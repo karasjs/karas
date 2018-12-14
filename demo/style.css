@@ -1,0 +1,65 @@
+.tip{
+  background:#F0F0F0;
+  border:1px dashed #CCC;
+  padding:10px;
+  display:inline-block;
+  min-width:400px;
+  border-radius:3px;
+  font:14px/1.5 "微软雅黑";
+  color:#9CF;
+}
+
+.jssc span{
+  display:inline;
+  position:static;
+  width:auto;
+  height:auto;
+  background:none;
+  border-radius:0;
+  transition:none;
+}
+
+.jssc .col{margin-left:12px;color:#CCC;cursor:default;}
+.jssc .col em{position:relative;font-style:normal;}
+.jssc .col em small{position:absolute;top:-10px;left:0;color:#A0A080;}
+.jssc .col,.jssc ol{font-family:Consolas,momospace,"宋体","Courier New";font-size:12px;}
+.jssc li:hover{background:#FF9;}
+.jssc .number{color:#088;}
+.jssc .keyword{color:#33f;}
+.jssc .comment{color:#393;}
+.jssc .string{color:#a33;}
+.jssc .template,.jssc .mark{color:#993;}
+.jssc .reg, .jssc .annot, .jssc .head, .jssc .declare{color:#999;}
+.jssc .annot{font-style:italic;}
+.jssc .attr{color:#909;}
+.jssc .property{color:#F33;}
+.jssc .selector{font-weight:700;}
+.jssc .units{color:#9c0;}
+.jssc .important{text-decoration:underline;}
+.jssc .pseudo{font-style:italic;}
+.jssc .tags, .jssc .cdata{color:#c96;}
+.jssc .hack{color:#ccc;}
+.jssc .namespace{color:#f00;}
+.jssc .depth,.jssc .elem{color:#fc0;}
+.jssc .java .keyword{color:#909;}
+.jssc .color{color:#f99;}
+.jssc .text{color:#600;}
+
+.jssc{position:relative;}
+.jssc p{margin:10px 0;color:#79a;text-indent:2em;font-weight:700;font-family:"Verdana","\5b8b\4f53";}
+.jssc .error{color:#f33;}
+.jssc .copy{display:block;position:absolute;top:0;right:0;cursor:pointer;color:#39f;}
+.jssc ol{margin:0;padding:0;overflow:auto;border:1px solid #ccc;background-color:#eee;clear:both;}
+.jssc ol li{margin:0;padding-left:10px;border-left:1px solid #abc;background-color:#fff;color:#333;word-wrap:break-word;word-break:break-all;}
+.jssc ol li:hover{background-color:#ff9;}
+.jssc ol li.even{background-color:#eee;}
+.jssc ol li .error{background-color:#f33;}
+.jssc ol .fold{background:#eee;font-style:italic;}
+.jssc ol .fold:after{content:"...";}
+.jssc ol .hide{position:absolute;visibility:hidden;}
+
+canvas{
+  display:block;
+  width:375px;
+  height:200px;
+}

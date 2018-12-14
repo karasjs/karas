@@ -1,0 +1,43 @@
+{
+  "name": "karas",
+  "version": "0.1.0",
+  "description": "karas",
+  "maintainers": [
+    {
+      "name": "army8735",
+      "email": "army8735@qq.com"
+    }
+  ],
+  "scripts": {
+    "build": "webpack --colors",
+    "dev": "webpack --config webpack-dev.config.js --colors",
+    "dist": "webpack --mode production --colors",
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/karasjs/karas.git"
+  },
+  "dependencies": {
+    "yurine": "~0.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "blanket": "^1.1.6",
+    "coveralls": "^2.11.2",
+    "expect.js": "^0.3.1",
+    "mocha": "^2.2.4",
+    "mocha-lcov-reporter": "^0.0.2",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2"
+  },
+  "main": "./build/index",
+  "engines": {
+    "node": ">=10.0.0"
+  },
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "author": "army8735 <army8735@qq.com>"
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+    <title>Hello, world!</title>
+    <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div id="example"></div>
+<pre><code class="brush:jsx"></code></pre>
+<script type="text/jsx">
+  let data = [3, 4, 1, 2, 5];
+  yurine.render(
+    <canvas width="750" height="400">
+      <div>Hello, world!</div>
+      <div>I'm yurine!</div>
+      <span>第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字</span>
+      <div>
+        <div>hahaha</div>
+        <div>lalala</div>
+      </div>
+      <div>
+        <span>123</span>
+        <span>456</span>
+      </div>
+      {[1, [2, [3]]]}
+      <span>aaa</span>
+      <span>bbb</span>
+    </canvas>,
+    '#example'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="../build/index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+      'homunculus': seajs.resolve('../node_modules/homunculus/index.js', seajs.data.cwd),
+      'karas': seajs.resolve('../node_modules/karas/init.js', seajs.data.cwd),
+      'jaw': seajs.resolve('../node_modules/jaw/init.js', seajs.data.cwd),
+    },
+    map: [function(url) {
+      return url.replace('demo/lexer/', 'node_modules/homunculus/web/lexer/');
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc', '../init', 'karas'], function(jssc, yurine, karas) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    karas.init();
+    yurine.init();
+  });
+</script>
+</body>
+</html>

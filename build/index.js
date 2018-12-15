@@ -96,7 +96,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./node_modules/_webpack@4.27.1@webpack/buildin/global.js":
+/***/ "./node_modules/webpack/buildin/global.js":
 /*!***********************************!*\
   !*** (webpack)/buildin/global.js ***!
   \***********************************/
@@ -133,12 +133,8 @@ module.exports = g;
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Group__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Group */ "./src/Group.js");
-/* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Geom */ "./src/Geom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./util */ "./src/util.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
-/* harmony import */ var _VirtualDom__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./VirtualDom */ "./src/VirtualDom.js");
-/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
+/* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./util */ "./src/util.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -160,12 +156,8 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
-
-
-
-
 function getDom(dom) {
-  if (_util__WEBPACK_IMPORTED_MODULE_2__["default"].isString(dom)) {
+  if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isString(dom)) {
     var o = document.querySelector(dom);
 
     if (!o) {
@@ -179,26 +171,26 @@ function getDom(dom) {
 }
 
 function renderProp(k, v) {
-  var s = Array.isArray(v) ? _util__WEBPACK_IMPORTED_MODULE_2__["default"].joinSourceArray(v) : _util__WEBPACK_IMPORTED_MODULE_2__["default"].stringify(v);
+  var s = Array.isArray(v) ? _util__WEBPACK_IMPORTED_MODULE_1__["default"].joinSourceArray(v) : _util__WEBPACK_IMPORTED_MODULE_1__["default"].stringify(v);
 
   if (k === 'className') {
     k = 'class';
   }
 
-  return ' ' + k + '="' + _util__WEBPACK_IMPORTED_MODULE_2__["default"].encodeHtml(s, true) + '"';
+  return ' ' + k + '="' + _util__WEBPACK_IMPORTED_MODULE_1__["default"].encodeHtml(s, true) + '"';
 }
 
 var Canvas =
 /*#__PURE__*/
-function (_Group) {
-  _inherits(Canvas, _Group);
+function (_Dom) {
+  _inherits(Canvas, _Dom);
 
   function Canvas(props, children) {
     var _this;
 
     _classCallCheck(this, Canvas);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, props, children));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
 
     if (_this.props.width === undefined) {
       _this.props.width = _this.__width = 300;
@@ -218,22 +210,10 @@ function (_Group) {
 
     _this.__element = null; // 真实DOM引用
 
-    _this.__x = _this.__y = 0;
-
-    _this.initStyle();
-
     return _this;
   }
 
   _createClass(Canvas, [{
-    key: "initStyle",
-    value: function initStyle() {
-      this.__style = Object.assign({
-        width: parseInt(this.props.width),
-        height: parseInt(this.props.height)
-      }, _reset__WEBPACK_IMPORTED_MODULE_3__["default"]);
-    }
-  }, {
     key: "toString",
     value: function toString() {
       var res = '<canvas'; // 处理属性
@@ -261,61 +241,12 @@ function (_Group) {
 
       this.__groupDiv(this.ctx);
 
-      this.__measureRow(); // this.ctx.clearRect(0, 0, this.props.width, this.props.height);
-      // this.render();
+      this.__groupRow({
+        w: this.width,
+        h: this.height
+      });
 
-    } // @Override
-
-  }, {
-    key: "__measureRow",
-    value: function __measureRow() {}
-  }, {
-    key: "render",
-    value: function render() {// let group = [];
-      // let current = [];
-      // const W = parseInt(this.props.width);
-      // const H = parseInt(this.props.height);
-      // let free = W;
-      // for(let i = 0; i < this.children.length; i++) {
-      //   let item = this.children[i];
-      //   if(item instanceof Group) {
-      //     let w = item.__measureWidth({
-      //       parentWidth: W,
-      //       parentHeight: H,
-      //     });
-      //     // 剩余的宽度不足以放下元素，需要换新行
-      //     if(w > free) {
-      //       if(current.length) {
-      //         group.push(current);
-      //         current = [];
-      //       }
-      //       free = W - w;
-      //     }
-      //     // 可以放下，减去宽度获得新的剩余空间宽度
-      //     else {
-      //       free -= w;
-      //     }
-      //     current.push({
-      //       w,
-      //       item,
-      //     });
-      //   }
-      // }
-      // if(current.length) {
-      //   group.push(current);
-      // } console.log(group);
-      // let x = 0;
-      // let y = 0;
-      // group.forEach(row => {
-      //   row.forEach(item => {
-      //     if(item instanceof VirtualDom) {
-      //       item.render({
-      //         x,
-      //         y,
-      //       });
-      //     }
-      //   });
-      // });
+      this.render();
     }
   }, {
     key: "element",
@@ -325,9 +256,282 @@ function (_Group) {
   }]);
 
   return Canvas;
-}(_Group__WEBPACK_IMPORTED_MODULE_0__["default"]);
+}(_Dom__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Canvas);
+
+/***/ }),
+
+/***/ "./src/Dom.js":
+/*!********************!*\
+  !*** ./src/Dom.js ***!
+  \********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
+/* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/Text.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./util */ "./src/util.js");
+/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
+
+
+
+var TAG_NAME = {
+  'div': true,
+  'span': true,
+  'ul': true,
+  'li': true,
+  'a': true
+};
+var INLINE = {
+  'span': true,
+  'a': true
+};
+
+var Dom =
+/*#__PURE__*/
+function (_Element) {
+  _inherits(Dom, _Element);
+
+  function Dom(name, props, children) {
+    var _this;
+
+    _classCallCheck(this, Dom);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, props));
+    _this.__children = children;
+    _this.__div = [];
+    _this.__row = [];
+    _this.__style = {};
+
+    _this.__initStyle(name, _this.props.style);
+
+    return _this;
+  }
+
+  _createClass(Dom, [{
+    key: "__initStyle",
+    value: function __initStyle(name, style) {
+      this.__style = Object.assign({}, _reset__WEBPACK_IMPORTED_MODULE_3__["default"], style); // 仅支持flex/block/inline-block
+
+      if (!this.style.display || ['flex', 'block', 'inline-block'].indexOf(this.style.display) === -1) {
+        if (INLINE.hasOwnProperty(name)) {
+          this.style.display = 'inline-block';
+        } else {
+          this.style.display = 'block';
+        }
+      }
+    } // 封装string为text节点，同时打平children中的数组，使得children只是一维列表
+
+  }, {
+    key: "__traverse",
+    value: function __traverse() {
+      var list = [];
+
+      this.__traverseChildren(this.children, list);
+
+      this.__children = list;
+    }
+  }, {
+    key: "__traverseChildren",
+    value: function __traverseChildren(children, list) {
+      var _this2 = this;
+
+      if (Array.isArray(children)) {
+        children.forEach(function (item) {
+          _this2.__traverseChildren(item, list);
+        });
+      } else if (children instanceof _Element__WEBPACK_IMPORTED_MODULE_0__["default"]) {
+        list.push(children);
+
+        children.__traverse();
+      } // 排除掉空的文本
+      else if (!_util__WEBPACK_IMPORTED_MODULE_2__["default"].isNil(children)) {
+          list.push(new _Text__WEBPACK_IMPORTED_MODULE_1__["default"](children));
+        }
+    } // 递归遍历区分block块组，使得每组中要么是block要么是inline数组，同时设置父子兄弟关系和ctx
+
+  }, {
+    key: "__groupDiv",
+    value: function __groupDiv(ctx) {
+      var prev = null;
+      var list = [];
+      var inLine = [];
+      this.children.forEach(function (item) {
+        item.__ctx = ctx;
+
+        if (item instanceof Dom) {
+          item.__groupDiv(ctx);
+
+          if (['block', 'flex'].indexOf(item.style.display) > -1) {
+            if (inLine.length) {
+              list.push(inLine);
+              inLine = [];
+            }
+
+            list.push(item);
+          } else {
+            inLine.push(item);
+          }
+        } else {
+          inLine.push(item);
+        }
+
+        if (prev) {
+          prev.__next = item;
+        }
+
+        item.__prev = prev;
+        prev = item;
+      });
+
+      if (inLine.length) {
+        list.push(inLine);
+      }
+
+      this.__div = list;
+    } // 递归测量inline位置，进行换行及多行文本操作，使得分行后每行有若干个inline元素
+
+  }, {
+    key: "__groupRow",
+    value: function __groupRow(options) {
+      var _this3 = this;
+
+      var list = [];
+      this.div.forEach(function (arr) {
+        if (Array.isArray(arr)) {
+          var div = [];
+          var row = [];
+          var free = options.w;
+          arr.forEach(function (item) {
+            var iw = 0;
+
+            if (item instanceof _Text__WEBPACK_IMPORTED_MODULE_1__["default"]) {
+              var _this3$style = _this3.style,
+                  fontStyle = _this3$style.fontStyle,
+                  fontWeight = _this3$style.fontWeight,
+                  fontSize = _this3$style.fontSize,
+                  fontFamily = _this3$style.fontFamily;
+              _this3.ctx.font = "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+              iw = _this3.ctx.measureText(item.s).width;
+            } else {
+              iw = item.__measureInlineWidth();
+            }
+
+            if (iw > free) {
+              if (row.length) {
+                div.push(row);
+              }
+
+              row = [item];
+              free = options.w;
+            } else {
+              row.push(item);
+              free -= iw;
+            }
+          });
+
+          if (row.length) {
+            div.push(row);
+          }
+
+          list.push(div);
+        } else {
+          list.push(arr);
+        }
+      });
+      this.__row = list;
+    }
+  }, {
+    key: "__measureInlineWidth",
+    value: function __measureInlineWidth() {
+      var _this4 = this;
+
+      if (this.style.width && this.style.overflow === 'hidden') {
+        return this.style.width;
+      } else {
+        var w = 0;
+        var __childrenInlineWidth = [];
+        this.children.forEach(function (item) {
+          if (item instanceof _Text__WEBPACK_IMPORTED_MODULE_1__["default"]) {
+            var _this4$style = _this4.style,
+                fontStyle = _this4$style.fontStyle,
+                fontWeight = _this4$style.fontWeight,
+                fontSize = _this4$style.fontSize,
+                fontFamily = _this4$style.fontFamily;
+            _this4.ctx.font = "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+
+            var iw = _this4.ctx.measureText(item.s).width;
+
+            __childrenInlineWidth.push(iw);
+
+            w += iw;
+          } else {
+            var _iw = item.__measureInlineWidth();
+
+            __childrenInlineWidth.push(_iw);
+
+            w += _iw;
+          }
+        });
+        return w;
+      }
+    }
+  }, {
+    key: "render",
+    value: function render() {}
+  }, {
+    key: "div",
+    get: function get() {
+      return this.__div;
+    }
+  }, {
+    key: "row",
+    get: function get() {
+      return this.__row;
+    }
+  }, {
+    key: "children",
+    get: function get() {
+      return this.__children;
+    }
+  }, {
+    key: "style",
+    get: function get() {
+      return this.__style;
+    }
+  }], [{
+    key: "isValid",
+    value: function isValid(s) {
+      return TAG_NAME.hasOwnProperty(s);
+    }
+  }]);
+
+  return Dom;
+}(_Element__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/* harmony default export */ __webpack_exports__["default"] = (Dom);
 
 /***/ }),
 
@@ -548,172 +752,6 @@ function (_Element) {
 
 /***/ }),
 
-/***/ "./src/Group.js":
-/*!**********************!*\
-  !*** ./src/Group.js ***!
-  \**********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
-/* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/Text.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./util */ "./src/util.js");
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-
-
-
-
-var Group =
-/*#__PURE__*/
-function (_Element) {
-  _inherits(Group, _Element);
-
-  function Group(props, children) {
-    var _this;
-
-    _classCallCheck(this, Group);
-
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Group).call(this, props));
-    _this.__children = children;
-    _this.__div = [];
-    _this.__row = [];
-    _this.__style = {};
-    return _this;
-  } // 封装string为text节点，同时打平children中的数组，使得children只是一维列表
-
-
-  _createClass(Group, [{
-    key: "__traverse",
-    value: function __traverse() {
-      var list = [];
-
-      this.__traverseChildren(this.children, list);
-
-      this.__children = list;
-    }
-  }, {
-    key: "__traverseChildren",
-    value: function __traverseChildren(children, list) {
-      var _this2 = this;
-
-      if (Array.isArray(children)) {
-        children.forEach(function (item) {
-          _this2.__traverseChildren(item, list);
-        });
-      } else if (children instanceof _Element__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-        list.push(children);
-
-        children.__traverse();
-      } // 排除掉空的文本
-      else if (!_util__WEBPACK_IMPORTED_MODULE_2__["default"].isNil(children)) {
-          list.push(new _Text__WEBPACK_IMPORTED_MODULE_1__["default"](children));
-        }
-    } // 递归遍历区分block块组，使得每组中一定都是inline元素，同时设置父子兄弟关系和ctx
-
-  }, {
-    key: "__groupDiv",
-    value: function __groupDiv(ctx) {
-      var prev = null;
-      var list = [];
-      var inLineTemp = [];
-      this.children.forEach(function (item) {
-        item.__ctx = ctx;
-
-        if (item instanceof Group) {
-          item.__groupDiv(ctx);
-
-          if (['block', 'flex'].indexOf(item.style.display) > -1) {
-            if (inLineTemp.length) {
-              list.push(inLineTemp);
-              inLineTemp = [];
-            }
-
-            list.push(item);
-          } else {
-            inLineTemp.push(item);
-          }
-        } else {
-          inLineTemp.push(item);
-        }
-
-        if (prev) {
-          prev.__next = item;
-        }
-
-        item.__prev = prev;
-        prev = item;
-      });
-
-      if (inLineTemp.length) {
-        list.push(inLineTemp);
-      }
-
-      this.__div = list;
-    } // 递归测量inline位置，进行换行及多行操作，使得分行后每行有若干个inline元素
-    // measure() {
-    //   let res = {
-    //     row: [],
-    //     x: this.parent.x,
-    //     y: this.parent.y,
-    //   };
-    //   this.measureDiv(this.group, res);
-    // }
-    // 递归测量inline位置，进行换行及多行操作，使得分行后每行有若干个inline元素
-
-  }, {
-    key: "__measureRow",
-    value: function __measureRow() {
-      var list = [];
-      this.children.forEach(function (item) {});
-    }
-  }, {
-    key: "group",
-    get: function get() {
-      return this.__div;
-    }
-  }, {
-    key: "row",
-    get: function get() {
-      return this.__row;
-    }
-  }, {
-    key: "children",
-    get: function get() {
-      return this.__children;
-    }
-  }, {
-    key: "style",
-    get: function get() {
-      return this.__style;
-    }
-  }]);
-
-  return Group;
-}(_Element__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-/* harmony default export */ __webpack_exports__["default"] = (Group);
-
-/***/ }),
-
 /***/ "./src/Line.js":
 /*!*********************!*\
   !*** ./src/Line.js ***!
@@ -815,173 +853,6 @@ function (_Element) {
 
 /***/ }),
 
-/***/ "./src/VirtualDom.js":
-/*!***************************!*\
-  !*** ./src/VirtualDom.js ***!
-  \***************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Group__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Group */ "./src/Group.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-
-
-var name = {
-  'div': true,
-  'span': true,
-  'ul': true,
-  'li': true,
-  'a': true
-};
-var inline = {
-  'span': true,
-  'a': true
-};
-
-var VirtualDom =
-/*#__PURE__*/
-function (_Group) {
-  _inherits(VirtualDom, _Group);
-
-  function VirtualDom(name, props, children) {
-    var _this;
-
-    _classCallCheck(this, VirtualDom);
-
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(VirtualDom).call(this, props, children));
-    _this.__name = name;
-
-    _this.initStyle(name);
-
-    return _this;
-  }
-
-  _createClass(VirtualDom, [{
-    key: "initStyle",
-    value: function initStyle(name) {
-      this.__style = Object.assign({}, _reset__WEBPACK_IMPORTED_MODULE_1__["default"]); // 仅支持flex/block/inline-block
-
-      if (!this.style.display || ['flex', 'block', 'inline-block'].indexOf(this.style.display) === -1) {
-        if (inline.hasOwnProperty(name)) {
-          this.style.display = 'inline-block';
-        } else {
-          this.style.display = 'block';
-        }
-      }
-    } // __measureWidth(options) {
-    //   if(this.style.display === 'block') {
-    //     return options.parentWidth;
-    //   }
-    //   else if(this.style.width && this.style.overflow === 'hidden') {
-    //     return this.style.width;
-    //   }
-    //   else {
-    //     return this.__measureChildrenWidth(this.children);
-    //   }
-    // }
-    // __measureChildrenWidth(children) {
-    //   let w = 0;
-    //   if(Array.isArray(children)) {
-    //     children.forEach(item => {
-    //       w += this.__measureChildrenWidth(item);
-    //     });
-    //   }
-    //   else if(children instanceof VirtualDom) {
-    //     w = children.__measureWidth();
-    //   }
-    //   else {
-    //     let style = this.style;
-    //     this.ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px/${style.lineHeight}px ${style.fontFamily}`;
-    //     w = this.ctx.measureText(children).width;
-    //   }
-    //   return Math.max(w, this.style.width || 0);
-    // }
-
-  }, {
-    key: "render",
-    value: function render(options) {
-      var x = options.x,
-          y = options.y;
-      this.__x = x;
-      this.__y = y;
-
-      this.__renderChildren(this.children);
-
-      return {
-        x: x,
-        y: y,
-        width: this.width,
-        height: this.height
-      };
-    }
-  }, {
-    key: "__renderChildren",
-    value: function __renderChildren(children) {
-      this.ctx.font = '30px Georgia';
-      this.ctx.fillText(this.children[0], this.x, this.y + 30);
-      var square = this.ctx.measureText(this.children[0]);
-      this.__width = square.width;
-      this.__height = 30;
-    }
-  }, {
-    key: "name",
-    get: function get() {
-      return this.__name;
-    }
-  }, {
-    key: "x",
-    get: function get() {
-      return this.__x;
-    }
-  }, {
-    key: "y",
-    get: function get() {
-      return this.__y;
-    }
-  }, {
-    key: "width",
-    get: function get() {
-      return this.__width;
-    }
-  }, {
-    key: "height",
-    get: function get() {
-      return this.__height;
-    }
-  }], [{
-    key: "isValid",
-    value: function isValid(s) {
-      return name.hasOwnProperty(s);
-    }
-  }]);
-
-  return VirtualDom;
-}(_Group__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-/* harmony default export */ __webpack_exports__["default"] = (VirtualDom);
-
-/***/ }),
-
 /***/ "./src/index.js":
 /*!**********************!*\
   !*** ./src/index.js ***!
@@ -992,7 +863,7 @@ function (_Group) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* WEBPACK VAR INJECTION */(function(global) {/* harmony import */ var _Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Canvas */ "./src/Canvas.js");
-/* harmony import */ var _VirtualDom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./VirtualDom */ "./src/VirtualDom.js");
+/* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
 /* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Geom */ "./src/Geom.js");
 /* harmony import */ var _Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./Line */ "./src/Line.js");
 
@@ -1022,8 +893,8 @@ var yurine = {
       return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
     }
 
-    if (_VirtualDom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(name)) {
-      return new _VirtualDom__WEBPACK_IMPORTED_MODULE_1__["default"](name, props, children);
+    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(name)) {
+      return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](name, props, children);
     }
 
     throw new Error('can not use marker: ' + name);
@@ -1037,7 +908,7 @@ if (typeof window != 'undefined') {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (yurine);
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/_webpack@4.27.1@webpack/buildin/global.js */ "./node_modules/_webpack@4.27.1@webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 

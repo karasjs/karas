@@ -1,5 +1,5 @@
 import Canvas from './Canvas';
-import VirtualDom from './VirtualDom';
+import Dom from './Dom';
 import Geom from './Geom';
 import Line from './Line';
 
@@ -23,8 +23,8 @@ let yurine = {
     if(name === 'canvas') {
       return new Canvas(props, children);
     }
-    if(VirtualDom.isValid(name)) {
-      return new VirtualDom(name, props, children);
+    if(Dom.isValid(name)) {
+      return new Dom(name, props, children);
     }
     throw new Error('can not use marker: ' + name);
   },

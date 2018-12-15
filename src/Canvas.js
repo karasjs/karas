@@ -1,9 +1,5 @@
-import Group from './Group';
-import Geom from './Geom';
+import Dom from './Dom';
 import util from './util';
-import reset from './reset';
-import VirtualDom from "./VirtualDom";
-import Element from "./Element";
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -24,9 +20,9 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
-class Canvas extends Group {
+class Canvas extends Dom {
   constructor(props, children) {
-    super(props, children);
+    super('canvas', props, children);
     if(this.props.width === undefined) {
       this.props.width = this.__width = 300;
       this.__props.push(['width', 300]);
@@ -42,14 +38,6 @@ class Canvas extends Group {
       this.__height = Math.max(0, parseInt(this.props.height) || 0);
     }
     this.__element = null; // 真实DOM引用
-    this.__x = this.__y = 0;
-    this.initStyle();
-  }
-  initStyle() {
-    this.__style = Object.assign({
-      width: parseInt(this.props.width),
-      height: parseInt(this.props.height),
-    }, reset);
   }
   toString() {
     let res = '<canvas';
@@ -71,60 +59,11 @@ class Canvas extends Group {
     this.__ctx = this.element.getContext('2d');
     this.__traverse();
     this.__groupDiv(this.ctx);
-    this.__measureRow();
-    // this.ctx.clearRect(0, 0, this.props.width, this.props.height);
-    // this.render();
-  }
-  // @Override
-  __measureRow() {
-
-  }
-  render() {
-    // let group = [];
-    // let current = [];
-    // const W = parseInt(this.props.width);
-    // const H = parseInt(this.props.height);
-    // let free = W;
-    // for(let i = 0; i < this.children.length; i++) {
-    //   let item = this.children[i];
-    //   if(item instanceof Group) {
-    //     let w = item.__measureWidth({
-    //       parentWidth: W,
-    //       parentHeight: H,
-    //     });
-    //     // 剩余的宽度不足以放下元素，需要换新行
-    //     if(w > free) {
-    //       if(current.length) {
-    //         group.push(current);
-    //         current = [];
-    //       }
-    //       free = W - w;
-    //     }
-    //     // 可以放下，减去宽度获得新的剩余空间宽度
-    //     else {
-    //       free -= w;
-    //     }
-    //     current.push({
-    //       w,
-    //       item,
-    //     });
-    //   }
-    // }
-    // if(current.length) {
-    //   group.push(current);
-    // } console.log(group);
-    // let x = 0;
-    // let y = 0;
-    // group.forEach(row => {
-    //   row.forEach(item => {
-    //     if(item instanceof VirtualDom) {
-    //       item.render({
-    //         x,
-    //         y,
-    //       });
-    //     }
-    //   });
-    // });
+    this.__groupRow({
+      w: this.width,
+      h: this.height,
+    });
+    this.render();
   }
 
   get element() {

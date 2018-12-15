@@ -14,19 +14,22 @@
   yurine.render(
     <canvas width="750" height="400">
       <div>Hello, world!</div>
-      <div>I'm yurine!</div>
       <span>第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字</span>
       <div>
-        <div>hahaha</div>
-        <div>lalala</div>
+        <div>haha</div>
+        <div>lala</div>
       </div>
       <div>
-        <span>123</span>
-        <span>456</span>
+        <span>xxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
+        <span>yyyyyyyyyyyyyyyyyyyyyyyyyyyy</span>
       </div>
       {[1, [2, [3]]]}
-      <span>aaa</span>
-      <span>bbb</span>
+      <span>aaaaaaaaaaaaaaaaaaaaaaa</span>
+      <span style={{fontSize:100}}>bbbbbbbbbbbbbbbbbbbbbbb</span>
+      <div>
+        <span>c</span>
+        <span>d</span>
+      </div>
     </canvas>,
     '#example'
   );
@@ -37,15 +40,14 @@
   seajs.config({
     alias: {
       'homunculus': seajs.resolve('../node_modules/homunculus/index.js', seajs.data.cwd),
-      'karas': seajs.resolve('../node_modules/karas/init.js', seajs.data.cwd),
-      'jaw': seajs.resolve('../node_modules/jaw/init.js', seajs.data.cwd),
+      'yurine': seajs.resolve('../node_modules/yurine/init.js', seajs.data.cwd)
     },
     map: [function(url) {
       return url.replace('demo/lexer/', 'node_modules/homunculus/web/lexer/');
     }]
   });
   define('fs', {});
-  seajs.use(['jssc', '../init', 'karas'], function(jssc, yurine, karas) {
+  seajs.use(['jssc', '../init', 'yurine'], function(jssc, karas, yurine) {
     var code = document.querySelector('pre code');
     var jsx = document.querySelector('script[type="text/jsx"]');
     var source = jsx.textContent || jsx.text;
@@ -53,8 +55,8 @@
     var text = document.createTextNode(source);
     code.appendChild(text);
     jssc.exec();
-    karas.init();
     yurine.init();
+    karas.init();
   });
 </script>
 </body>

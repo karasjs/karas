@@ -1,4 +1,5 @@
-import Group from './Group';
+import Dom from './Dom';
+import Text from './Text';
 import reset from './reset';
 
 const name = {
@@ -13,14 +14,14 @@ const inline = {
   'a': true,
 };
 
-class VirtualDom extends Group {
+class VirtualDom extends Dom {
   constructor(name, props, children) {
     super(props, children);
     this.__name = name;
-    this.initStyle(name);
+    this.__initStyle(name, this.props.style);
   }
-  initStyle(name) {
-    this.__style = Object.assign({}, reset);
+  __initStyle(name, style) {
+    this.__style = Object.assign({}, reset, style);
     // 仅支持flex/block/inline-block
     if(!this.style.display || ['flex', 'block', 'inline-block'].indexOf(this.style.display) === -1) {
       if(inline.hasOwnProperty(name)) {
@@ -31,34 +32,30 @@ class VirtualDom extends Group {
       }
     }
   }
-  // __measureWidth(options) {
-  //   if(this.style.display === 'block') {
-  //     return options.parentWidth;
-  //   }
-  //   else if(this.style.width && this.style.overflow === 'hidden') {
-  //     return this.style.width;
-  //   }
-  //   else {
-  //     return this.__measureChildrenWidth(this.children);
-  //   }
-  // }
-  // __measureChildrenWidth(children) {
-  //   let w = 0;
-  //   if(Array.isArray(children)) {
-  //     children.forEach(item => {
-  //       w += this.__measureChildrenWidth(item);
-  //     });
-  //   }
-  //   else if(children instanceof VirtualDom) {
-  //     w = children.__measureWidth();
-  //   }
-  //   else {
-  //     let style = this.style;
-  //     this.ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize}px/${style.lineHeight}px ${style.fontFamily}`;
-  //     w = this.ctx.measureText(children).width;
-  //   }
-  //   return Math.max(w, this.style.width || 0);
-  // }
+  __measureInlineWidth() {
+    if(this.style.width && this.style.overflow === 'hidden') {
+      return this.style.width;
+    }
+    else {
+      let w = 0;
+      let __childrenInlineWidth = [];
+      this.children.forEach(item => {
+        if(item instanceof Text) {
+          let { fontStyle, fontWeight, fontSize, fontFamily } = this.style;
+          this.ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
+          let iw = this.ctx.measureText(item.s).width;
+          __childrenInlineWidth.push(iw);
+          w += iw;
+        }
+        else {
+          let iw = item.__measureInlineWidth();
+          __childrenInlineWidth.push(iw);
+          w += iw;
+        }
+      });
+      return w;
+    }
+  }
   render(options) {
     let { x, y } = options;
     this.__x = x;

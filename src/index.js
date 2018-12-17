@@ -1,9 +1,8 @@
 import Canvas from './Canvas';
 import Dom from './Dom';
-import Geom from './Geom';
 import Line from './Line';
 
-let yurine = {
+let karas = {
   render(canvas, dom) {
     if(!canvas instanceof Canvas) {
       throw new Error('render root muse be canvas');
@@ -13,28 +12,29 @@ let yurine = {
     }
     return canvas;
   },
-  createCp(name, props) {
+  createGeom(name, props) {
     switch(name) {
       case 'Line':
         return new Line(props);
     }
   },
-  createVd(name, props, children) {
-    if(name === 'canvas') {
+  createDom(tagName, props, children) {
+    if(tagName === 'canvas') {
       return new Canvas(props, children);
     }
-    if(Dom.isValid(name)) {
-      return new Dom(name, props, children);
+    if(Dom.isValid(tagName)) {
+      return new Dom(tagName, props, children);
     }
-    throw new Error('can not use marker: ' + name);
+    throw new Error('can not use marker: ' + tagName);
   },
+  Line,
 };
 
 if(typeof window != 'undefined') {
-  window.yurine = yurine;
+  window.karas = karas;
 }
 else if(typeof global != 'undefined') {
-  global.yurine = yurine;
+  global.karas = karas;
 }
 
-export default yurine;
+export default karas;

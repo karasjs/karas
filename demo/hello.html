@@ -11,25 +11,11 @@
 <pre><code class="brush:jsx"></code></pre>
 <script type="text/jsx">
   let data = [3, 4, 1, 2, 5];
-  yurine.render(
-    <canvas width="750" height="400">
-      <div>Hello, world!</div>
-      <span>第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字第一行文字</span>
-      <div>
-        <div>haha</div>
-        <div>lala</div>
-      </div>
-      <div>
-        <span>xxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>
-        <span>yyyyyyyyyyyyyyyyyyyyyyyyyyyy</span>
-      </div>
-      {[1, [2, [3]]]}
-      <span>aaaaaaaaaaaaaaaaaaaaaaa</span>
-      <span style={{fontSize:100}}>bbbbbbbbbbbbbbbbbbbbbbb</span>
-      <div>
-        <span>c</span>
-        <span>d</span>
-      </div>
+  karas.render(
+    <canvas width="720" height="400">
+      <span>Hello</span>
+      <div>world!</div>
+      <Line data={data} />
     </canvas>,
     '#example'
   );

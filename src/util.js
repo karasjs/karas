@@ -1,3 +1,5 @@
+import font from './font';
+
 var toString = {}.toString;
 function isType(type) {
   return function(obj) {
@@ -37,6 +39,20 @@ function isNil(v) {
   return v === undefined || v === null;
 }
 
+function setFontStyle(style) {
+  let { fontStyle, fontWeight, fontSize, fontFamily } = style;
+  return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
+}
+
+function getLimitLineHeight(lineHeight, fontSize, fontFamily) {
+  let ft = font[fontFamily] || font.arial;
+  let min = fontSize * ft.car;
+  if(lineHeight <= 0) {
+    return Math.ceil(min);
+  }
+  return Math.max(lineHeight, min);
+}
+
 var util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -50,6 +66,8 @@ var util = {
   },
   encodeHtml,
   isNil,
+  setFontStyle,
+  getLimitLineHeight,
 };
 
 export default util;

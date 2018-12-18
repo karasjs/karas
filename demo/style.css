@@ -1,12 +1,5 @@
-.tip{
-  background:#F0F0F0;
-  border:1px dashed #CCC;
-  padding:10px;
-  display:inline-block;
-  min-width:400px;
-  border-radius:3px;
-  font:14px/1.5 "微软雅黑";
-  color:#9CF;
+body{
+  margin:5px;
 }
 
 .jssc span{

@@ -1,5 +1,5 @@
-import Element from './Element';
-import reset from './reset';
+import Element from '../Element';
+import reset from '../reset';
 
 class Geom extends Element {
   constructor(props) {

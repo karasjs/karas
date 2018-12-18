@@ -1,6 +1,6 @@
 import Canvas from './Canvas';
 import Dom from './Dom';
-import Line from './Line';
+import Line from './geom/Line';
 
 let karas = {
   render(canvas, dom) {

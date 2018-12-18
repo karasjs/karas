@@ -1,6 +1,6 @@
 import Element from './Element';
 import Text from './Text';
-import Geom from './Geom';
+import Geom from './geom/Geom';
 import util from './util';
 import reset from './reset';
 import font from './font';
@@ -223,12 +223,12 @@ class Dom extends Element {
             let mw = item.__maxInlineWidth();
             // 超过父元素宽度需换行，本身就是行头则忽略
             if(mw > w && x > data.x) {
-              // if(line.length) {
-              //   group.push(line);
-              //   let mh = getMaxHeight(line);
-              //   y += mh;
-              //   line = [item];
-              // }
+              if(line.length) {
+                group.push(line);
+                let mh = getMaxHeight(line);
+                y += mh;
+                line = [];
+              }
             }
             item.__preLay({
               x,
@@ -237,29 +237,32 @@ class Dom extends Element {
               h,
             });
             line.push(item);
+            x += mw;
           }
           // 文本
           else {
             let mw = this.__tw[ii];
             if(mw > w && x > data.x) {
-              // if(line.length) {
-              //   group.push(line);
-              //   let mh = getMaxHeight(line);
-              //   y += mh;
-              //   line = [item];
-              // }
+              if(line.length) {
+                group.push(line);
+                let mh = getMaxHeight(line);
+                y += mh;
+                line = [];
+              }
             }
             let h = util.getLimitLineHeight(style.lineHeight, style.fontSize);
             item.__x = x;
             item.__y = y;
             item.__height = h;
             line.push(item);
+            x += mw;
           }
           ii++;
         });
         if(line.length) {
           group.push(line);
           let mh = getMaxHeight(line);
+          x = 0;
           y += mh;
         }
         list.push(group);

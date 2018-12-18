@@ -13,8 +13,9 @@
   let data = [3, 4, 1, 2, 5];
   karas.render(
     <canvas width="720" height="400">
-      <span>Hello</span>
-      <div>world!</div>
+      <span>Hello </span>
+      <span>world!</span>
+      <div>Fuck you!</div>
       <Line data={data} />
     </canvas>,
     '#example'
@@ -26,7 +27,8 @@
   seajs.config({
     alias: {
       'homunculus': seajs.resolve('../node_modules/homunculus/index.js', seajs.data.cwd),
-      'yurine': seajs.resolve('../node_modules/yurine/init.js', seajs.data.cwd)
+      'yurine': seajs.resolve('../node_modules/yurine/init.js', seajs.data.cwd),
+      'jaw': seajs.resolve('../node_modules/jaw/init.js', seajs.data.cwd)
     },
     map: [function(url) {
       return url.replace('demo/lexer/', 'node_modules/homunculus/web/lexer/');

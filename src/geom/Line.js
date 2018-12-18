@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import util from './util';
+import util from '../util';
 
 class Line extends Geom {
   constructor(props) {

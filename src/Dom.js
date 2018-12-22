@@ -96,8 +96,8 @@ class Dom extends Element {
   }
   // 合并设置style，包括继承和默认值
   __initStyle() {
-    Object.assign(this.__style, reset, this.props.style);
     let style = this.style;
+    Object.assign(style, reset, this.props.style);
     // 仅支持flex/block/inline-block
     if(!style.display || ['flex', 'block', 'inline-block'].indexOf(style.display) === -1) {
       if(INLINE.hasOwnProperty(this.tagName)) {
@@ -125,7 +125,7 @@ class Dom extends Element {
       }
     });
   }
-  // 递归遍历区分block块组，使得每组中要么是block要么是inline数组
+  // 递归遍历区分block块组，使得每组中要么是block元素要么是inline数组
   __groupDiv() {
     let list = [];
     let inLine = [];
@@ -155,7 +155,7 @@ class Dom extends Element {
     }
     this.__div = list;
   }
-  // 仅测量包含的文本宽度，可能为多个children存数组形式，递归Dom记特殊值-1
+  // 仅测量包含的文本宽度，可能为多个children则存数组形式，递归Dom记特殊值-1
   __measureInlineWidth() {
     let list = [];
     let { children, ctx, style } = this;
@@ -170,7 +170,7 @@ class Dom extends Element {
         list.push(w);
       }
     });
-    this.__tw = list;
+    this.__iw = list;
   }
   // 给定父宽度情况下，获取包括换行后的总高度
   __measureInlineHeight(w) {
@@ -182,7 +182,7 @@ class Dom extends Element {
     else {
       lineHeight = Math.max(lineHeight, this.style.fontSize * font.arial.car);
     }
-    this.__tw.forEach((n, i) => {
+    this.__iw.forEach((n, i) => {
       if(n === -1) {
         h += this.children[i].__measureInlineHeight(w);
       }
@@ -196,7 +196,7 @@ class Dom extends Element {
   // 获取最大可能的宽度，即所有孩子同在一行
   __maxInlineWidth() {
     let w = 0;
-    this.__tw.forEach((n, i) => {
+    this.__iw.forEach((n, i) => {
       // 递归的inline元素
       if(n === -1) {
         n = this.children[i].__maxInlineWidth();
@@ -222,10 +222,11 @@ class Dom extends Element {
           if(item instanceof Dom) {
             let mw = item.__maxInlineWidth();
             // 超过父元素宽度需换行，本身就是行头则忽略
-            if(mw > w && x > data.x) {
+            if(mw + x > w && x > data.x) {
               if(line.length) {
                 group.push(line);
                 let mh = getMaxHeight(line);
+                x = 0;
                 y += mh;
                 line = [];
               }
@@ -241,11 +242,12 @@ class Dom extends Element {
           }
           // 文本
           else {
-            let mw = this.__tw[ii];
-            if(mw > w && x > data.x) {
+            let mw = this.__iw[ii];
+            if(mw + x > w && x > data.x) {
               if(line.length) {
                 group.push(line);
                 let mh = getMaxHeight(line);
+                x = 0;
                 y += mh;
                 line = [];
               }

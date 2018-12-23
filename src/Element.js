@@ -61,6 +61,7 @@ class Element {
     this.__next = null;
     this.__ctx = null; // canvas的context
     this.__parent = null;
+    this.__baseLine = 0;
   }
 
   get x() {
@@ -86,6 +87,9 @@ class Element {
   }
   get ctx() {
     return this.__ctx;
+  }
+  get baseLine() {
+    return this.__baseLine;
   }
 }
 

@@ -59,19 +59,13 @@ class Canvas extends Dom {
     this.__ctx = this.element.getContext('2d');
     this.__traverse(this.ctx);
     this.__initStyle();
-    this.__groupDiv();
-    this.__measureInlineWidth();
     this.__preLay({
       x: 0,
       y: 0,
       w: this.width,
-      height: this.height,
     });
-    if(this.style.display === 'flex') {
-    }
-    else {
-      this.render();
-    }
+    this.render();
+    console.log(this.width, this.height)
   }
 
   get element() {

@@ -8,7 +8,7 @@ export default {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 32,
+  fontSize: 16,
   fontFamily: 'sans-serif',
   fontColor: '#000',
   fontStyle: 'normal',
@@ -22,4 +22,5 @@ export default {
   borderRightStyle: 'solid',
   borderBottomStyle: 'solid',
   borderLeftStyle: 'solid',
+  verticalAlign: 'baseline',
 };

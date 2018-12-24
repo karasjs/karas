@@ -1,6 +1,7 @@
 import Canvas from './Canvas';
 import Dom from './Dom';
 import Line from './geom/Line';
+import config from './config';
 
 let karas = {
   render(canvas, dom) {
@@ -28,6 +29,7 @@ let karas = {
     throw new Error('can not use marker: ' + tagName);
   },
   Line,
+  config,
 };
 
 if(typeof window != 'undefined') {

@@ -1,11 +1,11 @@
-import font from './font';
-
-var toString = {}.toString;
+let toString = {}.toString;
 function isType(type) {
   return function(obj) {
     return toString.call(obj) === '[object ' + type + ']';
   }
 }
+
+let isNumber = isType('Number');
 
 function joinSourceArray(arr) {
   var res = '';
@@ -44,20 +44,35 @@ function setFontStyle(style) {
   return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
 }
 
-function getLimitLineHeight(lineHeight, fontSize, fontFamily) {
-  let ft = font[fontFamily] || font.arial;
-  let min = fontSize * ft.car;
-  if(lineHeight <= 0) {
-    return Math.ceil(min);
-  }
-  return Math.max(lineHeight, min);
+// 防止负数，同时百分比转为负数表示
+function validStyle(style) {
+  ['width', 'height'].forEach(k => {
+    if(style.hasOwnProperty(k)) {
+      let v = style[k];
+      if(/%$/.test(v)) {
+        v = parseFloat(v);
+        if(v < 0) {
+          v = 0;
+          style[k] = 0;
+        }
+        else {
+          style[k] = -v;
+        }
+      }
+      else {
+        if(v < 0) {
+          style[k] = 0;
+        }
+      }
+    }
+  });
 }
 
-var util = {
+let util = {
   isObject: isType('Object'),
   isString: isType('String'),
   isFunction: isType('Function'),
-  isNumber: isType('Number'),
+  isNumber,
   isBoolean: isType('Boolean'),
   isDate: isType('Date'),
   stringify,
@@ -67,7 +82,7 @@ var util = {
   encodeHtml,
   isNil,
   setFontStyle,
-  getLimitLineHeight,
+  validStyle,
 };
 
 export default util;

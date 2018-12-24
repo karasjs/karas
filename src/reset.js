@@ -23,4 +23,6 @@ export default {
   borderBottomStyle: 'solid',
   borderLeftStyle: 'solid',
   verticalAlign: 'baseline',
+  flex: 0,
+  flexGrow: 0,
 };

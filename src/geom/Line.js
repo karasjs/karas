@@ -9,7 +9,7 @@ class Line extends Geom {
     let { x, y, width, height, props, ctx } = this;
     let { max, min, data } = props;
     ctx.strokeStyle = '#333333';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     if(util.isNil(max)) {
       max = data[0];
       data.forEach(item => {
@@ -33,10 +33,8 @@ class Line extends Geom {
     let coords = [];
     data.forEach((item, i) => {
       let diff = item - min;
-      // console.log(item, diff);
       let rx = i * stepX;
       let ry = height - diff * stepY;
-      // console.log(i, x, y);
       coords.push([rx, ry + y]);
     });
     let first = coords[0];

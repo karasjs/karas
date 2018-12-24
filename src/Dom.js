@@ -117,11 +117,16 @@ class Dom extends Element {
     let parent = this.parent;
     if(parent) {
       let parentStyle = parent.style;
+      // 继承父元素样式
       ['fontSize', 'lineHeight'].forEach(k => {
         if(!style.hasOwnProperty(k) && parentStyle.hasOwnProperty(k)) {
           style[k] = parentStyle[k];
         }
       });
+      // flex的children不能为inline
+      if(parentStyle.display === 'flex' && style.display === 'inline-block') {
+        style.display = 'block';
+      }
     }
     this.children.forEach(item => {
       if(item instanceof Dom) {
@@ -176,22 +181,46 @@ class Dom extends Element {
     });
     return lh;
   }
-  // 计算好所有元素的基本位置，inline比较特殊，还需后续计算
+  __isInline() {
+    return this.style.display === 'inline-block';
+  }
+  __offsetY(diff) {
+    this.__y += diff;
+    this.children.forEach(item => {
+      if(item instanceof Dom) {
+        item.__offsetY(diff);
+      }
+      else {
+        item.__y += diff;
+      }
+    });
+  }
   __preLay(data) {
+    let { style } = this;
+    if(style.display === 'block') {
+      this.__preLayBlock(data);
+    }
+    else if(style.display === 'flex') {
+      this.__preLayFlex(data);
+    }
+    else {
+      this.__preLayInline(data);
+    }
+  }
+  // 计算好所有元素的基本位置，inline比较特殊，还需后续计算
+  __preLayBlock(data) {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
-    let mx = x;
     let { children, ctx, style } = this;
     let { lineHeight } = style;
-    // let group = [];
     let line = [];
     children.forEach(item => {
       if(item instanceof Dom) {
         if(item.__isInline()) {
           // inline开头
           if(x === data.x) {
-            item.__preLay({
+            item.__preLayInline({
               x,
               y,
               w,
@@ -203,7 +232,7 @@ class Dom extends Element {
             // 非开头先尝试是否放得下
             let fw = item.__tryLayInline(w - x);
             if(fw >= 0) {
-              item.__preLay({
+              item.__preLayInline({
                 x,
                 y,
                 w,
@@ -219,8 +248,7 @@ class Dom extends Element {
               });
               x = data.x;
               y += lh;
-              // group.push(line);
-              item.__preLay({
+              item.__preLayInline({
                 x,
                 y,
                 w,
@@ -238,7 +266,6 @@ class Dom extends Element {
             });
             x = data.x;
             y += lh;
-            // group.push(line);
             line = [];
           }
           item.__preLay({
@@ -246,11 +273,25 @@ class Dom extends Element {
             y,
             w,
           });
-          // group.push(item);
           y += item.height;
         }
       }
-      else if(item instanceof Geom) {}
+      else if(item instanceof Geom) {
+        // 图形也是block先处理之前可能的行
+        if(line.length) {
+          let lh = this.__preLayLine(line, {
+            w,
+            lineHeight,
+          });
+          y += lh;
+        }
+        item.__preLay({
+          x,
+          y,
+          w,
+        });
+        y += item.height;
+      }
       else {
         ctx.font = util.setFontStyle(style);
         let tw = ctx.measureText(item.textContent).width;
@@ -258,6 +299,142 @@ class Dom extends Element {
         }
         else {
           item.__x = x;
+          item.__y = y;
+          item.__width = tw;
+          item.__height = lineHeight;
+          item.__baseLine = getBaseLineByFont(style.fontSize);
+          x += tw;
+          line.push(item);
+        }
+      }
+    });
+    // 结束后处理可能遗留的最后的行
+    if(line.length) {
+      let lh = this.__preLayLine(line, {
+        w,
+        lineHeight,
+      });
+      y += lh;
+    }
+    this.__width = w;
+    this.__height = y - data.y;
+  }
+  __preLayFlex(data) {
+    let { x, y, w } = data;
+    this.__x = x;
+    this.__y = y;
+    let { children, ctx, style } = this;
+    let grow = [];
+    let mws = [];
+    children.forEach(item => {
+      if(item instanceof Dom) {
+        grow.push(item.style.flexGrow);
+        if(item.style.hasOwnProperty('width')) {
+          let width = item.style.width;
+          if(width < 0) {
+            mws.push(-width * w);
+          }
+          else {
+            mws.push(width);
+          }
+        }
+        else {
+          mws.push(item.__minWidth());
+        }
+      }
+      else if(item instanceof Geom) {
+        grow.push(item.style.flexGrow);
+        if(item.style.hasOwnProperty('width')) {
+          let width = item.style.width;
+          if(width < 0) {
+            mws.push(-width * w);
+          }
+          else {
+            mws.push(width);
+          }
+        }
+        else {
+          mws.push(0);
+        }
+      }
+      else {
+        grow.push(0);
+        ctx.font = util.setFontStyle(style);
+        if(style.wordBreak === 'break-all') {
+          let tw = 0;
+          let textContent = item.textContent;
+          let len = textContent.length;
+          for(let i = 0; i < len; i++) {
+            tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+          }
+          mws.push(tw);
+        }
+        else {
+          let tw = ctx.measureText(item.textContent).width;
+          mws.push(tw);
+        }
+      }
+    });
+    this.__width = w;
+    this.__height = y - data.y;
+  }
+  __preLayInline(data) {
+    let { x, y, w } = data;
+    this.__x = x;
+    this.__y = y;
+    let mx = x;
+    let { children, ctx, style } = this;
+    let { lineHeight } = style;
+    let line = [];
+    children.forEach(item => {
+      if(item instanceof Dom) {
+        // inline开头
+        if(x === data.x) {
+          item.__preLayInline({
+            x,
+            y,
+            w,
+          });
+          line.push(item);
+          x += item.width;
+        }
+        else {
+          // 非开头先尝试是否放得下
+          let fw = item.__tryLayInline(w - x);
+          if(fw >= 0) {
+            item.__preLayInline({
+              x,
+              y,
+              w,
+            });
+            line.push(item);
+            x += item.width;
+          }
+          else {
+            // 放不下处理之前的行，并重新开头
+            let lh = this.__preLayLine(line, {
+              w,
+              lineHeight,
+            });
+            x = data.x;
+            y += lh;
+            item.__preLayInline({
+              x,
+              y,
+              w,
+            });
+            line = [item];
+          }
+        }
+      }
+      else {
+        ctx.font = util.setFontStyle(style);
+        let tw = ctx.measureText(item.textContent).width;
+        if(x + tw > w) {
+        }
+        else {
+          item.__x = x;
+          item.__y = y;
           item.__width = tw;
           item.__height = lineHeight;
           item.__baseLine = getBaseLineByFont(style.fontSize);
@@ -274,9 +451,7 @@ class Dom extends Element {
         lineHeight,
       });
       y += lh;
-      // group.push(line);
     }
-    // this.__group = group;
     this.__width = mx - data.x;
     this.__height = y - data.y;
   }
@@ -284,26 +459,12 @@ class Dom extends Element {
     let { ctx, style } = this;
     // 简化负边距、小行高、行内背景优先等逻辑
     this.children.forEach(item => {
-      if(item instanceof Dom) {
+      if(item instanceof Dom || item instanceof Geom) {
         item.render();
       }
       else {
         ctx.font = util.setFontStyle(style);
         ctx.fillText(item.textContent, item.x, item.y + item.baseLine);
-      }
-    });
-  }
-  __isInline() {
-    return this.style.display === 'inline-block';
-  }
-  __offsetY(diff) {
-    this.__y += diff;
-    this.children.forEach(item => {
-      if(item instanceof Dom) {
-        item.__offsetY(diff);
-      }
-      else {
-        item.__y += diff;
       }
     });
   }

@@ -65,7 +65,6 @@ class Canvas extends Dom {
       w: this.width,
     });
     this.render();
-    console.log(this.width, this.height)
   }
 
   get element() {

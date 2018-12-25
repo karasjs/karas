@@ -534,6 +534,24 @@ function (_Element) {
           item.__y += diff;
         }
       });
+    } // 元素自动换行后的最大宽度
+
+  }, {
+    key: "__autoLineFeedWidth",
+    value: function __autoLineFeedWidth() {
+      var children = this.children,
+          ctx = this.ctx,
+          style = this.style;
+      var w = 0;
+      children.forEach(function (item) {
+        if (item instanceof Dom) {
+          w = Math.max(item.__autoLineFeedWidth());
+        } else {
+          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          w = Math.max(w, ctx.measureText(item.textContent).width);
+        }
+      });
+      return w;
     }
   }, {
     key: "__preLay",
@@ -702,7 +720,7 @@ function (_Element) {
               mws.push(width);
             }
           } else {
-            mws.push(item.__minWidth());
+            mws.push(item.__autoLineFeedWidth());
           }
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
           grow.push(item.style.flexGrow);

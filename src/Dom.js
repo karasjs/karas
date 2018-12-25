@@ -195,6 +195,21 @@ class Dom extends Element {
       }
     });
   }
+  // 元素自动换行后的最大宽度
+  __autoLineFeedWidth() {
+    let { children, ctx, style } = this;
+    let w = 0;
+    children.forEach(item => {
+      if(item instanceof Dom) {
+        w = Math.max(item.__autoLineFeedWidth());
+      }
+      else {
+        ctx.font = util.setFontStyle(style);
+        w = Math.max(w, ctx.measureText(item.textContent).width);
+      }
+    });
+    return w;
+  }
   __preLay(data) {
     let { style } = this;
     if(style.display === 'block') {
@@ -339,7 +354,7 @@ class Dom extends Element {
           }
         }
         else {
-          mws.push(item.__minWidth());
+          mws.push(item.__autoLineFeedWidth());
         }
       }
       else if(item instanceof Geom) {

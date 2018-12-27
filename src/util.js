@@ -39,35 +39,6 @@ function isNil(v) {
   return v === undefined || v === null;
 }
 
-function setFontStyle(style) {
-  let { fontStyle, fontWeight, fontSize, fontFamily } = style;
-  return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
-}
-
-// 防止负数，同时百分比转为负数表示
-function validStyle(style) {
-  ['width', 'height'].forEach(k => {
-    if(style.hasOwnProperty(k)) {
-      let v = style[k];
-      if(/%$/.test(v)) {
-        v = parseFloat(v);
-        if(v < 0) {
-          v = 0;
-          style[k] = 0;
-        }
-        else {
-          style[k] = -v;
-        }
-      }
-      else {
-        if(v < 0) {
-          style[k] = 0;
-        }
-      }
-    }
-  });
-}
-
 let util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -81,8 +52,6 @@ let util = {
   },
   encodeHtml,
   isNil,
-  setFontStyle,
-  validStyle,
 };
 
 export default util;

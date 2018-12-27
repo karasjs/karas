@@ -4,6 +4,8 @@ import Geom from './geom/Geom';
 import util from './util';
 import reset from './reset';
 import font from './font';
+import css from './css';
+import unit from './unit';
 
 const TAG_NAME = {
   'div': true,
@@ -140,6 +142,7 @@ class Dom extends Element {
     let { fontSize, lineHeight } = style;
     lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
     style.lineHeight = lineHeight;
+    css.regularized(style);
   }
   // 给定父宽度情况下，放下后剩余宽度，可能为负数
   __tryLayInline(w) {
@@ -153,7 +156,7 @@ class Dom extends Element {
         w = item.__tryLayInline(w);
       }
       else {
-        ctx.font = util.setFontStyle(style);
+        ctx.font = css.setFontStyle(style);
         w -= ctx.measureText(item.textContent).width;
       }
     }
@@ -196,16 +199,27 @@ class Dom extends Element {
     });
   }
   // 元素自动换行后的最大宽度
-  __autoLineFeedWidth() {
+  __linefeedWidth() {
     let { children, ctx, style } = this;
     let w = 0;
     children.forEach(item => {
       if(item instanceof Dom) {
-        w = Math.max(item.__autoLineFeedWidth());
+        w = Math.max(item.__linefeedWidth());
       }
       else {
-        ctx.font = util.setFontStyle(style);
-        w = Math.max(w, ctx.measureText(item.textContent).width);
+        ctx.font = css.setFontStyle(style);
+        if(style.wordBreak === 'break-all') {
+          let tw = 0;
+          let textContent = item.textContent;
+          let len = textContent.length;
+          for(let i = 0; i < len; i++) {
+            tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+          }
+          w = Math.max(w, tw);
+        }
+        else {
+          w = Math.max(w, ctx.measureText(item.textContent).width);
+        }
       }
     });
     return w;
@@ -308,7 +322,7 @@ class Dom extends Element {
         y += item.height;
       }
       else {
-        ctx.font = util.setFontStyle(style);
+        ctx.font = css.setFontStyle(style);
         let tw = ctx.measureText(item.textContent).width;
         if(x + tw > w) {
         }
@@ -340,41 +354,37 @@ class Dom extends Element {
     this.__y = y;
     let { children, ctx, style } = this;
     let grow = [];
-    let mws = [];
+    let lfw = [];
     children.forEach(item => {
       if(item instanceof Dom) {
         grow.push(item.style.flexGrow);
-        if(item.style.hasOwnProperty('width')) {
-          let width = item.style.width;
-          if(width < 0) {
-            mws.push(-width * w);
-          }
-          else {
-            mws.push(width);
-          }
+        let width = item.style.width;
+        if(width.unit === unit.PERCENT) {
+          lfw.push(width.value * w);
+        }
+        else if(width.unit === unit.PX) {
+          lfw.push(width.value);
         }
         else {
-          mws.push(item.__autoLineFeedWidth());
+          lfw.push(item.__linefeedWidth());
         }
       }
       else if(item instanceof Geom) {
         grow.push(item.style.flexGrow);
-        if(item.style.hasOwnProperty('width')) {
-          let width = item.style.width;
-          if(width < 0) {
-            mws.push(-width * w);
-          }
-          else {
-            mws.push(width);
-          }
+        let width = item.style.width;
+        if(width.unit === unit.PERCENT) {
+          lfw.push(width.value * w);
+        }
+        else if(width.unit === unit.PX) {
+          lfw.push(width.value);
         }
         else {
-          mws.push(0);
+          lfw.push(-1);
         }
       }
       else {
         grow.push(0);
-        ctx.font = util.setFontStyle(style);
+        ctx.font = css.setFontStyle(style);
         if(style.wordBreak === 'break-all') {
           let tw = 0;
           let textContent = item.textContent;
@@ -382,14 +392,20 @@ class Dom extends Element {
           for(let i = 0; i < len; i++) {
             tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
           }
-          mws.push(tw);
+          lfw.push(tw);
         }
         else {
           let tw = ctx.measureText(item.textContent).width;
-          mws.push(tw);
+          lfw.push(tw);
         }
       }
     });
+    let flexIndex = [];
+    grow.forEach((item, i) => {
+      if(item === 0) {
+        flexIndex.push(i);
+      }
+    }); console.log(flexIndex)
     this.__width = w;
     this.__height = y - data.y;
   }
@@ -443,7 +459,7 @@ class Dom extends Element {
         }
       }
       else {
-        ctx.font = util.setFontStyle(style);
+        ctx.font = css.setFontStyle(style);
         let tw = ctx.measureText(item.textContent).width;
         if(x + tw > w) {
         }
@@ -478,7 +494,7 @@ class Dom extends Element {
         item.render();
       }
       else {
-        ctx.font = util.setFontStyle(style);
+        ctx.font = css.setFontStyle(style);
         ctx.fillText(item.textContent, item.x, item.y + item.baseLine);
       }
     });

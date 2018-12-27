@@ -1,6 +1,8 @@
 import Element from '../Element';
 import reset from '../reset';
 import util from '../util';
+import css from '../css';
+import unit from '../unit';
 
 class Geom extends Element {
   constructor(props) {
@@ -10,20 +12,35 @@ class Geom extends Element {
   __initStyle() {
     let { style } = this;
     // 图形强制block
-    Object.assign(style, {
-      width: 300,
-      height: 150,
-    }, reset, this.props.style, {
+    Object.assign(style, reset, this.props.style, {
       display: 'block',
     });
-    util.validStyle(style);
+    css.regularized(style);
   }
   __preLay(data) {
     let { x, y, w, h } = data;
+    let { style } = this;
+    let { width, height } = style;
     this.__x = x;
     this.__y = y;
-    this.__width = w;
-    this.__height = this.style.height;
+    if(width.unit === unit.PERCENT) {
+      this.__width = Math.ceil(width.value * h);
+    }
+    else if(width.unit === unit.PX) {
+      this.__width = width.value;
+    }
+    else {
+      this.__width = w;
+    }
+    if(height.unit === unit.PERCENT) {
+      this.__height = Math.ceil(height.value * h);
+    }
+    else if(height.unit === unit.PX) {
+      this.__height = height.value;
+    }
+    else {
+      this.__height = h;
+    }
   }
   render() {
     throw new Error('Geom render() must be implemented');

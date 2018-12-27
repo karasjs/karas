@@ -278,6 +278,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./util */ "./src/util.js");
 /* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
 /* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./font */ "./src/font.js");
+/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./css */ "./src/css.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -295,6 +297,8 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
 
 
 
@@ -467,6 +471,7 @@ function (_Element) {
           lineHeight = style.lineHeight;
       lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
       style.lineHeight = lineHeight;
+      _css__WEBPACK_IMPORTED_MODULE_6__["default"].regularized(style);
     } // 给定父宽度情况下，放下后剩余宽度，可能为负数
 
   }, {
@@ -486,7 +491,7 @@ function (_Element) {
         if (item instanceof Dom) {
           w = item.__tryLayInline(w);
         } else {
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
           w -= ctx.measureText(item.textContent).width;
         }
       }
@@ -537,18 +542,31 @@ function (_Element) {
     } // 元素自动换行后的最大宽度
 
   }, {
-    key: "__autoLineFeedWidth",
-    value: function __autoLineFeedWidth() {
+    key: "__linefeedWidth",
+    value: function __linefeedWidth() {
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
       var w = 0;
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          w = Math.max(item.__autoLineFeedWidth());
+          w = Math.max(item.__linefeedWidth());
         } else {
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
-          w = Math.max(w, ctx.measureText(item.textContent).width);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
+
+          if (style.wordBreak === 'break-all') {
+            var tw = 0;
+            var textContent = item.textContent;
+            var len = textContent.length;
+
+            for (var i = 0; i < len; i++) {
+              tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+            }
+
+            w = Math.max(w, tw);
+          } else {
+            w = Math.max(w, ctx.measureText(item.textContent).width);
+          }
         }
       });
       return w;
@@ -667,7 +685,7 @@ function (_Element) {
 
           y += item.height;
         } else {
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
           var tw = ctx.measureText(item.textContent).width;
 
           if (x + tw > w) {} else {
@@ -706,39 +724,33 @@ function (_Element) {
           ctx = this.ctx,
           style = this.style;
       var grow = [];
-      var mws = [];
+      var lfw = [];
       children.forEach(function (item) {
         if (item instanceof Dom) {
           grow.push(item.style.flexGrow);
+          var width = item.style.width;
 
-          if (item.style.hasOwnProperty('width')) {
-            var width = item.style.width;
-
-            if (width < 0) {
-              mws.push(-width * w);
-            } else {
-              mws.push(width);
-            }
+          if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+            lfw.push(width.value * w);
+          } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+            lfw.push(width.value);
           } else {
-            mws.push(item.__autoLineFeedWidth());
+            lfw.push(item.__linefeedWidth());
           }
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
           grow.push(item.style.flexGrow);
+          var _width = item.style.width;
 
-          if (item.style.hasOwnProperty('width')) {
-            var _width = item.style.width;
-
-            if (_width < 0) {
-              mws.push(-_width * w);
-            } else {
-              mws.push(_width);
-            }
+          if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+            lfw.push(_width.value * w);
+          } else if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+            lfw.push(_width.value);
           } else {
-            mws.push(0);
+            lfw.push(-1);
           }
         } else {
           grow.push(0);
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
 
           if (style.wordBreak === 'break-all') {
             var tw = 0;
@@ -749,13 +761,20 @@ function (_Element) {
               tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
             }
 
-            mws.push(tw);
+            lfw.push(tw);
           } else {
             var _tw = ctx.measureText(item.textContent).width;
-            mws.push(_tw);
+            lfw.push(_tw);
           }
         }
       });
+      var flexIndex = [];
+      grow.forEach(function (item, i) {
+        if (item === 0) {
+          flexIndex.push(i);
+        }
+      });
+      console.log(flexIndex);
       this.__width = w;
       this.__height = y - data.y;
     }
@@ -820,7 +839,7 @@ function (_Element) {
             }
           }
         } else {
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
           var tw = ctx.measureText(item.textContent).width;
 
           if (x + tw > w) {} else {
@@ -858,7 +877,7 @@ function (_Element) {
         if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
           item.render();
         } else {
-          ctx.font = _util__WEBPACK_IMPORTED_MODULE_3__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
           ctx.fillText(item.textContent, item.x, item.y + item.baseLine);
         }
       });
@@ -1135,6 +1154,65 @@ var dpr = 1;
 
 /***/ }),
 
+/***/ "./src/css.js":
+/*!********************!*\
+  !*** ./src/css.js ***!
+  \********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
+
+
+function regularized(style) {
+  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
+    var v = style[k];
+
+    if (v === 'auto') {
+      style[k] = {
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].AUTO
+      };
+    } else if (/%$/.test(v)) {
+      v = parseFloat(v) || 0;
+
+      if (v <= 0) {
+        style[k] = {
+          value: 0,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+        };
+      } else {
+        style[k] = {
+          value: v,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PERCENT
+        };
+      }
+    } else {
+      v = parseInt(v) || 0;
+      style[k] = {
+        value: Math.max(v, 0),
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+      };
+    }
+  });
+}
+
+function setFontStyle(style) {
+  var fontStyle = style.fontStyle,
+      fontWeight = style.fontWeight,
+      fontSize = style.fontSize,
+      fontFamily = style.fontFamily;
+  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+}
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  regularized: regularized,
+  setFontStyle: setFontStyle
+});
+
+/***/ }),
+
 /***/ "./src/font.js":
 /*!*********************!*\
   !*** ./src/font.js ***!
@@ -1175,6 +1253,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Element */ "./src/Element.js");
 /* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
+/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../css */ "./src/css.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1192,6 +1272,8 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
 
 
 
@@ -1218,13 +1300,10 @@ function (_Element) {
     value: function __initStyle() {
       var style = this.style; // 图形强制block
 
-      Object.assign(style, {
-        width: 300,
-        height: 150
-      }, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
+      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
         display: 'block'
       });
-      _util__WEBPACK_IMPORTED_MODULE_2__["default"].validStyle(style);
+      _css__WEBPACK_IMPORTED_MODULE_3__["default"].regularized(style);
     }
   }, {
     key: "__preLay",
@@ -1233,10 +1312,27 @@ function (_Element) {
           y = data.y,
           w = data.w,
           h = data.h;
+      var style = this.style;
+      var width = style.width,
+          height = style.height;
       this.__x = x;
       this.__y = y;
-      this.__width = w;
-      this.__height = this.style.height;
+
+      if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+        this.__width = Math.ceil(width.value * h);
+      } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+        this.__width = width.value;
+      } else {
+        this.__width = w;
+      }
+
+      if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+        this.__height = Math.ceil(height.value * h);
+      } else if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+        this.__height = height.value;
+      } else {
+        this.__height = h;
+      }
     }
   }, {
     key: "render",
@@ -1464,8 +1560,27 @@ __webpack_require__.r(__webpack_exports__);
   borderBottomStyle: 'solid',
   borderLeftStyle: 'solid',
   verticalAlign: 'baseline',
+  width: 'auto',
+  height: 'auto',
   flex: 0,
   flexGrow: 0
+});
+
+/***/ }),
+
+/***/ "./src/unit.js":
+/*!*********************!*\
+  !*** ./src/unit.js ***!
+  \*********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ({
+  AUTO: 0,
+  PX: 1,
+  PERCENT: 2
 });
 
 /***/ }),
@@ -1525,38 +1640,6 @@ function isNil(v) {
   return v === undefined || v === null;
 }
 
-function setFontStyle(style) {
-  var fontStyle = style.fontStyle,
-      fontWeight = style.fontWeight,
-      fontSize = style.fontSize,
-      fontFamily = style.fontFamily;
-  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
-} // 防止负数，同时百分比转为负数表示
-
-
-function validStyle(style) {
-  ['width', 'height'].forEach(function (k) {
-    if (style.hasOwnProperty(k)) {
-      var v = style[k];
-
-      if (/%$/.test(v)) {
-        v = parseFloat(v);
-
-        if (v < 0) {
-          v = 0;
-          style[k] = 0;
-        } else {
-          style[k] = -v;
-        }
-      } else {
-        if (v < 0) {
-          style[k] = 0;
-        }
-      }
-    }
-  });
-}
-
 var util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -1569,9 +1652,7 @@ var util = {
     return _joinSourceArray(arr);
   },
   encodeHtml: encodeHtml,
-  isNil: isNil,
-  setFontStyle: setFontStyle,
-  validStyle: validStyle
+  isNil: isNil
 };
 /* harmony default export */ __webpack_exports__["default"] = (util);
 

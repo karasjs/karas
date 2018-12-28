@@ -10,3 +10,4 @@ webpack-dev.config.js
 tests/
 demo/
 node_modules/
+lib/

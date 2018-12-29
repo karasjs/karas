@@ -15,14 +15,6 @@ const INLINE = {
   'span': true,
 };
 
-function getLineMaxHeight(line) {
-  let mh = 0;
-  line.forEach(item => {
-    mh = Math.max(mh, item.height);
-  });
-  return mh;
-}
-
 function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
   if(lineHeight <= 0) {
     return Math.ceil(fontSize * font.arial.lhr);
@@ -138,16 +130,17 @@ class Dom extends Element {
         item.__initStyle();
       }
     });
-    // 防止小行高
+    // 防止小行高，仅支持lineHeight>=1的情况
     let { fontSize, lineHeight } = style;
     lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
     style.lineHeight = lineHeight;
     css.regularized(style);
   }
-  // 给定父宽度情况下，放下后剩余宽度，可能为负数
+  // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
   __tryLayInline(w) {
     let { children, ctx, style } = this;
     for(let i = 0; i < children.length; i++) {
+      // 当放不下时直接返回，无需继续多余的尝试计算
       if(w < 0) {
         return w;
       }
@@ -184,9 +177,7 @@ class Dom extends Element {
     });
     return lh;
   }
-  __isInline() {
-    return this.style.display === 'inline-block';
-  }
+  // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align:baseline对齐用
   __offsetY(diff) {
     this.__y += diff;
     this.children.forEach(item => {
@@ -236,7 +227,7 @@ class Dom extends Element {
       this.__preLayInline(data);
     }
   }
-  // 计算好所有元素的基本位置，inline比较特殊，还需后续计算
+  // 本身block布局时计算好所有子元素的基本位置
   __preLayBlock(data) {
     let { x, y, w } = data;
     this.__x = x;
@@ -246,7 +237,7 @@ class Dom extends Element {
     let line = [];
     children.forEach(item => {
       if(item instanceof Dom) {
-        if(item.__isInline()) {
+        if(style.display === 'inline-block') {
           // inline开头
           if(x === data.x) {
             item.__preLayInline({
@@ -348,6 +339,7 @@ class Dom extends Element {
     this.__width = w;
     this.__height = y - data.y;
   }
+  // 弹性布局时的计算位置
   __preLayFlex(data) {
     let { x, y, w } = data;
     this.__x = x;
@@ -409,6 +401,7 @@ class Dom extends Element {
     this.__width = w;
     this.__height = y - data.y;
   }
+  // inline比较特殊，先简单顶部对其，还需后续计算y偏移
   __preLayInline(data) {
     let { x, y, w } = data;
     this.__x = x;

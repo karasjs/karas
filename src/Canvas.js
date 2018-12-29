@@ -23,6 +23,7 @@ function renderProp(k, v) {
 class Canvas extends Dom {
   constructor(props, children) {
     super('canvas', props, children);
+    // 缺省默认canvas的宽高设置
     if(this.props.width === undefined) {
       this.props.width = this.__width = 300;
       this.__props.push(['width', 300]);
@@ -41,7 +42,7 @@ class Canvas extends Dom {
   }
   toString() {
     let res = '<canvas';
-    // 处理属性
+    // 拼接处理属性
     for(let i = 0, len = this.__props.length; i < len; i++) {
       let item = this.__props[i];
       let s = renderProp(item[0], item[1]);
@@ -63,6 +64,7 @@ class Canvas extends Dom {
       x: 0,
       y: 0,
       w: this.width,
+      h: this.height,
     });
     this.render();
   }

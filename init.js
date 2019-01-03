@@ -1,7 +1,7 @@
 define(function(require, exports, module) {
   var head = document.head || document.getElementsByTagName('head')[0];
-  var yurine = require('./build/index')['default'];
-  yurine.init = function() {
+  var karas = require('./build/index')['default'];
+  karas.init = function() {
     var jsx = document.querySelectorAll('script');
     for(var i = 0, len = jsx.length; i < len; i++) {
       var node = jsx[i];
@@ -25,5 +25,5 @@ define(function(require, exports, module) {
       }
     }
   };
-  module.exports = yurine;
+  module.exports = karas;
 });

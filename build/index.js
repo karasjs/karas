@@ -96,34 +96,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./node_modules/webpack/buildin/global.js":
-/*!***********************************!*\
-  !*** (webpack)/buildin/global.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-var g; // This works in non-strict mode
-
-g = function () {
-  return this;
-}();
-
-try {
-  // This works if eval is allowed (see CSP)
-  g = g || new Function("return this")();
-} catch (e) {
-  // This works if the window reference is available
-  if (typeof window === "object") g = window;
-} // g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-
-module.exports = g;
-
-/***/ }),
-
 /***/ "./src/Canvas.js":
 /*!***********************!*\
   !*** ./src/Canvas.js ***!
@@ -190,7 +162,7 @@ function (_Dom) {
 
     _classCallCheck(this, Canvas);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children)); // 缺省默认canvas的宽高设置
 
     if (_this.props.width === undefined) {
       _this.props.width = _this.__width = 300;
@@ -216,7 +188,7 @@ function (_Dom) {
   _createClass(Canvas, [{
     key: "toString",
     value: function toString() {
-      var res = '<canvas'; // 处理属性
+      var res = '<canvas'; // 拼接处理属性
 
       for (var i = 0, len = this.__props.length; i < len; i++) {
         var item = this.__props[i];
@@ -244,7 +216,8 @@ function (_Dom) {
       this.__preLay({
         x: 0,
         y: 0,
-        w: this.width
+        w: this.width,
+        h: this.height
       });
 
       this.render();
@@ -313,14 +286,6 @@ var TAG_NAME = {
 var INLINE = {
   'span': true
 };
-
-function getLineMaxHeight(line) {
-  var mh = 0;
-  line.forEach(function (item) {
-    mh = Math.max(mh, item.height);
-  });
-  return mh;
-}
 
 function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
   if (lineHeight <= 0) {
@@ -465,14 +430,14 @@ function (_Element) {
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
           item.__initStyle();
         }
-      }); // 防止小行高
+      }); // 防止小行高，仅支持lineHeight>=1的情况
 
       var fontSize = style.fontSize,
           lineHeight = style.lineHeight;
       lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
       style.lineHeight = lineHeight;
       _css__WEBPACK_IMPORTED_MODULE_6__["default"].regularized(style);
-    } // 给定父宽度情况下，放下后剩余宽度，可能为负数
+    } // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
 
   }, {
     key: "__tryLayInline",
@@ -482,6 +447,7 @@ function (_Element) {
           style = this.style;
 
       for (var i = 0; i < children.length; i++) {
+        // 当放不下时直接返回，无需继续多余的尝试计算
         if (w < 0) {
           return w;
         }
@@ -522,12 +488,8 @@ function (_Element) {
         }
       });
       return lh;
-    }
-  }, {
-    key: "__isInline",
-    value: function __isInline() {
-      return this.style.display === 'inline-block';
-    }
+    } // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align:baseline对齐用
+
   }, {
     key: "__offsetY",
     value: function __offsetY(diff) {
@@ -543,14 +505,14 @@ function (_Element) {
 
   }, {
     key: "__linefeedWidth",
-    value: function __linefeedWidth() {
+    value: function __linefeedWidth(includeWidth) {
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
       var w = 0;
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          w = Math.max(item.__linefeedWidth());
+          w = Math.max(item.__linefeedWidth(true));
         } else {
           ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
 
@@ -568,8 +530,23 @@ function (_Element) {
             w = Math.max(w, ctx.measureText(item.textContent).width);
           }
         }
-      });
-      return w;
+      }); // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
+
+      if (includeWidth && this.parent.style.display !== 'flex') {
+        var width = style.width;
+
+        switch (width.unit) {
+          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+            w = Math.max(w, width.value);
+            break;
+
+          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT:
+            w = Math.max(w, width.value * 0.01 * this.parent.width);
+            break;
+        }
+      }
+
+      return Math.ceil(w);
     }
   }, {
     key: "__preLay",
@@ -583,7 +560,7 @@ function (_Element) {
       } else {
         this.__preLayInline(data);
       }
-    } // 计算好所有元素的基本位置，inline比较特殊，还需后续计算
+    } // 本身block布局时计算好所有子元素的基本位置
 
   }, {
     key: "__preLayBlock",
@@ -595,6 +572,7 @@ function (_Element) {
           w = data.w;
       this.__x = x;
       this.__y = y;
+      this.__width = w;
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
@@ -602,7 +580,7 @@ function (_Element) {
       var line = [];
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          if (item.__isInline()) {
+          if (style.display === 'inline-block') {
             // inline开头
             if (x === data.x) {
               item.__preLayInline({
@@ -709,9 +687,9 @@ function (_Element) {
         y += lh;
       }
 
-      this.__width = w;
       this.__height = y - data.y;
-    }
+    } // 弹性布局时的计算位置
+
   }, {
     key: "__preLayFlex",
     value: function __preLayFlex(data) {
@@ -720,6 +698,7 @@ function (_Element) {
           w = data.w;
       this.__x = x;
       this.__y = y;
+      this.__width = w;
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
@@ -767,17 +746,71 @@ function (_Element) {
             lfw.push(_tw);
           }
         }
-      });
-      var flexIndex = [];
-      grow.forEach(function (item, i) {
-        if (item === 0) {
-          flexIndex.push(i);
+      }); // 全部最小自适应宽度和
+
+      var sum = 0;
+      lfw.forEach(function (item) {
+        sum += item;
+      }); // TODO: 和大于等于可用宽度时，grow属性无效
+
+      if (sum >= w) {} else {
+        var free = w;
+        var total = 0; // 获取固定和弹性的子项
+
+        var fixIndex = [];
+        var flexIndex = [];
+        grow.forEach(function (item, i) {
+          if (item === 0) {
+            free -= lfw[i];
+            fixIndex.push(i);
+          } else {
+            flexIndex.push(i);
+            total += item;
+          }
+        }); // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
+
+        var per = free / total;
+        var space = [];
+
+        for (var i = 1; i < flexIndex.length; i++) {
+          var n = Math.floor(per * grow[flexIndex[i]]);
+          space.push(n);
+          free -= n;
         }
+
+        space.unshift(free); // 固定和弹性最终组成连续的占用宽度列表进行布局
+
+        var count = 0;
+        grow.forEach(function (item, i) {
+          var child = children[i];
+
+          if (item === 0) {
+            child.__preLay({
+              x: x,
+              y: y,
+              w: lfw[i]
+            });
+
+            x += lfw[i];
+          } else {
+            child.__preLay({
+              x: x,
+              y: y,
+              w: space[count]
+            });
+
+            x += space[count++];
+          }
+        });
+      }
+
+      var h = 0;
+      children.forEach(function (item) {
+        h = Math.max(h, item.height);
       });
-      console.log(flexIndex);
-      this.__width = w;
-      this.__height = y - data.y;
-    }
+      this.__height = h;
+    } // inline比较特殊，先简单顶部对其，还需后续计算y偏移
+
   }, {
     key: "__preLayInline",
     value: function __preLayInline(data) {
@@ -1473,7 +1506,7 @@ function (_Geom) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* WEBPACK VAR INJECTION */(function(global) {/* harmony import */ var _Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Canvas */ "./src/Canvas.js");
+/* harmony import */ var _Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Canvas */ "./src/Canvas.js");
 /* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
 /* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
 /* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./config */ "./src/config.js");
@@ -1516,12 +1549,9 @@ var karas = {
 
 if (typeof window != 'undefined') {
   window.karas = karas;
-} else if (typeof global != 'undefined') {
-  global.karas = karas;
 }
 
 /* harmony default export */ __webpack_exports__["default"] = (karas);
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 

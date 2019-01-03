@@ -35,8 +35,5 @@ let karas = {
 if(typeof window != 'undefined') {
   window.karas = karas;
 }
-else if(typeof global != 'undefined') {
-  global.karas = karas;
-}
 
 export default karas;

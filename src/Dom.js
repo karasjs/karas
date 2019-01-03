@@ -190,12 +190,12 @@ class Dom extends Element {
     });
   }
   // 元素自动换行后的最大宽度
-  __linefeedWidth() {
+  __linefeedWidth(includeWidth) {
     let { children, ctx, style } = this;
     let w = 0;
     children.forEach(item => {
       if(item instanceof Dom) {
-        w = Math.max(item.__linefeedWidth());
+        w = Math.max(item.__linefeedWidth(true));
       }
       else {
         ctx.font = css.setFontStyle(style);
@@ -213,7 +213,19 @@ class Dom extends Element {
         }
       }
     });
-    return w;
+    // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
+    if(includeWidth && this.parent.style.display !== 'flex') {
+      let width = style.width;
+      switch(width.unit) {
+        case unit.PX:
+          w = Math.max(w, width.value);
+          break;
+        case unit.PERCENT:
+          w = Math.max(w, width.value * 0.01 * this.parent.width);
+          break;
+      }
+    }
+    return Math.ceil(w);
   }
   __preLay(data) {
     let { style } = this;
@@ -232,6 +244,7 @@ class Dom extends Element {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
+    this.__width = w;
     let { children, ctx, style } = this;
     let { lineHeight } = style;
     let line = [];
@@ -336,7 +349,6 @@ class Dom extends Element {
       });
       y += lh;
     }
-    this.__width = w;
     this.__height = y - data.y;
   }
   // 弹性布局时的计算位置
@@ -344,6 +356,7 @@ class Dom extends Element {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
+    this.__width = w;
     let { children, ctx, style } = this;
     let grow = [];
     let lfw = [];
@@ -392,14 +405,65 @@ class Dom extends Element {
         }
       }
     });
-    let flexIndex = [];
-    grow.forEach((item, i) => {
-      if(item === 0) {
-        flexIndex.push(i);
+    // 全部最小自适应宽度和
+    let sum = 0;
+    lfw.forEach(item => {
+      sum += item;
+    });
+    // TODO: 和大于等于可用宽度时，grow属性无效
+    if(sum >= w) {}
+    else {
+      let free = w;
+      let total = 0;
+      // 获取固定和弹性的子项
+      let fixIndex = [];
+      let flexIndex = [];
+      grow.forEach((item, i) => {
+        if(item === 0) {
+          free -= lfw[i];
+          fixIndex.push(i);
+        }
+        else {
+          flexIndex.push(i);
+          total += item;
+        }
+      });
+      // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
+      let per = free / total;
+      let space = [];
+      for(let i = 1; i < flexIndex.length; i++) {
+        let n = Math.floor(per * grow[flexIndex[i]]);
+        space.push(n);
+        free -= n;
       }
-    }); console.log(flexIndex)
-    this.__width = w;
-    this.__height = y - data.y;
+      space.unshift(free);
+      // 固定和弹性最终组成连续的占用宽度列表进行布局
+      let count = 0;
+      grow.forEach((item, i) => {
+        let child = children[i];
+        if(item === 0) {
+          child.__preLay({
+            x,
+            y,
+            w: lfw[i],
+          });
+          x += lfw[i];
+        }
+        else {
+          child.__preLay({
+            x,
+            y,
+            w: space[count],
+          });
+          x += space[count++];
+        }
+      });
+    }
+    let h = 0;
+    children.forEach(item => {
+      h = Math.max(h, item.height);
+    });
+    this.__height = h;
   }
   // inline比较特殊，先简单顶部对其，还需后续计算y偏移
   __preLayInline(data) {

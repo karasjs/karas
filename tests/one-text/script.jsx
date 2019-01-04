@@ -1,5 +1,5 @@
 karas.render(
-  <canvas width="720" height="400">
+  <canvas width="360" height="360">
     <div>hello</div>
   </canvas>,
   '#test'

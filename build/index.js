@@ -580,7 +580,7 @@ function (_Element) {
       var line = [];
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          if (style.display === 'inline-block') {
+          if (item.style.display === 'inline-block') {
             // inline开头
             if (x === data.x) {
               item.__preLayInline({

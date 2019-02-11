@@ -2,16 +2,12 @@ language: node_js
 
 os: osx
 
-osx_image: xcode10.1
-
 node_js:
   - 10
 
 before_script:
   - nightwatch --version
   - java -version
-  - sleep 3
-  - sudo safaridriver --enable
 
 script:
   - make test
@@ -19,3 +15,6 @@ script:
 dist: trusty
 
 sudo: required
+
+addons:
+  firefox: latest

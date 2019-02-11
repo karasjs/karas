@@ -4,9 +4,10 @@ module.exports = (function(settings) {
     'server_path': require('selenium-server').path,
     host_path: '127.0.0.1',
     'port': 4444,
-    // 'cli_args': {
-    //   'webdriver.chrome.driver': require('chromedriver').path,
-    // },
+    'cli_args': {
+      'webdriver.chrome.driver': require('chromedriver').path,
+      'webdriver.gecko.driver': require('geckodriver').path,
+    },
   };
   settings.test_settings = {
     default: {
@@ -19,7 +20,7 @@ module.exports = (function(settings) {
         'path' : '',
       },
       'desiredCapabilities': {
-        'browserName': 'safari',
+        'browserName': 'firefox',
         'javascriptEnabled': true,
         'acceptSslCerts': true,
       }

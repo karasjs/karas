@@ -11,7 +11,7 @@ before_script:
   - nightwatch --version
   - java -version
   - sleep 3
-  - safaridriver --enable
+  - sudo safaridriver --enable
 
 script:
   - make test

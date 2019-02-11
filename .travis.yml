@@ -2,6 +2,8 @@ language: node_js
 
 os: osx
 
+osx_image: xcode10.1
+
 node_js:
   - 10
 

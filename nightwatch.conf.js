@@ -6,7 +6,6 @@ module.exports = (function(settings) {
     'port': 4444,
     'cli_args': {
       'webdriver.chrome.driver': require('chromedriver').path,
-      'webdriver.gecko.driver': require('geckodriver').path,
     },
   };
   settings.test_settings = {
@@ -20,7 +19,7 @@ module.exports = (function(settings) {
         'path' : '',
       },
       'desiredCapabilities': {
-        'browserName': 'firefox',
+        'browserName': 'chrome',
         'javascriptEnabled': true,
         'acceptSslCerts': true,
       }

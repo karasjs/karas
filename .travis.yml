@@ -13,7 +13,7 @@ before_script:
 script:
   - make test
 
-dist: trusty
+dist: xenial
 
 sudo: required
 

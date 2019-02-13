@@ -1,5 +1,6 @@
 import Canvas from './Canvas';
 import Dom from './Dom';
+import Geom from './geom/Geom';
 import Line from './geom/Line';
 import config from './config';
 
@@ -23,7 +24,13 @@ let karas = {
     if(tagName === 'canvas') {
       return new Canvas(props, children);
     }
-    if(Dom.isValid(tagName)) {
+    if(Geom.isValid(tagName)) {
+      switch(tagName) {
+        case 'line':
+          return new Line(props);
+      }
+    }
+    else if(Dom.isValid(tagName)) {
       return new Dom(tagName, props, children);
     }
     throw new Error('can not use marker: ' + tagName);

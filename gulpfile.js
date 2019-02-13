@@ -15,7 +15,7 @@ function jsx(file, enc, cb) {
   content = babel.transformSync(content, {
     presets: ['@babel/preset-env']
   }).code;
-  file.contents = new Buffer(content);
+  file.contents = Buffer.from(content);
   cb(null, file);
 }
 

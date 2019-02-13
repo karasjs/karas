@@ -825,7 +825,20 @@ function (_Element) {
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
-      var lineHeight = style.lineHeight;
+      var width = style.width,
+          lineHeight = style.lineHeight;
+      var fixedWidth;
+
+      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+        fixedWidth = true;
+
+        switch (width.unit) {
+          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+            w = width.value;
+            break;
+        }
+      }
+
       var line = [];
       children.forEach(function (item) {
         if (item instanceof Dom) {
@@ -873,9 +886,9 @@ function (_Element) {
           }
         } else {
           ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          var tw = ctx.measureText(item.textContent).width;
+          var tw = ctx.measureText(item.textContent).width; // inline开头
 
-          if (x + tw > w) {} else {
+          if (x === data.x) {
             item.__x = x;
             item.__y = y;
             item.__width = tw;
@@ -884,6 +897,17 @@ function (_Element) {
             x += tw;
             mx = Math.max(mx, x);
             line.push(item);
+          } else {
+            if (x + tw > w) {} else {
+              item.__x = x;
+              item.__y = y;
+              item.__width = tw;
+              item.__height = lineHeight;
+              item.__baseLine = getBaseLineByFont(style.fontSize);
+              x += tw;
+              mx = Math.max(mx, x);
+              line.push(item);
+            }
           }
         }
       }); // 结束后处理可能遗留的最后的行
@@ -895,9 +919,10 @@ function (_Element) {
         });
 
         y += lh;
-      }
+      } // 元素的width不能超过父元素w
 
-      this.__width = mx - data.x;
+
+      this.__width = fixedWidth ? w : mx - data.x;
       this.__height = y - data.y;
     }
   }, {
@@ -1311,6 +1336,10 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
+var TAG_NAME = {
+  'line': true,
+  'curve': true
+};
 
 var Geom =
 /*#__PURE__*/
@@ -1368,14 +1397,14 @@ function (_Element) {
       }
     }
   }, {
-    key: "render",
-    value: function render() {
-      throw new Error('Geom render() must be implemented');
-    }
-  }, {
     key: "style",
     get: function get() {
       return this.__style;
+    }
+  }], [{
+    key: "isValid",
+    value: function isValid(s) {
+      return TAG_NAME.hasOwnProperty(s);
     }
   }]);
 
@@ -1508,8 +1537,10 @@ function (_Geom) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Canvas */ "./src/Canvas.js");
 /* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
-/* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
-/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./config */ "./src/config.js");
+/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
+/* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
+/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./config */ "./src/config.js");
+
 
 
 
@@ -1529,7 +1560,7 @@ var karas = {
   createGeom: function createGeom(name, props) {
     switch (name) {
       case 'Line':
-        return new _geom_Line__WEBPACK_IMPORTED_MODULE_2__["default"](props);
+        return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
     }
   },
   createDom: function createDom(tagName, props, children) {
@@ -1537,14 +1568,19 @@ var karas = {
       return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
     }
 
-    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
+    if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
+      switch (tagName) {
+        case 'line':
+          return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
+      }
+    } else if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
       return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](tagName, props, children);
     }
 
     throw new Error('can not use marker: ' + tagName);
   },
-  Line: _geom_Line__WEBPACK_IMPORTED_MODULE_2__["default"],
-  config: _config__WEBPACK_IMPORTED_MODULE_3__["default"]
+  Line: _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"],
+  config: _config__WEBPACK_IMPORTED_MODULE_4__["default"]
 };
 
 if (typeof window != 'undefined') {

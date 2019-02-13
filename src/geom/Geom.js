@@ -4,6 +4,11 @@ import util from '../util';
 import css from '../css';
 import unit from '../unit';
 
+const TAG_NAME = {
+  'line': true,
+  'curve': true,
+};
+
 class Geom extends Element {
   constructor(props) {
     super(props);
@@ -42,12 +47,13 @@ class Geom extends Element {
       this.__height = h;
     }
   }
-  render() {
-    throw new Error('Geom render() must be implemented');
-  }
 
   get style() {
     return this.__style;
+  }
+
+  static isValid(s) {
+    return TAG_NAME.hasOwnProperty(s);
   }
 }
 

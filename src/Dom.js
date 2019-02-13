@@ -472,7 +472,16 @@ class Dom extends Element {
     this.__y = y;
     let mx = x;
     let { children, ctx, style } = this;
-    let { lineHeight } = style;
+    let { width, lineHeight } = style;
+    let fixedWidth;
+    if(width && width.unit !== unit.AUTO) {
+      fixedWidth = true;
+      switch(width.unit) {
+        case unit.PX:
+          w = width.value;
+          break;
+      }
+    }
     let line = [];
     children.forEach(item => {
       if(item instanceof Dom) {
@@ -518,9 +527,8 @@ class Dom extends Element {
       else {
         ctx.font = css.setFontStyle(style);
         let tw = ctx.measureText(item.textContent).width;
-        if(x + tw > w) {
-        }
-        else {
+        // inline开头
+        if(x === data.x) {
           item.__x = x;
           item.__y = y;
           item.__width = tw;
@@ -529,6 +537,20 @@ class Dom extends Element {
           x += tw;
           mx = Math.max(mx, x);
           line.push(item);
+        }
+        else {
+          if(x + tw > w) {
+          }
+          else {
+            item.__x = x;
+            item.__y = y;
+            item.__width = tw;
+            item.__height = lineHeight;
+            item.__baseLine = getBaseLineByFont(style.fontSize);
+            x += tw;
+            mx = Math.max(mx, x);
+            line.push(item);
+          }
         }
       }
     });
@@ -540,7 +562,8 @@ class Dom extends Element {
       });
       y += lh;
     }
-    this.__width = mx - data.x;
+    // 元素的width不能超过父元素w
+    this.__width = fixedWidth ? w : mx - data.x;
     this.__height = y - data.y;
   }
   render() {

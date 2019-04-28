@@ -14,12 +14,6 @@ let karas = {
     }
     return canvas;
   },
-  createGeom(name, props) {
-    switch(name) {
-      case 'Line':
-        return new Line(props);
-    }
-  },
   createDom(tagName, props, children) {
     if(tagName === 'canvas') {
       return new Canvas(props, children);
@@ -30,12 +24,33 @@ let karas = {
           return new Line(props);
       }
     }
-    else if(Dom.isValid(tagName)) {
+    if(Dom.isValid(tagName)) {
       return new Dom(tagName, props, children);
     }
     throw new Error('can not use marker: ' + tagName);
   },
-  Line,
+  createVd(tagName, props, children) {
+    if(tagName === 'canvas') {
+      return new Canvas(props, children);
+    }
+    if(Dom.isValid(tagName)) {
+      return new Dom(tagName, props, children);
+    }
+    throw new Error('can not use marker: ' + tagName);
+  },
+  createGp(tagName, props) {
+    if(Geom.isValid(tagName)) {
+      switch(tagName) {
+        case '$line':
+          return new Line(props);
+        case '$point':
+        default:
+          throw new Error('can not use marker: ' + tagName);
+      }
+    }
+  },
+  createCp(tagName, props, children) {},
+  // Line,
   config,
 };
 

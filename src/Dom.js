@@ -1,5 +1,6 @@
 import Element from './Element';
 import Text from './Text';
+import LineGroup from './LineGroup';
 import Geom from './geom/Geom';
 import util from './util';
 import reset from './reset';
@@ -32,6 +33,7 @@ class Dom extends Element {
     this.__tagName = tagName;
     this.__children = children;
     this.__style = {}; // style被解析后的k-v形式
+    this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
   }
 
   /**
@@ -49,7 +51,7 @@ class Dom extends Element {
       if(item instanceof Text) {
         let prev = list[i - 1];
         if(prev instanceof Text) {
-          prev.textContent += item.textContent;
+          prev.content += item.content;
           list.splice(i, 1);
         }
         else {
@@ -95,7 +97,7 @@ class Dom extends Element {
       list.push(new Text(children));
     }
   }
-  // 合并设置style，包括继承和默认值
+  // 合并设置style，包括继承和默认值，修改一些自动值和固定值
   __initStyle() {
     let style = this.style;
     Object.assign(style, reset, this.props.style);
@@ -134,7 +136,7 @@ class Dom extends Element {
     let { fontSize, lineHeight } = style;
     lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
     style.lineHeight = lineHeight;
-    css.regularized(style);
+    css.normalize(style);
   }
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
   __tryLayInline(w) {
@@ -150,14 +152,14 @@ class Dom extends Element {
       }
       else {
         ctx.font = css.setFontStyle(style);
-        w -= ctx.measureText(item.textContent).width;
+        w -= ctx.measureText(item.content).width;
       }
     }
     return w;
   }
   // 处理已布置好x的line组，并返回line高
   __preLayLine(line, options) {
-    let { w, lineHeight } = options;
+    let { lineHeight } = options;
     let lh = lineHeight;
     let baseLine = 0;
     line.forEach(item => {
@@ -177,7 +179,7 @@ class Dom extends Element {
     });
     return lh;
   }
-  // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align:baseline对齐用
+  // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
   __offsetY(diff) {
     this.__y += diff;
     this.children.forEach(item => {
@@ -201,15 +203,15 @@ class Dom extends Element {
         ctx.font = css.setFontStyle(style);
         if(style.wordBreak === 'break-all') {
           let tw = 0;
-          let textContent = item.textContent;
-          let len = textContent.length;
+          let content = item.content;
+          let len = content.length;
           for(let i = 0; i < len; i++) {
-            tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+            tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
           }
           w = Math.max(w, tw);
         }
         else {
-          w = Math.max(w, ctx.measureText(item.textContent).width);
+          w = Math.max(w, ctx.measureText(item.content).width);
         }
       }
     });
@@ -241,40 +243,60 @@ class Dom extends Element {
   }
   // 本身block布局时计算好所有子元素的基本位置
   __preLayBlock(data) {
-    let { x, y, w } = data;
+    let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
     this.__width = w;
     let { children, ctx, style } = this;
-    let { lineHeight } = style;
+    let { width, height, lineHeight } = style;
+    // 除了auto外都是固定高度
+    let fixedHeight;
+    if(width && width.unit !== unit.AUTO) {
+      switch(width.unit) {
+        case unit.PX:
+          w = width.value;
+          break;
+      }
+    }
+    if(height && height.unit !== unit.AUTO) {
+      fixedHeight = true;
+      switch(height.unit) {
+        case unit.PX:
+          h = height.value;
+          break;
+      }
+    }
     let line = [];
+    let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
       if(item instanceof Dom) {
         if(item.style.display === 'inline-block') {
-          // inline开头
+          // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
+            lineGroup.add(item);
             item.__preLayInline({
               x,
               y,
               w,
             });
-            line.push(item);
             x += item.width;
           }
           else {
             // 非开头先尝试是否放得下
             let fw = item.__tryLayInline(w - x);
+            // 放得下继续
             if(fw >= 0) {
               item.__preLayInline({
                 x,
                 y,
                 w,
               });
-              line.push(item);
               x += item.width;
+              lineGroup.add(item);
             }
+            // 放不下处理之前的lineGroup，并重新开头
             else {
-              // 放不下处理之前的行，并重新开头
+              this.lineGroups.push(lineGroup);
               let lh = this.__preLayLine(line, {
                 w,
                 lineHeight,
@@ -286,20 +308,24 @@ class Dom extends Element {
                 y,
                 w,
               });
-              line = [item];
+              lineGroup = new LineGroup();
             }
           }
         }
         else {
           // block先处理之前可能的行
-          if(line.length) {
-            let lh = this.__preLayLine(line, {
-              w,
-              lineHeight,
-            });
-            x = data.x;
-            y += lh;
-            line = [];
+          // if(line.length) {
+          //   let lh = this.__preLayLine(line, {
+          //     w,
+          //     lineHeight,
+          //   });
+          //   x = data.x;
+          //   y += lh;
+          //   line = [];
+          // }
+          if(lineGroup.size) {
+            this.lineGroups.push(lineGroup);
+            lineGroup = new LineGroup();
           }
           item.__preLay({
             x,
@@ -325,9 +351,10 @@ class Dom extends Element {
         });
         y += item.height;
       }
+      // 文字和inline类似
       else {
         ctx.font = css.setFontStyle(style);
-        let tw = ctx.measureText(item.textContent).width;
+        let tw = ctx.measureText(item.content).width;
         if(x + tw > w) {
         }
         else {
@@ -341,15 +368,17 @@ class Dom extends Element {
         }
       }
     });
-    // 结束后处理可能遗留的最后的行
-    if(line.length) {
-      let lh = this.__preLayLine(line, {
-        w,
-        lineHeight,
-      });
-      y += lh;
+    // 结束后处理可能遗留的最后的lineGroup
+    if(lineGroup.size) {
+      this.lineGroups.push(lineGroup);
+      lineGroup.calculate();
+      lineGroup.adjust();
+      y += lineGroup.height;
+      // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+      this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
     }
-    this.__height = y - data.y;
+    this.__width = w;
+    this.__height = fixedHeight ? h : y - data.y;
   }
   // 弹性布局时的计算位置
   __preLayFlex(data) {
@@ -392,15 +421,15 @@ class Dom extends Element {
         ctx.font = css.setFontStyle(style);
         if(style.wordBreak === 'break-all') {
           let tw = 0;
-          let textContent = item.textContent;
-          let len = textContent.length;
+          let content = item.content;
+          let len = content.length;
           for(let i = 0; i < len; i++) {
-            tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+            tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
           }
           lfw.push(tw);
         }
         else {
-          let tw = ctx.measureText(item.textContent).width;
+          let tw = ctx.measureText(item.content).width;
           lfw.push(tw);
         }
       }
@@ -465,15 +494,17 @@ class Dom extends Element {
     });
     this.__height = h;
   }
-  // inline比较特殊，先简单顶部对其，还需后续计算y偏移
+  // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __preLayInline(data) {
-    let { x, y, w } = data;
+    let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
-    let mx = x;
+    let maxX = x;
     let { children, ctx, style } = this;
-    let { width, lineHeight } = style;
+    let { width, height, lineHeight } = style;
+    // 除了auto外都是固定高度
     let fixedWidth;
+    let fixedHeight;
     if(width && width.unit !== unit.AUTO) {
       fixedWidth = true;
       switch(width.unit) {
@@ -482,51 +513,66 @@ class Dom extends Element {
           break;
       }
     }
+    if(height && height.unit !== unit.AUTO) {
+      fixedHeight = true;
+      switch(height.unit) {
+        case unit.PX:
+          h = height.value;
+          break;
+      }
+    }
     let line = [];
+    let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
       if(item instanceof Dom) {
-        // inline开头
+        // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
+          lineGroup.add(item);
           item.__preLayInline({
             x,
             y,
             w,
           });
-          line.push(item);
           x += item.width;
         }
         else {
           // 非开头先尝试是否放得下
           let fw = item.__tryLayInline(w - x);
+          // 放得下继续
           if(fw >= 0) {
+            lineGroup.add(item);
             item.__preLayInline({
               x,
               y,
               w,
             });
-            line.push(item);
             x += item.width;
           }
+          // 放不下处理之前的lineGroup，并重新开头
           else {
-            // 放不下处理之前的行，并重新开头
-            let lh = this.__preLayLine(line, {
-              w,
-              lineHeight,
-            });
+            lineGroup.calculate();
+            lineGroup.adjust();
+            this.lineGroups.push(lineGroup);
+            // let lh = this.__preLayLine(line, {
+            //   w,
+            //   lineHeight,
+            // });
             x = data.x;
-            y += lh;
+            y += lineGroup.height;
             item.__preLayInline({
               x,
               y,
               w,
             });
-            line = [item];
+            lineGroup = new LineGroup(x, y);
+            lineGroup.add(item);
           }
         }
       }
+      // inline里的其它可能只有文本
       else {
         ctx.font = css.setFontStyle(style);
-        let tw = ctx.measureText(item.textContent).width;
+        let tw = ctx.measureText(item.content).width;
         // inline开头
         if(x === data.x) {
           item.__x = x;
@@ -535,8 +581,9 @@ class Dom extends Element {
           item.__height = lineHeight;
           item.__baseLine = getBaseLineByFont(style.fontSize);
           x += tw;
-          mx = Math.max(mx, x);
+          maxX = Math.max(maxX, x);
           line.push(item);
+          lineGroup.add(item);
         }
         else {
           if(x + tw > w) {
@@ -548,23 +595,25 @@ class Dom extends Element {
             item.__height = lineHeight;
             item.__baseLine = getBaseLineByFont(style.fontSize);
             x += tw;
-            mx = Math.max(mx, x);
+            maxX = Math.max(maxX, x);
             line.push(item);
+            lineGroup.add(item);
           }
         }
       }
     });
-    // 结束后处理可能遗留的最后的行
-    if(line.length) {
-      let lh = this.__preLayLine(line, {
-        w,
-        lineHeight,
-      });
-      y += lh;
+    // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
+    if(lineGroup.size) {
+      this.lineGroups.push(lineGroup);
+      lineGroup.calculate();
+      lineGroup.adjust();
+      y += lineGroup.height;
+      // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+      this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
     }
     // 元素的width不能超过父元素w
-    this.__width = fixedWidth ? w : mx - data.x;
-    this.__height = y - data.y;
+    this.__width = fixedWidth ? w : maxX - data.x;
+    this.__height = fixedHeight ? h : y - data.y;
   }
   render() {
     let { ctx, style } = this;
@@ -575,7 +624,7 @@ class Dom extends Element {
       }
       else {
         ctx.font = css.setFontStyle(style);
-        ctx.fillText(item.textContent, item.x, item.y + item.baseLine);
+        ctx.fillText(item.content, item.x, item.y + item.baseLine);
       }
     });
   }
@@ -588,6 +637,9 @@ class Dom extends Element {
   }
   get style() {
     return this.__style;
+  }
+  get lineGroups() {
+    return this.__lineGroups;
   }
 
   static isValid(s) {

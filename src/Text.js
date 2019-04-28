@@ -1,17 +1,14 @@
 import Element from './Element';
 
 class Text extends Element {
-  constructor(textContent) {
+  constructor(content) {
     super([]);
-    this.__textContent = textContent.toString();
+    this.__content = content.toString();
     this.__lineBoxes = [];
   }
 
-  get textContent() {
-    return this.__textContent;
-  }
-  set textContent(v) {
-    this.__textContent = v;
+  get content() {
+    return this.__content;
   }
   get lineBoxes() {
     return this.__lineBoxes;

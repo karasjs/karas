@@ -2,7 +2,7 @@ var gulp = require('gulp');
 var util = require('gulp-util');
 var rename = require('gulp-rename');
 var through2 = require('through2');
-var yurine = require('yurine').default;
+var yurine = require('yurine');
 var babel = require('@babel/core');
 
 var fs = require('fs');

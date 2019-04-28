@@ -1,6 +1,8 @@
 import Dom from './Dom';
 import util from './util';
 
+let uuid = 0;
+
 function getDom(dom) {
   if(util.isString(dom)) {
     let o = document.querySelector(dom);
@@ -23,6 +25,7 @@ function renderProp(k, v) {
 class Canvas extends Dom {
   constructor(props, children) {
     super('canvas', props, children);
+    this.__uuid = uuid++;
     // 缺省默认canvas的宽高设置
     if(this.props.width === undefined) {
       this.props.width = this.__width = 300;
@@ -48,6 +51,7 @@ class Canvas extends Dom {
       let s = renderProp(item[0], item[1]);
       res += s;
     }
+    res += ' karas-uuid=' + this.uuid;
     res += '></canvas>';
     return res;
   }
@@ -55,10 +59,9 @@ class Canvas extends Dom {
     let s = this.toString();
     dom = getDom(dom);
     dom.insertAdjacentHTML('beforeend', s);
-    let canvas = dom.querySelectorAll('canvas');
-    this.__element = canvas[canvas.length - 1];
-    this.__ctx = this.element.getContext('2d');
-    this.__traverse(this.ctx);
+    this.__element = dom.querySelector(`canvas[karas-uuid="${this.uuid}"]`);
+    this.__ctx = this.__element.getContext('2d');
+    this.__traverse(this.__ctx);
     this.__initStyle();
     this.__preLay({
       x: 0,
@@ -69,6 +72,9 @@ class Canvas extends Dom {
     this.render();
   }
 
+  get uuid() {
+    return this.__uuid;
+  }
   get element() {
     return this.__element;
   }

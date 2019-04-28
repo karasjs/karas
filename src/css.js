@@ -1,6 +1,6 @@
 import unit from './unit';
 
-function regularized(style) {
+function normalize(style) {
   [
     'marginTop',
     'marginRight',
@@ -54,6 +54,6 @@ function setFontStyle(style) {
 }
 
 export default {
-  regularized,
+  normalize,
   setFontStyle,
 };

@@ -127,6 +127,7 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
+var uuid = 0;
 
 function getDom(dom) {
   if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isString(dom)) {
@@ -162,7 +163,8 @@ function (_Dom) {
 
     _classCallCheck(this, Canvas);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children)); // 缺省默认canvas的宽高设置
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
+    _this.__uuid = uuid++; // 缺省默认canvas的宽高设置
 
     if (_this.props.width === undefined) {
       _this.props.width = _this.__width = 300;
@@ -196,6 +198,7 @@ function (_Dom) {
         res += s;
       }
 
+      res += ' karas-uuid=' + this.uuid;
       res += '></canvas>';
       return res;
     }
@@ -205,11 +208,10 @@ function (_Dom) {
       var s = this.toString();
       dom = getDom(dom);
       dom.insertAdjacentHTML('beforeend', s);
-      var canvas = dom.querySelectorAll('canvas');
-      this.__element = canvas[canvas.length - 1];
-      this.__ctx = this.element.getContext('2d');
+      this.__element = dom.querySelector("canvas[karas-uuid=\"".concat(this.uuid, "\"]"));
+      this.__ctx = this.__element.getContext('2d');
 
-      this.__traverse(this.ctx);
+      this.__traverse(this.__ctx);
 
       this.__initStyle();
 
@@ -221,6 +223,11 @@ function (_Dom) {
       });
 
       this.render();
+    }
+  }, {
+    key: "uuid",
+    get: function get() {
+      return this.__uuid;
     }
   }, {
     key: "element",
@@ -247,12 +254,13 @@ function (_Dom) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
 /* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/Text.js");
-/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./util */ "./src/util.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
-/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./font */ "./src/font.js");
-/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./css */ "./src/css.js");
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
+/* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/LineGroup.js");
+/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./util */ "./src/util.js");
+/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
+/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./font */ "./src/font.js");
+/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./css */ "./src/css.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -279,6 +287,7 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
+
 var TAG_NAME = {
   'div': true,
   'span': true
@@ -289,14 +298,14 @@ var INLINE = {
 
 function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
   if (lineHeight <= 0) {
-    return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_5__["default"].arial.lhr);
+    return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.lhr);
   }
 
-  return Math.max(lineHeight, Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_5__["default"].arial.car));
+  return Math.max(lineHeight, Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.car));
 }
 
 function getBaseLineByFont(fontSize) {
-  return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_5__["default"].arial.blr);
+  return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.blr);
 }
 
 var Dom =
@@ -313,6 +322,8 @@ function (_Element) {
     _this.__tagName = tagName;
     _this.__children = children;
     _this.__style = {}; // style被解析后的k-v形式
+
+    _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
     return _this;
   }
@@ -341,7 +352,7 @@ function (_Element) {
           var _prev = list[i - 1];
 
           if (_prev instanceof _Text__WEBPACK_IMPORTED_MODULE_1__["default"]) {
-            _prev.textContent += item.textContent;
+            _prev.content += item.content;
             list.splice(i, 1);
           } else {
             i--;
@@ -386,19 +397,19 @@ function (_Element) {
 
         children.__traverse(ctx);
       } // 图形没有children
-      else if (children instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+      else if (children instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           list.push(children);
         } // 排除掉空的文本
-        else if (!_util__WEBPACK_IMPORTED_MODULE_3__["default"].isNil(children)) {
+        else if (!_util__WEBPACK_IMPORTED_MODULE_4__["default"].isNil(children)) {
             list.push(new _Text__WEBPACK_IMPORTED_MODULE_1__["default"](children));
           }
-    } // 合并设置style，包括继承和默认值
+    } // 合并设置style，包括继承和默认值，修改一些自动值和固定值
 
   }, {
     key: "__initStyle",
     value: function __initStyle() {
       var style = this.style;
-      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_4__["default"], this.props.style); // 仅支持flex/block/inline-block
+      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline-block
 
       if (!style.display || ['flex', 'block', 'inline-block'].indexOf(style.display) === -1) {
         if (INLINE.hasOwnProperty(this.tagName)) {
@@ -427,7 +438,7 @@ function (_Element) {
       this.children.forEach(function (item) {
         if (item instanceof Dom) {
           item.__initStyle();
-        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           item.__initStyle();
         }
       }); // 防止小行高，仅支持lineHeight>=1的情况
@@ -436,7 +447,7 @@ function (_Element) {
           lineHeight = style.lineHeight;
       lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
       style.lineHeight = lineHeight;
-      _css__WEBPACK_IMPORTED_MODULE_6__["default"].regularized(style);
+      _css__WEBPACK_IMPORTED_MODULE_7__["default"].normalize(style);
     } // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
 
   }, {
@@ -457,8 +468,8 @@ function (_Element) {
         if (item instanceof Dom) {
           w = item.__tryLayInline(w);
         } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          w -= ctx.measureText(item.textContent).width;
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+          w -= ctx.measureText(item.content).width;
         }
       }
 
@@ -468,8 +479,7 @@ function (_Element) {
   }, {
     key: "__preLayLine",
     value: function __preLayLine(line, options) {
-      var w = options.w,
-          lineHeight = options.lineHeight;
+      var lineHeight = options.lineHeight;
       var lh = lineHeight;
       var baseLine = 0;
       line.forEach(function (item) {
@@ -488,7 +498,7 @@ function (_Element) {
         }
       });
       return lh;
-    } // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align:baseline对齐用
+    } // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
 
   }, {
     key: "__offsetY",
@@ -514,20 +524,20 @@ function (_Element) {
         if (item instanceof Dom) {
           w = Math.max(item.__linefeedWidth(true));
         } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
 
           if (style.wordBreak === 'break-all') {
             var tw = 0;
-            var textContent = item.textContent;
-            var len = textContent.length;
+            var content = item.content;
+            var len = content.length;
 
             for (var i = 0; i < len; i++) {
-              tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+              tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
             }
 
             w = Math.max(w, tw);
           } else {
-            w = Math.max(w, ctx.measureText(item.textContent).width);
+            w = Math.max(w, ctx.measureText(item.content).width);
           }
         }
       }); // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
@@ -536,11 +546,11 @@ function (_Element) {
         var width = style.width;
 
         switch (width.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
             w = Math.max(w, width.value);
             break;
 
-          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT:
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT:
             w = Math.max(w, width.value * 0.01 * this.parent.width);
             break;
         }
@@ -569,31 +579,58 @@ function (_Element) {
 
       var x = data.x,
           y = data.y,
-          w = data.w;
+          w = data.w,
+          h = data.h;
       this.__x = x;
       this.__y = y;
       this.__width = w;
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
-      var lineHeight = style.lineHeight;
+      var width = style.width,
+          height = style.height,
+          lineHeight = style.lineHeight; // 除了auto外都是固定高度
+
+      var fixedHeight;
+
+      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+        switch (width.unit) {
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+            w = width.value;
+            break;
+        }
+      }
+
+      if (height && height.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+        fixedHeight = true;
+
+        switch (height.unit) {
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+            h = height.value;
+            break;
+        }
+      }
+
       var line = [];
+      var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
         if (item instanceof Dom) {
           if (item.style.display === 'inline-block') {
-            // inline开头
+            // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
+              lineGroup.add(item);
+
               item.__preLayInline({
                 x: x,
                 y: y,
                 w: w
               });
 
-              line.push(item);
               x += item.width;
             } else {
               // 非开头先尝试是否放得下
-              var fw = item.__tryLayInline(w - x);
+              var fw = item.__tryLayInline(w - x); // 放得下继续
+
 
               if (fw >= 0) {
                 item.__preLayInline({
@@ -602,38 +639,44 @@ function (_Element) {
                   w: w
                 });
 
-                line.push(item);
                 x += item.width;
-              } else {
-                // 放不下处理之前的行，并重新开头
-                var lh = _this4.__preLayLine(line, {
-                  w: w,
-                  lineHeight: lineHeight
-                });
+                lineGroup.add(item);
+              } // 放不下处理之前的lineGroup，并重新开头
+              else {
+                  _this4.lineGroups.push(lineGroup);
 
-                x = data.x;
-                y += lh;
+                  var lh = _this4.__preLayLine(line, {
+                    w: w,
+                    lineHeight: lineHeight
+                  });
 
-                item.__preLayInline({
-                  x: x,
-                  y: y,
-                  w: w
-                });
+                  x = data.x;
+                  y += lh;
 
-                line = [item];
-              }
+                  item.__preLayInline({
+                    x: x,
+                    y: y,
+                    w: w
+                  });
+
+                  lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"]();
+                }
             }
           } else {
             // block先处理之前可能的行
-            if (line.length) {
-              var _lh = _this4.__preLayLine(line, {
-                w: w,
-                lineHeight: lineHeight
-              });
+            // if(line.length) {
+            //   let lh = this.__preLayLine(line, {
+            //     w,
+            //     lineHeight,
+            //   });
+            //   x = data.x;
+            //   y += lh;
+            //   line = [];
+            // }
+            if (lineGroup.size) {
+              _this4.lineGroups.push(lineGroup);
 
-              x = data.x;
-              y += _lh;
-              line = [];
+              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"]();
             }
 
             item.__preLay({
@@ -644,15 +687,15 @@ function (_Element) {
 
             y += item.height;
           }
-        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           // 图形也是block先处理之前可能的行
           if (line.length) {
-            var _lh2 = _this4.__preLayLine(line, {
+            var _lh = _this4.__preLayLine(line, {
               w: w,
               lineHeight: lineHeight
             });
 
-            y += _lh2;
+            y += _lh;
           }
 
           item.__preLay({
@@ -662,32 +705,34 @@ function (_Element) {
           });
 
           y += item.height;
-        } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          var tw = ctx.measureText(item.textContent).width;
+        } // 文字和inline类似
+        else {
+            ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+            var tw = ctx.measureText(item.content).width;
 
-          if (x + tw > w) {} else {
-            item.__x = x;
-            item.__y = y;
-            item.__width = tw;
-            item.__height = lineHeight;
-            item.__baseLine = getBaseLineByFont(style.fontSize);
-            x += tw;
-            line.push(item);
+            if (x + tw > w) {} else {
+              item.__x = x;
+              item.__y = y;
+              item.__width = tw;
+              item.__height = lineHeight;
+              item.__baseLine = getBaseLineByFont(style.fontSize);
+              x += tw;
+              line.push(item);
+            }
           }
-        }
-      }); // 结束后处理可能遗留的最后的行
+      }); // 结束后处理可能遗留的最后的lineGroup
 
-      if (line.length) {
-        var lh = this.__preLayLine(line, {
-          w: w,
-          lineHeight: lineHeight
-        });
+      if (lineGroup.size) {
+        this.lineGroups.push(lineGroup);
+        lineGroup.calculate();
+        lineGroup.adjust();
+        y += lineGroup.height; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
 
-        y += lh;
+        this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
       }
 
-      this.__height = y - data.y;
+      this.__width = w;
+      this.__height = fixedHeight ? h : y - data.y;
     } // 弹性布局时的计算位置
 
   }, {
@@ -709,40 +754,40 @@ function (_Element) {
           grow.push(item.style.flexGrow);
           var width = item.style.width;
 
-          if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+          if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT) {
             lfw.push(width.value * w);
-          } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+          } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX) {
             lfw.push(width.value);
           } else {
             lfw.push(item.__linefeedWidth());
           }
-        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           grow.push(item.style.flexGrow);
           var _width = item.style.width;
 
-          if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+          if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT) {
             lfw.push(_width.value * w);
-          } else if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+          } else if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX) {
             lfw.push(_width.value);
           } else {
             lfw.push(-1);
           }
         } else {
           grow.push(0);
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
 
           if (style.wordBreak === 'break-all') {
             var tw = 0;
-            var textContent = item.textContent;
-            var len = textContent.length;
+            var content = item.content;
+            var len = content.length;
 
             for (var i = 0; i < len; i++) {
-              tw = Math.max(tw, ctx.measureText(textContent.charAt(i)).width);
+              tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
             }
 
             lfw.push(tw);
           } else {
-            var _tw = ctx.measureText(item.textContent).width;
+            var _tw = ctx.measureText(item.content).width;
             lfw.push(_tw);
           }
         }
@@ -809,7 +854,7 @@ function (_Element) {
         h = Math.max(h, item.height);
       });
       this.__height = h;
-    } // inline比较特殊，先简单顶部对其，还需后续计算y偏移
+    } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
   }, {
     key: "__preLayInline",
@@ -818,112 +863,138 @@ function (_Element) {
 
       var x = data.x,
           y = data.y,
-          w = data.w;
+          w = data.w,
+          h = data.h;
       this.__x = x;
       this.__y = y;
-      var mx = x;
+      var maxX = x;
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
       var width = style.width,
-          lineHeight = style.lineHeight;
-      var fixedWidth;
+          height = style.height,
+          lineHeight = style.lineHeight; // 除了auto外都是固定高度
 
-      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      var fixedWidth;
+      var fixedHeight;
+
+      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
         fixedWidth = true;
 
         switch (width.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
             w = width.value;
             break;
         }
       }
 
+      if (height && height.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+        fixedHeight = true;
+
+        switch (height.unit) {
+          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+            h = height.value;
+            break;
+        }
+      }
+
       var line = [];
+      var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          // inline开头
+          // inline开头，不用考虑是否放得下直接放
           if (x === data.x) {
+            lineGroup.add(item);
+
             item.__preLayInline({
               x: x,
               y: y,
               w: w
             });
 
-            line.push(item);
             x += item.width;
           } else {
             // 非开头先尝试是否放得下
-            var fw = item.__tryLayInline(w - x);
+            var fw = item.__tryLayInline(w - x); // 放得下继续
+
 
             if (fw >= 0) {
+              lineGroup.add(item);
+
               item.__preLayInline({
                 x: x,
                 y: y,
                 w: w
               });
 
-              line.push(item);
               x += item.width;
-            } else {
-              // 放不下处理之前的行，并重新开头
-              var lh = _this5.__preLayLine(line, {
-                w: w,
-                lineHeight: lineHeight
-              });
+            } // 放不下处理之前的lineGroup，并重新开头
+            else {
+                lineGroup.calculate();
+                lineGroup.adjust();
 
-              x = data.x;
-              y += lh;
+                _this5.lineGroups.push(lineGroup); // let lh = this.__preLayLine(line, {
+                //   w,
+                //   lineHeight,
+                // });
 
-              item.__preLayInline({
-                x: x,
-                y: y,
-                w: w
-              });
 
-              line = [item];
-            }
+                x = data.x;
+                y += lineGroup.height;
+
+                item.__preLayInline({
+                  x: x,
+                  y: y,
+                  w: w
+                });
+
+                lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+                lineGroup.add(item);
+              }
           }
-        } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          var tw = ctx.measureText(item.textContent).width; // inline开头
+        } // inline里的其它可能只有文本
+        else {
+            ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+            var tw = ctx.measureText(item.content).width; // inline开头
 
-          if (x === data.x) {
-            item.__x = x;
-            item.__y = y;
-            item.__width = tw;
-            item.__height = lineHeight;
-            item.__baseLine = getBaseLineByFont(style.fontSize);
-            x += tw;
-            mx = Math.max(mx, x);
-            line.push(item);
-          } else {
-            if (x + tw > w) {} else {
+            if (x === data.x) {
               item.__x = x;
               item.__y = y;
               item.__width = tw;
               item.__height = lineHeight;
               item.__baseLine = getBaseLineByFont(style.fontSize);
               x += tw;
-              mx = Math.max(mx, x);
+              maxX = Math.max(maxX, x);
               line.push(item);
+              lineGroup.add(item);
+            } else {
+              if (x + tw > w) {} else {
+                item.__x = x;
+                item.__y = y;
+                item.__width = tw;
+                item.__height = lineHeight;
+                item.__baseLine = getBaseLineByFont(style.fontSize);
+                x += tw;
+                maxX = Math.max(maxX, x);
+                line.push(item);
+                lineGroup.add(item);
+              }
             }
           }
-        }
-      }); // 结束后处理可能遗留的最后的行
+      }); // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
 
-      if (line.length) {
-        var lh = this.__preLayLine(line, {
-          w: w,
-          lineHeight: lineHeight
-        });
+      if (lineGroup.size) {
+        this.lineGroups.push(lineGroup);
+        lineGroup.calculate();
+        lineGroup.adjust();
+        y += lineGroup.height; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
 
-        y += lh;
+        this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
       } // 元素的width不能超过父元素w
 
 
-      this.__width = fixedWidth ? w : mx - data.x;
-      this.__height = y - data.y;
+      this.__width = fixedWidth ? w : maxX - data.x;
+      this.__height = fixedHeight ? h : y - data.y;
     }
   }, {
     key: "render",
@@ -932,11 +1003,11 @@ function (_Element) {
           style = this.style; // 简化负边距、小行高、行内背景优先等逻辑
 
       this.children.forEach(function (item) {
-        if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+        if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           item.render();
         } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          ctx.fillText(item.textContent, item.x, item.y + item.baseLine);
+          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+          ctx.fillText(item.content, item.x, item.y + item.baseLine);
         }
       });
     }
@@ -954,6 +1025,11 @@ function (_Element) {
     key: "style",
     get: function get() {
       return this.__style;
+    }
+  }, {
+    key: "lineGroups",
+    get: function get() {
+      return this.__lineGroups;
     }
   }], [{
     key: "isValid",
@@ -1118,6 +1194,116 @@ function () {
 
 /***/ }),
 
+/***/ "./src/LineGroup.js":
+/*!**************************!*\
+  !*** ./src/LineGroup.js ***!
+  \**************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var LineGroup =
+/*#__PURE__*/
+function () {
+  function LineGroup(x, y) {
+    _classCallCheck(this, LineGroup);
+
+    this.__list = [];
+    this.__x = x;
+    this.__y = y;
+    this.__height = 0;
+    this.__baseLine = 0;
+  }
+
+  _createClass(LineGroup, [{
+    key: "add",
+    value: function add(item) {
+      this.list.push(item);
+    }
+  }, {
+    key: "__calBaseLine",
+    value: function __calBaseLine() {
+      var baseLine = 0;
+      this.list.forEach(function (item) {
+        baseLine = Math.max(baseLine, item.baseLine);
+      });
+      return baseLine;
+    }
+  }, {
+    key: "__calHeight",
+    value: function __calHeight() {
+      var height = 0;
+      this.list.forEach(function (item) {
+        height = Math.max(height, item.height);
+      });
+      return height;
+    }
+  }, {
+    key: "calculate",
+    value: function calculate() {
+      this.__height = this.__calHeight();
+      this.__baseLine = this.__calBaseLine();
+    }
+  }, {
+    key: "adjust",
+    value: function adjust() {
+      var _this = this;
+
+      // 仅当有2个和以上时才需要vertical对齐调整
+      if (this.list.length > 1) {
+        this.list.forEach(function (item) {
+          if (item.baseLine !== _this.baseLine) {
+            item.__offsetY(_this.baseLine - item.baseLine);
+          }
+        });
+      }
+    }
+  }, {
+    key: "list",
+    get: function get() {
+      return this.__list;
+    }
+  }, {
+    key: "x",
+    get: function get() {
+      return this.__x;
+    }
+  }, {
+    key: "y",
+    get: function get() {
+      return this.__y;
+    }
+  }, {
+    key: "height",
+    get: function get() {
+      return this.__height;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      return this.__baseLine;
+    }
+  }, {
+    key: "size",
+    get: function get() {
+      return this.__list.length;
+    }
+  }]);
+
+  return LineGroup;
+}();
+
+/* harmony default export */ __webpack_exports__["default"] = (LineGroup);
+
+/***/ }),
+
 /***/ "./src/Text.js":
 /*!*********************!*\
   !*** ./src/Text.js ***!
@@ -1153,24 +1339,21 @@ var Text =
 function (_Element) {
   _inherits(Text, _Element);
 
-  function Text(textContent) {
+  function Text(content) {
     var _this;
 
     _classCallCheck(this, Text);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this, []));
-    _this.__textContent = textContent.toString();
+    _this.__content = content.toString();
     _this.__lineBoxes = [];
     return _this;
   }
 
   _createClass(Text, [{
-    key: "textContent",
+    key: "content",
     get: function get() {
-      return this.__textContent;
-    },
-    set: function set(v) {
-      this.__textContent = v;
+      return this.__content;
     }
   }, {
     key: "lineBoxes",
@@ -1224,7 +1407,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
 
 
-function regularized(style) {
+function normalize(style) {
   ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
     var v = style[k];
 
@@ -1265,7 +1448,7 @@ function setFontStyle(style) {
 }
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-  regularized: regularized,
+  normalize: normalize,
   setFontStyle: setFontStyle
 });
 
@@ -1557,12 +1740,6 @@ var karas = {
 
     return canvas;
   },
-  createGeom: function createGeom(name, props) {
-    switch (name) {
-      case 'Line':
-        return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
-    }
-  },
   createDom: function createDom(tagName, props, children) {
     if (tagName === 'canvas') {
       return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
@@ -1573,13 +1750,39 @@ var karas = {
         case 'line':
           return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
       }
-    } else if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
+    }
+
+    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
       return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](tagName, props, children);
     }
 
     throw new Error('can not use marker: ' + tagName);
   },
-  Line: _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"],
+  createVd: function createVd(tagName, props, children) {
+    if (tagName === 'canvas') {
+      return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
+    }
+
+    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
+      return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](tagName, props, children);
+    }
+
+    throw new Error('can not use marker: ' + tagName);
+  },
+  createGp: function createGp(tagName, props) {
+    if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
+      switch (tagName) {
+        case '$line':
+          return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
+
+        case '$point':
+        default:
+          throw new Error('can not use marker: ' + tagName);
+      }
+    }
+  },
+  createCp: function createCp(tagName, props, children) {},
+  // Line,
   config: _config__WEBPACK_IMPORTED_MODULE_4__["default"]
 };
 

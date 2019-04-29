@@ -20,7 +20,7 @@ class Geom extends Element {
     Object.assign(style, reset, this.props.style, {
       display: 'block',
     });
-    css.regularized(style);
+    css.normalize(style);
   }
   __preLay(data) {
     let { x, y, w, h } = data;

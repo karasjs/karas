@@ -213,9 +213,10 @@ function (_Dom) {
 
       this.__traverse(this.__ctx);
 
-      this.__initStyle();
+      this.__initStyle(); // canvas作为根节点一定是block
 
-      this.__preLay({
+
+      this.__preLayBlock({
         x: 0,
         y: 0,
         w: this.width,
@@ -474,30 +475,6 @@ function (_Element) {
       }
 
       return w;
-    } // 处理已布置好x的line组，并返回line高
-
-  }, {
-    key: "__preLayLine",
-    value: function __preLayLine(line, options) {
-      var lineHeight = options.lineHeight;
-      var lh = lineHeight;
-      var baseLine = 0;
-      line.forEach(function (item) {
-        lh = Math.max(lh, item.height);
-        baseLine = Math.max(baseLine, item.baseLine);
-      }); // 设置此inline的baseLine，可能多次执行，最后一次设置为最后一行line的baseLine
-
-      this.__baseLine = baseLine;
-      line.forEach(function (item) {
-        var diff = baseLine - item.baseLine;
-
-        if (item instanceof Dom) {
-          item.__offsetY(diff);
-        } else {
-          item.__y += diff;
-        }
-      });
-      return lh;
     } // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
 
   }, {
@@ -666,15 +643,16 @@ function (_Element) {
               lineGroup.calculate();
               lineGroup.adjust();
               y += lineGroup.height;
-              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](data.x, y);
             }
 
             item.__preLay({
-              x: x,
+              x: data.x,
               y: y,
               w: w
             });
 
+            x = data.x;
             y += item.height;
           }
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
@@ -685,15 +663,16 @@ function (_Element) {
             lineGroup.calculate();
             lineGroup.adjust();
             y += lineGroup.height;
-            lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+            lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](data.x, y);
           }
 
           item.__preLay({
-            x: x,
+            x: data.x,
             y: y,
             w: w
           });
 
+          x = data.x;
           y += item.height;
         } // 文字和inline类似
         else {
@@ -731,15 +710,13 @@ function (_Element) {
         lineGroup.calculate();
         lineGroup.adjust();
         y += lineGroup.height;
-      }
+      } // let len = this.lineGroups.length;
+      // if(len) {
+      //   let last = this.lineGroups[len - 1];
+      //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+      //   this.__baseLine = last.y - this.y + last.baseLine;
+      // }
 
-      var len = this.lineGroups.length;
-
-      if (len) {
-        var last = this.lineGroups[len - 1]; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-
-        this.__baseLine = last.y - this.y + last.baseLine;
-      }
 
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
@@ -993,15 +970,13 @@ function (_Element) {
         lineGroup.calculate();
         lineGroup.adjust();
         y += lineGroup.height;
-      }
-
-      var len = this.lineGroups.length;
-
-      if (len) {
-        var last = this.lineGroups[len - 1]; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-
-        this.__baseLine = last.y - this.y + last.baseLine;
-      } // 元素的width不能超过父元素w
+      } // let len = this.lineGroups.length;
+      // if(len) {
+      //   let last = this.lineGroups[len - 1];
+      //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+      //   this.__baseLine = last.y - this.y + last.baseLine;
+      // }
+      // 元素的width不能超过父元素w
 
 
       this.__width = fixedWidth ? w : maxX - data.x;
@@ -1041,6 +1016,18 @@ function (_Element) {
     key: "lineGroups",
     get: function get() {
       return this.__lineGroups;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      var len = this.lineGroups.length;
+
+      if (len) {
+        var last = this.lineGroups[len - 1];
+        return last.y - this.y + last.baseLine;
+      }
+
+      return 0;
     }
   }], [{
     key: "isValid",
@@ -1559,7 +1546,7 @@ function (_Element) {
       Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
         display: 'block'
       });
-      _css__WEBPACK_IMPORTED_MODULE_3__["default"].regularized(style);
+      _css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
     }
   }, {
     key: "__preLay",

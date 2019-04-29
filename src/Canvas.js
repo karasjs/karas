@@ -63,7 +63,8 @@ class Canvas extends Dom {
     this.__ctx = this.__element.getContext('2d');
     this.__traverse(this.__ctx);
     this.__initStyle();
-    this.__preLay({
+    // canvas作为根节点一定是block
+    this.__preLayBlock({
       x: 0,
       y: 0,
       w: this.width,

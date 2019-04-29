@@ -157,28 +157,6 @@ class Dom extends Element {
     }
     return w;
   }
-  // 处理已布置好x的line组，并返回line高
-  __preLayLine(line, options) {
-    let { lineHeight } = options;
-    let lh = lineHeight;
-    let baseLine = 0;
-    line.forEach(item => {
-      lh = Math.max(lh, item.height);
-      baseLine = Math.max(baseLine, item.baseLine);
-    });
-    // 设置此inline的baseLine，可能多次执行，最后一次设置为最后一行line的baseLine
-    this.__baseLine = baseLine;
-    line.forEach(item => {
-      let diff = baseLine - item.baseLine;
-      if(item instanceof Dom) {
-        item.__offsetY(diff);
-      }
-      else {
-        item.__y += diff;
-      }
-    });
-    return lh;
-  }
   // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
   __offsetY(diff) {
     this.__y += diff;
@@ -316,13 +294,14 @@ class Dom extends Element {
             lineGroup.calculate();
             lineGroup.adjust();
             y += lineGroup.height;
-            lineGroup = new LineGroup(x, y);
+            lineGroup = new LineGroup(data.x, y);
           }
           item.__preLay({
-            x,
+            x: data.x,
             y,
             w,
           });
+          x = data.x;
           y += item.height;
         }
       }
@@ -333,13 +312,14 @@ class Dom extends Element {
           lineGroup.calculate();
           lineGroup.adjust();
           y += lineGroup.height;
-          lineGroup = new LineGroup(x, y);
+          lineGroup = new LineGroup(data.x, y);
         }
         item.__preLay({
-          x,
+          x: data.x,
           y,
           w,
         });
+        x = data.x;
         y += item.height;
       }
       // 文字和inline类似
@@ -377,12 +357,12 @@ class Dom extends Element {
       lineGroup.adjust();
       y += lineGroup.height;
     }
-    let len = this.lineGroups.length;
-    if(len) {
-      let last = this.lineGroups[len - 1];
-      // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-      this.__baseLine = last.y - this.y + last.baseLine;
-    }
+    // let len = this.lineGroups.length;
+    // if(len) {
+    //   let last = this.lineGroups[len - 1];
+    //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+    //   this.__baseLine = last.y - this.y + last.baseLine;
+    // }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
   }
@@ -612,12 +592,12 @@ class Dom extends Element {
       lineGroup.adjust();
       y += lineGroup.height;
     }
-    let len = this.lineGroups.length;
-    if(len) {
-      let last = this.lineGroups[len - 1];
-      // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-      this.__baseLine = last.y - this.y + last.baseLine;
-    }
+    // let len = this.lineGroups.length;
+    // if(len) {
+    //   let last = this.lineGroups[len - 1];
+    //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+    //   this.__baseLine = last.y - this.y + last.baseLine;
+    // }
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
@@ -647,6 +627,14 @@ class Dom extends Element {
   }
   get lineGroups() {
     return this.__lineGroups;
+  }
+  get baseLine() {
+    let len = this.lineGroups.length;
+    if(len) {
+      let last = this.lineGroups[len - 1];
+      return last.y - this.y + last.baseLine;
+    }
+    return 0;
   }
 
   static isValid(s) {

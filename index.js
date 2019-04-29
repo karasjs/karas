@@ -577,7 +577,6 @@ function (_Element) {
     value: function __preLayBlock(data) {
       var _this4 = this;
 
-      console.log('block');
       var x = data.x,
           y = data.y,
           w = data.w,
@@ -614,12 +613,9 @@ function (_Element) {
 
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
-        console.log(1, item, x, y);
-
         if (item instanceof Dom) {
           if (item.style.display === 'inline-block') {
-            console.log(2, x === data.x); // inline开头，不用考虑是否放得下直接放
-
+            // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
               lineGroup.add(item);
 
@@ -632,9 +628,8 @@ function (_Element) {
               x += item.width;
             } else {
               // 非开头先尝试是否放得下
-              var fw = item.__tryLayInline(w - x);
+              var fw = item.__tryLayInline(w - x); // 放得下继续
 
-              console.log(3, fw); // 放得下继续
 
               if (fw >= 0) {
                 item.__preLayInline({
@@ -916,12 +911,9 @@ function (_Element) {
       var line = [];
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
-        console.log(4, item);
-
         if (item instanceof Dom) {
           // inline开头，不用考虑是否放得下直接放
           if (x === data.x) {
-            console.log(5);
             lineGroup.add(item);
 
             item.__preLayInline({
@@ -934,9 +926,8 @@ function (_Element) {
             maxX = Math.max(maxX, x);
           } else {
             // 非开头先尝试是否放得下
-            var fw = item.__tryLayInline(w - x);
+            var fw = item.__tryLayInline(w - x); // 放得下继续
 
-            console.log(6, fw); // 放得下继续
 
             if (fw >= 0) {
               item.__preLayInline({
@@ -1005,11 +996,9 @@ function (_Element) {
       }
 
       var len = this.lineGroups.length;
-      console.log(7, len);
 
       if (len) {
-        var last = this.lineGroups[len - 1];
-        console.log(8, last.y, this.y, last.baseLine); // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+        var last = this.lineGroups[len - 1]; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
 
         this.__baseLine = last.y - this.y + last.baseLine;
       } // 元素的width不能超过父元素w

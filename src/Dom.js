@@ -242,7 +242,7 @@ class Dom extends Element {
     }
   }
   // 本身block布局时计算好所有子元素的基本位置
-  __preLayBlock(data) { console.log('block')
+  __preLayBlock(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
@@ -267,9 +267,9 @@ class Dom extends Element {
       }
     }
     let lineGroup = new LineGroup(x, y);
-    children.forEach(item => { console.log(1, item, x, y);
+    children.forEach(item => {
       if(item instanceof Dom) {
-        if(item.style.display === 'inline-block') { console.log(2, x === data.x)
+        if(item.style.display === 'inline-block') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -282,7 +282,7 @@ class Dom extends Element {
           }
           else {
             // 非开头先尝试是否放得下
-            let fw = item.__tryLayInline(w - x); console.log(3, fw);
+            let fw = item.__tryLayInline(w - x);
             // 放得下继续
             if(fw >= 0) {
               item.__preLayInline({
@@ -529,10 +529,10 @@ class Dom extends Element {
     }
     let line = [];
     let lineGroup = new LineGroup(x, y);
-    children.forEach(item => { console.log(4, item);
+    children.forEach(item => {
       if(item instanceof Dom) {
         // inline开头，不用考虑是否放得下直接放
-        if(x === data.x) { console.log(5)
+        if(x === data.x) {
           lineGroup.add(item);
           item.__preLayInline({
             x,
@@ -544,7 +544,7 @@ class Dom extends Element {
         }
         else {
           // 非开头先尝试是否放得下
-          let fw = item.__tryLayInline(w - x); console.log(6, fw);
+          let fw = item.__tryLayInline(w - x);
           // 放得下继续
           if(fw >= 0) {
             item.__preLayInline({
@@ -612,9 +612,9 @@ class Dom extends Element {
       lineGroup.adjust();
       y += lineGroup.height;
     }
-    let len = this.lineGroups.length; console.log(7, len);
+    let len = this.lineGroups.length;
     if(len) {
-      let last = this.lineGroups[len - 1]; console.log(8, last.y, this.y, last.baseLine);
+      let last = this.lineGroups[len - 1];
       // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
       this.__baseLine = last.y - this.y + last.baseLine;
     }

@@ -19,17 +19,17 @@
   );
 </script>
 <script src="sea.js"></script>
-<script src="../build/index.js"></script>
+<script src="../index.js"></script>
 <script>
   seajs.config({
-    alias: {
-      'homunculus': seajs.resolve('../node_modules/homunculus/index.js', seajs.data.cwd),
-      'yurine': seajs.resolve('../node_modules/yurine/init.js', seajs.data.cwd),
-      'jaw': seajs.resolve('../node_modules/jaw/init.js', seajs.data.cwd)
-    },
-    map: [function(url) {
-      return url.replace('demo/lexer/', 'node_modules/homunculus/web/lexer/');
-    }]
+      alias: {
+          'homunculus': seajs.resolve('../node_modules/yurine/node_modules/homunculus/index.js', seajs.data.cwd),
+          'yurine': seajs.resolve('../node_modules/yurine/init.js', seajs.data.cwd),
+          'jaw': seajs.resolve('../node_modules/yurine/node_modules/jaw/init.js', seajs.data.cwd)
+      },
+      map: [function(url) {
+          return url.replace('demo/lexer/', 'node_modules/yurine/node_modules/homunculus/web/lexer/');
+      }]
   });
   define('fs', {});
   seajs.use(['jssc', '../init', 'yurine'], function(jssc, karas, yurine) {

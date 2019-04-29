@@ -36,7 +36,7 @@ class LineGroup {
     // 仅当有2个和以上时才需要vertical对齐调整
     if(this.list.length > 1) {
       this.list.forEach(item => {
-        if(item.baseLine !== this.baseLine) {
+        if(item.baseLine !== this.baseLine) { console.log('adjust', this.baseLine, item.baseLine)
           item.__offsetY(this.baseLine - item.baseLine);
         }
       });

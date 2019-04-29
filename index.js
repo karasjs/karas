@@ -577,6 +577,7 @@ function (_Element) {
     value: function __preLayBlock(data) {
       var _this4 = this;
 
+      console.log('block');
       var x = data.x,
           y = data.y,
           w = data.w,
@@ -611,12 +612,14 @@ function (_Element) {
         }
       }
 
-      var line = [];
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
+        console.log(1, item, x, y);
+
         if (item instanceof Dom) {
           if (item.style.display === 'inline-block') {
-            // inline开头，不用考虑是否放得下直接放
+            console.log(2, x === data.x); // inline开头，不用考虑是否放得下直接放
+
             if (x === data.x) {
               lineGroup.add(item);
 
@@ -629,8 +632,9 @@ function (_Element) {
               x += item.width;
             } else {
               // 非开头先尝试是否放得下
-              var fw = item.__tryLayInline(w - x); // 放得下继续
+              var fw = item.__tryLayInline(w - x);
 
+              console.log(3, fw); // 放得下继续
 
               if (fw >= 0) {
                 item.__preLayInline({
@@ -638,45 +642,36 @@ function (_Element) {
                   y: y,
                   w: w
                 });
-
-                x += item.width;
-                lineGroup.add(item);
               } // 放不下处理之前的lineGroup，并重新开头
               else {
                   _this4.lineGroups.push(lineGroup);
 
-                  var lh = _this4.__preLayLine(line, {
-                    w: w,
-                    lineHeight: lineHeight
-                  });
-
+                  lineGroup.calculate();
+                  lineGroup.adjust();
                   x = data.x;
-                  y += lh;
+                  y += lineGroup.height;
 
                   item.__preLayInline({
-                    x: x,
+                    x: data.x,
                     y: y,
                     w: w
                   });
 
-                  lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"]();
+                  lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
                 }
+
+              x += item.width;
+              lineGroup.add(item);
             }
           } else {
-            // block先处理之前可能的行
-            // if(line.length) {
-            //   let lh = this.__preLayLine(line, {
-            //     w,
-            //     lineHeight,
-            //   });
-            //   x = data.x;
-            //   y += lh;
-            //   line = [];
-            // }
+            // block先处理之前可能的lineGroup
             if (lineGroup.size) {
               _this4.lineGroups.push(lineGroup);
 
-              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"]();
+              lineGroup.calculate();
+              lineGroup.adjust();
+              y += lineGroup.height;
+              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
             }
 
             item.__preLay({
@@ -689,13 +684,13 @@ function (_Element) {
           }
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           // 图形也是block先处理之前可能的行
-          if (line.length) {
-            var _lh = _this4.__preLayLine(line, {
-              w: w,
-              lineHeight: lineHeight
-            });
+          if (lineGroup.size) {
+            _this4.lineGroups.push(lineGroup);
 
-            y += _lh;
+            lineGroup.calculate();
+            lineGroup.adjust();
+            y += lineGroup.height;
+            lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
           }
 
           item.__preLay({
@@ -710,15 +705,29 @@ function (_Element) {
             ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
             var tw = ctx.measureText(item.content).width;
 
-            if (x + tw > w) {} else {
+            if (x + tw > w) {
+              _this4.lineGroups.push(lineGroup);
+
+              lineGroup.calculate();
+              lineGroup.adjust();
+              x = data.x;
+              y += lineGroup.height;
               item.__x = x;
               item.__y = y;
               item.__width = tw;
               item.__height = lineHeight;
               item.__baseLine = getBaseLineByFont(style.fontSize);
-              x += tw;
-              line.push(item);
+              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+            } else {
+              item.__x = x;
+              item.__y = y;
+              item.__width = tw;
+              item.__height = lineHeight;
+              item.__baseLine = getBaseLineByFont(style.fontSize);
             }
+
+            x += tw;
+            lineGroup.add(item);
           }
       }); // 结束后处理可能遗留的最后的lineGroup
 
@@ -726,9 +735,15 @@ function (_Element) {
         this.lineGroups.push(lineGroup);
         lineGroup.calculate();
         lineGroup.adjust();
-        y += lineGroup.height; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+        y += lineGroup.height;
+      }
 
-        this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
+      var len = this.lineGroups.length;
+
+      if (len) {
+        var last = this.lineGroups[len - 1]; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+
+        this.__baseLine = last.y - this.y + last.baseLine;
       }
 
       this.__width = w;
@@ -901,9 +916,12 @@ function (_Element) {
       var line = [];
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
+        console.log(4, item);
+
         if (item instanceof Dom) {
           // inline开头，不用考虑是否放得下直接放
           if (x === data.x) {
+            console.log(5);
             lineGroup.add(item);
 
             item.__preLayInline({
@@ -913,44 +931,40 @@ function (_Element) {
             });
 
             x += item.width;
+            maxX = Math.max(maxX, x);
           } else {
             // 非开头先尝试是否放得下
-            var fw = item.__tryLayInline(w - x); // 放得下继续
+            var fw = item.__tryLayInline(w - x);
 
+            console.log(6, fw); // 放得下继续
 
             if (fw >= 0) {
-              lineGroup.add(item);
-
               item.__preLayInline({
                 x: x,
                 y: y,
                 w: w
               });
-
-              x += item.width;
             } // 放不下处理之前的lineGroup，并重新开头
             else {
+                _this5.lineGroups.push(lineGroup);
+
                 lineGroup.calculate();
                 lineGroup.adjust();
-
-                _this5.lineGroups.push(lineGroup); // let lh = this.__preLayLine(line, {
-                //   w,
-                //   lineHeight,
-                // });
-
-
                 x = data.x;
                 y += lineGroup.height;
 
                 item.__preLayInline({
-                  x: x,
+                  x: data.x,
                   y: y,
                   w: w
                 });
 
                 lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
-                lineGroup.add(item);
               }
+
+            x += item.width;
+            maxX = Math.max(maxX, x);
+            lineGroup.add(item);
           }
         } // inline里的其它可能只有文本
         else {
@@ -987,9 +1001,17 @@ function (_Element) {
         this.lineGroups.push(lineGroup);
         lineGroup.calculate();
         lineGroup.adjust();
-        y += lineGroup.height; // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+        y += lineGroup.height;
+      }
 
-        this.__baseLine = lineGroup.y - this.y + lineGroup.baseLine;
+      var len = this.lineGroups.length;
+      console.log(7, len);
+
+      if (len) {
+        var last = this.lineGroups[len - 1];
+        console.log(8, last.y, this.y, last.baseLine); // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
+
+        this.__baseLine = last.y - this.y + last.baseLine;
       } // 元素的width不能超过父元素w
 
 
@@ -1260,6 +1282,8 @@ function () {
       if (this.list.length > 1) {
         this.list.forEach(function (item) {
           if (item.baseLine !== _this.baseLine) {
+            console.log('adjust', _this.baseLine, item.baseLine);
+
             item.__offsetY(_this.baseLine - item.baseLine);
           }
         });

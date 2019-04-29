@@ -1271,8 +1271,6 @@ function () {
       if (this.list.length > 1) {
         this.list.forEach(function (item) {
           if (item.baseLine !== _this.baseLine) {
-            console.log('adjust', _this.baseLine, item.baseLine);
-
             item.__offsetY(_this.baseLine - item.baseLine);
           }
         });

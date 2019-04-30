@@ -127,7 +127,6 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
-var uuid = 0;
 
 function getDom(dom) {
   if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isString(dom)) {
@@ -138,6 +137,10 @@ function getDom(dom) {
     }
 
     return o;
+  }
+
+  if (!dom) {
+    throw new Error('can not find dom: ' + dom);
   }
 
   return dom;
@@ -164,54 +167,88 @@ function (_Dom) {
     _classCallCheck(this, Canvas);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
-    _this.__uuid = uuid++; // 缺省默认canvas的宽高设置
+    _this.__node = null; // 真实DOM引用
 
-    if (_this.props.width === undefined) {
-      _this.props.width = _this.__width = 300;
-
-      _this.__props.push(['width', 300]);
-    } else {
-      _this.__width = Math.max(0, parseInt(_this.props.width) || 0);
-    }
-
-    if (_this.props.height === undefined) {
-      _this.props.height = _this.__height = 150;
-
-      _this.__props.push(['height', 150]);
-    } else {
-      _this.__height = Math.max(0, parseInt(_this.props.height) || 0);
-    }
-
-    _this.__element = null; // 真实DOM引用
-
+    _this.__dpr = 1;
     return _this;
   }
 
   _createClass(Canvas, [{
-    key: "toString",
-    value: function toString() {
+    key: "initProps",
+    value: function initProps() {
+      this.__dpr = this.props.dpr || window.devicePixelRatio || this.__dpr;
+
+      if (this.props.width !== undefined) {
+        var value = parseInt(this.props.width);
+
+        if (!isNaN(value) && value > 0) {
+          this.__width = value * this.dpr;
+        }
+      }
+
+      if (this.props.height !== undefined) {
+        var _value = parseInt(this.props.height);
+
+        if (!isNaN(_value) && _value > 0) {
+          this.__height = _value * this.dpr;
+        }
+      }
+    }
+  }, {
+    key: "genHtml",
+    value: function genHtml() {
       var res = '<canvas'; // 拼接处理属性
 
       for (var i = 0, len = this.__props.length; i < len; i++) {
         var item = this.__props[i];
-        var s = renderProp(item[0], item[1]);
-        res += s;
+        res += renderProp(item[0], item[1]);
       }
 
-      res += ' karas-uuid=' + this.uuid;
       res += '></canvas>';
       return res;
     }
   }, {
     key: "appendTo",
     value: function appendTo(dom) {
-      var s = this.toString();
       dom = getDom(dom);
-      dom.insertAdjacentHTML('beforeend', s);
-      this.__element = dom.querySelector("canvas[karas-uuid=\"".concat(this.uuid, "\"]"));
-      this.__ctx = this.__element.getContext('2d');
+      this.initProps(); // 已有canvas节点
 
-      this.__traverse(this.__ctx);
+      if (dom.nodeName.toUpperCase() === 'CANVAS') {
+        this.__node = dom;
+
+        if (this.width) {
+          dom.setAttribute('width', this.width);
+        }
+
+        if (this.height) {
+          dom.setAttribute('height', this.height);
+        }
+      } // 没有canvas节点则生成一个新的
+      else {
+          var s = this.genHtml();
+          dom.insertAdjacentHTML('beforeend', s);
+          var canvas = dom.querySelectorAll('canvas');
+          this.__node = canvas[canvas.length - 1];
+        } // 没有设置width/height则采用css计算形式
+
+
+      if (!this.width || !this.height) {
+        var css = window.getComputedStyle(dom, null);
+
+        if (!this.width) {
+          this.__width = parseInt(css.getPropertyValue('width')) * this.dpr;
+          dom.setAttribute('width', this.width);
+        }
+
+        if (!this.height) {
+          this.__height = parseInt(css.getPropertyValue('height')) * this.dpr;
+          dom.setAttribute('height', this.height);
+        }
+      }
+
+      this.__ctx = this.__node.getContext('2d');
+
+      this.__traverse(this.__ctx, this.__dpr);
 
       this.__initStyle(); // canvas作为根节点一定是block
 
@@ -226,14 +263,9 @@ function (_Dom) {
       this.render();
     }
   }, {
-    key: "uuid",
+    key: "node",
     get: function get() {
-      return this.__uuid;
-    }
-  }, {
-    key: "element",
-    get: function get() {
-      return this.__element;
+      return this.__node;
     }
   }]);
 
@@ -253,7 +285,7 @@ function (_Dom) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
+/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/Node.js");
 /* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/Text.js");
 /* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/LineGroup.js");
 /* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
@@ -311,8 +343,8 @@ function getBaseLineByFont(fontSize) {
 
 var Dom =
 /*#__PURE__*/
-function (_Element) {
-  _inherits(Dom, _Element);
+function (_Node) {
+  _inherits(Dom, _Node);
 
   function Dom(tagName, props, children) {
     var _this;
@@ -339,12 +371,12 @@ function (_Element) {
 
   _createClass(Dom, [{
     key: "__traverse",
-    value: function __traverse(ctx) {
+    value: function __traverse(ctx, dpr) {
       var _this2 = this;
 
       var list = [];
 
-      this.__traverseChildren(this.children, list, ctx);
+      this.__traverseChildren(this.children, list, ctx, dpr);
 
       for (var i = list.length - 1; i > 0; i--) {
         var item = list[i];
@@ -374,6 +406,7 @@ function (_Element) {
       var prev = null;
       list.forEach(function (item) {
         item.__ctx = ctx;
+        item.__dpr = dpr;
 
         if (prev) {
           prev.__next = item;
@@ -386,17 +419,17 @@ function (_Element) {
     }
   }, {
     key: "__traverseChildren",
-    value: function __traverseChildren(children, list, ctx) {
+    value: function __traverseChildren(children, list, ctx, dpr) {
       var _this3 = this;
 
       if (Array.isArray(children)) {
         children.forEach(function (item) {
-          _this3.__traverseChildren(item, list, ctx);
+          _this3.__traverseChildren(item, list, ctx, dpr);
         });
       } else if (children instanceof Dom) {
         list.push(children);
 
-        children.__traverse(ctx);
+        children.__traverse(ctx, dpr);
       } // 图形没有children
       else if (children instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           list.push(children);
@@ -710,13 +743,7 @@ function (_Element) {
         lineGroup.calculate();
         lineGroup.adjust();
         y += lineGroup.height;
-      } // let len = this.lineGroups.length;
-      // if(len) {
-      //   let last = this.lineGroups[len - 1];
-      //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-      //   this.__baseLine = last.y - this.y + last.baseLine;
-      // }
-
+      }
 
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
@@ -970,13 +997,7 @@ function (_Element) {
         lineGroup.calculate();
         lineGroup.adjust();
         y += lineGroup.height;
-      } // let len = this.lineGroups.length;
-      // if(len) {
-      //   let last = this.lineGroups[len - 1];
-      //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-      //   this.__baseLine = last.y - this.y + last.baseLine;
-      // }
-      // 元素的width不能超过父元素w
+      } // 元素的width不能超过父元素w
 
 
       this.__width = fixedWidth ? w : maxX - data.x;
@@ -1037,158 +1058,9 @@ function (_Element) {
   }]);
 
   return Dom;
-}(_Element__WEBPACK_IMPORTED_MODULE_0__["default"]);
+}(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Dom);
-
-/***/ }),
-
-/***/ "./src/Element.js":
-/*!************************!*\
-  !*** ./src/Element.js ***!
-  \************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./util */ "./src/util.js");
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-
-
-function arr2hash(arr) {
-  var hash = {};
-
-  for (var i = 0, len = arr.length; i < len; i++) {
-    var item = arr[i];
-
-    if (Array.isArray(item)) {
-      hash[item[0]] = item[1];
-    } else {
-      for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-        var k = list[j];
-        hash[k] = item[k];
-      }
-    }
-  }
-
-  return hash;
-}
-
-function hash2arr(hash) {
-  var arr = [];
-
-  for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-    var k = list[i];
-    arr.push([k, hash[k]]);
-  }
-
-  return arr;
-}
-
-function spread(arr) {
-  for (var i = 0, len = arr.length; i < len; i++) {
-    var item = arr[i];
-
-    if (!Array.isArray(item)) {
-      var temp = [];
-
-      for (var list = Object.keys(item), j = 0, _len = list.length; j < _len; j++) {
-        var k = list[j];
-        temp.push([k, item[k]]);
-      }
-
-      arr.splice.apply(arr, [i, 1].concat(temp));
-    }
-  }
-
-  return arr;
-}
-
-var Element =
-/*#__PURE__*/
-function () {
-  function Element(props) {
-    _classCallCheck(this, Element);
-
-    props = props || []; // 构建工具中都是arr，手写可能出现hash情况
-
-    if (Array.isArray(props)) {
-      this.props = arr2hash(props);
-      this.__props = spread(props);
-    } else {
-      this.props = props;
-      this.__props = hash2arr(props);
-    }
-
-    this.__x = 0;
-    this.__y = 0;
-    this.__width = 0;
-    this.__height = 0;
-    this.__prev = null;
-    this.__next = null;
-    this.__ctx = null; // canvas的context
-
-    this.__parent = null;
-    this.__baseLine = 0;
-  }
-
-  _createClass(Element, [{
-    key: "x",
-    get: function get() {
-      return this.__x;
-    }
-  }, {
-    key: "y",
-    get: function get() {
-      return this.__y;
-    }
-  }, {
-    key: "width",
-    get: function get() {
-      return this.__width;
-    }
-  }, {
-    key: "height",
-    get: function get() {
-      return this.__height;
-    }
-  }, {
-    key: "prev",
-    get: function get() {
-      return this.__prev;
-    }
-  }, {
-    key: "next",
-    get: function get() {
-      return this.__next;
-    }
-  }, {
-    key: "parent",
-    get: function get() {
-      return this.__parent;
-    }
-  }, {
-    key: "ctx",
-    get: function get() {
-      return this.__ctx;
-    }
-  }, {
-    key: "baseLine",
-    get: function get() {
-      return this.__baseLine;
-    }
-  }]);
-
-  return Element;
-}();
-
-/* harmony default export */ __webpack_exports__["default"] = (Element);
 
 /***/ }),
 
@@ -1302,6 +1174,161 @@ function () {
 
 /***/ }),
 
+/***/ "./src/Node.js":
+/*!*********************!*\
+  !*** ./src/Node.js ***!
+  \*********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./util */ "./src/util.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+function arr2hash(arr) {
+  var hash = {};
+
+  for (var i = 0, len = arr.length; i < len; i++) {
+    var item = arr[i];
+
+    if (Array.isArray(item)) {
+      hash[item[0]] = item[1];
+    } else {
+      for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+        var k = list[j];
+        hash[k] = item[k];
+      }
+    }
+  }
+
+  return hash;
+}
+
+function hash2arr(hash) {
+  var arr = [];
+
+  for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+    var k = list[i];
+    arr.push([k, hash[k]]);
+  }
+
+  return arr;
+}
+
+function spread(arr) {
+  for (var i = 0, len = arr.length; i < len; i++) {
+    var item = arr[i];
+
+    if (!Array.isArray(item)) {
+      var temp = [];
+
+      for (var list = Object.keys(item), j = 0, _len = list.length; j < _len; j++) {
+        var k = list[j];
+        temp.push([k, item[k]]);
+      }
+
+      arr.splice.apply(arr, [i, 1].concat(temp));
+    }
+  }
+
+  return arr;
+}
+
+var Node =
+/*#__PURE__*/
+function () {
+  function Node(props) {
+    _classCallCheck(this, Node);
+
+    props = props || []; // 构建工具中都是arr，手写可能出现hash情况
+
+    if (Array.isArray(props)) {
+      this.props = arr2hash(props);
+      this.__props = spread(props);
+    } else {
+      this.props = props;
+      this.__props = hash2arr(props);
+    }
+
+    this.__x = 0;
+    this.__y = 0;
+    this.__width = 0;
+    this.__height = 0;
+    this.__prev = null;
+    this.__next = null;
+    this.__ctx = null; // canvas的context
+
+    this.__dpr = 1;
+    this.__parent = null;
+    this.__baseLine = 0;
+  }
+
+  _createClass(Node, [{
+    key: "x",
+    get: function get() {
+      return this.__x;
+    }
+  }, {
+    key: "y",
+    get: function get() {
+      return this.__y;
+    }
+  }, {
+    key: "width",
+    get: function get() {
+      return this.__width;
+    }
+  }, {
+    key: "height",
+    get: function get() {
+      return this.__height;
+    }
+  }, {
+    key: "prev",
+    get: function get() {
+      return this.__prev;
+    }
+  }, {
+    key: "next",
+    get: function get() {
+      return this.__next;
+    }
+  }, {
+    key: "parent",
+    get: function get() {
+      return this.__parent;
+    }
+  }, {
+    key: "ctx",
+    get: function get() {
+      return this.__ctx;
+    }
+  }, {
+    key: "dpr",
+    get: function get() {
+      return this.__dpr;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      return this.__baseLine;
+    }
+  }]);
+
+  return Node;
+}();
+
+/* harmony default export */ __webpack_exports__["default"] = (Node);
+
+/***/ }),
+
 /***/ "./src/Text.js":
 /*!*********************!*\
   !*** ./src/Text.js ***!
@@ -1311,7 +1338,7 @@ function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Element */ "./src/Element.js");
+/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/Node.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1334,8 +1361,8 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 var Text =
 /*#__PURE__*/
-function (_Element) {
-  _inherits(Text, _Element);
+function (_Node) {
+  _inherits(Text, _Node);
 
   function Text(content) {
     var _this;
@@ -1361,35 +1388,9 @@ function (_Element) {
   }]);
 
   return Text;
-}(_Element__WEBPACK_IMPORTED_MODULE_0__["default"]);
+}(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Text);
-
-/***/ }),
-
-/***/ "./src/config.js":
-/*!***********************!*\
-  !*** ./src/config.js ***!
-  \***********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
-
-var dpr = 1;
-/* harmony default export */ __webpack_exports__["default"] = ({
-  get devicePixelRatio() {
-    return dpr;
-  },
-
-  set devicePixelRatio(v) {
-    dpr = v;
-    _reset__WEBPACK_IMPORTED_MODULE_0__["default"].fontSize = 16 * v;
-  }
-
-});
 
 /***/ }),
 
@@ -1489,7 +1490,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Element */ "./src/Element.js");
+/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Node */ "./src/Node.js");
 /* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
 /* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../css */ "./src/css.js");
@@ -1524,8 +1525,8 @@ var TAG_NAME = {
 
 var Geom =
 /*#__PURE__*/
-function (_Element) {
-  _inherits(Geom, _Element);
+function (_Node) {
+  _inherits(Geom, _Node);
 
   function Geom(props) {
     var _this;
@@ -1590,7 +1591,7 @@ function (_Element) {
   }]);
 
   return Geom;
-}(_Element__WEBPACK_IMPORTED_MODULE_0__["default"]);
+}(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Geom);
 
@@ -1720,8 +1721,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
 /* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
 /* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
-/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./config */ "./src/config.js");
-
 
 
 
@@ -1741,13 +1740,6 @@ var karas = {
   createDom: function createDom(tagName, props, children) {
     if (tagName === 'canvas') {
       return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
-    }
-
-    if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
-      switch (tagName) {
-        case 'line':
-          return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
-      }
     }
 
     if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
@@ -1779,9 +1771,7 @@ var karas = {
       }
     }
   },
-  createCp: function createCp(tagName, props, children) {},
-  // Line,
-  config: _config__WEBPACK_IMPORTED_MODULE_4__["default"]
+  createCp: function createCp(tagName, props, children) {}
 };
 
 if (typeof window != 'undefined') {

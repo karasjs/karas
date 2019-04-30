@@ -41,7 +41,7 @@ function spread(arr) {
   return arr;
 }
 
-class Element {
+class Node {
   constructor(props) {
     props = props || [];
     // 构建工具中都是arr，手写可能出现hash情况
@@ -60,6 +60,7 @@ class Element {
     this.__prev = null;
     this.__next = null;
     this.__ctx = null; // canvas的context
+    this.__dpr = 1;
     this.__parent = null;
     this.__baseLine = 0;
   }
@@ -88,9 +89,12 @@ class Element {
   get ctx() {
     return this.__ctx;
   }
+  get dpr() {
+    return this.__dpr;
+  }
   get baseLine() {
     return this.__baseLine;
   }
 }
 
-export default Element;
+export default Node;

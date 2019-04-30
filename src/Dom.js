@@ -1,4 +1,4 @@
-import Element from './Element';
+import Node from './Node';
 import Text from './Text';
 import LineGroup from './LineGroup';
 import Geom from './geom/Geom';
@@ -27,7 +27,7 @@ function getBaseLineByFont(fontSize) {
   return Math.ceil(fontSize * font.arial.blr);
 }
 
-class Dom extends Element {
+class Dom extends Node {
   constructor(tagName, props, children) {
     super(props);
     this.__tagName = tagName;
@@ -43,9 +43,9 @@ class Dom extends Element {
    * 4. 检测inline不能包含block
    * 5. 设置parent和prev/next和ctx
    */
-  __traverse(ctx) {
+  __traverse(ctx, dpr) {
     let list = [];
-    this.__traverseChildren(this.children, list, ctx);
+    this.__traverseChildren(this.children, list, ctx, dpr);
     for(let i = list.length - 1; i > 0; i--) {
       let item = list[i];
       if(item instanceof Text) {
@@ -70,6 +70,7 @@ class Dom extends Element {
     let prev = null;
     list.forEach(item => {
       item.__ctx = ctx;
+      item.__dpr = dpr;
       if(prev) {
         prev.__next = item;
       }
@@ -78,15 +79,15 @@ class Dom extends Element {
     });
     this.__children = list;
   }
-  __traverseChildren(children, list, ctx) {
+  __traverseChildren(children, list, ctx, dpr) {
     if(Array.isArray(children)) {
       children.forEach(item => {
-        this.__traverseChildren(item, list, ctx);
+        this.__traverseChildren(item, list, ctx, dpr);
       });
     }
     else if(children instanceof Dom) {
       list.push(children);
-      children.__traverse(ctx);
+      children.__traverse(ctx, dpr);
     }
     // 图形没有children
     else if(children instanceof Geom) {
@@ -357,12 +358,6 @@ class Dom extends Element {
       lineGroup.adjust();
       y += lineGroup.height;
     }
-    // let len = this.lineGroups.length;
-    // if(len) {
-    //   let last = this.lineGroups[len - 1];
-    //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-    //   this.__baseLine = last.y - this.y + last.baseLine;
-    // }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
   }
@@ -592,12 +587,6 @@ class Dom extends Element {
       lineGroup.adjust();
       y += lineGroup.height;
     }
-    // let len = this.lineGroups.length;
-    // if(len) {
-    //   let last = this.lineGroups[len - 1];
-    //   // 本身baseLine即是最后一个lineGroup/lineBlock的baseLine
-    //   this.__baseLine = last.y - this.y + last.baseLine;
-    // }
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;

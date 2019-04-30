@@ -1,4 +1,4 @@
-import Element from '../Element';
+import Node from '../Node';
 import reset from '../reset';
 import util from '../util';
 import css from '../css';
@@ -9,7 +9,7 @@ const TAG_NAME = {
   'curve': true,
 };
 
-class Geom extends Element {
+class Geom extends Node {
   constructor(props) {
     super(props);
     this.__style = {}; // style被解析后的k-v形式

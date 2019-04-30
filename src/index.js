@@ -2,7 +2,6 @@ import Canvas from './Canvas';
 import Dom from './Dom';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
-import config from './config';
 
 let karas = {
   render(canvas, dom) {
@@ -17,12 +16,6 @@ let karas = {
   createDom(tagName, props, children) {
     if(tagName === 'canvas') {
       return new Canvas(props, children);
-    }
-    if(Geom.isValid(tagName)) {
-      switch(tagName) {
-        case 'line':
-          return new Line(props);
-      }
     }
     if(Dom.isValid(tagName)) {
       return new Dom(tagName, props, children);
@@ -50,8 +43,6 @@ let karas = {
     }
   },
   createCp(tagName, props, children) {},
-  // Line,
-  config,
 };
 
 if(typeof window != 'undefined') {

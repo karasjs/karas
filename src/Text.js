@@ -1,6 +1,6 @@
-import Element from './Element';
+import Node from './Node';
 
-class Text extends Element {
+class Text extends Node {
   constructor(content) {
     super([]);
     this.__content = content.toString();

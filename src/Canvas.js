@@ -89,13 +89,24 @@ class Canvas extends Dom {
     this.__ctx = this.__node.getContext('2d');
     this.__traverse(this.__ctx, this.__dpr);
     this.__initStyle();
-    // canvas作为根节点一定是block
-    this.__preLayBlock({
-      x: 0,
-      y: 0,
-      w: this.width,
-      h: this.height,
-    });
+    // canvas作为根节点一定是block或flex，不会是inline
+    let { style } = this;
+    if(style.display === 'flex') {
+      this.__preLayFlex({
+        x: 0,
+        y: 0,
+        w: this.width,
+        h: this.height,
+      });
+    }
+    else {
+      this.__preLayBlock({
+        x: 0,
+        y: 0,
+        w: this.width,
+        h: this.height,
+      });
+    }
     this.render();
   }
 

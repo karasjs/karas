@@ -250,15 +250,26 @@ function (_Dom) {
 
       this.__traverse(this.__ctx, this.__dpr);
 
-      this.__initStyle(); // canvas作为根节点一定是block
+      this.__initStyle(); // canvas作为根节点一定是block或flex，不会是inline
 
 
-      this.__preLayBlock({
-        x: 0,
-        y: 0,
-        w: this.width,
-        h: this.height
-      });
+      var style = this.style;
+
+      if (style.display === 'flex') {
+        this.__preLayFlex({
+          x: 0,
+          y: 0,
+          w: this.width,
+          h: this.height
+        });
+      } else {
+        this.__preLayBlock({
+          x: 0,
+          y: 0,
+          w: this.width,
+          h: this.height
+        });
+      }
 
       this.render();
     }

@@ -721,29 +721,25 @@ function (_Node) {
         } // 文字和inline类似
         else {
             ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
-            var tw = ctx.measureText(item.content).width;
+            var tw = ctx.measureText(item.content).width; // 超出一行时先处理之前的行组，然后另起一行开头
 
-            if (x + tw > w) {
+            if (x + tw > w && x > data.x) {
               _this4.lineGroups.push(lineGroup);
 
               lineGroup.calculate();
               lineGroup.adjust();
-              x = data.x;
               y += lineGroup.height;
-              item.__x = x;
-              item.__y = y;
-              item.__width = tw;
-              item.__height = lineHeight;
-              item.__baseLine = getBaseLineByFont(style.fontSize);
+              x = data.x;
               lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
-            } else {
-              item.__x = x;
-              item.__y = y;
-              item.__width = tw;
-              item.__height = lineHeight;
-              item.__baseLine = getBaseLineByFont(style.fontSize);
-            }
+            } // 超出一行处理word-break
 
+
+            item.__x = x;
+            item.__y = y;
+            item.preLay();
+            item.__width = tw;
+            item.__height = lineHeight;
+            item.__baseLine = getBaseLineByFont(style.fontSize);
             x += tw;
             lineGroup.add(item);
           }
@@ -1380,13 +1376,16 @@ function (_Node) {
 
     _classCallCheck(this, Text);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this, []));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
     _this.__content = content.toString();
     _this.__lineBoxes = [];
     return _this;
   }
 
   _createClass(Text, [{
+    key: "preLay",
+    value: function preLay() {}
+  }, {
     key: "content",
     get: function get() {
       return this.__content;

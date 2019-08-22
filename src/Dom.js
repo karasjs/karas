@@ -327,26 +327,22 @@ class Dom extends Node {
       else {
         ctx.font = css.setFontStyle(style);
         let tw = ctx.measureText(item.content).width;
-        if(x + tw > w) {
+        // 超出一行时先处理之前的行组，然后另起一行开头
+        if(x + tw > w && x > data.x) {
           this.lineGroups.push(lineGroup);
           lineGroup.calculate();
           lineGroup.adjust();
-          x = data.x;
           y += lineGroup.height;
-          item.__x = x;
-          item.__y = y;
-          item.__width = tw;
-          item.__height = lineHeight;
-          item.__baseLine = getBaseLineByFont(style.fontSize);
+          x = data.x;
           lineGroup = new LineGroup(x, y);
         }
-        else {
-          item.__x = x;
-          item.__y = y;
-          item.__width = tw;
-          item.__height = lineHeight;
-          item.__baseLine = getBaseLineByFont(style.fontSize);
-        }
+        // 超出一行处理word-break
+        item.__x = x;
+        item.__y = y;
+        item.preLay();
+        item.__width = tw;
+        item.__height = lineHeight;
+        item.__baseLine = getBaseLineByFont(style.fontSize);
         x += tw;
         lineGroup.add(item);
       }

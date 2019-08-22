@@ -2,9 +2,12 @@ import Node from './Node';
 
 class Text extends Node {
   constructor(content) {
-    super([]);
+    super();
     this.__content = content.toString();
     this.__lineBoxes = [];
+  }
+
+  preLay() {
   }
 
   get content() {

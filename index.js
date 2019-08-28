@@ -96,17 +96,394 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/Canvas.js":
-/*!***********************!*\
-  !*** ./src/Canvas.js ***!
-  \***********************/
+/***/ "./src/css.js":
+/*!********************!*\
+  !*** ./src/css.js ***!
+  \********************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./util */ "./src/util.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
+
+
+function normalize(style) {
+  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
+    var v = style[k];
+
+    if (v === 'auto') {
+      style[k] = {
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].AUTO
+      };
+    } else if (/%$/.test(v)) {
+      v = parseFloat(v) || 0;
+
+      if (v <= 0) {
+        style[k] = {
+          value: 0,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+        };
+      } else {
+        style[k] = {
+          value: v,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PERCENT
+        };
+      }
+    } else {
+      v = parseInt(v) || 0;
+      style[k] = {
+        value: Math.max(v, 0),
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+      };
+    }
+  });
+}
+
+function setFontStyle(style) {
+  var fontStyle = style.fontStyle,
+      fontWeight = style.fontWeight,
+      fontSize = style.fontSize,
+      fontFamily = style.fontFamily;
+  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+}
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  normalize: normalize,
+  setFontStyle: setFontStyle
+});
+
+/***/ }),
+
+/***/ "./src/font.js":
+/*!*********************!*\
+  !*** ./src/font.js ***!
+  \*********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  arial: {
+    lhr: 1.14990234375,
+    // 默认line-height ratio
+    car: 1.1172,
+    // content-area ratio
+    blr: 0.9052734375,
+    // base-line ratio
+    mdr: 0.64599609375,
+    // middle ratio
+    lgr: 0.03271484375 // line-gap ratio
+
+  }
+});
+
+/***/ }),
+
+/***/ "./src/geom/Geom.js":
+/*!**************************!*\
+  !*** ./src/geom/Geom.js ***!
+  \**************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../node/Node */ "./src/node/Node.js");
+/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
+/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../css */ "./src/css.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
+
+
+
+
+var TAG_NAME = {
+  'line': true,
+  'curve': true
+};
+
+var Geom =
+/*#__PURE__*/
+function (_Node) {
+  _inherits(Geom, _Node);
+
+  function Geom(props) {
+    var _this;
+
+    _classCallCheck(this, Geom);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, props));
+    _this.__style = {}; // style被解析后的k-v形式
+
+    return _this;
+  }
+
+  _createClass(Geom, [{
+    key: "__initStyle",
+    value: function __initStyle() {
+      var style = this.style; // 图形强制block
+
+      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
+        display: 'block'
+      });
+      _css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
+    }
+  }, {
+    key: "__preLay",
+    value: function __preLay(data) {
+      var x = data.x,
+          y = data.y,
+          w = data.w,
+          h = data.h;
+      var style = this.style;
+      var width = style.width,
+          height = style.height;
+      this.__x = x;
+      this.__y = y;
+
+      if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+        this.__width = Math.ceil(width.value * h);
+      } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+        this.__width = width.value;
+      } else {
+        this.__width = w;
+      }
+
+      if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+        this.__height = Math.ceil(height.value * h);
+      } else if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+        this.__height = height.value;
+      } else {
+        this.__height = h;
+      }
+    }
+  }, {
+    key: "style",
+    get: function get() {
+      return this.__style;
+    }
+  }], [{
+    key: "isValid",
+    value: function isValid(s) {
+      return TAG_NAME.hasOwnProperty(s);
+    }
+  }]);
+
+  return Geom;
+}(_node_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/* harmony default export */ __webpack_exports__["default"] = (Geom);
+
+/***/ }),
+
+/***/ "./src/geom/Line.js":
+/*!**************************!*\
+  !*** ./src/geom/Line.js ***!
+  \**************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Geom */ "./src/geom/Geom.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/util.js");
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
+
+
+var Line =
+/*#__PURE__*/
+function (_Geom) {
+  _inherits(Line, _Geom);
+
+  function Line(props) {
+    _classCallCheck(this, Line);
+
+    return _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, props));
+  }
+
+  _createClass(Line, [{
+    key: "render",
+    value: function render() {
+      var x = this.x,
+          y = this.y,
+          width = this.width,
+          height = this.height,
+          props = this.props,
+          ctx = this.ctx;
+      var max = props.max,
+          min = props.min,
+          data = props.data;
+      ctx.strokeStyle = '#333333';
+      ctx.lineWidth = 1;
+
+      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(max)) {
+        max = data[0];
+        data.forEach(function (item) {
+          max = Math.max(item, max);
+        });
+      }
+
+      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(min)) {
+        min = data[0];
+        data.forEach(function (item) {
+          min = Math.min(item, min);
+        });
+      }
+
+      if (max < min) {
+        throw new Error('max can not less than min');
+      }
+
+      var stepX = width / (data.length - 1);
+      var stepY = height / (max - min);
+
+      if (max === min) {
+        stepY = height;
+      }
+
+      var coords = [];
+      data.forEach(function (item, i) {
+        var diff = item - min;
+        var rx = i * stepX;
+        var ry = height - diff * stepY;
+        coords.push([rx, ry + y]);
+      });
+      var first = coords[0];
+      ctx.beginPath();
+      ctx.moveTo(first[0], first[1]);
+
+      for (var i = 1; i < coords.length; i++) {
+        var item = coords[i];
+        ctx.lineTo(item[0], item[1]);
+      }
+
+      ctx.stroke();
+      ctx.closePath();
+    }
+  }]);
+
+  return Line;
+}(_Geom__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/* harmony default export */ __webpack_exports__["default"] = (Line);
+
+/***/ }),
+
+/***/ "./src/index.js":
+/*!**********************!*\
+  !*** ./src/index.js ***!
+  \**********************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _node_Dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./node/Dom */ "./src/node/Dom.js");
+/* harmony import */ var _node_Canvas__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./node/Canvas */ "./src/node/Canvas.js");
+/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
+/* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
+
+
+
+
+var karas = {
+  render: function render(canvas, dom) {
+    if (!canvas instanceof _node_Canvas__WEBPACK_IMPORTED_MODULE_1__["default"]) {
+      throw new Error('render root muse be canvas');
+    }
+
+    if (dom) {
+      canvas.appendTo(dom);
+    }
+
+    return canvas;
+  },
+  createVd: function createVd(tagName, props, children) {
+    if (tagName === 'canvas') {
+      return new _node_Canvas__WEBPACK_IMPORTED_MODULE_1__["default"](props, children);
+    }
+
+    if (_node_Dom__WEBPACK_IMPORTED_MODULE_0__["default"].isValid(tagName)) {
+      return new _node_Dom__WEBPACK_IMPORTED_MODULE_0__["default"](tagName, props, children);
+    }
+
+    throw new Error('can not use marker: ' + tagName);
+  },
+  createGp: function createGp(tagName, props) {
+    if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
+      switch (tagName) {
+        case '$line':
+          return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
+
+        case '$point':
+        default:
+          throw new Error('can not use marker: ' + tagName);
+      }
+    }
+  },
+  createCp: function createCp(tagName, props, children) {}
+};
+
+if (typeof window != 'undefined') {
+  window.karas = karas;
+}
+
+/* harmony default export */ __webpack_exports__["default"] = (karas);
+
+/***/ }),
+
+/***/ "./src/node/Canvas.js":
+/*!****************************!*\
+  !*** ./src/node/Canvas.js ***!
+  \****************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Dom */ "./src/node/Dom.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/util.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -169,14 +546,13 @@ function (_Dom) {
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
     _this.__node = null; // 真实DOM引用
 
-    _this.__dpr = 1;
     return _this;
   }
 
   _createClass(Canvas, [{
     key: "initProps",
     value: function initProps() {
-      this.__dpr = this.props.dpr || window.devicePixelRatio || this.__dpr;
+      this.__dpr = parseFloat(this.props.dpr) || 1;
 
       if (this.props.width !== undefined) {
         var value = parseInt(this.props.width);
@@ -244,32 +620,27 @@ function (_Dom) {
           this.__height = parseInt(css.getPropertyValue('height')) * this.dpr;
           dom.setAttribute('height', this.height);
         }
+      } // canvas作为根节点一定是block或flex，不会是inline
+
+
+      var style = this.style;
+
+      if (['flex', 'block'].indexOf(style.display) === -1) {
+        style.display = 'block';
       }
 
       this.__ctx = this.__node.getContext('2d');
 
       this.__traverse(this.__ctx, this.__dpr);
 
-      this.__initStyle(); // canvas作为根节点一定是block或flex，不会是inline
+      this.__initStyle();
 
-
-      var style = this.style;
-
-      if (style.display === 'flex') {
-        this.__preLayFlex({
-          x: 0,
-          y: 0,
-          w: this.width,
-          h: this.height
-        });
-      } else {
-        this.__preLayBlock({
-          x: 0,
-          y: 0,
-          w: this.width,
-          h: this.height
-        });
-      }
+      this.__preLay({
+        x: 0,
+        y: 0,
+        w: this.width,
+        h: this.height
+      });
 
       this.render();
     }
@@ -287,24 +658,24 @@ function (_Dom) {
 
 /***/ }),
 
-/***/ "./src/Dom.js":
-/*!********************!*\
-  !*** ./src/Dom.js ***!
-  \********************/
+/***/ "./src/node/Dom.js":
+/*!*************************!*\
+  !*** ./src/node/Dom.js ***!
+  \*************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/Node.js");
-/* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/Text.js");
-/* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/LineGroup.js");
-/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./util */ "./src/util.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./reset */ "./src/reset.js");
-/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./font */ "./src/font.js");
-/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./css */ "./src/css.js");
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
+/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/node/Node.js");
+/* harmony import */ var _Text__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Text */ "./src/node/Text.js");
+/* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/node/LineGroup.js");
+/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../geom/Geom */ "./src/geom/Geom.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../util */ "./src/util.js");
+/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
+/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../font */ "./src/font.js");
+/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../css */ "./src/css.js");
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -752,6 +1123,7 @@ function (_Node) {
         y += lineGroup.height;
       }
 
+      console.log(lineGroup);
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
     } // 弹性布局时的计算位置
@@ -1071,10 +1443,10 @@ function (_Node) {
 
 /***/ }),
 
-/***/ "./src/LineGroup.js":
-/*!**************************!*\
-  !*** ./src/LineGroup.js ***!
-  \**************************/
+/***/ "./src/node/LineGroup.js":
+/*!*******************************!*\
+  !*** ./src/node/LineGroup.js ***!
+  \*******************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1181,23 +1553,20 @@ function () {
 
 /***/ }),
 
-/***/ "./src/Node.js":
-/*!*********************!*\
-  !*** ./src/Node.js ***!
-  \*********************/
+/***/ "./src/node/Node.js":
+/*!**************************!*\
+  !*** ./src/node/Node.js ***!
+  \**************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./util */ "./src/util.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-
 
 function arr2hash(arr) {
   var hash = {};
@@ -1336,16 +1705,16 @@ function () {
 
 /***/ }),
 
-/***/ "./src/Text.js":
-/*!*********************!*\
-  !*** ./src/Text.js ***!
-  \*********************/
+/***/ "./src/node/Text.js":
+/*!**************************!*\
+  !*** ./src/node/Text.js ***!
+  \**************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/Node.js");
+/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/node/Node.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1401,394 +1770,6 @@ function (_Node) {
 }(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Text);
-
-/***/ }),
-
-/***/ "./src/css.js":
-/*!********************!*\
-  !*** ./src/css.js ***!
-  \********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
-
-
-function normalize(style) {
-  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
-    var v = style[k];
-
-    if (v === 'auto') {
-      style[k] = {
-        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].AUTO
-      };
-    } else if (/%$/.test(v)) {
-      v = parseFloat(v) || 0;
-
-      if (v <= 0) {
-        style[k] = {
-          value: 0,
-          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
-        };
-      } else {
-        style[k] = {
-          value: v,
-          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PERCENT
-        };
-      }
-    } else {
-      v = parseInt(v) || 0;
-      style[k] = {
-        value: Math.max(v, 0),
-        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
-      };
-    }
-  });
-}
-
-function setFontStyle(style) {
-  var fontStyle = style.fontStyle,
-      fontWeight = style.fontWeight,
-      fontSize = style.fontSize,
-      fontFamily = style.fontFamily;
-  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
-}
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-  normalize: normalize,
-  setFontStyle: setFontStyle
-});
-
-/***/ }),
-
-/***/ "./src/font.js":
-/*!*********************!*\
-  !*** ./src/font.js ***!
-  \*********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-  arial: {
-    lhr: 1.14990234375,
-    // 默认line-height ratio
-    car: 1.1172,
-    // content-area ratio
-    blr: 0.9052734375,
-    // base-line ratio
-    mdr: 0.64599609375,
-    // middle ratio
-    lgr: 0.03271484375 // line-gap ratio
-
-  }
-});
-
-/***/ }),
-
-/***/ "./src/geom/Geom.js":
-/*!**************************!*\
-  !*** ./src/geom/Geom.js ***!
-  \**************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../Node */ "./src/Node.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
-/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../css */ "./src/css.js");
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-
-
-
-
-
-var TAG_NAME = {
-  'line': true,
-  'curve': true
-};
-
-var Geom =
-/*#__PURE__*/
-function (_Node) {
-  _inherits(Geom, _Node);
-
-  function Geom(props) {
-    var _this;
-
-    _classCallCheck(this, Geom);
-
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, props));
-    _this.__style = {}; // style被解析后的k-v形式
-
-    return _this;
-  }
-
-  _createClass(Geom, [{
-    key: "__initStyle",
-    value: function __initStyle() {
-      var style = this.style; // 图形强制block
-
-      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
-        display: 'block'
-      });
-      _css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
-    }
-  }, {
-    key: "__preLay",
-    value: function __preLay(data) {
-      var x = data.x,
-          y = data.y,
-          w = data.w,
-          h = data.h;
-      var style = this.style;
-      var width = style.width,
-          height = style.height;
-      this.__x = x;
-      this.__y = y;
-
-      if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
-        this.__width = Math.ceil(width.value * h);
-      } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
-        this.__width = width.value;
-      } else {
-        this.__width = w;
-      }
-
-      if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
-        this.__height = Math.ceil(height.value * h);
-      } else if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
-        this.__height = height.value;
-      } else {
-        this.__height = h;
-      }
-    }
-  }, {
-    key: "style",
-    get: function get() {
-      return this.__style;
-    }
-  }], [{
-    key: "isValid",
-    value: function isValid(s) {
-      return TAG_NAME.hasOwnProperty(s);
-    }
-  }]);
-
-  return Geom;
-}(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-/* harmony default export */ __webpack_exports__["default"] = (Geom);
-
-/***/ }),
-
-/***/ "./src/geom/Line.js":
-/*!**************************!*\
-  !*** ./src/geom/Line.js ***!
-  \**************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Geom */ "./src/geom/Geom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/util.js");
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
-
-
-
-var Line =
-/*#__PURE__*/
-function (_Geom) {
-  _inherits(Line, _Geom);
-
-  function Line(props) {
-    _classCallCheck(this, Line);
-
-    return _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, props));
-  }
-
-  _createClass(Line, [{
-    key: "render",
-    value: function render() {
-      var x = this.x,
-          y = this.y,
-          width = this.width,
-          height = this.height,
-          props = this.props,
-          ctx = this.ctx;
-      var max = props.max,
-          min = props.min,
-          data = props.data;
-      ctx.strokeStyle = '#333333';
-      ctx.lineWidth = 1;
-
-      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(max)) {
-        max = data[0];
-        data.forEach(function (item) {
-          max = Math.max(item, max);
-        });
-      }
-
-      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(min)) {
-        min = data[0];
-        data.forEach(function (item) {
-          min = Math.min(item, min);
-        });
-      }
-
-      if (max < min) {
-        throw new Error('max can not less than min');
-      }
-
-      var stepX = width / (data.length - 1);
-      var stepY = height / (max - min);
-
-      if (max === min) {
-        stepY = height;
-      }
-
-      var coords = [];
-      data.forEach(function (item, i) {
-        var diff = item - min;
-        var rx = i * stepX;
-        var ry = height - diff * stepY;
-        coords.push([rx, ry + y]);
-      });
-      var first = coords[0];
-      ctx.beginPath();
-      ctx.moveTo(first[0], first[1]);
-
-      for (var i = 1; i < coords.length; i++) {
-        var item = coords[i];
-        ctx.lineTo(item[0], item[1]);
-      }
-
-      ctx.stroke();
-      ctx.closePath();
-    }
-  }]);
-
-  return Line;
-}(_Geom__WEBPACK_IMPORTED_MODULE_0__["default"]);
-
-/* harmony default export */ __webpack_exports__["default"] = (Line);
-
-/***/ }),
-
-/***/ "./src/index.js":
-/*!**********************!*\
-  !*** ./src/index.js ***!
-  \**********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _Canvas__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Canvas */ "./src/Canvas.js");
-/* harmony import */ var _Dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dom */ "./src/Dom.js");
-/* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
-/* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
-
-
-
-
-var karas = {
-  render: function render(canvas, dom) {
-    if (!canvas instanceof _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"]) {
-      throw new Error('render root muse be canvas');
-    }
-
-    if (dom) {
-      canvas.appendTo(dom);
-    }
-
-    return canvas;
-  },
-  createDom: function createDom(tagName, props, children) {
-    if (tagName === 'canvas') {
-      return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
-    }
-
-    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
-      return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](tagName, props, children);
-    }
-
-    throw new Error('can not use marker: ' + tagName);
-  },
-  createVd: function createVd(tagName, props, children) {
-    if (tagName === 'canvas') {
-      return new _Canvas__WEBPACK_IMPORTED_MODULE_0__["default"](props, children);
-    }
-
-    if (_Dom__WEBPACK_IMPORTED_MODULE_1__["default"].isValid(tagName)) {
-      return new _Dom__WEBPACK_IMPORTED_MODULE_1__["default"](tagName, props, children);
-    }
-
-    throw new Error('can not use marker: ' + tagName);
-  },
-  createGp: function createGp(tagName, props) {
-    if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
-      switch (tagName) {
-        case '$line':
-          return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
-
-        case '$point':
-        default:
-          throw new Error('can not use marker: ' + tagName);
-      }
-    }
-  },
-  createCp: function createCp(tagName, props, children) {}
-};
-
-if (typeof window != 'undefined') {
-  window.karas = karas;
-}
-
-/* harmony default export */ __webpack_exports__["default"] = (karas);
 
 /***/ }),
 

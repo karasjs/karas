@@ -1,5 +1,5 @@
 import Dom from './Dom';
-import util from './util';
+import util from '../util';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -27,10 +27,9 @@ class Canvas extends Dom {
   constructor(props, children) {
     super('canvas', props, children);
     this.__node = null; // 真实DOM引用
-    this.__dpr = 1;
   }
   initProps() {
-    this.__dpr = this.props.dpr || window.devicePixelRatio || this.__dpr;
+    this.__dpr = parseFloat(this.props.dpr) || 1;
     if(this.props.width !== undefined) {
       let value = parseInt(this.props.width);
       if(!isNaN(value) && value > 0) {
@@ -86,27 +85,20 @@ class Canvas extends Dom {
         dom.setAttribute('height', this.height);
       }
     }
+    // canvas作为根节点一定是block或flex，不会是inline
+    let { style } = this;
+    if(['flex', 'block'].indexOf(style.display) === -1) {
+      style.display = 'block';
+    }
     this.__ctx = this.__node.getContext('2d');
     this.__traverse(this.__ctx, this.__dpr);
     this.__initStyle();
-    // canvas作为根节点一定是block或flex，不会是inline
-    let { style } = this;
-    if(style.display === 'flex') {
-      this.__preLayFlex({
-        x: 0,
-        y: 0,
-        w: this.width,
-        h: this.height,
-      });
-    }
-    else {
-      this.__preLayBlock({
-        x: 0,
-        y: 0,
-        w: this.width,
-        h: this.height,
-      });
-    }
+    this.__preLay({
+      x: 0,
+      y: 0,
+      w: this.width,
+      h: this.height,
+    });
     this.render();
   }
 

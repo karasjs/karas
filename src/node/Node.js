@@ -1,5 +1,3 @@
-import util from './util';
-
 function arr2hash(arr) {
   let hash = {};
   for(let i = 0, len = arr.length; i < len; i++) {

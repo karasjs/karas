@@ -1,4 +1,4 @@
-import Node from '../Node';
+import Node from '../node/Node';
 import reset from '../reset';
 import util from '../util';
 import css from '../css';

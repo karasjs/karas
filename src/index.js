@@ -1,5 +1,5 @@
-import Canvas from './Canvas';
-import Dom from './Dom';
+import Dom from './node/Dom';
+import Canvas from './node/Canvas';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 
@@ -12,15 +12,6 @@ let karas = {
       canvas.appendTo(dom);
     }
     return canvas;
-  },
-  createDom(tagName, props, children) {
-    if(tagName === 'canvas') {
-      return new Canvas(props, children);
-    }
-    if(Dom.isValid(tagName)) {
-      return new Dom(tagName, props, children);
-    }
-    throw new Error('can not use marker: ' + tagName);
   },
   createVd(tagName, props, children) {
     if(tagName === 'canvas') {

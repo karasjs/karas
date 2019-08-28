@@ -1,12 +1,12 @@
 import Node from './Node';
 import Text from './Text';
 import LineGroup from './LineGroup';
-import Geom from './geom/Geom';
-import util from './util';
-import reset from './reset';
-import font from './font';
-import css from './css';
-import unit from './unit';
+import Geom from '../geom/Geom';
+import util from '../util';
+import reset from '../reset';
+import font from '../font';
+import css from '../css';
+import unit from '../unit';
 
 const TAG_NAME = {
   'div': true,
@@ -353,7 +353,7 @@ class Dom extends Node {
       lineGroup.calculate();
       lineGroup.adjust();
       y += lineGroup.height;
-    }
+    } console.log(lineGroup);
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
   }

@@ -96,93 +96,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./src/css.js":
-/*!********************!*\
-  !*** ./src/css.js ***!
-  \********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/unit.js");
-
-
-function normalize(style) {
-  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
-    var v = style[k];
-
-    if (v === 'auto') {
-      style[k] = {
-        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].AUTO
-      };
-    } else if (/%$/.test(v)) {
-      v = parseFloat(v) || 0;
-
-      if (v <= 0) {
-        style[k] = {
-          value: 0,
-          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
-        };
-      } else {
-        style[k] = {
-          value: v,
-          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PERCENT
-        };
-      }
-    } else {
-      v = parseInt(v) || 0;
-      style[k] = {
-        value: Math.max(v, 0),
-        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
-      };
-    }
-  });
-}
-
-function setFontStyle(style) {
-  var fontStyle = style.fontStyle,
-      fontWeight = style.fontWeight,
-      fontSize = style.fontSize,
-      fontFamily = style.fontFamily;
-  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
-}
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-  normalize: normalize,
-  setFontStyle: setFontStyle
-});
-
-/***/ }),
-
-/***/ "./src/font.js":
-/*!*********************!*\
-  !*** ./src/font.js ***!
-  \*********************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-  arial: {
-    lhr: 1.14990234375,
-    // 默认line-height ratio
-    car: 1.1172,
-    // content-area ratio
-    blr: 0.9052734375,
-    // base-line ratio
-    mdr: 0.64599609375,
-    // middle ratio
-    lgr: 0.03271484375 // line-gap ratio
-
-  }
-});
-
-/***/ }),
-
 /***/ "./src/geom/Geom.js":
 /*!**************************!*\
   !*** ./src/geom/Geom.js ***!
@@ -193,10 +106,10 @@ __webpack_require__.r(__webpack_exports__);
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../node/Node */ "./src/node/Node.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
+/* harmony import */ var _style_reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../style/reset */ "./src/style/reset.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
-/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../css */ "./src/css.js");
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
+/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -246,10 +159,10 @@ function (_Node) {
     value: function __initStyle() {
       var style = this.style; // 图形强制block
 
-      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
+      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
         display: 'block'
       });
-      _css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
+      _style_css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
     }
   }, {
     key: "__preLay",
@@ -264,17 +177,17 @@ function (_Node) {
       this.__x = x;
       this.__y = y;
 
-      if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+      if (width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
         this.__width = Math.ceil(width.value * h);
-      } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+      } else if (width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
         this.__width = width.value;
       } else {
         this.__width = w;
       }
 
-      if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
+      if (height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
         this.__height = Math.ceil(height.value * h);
-      } else if (height.unit === _unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
+      } else if (height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
         this.__height = height.value;
       } else {
         this.__height = h;
@@ -450,7 +363,7 @@ var karas = {
 
     throw new Error('can not use marker: ' + tagName);
   },
-  createGp: function createGp(tagName, props) {
+  createGm: function createGm(tagName, props) {
     if (_geom_Geom__WEBPACK_IMPORTED_MODULE_2__["default"].isValid(tagName)) {
       switch (tagName) {
         case '$line':
@@ -552,13 +465,11 @@ function (_Dom) {
   _createClass(Canvas, [{
     key: "initProps",
     value: function initProps() {
-      this.__dpr = parseFloat(this.props.dpr) || 1;
-
       if (this.props.width !== undefined) {
         var value = parseInt(this.props.width);
 
         if (!isNaN(value) && value > 0) {
-          this.__width = value * this.dpr;
+          this.__width = value;
         }
       }
 
@@ -566,7 +477,7 @@ function (_Dom) {
         var _value = parseInt(this.props.height);
 
         if (!isNaN(_value) && _value > 0) {
-          this.__height = _value * this.dpr;
+          this.__height = _value;
         }
       }
     }
@@ -612,12 +523,12 @@ function (_Dom) {
         var css = window.getComputedStyle(dom, null);
 
         if (!this.width) {
-          this.__width = parseInt(css.getPropertyValue('width')) * this.dpr;
+          this.__width = parseInt(css.getPropertyValue('width'));
           dom.setAttribute('width', this.width);
         }
 
         if (!this.height) {
-          this.__height = parseInt(css.getPropertyValue('height')) * this.dpr;
+          this.__height = parseInt(css.getPropertyValue('height'));
           dom.setAttribute('height', this.height);
         }
       } // canvas作为根节点一定是block或flex，不会是inline
@@ -631,7 +542,7 @@ function (_Dom) {
 
       this.__ctx = this.__node.getContext('2d');
 
-      this.__traverse(this.__ctx, this.__dpr);
+      this.__traverse(this.__ctx);
 
       this.__initStyle();
 
@@ -672,10 +583,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/node/LineGroup.js");
 /* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../geom/Geom */ "./src/geom/Geom.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../util */ "./src/util.js");
-/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../reset */ "./src/reset.js");
-/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../font */ "./src/font.js");
-/* harmony import */ var _css__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../css */ "./src/css.js");
-/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../unit */ "./src/unit.js");
+/* harmony import */ var _style_reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../style/reset */ "./src/style/reset.js");
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
+/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -702,7 +612,6 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
-
 var TAG_NAME = {
   'div': true,
   'span': true
@@ -710,18 +619,6 @@ var TAG_NAME = {
 var INLINE = {
   'span': true
 };
-
-function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
-  if (lineHeight <= 0) {
-    return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.lhr);
-  }
-
-  return Math.max(lineHeight, Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.car));
-}
-
-function getBaseLineByFont(fontSize) {
-  return Math.ceil(fontSize * _font__WEBPACK_IMPORTED_MODULE_6__["default"].arial.blr);
-}
 
 var Dom =
 /*#__PURE__*/
@@ -736,8 +633,6 @@ function (_Node) {
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, props));
     _this.__tagName = tagName;
     _this.__children = children;
-    _this.__style = {}; // style被解析后的k-v形式
-
     _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
     return _this;
@@ -753,12 +648,12 @@ function (_Node) {
 
   _createClass(Dom, [{
     key: "__traverse",
-    value: function __traverse(ctx, dpr) {
+    value: function __traverse(ctx) {
       var _this2 = this;
 
       var list = [];
 
-      this.__traverseChildren(this.children, list, ctx, dpr);
+      this.__traverseChildren(this.children, list, ctx);
 
       for (var i = list.length - 1; i > 0; i--) {
         var item = list[i];
@@ -788,7 +683,6 @@ function (_Node) {
       var prev = null;
       list.forEach(function (item) {
         item.__ctx = ctx;
-        item.__dpr = dpr;
 
         if (prev) {
           prev.__next = item;
@@ -801,17 +695,17 @@ function (_Node) {
     }
   }, {
     key: "__traverseChildren",
-    value: function __traverseChildren(children, list, ctx, dpr) {
+    value: function __traverseChildren(children, list, ctx) {
       var _this3 = this;
 
       if (Array.isArray(children)) {
         children.forEach(function (item) {
-          _this3.__traverseChildren(item, list, ctx, dpr);
+          _this3.__traverseChildren(item, list, ctx);
         });
       } else if (children instanceof Dom) {
         list.push(children);
 
-        children.__traverse(ctx, dpr);
+        children.__traverse(ctx);
       } // 图形没有children
       else if (children instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           list.push(children);
@@ -825,7 +719,7 @@ function (_Node) {
     key: "__initStyle",
     value: function __initStyle() {
       var style = this.style;
-      Object.assign(style, _reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline-block
+      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline-block
 
       if (!style.display || ['flex', 'block', 'inline-block'].indexOf(style.display) === -1) {
         if (INLINE.hasOwnProperty(this.tagName)) {
@@ -851,19 +745,16 @@ function (_Node) {
         }
       }
 
+      _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].limitLineHeight(style);
       this.children.forEach(function (item) {
         if (item instanceof Dom) {
           item.__initStyle();
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           item.__initStyle();
+        } else {
+          item.__style = style;
         }
-      }); // 防止小行高，仅支持lineHeight>=1的情况
-
-      var fontSize = style.fontSize,
-          lineHeight = style.lineHeight;
-      lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
-      style.lineHeight = lineHeight;
-      _css__WEBPACK_IMPORTED_MODULE_7__["default"].normalize(style);
+      });
     } // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
 
   }, {
@@ -884,7 +775,7 @@ function (_Node) {
         if (item instanceof Dom) {
           w = item.__tryLayInline(w);
         } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
           w -= ctx.measureText(item.content).width;
         }
       }
@@ -897,26 +788,24 @@ function (_Node) {
     value: function __offsetY(diff) {
       this.__y += diff;
       this.children.forEach(function (item) {
-        if (item instanceof Dom) {
+        if (item) {
           item.__offsetY(diff);
-        } else {
-          item.__y += diff;
         }
       });
     } // 元素自动换行后的最大宽度
 
   }, {
-    key: "__linefeedWidth",
-    value: function __linefeedWidth(includeWidth) {
+    key: "__feedWidth",
+    value: function __feedWidth(includeWidth) {
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
       var w = 0;
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          w = Math.max(item.__linefeedWidth(true));
+          w = Math.max(w, item.__feedWidth(true));
         } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
 
           if (style.wordBreak === 'break-all') {
             var tw = 0;
@@ -938,17 +827,17 @@ function (_Node) {
         var width = style.width;
 
         switch (width.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
             w = Math.max(w, width.value);
             break;
 
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT:
             w = Math.max(w, width.value * 0.01 * this.parent.width);
             break;
         }
       }
 
-      return Math.ceil(w);
+      return w;
     }
   }, {
     key: "__preLay",
@@ -977,27 +866,25 @@ function (_Node) {
       this.__y = y;
       this.__width = w;
       var children = this.children,
-          ctx = this.ctx,
           style = this.style;
       var width = style.width,
-          height = style.height,
-          lineHeight = style.lineHeight; // 除了auto外都是固定高度
+          height = style.height; // 除了auto外都是固定高度
 
       var fixedHeight;
 
-      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
         switch (width.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
             w = width.value;
             break;
         }
       }
 
-      if (height && height.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
         fixedHeight = true;
 
         switch (height.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
             h = height.value;
             break;
         }
@@ -1014,7 +901,8 @@ function (_Node) {
               item.__preLayInline({
                 x: x,
                 y: y,
-                w: w
+                w: w,
+                h: h
               });
 
               x += item.width;
@@ -1033,8 +921,7 @@ function (_Node) {
               else {
                   _this4.lineGroups.push(lineGroup);
 
-                  lineGroup.calculate();
-                  lineGroup.adjust();
+                  lineGroup.verticalAlign();
                   x = data.x;
                   y += lineGroup.height;
 
@@ -1055,8 +942,7 @@ function (_Node) {
             if (lineGroup.size) {
               _this4.lineGroups.push(lineGroup);
 
-              lineGroup.calculate();
-              lineGroup.adjust();
+              lineGroup.verticalAlign();
               y += lineGroup.height;
               lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](data.x, y);
             }
@@ -1064,7 +950,8 @@ function (_Node) {
             item.__preLay({
               x: data.x,
               y: y,
-              w: w
+              w: w,
+              h: h
             });
 
             x = data.x;
@@ -1075,8 +962,7 @@ function (_Node) {
           if (lineGroup.size) {
             _this4.lineGroups.push(lineGroup);
 
-            lineGroup.calculate();
-            lineGroup.adjust();
+            lineGroup.verticalAlign();
             y += lineGroup.height;
             lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](data.x, y);
           }
@@ -1089,41 +975,62 @@ function (_Node) {
 
           x = data.x;
           y += item.height;
-        } // 文字和inline类似
+        } // 文字和inline-block类似
         else {
-            ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
-            var tw = ctx.measureText(item.content).width; // 超出一行时先处理之前的行组，然后另起一行开头
+            // x开头，不用考虑是否放得下直接放
+            if (x === data.x) {
+              lineGroup.add(item);
 
-            if (x + tw > w && x > data.x) {
-              _this4.lineGroups.push(lineGroup);
+              item.__preLay({
+                x: x,
+                y: y,
+                w: w,
+                h: h
+              });
 
-              lineGroup.calculate();
-              lineGroup.adjust();
-              y += lineGroup.height;
-              x = data.x;
-              lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
-            } // 超出一行处理word-break
+              x += item.width;
+            } else {
+              // 非开头先尝试是否放得下
+              var _fw = item.__tryLayInline(w - x); // 放得下继续
 
 
-            item.__x = x;
-            item.__y = y;
-            item.preLay();
-            item.__width = tw;
-            item.__height = lineHeight;
-            item.__baseLine = getBaseLineByFont(style.fontSize);
-            x += tw;
-            lineGroup.add(item);
+              if (_fw >= 0) {
+                item.__preLay({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h
+                });
+              } // 放不下处理之前的lineGroup，并重新开头
+              else {
+                  _this4.lineGroups.push(lineGroup);
+
+                  lineGroup.verticalAlign();
+                  x = data.x;
+                  y += lineGroup.height;
+
+                  item.__preLay({
+                    x: data.x,
+                    y: y,
+                    w: w,
+                    h: h
+                  });
+
+                  lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+                }
+
+              x += item.width;
+              lineGroup.add(item);
+            }
           }
       }); // 结束后处理可能遗留的最后的lineGroup
 
       if (lineGroup.size) {
         this.lineGroups.push(lineGroup);
-        lineGroup.calculate();
-        lineGroup.adjust();
+        lineGroup.verticalAlign();
         y += lineGroup.height;
       }
 
-      console.log(lineGroup);
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
     } // 弹性布局时的计算位置
@@ -1140,34 +1047,56 @@ function (_Node) {
       var children = this.children,
           ctx = this.ctx,
           style = this.style;
+      var width = style.width,
+          height = style.height;
+      var fixedHeight;
+
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+        switch (width.unit) {
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+            w = width.value;
+            break;
+        }
+      }
+
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+        fixedHeight = true;
+
+        switch (height.unit) {
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+            h = height.value;
+            break;
+        }
+      }
+
       var grow = [];
       var lfw = [];
       children.forEach(function (item) {
         if (item instanceof Dom) {
           grow.push(item.style.flexGrow);
-          var width = item.style.width;
+          var _width = item.style.width;
 
-          if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT) {
-            lfw.push(width.value * w);
-          } else if (width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX) {
-            lfw.push(width.value);
+          if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+            lfw.push(_width.value * w);
+          } else if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+            lfw.push(_width.value);
           } else {
-            lfw.push(item.__linefeedWidth());
+            lfw.push(item.__feedWidth());
           }
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           grow.push(item.style.flexGrow);
-          var _width = item.style.width;
+          var _width2 = item.style.width;
 
-          if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PERCENT) {
-            lfw.push(_width.value * w);
-          } else if (_width.unit === _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX) {
-            lfw.push(_width.value);
+          if (_width2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
+            lfw.push(_width2.value * w);
+          } else if (_width2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
+            lfw.push(_width2.value);
           } else {
             lfw.push(-1);
           }
         } else {
           grow.push(0);
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
+          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
 
           if (style.wordBreak === 'break-all') {
             var tw = 0;
@@ -1262,7 +1191,6 @@ function (_Node) {
       this.__y = y;
       var maxX = x;
       var children = this.children,
-          ctx = this.ctx,
           style = this.style;
       var width = style.width,
           height = style.height,
@@ -1271,27 +1199,26 @@ function (_Node) {
       var fixedWidth;
       var fixedHeight;
 
-      if (width && width.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
         fixedWidth = true;
 
         switch (width.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
             w = width.value;
             break;
         }
       }
 
-      if (height && height.unit !== _unit__WEBPACK_IMPORTED_MODULE_8__["default"].AUTO) {
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
         fixedHeight = true;
 
         switch (height.unit) {
-          case _unit__WEBPACK_IMPORTED_MODULE_8__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
             h = height.value;
             break;
         }
       }
 
-      var line = [];
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
         if (item instanceof Dom) {
@@ -1322,8 +1249,7 @@ function (_Node) {
             else {
                 _this5.lineGroups.push(lineGroup);
 
-                lineGroup.calculate();
-                lineGroup.adjust();
+                lineGroup.verticalAlign();
                 x = data.x;
                 y += lineGroup.height;
 
@@ -1340,41 +1266,60 @@ function (_Node) {
             maxX = Math.max(maxX, x);
             lineGroup.add(item);
           }
-        } // inline里的其它可能只有文本
+        } // inline里的其它只有文本
         else {
-            ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
-            var tw = ctx.measureText(item.content).width; // inline开头
-
             if (x === data.x) {
-              item.__x = x;
-              item.__y = y;
-              item.__width = tw;
-              item.__height = lineHeight;
-              item.__baseLine = getBaseLineByFont(style.fontSize);
-              x += tw;
-              maxX = Math.max(maxX, x);
-              line.push(item);
               lineGroup.add(item);
+
+              item.__preLay({
+                x: x,
+                y: y,
+                w: w,
+                h: h
+              });
+
+              x += item.width;
+              maxX = Math.max(maxX, x);
             } else {
-              if (x + tw > w) {} else {
-                item.__x = x;
-                item.__y = y;
-                item.__width = tw;
-                item.__height = lineHeight;
-                item.__baseLine = getBaseLineByFont(style.fontSize);
-                x += tw;
-                maxX = Math.max(maxX, x);
-                line.push(item);
-                lineGroup.add(item);
-              }
+              // 非开头先尝试是否放得下
+              var _fw2 = item.__tryLayInline(w - x); // 放得下继续
+
+
+              if (_fw2 >= 0) {
+                item.__preLay({
+                  x: x,
+                  y: y,
+                  w: w,
+                  h: h
+                });
+              } // 放不下处理之前的lineGroup，并重新开头
+              else {
+                  _this5.lineGroups.push(lineGroup);
+
+                  lineGroup.verticalAlign();
+                  x = data.x;
+                  y += lineGroup.height;
+
+                  item.__preLay({
+                    x: data.x,
+                    y: y,
+                    w: w,
+                    h: h
+                  });
+
+                  lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
+                }
+
+              x += item.width;
+              maxX = Math.max(maxX, x);
+              lineGroup.add(item);
             }
           }
       }); // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
 
       if (lineGroup.size) {
         this.lineGroups.push(lineGroup);
-        lineGroup.calculate();
-        lineGroup.adjust();
+        lineGroup.verticalAlign();
         y += lineGroup.height;
       } // 元素的width不能超过父元素w
 
@@ -1386,14 +1331,20 @@ function (_Node) {
     key: "render",
     value: function render() {
       var ctx = this.ctx,
-          style = this.style; // 简化负边距、小行高、行内背景优先等逻辑
+          style = this.style,
+          children = this.children;
 
-      this.children.forEach(function (item) {
-        if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
+      if (style.backgroundColor) {
+        ctx.beginPath();
+        ctx.fillStyle = style.backgroundColor;
+        ctx.rect(this.x, this.y, this.width, this.height);
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      children.forEach(function (item) {
+        if (item) {
           item.render();
-        } else {
-          ctx.font = _css__WEBPACK_IMPORTED_MODULE_7__["default"].setFontStyle(style);
-          ctx.fillText(item.content, item.x, item.y + item.baseLine);
         }
       });
     }
@@ -1406,11 +1357,6 @@ function (_Node) {
     key: "children",
     get: function get() {
       return this.__children;
-    }
-  }, {
-    key: "style",
-    get: function get() {
-      return this.__style;
     }
   }, {
     key: "lineGroups",
@@ -1427,7 +1373,7 @@ function (_Node) {
         return last.y - this.y + last.baseLine;
       }
 
-      return 0;
+      return this.y;
     }
   }], [{
     key: "isValid",
@@ -1440,6 +1386,87 @@ function (_Node) {
 }(_Node__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Dom);
+
+/***/ }),
+
+/***/ "./src/node/LineBox.js":
+/*!*****************************!*\
+  !*** ./src/node/LineBox.js ***!
+  \*****************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+
+var LineBox =
+/*#__PURE__*/
+function () {
+  function LineBox(ctx, x, y, content, style) {
+    _classCallCheck(this, LineBox);
+
+    this.__ctx = ctx;
+    this.__x = x;
+    this.__y = y;
+    this.__content = content;
+    this.__style = style;
+  }
+
+  _createClass(LineBox, [{
+    key: "render",
+    value: function render() {
+      this.ctx.fillStyle = this.style.color;
+      this.ctx.fillText(this.content, this.x, this.y + _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLineByFont(this.style));
+    }
+  }, {
+    key: "__offsetY",
+    value: function __offsetY(diff) {
+      this.__y += diff;
+    }
+  }, {
+    key: "ctx",
+    get: function get() {
+      return this.__ctx;
+    }
+  }, {
+    key: "x",
+    get: function get() {
+      return this.__x;
+    }
+  }, {
+    key: "y",
+    get: function get() {
+      return this.__y;
+    }
+  }, {
+    key: "content",
+    get: function get() {
+      return this.__content;
+    }
+  }, {
+    key: "style",
+    get: function get() {
+      return this.__style;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      return _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLineByFont(this.style);
+    }
+  }]);
+
+  return LineBox;
+}();
+
+/* harmony default export */ __webpack_exports__["default"] = (LineBox);
 
 /***/ }),
 
@@ -1495,17 +1522,13 @@ function () {
       return height;
     }
   }, {
-    key: "calculate",
-    value: function calculate() {
-      this.__height = this.__calHeight();
-      this.__baseLine = this.__calBaseLine();
-    }
-  }, {
-    key: "adjust",
-    value: function adjust() {
+    key: "verticalAlign",
+    value: function verticalAlign() {
       var _this = this;
 
-      // 仅当有2个和以上时才需要vertical对齐调整
+      this.__height = this.__calHeight();
+      this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
+
       if (this.list.length > 1) {
         this.list.forEach(function (item) {
           if (item.baseLine !== _this.baseLine) {
@@ -1641,8 +1664,9 @@ function () {
     this.__next = null;
     this.__ctx = null; // canvas的context
 
-    this.__dpr = 1;
     this.__parent = null;
+    this.__style = {}; // style被解析后的k-v形式
+
     this.__baseLine = 0;
   }
 
@@ -1682,14 +1706,14 @@ function () {
       return this.__parent;
     }
   }, {
+    key: "style",
+    get: function get() {
+      return this.__style;
+    }
+  }, {
     key: "ctx",
     get: function get() {
       return this.__ctx;
-    }
-  }, {
-    key: "dpr",
-    get: function get() {
-      return this.__dpr;
     }
   }, {
     key: "baseLine",
@@ -1715,6 +1739,8 @@ function () {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Node */ "./src/node/Node.js");
+/* harmony import */ var _LineBox__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./LineBox */ "./src/node/LineBox.js");
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1735,6 +1761,33 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
+
+
+function getWordBreakAllIndex(ctx, content, begin, start, end, w) {
+  if (start === end) {
+    return start;
+  }
+
+  if (start === end - 1) {
+    var _tw = ctx.measureText(content.slice(begin, end)).width;
+
+    if (_tw > w) {
+      return start;
+    }
+
+    return end;
+  }
+
+  var center = start + (end - start >> 1);
+  var tw = ctx.measureText(content.slice(begin, center)).width;
+
+  if (tw > w) {
+    return getWordBreakAllIndex(ctx, content, begin, start, center, w);
+  }
+
+  return getWordBreakAllIndex(ctx, content, begin, center, end, w);
+}
+
 var Text =
 /*#__PURE__*/
 function (_Node) {
@@ -1746,23 +1799,89 @@ function (_Node) {
     _classCallCheck(this, Text);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
-    _this.__content = content.toString();
+    _this.__content = content || '';
     _this.__lineBoxes = [];
     return _this;
   }
 
   _createClass(Text, [{
-    key: "preLay",
-    value: function preLay() {}
+    key: "__preLay",
+    value: function __preLay(data) {
+      var x = data.x,
+          y = data.y,
+          w = data.w,
+          h = data.h;
+      this.__x = x;
+      this.__y = y;
+      var maxX = x;
+      var ctx = this.ctx,
+          content = this.content,
+          style = this.style,
+          lineBoxes = this.lineBoxes;
+      ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(style); // 2分法查找分割字符串为lineBox，形成多行
+
+      var length = content.length;
+      var begin = 0;
+
+      while (begin < length) {
+        var i = getWordBreakAllIndex(ctx, content, begin, begin, length, w);
+        var lineBox = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i), style);
+        lineBoxes.push(lineBox);
+        maxX = Math.max(maxX, x + ctx.measureText(content.slice(begin, i)).width);
+        y += this.style.lineHeight;
+        begin = i;
+      }
+
+      this.__width = maxX - x;
+      this.__height = y - data.y;
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      this.ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(this.style);
+      this.lineBoxes.forEach(function (item) {
+        item.render();
+      });
+    }
+  }, {
+    key: "__tryLayInline",
+    value: function __tryLayInline(w) {
+      this.ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(this.style);
+      var tw = this.ctx.measureText(this.content).width;
+      return w - tw;
+    }
+  }, {
+    key: "__measureText",
+    value: function __measureText() {
+      this.ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(this.style);
+      return this.ctx.measureText(this.content);
+    }
+  }, {
+    key: "__offsetY",
+    value: function __offsetY(diff) {
+      this.__y += diff;
+      this.lineBoxes.forEach(function (item) {
+        item.__offsetY(diff);
+      });
+    }
   }, {
     key: "content",
     get: function get() {
       return this.__content;
+    },
+    set: function set(v) {
+      this.__content = v;
     }
   }, {
     key: "lineBoxes",
     get: function get() {
       return this.__lineBoxes;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      var last = this.lineBoxes[this.lineBoxes.length - 1];
+      return last.y - this.y + last.baseLine;
     }
   }]);
 
@@ -1773,10 +1892,122 @@ function (_Node) {
 
 /***/ }),
 
-/***/ "./src/reset.js":
-/*!**********************!*\
-  !*** ./src/reset.js ***!
-  \**********************/
+/***/ "./src/style/css.js":
+/*!**************************!*\
+  !*** ./src/style/css.js ***!
+  \**************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/style/unit.js");
+/* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./font */ "./src/style/font.js");
+
+
+
+function normalize(style) {
+  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
+    var v = style[k];
+
+    if (v === 'auto') {
+      style[k] = {
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].AUTO
+      };
+    } else if (/%$/.test(v)) {
+      v = parseFloat(v) || 0;
+
+      if (v <= 0) {
+        style[k] = {
+          value: 0,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+        };
+      } else {
+        style[k] = {
+          value: v,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PERCENT
+        };
+      }
+    } else {
+      v = parseInt(v) || 0;
+      style[k] = {
+        value: Math.max(v, 0),
+        unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+      };
+    }
+  });
+}
+
+function setFontStyle(style) {
+  var fontStyle = style.fontStyle,
+      fontWeight = style.fontWeight,
+      fontSize = style.fontSize,
+      fontFamily = style.fontFamily;
+  return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+} // 防止小行高，仅支持lineHeight>=1的情况
+
+
+function limitLineHeight(style) {
+  var fontSize = style.fontSize,
+      lineHeight = style.lineHeight;
+  lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
+  style.lineHeight = lineHeight;
+  normalize(style);
+}
+
+function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
+  if (lineHeight === 0) {
+    return fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+  }
+
+  return Math.max(lineHeight, fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.car);
+}
+
+function getBaseLineByFont(style) {
+  return style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.blr;
+}
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  normalize: normalize,
+  setFontStyle: setFontStyle,
+  limitLineHeight: limitLineHeight,
+  getBaseLineByFont: getBaseLineByFont
+});
+
+/***/ }),
+
+/***/ "./src/style/font.js":
+/*!***************************!*\
+  !*** ./src/style/font.js ***!
+  \***************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+  arial: {
+    lhr: 1.14990234375,
+    // 默认line-height ratio
+    car: 1.1172,
+    // content-area ratio
+    blr: 0.9052734375,
+    // base-line ratio
+    mdr: 0.64599609375,
+    // middle ratio
+    lgr: 0.03271484375 // line-gap ratio
+
+  }
+});
+
+/***/ }),
+
+/***/ "./src/style/reset.js":
+/*!****************************!*\
+  !*** ./src/style/reset.js ***!
+  \****************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1794,7 +2025,7 @@ __webpack_require__.r(__webpack_exports__);
   paddingLeft: 0,
   fontSize: 16,
   fontFamily: 'sans-serif',
-  fontColor: '#000',
+  color: '#000',
   fontStyle: 'normal',
   fontWeight: 400,
   lineHeight: 0,
@@ -1816,10 +2047,10 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
-/***/ "./src/unit.js":
-/*!*********************!*\
-  !*** ./src/unit.js ***!
-  \*********************/
+/***/ "./src/style/unit.js":
+/*!***************************!*\
+  !*** ./src/style/unit.js ***!
+  \***************************/
 /*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 

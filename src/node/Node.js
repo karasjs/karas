@@ -58,8 +58,8 @@ class Node {
     this.__prev = null;
     this.__next = null;
     this.__ctx = null; // canvas的context
-    this.__dpr = 1;
     this.__parent = null;
+    this.__style = {}; // style被解析后的k-v形式
     this.__baseLine = 0;
   }
 
@@ -84,11 +84,11 @@ class Node {
   get parent() {
     return this.__parent;
   }
+  get style() {
+    return this.__style;
+  }
   get ctx() {
     return this.__ctx;
-  }
-  get dpr() {
-    return this.__dpr;
   }
   get baseLine() {
     return this.__baseLine;

@@ -29,17 +29,16 @@ class Canvas extends Dom {
     this.__node = null; // 真实DOM引用
   }
   initProps() {
-    this.__dpr = parseFloat(this.props.dpr) || 1;
     if(this.props.width !== undefined) {
       let value = parseInt(this.props.width);
       if(!isNaN(value) && value > 0) {
-        this.__width = value * this.dpr;
+        this.__width = value;
       }
     }
     if(this.props.height !== undefined) {
       let value = parseInt(this.props.height);
       if(!isNaN(value) && value > 0) {
-        this.__height = value * this.dpr;
+        this.__height = value;
       }
     }
   }
@@ -77,11 +76,11 @@ class Canvas extends Dom {
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
       if(!this.width) {
-        this.__width = parseInt(css.getPropertyValue('width')) * this.dpr;
+        this.__width = parseInt(css.getPropertyValue('width'));
         dom.setAttribute('width', this.width);
       }
       if(!this.height) {
-        this.__height = parseInt(css.getPropertyValue('height')) * this.dpr;
+        this.__height = parseInt(css.getPropertyValue('height'));
         dom.setAttribute('height', this.height);
       }
     }
@@ -91,7 +90,7 @@ class Canvas extends Dom {
       style.display = 'block';
     }
     this.__ctx = this.__node.getContext('2d');
-    this.__traverse(this.__ctx, this.__dpr);
+    this.__traverse(this.__ctx);
     this.__initStyle();
     this.__preLay({
       x: 0,

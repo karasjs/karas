@@ -27,12 +27,9 @@ class LineGroup {
     return height;
   }
 
-  calculate() {
+  verticalAlign() {
     this.__height = this.__calHeight();
     this.__baseLine = this.__calBaseLine();
-  }
-
-  adjust() {
     // 仅当有2个和以上时才需要vertical对齐调整
     if(this.list.length > 1) {
       this.list.forEach(item => {

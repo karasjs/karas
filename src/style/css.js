@@ -1,4 +1,5 @@
 import unit from './unit';
+import font from "./font";
 
 function normalize(style) {
   [
@@ -53,7 +54,28 @@ function setFontStyle(style) {
   return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
 }
 
+// 防止小行高，仅支持lineHeight>=1的情况
+function limitLineHeight(style) {
+  let { fontSize, lineHeight } = style;
+  lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
+  style.lineHeight = lineHeight;
+  normalize(style);
+}
+
+function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
+  if(lineHeight === 0) {
+    return fontSize * font.arial.lhr;
+  }
+  return Math.max(lineHeight, fontSize * font.arial.car);
+}
+
+function getBaseLineByFont(style) {
+  return style.fontSize * font.arial.blr;
+}
+
 export default {
   normalize,
   setFontStyle,
+  limitLineHeight,
+  getBaseLineByFont,
 };

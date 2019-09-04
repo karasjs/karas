@@ -10,7 +10,7 @@ export default {
   paddingLeft: 0,
   fontSize: 16,
   fontFamily: 'sans-serif',
-  fontColor: '#000',
+  color: '#000',
   fontStyle: 'normal',
   fontWeight: 400,
   lineHeight: 0, // normal

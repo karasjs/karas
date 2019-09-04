@@ -1,8 +1,8 @@
 import Node from '../node/Node';
-import reset from '../reset';
+import reset from '../style/reset';
 import util from '../util';
-import css from '../css';
-import unit from '../unit';
+import css from '../style/css';
+import unit from '../style/unit';
 
 const TAG_NAME = {
   'line': true,

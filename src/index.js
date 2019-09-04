@@ -22,7 +22,7 @@ let karas = {
     }
     throw new Error('can not use marker: ' + tagName);
   },
-  createGp(tagName, props) {
+  createGm(tagName, props) {
     if(Geom.isValid(tagName)) {
       switch(tagName) {
         case '$line':

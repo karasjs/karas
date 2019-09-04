@@ -23,6 +23,9 @@ module.exports = (function(settings) {
         'browserName': 'chrome',
         'javascriptEnabled': true,
         'acceptSslCerts': true,
+        chromeOptions: {
+          w3c: false,
+        },
       }
     },
   };

@@ -86,7 +86,7 @@ class Canvas extends Dom {
     }
     // canvas作为根节点一定是block或flex，不会是inline
     let { style } = this;
-    if(['flex', 'block'].indexOf(style.display) === -1) {
+    if(['flex', 'block', 'none'].indexOf(style.display) === -1) {
       style.display = 'block';
     }
     this.__ctx = this.__node.getContext('2d');

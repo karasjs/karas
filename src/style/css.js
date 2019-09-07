@@ -40,13 +40,33 @@ function normalize(style) {
       }
     }
     else {
-      v = parseInt(v) || 0;
+      v = parseFloat(v) || 0;
       style[k] = {
         value: Math.max(v, 0),
         unit: unit.PX,
       };
     }
   });
+  // 计算lineHeight为px值，最小范围
+  let lineHeight = style.lineHeight;
+  if(lineHeight === 'normal') {
+    lineHeight = style.fontSize * font.arial.lhr;
+  }
+  else if(/px$/.test(lineHeight)) {
+    lineHeight = parseFloat(lineHeight);
+    lineHeight = Math.max(style.fontSize, lineHeight);
+  }
+  // 纯数字比例
+  else {
+    lineHeight = parseFloat(lineHeight) || 'normal';
+    if(lineHeight === 'normal') {
+      lineHeight = style.fontSize * font.arial.lhr;
+    }
+    else {
+      lineHeight *= style.fontSize;
+    }
+  }
+  style.lineHeight = lineHeight;
 }
 
 function setFontStyle(style) {
@@ -54,28 +74,13 @@ function setFontStyle(style) {
   return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
 }
 
-// 防止小行高，仅支持lineHeight>=1的情况
-function limitLineHeight(style) {
-  let { fontSize, lineHeight } = style;
-  lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
-  style.lineHeight = lineHeight;
-  normalize(style);
-}
-
-function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
-  if(lineHeight === 0) {
-    return fontSize * font.arial.lhr;
-  }
-  return Math.max(lineHeight, fontSize * font.arial.car);
-}
-
-function getBaseLineByFont(style) {
-  return style.fontSize * font.arial.blr;
+function getBaseLine(style) {
+  let normal = style.fontSize * font.arial.lhr;
+  return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
 }
 
 export default {
   normalize,
   setFontStyle,
-  limitLineHeight,
-  getBaseLineByFont,
+  getBaseLine,
 };

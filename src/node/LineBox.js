@@ -11,7 +11,7 @@ class LineBox {
 
   render() {
     this.ctx.fillStyle = this.style.color;
-    this.ctx.fillText(this.content, this.x, this.y + css.getBaseLineByFont(this.style));
+    this.ctx.fillText(this.content, this.x, this.y + css.getBaseLine(this.style));
   }
 
   __offsetY(diff) {
@@ -34,7 +34,7 @@ class LineBox {
     return this.__style;
   }
   get baseLine() {
-    return css.getBaseLineByFont(this.style);
+    return css.getBaseLine(this.style);
   }
 }
 

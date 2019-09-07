@@ -536,7 +536,7 @@ function (_Dom) {
 
       var style = this.style;
 
-      if (['flex', 'block'].indexOf(style.display) === -1) {
+      if (['flex', 'block', 'none'].indexOf(style.display) === -1) {
         style.display = 'block';
       }
 
@@ -670,12 +670,12 @@ function (_Node) {
         }
       }
 
-      if (this.style.display === 'inline-block') {
+      if (this.style.display === 'inline' && this.parent.style.display !== 'flex') {
         for (var _i = list.length - 1; _i >= 0; _i--) {
           var _item = list[_i];
 
-          if (_item instanceof Dom && _item.style.display !== 'inline-block') {
-            throw new Error('inline-block can not contain block');
+          if (_item instanceof Dom && _item.style.display !== 'inline') {
+            throw new Error('inline can not contain block');
           }
         }
       }
@@ -713,17 +713,17 @@ function (_Node) {
         else if (!_util__WEBPACK_IMPORTED_MODULE_4__["default"].isNil(children)) {
             list.push(new _Text__WEBPACK_IMPORTED_MODULE_1__["default"](children));
           }
-    } // 合并设置style，包括继承和默认值，修改一些自动值和固定值
+    } // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
 
   }, {
     key: "__initStyle",
     value: function __initStyle() {
       var style = this.style;
-      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline-block
+      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline
 
-      if (!style.display || ['flex', 'block', 'inline-block'].indexOf(style.display) === -1) {
+      if (!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
         if (INLINE.hasOwnProperty(this.tagName)) {
-          style.display = 'inline-block';
+          style.display = 'inline';
         } else {
           style.display = 'block';
         }
@@ -734,35 +734,31 @@ function (_Node) {
       if (parent) {
         var parentStyle = parent.style; // 继承父元素样式
 
-        ['fontSize', 'lineHeight'].forEach(function (k) {
+        ['fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'wordBreak', 'color', 'textAlign'].forEach(function (k) {
           if (!style.hasOwnProperty(k) && parentStyle.hasOwnProperty(k)) {
             style[k] = parentStyle[k];
           }
-        }); // flex的children不能为inline
-
-        if (parentStyle.display === 'flex' && style.display === 'inline-block') {
-          style.display = 'block';
-        }
+        });
       }
 
-      _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].limitLineHeight(style);
+      _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].normalize(style);
       this.children.forEach(function (item) {
         if (item instanceof Dom) {
           item.__initStyle();
         } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           item.__initStyle();
         } else {
-          item.__style = style;
+          item.__style = style; // 文字首先测量所有字符宽度
+
+          item.__measure();
         }
       });
-    } // 给定父宽度情况下，尝试行内放下后的剩余宽度，可能为负数即放不下
+    } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
 
   }, {
     key: "__tryLayInline",
     value: function __tryLayInline(w) {
-      var children = this.children,
-          ctx = this.ctx,
-          style = this.style;
+      var children = this.children;
 
       for (var i = 0; i < children.length; i++) {
         // 当放不下时直接返回，无需继续多余的尝试计算
@@ -772,11 +768,10 @@ function (_Node) {
 
         var item = children[i];
 
-        if (item instanceof Dom) {
+        if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           w = item.__tryLayInline(w);
         } else {
-          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-          w -= ctx.measureText(item.content).width;
+          w -= item.textWidth;
         }
       }
 
@@ -792,52 +787,64 @@ function (_Node) {
           item.__offsetY(diff);
         }
       });
-    } // 元素自动换行后的最大宽度
+    } // // 元素自动换行后的最大宽度
+    // __feedWidth(includeWidth) {
+    //   let { children, ctx, style } = this;
+    //   let w = 0;
+    //   children.forEach(item => {
+    //     if(item instanceof Dom) {
+    //       w = Math.max(w, item.__feedWidth(true));
+    //     }
+    //     else {
+    //       ctx.font = css.setFontStyle(style);
+    //       if(style.wordBreak === 'break-all') {
+    //         let tw = 0;
+    //         let content = item.content;
+    //         let len = content.length;
+    //         for(let i = 0; i < len; i++) {
+    //           tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
+    //         }
+    //         w = Math.max(w, tw);
+    //       }
+    //       else {
+    //         w = Math.max(w, ctx.measureText(item.content).width);
+    //       }
+    //     }
+    //   });
+    //   // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
+    //   if(includeWidth && this.parent.style.display !== 'flex') {
+    //     let width = style.width;
+    //     switch(width.unit) {
+    //       case unit.PX:
+    //         w = Math.max(w, width.value);
+    //         break;
+    //       case unit.PERCENT:
+    //         w = Math.max(w, width.value * 0.01 * this.parent.width);
+    //         break;
+    //     }
+    //   }
+    //   return w;
+    // }
+    // 获取节点的最小宽度
 
   }, {
-    key: "__feedWidth",
-    value: function __feedWidth(includeWidth) {
-      var children = this.children,
-          ctx = this.ctx,
-          style = this.style;
-      var w = 0;
+    key: "__calMaxAndMinWidth",
+    value: function __calMaxAndMinWidth() {
+      var children = this.children;
+      var max = 0;
+      var min = 0;
       children.forEach(function (item) {
-        if (item instanceof Dom) {
-          w = Math.max(w, item.__feedWidth(true));
-        } else {
-          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
+        var _item$__calMaxAndMinW = item.__calMaxAndMinWidth(),
+            a = _item$__calMaxAndMinW.max,
+            b = _item$__calMaxAndMinW.min;
 
-          if (style.wordBreak === 'break-all') {
-            var tw = 0;
-            var content = item.content;
-            var len = content.length;
-
-            for (var i = 0; i < len; i++) {
-              tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
-            }
-
-            w = Math.max(w, tw);
-          } else {
-            w = Math.max(w, ctx.measureText(item.content).width);
-          }
-        }
-      }); // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
-
-      if (includeWidth && this.parent.style.display !== 'flex') {
-        var width = style.width;
-
-        switch (width.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
-            w = Math.max(w, width.value);
-            break;
-
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT:
-            w = Math.max(w, width.value * 0.01 * this.parent.width);
-            break;
-        }
-      }
-
-      return w;
+        max = Math.max(max, a);
+        min = Math.max(min, b);
+      });
+      return {
+        max: max,
+        min: min
+      };
     }
   }, {
     key: "__preLay",
@@ -893,7 +900,7 @@ function (_Node) {
       var lineGroup = new _LineGroup__WEBPACK_IMPORTED_MODULE_2__["default"](x, y);
       children.forEach(function (item) {
         if (item instanceof Dom) {
-          if (item.style.display === 'inline-block') {
+          if (item.style.display === 'inline') {
             // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
               lineGroup.add(item);
@@ -975,7 +982,7 @@ function (_Node) {
 
           x = data.x;
           y += item.height;
-        } // 文字和inline-block类似
+        } // 文字和inline类似
         else {
             // x开头，不用考虑是否放得下直接放
             if (x === data.x) {
@@ -1040,7 +1047,8 @@ function (_Node) {
     value: function __preLayFlex(data) {
       var x = data.x,
           y = data.y,
-          w = data.w;
+          w = data.w,
+          h = data.h;
       this.__x = x;
       this.__y = y;
       this.__width = w;
@@ -1069,113 +1077,147 @@ function (_Node) {
         }
       }
 
-      var grow = [];
-      var lfw = [];
+      var growList = [];
+      var shrinkList = [];
+      var basisList = [];
+      var widthList = [];
+      var maxList = [];
+      var minList = [];
       children.forEach(function (item) {
-        if (item instanceof Dom) {
-          grow.push(item.style.flexGrow);
-          var _width = item.style.width;
+        if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
+          var _item$style = item.style,
+              flexGrow = _item$style.flexGrow,
+              flexShrink = _item$style.flexShrink,
+              flexBasis = _item$style.flexBasis,
+              _width = _item$style.width;
+          growList.push(flexGrow);
+          shrinkList.push(flexShrink);
+          basisList.push(flexBasis);
 
           if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
-            lfw.push(_width.value * w);
+            widthList.push(_width.value * w);
           } else if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
-            lfw.push(_width.value);
+            widthList.push(_width.value);
           } else {
-            lfw.push(item.__feedWidth());
-          }
-        } else if (item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
-          grow.push(item.style.flexGrow);
-          var _width2 = item.style.width;
-
-          if (_width2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
-            lfw.push(_width2.value * w);
-          } else if (_width2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
-            lfw.push(_width2.value);
-          } else {
-            lfw.push(-1);
+            widthList.push('auto');
           }
         } else {
-          grow.push(0);
-          ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].setFontStyle(style);
-
-          if (style.wordBreak === 'break-all') {
-            var tw = 0;
-            var content = item.content;
-            var len = content.length;
-
-            for (var i = 0; i < len; i++) {
-              tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
-            }
-
-            lfw.push(tw);
-          } else {
-            var _tw = ctx.measureText(item.content).width;
-            lfw.push(_tw);
-          }
-        }
-      }); // 全部最小自适应宽度和
-
-      var sum = 0;
-      lfw.forEach(function (item) {
-        sum += item;
-      }); // TODO: 和大于等于可用宽度时，grow属性无效
-
-      if (sum >= w) {} else {
-        var free = w;
-        var total = 0; // 获取固定和弹性的子项
-
-        var fixIndex = [];
-        var flexIndex = [];
-        grow.forEach(function (item, i) {
-          if (item === 0) {
-            free -= lfw[i];
-            fixIndex.push(i);
-          } else {
-            flexIndex.push(i);
-            total += item;
-          }
-        }); // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
-
-        var per = free / total;
-        var space = [];
-
-        for (var i = 1; i < flexIndex.length; i++) {
-          var n = Math.floor(per * grow[flexIndex[i]]);
-          space.push(n);
-          free -= n;
+          growList.push(0);
+          shrinkList.push(1);
+          basisList.push('auto');
+          widthList.push('auto');
         }
 
-        space.unshift(free); // 固定和弹性最终组成连续的占用宽度列表进行布局
+        var _item$__calMaxAndMinW2 = item.__calMaxAndMinWidth(),
+            max = _item$__calMaxAndMinW2.max,
+            min = _item$__calMaxAndMinW2.min;
 
-        var count = 0;
-        grow.forEach(function (item, i) {
-          var child = children[i];
+        maxList.push(max);
+        minList.push(min);
+      });
+      console.log(growList, shrinkList, basisList, widthList, minList, maxList);
+      var growSum = 0;
+      growList.forEach(function (item) {
+        growSum += item;
+      });
+      var shrinkSum = 0;
+      shrinkList.forEach(function (item) {
+        shrinkSum += item;
+      }); // 均不扩展和收缩
 
-          if (item === 0) {
-            child.__preLay({
+      if (growSum === 0 && shrinkSum === 0) {
+        var maxHeight = 0; // 从左到右依次排列布局，等同inline-block
+
+        children.forEach(function (item, i) {
+          if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
+            item.__preLayInline({
               x: x,
               y: y,
-              w: lfw[i]
+              w: basisList[i] === 'auto' ? w : minList[i],
+              h: h
             });
 
-            x += lfw[i];
+            x += item.width;
           } else {
-            child.__preLay({
+            item.__preLay({
               x: x,
               y: y,
-              w: space[count]
+              w: w,
+              h: h
             });
 
-            x += space[count++];
+            x += item.width;
           }
+
+          maxHeight = Math.max(maxHeight, item.height);
+        }); // 所有孩子高度相同
+
+        children.forEach(function (item) {
+          item.__height = maxHeight;
         });
+        y += maxHeight;
       }
 
-      var h = 0;
-      children.forEach(function (item) {
-        h = Math.max(h, item.height);
-      });
-      this.__height = h;
+      this.__width = w;
+      this.__height = fixedHeight ? h : y - data.y; // // 全部最小自适应宽度和
+      // let sum = 0;
+      // lfw.forEach(item => {
+      //   sum += item;
+      // });
+      // // TODO: 和大于等于可用宽度时，grow属性无效
+      // if(sum >= w) {}
+      // else {
+      //   let free = w;
+      //   let total = 0;
+      //   // 获取固定和弹性的子项
+      //   let fixIndex = [];
+      //   let flexIndex = [];
+      //   grow.forEach((item, i) => {
+      //     if(item === 0) {
+      //       free -= lfw[i];
+      //       fixIndex.push(i);
+      //     }
+      //     else {
+      //       flexIndex.push(i);
+      //       total += item;
+      //     }
+      //   });
+      //   // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
+      //   let per = free / total;
+      //   let space = [];
+      //   for(let i = 1; i < flexIndex.length; i++) {
+      //     let n = Math.floor(per * grow[flexIndex[i]]);
+      //     space.push(n);
+      //     free -= n;
+      //   }
+      //   space.unshift(free);
+      //   // 固定和弹性最终组成连续的占用宽度列表进行布局
+      //   let count = 0;
+      //   grow.forEach((item, i) => {
+      //     let child = children[i];
+      //     if(item === 0) {
+      //       child.__preLay({
+      //         x,
+      //         y,
+      //         w: lfw[i],
+      //       });
+      //       x += lfw[i];
+      //     }
+      //     else {
+      //       child.__preLay({
+      //         x,
+      //         y,
+      //         w: space[count],
+      //       });
+      //       x += space[count++];
+      //     }
+      //   });
+      // }
+      // let h = 0;
+      // children.forEach(item => {
+      //   h = Math.max(h, item.height);
+      // });
+      // this.__height = h;
     } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
   }, {
@@ -1193,8 +1235,7 @@ function (_Node) {
       var children = this.children,
           style = this.style;
       var width = style.width,
-          height = style.height,
-          lineHeight = style.lineHeight; // 除了auto外都是固定高度
+          height = style.height; // 除了auto外都是固定高度
 
       var fixedWidth;
       var fixedHeight;
@@ -1424,7 +1465,7 @@ function () {
     key: "render",
     value: function render() {
       this.ctx.fillStyle = this.style.color;
-      this.ctx.fillText(this.content, this.x, this.y + _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLineByFont(this.style));
+      this.ctx.fillText(this.content, this.x, this.y + _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLine(this.style));
     }
   }, {
     key: "__offsetY",
@@ -1459,7 +1500,7 @@ function () {
   }, {
     key: "baseLine",
     get: function get() {
-      return _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLineByFont(this.style);
+      return _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLine(this.style);
     }
   }]);
 
@@ -1762,31 +1803,7 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
-
-function getWordBreakAllIndex(ctx, content, begin, start, end, w) {
-  if (start === end) {
-    return start;
-  }
-
-  if (start === end - 1) {
-    var _tw = ctx.measureText(content.slice(begin, end)).width;
-
-    if (_tw > w) {
-      return start;
-    }
-
-    return end;
-  }
-
-  var center = start + (end - start >> 1);
-  var tw = ctx.measureText(content.slice(begin, center)).width;
-
-  if (tw > w) {
-    return getWordBreakAllIndex(ctx, content, begin, start, center, w);
-  }
-
-  return getWordBreakAllIndex(ctx, content, begin, center, end, w);
-}
+var CHAR_WIDTH_CACHE = {};
 
 var Text =
 /*#__PURE__*/
@@ -1799,12 +1816,44 @@ function (_Node) {
     _classCallCheck(this, Text);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
-    _this.__content = content || '';
+    _this.__content = content.toString();
     _this.__lineBoxes = [];
+    _this.__charWidth = [];
+    _this.__textWidth = 0;
     return _this;
-  }
+  } // 预先计算每个字的宽度
+
 
   _createClass(Text, [{
+    key: "__measure",
+    value: function __measure() {
+      this.__charWidth = [];
+      var ctx = this.ctx,
+          content = this.content,
+          style = this.style,
+          charWidth = this.charWidth;
+      ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(style);
+      var cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
+      var length = content.length;
+      var sum = 0;
+
+      for (var i = 0; i < length; i++) {
+        var _char = content.charAt(i);
+
+        if (cache.hasOwnProperty(_char)) {
+          charWidth.push(cache[_char]);
+          sum += cache[_char];
+          continue;
+        }
+
+        var mw = cache[_char] = ctx.measureText(_char).width;
+        charWidth.push(mw);
+        sum += mw;
+      }
+
+      this.__textWidth = sum;
+    }
+  }, {
     key: "__preLay",
     value: function __preLay(data) {
       var x = data.x,
@@ -1817,19 +1866,44 @@ function (_Node) {
       var ctx = this.ctx,
           content = this.content,
           style = this.style,
-          lineBoxes = this.lineBoxes;
-      ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(style); // 2分法查找分割字符串为lineBox，形成多行
+          lineBoxes = this.lineBoxes,
+          charWidth = this.charWidth; // 顺序尝试分割字符串为lineBox，形成多行
 
-      var length = content.length;
       var begin = 0;
+      var i = 0;
+      var count = 0;
+      var length = content.length;
 
-      while (begin < length) {
-        var i = getWordBreakAllIndex(ctx, content, begin, begin, length, w);
-        var lineBox = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i), style);
-        lineBoxes.push(lineBox);
-        maxX = Math.max(maxX, x + ctx.measureText(content.slice(begin, i)).width);
+      while (i < length) {
+        count += charWidth[i];
+
+        if (count === w) {
+          var lineBox = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i + 1), style);
+          lineBoxes.push(lineBox);
+          maxX = Math.max(maxX, x + count);
+          y += this.style.lineHeight;
+          begin = i + 1;
+          i = begin + 1;
+          count = 0;
+        } else if (count > w) {
+          var _lineBox = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i), style);
+
+          lineBoxes.push(_lineBox);
+          maxX = Math.max(maxX, x + count - charWidth[i]);
+          y += this.style.lineHeight;
+          begin = i;
+          count = 0;
+        } else {
+          i++;
+        }
+      }
+
+      if (begin < i) {
+        var _lineBox2 = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i), style);
+
+        lineBoxes.push(_lineBox2);
+        maxX = Math.max(maxX, x + count);
         y += this.style.lineHeight;
-        begin = i;
       }
 
       this.__width = maxX - x;
@@ -1851,18 +1925,24 @@ function (_Node) {
       return w - tw;
     }
   }, {
-    key: "__measureText",
-    value: function __measureText() {
-      this.ctx.font = _style_css__WEBPACK_IMPORTED_MODULE_2__["default"].setFontStyle(this.style);
-      return this.ctx.measureText(this.content);
-    }
-  }, {
     key: "__offsetY",
     value: function __offsetY(diff) {
       this.__y += diff;
       this.lineBoxes.forEach(function (item) {
         item.__offsetY(diff);
       });
+    }
+  }, {
+    key: "__calMaxAndMinWidth",
+    value: function __calMaxAndMinWidth() {
+      var n = 0;
+      this.charWidth.forEach(function (item) {
+        n = Math.max(n, item);
+      });
+      return {
+        max: this.textWidth,
+        min: n
+      };
     }
   }, {
     key: "content",
@@ -1876,6 +1956,16 @@ function (_Node) {
     key: "lineBoxes",
     get: function get() {
       return this.__lineBoxes;
+    }
+  }, {
+    key: "charWidth",
+    get: function get() {
+      return this.__charWidth;
+    }
+  }, {
+    key: "textWidth",
+    get: function get() {
+      return this.__textWidth;
     }
   }, {
     key: "baseLine",
@@ -1929,13 +2019,33 @@ function normalize(style) {
         };
       }
     } else {
-      v = parseInt(v) || 0;
+      v = parseFloat(v) || 0;
       style[k] = {
         value: Math.max(v, 0),
         unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
       };
     }
-  });
+  }); // 计算lineHeight为px值，最小范围
+
+  var lineHeight = style.lineHeight;
+
+  if (lineHeight === 'normal') {
+    lineHeight = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+  } else if (/px$/.test(lineHeight)) {
+    lineHeight = parseFloat(lineHeight);
+    lineHeight = Math.max(style.fontSize, lineHeight);
+  } // 纯数字比例
+  else {
+      lineHeight = parseFloat(lineHeight) || 'normal';
+
+      if (lineHeight === 'normal') {
+        lineHeight = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+      } else {
+        lineHeight *= style.fontSize;
+      }
+    }
+
+  style.lineHeight = lineHeight;
 }
 
 function setFontStyle(style) {
@@ -1944,34 +2054,17 @@ function setFontStyle(style) {
       fontSize = style.fontSize,
       fontFamily = style.fontFamily;
   return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
-} // 防止小行高，仅支持lineHeight>=1的情况
-
-
-function limitLineHeight(style) {
-  var fontSize = style.fontSize,
-      lineHeight = style.lineHeight;
-  lineHeight = getLineHeightByFontAndLineHeight(fontSize, lineHeight);
-  style.lineHeight = lineHeight;
-  normalize(style);
 }
 
-function getLineHeightByFontAndLineHeight(fontSize, lineHeight) {
-  if (lineHeight === 0) {
-    return fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
-  }
-
-  return Math.max(lineHeight, fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.car);
-}
-
-function getBaseLineByFont(style) {
-  return style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.blr;
+function getBaseLine(style) {
+  var normal = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+  return (style.lineHeight - normal) * 0.5 + style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.blr;
 }
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   normalize: normalize,
   setFontStyle: setFontStyle,
-  limitLineHeight: limitLineHeight,
-  getBaseLineByFont: getBaseLineByFont
+  getBaseLine: getBaseLine
 });
 
 /***/ }),
@@ -1990,14 +2083,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   arial: {
     lhr: 1.14990234375,
-    // 默认line-height ratio
-    car: 1.1172,
-    // content-area ratio
+    // 默认line-height ratio，(67+1854+434)/2048
+    car: 1.1171875,
+    // content-area ratio，(1854+434)/2048
     blr: 0.9052734375,
-    // base-line ratio
+    // base-line ratio，1854/2048
     mdr: 0.64599609375,
-    // middle ratio
-    lgr: 0.03271484375 // line-gap ratio
+    // middle ratio，(1854-1062/2)/2048
+    lgr: 0.03271484375 // line-gap ratio，67/2048
 
   }
 });
@@ -2024,12 +2117,11 @@ __webpack_require__.r(__webpack_exports__);
   paddingBottom: 0,
   paddingLeft: 0,
   fontSize: 16,
-  fontFamily: 'sans-serif',
+  fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',
   fontWeight: 400,
-  lineHeight: 0,
-  // normal
+  lineHeight: 'normal',
   borderTopWidth: 0,
   borderRightWidth: 0,
   borderBottomWidth: 0,
@@ -2041,8 +2133,10 @@ __webpack_require__.r(__webpack_exports__);
   verticalAlign: 'baseline',
   width: 'auto',
   height: 'auto',
-  flex: 0,
-  flexGrow: 0
+  flexGrow: 0,
+  flexShrink: 1,
+  flexBasis: 'auto',
+  alignItem: 'stretch'
 });
 
 /***/ }),

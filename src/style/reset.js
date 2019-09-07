@@ -9,11 +9,11 @@ export default {
   paddingBottom: 0,
   paddingLeft: 0,
   fontSize: 16,
-  fontFamily: 'sans-serif',
+  fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',
   fontWeight: 400,
-  lineHeight: 0, // normal
+  lineHeight: 'normal',
   borderTopWidth: 0,
   borderRightWidth: 0,
   borderBottomWidth: 0,
@@ -25,6 +25,8 @@ export default {
   verticalAlign: 'baseline',
   width: 'auto',
   height: 'auto',
-  flex: 0,
   flexGrow: 0,
+  flexShrink: 1,
+  flexBasis: 'auto',
+  alignItem: 'stretch',
 };

@@ -1,4 +1,5 @@
-export default {
+const RESET = {
+  display: 'block',
   borderSizing: 'content-box',
   marginTop: 0,
   marginRight: 0,
@@ -29,4 +30,17 @@ export default {
   flexShrink: 1,
   flexBasis: 'auto',
   alignItem: 'stretch',
+  textAlign: 'left',
 };
+
+let reset = [];
+
+Object.keys(RESET).forEach(k => {
+  let v = RESET[k];
+  reset.push({
+    k,
+    v,
+  });
+});
+
+export default reset;

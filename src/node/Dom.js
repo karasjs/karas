@@ -3,7 +3,6 @@ import Text from './Text';
 import LineGroup from './LineGroup';
 import Geom from '../geom/Geom';
 import util from '../util';
-import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 
@@ -88,8 +87,7 @@ class Dom extends Node {
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
   __initStyle() {
-    let style = this.style;
-    Object.assign(style, reset, this.props.style);
+    let style = this.__style = this.props.style || {};
     // 仅支持flex/block/inline
     if(!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
       if(INLINE.hasOwnProperty(this.tagName)) {
@@ -99,16 +97,17 @@ class Dom extends Node {
         style.display = 'block';
       }
     }
+    // 继承父元素样式
     let parent = this.parent;
     if(parent) {
       let parentStyle = parent.style;
-      // 继承父元素样式
       ['fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'wordBreak', 'color', 'textAlign'].forEach(k => {
         if(!style.hasOwnProperty(k) && parentStyle.hasOwnProperty(k)) {
           style[k] = parentStyle[k];
         }
       });
     }
+    // 标准化处理，默认值、简写属性
     css.normalize(style);
     this.children.forEach(item => {
       if(item instanceof Dom) {
@@ -154,46 +153,7 @@ class Dom extends Node {
     });
   }
 
-  // // 元素自动换行后的最大宽度
-  // __feedWidth(includeWidth) {
-  //   let { children, ctx, style } = this;
-  //   let w = 0;
-  //   children.forEach(item => {
-  //     if(item instanceof Dom) {
-  //       w = Math.max(w, item.__feedWidth(true));
-  //     }
-  //     else {
-  //       ctx.font = css.setFontStyle(style);
-  //       if(style.wordBreak === 'break-all') {
-  //         let tw = 0;
-  //         let content = item.content;
-  //         let len = content.length;
-  //         for(let i = 0; i < len; i++) {
-  //           tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
-  //         }
-  //         w = Math.max(w, tw);
-  //       }
-  //       else {
-  //         w = Math.max(w, ctx.measureText(item.content).width);
-  //       }
-  //     }
-  //   });
-  //   // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
-  //   if(includeWidth && this.parent.style.display !== 'flex') {
-  //     let width = style.width;
-  //     switch(width.unit) {
-  //       case unit.PX:
-  //         w = Math.max(w, width.value);
-  //         break;
-  //       case unit.PERCENT:
-  //         w = Math.max(w, width.value * 0.01 * this.parent.width);
-  //         break;
-  //     }
-  //   }
-  //   return w;
-  // }
-
-  // 获取节点的最小宽度
+  // 获取节点的最大和最小宽度
   __calMaxAndMinWidth() {
     let { children } = this;
     let max = 0;
@@ -405,51 +365,69 @@ class Dom extends Node {
     let widthList = [];
     let maxList = [];
     let minList = [];
+    let maxWidth = 0;
+    let minWidth = 0;
+    let growSum = 0;
+    let shrinkSum = 0;
     children.forEach(item => {
+      let { max, min } = item.__calMaxAndMinWidth();
+      maxList.push(max);
+      minList.push(min);
       if(item instanceof Dom || item instanceof Geom) {
         let { flexGrow, flexShrink, flexBasis, width } = item.style;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
         basisList.push(flexBasis);
-        if(width.unit === unit.PERCENT) {
+        growSum += flexGrow;
+        shrinkSum += flexShrink;
+        if(width.unit === unit.AUTO) {
+          widthList.push('auto');
+        }
+        else if(width.unit === unit.PERCENT) {
           widthList.push(width.value * w);
         }
         else if(width.unit === unit.PX) {
           widthList.push(width.value);
         }
-        else {
-          widthList.push('auto');
+        // 根据basis不同，最大和最小计算方式不同
+        if(flexBasis.unit === unit.AUTO) {
+          if(width.unit === unit.AUTO) {
+            maxWidth += max;
+            minWidth += min;
+          }
+          else {
+            maxWidth += widthList[widthList.length - 1];
+            minWidth += widthList[widthList.length - 1];
+          }
+        }
+        else if([unit.PERCENT, unit.PX].indexOf(flexBasis.unit) > -1) {
+          maxWidth += max;
+          minWidth += min;
         }
       }
       else {
         growList.push(0);
         shrinkList.push(1);
-        basisList.push('auto');
+        basisList.push({
+          unit: unit.AUTO,
+        });
+        shrinkSum += 1;
         widthList.push('auto');
+        maxWidth += max;
+        minWidth += min;
       }
-      let { max, min } = item.__calMaxAndMinWidth();
-      maxList.push(max);
-      minList.push(min);
     });
-    console.log(growList, shrinkList, basisList, widthList, minList, maxList);
-    let growSum = 0;
-    growList.forEach(item => {
-      growSum += item;
-    });
-    let shrinkSum = 0;
-    shrinkList.forEach(item => {
-      shrinkSum += item;
-    });
+    console.log(w, maxWidth, minWidth, growList, shrinkList, basisList, widthList, minList, maxList, growSum, shrinkSum);
     // 均不扩展和收缩
     if(growSum === 0 && shrinkSum === 0) {
       let maxHeight = 0;
       // 从左到右依次排列布局，等同inline-block
-      children.forEach((item, i) => {
+      children.forEach(item => {
         if(item instanceof Dom || item instanceof Geom) {
           item.__preLayInline({
             x,
             y,
-            w: basisList[i] === 'auto' ? w : minList[i],
+            w,
             h,
           });
           x += item.width;
@@ -473,65 +451,6 @@ class Dom extends Node {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    // // 全部最小自适应宽度和
-    // let sum = 0;
-    // lfw.forEach(item => {
-    //   sum += item;
-    // });
-    // // TODO: 和大于等于可用宽度时，grow属性无效
-    // if(sum >= w) {}
-    // else {
-    //   let free = w;
-    //   let total = 0;
-    //   // 获取固定和弹性的子项
-    //   let fixIndex = [];
-    //   let flexIndex = [];
-    //   grow.forEach((item, i) => {
-    //     if(item === 0) {
-    //       free -= lfw[i];
-    //       fixIndex.push(i);
-    //     }
-    //     else {
-    //       flexIndex.push(i);
-    //       total += item;
-    //     }
-    //   });
-    //   // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
-    //   let per = free / total;
-    //   let space = [];
-    //   for(let i = 1; i < flexIndex.length; i++) {
-    //     let n = Math.floor(per * grow[flexIndex[i]]);
-    //     space.push(n);
-    //     free -= n;
-    //   }
-    //   space.unshift(free);
-    //   // 固定和弹性最终组成连续的占用宽度列表进行布局
-    //   let count = 0;
-    //   grow.forEach((item, i) => {
-    //     let child = children[i];
-    //     if(item === 0) {
-    //       child.__preLay({
-    //         x,
-    //         y,
-    //         w: lfw[i],
-    //       });
-    //       x += lfw[i];
-    //     }
-    //     else {
-    //       child.__preLay({
-    //         x,
-    //         y,
-    //         w: space[count],
-    //       });
-    //       x += space[count++];
-    //     }
-    //   });
-    // }
-    // let h = 0;
-    // children.forEach(item => {
-    //   h = Math.max(h, item.height);
-    // });
-    // this.__height = h;
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移

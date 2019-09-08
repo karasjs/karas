@@ -583,9 +583,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _LineGroup__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./LineGroup */ "./src/node/LineGroup.js");
 /* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../geom/Geom */ "./src/geom/Geom.js");
 /* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../util */ "./src/util.js");
-/* harmony import */ var _style_reset__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../style/reset */ "./src/style/reset.js");
-/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
-/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
+/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -603,7 +602,6 @@ function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.g
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
 
 
 
@@ -718,8 +716,7 @@ function (_Node) {
   }, {
     key: "__initStyle",
     value: function __initStyle() {
-      var style = this.style;
-      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_5__["default"], this.props.style); // 仅支持flex/block/inline
+      var style = this.__style = this.props.style || {}; // 仅支持flex/block/inline
 
       if (!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
         if (INLINE.hasOwnProperty(this.tagName)) {
@@ -727,21 +724,22 @@ function (_Node) {
         } else {
           style.display = 'block';
         }
-      }
+      } // 继承父元素样式
+
 
       var parent = this.parent;
 
       if (parent) {
-        var parentStyle = parent.style; // 继承父元素样式
-
+        var parentStyle = parent.style;
         ['fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'wordBreak', 'color', 'textAlign'].forEach(function (k) {
           if (!style.hasOwnProperty(k) && parentStyle.hasOwnProperty(k)) {
             style[k] = parentStyle[k];
           }
         });
-      }
+      } // 标准化处理，默认值、简写属性
 
-      _style_css__WEBPACK_IMPORTED_MODULE_6__["default"].normalize(style);
+
+      _style_css__WEBPACK_IMPORTED_MODULE_5__["default"].normalize(style);
       this.children.forEach(function (item) {
         if (item instanceof Dom) {
           item.__initStyle();
@@ -787,45 +785,7 @@ function (_Node) {
           item.__offsetY(diff);
         }
       });
-    } // // 元素自动换行后的最大宽度
-    // __feedWidth(includeWidth) {
-    //   let { children, ctx, style } = this;
-    //   let w = 0;
-    //   children.forEach(item => {
-    //     if(item instanceof Dom) {
-    //       w = Math.max(w, item.__feedWidth(true));
-    //     }
-    //     else {
-    //       ctx.font = css.setFontStyle(style);
-    //       if(style.wordBreak === 'break-all') {
-    //         let tw = 0;
-    //         let content = item.content;
-    //         let len = content.length;
-    //         for(let i = 0; i < len; i++) {
-    //           tw = Math.max(tw, ctx.measureText(content.charAt(i)).width);
-    //         }
-    //         w = Math.max(w, tw);
-    //       }
-    //       else {
-    //         w = Math.max(w, ctx.measureText(item.content).width);
-    //       }
-    //     }
-    //   });
-    //   // flexBox的子项不考虑width影响，但孙子项且父元素不是flex时考虑
-    //   if(includeWidth && this.parent.style.display !== 'flex') {
-    //     let width = style.width;
-    //     switch(width.unit) {
-    //       case unit.PX:
-    //         w = Math.max(w, width.value);
-    //         break;
-    //       case unit.PERCENT:
-    //         w = Math.max(w, width.value * 0.01 * this.parent.width);
-    //         break;
-    //     }
-    //   }
-    //   return w;
-    // }
-    // 获取节点的最小宽度
+    } // 获取节点的最大和最小宽度
 
   }, {
     key: "__calMaxAndMinWidth",
@@ -879,19 +839,19 @@ function (_Node) {
 
       var fixedHeight;
 
-      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         switch (width.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             w = width.value;
             break;
         }
       }
 
-      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         fixedHeight = true;
 
         switch (height.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             h = height.value;
             break;
         }
@@ -1059,19 +1019,19 @@ function (_Node) {
           height = style.height;
       var fixedHeight;
 
-      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         switch (width.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             w = width.value;
             break;
         }
       }
 
-      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         fixedHeight = true;
 
         switch (height.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             h = height.value;
             break;
         }
@@ -1083,7 +1043,18 @@ function (_Node) {
       var widthList = [];
       var maxList = [];
       var minList = [];
+      var maxWidth = 0;
+      var minWidth = 0;
+      var growSum = 0;
+      var shrinkSum = 0;
       children.forEach(function (item) {
+        var _item$__calMaxAndMinW2 = item.__calMaxAndMinWidth(),
+            max = _item$__calMaxAndMinW2.max,
+            min = _item$__calMaxAndMinW2.min;
+
+        maxList.push(max);
+        minList.push(min);
+
         if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
           var _item$style = item.style,
               flexGrow = _item$style.flexGrow,
@@ -1093,47 +1064,53 @@ function (_Node) {
           growList.push(flexGrow);
           shrinkList.push(flexShrink);
           basisList.push(flexBasis);
+          growSum += flexGrow;
+          shrinkSum += flexShrink;
 
-          if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PERCENT) {
-            widthList.push(_width.value * w);
-          } else if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX) {
-            widthList.push(_width.value);
-          } else {
+          if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
             widthList.push('auto');
+          } else if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PERCENT) {
+            widthList.push(_width.value * w);
+          } else if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX) {
+            widthList.push(_width.value);
+          } // 根据basis不同，最大和最小计算方式不同
+
+
+          if (flexBasis.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+            if (_width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+              maxWidth += max;
+              minWidth += min;
+            } else {
+              maxWidth += widthList[widthList.length - 1];
+              minWidth += widthList[widthList.length - 1];
+            }
+          } else if ([_style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PERCENT, _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX].indexOf(flexBasis.unit) > -1) {
+            maxWidth += max;
+            minWidth += min;
           }
         } else {
           growList.push(0);
           shrinkList.push(1);
-          basisList.push('auto');
+          basisList.push({
+            unit: _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO
+          });
+          shrinkSum += 1;
           widthList.push('auto');
+          maxWidth += max;
+          minWidth += min;
         }
-
-        var _item$__calMaxAndMinW2 = item.__calMaxAndMinWidth(),
-            max = _item$__calMaxAndMinW2.max,
-            min = _item$__calMaxAndMinW2.min;
-
-        maxList.push(max);
-        minList.push(min);
       });
-      console.log(growList, shrinkList, basisList, widthList, minList, maxList);
-      var growSum = 0;
-      growList.forEach(function (item) {
-        growSum += item;
-      });
-      var shrinkSum = 0;
-      shrinkList.forEach(function (item) {
-        shrinkSum += item;
-      }); // 均不扩展和收缩
+      console.log(w, maxWidth, minWidth, growList, shrinkList, basisList, widthList, minList, maxList, growSum, shrinkSum); // 均不扩展和收缩
 
       if (growSum === 0 && shrinkSum === 0) {
         var maxHeight = 0; // 从左到右依次排列布局，等同inline-block
 
-        children.forEach(function (item, i) {
+        children.forEach(function (item) {
           if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
             item.__preLayInline({
               x: x,
               y: y,
-              w: basisList[i] === 'auto' ? w : minList[i],
+              w: w,
               h: h
             });
 
@@ -1159,65 +1136,7 @@ function (_Node) {
       }
 
       this.__width = w;
-      this.__height = fixedHeight ? h : y - data.y; // // 全部最小自适应宽度和
-      // let sum = 0;
-      // lfw.forEach(item => {
-      //   sum += item;
-      // });
-      // // TODO: 和大于等于可用宽度时，grow属性无效
-      // if(sum >= w) {}
-      // else {
-      //   let free = w;
-      //   let total = 0;
-      //   // 获取固定和弹性的子项
-      //   let fixIndex = [];
-      //   let flexIndex = [];
-      //   grow.forEach((item, i) => {
-      //     if(item === 0) {
-      //       free -= lfw[i];
-      //       fixIndex.push(i);
-      //     }
-      //     else {
-      //       flexIndex.push(i);
-      //       total += item;
-      //     }
-      //   });
-      //   // 除首位各自向下取整计算占用宽度，首位使用差值剩余的宽度
-      //   let per = free / total;
-      //   let space = [];
-      //   for(let i = 1; i < flexIndex.length; i++) {
-      //     let n = Math.floor(per * grow[flexIndex[i]]);
-      //     space.push(n);
-      //     free -= n;
-      //   }
-      //   space.unshift(free);
-      //   // 固定和弹性最终组成连续的占用宽度列表进行布局
-      //   let count = 0;
-      //   grow.forEach((item, i) => {
-      //     let child = children[i];
-      //     if(item === 0) {
-      //       child.__preLay({
-      //         x,
-      //         y,
-      //         w: lfw[i],
-      //       });
-      //       x += lfw[i];
-      //     }
-      //     else {
-      //       child.__preLay({
-      //         x,
-      //         y,
-      //         w: space[count],
-      //       });
-      //       x += space[count++];
-      //     }
-      //   });
-      // }
-      // let h = 0;
-      // children.forEach(item => {
-      //   h = Math.max(h, item.height);
-      // });
-      // this.__height = h;
+      this.__height = fixedHeight ? h : y - data.y;
     } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
   }, {
@@ -1240,21 +1159,21 @@ function (_Node) {
       var fixedWidth;
       var fixedHeight;
 
-      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         fixedWidth = true;
 
         switch (width.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             w = width.value;
             break;
         }
       }
 
-      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].AUTO) {
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
         fixedHeight = true;
 
         switch (height.unit) {
-          case _style_unit__WEBPACK_IMPORTED_MODULE_7__["default"].PX:
+          case _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX:
             h = height.value;
             break;
         }
@@ -1881,7 +1800,7 @@ function (_Node) {
           var lineBox = new _LineBox__WEBPACK_IMPORTED_MODULE_1__["default"](ctx, x, y, content.slice(begin, i + 1), style);
           lineBoxes.push(lineBox);
           maxX = Math.max(maxX, x + count);
-          y += this.style.lineHeight;
+          y += this.style.lineHeight.value;
           begin = i + 1;
           i = begin + 1;
           count = 0;
@@ -1890,7 +1809,7 @@ function (_Node) {
 
           lineBoxes.push(_lineBox);
           maxX = Math.max(maxX, x + count - charWidth[i]);
-          y += this.style.lineHeight;
+          y += this.style.lineHeight.value;
           begin = i;
           count = 0;
         } else {
@@ -1903,7 +1822,7 @@ function (_Node) {
 
         lineBoxes.push(_lineBox2);
         maxX = Math.max(maxX, x + count);
-        y += this.style.lineHeight;
+        y += this.style.lineHeight.value;
       }
 
       this.__width = maxX - x;
@@ -1993,12 +1912,56 @@ function (_Node) {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _unit__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./unit */ "./src/style/unit.js");
 /* harmony import */ var _font__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./font */ "./src/style/font.js");
+/* harmony import */ var _reset__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./reset */ "./src/style/reset.js");
+/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../util */ "./src/util.js");
+
+
 
 
 
 function normalize(style) {
-  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height'].forEach(function (k) {
-    var v = style[k];
+  // 默认reset
+  _reset__WEBPACK_IMPORTED_MODULE_2__["default"].forEach(function (item) {
+    if (!style.hasOwnProperty(item.k)) {
+      style[item.k] = item.v;
+    }
+  }); // 处理缩写
+
+  if (style.background) {
+    var bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
+
+    if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
+      style.backgroundColor = bgc[0];
+    }
+  }
+
+  if (style.flex) {
+    if (style.flex === 'none') {
+      style.flexGrow = 0;
+      style.flexShrink = 0;
+      style.flexBasis = 'auto';
+    } else if (style.flex === 'auto') {
+      style.flexGrow = 1;
+      style.flexShrink = 1;
+      style.flexBasis = 'auto';
+    } else if (/^\d+$/.test(style.flex)) {
+      style.flexGrow = parseInt(style.flex);
+      style.flexShrink = 1;
+      style.flexBasis = 0;
+    } else {
+      style.flexGrow = 0;
+      style.flexShrink = 1;
+      style.flexBasis = 'auto';
+    }
+  } // 转化不同单位值为对象标准化
+
+
+  ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height', 'flexBasis'].forEach(function (k) {
+    var v = style[k]; // 编译工具前置解析优化跳出
+
+    if (!_util__WEBPACK_IMPORTED_MODULE_3__["default"].isNil(v) && v.unit) {
+      return;
+    }
 
     if (v === 'auto') {
       style[k] = {
@@ -2030,18 +1993,30 @@ function normalize(style) {
   var lineHeight = style.lineHeight;
 
   if (lineHeight === 'normal') {
-    lineHeight = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+    lineHeight = {
+      value: style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr,
+      unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+    };
   } else if (/px$/.test(lineHeight)) {
     lineHeight = parseFloat(lineHeight);
-    lineHeight = Math.max(style.fontSize, lineHeight);
+    lineHeight = {
+      value: Math.max(style.fontSize, lineHeight),
+      unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+    };
   } // 纯数字比例
   else {
-      lineHeight = parseFloat(lineHeight) || 'normal';
+      lineHeight = parseFloat(lineHeight) || 'normal'; // 非法数字
 
       if (lineHeight === 'normal') {
-        lineHeight = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
+        lineHeight = {
+          value: style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+        };
       } else {
-        lineHeight *= style.fontSize;
+        lineHeight = {
+          value: lineHeight * style.fontSize,
+          unit: _unit__WEBPACK_IMPORTED_MODULE_0__["default"].PX
+        };
       }
     }
 
@@ -2058,7 +2033,7 @@ function setFontStyle(style) {
 
 function getBaseLine(style) {
   var normal = style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.lhr;
-  return (style.lineHeight - normal) * 0.5 + style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.blr;
+  return (style.lineHeight.value - normal) * 0.5 + style.fontSize * _font__WEBPACK_IMPORTED_MODULE_1__["default"].arial.blr;
 }
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2106,7 +2081,8 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ({
+var RESET = {
+  display: 'block',
   borderSizing: 'content-box',
   marginTop: 0,
   marginRight: 0,
@@ -2136,8 +2112,18 @@ __webpack_require__.r(__webpack_exports__);
   flexGrow: 0,
   flexShrink: 1,
   flexBasis: 'auto',
-  alignItem: 'stretch'
+  alignItem: 'stretch',
+  textAlign: 'left'
+};
+var reset = [];
+Object.keys(RESET).forEach(function (k) {
+  var v = RESET[k];
+  reset.push({
+    k: k,
+    v: v
+  });
 });
+/* harmony default export */ __webpack_exports__["default"] = (reset);
 
 /***/ }),
 

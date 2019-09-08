@@ -52,7 +52,7 @@ class Text extends Node {
         let lineBox = new LineBox(ctx, x, y, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
-        y += this.style.lineHeight;
+        y += this.style.lineHeight.value;
         begin = i + 1;
         i = begin + 1;
         count = 0;
@@ -61,7 +61,7 @@ class Text extends Node {
         let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidth[i]);
-        y += this.style.lineHeight;
+        y += this.style.lineHeight.value;
         begin = i;
         count = 0;
       }
@@ -73,7 +73,7 @@ class Text extends Node {
       let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
-      y += this.style.lineHeight;
+      y += this.style.lineHeight.value;
     }
     this.__width = maxX - x;
     this.__height = y - data.y;

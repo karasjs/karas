@@ -3,6 +3,25 @@ import font from './font';
 import reset from './reset';
 import util from '../util';
 
+function parserOneBorder(style, direction) {
+  let key = `border${direction}`;
+  if(!style[key]) {
+    return;
+  }
+  let w = /\b\d+px\b/i.exec(style[key]);
+  if(w) {
+    style[key + 'Width'] = w[0];
+  }
+  let s = /\bsolid\b/i.exec(style[key]);
+  if(s) {
+    style[key + 'Style'] = s[0];
+  }
+  let c = /#[0-9a-f]{3,6}/i.exec(style[key]);
+  if(c && [4, 7].indexOf(c[0].length) > -1) {
+    style[key + 'Color'] = c[0];
+  }
+}
+
 function normalize(style) {
   // 默认reset
   reset.forEach(item => {
@@ -11,6 +30,7 @@ function normalize(style) {
     }
   });
   // 处理缩写
+  // TODO: 重复声明时优先级
   if(style.background) {
     let bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
@@ -39,6 +59,13 @@ function normalize(style) {
       style.flexBasis = 'auto';
     }
   }
+  if(style.border) {
+    style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = style.border;
+  }
+  parserOneBorder(style, 'Top');
+  parserOneBorder(style, 'Right');
+  parserOneBorder(style, 'Bottom');
+  parserOneBorder(style, 'Left');
   // 转化不同单位值为对象标准化
   [
     'marginTop',

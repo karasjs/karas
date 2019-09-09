@@ -9,7 +9,7 @@ const RESET = {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 16,
+  fontSize: 24,
   fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',
@@ -29,6 +29,7 @@ const RESET = {
   flexGrow: 0,
   flexShrink: 1,
   flexBasis: 'auto',
+  flexDirection: 'row',
   alignItem: 'stretch',
   textAlign: 'left',
 };

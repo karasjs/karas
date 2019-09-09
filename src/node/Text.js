@@ -9,45 +9,42 @@ class Text extends Node {
     super();
     this.__content = content.toString();
     this.__lineBoxes = [];
-    this.__charWidth = [];
+    this.__charWidthList = [];
+    this.__charWidth = 0;
     this.__textWidth = 0;
   }
 
   // 预先计算每个字的宽度
   __measure() {
-    this.__charWidth = [];
-    let { ctx, content, style, charWidth } = this;
+    this.__charWidthList = [];
+    let { ctx, content, style, charWidthList } = this;
     ctx.font = css.setFontStyle(style);
     let cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
     let length = content.length;
     let sum = 0;
     for(let i = 0; i < length; i++) {
       let char = content.charAt(i);
-      if(cache.hasOwnProperty(char)) {
-        charWidth.push(cache[char]);
-        sum += cache[char];
-        continue;
-      }
-      let mw = cache[char] = ctx.measureText(char).width;
-      charWidth.push(mw);
+      let mw = cache.hasOwnProperty(char) ? cache[char] : ctx.measureText(char).width;
+      charWidthList.push(mw);
       sum += mw;
+      this.__charWidth = Math.max(this.charWidth, mw);
     }
     this.__textWidth = sum;
   }
 
-  __preLay(data) {
+  __preLay(data, isVirtual) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { ctx, content, style, lineBoxes, charWidth } = this;
+    let { ctx, content, style, lineBoxes, charWidthList } = this;
     // 顺序尝试分割字符串为lineBox，形成多行
     let begin = 0;
     let i = 0;
     let count = 0;
     let length = content.length;
     while(i < length) {
-      count += charWidth[i];
+      count += charWidthList[i];
       if (count === w) {
         let lineBox = new LineBox(ctx, x, y, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
@@ -58,18 +55,23 @@ class Text extends Node {
         count = 0;
       }
       else if (count > w) {
+        // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+        if(i === begin) {
+          i = begin + 1;
+        }
         let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
         lineBoxes.push(lineBox);
-        maxX = Math.max(maxX, x + count - charWidth[i]);
+        maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += this.style.lineHeight.value;
         begin = i;
+        i = i + 1;
         count = 0;
       }
       else {
         i++;
       }
     }
-    if(begin < i) {
+    if(begin < length && begin < i) {
       let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
@@ -77,6 +79,9 @@ class Text extends Node {
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
+    if(isVirtual) {
+      this.__lineBoxes = [];
+    }
   }
 
   render() {
@@ -101,7 +106,7 @@ class Text extends Node {
 
   __calMaxAndMinWidth() {
     let n = 0;
-    this.charWidth.forEach(item => {
+    this.charWidthList.forEach(item => {
       n = Math.max(n, item);
     });
     return { max: this.textWidth, min: n };
@@ -116,6 +121,9 @@ class Text extends Node {
   get lineBoxes() {
     return this.__lineBoxes;
   }
+  get charWidthList() {
+    return this.__charWidthList;
+  }
   get charWidth() {
     return this.__charWidth;
   }
@@ -125,6 +133,12 @@ class Text extends Node {
   get baseLine() {
     let last = this.lineBoxes[this.lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
+  }
+  get outerWidth() {
+    return this.__width;
+  }
+  get outerHeight() {
+    return this.__height;
   }
 }
 

@@ -91,6 +91,9 @@ class Canvas extends Dom {
     }
     this.__ctx = this.__node.getContext('2d');
     this.__traverse(this.__ctx);
+    // canvas的宽高固定初始化
+    style.width = this.width;
+    style.height = this.height;
     this.__initStyle();
     this.__preLay({
       x: 0,

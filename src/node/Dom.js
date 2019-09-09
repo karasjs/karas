@@ -20,6 +20,8 @@ class Dom extends Node {
     this.__tagName = tagName;
     this.__children = children;
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
+    this.__outerWidth = 0;
+    this.__outerHeight = 0;
   }
 
   /**
@@ -87,7 +89,7 @@ class Dom extends Node {
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
   __initStyle() {
-    let style = this.__style = this.props.style || {};
+    let style = this.__style;
     // 仅支持flex/block/inline
     if(!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
       if(INLINE.hasOwnProperty(this.tagName)) {
@@ -153,17 +155,65 @@ class Dom extends Node {
     });
   }
 
-  // 获取节点的最大和最小宽度
-  __calMaxAndMinWidth() {
-    let { children } = this;
-    let max = 0;
+  __calAutoBasis(isDirectionRow, w, h, isRecursion) {
+    let b = 0;
     let min = 0;
+    let max = 0;
+    let { children, style } = this;
+    // 初始化以style的属性
+    let {
+      width,
+      height,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+    } = style;
+    let main = isDirectionRow ? width : height;
+    if(main.unit !== unit.AUTO) {
+      b = max += main.value;
+      // 递归时children的长度会影响flex元素的最小宽度
+      if(isRecursion) {
+        min = b;
+      }
+    }
+    // 递归children取最大值
     children.forEach(item => {
-      let { max: a, min: b } = item.__calMaxAndMinWidth();
-      max = Math.max(max, a);
-      min = Math.max(min, b);
+      if(item instanceof Dom || item instanceof Geom) {
+        let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
+        b = Math.max(b, b2);
+        min = Math.max(min, min2);
+        max = Math.max(max, max2);
+      }
+      else if(isDirectionRow) {
+        min = Math.max(item.charWidth, min);
+        max = Math.max(item.textWidth, max);
+      }
+      else {
+        item.__preLay({
+          x: 0,
+          y: 0,
+          w,
+          h,
+        }, true);
+        min = Math.max(min, item.height);
+        max = Math.max(max, item.height);
+      }
     });
-    return { max, min };
+    // border也得计算在内
+    if(isDirectionRow) {
+      let w = borderRightWidth.value + borderLeftWidth.value;
+      b += w;
+      max += w;
+      min += w;
+    }
+    else {
+      let h = borderTopWidth.value + borderBottomWidth.value;
+      b += h;
+      max += h;
+      min += h;
+    }
+    return { b, min, max };
   }
 
   __preLay(data) {
@@ -186,7 +236,14 @@ class Dom extends Node {
     this.__y = y;
     this.__width = w;
     let { children, style } = this;
-    let { width, height } = style;
+    let {
+      width,
+      height,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+    } = style;
     // 除了auto外都是固定高度
     let fixedHeight;
     if(width && width.unit !== unit.AUTO) {
@@ -202,8 +259,19 @@ class Dom extends Node {
         case unit.PX:
           h = height.value;
           break;
+        case unit.PERCENT:
+          h *= height.value * 0.01;
+          break;
       }
     }
+    // border影响x和y和尺寸
+    x += borderLeftWidth.value;
+    data.x = x;
+    y += borderTopWidth.value;
+    data.y = y;
+    w -= borderLeftWidth.value + borderRightWidth.value;
+    h -= borderTopWidth.value + borderBottomWidth.value;
+    // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
       if(item instanceof Dom) {
@@ -217,7 +285,7 @@ class Dom extends Node {
               w,
               h,
             });
-            x += item.width;
+            x += item.outerWidth;
           }
           else {
             // 非开头先尝试是否放得下
@@ -235,7 +303,7 @@ class Dom extends Node {
               this.lineGroups.push(lineGroup);
               lineGroup.verticalAlign();
               x = data.x;
-              y += lineGroup.height;
+              y += lineGroup.outerHeight;
               item.__preLayInline({
                 x: data.x,
                 y,
@@ -243,7 +311,7 @@ class Dom extends Node {
               });
               lineGroup = new LineGroup(x, y);
             }
-            x += item.width;
+            x += item.outerWidth;
             lineGroup.add(item);
           }
         }
@@ -262,7 +330,7 @@ class Dom extends Node {
             h,
           });
           x = data.x;
-          y += item.height;
+          y += item.outerHeight;
         }
       }
       else if(item instanceof Geom) {
@@ -279,7 +347,7 @@ class Dom extends Node {
           w,
         });
         x = data.x;
-        y += item.height;
+        y += item.outerHeight;
       }
       // 文字和inline类似
       else {
@@ -333,6 +401,8 @@ class Dom extends Node {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
+    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   // 弹性布局时的计算位置
@@ -341,8 +411,17 @@ class Dom extends Node {
     this.__x = x;
     this.__y = y;
     this.__width = w;
-    let { children, ctx, style } = this;
-    let { width, height } = style;
+    let { children, style } = this;
+    let {
+      width,
+      height,
+      flexDirection,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+    } = style;
+    // 除了auto外都是固定高度
     let fixedHeight;
     if(width && width.unit !== unit.AUTO) {
       switch(width.unit) {
@@ -357,80 +436,30 @@ class Dom extends Node {
         case unit.PX:
           h = height.value;
           break;
+        case unit.PERCENT:
+          h *= height.value * 0.01;
+          break;
       }
     }
-    let growList = [];
-    let shrinkList = [];
-    let basisList = [];
-    let widthList = [];
-    let maxList = [];
-    let minList = [];
-    let maxWidth = 0;
-    let minWidth = 0;
-    let growSum = 0;
-    let shrinkSum = 0;
-    children.forEach(item => {
-      let { max, min } = item.__calMaxAndMinWidth();
-      maxList.push(max);
-      minList.push(min);
-      if(item instanceof Dom || item instanceof Geom) {
-        let { flexGrow, flexShrink, flexBasis, width } = item.style;
-        growList.push(flexGrow);
-        shrinkList.push(flexShrink);
-        basisList.push(flexBasis);
-        growSum += flexGrow;
-        shrinkSum += flexShrink;
-        if(width.unit === unit.AUTO) {
-          widthList.push('auto');
-        }
-        else if(width.unit === unit.PERCENT) {
-          widthList.push(width.value * w);
-        }
-        else if(width.unit === unit.PX) {
-          widthList.push(width.value);
-        }
-        // 根据basis不同，最大和最小计算方式不同
-        if(flexBasis.unit === unit.AUTO) {
-          if(width.unit === unit.AUTO) {
-            maxWidth += max;
-            minWidth += min;
-          }
-          else {
-            maxWidth += widthList[widthList.length - 1];
-            minWidth += widthList[widthList.length - 1];
-          }
-        }
-        else if([unit.PERCENT, unit.PX].indexOf(flexBasis.unit) > -1) {
-          maxWidth += max;
-          minWidth += min;
-        }
-      }
-      else {
-        growList.push(0);
-        shrinkList.push(1);
-        basisList.push({
-          unit: unit.AUTO,
-        });
-        shrinkSum += 1;
-        widthList.push('auto');
-        maxWidth += max;
-        minWidth += min;
-      }
-    });
-    console.log(w, maxWidth, minWidth, growList, shrinkList, basisList, widthList, minList, maxList, growSum, shrinkSum);
-    // 均不扩展和收缩
-    if(growSum === 0 && shrinkSum === 0) {
-      let maxHeight = 0;
-      // 从左到右依次排列布局，等同inline-block
+    // border影响x和y和尺寸
+    x += borderLeftWidth.value;
+    data.x = x;
+    y += borderTopWidth.value;
+    data.y = y;
+    w -= borderLeftWidth.value + borderRightWidth.value;
+    h -= borderTopWidth.value + borderBottomWidth.value;
+    let isDirectionRow = flexDirection === 'row';
+    // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
+    if(!isDirectionRow && !fixedHeight) {
       children.forEach(item => {
         if(item instanceof Dom || item instanceof Geom) {
-          item.__preLayInline({
+          item.__preLayBlock({
             x,
             y,
             w,
             h,
           });
-          x += item.width;
+          y += item.outerHeight;
         }
         else {
           item.__preLay({
@@ -439,18 +468,170 @@ class Dom extends Node {
             w,
             h,
           });
-          x += item.width;
+          y += item.height;
         }
-        maxHeight = Math.max(maxHeight, item.height);
       });
-      // 所有孩子高度相同
-      children.forEach(item => {
-        item.__height = maxHeight;
-      });
-      y += maxHeight;
+      this.__width = w;
+      this.__height = y - data.y;
+      this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
+      this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
+      return;
     }
+    // 计算伸缩基数
+    let growList = [];
+    let shrinkList = [];
+    let basisList = [];
+    let minList = [];
+    let growSum = 0;
+    let shrinkSum = 0;
+    let basisSum = 0;
+    let maxSum = 0;
+    children.forEach(item => {
+      if(item instanceof Dom || item instanceof Geom) {
+        let { flexGrow, flexShrink, flexBasis } = item.style;
+        growList.push(flexGrow);
+        shrinkList.push(flexShrink);
+        growSum += flexGrow;
+        shrinkSum += flexShrink;
+        let { b, min, max } = item.__calAutoBasis(isDirectionRow, w, h);
+        // 根据basis不同，计算方式不同
+        if(flexBasis.unit === unit.AUTO) {
+          basisList.push(max);
+          basisSum += max;
+        }
+        else if(flexBasis.unit === unit.PX) {
+          b = flexBasis.value;
+          basisList.push(b);
+          basisSum += b;
+        }
+        else if(flexBasis.unit === unit.PERCENT) {
+          b = (isDirectionRow ? w : h) * flexBasis.value;
+          basisList.push(b);
+          basisSum += b;
+        }
+        maxSum += max;
+        minList.push(min);
+      }
+      else {
+        growList.push(0);
+        shrinkList.push(1);
+        shrinkSum += 1;
+        if(isDirectionRow) {
+          basisList.push(item.textWidth);
+          basisSum += item.textWidth;
+          maxSum += item.textWidth;
+          minList.push(item.charWidth);
+        }
+        else {
+          item.__preLay({
+            x: 0,
+            y: 0,
+            w,
+            h,
+          });
+          basisList.push(item.height);
+          basisSum += item.height;
+          maxSum += item.height;
+          minList.push(item.height);
+        }
+      }
+    });
+    let maxCross = 0;
+    // 判断是否超出，决定使用grow还是shrink
+    let isOverflow = maxSum > (isDirectionRow ? w : h);
+    children.forEach((item, i) => {
+      let main;
+      let shrink = shrinkList[i];
+      let grow = growList[i];
+      if(isOverflow) {
+        let overflow = basisSum - (isDirectionRow ? w : h);
+        main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
+      }
+      else {
+        let free = (isDirectionRow ? w : h) - basisSum;
+        main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
+      }
+      main = Math.max(main, minList[i]);
+      if(item instanceof Dom || item instanceof Geom) {
+        if(isDirectionRow) {
+          item.__preLayInline({
+            x,
+            y,
+            w: main,
+            h,
+          });
+        }
+        else {
+          item.__preLayBlock({
+            x,
+            y,
+            w,
+            h: main,
+          });
+        }
+        // 重设因伸缩而导致的主轴长度
+        let {
+          borderTopWidth,
+          borderRightWidth,
+          borderBottomWidth,
+          borderLeftWidth,
+        } = item.style;
+        if(isOverflow && shrink) {
+          if(isDirectionRow) {
+            item.__width = main;
+            item.__outerWidth = main + borderLeftWidth.value + borderRightWidth.value;
+          }
+          else {
+            item.__height = main;
+            item.__outerHeight = main + borderTopWidth.value + borderBottomWidth.value;
+          }
+        }
+        else if(!isOverflow && grow) {
+          if(isDirectionRow) {
+            item.__width = main;
+            item.__outerWidth = main + borderLeftWidth.value + borderRightWidth.value;
+          }
+          else {
+            item.__height = main;
+            item.__outerHeight = main + borderTopWidth.value + borderBottomWidth.value;
+          }
+        }
+      }
+      else {
+        item.__preLay({
+          x,
+          y,
+          w: isDirectionRow ? main : w,
+          h: isDirectionRow ? h : main,
+        });
+      }
+      if(isDirectionRow) {
+        x += item.outerWidth;
+        maxCross = Math.max(maxCross, item.outerHeight);
+      }
+      else {
+        y += item.outerHeight;
+        x = data.x;
+        maxCross = Math.max(maxCross, item.outerWidth);
+      }
+    });
+    if(isDirectionRow) {
+      y += maxCross;
+    }
+    // 所有孩子侧轴长度相同
+    children.forEach(item => {
+      let { style } = item;
+      if(isDirectionRow) {
+        item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
+      }
+      else {
+        item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+      }
+    });
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
+    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -460,7 +641,14 @@ class Dom extends Node {
     this.__y = y;
     let maxX = x;
     let { children, style } = this;
-    let { width, height } = style;
+    let {
+      width,
+      height,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+    } = style;
     // 除了auto外都是固定高度
     let fixedWidth;
     let fixedHeight;
@@ -480,6 +668,14 @@ class Dom extends Node {
           break;
       }
     }
+    // border影响x和y
+    x += borderLeftWidth.value;
+    data.x = x;
+    y += borderTopWidth.value;
+    data.y = y;
+    w -= borderLeftWidth.value + borderRightWidth.value;
+    h -= borderTopWidth.value + borderBottomWidth.value;
+    // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
       if(item instanceof Dom) {
@@ -491,7 +687,7 @@ class Dom extends Node {
             y,
             w,
           });
-          x += item.width;
+          x += item.outerWidth;
           maxX = Math.max(maxX, x);
         }
         else {
@@ -518,7 +714,7 @@ class Dom extends Node {
             });
             lineGroup = new LineGroup(x, y);
           }
-          x += item.width;
+          x += item.outerWidth;
           maxX = Math.max(maxX, x);
           lineGroup.add(item);
         }
@@ -577,15 +773,67 @@ class Dom extends Node {
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__outerWidth = this.__width + borderLeftWidth.value + borderRightWidth.value;
+    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   render() {
-    const { ctx, style, children } = this;
-    if (style.backgroundColor) {
+    let { ctx, style, children, x, y, width, height } = this;
+    let {
+      backgroundColor,
+      borderTopWidth,
+      borderTopColor,
+      borderRightWidth,
+      borderRightColor,
+      borderBottomWidth,
+      borderBottomColor,
+      borderLeftWidth,
+      borderLeftColor,
+    } = style;
+    if(backgroundColor) {
       ctx.beginPath();
-      ctx.fillStyle = style.backgroundColor;
+      ctx.fillStyle = backgroundColor;
       ctx.rect(this.x, this.y, this.width, this.height);
       ctx.fill();
+      ctx.closePath();
+    }
+    if(borderTopWidth.value) {
+      ctx.beginPath();
+      ctx.lineWidth = borderTopWidth.value;
+      ctx.strokeStyle = borderTopColor;
+      let y2 = y + borderTopWidth.value * 0.5;
+      ctx.moveTo(x + borderLeftWidth.value, y2);
+      ctx.lineTo(x + borderLeftWidth.value + width, y2);
+      ctx.stroke();
+      ctx.closePath();
+    }
+    if(borderRightWidth.value) {
+      ctx.beginPath();
+      ctx.lineWidth = borderRightWidth.value;
+      ctx.strokeStyle = borderRightColor;
+      let x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
+      ctx.moveTo(x2, y);
+      ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
+      ctx.stroke();
+      ctx.closePath();
+    }
+    if(borderBottomWidth.value) {
+      ctx.beginPath();
+      ctx.lineWidth = borderBottomWidth.value;
+      ctx.strokeStyle = borderBottomColor;
+      let y2 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+      ctx.moveTo(x + borderLeftWidth.value, y2);
+      ctx.lineTo(x + borderLeftWidth.value + width, y2);
+      ctx.stroke();
+      ctx.closePath();
+    }
+    if(borderLeftWidth.value) {
+      ctx.beginPath();
+      ctx.lineWidth = borderLeftWidth.value;
+      ctx.strokeStyle = borderLeftColor;
+      ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
+      ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
+      ctx.stroke();
       ctx.closePath();
     }
     children.forEach(item => {
@@ -611,6 +859,12 @@ class Dom extends Node {
       return last.y - this.y + last.baseLine;
     }
     return this.y;
+  }
+  get outerWidth() {
+    return this.__outerWidth;
+  }
+  get outerHeight() {
+    return this.__outerHeight;
   }
 
   static isValid(s) {

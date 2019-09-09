@@ -59,7 +59,7 @@ class Node {
     this.__next = null;
     this.__ctx = null; // canvas的context
     this.__parent = null;
-    this.__style = {}; // style被解析后的k-v形式
+    this.__style = this.props.style || {}; // style被解析后的k-v形式
     this.__baseLine = 0;
   }
 

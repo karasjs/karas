@@ -9,9 +9,9 @@
     }
   ],
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --colors",
     "dev": "webpack --config webpack-dev.config.js --colors",
-    "dist": "webpack --config webpack-dist.config.js",
+    "dist": "webpack --config webpack-dist.config.js --colors",
     "test": "make test"
   },
   "repository": {

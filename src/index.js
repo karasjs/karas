@@ -2,6 +2,7 @@ import Dom from './node/Dom';
 import Canvas from './node/Canvas';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
+import Polygon from './geom/Polygon';
 
 let karas = {
   render(canvas, dom) {
@@ -27,11 +28,11 @@ let karas = {
       switch(tagName) {
         case '$line':
           return new Line(props);
-        case '$point':
-        default:
-          throw new Error('can not use marker: ' + tagName);
+        case '$polygon':
+          return new Polygon(props);
       }
     }
+    throw new Error('can not use geom marker: ' + tagName);
   },
   createCp(tagName, props, children) {},
 };

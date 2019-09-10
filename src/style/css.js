@@ -84,7 +84,7 @@ function normalize(style) {
     'borderLeftWidth',
     'width',
     'height',
-    'flexBasis'
+    'flexBasis',
   ].forEach(k => {
     let v = style[k];
     // 编译工具前置解析优化跳出

@@ -14,6 +14,10 @@ class LineBox {
     this.ctx.fillText(this.content, this.x, this.y + css.getBaseLine(this.style));
   }
 
+  __offsetX(diff) {
+    this.__x += diff;
+  }
+
   __offsetY(diff) {
     this.__y += diff;
   }

@@ -30,8 +30,11 @@ const RESET = {
   flexShrink: 1,
   flexBasis: 'auto',
   flexDirection: 'row',
+  justifyContent: 'flex-start',
   alignItem: 'stretch',
   textAlign: 'left',
+  stroke: '#000',
+  strokeWidth: 1,
 };
 
 let reset = [];

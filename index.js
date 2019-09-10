@@ -106,10 +106,8 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_Node__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../node/Node */ "./src/node/Node.js");
-/* harmony import */ var _style_reset__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../style/reset */ "./src/style/reset.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../util */ "./src/util.js");
-/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
-/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
+/* harmony import */ var _style_css__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../style/css */ "./src/style/css.js");
+/* harmony import */ var _style_unit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../style/unit */ "./src/style/unit.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -131,11 +129,9 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
 
 
 
-
-
 var TAG_NAME = {
-  'line': true,
-  'curve': true
+  '$line': true,
+  '$polygon': true
 };
 
 var Geom =
@@ -144,59 +140,218 @@ function (_Node) {
   _inherits(Geom, _Node);
 
   function Geom(props) {
-    var _this;
-
     _classCallCheck(this, Geom);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, props));
-    _this.__style = {}; // style被解析后的k-v形式
-
-    return _this;
+    return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, props));
   }
 
   _createClass(Geom, [{
     key: "__initStyle",
     value: function __initStyle() {
-      var style = this.style; // 图形强制block
+      _style_css__WEBPACK_IMPORTED_MODULE_1__["default"].normalize(this.style);
+    }
+  }, {
+    key: "__calAutoBasis",
+    value: function __calAutoBasis(isDirectionRow, w, h) {
+      var b = 0;
+      var min = 0;
+      var max = 0;
+      var style = this.style; // 计算需考虑style的属性
 
-      Object.assign(style, _style_reset__WEBPACK_IMPORTED_MODULE_1__["default"], this.props.style, {
-        display: 'block'
-      });
-      _style_css__WEBPACK_IMPORTED_MODULE_3__["default"].normalize(style);
+      var width = style.width,
+          height = style.height,
+          borderTopWidth = style.borderTopWidth,
+          borderRightWidth = style.borderRightWidth,
+          borderBottomWidth = style.borderBottomWidth,
+          borderLeftWidth = style.borderLeftWidth;
+      var main = isDirectionRow ? width : height;
+
+      if (main.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_2__["default"].AUTO) {
+        b = max += main.value;
+      } // border也得计算在内
+
+
+      if (isDirectionRow) {
+        var _w = borderRightWidth.value + borderLeftWidth.value;
+
+        b += _w;
+        max += _w;
+        min += _w;
+      } else {
+        var _h = borderTopWidth.value + borderBottomWidth.value;
+
+        b += _h;
+        max += _h;
+        min += _h;
+      }
+
+      return {
+        b: b,
+        min: min,
+        max: max
+      };
     }
   }, {
     key: "__preLay",
     value: function __preLay(data) {
+      var style = this.style;
+
+      if (style.display === 'block') {
+        this.__preLayBlock(data);
+      } else if (style.display === 'flex') {
+        this.__preLayFlex(data);
+      } else {
+        this.__preLayInline(data);
+      }
+    }
+  }, {
+    key: "__preLayInline",
+    value: function __preLayInline(data) {
       var x = data.x,
           y = data.y,
           w = data.w,
           h = data.h;
-      var style = this.style;
-      var width = style.width,
-          height = style.height;
       this.__x = x;
       this.__y = y;
+      var style = this.style;
+      var width = style.width,
+          height = style.height,
+          borderTopWidth = style.borderTopWidth,
+          borderRightWidth = style.borderRightWidth,
+          borderBottomWidth = style.borderBottomWidth,
+          borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
 
-      if (width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
-        this.__width = Math.ceil(width.value * h);
-      } else if (width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
-        this.__width = width.value;
-      } else {
-        this.__width = w;
+      var fixedWidth;
+      var fixedHeight;
+
+      if (width && width.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_2__["default"].AUTO) {
+        fixedWidth = true;
+
+        switch (width.unit) {
+          case _style_unit__WEBPACK_IMPORTED_MODULE_2__["default"].PX:
+            w = width.value;
+            break;
+        }
       }
 
-      if (height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PERCENT) {
-        this.__height = Math.ceil(height.value * h);
-      } else if (height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_4__["default"].PX) {
-        this.__height = height.value;
-      } else {
-        this.__height = h;
+      if (height && height.unit !== _style_unit__WEBPACK_IMPORTED_MODULE_2__["default"].AUTO) {
+        fixedHeight = true;
+
+        switch (height.unit) {
+          case _style_unit__WEBPACK_IMPORTED_MODULE_2__["default"].PX:
+            h = height.value;
+            break;
+        }
+      } // border影响x和y
+
+
+      x += borderLeftWidth.value;
+      data.x = x;
+      y += borderTopWidth.value;
+      data.y = y;
+      w -= borderLeftWidth.value + borderRightWidth.value;
+      h -= borderTopWidth.value + borderBottomWidth.value; // 元素的width不能超过父元素w
+
+      this.__width = fixedWidth ? w : x - data.x;
+      this.__height = fixedHeight ? h : y - data.y;
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var ctx = this.ctx,
+          style = this.style,
+          x = this.x,
+          y = this.y,
+          width = this.width,
+          height = this.height;
+      var backgroundColor = style.backgroundColor,
+          borderTopWidth = style.borderTopWidth,
+          borderTopColor = style.borderTopColor,
+          borderRightWidth = style.borderRightWidth,
+          borderRightColor = style.borderRightColor,
+          borderBottomWidth = style.borderBottomWidth,
+          borderBottomColor = style.borderBottomColor,
+          borderLeftWidth = style.borderLeftWidth,
+          borderLeftColor = style.borderLeftColor;
+
+      if (backgroundColor) {
+        ctx.beginPath();
+        ctx.fillStyle = backgroundColor;
+        ctx.rect(this.x, this.y, this.width, this.height);
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      if (borderTopWidth.value) {
+        ctx.beginPath();
+        ctx.lineWidth = borderTopWidth.value;
+        ctx.strokeStyle = borderTopColor;
+        var y2 = y + borderTopWidth.value * 0.5;
+        ctx.moveTo(x + borderLeftWidth.value, y2);
+        ctx.lineTo(x + borderLeftWidth.value + width, y2);
+        ctx.stroke();
+        ctx.closePath();
+      }
+
+      if (borderRightWidth.value) {
+        ctx.beginPath();
+        ctx.lineWidth = borderRightWidth.value;
+        ctx.strokeStyle = borderRightColor;
+        var x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
+        ctx.stroke();
+        ctx.closePath();
+      }
+
+      if (borderBottomWidth.value) {
+        ctx.beginPath();
+        ctx.lineWidth = borderBottomWidth.value;
+        ctx.strokeStyle = borderBottomColor;
+
+        var _y = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+
+        ctx.moveTo(x + borderLeftWidth.value, _y);
+        ctx.lineTo(x + borderLeftWidth.value + width, _y);
+        ctx.stroke();
+        ctx.closePath();
+      }
+
+      if (borderLeftWidth.value) {
+        ctx.beginPath();
+        ctx.lineWidth = borderLeftWidth.value;
+        ctx.strokeStyle = borderLeftColor;
+        ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
+        ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
+        ctx.stroke();
+        ctx.closePath();
       }
     }
   }, {
-    key: "style",
+    key: "tagName",
     get: function get() {
-      return this.__style;
+      return this.__tagName;
+    }
+  }, {
+    key: "baseLine",
+    get: function get() {
+      return 0;
+    }
+  }, {
+    key: "outerWidth",
+    get: function get() {
+      var _this$style = this.style,
+          borderLeftWidth = _this$style.borderLeftWidth,
+          borderRightWidth = _this$style.borderRightWidth;
+      return this.width + borderLeftWidth.value + borderRightWidth.value;
+    }
+  }, {
+    key: "outerHeight",
+    get: function get() {
+      var _this$style2 = this.style,
+          borderTopWidth = _this$style2.borderTopWidth,
+          borderBottomWidth = _this$style2.borderBottomWidth;
+      return this.height + borderTopWidth.value + borderBottomWidth.value;
     }
   }], [{
     key: "isValid",
@@ -222,7 +377,6 @@ function (_Node) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Geom */ "./src/geom/Geom.js");
-/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util */ "./src/util.js");
 function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -235,12 +389,15 @@ function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) ===
 
 function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
+function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
+
+function _superPropBase(object, property) { while (!Object.prototype.hasOwnProperty.call(object, property)) { object = _getPrototypeOf(object); if (object === null) break; } return object; }
+
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
-
 
 
 
@@ -250,69 +407,62 @@ function (_Geom) {
   _inherits(Line, _Geom);
 
   function Line(props) {
+    var _this;
+
     _classCallCheck(this, Line);
 
-    return _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, props));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, props));
+    _this.__tagName = '$line';
+    _this.__start = [0, 0];
+    _this.__end = [1, 1];
+
+    if (Array.isArray(_this.props.start)) {
+      _this.__start = _this.props.start;
+    }
+
+    if (Array.isArray(_this.props.end)) {
+      _this.__end = _this.props.end;
+    }
+
+    return _this;
   }
 
   _createClass(Line, [{
     key: "render",
     value: function render() {
+      _get(_getPrototypeOf(Line.prototype), "render", this).call(this);
+
       var x = this.x,
           y = this.y,
           width = this.width,
           height = this.height,
-          props = this.props,
-          ctx = this.ctx;
-      var max = props.max,
-          min = props.min,
-          data = props.data;
-      ctx.strokeStyle = '#333333';
-      ctx.lineWidth = 1;
-
-      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(max)) {
-        max = data[0];
-        data.forEach(function (item) {
-          max = Math.max(item, max);
-        });
-      }
-
-      if (_util__WEBPACK_IMPORTED_MODULE_1__["default"].isNil(min)) {
-        min = data[0];
-        data.forEach(function (item) {
-          min = Math.min(item, min);
-        });
-      }
-
-      if (max < min) {
-        throw new Error('max can not less than min');
-      }
-
-      var stepX = width / (data.length - 1);
-      var stepY = height / (max - min);
-
-      if (max === min) {
-        stepY = height;
-      }
-
-      var coords = [];
-      data.forEach(function (item, i) {
-        var diff = item - min;
-        var rx = i * stepX;
-        var ry = height - diff * stepY;
-        coords.push([rx, ry + y]);
-      });
-      var first = coords[0];
+          style = this.style,
+          ctx = this.ctx,
+          start = this.start,
+          end = this.end;
+      var borderTopWidth = style.borderTopWidth,
+          borderLeftWidth = style.borderLeftWidth,
+          stroke = style.stroke,
+          strokeWidth = style.strokeWidth;
+      var originX = x + borderLeftWidth.value;
+      var originY = y + borderTopWidth.value;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeWidth;
       ctx.beginPath();
-      ctx.moveTo(first[0], first[1]);
-
-      for (var i = 1; i < coords.length; i++) {
-        var item = coords[i];
-        ctx.lineTo(item[0], item[1]);
-      }
-
+      ctx.moveTo(originX + start[0] * width, originY + start[1] * height);
+      ctx.lineTo(originX + end[0] * width, originY + end[1] * height);
       ctx.stroke();
       ctx.closePath();
+    }
+  }, {
+    key: "start",
+    get: function get() {
+      return this.__start;
+    }
+  }, {
+    key: "end",
+    get: function get() {
+      return this.__end;
     }
   }]);
 
@@ -320,6 +470,106 @@ function (_Geom) {
 }(_Geom__WEBPACK_IMPORTED_MODULE_0__["default"]);
 
 /* harmony default export */ __webpack_exports__["default"] = (Line);
+
+/***/ }),
+
+/***/ "./src/geom/Polygon.js":
+/*!*****************************!*\
+  !*** ./src/geom/Polygon.js ***!
+  \*****************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _Geom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./Geom */ "./src/geom/Geom.js");
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _get(target, property, receiver) { if (typeof Reflect !== "undefined" && Reflect.get) { _get = Reflect.get; } else { _get = function _get(target, property, receiver) { var base = _superPropBase(target, property); if (!base) return; var desc = Object.getOwnPropertyDescriptor(base, property); if (desc.get) { return desc.get.call(receiver); } return desc.value; }; } return _get(target, property, receiver || target); }
+
+function _superPropBase(object, property) { while (!Object.prototype.hasOwnProperty.call(object, property)) { object = _getPrototypeOf(object); if (object === null) break; } return object; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+
+
+var Polygon =
+/*#__PURE__*/
+function (_Geom) {
+  _inherits(Polygon, _Geom);
+
+  function Polygon(props) {
+    var _this;
+
+    _classCallCheck(this, Polygon);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, props));
+    _this.__tagName = '$polygon';
+    _this.__pointList = [];
+
+    if (Array.isArray(_this.props.pointList)) {
+      _this.__pointList = _this.props.pointList;
+    }
+
+    return _this;
+  }
+
+  _createClass(Polygon, [{
+    key: "render",
+    value: function render() {
+      _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this);
+
+      var x = this.x,
+          y = this.y,
+          width = this.width,
+          height = this.height,
+          style = this.style,
+          ctx = this.ctx,
+          pointList = this.pointList;
+      var borderTopWidth = style.borderTopWidth,
+          borderLeftWidth = style.borderLeftWidth,
+          stroke = style.stroke,
+          strokeWidth = style.strokeWidth;
+      var originX = x + borderLeftWidth.value;
+      var originY = y + borderTopWidth.value;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeWidth;
+      ctx.beginPath();
+      ctx.moveTo(originX + pointList[0][0] * width, originY + pointList[0][1] * height);
+
+      for (var i = 1, len = pointList.length; i < len; i++) {
+        var point = pointList[i];
+        ctx.lineTo(originX + point[0] * width, originY + point[1] * height);
+      }
+
+      ctx.stroke();
+      ctx.closePath();
+    }
+  }, {
+    key: "pointList",
+    get: function get() {
+      return this.__pointList;
+    }
+  }]);
+
+  return Polygon;
+}(_Geom__WEBPACK_IMPORTED_MODULE_0__["default"]);
+
+/* harmony default export */ __webpack_exports__["default"] = (Polygon);
 
 /***/ }),
 
@@ -336,6 +586,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _node_Canvas__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./node/Canvas */ "./src/node/Canvas.js");
 /* harmony import */ var _geom_Geom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./geom/Geom */ "./src/geom/Geom.js");
 /* harmony import */ var _geom_Line__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./geom/Line */ "./src/geom/Line.js");
+/* harmony import */ var _geom_Polygon__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./geom/Polygon */ "./src/geom/Polygon.js");
+
 
 
 
@@ -369,11 +621,12 @@ var karas = {
         case '$line':
           return new _geom_Line__WEBPACK_IMPORTED_MODULE_3__["default"](props);
 
-        case '$point':
-        default:
-          throw new Error('can not use marker: ' + tagName);
+        case '$polygon':
+          return new _geom_Polygon__WEBPACK_IMPORTED_MODULE_4__["default"](props);
       }
     }
+
+    throw new Error('can not use geom marker: ' + tagName);
   },
   createCp: function createCp(tagName, props, children) {}
 };
@@ -778,6 +1031,17 @@ function (_Node) {
       }
 
       return w;
+    } // 设置y偏移值，递归包括children，此举在flex行元素的child进行justify-content对齐用
+
+  }, {
+    key: "__offsetX",
+    value: function __offsetX(diff) {
+      this.__x += diff;
+      this.children.forEach(function (item) {
+        if (item) {
+          item.__offsetX(diff);
+        }
+      });
     } // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
 
   }, {
@@ -797,7 +1061,7 @@ function (_Node) {
       var min = 0;
       var max = 0;
       var children = this.children,
-          style = this.style; // 初始化以style的属性
+          style = this.style; // 计算需考虑style的属性
 
       var width = style.width,
           height = style.height,
@@ -1092,7 +1356,8 @@ function (_Node) {
           borderTopWidth = style.borderTopWidth,
           borderRightWidth = style.borderRightWidth,
           borderBottomWidth = style.borderBottomWidth,
-          borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+          borderLeftWidth = style.borderLeftWidth,
+          justifyContent = style.justifyContent; // 除了auto外都是固定高度
 
       var fixedHeight;
 
@@ -1219,13 +1484,9 @@ function (_Node) {
             minList.push(item.height);
           }
         }
-      }); // 不伸展且总长度不足时，父元素宽度缩短
-
-      if (growSum === 0 && isDirectionRow && maxSum < w) {
-        w = maxSum;
-      }
-
-      var maxCross = 0; // 判断是否超出，决定使用grow还是shrink
+      });
+      var maxCross = 0;
+      var free = 0; // 判断是否超出，决定使用grow还是shrink
 
       var isOverflow = maxSum > (isDirectionRow ? w : h);
       children.forEach(function (item, i) {
@@ -1237,7 +1498,7 @@ function (_Node) {
           var overflow = basisSum - (isDirectionRow ? w : h);
           main = shrink ? basisList[i] - overflow * shrink / shrinkSum : basisList[i];
         } else {
-          var free = (isDirectionRow ? w : h) - basisSum;
+          free = (isDirectionRow ? w : h) - basisSum;
           main = grow ? basisList[i] + free * grow / growSum : basisList[i];
         } // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
 
@@ -1317,7 +1578,40 @@ function (_Node) {
           x = data.x;
           maxCross = Math.max(maxCross, item.outerWidth);
         }
-      });
+      }); // 主轴侧轴对齐方式
+
+      if (!isOverflow && growSum === 0 && free > 0) {
+        var len = children.length;
+
+        if (justifyContent === 'flex-end') {
+          for (var i = 0; i < len; i++) {
+            var child = children[i];
+            isDirectionRow ? child.__offsetX(free) : child.__offsetY(free);
+          }
+        } else if (justifyContent === 'center') {
+          var center = free * 0.5;
+
+          for (var _i2 = 0; _i2 < len; _i2++) {
+            var _child = children[_i2];
+            isDirectionRow ? _child.__offsetX(center) : _child.__offsetY(center);
+          }
+        } else if (justifyContent === 'space-between') {
+          var between = free / (len - 1);
+
+          for (var _i3 = 1; _i3 < len; _i3++) {
+            var _child2 = children[_i3];
+            isDirectionRow ? _child2.__offsetX(between * _i3) : _child2.__offsetY(between * _i3);
+          }
+        } else if (justifyContent === 'space-around') {
+          var around = free / (len + 1);
+
+          for (var _i4 = 0; _i4 < len; _i4++) {
+            var _child3 = children[_i4];
+            isDirectionRow ? _child3.__offsetX(around * (_i4 + 1)) : _child3.__offsetY(around * (_i4 + 1));
+          }
+        }
+      } // 子元素侧轴伸展
+
 
       if (isDirectionRow) {
         // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
@@ -1678,6 +1972,11 @@ function () {
     value: function render() {
       this.ctx.fillStyle = this.style.color;
       this.ctx.fillText(this.content, this.x, this.y + _style_css__WEBPACK_IMPORTED_MODULE_0__["default"].getBaseLine(this.style));
+    }
+  }, {
+    key: "__offsetX",
+    value: function __offsetX(diff) {
+      this.__x += diff;
     }
   }, {
     key: "__offsetY",
@@ -2143,6 +2442,14 @@ function (_Node) {
       return w - tw;
     }
   }, {
+    key: "__offsetX",
+    value: function __offsetX(diff) {
+      this.__x += diff;
+      this.lineBoxes.forEach(function (item) {
+        item.__offsetX(diff);
+      });
+    }
+  }, {
     key: "__offsetY",
     value: function __offsetY(diff) {
       this.__y += diff;
@@ -2441,7 +2748,7 @@ var RESET = {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 16,
+  fontSize: 24,
   fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',
@@ -2462,8 +2769,11 @@ var RESET = {
   flexShrink: 1,
   flexBasis: 'auto',
   flexDirection: 'row',
+  justifyContent: 'flex-start',
   alignItem: 'stretch',
-  textAlign: 'left'
+  textAlign: 'left',
+  stroke: '#000',
+  strokeWidth: 1
 };
 var reset = [];
 Object.keys(RESET).forEach(function (k) {

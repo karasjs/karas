@@ -97,6 +97,13 @@ class Text extends Node {
     return w - tw;
   }
 
+  __offsetX(diff) {
+    this.__x += diff;
+    this.lineBoxes.forEach(item => {
+      item.__offsetX(diff);
+    });
+  }
+
   __offsetY(diff) {
     this.__y += diff;
     this.lineBoxes.forEach(item => {

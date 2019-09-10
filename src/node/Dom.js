@@ -143,6 +143,16 @@ class Dom extends Node {
     return w;
   }
 
+  // 设置y偏移值，递归包括children，此举在flex行元素的child进行justify-content对齐用
+  __offsetX(diff) {
+    this.__x += diff;
+    this.children.forEach(item => {
+      if(item) {
+        item.__offsetX(diff);
+      }
+    });
+  }
+
   // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
   __offsetY(diff) {
     this.__y += diff;
@@ -158,7 +168,7 @@ class Dom extends Node {
     let min = 0;
     let max = 0;
     let { children, style } = this;
-    // 初始化以style的属性
+    // 计算需考虑style的属性
     let {
       width,
       height,
@@ -416,6 +426,7 @@ class Dom extends Node {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      justifyContent,
     } = style;
     // 除了auto外都是固定高度
     let fixedHeight;
@@ -530,11 +541,8 @@ class Dom extends Node {
         }
       }
     });
-    // 不伸展且总长度不足时，父元素宽度缩短
-    if(growSum === 0 && isDirectionRow && maxSum < w) {
-      w = maxSum;
-    }
     let maxCross = 0;
+    let free = 0;
     // 判断是否超出，决定使用grow还是shrink
     let isOverflow = maxSum > (isDirectionRow ? w : h);
     children.forEach((item, i) => {
@@ -547,7 +555,7 @@ class Dom extends Node {
         main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
       }
       else {
-        let free = (isDirectionRow ? w : h) - basisSum;
+        free = (isDirectionRow ? w : h) - basisSum;
         main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
       }
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
@@ -624,6 +632,38 @@ class Dom extends Node {
         maxCross = Math.max(maxCross, item.outerWidth);
       }
     });
+    // 主轴侧轴对齐方式
+    if(!isOverflow && growSum === 0 && free > 0) {
+      let len = children.length;
+      if(justifyContent === 'flex-end') {
+        for(let i = 0; i < len; i++) {
+          let child = children[i];
+          isDirectionRow ? child.__offsetX(free) : child.__offsetY(free);
+        }
+      }
+      else if(justifyContent === 'center') {
+        let center = free * 0.5;
+        for(let i = 0; i < len; i++) {
+          let child = children[i];
+          isDirectionRow ? child.__offsetX(center) : child.__offsetY(center);
+        }
+      }
+      else if(justifyContent === 'space-between') {
+        let between = free / (len - 1);
+        for(let i = 1; i < len; i++) {
+          let child = children[i];
+          isDirectionRow ? child.__offsetX(between * i) : child.__offsetY(between * i);
+        }
+      }
+      else if(justifyContent === 'space-around') {
+        let around = free / (len + 1);
+        for(let i = 0; i < len; i++) {
+          let child = children[i];
+          isDirectionRow ? child.__offsetX(around * (i + 1)) : child.__offsetY(around * (i + 1));
+        }
+      }
+    }
+    // 子元素侧轴伸展
     if(isDirectionRow) {
       // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
       if(fixedHeight) {

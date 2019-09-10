@@ -553,9 +553,9 @@ class Dom extends Node {
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Dom || item instanceof Geom) {
-        const { style, style: { display, flexDirection, height }} = item;
+        const { style, style: { display, flexDirection, width, height }} = item;
         if(isDirectionRow) {
-          // flex的child如果是block，则等同于inline-block布局
+          // row的flex的child如果是block，则等同于inline-block布局
           if(display === 'block') {
             style.display = 'inline';
           }
@@ -572,6 +572,15 @@ class Dom extends Node {
           })
         }
         else {
+          // column的flex的child如果是inline，变为block
+          if(display === 'inline') {
+            style.display = 'block';
+          }
+          // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+          else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
+            width.value = w;
+            width.unit = unit.PX;
+          }
           item.__preLay({
             x,
             y,

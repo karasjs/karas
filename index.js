@@ -1249,10 +1249,11 @@ function (_Node) {
               _item$style2 = item.style,
               display = _item$style2.display,
               _flexDirection = _item$style2.flexDirection,
+              _width = _item$style2.width,
               _height = _item$style2.height;
 
           if (isDirectionRow) {
-            // flex的child如果是block，则等同于inline-block布局
+            // row的flex的child如果是block，则等同于inline-block布局
             if (display === 'block') {
               _style.display = 'inline';
             } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
@@ -1268,6 +1269,15 @@ function (_Node) {
               h: h
             });
           } else {
+            // column的flex的child如果是inline，变为block
+            if (display === 'inline') {
+              _style.display = 'block';
+            } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+            else if (display === 'flex' && _flexDirection === 'row' && _width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+                _width.value = w;
+                _width.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
+              }
+
             item.__preLay({
               x: x,
               y: y,

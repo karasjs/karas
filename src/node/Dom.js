@@ -20,8 +20,6 @@ class Dom extends Node {
     this.__tagName = tagName;
     this.__children = children;
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
-    this.__outerWidth = 0;
-    this.__outerHeight = 0;
   }
 
   /**
@@ -401,8 +399,6 @@ class Dom extends Node {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   // 弹性布局时的计算位置
@@ -473,8 +469,6 @@ class Dom extends Node {
       });
       this.__width = w;
       this.__height = y - data.y;
-      this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-      this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
       return;
     }
     // 计算伸缩基数
@@ -528,7 +522,7 @@ class Dom extends Node {
             y: 0,
             w,
             h,
-          });
+          }, true);
           basisList.push(item.height);
           basisSum += item.height;
           maxSum += item.height;
@@ -536,6 +530,10 @@ class Dom extends Node {
         }
       }
     });
+    // 不伸展且总长度不足时，父元素宽度缩短
+    if(growSum === 0 && isDirectionRow && maxSum < w) {
+      w = maxSum;
+    }
     let maxCross = 0;
     // 判断是否超出，决定使用grow还是shrink
     let isOverflow = maxSum > (isDirectionRow ? w : h);
@@ -543,6 +541,7 @@ class Dom extends Node {
       let main;
       let shrink = shrinkList[i];
       let grow = growList[i];
+      // 计算主轴长度
       if(isOverflow) {
         let overflow = basisSum - (isDirectionRow ? w : h);
         main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
@@ -551,18 +550,29 @@ class Dom extends Node {
         let free = (isDirectionRow ? w : h) - basisSum;
         main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
       }
+      // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Dom || item instanceof Geom) {
+        const { style, style: { display, flexDirection, height }} = item;
         if(isDirectionRow) {
-          item.__preLayInline({
+          // flex的child如果是block，则等同于inline-block布局
+          if(display === 'block') {
+            style.display = 'inline';
+          }
+          // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
+          else if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
+            height.value = h;
+            height.unit = unit.PX;
+          }
+          item.__preLay({
             x,
             y,
             w: main,
             h,
-          });
+          })
         }
         else {
-          item.__preLayBlock({
+          item.__preLay({
             x,
             y,
             w,
@@ -570,30 +580,20 @@ class Dom extends Node {
           });
         }
         // 重设因伸缩而导致的主轴长度
-        let {
-          borderTopWidth,
-          borderRightWidth,
-          borderBottomWidth,
-          borderLeftWidth,
-        } = item.style;
         if(isOverflow && shrink) {
           if(isDirectionRow) {
             item.__width = main;
-            item.__outerWidth = main + borderLeftWidth.value + borderRightWidth.value;
           }
           else {
             item.__height = main;
-            item.__outerHeight = main + borderTopWidth.value + borderBottomWidth.value;
           }
         }
         else if(!isOverflow && grow) {
           if(isDirectionRow) {
             item.__width = main;
-            item.__outerWidth = main + borderLeftWidth.value + borderRightWidth.value;
           }
           else {
             item.__height = main;
-            item.__outerHeight = main + borderTopWidth.value + borderBottomWidth.value;
           }
         }
       }
@@ -616,22 +616,28 @@ class Dom extends Node {
       }
     });
     if(isDirectionRow) {
+      // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
+      if(fixedHeight) {
+        maxCross = h;
+      }
       y += maxCross;
     }
-    // 所有孩子侧轴长度相同
+    // 所有短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
     children.forEach(item => {
       let { style } = item;
       if(isDirectionRow) {
-        item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
+        if(item.style.height.unit === unit.AUTO) {
+          item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
+        }
       }
       else {
-        item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+        if(item.style.width.unit === unit.AUTO) {
+          item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+        }
       }
     });
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -773,8 +779,6 @@ class Dom extends Node {
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__outerWidth = this.__width + borderLeftWidth.value + borderRightWidth.value;
-    this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   render() {
@@ -861,10 +865,12 @@ class Dom extends Node {
     return this.y;
   }
   get outerWidth() {
-    return this.__outerWidth;
+    let { style: { borderLeftWidth, borderRightWidth } } = this;
+    return this.width + borderLeftWidth.value + borderRightWidth.value;
   }
   get outerHeight() {
-    return this.__outerHeight;
+    let { style: { borderTopWidth, borderBottomWidth } } = this;
+    return this.height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   static isValid(s) {

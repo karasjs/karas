@@ -48,11 +48,13 @@ function normalize(style) {
       style.flexShrink = 1;
       style.flexBasis = 'auto';
     }
-    else if(/^\d+$/.test(style.flex)) {
-      style.flexGrow = parseInt(style.flex);
+    else if(/^[\d.]+$/.test(style.flex)) {
+      style.flexGrow = parseFloat(style.flex);
       style.flexShrink = 1;
       style.flexBasis = 0;
     }
+    else if(/^[\d.]+px$/.test(style.flex)) {}
+    else if(/^[\d.]+%$/.test(style.flex)) {}
     else {
       style.flexGrow = 0;
       style.flexShrink = 1;

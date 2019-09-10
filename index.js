@@ -637,8 +637,6 @@ function (_Node) {
     _this.__children = children;
     _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
-    _this.__outerWidth = 0;
-    _this.__outerHeight = 0;
     return _this;
   }
   /**
@@ -1074,8 +1072,6 @@ function (_Node) {
 
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
-      this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-      this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
     } // 弹性布局时的计算位置
 
   }, {
@@ -1155,8 +1151,6 @@ function (_Node) {
         });
         this.__width = w;
         this.__height = y - data.y;
-        this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-        this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
         return;
       } // 计算伸缩基数
 
@@ -1217,7 +1211,7 @@ function (_Node) {
               y: 0,
               w: w,
               h: h
-            });
+            }, true);
 
             basisList.push(item.height);
             basisSum += item.height;
@@ -1225,14 +1219,19 @@ function (_Node) {
             minList.push(item.height);
           }
         }
-      });
+      }); // 不伸展且总长度不足时，父元素宽度缩短
+
+      if (growSum === 0 && isDirectionRow && maxSum < w) {
+        w = maxSum;
+      }
+
       var maxCross = 0; // 判断是否超出，决定使用grow还是shrink
 
       var isOverflow = maxSum > (isDirectionRow ? w : h);
       children.forEach(function (item, i) {
         var main;
         var shrink = shrinkList[i];
-        var grow = growList[i];
+        var grow = growList[i]; // 计算主轴长度
 
         if (isOverflow) {
           var overflow = basisSum - (isDirectionRow ? w : h);
@@ -1240,20 +1239,36 @@ function (_Node) {
         } else {
           var free = (isDirectionRow ? w : h) - basisSum;
           main = grow ? basisList[i] + free * grow / growSum : basisList[i];
-        }
+        } // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
+
 
         main = Math.max(main, minList[i]);
 
         if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
+          var _style = item.style,
+              _item$style2 = item.style,
+              display = _item$style2.display,
+              _flexDirection = _item$style2.flexDirection,
+              _height = _item$style2.height;
+
           if (isDirectionRow) {
-            item.__preLayInline({
+            // flex的child如果是block，则等同于inline-block布局
+            if (display === 'block') {
+              _style.display = 'inline';
+            } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
+            else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && _height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+                _height.value = h;
+                _height.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
+              }
+
+            item.__preLay({
               x: x,
               y: y,
               w: main,
               h: h
             });
           } else {
-            item.__preLayBlock({
+            item.__preLay({
               x: x,
               y: y,
               w: w,
@@ -1262,27 +1277,17 @@ function (_Node) {
           } // 重设因伸缩而导致的主轴长度
 
 
-          var _item$style2 = item.style,
-              _borderTopWidth = _item$style2.borderTopWidth,
-              _borderRightWidth = _item$style2.borderRightWidth,
-              _borderBottomWidth = _item$style2.borderBottomWidth,
-              _borderLeftWidth = _item$style2.borderLeftWidth;
-
           if (isOverflow && shrink) {
             if (isDirectionRow) {
               item.__width = main;
-              item.__outerWidth = main + _borderLeftWidth.value + _borderRightWidth.value;
             } else {
               item.__height = main;
-              item.__outerHeight = main + _borderTopWidth.value + _borderBottomWidth.value;
             }
           } else if (!isOverflow && grow) {
             if (isDirectionRow) {
               item.__width = main;
-              item.__outerWidth = main + _borderLeftWidth.value + _borderRightWidth.value;
             } else {
               item.__height = main;
-              item.__outerHeight = main + _borderTopWidth.value + _borderBottomWidth.value;
             }
           }
         } else {
@@ -1305,23 +1310,30 @@ function (_Node) {
       });
 
       if (isDirectionRow) {
+        // 父元素固定高度，子元素可能超过，侧轴最大长度取固定高度
+        if (fixedHeight) {
+          maxCross = h;
+        }
+
         y += maxCross;
-      } // 所有孩子侧轴长度相同
+      } // 所有短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
 
 
       children.forEach(function (item) {
         var style = item.style;
 
         if (isDirectionRow) {
-          item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
+          if (item.style.height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+            item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
+          }
         } else {
-          item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+          if (item.style.width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+            item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+          }
         }
       });
       this.__width = w;
       this.__height = fixedHeight ? h : y - data.y;
-      this.__outerWidth = w + borderLeftWidth.value + borderRightWidth.value;
-      this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
     } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
   }, {
@@ -1483,8 +1495,6 @@ function (_Node) {
 
       this.__width = fixedWidth ? w : maxX - data.x;
       this.__height = fixedHeight ? h : y - data.y;
-      this.__outerWidth = this.__width + borderLeftWidth.value + borderRightWidth.value;
-      this.__outerHeight = this.__height + borderTopWidth.value + borderBottomWidth.value;
     }
   }, {
     key: "render",
@@ -1595,12 +1605,18 @@ function (_Node) {
   }, {
     key: "outerWidth",
     get: function get() {
-      return this.__outerWidth;
+      var _this$style = this.style,
+          borderLeftWidth = _this$style.borderLeftWidth,
+          borderRightWidth = _this$style.borderRightWidth;
+      return this.width + borderLeftWidth.value + borderRightWidth.value;
     }
   }, {
     key: "outerHeight",
     get: function get() {
-      return this.__outerHeight;
+      var _this$style2 = this.style,
+          borderTopWidth = _this$style2.borderTopWidth,
+          borderBottomWidth = _this$style2.borderBottomWidth;
+      return this.height + borderTopWidth.value + borderBottomWidth.value;
     }
   }], [{
     key: "isValid",
@@ -2259,11 +2275,11 @@ function normalize(style) {
       style.flexGrow = 1;
       style.flexShrink = 1;
       style.flexBasis = 'auto';
-    } else if (/^\d+$/.test(style.flex)) {
-      style.flexGrow = parseInt(style.flex);
+    } else if (/^[\d.]+$/.test(style.flex)) {
+      style.flexGrow = parseFloat(style.flex);
       style.flexShrink = 1;
       style.flexBasis = 0;
-    } else {
+    } else if (/^[\d.]+px$/.test(style.flex)) {} else if (/^[\d.]+%$/.test(style.flex)) {} else {
       style.flexGrow = 0;
       style.flexShrink = 1;
       style.flexBasis = 'auto';
@@ -2415,7 +2431,7 @@ var RESET = {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 24,
+  fontSize: 16,
   fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',

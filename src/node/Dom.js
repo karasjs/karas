@@ -301,7 +301,7 @@ class Dom extends Node {
               this.lineGroups.push(lineGroup);
               lineGroup.verticalAlign();
               x = data.x;
-              y += lineGroup.outerHeight;
+              y += lineGroup.height;
               item.__preLayInline({
                 x: data.x,
                 y,

@@ -18,4 +18,4 @@ dist: trusty
 sudo: required
 
 addons:
-  chrome: stable
+  chrome: 76

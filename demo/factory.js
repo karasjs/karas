@@ -3,6 +3,7 @@ define(function(require, exports) {
 		CssLexer = require('./lexer/CssLexer'),
     HtmlLexer = require('./lexer/HtmlLexer'),
     JSXLexer = require('./lexer/JSXLexer'),
+		CSXLexer = require('./lexer/CSXLexer'),
 		EcmascriptRule = require('./lexer/rule/EcmascriptRule'),
 		CssRule = require('./lexer/rule/CssRule'),
     HtmlRule = require('./lexer/rule/HtmlRule'),
@@ -35,6 +36,8 @@ define(function(require, exports) {
         return new HtmlLexer(new HtmlRule());
       case "jsx":
         return new JSXLexer(new EcmascriptRule());
+			case "csx":
+				return new CSXLexer(new EcmascriptRule());
 			/*case "py":
 			case "python":
 				return new PythonLexer(new PythonRule());

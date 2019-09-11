@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
   var head = document.head || document.getElementsByTagName('head')[0];
-  var karas = require('./index')['default'];
+  var karas = require('./index');
   karas.init = function() {
     var jsx = document.querySelectorAll('script');
     for(var i = 0, len = jsx.length; i < len; i++) {

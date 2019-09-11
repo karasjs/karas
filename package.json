@@ -9,9 +9,9 @@
     }
   ],
   "scripts": {
-    "build": "webpack --colors",
-    "dev": "webpack --config webpack-dev.config.js --colors",
-    "dist": "webpack --config webpack-dist.config.js --colors",
+    "build": "rollup -c rollup.config.js",
+    "dev": "rollup -c rollup.config.js --watch",
+    "dist": "rollup -c rollup.config.dist.js",
     "test": "make test"
   },
   "repository": {
@@ -24,7 +24,6 @@
   "devDependencies": {
     "@babel/core": "^7.4.3",
     "@babel/preset-env": "^7.4.3",
-    "babel-loader": "^8.0.4",
     "blanket": "^1.1.6",
     "chromedriver": "^76.0.0",
     "coveralls": "^2.11.2",
@@ -34,10 +33,12 @@
     "mocha": "^2.2.4",
     "mocha-lcov-reporter": "^0.0.2",
     "nightwatch": "^1.1.0",
+    "rollup": "^1.21.2",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-sourcemaps": "^0.4.2",
+    "rollup-plugin-uglify": "^6.0.3",
     "selenium-server": "^3.141.59",
-    "through2": "^3.0.0",
-    "webpack": "^4.27.1",
-    "webpack-cli": "^3.1.2"
+    "through2": "^3.0.0"
   },
   "main": "./index",
   "engines": {

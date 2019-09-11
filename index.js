@@ -1395,7 +1395,22 @@ function (_Node) {
       if (!isDirectionRow && !fixedHeight) {
         children.forEach(function (item) {
           if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
-            item.__preLayBlock({
+            var _style = item.style,
+                _item$style = item.style,
+                display = _item$style.display,
+                _flexDirection = _item$style.flexDirection,
+                _width = _item$style.width,
+                _height = _item$style.height; // column的flex的child如果是inline，变为block
+
+            if (display === 'inline') {
+              _style.display = 'block';
+            } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+            else if (display === 'flex' && _flexDirection === 'row' && _width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+                _width.value = w;
+                _width.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
+              }
+
+            item.__preLay({
               x: x,
               y: y,
               w: w,
@@ -1411,7 +1426,7 @@ function (_Node) {
               h: h
             });
 
-            y += item.height;
+            y += item.outerHeight;
           }
         });
         this.__width = w;
@@ -1430,10 +1445,10 @@ function (_Node) {
       var maxSum = 0;
       children.forEach(function (item) {
         if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
-          var _item$style = item.style,
-              flexGrow = _item$style.flexGrow,
-              flexShrink = _item$style.flexShrink,
-              flexBasis = _item$style.flexBasis;
+          var _item$style2 = item.style,
+              flexGrow = _item$style2.flexGrow,
+              flexShrink = _item$style2.flexShrink,
+              flexBasis = _item$style2.flexBasis;
           growList.push(flexGrow);
           shrinkList.push(flexShrink);
           growSum += flexGrow;
@@ -1506,21 +1521,21 @@ function (_Node) {
         main = Math.max(main, minList[i]);
 
         if (item instanceof Dom || item instanceof _geom_Geom__WEBPACK_IMPORTED_MODULE_3__["default"]) {
-          var _style = item.style,
-              _item$style2 = item.style,
-              display = _item$style2.display,
-              _flexDirection = _item$style2.flexDirection,
-              _width = _item$style2.width,
-              _height = _item$style2.height;
+          var _style2 = item.style,
+              _item$style3 = item.style,
+              display = _item$style3.display,
+              _flexDirection2 = _item$style3.flexDirection,
+              _width2 = _item$style3.width,
+              _height2 = _item$style3.height;
 
           if (isDirectionRow) {
             // row的flex的child如果是block，则等同于inline-block布局
             if (display === 'block') {
-              _style.display = 'inline';
+              _style2.display = 'inline';
             } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-            else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && _height.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
-                _height.value = h;
-                _height.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
+            else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && _height2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+                _height2.value = h;
+                _height2.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
               }
 
             item.__preLay({
@@ -1532,11 +1547,11 @@ function (_Node) {
           } else {
             // column的flex的child如果是inline，变为block
             if (display === 'inline') {
-              _style.display = 'block';
+              _style2.display = 'block';
             } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-            else if (display === 'flex' && _flexDirection === 'row' && _width.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
-                _width.value = w;
-                _width.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
+            else if (display === 'flex' && _flexDirection2 === 'row' && _width2.unit === _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].AUTO) {
+                _width2.value = w;
+                _width2.unit = _style_unit__WEBPACK_IMPORTED_MODULE_6__["default"].PX;
               }
 
             item.__preLay({

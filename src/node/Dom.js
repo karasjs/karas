@@ -460,7 +460,17 @@ class Dom extends Node {
     if(!isDirectionRow && !fixedHeight) {
       children.forEach(item => {
         if(item instanceof Dom || item instanceof Geom) {
-          item.__preLayBlock({
+          const { style, style: { display, flexDirection, width, height }} = item;
+          // column的flex的child如果是inline，变为block
+          if(display === 'inline') {
+            style.display = 'block';
+          }
+          // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+          else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
+            width.value = w;
+            width.unit = unit.PX;
+          }
+          item.__preLay({
             x,
             y,
             w,
@@ -475,7 +485,7 @@ class Dom extends Node {
             w,
             h,
           });
-          y += item.height;
+          y += item.outerHeight;
         }
       });
       this.__width = w;

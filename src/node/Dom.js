@@ -1,4 +1,4 @@
-import Node from './Node';
+import Xom from './Xom';
 import Text from './Text';
 import LineGroup from './LineGroup';
 import Geom from '../geom/Geom';
@@ -14,10 +14,9 @@ const INLINE = {
   'span': true,
 };
 
-class Dom extends Node {
+class Dom extends Xom {
   constructor(tagName, props, children) {
-    super(props);
-    this.__tagName = tagName;
+    super(tagName, props);
     this.__children = children;
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
   }
@@ -88,8 +87,8 @@ class Dom extends Node {
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
   __initStyle() {
     let style = this.__style;
-    // 仅支持flex/block/inline
-    if(!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
+    // 仅支持flex/block/inline/none
+    if(!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
       if(INLINE.hasOwnProperty(this.tagName)) {
         style.display = 'inline';
       }
@@ -110,10 +109,7 @@ class Dom extends Node {
     // 标准化处理，默认值、简写属性
     css.normalize(style);
     this.children.forEach(item => {
-      if(item instanceof Dom) {
-        item.__initStyle();
-      }
-      else if(item instanceof Geom) {
+      if(item instanceof Dom || item instanceof Geom) {
         item.__initStyle();
       }
       else {
@@ -145,7 +141,7 @@ class Dom extends Node {
 
   // 设置y偏移值，递归包括children，此举在flex行元素的child进行justify-content对齐用
   __offsetX(diff) {
-    this.__x += diff;
+    super.__offsetX(diff);
     this.children.forEach(item => {
       if(item) {
         item.__offsetX(diff);
@@ -155,7 +151,7 @@ class Dom extends Node {
 
   // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
   __offsetY(diff) {
-    this.__y += diff;
+    super.__offsetY(diff);
     this.children.forEach(item => {
       if(item) {
         item.__offsetY(diff);
@@ -222,19 +218,6 @@ class Dom extends Node {
       min += h;
     }
     return { b, min, max };
-  }
-
-  __preLay(data) {
-    let { style } = this;
-    if(style.display === 'block') {
-      this.__preLayBlock(data);
-    }
-    else if(style.display === 'flex') {
-      this.__preLayFlex(data);
-    }
-    else {
-      this.__preLayInline(data);
-    }
   }
 
   // 本身block布局时计算好所有子元素的基本位置
@@ -841,65 +824,8 @@ class Dom extends Node {
   }
 
   render() {
-    let { ctx, style, children, x, y, width, height } = this;
-    let {
-      backgroundColor,
-      borderTopWidth,
-      borderTopColor,
-      borderRightWidth,
-      borderRightColor,
-      borderBottomWidth,
-      borderBottomColor,
-      borderLeftWidth,
-      borderLeftColor,
-    } = style;
-    if(backgroundColor) {
-      ctx.beginPath();
-      ctx.fillStyle = backgroundColor;
-      ctx.rect(this.x, this.y, this.width, this.height);
-      ctx.fill();
-      ctx.closePath();
-    }
-    if(borderTopWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderTopWidth.value;
-      ctx.strokeStyle = borderTopColor;
-      let y2 = y + borderTopWidth.value * 0.5;
-      ctx.moveTo(x + borderLeftWidth.value, y2);
-      ctx.lineTo(x + borderLeftWidth.value + width, y2);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderRightWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderRightWidth.value;
-      ctx.strokeStyle = borderRightColor;
-      let x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
-      ctx.moveTo(x2, y);
-      ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderBottomWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderBottomWidth.value;
-      ctx.strokeStyle = borderBottomColor;
-      let y2 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
-      ctx.moveTo(x + borderLeftWidth.value, y2);
-      ctx.lineTo(x + borderLeftWidth.value + width, y2);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderLeftWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderLeftWidth.value;
-      ctx.strokeStyle = borderLeftColor;
-      ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
-      ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    children.forEach(item => {
+    super.render();
+    this.children.forEach(item => {
       if(item) {
         item.render();
       }
@@ -922,14 +848,6 @@ class Dom extends Node {
       return last.y - this.y + last.baseLine;
     }
     return this.y;
-  }
-  get outerWidth() {
-    let { style: { borderLeftWidth, borderRightWidth } } = this;
-    return this.width + borderLeftWidth.value + borderRightWidth.value;
-  }
-  get outerHeight() {
-    let { style: { borderTopWidth, borderBottomWidth } } = this;
-    return this.height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   static isValid(s) {

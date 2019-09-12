@@ -9,7 +9,7 @@ const RESET = {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 16,
+  fontSize: 24,
   fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',

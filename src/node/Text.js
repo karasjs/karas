@@ -1,6 +1,7 @@
 import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
+import mode from './mode';
 
 const CHAR_WIDTH_CACHE = {};
 
@@ -18,13 +19,28 @@ class Text extends Node {
   __measure() {
     this.__charWidthList = [];
     let { ctx, content, style, charWidthList } = this;
-    ctx.font = css.setFontStyle(style);
+    if(mode.isCanvas()) {
+      ctx.font = css.setFontStyle(style);
+    }
     let cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
     let length = content.length;
     let sum = 0;
     for(let i = 0; i < length; i++) {
       let char = content.charAt(i);
-      let mw = cache.hasOwnProperty(char) ? cache[char] : ctx.measureText(char).width;
+      let mw;
+      if(cache.hasOwnProperty(char)) {
+        mw = cache[char];
+      }
+      else if(mode.isCanvas()) {
+        mw = ctx.measureText(char).width;
+      }
+      else if(mode.isSvg()) {
+        let dom = mode.measure;
+        dom.style.fontSize = style.fontSize + 'px';
+        dom.innerText = char;
+        let css = window.getComputedStyle(dom, null);
+        mw = parseFloat(css.width);
+      }
       charWidthList.push(mw);
       sum += mw;
       this.__charWidth = Math.max(this.charWidth, mw);
@@ -85,7 +101,9 @@ class Text extends Node {
   }
 
   render() {
-    this.ctx.font = css.setFontStyle(this.style);
+    if(mode.isCanvas()) {
+      this.ctx.font = css.setFontStyle(this.style);
+    }
     this.lineBoxes.forEach(item => {
       item.render();
     });
@@ -98,14 +116,14 @@ class Text extends Node {
   }
 
   __offsetX(diff) {
-    this.__x += diff;
+    super.__offsetX(diff);
     this.lineBoxes.forEach(item => {
       item.__offsetX(diff);
     });
   }
 
   __offsetY(diff) {
-    this.__y += diff;
+    super.__offsetY(diff);
     this.lineBoxes.forEach(item => {
       item.__offsetY(diff);
     });
@@ -140,12 +158,6 @@ class Text extends Node {
   get baseLine() {
     let last = this.lineBoxes[this.lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
-  }
-  get outerWidth() {
-    return this.__width;
-  }
-  get outerHeight() {
-    return this.__height;
   }
 }
 

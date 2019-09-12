@@ -1,22 +1,22 @@
 import Dom from './node/Dom';
-import Canvas from './node/Canvas';
+import CS from './node/CS';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polygon from './geom/Polygon';
 
 let karas = {
-  render(canvas, dom) {
-    if(!canvas instanceof Canvas) {
-      throw new Error('render root muse be canvas');
+  render(cs, dom) {
+    if(!(cs instanceof CS)) {
+      throw new Error('render root muse be canvas or svg');
     }
     if(dom) {
-      canvas.appendTo(dom);
+      cs.appendTo(dom);
     }
-    return canvas;
+    return cs;
   },
   createVd(tagName, props, children) {
-    if(tagName === 'canvas') {
-      return new Canvas(props, children);
+    if(['canvas', 'svg'].indexOf(tagName) > -1) {
+      return new CS(tagName, props, children);
     }
     if(Dom.isValid(tagName)) {
       return new Dom(tagName, props, children);

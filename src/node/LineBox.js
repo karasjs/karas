@@ -1,4 +1,5 @@
 import css from '../style/css';
+import mode from './mode';
 
 class LineBox {
   constructor(ctx, x, y, content, style) {
@@ -10,8 +11,14 @@ class LineBox {
   }
 
   render() {
-    this.ctx.fillStyle = this.style.color;
-    this.ctx.fillText(this.content, this.x, this.y + css.getBaseLine(this.style));
+    let { ctx, style, content, x, y } = this;
+    if(mode.isCanvas()) {
+      ctx.fillStyle = style.color;
+      ctx.fillText(content, x, y + css.getBaseLine(style));
+    }
+    else if(mode.isSvg()) {
+      mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
+    }
   }
 
   __offsetX(diff) {

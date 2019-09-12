@@ -1,4 +1,4 @@
-import Node from '../node/Node';
+import Xom from '../node/Xom';
 import css from '../style/css';
 import unit from '../style/unit';
 
@@ -7,9 +7,9 @@ const TAG_NAME = {
   '$polygon': true,
 };
 
-class Geom extends Node {
-  constructor(props) {
-    super(props);
+class Geom extends Xom {
+  constructor(tagName, props) {
+    super(tagName, props);
   }
 
   __initStyle() {
@@ -50,18 +50,9 @@ class Geom extends Node {
     return { b, min, max };
   }
 
-  __preLay(data) {
-    let { style } = this;
-    if(style.display === 'block') {
-      this.__preLayBlock(data);
-    }
-    else if(style.display === 'flex') {
-      this.__preLayFlex(data);
-    }
-    else {
-      this.__preLayInline(data);
-    }
-  }
+  __preLayBlock(data) {}
+
+  __preLayFlex(data) {}
 
   __preLayInline(data) {
     let { x, y, w, h } = data;
@@ -108,64 +99,7 @@ class Geom extends Node {
   }
 
   render() {
-    let { ctx, style, x, y, width, height } = this;
-    let {
-      backgroundColor,
-      borderTopWidth,
-      borderTopColor,
-      borderRightWidth,
-      borderRightColor,
-      borderBottomWidth,
-      borderBottomColor,
-      borderLeftWidth,
-      borderLeftColor,
-    } = style;
-    if(backgroundColor) {
-      ctx.beginPath();
-      ctx.fillStyle = backgroundColor;
-      ctx.rect(this.x, this.y, this.width, this.height);
-      ctx.fill();
-      ctx.closePath();
-    }
-    if(borderTopWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderTopWidth.value;
-      ctx.strokeStyle = borderTopColor;
-      let y2 = y + borderTopWidth.value * 0.5;
-      ctx.moveTo(x + borderLeftWidth.value, y2);
-      ctx.lineTo(x + borderLeftWidth.value + width, y2);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderRightWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderRightWidth.value;
-      ctx.strokeStyle = borderRightColor;
-      let x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
-      ctx.moveTo(x2, y);
-      ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderBottomWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderBottomWidth.value;
-      ctx.strokeStyle = borderBottomColor;
-      let y2 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
-      ctx.moveTo(x + borderLeftWidth.value, y2);
-      ctx.lineTo(x + borderLeftWidth.value + width, y2);
-      ctx.stroke();
-      ctx.closePath();
-    }
-    if(borderLeftWidth.value) {
-      ctx.beginPath();
-      ctx.lineWidth = borderLeftWidth.value;
-      ctx.strokeStyle = borderLeftColor;
-      ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
-      ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
-      ctx.stroke();
-      ctx.closePath();
-    }
+    super.render();
   }
 
   get tagName() {
@@ -173,14 +107,6 @@ class Geom extends Node {
   }
   get baseLine() {
     return 0;
-  }
-  get outerWidth() {
-    let { style: { borderLeftWidth, borderRightWidth } } = this;
-    return this.width + borderLeftWidth.value + borderRightWidth.value;
-  }
-  get outerHeight() {
-    let { style: { borderTopWidth, borderBottomWidth } } = this;
-    return this.height + borderTopWidth.value + borderBottomWidth.value;
   }
 
   static isValid(s) {

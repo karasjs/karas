@@ -1,5 +1,6 @@
-import Dom from './Dom';
+import Dom from '../node/Dom';
 import util from '../util';
+import mode from './mode';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -23,12 +24,13 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
-class Canvas extends Dom {
-  constructor(props, children) {
-    super('canvas', props, children);
+class CS extends Dom {
+  constructor(tagName, props, children) {
+    super(tagName, props, children);
     this.__node = null; // 真实DOM引用
   }
-  initProps() {
+
+  __initProps() {
     if(this.props.width !== undefined) {
       let value = parseInt(this.props.width);
       if(!isNaN(value) && value > 0) {
@@ -42,21 +44,23 @@ class Canvas extends Dom {
       }
     }
   }
-  genHtml() {
-    let res = '<canvas';
+
+  __genHtml() {
+    let res = `<${this.tagName}`;
     // 拼接处理属性
     for(let i = 0, len = this.__props.length; i < len; i++) {
       let item = this.__props[i];
       res += renderProp(item[0], item[1]);
     }
-    res += '></canvas>';
+    res += `></${this.tagName}>`;
     return res;
   }
+
   appendTo(dom) {
     dom = getDom(dom);
-    this.initProps();
+    this.__initProps();
     // 已有canvas节点
-    if(dom.nodeName.toUpperCase() === 'CANVAS') {
+    if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
       this.__node = dom;
       if(this.width) {
         dom.setAttribute('width', this.width);
@@ -67,9 +71,9 @@ class Canvas extends Dom {
     }
     // 没有canvas节点则生成一个新的
     else {
-      let s = this.genHtml();
+      let s = this.__genHtml();
       dom.insertAdjacentHTML('beforeend', s);
-      let canvas = dom.querySelectorAll('canvas');
+      let canvas = dom.querySelectorAll(this.tagName);
       this.__node = canvas[canvas.length - 1];
     }
     // 没有设置width/height则采用css计算形式
@@ -86,10 +90,17 @@ class Canvas extends Dom {
     }
     // canvas作为根节点一定是block或flex，不会是inline
     let { style } = this;
-    if(['flex', 'block', 'none'].indexOf(style.display) === -1) {
+    if(['flex', 'block'].indexOf(style.display) === -1) {
       style.display = 'block';
     }
-    this.__ctx = this.__node.getContext('2d');
+    // 只有canvas有ctx，svg用真实dom
+    if(this.tagName === 'canvas') {
+      this.__ctx = this.__node.getContext('2d');
+      mode.setCanvas();
+    }
+    else if(this.tagName === 'svg') {
+      mode.setSvg();
+    }
     this.__traverse(this.__ctx);
     // canvas的宽高固定初始化
     style.width = this.width;
@@ -102,6 +113,9 @@ class Canvas extends Dom {
       h: this.height,
     });
     this.render();
+    if(mode.isSvg()) {
+      this.__node.innerHTML = mode.html;
+    }
   }
 
   get node() {
@@ -109,4 +123,4 @@ class Canvas extends Dom {
   }
 }
 
-export default Canvas;
+export default CS;

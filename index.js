@@ -103,6 +103,141 @@
     return _get(target, property, receiver || target);
   }
 
+  var Node =
+  /*#__PURE__*/
+  function () {
+    function Node() {
+      _classCallCheck(this, Node);
+
+      this.__x = 0;
+      this.__y = 0;
+      this.__width = 0;
+      this.__height = 0;
+      this.__prev = null;
+      this.__next = null;
+      this.__ctx = null; // canvas的context
+
+      this.__parent = null;
+      this.__style = {}; // style被解析后的k-v形式
+
+      this.__baseLine = 0;
+    }
+
+    _createClass(Node, [{
+      key: "__offsetX",
+      value: function __offsetX(diff) {
+        this.__x += diff;
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.__y += diff;
+      }
+    }, {
+      key: "x",
+      get: function get() {
+        return this.__x;
+      }
+    }, {
+      key: "y",
+      get: function get() {
+        return this.__y;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "outerWidth",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "outerHeight",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "prev",
+      get: function get() {
+        return this.__prev;
+      }
+    }, {
+      key: "next",
+      get: function get() {
+        return this.__next;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
+      }
+    }, {
+      key: "style",
+      get: function get() {
+        return this.__style;
+      }
+    }, {
+      key: "ctx",
+      get: function get() {
+        return this.__ctx;
+      }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        return this.__baseLine;
+      }
+    }]);
+
+    return Node;
+  }();
+
+  var mode = 0;
+  var measureDom;
+  var svgHtml;
+  var mode$1 = {
+    setCanvas: function setCanvas() {
+      mode = 0;
+    },
+    setSvg: function setSvg() {
+      mode = 1;
+      svgHtml = '';
+    },
+    isCanvas: function isCanvas() {
+      return mode === 0;
+    },
+    isSvg: function isSvg() {
+      return mode === 1;
+    },
+    appendHtml: function appendHtml(s) {
+      svgHtml += s;
+    },
+
+    get html() {
+      return svgHtml;
+    },
+
+    get measure() {
+      if (!measureDom) {
+        measureDom = document.createElement('div');
+        measureDom.style.position = 'absolute';
+        measureDom.style.left = '99999px';
+        measureDom.style.top = '-99999px';
+        measureDom.style.visibility = 'hidden';
+        document.body.appendChild(measureDom);
+      }
+
+      return measureDom;
+    }
+
+  };
+
   function arr2hash(arr) {
     var hash = {};
 
@@ -152,90 +287,182 @@
     return arr;
   }
 
-  var Node =
+  var Xom =
   /*#__PURE__*/
-  function () {
-    function Node(props) {
-      _classCallCheck(this, Node);
+  function (_Node) {
+    _inherits(Xom, _Node);
 
+    function Xom(tagName, props) {
+      var _this;
+
+      _classCallCheck(this, Xom);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Xom).call(this));
       props = props || []; // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
-        this.props = arr2hash(props);
-        this.__props = spread(props);
+        _this.props = arr2hash(props);
+        _this.__props = spread(props);
       } else {
-        this.props = props;
-        this.__props = hash2arr(props);
+        _this.props = props;
+        _this.__props = hash2arr(props);
       }
 
-      this.__x = 0;
-      this.__y = 0;
-      this.__width = 0;
-      this.__height = 0;
-      this.__prev = null;
-      this.__next = null;
-      this.__ctx = null; // canvas的context
+      _this.__tagName = tagName;
+      _this.__style = _this.props.style || {}; // style被解析后的k-v形式
 
-      this.__parent = null;
-      this.__style = this.props.style || {}; // style被解析后的k-v形式
-
-      this.__baseLine = 0;
+      return _this;
     }
 
-    _createClass(Node, [{
-      key: "x",
-      get: function get() {
-        return this.__x;
+    _createClass(Xom, [{
+      key: "__preLay",
+      value: function __preLay(data) {
+        var style = this.style;
+
+        if (style.display === 'block') {
+          this.__preLayBlock(data);
+        } else if (style.display === 'flex') {
+          this.__preLayFlex(data);
+        } else {
+          this.__preLayInline(data);
+        }
       }
     }, {
-      key: "y",
-      get: function get() {
-        return this.__y;
+      key: "render",
+      value: function render() {
+        var ctx = this.ctx,
+            style = this.style,
+            x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            outerWidth = this.outerWidth,
+            outerHeight = this.outerHeight;
+        var backgroundColor = style.backgroundColor,
+            borderTopWidth = style.borderTopWidth,
+            borderTopColor = style.borderTopColor,
+            borderRightWidth = style.borderRightWidth,
+            borderRightColor = style.borderRightColor,
+            borderBottomWidth = style.borderBottomWidth,
+            borderBottomColor = style.borderBottomColor,
+            borderLeftWidth = style.borderLeftWidth,
+            borderLeftColor = style.borderLeftColor;
+
+        if (backgroundColor) {
+          var x1 = x;
+
+          if (borderLeftWidth) {
+            x1 += borderLeftWidth.value;
+          }
+
+          var y1 = y;
+
+          if (borderTopWidth) {
+            y1 += borderTopWidth.value;
+          }
+
+          if (mode$1.isCanvas()) {
+            ctx.beginPath();
+            ctx.fillStyle = backgroundColor;
+            ctx.rect(x1, y1, width, height);
+            ctx.fill();
+            ctx.closePath();
+          } else if (mode$1.isSvg()) {
+            mode$1.appendHtml("<rect x=\"".concat(x1, "\" y=\"").concat(y1, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(backgroundColor, "\"/>"));
+          }
+        }
+
+        if (borderTopWidth.value) {
+          var _y = y + borderTopWidth.value * 0.5;
+
+          if (mode$1.isCanvas()) {
+            ctx.beginPath();
+            ctx.lineWidth = borderTopWidth.value;
+            ctx.strokeStyle = borderTopColor;
+            ctx.moveTo(x + borderLeftWidth.value, _y);
+            ctx.lineTo(x + borderLeftWidth.value + width, _y);
+            ctx.stroke();
+            ctx.closePath();
+          } else {
+            mode$1.appendHtml("<line x1=\"".concat(x, "\" y1=\"").concat(_y, "\" x2=\"").concat(x + outerWidth, "\" y2=\"").concat(_y, "\" stroke-width=\"").concat(borderTopWidth.value, "\" stroke=\"").concat(borderTopColor, "\"/>"));
+          }
+        }
+
+        if (borderRightWidth.value) {
+          var _x = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
+
+          var y2 = y + outerHeight;
+
+          if (mode$1.isCanvas()) {
+            ctx.beginPath();
+            ctx.lineWidth = borderRightWidth.value;
+            ctx.strokeStyle = borderRightColor;
+            ctx.moveTo(_x, y);
+            ctx.lineTo(_x, y2);
+            ctx.stroke();
+            ctx.closePath();
+          } else {
+            mode$1.appendHtml("<line x1=\"".concat(_x, "\" y1=\"").concat(y, "\" x2=\"").concat(_x, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(borderRightWidth.value, "\" stroke=\"").concat(borderRightColor, "\"/>"));
+          }
+        }
+
+        if (borderBottomWidth.value) {
+          var _y2 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+
+          if (mode$1.isCanvas()) {
+            ctx.beginPath();
+            ctx.lineWidth = borderBottomWidth.value;
+            ctx.strokeStyle = borderBottomColor;
+            ctx.moveTo(x + borderLeftWidth.value, _y2);
+            ctx.lineTo(x + borderLeftWidth.value + width, _y2);
+            ctx.stroke();
+            ctx.closePath();
+          } else {
+            mode$1.appendHtml("<line x1=\"".concat(x, "\" y1=\"").concat(_y2, "\" x2=\"").concat(x + outerWidth, "\" y2=\"").concat(_y2, "\" stroke-width=\"").concat(borderBottomWidth.value, "\" stroke=\"").concat(borderBottomColor, "\"/>"));
+          }
+        }
+
+        if (borderLeftWidth.value) {
+          var _x2 = x + borderLeftWidth.value * 0.5;
+
+          if (mode$1.isCanvas()) {
+            ctx.beginPath();
+            ctx.lineWidth = borderLeftWidth.value;
+            ctx.strokeStyle = borderLeftColor;
+            ctx.moveTo(_x2, y);
+            ctx.lineTo(_x2, y + height + borderTopWidth.value + borderBottomWidth.value);
+            ctx.stroke();
+            ctx.closePath();
+          } else {
+            mode$1.appendHtml("<line x1=\"".concat(_x2, "\" y1=\"").concat(y, "\" x2=\"").concat(_x2, "\" y2=\"").concat(y + outerHeight, "\" stroke-width=\"").concat(borderLeftWidth.value, "\" stroke=\"").concat(borderLeftColor, "\"/>"));
+          }
+        }
       }
     }, {
-      key: "width",
+      key: "tagName",
       get: function get() {
-        return this.__width;
+        return this.__tagName;
       }
     }, {
-      key: "height",
+      key: "outerWidth",
       get: function get() {
-        return this.__height;
+        var _this$style = this.style,
+            borderLeftWidth = _this$style.borderLeftWidth,
+            borderRightWidth = _this$style.borderRightWidth;
+        return this.width + borderLeftWidth.value + borderRightWidth.value;
       }
     }, {
-      key: "prev",
+      key: "outerHeight",
       get: function get() {
-        return this.__prev;
-      }
-    }, {
-      key: "next",
-      get: function get() {
-        return this.__next;
-      }
-    }, {
-      key: "parent",
-      get: function get() {
-        return this.__parent;
-      }
-    }, {
-      key: "style",
-      get: function get() {
-        return this.__style;
-      }
-    }, {
-      key: "ctx",
-      get: function get() {
-        return this.__ctx;
-      }
-    }, {
-      key: "baseLine",
-      get: function get() {
-        return this.__baseLine;
+        var _this$style2 = this.style,
+            borderTopWidth = _this$style2.borderTopWidth,
+            borderBottomWidth = _this$style2.borderBottomWidth;
+        return this.height + borderTopWidth.value + borderBottomWidth.value;
       }
     }]);
 
-    return Node;
-  }();
+    return Xom;
+  }(Node);
 
   var unit = {
     AUTO: 0,
@@ -269,7 +496,7 @@
     paddingRight: 0,
     paddingBottom: 0,
     paddingLeft: 0,
-    fontSize: 16,
+    fontSize: 24,
     fontFamily: 'arial',
     color: '#000',
     fontStyle: 'normal',
@@ -540,8 +767,18 @@
     _createClass(LineBox, [{
       key: "render",
       value: function render() {
-        this.ctx.fillStyle = this.style.color;
-        this.ctx.fillText(this.content, this.x, this.y + css.getBaseLine(this.style));
+        var ctx = this.ctx,
+            style = this.style,
+            content = this.content,
+            x = this.x,
+            y = this.y;
+
+        if (mode$1.isCanvas()) {
+          ctx.fillStyle = style.color;
+          ctx.fillText(content, x, y + css.getBaseLine(style));
+        } else if (mode$1.isSvg()) {
+          mode$1.appendHtml("<text x=\"".concat(x, "\" y=\"").concat(y + css.getBaseLine(style), "\" fill=\"").concat(style.color, "\" font-size=\"").concat(style.fontSize, "px\">").concat(content, "</text>"));
+        }
       }
     }, {
       key: "__offsetX",
@@ -618,7 +855,11 @@
             content = this.content,
             style = this.style,
             charWidthList = this.charWidthList;
-        ctx.font = css.setFontStyle(style);
+
+        if (mode$1.isCanvas()) {
+          ctx.font = css.setFontStyle(style);
+        }
+
         var cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
         var length = content.length;
         var sum = 0;
@@ -626,7 +867,22 @@
         for (var i = 0; i < length; i++) {
           var _char = content.charAt(i);
 
-          var mw = cache.hasOwnProperty(_char) ? cache[_char] : ctx.measureText(_char).width;
+          var mw = void 0;
+
+          if (cache.hasOwnProperty(_char)) {
+            mw = cache[_char];
+          } else if (mode$1.isCanvas()) {
+            mw = ctx.measureText(_char).width;
+          } else if (mode$1.isSvg()) {
+            var dom = mode$1.measure;
+            dom.style.fontSize = style.fontSize + 'px';
+            dom.innerText = _char;
+
+            var _css = window.getComputedStyle(dom, null);
+
+            mw = parseFloat(_css.width);
+          }
+
           charWidthList.push(mw);
           sum += mw;
           this.__charWidth = Math.max(this.charWidth, mw);
@@ -703,7 +959,10 @@
     }, {
       key: "render",
       value: function render() {
-        this.ctx.font = css.setFontStyle(this.style);
+        if (mode$1.isCanvas()) {
+          this.ctx.font = css.setFontStyle(this.style);
+        }
+
         this.lineBoxes.forEach(function (item) {
           item.render();
         });
@@ -718,7 +977,8 @@
     }, {
       key: "__offsetX",
       value: function __offsetX(diff) {
-        this.__x += diff;
+        _get(_getPrototypeOf(Text.prototype), "__offsetX", this).call(this, diff);
+
         this.lineBoxes.forEach(function (item) {
           item.__offsetX(diff);
         });
@@ -726,7 +986,8 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
-        this.__y += diff;
+        _get(_getPrototypeOf(Text.prototype), "__offsetY", this).call(this, diff);
+
         this.lineBoxes.forEach(function (item) {
           item.__offsetY(diff);
         });
@@ -776,16 +1037,6 @@
       get: function get() {
         var last = this.lineBoxes[this.lineBoxes.length - 1];
         return last.y - this.y + last.baseLine;
-      }
-    }, {
-      key: "outerWidth",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "outerHeight",
-      get: function get() {
-        return this.__height;
       }
     }]);
 
@@ -886,13 +1137,13 @@
 
   var Geom =
   /*#__PURE__*/
-  function (_Node) {
-    _inherits(Geom, _Node);
+  function (_Xom) {
+    _inherits(Geom, _Xom);
 
-    function Geom(props) {
+    function Geom(tagName, props) {
       _classCallCheck(this, Geom);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, props));
+      return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
     }
 
     _createClass(Geom, [{
@@ -942,18 +1193,11 @@
         };
       }
     }, {
-      key: "__preLay",
-      value: function __preLay(data) {
-        var style = this.style;
-
-        if (style.display === 'block') {
-          this.__preLayBlock(data);
-        } else if (style.display === 'flex') {
-          this.__preLayFlex(data);
-        } else {
-          this.__preLayInline(data);
-        }
-      }
+      key: "__preLayBlock",
+      value: function __preLayBlock(data) {}
+    }, {
+      key: "__preLayFlex",
+      value: function __preLayFlex(data) {}
     }, {
       key: "__preLayInline",
       value: function __preLayInline(data) {
@@ -1008,74 +1252,7 @@
     }, {
       key: "render",
       value: function render() {
-        var ctx = this.ctx,
-            style = this.style,
-            x = this.x,
-            y = this.y,
-            width = this.width,
-            height = this.height;
-        var backgroundColor = style.backgroundColor,
-            borderTopWidth = style.borderTopWidth,
-            borderTopColor = style.borderTopColor,
-            borderRightWidth = style.borderRightWidth,
-            borderRightColor = style.borderRightColor,
-            borderBottomWidth = style.borderBottomWidth,
-            borderBottomColor = style.borderBottomColor,
-            borderLeftWidth = style.borderLeftWidth,
-            borderLeftColor = style.borderLeftColor;
-
-        if (backgroundColor) {
-          ctx.beginPath();
-          ctx.fillStyle = backgroundColor;
-          ctx.rect(this.x, this.y, this.width, this.height);
-          ctx.fill();
-          ctx.closePath();
-        }
-
-        if (borderTopWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderTopWidth.value;
-          ctx.strokeStyle = borderTopColor;
-          var y2 = y + borderTopWidth.value * 0.5;
-          ctx.moveTo(x + borderLeftWidth.value, y2);
-          ctx.lineTo(x + borderLeftWidth.value + width, y2);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderRightWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderRightWidth.value;
-          ctx.strokeStyle = borderRightColor;
-          var x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
-          ctx.moveTo(x2, y);
-          ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderBottomWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderBottomWidth.value;
-          ctx.strokeStyle = borderBottomColor;
-
-          var _y = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
-
-          ctx.moveTo(x + borderLeftWidth.value, _y);
-          ctx.lineTo(x + borderLeftWidth.value + width, _y);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderLeftWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderLeftWidth.value;
-          ctx.strokeStyle = borderLeftColor;
-          ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
-          ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
-          ctx.stroke();
-          ctx.closePath();
-        }
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this);
       }
     }, {
       key: "tagName",
@@ -1087,22 +1264,6 @@
       get: function get() {
         return 0;
       }
-    }, {
-      key: "outerWidth",
-      get: function get() {
-        var _this$style = this.style,
-            borderLeftWidth = _this$style.borderLeftWidth,
-            borderRightWidth = _this$style.borderRightWidth;
-        return this.width + borderLeftWidth.value + borderRightWidth.value;
-      }
-    }, {
-      key: "outerHeight",
-      get: function get() {
-        var _this$style2 = this.style,
-            borderTopWidth = _this$style2.borderTopWidth,
-            borderBottomWidth = _this$style2.borderBottomWidth;
-        return this.height + borderTopWidth.value + borderBottomWidth.value;
-      }
     }], [{
       key: "isValid",
       value: function isValid(s) {
@@ -1111,7 +1272,7 @@
     }]);
 
     return Geom;
-  }(Node);
+  }(Xom);
 
   var TAG_NAME$1 = {
     'div': true,
@@ -1123,16 +1284,15 @@
 
   var Dom =
   /*#__PURE__*/
-  function (_Node) {
-    _inherits(Dom, _Node);
+  function (_Xom) {
+    _inherits(Dom, _Xom);
 
     function Dom(tagName, props, children) {
       var _this;
 
       _classCallCheck(this, Dom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, props));
-      _this.__tagName = tagName;
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, tagName, props));
       _this.__children = children;
       _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
@@ -1215,9 +1375,9 @@
     }, {
       key: "__initStyle",
       value: function __initStyle() {
-        var style = this.__style; // 仅支持flex/block/inline
+        var style = this.__style; // 仅支持flex/block/inline/none
 
-        if (!style.display || ['flex', 'block', 'inline'].indexOf(style.display) === -1) {
+        if (!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
           if (INLINE.hasOwnProperty(this.tagName)) {
             style.display = 'inline';
           } else {
@@ -1240,9 +1400,7 @@
 
         css.normalize(style);
         this.children.forEach(function (item) {
-          if (item instanceof Dom) {
-            item.__initStyle();
-          } else if (item instanceof Geom) {
+          if (item instanceof Dom || item instanceof Geom) {
             item.__initStyle();
           } else {
             item.__style = style; // 文字首先测量所有字符宽度
@@ -1278,7 +1436,8 @@
     }, {
       key: "__offsetX",
       value: function __offsetX(diff) {
-        this.__x += diff;
+        _get(_getPrototypeOf(Dom.prototype), "__offsetX", this).call(this, diff);
+
         this.children.forEach(function (item) {
           if (item) {
             item.__offsetX(diff);
@@ -1289,7 +1448,8 @@
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
-        this.__y += diff;
+        _get(_getPrototypeOf(Dom.prototype), "__offsetY", this).call(this, diff);
+
         this.children.forEach(function (item) {
           if (item) {
             item.__offsetY(diff);
@@ -1367,19 +1527,6 @@
           min: min,
           max: max
         };
-      }
-    }, {
-      key: "__preLay",
-      value: function __preLay(data) {
-        var style = this.style;
-
-        if (style.display === 'block') {
-          this.__preLayBlock(data);
-        } else if (style.display === 'flex') {
-          this.__preLayFlex(data);
-        } else {
-          this.__preLayInline(data);
-        }
       } // 本身block布局时计算好所有子元素的基本位置
 
     }, {
@@ -2060,77 +2207,9 @@
     }, {
       key: "render",
       value: function render() {
-        var ctx = this.ctx,
-            style = this.style,
-            children = this.children,
-            x = this.x,
-            y = this.y,
-            width = this.width,
-            height = this.height;
-        var backgroundColor = style.backgroundColor,
-            borderTopWidth = style.borderTopWidth,
-            borderTopColor = style.borderTopColor,
-            borderRightWidth = style.borderRightWidth,
-            borderRightColor = style.borderRightColor,
-            borderBottomWidth = style.borderBottomWidth,
-            borderBottomColor = style.borderBottomColor,
-            borderLeftWidth = style.borderLeftWidth,
-            borderLeftColor = style.borderLeftColor;
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this);
 
-        if (backgroundColor) {
-          ctx.beginPath();
-          ctx.fillStyle = backgroundColor;
-          ctx.rect(this.x, this.y, this.width, this.height);
-          ctx.fill();
-          ctx.closePath();
-        }
-
-        if (borderTopWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderTopWidth.value;
-          ctx.strokeStyle = borderTopColor;
-          var y2 = y + borderTopWidth.value * 0.5;
-          ctx.moveTo(x + borderLeftWidth.value, y2);
-          ctx.lineTo(x + borderLeftWidth.value + width, y2);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderRightWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderRightWidth.value;
-          ctx.strokeStyle = borderRightColor;
-          var x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
-          ctx.moveTo(x2, y);
-          ctx.lineTo(x2, y + height + borderTopWidth.value + borderBottomWidth.value);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderBottomWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderBottomWidth.value;
-          ctx.strokeStyle = borderBottomColor;
-
-          var _y = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
-
-          ctx.moveTo(x + borderLeftWidth.value, _y);
-          ctx.lineTo(x + borderLeftWidth.value + width, _y);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        if (borderLeftWidth.value) {
-          ctx.beginPath();
-          ctx.lineWidth = borderLeftWidth.value;
-          ctx.strokeStyle = borderLeftColor;
-          ctx.moveTo(x + borderLeftWidth.value * 0.5, y);
-          ctx.lineTo(x + borderLeftWidth.value * 0.5, y + height + borderTopWidth.value + borderBottomWidth.value);
-          ctx.stroke();
-          ctx.closePath();
-        }
-
-        children.forEach(function (item) {
+        this.children.forEach(function (item) {
           if (item) {
             item.render();
           }
@@ -2163,22 +2242,6 @@
 
         return this.y;
       }
-    }, {
-      key: "outerWidth",
-      get: function get() {
-        var _this$style = this.style,
-            borderLeftWidth = _this$style.borderLeftWidth,
-            borderRightWidth = _this$style.borderRightWidth;
-        return this.width + borderLeftWidth.value + borderRightWidth.value;
-      }
-    }, {
-      key: "outerHeight",
-      get: function get() {
-        var _this$style2 = this.style,
-            borderTopWidth = _this$style2.borderTopWidth,
-            borderBottomWidth = _this$style2.borderBottomWidth;
-        return this.height + borderTopWidth.value + borderBottomWidth.value;
-      }
     }], [{
       key: "isValid",
       value: function isValid(s) {
@@ -2187,7 +2250,7 @@
     }]);
 
     return Dom;
-  }(Node);
+  }(Xom);
 
   function getDom(dom) {
     if (util.isString(dom)) {
@@ -2217,25 +2280,25 @@
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
   }
 
-  var Canvas =
+  var CS =
   /*#__PURE__*/
   function (_Dom) {
-    _inherits(Canvas, _Dom);
+    _inherits(CS, _Dom);
 
-    function Canvas(props, children) {
+    function CS(tagName, props, children) {
       var _this;
 
-      _classCallCheck(this, Canvas);
+      _classCallCheck(this, CS);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Canvas).call(this, 'canvas', props, children));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(CS).call(this, tagName, props, children));
       _this.__node = null; // 真实DOM引用
 
       return _this;
     }
 
-    _createClass(Canvas, [{
-      key: "initProps",
-      value: function initProps() {
+    _createClass(CS, [{
+      key: "__initProps",
+      value: function __initProps() {
         if (this.props.width !== undefined) {
           var value = parseInt(this.props.width);
 
@@ -2253,25 +2316,27 @@
         }
       }
     }, {
-      key: "genHtml",
-      value: function genHtml() {
-        var res = '<canvas'; // 拼接处理属性
+      key: "__genHtml",
+      value: function __genHtml() {
+        var res = "<".concat(this.tagName); // 拼接处理属性
 
         for (var i = 0, len = this.__props.length; i < len; i++) {
           var item = this.__props[i];
           res += renderProp(item[0], item[1]);
         }
 
-        res += '></canvas>';
+        res += "></".concat(this.tagName, ">");
         return res;
       }
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
         dom = getDom(dom);
-        this.initProps(); // 已有canvas节点
 
-        if (dom.nodeName.toUpperCase() === 'CANVAS') {
+        this.__initProps(); // 已有canvas节点
+
+
+        if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
           this.__node = dom;
 
           if (this.width) {
@@ -2283,9 +2348,10 @@
           }
         } // 没有canvas节点则生成一个新的
         else {
-            var s = this.genHtml();
+            var s = this.__genHtml();
+
             dom.insertAdjacentHTML('beforeend', s);
-            var canvas = dom.querySelectorAll('canvas');
+            var canvas = dom.querySelectorAll(this.tagName);
             this.__node = canvas[canvas.length - 1];
           } // 没有设置width/height则采用css计算形式
 
@@ -2307,11 +2373,17 @@
 
         var style = this.style;
 
-        if (['flex', 'block', 'none'].indexOf(style.display) === -1) {
+        if (['flex', 'block'].indexOf(style.display) === -1) {
           style.display = 'block';
-        }
+        } // 只有canvas有ctx，svg用真实dom
 
-        this.__ctx = this.__node.getContext('2d');
+
+        if (this.tagName === 'canvas') {
+          this.__ctx = this.__node.getContext('2d');
+          mode$1.setCanvas();
+        } else if (this.tagName === 'svg') {
+          mode$1.setSvg();
+        }
 
         this.__traverse(this.__ctx); // canvas的宽高固定初始化
 
@@ -2329,6 +2401,10 @@
         });
 
         this.render();
+
+        if (mode$1.isSvg()) {
+          this.__node.innerHTML = mode$1.html;
+        }
       }
     }, {
       key: "node",
@@ -2337,7 +2413,7 @@
       }
     }]);
 
-    return Canvas;
+    return CS;
   }(Dom);
 
   var Line =
@@ -2350,8 +2426,7 @@
 
       _classCallCheck(this, Line);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, props));
-      _this.__tagName = '$line';
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, '$line', props));
       _this.__start = [0, 0];
       _this.__end = [1, 1];
 
@@ -2385,13 +2460,22 @@
             strokeWidth = style.strokeWidth;
         var originX = x + borderLeftWidth.value;
         var originY = y + borderTopWidth.value;
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = strokeWidth;
-        ctx.beginPath();
-        ctx.moveTo(originX + start[0] * width, originY + start[1] * height);
-        ctx.lineTo(originX + end[0] * width, originY + end[1] * height);
-        ctx.stroke();
-        ctx.closePath();
+        var x1 = originX + start[0] * width;
+        var y1 = originY + start[1] * height;
+        var x2 = originX + end[0] * width;
+        var y2 = originY + end[1] * height;
+
+        if (mode$1.isCanvas()) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          ctx.closePath();
+        } else if (mode$1.isSvg()) {
+          mode$1.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
       }
     }, {
       key: "start",
@@ -2418,8 +2502,7 @@
 
       _classCallCheck(this, Polygon);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, props));
-      _this.__tagName = '$polygon';
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props));
       _this.__pointList = [];
 
       if (Array.isArray(_this.props.pointList)) {
@@ -2447,18 +2530,30 @@
             strokeWidth = style.strokeWidth;
         var originX = x + borderLeftWidth.value;
         var originY = y + borderTopWidth.value;
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = strokeWidth;
-        ctx.beginPath();
-        ctx.moveTo(originX + pointList[0][0] * width, originY + pointList[0][1] * height);
 
-        for (var i = 1, len = pointList.length; i < len; i++) {
-          var point = pointList[i];
-          ctx.lineTo(originX + point[0] * width, originY + point[1] * height);
+        if (mode$1.isCanvas()) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.beginPath();
+          ctx.moveTo(originX + pointList[0][0] * width, originY + pointList[0][1] * height);
+
+          for (var i = 1, len = pointList.length; i < len; i++) {
+            var point = pointList[i];
+            ctx.lineTo(originX + point[0] * width, originY + point[1] * height);
+          }
+
+          ctx.stroke();
+          ctx.closePath();
+        } else if (mode$1.isSvg()) {
+          var points = '';
+
+          for (var _i = 0, _len = pointList.length; _i < _len; _i++) {
+            var _point = pointList[_i];
+            points += "".concat(originX + _point[0] * width, ",").concat(originY + _point[1] * height, " ");
+          }
+
+          mode$1.appendHtml("<polyline fill=\"none\" points=\"".concat(points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
         }
-
-        ctx.stroke();
-        ctx.closePath();
       }
     }, {
       key: "pointList",
@@ -2471,20 +2566,20 @@
   }(Geom);
 
   var karas = {
-    render: function render(canvas, dom) {
-      if (!canvas instanceof Canvas) {
-        throw new Error('render root muse be canvas');
+    render: function render(cs, dom) {
+      if (!(cs instanceof CS)) {
+        throw new Error('render root muse be canvas or svg');
       }
 
       if (dom) {
-        canvas.appendTo(dom);
+        cs.appendTo(dom);
       }
 
-      return canvas;
+      return cs;
     },
     createVd: function createVd(tagName, props, children) {
-      if (tagName === 'canvas') {
-        return new Canvas(props, children);
+      if (['canvas', 'svg'].indexOf(tagName) > -1) {
+        return new CS(tagName, props, children);
       }
 
       if (Dom.isValid(tagName)) {

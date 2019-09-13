@@ -25,12 +25,12 @@ class Dom extends Xom {
    * 1. 封装string为Text节点
    * 2. 打平children中的数组，变成一维
    * 3. 合并相连的Text节点
-   * 4. 检测inline不能包含block
-   * 5. 设置parent和prev/next和ctx
+   * 4. 检测inline不能包含block和flex
+   * 5. 设置parent和prev/next和ctx和mode
    */
-  __traverse(ctx) {
+  __traverse(ctx, mode) {
     let list = [];
-    this.__traverseChildren(this.children, list, ctx);
+    this.__traverseChildren(this.children, list, ctx, mode);
     for(let i = list.length - 1; i > 0; i--) {
       let item = list[i];
       if(item instanceof Text) {
@@ -48,7 +48,7 @@ class Dom extends Xom {
       for(let i = list.length - 1; i >= 0; i--) {
         let item = list[i];
         if(item instanceof Dom && item.style.display !== 'inline') {
-          throw new Error('inline can not contain block');
+          throw new Error('inline can not contain block/flex');
         }
       }
     }
@@ -64,23 +64,27 @@ class Dom extends Xom {
     this.__children = list;
   }
 
-  __traverseChildren(children, list, ctx) {
+  __traverseChildren(children, list, ctx, mode) {
     if(Array.isArray(children)) {
       children.forEach(item => {
-        this.__traverseChildren(item, list, ctx);
+        this.__traverseChildren(item, list, ctx, mode);
       });
     }
     else if(children instanceof Dom) {
       list.push(children);
-      children.__traverse(ctx);
+      children.__traverse(ctx, mode);
+      children.__mode = mode;
     }
     // 图形没有children
     else if(children instanceof Geom) {
       list.push(children);
+      children.__mode = mode;
     }
     // 排除掉空的文本
     else if(!util.isNil(children)) {
-      list.push(new Text(children));
+      let text = new Text(children);
+      text.__mode = mode;
+      list.push(text);
     }
   }
 
@@ -121,8 +125,14 @@ class Dom extends Xom {
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
-  __tryLayInline(w) {
-    let { children } = this;
+  __tryLayInline(w, total) {
+    let { children, style: { width } } = this;
+    if(width.unit === unit.PX) {
+      return w - width.value;
+    }
+    else if(width.unit === unit.PERCENT) {
+      return w - total * width.value * 0.01;
+    }
     for(let i = 0; i < children.length; i++) {
       // 当放不下时直接返回，无需继续多余的尝试计算
       if(w < 0) {
@@ -130,7 +140,7 @@ class Dom extends Xom {
       }
       let item = children[i];
       if(item instanceof Dom || item instanceof Geom) {
-        w = item.__tryLayInline(w);
+        w -= item.__tryLayInline(w, total);
       }
       else {
         w -= item.textWidth;
@@ -172,9 +182,17 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = style;
     let main = isDirectionRow ? width : height;
-    if(main.unit !== unit.AUTO) {
+    if(main.unit === unit.PX) {
       b = max += main.value;
       // 递归时children的长度会影响flex元素的最小宽度
       if(isRecursion) {
@@ -204,15 +222,15 @@ class Dom extends Xom {
         max = Math.max(max, item.height);
       }
     });
-    // border也得计算在内
+    // margin/padding/border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth.value + borderLeftWidth.value;
+      let w = borderRightWidth.value + borderLeftWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
       b += w;
       max += w;
       min += w;
     }
     else {
-      let h = borderTopWidth.value + borderBottomWidth.value;
+      let h = borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
       b += h;
       max += h;
       min += h;
@@ -234,6 +252,14 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = style;
     // 除了auto外都是固定高度
     let fixedHeight;
@@ -241,6 +267,9 @@ class Dom extends Xom {
       switch(width.unit) {
         case unit.PX:
           w = width.value;
+          break;
+        case unit.PERCENT:
+          w *= width.value * 0.01;
           break;
       }
     }
@@ -255,17 +284,17 @@ class Dom extends Xom {
           break;
       }
     }
-    // border影响x和y和尺寸
-    x += borderLeftWidth.value;
+    // margin/padding/border影响x和y和尺寸
+    x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     data.x = x;
-    y += borderTopWidth.value;
+    y += borderTopWidth.value + marginTop.value + paddingTop.value;
     data.y = y;
-    w -= borderLeftWidth.value + borderRightWidth.value;
-    h -= borderTopWidth.value + borderBottomWidth.value;
+    w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+    h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
-      if(item instanceof Dom) {
+      if(item instanceof Dom || item instanceof Geom) {
         if(item.style.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
@@ -280,13 +309,14 @@ class Dom extends Xom {
           }
           else {
             // 非开头先尝试是否放得下
-            let fw = item.__tryLayInline(w - x);
+            let fw = item.__tryLayInline(w - x, w);
             // 放得下继续
             if(fw >= 0) {
               item.__preLayInline({
                 x,
                 y,
                 w,
+                h,
               });
             }
             // 放不下处理之前的lineGroup，并重新开头
@@ -299,6 +329,7 @@ class Dom extends Xom {
                 x: data.x,
                 y,
                 w,
+                h,
               });
               lineGroup = new LineGroup(x, y);
             }
@@ -324,22 +355,6 @@ class Dom extends Xom {
           y += item.outerHeight;
         }
       }
-      else if(item instanceof Geom) {
-        // 图形也是block先处理之前可能的行
-        if(lineGroup.size) {
-          this.lineGroups.push(lineGroup);
-          lineGroup.verticalAlign();
-          y += lineGroup.height;
-          lineGroup = new LineGroup(data.x, y);
-        }
-        item.__preLay({
-          x: data.x,
-          y,
-          w,
-        });
-        x = data.x;
-        y += item.outerHeight;
-      }
       // 文字和inline类似
       else {
         // x开头，不用考虑是否放得下直接放
@@ -355,7 +370,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下
-          let fw = item.__tryLayInline(w - x);
+          let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
             item.__preLay({
@@ -409,6 +424,14 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
       justifyContent,
     } = style;
     // 除了auto外都是固定高度
@@ -417,6 +440,9 @@ class Dom extends Xom {
       switch(width.unit) {
         case unit.PX:
           w = width.value;
+          break;
+        case unit.PERCENT:
+          w *= width.value * 0.01;
           break;
       }
     }
@@ -431,13 +457,13 @@ class Dom extends Xom {
           break;
       }
     }
-    // border影响x和y和尺寸
-    x += borderLeftWidth.value;
+    // margin/padding/border影响x和y和尺寸
+    x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     data.x = x;
-    y += borderTopWidth.value;
+    y += borderTopWidth.value + marginTop.value + paddingTop.value;
     data.y = y;
-    w -= borderLeftWidth.value + borderRightWidth.value;
-    h -= borderTopWidth.value + borderBottomWidth.value;
+    w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+    h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     let isDirectionRow = flexDirection === 'row';
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
@@ -556,9 +582,9 @@ class Dom extends Xom {
       if(item instanceof Dom || item instanceof Geom) {
         const { style, style: { display, flexDirection, width, height }} = item;
         if(isDirectionRow) {
-          // row的flex的child如果是block，则等同于inline-block布局
-          if(display === 'block') {
-            style.display = 'inline';
+          // row的flex的child如果是inline，变为block
+          if(display === 'inline') {
+            style.display = 'block';
           }
           // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
           else if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
@@ -621,35 +647,36 @@ class Dom extends Xom {
       }
       else {
         y += item.outerHeight;
-        x = data.x;
         maxCross = Math.max(maxCross, item.outerWidth);
       }
     });
+    // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
+    let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
     // 主轴侧轴对齐方式
-    if(!isOverflow && growSum === 0 && free > 0) {
+    if(!isOverflow && growSum === 0 && free > 0 && diff > 0) {
       let len = children.length;
       if(justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
           let child = children[i];
-          isDirectionRow ? child.__offsetX(free) : child.__offsetY(free);
+          isDirectionRow ? child.__offsetX(diff) : child.__offsetY(diff);
         }
       }
       else if(justifyContent === 'center') {
-        let center = free * 0.5;
+        let center = diff * 0.5;
         for(let i = 0; i < len; i++) {
           let child = children[i];
           isDirectionRow ? child.__offsetX(center) : child.__offsetY(center);
         }
       }
       else if(justifyContent === 'space-between') {
-        let between = free / (len - 1);
+        let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = children[i];
           isDirectionRow ? child.__offsetX(between * i) : child.__offsetY(between * i);
         }
       }
       else if(justifyContent === 'space-around') {
-        let around = free / (len + 1);
+        let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = children[i];
           isDirectionRow ? child.__offsetX(around * (i + 1)) : child.__offsetY(around * (i + 1));
@@ -696,6 +723,14 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = style;
     // 除了auto外都是固定高度
     let fixedWidth;
@@ -706,6 +741,9 @@ class Dom extends Xom {
         case unit.PX:
           w = width.value;
           break;
+        case unit.PERCENT:
+          w *= width.value * 0.01;
+          break;
       }
     }
     if(height && height.unit !== unit.AUTO) {
@@ -714,19 +752,22 @@ class Dom extends Xom {
         case unit.PX:
           h = height.value;
           break;
+        case unit.PERCENT:
+          h *= height.value * 0.01;
+          break;
       }
     }
-    // border影响x和y
-    x += borderLeftWidth.value;
+    // margin/padding/border影响x和y和尺寸
+    x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     data.x = x;
-    y += borderTopWidth.value;
+    y += borderTopWidth.value + marginTop.value + paddingTop.value;
     data.y = y;
-    w -= borderLeftWidth.value + borderRightWidth.value;
-    h -= borderTopWidth.value + borderBottomWidth.value;
+    w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+    h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     children.forEach(item => {
-      if(item instanceof Dom) {
+      if(item instanceof Dom || item instanceof Geom) {
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -734,19 +775,21 @@ class Dom extends Xom {
             x,
             y,
             w,
+            h,
           });
           x += item.outerWidth;
           maxX = Math.max(maxX, x);
         }
         else {
           // 非开头先尝试是否放得下
-          let fw = item.__tryLayInline(w - x);
+          let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
             item.__preLayInline({
               x,
               y,
               w,
+              h,
             });
           }
           // 放不下处理之前的lineGroup，并重新开头
@@ -759,6 +802,7 @@ class Dom extends Xom {
               x: data.x,
               y,
               w,
+              h,
             });
             lineGroup = new LineGroup(x, y);
           }
@@ -782,7 +826,7 @@ class Dom extends Xom {
         }
         else {
           // 非开头先尝试是否放得下
-          let fw = item.__tryLayInline(w - x);
+          let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
             item.__preLay({

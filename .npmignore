@@ -14,4 +14,4 @@ nightwatch.conf.js
 tests/
 demo/
 node_modules/
-lib/
+.DS_Store

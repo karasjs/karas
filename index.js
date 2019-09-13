@@ -103,6 +103,38 @@
     return _get(target, property, receiver || target);
   }
 
+  var CANVAS = 0;
+  var SVG = 1;
+  var div;
+  var svgHtml = '';
+  var mode = {
+    CANVAS: CANVAS,
+    SVG: SVG,
+    appendHtml: function appendHtml(s) {
+      svgHtml += s;
+    },
+
+    get html() {
+      return svgHtml;
+    },
+
+    measure: function measure(s, style) {
+      if (!div) {
+        div = document.createElement('div');
+        div.style.position = 'absolute';
+        div.style.left = '99999px';
+        div.style.top = '-99999px';
+        div.style.visibility = 'hidden';
+        document.body.appendChild(div);
+      }
+
+      div.style.fontSize = style.fontSize + 'px';
+      div.innerText = s;
+      var css = window.getComputedStyle(div, null);
+      return parseFloat(css.width);
+    }
+  };
+
   var Node =
   /*#__PURE__*/
   function () {
@@ -121,6 +153,7 @@
       this.__style = {}; // style被解析后的k-v形式
 
       this.__baseLine = 0;
+      this.__mode = mode.CANVAS;
     }
 
     _createClass(Node, [{
@@ -193,50 +226,15 @@
       get: function get() {
         return this.__baseLine;
       }
+    }, {
+      key: "mode",
+      get: function get() {
+        return this.__mode;
+      }
     }]);
 
     return Node;
   }();
-
-  var mode = 0;
-  var measureDom;
-  var svgHtml;
-  var mode$1 = {
-    setCanvas: function setCanvas() {
-      mode = 0;
-    },
-    setSvg: function setSvg() {
-      mode = 1;
-      svgHtml = '';
-    },
-    isCanvas: function isCanvas() {
-      return mode === 0;
-    },
-    isSvg: function isSvg() {
-      return mode === 1;
-    },
-    appendHtml: function appendHtml(s) {
-      svgHtml += s;
-    },
-
-    get html() {
-      return svgHtml;
-    },
-
-    get measure() {
-      if (!measureDom) {
-        measureDom = document.createElement('div');
-        measureDom.style.position = 'absolute';
-        measureDom.style.left = '99999px';
-        measureDom.style.top = '-99999px';
-        measureDom.style.visibility = 'hidden';
-        document.body.appendChild(measureDom);
-      }
-
-      return measureDom;
-    }
-
-  };
 
   function arr2hash(arr) {
     var hash = {};
@@ -319,6 +317,10 @@
       value: function __preLay(data) {
         var style = this.style;
 
+        if (style.position === 'absolute') {
+          var raParent = this.raParent;
+        }
+
         if (style.display === 'block') {
           this.__preLayBlock(data);
         } else if (style.display === 'flex') {
@@ -346,7 +348,21 @@
             borderBottomWidth = style.borderBottomWidth,
             borderBottomColor = style.borderBottomColor,
             borderLeftWidth = style.borderLeftWidth,
-            borderLeftColor = style.borderLeftColor;
+            borderLeftColor = style.borderLeftColor,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft;
+
+        if (marginLeft) {
+          x += marginLeft.value;
+        }
+
+        if (marginTop) {
+          y += marginTop.value;
+        }
 
         if (backgroundColor) {
           var x1 = x;
@@ -361,80 +377,144 @@
             y1 += borderTopWidth.value;
           }
 
-          if (mode$1.isCanvas()) {
+          var w = width + paddingLeft.value + paddingRight.value;
+          var h = height + paddingTop.value + paddingBottom.value;
+
+          if (this.mode === mode.CANVAS) {
             ctx.beginPath();
             ctx.fillStyle = backgroundColor;
-            ctx.rect(x1, y1, width, height);
+            ctx.rect(x1, y1, w, h);
             ctx.fill();
             ctx.closePath();
-          } else if (mode$1.isSvg()) {
-            mode$1.appendHtml("<rect x=\"".concat(x1, "\" y=\"").concat(y1, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(backgroundColor, "\"/>"));
+          } else if (this.mode === mode.SVG) {
+            mode.appendHtml("<rect x=\"".concat(x1, "\" y=\"").concat(y1, "\" width=\"").concat(w, "\" height=\"").concat(h, "\" fill=\"").concat(backgroundColor, "\"/>"));
           }
         }
 
         if (borderTopWidth.value) {
+          var _x = x + borderLeftWidth.value;
+
           var _y = y + borderTopWidth.value * 0.5;
 
-          if (mode$1.isCanvas()) {
+          var x2 = _x + width;
+
+          if (paddingLeft) {
+            x2 += paddingLeft.value;
+          }
+
+          if (paddingRight) {
+            x2 += paddingRight.value;
+          }
+
+          if (this.mode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderTopWidth.value;
             ctx.strokeStyle = borderTopColor;
-            ctx.moveTo(x + borderLeftWidth.value, _y);
-            ctx.lineTo(x + borderLeftWidth.value + width, _y);
+            ctx.moveTo(_x, _y);
+            ctx.lineTo(x2, _y);
             ctx.stroke();
             ctx.closePath();
-          } else {
-            mode$1.appendHtml("<line x1=\"".concat(x, "\" y1=\"").concat(_y, "\" x2=\"").concat(x + outerWidth, "\" y2=\"").concat(_y, "\" stroke-width=\"").concat(borderTopWidth.value, "\" stroke=\"").concat(borderTopColor, "\"/>"));
+          } else if (this.mode === mode.SVG) {
+            mode.appendHtml("<line x1=\"".concat(_x, "\" y1=\"").concat(_y, "\" x2=\"").concat(x2, "\" y2=\"").concat(_y, "\" stroke-width=\"").concat(borderTopWidth.value, "\" stroke=\"").concat(borderTopColor, "\"/>"));
           }
         }
 
         if (borderRightWidth.value) {
-          var _x = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
+          var _x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
 
-          var y2 = y + outerHeight;
+          var _y2 = y;
+          var y2 = _y2 + height + borderTopWidth.value + borderBottomWidth.value;
 
-          if (mode$1.isCanvas()) {
+          if (paddingLeft) {
+            _x2 += paddingLeft.value;
+          }
+
+          if (paddingRight) {
+            _x2 += paddingRight.value;
+          }
+
+          if (paddingTop) {
+            y2 += paddingTop.value;
+          }
+
+          if (paddingBottom) {
+            y2 += paddingBottom.value;
+          }
+
+          if (this.mode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderRightWidth.value;
             ctx.strokeStyle = borderRightColor;
-            ctx.moveTo(_x, y);
-            ctx.lineTo(_x, y2);
+            ctx.moveTo(_x2, _y2);
+            ctx.lineTo(_x2, y2);
             ctx.stroke();
             ctx.closePath();
-          } else {
-            mode$1.appendHtml("<line x1=\"".concat(_x, "\" y1=\"").concat(y, "\" x2=\"").concat(_x, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(borderRightWidth.value, "\" stroke=\"").concat(borderRightColor, "\"/>"));
+          } else if (this.mode === mode.SVG) {
+            mode.appendHtml("<line x1=\"".concat(_x2, "\" y1=\"").concat(_y2, "\" x2=\"").concat(_x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(borderRightWidth.value, "\" stroke=\"").concat(borderRightColor, "\"/>"));
           }
         }
 
         if (borderBottomWidth.value) {
-          var _y2 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+          var _x3 = x + borderLeftWidth.value;
 
-          if (mode$1.isCanvas()) {
+          var _y3 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+
+          var _x4 = _x3 + width;
+
+          if (paddingLeft) {
+            _x4 += paddingLeft.value;
+          }
+
+          if (paddingRight) {
+            _x4 += paddingRight.value;
+          }
+
+          if (paddingTop) {
+            _y3 += paddingTop.value;
+          }
+
+          if (paddingBottom) {
+            _y3 += paddingBottom.value;
+          }
+
+          if (this.mode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderBottomWidth.value;
             ctx.strokeStyle = borderBottomColor;
-            ctx.moveTo(x + borderLeftWidth.value, _y2);
-            ctx.lineTo(x + borderLeftWidth.value + width, _y2);
+            ctx.moveTo(_x3, _y3);
+            ctx.lineTo(_x4, _y3);
             ctx.stroke();
             ctx.closePath();
-          } else {
-            mode$1.appendHtml("<line x1=\"".concat(x, "\" y1=\"").concat(_y2, "\" x2=\"").concat(x + outerWidth, "\" y2=\"").concat(_y2, "\" stroke-width=\"").concat(borderBottomWidth.value, "\" stroke=\"").concat(borderBottomColor, "\"/>"));
+          } else if (this.mode === mode.SVG) {
+            mode.appendHtml("<line x1=\"".concat(_x3, "\" y1=\"").concat(_y3, "\" x2=\"").concat(_x4, "\" y2=\"").concat(_y3, "\" stroke-width=\"").concat(borderBottomWidth.value, "\" stroke=\"").concat(borderBottomColor, "\"/>"));
           }
         }
 
         if (borderLeftWidth.value) {
-          var _x2 = x + borderLeftWidth.value * 0.5;
+          var _x5 = x + borderLeftWidth.value * 0.5;
 
-          if (mode$1.isCanvas()) {
+          var _y4 = y;
+
+          var _y5 = _y4 + height + borderTopWidth.value + borderBottomWidth.value;
+
+          if (paddingTop) {
+            _y5 += paddingTop.value;
+          }
+
+          if (paddingBottom) {
+            _y5 += paddingBottom.value;
+          }
+
+          if (this.mode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderLeftWidth.value;
             ctx.strokeStyle = borderLeftColor;
-            ctx.moveTo(_x2, y);
-            ctx.lineTo(_x2, y + height + borderTopWidth.value + borderBottomWidth.value);
+            ctx.moveTo(_x5, _y4);
+            ctx.lineTo(_x5, _y5);
             ctx.stroke();
             ctx.closePath();
-          } else {
-            mode$1.appendHtml("<line x1=\"".concat(_x2, "\" y1=\"").concat(y, "\" x2=\"").concat(_x2, "\" y2=\"").concat(y + outerHeight, "\" stroke-width=\"").concat(borderLeftWidth.value, "\" stroke=\"").concat(borderLeftColor, "\"/>"));
+          } else if (this.mode === mode.SVG) {
+            mode.appendHtml("<line x1=\"".concat(_x5, "\" y1=\"").concat(_y4, "\" x2=\"").concat(_x5, "\" y2=\"").concat(_y5, "\" stroke-width=\"").concat(borderLeftWidth.value, "\" stroke=\"").concat(borderLeftColor, "\"/>"));
           }
         }
       }
@@ -448,16 +528,39 @@
       get: function get() {
         var _this$style = this.style,
             borderLeftWidth = _this$style.borderLeftWidth,
-            borderRightWidth = _this$style.borderRightWidth;
-        return this.width + borderLeftWidth.value + borderRightWidth.value;
+            borderRightWidth = _this$style.borderRightWidth,
+            marginLeft = _this$style.marginLeft,
+            marginRight = _this$style.marginRight,
+            paddingLeft = _this$style.paddingLeft,
+            paddingRight = _this$style.paddingRight;
+        return this.width + borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
       }
     }, {
       key: "outerHeight",
       get: function get() {
         var _this$style2 = this.style,
             borderTopWidth = _this$style2.borderTopWidth,
-            borderBottomWidth = _this$style2.borderBottomWidth;
-        return this.height + borderTopWidth.value + borderBottomWidth.value;
+            borderBottomWidth = _this$style2.borderBottomWidth,
+            marginTop = _this$style2.marginTop,
+            marginBottom = _this$style2.marginBottom,
+            paddingTop = _this$style2.paddingTop,
+            paddingBottom = _this$style2.paddingBottom;
+        return this.height + borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+      }
+    }, {
+      key: "raParent",
+      get: function get() {
+        var dom = this.parent;
+
+        while (dom.parent) {
+          if (['relative', 'absolute'].indexOf(dom.style.position) > -1) {
+            break;
+          }
+
+          dom = dom.parent;
+        }
+
+        return dom;
       }
     }]);
 
@@ -486,6 +589,7 @@
   };
 
   var RESET = {
+    position: 'static',
     display: 'block',
     borderSizing: 'content-box',
     marginTop: 0,
@@ -496,7 +600,7 @@
     paddingRight: 0,
     paddingBottom: 0,
     paddingLeft: 0,
-    fontSize: 24,
+    fontSize: 16,
     fontFamily: 'arial',
     color: '#000',
     fontStyle: 'normal',
@@ -660,12 +764,20 @@
       style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = style.border;
     }
 
+    if (style.margin) {
+      style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = style.margin;
+    }
+
+    if (style.padding) {
+      style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+    }
+
     parserOneBorder(style, 'Top');
     parserOneBorder(style, 'Right');
     parserOneBorder(style, 'Bottom');
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
 
-    ['marginTop', 'marginRight', 'marginDown', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingDown', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height', 'flexBasis'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'width', 'height', 'flexBasis'].forEach(function (k) {
       var v = style[k]; // 编译工具前置解析优化跳出
 
       if (!util.isNil(v) && v.unit) {
@@ -754,9 +866,10 @@
   var LineBox =
   /*#__PURE__*/
   function () {
-    function LineBox(ctx, x, y, content, style) {
+    function LineBox(mode, ctx, x, y, content, style) {
       _classCallCheck(this, LineBox);
 
+      this.__mode = mode;
       this.__ctx = ctx;
       this.__x = x;
       this.__y = y;
@@ -773,11 +886,11 @@
             x = this.x,
             y = this.y;
 
-        if (mode$1.isCanvas()) {
+        if (this.mode === mode.CANVAS) {
           ctx.fillStyle = style.color;
           ctx.fillText(content, x, y + css.getBaseLine(style));
-        } else if (mode$1.isSvg()) {
-          mode$1.appendHtml("<text x=\"".concat(x, "\" y=\"").concat(y + css.getBaseLine(style), "\" fill=\"").concat(style.color, "\" font-size=\"").concat(style.fontSize, "px\">").concat(content, "</text>"));
+        } else if (this.mode === mode.SVG) {
+          mode.appendHtml("<text x=\"".concat(x, "\" y=\"").concat(y + css.getBaseLine(style), "\" fill=\"").concat(style.color, "\" font-size=\"").concat(style.fontSize, "px\">").concat(content, "</text>"));
         }
       }
     }, {
@@ -820,6 +933,11 @@
       get: function get() {
         return css.getBaseLine(this.style);
       }
+    }, {
+      key: "mode",
+      get: function get() {
+        return this.__mode;
+      }
     }]);
 
     return LineBox;
@@ -856,7 +974,7 @@
             style = this.style,
             charWidthList = this.charWidthList;
 
-        if (mode$1.isCanvas()) {
+        if (this.mode === mode.CANVAS) {
           ctx.font = css.setFontStyle(style);
         }
 
@@ -871,16 +989,10 @@
 
           if (cache.hasOwnProperty(_char)) {
             mw = cache[_char];
-          } else if (mode$1.isCanvas()) {
+          } else if (this.mode === mode.CANVAS) {
             mw = ctx.measureText(_char).width;
-          } else if (mode$1.isSvg()) {
-            var dom = mode$1.measure;
-            dom.style.fontSize = style.fontSize + 'px';
-            dom.innerText = _char;
-
-            var _css = window.getComputedStyle(dom, null);
-
-            mw = parseFloat(_css.width);
+          } else if (this.mode === mode.SVG) {
+            mw = mode.measure(_char, style);
           }
 
           charWidthList.push(mw);
@@ -915,7 +1027,7 @@
           count += charWidthList[i];
 
           if (count === w) {
-            var lineBox = new LineBox(ctx, x, y, content.slice(begin, i + 1), style);
+            var lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i + 1), style);
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
             y += this.style.lineHeight.value;
@@ -928,7 +1040,7 @@
               i = begin + 1;
             }
 
-            var _lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
+            var _lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
@@ -942,7 +1054,7 @@
         }
 
         if (begin < length && begin < i) {
-          var _lineBox2 = new LineBox(ctx, x, y, content.slice(begin, i), style);
+          var _lineBox2 = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
@@ -959,7 +1071,7 @@
     }, {
       key: "render",
       value: function render() {
-        if (mode$1.isCanvas()) {
+        if (this.mode === mode.CANVAS) {
           this.ctx.font = css.setFontStyle(this.style);
         }
 
@@ -970,9 +1082,7 @@
     }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w) {
-        this.ctx.font = css.setFontStyle(this.style);
-        var tw = this.ctx.measureText(this.content).width;
-        return w - tw;
+        return w - this.textWidth;
       }
     }, {
       key: "__offsetX",
@@ -1152,6 +1262,20 @@
         css.normalize(this.style);
       }
     }, {
+      key: "__tryLayInline",
+      value: function __tryLayInline(w, total) {
+        // 无children，直接以style的width为宽度，不定义则为0
+        var width = this.style.width;
+
+        if (width.unit === unit.PX) {
+          return w - width.value;
+        } else if (width.unit === unit.PERCENT) {
+          return w - total * width.value * 0.01;
+        }
+
+        return w;
+      }
+    }, {
       key: "__calAutoBasis",
       value: function __calAutoBasis(isDirectionRow, w, h) {
         var b = 0;
@@ -1194,10 +1318,62 @@
       }
     }, {
       key: "__preLayBlock",
-      value: function __preLayBlock(data) {}
+      value: function __preLayBlock(data) {
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h;
+        this.__x = x;
+        this.__y = y;
+        this.__width = w;
+        var style = this.style;
+        var width = style.width,
+            height = style.height,
+            borderTopWidth = style.borderTopWidth,
+            borderRightWidth = style.borderRightWidth,
+            borderBottomWidth = style.borderBottomWidth,
+            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+
+        var fixedHeight;
+
+        if (width && width.unit !== unit.AUTO) {
+          switch (width.unit) {
+            case unit.PX:
+              w = width.value;
+              break;
+          }
+        }
+
+        if (height && height.unit !== unit.AUTO) {
+          fixedHeight = true;
+
+          switch (height.unit) {
+            case unit.PX:
+              h = height.value;
+              break;
+
+            case unit.PERCENT:
+              h *= height.value * 0.01;
+              break;
+          }
+        } // border影响x和y和尺寸
+
+
+        x += borderLeftWidth.value;
+        data.x = x;
+        y += borderTopWidth.value;
+        data.y = y;
+        w -= borderLeftWidth.value + borderRightWidth.value;
+        h -= borderTopWidth.value + borderBottomWidth.value;
+        this.__width = w;
+        this.__height = fixedHeight ? h : 0;
+      }
     }, {
       key: "__preLayFlex",
-      value: function __preLayFlex(data) {}
+      value: function __preLayFlex(data) {
+        // 无children所以等同于block
+        this.__preLayBlock(data);
+      }
     }, {
       key: "__preLayInline",
       value: function __preLayInline(data) {
@@ -1262,7 +1438,22 @@
     }, {
       key: "baseLine",
       get: function get() {
-        return 0;
+        return this.__height;
+      }
+    }, {
+      key: "origin",
+      get: function get() {
+        return this.__origin;
+      }
+    }, {
+      key: "min",
+      get: function get() {
+        return this.__min;
+      }
+    }, {
+      key: "max",
+      get: function get() {
+        return this.__max;
       }
     }], [{
       key: "isValid",
@@ -1302,19 +1493,19 @@
      * 1. 封装string为Text节点
      * 2. 打平children中的数组，变成一维
      * 3. 合并相连的Text节点
-     * 4. 检测inline不能包含block
-     * 5. 设置parent和prev/next和ctx
+     * 4. 检测inline不能包含block和flex
+     * 5. 设置parent和prev/next和ctx和mode
      */
 
 
     _createClass(Dom, [{
       key: "__traverse",
-      value: function __traverse(ctx) {
+      value: function __traverse(ctx, mode) {
         var _this2 = this;
 
         var list = [];
 
-        this.__traverseChildren(this.children, list, ctx);
+        this.__traverseChildren(this.children, list, ctx, mode);
 
         for (var i = list.length - 1; i > 0; i--) {
           var item = list[i];
@@ -1336,7 +1527,7 @@
             var _item = list[_i];
 
             if (_item instanceof Dom && _item.style.display !== 'inline') {
-              throw new Error('inline can not contain block');
+              throw new Error('inline can not contain block/flex');
             }
           }
         }
@@ -1352,23 +1543,28 @@
       }
     }, {
       key: "__traverseChildren",
-      value: function __traverseChildren(children, list, ctx) {
+      value: function __traverseChildren(children, list, ctx, mode) {
         var _this3 = this;
 
         if (Array.isArray(children)) {
           children.forEach(function (item) {
-            _this3.__traverseChildren(item, list, ctx);
+            _this3.__traverseChildren(item, list, ctx, mode);
           });
         } else if (children instanceof Dom) {
           list.push(children);
 
-          children.__traverse(ctx);
+          children.__traverse(ctx, mode);
+
+          children.__mode = mode;
         } // 图形没有children
         else if (children instanceof Geom) {
             list.push(children);
+            children.__mode = mode;
           } // 排除掉空的文本
           else if (!util.isNil(children)) {
-              list.push(new Text(children));
+              var text = new Text(children);
+              text.__mode = mode;
+              list.push(text);
             }
       } // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
 
@@ -1412,8 +1608,15 @@
 
     }, {
       key: "__tryLayInline",
-      value: function __tryLayInline(w) {
-        var children = this.children;
+      value: function __tryLayInline(w, total) {
+        var children = this.children,
+            width = this.style.width;
+
+        if (width.unit === unit.PX) {
+          return w - width.value;
+        } else if (width.unit === unit.PERCENT) {
+          return w - total * width.value * 0.01;
+        }
 
         for (var i = 0; i < children.length; i++) {
           // 当放不下时直接返回，无需继续多余的尝试计算
@@ -1424,7 +1627,7 @@
           var item = children[i];
 
           if (item instanceof Dom || item instanceof Geom) {
-            w = item.__tryLayInline(w);
+            w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;
           }
@@ -1470,10 +1673,18 @@
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth;
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft;
         var main = isDirectionRow ? width : height;
 
-        if (main.unit !== unit.AUTO) {
+        if (main.unit === unit.PX) {
           b = max += main.value; // 递归时children的长度会影响flex元素的最小宽度
 
           if (isRecursion) {
@@ -1506,16 +1717,16 @@
             min = Math.max(min, item.height);
             max = Math.max(max, item.height);
           }
-        }); // border也得计算在内
+        }); // margin/padding/border也得计算在内
 
         if (isDirectionRow) {
-          var _w = borderRightWidth.value + borderLeftWidth.value;
+          var _w = borderRightWidth.value + borderLeftWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
 
           b += _w;
           max += _w;
           min += _w;
         } else {
-          var _h = borderTopWidth.value + borderBottomWidth.value;
+          var _h = borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
 
           b += _h;
           max += _h;
@@ -1548,7 +1759,15 @@
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft; // 除了auto外都是固定高度
 
         var fixedHeight;
 
@@ -1556,6 +1775,10 @@
           switch (width.unit) {
             case unit.PX:
               w = width.value;
+              break;
+
+            case unit.PERCENT:
+              w *= width.value * 0.01;
               break;
           }
         }
@@ -1572,19 +1795,19 @@
               h *= height.value * 0.01;
               break;
           }
-        } // border影响x和y和尺寸
+        } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value;
+        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         data.x = x;
-        y += borderTopWidth.value;
+        y += borderTopWidth.value + marginTop.value + paddingTop.value;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value;
-        h -= borderTopWidth.value + borderBottomWidth.value; // 递归布局，将inline的节点组成lineGroup一行
+        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         children.forEach(function (item) {
-          if (item instanceof Dom) {
+          if (item instanceof Dom || item instanceof Geom) {
             if (item.style.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -1600,14 +1823,15 @@
                 x += item.outerWidth;
               } else {
                 // 非开头先尝试是否放得下
-                var fw = item.__tryLayInline(w - x); // 放得下继续
+                var fw = item.__tryLayInline(w - x, w); // 放得下继续
 
 
                 if (fw >= 0) {
                   item.__preLayInline({
                     x: x,
                     y: y,
-                    w: w
+                    w: w,
+                    h: h
                   });
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
@@ -1620,7 +1844,8 @@
                     item.__preLayInline({
                       x: data.x,
                       y: y,
-                      w: w
+                      w: w,
+                      h: h
                     });
 
                     lineGroup = new LineGroup(x, y);
@@ -1649,24 +1874,6 @@
               x = data.x;
               y += item.outerHeight;
             }
-          } else if (item instanceof Geom) {
-            // 图形也是block先处理之前可能的行
-            if (lineGroup.size) {
-              _this4.lineGroups.push(lineGroup);
-
-              lineGroup.verticalAlign();
-              y += lineGroup.height;
-              lineGroup = new LineGroup(data.x, y);
-            }
-
-            item.__preLay({
-              x: data.x,
-              y: y,
-              w: w
-            });
-
-            x = data.x;
-            y += item.outerHeight;
           } // 文字和inline类似
           else {
               // x开头，不用考虑是否放得下直接放
@@ -1683,7 +1890,7 @@
                 x += item.width;
               } else {
                 // 非开头先尝试是否放得下
-                var _fw = item.__tryLayInline(w - x); // 放得下继续
+                var _fw = item.__tryLayInline(w - x, w); // 放得下继续
 
 
                 if (_fw >= 0) {
@@ -1746,6 +1953,14 @@
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft,
             justifyContent = style.justifyContent; // 除了auto外都是固定高度
 
         var fixedHeight;
@@ -1754,6 +1969,10 @@
           switch (width.unit) {
             case unit.PX:
               w = width.value;
+              break;
+
+            case unit.PERCENT:
+              w *= width.value * 0.01;
               break;
           }
         }
@@ -1770,15 +1989,15 @@
               h *= height.value * 0.01;
               break;
           }
-        } // border影响x和y和尺寸
+        } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value;
+        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         data.x = x;
-        y += borderTopWidth.value;
+        y += borderTopWidth.value + marginTop.value + paddingTop.value;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value;
-        h -= borderTopWidth.value + borderBottomWidth.value;
+        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
         var isDirectionRow = flexDirection === 'row'; // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
 
         if (!isDirectionRow && !fixedHeight) {
@@ -1918,9 +2137,9 @@
                 _height2 = _item$style3.height;
 
             if (isDirectionRow) {
-              // row的flex的child如果是block，则等同于inline-block布局
-              if (display === 'block') {
-                _style2.display = 'inline';
+              // row的flex的child如果是inline，变为block
+              if (display === 'inline') {
+                _style2.display = 'block';
               } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
               else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && _height2.unit === unit.AUTO) {
                   _height2.value = h;
@@ -1979,35 +2198,36 @@
             maxCross = Math.max(maxCross, item.outerHeight);
           } else {
             y += item.outerHeight;
-            x = data.x;
             maxCross = Math.max(maxCross, item.outerWidth);
           }
-        }); // 主轴侧轴对齐方式
+        }); // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
 
-        if (!isOverflow && growSum === 0 && free > 0) {
+        var diff = isDirectionRow ? w - x + data.x : h - y + data.y; // 主轴侧轴对齐方式
+
+        if (!isOverflow && growSum === 0 && free > 0 && diff > 0) {
           var len = children.length;
 
           if (justifyContent === 'flex-end') {
             for (var i = 0; i < len; i++) {
               var child = children[i];
-              isDirectionRow ? child.__offsetX(free) : child.__offsetY(free);
+              isDirectionRow ? child.__offsetX(diff) : child.__offsetY(diff);
             }
           } else if (justifyContent === 'center') {
-            var center = free * 0.5;
+            var center = diff * 0.5;
 
             for (var _i2 = 0; _i2 < len; _i2++) {
               var _child = children[_i2];
               isDirectionRow ? _child.__offsetX(center) : _child.__offsetY(center);
             }
           } else if (justifyContent === 'space-between') {
-            var between = free / (len - 1);
+            var between = diff / (len - 1);
 
             for (var _i3 = 1; _i3 < len; _i3++) {
               var _child2 = children[_i3];
               isDirectionRow ? _child2.__offsetX(between * _i3) : _child2.__offsetY(between * _i3);
             }
           } else if (justifyContent === 'space-around') {
-            var around = free / (len + 1);
+            var around = diff / (len + 1);
 
             for (var _i4 = 0; _i4 < len; _i4++) {
               var _child3 = children[_i4];
@@ -2063,7 +2283,15 @@
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft; // 除了auto外都是固定高度
 
         var fixedWidth;
         var fixedHeight;
@@ -2075,6 +2303,10 @@
             case unit.PX:
               w = width.value;
               break;
+
+            case unit.PERCENT:
+              w *= width.value * 0.01;
+              break;
           }
         }
 
@@ -2085,20 +2317,24 @@
             case unit.PX:
               h = height.value;
               break;
+
+            case unit.PERCENT:
+              h *= height.value * 0.01;
+              break;
           }
-        } // border影响x和y
+        } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value;
+        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         data.x = x;
-        y += borderTopWidth.value;
+        y += borderTopWidth.value + marginTop.value + paddingTop.value;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value;
-        h -= borderTopWidth.value + borderBottomWidth.value; // 递归布局，将inline的节点组成lineGroup一行
+        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         children.forEach(function (item) {
-          if (item instanceof Dom) {
+          if (item instanceof Dom || item instanceof Geom) {
             // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
               lineGroup.add(item);
@@ -2106,21 +2342,23 @@
               item.__preLayInline({
                 x: x,
                 y: y,
-                w: w
+                w: w,
+                h: h
               });
 
               x += item.outerWidth;
               maxX = Math.max(maxX, x);
             } else {
               // 非开头先尝试是否放得下
-              var fw = item.__tryLayInline(w - x); // 放得下继续
+              var fw = item.__tryLayInline(w - x, w); // 放得下继续
 
 
               if (fw >= 0) {
                 item.__preLayInline({
                   x: x,
                   y: y,
-                  w: w
+                  w: w,
+                  h: h
                 });
               } // 放不下处理之前的lineGroup，并重新开头
               else {
@@ -2133,7 +2371,8 @@
                   item.__preLayInline({
                     x: data.x,
                     y: y,
-                    w: w
+                    w: w,
+                    h: h
                   });
 
                   lineGroup = new LineGroup(x, y);
@@ -2159,7 +2398,7 @@
                 maxX = Math.max(maxX, x);
               } else {
                 // 非开头先尝试是否放得下
-                var _fw2 = item.__tryLayInline(w - x); // 放得下继续
+                var _fw2 = item.__tryLayInline(w - x, w); // 放得下继续
 
 
                 if (_fw2 >= 0) {
@@ -2380,12 +2619,12 @@
 
         if (this.tagName === 'canvas') {
           this.__ctx = this.__node.getContext('2d');
-          mode$1.setCanvas();
+          this.__mode = mode.CANVAS;
         } else if (this.tagName === 'svg') {
-          mode$1.setSvg();
+          this.__mode = mode.SVG;
         }
 
-        this.__traverse(this.__ctx); // canvas的宽高固定初始化
+        this.__traverse(this.__ctx, this.__mode); // canvas的宽高固定初始化
 
 
         style.width = this.width;
@@ -2402,8 +2641,8 @@
 
         this.render();
 
-        if (mode$1.isSvg()) {
-          this.__node.innerHTML = mode$1.html;
+        if (this.mode === mode.SVG) {
+          this.__node.innerHTML = mode.html;
         }
       }
     }, {
@@ -2426,9 +2665,10 @@
 
       _classCallCheck(this, Line);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, '$line', props));
-      _this.__start = [0, 0];
-      _this.__end = [1, 1];
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, '$line', props)); // start和end表明线段的首尾坐标
+
+      _this.__start = [];
+      _this.__end = [];
 
       if (Array.isArray(_this.props.start)) {
         _this.__start = _this.props.start;
@@ -2436,6 +2676,13 @@
 
       if (Array.isArray(_this.props.end)) {
         _this.__end = _this.props.end;
+      } // 原点位置，4个角，默认左下
+
+
+      if (['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
+        _this.__origin = _this.props.origin;
+      } else {
+        _this.__origin = 'BOTTOM_LEFT';
       }
 
       return _this;
@@ -2453,19 +2700,56 @@
             style = this.style,
             ctx = this.ctx,
             start = this.start,
-            end = this.end;
+            end = this.end,
+            origin = this.origin;
+
+        if (start.length < 2 || end.length < 2) {
+          return;
+        }
+
         var borderTopWidth = style.borderTopWidth,
+            borderRightWidth = style.borderRightWidth,
+            borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth;
-        var originX = x + borderLeftWidth.value;
-        var originY = y + borderTopWidth.value;
-        var x1 = originX + start[0] * width;
-        var y1 = originY + start[1] * height;
-        var x2 = originX + end[0] * width;
-        var y2 = originY + end[1] * height;
+        var x1, y1, x2, y2;
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
 
-        if (mode$1.isCanvas()) {
+        if (origin === 'TOP_LEFT') {
+          x1 = originX + start[0] * width;
+          y1 = originY + start[1] * height;
+          x2 = originX + end[0] * width;
+          y2 = originY + end[1] * height;
+        } else if (origin === 'TOP_RIGHT') {
+          x1 = originX + width - start[0] * width;
+          y1 = originY + start[1] * height;
+          x2 = originX + width - end[0] * width;
+          y2 = originY + end[1] * height;
+        } else if (origin === 'BOTTOM_LEFT') {
+          x1 = originX + start[0] * width;
+          y1 = originY + height - start[1] * height;
+          x2 = originX + end[0] * width;
+          y2 = originY + height - end[1] * height;
+        } else if (origin === 'BOTTOM_RIGHT') {
+          x1 = originX + width - start[0] * width;
+          y1 = originY + height - start[1] * height;
+          x2 = originX + width - end[0] * width;
+          y2 = originY + height - end[1] * height;
+        }
+
+        if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.beginPath();
@@ -2473,8 +2757,8 @@
           ctx.lineTo(x2, y2);
           ctx.stroke();
           ctx.closePath();
-        } else if (mode$1.isSvg()) {
-          mode$1.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        } else if (this.mode === mode.SVG) {
+          mode.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
         }
       }
     }, {
@@ -2502,11 +2786,38 @@
 
       _classCallCheck(this, Polygon);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props)); // 折线所有点的列表
+
       _this.__pointList = [];
 
       if (Array.isArray(_this.props.pointList)) {
         _this.__pointList = _this.props.pointList;
+      } // 原点位置，4个角，默认左下
+
+
+      if (['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
+        _this.__origin = _this.props.origin;
+      } else {
+        _this.__origin = 'BOTTOM_LEFT';
+      } // max和min默认取值坐标轴范围[0, 1]，可更改
+
+
+      if (_this.props.min) {
+        _this.__min = parseFloat(_this.props.min) || 0;
+      } else {
+        _this.__min = 0;
+      }
+
+      if (_this.props.max) {
+        var max = parseFloat(_this.props.max);
+
+        if (isNaN(max)) {
+          max = 1;
+        }
+
+        _this.__max = max;
+      } else {
+        _this.__max = 1;
       }
 
       return _this;
@@ -2523,36 +2834,90 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            pointList = this.pointList;
+            pointList = this.pointList,
+            max = this.max,
+            min = this.min,
+            origin = this.origin;
+
+        if (pointList.length < 2) {
+          return;
+        }
+
+        for (var i = 0, len = pointList.length; i < len; i++) {
+          if (!Array.isArray(pointList[i]) || pointList[i].length < 2) {
+            return;
+          }
+        }
+
         var borderTopWidth = style.borderTopWidth,
+            borderRightWidth = style.borderRightWidth,
+            borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginRight = style.marginRight,
+            marginBottom = style.marginBottom,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingRight = style.paddingRight,
+            paddingBottom = style.paddingBottom,
+            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth;
-        var originX = x + borderLeftWidth.value;
-        var originY = y + borderTopWidth.value;
+        var scale = max - min;
 
-        if (mode$1.isCanvas()) {
+        if (scale <= 0) {
+          throw new Error("scale can not <= 0: max(".concat(this.max, ") - min(").concat(this.min, ")"));
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+
+        if (origin === 'TOP_LEFT') {
+          pointList.forEach(function (item) {
+            item[0] = originX + item[0] * width;
+            item[1] = originY + (item[1] - min) * height / scale;
+          });
+        } else if (origin === 'TOP_RIGHT') {
+          pointList.forEach(function (item) {
+            item[0] = originX + width - item[0] * width;
+            item[1] = originY + (item[1] - min) * height / scale;
+          });
+        } else if (origin === 'BOTTOM_LEFT') {
+          pointList.forEach(function (item) {
+            item[0] = originX + item[0] * width;
+            item[1] = originY + height - (item[1] - min) * height / scale;
+          });
+        } else if (origin === 'BOTTOM_RIGHT') {
+          pointList.forEach(function (item) {
+            item[0] = originX + width - item[0] * width;
+            item[1] = originY + height - (item[1] - min) * height / scale;
+          });
+        }
+
+        if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.beginPath();
-          ctx.moveTo(originX + pointList[0][0] * width, originY + pointList[0][1] * height);
+          ctx.moveTo(pointList[0][0], originY + pointList[0][1]);
 
-          for (var i = 1, len = pointList.length; i < len; i++) {
-            var point = pointList[i];
-            ctx.lineTo(originX + point[0] * width, originY + point[1] * height);
+          for (var _i = 1, _len = pointList.length; _i < _len; _i++) {
+            var point = pointList[_i];
+            ctx.lineTo(point[0], originY + point[1]);
           }
 
           ctx.stroke();
           ctx.closePath();
-        } else if (mode$1.isSvg()) {
+        } else if (this.mode === mode.SVG) {
           var points = '';
 
-          for (var _i = 0, _len = pointList.length; _i < _len; _i++) {
-            var _point = pointList[_i];
-            points += "".concat(originX + _point[0] * width, ",").concat(originY + _point[1] * height, " ");
+          for (var _i2 = 0, _len2 = pointList.length; _i2 < _len2; _i2++) {
+            var _point = pointList[_i2];
+            points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode$1.appendHtml("<polyline fill=\"none\" points=\"".concat(points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
         }
       }
     }, {

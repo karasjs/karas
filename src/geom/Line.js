@@ -4,32 +4,76 @@ import mode from '../node/mode';
 class Line extends Geom {
   constructor(props) {
     super('$line', props);
-    this.__start = [0, 0];
-    this.__end = [1, 1];
+    // start和end表明线段的首尾坐标
+    this.__start = [];
+    this.__end = [];
     if(Array.isArray(this.props.start)) {
       this.__start = this.props.start;
     }
     if(Array.isArray(this.props.end)) {
       this.__end = this.props.end;
     }
+    // 原点位置，4个角，默认左下
+    if(['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(this.props.origin) > -1) {
+      this.__origin = this.props.origin;
+    }
+    else {
+      this.__origin = 'BOTTOM_LEFT';
+    }
   }
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, start, end } = this;
+    let { x, y, width, height, style, ctx, start, end, origin } = this;
+    if(start.length < 2 || end.length < 2) {
+      return;
+    }
     let {
       borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
       stroke,
       strokeWidth,
     } = style;
-    let originX = x + borderLeftWidth.value;
-    let originY = y + borderTopWidth.value;
-    let x1 = originX + start[0] * width;
-    let y1 = originY + start[1] * height;
-    let x2 = originX + end[0] * width;
-    let y2 = originY + end[1] * height;
-    if(mode.isCanvas()) {
+    let x1, y1, x2, y2;
+    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+    width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+    height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+    if(origin === 'TOP_LEFT') {
+      x1 = originX + start[0] * width;
+      y1 = originY + start[1] * height;
+      x2 = originX + end[0] * width;
+      y2 = originY + end[1] * height;
+    }
+    else if(origin === 'TOP_RIGHT') {
+      x1 = originX + width - start[0] * width;
+      y1 = originY + start[1] * height;
+      x2 = originX + width - end[0] * width;
+      y2 = originY + end[1] * height;
+    }
+    else if(origin === 'BOTTOM_LEFT') {
+      x1 = originX + start[0] * width;
+      y1 = originY + height - start[1] * height;
+      x2 = originX + end[0] * width;
+      y2 = originY + height - end[1] * height;
+    }
+    else if(origin === 'BOTTOM_RIGHT') {
+      x1 = originX + width - start[0] * width;
+      y1 = originY + height - start[1] * height;
+      x2 = originX + width - end[0] * width;
+      y2 = originY + height - end[1] * height;
+    }
+    if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.beginPath();
@@ -38,7 +82,7 @@ class Line extends Geom {
       ctx.stroke();
       ctx.closePath();
     }
-    else if(mode.isSvg()) {
+    else if(this.mode === mode.SVG) {
       mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
     }
   }

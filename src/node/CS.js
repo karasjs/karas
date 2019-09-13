@@ -96,12 +96,12 @@ class CS extends Dom {
     // 只有canvas有ctx，svg用真实dom
     if(this.tagName === 'canvas') {
       this.__ctx = this.__node.getContext('2d');
-      mode.setCanvas();
+      this.__mode = mode.CANVAS;
     }
     else if(this.tagName === 'svg') {
-      mode.setSvg();
+      this.__mode = mode.SVG;
     }
-    this.__traverse(this.__ctx);
+    this.__traverse(this.__ctx, this.__mode);
     // canvas的宽高固定初始化
     style.width = this.width;
     style.height = this.height;
@@ -113,7 +113,7 @@ class CS extends Dom {
       h: this.height,
     });
     this.render();
-    if(mode.isSvg()) {
+    if(this.mode === mode.SVG) {
       this.__node.innerHTML = mode.html;
     }
   }

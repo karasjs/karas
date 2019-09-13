@@ -19,7 +19,7 @@ class Text extends Node {
   __measure() {
     this.__charWidthList = [];
     let { ctx, content, style, charWidthList } = this;
-    if(mode.isCanvas()) {
+    if(this.mode === mode.CANVAS) {
       ctx.font = css.setFontStyle(style);
     }
     let cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
@@ -31,15 +31,11 @@ class Text extends Node {
       if(cache.hasOwnProperty(char)) {
         mw = cache[char];
       }
-      else if(mode.isCanvas()) {
+      else if(this.mode === mode.CANVAS) {
         mw = ctx.measureText(char).width;
       }
-      else if(mode.isSvg()) {
-        let dom = mode.measure;
-        dom.style.fontSize = style.fontSize + 'px';
-        dom.innerText = char;
-        let css = window.getComputedStyle(dom, null);
-        mw = parseFloat(css.width);
+      else if(this.mode === mode.SVG) {
+        mw = mode.measure(char, style);
       }
       charWidthList.push(mw);
       sum += mw;
@@ -62,7 +58,7 @@ class Text extends Node {
     while(i < length) {
       count += charWidthList[i];
       if (count === w) {
-        let lineBox = new LineBox(ctx, x, y, content.slice(begin, i + 1), style);
+        let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
         y += this.style.lineHeight.value;
@@ -75,7 +71,7 @@ class Text extends Node {
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
+        let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += this.style.lineHeight.value;
@@ -88,7 +84,7 @@ class Text extends Node {
       }
     }
     if(begin < length && begin < i) {
-      let lineBox = new LineBox(ctx, x, y, content.slice(begin, i), style);
+      let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
       y += this.style.lineHeight.value;
@@ -101,7 +97,7 @@ class Text extends Node {
   }
 
   render() {
-    if(mode.isCanvas()) {
+    if(this.mode === mode.CANVAS) {
       this.ctx.font = css.setFontStyle(this.style);
     }
     this.lineBoxes.forEach(item => {
@@ -110,9 +106,7 @@ class Text extends Node {
   }
 
   __tryLayInline(w) {
-    this.ctx.font = css.setFontStyle(this.style);
-    let tw = this.ctx.measureText(this.content).width;
-    return w - tw;
+    return w - this.textWidth;
   }
 
   __offsetX(diff) {

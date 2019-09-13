@@ -16,6 +16,18 @@ class Geom extends Xom {
     css.normalize(this.style);
   }
 
+  __tryLayInline(w, total) {
+    // 无children，直接以style的width为宽度，不定义则为0
+    let { style: { width } } = this;
+    if(width.unit === unit.PX) {
+      return w - width.value;
+    }
+    else if(width.unit === unit.PERCENT) {
+      return w - total * width.value * 0.01;
+    }
+    return w;
+  }
+
   __calAutoBasis(isDirectionRow, w, h) {
     let b = 0;
     let min = 0;
@@ -50,9 +62,55 @@ class Geom extends Xom {
     return { b, min, max };
   }
 
-  __preLayBlock(data) {}
+  __preLayBlock(data) {
+    let { x, y, w, h } = data;
+    this.__x = x;
+    this.__y = y;
+    this.__width = w;
+    let { style } = this;
+    let {
+      width,
+      height,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+    } = style;
+    // 除了auto外都是固定高度
+    let fixedHeight;
+    if(width && width.unit !== unit.AUTO) {
+      switch(width.unit) {
+        case unit.PX:
+          w = width.value;
+          break;
+      }
+    }
+    if(height && height.unit !== unit.AUTO) {
+      fixedHeight = true;
+      switch(height.unit) {
+        case unit.PX:
+          h = height.value;
+          break;
+        case unit.PERCENT:
+          h *= height.value * 0.01;
+          break;
+      }
+    }
+    // border影响x和y和尺寸
+    x += borderLeftWidth.value;
+    data.x = x;
+    y += borderTopWidth.value;
+    data.y = y;
+    w -= borderLeftWidth.value + borderRightWidth.value;
+    h -= borderTopWidth.value + borderBottomWidth.value;
+    this.__width = w;
+    this.__height = fixedHeight ? h : 0;
+  }
 
-  __preLayFlex(data) {}
+  __preLayFlex(data) {
+    // 无children所以等同于block
+    this.__preLayBlock(data);
+  }
 
   __preLayInline(data) {
     let { x, y, w, h } = data;
@@ -106,7 +164,16 @@ class Geom extends Xom {
     return this.__tagName;
   }
   get baseLine() {
-    return 0;
+    return this.__height;
+  }
+  get origin() {
+    return this.__origin;
+  }
+  get min() {
+    return this.__min;
+  }
+  get max() {
+    return this.__max;
   }
 
   static isValid(s) {

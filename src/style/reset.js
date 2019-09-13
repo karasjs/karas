@@ -1,4 +1,5 @@
 const RESET = {
+  position: 'static',
   display: 'block',
   borderSizing: 'content-box',
   marginTop: 0,
@@ -9,7 +10,7 @@ const RESET = {
   paddingRight: 0,
   paddingBottom: 0,
   paddingLeft: 0,
-  fontSize: 24,
+  fontSize: 16,
   fontFamily: 'arial',
   color: '#000',
   fontStyle: 'normal',

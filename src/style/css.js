@@ -64,6 +64,12 @@ function normalize(style) {
   if(style.border) {
     style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = style.border;
   }
+  if(style.margin) {
+    style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = style.margin;
+  }
+  if(style.padding) {
+    style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+  }
   parserOneBorder(style, 'Top');
   parserOneBorder(style, 'Right');
   parserOneBorder(style, 'Bottom');
@@ -72,11 +78,11 @@ function normalize(style) {
   [
     'marginTop',
     'marginRight',
-    'marginDown',
+    'marginBottom',
     'marginLeft',
     'paddingTop',
     'paddingRight',
-    'paddingDown',
+    'paddingBottom',
     'paddingLeft',
     'borderTopWidth',
     'borderRightWidth',

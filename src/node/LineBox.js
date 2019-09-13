@@ -2,7 +2,8 @@ import css from '../style/css';
 import mode from './mode';
 
 class LineBox {
-  constructor(ctx, x, y, content, style) {
+  constructor(mode, ctx, x, y, content, style) {
+    this.__mode = mode;
     this.__ctx = ctx;
     this.__x = x;
     this.__y = y;
@@ -12,11 +13,11 @@ class LineBox {
 
   render() {
     let { ctx, style, content, x, y } = this;
-    if(mode.isCanvas()) {
+    if(this.mode === mode.CANVAS) {
       ctx.fillStyle = style.color;
       ctx.fillText(content, x, y + css.getBaseLine(style));
     }
-    else if(mode.isSvg()) {
+    else if(this.mode === mode.SVG) {
       mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
     }
   }
@@ -46,6 +47,9 @@ class LineBox {
   }
   get baseLine() {
     return css.getBaseLine(this.style);
+  }
+  get mode() {
+    return this.__mode;
   }
 }
 

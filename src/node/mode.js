@@ -1,36 +1,30 @@
-let mode = 0;
-let measureDom;
-let svgHtml;
+const CANVAS = 0;
+const SVG = 1;
+
+let div;
+let svgHtml = '';
 
 export default {
-  setCanvas() {
-    mode = 0;
-  },
-  setSvg() {
-    mode = 1;
-    svgHtml = '';
-  },
-  isCanvas() {
-    return mode === 0;
-  },
-  isSvg() {
-    return mode === 1;
-  },
+  CANVAS,
+  SVG,
   appendHtml(s) {
     svgHtml += s;
   },
   get html() {
     return svgHtml;
   },
-  get measure() {
-    if(!measureDom) {
-      measureDom = document.createElement('div');
-      measureDom.style.position = 'absolute';
-      measureDom.style.left = '99999px';
-      measureDom.style.top = '-99999px';
-      measureDom.style.visibility = 'hidden';
-      document.body.appendChild(measureDom);
+  measure(s, style) {
+    if(!div) {
+      div = document.createElement('div');
+      div.style.position = 'absolute';
+      div.style.left = '99999px';
+      div.style.top = '-99999px';
+      div.style.visibility = 'hidden';
+      document.body.appendChild(div);
     }
-    return measureDom;
+    div.style.fontSize = style.fontSize + 'px';
+    div.innerText = s;
+    let css = window.getComputedStyle(div, null);
+    return parseFloat(css.width);
   }
 };

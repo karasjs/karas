@@ -61,6 +61,9 @@ class Xom extends Node {
 
   __preLay(data) {
     let { style } = this;
+    if(style.position === 'absolute') {
+      let raParent = this.raParent;
+    }
     if(style.display === 'block') {
       this.__preLayBlock(data);
     }
@@ -84,7 +87,19 @@ class Xom extends Node {
       borderBottomColor,
       borderLeftWidth,
       borderLeftColor,
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = style;
+    if(marginLeft) {
+      x += marginLeft.value;
+    }
+    if(marginTop) {
+      y += marginTop.value;
+    }
     if(backgroundColor) {
       let x1 = x;
       if(borderLeftWidth) {
@@ -94,76 +109,121 @@ class Xom extends Node {
       if(borderTopWidth) {
         y1 += borderTopWidth.value;
       }
-      if(mode.isCanvas()) {
+      let w = width + paddingLeft.value + paddingRight.value;
+      let h = height + paddingTop.value + paddingBottom.value;
+      if(this.mode === mode.CANVAS) {
         ctx.beginPath();
         ctx.fillStyle = backgroundColor;
-        ctx.rect(x1, y1, width, height);
+        ctx.rect(x1, y1, w, h);
         ctx.fill();
         ctx.closePath();
       }
-      else if(mode.isSvg()) {
-        mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${width}" height="${height}" fill="${backgroundColor}"/>`);
+      else if(this.mode === mode.SVG) {
+        mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
       }
     }
     if(borderTopWidth.value) {
+      let x1 = x + borderLeftWidth.value;
       let y1 = y + borderTopWidth.value * 0.5;
-      if(mode.isCanvas()) {
+      let x2 = x1 + width;
+      if(paddingLeft) {
+        x2 += paddingLeft.value;
+      }
+      if(paddingRight) {
+        x2 += paddingRight.value;
+      }
+      if(this.mode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderTopWidth.value;
         ctx.strokeStyle = borderTopColor;
-        ctx.moveTo(x + borderLeftWidth.value, y1);
-        ctx.lineTo(x + borderLeftWidth.value + width, y1);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
         ctx.stroke();
         ctx.closePath();
       }
-      else {
-        mode.appendHtml(`<line x1="${x}" y1="${y1}" x2="${x + outerWidth}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
+      else if(this.mode === mode.SVG) {
+        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
       }
     }
     if(borderRightWidth.value) {
       let x1 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
-      let y2 = y + outerHeight;
-      if(mode.isCanvas()) {
+      let y1 = y;
+      let y2 = y1 + height + borderTopWidth.value + borderBottomWidth.value;
+      if(paddingLeft) {
+        x1 += paddingLeft.value;
+      }
+      if(paddingRight) {
+        x1 += paddingRight.value;
+      }
+      if(paddingTop) {
+        y2 += paddingTop.value;
+      }
+      if(paddingBottom) {
+        y2 += paddingBottom.value;
+      }
+      if(this.mode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderRightWidth.value;
         ctx.strokeStyle = borderRightColor;
-        ctx.moveTo(x1, y);
+        ctx.moveTo(x1, y1);
         ctx.lineTo(x1, y2);
         ctx.stroke();
         ctx.closePath();
       }
-      else {
-        mode.appendHtml(`<line x1="${x1}" y1="${y}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
+      else if(this.mode === mode.SVG) {
+        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
       }
     }
     if(borderBottomWidth.value) {
+      let x1 = x + borderLeftWidth.value;
       let y1 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
-      if(mode.isCanvas()) {
+      let x2 = x1 + width;
+      if(paddingLeft) {
+        x2 += paddingLeft.value;
+      }
+      if(paddingRight) {
+        x2 += paddingRight.value;
+      }
+      if(paddingTop) {
+        y1 += paddingTop.value;
+      }
+      if(paddingBottom) {
+        y1 += paddingBottom.value;
+      }
+      if(this.mode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderBottomWidth.value;
         ctx.strokeStyle = borderBottomColor;
-        ctx.moveTo(x + borderLeftWidth.value, y1);
-        ctx.lineTo(x + borderLeftWidth.value + width, y1);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
         ctx.stroke();
         ctx.closePath();
       }
-      else {
-        mode.appendHtml(`<line x1="${x}" y1="${y1}" x2="${x + outerWidth}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
+      else if(this.mode === mode.SVG) {
+        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
       }
     }
     if(borderLeftWidth.value) {
       let x1 = x + borderLeftWidth.value * 0.5;
-      if(mode.isCanvas()) {
+      let y1 = y;
+      let y2 = y1 + height + borderTopWidth.value + borderBottomWidth.value;
+      if(paddingTop) {
+        y2 += paddingTop.value;
+      }
+      if(paddingBottom) {
+        y2 += paddingBottom.value;
+      }
+      if(this.mode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderLeftWidth.value;
         ctx.strokeStyle = borderLeftColor;
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x1, y + height + borderTopWidth.value + borderBottomWidth.value);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1, y2);
         ctx.stroke();
         ctx.closePath();
       }
-      else {
-        mode.appendHtml(`<line x1="${x1}" y1="${y}" x2="${x1}" y2="${y + outerHeight}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
+      else if(this.mode === mode.SVG) {
+        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
       }
     }
   }
@@ -172,12 +232,48 @@ class Xom extends Node {
     return this.__tagName;
   }
   get outerWidth() {
-    let { style: { borderLeftWidth, borderRightWidth } } = this;
-    return this.width + borderLeftWidth.value + borderRightWidth.value;
+    let { style: {
+      borderLeftWidth,
+      borderRightWidth,
+      marginLeft,
+      marginRight,
+      paddingLeft,
+      paddingRight,
+    } } = this;
+    return this.width
+      + borderLeftWidth.value
+      + borderRightWidth.value
+      + marginLeft.value
+      + marginRight.value
+      + paddingLeft.value
+      + paddingRight.value;
   }
   get outerHeight() {
-    let { style: { borderTopWidth, borderBottomWidth } } = this;
-    return this.height + borderTopWidth.value + borderBottomWidth.value;
+    let { style: {
+      borderTopWidth,
+      borderBottomWidth,
+      marginTop,
+      marginBottom,
+      paddingTop,
+      paddingBottom,
+    } } = this;
+    return this.height
+      + borderTopWidth.value
+      + borderBottomWidth.value
+      + marginTop.value
+      + marginBottom.value
+      + paddingTop.value
+      + paddingBottom.value;
+  }
+  get raParent() {
+    let dom = this.parent;
+    while(dom.parent) {
+      if(['relative', 'absolute'].indexOf(dom.style.position) > -1) {
+        break;
+      }
+      dom = dom.parent;
+    }
+    return dom;
   }
 }
 

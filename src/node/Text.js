@@ -58,7 +58,7 @@ class Text extends Node {
     while(i < length) {
       count += charWidthList[i];
       if (count === w) {
-        let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i + 1), style);
+        let lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
         y += this.style.lineHeight.value;
@@ -71,7 +71,7 @@ class Text extends Node {
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
+        let lineBox = new LineBox(this.mode, ctx, x, y, count - charWidthList[i], content.slice(begin, i), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += this.style.lineHeight.value;
@@ -84,15 +84,30 @@ class Text extends Node {
       }
     }
     if(begin < length && begin < i) {
-      let lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
+      count = 0;
+      for(i = begin ;i < length; i++) {
+        count += charWidthList[i];
+      }
+      let lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, length), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
-      y += this.style.lineHeight.value;
+      y += style.lineHeight.value;
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
     if(isVirtual) {
       this.__lineBoxes = [];
+    }
+    else {
+      let { textAlign } = style;
+      if(['center', 'right'].indexOf(textAlign) > -1) {
+        lineBoxes.forEach(lineBox => {
+          let diff = this.__width - lineBox.width;
+          if(diff > 0) {
+            lineBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
+          }
+        });
+      }
     }
   }
 

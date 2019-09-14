@@ -3,7 +3,6 @@ class LineGroup {
     this.__list = [];
     this.__x = x;
     this.__y = y;
-    this.__height = 0;
     this.__baseLine = 0;
   }
 
@@ -19,16 +18,7 @@ class LineGroup {
     return baseLine;
   }
 
-  __calHeight() {
-    let height = 0;
-    this.list.forEach(item => {
-      height = Math.max(height, item.height);
-    });
-    return height;
-  }
-
   verticalAlign() {
-    this.__height = this.__calHeight();
     this.__baseLine = this.__calBaseLine();
     // 仅当有2个和以上时才需要vertical对齐调整
     if(this.list.length > 1) {
@@ -40,6 +30,12 @@ class LineGroup {
     }
   }
 
+  horizonAlign(diff) {
+    this.list.forEach(item => {
+      item.__offsetX(diff);
+    });
+  }
+
   get list() {
     return this.__list;
   }
@@ -49,8 +45,19 @@ class LineGroup {
   get y() {
     return this.__y;
   }
+  get width() {
+    let width = 0;
+    this.list.forEach(item => {
+      width += item.width;
+    });
+    return width;
+  }
   get height() {
-    return this.__height;
+    let height = 0;
+    this.list.forEach(item => {
+      height = Math.max(height, item.height);
+    });
+    return height;
   }
   get baseLine() {
     return this.__baseLine;

@@ -875,13 +875,14 @@
   var LineBox =
   /*#__PURE__*/
   function () {
-    function LineBox(mode, ctx, x, y, content, style) {
+    function LineBox(mode, ctx, x, y, w, content, style) {
       _classCallCheck(this, LineBox);
 
       this.__mode = mode;
       this.__ctx = ctx;
       this.__x = x;
       this.__y = y;
+      this.__width = w;
       this.__content = content;
       this.__style = style;
     }
@@ -926,6 +927,11 @@
       key: "y",
       get: function get() {
         return this.__y;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
       }
     }, {
       key: "content",
@@ -1014,6 +1020,8 @@
     }, {
       key: "__preLay",
       value: function __preLay(data, isVirtual) {
+        var _this2 = this;
+
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -1036,7 +1044,7 @@
           count += charWidthList[i];
 
           if (count === w) {
-            var lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i + 1), style);
+            var lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, i + 1), style);
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
             y += this.style.lineHeight.value;
@@ -1049,7 +1057,7 @@
               i = begin + 1;
             }
 
-            var _lineBox = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
+            var _lineBox = new LineBox(this.mode, ctx, x, y, count - charWidthList[i], content.slice(begin, i), style);
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
@@ -1063,11 +1071,17 @@
         }
 
         if (begin < length && begin < i) {
-          var _lineBox2 = new LineBox(this.mode, ctx, x, y, content.slice(begin, i), style);
+          count = 0;
+
+          for (i = begin; i < length; i++) {
+            count += charWidthList[i];
+          }
+
+          var _lineBox2 = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, length), style);
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
-          y += this.style.lineHeight.value;
+          y += style.lineHeight.value;
         }
 
         this.__width = maxX - x;
@@ -1075,6 +1089,18 @@
 
         if (isVirtual) {
           this.__lineBoxes = [];
+        } else {
+          var textAlign = style.textAlign;
+
+          if (['center', 'right'].indexOf(textAlign) > -1) {
+            lineBoxes.forEach(function (lineBox) {
+              var diff = _this2.__width - lineBox.width;
+
+              if (diff > 0) {
+                lineBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
+              }
+            });
+          }
         }
       }
     }, {
@@ -1171,7 +1197,6 @@
       this.__list = [];
       this.__x = x;
       this.__y = y;
-      this.__height = 0;
       this.__baseLine = 0;
     }
 
@@ -1190,20 +1215,10 @@
         return baseLine;
       }
     }, {
-      key: "__calHeight",
-      value: function __calHeight() {
-        var height = 0;
-        this.list.forEach(function (item) {
-          height = Math.max(height, item.height);
-        });
-        return height;
-      }
-    }, {
       key: "verticalAlign",
       value: function verticalAlign() {
         var _this = this;
 
-        this.__height = this.__calHeight();
         this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
 
         if (this.list.length > 1) {
@@ -1213,6 +1228,13 @@
             }
           });
         }
+      }
+    }, {
+      key: "horizonAlign",
+      value: function horizonAlign(diff) {
+        this.list.forEach(function (item) {
+          item.__offsetX(diff);
+        });
       }
     }, {
       key: "list",
@@ -1230,9 +1252,22 @@
         return this.__y;
       }
     }, {
+      key: "width",
+      get: function get() {
+        var width = 0;
+        this.list.forEach(function (item) {
+          width += item.width;
+        });
+        return width;
+      }
+    }, {
       key: "height",
       get: function get() {
-        return this.__height;
+        var height = 0;
+        this.list.forEach(function (item) {
+          height = Math.max(height, item.height);
+        });
+        return height;
       }
     }, {
       key: "baseLine",
@@ -1821,8 +1856,6 @@
     }, {
       key: "__preLayBlock",
       value: function __preLayBlock(data) {
-        var _this4 = this;
-
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -1831,7 +1864,8 @@
         this.__y = y;
         this.__width = w;
         var flowChildren = this.flowChildren,
-            style = this.style;
+            style = this.style,
+            lineGroups = this.lineGroups;
         var width = style.width,
             height = style.height,
             borderTopWidth = style.borderTopWidth,
@@ -1845,7 +1879,8 @@
             paddingTop = style.paddingTop,
             paddingRight = style.paddingRight,
             paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft; // 除了auto外都是固定高度
+            paddingLeft = style.paddingLeft,
+            textAlign = style.textAlign; // 除了auto外都是固定高度
 
         var fixedHeight;
 
@@ -1913,8 +1948,7 @@
                   });
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
-                    _this4.lineGroups.push(lineGroup);
-
+                    lineGroups.push(lineGroup);
                     lineGroup.verticalAlign();
                     x = data.x;
                     y += lineGroup.height;
@@ -1935,8 +1969,7 @@
             } else {
               // block先处理之前可能的lineGroup
               if (lineGroup.size) {
-                _this4.lineGroups.push(lineGroup);
-
+                lineGroups.push(lineGroup);
                 lineGroup.verticalAlign();
                 y += lineGroup.height;
                 lineGroup = new LineGroup(data.x, y);
@@ -1980,8 +2013,7 @@
                   });
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
-                    _this4.lineGroups.push(lineGroup);
-
+                    lineGroups.push(lineGroup);
                     lineGroup.verticalAlign();
                     x = data.x;
                     y += lineGroup.height;
@@ -2003,9 +2035,20 @@
         }); // 结束后处理可能遗留的最后的lineGroup
 
         if (lineGroup.size) {
-          this.lineGroups.push(lineGroup);
+          lineGroups.push(lineGroup);
           lineGroup.verticalAlign();
           y += lineGroup.height;
+        } // text-align
+
+
+        if (['center', 'right'].indexOf(textAlign) > -1) {
+          lineGroups.forEach(function (lineGroup) {
+            var diff = w - lineGroup.width;
+
+            if (diff > 0) {
+              lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+            }
+          });
         }
 
         this.__width = w;
@@ -2373,7 +2416,7 @@
     }, {
       key: "__preLayInline",
       value: function __preLayInline(data) {
-        var _this5 = this;
+        var _this4 = this;
 
         var x = data.x,
             y = data.y,
@@ -2383,7 +2426,8 @@
         this.__y = y;
         var maxX = x;
         var flowChildren = this.flowChildren,
-            style = this.style;
+            style = this.style,
+            lineGroups = this.lineGroups;
         var width = style.width,
             height = style.height,
             borderTopWidth = style.borderTopWidth,
@@ -2397,7 +2441,8 @@
             paddingTop = style.paddingTop,
             paddingRight = style.paddingRight,
             paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft; // 除了auto外都是固定高度
+            paddingLeft = style.paddingLeft,
+            textAlign = style.textAlign; // 除了auto外都是固定高度
 
         var fixedWidth;
         var fixedHeight;
@@ -2443,7 +2488,7 @@
           if (item instanceof Dom || item instanceof Geom) {
             // 绝对定位跳过
             if (item.style.position === 'absolute') {
-              _this5.absChildren.push(item);
+              _this4.absChildren.push(item);
 
               return;
             } // inline开头，不用考虑是否放得下直接放
@@ -2475,8 +2520,7 @@
                 });
               } // 放不下处理之前的lineGroup，并重新开头
               else {
-                  _this5.lineGroups.push(lineGroup);
-
+                  lineGroups.push(lineGroup);
                   lineGroup.verticalAlign();
                   x = data.x;
                   y += lineGroup.height;
@@ -2523,8 +2567,7 @@
                   });
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
-                    _this5.lineGroups.push(lineGroup);
-
+                    lineGroups.push(lineGroup);
                     lineGroup.verticalAlign();
                     x = data.x;
                     y += lineGroup.height;
@@ -2547,9 +2590,20 @@
         }); // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
 
         if (lineGroup.size) {
-          this.lineGroups.push(lineGroup);
+          lineGroups.push(lineGroup);
           lineGroup.verticalAlign();
           y += lineGroup.height;
+        } // text-align
+
+
+        if (['center', 'right'].indexOf(textAlign) > -1) {
+          lineGroups.forEach(function (lineGroup) {
+            var diff = w - lineGroup.width;
+
+            if (diff > 0) {
+              lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+            }
+          });
         } // 元素的width不能超过父元素w
 
 

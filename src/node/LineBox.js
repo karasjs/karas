@@ -2,11 +2,12 @@ import css from '../style/css';
 import mode from './mode';
 
 class LineBox {
-  constructor(mode, ctx, x, y, content, style) {
+  constructor(mode, ctx, x, y, w, content, style) {
     this.__mode = mode;
     this.__ctx = ctx;
     this.__x = x;
     this.__y = y;
+    this.__width = w;
     this.__content = content;
     this.__style = style;
   }
@@ -38,6 +39,9 @@ class LineBox {
   }
   get y() {
     return this.__y;
+  }
+  get width() {
+    return this.__width;
   }
   get content() {
     return this.__content;

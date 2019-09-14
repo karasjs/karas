@@ -308,7 +308,7 @@ class Dom extends Xom {
     this.__x = x;
     this.__y = y;
     this.__width = w;
-    let { flowChildren, style } = this;
+    let { flowChildren, style, lineGroups } = this;
     let {
       width,
       height,
@@ -324,6 +324,7 @@ class Dom extends Xom {
       paddingRight,
       paddingBottom,
       paddingLeft,
+      textAlign,
     } = style;
     // 除了auto外都是固定高度
     let fixedHeight;
@@ -385,7 +386,7 @@ class Dom extends Xom {
             }
             // 放不下处理之前的lineGroup，并重新开头
             else {
-              this.lineGroups.push(lineGroup);
+              lineGroups.push(lineGroup);
               lineGroup.verticalAlign();
               x = data.x;
               y += lineGroup.height;
@@ -404,7 +405,7 @@ class Dom extends Xom {
         else {
           // block先处理之前可能的lineGroup
           if(lineGroup.size) {
-            this.lineGroups.push(lineGroup);
+            lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
             y += lineGroup.height;
             lineGroup = new LineGroup(data.x, y);
@@ -446,7 +447,7 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineGroup，并重新开头
           else {
-            this.lineGroups.push(lineGroup);
+            lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
@@ -465,9 +466,18 @@ class Dom extends Xom {
     });
     // 结束后处理可能遗留的最后的lineGroup
     if(lineGroup.size) {
-      this.lineGroups.push(lineGroup);
+      lineGroups.push(lineGroup);
       lineGroup.verticalAlign();
       y += lineGroup.height;
+    }
+    // text-align
+    if(['center', 'right'].indexOf(textAlign) > -1) {
+      lineGroups.forEach(lineGroup => {
+        let diff = w - lineGroup.width;
+        if(diff > 0) {
+          lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+        }
+      });
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
@@ -819,7 +829,7 @@ class Dom extends Xom {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { flowChildren, style } = this;
+    let { flowChildren, style, lineGroups } = this;
     let {
       width,
       height,
@@ -835,6 +845,7 @@ class Dom extends Xom {
       paddingRight,
       paddingBottom,
       paddingLeft,
+      textAlign,
     } = style;
     // 除了auto外都是固定高度
     let fixedWidth;
@@ -903,7 +914,7 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineGroup，并重新开头
           else {
-            this.lineGroups.push(lineGroup);
+            lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
@@ -947,7 +958,7 @@ class Dom extends Xom {
           }
           // 放不下处理之前的lineGroup，并重新开头
           else {
-            this.lineGroups.push(lineGroup);
+            lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
@@ -967,9 +978,18 @@ class Dom extends Xom {
     });
     // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
     if(lineGroup.size) {
-      this.lineGroups.push(lineGroup);
+      lineGroups.push(lineGroup);
       lineGroup.verticalAlign();
       y += lineGroup.height;
+    }
+    // text-align
+    if(['center', 'right'].indexOf(textAlign) > -1) {
+      lineGroups.forEach(lineGroup => {
+        let diff = w - lineGroup.width;
+        if(diff > 0) {
+          lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
+        }
+      });
     }
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;

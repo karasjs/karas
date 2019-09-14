@@ -1,5 +1,6 @@
 import Node from './Node';
 import mode from './mode';
+import unit from '../style/unit';
 
 function arr2hash(arr) {
   let hash = {};
@@ -61,9 +62,6 @@ class Xom extends Node {
 
   __preLay(data) {
     let { style } = this;
-    if(style.position === 'absolute') {
-      let raParent = this.raParent;
-    }
     if(style.display === 'block') {
       this.__preLayBlock(data);
     }
@@ -73,10 +71,37 @@ class Xom extends Node {
     else {
       this.__preLayInline(data);
     }
+    // relative偏移
+    let { width, height } = this.parent || this;
+    let {
+      position,
+      top,
+      right,
+      bottom,
+      left,
+    } = style;
+    if(position === 'relative') {
+      if(left.unit !== unit.AUTO) {
+        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
+        this.__offsetX(diff);
+      }
+      else if(right.unit !== unit.AUTO) {
+        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
+        this.__offsetX(-diff);
+      }
+      if(top.unit !== unit.AUTO) {
+        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01;
+        this.__offsetY(diff);
+      }
+      else if(bottom.unit !== unit.AUTO) {
+        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01;
+        this.__offsetY(-diff);
+      }
+    }
   }
 
   render() {
-    let { ctx, style, x, y, width, height, outerWidth, outerHeight } = this;
+    let { ctx, style, x, y, width, height } = this;
     let {
       backgroundColor,
       borderTopWidth,
@@ -264,16 +289,6 @@ class Xom extends Node {
       + marginBottom.value
       + paddingTop.value
       + paddingBottom.value;
-  }
-  get raParent() {
-    let dom = this.parent;
-    while(dom.parent) {
-      if(['relative', 'absolute'].indexOf(dom.style.position) > -1) {
-        break;
-      }
-      dom = dom.parent;
-    }
-    return dom;
   }
 }
 

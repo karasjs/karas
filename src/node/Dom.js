@@ -18,7 +18,10 @@ class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
     this.__children = children;
+    this.__flowChildren = []; // 非绝对定位孩子
+    this.__absChildren = []; // 绝对定位孩子
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
+    this.__flowY = 0; // 文档流布局结束后的y坐标，供absolute布局默认位置使用
   }
 
   /**
@@ -60,6 +63,12 @@ class Dom extends Xom {
       }
       item.__parent = this;
       item.__prev = prev;
+      if(item instanceof Text || item.style.position !== 'absolute') {
+        this.__flowChildren.push(item);
+      }
+      else {
+        this.__absChildren.push(item);
+      }
     });
     this.__children = list;
   }
@@ -126,19 +135,19 @@ class Dom extends Xom {
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
   __tryLayInline(w, total) {
-    let { children, style: { width } } = this;
+    let { flowChildren, style: { width } } = this;
     if(width.unit === unit.PX) {
       return w - width.value;
     }
     else if(width.unit === unit.PERCENT) {
       return w - total * width.value * 0.01;
     }
-    for(let i = 0; i < children.length; i++) {
+    for(let i = 0; i < flowChildren.length; i++) {
       // 当放不下时直接返回，无需继续多余的尝试计算
       if(w < 0) {
         return w;
       }
-      let item = children[i];
+      let item = flowChildren[i];
       if(item instanceof Dom || item instanceof Geom) {
         w -= item.__tryLayInline(w, total);
       }
@@ -152,7 +161,7 @@ class Dom extends Xom {
   // 设置y偏移值，递归包括children，此举在flex行元素的child进行justify-content对齐用
   __offsetX(diff) {
     super.__offsetX(diff);
-    this.children.forEach(item => {
+    this.flowChildren.forEach(item => {
       if(item) {
         item.__offsetX(diff);
       }
@@ -162,7 +171,7 @@ class Dom extends Xom {
   // 设置y偏移值，递归包括children，此举在初步确定inline布局后设置元素vertical-align用
   __offsetY(diff) {
     super.__offsetY(diff);
-    this.children.forEach(item => {
+    this.flowChildren.forEach(item => {
       if(item) {
         item.__offsetY(diff);
       }
@@ -173,7 +182,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { children, style } = this;
+    let { flowChildren, style } = this;
     // 计算需考虑style的属性
     let {
       width,
@@ -193,14 +202,14 @@ class Dom extends Xom {
     } = style;
     let main = isDirectionRow ? width : height;
     if(main.unit === unit.PX) {
-      b = max += main.value;
+      b = max = main.value;
       // 递归时children的长度会影响flex元素的最小宽度
       if(isRecursion) {
         min = b;
       }
     }
     // 递归children取最大值
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       if(item instanceof Dom || item instanceof Geom) {
         let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
         b = Math.max(b, b2);
@@ -238,13 +247,68 @@ class Dom extends Xom {
     return { b, min, max };
   }
 
+  __calAbs(isDirectionRow) {
+    let max = 0;
+    let { flowChildren, style } = this;
+    // 计算需考虑style的属性
+    let {
+      width,
+      height,
+      borderTopWidth,
+      borderRightWidth,
+      borderBottomWidth,
+      borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
+    } = style;
+    let main = isDirectionRow ? width : height;
+    if(main.unit === unit.PX) {
+      max = main.value;
+    }
+    // 递归children取最大值
+    flowChildren.forEach(item => {
+      if(item instanceof Dom || item instanceof Geom) {
+        let max2 = item.__calAbs(isDirectionRow);
+        max = Math.max(max, max2);
+      }
+      else if(isDirectionRow) {
+        max = Math.max(item.textWidth, max);
+      }
+      else {
+        item.__preLay({
+          x: 0,
+          y: 0,
+          w: Infinity,
+          h: Infinity,
+        }, true);
+        max = Math.max(max, item.height);
+      }
+    });
+    // margin/padding/border也得计算在内
+    if(isDirectionRow) {
+      let w = borderRightWidth.value + borderLeftWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+      max += w;
+    }
+    else {
+      let h = borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+      max += h;
+    }
+    return max;
+  }
+
   // 本身block布局时计算好所有子元素的基本位置
   __preLayBlock(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
     this.__width = w;
-    let { children, style } = this;
+    let { flowChildren, style } = this;
     let {
       width,
       height,
@@ -293,7 +357,7 @@ class Dom extends Xom {
     h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       if(item instanceof Dom || item instanceof Geom) {
         if(item.style.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
@@ -407,6 +471,7 @@ class Dom extends Xom {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__flowY = y;
   }
 
   // 弹性布局时的计算位置
@@ -415,7 +480,7 @@ class Dom extends Xom {
     this.__x = x;
     this.__y = y;
     this.__width = w;
-    let { children, style } = this;
+    let { flowChildren, style } = this;
     let {
       width,
       height,
@@ -467,9 +532,9 @@ class Dom extends Xom {
     let isDirectionRow = flexDirection === 'row';
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
-      children.forEach(item => {
+      flowChildren.forEach(item => {
         if(item instanceof Dom || item instanceof Geom) {
-          const { style, style: { display, flexDirection, width, height }} = item;
+          const { style, style: { display, flexDirection, width }} = item;
           // column的flex的child如果是inline，变为block
           if(display === 'inline') {
             style.display = 'block';
@@ -510,7 +575,7 @@ class Dom extends Xom {
     let shrinkSum = 0;
     let basisSum = 0;
     let maxSum = 0;
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       if(item instanceof Dom || item instanceof Geom) {
         let { flexGrow, flexShrink, flexBasis } = item.style;
         growList.push(flexGrow);
@@ -564,7 +629,7 @@ class Dom extends Xom {
     let free = 0;
     // 判断是否超出，决定使用grow还是shrink
     let isOverflow = maxSum > (isDirectionRow ? w : h);
-    children.forEach((item, i) => {
+    flowChildren.forEach((item, i) => {
       let main;
       let shrink = shrinkList[i];
       let grow = growList[i];
@@ -654,31 +719,31 @@ class Dom extends Xom {
     let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
     // 主轴侧轴对齐方式
     if(!isOverflow && growSum === 0 && free > 0 && diff > 0) {
-      let len = children.length;
+      let len = flowChildren.length;
       if(justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
-          let child = children[i];
+          let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(diff) : child.__offsetY(diff);
         }
       }
       else if(justifyContent === 'center') {
         let center = diff * 0.5;
         for(let i = 0; i < len; i++) {
-          let child = children[i];
+          let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(center) : child.__offsetY(center);
         }
       }
       else if(justifyContent === 'space-between') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
-          let child = children[i];
+          let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(between * i) : child.__offsetY(between * i);
         }
       }
       else if(justifyContent === 'space-around') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
-          let child = children[i];
+          let child = flowChildren[i];
           isDirectionRow ? child.__offsetX(around * (i + 1)) : child.__offsetY(around * (i + 1));
         }
       }
@@ -692,7 +757,7 @@ class Dom extends Xom {
       y += maxCross;
     }
     // 所有短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       let { style } = item;
       if(isDirectionRow) {
         if(item.style.height.unit === unit.AUTO) {
@@ -707,6 +772,7 @@ class Dom extends Xom {
     });
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__flowY = y;
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -715,7 +781,7 @@ class Dom extends Xom {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { children, style } = this;
+    let { flowChildren, style } = this;
     let {
       width,
       height,
@@ -766,8 +832,13 @@ class Dom extends Xom {
     h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
-    children.forEach(item => {
+    flowChildren.forEach(item => {
       if(item instanceof Dom || item instanceof Geom) {
+        // 绝对定位跳过
+        if(item.style.position === 'absolute') {
+          this.absChildren.push(item);
+          return;
+        }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -865,12 +936,123 @@ class Dom extends Xom {
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
+    this.__flowY = y;
+  }
+
+  // 只针对绝对定位children布局
+  __preLayAbs(container) {
+    let { x, y, flowY, width, height, children, absChildren, style } = this;
+    let {
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingLeft,
+      paddingRight,
+      paddingBottom,
+      borderTopWidth,
+      borderLeftWidth,
+    } = style;
+    let pw = width + paddingLeft.value + paddingRight.value;
+    let ph = height + paddingTop.value + paddingBottom.value;
+    // 递归进行，遇到absolute/relative的设置新容器
+    children.forEach(item => {
+      if(item instanceof Dom) {
+        item.__preLayAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
+      }
+    });
+    // 对absolute的元素进行相对容器布局
+    absChildren.forEach(item => {
+      let { style, style: { left, top, right, bottom, width: width2, height: height2 } } = item;
+      let x2, y2, w2, h2;
+      // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
+      if(left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
+        x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+        w2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - x2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
+      }
+      else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
+        x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+        w2 = width2.unit === unit.PX ? width2.value : width;
+      }
+      else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
+        w2 = width2.unit === unit.PX ? width2.value : width;
+        let widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+        x2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - widthPx : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - widthPx;
+      }
+      else if(left.unit !== unit.AUTO) {
+        x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+        w2 = item.__calAbs(true);
+      }
+      else if(right.unit !== unit.AUTO) {
+        w2 = item.__calAbs(true);
+        x2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - w2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - w2;
+      }
+      else if(width2.unit !== unit.AUTO) {
+        x2 = x + marginLeft.value + borderLeftWidth.value;
+        w2 = width2.unit === unit.PX ? width2.value : width;
+      }
+      else {
+        x2 = x + marginLeft.value + borderLeftWidth.value;
+        w2 = item.__calAbs(true);
+      }
+      // top/bottom/height优先级同上
+      if(top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
+        y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
+        h2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - y2 : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - y2;
+        style.height = {
+          value: h2,
+          unit: unit.PX,
+        };
+      }
+      else if(top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
+        y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
+        h2 = height2.unit === unit.PX ? height2.value : height;
+      }
+      else if(bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
+        h2 = height2.unit === unit.PX ? height2.value : height;
+        let heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+        y2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - heightPx : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - heightPx;
+      }
+      else if(top.unit !== unit.AUTO) {
+        y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
+        h2 = item.__calAbs();
+      }
+      else if(bottom.unit !== unit.AUTO) {
+        h2 = item.__calAbs();
+        y2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - h2 : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - h2;
+      }
+      else if(height2.unit !== unit.AUTO) {
+        y2 = flowY + marginTop.value + borderTopWidth.value;
+        h2 = height2.unit === unit.PX ? height2.value : height;
+      }
+      else {
+        y2 = flowY + marginTop.value + borderTopWidth.value;
+        h2 = item.__calAbs();
+      }
+      // absolute时inline强制block
+      if(style.display === 'inline') {
+        style.display = 'block';
+      }
+      item.__preLay({
+        x: x2,
+        y: y2,
+        w: w2,
+        h: h2,
+      });
+    });
   }
 
   render() {
     super.render();
-    this.children.forEach(item => {
-      if(item) {
+    let { flowChildren, children } = this;
+    // 先绘制static
+    flowChildren.forEach(item => {
+      if(item instanceof Text || item.style.position === 'static') {
+        item.render();
+      }
+    });
+    // 再绘制relative和absolute
+    children.forEach(item => {
+      if((item instanceof Dom || item instanceof Geom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
         item.render();
       }
     });
@@ -882,6 +1064,12 @@ class Dom extends Xom {
   get children() {
     return this.__children;
   }
+  get flowChildren() {
+    return this.__flowChildren;
+  }
+  get absChildren() {
+    return this.__absChildren;
+  }
   get lineGroups() {
     return this.__lineGroups;
   }
@@ -892,6 +1080,9 @@ class Dom extends Xom {
       return last.y - this.y + last.baseLine;
     }
     return this.y;
+  }
+  get flowY() {
+    return this.__flowY;
   }
 
   static isValid(s) {

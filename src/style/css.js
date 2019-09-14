@@ -88,6 +88,10 @@ function normalize(style) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
+    'top',
+    'right',
+    'bottom',
+    'left',
     'width',
     'height',
     'flexBasis',
@@ -104,23 +108,15 @@ function normalize(style) {
     }
     else if(/%$/.test(v)) {
       v = parseFloat(v) || 0;
-      if(v <= 0) {
-        style[k] = {
-          value: 0,
-          unit: unit.PX,
-        };
-      }
-      else {
-        style[k] = {
-          value: v,
-          unit: unit.PERCENT,
-        };
-      }
+      style[k] = {
+        value: v,
+        unit: unit.PERCENT,
+      };
     }
     else {
       v = parseFloat(v) || 0;
       style[k] = {
-        value: Math.max(v, 0),
+        value: v,
         unit: unit.PX,
       };
     }

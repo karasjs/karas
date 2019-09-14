@@ -88,10 +88,14 @@ class CS extends Dom {
         dom.setAttribute('height', this.height);
       }
     }
-    // canvas作为根节点一定是block或flex，不会是inline
+    // canvas/svg作为根节点一定是block或flex，不会是inline
     let { style } = this;
     if(['flex', 'block'].indexOf(style.display) === -1) {
       style.display = 'block';
+    }
+    // 同理position不能为absolute
+    if(style.position === 'absolute') {
+      style.position = 'static';
     }
     // 只有canvas有ctx，svg用真实dom
     if(this.tagName === 'canvas') {
@@ -112,6 +116,7 @@ class CS extends Dom {
       w: this.width,
       h: this.height,
     });
+    this.__preLayAbs(this);
     this.render();
     if(this.mode === mode.SVG) {
       this.__node.innerHTML = mode.html;

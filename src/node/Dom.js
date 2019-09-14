@@ -498,10 +498,13 @@ class Dom extends Xom {
       paddingBottom,
       paddingLeft,
       justifyContent,
+      alignItems,
     } = style;
     // 除了auto外都是固定高度
+    let fixedWidth;
     let fixedHeight;
     if(width && width.unit !== unit.AUTO) {
+      fixedWidth = true;
       switch(width.unit) {
         case unit.PX:
           w = width.value;
@@ -626,7 +629,6 @@ class Dom extends Xom {
       }
     });
     let maxCross = 0;
-    let free = 0;
     // 判断是否超出，决定使用grow还是shrink
     let isOverflow = maxSum > (isDirectionRow ? w : h);
     flowChildren.forEach((item, i) => {
@@ -639,7 +641,7 @@ class Dom extends Xom {
         main = shrink ? (basisList[i] - overflow * shrink / shrinkSum) : basisList[i];
       }
       else {
-        free = (isDirectionRow ? w : h) - basisSum;
+        let free = (isDirectionRow ? w : h) - basisSum;
         main = grow ? (basisList[i] + free * grow / growSum) : basisList[i];
       }
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
@@ -718,7 +720,7 @@ class Dom extends Xom {
     // 计算主轴剩余时要用真实剩余空间而不能用伸缩剩余空间
     let diff = isDirectionRow ? w - x + data.x : h - y + data.y;
     // 主轴侧轴对齐方式
-    if(!isOverflow && growSum === 0 && free > 0 && diff > 0) {
+    if(!isOverflow && growSum === 0 && diff > 0) {
       let len = flowChildren.length;
       if(justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
@@ -756,20 +758,55 @@ class Dom extends Xom {
       }
       y += maxCross;
     }
-    // 所有短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-    flowChildren.forEach(item => {
-      let { style } = item;
-      if(isDirectionRow) {
-        if(item.style.height.unit === unit.AUTO) {
-          item.__height = maxCross - style.borderTopWidth.value - style.borderBottomWidth.value;
-        }
+    else {
+      if(fixedWidth) {
+        maxCross = w;
       }
-      else {
-        if(item.style.width.unit === unit.AUTO) {
-          item.__width = maxCross - style.borderRightWidth.value - style.borderLeftWidth.value;
+    }
+    // 侧轴对齐
+    if(alignItems === 'stretch') {
+      // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
+      flowChildren.forEach(item => {
+        let { style } = item;
+        if(isDirectionRow) {
+          if(height.unit === unit.AUTO) {
+            item.__height = maxCross
+              - style.marginTop.value
+              - style.marginBottom.value
+              - style.paddingTop.value
+              - style.paddingBottom.value
+              - style.borderTopWidth.value
+              - style.borderBottomWidth.value;
+          }
+        } else {
+          if(width.unit === unit.AUTO) {
+            item.__width = maxCross
+              - style.marginLeft.value
+              - style.marginRight.value
+              - style.paddingLeft.value
+              - style.paddingRight.value
+              - borderRightWidth.value
+              - borderLeftWidth.value;
+          }
         }
-      }
-    });
+      });
+    }
+    else if(alignItems === 'center') {
+      flowChildren.forEach(item => {
+        let diff = maxCross - item.outerHeight;
+        if(diff > 0) {
+          item.__offsetY(diff * 0.5);
+        }
+      });
+    }
+    else if(alignItems === 'flex-end') {
+      flowChildren.forEach(item => {
+        let diff = maxCross - item.outerHeight;
+        if(diff > 0) {
+          item.__offsetY(diff);
+        }
+      });
+    }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;

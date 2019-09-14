@@ -36,8 +36,9 @@ const RESET = {
   flexBasis: 'auto',
   flexDirection: 'row',
   justifyContent: 'flex-start',
-  alignItem: 'stretch',
+  alignItems: 'stretch',
   textAlign: 'left',
+  visibility: 'visible',
   stroke: '#000',
   strokeWidth: 1,
 };

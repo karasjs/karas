@@ -769,7 +769,7 @@ class Dom extends Xom {
       flowChildren.forEach(item => {
         let { style } = item;
         if(isDirectionRow) {
-          if(height.unit === unit.AUTO) {
+          if(style.height.unit === unit.AUTO) {
             item.__height = maxCross
               - style.marginTop.value
               - style.marginBottom.value
@@ -778,8 +778,9 @@ class Dom extends Xom {
               - style.borderTopWidth.value
               - style.borderBottomWidth.value;
           }
-        } else {
-          if(width.unit === unit.AUTO) {
+        }
+        else {
+          if(style.width.unit === unit.AUTO) {
             item.__width = maxCross
               - style.marginLeft.value
               - style.marginRight.value

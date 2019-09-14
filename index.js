@@ -2338,11 +2338,11 @@
             var style = item.style;
 
             if (isDirectionRow) {
-              if (height.unit === unit.AUTO) {
+              if (style.height.unit === unit.AUTO) {
                 item.__height = maxCross - style.marginTop.value - style.marginBottom.value - style.paddingTop.value - style.paddingBottom.value - style.borderTopWidth.value - style.borderBottomWidth.value;
               }
             } else {
-              if (width.unit === unit.AUTO) {
+              if (style.width.unit === unit.AUTO) {
                 item.__width = maxCross - style.marginLeft.value - style.marginRight.value - style.paddingLeft.value - style.paddingRight.value - borderRightWidth.value - borderLeftWidth.value;
               }
             }

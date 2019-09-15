@@ -3,6 +3,7 @@ import CS from './node/CS';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polygon from './geom/Polygon';
+import Component from './component/Component';
 
 let karas = {
   render(cs, dom) {
@@ -34,7 +35,9 @@ let karas = {
     }
     throw new Error('can not use geom marker: ' + tagName);
   },
-  createCp(tagName, props, children) {},
+  createCp(cp, props) {
+    return new cp(props);
+  },
 };
 
 if(typeof window != 'undefined') {

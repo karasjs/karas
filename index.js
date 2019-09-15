@@ -315,19 +315,34 @@
       _this.__tagName = tagName;
       _this.__style = _this.props.style || {}; // style被解析后的k-v形式
 
+      _this.__listener = {};
+
+      _this.__props.forEach(function (item) {
+        var k = item[0];
+
+        if (/^on[a-zA-Z]/.test(k)) {
+          _this.__listener[k.slice(2).toLowerCase()] = item[1];
+        }
+      });
+
       return _this;
     }
 
     _createClass(Xom, [{
       key: "__preLay",
       value: function __preLay(data) {
-        var style = this.style;
+        var style = this.style,
+            display = this.style.display;
 
-        if (style.display === 'block') {
+        if (display === 'none') {
+          return;
+        }
+
+        if (display === 'block') {
           this.__preLayBlock(data);
-        } else if (style.display === 'flex') {
+        } else if (display === 'flex') {
           this.__preLayFlex(data);
-        } else {
+        } else if (display === 'inline') {
           this.__preLayInline(data);
         } // relative偏移
 
@@ -373,7 +388,8 @@
             y = this.y,
             width = this.width,
             height = this.height;
-        var backgroundColor = style.backgroundColor,
+        var display = style.display,
+            backgroundColor = style.backgroundColor,
             borderTopWidth = style.borderTopWidth,
             borderTopColor = style.borderTopColor,
             borderRightWidth = style.borderRightWidth,
@@ -388,6 +404,10 @@
             paddingRight = style.paddingRight,
             paddingBottom = style.paddingBottom,
             paddingLeft = style.paddingLeft;
+
+        if (display === 'none') {
+          return;
+        }
 
         if (marginLeft) {
           x += marginLeft.value;
@@ -579,6 +599,11 @@
             paddingTop = _this$style2.paddingTop,
             paddingBottom = _this$style2.paddingBottom;
         return this.height + borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+      }
+    }, {
+      key: "listener",
+      get: function get() {
+        return this.__listener;
       }
     }]);
 
@@ -1652,7 +1677,7 @@
 
         css.normalize(style);
         this.children.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             item.__initStyle();
           } else {
             item.__style = style; // 文字首先测量所有字符宽度
@@ -1682,7 +1707,7 @@
 
           var item = flowChildren[i];
 
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;
@@ -1750,7 +1775,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
                 b2 = _item$__calAutoBasis.b,
                 min2 = _item$__calAutoBasis.min,
@@ -1824,7 +1849,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             var max2 = item.__calAbs(isDirectionRow);
 
             max = Math.max(max, max2);
@@ -1920,7 +1945,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             if (item.style.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -2128,7 +2153,7 @@
 
         if (!isDirectionRow && !fixedHeight) {
           flowChildren.forEach(function (item) {
-            if (item instanceof Dom || item instanceof Geom) {
+            if (item instanceof Xom) {
               var _style = item.style,
                   _item$style = item.style,
                   display = _item$style.display,
@@ -2177,7 +2202,7 @@
         var basisSum = 0;
         var maxSum = 0;
         flowChildren.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             var _item$style2 = item.style,
                 flexGrow = _item$style2.flexGrow,
                 flexShrink = _item$style2.flexShrink,
@@ -2252,7 +2277,7 @@
 
           main = Math.max(main, minList[i]);
 
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             var _style2 = item.style,
                 _item$style3 = item.style,
                 display = _item$style3.display,
@@ -2485,7 +2510,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Geom) {
+          if (item instanceof Xom) {
             // 绝对定位跳过
             if (item.style.position === 'absolute') {
               _this4.absChildren.push(item);
@@ -2718,12 +2743,98 @@
         });
       }
     }, {
+      key: "__emitEvent",
+      value: function __emitEvent(e) {
+        var type = e.event.type,
+            xe = e.x,
+            ye = e.y,
+            covers = e.covers;
+        var listener = this.listener,
+            children = this.children,
+            style = this.style,
+            x = this.x,
+            y = this.y,
+            outerWidth = this.outerWidth,
+            outerHeight = this.outerHeight;
+
+        if (style.display === 'none') {
+          return;
+        }
+
+        var cb;
+
+        if (listener.hasOwnProperty(type)) {
+          cb = listener[type];
+        }
+
+        var hasChildEmit; // 先响应absolute/relative高优先级
+
+        for (var i = children.length - 1; i >= 0; i--) {
+          var child = children[i];
+
+          if (child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+            if (child.__emitEvent(e)) {
+              hasChildEmit = true;
+            }
+          }
+        } // 再看普通流
+
+
+        for (var _i5 = children.length - 1; _i5 >= 0; _i5--) {
+          var _child4 = children[_i5];
+
+          if (_child4 instanceof Xom && ['absolute', 'relative'].indexOf(_child4.style.position) === -1) {
+            if (_child4.__emitEvent(e)) {
+              hasChildEmit = true;
+            }
+          }
+        } // child触发则parent一定触发
+
+
+        if (hasChildEmit) {
+          cb && cb(e);
+          covers.push({
+            x: x,
+            y: y,
+            w: outerWidth,
+            h: outerHeight
+          });
+        } // 否则判断坐标是否位于自己内部，以及没被遮挡
+        else if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+            for (var _i6 = 0, len = covers.length; _i6 < len; _i6++) {
+              var _covers$_i = covers[_i6],
+                  x2 = _covers$_i.x,
+                  y2 = _covers$_i.y,
+                  w = _covers$_i.w,
+                  h = _covers$_i.h;
+
+              if (xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+                return;
+              }
+            }
+
+            cb && cb(e);
+            covers.push({
+              x: x,
+              y: y,
+              w: outerWidth,
+              h: outerHeight
+            });
+          }
+      }
+    }, {
       key: "render",
       value: function render() {
         _get(_getPrototypeOf(Dom.prototype), "render", this).call(this);
 
-        var flowChildren = this.flowChildren,
-            children = this.children; // 先绘制static
+        var display = this.style.display,
+            flowChildren = this.flowChildren,
+            children = this.children;
+
+        if (display === 'none') {
+          return;
+        } // 先绘制static
+
 
         flowChildren.forEach(function (item) {
           if (item instanceof Text || item.style.position === 'static') {
@@ -2732,7 +2843,7 @@
         }); // 再绘制relative和absolute
 
         children.forEach(function (item) {
-          if ((item instanceof Dom || item instanceof Geom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
+          if (item instanceof Xom && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
             item.render();
           }
         });
@@ -2866,6 +2977,43 @@
         return res;
       }
     }, {
+      key: "__cb",
+      value: function __cb(e) {
+        var node = this.node;
+
+        var _node$getBoundingClie = node.getBoundingClientRect(),
+            x = _node$getBoundingClie.x,
+            y = _node$getBoundingClie.y,
+            top = _node$getBoundingClie.top,
+            right = _node$getBoundingClie.right;
+
+        x = x || top || 0;
+        y = y || right || 0;
+        var clientX = e.clientX,
+            clientY = e.clientY;
+        x = clientX - x;
+        y = clientY - y;
+
+        this.__emitEvent({
+          event: e,
+          x: x,
+          y: y,
+          covers: []
+        });
+      }
+    }, {
+      key: "__initEvent",
+      value: function __initEvent() {
+        var _this2 = this;
+
+        var node = this.node;
+        ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseover', 'mouseup', 'mouseout', 'resize', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
+          node.addEventListener(type, function (e) {
+            _this2.__cb(e);
+          });
+        });
+      }
+    }, {
       key: "appendTo",
       value: function appendTo(dom) {
         dom = getDom(dom);
@@ -2885,11 +3033,8 @@
           }
         } // 没有canvas节点则生成一个新的
         else {
-            var s = this.__genHtml();
-
-            dom.insertAdjacentHTML('beforeend', s);
-            var canvas = dom.querySelectorAll(this.tagName);
-            this.__node = canvas[canvas.length - 1];
+            dom.innerHTML = this.__genHtml();
+            this.__node = dom.querySelector(this.tagName);
           } // 没有设置width/height则采用css计算形式
 
 
@@ -2905,6 +3050,17 @@
             this.__height = parseInt(css.getPropertyValue('height'));
             dom.setAttribute('height', this.height);
           }
+        } // 只有canvas有ctx，svg用真实dom
+
+
+        if (this.tagName === 'canvas') {
+          this.__ctx = this.__node.getContext('2d');
+
+          this.__ctx.clearRect(0, 0, this.width, this.height);
+
+          this.__mode = mode.CANVAS;
+        } else if (this.tagName === 'svg') {
+          this.__mode = mode.SVG;
         } // canvas/svg作为根节点一定是block或flex，不会是inline
 
 
@@ -2917,14 +3073,6 @@
 
         if (style.position === 'absolute') {
           style.position = 'static';
-        } // 只有canvas有ctx，svg用真实dom
-
-
-        if (this.tagName === 'canvas') {
-          this.__ctx = this.__node.getContext('2d');
-          this.__mode = mode.CANVAS;
-        } else if (this.tagName === 'svg') {
-          this.__mode = mode.SVG;
         }
 
         this.__traverse(this.__ctx, this.__mode); // canvas的宽高固定初始化
@@ -2947,7 +3095,13 @@
         this.render();
 
         if (this.mode === mode.SVG) {
-          this.__node.innerHTML = mode.html;
+          this.node.innerHTML = mode.html;
+        }
+
+        if (util.isNil(this.node.getAttribute('karas-event'))) {
+          this.node.setAttribute('karas-event', '1');
+
+          this.__initEvent();
         }
       }
     }, {
@@ -3154,7 +3308,8 @@
           }
         }
 
-        var borderTopWidth = style.borderTopWidth,
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -3168,6 +3323,11 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth;
+
+        if (display === 'none') {
+          return;
+        }
+
         var scale = max - min;
 
         if (scale <= 0) {
@@ -3271,7 +3431,9 @@
 
       throw new Error('can not use geom marker: ' + tagName);
     },
-    createCp: function createCp(tagName, props, children) {}
+    createCp: function createCp(cp, props) {
+      return new cp(props);
+    }
   };
 
   if (typeof window != 'undefined') {

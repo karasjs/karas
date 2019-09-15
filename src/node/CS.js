@@ -56,6 +56,32 @@ class CS extends Dom {
     return res;
   }
 
+  __cb(e) {
+    let { node } = this;
+    let { x, y, top, right } = node.getBoundingClientRect();
+    x = x || top || 0;
+    y = y || right || 0;
+    let { clientX, clientY } = e;
+    x = clientX - x;
+    y = clientY - y;
+    this.__emitEvent({
+      event: e,
+      x,
+      y,
+      covers: [],
+    });
+  }
+
+  __initEvent() {
+    let { node } = this;
+    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseover', 'mouseup', 'mouseout', 'resize', 'touchstart',
+      'touchmove', 'touchend', 'touchcancel'].forEach(type => {
+        node.addEventListener(type, e => {
+          this.__cb(e);
+        });
+    });
+  }
+
   appendTo(dom) {
     dom = getDom(dom);
     this.__initProps();
@@ -71,10 +97,8 @@ class CS extends Dom {
     }
     // 没有canvas节点则生成一个新的
     else {
-      let s = this.__genHtml();
-      dom.insertAdjacentHTML('beforeend', s);
-      let canvas = dom.querySelectorAll(this.tagName);
-      this.__node = canvas[canvas.length - 1];
+      dom.innerHTML = this.__genHtml();
+      this.__node = dom.querySelector(this.tagName);
     }
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
@@ -88,6 +112,15 @@ class CS extends Dom {
         dom.setAttribute('height', this.height);
       }
     }
+    // 只有canvas有ctx，svg用真实dom
+    if(this.tagName === 'canvas') {
+      this.__ctx = this.__node.getContext('2d');
+      this.__ctx.clearRect(0, 0, this.width, this.height);
+      this.__mode = mode.CANVAS;
+    }
+    else if(this.tagName === 'svg') {
+      this.__mode = mode.SVG;
+    }
     // canvas/svg作为根节点一定是block或flex，不会是inline
     let { style } = this;
     if(['flex', 'block'].indexOf(style.display) === -1) {
@@ -96,14 +129,6 @@ class CS extends Dom {
     // 同理position不能为absolute
     if(style.position === 'absolute') {
       style.position = 'static';
-    }
-    // 只有canvas有ctx，svg用真实dom
-    if(this.tagName === 'canvas') {
-      this.__ctx = this.__node.getContext('2d');
-      this.__mode = mode.CANVAS;
-    }
-    else if(this.tagName === 'svg') {
-      this.__mode = mode.SVG;
     }
     this.__traverse(this.__ctx, this.__mode);
     // canvas的宽高固定初始化
@@ -119,7 +144,11 @@ class CS extends Dom {
     this.__preLayAbs(this);
     this.render();
     if(this.mode === mode.SVG) {
-      this.__node.innerHTML = mode.html;
+      this.node.innerHTML = mode.html;
+    }
+    if(util.isNil(this.node.getAttribute('karas-event'))) {
+      this.node.setAttribute('karas-event', '1');
+      this.__initEvent();
     }
   }
 

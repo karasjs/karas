@@ -47,6 +47,7 @@ class Polygon extends Geom {
       }
     }
     let {
+      display,
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -62,6 +63,9 @@ class Polygon extends Geom {
       stroke,
       strokeWidth,
     } = style;
+    if(display === 'none') {
+      return;
+    }
     let scale = max - min;
     if(scale <= 0) {
       throw new Error(`scale can not <= 0: max(${this.max}) - min(${this.min})`);

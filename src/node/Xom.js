@@ -58,17 +58,27 @@ class Xom extends Node {
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
+    this.__listener = {};
+    this.__props.forEach(item => {
+      let k = item[0];
+      if(/^on[a-zA-Z]/.test(k)) {
+        this.__listener[k.slice(2).toLowerCase()] = item[1];
+      }
+    });
   }
 
   __preLay(data) {
-    let { style } = this;
-    if(style.display === 'block') {
+    let { style, style: { display } } = this;
+    if(display === 'none') {
+      return;
+    }
+    if(display === 'block') {
       this.__preLayBlock(data);
     }
-    else if(style.display === 'flex') {
+    else if(display === 'flex') {
       this.__preLayFlex(data);
     }
-    else {
+    else if(display === 'inline') {
       this.__preLayInline(data);
     }
     // relative偏移
@@ -103,6 +113,7 @@ class Xom extends Node {
   render() {
     let { ctx, style, x, y, width, height } = this;
     let {
+      display,
       backgroundColor,
       borderTopWidth,
       borderTopColor,
@@ -119,6 +130,9 @@ class Xom extends Node {
       paddingBottom,
       paddingLeft,
     } = style;
+    if(display === 'none') {
+      return;
+    }
     if(marginLeft) {
       x += marginLeft.value;
     }
@@ -289,6 +303,9 @@ class Xom extends Node {
       + marginBottom.value
       + paddingTop.value
       + paddingBottom.value;
+  }
+  get listener() {
+    return this.__listener;
   }
 }
 

@@ -122,7 +122,7 @@ class Dom extends Xom {
     // 标准化处理，默认值、简写属性
     css.normalize(style);
     this.children.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         item.__initStyle();
       }
       else {
@@ -148,7 +148,7 @@ class Dom extends Xom {
         return w;
       }
       let item = flowChildren[i];
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         w -= item.__tryLayInline(w, total);
       }
       else {
@@ -210,7 +210,7 @@ class Dom extends Xom {
     }
     // 递归children取最大值
     flowChildren.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
         b = Math.max(b, b2);
         min = Math.max(min, min2);
@@ -273,7 +273,7 @@ class Dom extends Xom {
     }
     // 递归children取最大值
     flowChildren.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         let max2 = item.__calAbs(isDirectionRow);
         max = Math.max(max, max2);
       }
@@ -359,7 +359,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         if(item.style.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
@@ -546,7 +546,7 @@ class Dom extends Xom {
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
       flowChildren.forEach(item => {
-        if(item instanceof Dom || item instanceof Geom) {
+        if(item instanceof Xom) {
           const { style, style: { display, flexDirection, width }} = item;
           // column的flex的child如果是inline，变为block
           if(display === 'inline') {
@@ -589,7 +589,7 @@ class Dom extends Xom {
     let basisSum = 0;
     let maxSum = 0;
     flowChildren.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         let { flexGrow, flexShrink, flexBasis } = item.style;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
@@ -656,7 +656,7 @@ class Dom extends Xom {
       }
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         const { style, style: { display, flexDirection, width, height }} = item;
         if(isDirectionRow) {
           // row的flex的child如果是inline，变为block
@@ -882,7 +882,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Dom || item instanceof Geom) {
+      if(item instanceof Xom) {
         // 绝对定位跳过
         if(item.style.position === 'absolute') {
           this.absChildren.push(item);
@@ -1099,9 +1099,69 @@ class Dom extends Xom {
     });
   }
 
+  __emitEvent(e) {
+    let { event: { type }, x: xe, y: ye, covers } = e;
+    let { listener, children, style, x, y, outerWidth, outerHeight } = this;
+    if(style.display === 'none') {
+      return;
+    }
+    let cb;
+    if(listener.hasOwnProperty(type)) {
+      cb = listener[type];
+    }
+    let hasChildEmit;
+    // 先响应absolute/relative高优先级
+    for(let i = children.length - 1; i >= 0; i--) {
+      let child = children[i];
+      if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+        if(child.__emitEvent(e)) {
+          hasChildEmit = true;
+        }
+      }
+    }
+    // 再看普通流
+    for(let i = children.length - 1; i >= 0; i--) {
+      let child = children[i];
+      if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
+        if(child.__emitEvent(e)) {
+          hasChildEmit = true;
+        }
+      }
+    }
+    // child触发则parent一定触发
+    if(hasChildEmit) {
+      cb && cb(e);
+      covers.push({
+        x,
+        y,
+        w: outerWidth,
+        h: outerHeight,
+      });
+    }
+    // 否则判断坐标是否位于自己内部，以及没被遮挡
+    else if(xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+      for(let i = 0, len = covers.length; i < len; i++) {
+        let { x: x2, y: y2, w, h: h } = covers[i];
+        if(xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+          return;
+        }
+      }
+      cb && cb(e);
+      covers.push({
+        x,
+        y,
+        w: outerWidth,
+        h: outerHeight,
+      });
+    }
+  }
+
   render() {
     super.render();
-    let { flowChildren, children } = this;
+    let { style: { display }, flowChildren, children } = this;
+    if(display === 'none') {
+      return;
+    }
     // 先绘制static
     flowChildren.forEach(item => {
       if(item instanceof Text || item.style.position === 'static') {
@@ -1110,7 +1170,7 @@ class Dom extends Xom {
     });
     // 再绘制relative和absolute
     children.forEach(item => {
-      if((item instanceof Dom || item instanceof Geom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
+      if((item instanceof Xom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
         item.render();
       }
     });

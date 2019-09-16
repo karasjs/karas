@@ -2,11 +2,6 @@ import Xom from '../node/Xom';
 import css from '../style/css';
 import unit from '../style/unit';
 
-const TAG_NAME = {
-  '$line': true,
-  '$polygon': true,
-};
-
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
@@ -156,6 +151,36 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
   }
 
+  __emitEvent(e) {
+    let { event: { type }, x: xe, y: ye, covers } = e;
+    let { listener, style, x, y, outerWidth, outerHeight } = this;
+    if(style.display === 'none') {
+      return;
+    }
+    let cb;
+    if(listener.hasOwnProperty(type)) {
+      cb = listener[type];
+    }
+    if(xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+      for(let i = 0, len = covers.length; i < len; i++) {
+        let { x: x2, y: y2, w, h: h } = covers[i];
+        if(xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+          return;
+        }
+      }
+      if(!e.target) {
+        e.target = this;
+      }
+      covers.push({
+        x,
+        y,
+        w: outerWidth,
+        h: outerHeight,
+      });
+      cb && cb(e);
+    }
+  }
+
   render() {
     super.render();
   }
@@ -174,10 +199,6 @@ class Geom extends Xom {
   }
   get max() {
     return this.__max;
-  }
-
-  static isValid(s) {
-    return TAG_NAME.hasOwnProperty(s);
   }
 }
 

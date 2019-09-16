@@ -39,8 +39,9 @@ const RESET = {
   alignItems: 'stretch',
   textAlign: 'left',
   visibility: 'visible',
+  fill: '#000',
   stroke: '#000',
-  strokeWidth: 1,
+  strokeWidth: 0,
 };
 
 let reset = [];

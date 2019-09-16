@@ -16,29 +16,15 @@ class Polygon extends Geom {
     else {
       this.__origin = 'BOTTOM_LEFT';
     }
-    // max和min默认取值坐标轴范围[0, 1]，可更改
-    if(this.props.min) {
-      this.__min = parseFloat(this.props.min) || 0;
-    }
-    else {
-      this.__min = 0;
-    }
-    if(this.props.max) {
-      let max = parseFloat(this.props.max);
-      if(isNaN(max)) {
-        max = 1;
-      }
-      this.__max = max;
-    }
-    else {
-      this.__max = 1;
-    }
   }
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, pointList, max, min, origin } = this;
+    let { x, y, width, height, style, ctx, pointList, origin } = this;
     if(pointList.length < 2) {
+      return;
+    }
+    if(style.display === 'none') {
       return;
     }
     for(let i = 0, len = pointList.length; i < len; i++) {
@@ -49,16 +35,10 @@ class Polygon extends Geom {
     let {
       display,
       borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
       borderLeftWidth,
       marginTop,
-      marginRight,
-      marginBottom,
       marginLeft,
       paddingTop,
-      paddingRight,
-      paddingBottom,
       paddingLeft,
       stroke,
       strokeWidth,
@@ -66,36 +46,30 @@ class Polygon extends Geom {
     if(display === 'none') {
       return;
     }
-    let scale = max - min;
-    if(scale <= 0) {
-      throw new Error(`scale can not <= 0: max(${this.max}) - min(${this.min})`);
-    }
     let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-    width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-    height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
     if(origin === 'TOP_LEFT') {
       pointList.forEach(item => {
         item[0] = originX + item[0] * width;
-        item[1] = originY + (item[1] - min) * height / scale;
+        item[1] = originY + item[1] * height;
       });
     }
     else if(origin === 'TOP_RIGHT') {
       pointList.forEach(item => {
         item[0] = originX + width - item[0] * width;
-        item[1] = originY + (item[1] - min) * height / scale;
+        item[1] = originY + item[1] * height;
       });
     }
     else if(origin === 'BOTTOM_LEFT') {
       pointList.forEach(item => {
         item[0] = originX + item[0] * width;
-        item[1] = originY + height - (item[1] - min) * height / scale;
+        item[1] = originY + height - item[1] * height;
       });
     }
     else if(origin === 'BOTTOM_RIGHT') {
       pointList.forEach(item => {
         item[0] = originX + width - item[0] * width;
-        item[1] = originY + height - (item[1] - min) * height / scale;
+        item[1] = originY + height - item[1] * height;
       });
     }
     if(this.mode === mode.CANVAS) {
@@ -107,7 +81,9 @@ class Polygon extends Geom {
         let point = pointList[i];
         ctx.lineTo(point[0], originY + point[1]);
       }
-      ctx.stroke();
+      if(strokeWidth && stroke !== 'transparent') {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {

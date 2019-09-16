@@ -1130,13 +1130,13 @@ class Dom extends Xom {
     }
     // child触发则parent一定触发
     if(hasChildEmit) {
-      cb && cb(e);
       covers.push({
         x,
         y,
         w: outerWidth,
         h: outerHeight,
       });
+      cb && cb(e);
     }
     // 否则判断坐标是否位于自己内部，以及没被遮挡
     else if(xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
@@ -1146,13 +1146,16 @@ class Dom extends Xom {
           return;
         }
       }
-      cb && cb(e);
+      if(!e.target) {
+        e.target = this;
+      }
       covers.push({
         x,
         y,
         w: outerWidth,
         h: outerHeight,
       });
+      cb && cb(e);
     }
   }
 

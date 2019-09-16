@@ -74,7 +74,7 @@ class CS extends Dom {
 
   __initEvent() {
     let { node } = this;
-    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseover', 'mouseup', 'mouseout', 'resize', 'touchstart',
+    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart',
       'touchmove', 'touchend', 'touchcancel'].forEach(type => {
         node.addEventListener(type, e => {
           this.__cb(e);

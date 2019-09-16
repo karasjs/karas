@@ -103,6 +103,48 @@
     return _get(target, property, receiver || target);
   }
 
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+  }
+
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
+  function _iterableToArrayLimit(arr, i) {
+    if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+      return;
+    }
+
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+    var _e = undefined;
+
+    try {
+      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"] != null) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance");
+  }
+
   var CANVAS = 0;
   var SVG = 1;
   var div;
@@ -666,8 +708,9 @@
     alignItems: 'stretch',
     textAlign: 'left',
     visibility: 'visible',
+    fill: '#000',
     stroke: '#000',
-    strokeWidth: 1
+    strokeWidth: 0
   };
   var reset = [];
   Object.keys(RESET).forEach(function (k) {
@@ -1309,11 +1352,6 @@
     return LineGroup;
   }();
 
-  var TAG_NAME = {
-    '$line': true,
-    '$polygon': true
-  };
-
   var Geom =
   /*#__PURE__*/
   function (_Xom) {
@@ -1495,6 +1533,56 @@
         this.__height = fixedHeight ? h : y - data.y;
       }
     }, {
+      key: "__emitEvent",
+      value: function __emitEvent(e) {
+        var type = e.event.type,
+            xe = e.x,
+            ye = e.y,
+            covers = e.covers;
+        var listener = this.listener,
+            style = this.style,
+            x = this.x,
+            y = this.y,
+            outerWidth = this.outerWidth,
+            outerHeight = this.outerHeight;
+
+        if (style.display === 'none') {
+          return;
+        }
+
+        var cb;
+
+        if (listener.hasOwnProperty(type)) {
+          cb = listener[type];
+        }
+
+        if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+          for (var i = 0, len = covers.length; i < len; i++) {
+            var _covers$i = covers[i],
+                x2 = _covers$i.x,
+                y2 = _covers$i.y,
+                w = _covers$i.w,
+                h = _covers$i.h;
+
+            if (xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+              return;
+            }
+          }
+
+          if (!e.target) {
+            e.target = this;
+          }
+
+          covers.push({
+            x: x,
+            y: y,
+            w: outerWidth,
+            h: outerHeight
+          });
+          cb && cb(e);
+        }
+      }
+    }, {
       key: "render",
       value: function render() {
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this);
@@ -1524,17 +1612,12 @@
       get: function get() {
         return this.__max;
       }
-    }], [{
-      key: "isValid",
-      value: function isValid(s) {
-        return TAG_NAME.hasOwnProperty(s);
-      }
     }]);
 
     return Geom;
   }(Xom);
 
-  var TAG_NAME$1 = {
+  var TAG_NAME = {
     'div': true,
     'span': true
   };
@@ -2792,13 +2875,13 @@
 
 
         if (hasChildEmit) {
-          cb && cb(e);
           covers.push({
             x: x,
             y: y,
             w: outerWidth,
             h: outerHeight
           });
+          cb && cb(e);
         } // 否则判断坐标是否位于自己内部，以及没被遮挡
         else if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
             for (var _i6 = 0, len = covers.length; _i6 < len; _i6++) {
@@ -2813,13 +2896,17 @@
               }
             }
 
-            cb && cb(e);
+            if (!e.target) {
+              e.target = this;
+            }
+
             covers.push({
               x: x,
               y: y,
               w: outerWidth,
               h: outerHeight
             });
+            cb && cb(e);
           }
       }
     }, {
@@ -2893,7 +2980,7 @@
     }], [{
       key: "isValid",
       value: function isValid(s) {
-        return TAG_NAME$1.hasOwnProperty(s);
+        return TAG_NAME.hasOwnProperty(s);
       }
     }]);
 
@@ -3007,7 +3094,7 @@
         var _this2 = this;
 
         var node = this.node;
-        ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseover', 'mouseup', 'mouseout', 'resize', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
+        ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
           node.addEventListener(type, function (e) {
             _this2.__cb(e);
           });
@@ -3258,25 +3345,6 @@
         _this.__origin = _this.props.origin;
       } else {
         _this.__origin = 'BOTTOM_LEFT';
-      } // max和min默认取值坐标轴范围[0, 1]，可更改
-
-
-      if (_this.props.min) {
-        _this.__min = parseFloat(_this.props.min) || 0;
-      } else {
-        _this.__min = 0;
-      }
-
-      if (_this.props.max) {
-        var max = parseFloat(_this.props.max);
-
-        if (isNaN(max)) {
-          max = 1;
-        }
-
-        _this.__max = max;
-      } else {
-        _this.__max = 1;
       }
 
       return _this;
@@ -3294,11 +3362,13 @@
             style = this.style,
             ctx = this.ctx,
             pointList = this.pointList,
-            max = this.max,
-            min = this.min,
             origin = this.origin;
 
         if (pointList.length < 2) {
+          return;
+        }
+
+        if (style.display === 'none') {
           return;
         }
 
@@ -3310,16 +3380,10 @@
 
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
             marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
             marginLeft = style.marginLeft,
             paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth;
@@ -3328,36 +3392,28 @@
           return;
         }
 
-        var scale = max - min;
-
-        if (scale <= 0) {
-          throw new Error("scale can not <= 0: max(".concat(this.max, ") - min(").concat(this.min, ")"));
-        }
-
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-        width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-        height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
 
         if (origin === 'TOP_LEFT') {
           pointList.forEach(function (item) {
             item[0] = originX + item[0] * width;
-            item[1] = originY + (item[1] - min) * height / scale;
+            item[1] = originY + item[1] * height;
           });
         } else if (origin === 'TOP_RIGHT') {
           pointList.forEach(function (item) {
             item[0] = originX + width - item[0] * width;
-            item[1] = originY + (item[1] - min) * height / scale;
+            item[1] = originY + item[1] * height;
           });
         } else if (origin === 'BOTTOM_LEFT') {
           pointList.forEach(function (item) {
             item[0] = originX + item[0] * width;
-            item[1] = originY + height - (item[1] - min) * height / scale;
+            item[1] = originY + height - item[1] * height;
           });
         } else if (origin === 'BOTTOM_RIGHT') {
           pointList.forEach(function (item) {
             item[0] = originX + width - item[0] * width;
-            item[1] = originY + height - (item[1] - min) * height / scale;
+            item[1] = originY + height - item[1] * height;
           });
         }
 
@@ -3372,7 +3428,10 @@
             ctx.lineTo(point[0], originY + point[1]);
           }
 
-          ctx.stroke();
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
           var points = '';
@@ -3393,6 +3452,193 @@
     }]);
 
     return Polygon;
+  }(Geom);
+
+  var DEGREE = Math.PI / 180;
+  var OFFSET = Math.PI * 0.5;
+
+  function getCoordByDegree(x, y, r, d) {
+    while (d > 360) {
+      d -= 360;
+    }
+
+    while (d < 0) {
+      d += 360;
+    }
+
+    if (d >= 0 && d < 90) {
+      return [x + Math.sin(d * DEGREE) * r, y - Math.cos(d * DEGREE) * r];
+    } else if (d >= 90 && d < 180) {
+      return [x + Math.cos((d - 90) * DEGREE) * r, y + Math.sin((d - 90) * DEGREE) * r];
+    } else if (d >= 180 && d < 270) {
+      return [x - Math.cos((270 - d) * DEGREE) * r, y + Math.sin((270 - d) * DEGREE) * r];
+    } else {
+      return [x - Math.sin((360 - d) * DEGREE) * r, y - Math.cos((360 - d) * DEGREE) * r];
+    }
+  }
+
+  var Sector =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Sector, _Geom);
+
+    function Sector(props) {
+      var _this;
+
+      _classCallCheck(this, Sector);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Sector).call(this, '$sector', props)); // 角度
+
+      _this.__start = 0;
+      _this.__end = 0;
+
+      if (_this.props.start) {
+        _this.__start = parseFloat(_this.props.start);
+
+        if (isNaN(_this.start)) {
+          _this.__start = 0;
+        }
+      }
+
+      if (_this.props.end) {
+        _this.__end = parseFloat(_this.props.end);
+
+        if (isNaN(_this.end)) {
+          _this.__end = 0;
+        }
+      } // 圆点位置，默认中间[0.5, 0.5]，只写一个为简写
+
+
+      _this.__origin = [0.5, 0.5];
+
+      if (Array.isArray(_this.props.origin) && _this.props.origin.length) {
+        _this.__origin = _this.props.origin;
+
+        if (util.isNil(_this.origin[1])) {
+          _this.origin[1] = _this.origin[0];
+        }
+
+        if (isNaN(_this.origin[0])) {
+          _this.origin[0] = 0.5;
+        }
+
+        if (isNaN(_this.origin[1])) {
+          _this.origin[1] = 0.5;
+        }
+      } // 半径0~1，默认1
+
+
+      _this.__radius = 1;
+
+      if (_this.props.radius) {
+        _this.__radius = parseFloat(_this.props.radius);
+
+        if (isNaN(_this.radius)) {
+          _this.__radius = 1;
+        }
+      }
+
+      return _this;
+    }
+
+    _createClass(Sector, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Sector.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            start = this.start,
+            end = this.end,
+            origin = this.origin,
+            radius = this.radius;
+
+        if (start === end) {
+          return;
+        }
+
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth,
+            fill = style.fill;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        originX += origin[0] * width;
+        originY += origin[1] * height;
+        var r = this.radius * Math.min(width, height) * 0.5;
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.arc(originX, originY, r, start * DEGREE - OFFSET, end * DEGREE - OFFSET);
+          ctx.fill();
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) {
+          var x1, y1, x2, y2;
+
+          var _getCoordByDegree = getCoordByDegree(originX, originY, r, start);
+
+          var _getCoordByDegree2 = _slicedToArray(_getCoordByDegree, 2);
+
+          x1 = _getCoordByDegree2[0];
+          y1 = _getCoordByDegree2[1];
+
+          var _getCoordByDegree3 = getCoordByDegree(originX, originY, r, end);
+
+          var _getCoordByDegree4 = _slicedToArray(_getCoordByDegree3, 2);
+
+          x2 = _getCoordByDegree4[0];
+          y2 = _getCoordByDegree4[1];
+          var large = end - start > 180 ? 1 : 0;
+          mode.appendHtml("<path d=\"M ".concat(originX, " ").concat(originY, " L ").concat(x1, " ").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.__start;
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.__end;
+      }
+    }, {
+      key: "origin",
+      get: function get() {
+        return this.__origin;
+      }
+    }, {
+      key: "radius",
+      get: function get() {
+        return this.__radius;
+      }
+    }]);
+
+    return Sector;
   }(Geom);
 
   var karas = {
@@ -3419,14 +3665,15 @@
       throw new Error('can not use marker: ' + tagName);
     },
     createGm: function createGm(tagName, props) {
-      if (Geom.isValid(tagName)) {
-        switch (tagName) {
-          case '$line':
-            return new Line(props);
+      switch (tagName) {
+        case '$line':
+          return new Line(props);
 
-          case '$polygon':
-            return new Polygon(props);
-        }
+        case '$polygon':
+          return new Polygon(props);
+
+        case '$sector':
+          return new Sector(props);
       }
 
       throw new Error('can not use geom marker: ' + tagName);

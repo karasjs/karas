@@ -3,7 +3,7 @@ import CS from './node/CS';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polygon from './geom/Polygon';
-import Component from './component/Component';
+import Sector from './geom/Sector';
 
 let karas = {
   render(cs, dom) {
@@ -25,13 +25,13 @@ let karas = {
     throw new Error('can not use marker: ' + tagName);
   },
   createGm(tagName, props) {
-    if(Geom.isValid(tagName)) {
-      switch(tagName) {
-        case '$line':
-          return new Line(props);
-        case '$polygon':
-          return new Polygon(props);
-      }
+    switch(tagName) {
+      case '$line':
+        return new Line(props);
+      case '$polygon':
+        return new Polygon(props);
+      case '$sector':
+        return new Sector(props);
     }
     throw new Error('can not use geom marker: ' + tagName);
   },

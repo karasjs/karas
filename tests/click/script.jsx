@@ -1,11 +1,11 @@
-function click(color) {
+function cb(color) {
   render(color);
 }
 function render(color) {
   karas.render(
     <canvas width="360" height="360">
-      <div style={{background:color}} onMouseOver={()=>click('#00F')}>#00F</div>
-      <div style={{background:color}} onMouseOver={()=>click('#F00')}>#F00</div>
+      <div style={{background:color}} onMouseMove={()=>cb('#00F')}>#00F</div>
+      <div style={{background:color}} onMouseMove={()=>cb('#F00')}>#F00</div>
     </canvas>,
     '#test'
   );

@@ -1070,7 +1070,7 @@ class Dom extends Xom {
       }
       else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
-        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+        w2 = width2.unit === unit.PX ? width2.value : width;
       }
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         w2 = width2.unit === unit.PX ? width2.value : width;

@@ -13,6 +13,9 @@ export default {
   get html() {
     return svgHtml;
   },
+  reset() {
+    svgHtml = '';
+  },
   measure(s, style) {
     if(!div) {
       div = document.createElement('div');

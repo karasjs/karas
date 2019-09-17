@@ -657,7 +657,24 @@ class Dom extends Xom {
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Xom) {
-        const { style, style: { display, flexDirection, width, height }} = item;
+        const { style, style: {
+          display,
+          flexDirection,
+          width,
+          height,
+          marginTop,
+          marginRight,
+          marginBottom,
+          marginLeft,
+          borderTopWidth,
+          borderRightWidth,
+          borderBottomWidth,
+          borderLeftWidth,
+          paddingTop,
+          paddingRight,
+          paddingBottom,
+          paddingLeft,
+        }} = item;
         if(isDirectionRow) {
           // row的flex的child如果是inline，变为block
           if(display === 'inline') {
@@ -695,18 +712,42 @@ class Dom extends Xom {
         // 重设因伸缩而导致的主轴长度
         if(isOverflow && shrink) {
           if(isDirectionRow) {
-            item.__width = main;
+            item.__width = main
+              - marginLeft.value
+              - marginRight.value
+              - borderLeftWidth.value
+              - borderRightWidth.value
+              - paddingLeft.value
+              - paddingRight.value;
           }
           else {
-            item.__height = main;
+            item.__height = main
+              - marginTop.value
+              - marginBottom.value
+              - borderTopWidth.value
+              - borderBottomWidth.value
+              - paddingTop.value
+              - paddingBottom.value;
           }
         }
         else if(!isOverflow && grow) {
           if(isDirectionRow) {
-            item.__width = main;
+            item.__width = main
+              - marginLeft.value
+              - marginRight.value
+              - borderLeftWidth.value
+              - borderRightWidth.value
+              - paddingLeft.value
+              - paddingRight.value;
           }
           else {
-            item.__height = main;
+            item.__height = main
+              - marginTop.value
+              - marginBottom.value
+              - borderTopWidth.value
+              - borderBottomWidth.value
+              - paddingTop.value
+              - paddingBottom.value;
           }
         }
       }
@@ -1024,12 +1065,12 @@ class Dom extends Xom {
       let x2, y2, w2, h2;
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-        x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+        x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
         w2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - x2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
       }
       else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-        x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
-        w2 = width2.unit === unit.PX ? width2.value : width;
+        x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
       }
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         w2 = width2.unit === unit.PX ? width2.value : width;
@@ -1099,7 +1140,7 @@ class Dom extends Xom {
     });
   }
 
-  __emitEvent(e) {
+  __emitEvent(e, force) {
     let { event: { type }, x: xe, y: ye, covers } = e;
     let { listener, children, style, x, y, outerWidth, outerHeight } = this;
     if(style.display === 'none') {
@@ -1114,7 +1155,7 @@ class Dom extends Xom {
     for(let i = children.length - 1; i >= 0; i--) {
       let child = children[i];
       if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
-        if(child.__emitEvent(e)) {
+        if(child.__emitEvent(e, force)) {
           hasChildEmit = true;
         }
       }
@@ -1123,10 +1164,14 @@ class Dom extends Xom {
     for(let i = children.length - 1; i >= 0; i--) {
       let child = children[i];
       if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
-        if(child.__emitEvent(e)) {
+        if(child.__emitEvent(e, force)) {
           hasChildEmit = true;
         }
       }
+    }
+    if(force) {
+      cb && cb(e);
+      return;
     }
     // child触发则parent一定触发
     if(hasChildEmit) {

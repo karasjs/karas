@@ -24,11 +24,12 @@ class Line extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, start, end, origin } = this;
+    let { x, y, width, height, style, ctx, start, end, origin, dash } = this;
     if(start.length < 2 || end.length < 2) {
       return;
     }
     let {
+      display,
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -44,6 +45,9 @@ class Line extends Geom {
       stroke,
       strokeWidth,
     } = style;
+    if(display === 'none') {
+      return;
+    }
     let x1, y1, x2, y2;
     let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
@@ -76,6 +80,7 @@ class Line extends Geom {
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
+      ctx.setLineDash(dash);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);

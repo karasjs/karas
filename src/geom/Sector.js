@@ -1,8 +1,6 @@
 import Geom from './Geom';
 import mode from '../node/mode';
-import util from '../util';
 
-const DEGREE = Math.PI / 180;
 const OFFSET = Math.PI * 0.5;
 
 function getCoordByDegree(x, y, r, d) {
@@ -14,26 +12,26 @@ function getCoordByDegree(x, y, r, d) {
   }
   if(d >= 0 && d < 90) {
     return [
-      x + Math.sin(d * DEGREE) * r,
-      y - Math.cos(d * DEGREE) * r
+      x + Math.sin(d * Math.PI / 180) * r,
+      y - Math.cos(d * Math.PI / 180) * r
     ];
   }
   else if(d >= 90 && d < 180) {
     return [
-      x + Math.cos((d - 90) * DEGREE) * r,
-      y + Math.sin((d - 90) * DEGREE) * r,
+      x + Math.cos((d - 90) * Math.PI / 180) * r,
+      y + Math.sin((d - 90) * Math.PI / 180) * r,
     ];
   }
   else if(d >= 180 && d < 270) {
     return [
-      x - Math.cos((270 - d) * DEGREE) * r,
-      y + Math.sin((270 - d) * DEGREE) * r,
+      x - Math.cos((270 - d) * Math.PI / 180) * r,
+      y + Math.sin((270 - d) * Math.PI / 180) * r,
     ];
   }
   else {
     return [
-      x - Math.sin((360 - d) * DEGREE) * r,
-      y - Math.cos((360 - d) * DEGREE) * r,
+      x - Math.sin((360 - d) * Math.PI / 180) * r,
+      y - Math.cos((360 - d) * Math.PI / 180) * r,
     ];
   }
 }
@@ -56,33 +54,19 @@ class Sector extends Geom {
         this.__end = 0;
       }
     }
-    // 圆点位置，默认中间[0.5, 0.5]，只写一个为简写
-    this.__origin = [0.5, 0.5];
-    if(Array.isArray(this.props.origin) && this.props.origin.length) {
-      this.__origin = this.props.origin;
-      if(util.isNil(this.origin[1])) {
-        this.origin[1] = this.origin[0];
-      }
-      if(isNaN(this.origin[0])) {
-        this.origin[0] = 0.5;
-      }
-      if(isNaN(this.origin[1])) {
-        this.origin[1] = 0.5;
-      }
-    }
     // 半径0~1，默认1
-    this.__radius = 1;
-    if(this.props.radius) {
-      this.__radius = parseFloat(this.props.radius);
-      if(isNaN(this.radius)) {
-        this.__radius = 1;
+    this.__r = 1;
+    if(this.props.r) {
+      this.__r = parseFloat(this.props.r);
+      if(isNaN(this.r)) {
+        this.__r = 1;
       }
     }
   }
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, start, end, origin, radius } = this;
+    let { x, y, width, height, style, ctx, start, end, r, dash } = this;
     if(start === end) {
       return;
     }
@@ -103,16 +87,17 @@ class Sector extends Geom {
     }
     let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-    originX += origin[0] * width;
-    originY += origin[1] * height;
-    let r = this.radius * Math.min(width, height) * 0.5;
+    originX += width * 0.5;
+    originY += height * 0.5;
+    r *= Math.min(width, height) * 0.5;
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
+      ctx.setLineDash(dash);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
-      ctx.arc(originX, originY, r, start * DEGREE - OFFSET, end * DEGREE - OFFSET);
+      ctx.arc(originX, originY, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
       ctx.fill();
       if(strokeWidth && stroke !== 'transparent') {
         ctx.stroke();
@@ -134,11 +119,8 @@ class Sector extends Geom {
   get end() {
     return this.__end;
   }
-  get origin() {
-    return this.__origin;
-  }
-  get radius() {
-    return this.__radius;
+  get r() {
+    return this.__r;
   }
 }
 

@@ -160,6 +160,9 @@
       return svgHtml;
     },
 
+    reset: function reset() {
+      svgHtml = '';
+    },
     measure: function measure(s, style) {
       if (!div) {
         div = document.createElement('div');
@@ -1358,9 +1361,18 @@
     _inherits(Geom, _Xom);
 
     function Geom(tagName, props) {
+      var _this;
+
       _classCallCheck(this, Geom);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this.__dash = null;
+
+      if (Array.isArray(_this.props.dash)) {
+        _this.__dash = _this.props.dash;
+      }
+
+      return _this;
     }
 
     _createClass(Geom, [{
@@ -1533,8 +1545,13 @@
         this.__height = fixedHeight ? h : y - data.y;
       }
     }, {
+      key: "__calAbs",
+      value: function __calAbs() {
+        return 0;
+      }
+    }, {
       key: "__emitEvent",
-      value: function __emitEvent(e) {
+      value: function __emitEvent(e, force) {
         var type = e.event.type,
             xe = e.x,
             ye = e.y,
@@ -1554,6 +1571,11 @@
 
         if (listener.hasOwnProperty(type)) {
           cb = listener[type];
+        }
+
+        if (force) {
+          cb && cb(e);
+          return;
         }
 
         if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
@@ -1603,14 +1625,9 @@
         return this.__origin;
       }
     }, {
-      key: "min",
+      key: "dash",
       get: function get() {
-        return this.__min;
-      }
-    }, {
-      key: "max",
-      get: function get() {
-        return this.__max;
+        return this.__dash;
       }
     }]);
 
@@ -2366,7 +2383,19 @@
                 display = _item$style3.display,
                 _flexDirection2 = _item$style3.flexDirection,
                 _width2 = _item$style3.width,
-                _height = _item$style3.height;
+                _height = _item$style3.height,
+                _marginTop = _item$style3.marginTop,
+                _marginRight = _item$style3.marginRight,
+                _marginBottom = _item$style3.marginBottom,
+                _marginLeft = _item$style3.marginLeft,
+                _borderTopWidth = _item$style3.borderTopWidth,
+                _borderRightWidth = _item$style3.borderRightWidth,
+                _borderBottomWidth = _item$style3.borderBottomWidth,
+                _borderLeftWidth = _item$style3.borderLeftWidth,
+                _paddingTop = _item$style3.paddingTop,
+                _paddingRight = _item$style3.paddingRight,
+                _paddingBottom = _item$style3.paddingBottom,
+                _paddingLeft = _item$style3.paddingLeft;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
@@ -2405,15 +2434,15 @@
 
             if (isOverflow && shrink) {
               if (isDirectionRow) {
-                item.__width = main;
+                item.__width = main - _marginLeft.value - _marginRight.value - _borderLeftWidth.value - _borderRightWidth.value - _paddingLeft.value - _paddingRight.value;
               } else {
-                item.__height = main;
+                item.__height = main - _marginTop.value - _marginBottom.value - _borderTopWidth.value - _borderBottomWidth.value - _paddingTop.value - _paddingBottom.value;
               }
             } else if (!isOverflow && grow) {
               if (isDirectionRow) {
-                item.__width = main;
+                item.__width = main - _marginLeft.value - _marginRight.value - _borderLeftWidth.value - _borderRightWidth.value - _paddingLeft.value - _paddingRight.value;
               } else {
-                item.__height = main;
+                item.__height = main - _marginTop.value - _marginBottom.value - _borderTopWidth.value - _borderBottomWidth.value - _paddingTop.value - _paddingBottom.value;
               }
             }
           } else {
@@ -2760,11 +2789,11 @@
           var x2, y2, w2, h2; // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
 
           if (left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+            x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
             w2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - x2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
           } else if (left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
-            w2 = width2.unit === unit.PX ? width2.value : width;
+            x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+            w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
           } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
             w2 = width2.unit === unit.PX ? width2.value : width;
             var widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
@@ -2827,7 +2856,7 @@
       }
     }, {
       key: "__emitEvent",
-      value: function __emitEvent(e) {
+      value: function __emitEvent(e, force) {
         var type = e.event.type,
             xe = e.x,
             ye = e.y,
@@ -2856,7 +2885,7 @@
           var child = children[i];
 
           if (child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
-            if (child.__emitEvent(e)) {
+            if (child.__emitEvent(e, force)) {
               hasChildEmit = true;
             }
           }
@@ -2867,10 +2896,15 @@
           var _child4 = children[_i5];
 
           if (_child4 instanceof Xom && ['absolute', 'relative'].indexOf(_child4.style.position) === -1) {
-            if (_child4.__emitEvent(e)) {
+            if (_child4.__emitEvent(e, force)) {
               hasChildEmit = true;
             }
           }
+        }
+
+        if (force) {
+          cb && cb(e);
+          return;
         } // child触发则parent一定触发
 
 
@@ -3065,7 +3099,11 @@
       }
     }, {
       key: "__cb",
-      value: function __cb(e) {
+      value: function __cb(e, force) {
+        if (e.touches && e.touches.length > 1) {
+          return;
+        }
+
         var node = this.node;
 
         var _node$getBoundingClie = node.getBoundingClientRect(),
@@ -3076,8 +3114,11 @@
 
         x = x || top || 0;
         y = y || right || 0;
-        var clientX = e.clientX,
-            clientY = e.clientY;
+
+        var _ref = e.touches ? e.touches[0] || {} : e,
+            clientX = _ref.clientX,
+            clientY = _ref.clientY;
+
         x = clientX - x;
         y = clientY - y;
 
@@ -3086,7 +3127,7 @@
           x: x,
           y: y,
           covers: []
-        });
+        }, force);
       }
     }, {
       key: "__initEvent",
@@ -3096,7 +3137,7 @@
         var node = this.node;
         ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
           node.addEventListener(type, function (e) {
-            _this2.__cb(e);
+            _this2.__cb(e, ['touchend', 'touchcancel'].indexOf(type) > -1);
           });
         });
       }
@@ -3183,10 +3224,11 @@
 
         if (this.mode === mode.SVG) {
           this.node.innerHTML = mode.html;
+          mode.reset();
         }
 
-        if (util.isNil(this.node.getAttribute('karas-event'))) {
-          this.node.setAttribute('karas-event', '1');
+        if (!this.node.__initEvent) {
+          this.node.__initEvent = true;
 
           this.__initEvent();
         }
@@ -3247,13 +3289,15 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            origin = this.origin;
+            origin = this.origin,
+            dash = this.dash;
 
         if (start.length < 2 || end.length < 2) {
           return;
         }
 
-        var borderTopWidth = style.borderTopWidth,
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -3267,6 +3311,11 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth;
+
+        if (display === 'none') {
+          return;
+        }
+
         var x1, y1, x2, y2;
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
@@ -3298,6 +3347,7 @@
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
+          ctx.setLineDash(dash);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
@@ -3322,22 +3372,22 @@
     return Line;
   }(Geom);
 
-  var Polygon =
+  var Polyline =
   /*#__PURE__*/
   function (_Geom) {
-    _inherits(Polygon, _Geom);
+    _inherits(Polyline, _Geom);
 
-    function Polygon(props) {
+    function Polyline(props) {
       var _this;
 
-      _classCallCheck(this, Polygon);
+      _classCallCheck(this, Polyline);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props)); // 折线所有点的列表
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, '$polygon', props)); // 折线所有点的列表
 
-      _this.__pointList = [];
+      _this.__points = [];
 
-      if (Array.isArray(_this.props.pointList)) {
-        _this.__pointList = _this.props.pointList;
+      if (Array.isArray(_this.props.points)) {
+        _this.__points = _this.props.points;
       } // 原点位置，4个角，默认左下
 
 
@@ -3350,10 +3400,10 @@
       return _this;
     }
 
-    _createClass(Polygon, [{
+    _createClass(Polyline, [{
       key: "render",
       value: function render() {
-        _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this);
+        _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this);
 
         var x = this.x,
             y = this.y,
@@ -3361,19 +3411,16 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            pointList = this.pointList,
-            origin = this.origin;
+            points = this.points,
+            origin = this.origin,
+            dash = this.dash;
 
-        if (pointList.length < 2) {
+        if (points.length < 2) {
           return;
         }
 
-        if (style.display === 'none') {
-          return;
-        }
-
-        for (var i = 0, len = pointList.length; i < len; i++) {
-          if (!Array.isArray(pointList[i]) || pointList[i].length < 2) {
+        for (var i = 0, len = points.length; i < len; i++) {
+          if (!Array.isArray(points[i]) || points[i].length < 2) {
             return;
           }
         }
@@ -3394,38 +3441,36 @@
 
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var pts = this.__pts = [];
 
         if (origin === 'TOP_LEFT') {
-          pointList.forEach(function (item) {
-            item[0] = originX + item[0] * width;
-            item[1] = originY + item[1] * height;
+          points.forEach(function (item) {
+            pts.push([originX + item[0] * width, originY + item[1] * height]);
           });
         } else if (origin === 'TOP_RIGHT') {
-          pointList.forEach(function (item) {
-            item[0] = originX + width - item[0] * width;
-            item[1] = originY + item[1] * height;
+          points.forEach(function (item) {
+            pts.push([originX + width - item[0] * width, originY + item[1] * height]);
           });
         } else if (origin === 'BOTTOM_LEFT') {
-          pointList.forEach(function (item) {
-            item[0] = originX + item[0] * width;
-            item[1] = originY + height - item[1] * height;
+          points.forEach(function (item) {
+            pts.push([originX + item[0] * width, originY + height - item[1] * height]);
           });
         } else if (origin === 'BOTTOM_RIGHT') {
-          pointList.forEach(function (item) {
-            item[0] = originX + width - item[0] * width;
-            item[1] = originY + height - item[1] * height;
+          points.forEach(function (item) {
+            pts.push([originX + width - item[0] * width, originY + height - item[1] * height]);
           });
         }
 
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
+          ctx.setLineDash(dash);
           ctx.beginPath();
-          ctx.moveTo(pointList[0][0], originY + pointList[0][1]);
+          ctx.moveTo(pts[0][0], originY + pts[0][1]);
 
-          for (var _i = 1, _len = pointList.length; _i < _len; _i++) {
-            var point = pointList[_i];
-            ctx.lineTo(point[0], originY + point[1]);
+          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
+            var point = pts[_i];
+            ctx.lineTo(point[0], point[1]);
           }
 
           if (strokeWidth && stroke !== 'transparent') {
@@ -3434,27 +3479,166 @@
 
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
-          var points = '';
+          var _points = '';
 
-          for (var _i2 = 0, _len2 = pointList.length; _i2 < _len2; _i2++) {
-            var _point = pointList[_i2];
-            points += "".concat(_point[0], ",").concat(_point[1], " ");
+          for (var _i2 = 0, _len2 = pts.length; _i2 < _len2; _i2++) {
+            var _point = pts[_i2];
+            _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
         }
       }
     }, {
-      key: "pointList",
+      key: "getPointsByX",
+      value: function getPointsByX(x) {
+        var min = Infinity;
+        var len = this.__pts.length;
+        var res = [];
+
+        for (var i = 0; i < len; i++) {
+          var diff = Math.abs(this.__pts[i][0] - x);
+
+          if (diff < min) {
+            min = diff;
+          }
+        }
+
+        for (var _i3 = 0; _i3 < len; _i3++) {
+          var _diff = Math.abs(this.__pts[_i3][0] - x);
+
+          if (_diff === min) {
+            res.push({
+              index: _i3,
+              x: this.__pts[_i3][0],
+              y: this.__pts[_i3][1]
+            });
+          }
+        }
+
+        return res;
+      }
+    }, {
+      key: "points",
       get: function get() {
-        return this.__pointList;
+        return this.__points;
+      }
+    }, {
+      key: "origin",
+      get: function get() {
+        return this.__origin;
+      }
+    }]);
+
+    return Polyline;
+  }(Geom);
+
+  var Polygon =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Polygon, _Geom);
+
+    function Polygon(props) {
+      var _this;
+
+      _classCallCheck(this, Polygon);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props)); // 所有点的列表
+
+      _this.__points = [];
+
+      if (Array.isArray(_this.props.points)) {
+        _this.__points = _this.props.points;
+      }
+
+      return _this;
+    }
+
+    _createClass(Polygon, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            points = this.points,
+            dash = this.dash;
+
+        if (points.length < 3) {
+          return;
+        }
+
+        for (var i = 0, len = points.length; i < len; i++) {
+          if (!Array.isArray(points[i]) || points[i].length < 2) {
+            return;
+          }
+        }
+
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        points.forEach(function (item) {
+          item[0] = originX + item[0] * width;
+          item[1] = originY + item[1] * height;
+        });
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(points[0][0], originY + points[0][1]);
+
+          for (var _i = 1, _len = points.length; _i < _len; _i++) {
+            var point = points[_i];
+            ctx.lineTo(point[0], point[1]);
+          }
+
+          ctx.fill();
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) {
+          var _points = '';
+
+          for (var _i2 = 0, _len2 = _points.length; _i2 < _len2; _i2++) {
+            var _point = _points[_i2];
+            _points += "".concat(_point[0], ",").concat(_point[1], " ");
+          }
+
+          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
+      }
+    }, {
+      key: "points",
+      get: function get() {
+        return this.__points;
       }
     }]);
 
     return Polygon;
   }(Geom);
 
-  var DEGREE = Math.PI / 180;
   var OFFSET = Math.PI * 0.5;
 
   function getCoordByDegree(x, y, r, d) {
@@ -3467,13 +3651,13 @@
     }
 
     if (d >= 0 && d < 90) {
-      return [x + Math.sin(d * DEGREE) * r, y - Math.cos(d * DEGREE) * r];
+      return [x + Math.sin(d * Math.PI / 180) * r, y - Math.cos(d * Math.PI / 180) * r];
     } else if (d >= 90 && d < 180) {
-      return [x + Math.cos((d - 90) * DEGREE) * r, y + Math.sin((d - 90) * DEGREE) * r];
+      return [x + Math.cos((d - 90) * Math.PI / 180) * r, y + Math.sin((d - 90) * Math.PI / 180) * r];
     } else if (d >= 180 && d < 270) {
-      return [x - Math.cos((270 - d) * DEGREE) * r, y + Math.sin((270 - d) * DEGREE) * r];
+      return [x - Math.cos((270 - d) * Math.PI / 180) * r, y + Math.sin((270 - d) * Math.PI / 180) * r];
     } else {
-      return [x - Math.sin((360 - d) * DEGREE) * r, y - Math.cos((360 - d) * DEGREE) * r];
+      return [x - Math.sin((360 - d) * Math.PI / 180) * r, y - Math.cos((360 - d) * Math.PI / 180) * r];
     }
   }
 
@@ -3506,35 +3690,16 @@
         if (isNaN(_this.end)) {
           _this.__end = 0;
         }
-      } // 圆点位置，默认中间[0.5, 0.5]，只写一个为简写
-
-
-      _this.__origin = [0.5, 0.5];
-
-      if (Array.isArray(_this.props.origin) && _this.props.origin.length) {
-        _this.__origin = _this.props.origin;
-
-        if (util.isNil(_this.origin[1])) {
-          _this.origin[1] = _this.origin[0];
-        }
-
-        if (isNaN(_this.origin[0])) {
-          _this.origin[0] = 0.5;
-        }
-
-        if (isNaN(_this.origin[1])) {
-          _this.origin[1] = 0.5;
-        }
       } // 半径0~1，默认1
 
 
-      _this.__radius = 1;
+      _this.__r = 1;
 
-      if (_this.props.radius) {
-        _this.__radius = parseFloat(_this.props.radius);
+      if (_this.props.r) {
+        _this.__r = parseFloat(_this.props.r);
 
-        if (isNaN(_this.radius)) {
-          _this.__radius = 1;
+        if (isNaN(_this.r)) {
+          _this.__r = 1;
         }
       }
 
@@ -3554,8 +3719,8 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            origin = this.origin,
-            radius = this.radius;
+            r = this.r,
+            dash = this.dash;
 
         if (start === end) {
           return;
@@ -3578,17 +3743,18 @@
 
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-        originX += origin[0] * width;
-        originY += origin[1] * height;
-        var r = this.radius * Math.min(width, height) * 0.5;
+        originX += width * 0.5;
+        originY += height * 0.5;
+        r *= Math.min(width, height) * 0.5;
 
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
+          ctx.setLineDash(dash);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
-          ctx.arc(originX, originY, r, start * DEGREE - OFFSET, end * DEGREE - OFFSET);
+          ctx.arc(originX, originY, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
           ctx.fill();
 
           if (strokeWidth && stroke !== 'transparent') {
@@ -3627,18 +3793,409 @@
         return this.__end;
       }
     }, {
-      key: "origin",
+      key: "r",
       get: function get() {
-        return this.__origin;
-      }
-    }, {
-      key: "radius",
-      get: function get() {
-        return this.__radius;
+        return this.__r;
       }
     }]);
 
     return Sector;
+  }(Geom);
+
+  var Rect =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Rect, _Geom);
+
+    function Rect(props) {
+      _classCallCheck(this, Rect);
+
+      return _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, '$sector', props));
+    }
+
+    _createClass(Rect, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Rect.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            dash = this.dash;
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth,
+            fill = style.fill;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.lineTo(originX + width, originY);
+          ctx.lineTo(originX + width, originY + height);
+          ctx.lineTo(originX, originY + height);
+          ctx.fill();
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) {
+          mode.appendHtml("<rect x=\"".concat(x, "\" y=\"").concat(y, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
+      }
+    }]);
+
+    return Rect;
+  }(Geom);
+
+  var Circle =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Circle, _Geom);
+
+    function Circle(props) {
+      var _this;
+
+      _classCallCheck(this, Circle);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, '$circle', props)); // 半径0~1，默认1
+
+      _this.__r = 1;
+
+      if (_this.props.r) {
+        _this.__r = parseFloat(_this.props.r);
+
+        if (isNaN(_this.r)) {
+          _this.__r = 1;
+        }
+      }
+
+      return _this;
+    }
+
+    _createClass(Circle, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Circle.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            r = this.r,
+            dash = this.dash;
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth,
+            fill = style.fill;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        originX += width * 0.5;
+        originY += height * 0.5;
+        r *= Math.min(width, height) * 0.5;
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.arc(originX, originY, r, 0, 2 * Math.PI);
+          ctx.fill();
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) {
+          mode.appendHtml("<circle cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" r=\"").concat(r, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
+      }
+    }, {
+      key: "r",
+      get: function get() {
+        return this.__r;
+      }
+    }]);
+
+    return Circle;
+  }(Geom);
+
+  var Ellipse =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Ellipse, _Geom);
+
+    function Ellipse(props) {
+      var _this;
+
+      _classCallCheck(this, Ellipse);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, '$ellipse', props)); // 半径0~1，默认1
+
+      _this.__rx = 1;
+
+      if (_this.props.rx) {
+        _this.__rx = parseFloat(_this.props.rx);
+
+        if (isNaN(_this.rx)) {
+          _this.__rx = 1;
+        }
+      }
+
+      _this.__ry = 1;
+
+      if (_this.props.ry) {
+        _this.__ry = parseFloat(_this.props.ry);
+
+        if (isNaN(_this.rx)) {
+          _this.__ry = 1;
+        }
+      }
+
+      return _this;
+    }
+
+    _createClass(Ellipse, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            rx = this.rx,
+            ry = this.ry,
+            dash = this.dash;
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth,
+            fill = style.fill;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        originX += width * 0.5;
+        originY += height * 0.5;
+        rx *= width * 0.5;
+        ry *= height * 0.5;
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          ctx.moveTo(originX, originY);
+          ctx.ellipse && ctx.ellipse(originX, originY, rx, ry, 0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) {
+          mode.appendHtml("<ellipse cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" rx=\"").concat(rx, "\" ry=\"").concat(ry, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+        }
+      }
+    }, {
+      key: "rx",
+      get: function get() {
+        return this.__rx;
+      }
+    }, {
+      key: "ry",
+      get: function get() {
+        return this.__ry;
+      }
+    }]);
+
+    return Ellipse;
+  }(Geom);
+
+  var Grid =
+  /*#__PURE__*/
+  function (_Geom) {
+    _inherits(Grid, _Geom);
+
+    function Grid(props) {
+      var _this;
+
+      _classCallCheck(this, Grid);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Grid).call(this, '$grid', props)); // x,y被分为几格
+
+      _this.__nx = 0;
+
+      if (_this.props.nx) {
+        _this.__nx = parseFloat(_this.props.nx);
+
+        if (isNaN(_this.nx)) {
+          _this.__nx = 0;
+        }
+      }
+
+      _this.__ny = 0;
+
+      if (_this.props.ny) {
+        _this.__ny = parseFloat(_this.props.ny);
+
+        if (isNaN(_this.ny)) {
+          _this.__ny = 0;
+        }
+      }
+
+      return _this;
+    }
+
+    _createClass(Grid, [{
+      key: "render",
+      value: function render() {
+        _get(_getPrototypeOf(Grid.prototype), "render", this).call(this);
+
+        var x = this.x,
+            y = this.y,
+            width = this.width,
+            height = this.height,
+            style = this.style,
+            ctx = this.ctx,
+            nx = this.nx,
+            ny = this.ny,
+            dash = this.dash;
+
+        if (width <= 0 || height <= 0) {
+          return;
+        }
+
+        if (nx < 3 && ny < 3) {
+          return;
+        }
+
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            marginTop = style.marginTop,
+            marginLeft = style.marginLeft,
+            paddingTop = style.paddingTop,
+            paddingLeft = style.paddingLeft,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var endX = originX + width;
+        var endY = originY + height;
+        var lx = [];
+        var ly = [];
+
+        if (nx >= 3) {
+          var per = width / (nx - 1);
+
+          for (var i = 0; i < nx; i++) {
+            ly.push(originX + i * per);
+          }
+        }
+
+        if (ny >= 3) {
+          var _per = height / (ny - 1);
+
+          for (var _i = 0; _i < ny; _i++) {
+            lx.push(originY + _i * _per);
+          }
+        }
+
+        if (this.mode === mode.CANVAS) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = strokeWidth;
+          ctx.setLineDash(dash);
+          ctx.beginPath();
+          lx.forEach(function (item) {
+            ctx.moveTo(originX, item);
+            ctx.lineTo(endX, item);
+          });
+          ly.forEach(function (item) {
+            ctx.moveTo(item, originY);
+            ctx.lineTo(item, endY);
+          });
+
+          if (strokeWidth && stroke !== 'transparent') {
+            ctx.stroke();
+          }
+
+          ctx.closePath();
+        } else if (this.mode === mode.SVG) ;
+      }
+    }, {
+      key: "nx",
+      get: function get() {
+        return this.__nx;
+      }
+    }, {
+      key: "ny",
+      get: function get() {
+        return this.__ny;
+      }
+    }, {
+      key: "dash",
+      get: function get() {
+        return this.__dash;
+      }
+    }]);
+
+    return Grid;
   }(Geom);
 
   var karas = {
@@ -3669,11 +4226,26 @@
         case '$line':
           return new Line(props);
 
+        case '$polyline':
+          return new Polyline(props);
+
         case '$polygon':
           return new Polygon(props);
 
         case '$sector':
           return new Sector(props);
+
+        case '$rect':
+          return new Rect(props);
+
+        case '$circle':
+          return new Circle(props);
+
+        case '$ellipse':
+          return new Ellipse(props);
+
+        case '$grid':
+          return new Grid(props);
       }
 
       throw new Error('can not use geom marker: ' + tagName);

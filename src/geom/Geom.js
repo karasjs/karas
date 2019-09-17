@@ -5,6 +5,10 @@ import unit from '../style/unit';
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
+    this.__dash = null;
+    if(Array.isArray(this.props.dash)) {
+      this.__dash = this.props.dash;
+    }
   }
 
   __initStyle() {
@@ -151,7 +155,11 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
   }
 
-  __emitEvent(e) {
+  __calAbs() {
+    return 0;
+  }
+
+  __emitEvent(e, force) {
     let { event: { type }, x: xe, y: ye, covers } = e;
     let { listener, style, x, y, outerWidth, outerHeight } = this;
     if(style.display === 'none') {
@@ -160,6 +168,10 @@ class Geom extends Xom {
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];
+    }
+    if(force) {
+      cb && cb(e);
+      return;
     }
     if(xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
       for(let i = 0, len = covers.length; i < len; i++) {
@@ -194,11 +206,8 @@ class Geom extends Xom {
   get origin() {
     return this.__origin;
   }
-  get min() {
-    return this.__min;
-  }
-  get max() {
-    return this.__max;
+  get dash() {
+    return this.__dash;
   }
 }
 

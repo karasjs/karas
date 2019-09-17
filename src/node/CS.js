@@ -56,12 +56,15 @@ class CS extends Dom {
     return res;
   }
 
-  __cb(e) {
+  __cb(e, force) {
+    if(e.touches && e.touches.length > 1) {
+      return;
+    }
     let { node } = this;
     let { x, y, top, right } = node.getBoundingClientRect();
     x = x || top || 0;
     y = y || right || 0;
-    let { clientX, clientY } = e;
+    let { clientX, clientY } = e.touches ? (e.touches[0] || {}) : e;
     x = clientX - x;
     y = clientY - y;
     this.__emitEvent({
@@ -69,16 +72,15 @@ class CS extends Dom {
       x,
       y,
       covers: [],
-    });
+    }, force);
   }
 
   __initEvent() {
     let { node } = this;
-    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart',
-      'touchmove', 'touchend', 'touchcancel'].forEach(type => {
-        node.addEventListener(type, e => {
-          this.__cb(e);
-        });
+    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
+      node.addEventListener(type, e => {
+        this.__cb(e, ['touchend', 'touchcancel'].indexOf(type) > -1);
+      });
     });
   }
 
@@ -145,9 +147,10 @@ class CS extends Dom {
     this.render();
     if(this.mode === mode.SVG) {
       this.node.innerHTML = mode.html;
+      mode.reset();
     }
-    if(util.isNil(this.node.getAttribute('karas-event'))) {
-      this.node.setAttribute('karas-event', '1');
+    if(!this.node.__initEvent) {
+      this.node.__initEvent = true;
       this.__initEvent();
     }
   }

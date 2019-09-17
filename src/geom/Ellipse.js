@@ -23,7 +23,7 @@ class Ellipse extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, rx, ry, dash } = this;
+    let { x, y, width, height, style, ctx, rx, ry } = this;
     let {
       display,
       borderTopWidth,
@@ -34,6 +34,7 @@ class Ellipse extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
       fill,
     } = style;
     if(display === 'none') {
@@ -49,7 +50,7 @@ class Ellipse extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.ellipse && ctx.ellipse(originX, originY, rx, ry, 0, 0, 2 * Math.PI);
@@ -60,7 +61,7 @@ class Ellipse extends Geom {
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<ellipse cx="${originX}" cy="${originY}" rx="${rx}" ry="${ry}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<ellipse cx="${originX}" cy="${originY}" rx="${rx}" ry="${ry}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

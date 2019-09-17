@@ -42,6 +42,7 @@ const RESET = {
   fill: '#000',
   stroke: '#000',
   strokeWidth: 0,
+  strokeDasharray: [],
 };
 
 let reset = [];

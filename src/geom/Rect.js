@@ -8,7 +8,7 @@ class Rect extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, dash } = this;
+    let { x, y, width, height, style, ctx } = this;
     let {
       display,
       borderTopWidth,
@@ -19,6 +19,7 @@ class Rect extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
       fill,
     } = style;
     if(display === 'none') {
@@ -30,7 +31,7 @@ class Rect extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.lineTo(originX + width, originY);
@@ -43,7 +44,7 @@ class Rect extends Geom {
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 }

@@ -24,7 +24,7 @@ class Line extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, start, end, origin, dash } = this;
+    let { x, y, width, height, style, ctx, start, end, origin } = this;
     if(start.length < 2 || end.length < 2) {
       return;
     }
@@ -44,6 +44,7 @@ class Line extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
     } = style;
     if(display === 'none') {
       return;
@@ -80,7 +81,7 @@ class Line extends Geom {
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
@@ -88,7 +89,7 @@ class Line extends Geom {
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

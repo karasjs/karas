@@ -16,7 +16,7 @@ class Circle extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, r, dash } = this;
+    let { x, y, width, height, style, ctx, r } = this;
     let {
       display,
       borderTopWidth,
@@ -27,6 +27,7 @@ class Circle extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
       fill,
     } = style;
     if(display === 'none') {
@@ -41,7 +42,7 @@ class Circle extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.arc(originX, originY, r, 0, 2 * Math.PI);
@@ -52,7 +53,7 @@ class Circle extends Geom {
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

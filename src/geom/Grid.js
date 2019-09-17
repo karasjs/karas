@@ -23,7 +23,7 @@ class Grid extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, nx, ny, dash } = this;
+    let { x, y, width, height, style, ctx, nx, ny } = this;
     if(width <= 0 || height <= 0) {
       return;
     }
@@ -40,6 +40,7 @@ class Grid extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
     } = style;
     if(display === 'none') {
       return;
@@ -65,7 +66,7 @@ class Grid extends Geom {
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       lx.forEach(item => {
         ctx.moveTo(originX, item);
@@ -81,7 +82,12 @@ class Grid extends Geom {
       ctx.closePath();
     }
     else if(this.mode === mode.SVG) {
-      //
+      lx.forEach(item => {
+        mode.appendHtml(`<line x1="${originX}" y1="${item}" x2="${endX}" y2="${item}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      });
+      ly.forEach(item => {
+        mode.appendHtml(`<line x1="${item}" y1="${originY}" x2="${item}" y2="${endY}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      });
     }
   }
 

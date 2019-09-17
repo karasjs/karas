@@ -66,7 +66,7 @@ class Sector extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, start, end, r, dash } = this;
+    let { x, y, width, height, style, ctx, start, end, r } = this;
     if(start === end) {
       return;
     }
@@ -80,6 +80,7 @@ class Sector extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
       fill,
     } = style;
     if(display === 'none') {
@@ -94,7 +95,7 @@ class Sector extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
       ctx.arc(originX, originY, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
@@ -109,7 +110,7 @@ class Sector extends Geom {
       [ x1, y1 ] = getCoordByDegree(originX, originY, r, start);
       [ x2, y2 ] = getCoordByDegree(originX, originY, r, end);
       let large = (end - start) > 180 ? 1 : 0;
-      mode.appendHtml(`<path d="M ${originX} ${originY} L ${x1} ${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} z" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<path d="M ${originX} ${originY} L ${x1} ${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} z" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

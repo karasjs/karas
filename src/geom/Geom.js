@@ -5,10 +5,6 @@ import unit from '../style/unit';
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
-    this.__dash = null;
-    if(Array.isArray(this.props.dash)) {
-      this.__dash = this.props.dash;
-    }
   }
 
   __initStyle() {
@@ -205,9 +201,6 @@ class Geom extends Xom {
   }
   get origin() {
     return this.__origin;
-  }
-  get dash() {
-    return this.__dash;
   }
 }
 

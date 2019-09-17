@@ -713,7 +713,8 @@
     visibility: 'visible',
     fill: '#000',
     stroke: '#000',
-    strokeWidth: 0
+    strokeWidth: 0,
+    strokeDasharray: []
   };
   var reset = [];
   Object.keys(RESET).forEach(function (k) {
@@ -1361,18 +1362,9 @@
     _inherits(Geom, _Xom);
 
     function Geom(tagName, props) {
-      var _this;
-
       _classCallCheck(this, Geom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
-      _this.__dash = null;
-
-      if (Array.isArray(_this.props.dash)) {
-        _this.__dash = _this.props.dash;
-      }
-
-      return _this;
+      return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
     }
 
     _createClass(Geom, [{
@@ -1623,11 +1615,6 @@
       key: "origin",
       get: function get() {
         return this.__origin;
-      }
-    }, {
-      key: "dash",
-      get: function get() {
-        return this.__dash;
       }
     }]);
 
@@ -3289,8 +3276,7 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            origin = this.origin,
-            dash = this.dash;
+            origin = this.origin;
 
         if (start.length < 2 || end.length < 2) {
           return;
@@ -3310,7 +3296,8 @@
             paddingBottom = style.paddingBottom,
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
-            strokeWidth = style.strokeWidth;
+            strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray;
 
         if (display === 'none') {
           return;
@@ -3347,14 +3334,14 @@
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
           ctx.stroke();
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -3412,8 +3399,7 @@
             style = this.style,
             ctx = this.ctx,
             points = this.points,
-            origin = this.origin,
-            dash = this.dash;
+            origin = this.origin;
 
         if (points.length < 2) {
           return;
@@ -3433,7 +3419,8 @@
             paddingTop = style.paddingTop,
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
-            strokeWidth = style.strokeWidth;
+            strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray;
 
         if (display === 'none') {
           return;
@@ -3464,7 +3451,7 @@
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(pts[0][0], originY + pts[0][1]);
 
@@ -3486,7 +3473,7 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -3565,8 +3552,7 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            points = this.points,
-            dash = this.dash;
+            points = this.points;
 
         if (points.length < 3) {
           return;
@@ -3586,7 +3572,8 @@
             paddingTop = style.paddingTop,
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
-            strokeWidth = style.strokeWidth;
+            strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray;
 
         if (display === 'none') {
           return;
@@ -3602,7 +3589,7 @@
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(points[0][0], originY + points[0][1]);
 
@@ -3626,7 +3613,7 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -3719,8 +3706,7 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            r = this.r,
-            dash = this.dash;
+            r = this.r;
 
         if (start === end) {
           return;
@@ -3735,6 +3721,7 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray,
             fill = style.fill;
 
         if (display === 'none') {
@@ -3751,7 +3738,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
           ctx.arc(originX, originY, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
@@ -3779,7 +3766,7 @@
           x2 = _getCoordByDegree4[0];
           y2 = _getCoordByDegree4[1];
           var large = end - start > 180 ? 1 : 0;
-          mode.appendHtml("<path d=\"M ".concat(originX, " ").concat(originY, " L ").concat(x1, " ").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<path d=\"M ".concat(originX, " ").concat(originY, " L ").concat(x1, " ").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -3823,8 +3810,7 @@
             width = this.width,
             height = this.height,
             style = this.style,
-            ctx = this.ctx,
-            dash = this.dash;
+            ctx = this.ctx;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -3834,6 +3820,7 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray,
             fill = style.fill;
 
         if (display === 'none') {
@@ -3847,7 +3834,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
           ctx.lineTo(originX + width, originY);
@@ -3861,7 +3848,7 @@
 
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<rect x=\"".concat(x, "\" y=\"").concat(y, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<rect x=\"".concat(x, "\" y=\"").concat(y, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }]);
@@ -3905,8 +3892,7 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            r = this.r,
-            dash = this.dash;
+            r = this.r;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -3916,6 +3902,7 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray,
             fill = style.fill;
 
         if (display === 'none') {
@@ -3932,7 +3919,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
           ctx.arc(originX, originY, r, 0, 2 * Math.PI);
@@ -3944,7 +3931,7 @@
 
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<circle cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" r=\"").concat(r, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<circle cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" r=\"").concat(r, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -4004,8 +3991,7 @@
             style = this.style,
             ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry,
-            dash = this.dash;
+            ry = this.ry;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -4015,6 +4001,7 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray,
             fill = style.fill;
 
         if (display === 'none') {
@@ -4032,7 +4019,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
           ctx.ellipse && ctx.ellipse(originX, originY, rx, ry, 0, 0, 2 * Math.PI);
@@ -4044,7 +4031,7 @@
 
           ctx.closePath();
         } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<ellipse cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" rx=\"").concat(rx, "\" ry=\"").concat(ry, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\"/>"));
+          mode.appendHtml("<ellipse cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" rx=\"").concat(rx, "\" ry=\"").concat(ry, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
     }, {
@@ -4109,8 +4096,7 @@
             style = this.style,
             ctx = this.ctx,
             nx = this.nx,
-            ny = this.ny,
-            dash = this.dash;
+            ny = this.ny;
 
         if (width <= 0 || height <= 0) {
           return;
@@ -4128,7 +4114,8 @@
             paddingTop = style.paddingTop,
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
-            strokeWidth = style.strokeWidth;
+            strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray;
 
         if (display === 'none') {
           return;
@@ -4160,7 +4147,7 @@
         if (this.mode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(dash);
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           lx.forEach(function (item) {
             ctx.moveTo(originX, item);
@@ -4176,7 +4163,14 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) ;
+        } else if (this.mode === mode.SVG) {
+          lx.forEach(function (item) {
+            mode.appendHtml("<line x1=\"".concat(originX, "\" y1=\"").concat(item, "\" x2=\"").concat(endX, "\" y2=\"").concat(item, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          });
+          ly.forEach(function (item) {
+            mode.appendHtml("<line x1=\"".concat(item, "\" y1=\"").concat(originY, "\" x2=\"").concat(item, "\" y2=\"").concat(endY, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          });
+        }
       }
     }, {
       key: "nx",

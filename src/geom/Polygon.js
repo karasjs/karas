@@ -13,7 +13,7 @@ class Polygon extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, points, dash } = this;
+    let { x, y, width, height, style, ctx, points } = this;
     if(points.length < 3) {
       return;
     }
@@ -32,6 +32,7 @@ class Polygon extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
     } = style;
     if(display === 'none') {
       return;
@@ -45,7 +46,7 @@ class Polygon extends Geom {
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(points[0][0], originY + points[0][1]);
       for(let i = 1, len = points.length; i < len; i++) {
@@ -64,7 +65,7 @@ class Polygon extends Geom {
         let point = points[i];
         points += `${point[0]},${point[1]} `;
       }
-      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

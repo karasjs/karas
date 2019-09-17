@@ -20,7 +20,7 @@ class Polyline extends Geom {
 
   render() {
     super.render();
-    let { x, y, width, height, style, ctx, points, origin, dash } = this;
+    let { x, y, width, height, style, ctx, points, origin } = this;
     if(points.length < 2) {
       return;
     }
@@ -39,6 +39,7 @@ class Polyline extends Geom {
       paddingLeft,
       stroke,
       strokeWidth,
+      strokeDasharray,
     } = style;
     if(display === 'none') {
       return;
@@ -81,7 +82,7 @@ class Polyline extends Geom {
     if(this.mode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(dash);
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(pts[0][0], originY + pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {
@@ -99,7 +100,7 @@ class Polyline extends Geom {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
       }
-      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}"/>`);
+      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

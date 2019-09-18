@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Polyline extends Geom {
   constructor(props) {
@@ -18,8 +18,8 @@ class Polyline extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, points, origin } = this;
     if(points.length < 2) {
       return;
@@ -79,7 +79,7 @@ class Polyline extends Geom {
         ]);
       });
     }
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
@@ -94,7 +94,7 @@ class Polyline extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       let points = '';
       for(let i = 0, len = pts.length; i < len; i++) {
         let point = pts[i];

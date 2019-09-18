@@ -31,9 +31,9 @@ class Dom extends Xom {
    * 4. 检测inline不能包含block和flex
    * 5. 设置parent和prev/next和ctx和mode
    */
-  __traverse(ctx, mode) {
+  __traverse(ctx, renderMode) {
     let list = [];
-    this.__traverseChildren(this.children, list, ctx, mode);
+    this.__traverseChildren(this.children, list, ctx, renderMode);
     for(let i = list.length - 1; i > 0; i--) {
       let item = list[i];
       if(item instanceof Text) {
@@ -73,26 +73,24 @@ class Dom extends Xom {
     this.__children = list;
   }
 
-  __traverseChildren(children, list, ctx, mode) {
+  __traverseChildren(children, list, ctx, renderMode) {
     if(Array.isArray(children)) {
       children.forEach(item => {
-        this.__traverseChildren(item, list, ctx, mode);
+        this.__traverseChildren(item, list, ctx, renderMode);
       });
     }
     else if(children instanceof Dom) {
       list.push(children);
-      children.__traverse(ctx, mode);
-      children.__mode = mode;
+      children.__traverse(ctx, renderMode);
     }
     // 图形没有children
     else if(children instanceof Geom) {
       list.push(children);
-      children.__mode = mode;
     }
     // 排除掉空的文本
     else if(!util.isNil(children)) {
       let text = new Text(children);
-      text.__mode = mode;
+      text.__renderMode = renderMode;
       list.push(text);
     }
   }
@@ -1204,8 +1202,8 @@ class Dom extends Xom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { style: { display }, flowChildren, children } = this;
     if(display === 'none') {
       return;
@@ -1213,13 +1211,13 @@ class Dom extends Xom {
     // 先绘制static
     flowChildren.forEach(item => {
       if(item instanceof Text || item.style.position === 'static') {
-        item.render();
+        item.render(renderMode);
       }
     });
     // 再绘制relative和absolute
     children.forEach(item => {
       if((item instanceof Xom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
-        item.render();
+        item.render(renderMode);
       }
     });
   }
@@ -1249,6 +1247,13 @@ class Dom extends Xom {
   }
   get flowY() {
     return this.__flowY;
+  }
+  get virtualDom() {
+    return {
+      ...super.virtualDom,
+      type: 'dom',
+      children: this.children.map(item => item.virtualDom),
+    };
   }
 
   static isValid(s) {

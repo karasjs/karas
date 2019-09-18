@@ -26,6 +26,55 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(source, true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(source).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -145,41 +194,6 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance");
   }
 
-  var CANVAS = 0;
-  var SVG = 1;
-  var div;
-  var svgHtml = '';
-  var mode = {
-    CANVAS: CANVAS,
-    SVG: SVG,
-    appendHtml: function appendHtml(s) {
-      svgHtml += s;
-    },
-
-    get html() {
-      return svgHtml;
-    },
-
-    reset: function reset() {
-      svgHtml = '';
-    },
-    measure: function measure(s, style) {
-      if (!div) {
-        div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.left = '99999px';
-        div.style.top = '-99999px';
-        div.style.visibility = 'hidden';
-        document.body.appendChild(div);
-      }
-
-      div.style.fontSize = style.fontSize + 'px';
-      div.innerText = s;
-      var css = window.getComputedStyle(div, null);
-      return parseFloat(css.width);
-    }
-  };
-
   var Node =
   /*#__PURE__*/
   function () {
@@ -198,7 +212,7 @@
       this.__style = {}; // style被解析后的k-v形式
 
       this.__baseLine = 0;
-      this.__mode = mode.CANVAS;
+      this.__virtualDom = {};
     }
 
     _createClass(Node, [{
@@ -272,14 +286,49 @@
         return this.__baseLine;
       }
     }, {
-      key: "mode",
+      key: "virtualDom",
       get: function get() {
-        return this.__mode;
+        return this.__virtualDom;
       }
     }]);
 
     return Node;
   }();
+
+  var CANVAS = 0;
+  var SVG = 1;
+  var div;
+  var svgHtml = '';
+  var mode = {
+    CANVAS: CANVAS,
+    SVG: SVG,
+    appendHtml: function appendHtml(s) {
+      svgHtml += s;
+    },
+
+    get html() {
+      return svgHtml;
+    },
+
+    reset: function reset() {
+      svgHtml = '';
+    },
+    measure: function measure(s, style) {
+      if (!div) {
+        div = document.createElement('div');
+        div.style.position = 'absolute';
+        div.style.left = '99999px';
+        div.style.top = '-99999px';
+        div.style.visibility = 'hidden';
+        document.body.appendChild(div);
+      }
+
+      div.style.fontSize = style.fontSize + 'px';
+      div.innerText = s;
+      var css = window.getComputedStyle(div, null);
+      return parseFloat(css.width);
+    }
+  };
 
   var unit = {
     AUTO: 0,
@@ -426,13 +475,17 @@
       }
     }, {
       key: "render",
-      value: function render() {
+      value: function render(renderMode) {
+        this.__virtualDom = {
+          bb: []
+        };
         var ctx = this.ctx,
             style = this.style,
             x = this.x,
             y = this.y,
             width = this.width,
-            height = this.height;
+            height = this.height,
+            virtualDom = this.virtualDom;
         var display = style.display,
             backgroundColor = style.backgroundColor,
             borderTopWidth = style.borderTopWidth,
@@ -478,14 +531,24 @@
           var w = width + paddingLeft.value + paddingRight.value;
           var h = height + paddingTop.value + paddingBottom.value;
 
-          if (this.mode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.fillStyle = backgroundColor;
             ctx.rect(x1, y1, w, h);
             ctx.fill();
             ctx.closePath();
-          } else if (this.mode === mode.SVG) {
-            mode.appendHtml("<rect x=\"".concat(x1, "\" y=\"").concat(y1, "\" width=\"").concat(w, "\" height=\"").concat(h, "\" fill=\"").concat(backgroundColor, "\"/>"));
+          } else if (renderMode === mode.SVG) {
+            virtualDom.bb.push({
+              type: 'item',
+              tagName: 'rect',
+              props: {
+                x: x1,
+                y: y1,
+                width: w,
+                height: h,
+                fill: backgroundColor
+              }
+            }); // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
           }
         }
 
@@ -504,7 +567,7 @@
             x2 += paddingRight.value;
           }
 
-          if (this.mode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderTopWidth.value;
             ctx.strokeStyle = borderTopColor;
@@ -512,8 +575,19 @@
             ctx.lineTo(x2, _y);
             ctx.stroke();
             ctx.closePath();
-          } else if (this.mode === mode.SVG) {
-            mode.appendHtml("<line x1=\"".concat(_x, "\" y1=\"").concat(_y, "\" x2=\"").concat(x2, "\" y2=\"").concat(_y, "\" stroke-width=\"").concat(borderTopWidth.value, "\" stroke=\"").concat(borderTopColor, "\"/>"));
+          } else if (renderMode === mode.SVG) {
+            virtualDom.bb.push({
+              type: 'item',
+              tagName: 'line',
+              props: {
+                x1: _x,
+                y1: _y,
+                x2: x2,
+                y2: _y,
+                'stroke-width': borderTopWidth.value,
+                stroke: borderTopColor
+              }
+            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
           }
         }
 
@@ -539,7 +613,7 @@
             y2 += paddingBottom.value;
           }
 
-          if (this.mode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderRightWidth.value;
             ctx.strokeStyle = borderRightColor;
@@ -547,8 +621,19 @@
             ctx.lineTo(_x2, y2);
             ctx.stroke();
             ctx.closePath();
-          } else if (this.mode === mode.SVG) {
-            mode.appendHtml("<line x1=\"".concat(_x2, "\" y1=\"").concat(_y2, "\" x2=\"").concat(_x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(borderRightWidth.value, "\" stroke=\"").concat(borderRightColor, "\"/>"));
+          } else if (renderMode === mode.SVG) {
+            virtualDom.bb.push({
+              type: 'item',
+              tagName: 'line',
+              props: {
+                x1: _x2,
+                y1: _y2,
+                x2: _x2,
+                y2: y2,
+                'stroke-width': borderRightWidth.value,
+                stroke: borderRightColor
+              }
+            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
           }
         }
 
@@ -575,7 +660,7 @@
             _y3 += paddingBottom.value;
           }
 
-          if (this.mode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderBottomWidth.value;
             ctx.strokeStyle = borderBottomColor;
@@ -583,8 +668,19 @@
             ctx.lineTo(_x4, _y3);
             ctx.stroke();
             ctx.closePath();
-          } else if (this.mode === mode.SVG) {
-            mode.appendHtml("<line x1=\"".concat(_x3, "\" y1=\"").concat(_y3, "\" x2=\"").concat(_x4, "\" y2=\"").concat(_y3, "\" stroke-width=\"").concat(borderBottomWidth.value, "\" stroke=\"").concat(borderBottomColor, "\"/>"));
+          } else if (renderMode === mode.SVG) {
+            virtualDom.bb.push({
+              type: 'item',
+              tagName: 'line',
+              props: {
+                x1: _x3,
+                y1: _y3,
+                x2: _x4,
+                y2: _y3,
+                'stroke-width': borderBottomWidth.value,
+                stroke: borderBottomColor
+              }
+            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
           }
         }
 
@@ -603,7 +699,7 @@
             _y5 += paddingBottom.value;
           }
 
-          if (this.mode === mode.CANVAS) {
+          if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.lineWidth = borderLeftWidth.value;
             ctx.strokeStyle = borderLeftColor;
@@ -611,8 +707,19 @@
             ctx.lineTo(_x5, _y5);
             ctx.stroke();
             ctx.closePath();
-          } else if (this.mode === mode.SVG) {
-            mode.appendHtml("<line x1=\"".concat(_x5, "\" y1=\"").concat(_y4, "\" x2=\"").concat(_x5, "\" y2=\"").concat(_y5, "\" stroke-width=\"").concat(borderLeftWidth.value, "\" stroke=\"").concat(borderLeftColor, "\"/>"));
+          } else if (renderMode === mode.SVG) {
+            virtualDom.bb.push({
+              type: 'item',
+              tagName: 'line',
+              props: {
+                x1: _x5,
+                y1: _y4,
+                x2: _x5,
+                y2: _y5,
+                'stroke-width': borderLeftWidth.value,
+                stroke: borderLeftColor
+              }
+            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
           }
         }
       }
@@ -771,6 +878,50 @@
     return v === undefined || v === null;
   }
 
+  function joinVirtualDom(vd) {
+    if (vd.type === 'item') {
+      console.log(vd);
+      var props = vd.props;
+      var s = '';
+
+      for (var i in props) {
+        if (props.hasOwnProperty(i)) {
+          s += " ".concat(i, "=\"").concat(props[i], "\"");
+        }
+      }
+
+      if (vd.tagName === 'text') {
+        return "<text".concat(s, ">").concat(vd.content, "</text>");
+      }
+
+      return "<".concat(vd.tagName).concat(s, "/>");
+    } else if (vd.type === 'text') {
+      var _s = "";
+      vd.children.forEach(function (item) {
+        _s += joinVirtualDom(item);
+      });
+      return "<g>".concat(_s, "</g>");
+    } else if (vd.type === 'dom') {
+      var _s2 = '<g>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVirtualDom(item);
+      });
+      _s2 += '</g>';
+      vd.children.forEach(function (item) {
+        _s2 += joinVirtualDom(item);
+      });
+      return "<g>".concat(_s2, "</g>");
+    } else if (vd.type === 'geom') {
+      var _s3 = '<g>';
+      vd.bb.forEach(function (item) {
+        _s3 += joinVirtualDom(item);
+      });
+      _s3 += '</g>';
+      _s3 += joinVirtualDom(vd.content);
+      return "<g>".concat(_s3, "</g>");
+    }
+  }
+
   var util = {
     isObject: isType('Object'),
     isString: isType('String'),
@@ -783,7 +934,8 @@
       return _joinSourceArray(arr);
     },
     encodeHtml: encodeHtml,
-    isNil: isNil
+    isNil: isNil,
+    joinVirtualDom: joinVirtualDom
   };
 
   function parserOneBorder(style, direction) {
@@ -947,32 +1099,40 @@
   var LineBox =
   /*#__PURE__*/
   function () {
-    function LineBox(mode, ctx, x, y, w, content, style) {
+    function LineBox(x, y, w, content, style) {
       _classCallCheck(this, LineBox);
 
-      this.__mode = mode;
-      this.__ctx = ctx;
       this.__x = x;
       this.__y = y;
       this.__width = w;
       this.__content = content;
       this.__style = style;
+      this.__virtualDom = {};
     }
 
     _createClass(LineBox, [{
       key: "render",
-      value: function render() {
-        var ctx = this.ctx,
-            style = this.style,
+      value: function render(renderMode, ctx) {
+        var style = this.style,
             content = this.content,
             x = this.x,
             y = this.y;
+        y += css.getBaseLine(style);
 
-        if (this.mode === mode.CANVAS) {
-          ctx.fillStyle = style.color;
-          ctx.fillText(content, x, y + css.getBaseLine(style));
-        } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<text x=\"".concat(x, "\" y=\"").concat(y + css.getBaseLine(style), "\" fill=\"").concat(style.color, "\" font-size=\"").concat(style.fontSize, "px\">").concat(content, "</text>"));
+        if (renderMode === mode.CANVAS) {
+          ctx.fillText(content, x, y);
+        } else if (renderMode === mode.SVG) {
+          this.__virtualDom = {
+            type: 'item',
+            tagName: 'text',
+            props: {
+              x: x,
+              y: y,
+              fill: style.color,
+              'font-size': "".concat(style.fontSize, "px")
+            },
+            content: content
+          }; // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
         }
       }
     }, {
@@ -984,11 +1144,6 @@
       key: "__offsetY",
       value: function __offsetY(diff) {
         this.__y += diff;
-      }
-    }, {
-      key: "ctx",
-      get: function get() {
-        return this.__ctx;
       }
     }, {
       key: "x",
@@ -1021,9 +1176,9 @@
         return css.getBaseLine(this.style);
       }
     }, {
-      key: "mode",
+      key: "virtualDom",
       get: function get() {
-        return this.__mode;
+        return this.__virtualDom;
       }
     }]);
 
@@ -1059,9 +1214,10 @@
         var ctx = this.ctx,
             content = this.content,
             style = this.style,
-            charWidthList = this.charWidthList;
+            charWidthList = this.charWidthList,
+            renderMode = this.renderMode;
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.font = css.setFontStyle(style);
         }
 
@@ -1076,9 +1232,9 @@
 
           if (cache.hasOwnProperty(_char)) {
             mw = cache[_char];
-          } else if (this.mode === mode.CANVAS) {
+          } else if (renderMode === mode.CANVAS) {
             mw = ctx.measureText(_char).width;
-          } else if (this.mode === mode.SVG) {
+          } else if (renderMode === mode.SVG) {
             mw = mode.measure(_char, style);
           }
 
@@ -1105,7 +1261,8 @@
             content = this.content,
             style = this.style,
             lineBoxes = this.lineBoxes,
-            charWidthList = this.charWidthList; // 顺序尝试分割字符串为lineBox，形成多行
+            charWidthList = this.charWidthList,
+            renderMode = this.renderMode; // 顺序尝试分割字符串为lineBox，形成多行
 
         var begin = 0;
         var i = 0;
@@ -1116,7 +1273,7 @@
           count += charWidthList[i];
 
           if (count === w) {
-            var lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, i + 1), style);
+            var lineBox = new LineBox(x, y, count, content.slice(begin, i + 1), style);
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
             y += this.style.lineHeight.value;
@@ -1129,7 +1286,7 @@
               i = begin + 1;
             }
 
-            var _lineBox = new LineBox(this.mode, ctx, x, y, count - charWidthList[i], content.slice(begin, i), style);
+            var _lineBox = new LineBox(x, y, count - charWidthList[i], content.slice(begin, i), style);
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
@@ -1149,7 +1306,7 @@
             count += charWidthList[i];
           }
 
-          var _lineBox2 = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, length), style);
+          var _lineBox2 = new LineBox(x, y, count, content.slice(begin, length), style);
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
@@ -1177,13 +1334,17 @@
       }
     }, {
       key: "render",
-      value: function render() {
-        if (this.mode === mode.CANVAS) {
-          this.ctx.font = css.setFontStyle(this.style);
+      value: function render(renderMode) {
+        var ctx = this.ctx,
+            style = this.style;
+
+        if (renderMode === mode.CANVAS) {
+          ctx.font = css.setFontStyle(style);
+          ctx.fillStyle = style.color;
         }
 
         this.lineBoxes.forEach(function (item) {
-          item.render();
+          item.render(renderMode, ctx);
         });
       }
     }, {
@@ -1254,6 +1415,22 @@
       get: function get() {
         var last = this.lineBoxes[this.lineBoxes.length - 1];
         return last.y - this.y + last.baseLine;
+      }
+    }, {
+      key: "renderMode",
+      get: function get() {
+        return this.__renderMode;
+      }
+    }, {
+      key: "virtualDom",
+      get: function get() {
+        return {
+          type: 'text',
+          tagName: 'text',
+          children: this.lineBoxes.map(function (lineBox) {
+            return lineBox.virtualDom;
+          })
+        };
       }
     }]);
 
@@ -1598,8 +1775,8 @@
       }
     }, {
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
       }
     }, {
       key: "tagName",
@@ -1612,9 +1789,11 @@
         return this.__height;
       }
     }, {
-      key: "origin",
+      key: "virtualDom",
       get: function get() {
-        return this.__origin;
+        return _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
+          type: 'geom'
+        });
       }
     }]);
 
@@ -1662,12 +1841,12 @@
 
     _createClass(Dom, [{
       key: "__traverse",
-      value: function __traverse(ctx, mode) {
+      value: function __traverse(ctx, renderMode) {
         var _this2 = this;
 
         var list = [];
 
-        this.__traverseChildren(this.children, list, ctx, mode);
+        this.__traverseChildren(this.children, list, ctx, renderMode);
 
         for (var i = list.length - 1; i > 0; i--) {
           var item = list[i];
@@ -1711,27 +1890,24 @@
       }
     }, {
       key: "__traverseChildren",
-      value: function __traverseChildren(children, list, ctx, mode) {
+      value: function __traverseChildren(children, list, ctx, renderMode) {
         var _this3 = this;
 
         if (Array.isArray(children)) {
           children.forEach(function (item) {
-            _this3.__traverseChildren(item, list, ctx, mode);
+            _this3.__traverseChildren(item, list, ctx, renderMode);
           });
         } else if (children instanceof Dom) {
           list.push(children);
 
-          children.__traverse(ctx, mode);
-
-          children.__mode = mode;
+          children.__traverse(ctx, renderMode);
         } // 图形没有children
         else if (children instanceof Geom) {
             list.push(children);
-            children.__mode = mode;
           } // 排除掉空的文本
           else if (!util.isNil(children)) {
               var text = new Text(children);
-              text.__mode = mode;
+              text.__renderMode = renderMode;
               list.push(text);
             }
       } // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
@@ -2932,8 +3108,8 @@
       }
     }, {
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
 
         var display = this.style.display,
             flowChildren = this.flowChildren,
@@ -2946,13 +3122,13 @@
 
         flowChildren.forEach(function (item) {
           if (item instanceof Text || item.style.position === 'static') {
-            item.render();
+            item.render(renderMode);
           }
         }); // 再绘制relative和absolute
 
         children.forEach(function (item) {
           if (item instanceof Xom && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
-            item.render();
+            item.render(renderMode);
           }
         });
       }
@@ -2998,6 +3174,16 @@
       get: function get() {
         return this.__flowY;
       }
+    }, {
+      key: "virtualDom",
+      get: function get() {
+        return _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
+          type: 'dom',
+          children: this.children.map(function (item) {
+            return item.virtualDom;
+          })
+        });
+      }
     }], [{
       key: "isValid",
       value: function isValid(s) {
@@ -3007,6 +3193,41 @@
 
     return Dom;
   }(Xom);
+
+  function diff(elem, ovd, nvd) {
+
+    if (ovd.type === 'dom') {
+      if (nvd.type === 'dom') {
+        diffD2D(elem, ovd, nvd);
+      } else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+    } else if (nvd.type === 'text') {
+      if (nvd.type === 'dom') ; else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+    } else if (nvd.type === 'geom') {
+      if (nvd.type === 'dom') ; else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+    }
+  }
+
+  function diffD2D(elem, ovd, nvd) {
+    // console.log(elem, ovd, nvd);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+  }
+
+  function diffBb(elem, obb, nbb) {
+    var ol = obb.length;
+    var nl = nbb.length;
+    var i = 0;
+
+    for (; i < Math.min(ol, nl); i++) {
+      diffItem(elem, i, obb[i], nbb[i]);
+    }
+  }
+
+  function diffItem(elem, i, o, n) {
+    if (o.tagName !== n.tagName) {
+      elem.insertAdjacentHTML('afterend', util.joinVirtualDom(n));
+      elem.parentNode.removeChild(elem);
+    }
+  }
 
   function getDom(dom) {
     if (util.isString(dom)) {
@@ -3133,7 +3354,7 @@
       value: function appendTo(dom) {
         dom = getDom(dom);
 
-        this.__initProps(); // 已有canvas节点
+        this.__initProps(); // 已有root节点
 
 
         if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
@@ -3168,14 +3389,16 @@
         } // 只有canvas有ctx，svg用真实dom
 
 
+        var renderMode;
+
         if (this.tagName === 'canvas') {
           this.__ctx = this.__node.getContext('2d');
 
           this.__ctx.clearRect(0, 0, this.width, this.height);
 
-          this.__mode = mode.CANVAS;
+          renderMode = mode.CANVAS;
         } else if (this.tagName === 'svg') {
-          this.__mode = mode.SVG;
+          renderMode = mode.SVG;
         } // canvas/svg作为根节点一定是block或flex，不会是inline
 
 
@@ -3190,7 +3413,7 @@
           style.position = 'static';
         }
 
-        this.__traverse(this.__ctx, this.__mode); // canvas的宽高固定初始化
+        this.__traverse(this.__ctx, renderMode); // canvas的宽高固定初始化
 
 
         style.width = this.width;
@@ -3207,15 +3430,22 @@
 
         this.__preLayAbs(this);
 
-        this.render();
+        this.render(renderMode);
 
-        if (this.mode === mode.SVG) {
-          this.node.innerHTML = mode.html;
-          mode.reset();
+        if (renderMode === mode.SVG) {
+          var nvd = this.virtualDom;
+
+          if (this.node.__karasInit) {
+            diff(this.node.firstChild, this.node.__ovd, nvd);
+          } else {
+            this.node.innerHTML = util.joinVirtualDom(nvd);
+          }
+
+          this.node.__ovd = nvd;
         }
 
-        if (!this.node.__initEvent) {
-          this.node.__initEvent = true;
+        if (!this.node.__karasInit) {
+          this.node.__karasInit = true;
 
           this.__initEvent();
         }
@@ -3265,8 +3495,8 @@
 
     _createClass(Line, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Line.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3331,7 +3561,7 @@
           y2 = originY + height - end[1] * height;
         }
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
@@ -3340,7 +3570,7 @@
           ctx.lineTo(x2, y2);
           ctx.stroke();
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           mode.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
@@ -3353,6 +3583,11 @@
       key: "end",
       get: function get() {
         return this.__end;
+      }
+    }, {
+      key: "origin",
+      get: function get() {
+        return this.__origin;
       }
     }]);
 
@@ -3389,8 +3624,8 @@
 
     _createClass(Polyline, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3448,7 +3683,7 @@
           });
         }
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
@@ -3465,7 +3700,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           var _points = '';
 
           for (var _i2 = 0, _len2 = pts.length; _i2 < _len2; _i2++) {
@@ -3543,8 +3778,8 @@
 
     _createClass(Polygon, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3586,7 +3821,7 @@
           item[1] = originY + item[1] * height;
         });
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
@@ -3605,7 +3840,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           var _points = '';
 
           for (var _i2 = 0, _len2 = _points.length; _i2 < _len2; _i2++) {
@@ -3695,8 +3930,8 @@
 
     _createClass(Sector, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Sector.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3734,7 +3969,7 @@
         originY += height * 0.5;
         r *= Math.min(width, height) * 0.5;
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
@@ -3749,7 +3984,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           var x1, y1, x2, y2;
 
           var _getCoordByDegree = getCoordByDegree(originX, originY, r, start);
@@ -3802,8 +4037,8 @@
 
     _createClass(Rect, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Rect.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3830,7 +4065,7 @@
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
@@ -3847,7 +4082,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           mode.appendHtml("<rect x=\"".concat(x, "\" y=\"").concat(y, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
@@ -3883,8 +4118,8 @@
 
     _createClass(Circle, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Circle.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -3892,7 +4127,8 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            r = this.r;
+            r = this.r,
+            virtualDom = this.virtualDom;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -3915,23 +4151,37 @@
         originY += height * 0.5;
         r *= Math.min(width, height) * 0.5;
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(originX, originY);
           ctx.arc(originX, originY, r, 0, 2 * Math.PI);
-          ctx.fill();
+
+          if (fill !== 'transparent') {
+            ctx.fill();
+          }
 
           if (strokeWidth && stroke !== 'transparent') {
             ctx.stroke();
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
-          mode.appendHtml("<circle cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" r=\"").concat(r, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+        } else if (renderMode === mode.SVG) {
+          virtualDom.content = {
+            type: 'item',
+            tagName: 'circle',
+            props: {
+              cx: originX,
+              cy: originY,
+              r: r,
+              fill: fill,
+              stroke: stroke,
+              'stroke-width': strokeWidth,
+              'stroke-dasharray': strokeDasharray
+            }
+          }; // mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
         }
       }
     }, {
@@ -3981,8 +4231,8 @@
 
     _createClass(Ellipse, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -4015,7 +4265,7 @@
         rx *= width * 0.5;
         ry *= height * 0.5;
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
@@ -4030,7 +4280,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           mode.appendHtml("<ellipse cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" rx=\"").concat(rx, "\" ry=\"").concat(ry, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
         }
       }
@@ -4086,8 +4336,8 @@
 
     _createClass(Grid, [{
       key: "render",
-      value: function render() {
-        _get(_getPrototypeOf(Grid.prototype), "render", this).call(this);
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Grid.prototype), "render", this).call(this, renderMode);
 
         var x = this.x,
             y = this.y,
@@ -4144,7 +4394,7 @@
           }
         }
 
-        if (this.mode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
@@ -4163,7 +4413,7 @@
           }
 
           ctx.closePath();
-        } else if (this.mode === mode.SVG) {
+        } else if (renderMode === mode.SVG) {
           lx.forEach(function (item) {
             mode.appendHtml("<line x1=\"".concat(originX, "\" y1=\"").concat(item, "\" x2=\"").concat(endX, "\" y2=\"").concat(item, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
           });

@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 const OFFSET = Math.PI * 0.5;
 
@@ -64,8 +64,8 @@ class Sector extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, start, end, r } = this;
     if(start === end) {
       return;
@@ -91,7 +91,7 @@ class Sector extends Geom {
     originX += width * 0.5;
     originY += height * 0.5;
     r *= Math.min(width, height) * 0.5;
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
@@ -105,7 +105,7 @@ class Sector extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       let x1, y1, x2, y2;
       [ x1, y1 ] = getCoordByDegree(originX, originY, r, start);
       [ x2, y2 ] = getCoordByDegree(originX, originY, r, end);

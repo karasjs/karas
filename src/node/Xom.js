@@ -1,5 +1,5 @@
 import Node from './Node';
-import mode from './mode';
+import mode from '../mode';
 import unit from '../style/unit';
 
 function arr2hash(arr) {
@@ -110,8 +110,11 @@ class Xom extends Node {
     }
   }
 
-  render() {
-    let { ctx, style, x, y, width, height } = this;
+  render(renderMode) {
+    this.__virtualDom = {
+      bb: [],
+    };
+    let { ctx, style, x, y, width, height, virtualDom } = this;
     let {
       display,
       backgroundColor,
@@ -150,15 +153,26 @@ class Xom extends Node {
       }
       let w = width + paddingLeft.value + paddingRight.value;
       let h = height + paddingTop.value + paddingBottom.value;
-      if(this.mode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.fillStyle = backgroundColor;
         ctx.rect(x1, y1, w, h);
         ctx.fill();
         ctx.closePath();
       }
-      else if(this.mode === mode.SVG) {
-        mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
+      else if(renderMode === mode.SVG) {
+        virtualDom.bb.push({
+          type: 'item',
+          tagName: 'rect',
+          props: {
+            x: x1,
+            y: y1,
+            width: w,
+            height: h,
+            fill: backgroundColor,
+          },
+        });
+        // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
       }
     }
     if(borderTopWidth.value) {
@@ -171,7 +185,7 @@ class Xom extends Node {
       if(paddingRight) {
         x2 += paddingRight.value;
       }
-      if(this.mode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderTopWidth.value;
         ctx.strokeStyle = borderTopColor;
@@ -180,8 +194,20 @@ class Xom extends Node {
         ctx.stroke();
         ctx.closePath();
       }
-      else if(this.mode === mode.SVG) {
-        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
+      else if(renderMode === mode.SVG) {
+        virtualDom.bb.push({
+          type: 'item',
+          tagName: 'line',
+          props: {
+            x1,
+            y1,
+            x2,
+            y2: y1,
+            'stroke-width': borderTopWidth.value,
+            stroke: borderTopColor,
+          },
+        });
+        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
       }
     }
     if(borderRightWidth.value) {
@@ -200,7 +226,7 @@ class Xom extends Node {
       if(paddingBottom) {
         y2 += paddingBottom.value;
       }
-      if(this.mode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderRightWidth.value;
         ctx.strokeStyle = borderRightColor;
@@ -209,8 +235,20 @@ class Xom extends Node {
         ctx.stroke();
         ctx.closePath();
       }
-      else if(this.mode === mode.SVG) {
-        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
+      else if(renderMode === mode.SVG) {
+        virtualDom.bb.push({
+          type: 'item',
+          tagName: 'line',
+          props: {
+            x1,
+            y1,
+            x2: x1,
+            y2,
+            'stroke-width': borderRightWidth.value,
+            stroke: borderRightColor,
+          },
+        });
+        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
       }
     }
     if(borderBottomWidth.value) {
@@ -229,7 +267,7 @@ class Xom extends Node {
       if(paddingBottom) {
         y1 += paddingBottom.value;
       }
-      if(this.mode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderBottomWidth.value;
         ctx.strokeStyle = borderBottomColor;
@@ -238,8 +276,20 @@ class Xom extends Node {
         ctx.stroke();
         ctx.closePath();
       }
-      else if(this.mode === mode.SVG) {
-        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
+      else if(renderMode === mode.SVG) {
+        virtualDom.bb.push({
+          type: 'item',
+          tagName: 'line',
+          props: {
+            x1,
+            y1,
+            x2,
+            y2: y1,
+            'stroke-width': borderBottomWidth.value,
+            stroke: borderBottomColor,
+          },
+        });
+        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
       }
     }
     if(borderLeftWidth.value) {
@@ -252,7 +302,7 @@ class Xom extends Node {
       if(paddingBottom) {
         y2 += paddingBottom.value;
       }
-      if(this.mode === mode.CANVAS) {
+      if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderLeftWidth.value;
         ctx.strokeStyle = borderLeftColor;
@@ -261,8 +311,20 @@ class Xom extends Node {
         ctx.stroke();
         ctx.closePath();
       }
-      else if(this.mode === mode.SVG) {
-        mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
+      else if(renderMode === mode.SVG) {
+        virtualDom.bb.push({
+          type: 'item',
+          tagName: 'line',
+          props: {
+            x1,
+            y1,
+            x2: x1,
+            y2,
+            'stroke-width': borderLeftWidth.value,
+            stroke: borderLeftColor,
+          },
+        });
+        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
       }
     }
   }

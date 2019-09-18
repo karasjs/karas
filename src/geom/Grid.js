@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Grid extends Geom {
   constructor(props) {
@@ -21,8 +21,8 @@ class Grid extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, nx, ny } = this;
     if(width <= 0 || height <= 0) {
       return;
@@ -63,7 +63,7 @@ class Grid extends Geom {
         lx.push(originY + i * per);
       }
     }
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
@@ -81,7 +81,7 @@ class Grid extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       lx.forEach(item => {
         mode.appendHtml(`<line x1="${originX}" y1="${item}" x2="${endX}" y2="${item}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
       });

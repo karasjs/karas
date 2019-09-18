@@ -1,7 +1,7 @@
 import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
-import mode from './mode';
+import mode from '../mode';
 
 const CHAR_WIDTH_CACHE = {};
 
@@ -18,8 +18,8 @@ class Text extends Node {
   // 预先计算每个字的宽度
   __measure() {
     this.__charWidthList = [];
-    let { ctx, content, style, charWidthList } = this;
-    if(this.mode === mode.CANVAS) {
+    let { ctx, content, style, charWidthList, renderMode } = this;
+    if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(style);
     }
     let cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
@@ -31,10 +31,10 @@ class Text extends Node {
       if(cache.hasOwnProperty(char)) {
         mw = cache[char];
       }
-      else if(this.mode === mode.CANVAS) {
+      else if(renderMode === mode.CANVAS) {
         mw = ctx.measureText(char).width;
       }
-      else if(this.mode === mode.SVG) {
+      else if(renderMode === mode.SVG) {
         mw = mode.measure(char, style);
       }
       charWidthList.push(mw);
@@ -49,7 +49,7 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { ctx, content, style, lineBoxes, charWidthList } = this;
+    let { ctx, content, style, lineBoxes, charWidthList, renderMode } = this;
     // 顺序尝试分割字符串为lineBox，形成多行
     let begin = 0;
     let i = 0;
@@ -58,7 +58,7 @@ class Text extends Node {
     while(i < length) {
       count += charWidthList[i];
       if (count === w) {
-        let lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, i + 1), style);
+        let lineBox = new LineBox(x, y, count, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
         y += this.style.lineHeight.value;
@@ -71,7 +71,7 @@ class Text extends Node {
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(this.mode, ctx, x, y, count - charWidthList[i], content.slice(begin, i), style);
+        let lineBox = new LineBox(x, y, count - charWidthList[i], content.slice(begin, i), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += this.style.lineHeight.value;
@@ -88,7 +88,7 @@ class Text extends Node {
       for(i = begin ;i < length; i++) {
         count += charWidthList[i];
       }
-      let lineBox = new LineBox(this.mode, ctx, x, y, count, content.slice(begin, length), style);
+      let lineBox = new LineBox(x, y, count, content.slice(begin, length), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
       y += style.lineHeight.value;
@@ -111,12 +111,14 @@ class Text extends Node {
     }
   }
 
-  render() {
-    if(this.mode === mode.CANVAS) {
-      this.ctx.font = css.setFontStyle(this.style);
+  render(renderMode) {
+    const { ctx, style } = this;
+    if(renderMode === mode.CANVAS) {
+      ctx.font = css.setFontStyle(style);
+      ctx.fillStyle = style.color;
     }
     this.lineBoxes.forEach(item => {
-      item.render();
+      item.render(renderMode, ctx);
     });
   }
 
@@ -167,6 +169,16 @@ class Text extends Node {
   get baseLine() {
     let last = this.lineBoxes[this.lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
+  }
+  get renderMode() {
+    return this.__renderMode;
+  }
+  get virtualDom() {
+    return {
+      type: 'text',
+      tagName: 'text',
+      children: this.lineBoxes.map(lineBox => lineBox.virtualDom),
+    };
   }
 }
 

@@ -1,6 +1,7 @@
 import Dom from '../node/Dom';
 import util from '../util';
-import mode from './mode';
+import mode from '../mode';
+import domDiff from '../domDiff';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -87,7 +88,7 @@ class CS extends Dom {
   appendTo(dom) {
     dom = getDom(dom);
     this.__initProps();
-    // 已有canvas节点
+    // 已有root节点
     if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
       this.__node = dom;
       if(this.width) {
@@ -115,13 +116,14 @@ class CS extends Dom {
       }
     }
     // 只有canvas有ctx，svg用真实dom
+    let renderMode;
     if(this.tagName === 'canvas') {
       this.__ctx = this.__node.getContext('2d');
       this.__ctx.clearRect(0, 0, this.width, this.height);
-      this.__mode = mode.CANVAS;
+      renderMode = mode.CANVAS;
     }
     else if(this.tagName === 'svg') {
-      this.__mode = mode.SVG;
+      renderMode = mode.SVG;
     }
     // canvas/svg作为根节点一定是block或flex，不会是inline
     let { style } = this;
@@ -132,7 +134,7 @@ class CS extends Dom {
     if(style.position === 'absolute') {
       style.position = 'static';
     }
-    this.__traverse(this.__ctx, this.__mode);
+    this.__traverse(this.__ctx, renderMode);
     // canvas的宽高固定初始化
     style.width = this.width;
     style.height = this.height;
@@ -144,13 +146,18 @@ class CS extends Dom {
       h: this.height,
     });
     this.__preLayAbs(this);
-    this.render();
-    if(this.mode === mode.SVG) {
-      this.node.innerHTML = mode.html;
-      mode.reset();
+    this.render(renderMode);
+    if(renderMode === mode.SVG) {
+      let nvd = this.virtualDom;
+      if(this.node.__karasInit) {
+        domDiff(this.node.firstChild, this.node.__ovd, nvd);
+      } else {
+        this.node.innerHTML = util.joinVirtualDom(nvd);
+      }
+      this.node.__ovd = nvd;
     }
-    if(!this.node.__initEvent) {
-      this.node.__initEvent = true;
+    if(!this.node.__karasInit) {
+      this.node.__karasInit = true;
       this.__initEvent();
     }
   }

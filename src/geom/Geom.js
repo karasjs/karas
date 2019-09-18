@@ -189,8 +189,8 @@ class Geom extends Xom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
   }
 
   get tagName() {
@@ -199,8 +199,11 @@ class Geom extends Xom {
   get baseLine() {
     return this.__height;
   }
-  get origin() {
-    return this.__origin;
+  get virtualDom() {
+    return {
+      ...super.virtualDom,
+      type: 'geom',
+    };
   }
 }
 

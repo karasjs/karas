@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Ellipse extends Geom {
   constructor(props) {
@@ -21,8 +21,8 @@ class Ellipse extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, rx, ry } = this;
     let {
       display,
@@ -46,7 +46,7 @@ class Ellipse extends Geom {
     originY += height * 0.5;
     rx *= width * 0.5;
     ry *= height * 0.5;
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
@@ -60,7 +60,7 @@ class Ellipse extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       mode.appendHtml(`<ellipse cx="${originX}" cy="${originY}" rx="${rx}" ry="${ry}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }

@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Circle extends Geom {
   constructor(props) {
@@ -14,9 +14,9 @@ class Circle extends Geom {
     }
   }
 
-  render() {
-    super.render();
-    let { x, y, width, height, style, ctx, r } = this;
+  render(renderMode) {
+    super.render(renderMode);
+    let { x, y, width, height, style, ctx, r, virtualDom } = this;
     let {
       display,
       borderTopWidth,
@@ -38,22 +38,36 @@ class Circle extends Geom {
     originX += width * 0.5;
     originY += height * 0.5;
     r *= Math.min(width, height) * 0.5;
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
-      ctx.moveTo(originX, originY);
       ctx.arc(originX, originY, r, 0, 2 * Math.PI);
-      ctx.fill();
+      if(fill !== 'transparent') {
+        ctx.fill();
+      }
       if(strokeWidth && stroke !== 'transparent') {
         ctx.stroke();
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+    else if(renderMode === mode.SVG) {
+      virtualDom.content = {
+        type: 'item',
+        tagName: 'circle',
+        props: {
+          cx: originX,
+          cy: originY,
+          r,
+          fill,
+          stroke,
+          'stroke-width': strokeWidth,
+          'stroke-dasharray': strokeDasharray,
+        },
+      };
+      // mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
 

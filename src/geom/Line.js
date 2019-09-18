@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Line extends Geom {
   constructor(props) {
@@ -22,8 +22,8 @@ class Line extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, start, end, origin } = this;
     if(start.length < 2 || end.length < 2) {
       return;
@@ -78,7 +78,7 @@ class Line extends Geom {
       x2 = originX + width - end[0] * width;
       y2 = originY + height - end[1] * height;
     }
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
@@ -88,7 +88,7 @@ class Line extends Geom {
       ctx.stroke();
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }
@@ -98,6 +98,9 @@ class Line extends Geom {
   }
   get end() {
     return this.__end;
+  }
+  get origin() {
+    return this.__origin;
   }
 }
 

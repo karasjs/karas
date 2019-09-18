@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Polygon extends Geom {
   constructor(props) {
@@ -11,8 +11,8 @@ class Polygon extends Geom {
     }
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx, points } = this;
     if(points.length < 3) {
       return;
@@ -43,7 +43,7 @@ class Polygon extends Geom {
       item[0] = originX + item[0] * width;
       item[1] = originY + item[1] * height;
     });
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
@@ -59,7 +59,7 @@ class Polygon extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       let points = '';
       for(let i = 0, len = points.length; i < len; i++) {
         let point = points[i];

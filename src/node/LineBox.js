@@ -1,25 +1,35 @@
 import css from '../style/css';
-import mode from './mode';
+import mode from '../mode';
 
 class LineBox {
-  constructor(mode, ctx, x, y, w, content, style) {
-    this.__mode = mode;
-    this.__ctx = ctx;
+  constructor(x, y, w, content, style) {
     this.__x = x;
     this.__y = y;
     this.__width = w;
     this.__content = content;
     this.__style = style;
+    this.__virtualDom = {};
   }
 
-  render() {
-    let { ctx, style, content, x, y } = this;
-    if(this.mode === mode.CANVAS) {
-      ctx.fillStyle = style.color;
-      ctx.fillText(content, x, y + css.getBaseLine(style));
+  render(renderMode, ctx) {
+    let { style, content, x, y } = this;
+    y += css.getBaseLine(style);
+    if(renderMode === mode.CANVAS) {
+      ctx.fillText(content, x, y);
     }
-    else if(this.mode === mode.SVG) {
-      mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
+    else if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        type: 'item',
+        tagName: 'text',
+        props: {
+          x,
+          y,
+          fill: style.color,
+          'font-size': `${style.fontSize}px`,
+        },
+        content,
+      };
+      // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
     }
   }
 
@@ -31,9 +41,6 @@ class LineBox {
     this.__y += diff;
   }
 
-  get ctx() {
-    return this.__ctx;
-  }
   get x() {
     return this.__x;
   }
@@ -52,8 +59,8 @@ class LineBox {
   get baseLine() {
     return css.getBaseLine(this.style);
   }
-  get mode() {
-    return this.__mode;
+  get virtualDom() {
+    return this.__virtualDom;
   }
 }
 

@@ -1,5 +1,3 @@
-import mode from './mode';
-
 class Node {
   constructor() {
     this.__x = 0;
@@ -12,7 +10,7 @@ class Node {
     this.__parent = null;
     this.__style = {}; // style被解析后的k-v形式
     this.__baseLine = 0;
-    this.__mode = mode.CANVAS;
+    this.__virtualDom = {};
   }
 
   __offsetX(diff) {
@@ -59,8 +57,8 @@ class Node {
   get baseLine() {
     return this.__baseLine;
   }
-  get mode() {
-    return this.__mode;
+  get virtualDom() {
+    return this.__virtualDom;
   }
 }
 

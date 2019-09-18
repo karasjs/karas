@@ -1,13 +1,13 @@
 import Geom from './Geom';
-import mode from '../node/mode';
+import mode from '../mode';
 
 class Rect extends Geom {
   constructor(props) {
     super('$sector', props);
   }
 
-  render() {
-    super.render();
+  render(renderMode) {
+    super.render(renderMode);
     let { x, y, width, height, style, ctx } = this;
     let {
       display,
@@ -27,7 +27,7 @@ class Rect extends Geom {
     }
     let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-    if(this.mode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
@@ -43,7 +43,7 @@ class Rect extends Geom {
       }
       ctx.closePath();
     }
-    else if(this.mode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       mode.appendHtml(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
     }
   }

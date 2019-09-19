@@ -12,9 +12,9 @@ function parserOneBorder(style, direction) {
   if(w) {
     style[key + 'Width'] = w[0];
   }
-  let s = /\bsolid\b/i.exec(style[key]);
+  let s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
   if(s) {
-    style[key + 'Style'] = s[0];
+    style[key + 'Style'] = s[1];
   }
   let c = /#[0-9a-f]{3,6}/i.exec(style[key]);
   if(c && [4, 7].indexOf(c[0].length) > -1) {

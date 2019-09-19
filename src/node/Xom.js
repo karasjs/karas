@@ -120,12 +120,16 @@ class Xom extends Node {
       backgroundColor,
       borderTopWidth,
       borderTopColor,
+      borderTopStyle,
       borderRightWidth,
       borderRightColor,
+      borderRightStyle,
       borderBottomWidth,
       borderBottomColor,
+      borderBottomStyle,
       borderLeftWidth,
       borderLeftColor,
+      borderLeftStyle,
       marginTop,
       marginLeft,
       paddingTop,
@@ -172,7 +176,6 @@ class Xom extends Node {
             ['fill', backgroundColor]
           ],
         });
-        // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
       }
     }
     if(borderTopWidth.value) {
@@ -189,13 +192,22 @@ class Xom extends Node {
         ctx.beginPath();
         ctx.lineWidth = borderTopWidth.value;
         ctx.strokeStyle = borderTopColor;
+        if(borderTopStyle === 'dashed') {
+          ctx.setLineDash([borderTopWidth.value * 3, borderTopWidth.value * 2]);
+        }
+        else if(borderTopStyle === 'dotted') {
+          ctx.setLineDash([borderTopWidth.value, borderTopWidth.value]);
+        }
+        else {
+          ctx.setLineDash([]);
+        }
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y1);
         ctx.stroke();
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.bb.push({
+        let item = {
           type: 'item',
           tagName: 'line',
           props: [
@@ -206,8 +218,14 @@ class Xom extends Node {
             ['stroke-width', borderTopWidth.value],
             ['stroke', borderTopColor]
           ],
-        });
-        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
+        };
+        if(borderTopStyle === 'dashed') {
+          item.props.push(['stroke-dasharray', `${borderTopWidth.value * 3}, ${borderTopWidth.value * 2}`])
+        }
+        else if(borderTopStyle === 'dotted') {
+          item.props.push(['stroke-dasharray', `${borderTopWidth.value}, ${borderTopWidth.value}`])
+        }
+        virtualDom.bb.push(item);
       }
     }
     if(borderRightWidth.value) {
@@ -230,13 +248,22 @@ class Xom extends Node {
         ctx.beginPath();
         ctx.lineWidth = borderRightWidth.value;
         ctx.strokeStyle = borderRightColor;
+        if(borderRightStyle === 'dashed') {
+          ctx.setLineDash([borderRightWidth.value * 3, borderRightWidth.value * 2]);
+        }
+        else if(borderRightStyle === 'dotted') {
+          ctx.setLineDash([borderRightWidth.value, borderRightWidth.value * 2]);
+        }
+        else {
+          ctx.setLineDash([]);
+        }
         ctx.moveTo(x1, y1);
         ctx.lineTo(x1, y2);
         ctx.stroke();
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.bb.push({
+        let item = {
           type: 'item',
           tagName: 'line',
           props: [
@@ -247,8 +274,14 @@ class Xom extends Node {
             ['stroke-width', borderRightWidth.value],
             ['stroke', borderRightColor]
           ],
-        });
-        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
+        };
+        if(borderRightStyle === 'dashed') {
+          item.props.push(['stroke-dasharray', `${borderRightWidth.value * 3}, ${borderRightWidth.value * 2}`])
+        }
+        else if(borderTopStyle === 'dotted') {
+          item.props.push(['stroke-dasharray', `${borderRightWidth.value}, ${borderRightWidth.value}`])
+        }
+        virtualDom.bb.push(item);
       }
     }
     if(borderBottomWidth.value) {
@@ -271,13 +304,22 @@ class Xom extends Node {
         ctx.beginPath();
         ctx.lineWidth = borderBottomWidth.value;
         ctx.strokeStyle = borderBottomColor;
+        if(borderBottomStyle === 'dashed') {
+          ctx.setLineDash([borderBottomWidth.value * 3, borderBottomWidth.value * 2]);
+        }
+        else if(borderBottomStyle === 'dotted') {
+          ctx.setLineDash([borderBottomWidth.value, borderBottomWidth.value * 2]);
+        }
+        else {
+          ctx.setLineDash([]);
+        }
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y1);
         ctx.stroke();
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.bb.push({
+        let item = {
           type: 'item',
           tagName: 'line',
           props: [
@@ -288,8 +330,14 @@ class Xom extends Node {
             ['stroke-width', borderBottomWidth.value],
             ['stroke', borderBottomColor]
           ],
-        });
-        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
+        };
+        if(borderBottomStyle === 'dashed') {
+          item.props.push(['stroke-dasharray', `${borderBottomWidth.value * 3}, ${borderBottomWidth.value * 2}`])
+        }
+        else if(borderBottomStyle === 'dotted') {
+          item.props.push(['stroke-dasharray', `${borderBottomWidth.value}, ${borderBottomWidth.value}`])
+        }
+        virtualDom.bb.push(item);
       }
     }
     if(borderLeftWidth.value) {
@@ -306,13 +354,22 @@ class Xom extends Node {
         ctx.beginPath();
         ctx.lineWidth = borderLeftWidth.value;
         ctx.strokeStyle = borderLeftColor;
+        if(borderLeftStyle === 'dashed') {
+          ctx.setLineDash([borderLeftWidth.value * 3, borderLeftWidth.value * 2]);
+        }
+        else if(borderLeftStyle === 'dotted') {
+          ctx.setLineDash([borderLeftWidth.value, borderLeftWidth.value * 2]);
+        }
+        else {
+          ctx.setLineDash([]);
+        }
         ctx.moveTo(x1, y1);
         ctx.lineTo(x1, y2);
         ctx.stroke();
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.bb.push({
+        let item = {
           type: 'item',
           tagName: 'line',
           props: [
@@ -323,8 +380,14 @@ class Xom extends Node {
             ['stroke-width', borderLeftWidth.value],
             ['stroke', borderLeftColor]
           ],
-        });
-        // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
+        };
+        if(borderLeftStyle === 'dashed') {
+          item.props.push(['stroke-dasharray', `${borderLeftWidth.value * 3}, ${borderLeftWidth.value * 2}`])
+        }
+        else if(borderLeftStyle === 'dotted') {
+          item.props.push(['stroke-dasharray', `${borderLeftWidth.value}, ${borderLeftWidth.value}`])
+        }
+        virtualDom.bb.push(item);
       }
     }
   }

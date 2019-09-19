@@ -15,3 +15,5 @@ tests/
 demo/
 node_modules/
 .DS_Store
+reports/
+.idea/

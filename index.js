@@ -478,12 +478,16 @@
             backgroundColor = style.backgroundColor,
             borderTopWidth = style.borderTopWidth,
             borderTopColor = style.borderTopColor,
+            borderTopStyle = style.borderTopStyle,
             borderRightWidth = style.borderRightWidth,
             borderRightColor = style.borderRightColor,
+            borderRightStyle = style.borderRightStyle,
             borderBottomWidth = style.borderBottomWidth,
             borderBottomColor = style.borderBottomColor,
+            borderBottomStyle = style.borderBottomStyle,
             borderLeftWidth = style.borderLeftWidth,
             borderLeftColor = style.borderLeftColor,
+            borderLeftStyle = style.borderLeftStyle,
             marginTop = style.marginTop,
             marginLeft = style.marginLeft,
             paddingTop = style.paddingTop,
@@ -530,7 +534,7 @@
               type: 'item',
               tagName: 'rect',
               props: [['x', x1], ['y', y1], ['width', w], ['height', h], ['fill', backgroundColor]]
-            }); // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
+            });
           }
         }
 
@@ -553,16 +557,33 @@
             ctx.beginPath();
             ctx.lineWidth = borderTopWidth.value;
             ctx.strokeStyle = borderTopColor;
+
+            if (borderTopStyle === 'dashed') {
+              ctx.setLineDash([borderTopWidth.value * 3, borderTopWidth.value * 2]);
+            } else if (borderTopStyle === 'dotted') {
+              ctx.setLineDash([borderTopWidth.value, borderTopWidth.value]);
+            } else {
+              ctx.setLineDash([]);
+            }
+
             ctx.moveTo(_x, _y);
             ctx.lineTo(x2, _y);
             ctx.stroke();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            virtualDom.bb.push({
+            var item = {
               type: 'item',
               tagName: 'line',
               props: [['x1', _x], ['y1', _y], ['x2', x2], ['y2', _y], ['stroke-width', borderTopWidth.value], ['stroke', borderTopColor]]
-            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
+            };
+
+            if (borderTopStyle === 'dashed') {
+              item.props.push(['stroke-dasharray', "".concat(borderTopWidth.value * 3, ", ").concat(borderTopWidth.value * 2)]);
+            } else if (borderTopStyle === 'dotted') {
+              item.props.push(['stroke-dasharray', "".concat(borderTopWidth.value, ", ").concat(borderTopWidth.value)]);
+            }
+
+            virtualDom.bb.push(item);
           }
         }
 
@@ -592,16 +613,33 @@
             ctx.beginPath();
             ctx.lineWidth = borderRightWidth.value;
             ctx.strokeStyle = borderRightColor;
+
+            if (borderRightStyle === 'dashed') {
+              ctx.setLineDash([borderRightWidth.value * 3, borderRightWidth.value * 2]);
+            } else if (borderRightStyle === 'dotted') {
+              ctx.setLineDash([borderRightWidth.value, borderRightWidth.value * 2]);
+            } else {
+              ctx.setLineDash([]);
+            }
+
             ctx.moveTo(_x2, _y2);
             ctx.lineTo(_x2, y2);
             ctx.stroke();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            virtualDom.bb.push({
+            var _item = {
               type: 'item',
               tagName: 'line',
               props: [['x1', _x2], ['y1', _y2], ['x2', _x2], ['y2', y2], ['stroke-width', borderRightWidth.value], ['stroke', borderRightColor]]
-            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
+            };
+
+            if (borderRightStyle === 'dashed') {
+              _item.props.push(['stroke-dasharray', "".concat(borderRightWidth.value * 3, ", ").concat(borderRightWidth.value * 2)]);
+            } else if (borderTopStyle === 'dotted') {
+              _item.props.push(['stroke-dasharray', "".concat(borderRightWidth.value, ", ").concat(borderRightWidth.value)]);
+            }
+
+            virtualDom.bb.push(_item);
           }
         }
 
@@ -632,16 +670,33 @@
             ctx.beginPath();
             ctx.lineWidth = borderBottomWidth.value;
             ctx.strokeStyle = borderBottomColor;
+
+            if (borderBottomStyle === 'dashed') {
+              ctx.setLineDash([borderBottomWidth.value * 3, borderBottomWidth.value * 2]);
+            } else if (borderBottomStyle === 'dotted') {
+              ctx.setLineDash([borderBottomWidth.value, borderBottomWidth.value * 2]);
+            } else {
+              ctx.setLineDash([]);
+            }
+
             ctx.moveTo(_x3, _y3);
             ctx.lineTo(_x4, _y3);
             ctx.stroke();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            virtualDom.bb.push({
+            var _item2 = {
               type: 'item',
               tagName: 'line',
               props: [['x1', _x3], ['y1', _y3], ['x2', _x4], ['y2', _y3], ['stroke-width', borderBottomWidth.value], ['stroke', borderBottomColor]]
-            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
+            };
+
+            if (borderBottomStyle === 'dashed') {
+              _item2.props.push(['stroke-dasharray', "".concat(borderBottomWidth.value * 3, ", ").concat(borderBottomWidth.value * 2)]);
+            } else if (borderBottomStyle === 'dotted') {
+              _item2.props.push(['stroke-dasharray', "".concat(borderBottomWidth.value, ", ").concat(borderBottomWidth.value)]);
+            }
+
+            virtualDom.bb.push(_item2);
           }
         }
 
@@ -664,16 +719,33 @@
             ctx.beginPath();
             ctx.lineWidth = borderLeftWidth.value;
             ctx.strokeStyle = borderLeftColor;
+
+            if (borderLeftStyle === 'dashed') {
+              ctx.setLineDash([borderLeftWidth.value * 3, borderLeftWidth.value * 2]);
+            } else if (borderLeftStyle === 'dotted') {
+              ctx.setLineDash([borderLeftWidth.value, borderLeftWidth.value * 2]);
+            } else {
+              ctx.setLineDash([]);
+            }
+
             ctx.moveTo(_x5, _y4);
             ctx.lineTo(_x5, _y5);
             ctx.stroke();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            virtualDom.bb.push({
+            var _item3 = {
               type: 'item',
               tagName: 'line',
               props: [['x1', _x5], ['y1', _y4], ['x2', _x5], ['y2', _y5], ['stroke-width', borderLeftWidth.value], ['stroke', borderLeftColor]]
-            }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
+            };
+
+            if (borderLeftStyle === 'dashed') {
+              _item3.props.push(['stroke-dasharray', "".concat(borderLeftWidth.value * 3, ", ").concat(borderLeftWidth.value * 2)]);
+            } else if (borderLeftStyle === 'dotted') {
+              _item3.props.push(['stroke-dasharray', "".concat(borderLeftWidth.value, ", ").concat(borderLeftWidth.value)]);
+            }
+
+            virtualDom.bb.push(_item3);
           }
         }
       }
@@ -904,10 +976,10 @@
       style[key + 'Width'] = w[0];
     }
 
-    var s = /\bsolid\b/i.exec(style[key]);
+    var s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
 
     if (s) {
-      style[key + 'Style'] = s[0];
+      style[key + 'Style'] = s[1];
     }
 
     var c = /#[0-9a-f]{3,6}/i.exec(style[key]);

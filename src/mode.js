@@ -2,20 +2,10 @@ const CANVAS = 0;
 const SVG = 1;
 
 let div;
-let svgHtml = '';
 
 export default {
   CANVAS,
   SVG,
-  appendHtml(s) {
-    svgHtml += s;
-  },
-  get html() {
-    return svgHtml;
-  },
-  reset() {
-    svgHtml = '';
-  },
   measure(s, style) {
     if(!div) {
       div = document.createElement('div');

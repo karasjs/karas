@@ -1,5 +1,6 @@
 import Dom from './node/Dom';
 import CS from './node/CS';
+import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polyline from './geom/Polyline';
 import Polygon from './geom/Polygon';
@@ -8,6 +9,15 @@ import Rect from './geom/Rect';
 import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
 import Grid from './geom/Grid';
+
+Geom.register('$line', Line);
+Geom.register('$polyline', Polyline);
+Geom.register('$polygon', Polygon);
+Geom.register('$sector', Sector);
+Geom.register('$rect', Rect);
+Geom.register('$circle', Circle);
+Geom.register('$ellipse', Ellipse);
+Geom.register('$grid', Grid);
 
 let karas = {
   render(cs, dom) {
@@ -29,29 +39,13 @@ let karas = {
     throw new Error('can not use marker: ' + tagName);
   },
   createGm(tagName, props) {
-    switch(tagName) {
-      case '$line':
-        return new Line(props);
-      case '$polyline':
-        return new Polyline(props);
-      case '$polygon':
-        return new Polygon(props);
-      case '$sector':
-        return new Sector(props);
-      case '$rect':
-        return new Rect(props);
-      case '$circle':
-        return new Circle(props);
-      case '$ellipse':
-        return new Ellipse(props);
-      case '$grid':
-        return new Grid(props);
-    }
-    throw new Error('can not use geom marker: ' + tagName);
+    let klass = Geom.getImplement(tagName);
+    return new klass(tagName, props);
   },
   createCp(cp, props) {
     return new cp(props);
   },
+  Geom,
 };
 
 if(typeof window != 'undefined') {

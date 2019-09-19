@@ -40,14 +40,11 @@ function isNil(v) {
 }
 
 function joinVirtualDom(vd) {
-  if(vd.type === 'item') { console.log(vd);
-    let props = vd.props;
+  if(vd.type === 'item') {
     let s = '';
-    for(let i in props) {
-      if(props.hasOwnProperty(i)) {
-        s += ` ${i}="${props[i]}"`;
-      }
-    }
+    vd.props.forEach(item => {
+      s += ` ${item[0]}="${item[1]}"`;
+    });
     if(vd.tagName === 'text') {
       return `<text${s}>${vd.content}</text>`;
     }
@@ -65,10 +62,11 @@ function joinVirtualDom(vd) {
     vd.bb.forEach(item => {
       s += joinVirtualDom(item);
     });
-    s += '</g>';
+    s += '</g><g>';
     vd.children.forEach(item => {
       s += joinVirtualDom(item);
     });
+    s += '</g>';
     return `<g>${s}</g>`;
   }
   else if(vd.type === 'geom') {
@@ -76,8 +74,11 @@ function joinVirtualDom(vd) {
     vd.bb.forEach(item => {
       s += joinVirtualDom(item);
     });
+    s += '</g><g>';
+    vd.content.forEach(item => {
+      s += joinVirtualDom(item);
+    });
     s += '</g>';
-    s += joinVirtualDom(vd.content);
     return `<g>${s}</g>`;
   }
 }

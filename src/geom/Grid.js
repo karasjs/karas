@@ -2,8 +2,8 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Grid extends Geom {
-  constructor(props) {
-    super('$grid', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // x,y被分为几格
     this.__nx = 0;
     if(this.props.nx) {
@@ -23,7 +23,7 @@ class Grid extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, nx, ny } = this;
+    let { x, y, width, height, style, ctx, nx, ny, virtualDom } = this;
     if(width <= 0 || height <= 0) {
       return;
     }
@@ -83,10 +83,34 @@ class Grid extends Geom {
     }
     else if(renderMode === mode.SVG) {
       lx.forEach(item => {
-        mode.appendHtml(`<line x1="${originX}" y1="${item}" x2="${endX}" y2="${item}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+        virtualDom.content.push({
+          type: 'item',
+          tagName: 'line',
+          props: [
+            ['x1', originX],
+            ['y1', item],
+            ['x2', endX],
+            ['y2', item],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ],
+        });
       });
       ly.forEach(item => {
-        mode.appendHtml(`<line x1="${item}" y1="${originY}" x2="${item}" y2="${endY}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+        virtualDom.content.push({
+          type: 'item',
+          tagName: 'line',
+          props: [
+            ['x1', item],
+            ['y1', originY],
+            ['x2', item],
+            ['y2', endY],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ],
+        });
       });
     }
   }

@@ -2,13 +2,13 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Rect extends Geom {
-  constructor(props) {
-    super('$sector', props);
+  constructor(tagName, props) {
+    super(tagName, props);
   }
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx } = this;
+    let { x, y, width, height, style, ctx, virtualDom } = this;
     let {
       display,
       borderTopWidth,
@@ -44,7 +44,20 @@ class Rect extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      mode.appendHtml(`<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      virtualDom.content.push({
+        type: 'item',
+        tagName: 'rect',
+        props: [
+          ['x', x],
+          ['y', y],
+          ['width', width],
+          ['height', height],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 }

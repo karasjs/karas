@@ -21,12 +21,12 @@ class LineBox {
       this.__virtualDom = {
         type: 'item',
         tagName: 'text',
-        props: {
-          x,
-          y,
-          fill: style.color,
-          'font-size': `${style.fontSize}px`,
-        },
+        props: [
+          ['x', x],
+          ['y', y],
+          ['fill', style.color],
+          ['font-size', `${style.fontSize}px`]
+        ],
         content,
       };
       // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);

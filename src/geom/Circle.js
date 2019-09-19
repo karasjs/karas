@@ -2,8 +2,8 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Circle extends Geom {
-  constructor(props) {
-    super('$circle', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // 半径0~1，默认1
     this.__r = 1;
     if(this.props.r) {
@@ -54,20 +54,19 @@ class Circle extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      virtualDom.content = {
+      virtualDom.content.push({
         type: 'item',
         tagName: 'circle',
-        props: {
-          cx: originX,
-          cy: originY,
-          r,
-          fill,
-          stroke,
-          'stroke-width': strokeWidth,
-          'stroke-dasharray': strokeDasharray,
-        },
-      };
-      // mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+        props: [
+          ['cx', originX],
+          ['cy', originY],
+          ['r', r],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 

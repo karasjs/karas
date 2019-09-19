@@ -32,10 +32,10 @@ class Text extends Node {
         mw = cache[char];
       }
       else if(renderMode === mode.CANVAS) {
-        mw = ctx.measureText(char).width;
+        mw = cache[char] = ctx.measureText(char).width;
       }
       else if(renderMode === mode.SVG) {
-        mw = mode.measure(char, style);
+        mw = cache[char] = mode.measure(char, style);
       }
       charWidthList.push(mw);
       sum += mw;
@@ -120,6 +120,12 @@ class Text extends Node {
     this.lineBoxes.forEach(item => {
       item.render(renderMode, ctx);
     });
+    if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        type: 'text',
+        children: this.lineBoxes.map(lineBox => lineBox.virtualDom),
+      };
+    }
   }
 
   __tryLayInline(w) {
@@ -172,13 +178,6 @@ class Text extends Node {
   }
   get renderMode() {
     return this.__renderMode;
-  }
-  get virtualDom() {
-    return {
-      type: 'text',
-      tagName: 'text',
-      children: this.lineBoxes.map(lineBox => lineBox.virtualDom),
-    };
   }
 }
 

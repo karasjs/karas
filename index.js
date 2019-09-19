@@ -298,21 +298,9 @@
   var CANVAS = 0;
   var SVG = 1;
   var div;
-  var svgHtml = '';
   var mode = {
     CANVAS: CANVAS,
     SVG: SVG,
-    appendHtml: function appendHtml(s) {
-      svgHtml += s;
-    },
-
-    get html() {
-      return svgHtml;
-    },
-
-    reset: function reset() {
-      svgHtml = '';
-    },
     measure: function measure(s, style) {
       if (!div) {
         div = document.createElement('div');
@@ -541,13 +529,7 @@
             virtualDom.bb.push({
               type: 'item',
               tagName: 'rect',
-              props: {
-                x: x1,
-                y: y1,
-                width: w,
-                height: h,
-                fill: backgroundColor
-              }
+              props: [['x', x1], ['y', y1], ['width', w], ['height', h], ['fill', backgroundColor]]
             }); // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
           }
         }
@@ -579,14 +561,7 @@
             virtualDom.bb.push({
               type: 'item',
               tagName: 'line',
-              props: {
-                x1: _x,
-                y1: _y,
-                x2: x2,
-                y2: _y,
-                'stroke-width': borderTopWidth.value,
-                stroke: borderTopColor
-              }
+              props: [['x1', _x], ['y1', _y], ['x2', x2], ['y2', _y], ['stroke-width', borderTopWidth.value], ['stroke', borderTopColor]]
             }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
           }
         }
@@ -625,14 +600,7 @@
             virtualDom.bb.push({
               type: 'item',
               tagName: 'line',
-              props: {
-                x1: _x2,
-                y1: _y2,
-                x2: _x2,
-                y2: y2,
-                'stroke-width': borderRightWidth.value,
-                stroke: borderRightColor
-              }
+              props: [['x1', _x2], ['y1', _y2], ['x2', _x2], ['y2', y2], ['stroke-width', borderRightWidth.value], ['stroke', borderRightColor]]
             }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
           }
         }
@@ -672,14 +640,7 @@
             virtualDom.bb.push({
               type: 'item',
               tagName: 'line',
-              props: {
-                x1: _x3,
-                y1: _y3,
-                x2: _x4,
-                y2: _y3,
-                'stroke-width': borderBottomWidth.value,
-                stroke: borderBottomColor
-              }
+              props: [['x1', _x3], ['y1', _y3], ['x2', _x4], ['y2', _y3], ['stroke-width', borderBottomWidth.value], ['stroke', borderBottomColor]]
             }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
           }
         }
@@ -711,14 +672,7 @@
             virtualDom.bb.push({
               type: 'item',
               tagName: 'line',
-              props: {
-                x1: _x5,
-                y1: _y4,
-                x2: _x5,
-                y2: _y5,
-                'stroke-width': borderLeftWidth.value,
-                stroke: borderLeftColor
-              }
+              props: [['x1', _x5], ['y1', _y4], ['x2', _x5], ['y2', _y5], ['stroke-width', borderLeftWidth.value], ['stroke', borderLeftColor]]
             }); // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
           }
         }
@@ -880,15 +834,10 @@
 
   function joinVirtualDom(vd) {
     if (vd.type === 'item') {
-      console.log(vd);
-      var props = vd.props;
       var s = '';
-
-      for (var i in props) {
-        if (props.hasOwnProperty(i)) {
-          s += " ".concat(i, "=\"").concat(props[i], "\"");
-        }
-      }
+      vd.props.forEach(function (item) {
+        s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+      });
 
       if (vd.tagName === 'text') {
         return "<text".concat(s, ">").concat(vd.content, "</text>");
@@ -906,18 +855,22 @@
       vd.bb.forEach(function (item) {
         _s2 += joinVirtualDom(item);
       });
-      _s2 += '</g>';
+      _s2 += '</g><g>';
       vd.children.forEach(function (item) {
         _s2 += joinVirtualDom(item);
       });
+      _s2 += '</g>';
       return "<g>".concat(_s2, "</g>");
     } else if (vd.type === 'geom') {
       var _s3 = '<g>';
       vd.bb.forEach(function (item) {
         _s3 += joinVirtualDom(item);
       });
+      _s3 += '</g><g>';
+      vd.content.forEach(function (item) {
+        _s3 += joinVirtualDom(item);
+      });
       _s3 += '</g>';
-      _s3 += joinVirtualDom(vd.content);
       return "<g>".concat(_s3, "</g>");
     }
   }
@@ -1125,12 +1078,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: {
-              x: x,
-              y: y,
-              fill: style.color,
-              'font-size': "".concat(style.fontSize, "px")
-            },
+            props: [['x', x], ['y', y], ['fill', style.color], ['font-size', "".concat(style.fontSize, "px")]],
             content: content
           }; // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
         }
@@ -1233,9 +1181,9 @@
           if (cache.hasOwnProperty(_char)) {
             mw = cache[_char];
           } else if (renderMode === mode.CANVAS) {
-            mw = ctx.measureText(_char).width;
+            mw = cache[_char] = ctx.measureText(_char).width;
           } else if (renderMode === mode.SVG) {
-            mw = mode.measure(_char, style);
+            mw = cache[_char] = mode.measure(_char, style);
           }
 
           charWidthList.push(mw);
@@ -1346,6 +1294,15 @@
         this.lineBoxes.forEach(function (item) {
           item.render(renderMode, ctx);
         });
+
+        if (renderMode === mode.SVG) {
+          this.__virtualDom = {
+            type: 'text',
+            children: this.lineBoxes.map(function (lineBox) {
+              return lineBox.virtualDom;
+            })
+          };
+        }
       }
     }, {
       key: "__tryLayInline",
@@ -1420,17 +1377,6 @@
       key: "renderMode",
       get: function get() {
         return this.__renderMode;
-      }
-    }, {
-      key: "virtualDom",
-      get: function get() {
-        return {
-          type: 'text',
-          tagName: 'text',
-          children: this.lineBoxes.map(function (lineBox) {
-            return lineBox.virtualDom;
-          })
-        };
       }
     }]);
 
@@ -1532,6 +1478,8 @@
 
     return LineGroup;
   }();
+
+  var IMPLEMENT = {};
 
   var Geom =
   /*#__PURE__*/
@@ -1777,6 +1725,13 @@
       key: "render",
       value: function render(renderMode) {
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
+
+        if (renderMode === mode.SVG) {
+          this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
+            type: 'geom',
+            content: []
+          });
+        }
       }
     }, {
       key: "tagName",
@@ -1788,12 +1743,23 @@
       get: function get() {
         return this.__height;
       }
+    }], [{
+      key: "getImplement",
+      value: function getImplement(name) {
+        if (!IMPLEMENT.hasOwnProperty(name)) {
+          throw new Error("Geom has not register: ".concat(name));
+        }
+
+        return IMPLEMENT[name];
+      }
     }, {
-      key: "virtualDom",
-      get: function get() {
-        return _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
-          type: 'geom'
-        });
+      key: "register",
+      value: function register(name, implement) {
+        if (IMPLEMENT.hasOwnProperty(name)) {
+          throw new Error("Geom has already register: ".concat(name));
+        }
+
+        IMPLEMENT[name] = implement;
       }
     }]);
 
@@ -3131,6 +3097,15 @@
             item.render(renderMode);
           }
         });
+
+        if (renderMode === mode.SVG) {
+          this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
+            type: 'dom',
+            children: this.children.map(function (item) {
+              return item.virtualDom;
+            })
+          });
+        }
       }
     }, {
       key: "tagName",
@@ -3174,16 +3149,6 @@
       get: function get() {
         return this.__flowY;
       }
-    }, {
-      key: "virtualDom",
-      get: function get() {
-        return _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
-          type: 'dom',
-          children: this.children.map(function (item) {
-            return item.virtualDom;
-          })
-        });
-      }
     }], [{
       key: "isValid",
       value: function isValid(s) {
@@ -3195,21 +3160,109 @@
   }(Xom);
 
   function diff(elem, ovd, nvd) {
-
     if (ovd.type === 'dom') {
       if (nvd.type === 'dom') {
         diffD2D(elem, ovd, nvd);
-      } else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+      } else if (nvd.type === 'text') {
+        replaceWith(elem, nvd);
+      } else if (nvd.type === 'geom') {
+        diffD2G(elem, ovd, nvd);
+      }
     } else if (nvd.type === 'text') {
-      if (nvd.type === 'dom') ; else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+      if (nvd.type === 'dom') {
+        replaceWith(elem, nvd);
+      } else if (nvd.type === 'text') {
+        diffT2T(elem, ovd, nvd);
+      } else if (nvd.type === 'geom') {
+        replaceWith(elem, nvd);
+      }
     } else if (nvd.type === 'geom') {
-      if (nvd.type === 'dom') ; else if (nvd.type === 'text') ; else if (nvd.type === 'geom') ;
+      if (nvd.type === 'dom') {
+        diffG2D(elem, ovd, nvd);
+      } else if (nvd.type === 'text') {
+        replaceWith(elem, nvd);
+      } else if (nvd.type === 'geom') {
+        diffG2G(elem, ovd, nvd);
+      }
     }
   }
 
   function diffD2D(elem, ovd, nvd) {
-    // console.log(elem, ovd, nvd);
     diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    var ol = ovd.children.length;
+    var nl = nvd.children.length;
+    var i = 0;
+    var lastChild = elem.lastChild;
+    var cns = lastChild.childNodes;
+
+    for (; i < Math.min(ol, nl); i++) {
+      diff(cns[i], ovd.children[i], nvd.children[i]);
+    }
+
+    if (i < ol) {
+      for (; i < ol; i++) {
+        removeAt(lastChild, cns, i);
+      }
+    } else if (i < nl) {
+      for (; i < nl; i++) {
+        insertAt(lastChild, cns, i, nvd.children[i]);
+      }
+    }
+  }
+
+  function diffD2G(elem, ovd, nvd) {
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    replaceWith(elem.lastChild, nvd.content);
+  }
+
+  function diffT2T(elem, ovd, nvd) {
+    var ol = ovd.children.length;
+    var nl = nvd.children.length;
+    var i = 0;
+
+    for (; i < Math.min(ol, nl); i++) {
+      diffItem(elem, i, ovd.children[i], nvd.children[i], true);
+    }
+
+    var cns = elem.childNodes;
+
+    if (i < ol) {
+      for (; i < ol; i++) {
+        removeAt(elem, cns, i);
+      }
+    } else if (i < nl) {
+      for (; i < nl; i++) {
+        insertAt(elem, cns, i, nvd.children[i]);
+      }
+    }
+  }
+
+  function diffG2D(elem, ovd, nvd) {
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    replaceWith(elem.lastChild, nvd.children);
+  }
+
+  function diffG2G(elem, ovd, nvd) {
+    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    var ol = ovd.content.length;
+    var nl = nvd.content.length;
+    var i = 0;
+    var lastChild = elem.lastChild;
+    var cns = lastChild.childNodes;
+
+    for (; i < Math.min(ol, nl); i++) {
+      diffItem(lastChild, i, ovd.content[i], nvd.content[i]);
+    }
+
+    if (i < ol) {
+      for (; i < ol; i++) {
+        removeAt(lastChild, cns, i);
+      }
+    } else if (i < nl) {
+      for (; i < nl; i++) {
+        insertAt(lastChild, cns, i, nvd.content[i]);
+      }
+    }
   }
 
   function diffBb(elem, obb, nbb) {
@@ -3220,12 +3273,99 @@
     for (; i < Math.min(ol, nl); i++) {
       diffItem(elem, i, obb[i], nbb[i]);
     }
+
+    var cns = elem.childNodes;
+
+    if (i < ol) {
+      for (; i < ol; i++) {
+        removeAt(elem, cns, i);
+      }
+    } else if (i < nl) {
+      for (; i < nl; i++) {
+        insertAt(elem, cns, i, nbb[i]);
+      }
+    }
   }
 
-  function diffItem(elem, i, o, n) {
-    if (o.tagName !== n.tagName) {
-      elem.insertAdjacentHTML('afterend', util.joinVirtualDom(n));
-      elem.parentNode.removeChild(elem);
+  function diffItem(elem, i, ovd, nvd, isText) {
+    var cns = elem.childNodes;
+
+    if (ovd.tagName !== nvd.tagName) {
+      replaceWith(cns[i], nvd);
+    } else {
+      var op = {};
+
+      for (var j = 0, len = ovd.props.length; j < len; j++) {
+        var prop = ovd.props[j];
+
+        var _prop = _slicedToArray(prop, 2),
+            _k = _prop[0],
+            v = _prop[1];
+
+        op[_k] = v;
+      }
+
+      for (var _j = 0, _len = nvd.props.length; _j < _len; _j++) {
+        var _prop2 = nvd.props[_j];
+
+        var _prop3 = _slicedToArray(_prop2, 2),
+            _k2 = _prop3[0],
+            v = _prop3[1]; // 已有不等更新，没有添加
+
+
+        if (op.hasOwnProperty(_k2)) {
+          if (op[_k2] !== v) {
+            cns[i].setAttribute(_k2, v);
+          }
+
+          delete op[_k2];
+        } else {
+          cns[i].setAttribute(_k2, v);
+        }
+      } // 多余的删除
+
+
+      for (var k in op) {
+        if (op.hasOwnProperty(k)) {
+          cns[i].removeAttribute(k);
+        }
+      }
+
+      if (isText && ovd.content !== nvd.content) {
+        cns[i].textContent = nvd.content;
+      }
+    }
+  }
+
+  function replaceWith(elem, vd) {
+    var res;
+
+    if (Array.isArray(vd)) {
+      res = '';
+      vd.forEach(function (item) {
+        res += util.joinVirtualDom(item);
+      });
+    } else {
+      res = util.joinVirtualDom(vd);
+    }
+
+    elem.insertAdjacentHTML('afterend', res);
+    elem.parentNode.removeChild(elem);
+  }
+
+  function insertAt(elem, cns, index, vd) {
+    var res = util.joinVirtualDom(vd);
+
+    if (index >= cns.length) {
+      elem.insertAdjacentHTML('beforeend', res);
+    } else {
+      cns[index].insertAdjacentHTML('beforebegin', res);
+    }
+  }
+
+  function removeAt(elem, cns, index) {
+    if (cns[index]) {
+      elem.removeChild(cns[index]);
     }
   }
 
@@ -3367,10 +3507,14 @@
           if (this.height) {
             dom.setAttribute('height', this.height);
           }
-        } // 没有canvas节点则生成一个新的
+        } // 没有canvas/svg节点则生成一个新的
         else {
-            dom.innerHTML = this.__genHtml();
             this.__node = dom.querySelector(this.tagName);
+
+            if (!this.__node) {
+              dom.innerHTML = this.__genHtml();
+              this.__node = dom.querySelector(this.tagName);
+            }
           } // 没有设置width/height则采用css计算形式
 
 
@@ -3465,15 +3609,16 @@
   function (_Geom) {
     _inherits(Line, _Geom);
 
-    function Line(props) {
+    function Line(tagName, props) {
       var _this;
 
       _classCallCheck(this, Line);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, '$line', props)); // start和end表明线段的首尾坐标
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, tagName, props)); // start和end表明线段的首尾坐标，control表明控制点坐标
 
       _this.__start = [];
       _this.__end = [];
+      _this.__control = [];
 
       if (Array.isArray(_this.props.start)) {
         _this.__start = _this.props.start;
@@ -3481,13 +3626,10 @@
 
       if (Array.isArray(_this.props.end)) {
         _this.__end = _this.props.end;
-      } // 原点位置，4个角，默认左下
+      }
 
-
-      if (['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
-        _this.__origin = _this.props.origin;
-      } else {
-        _this.__origin = 'BOTTOM_LEFT';
+      if (Array.isArray(_this.props.control)) {
+        _this.__control = _this.props.control;
       }
 
       return _this;
@@ -3506,7 +3648,8 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            origin = this.origin;
+            control = this.control,
+            virtualDom = this.virtualDom;
 
         if (start.length < 2 || end.length < 2) {
           return;
@@ -3533,32 +3676,27 @@
           return;
         }
 
-        var x1, y1, x2, y2;
         var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
         var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
         width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
         height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+        var x1 = originX + start[0] * width;
+        var y1 = originY + start[1] * height;
+        var x2 = originX + end[0] * width;
+        var y2 = originY + end[1] * height;
+        var curve = 0;
+        var cx1, cy1, cx2, cy2;
 
-        if (origin === 'TOP_LEFT') {
-          x1 = originX + start[0] * width;
-          y1 = originY + start[1] * height;
-          x2 = originX + end[0] * width;
-          y2 = originY + end[1] * height;
-        } else if (origin === 'TOP_RIGHT') {
-          x1 = originX + width - start[0] * width;
-          y1 = originY + start[1] * height;
-          x2 = originX + width - end[0] * width;
-          y2 = originY + end[1] * height;
-        } else if (origin === 'BOTTOM_LEFT') {
-          x1 = originX + start[0] * width;
-          y1 = originY + height - start[1] * height;
-          x2 = originX + end[0] * width;
-          y2 = originY + height - end[1] * height;
-        } else if (origin === 'BOTTOM_RIGHT') {
-          x1 = originX + width - start[0] * width;
-          y1 = originY + height - start[1] * height;
-          x2 = originX + width - end[0] * width;
-          y2 = originY + height - end[1] * height;
+        if (Array.isArray(control[0])) {
+          curve++;
+          cx1 = originX + control[0][0] * width;
+          cy1 = originY + control[0][1] * height;
+        }
+
+        if (Array.isArray(control[1])) {
+          curve++;
+          cx2 = originX + control[1][0] * width;
+          cy2 = originY + control[1][1] * height;
         }
 
         if (renderMode === mode.CANVAS) {
@@ -3567,11 +3705,37 @@
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
+
+          if (curve === 2) {
+            ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2);
+          } else if (curve === 1) {
+            ctx.quadraticCurveTo(cx1, cy1, x2, y2);
+          } else {
+            ctx.lineTo(x2, y2);
+          }
+
           ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          mode.appendHtml("<line x1=\"".concat(x1, "\" y1=\"").concat(y1, "\" x2=\"").concat(x2, "\" y2=\"").concat(y2, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          if (curve === 2) {
+            virtualDom.content.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+            });
+          } else if (curve === 1) {
+            virtualDom.content.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+            });
+          } else {
+            virtualDom.content.push({
+              type: 'item',
+              tagName: 'line',
+              props: [['x1', x1], ['y1', y1], ['x2', x2], ['y2', y2], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+            });
+          }
         }
       }
     }, {
@@ -3585,9 +3749,9 @@
         return this.__end;
       }
     }, {
-      key: "origin",
+      key: "control",
       get: function get() {
-        return this.__origin;
+        return this.__control;
       }
     }]);
 
@@ -3599,12 +3763,12 @@
   function (_Geom) {
     _inherits(Polyline, _Geom);
 
-    function Polyline(props) {
+    function Polyline(tagName, props) {
       var _this;
 
       _classCallCheck(this, Polyline);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, '$polygon', props)); // 折线所有点的列表
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, tagName, props)); // 折线所有点的列表
 
       _this.__points = [];
 
@@ -3634,7 +3798,8 @@
             style = this.style,
             ctx = this.ctx,
             points = this.points,
-            origin = this.origin;
+            origin = this.origin,
+            virtualDom = this.virtualDom;
 
         if (points.length < 2) {
           return;
@@ -3708,7 +3873,11 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          virtualDom.content.push({
+            type: 'item',
+            tagName: 'polyline',
+            props: [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }, {
@@ -3760,12 +3929,12 @@
   function (_Geom) {
     _inherits(Polygon, _Geom);
 
-    function Polygon(props) {
+    function Polygon(tagName, props) {
       var _this;
 
       _classCallCheck(this, Polygon);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, '$polygon', props)); // 所有点的列表
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, tagName, props)); // 所有点的列表
 
       _this.__points = [];
 
@@ -3787,7 +3956,8 @@
             height = this.height,
             style = this.style,
             ctx = this.ctx,
-            points = this.points;
+            points = this.points,
+            virtualDom = this.virtualDom;
 
         if (points.length < 3) {
           return;
@@ -3808,7 +3978,8 @@
             paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray;
+            strokeDasharray = style.strokeDasharray,
+            fill = style.fill;
 
         if (display === 'none') {
           return;
@@ -3824,6 +3995,7 @@
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(points[0][0], originY + points[0][1]);
@@ -3848,7 +4020,11 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          mode.appendHtml("<polyline fill=\"none\" points=\"".concat(_points, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          virtualDom.content.push({
+            type: 'item',
+            tagName: 'polygon',
+            props: [['points', _points], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }, {
@@ -3888,12 +4064,12 @@
   function (_Geom) {
     _inherits(Sector, _Geom);
 
-    function Sector(props) {
+    function Sector(tagName, props) {
       var _this;
 
       _classCallCheck(this, Sector);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Sector).call(this, '$sector', props)); // 角度
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Sector).call(this, tagName, props)); // 角度
 
       _this.__start = 0;
       _this.__end = 0;
@@ -3941,7 +4117,8 @@
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            r = this.r;
+            r = this.r,
+            virtualDom = this.virtualDom;
 
         if (start === end) {
           return;
@@ -4001,7 +4178,11 @@
           x2 = _getCoordByDegree4[0];
           y2 = _getCoordByDegree4[1];
           var large = end - start > 180 ? 1 : 0;
-          mode.appendHtml("<path d=\"M ".concat(originX, " ").concat(originY, " L ").concat(x1, " ").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          virtualDom.content.push({
+            type: 'item',
+            tagName: 'path',
+            props: [['d', "M".concat(originX, " ").concat(originY, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }, {
@@ -4029,10 +4210,10 @@
   function (_Geom) {
     _inherits(Rect, _Geom);
 
-    function Rect(props) {
+    function Rect(tagName, props) {
       _classCallCheck(this, Rect);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, '$sector', props));
+      return _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, tagName, props));
     }
 
     _createClass(Rect, [{
@@ -4045,7 +4226,8 @@
             width = this.width,
             height = this.height,
             style = this.style,
-            ctx = this.ctx;
+            ctx = this.ctx,
+            virtualDom = this.virtualDom;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -4083,7 +4265,11 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          mode.appendHtml("<rect x=\"".concat(x, "\" y=\"").concat(y, "\" width=\"").concat(width, "\" height=\"").concat(height, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          virtualDom.content.push({
+            type: 'item',
+            tagName: 'rect',
+            props: [['x', x], ['y', y], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }]);
@@ -4096,12 +4282,12 @@
   function (_Geom) {
     _inherits(Circle, _Geom);
 
-    function Circle(props) {
+    function Circle(tagName, props) {
       var _this;
 
       _classCallCheck(this, Circle);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, '$circle', props)); // 半径0~1，默认1
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, tagName, props)); // 半径0~1，默认1
 
       _this.__r = 1;
 
@@ -4169,19 +4355,11 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.content = {
+          virtualDom.content.push({
             type: 'item',
             tagName: 'circle',
-            props: {
-              cx: originX,
-              cy: originY,
-              r: r,
-              fill: fill,
-              stroke: stroke,
-              'stroke-width': strokeWidth,
-              'stroke-dasharray': strokeDasharray
-            }
-          }; // mode.appendHtml(`<circle cx="${originX}" cy="${originY}" r="${r}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+            props: [['cx', originX], ['cy', originY], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }, {
@@ -4199,12 +4377,12 @@
   function (_Geom) {
     _inherits(Ellipse, _Geom);
 
-    function Ellipse(props) {
+    function Ellipse(tagName, props) {
       var _this;
 
       _classCallCheck(this, Ellipse);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, '$ellipse', props)); // 半径0~1，默认1
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径0~1，默认1
 
       _this.__rx = 1;
 
@@ -4241,7 +4419,8 @@
             style = this.style,
             ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry;
+            ry = this.ry,
+            virtualDom = this.virtualDom;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -4281,7 +4460,11 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          mode.appendHtml("<ellipse cx=\"".concat(originX, "\" cy=\"").concat(originY, "\" rx=\"").concat(rx, "\" ry=\"").concat(ry, "\" fill=\"").concat(fill, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+          virtualDom.content.push({
+            type: 'item',
+            tagName: 'ellipse',
+            props: [['cx', originX], ['cy', originY], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+          });
         }
       }
     }, {
@@ -4304,12 +4487,12 @@
   function (_Geom) {
     _inherits(Grid, _Geom);
 
-    function Grid(props) {
+    function Grid(tagName, props) {
       var _this;
 
       _classCallCheck(this, Grid);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Grid).call(this, '$grid', props)); // x,y被分为几格
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Grid).call(this, tagName, props)); // x,y被分为几格
 
       _this.__nx = 0;
 
@@ -4346,7 +4529,8 @@
             style = this.style,
             ctx = this.ctx,
             nx = this.nx,
-            ny = this.ny;
+            ny = this.ny,
+            virtualDom = this.virtualDom;
 
         if (width <= 0 || height <= 0) {
           return;
@@ -4415,10 +4599,18 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           lx.forEach(function (item) {
-            mode.appendHtml("<line x1=\"".concat(originX, "\" y1=\"").concat(item, "\" x2=\"").concat(endX, "\" y2=\"").concat(item, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+            virtualDom.content.push({
+              type: 'item',
+              tagName: 'line',
+              props: [['x1', originX], ['y1', item], ['x2', endX], ['y2', item], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+            });
           });
           ly.forEach(function (item) {
-            mode.appendHtml("<line x1=\"".concat(item, "\" y1=\"").concat(originY, "\" x2=\"").concat(item, "\" y2=\"").concat(endY, "\" stroke-width=\"").concat(strokeWidth, "\" stroke=\"").concat(stroke, "\" stroke-dasharray=\"").concat(strokeDasharray, "\"/>"));
+            virtualDom.content.push({
+              type: 'item',
+              tagName: 'line',
+              props: [['x1', item], ['y1', originY], ['x2', item], ['y2', endY], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
+            });
           });
         }
       }
@@ -4442,6 +4634,14 @@
     return Grid;
   }(Geom);
 
+  Geom.register('$line', Line);
+  Geom.register('$polyline', Polyline);
+  Geom.register('$polygon', Polygon);
+  Geom.register('$sector', Sector);
+  Geom.register('$rect', Rect);
+  Geom.register('$circle', Circle);
+  Geom.register('$ellipse', Ellipse);
+  Geom.register('$grid', Grid);
   var karas = {
     render: function render(cs, dom) {
       if (!(cs instanceof CS)) {
@@ -4466,37 +4666,13 @@
       throw new Error('can not use marker: ' + tagName);
     },
     createGm: function createGm(tagName, props) {
-      switch (tagName) {
-        case '$line':
-          return new Line(props);
-
-        case '$polyline':
-          return new Polyline(props);
-
-        case '$polygon':
-          return new Polygon(props);
-
-        case '$sector':
-          return new Sector(props);
-
-        case '$rect':
-          return new Rect(props);
-
-        case '$circle':
-          return new Circle(props);
-
-        case '$ellipse':
-          return new Ellipse(props);
-
-        case '$grid':
-          return new Grid(props);
-      }
-
-      throw new Error('can not use geom marker: ' + tagName);
+      var klass = Geom.getImplement(tagName);
+      return new klass(tagName, props);
     },
     createCp: function createCp(cp, props) {
       return new cp(props);
-    }
+    },
+    Geom: Geom
   };
 
   if (typeof window != 'undefined') {

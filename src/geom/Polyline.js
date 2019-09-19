@@ -2,8 +2,8 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Polyline extends Geom {
-  constructor(props) {
-    super('$polygon', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // 折线所有点的列表
     this.__points = [];
     if(Array.isArray(this.props.points)) {
@@ -20,7 +20,7 @@ class Polyline extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, points, origin } = this;
+    let { x, y, width, height, style, ctx, points, origin, virtualDom } = this;
     if(points.length < 2) {
       return;
     }
@@ -100,7 +100,17 @@ class Polyline extends Geom {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
       }
-      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      virtualDom.content.push({
+        type: 'item',
+        tagName: 'polyline',
+        props: [
+          ['points', points],
+          ['fill', 'none'],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 

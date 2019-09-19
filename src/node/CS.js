@@ -98,10 +98,13 @@ class CS extends Dom {
         dom.setAttribute('height', this.height);
       }
     }
-    // 没有canvas节点则生成一个新的
+    // 没有canvas/svg节点则生成一个新的
     else {
-      dom.innerHTML = this.__genHtml();
       this.__node = dom.querySelector(this.tagName);
+      if(!this.__node) {
+        dom.innerHTML = this.__genHtml();
+        this.__node = dom.querySelector(this.tagName);
+      }
     }
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {

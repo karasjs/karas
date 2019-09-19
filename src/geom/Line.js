@@ -2,29 +2,26 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Line extends Geom {
-  constructor(props) {
-    super('$line', props);
-    // start和end表明线段的首尾坐标
+  constructor(tagName, props) {
+    super(tagName, props);
+    // start和end表明线段的首尾坐标，control表明控制点坐标
     this.__start = [];
     this.__end = [];
+    this.__control = [];
     if(Array.isArray(this.props.start)) {
       this.__start = this.props.start;
     }
     if(Array.isArray(this.props.end)) {
       this.__end = this.props.end;
     }
-    // 原点位置，4个角，默认左下
-    if(['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(this.props.origin) > -1) {
-      this.__origin = this.props.origin;
-    }
-    else {
-      this.__origin = 'BOTTOM_LEFT';
+    if(Array.isArray(this.props.control)) {
+      this.__control = this.props.control;
     }
   }
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, start, end, origin } = this;
+    let { x, y, width, height, style, ctx, start, end, control, virtualDom } = this;
     if(start.length < 2 || end.length < 2) {
       return;
     }
@@ -49,34 +46,25 @@ class Line extends Geom {
     if(display === 'none') {
       return;
     }
-    let x1, y1, x2, y2;
     let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
     let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
     width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
     height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
-    if(origin === 'TOP_LEFT') {
-      x1 = originX + start[0] * width;
-      y1 = originY + start[1] * height;
-      x2 = originX + end[0] * width;
-      y2 = originY + end[1] * height;
+    let x1 = originX + start[0] * width;
+    let y1 = originY + start[1] * height;
+    let x2 = originX + end[0] * width;
+    let y2 = originY + end[1] * height;
+    let curve = 0;
+    let cx1, cy1, cx2, cy2;
+    if(Array.isArray(control[0])) {
+      curve++;
+      cx1 = originX + control[0][0] * width;
+      cy1 = originY + control[0][1] * height;
     }
-    else if(origin === 'TOP_RIGHT') {
-      x1 = originX + width - start[0] * width;
-      y1 = originY + start[1] * height;
-      x2 = originX + width - end[0] * width;
-      y2 = originY + end[1] * height;
-    }
-    else if(origin === 'BOTTOM_LEFT') {
-      x1 = originX + start[0] * width;
-      y1 = originY + height - start[1] * height;
-      x2 = originX + end[0] * width;
-      y2 = originY + height - end[1] * height;
-    }
-    else if(origin === 'BOTTOM_RIGHT') {
-      x1 = originX + width - start[0] * width;
-      y1 = originY + height - start[1] * height;
-      x2 = originX + width - end[0] * width;
-      y2 = originY + height - end[1] * height;
+    if(Array.isArray(control[1])) {
+      curve++;
+      cx2 = originX + control[1][0] * width;
+      cy2 = originY + control[1][1] * height;
     }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
@@ -84,12 +72,60 @@ class Line extends Geom {
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      if(curve === 2) {
+        ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2);
+      }
+      else if(curve === 1) {
+        ctx.quadraticCurveTo(cx1, cy1, x2, y2);
+      }
+      else {
+        ctx.lineTo(x2, y2);
+      }
       ctx.stroke();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      if(curve === 2) {
+        virtualDom.content.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', `M${x1} ${y1} C${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`],
+            ['fill', 'none'],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ],
+        });
+      }
+      else if(curve === 1) {
+        virtualDom.content.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', `M${x1} ${y1} Q${cx1} ${cy1} ${x2} ${y2}`],
+            ['fill', 'none'],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ],
+        });
+      }
+      else {
+        virtualDom.content.push({
+          type: 'item',
+          tagName: 'line',
+          props: [
+            ['x1', x1],
+            ['y1', y1],
+            ['x2', x2],
+            ['y2', y2],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ],
+        });
+      }
     }
   }
 
@@ -99,8 +135,8 @@ class Line extends Geom {
   get end() {
     return this.__end;
   }
-  get origin() {
-    return this.__origin;
+  get control() {
+    return this.__control;
   }
 }
 

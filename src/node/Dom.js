@@ -5,6 +5,7 @@ import Geom from '../geom/Geom';
 import util from '../util';
 import css from '../style/css';
 import unit from '../style/unit';
+import mode from '../mode';
 
 const TAG_NAME = {
   'div': true,
@@ -1220,6 +1221,13 @@ class Dom extends Xom {
         item.render(renderMode);
       }
     });
+    if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        ...super.virtualDom,
+        type: 'dom',
+        children: this.children.map(item => item.virtualDom),
+      };
+    }
   }
 
   get tagName() {
@@ -1247,13 +1255,6 @@ class Dom extends Xom {
   }
   get flowY() {
     return this.__flowY;
-  }
-  get virtualDom() {
-    return {
-      ...super.virtualDom,
-      type: 'dom',
-      children: this.children.map(item => item.virtualDom),
-    };
   }
 
   static isValid(s) {

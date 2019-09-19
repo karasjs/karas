@@ -37,8 +37,8 @@ function getCoordByDegree(x, y, r, d) {
 }
 
 class Sector extends Geom {
-  constructor(props) {
-    super('$sector', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // 角度
     this.__start = 0;
     this.__end = 0;
@@ -66,7 +66,7 @@ class Sector extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, start, end, r } = this;
+    let { x, y, width, height, style, ctx, start, end, r, virtualDom } = this;
     if(start === end) {
       return;
     }
@@ -110,7 +110,17 @@ class Sector extends Geom {
       [ x1, y1 ] = getCoordByDegree(originX, originY, r, start);
       [ x2, y2 ] = getCoordByDegree(originX, originY, r, end);
       let large = (end - start) > 180 ? 1 : 0;
-      mode.appendHtml(`<path d="M ${originX} ${originY} L ${x1} ${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} z" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      virtualDom.content.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', `M${originX} ${originY} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 

@@ -1,6 +1,9 @@
 import Xom from '../node/Xom';
 import css from '../style/css';
 import unit from '../style/unit';
+import mode from '../mode';
+
+const IMPLEMENT = {};
 
 class Geom extends Xom {
   constructor(tagName, props) {
@@ -191,6 +194,13 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
+    if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        ...super.virtualDom,
+        type: 'geom',
+        content: [],
+      };
+    }
   }
 
   get tagName() {
@@ -199,11 +209,18 @@ class Geom extends Xom {
   get baseLine() {
     return this.__height;
   }
-  get virtualDom() {
-    return {
-      ...super.virtualDom,
-      type: 'geom',
-    };
+
+  static getImplement(name) {
+    if(!IMPLEMENT.hasOwnProperty(name)) {
+      throw new Error(`Geom has not register: ${name}`);
+    }
+    return IMPLEMENT[name];
+  }
+  static register(name, implement) {
+    if(IMPLEMENT.hasOwnProperty(name)) {
+      throw new Error(`Geom has already register: ${name}`);
+    }
+    IMPLEMENT[name] = implement;
   }
 }
 

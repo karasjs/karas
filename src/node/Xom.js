@@ -164,13 +164,13 @@ class Xom extends Node {
         virtualDom.bb.push({
           type: 'item',
           tagName: 'rect',
-          props: {
-            x: x1,
-            y: y1,
-            width: w,
-            height: h,
-            fill: backgroundColor,
-          },
+          props: [
+            ['x', x1],
+            ['y', y1],
+            ['width', w],
+            ['height', h],
+            ['fill', backgroundColor]
+          ],
         });
         // mode.appendHtml(`<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="${backgroundColor}"/>`);
       }
@@ -198,14 +198,14 @@ class Xom extends Node {
         virtualDom.bb.push({
           type: 'item',
           tagName: 'line',
-          props: {
-            x1,
-            y1,
-            x2,
-            y2: y1,
-            'stroke-width': borderTopWidth.value,
-            stroke: borderTopColor,
-          },
+          props: [
+            ['x1', x1],
+            ['y1', y1],
+            ['x2', x2],
+            ['y2', y1],
+            ['stroke-width', borderTopWidth.value],
+            ['stroke', borderTopColor]
+          ],
         });
         // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderTopWidth.value}" stroke="${borderTopColor}"/>`);
       }
@@ -239,14 +239,14 @@ class Xom extends Node {
         virtualDom.bb.push({
           type: 'item',
           tagName: 'line',
-          props: {
-            x1,
-            y1,
-            x2: x1,
-            y2,
-            'stroke-width': borderRightWidth.value,
-            stroke: borderRightColor,
-          },
+          props: [
+            ['x1', x1],
+            ['y1', y1],
+            ['x2', x1],
+            ['y2', y2],
+            ['stroke-width', borderRightWidth.value],
+            ['stroke', borderRightColor]
+          ],
         });
         // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderRightWidth.value}" stroke="${borderRightColor}"/>`);
       }
@@ -280,14 +280,14 @@ class Xom extends Node {
         virtualDom.bb.push({
           type: 'item',
           tagName: 'line',
-          props: {
-            x1,
-            y1,
-            x2,
-            y2: y1,
-            'stroke-width': borderBottomWidth.value,
-            stroke: borderBottomColor,
-          },
+          props: [
+            ['x1', x1],
+            ['y1', y1],
+            ['x2', x2],
+            ['y2', y1],
+            ['stroke-width', borderBottomWidth.value],
+            ['stroke', borderBottomColor]
+          ],
         });
         // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y1}" stroke-width="${borderBottomWidth.value}" stroke="${borderBottomColor}"/>`);
       }
@@ -315,14 +315,14 @@ class Xom extends Node {
         virtualDom.bb.push({
           type: 'item',
           tagName: 'line',
-          props: {
-            x1,
-            y1,
-            x2: x1,
-            y2,
-            'stroke-width': borderLeftWidth.value,
-            stroke: borderLeftColor,
-          },
+          props: [
+            ['x1', x1],
+            ['y1', y1],
+            ['x2', x1],
+            ['y2', y2],
+            ['stroke-width', borderLeftWidth.value],
+            ['stroke', borderLeftColor]
+          ],
         });
         // mode.appendHtml(`<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2}" stroke-width="${borderLeftWidth.value}" stroke="${borderLeftColor}"/>`);
       }

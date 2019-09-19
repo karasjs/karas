@@ -2,8 +2,8 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Ellipse extends Geom {
-  constructor(props) {
-    super('$ellipse', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // 半径0~1，默认1
     this.__rx = 1;
     if(this.props.rx) {
@@ -23,7 +23,7 @@ class Ellipse extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, rx, ry } = this;
+    let { x, y, width, height, style, ctx, rx, ry, virtualDom } = this;
     let {
       display,
       borderTopWidth,
@@ -61,7 +61,20 @@ class Ellipse extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      mode.appendHtml(`<ellipse cx="${originX}" cy="${originY}" rx="${rx}" ry="${ry}" fill="${fill}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      virtualDom.content.push({
+        type: 'item',
+        tagName: 'ellipse',
+        props: [
+          ['cx', originX],
+          ['cy', originY],
+          ['rx', rx],
+          ['ry', ry],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 

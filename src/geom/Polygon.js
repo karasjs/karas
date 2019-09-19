@@ -2,8 +2,8 @@ import Geom from './Geom';
 import mode from '../mode';
 
 class Polygon extends Geom {
-  constructor(props) {
-    super('$polygon', props);
+  constructor(tagName, props) {
+    super(tagName, props);
     // 所有点的列表
     this.__points = [];
     if(Array.isArray(this.props.points)) {
@@ -13,7 +13,7 @@ class Polygon extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, points } = this;
+    let { x, y, width, height, style, ctx, points, virtualDom } = this;
     if(points.length < 3) {
       return;
     }
@@ -33,6 +33,7 @@ class Polygon extends Geom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      fill,
     } = style;
     if(display === 'none') {
       return;
@@ -46,6 +47,7 @@ class Polygon extends Geom {
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
+      ctx.fillStyle = fill;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(points[0][0], originY + points[0][1]);
@@ -65,7 +67,17 @@ class Polygon extends Geom {
         let point = points[i];
         points += `${point[0]},${point[1]} `;
       }
-      mode.appendHtml(`<polyline fill="none" points="${points}" stroke-width="${strokeWidth}" stroke="${stroke}" stroke-dasharray="${strokeDasharray}"/>`);
+      virtualDom.content.push({
+        type: 'item',
+        tagName: 'polygon',
+        props: [
+          ['points', points],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ],
+      });
     }
   }
 

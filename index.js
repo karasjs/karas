@@ -770,17 +770,17 @@
     }, {
       key: "mrw",
       get: function get() {
-        return this.__mtw;
+        return this.__mrw;
       }
     }, {
       key: "mbw",
       get: function get() {
-        return this.__mtw;
+        return this.__mbw;
       }
     }, {
       key: "mlw",
       get: function get() {
-        return this.__mtw;
+        return this.__mlw;
       }
     }, {
       key: "ptw",
@@ -790,17 +790,17 @@
     }, {
       key: "prw",
       get: function get() {
-        return this.__ptw;
+        return this.__prw;
       }
     }, {
       key: "pbw",
       get: function get() {
-        return this.__ptw;
+        return this.__pbw;
       }
     }, {
       key: "plw",
       get: function get() {
-        return this.__ptw;
+        return this.__plw;
       }
     }, {
       key: "outerWidth",

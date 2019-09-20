@@ -409,25 +409,25 @@ class Xom extends Node {
     return this.__mtw;
   }
   get mrw() {
-    return this.__mtw;
+    return this.__mrw;
   }
   get mbw() {
-    return this.__mtw;
+    return this.__mbw;
   }
   get mlw() {
-    return this.__mtw;
+    return this.__mlw;
   }
   get ptw() {
     return this.__ptw;
   }
   get prw() {
-    return this.__ptw;
+    return this.__prw;
   }
   get pbw() {
-    return this.__ptw;
+    return this.__pbw;
   }
   get plw() {
-    return this.__ptw;
+    return this.__plw;
   }
   get outerWidth() {
     let { mlw, mrw, plw, prw, style: {

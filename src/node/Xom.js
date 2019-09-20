@@ -65,13 +65,53 @@ class Xom extends Node {
         this.__listener[k.slice(2).toLowerCase()] = item[1];
       }
     });
+    // margin和padding的宽度
+    this.__mtw = 0;
+    this.__mrw = 0;
+    this.__mbw = 0;
+    this.__mlw = 0;
+    this.__ptw = 0;
+    this.__prw = 0;
+    this.__pbw = 0;
+    this.__plw = 0;
   }
 
   __preLay(data) {
-    let { style, style: { display } } = this;
+    let { w } = data;
+    let { style, style: {
+      display,
+      width,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
+    } } = this;
     if(display === 'none') {
       return;
     }
+    // 计算margin/padding，转换百分比
+    if(width && width.unit !== unit.AUTO) {
+      switch(width.unit) {
+        case unit.PX:
+          w = width.value;
+          break;
+        case unit.PERCENT:
+          w *= width.value * 0.01;
+          break;
+      }
+    }
+    this.__mlw = this.__mpWidth(marginLeft, w);
+    this.__mtw = this.__mpWidth(marginTop, w);
+    this.__mrw = this.__mpWidth(marginRight, w);
+    this.__mbw = this.__mpWidth(marginBottom, w);
+    this.__plw = this.__mpWidth(paddingLeft, w);
+    this.__ptw = this.__mpWidth(paddingTop, w);
+    this.__prw = this.__mpWidth(paddingRight, w);
+    this.__pbw = this.__mpWidth(paddingBottom, w);
     if(display === 'block') {
       this.__preLayBlock(data);
     }
@@ -82,7 +122,7 @@ class Xom extends Node {
       this.__preLayInline(data);
     }
     // relative偏移
-    let { width, height } = this.parent || this;
+    let { width: w2, height } = this.parent || this;
     let {
       position,
       top,
@@ -92,11 +132,11 @@ class Xom extends Node {
     } = style;
     if(position === 'relative') {
       if(left.unit !== unit.AUTO) {
-        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
+        let diff = left.unit === unit.PX ? left.value : left.value * w2 * 0.01;
         this.__offsetX(diff);
       }
       else if(right.unit !== unit.AUTO) {
-        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
+        let diff = right.unit === unit.PX ? right.value : right.value * w2 * 0.01;
         this.__offsetX(-diff);
       }
       if(top.unit !== unit.AUTO) {
@@ -110,11 +150,21 @@ class Xom extends Node {
     }
   }
 
+  __mpWidth(mp, w) {
+    if(mp.unit === unit.PX) {
+      return mp.value;
+    }
+    else if(mp.unit === unit.PERCENT) {
+      return mp.value * w * 0.01;
+    }
+    return 0;
+  }
+
   render(renderMode) {
     this.__virtualDom = {
       bb: [],
     };
-    let { ctx, style, x, y, width, height, virtualDom } = this;
+    let { ctx, style, x, y, width, height, mlw, mtw, plw, ptw, prw, pbw, virtualDom } = this;
     let {
       display,
       backgroundColor,
@@ -130,22 +180,12 @@ class Xom extends Node {
       borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
     } = style;
     if(display === 'none') {
       return;
     }
-    if(marginLeft) {
-      x += marginLeft.value;
-    }
-    if(marginTop) {
-      y += marginTop.value;
-    }
+    x += mlw;
+    y += mtw;
     if(backgroundColor) {
       let x1 = x;
       if(borderLeftWidth) {
@@ -155,8 +195,8 @@ class Xom extends Node {
       if(borderTopWidth) {
         y1 += borderTopWidth.value;
       }
-      let w = width + paddingLeft.value + paddingRight.value;
-      let h = height + paddingTop.value + paddingBottom.value;
+      let w = width + plw + prw;
+      let h = height + ptw + pbw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.fillStyle = backgroundColor;
@@ -182,12 +222,7 @@ class Xom extends Node {
       let x1 = x + borderLeftWidth.value;
       let y1 = y + borderTopWidth.value * 0.5;
       let x2 = x1 + width;
-      if(paddingLeft) {
-        x2 += paddingLeft.value;
-      }
-      if(paddingRight) {
-        x2 += paddingRight.value;
-      }
+      x2 += plw + prw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderTopWidth.value;
@@ -232,18 +267,8 @@ class Xom extends Node {
       let x1 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
       let y1 = y;
       let y2 = y1 + height + borderTopWidth.value + borderBottomWidth.value;
-      if(paddingLeft) {
-        x1 += paddingLeft.value;
-      }
-      if(paddingRight) {
-        x1 += paddingRight.value;
-      }
-      if(paddingTop) {
-        y2 += paddingTop.value;
-      }
-      if(paddingBottom) {
-        y2 += paddingBottom.value;
-      }
+      x1 += plw + prw;
+      y2 += ptw + pbw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderRightWidth.value;
@@ -288,18 +313,8 @@ class Xom extends Node {
       let x1 = x + borderLeftWidth.value;
       let y1 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
       let x2 = x1 + width;
-      if(paddingLeft) {
-        x2 += paddingLeft.value;
-      }
-      if(paddingRight) {
-        x2 += paddingRight.value;
-      }
-      if(paddingTop) {
-        y1 += paddingTop.value;
-      }
-      if(paddingBottom) {
-        y1 += paddingBottom.value;
-      }
+      x2 += plw + prw;
+      y1 += ptw + pbw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderBottomWidth.value;
@@ -344,12 +359,7 @@ class Xom extends Node {
       let x1 = x + borderLeftWidth.value * 0.5;
       let y1 = y;
       let y2 = y1 + height + borderTopWidth.value + borderBottomWidth.value;
-      if(paddingTop) {
-        y2 += paddingTop.value;
-      }
-      if(paddingBottom) {
-        y2 += paddingBottom.value;
-      }
+      y2 += ptw + pbw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.lineWidth = borderLeftWidth.value;
@@ -395,39 +405,55 @@ class Xom extends Node {
   get tagName() {
     return this.__tagName;
   }
+  get mtw() {
+    return this.__mtw;
+  }
+  get mrw() {
+    return this.__mtw;
+  }
+  get mbw() {
+    return this.__mtw;
+  }
+  get mlw() {
+    return this.__mtw;
+  }
+  get ptw() {
+    return this.__ptw;
+  }
+  get prw() {
+    return this.__ptw;
+  }
+  get pbw() {
+    return this.__ptw;
+  }
+  get plw() {
+    return this.__ptw;
+  }
   get outerWidth() {
-    let { style: {
+    let { mlw, mrw, plw, prw, style: {
       borderLeftWidth,
       borderRightWidth,
-      marginLeft,
-      marginRight,
-      paddingLeft,
-      paddingRight,
     } } = this;
     return this.width
       + borderLeftWidth.value
       + borderRightWidth.value
-      + marginLeft.value
-      + marginRight.value
-      + paddingLeft.value
-      + paddingRight.value;
+      + mlw
+      + mrw
+      + plw
+      + prw;
   }
   get outerHeight() {
-    let { style: {
+    let { mtw, mbw, ptw, pbw, style: {
       borderTopWidth,
       borderBottomWidth,
-      marginTop,
-      marginBottom,
-      paddingTop,
-      paddingBottom,
     } } = this;
     return this.height
       + borderTopWidth.value
       + borderBottomWidth.value
-      + marginTop.value
-      + marginBottom.value
-      + paddingTop.value
-      + paddingBottom.value;
+      + mtw
+      + mbw
+      + ptw
+      + pbw;
   }
   get listener() {
     return this.__listener;

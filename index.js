@@ -405,20 +405,62 @@
         if (/^on[a-zA-Z]/.test(k)) {
           _this.__listener[k.slice(2).toLowerCase()] = item[1];
         }
-      });
+      }); // margin和padding的宽度
 
+
+      _this.__mtw = 0;
+      _this.__mrw = 0;
+      _this.__mbw = 0;
+      _this.__mlw = 0;
+      _this.__ptw = 0;
+      _this.__prw = 0;
+      _this.__pbw = 0;
+      _this.__plw = 0;
       return _this;
     }
 
     _createClass(Xom, [{
       key: "__preLay",
       value: function __preLay(data) {
+        var w = data.w;
         var style = this.style,
-            display = this.style.display;
+            _this$style = this.style,
+            display = _this$style.display,
+            width = _this$style.width,
+            marginTop = _this$style.marginTop,
+            marginRight = _this$style.marginRight,
+            marginBottom = _this$style.marginBottom,
+            marginLeft = _this$style.marginLeft,
+            paddingTop = _this$style.paddingTop,
+            paddingRight = _this$style.paddingRight,
+            paddingBottom = _this$style.paddingBottom,
+            paddingLeft = _this$style.paddingLeft;
 
         if (display === 'none') {
           return;
+        } // 计算margin/padding，转换百分比
+
+
+        if (width && width.unit !== unit.AUTO) {
+          switch (width.unit) {
+            case unit.PX:
+              w = width.value;
+              break;
+
+            case unit.PERCENT:
+              w *= width.value * 0.01;
+              break;
+          }
         }
+
+        this.__mlw = this.__mpWidth(marginLeft, w);
+        this.__mtw = this.__mpWidth(marginTop, w);
+        this.__mrw = this.__mpWidth(marginRight, w);
+        this.__mbw = this.__mpWidth(marginBottom, w);
+        this.__plw = this.__mpWidth(paddingLeft, w);
+        this.__ptw = this.__mpWidth(paddingTop, w);
+        this.__prw = this.__mpWidth(paddingRight, w);
+        this.__pbw = this.__mpWidth(paddingBottom, w);
 
         if (display === 'block') {
           this.__preLayBlock(data);
@@ -430,7 +472,7 @@
 
 
         var _ref = this.parent || this,
-            width = _ref.width,
+            w2 = _ref.width,
             height = _ref.height;
 
         var position = style.position,
@@ -441,11 +483,11 @@
 
         if (position === 'relative') {
           if (left.unit !== unit.AUTO) {
-            var diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
+            var diff = left.unit === unit.PX ? left.value : left.value * w2 * 0.01;
 
             this.__offsetX(diff);
           } else if (right.unit !== unit.AUTO) {
-            var _diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
+            var _diff = right.unit === unit.PX ? right.value : right.value * w2 * 0.01;
 
             this.__offsetX(-_diff);
           }
@@ -462,6 +504,17 @@
         }
       }
     }, {
+      key: "__mpWidth",
+      value: function __mpWidth(mp, w) {
+        if (mp.unit === unit.PX) {
+          return mp.value;
+        } else if (mp.unit === unit.PERCENT) {
+          return mp.value * w * 0.01;
+        }
+
+        return 0;
+      }
+    }, {
       key: "render",
       value: function render(renderMode) {
         this.__virtualDom = {
@@ -473,6 +526,12 @@
             y = this.y,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw,
             virtualDom = this.virtualDom;
         var display = style.display,
             backgroundColor = style.backgroundColor,
@@ -487,25 +546,14 @@
             borderBottomStyle = style.borderBottomStyle,
             borderLeftWidth = style.borderLeftWidth,
             borderLeftColor = style.borderLeftColor,
-            borderLeftStyle = style.borderLeftStyle,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft;
+            borderLeftStyle = style.borderLeftStyle;
 
         if (display === 'none') {
           return;
         }
 
-        if (marginLeft) {
-          x += marginLeft.value;
-        }
-
-        if (marginTop) {
-          y += marginTop.value;
-        }
+        x += mlw;
+        y += mtw;
 
         if (backgroundColor) {
           var x1 = x;
@@ -520,8 +568,8 @@
             y1 += borderTopWidth.value;
           }
 
-          var w = width + paddingLeft.value + paddingRight.value;
-          var h = height + paddingTop.value + paddingBottom.value;
+          var w = width + plw + prw;
+          var h = height + ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
@@ -544,14 +592,7 @@
           var _y = y + borderTopWidth.value * 0.5;
 
           var x2 = _x + width;
-
-          if (paddingLeft) {
-            x2 += paddingLeft.value;
-          }
-
-          if (paddingRight) {
-            x2 += paddingRight.value;
-          }
+          x2 += plw + prw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
@@ -592,22 +633,8 @@
 
           var _y2 = y;
           var y2 = _y2 + height + borderTopWidth.value + borderBottomWidth.value;
-
-          if (paddingLeft) {
-            _x2 += paddingLeft.value;
-          }
-
-          if (paddingRight) {
-            _x2 += paddingRight.value;
-          }
-
-          if (paddingTop) {
-            y2 += paddingTop.value;
-          }
-
-          if (paddingBottom) {
-            y2 += paddingBottom.value;
-          }
+          _x2 += plw + prw;
+          y2 += ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
@@ -650,21 +677,8 @@
 
           var _x4 = _x3 + width;
 
-          if (paddingLeft) {
-            _x4 += paddingLeft.value;
-          }
-
-          if (paddingRight) {
-            _x4 += paddingRight.value;
-          }
-
-          if (paddingTop) {
-            _y3 += paddingTop.value;
-          }
-
-          if (paddingBottom) {
-            _y3 += paddingBottom.value;
-          }
+          _x4 += plw + prw;
+          _y3 += ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
@@ -707,13 +721,7 @@
 
           var _y5 = _y4 + height + borderTopWidth.value + borderBottomWidth.value;
 
-          if (paddingTop) {
-            _y5 += paddingTop.value;
-          }
-
-          if (paddingBottom) {
-            _y5 += paddingBottom.value;
-          }
+          _y5 += ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
@@ -755,28 +763,68 @@
         return this.__tagName;
       }
     }, {
+      key: "mtw",
+      get: function get() {
+        return this.__mtw;
+      }
+    }, {
+      key: "mrw",
+      get: function get() {
+        return this.__mtw;
+      }
+    }, {
+      key: "mbw",
+      get: function get() {
+        return this.__mtw;
+      }
+    }, {
+      key: "mlw",
+      get: function get() {
+        return this.__mtw;
+      }
+    }, {
+      key: "ptw",
+      get: function get() {
+        return this.__ptw;
+      }
+    }, {
+      key: "prw",
+      get: function get() {
+        return this.__ptw;
+      }
+    }, {
+      key: "pbw",
+      get: function get() {
+        return this.__ptw;
+      }
+    }, {
+      key: "plw",
+      get: function get() {
+        return this.__ptw;
+      }
+    }, {
       key: "outerWidth",
       get: function get() {
-        var _this$style = this.style,
-            borderLeftWidth = _this$style.borderLeftWidth,
-            borderRightWidth = _this$style.borderRightWidth,
-            marginLeft = _this$style.marginLeft,
-            marginRight = _this$style.marginRight,
-            paddingLeft = _this$style.paddingLeft,
-            paddingRight = _this$style.paddingRight;
-        return this.width + borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+        var mlw = this.mlw,
+            mrw = this.mrw,
+            plw = this.plw,
+            prw = this.prw,
+            _this$style2 = this.style,
+            borderLeftWidth = _this$style2.borderLeftWidth,
+            borderRightWidth = _this$style2.borderRightWidth;
+        return this.width + borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
       }
     }, {
       key: "outerHeight",
       get: function get() {
-        var _this$style2 = this.style,
-            borderTopWidth = _this$style2.borderTopWidth,
-            borderBottomWidth = _this$style2.borderBottomWidth,
-            marginTop = _this$style2.marginTop,
-            marginBottom = _this$style2.marginBottom,
-            paddingTop = _this$style2.paddingTop,
-            paddingBottom = _this$style2.paddingBottom;
-        return this.height + borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+        var mtw = this.mtw,
+            mbw = this.mbw,
+            ptw = this.ptw,
+            pbw = this.pbw,
+            _this$style3 = this.style,
+            borderTopWidth = _this$style3.borderTopWidth,
+            borderBottomWidth = _this$style3.borderBottomWidth;
+        return this.height + borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
       }
     }, {
       key: "listener",
@@ -2047,7 +2095,15 @@
         var b = 0;
         var min = 0;
         var max = 0;
-        var flowChildren = this.flowChildren,
+        var mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            mlw = this.mlw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw,
+            plw = this.plw,
+            flowChildren = this.flowChildren,
             style = this.style; // 计算需考虑style的属性
 
         var width = style.width,
@@ -2055,15 +2111,7 @@
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft;
+            borderLeftWidth = style.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
         if (main.unit === unit.PX) {
@@ -2102,13 +2150,13 @@
         }); // margin/padding/border也得计算在内
 
         if (isDirectionRow) {
-          var _w = borderRightWidth.value + borderLeftWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+          var _w = borderRightWidth.value + borderLeftWidth.value + mlw + mrw + plw + prw;
 
           b += _w;
           max += _w;
           min += _w;
         } else {
-          var _h = borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+          var _h = borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
 
           b += _h;
           max += _h;
@@ -2125,7 +2173,15 @@
       key: "__calAbs",
       value: function __calAbs(isDirectionRow) {
         var max = 0;
-        var flowChildren = this.flowChildren,
+        var mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            mlw = this.mlw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw,
+            plw = this.plw,
+            flowChildren = this.flowChildren,
             style = this.style; // 计算需考虑style的属性
 
         var width = style.width,
@@ -2133,15 +2189,7 @@
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft;
+            borderLeftWidth = style.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
         if (main.unit === unit.PX) {
@@ -2169,10 +2217,10 @@
         }); // margin/padding/border也得计算在内
 
         if (isDirectionRow) {
-          var w = borderRightWidth.value + borderLeftWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
+          var w = borderRightWidth.value + borderLeftWidth.value + mlw + mrw + plw + prw;
           max += w;
         } else {
-          var h = borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+          var h = borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
           max += h;
         }
 
@@ -2191,21 +2239,21 @@
         this.__width = w;
         var flowChildren = this.flowChildren,
             style = this.style,
-            lineGroups = this.lineGroups;
+            lineGroups = this.lineGroups,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw;
         var width = style.width,
             height = style.height,
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft,
             textAlign = style.textAlign; // 除了auto外都是固定高度
 
         var fixedHeight;
@@ -2237,12 +2285,16 @@
         } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        x += borderLeftWidth.value + mlw + plw;
         data.x = x;
-        y += borderTopWidth.value + marginTop.value + paddingTop.value;
+        y += borderTopWidth.value + mtw + ptw;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value; // 递归布局，将inline的节点组成lineGroup一行
+
+        if (width.unit === unit.AUTO) {
+          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+        }
+
+        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -2252,7 +2304,7 @@
               if (x === data.x) {
                 lineGroup.add(item);
 
-                item.__preLayInline({
+                item.__preLay({
                   x: x,
                   y: y,
                   w: w,
@@ -2266,7 +2318,7 @@
 
 
                 if (fw >= 0) {
-                  item.__preLayInline({
+                  item.__preLay({
                     x: x,
                     y: y,
                     w: w,
@@ -2279,7 +2331,7 @@
                     x = data.x;
                     y += lineGroup.height;
 
-                    item.__preLayInline({
+                    item.__preLay({
                       x: data.x,
                       y: y,
                       w: w,
@@ -2393,7 +2445,15 @@
         this.__y = y;
         this.__width = w;
         var flowChildren = this.flowChildren,
-            style = this.style;
+            style = this.style,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw;
         var width = style.width,
             height = style.height,
             flexDirection = style.flexDirection,
@@ -2401,14 +2461,6 @@
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft,
             justifyContent = style.justifyContent,
             alignItems = style.alignItems; // 除了auto外都是固定高度
 
@@ -2444,12 +2496,16 @@
         } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        x += borderLeftWidth.value + mlw + plw;
         data.x = x;
-        y += borderTopWidth.value + marginTop.value + paddingTop.value;
+        y += borderTopWidth.value + mtw + ptw;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+
+        if (width.unit === unit.AUTO) {
+          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+        }
+
+        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
         var isDirectionRow = flexDirection === 'row'; // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
 
         if (!isDirectionRow && !fixedHeight) {
@@ -2580,23 +2636,23 @@
 
           if (item instanceof Xom) {
             var _style2 = item.style,
+                _mlw = item.mlw,
+                _mtw = item.mtw,
+                _mrw = item.mrw,
+                _mbw = item.mbw,
+                _plw = item.plw,
+                _ptw = item.ptw,
+                _prw = item.prw,
+                _pbw = item.pbw,
                 _item$style3 = item.style,
                 display = _item$style3.display,
                 _flexDirection2 = _item$style3.flexDirection,
                 _width2 = _item$style3.width,
                 _height = _item$style3.height,
-                _marginTop = _item$style3.marginTop,
-                _marginRight = _item$style3.marginRight,
-                _marginBottom = _item$style3.marginBottom,
-                _marginLeft = _item$style3.marginLeft,
                 _borderTopWidth = _item$style3.borderTopWidth,
                 _borderRightWidth = _item$style3.borderRightWidth,
                 _borderBottomWidth = _item$style3.borderBottomWidth,
-                _borderLeftWidth = _item$style3.borderLeftWidth,
-                _paddingTop = _item$style3.paddingTop,
-                _paddingRight = _item$style3.paddingRight,
-                _paddingBottom = _item$style3.paddingBottom,
-                _paddingLeft = _item$style3.paddingLeft;
+                _borderLeftWidth = _item$style3.borderLeftWidth;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
@@ -2635,15 +2691,15 @@
 
             if (isOverflow && shrink) {
               if (isDirectionRow) {
-                item.__width = main - _marginLeft.value - _marginRight.value - _borderLeftWidth.value - _borderRightWidth.value - _paddingLeft.value - _paddingRight.value;
+                item.__width = main - _mlw - _mrw - _plw - _prw - _borderLeftWidth.value - _borderRightWidth.value;
               } else {
-                item.__height = main - _marginTop.value - _marginBottom.value - _borderTopWidth.value - _borderBottomWidth.value - _paddingTop.value - _paddingBottom.value;
+                item.__height = main - _mtw - _mbw - _ptw - _pbw - _borderTopWidth.value - _borderBottomWidth.value;
               }
             } else if (!isOverflow && grow) {
               if (isDirectionRow) {
-                item.__width = main - _marginLeft.value - _marginRight.value - _borderLeftWidth.value - _borderRightWidth.value - _paddingLeft.value - _paddingRight.value;
+                item.__width = main - _mlw - _mrw - _plw - _prw - _borderLeftWidth.value - _borderRightWidth.value;
               } else {
-                item.__height = main - _marginTop.value - _marginBottom.value - _borderTopWidth.value - _borderBottomWidth.value - _paddingTop.value - _paddingBottom.value;
+                item.__height = main - _mtw - _mbw - _ptw - _pbw - _borderTopWidth.value - _borderBottomWidth.value;
               }
             }
           } else {
@@ -2716,15 +2772,23 @@
         if (alignItems === 'stretch') {
           // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
           flowChildren.forEach(function (item) {
-            var style = item.style;
+            var style = item.style,
+                mlw = item.mlw,
+                mtw = item.mtw,
+                mrw = item.mrw,
+                mbw = item.mbw,
+                ptw = item.ptw,
+                prw = item.prw,
+                plw = item.plw,
+                pbw = item.pbw;
 
             if (isDirectionRow) {
               if (style.height.unit === unit.AUTO) {
-                item.__height = maxCross - style.marginTop.value - style.marginBottom.value - style.paddingTop.value - style.paddingBottom.value - style.borderTopWidth.value - style.borderBottomWidth.value;
+                item.__height = maxCross - mtw - mbw - ptw - pbw - style.borderTopWidth.value - style.borderBottomWidth.value;
               }
             } else {
               if (style.width.unit === unit.AUTO) {
-                item.__width = maxCross - style.marginLeft.value - style.marginRight.value - style.paddingLeft.value - style.paddingRight.value - borderRightWidth.value - borderLeftWidth.value;
+                item.__width = maxCross - mlw - mrw - plw - prw - borderRightWidth.value - borderLeftWidth.value;
               }
             }
           });
@@ -2765,21 +2829,21 @@
         var maxX = x;
         var flowChildren = this.flowChildren,
             style = this.style,
-            lineGroups = this.lineGroups;
+            lineGroups = this.lineGroups,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw;
         var width = style.width,
             height = style.height,
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft,
             textAlign = style.textAlign; // 除了auto外都是固定高度
 
         var fixedWidth;
@@ -2814,12 +2878,16 @@
         } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value + marginLeft.value + paddingLeft.value;
+        x += borderLeftWidth.value + mlw + plw;
         data.x = x;
-        y += borderTopWidth.value + marginTop.value + paddingTop.value;
+        y += borderTopWidth.value + mtw + ptw;
         data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-        h -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value; // 递归布局，将inline的节点组成lineGroup一行
+
+        if (width.unit === unit.AUTO) {
+          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+        }
+
+        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -2829,13 +2897,14 @@
               _this4.absChildren.push(item);
 
               return;
-            } // inline开头，不用考虑是否放得下直接放
+            }
 
+            item.style.display = 'inline'; // inline开头，不用考虑是否放得下直接放
 
             if (x === data.x) {
               lineGroup.add(item);
 
-              item.__preLayInline({
+              item.__preLay({
                 x: x,
                 y: y,
                 w: w,
@@ -2850,7 +2919,7 @@
 
 
               if (fw >= 0) {
-                item.__preLayInline({
+                item.__preLay({
                   x: x,
                   y: y,
                   w: w,
@@ -2863,7 +2932,7 @@
                   x = data.x;
                   y += lineGroup.height;
 
-                  item.__preLayInline({
+                  item.__preLay({
                     x: data.x,
                     y: y,
                     w: w,
@@ -2960,17 +3029,19 @@
             height = this.height,
             children = this.children,
             absChildren = this.absChildren,
-            style = this.style;
-        var marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            borderTopWidth = style.borderTopWidth,
+            style = this.style,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw;
+        var borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth;
-        var pw = width + paddingLeft.value + paddingRight.value;
-        var ph = height + paddingTop.value + paddingBottom.value; // 递归进行，遇到absolute/relative的设置新容器
+        var pw = width + plw + prw;
+        var ph = height + ptw + pbw; // 递归进行，遇到absolute/relative的设置新容器
 
         children.forEach(function (item) {
           if (item instanceof Dom) {
@@ -2979,7 +3050,9 @@
         }); // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
-          var style = item.style,
+          var mtw = item.mtw,
+              mlw = item.mlw,
+              style = item.style,
               _item$style4 = item.style,
               left = _item$style4.left,
               top = _item$style4.top,
@@ -2990,55 +3063,55 @@
           var x2, y2, w2, h2; // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
 
           if (left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
-            w2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - x2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
+            x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
+            w2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - x2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
           } else if (left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+            x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
             w2 = width2.unit === unit.PX ? width2.value : width;
             var widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-            x2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - widthPx : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - widthPx;
+            x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - widthPx : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - widthPx;
           } else if (left.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + marginLeft.value + borderLeftWidth.value + width * left.value * 0.01;
+            x2 = left.unit === unit.PX ? x + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
             w2 = item.__calAbs(true);
           } else if (right.unit !== unit.AUTO) {
             w2 = item.__calAbs(true);
-            x2 = right.unit === unit.PX ? x + marginLeft.value + borderLeftWidth.value + pw - right.value - w2 : x + marginLeft.value + borderLeftWidth.value + pw - width * right.value * 0.01 - w2;
+            x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - w2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - w2;
           } else if (width2.unit !== unit.AUTO) {
-            x2 = x + marginLeft.value + borderLeftWidth.value;
+            x2 = x + mlw + borderLeftWidth.value;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else {
-            x2 = x + marginLeft.value + borderLeftWidth.value;
+            x2 = x + mlw + borderLeftWidth.value;
             w2 = item.__calAbs(true);
           } // top/bottom/height优先级同上
 
 
           if (top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
-            h2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - y2 : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - y2;
+            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
+            h2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - y2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - y2;
             style.height = {
               value: h2,
               unit: unit.PX
             };
           } else if (top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
+            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else if (bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
             h2 = height2.unit === unit.PX ? height2.value : height;
             var heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-            y2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - heightPx : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - heightPx;
+            y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - heightPx : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - heightPx;
           } else if (top.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + marginTop.value + borderTopWidth.value + height * top.value * 0.01;
+            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
             h2 = item.__calAbs();
           } else if (bottom.unit !== unit.AUTO) {
             h2 = item.__calAbs();
-            y2 = bottom.unit === unit.PX ? y + marginTop.value + borderTopWidth.value + ph - bottom.value - h2 : y + marginTop.value + borderTopWidth.value + ph - height * bottom.value * 0.01 - h2;
+            y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - h2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - h2;
           } else if (height2.unit !== unit.AUTO) {
-            y2 = flowY + marginTop.value + borderTopWidth.value;
+            y2 = flowY + mtw + borderTopWidth.value;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else {
-            y2 = flowY + marginTop.value + borderTopWidth.value;
+            y2 = flowY + mtw + borderTopWidth.value;
             h2 = item.__calAbs();
           } // absolute时inline强制block
 

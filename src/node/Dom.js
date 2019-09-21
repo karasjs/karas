@@ -212,7 +212,7 @@ class Dom extends Xom {
         max = Math.max(item.textWidth, max);
       }
       else {
-        item.__preLay({
+        item.__layout({
           x: 0,
           y: 0,
           w,
@@ -264,7 +264,7 @@ class Dom extends Xom {
         max = Math.max(item.textWidth, max);
       }
       else {
-        item.__preLay({
+        item.__layout({
           x: 0,
           y: 0,
           w: Infinity,
@@ -286,7 +286,7 @@ class Dom extends Xom {
   }
 
   // 本身block布局时计算好所有子元素的基本位置
-  __preLayBlock(data) {
+  __layoutBlock(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
@@ -341,7 +341,7 @@ class Dom extends Xom {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
-            item.__preLay({
+            item.__layout({
               x,
               y,
               w,
@@ -354,7 +354,7 @@ class Dom extends Xom {
             let fw = item.__tryLayInline(w - x, w);
             // 放得下继续
             if(fw >= 0) {
-              item.__preLay({
+              item.__layout({
                 x,
                 y,
                 w,
@@ -367,7 +367,7 @@ class Dom extends Xom {
               lineGroup.verticalAlign();
               x = data.x;
               y += lineGroup.height;
-              item.__preLay({
+              item.__layout({
                 x: data.x,
                 y,
                 w,
@@ -387,7 +387,7 @@ class Dom extends Xom {
             y += lineGroup.height;
             lineGroup = new LineGroup(data.x, y);
           }
-          item.__preLay({
+          item.__layout({
             x: data.x,
             y,
             w,
@@ -402,7 +402,7 @@ class Dom extends Xom {
         // x开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -415,7 +415,7 @@ class Dom extends Xom {
           let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
-            item.__preLay({
+            item.__layout({
               x,
               y,
               w,
@@ -428,7 +428,7 @@ class Dom extends Xom {
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
-            item.__preLay({
+            item.__layout({
               x: data.x,
               y,
               w,
@@ -462,7 +462,7 @@ class Dom extends Xom {
   }
 
   // 弹性布局时的计算位置
-  __preLayFlex(data) {
+  __layoutFlex(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
@@ -528,7 +528,7 @@ class Dom extends Xom {
             width.value = w;
             width.unit = unit.PX;
           }
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -537,7 +537,7 @@ class Dom extends Xom {
           y += item.outerHeight;
         }
         else {
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -596,7 +596,7 @@ class Dom extends Xom {
           minList.push(item.charWidth);
         }
         else {
-          item.__preLay({
+          item.__layout({
             x: 0,
             y: 0,
             w,
@@ -648,7 +648,7 @@ class Dom extends Xom {
             height.value = h;
             height.unit = unit.PX;
           }
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w: main,
@@ -665,7 +665,7 @@ class Dom extends Xom {
             width.value = w;
             width.unit = unit.PX;
           }
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -691,7 +691,7 @@ class Dom extends Xom {
         }
       }
       else {
-        item.__preLay({
+        item.__layout({
           x,
           y,
           w: isDirectionRow ? main : w,
@@ -796,7 +796,7 @@ class Dom extends Xom {
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
-  __preLayInline(data) {
+  __layoutInline(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
@@ -858,7 +858,7 @@ class Dom extends Xom {
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -872,7 +872,7 @@ class Dom extends Xom {
           let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
-            item.__preLay({
+            item.__layout({
               x,
               y,
               w,
@@ -885,7 +885,7 @@ class Dom extends Xom {
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
-            item.__preLay({
+            item.__layout({
               x: data.x,
               y,
               w,
@@ -902,7 +902,7 @@ class Dom extends Xom {
       else {
         if(x === data.x) {
           lineGroup.add(item);
-          item.__preLay({
+          item.__layout({
             x,
             y,
             w,
@@ -916,7 +916,7 @@ class Dom extends Xom {
           let fw = item.__tryLayInline(w - x, w);
           // 放得下继续
           if(fw >= 0) {
-            item.__preLay({
+            item.__layout({
               x,
               y,
               w,
@@ -929,7 +929,7 @@ class Dom extends Xom {
             lineGroup.verticalAlign();
             x = data.x;
             y += lineGroup.height;
-            item.__preLay({
+            item.__layout({
               x: data.x,
               y,
               w,
@@ -965,7 +965,7 @@ class Dom extends Xom {
   }
 
   // 只针对绝对定位children布局
-  __preLayAbs(container) {
+  __layoutAbs(container) {
     let { x, y, flowY, width, height, children, absChildren, style, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
     let {
       borderTopWidth,
@@ -976,7 +976,7 @@ class Dom extends Xom {
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {
       if(item instanceof Dom) {
-        item.__preLayAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
+        item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
       }
     });
     // 对absolute的元素进行相对容器布局
@@ -1053,7 +1053,7 @@ class Dom extends Xom {
       if(style.display === 'inline') {
         style.display = 'block';
       }
-      item.__preLay({
+      item.__layout({
         x: x2,
         y: y2,
         w: w2,

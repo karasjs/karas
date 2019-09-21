@@ -44,7 +44,7 @@ class Text extends Node {
     this.__textWidth = sum;
   }
 
-  __preLay(data, isVirtual) {
+  __layout(data, isVirtual) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;

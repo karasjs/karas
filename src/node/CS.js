@@ -142,13 +142,13 @@ class CS extends Dom {
     style.width = this.width;
     style.height = this.height;
     this.__initStyle();
-    this.__preLay({
+    this.__layout({
       x: 0,
       y: 0,
       w: this.width,
       h: this.height,
     });
-    this.__preLayAbs(this);
+    this.__layoutAbs(this);
     this.render(renderMode);
     if(renderMode === mode.SVG) {
       let nvd = this.virtualDom;

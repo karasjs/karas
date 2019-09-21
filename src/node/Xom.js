@@ -76,7 +76,7 @@ class Xom extends Node {
     this.__plw = 0;
   }
 
-  __preLay(data) {
+  __layout(data) {
     let { w } = data;
     let { style, style: {
       display,
@@ -113,13 +113,13 @@ class Xom extends Node {
     this.__prw = this.__mpWidth(paddingRight, w);
     this.__pbw = this.__mpWidth(paddingBottom, w);
     if(display === 'block') {
-      this.__preLayBlock(data);
+      this.__layoutBlock(data);
     }
     else if(display === 'flex') {
-      this.__preLayFlex(data);
+      this.__layoutFlex(data);
     }
     else if(display === 'inline') {
-      this.__preLayInline(data);
+      this.__layoutInline(data);
     }
     // relative偏移
     let { width: w2, height } = this.parent || this;

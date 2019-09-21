@@ -60,7 +60,7 @@ class Geom extends Xom {
     return { b, min, max };
   }
 
-  __preLayBlock(data) {
+  __layoutBlock(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
@@ -105,12 +105,12 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : 0;
   }
 
-  __preLayFlex(data) {
+  __layoutFlex(data) {
     // 无children所以等同于block
-    this.__preLayBlock(data);
+    this.__layoutBlock(data);
   }
 
-  __preLayInline(data) {
+  __layoutInline(data) {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;

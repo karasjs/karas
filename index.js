@@ -420,8 +420,8 @@
     }
 
     _createClass(Xom, [{
-      key: "__preLay",
-      value: function __preLay(data) {
+      key: "__layout",
+      value: function __layout(data) {
         var w = data.w;
         var style = this.style,
             _this$style = this.style,
@@ -463,11 +463,11 @@
         this.__pbw = this.__mpWidth(paddingBottom, w);
 
         if (display === 'block') {
-          this.__preLayBlock(data);
+          this.__layoutBlock(data);
         } else if (display === 'flex') {
-          this.__preLayFlex(data);
+          this.__layoutFlex(data);
         } else if (display === 'inline') {
-          this.__preLayInline(data);
+          this.__layoutInline(data);
         } // relative偏移
 
 
@@ -1314,8 +1314,8 @@
         this.__textWidth = sum;
       }
     }, {
-      key: "__preLay",
-      value: function __preLay(data, isVirtual) {
+      key: "__layout",
+      value: function __layout(data, isVirtual) {
         var _this2 = this;
 
         var x = data.x,
@@ -1673,8 +1673,8 @@
         };
       }
     }, {
-      key: "__preLayBlock",
-      value: function __preLayBlock(data) {
+      key: "__layoutBlock",
+      value: function __layoutBlock(data) {
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -1725,14 +1725,14 @@
         this.__height = fixedHeight ? h : 0;
       }
     }, {
-      key: "__preLayFlex",
-      value: function __preLayFlex(data) {
+      key: "__layoutFlex",
+      value: function __layoutFlex(data) {
         // 无children所以等同于block
-        this.__preLayBlock(data);
+        this.__layoutBlock(data);
       }
     }, {
-      key: "__preLayInline",
-      value: function __preLayInline(data) {
+      key: "__layoutInline",
+      value: function __layoutInline(data) {
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -2137,7 +2137,7 @@
             min = Math.max(item.charWidth, min);
             max = Math.max(item.textWidth, max);
           } else {
-            item.__preLay({
+            item.__layout({
               x: 0,
               y: 0,
               w: w,
@@ -2205,7 +2205,7 @@
           } else if (isDirectionRow) {
             max = Math.max(item.textWidth, max);
           } else {
-            item.__preLay({
+            item.__layout({
               x: 0,
               y: 0,
               w: Infinity,
@@ -2228,8 +2228,8 @@
       } // 本身block布局时计算好所有子元素的基本位置
 
     }, {
-      key: "__preLayBlock",
-      value: function __preLayBlock(data) {
+      key: "__layoutBlock",
+      value: function __layoutBlock(data) {
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -2304,7 +2304,7 @@
               if (x === data.x) {
                 lineGroup.add(item);
 
-                item.__preLay({
+                item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -2318,7 +2318,7 @@
 
 
                 if (fw >= 0) {
-                  item.__preLay({
+                  item.__layout({
                     x: x,
                     y: y,
                     w: w,
@@ -2331,7 +2331,7 @@
                     x = data.x;
                     y += lineGroup.height;
 
-                    item.__preLay({
+                    item.__layout({
                       x: data.x,
                       y: y,
                       w: w,
@@ -2353,7 +2353,7 @@
                 lineGroup = new LineGroup(data.x, y);
               }
 
-              item.__preLay({
+              item.__layout({
                 x: data.x,
                 y: y,
                 w: w,
@@ -2369,7 +2369,7 @@
               if (x === data.x) {
                 lineGroup.add(item);
 
-                item.__preLay({
+                item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -2383,7 +2383,7 @@
 
 
                 if (_fw >= 0) {
-                  item.__preLay({
+                  item.__layout({
                     x: x,
                     y: y,
                     w: w,
@@ -2396,7 +2396,7 @@
                     x = data.x;
                     y += lineGroup.height;
 
-                    item.__preLay({
+                    item.__layout({
                       x: data.x,
                       y: y,
                       w: w,
@@ -2435,8 +2435,8 @@
       } // 弹性布局时的计算位置
 
     }, {
-      key: "__preLayFlex",
-      value: function __preLayFlex(data) {
+      key: "__layoutFlex",
+      value: function __layoutFlex(data) {
         var x = data.x,
             y = data.y,
             w = data.w,
@@ -2525,7 +2525,7 @@
                   _width.unit = unit.PX;
                 }
 
-              item.__preLay({
+              item.__layout({
                 x: x,
                 y: y,
                 w: w,
@@ -2534,7 +2534,7 @@
 
               y += item.outerHeight;
             } else {
-              item.__preLay({
+              item.__layout({
                 x: x,
                 y: y,
                 w: w,
@@ -2601,7 +2601,7 @@
               maxSum += item.textWidth;
               minList.push(item.charWidth);
             } else {
-              item.__preLay({
+              item.__layout({
                 x: 0,
                 y: 0,
                 w: w,
@@ -2664,7 +2664,7 @@
                   _height.unit = unit.PX;
                 }
 
-              item.__preLay({
+              item.__layout({
                 x: x,
                 y: y,
                 w: main,
@@ -2680,7 +2680,7 @@
                   _width2.unit = unit.PX;
                 }
 
-              item.__preLay({
+              item.__layout({
                 x: x,
                 y: y,
                 w: w,
@@ -2703,7 +2703,7 @@
               }
             }
           } else {
-            item.__preLay({
+            item.__layout({
               x: x,
               y: y,
               w: isDirectionRow ? main : w,
@@ -2816,8 +2816,8 @@
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
     }, {
-      key: "__preLayInline",
-      value: function __preLayInline(data) {
+      key: "__layoutInline",
+      value: function __layoutInline(data) {
         var _this4 = this;
 
         var x = data.x,
@@ -2904,7 +2904,7 @@
             if (x === data.x) {
               lineGroup.add(item);
 
-              item.__preLay({
+              item.__layout({
                 x: x,
                 y: y,
                 w: w,
@@ -2919,7 +2919,7 @@
 
 
               if (fw >= 0) {
-                item.__preLay({
+                item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -2932,7 +2932,7 @@
                   x = data.x;
                   y += lineGroup.height;
 
-                  item.__preLay({
+                  item.__layout({
                     x: data.x,
                     y: y,
                     w: w,
@@ -2951,7 +2951,7 @@
               if (x === data.x) {
                 lineGroup.add(item);
 
-                item.__preLay({
+                item.__layout({
                   x: x,
                   y: y,
                   w: w,
@@ -2966,7 +2966,7 @@
 
 
                 if (_fw2 >= 0) {
-                  item.__preLay({
+                  item.__layout({
                     x: x,
                     y: y,
                     w: w,
@@ -2979,7 +2979,7 @@
                     x = data.x;
                     y += lineGroup.height;
 
-                    item.__preLay({
+                    item.__layout({
                       x: data.x,
                       y: y,
                       w: w,
@@ -3020,8 +3020,8 @@
       } // 只针对绝对定位children布局
 
     }, {
-      key: "__preLayAbs",
-      value: function __preLayAbs(container) {
+      key: "__layoutAbs",
+      value: function __layoutAbs(container) {
         var x = this.x,
             y = this.y,
             flowY = this.flowY,
@@ -3045,7 +3045,7 @@
 
         children.forEach(function (item) {
           if (item instanceof Dom) {
-            item.__preLayAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
+            item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
           }
         }); // 对absolute的元素进行相对容器布局
 
@@ -3120,7 +3120,7 @@
             style.display = 'block';
           }
 
-          item.__preLay({
+          item.__layout({
             x: x2,
             y: y2,
             w: w2,
@@ -3710,14 +3710,14 @@
 
         this.__initStyle();
 
-        this.__preLay({
+        this.__layout({
           x: 0,
           y: 0,
           w: this.width,
           h: this.height
         });
 
-        this.__preLayAbs(this);
+        this.__layoutAbs(this);
 
         this.render(renderMode);
 

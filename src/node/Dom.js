@@ -1063,7 +1063,7 @@ class Dom extends Xom {
   }
 
   __emitEvent(e, force) {
-    let { event: { type }, x: xe, y: ye, covers } = e;
+    let { event: { type }, rx: xe, ry: ye, covers } = e;
     let { listener, children, style, x, y, outerWidth, outerHeight } = this;
     if(style.display === 'none') {
       return;
@@ -1128,7 +1128,16 @@ class Dom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { style: { display }, flowChildren, children } = this;
+    let { style, flowChildren, children } = this;
+    let {
+      display,
+      position,
+      top,
+      right,
+      bottom,
+      left,
+      height: h,
+    } = style;
     if(display === 'none') {
       return;
     }

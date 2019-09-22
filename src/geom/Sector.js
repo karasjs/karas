@@ -66,7 +66,7 @@ class Sector extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, start, end, r, virtualDom } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, start, end, r, virtualDom } = this;
     if(start === end) {
       return;
     }
@@ -74,10 +74,6 @@ class Sector extends Geom {
       display,
       borderTopWidth,
       borderLeftWidth,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -86,8 +82,8 @@ class Sector extends Geom {
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
     originX += width * 0.5;
     originY += height * 0.5;
     r *= Math.min(width, height) * 0.5;

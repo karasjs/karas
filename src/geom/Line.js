@@ -21,7 +21,7 @@ class Line extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, start, end, control, virtualDom } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, start, end, control, virtualDom } = this;
     if(start.length < 2 || end.length < 2) {
       return;
     }
@@ -31,14 +31,6 @@ class Line extends Geom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-      marginTop,
-      marginRight,
-      marginBottom,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -46,10 +38,8 @@ class Line extends Geom {
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-    width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-    height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
     let x1 = originX + start[0] * width;
     let y1 = originY + start[1] * height;
     let x2 = originX + end[0] * width;

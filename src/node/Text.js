@@ -58,7 +58,7 @@ class Text extends Node {
     while(i < length) {
       count += charWidthList[i];
       if (count === w) {
-        let lineBox = new LineBox(x, y, count, content.slice(begin, i + 1), style);
+        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
         y += this.style.lineHeight.value;
@@ -71,7 +71,7 @@ class Text extends Node {
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(x, y, count - charWidthList[i], content.slice(begin, i), style);
+        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), style);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += this.style.lineHeight.value;
@@ -88,7 +88,7 @@ class Text extends Node {
       for(i = begin ;i < length; i++) {
         count += charWidthList[i];
       }
-      let lineBox = new LineBox(x, y, count, content.slice(begin, length), style);
+      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length), style);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
       y += style.lineHeight.value;
@@ -130,20 +130,6 @@ class Text extends Node {
 
   __tryLayInline(w) {
     return w - this.textWidth;
-  }
-
-  __offsetX(diff) {
-    super.__offsetX(diff);
-    this.lineBoxes.forEach(item => {
-      item.__offsetX(diff);
-    });
-  }
-
-  __offsetY(diff) {
-    super.__offsetY(diff);
-    this.lineBoxes.forEach(item => {
-      item.__offsetY(diff);
-    });
   }
 
   __calMaxAndMinWidth() {

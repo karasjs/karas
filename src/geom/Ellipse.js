@@ -23,15 +23,11 @@ class Ellipse extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, rx, ry, virtualDom } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, rx, ry, virtualDom } = this;
     let {
       display,
       borderTopWidth,
       borderLeftWidth,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -40,8 +36,8 @@ class Ellipse extends Geom {
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
     originX += width * 0.5;
     originY += height * 0.5;
     rx *= width * 0.5;

@@ -2,7 +2,8 @@ import css from '../style/css';
 import mode from '../mode';
 
 class LineBox {
-  constructor(x, y, w, content, style) {
+  constructor(parent, x, y, w, content, style) {
+    this.__parent = parent;
     this.__x = x;
     this.__y = y;
     this.__width = w;
@@ -12,8 +13,10 @@ class LineBox {
   }
 
   render(renderMode, ctx) {
-    let { style, content, x, y } = this;
+    let { style, content, x, y, parent: { ox, oy } } = this;
     y += css.getBaseLine(style);
+    x += ox;
+    y += oy;
     if(renderMode === mode.CANVAS) {
       ctx.fillText(content, x, y);
     }
@@ -29,7 +32,6 @@ class LineBox {
         ],
         content,
       };
-      // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
     }
   }
 
@@ -61,6 +63,9 @@ class LineBox {
   }
   get virtualDom() {
     return this.__virtualDom;
+  }
+  get parent() {
+    return this.__parent;
   }
 }
 

@@ -78,7 +78,7 @@ class Xom extends Node {
 
   __layout(data) {
     let { w } = data;
-    let { style, style: {
+    let { style: {
       display,
       width,
       marginTop,
@@ -93,7 +93,6 @@ class Xom extends Node {
     if(display === 'none') {
       return;
     }
-    // 计算margin/padding，转换百分比
     if(width && width.unit !== unit.AUTO) {
       switch(width.unit) {
         case unit.PX:
@@ -121,35 +120,9 @@ class Xom extends Node {
     else if(display === 'inline') {
       this.__layoutInline(data);
     }
-    // relative偏移
-    let { width: w2, height } = this.parent || this;
-    let {
-      position,
-      top,
-      right,
-      bottom,
-      left,
-    } = style;
-    if(position === 'relative') {
-      if(left.unit !== unit.AUTO) {
-        let diff = left.unit === unit.PX ? left.value : left.value * w2 * 0.01;
-        this.__offsetX(diff);
-      }
-      else if(right.unit !== unit.AUTO) {
-        let diff = right.unit === unit.PX ? right.value : right.value * w2 * 0.01;
-        this.__offsetX(-diff);
-      }
-      if(top.unit !== unit.AUTO) {
-        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01;
-        this.__offsetY(diff);
-      }
-      else if(bottom.unit !== unit.AUTO) {
-        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01;
-        this.__offsetY(-diff);
-      }
-    }
   }
 
+  // 获取margin/padding的实际值
   __mpWidth(mp, w) {
     if(mp.unit === unit.PX) {
       return mp.value;
@@ -164,9 +137,14 @@ class Xom extends Node {
     this.__virtualDom = {
       bb: [],
     };
-    let { ctx, style, x, y, width, height, mlw, mtw, plw, ptw, prw, pbw, virtualDom } = this;
+    let { ctx, style, width, height, mlw, mtw, plw, ptw, prw, pbw, virtualDom } = this;
     let {
       display,
+      position,
+      top,
+      right,
+      bottom,
+      left,
       backgroundColor,
       borderTopWidth,
       borderTopColor,
@@ -180,10 +158,45 @@ class Xom extends Node {
       borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
+      transform,
     } = style;
     if(display === 'none') {
       return;
     }
+    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
+    if(position === 'relative' && this.parent) {
+      let { width, height } = this.parent;
+      let h = this.parent.style.height;
+      if(left.unit !== unit.AUTO) {
+        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
+        this.__offsetX(diff);
+      }
+      else if(right.unit !== unit.AUTO) {
+        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
+        this.__offsetX(-diff);
+      }
+      if(top.unit !== unit.AUTO) {
+        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+        this.__offsetY(diff);
+      }
+      else if(bottom.unit !== unit.AUTO) {
+        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+        this.__offsetY(-diff);
+      }
+    }
+    // translate相对于自身
+    if(transform) {
+      let { translateX, translateY } = transform;
+      if(translateX) {
+        let diff = translateX.unit === unit.PX ? translateX.value : translateX.value * width * 0.01;
+        this.__offsetX(diff);
+      }
+      if(translateY) {
+        let diff = translateY.unit === unit.PX ? translateY.value : translateY.value * height * 0.01;
+        this.__offsetY(diff);
+      }
+    }
+    let { rx: x, ry: y } = this;
     x += mlw;
     y += mtw;
     if(backgroundColor) {

@@ -105,24 +105,24 @@ function normalize(style) {
           transform.matrix3d = arr;
         }
         else if(k === 'translateX') {
-          transform.translateX = parseFloat(v) || 0;
+          transform.translateX = v;
         }
         else if(k === 'translateY') {
-          transform.translateY = parseFloat(v) || 0;
+          transform.translateY = v;
         }
         else if(k === 'translateZ') {
-          transform.translateZ = parseFloat(v) || 0;
+          transform.translateZ = v;
         }
         else if(k === 'translate') {
           let arr = v.split(',');
-          transform.translateX = parseFloat(arr[0]) || 0;
-          transform.translateX = parseFloat(arr[1]) || 0;
+          transform.translateX = arr[0];
+          transform.translateY = arr[1];
         }
         else if(k === 'translate3d') {
           let arr = v.split(',');
-          transform.translateX = parseFloat(arr[0]) || 0;
-          transform.translateX = parseFloat(arr[1]) || 0;
-          transform.translateZ = parseFloat(arr[2]) || 0;
+          transform.translateX = arr[0];
+          transform.translateY = arr[1];
+          transform.translateZ = arr[2];
         }
         else if(k === 'scaleX') {
           transform.scaleX = parseFloat(v) || 0;
@@ -177,6 +177,31 @@ function normalize(style) {
         }
         else if(k === 'perspective') {
           transform.perspective = parseFloat(v);
+        }
+      });
+      [
+        'translateX',
+        'translateY',
+        'translateZ',
+      ].forEach(k => {
+        let v = transform[k];
+        // 编译工具前置解析优化跳出
+        if(!util.isNil(v) && v.unit) {
+          return;
+        }
+        if(/%$/.test(v)) {
+          v = parseFloat(v) || 0;
+          transform[k] = {
+            value: v,
+            unit: unit.PERCENT,
+          };
+        }
+        else {
+          v = parseFloat(v) || 0;
+          transform[k] = {
+            value: v,
+            unit: unit.PX,
+          };
         }
       });
     }

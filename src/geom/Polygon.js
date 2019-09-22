@@ -13,7 +13,7 @@ class Polygon extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, points, virtualDom } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, points, virtualDom } = this;
     if(points.length < 3) {
       return;
     }
@@ -26,10 +26,6 @@ class Polygon extends Geom {
       display,
       borderTopWidth,
       borderLeftWidth,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -38,8 +34,8 @@ class Polygon extends Geom {
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
     points.forEach(item => {
       item[0] = originX + item[0] * width;
       item[1] = originY + item[1] * height;

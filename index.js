@@ -202,6 +202,9 @@
 
       this.__x = 0;
       this.__y = 0;
+      this.__ox = 0; // relative或transform造成的偏移量
+
+      this.__oy = 0;
       this.__width = 0;
       this.__height = 0;
       this.__prev = null;
@@ -218,12 +221,12 @@
     _createClass(Node, [{
       key: "__offsetX",
       value: function __offsetX(diff) {
-        this.__x += diff;
+        this.__ox += diff;
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff) {
-        this.__y += diff;
+        this.__oy += diff;
       }
     }, {
       key: "x",
@@ -234,6 +237,26 @@
       key: "y",
       get: function get() {
         return this.__y;
+      }
+    }, {
+      key: "ox",
+      get: function get() {
+        return this.__ox;
+      }
+    }, {
+      key: "oy",
+      get: function get() {
+        return this.__oy;
+      }
+    }, {
+      key: "rx",
+      get: function get() {
+        return this.x + this.ox;
+      }
+    }, {
+      key: "ry",
+      get: function get() {
+        return this.y + this.oy;
       }
     }, {
       key: "width",
@@ -423,8 +446,7 @@
       key: "__layout",
       value: function __layout(data) {
         var w = data.w;
-        var style = this.style,
-            _this$style = this.style,
+        var _this$style = this.style,
             display = _this$style.display,
             width = _this$style.width,
             marginTop = _this$style.marginTop,
@@ -438,8 +460,7 @@
 
         if (display === 'none') {
           return;
-        } // 计算margin/padding，转换百分比
-
+        }
 
         if (width && width.unit !== unit.AUTO) {
           switch (width.unit) {
@@ -468,41 +489,9 @@
           this.__layoutFlex(data);
         } else if (display === 'inline') {
           this.__layoutInline(data);
-        } // relative偏移
-
-
-        var _ref = this.parent || this,
-            w2 = _ref.width,
-            height = _ref.height;
-
-        var position = style.position,
-            top = style.top,
-            right = style.right,
-            bottom = style.bottom,
-            left = style.left;
-
-        if (position === 'relative') {
-          if (left.unit !== unit.AUTO) {
-            var diff = left.unit === unit.PX ? left.value : left.value * w2 * 0.01;
-
-            this.__offsetX(diff);
-          } else if (right.unit !== unit.AUTO) {
-            var _diff = right.unit === unit.PX ? right.value : right.value * w2 * 0.01;
-
-            this.__offsetX(-_diff);
-          }
-
-          if (top.unit !== unit.AUTO) {
-            var _diff2 = top.unit === unit.PX ? top.value : top.value * height * 0.01;
-
-            this.__offsetY(_diff2);
-          } else if (bottom.unit !== unit.AUTO) {
-            var _diff3 = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01;
-
-            this.__offsetY(-_diff3);
-          }
         }
-      }
+      } // 获取margin/padding的实际值
+
     }, {
       key: "__mpWidth",
       value: function __mpWidth(mp, w) {
@@ -522,8 +511,6 @@
         };
         var ctx = this.ctx,
             style = this.style,
-            x = this.x,
-            y = this.y,
             width = this.width,
             height = this.height,
             mlw = this.mlw,
@@ -534,6 +521,11 @@
             pbw = this.pbw,
             virtualDom = this.virtualDom;
         var display = style.display,
+            position = style.position,
+            top = style.top,
+            right = style.right,
+            bottom = style.bottom,
+            left = style.left,
             backgroundColor = style.backgroundColor,
             borderTopWidth = style.borderTopWidth,
             borderTopColor = style.borderTopColor,
@@ -546,12 +538,61 @@
             borderBottomStyle = style.borderBottomStyle,
             borderLeftWidth = style.borderLeftWidth,
             borderLeftColor = style.borderLeftColor,
-            borderLeftStyle = style.borderLeftStyle;
+            borderLeftStyle = style.borderLeftStyle,
+            transform = style.transform;
 
         if (display === 'none') {
           return;
+        } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
+
+
+        if (position === 'relative' && this.parent) {
+          var _this$parent = this.parent,
+              _width = _this$parent.width,
+              _height = _this$parent.height;
+          var h = this.parent.style.height;
+
+          if (left.unit !== unit.AUTO) {
+            var diff = left.unit === unit.PX ? left.value : left.value * _width * 0.01;
+
+            this.__offsetX(diff);
+          } else if (right.unit !== unit.AUTO) {
+            var _diff = right.unit === unit.PX ? right.value : right.value * _width * 0.01;
+
+            this.__offsetX(-_diff);
+          }
+
+          if (top.unit !== unit.AUTO) {
+            var _diff2 = top.unit === unit.PX ? top.value : top.value * _height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+
+            this.__offsetY(_diff2);
+          } else if (bottom.unit !== unit.AUTO) {
+            var _diff3 = bottom.unit === unit.PX ? bottom.value : bottom.value * _height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+
+            this.__offsetY(-_diff3);
+          }
+        } // translate相对于自身
+
+
+        if (transform) {
+          var translateX = transform.translateX,
+              translateY = transform.translateY;
+
+          if (translateX) {
+            var _diff4 = translateX.unit === unit.PX ? translateX.value : translateX.value * width * 0.01;
+
+            this.__offsetX(_diff4);
+          }
+
+          if (translateY) {
+            var _diff5 = translateY.unit === unit.PX ? translateY.value : translateY.value * height * 0.01;
+
+            this.__offsetY(_diff5);
+          }
         }
 
+        var x = this.rx,
+            y = this.ry;
         x += mlw;
         y += mtw;
 
@@ -569,19 +610,20 @@
           }
 
           var w = width + plw + prw;
-          var h = height + ptw + pbw;
+
+          var _h = height + ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.fillStyle = backgroundColor;
-            ctx.rect(x1, y1, w, h);
+            ctx.rect(x1, y1, w, _h);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
             virtualDom.bb.push({
               type: 'item',
               tagName: 'rect',
-              props: [['x', x1], ['y', y1], ['width', w], ['height', h], ['fill', backgroundColor]]
+              props: [['x', x1], ['y', y1], ['width', w], ['height', _h], ['fill', backgroundColor]]
             });
           }
         }
@@ -1128,22 +1170,22 @@
 
             transform.matrix3d = _arr;
           } else if (k === 'translateX') {
-            transform.translateX = parseFloat(v) || 0;
+            transform.translateX = v;
           } else if (k === 'translateY') {
-            transform.translateY = parseFloat(v) || 0;
+            transform.translateY = v;
           } else if (k === 'translateZ') {
-            transform.translateZ = parseFloat(v) || 0;
+            transform.translateZ = v;
           } else if (k === 'translate') {
             var _arr2 = v.split(',');
 
-            transform.translateX = parseFloat(_arr2[0]) || 0;
-            transform.translateX = parseFloat(_arr2[1]) || 0;
+            transform.translateX = _arr2[0];
+            transform.translateY = _arr2[1];
           } else if (k === 'translate3d') {
             var _arr3 = v.split(',');
 
-            transform.translateX = parseFloat(_arr3[0]) || 0;
-            transform.translateX = parseFloat(_arr3[1]) || 0;
-            transform.translateZ = parseFloat(_arr3[2]) || 0;
+            transform.translateX = _arr3[0];
+            transform.translateY = _arr3[1];
+            transform.translateZ = _arr3[2];
           } else if (k === 'scaleX') {
             transform.scaleX = parseFloat(v) || 0;
           } else if (k === 'scaleY') {
@@ -1189,6 +1231,27 @@
             transform.skewY = parseFloat(_arr8[1]) || 0;
           } else if (k === 'perspective') {
             transform.perspective = parseFloat(v);
+          }
+        });
+        ['translateX', 'translateY', 'translateZ'].forEach(function (k) {
+          var v = transform[k]; // 编译工具前置解析优化跳出
+
+          if (!util.isNil(v) && v.unit) {
+            return;
+          }
+
+          if (/%$/.test(v)) {
+            v = parseFloat(v) || 0;
+            transform[k] = {
+              value: v,
+              unit: unit.PERCENT
+            };
+          } else {
+            v = parseFloat(v) || 0;
+            transform[k] = {
+              value: v,
+              unit: unit.PX
+            };
           }
         });
       }
@@ -1288,9 +1351,10 @@
   var LineBox =
   /*#__PURE__*/
   function () {
-    function LineBox(x, y, w, content, style) {
+    function LineBox(parent, x, y, w, content, style) {
       _classCallCheck(this, LineBox);
 
+      this.__parent = parent;
       this.__x = x;
       this.__y = y;
       this.__width = w;
@@ -1305,8 +1369,13 @@
         var style = this.style,
             content = this.content,
             x = this.x,
-            y = this.y;
+            y = this.y,
+            _this$parent = this.parent,
+            ox = _this$parent.ox,
+            oy = _this$parent.oy;
         y += css.getBaseLine(style);
+        x += ox;
+        y += oy;
 
         if (renderMode === mode.CANVAS) {
           ctx.fillText(content, x, y);
@@ -1316,7 +1385,7 @@
             tagName: 'text',
             props: [['x', x], ['y', y], ['fill', style.color], ['font-size', "".concat(style.fontSize, "px")]],
             content: content
-          }; // mode.appendHtml(`<text x="${x}" y="${y + css.getBaseLine(style)}" fill="${style.color}" font-size="${style.fontSize}px">${content}</text>`);
+          };
         }
       }
     }, {
@@ -1363,6 +1432,11 @@
       key: "virtualDom",
       get: function get() {
         return this.__virtualDom;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
       }
     }]);
 
@@ -1457,7 +1531,7 @@
           count += charWidthList[i];
 
           if (count === w) {
-            var lineBox = new LineBox(x, y, count, content.slice(begin, i + 1), style);
+            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), style);
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
             y += this.style.lineHeight.value;
@@ -1470,7 +1544,7 @@
               i = begin + 1;
             }
 
-            var _lineBox = new LineBox(x, y, count - charWidthList[i], content.slice(begin, i), style);
+            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), style);
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
@@ -1490,7 +1564,7 @@
             count += charWidthList[i];
           }
 
-          var _lineBox2 = new LineBox(x, y, count, content.slice(begin, length), style);
+          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length), style);
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
@@ -1544,24 +1618,6 @@
       key: "__tryLayInline",
       value: function __tryLayInline(w) {
         return w - this.textWidth;
-      }
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff) {
-        _get(_getPrototypeOf(Text.prototype), "__offsetX", this).call(this, diff);
-
-        this.lineBoxes.forEach(function (item) {
-          item.__offsetX(diff);
-        });
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        _get(_getPrototypeOf(Text.prototype), "__offsetY", this).call(this, diff);
-
-        this.lineBoxes.forEach(function (item) {
-          item.__offsetY(diff);
-        });
       }
     }, {
       key: "__calMaxAndMinWidth",
@@ -1906,8 +1962,8 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var type = e.event.type,
-            xe = e.x,
-            ye = e.y,
+            xe = e.rx,
+            ye = e.ry,
             covers = e.covers;
         var listener = this.listener,
             style = this.style,
@@ -3248,8 +3304,8 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var type = e.event.type,
-            xe = e.x,
-            ye = e.y,
+            xe = e.rx,
+            ye = e.ry,
             covers = e.covers;
         var listener = this.listener,
             children = this.children,
@@ -3338,9 +3394,16 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
 
-        var display = this.style.display,
+        var style = this.style,
             flowChildren = this.flowChildren,
             children = this.children;
+        var display = style.display,
+            position = style.position,
+            top = style.top,
+            right = style.right,
+            bottom = style.bottom,
+            left = style.left,
+            h = style.height;
 
         if (display === 'none') {
           return;
@@ -3901,10 +3964,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             start = this.start,
@@ -3921,14 +3988,6 @@
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginRight = style.marginRight,
-            marginBottom = style.marginBottom,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingRight = style.paddingRight,
-            paddingBottom = style.paddingBottom,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray;
@@ -3937,10 +3996,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
-        width -= borderLeftWidth.value + borderRightWidth.value + marginLeft.value + marginRight.value + paddingLeft.value + paddingRight.value;
-        height -= borderTopWidth.value + borderBottomWidth.value + marginTop.value + marginBottom.value + paddingTop.value + paddingBottom.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         var x1 = originX + start[0] * width;
         var y1 = originY + start[1] * height;
         var x2 = originX + end[0] * width;
@@ -4052,10 +4109,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             points = this.points,
@@ -4075,10 +4136,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray;
@@ -4087,8 +4144,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         var pts = this.__pts = [];
 
         if (origin === 'TOP_LEFT') {
@@ -4211,10 +4268,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             points = this.points,
@@ -4233,10 +4294,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray,
@@ -4246,8 +4303,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         points.forEach(function (item) {
           item[0] = originX + item[0] * width;
           item[1] = originY + item[1] * height;
@@ -4370,10 +4427,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             start = this.start,
@@ -4388,10 +4449,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray,
@@ -4401,8 +4458,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         originX += width * 0.5;
         originY += height * 0.5;
         r *= Math.min(width, height) * 0.5;
@@ -4482,20 +4539,20 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             virtualDom = this.virtualDom;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray,
@@ -4505,8 +4562,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -4568,10 +4625,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             r = this.r,
@@ -4579,10 +4640,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray,
@@ -4592,8 +4649,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         originX += width * 0.5;
         originY += height * 0.5;
         r *= Math.min(width, height) * 0.5;
@@ -4673,10 +4730,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             rx = this.rx,
@@ -4685,10 +4746,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray,
@@ -4698,8 +4755,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         originX += width * 0.5;
         originY += height * 0.5;
         rx *= width * 0.5;
@@ -4783,10 +4840,14 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Grid.prototype), "render", this).call(this, renderMode);
 
-        var x = this.x,
-            y = this.y,
+        var x = this.rx,
+            y = this.ry,
             width = this.width,
             height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
             nx = this.nx,
@@ -4804,10 +4865,6 @@
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
-            marginTop = style.marginTop,
-            marginLeft = style.marginLeft,
-            paddingTop = style.paddingTop,
-            paddingLeft = style.paddingLeft,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
             strokeDasharray = style.strokeDasharray;
@@ -4816,8 +4873,8 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-        var originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
         var endX = originX + width;
         var endY = originY + height;
         var lx = [];

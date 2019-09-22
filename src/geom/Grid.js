@@ -23,7 +23,7 @@ class Grid extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { x, y, width, height, style, ctx, nx, ny, virtualDom } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, nx, ny, virtualDom } = this;
     if(width <= 0 || height <= 0) {
       return;
     }
@@ -34,10 +34,6 @@ class Grid extends Geom {
       display,
       borderTopWidth,
       borderLeftWidth,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -45,8 +41,8 @@ class Grid extends Geom {
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + marginLeft.value + paddingLeft.value;
-    let originY = y + borderTopWidth.value + marginTop.value + paddingTop.value;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
     let endX = originX + width;
     let endY = originY + height;
     let lx = [];

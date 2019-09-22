@@ -159,7 +159,7 @@ class Geom extends Xom {
   }
 
   __emitEvent(e, force) {
-    let { event: { type }, x: xe, y: ye, covers } = e;
+    let { event: { type }, rx: xe, ry: ye, covers } = e;
     let { listener, style, x, y, outerWidth, outerHeight } = this;
     if(style.display === 'none') {
       return;

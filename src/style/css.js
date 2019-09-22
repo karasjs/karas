@@ -70,6 +70,117 @@ function normalize(style) {
   if(style.padding) {
     style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
   }
+  if(style.transform) {
+    let match = style.transform.match(/\w+\(.+?\)/g);
+    if(match) {
+      let transform = style.transform = {};
+      match.forEach(item => {
+        let i = item.indexOf('(');
+        let k = item.slice(0, i);
+        let v = item.slice(i + 1, item.length - 1);
+        if(k === 'matrix') {
+          let arr = v.split(',');
+          arr = arr.map(item => parseFloat(item));
+          if(arr.length > 6) {
+            arr = arr.slice(0, 6);
+          }
+          else if(arr.length < 6) {
+            while(arr.length < 6) {
+              arr.push(0);
+            }
+          }
+          transform.matrix = arr;
+        }
+        else if(k === 'matrix3d') {
+          let arr = v.split(',');
+          arr = arr.map(item => parseFloat(item));
+          if(arr.length > 9) {
+            arr = arr.slice(0, 9);
+          }
+          else if(arr.length < 9) {
+            while(arr.length < 9) {
+              arr.push(0);
+            }
+          }
+          transform.matrix3d = arr;
+        }
+        else if(k === 'translateX') {
+          transform.translateX = parseFloat(v) || 0;
+        }
+        else if(k === 'translateY') {
+          transform.translateY = parseFloat(v) || 0;
+        }
+        else if(k === 'translateZ') {
+          transform.translateZ = parseFloat(v) || 0;
+        }
+        else if(k === 'translate') {
+          let arr = v.split(',');
+          transform.translateX = parseFloat(arr[0]) || 0;
+          transform.translateX = parseFloat(arr[1]) || 0;
+        }
+        else if(k === 'translate3d') {
+          let arr = v.split(',');
+          transform.translateX = parseFloat(arr[0]) || 0;
+          transform.translateX = parseFloat(arr[1]) || 0;
+          transform.translateZ = parseFloat(arr[2]) || 0;
+        }
+        else if(k === 'scaleX') {
+          transform.scaleX = parseFloat(v) || 0;
+        }
+        else if(k === 'scaleY') {
+          transform.scaleY = parseFloat(v) || 0;
+        }
+        else if(k === 'scaleZ') {
+          transform.scaleZ = parseFloat(v) || 0;
+        }
+        else if(k === 'scale') {
+          let arr = v.split(',');
+          transform.scaleX = parseFloat(arr[0]) || 0;
+          transform.scaleY = parseFloat(arr[1]) || 0;
+        }
+        else if(k === 'scale3d') {
+          let arr = v.split(',');
+          transform.scaleX = parseFloat(arr[0]) || 0;
+          transform.scaleY = parseFloat(arr[1]) || 0;
+          transform.scaleZ = parseFloat(arr[2]) || 0;
+        }
+        else if(k === 'rotateX') {
+          transform.rotateX = parseFloat(v) || 0;
+        }
+        else if(k === 'rotateY') {
+          transform.rotateY = parseFloat(v) || 0;
+        }
+        else if(k === 'rotateZ') {
+          transform.rotateZ = parseFloat(v) || 0;
+        }
+        else if(k === 'rotate') {
+          let arr = v.split(',');
+          transform.rotateX = parseFloat(arr[0]) || 0;
+          transform.rotateY = parseFloat(arr[1]) || 0;
+        }
+        else if(k === 'rotate3d') {
+          let arr = v.split(',');
+          transform.rotateX = parseFloat(arr[0]) || 0;
+          transform.rotateY = parseFloat(arr[1]) || 0;
+          transform.rotateZ = parseFloat(arr[2]) || 0;
+        }
+        else if(k === 'skewX') {
+          transform.skewX = parseFloat(v) || 0;
+        }
+        else if(k === 'skewY') {
+          transform.skewY = parseFloat(v) || 0;
+        }
+        else if(k === 'skew') {
+          let arr = v.split(',');
+          transform.skewX = parseFloat(arr[0]) || 0;
+          transform.skewY = parseFloat(arr[1]) || 0;
+        }
+        else if(k === 'perspective') {
+          transform.perspective = parseFloat(v);
+        }
+      });
+    }
+  }
   parserOneBorder(style, 'Top');
   parserOneBorder(style, 'Right');
   parserOneBorder(style, 'Bottom');
@@ -107,11 +218,20 @@ function normalize(style) {
       };
     }
     else if(/%$/.test(v)) {
-      v = parseFloat(v) || 0;
-      style[k] = {
-        value: v,
-        unit: unit.PERCENT,
-      };
+      // border不支持百分比
+      if(k.indexOf('border') === 0) {
+        style[k] = {
+          value: 0,
+          unit: unit.PX,
+        };
+      }
+      else {
+        v = parseFloat(v) || 0;
+        style[k] = {
+          value: v,
+          unit: unit.PERCENT,
+        };
+      }
     }
     else {
       v = parseFloat(v) || 0;

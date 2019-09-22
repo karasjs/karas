@@ -1086,6 +1086,114 @@
       style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
     }
 
+    if (style.transform) {
+      var match = style.transform.match(/\w+\(.+?\)/g);
+
+      if (match) {
+        var transform = style.transform = {};
+        match.forEach(function (item) {
+          var i = item.indexOf('(');
+          var k = item.slice(0, i);
+          var v = item.slice(i + 1, item.length - 1);
+
+          if (k === 'matrix') {
+            var arr = v.split(',');
+            arr = arr.map(function (item) {
+              return parseFloat(item);
+            });
+
+            if (arr.length > 6) {
+              arr = arr.slice(0, 6);
+            } else if (arr.length < 6) {
+              while (arr.length < 6) {
+                arr.push(0);
+              }
+            }
+
+            transform.matrix = arr;
+          } else if (k === 'matrix3d') {
+            var _arr = v.split(',');
+
+            _arr = _arr.map(function (item) {
+              return parseFloat(item);
+            });
+
+            if (_arr.length > 9) {
+              _arr = _arr.slice(0, 9);
+            } else if (_arr.length < 9) {
+              while (_arr.length < 9) {
+                _arr.push(0);
+              }
+            }
+
+            transform.matrix3d = _arr;
+          } else if (k === 'translateX') {
+            transform.translateX = parseFloat(v) || 0;
+          } else if (k === 'translateY') {
+            transform.translateY = parseFloat(v) || 0;
+          } else if (k === 'translateZ') {
+            transform.translateZ = parseFloat(v) || 0;
+          } else if (k === 'translate') {
+            var _arr2 = v.split(',');
+
+            transform.translateX = parseFloat(_arr2[0]) || 0;
+            transform.translateX = parseFloat(_arr2[1]) || 0;
+          } else if (k === 'translate3d') {
+            var _arr3 = v.split(',');
+
+            transform.translateX = parseFloat(_arr3[0]) || 0;
+            transform.translateX = parseFloat(_arr3[1]) || 0;
+            transform.translateZ = parseFloat(_arr3[2]) || 0;
+          } else if (k === 'scaleX') {
+            transform.scaleX = parseFloat(v) || 0;
+          } else if (k === 'scaleY') {
+            transform.scaleY = parseFloat(v) || 0;
+          } else if (k === 'scaleZ') {
+            transform.scaleZ = parseFloat(v) || 0;
+          } else if (k === 'scale') {
+            var _arr4 = v.split(',');
+
+            transform.scaleX = parseFloat(_arr4[0]) || 0;
+            transform.scaleY = parseFloat(_arr4[1]) || 0;
+          } else if (k === 'scale3d') {
+            var _arr5 = v.split(',');
+
+            transform.scaleX = parseFloat(_arr5[0]) || 0;
+            transform.scaleY = parseFloat(_arr5[1]) || 0;
+            transform.scaleZ = parseFloat(_arr5[2]) || 0;
+          } else if (k === 'rotateX') {
+            transform.rotateX = parseFloat(v) || 0;
+          } else if (k === 'rotateY') {
+            transform.rotateY = parseFloat(v) || 0;
+          } else if (k === 'rotateZ') {
+            transform.rotateZ = parseFloat(v) || 0;
+          } else if (k === 'rotate') {
+            var _arr6 = v.split(',');
+
+            transform.rotateX = parseFloat(_arr6[0]) || 0;
+            transform.rotateY = parseFloat(_arr6[1]) || 0;
+          } else if (k === 'rotate3d') {
+            var _arr7 = v.split(',');
+
+            transform.rotateX = parseFloat(_arr7[0]) || 0;
+            transform.rotateY = parseFloat(_arr7[1]) || 0;
+            transform.rotateZ = parseFloat(_arr7[2]) || 0;
+          } else if (k === 'skewX') {
+            transform.skewX = parseFloat(v) || 0;
+          } else if (k === 'skewY') {
+            transform.skewY = parseFloat(v) || 0;
+          } else if (k === 'skew') {
+            var _arr8 = v.split(',');
+
+            transform.skewX = parseFloat(_arr8[0]) || 0;
+            transform.skewY = parseFloat(_arr8[1]) || 0;
+          } else if (k === 'perspective') {
+            transform.perspective = parseFloat(v);
+          }
+        });
+      }
+    }
+
     parserOneBorder(style, 'Top');
     parserOneBorder(style, 'Right');
     parserOneBorder(style, 'Bottom');
@@ -1103,11 +1211,19 @@
           unit: unit.AUTO
         };
       } else if (/%$/.test(v)) {
-        v = parseFloat(v) || 0;
-        style[k] = {
-          value: v,
-          unit: unit.PERCENT
-        };
+        // border不支持百分比
+        if (k.indexOf('border') === 0) {
+          style[k] = {
+            value: 0,
+            unit: unit.PX
+          };
+        } else {
+          v = parseFloat(v) || 0;
+          style[k] = {
+            value: v,
+            unit: unit.PERCENT
+          };
+        }
       } else {
         v = parseFloat(v) || 0;
         style[k] = {
@@ -3542,23 +3658,23 @@
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
   }
 
-  var CS =
+  var Root =
   /*#__PURE__*/
   function (_Dom) {
-    _inherits(CS, _Dom);
+    _inherits(Root, _Dom);
 
-    function CS(tagName, props, children) {
+    function Root(tagName, props, children) {
       var _this;
 
-      _classCallCheck(this, CS);
+      _classCallCheck(this, Root);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(CS).call(this, tagName, props, children));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Root).call(this, tagName, props, children));
       _this.__node = null; // 真实DOM引用
 
       return _this;
     }
 
-    _createClass(CS, [{
+    _createClass(Root, [{
       key: "__initProps",
       value: function __initProps() {
         if (this.props.width !== undefined) {
@@ -3746,7 +3862,7 @@
       }
     }]);
 
-    return CS;
+    return Root;
   }(Dom);
 
   var Line =
@@ -4789,7 +4905,7 @@
   Geom.register('$grid', Grid);
   var karas = {
     render: function render(cs, dom) {
-      if (!(cs instanceof CS)) {
+      if (!(cs instanceof Root)) {
         throw new Error('render root muse be canvas or svg');
       }
 
@@ -4801,7 +4917,7 @@
     },
     createVd: function createVd(tagName, props, children) {
       if (['canvas', 'svg'].indexOf(tagName) > -1) {
-        return new CS(tagName, props, children);
+        return new Root(tagName, props, children);
       }
 
       if (Dom.isValid(tagName)) {
@@ -4817,7 +4933,8 @@
     createCp: function createCp(cp, props) {
       return new cp(props);
     },
-    Geom: Geom
+    Geom: Geom,
+    mode: mode
   };
 
   if (typeof window != 'undefined') {

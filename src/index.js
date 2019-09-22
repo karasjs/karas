@@ -1,5 +1,6 @@
 import Dom from './node/Dom';
-import CS from './node/CS';
+import Root from './node/Root';
+import mode from './mode';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polyline from './geom/Polyline';
@@ -21,7 +22,7 @@ Geom.register('$grid', Grid);
 
 let karas = {
   render(cs, dom) {
-    if(!(cs instanceof CS)) {
+    if(!(cs instanceof Root)) {
       throw new Error('render root muse be canvas or svg');
     }
     if(dom) {
@@ -31,7 +32,7 @@ let karas = {
   },
   createVd(tagName, props, children) {
     if(['canvas', 'svg'].indexOf(tagName) > -1) {
-      return new CS(tagName, props, children);
+      return new Root(tagName, props, children);
     }
     if(Dom.isValid(tagName)) {
       return new Dom(tagName, props, children);
@@ -46,6 +47,7 @@ let karas = {
     return new cp(props);
   },
   Geom,
+  mode,
 };
 
 if(typeof window != 'undefined') {

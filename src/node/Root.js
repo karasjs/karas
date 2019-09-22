@@ -25,7 +25,7 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
-class CS extends Dom {
+class Root extends Dom {
   constructor(tagName, props, children) {
     super(tagName, props, children);
     this.__node = null; // 真实DOM引用
@@ -170,4 +170,4 @@ class CS extends Dom {
   }
 }
 
-export default CS;
+export default Root;

@@ -1063,8 +1063,8 @@ class Dom extends Xom {
   }
 
   __emitEvent(e, force) {
-    let { event: { type }, rx: xe, ry: ye, covers } = e;
-    let { listener, children, style, x, y, outerWidth, outerHeight } = this;
+    let { event: { type }, x, y, covers } = e;
+    let { listener, children, style, rx, ry, outerWidth, outerHeight } = this;
     if(style.display === 'none') {
       return;
     }
@@ -1106,10 +1106,10 @@ class Dom extends Xom {
       cb && cb(e);
     }
     // 否则判断坐标是否位于自己内部，以及没被遮挡
-    else if(xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+    else if(x >= rx && y >= ry && x <= rx + outerWidth && y <= ry + outerHeight) {
       for(let i = 0, len = covers.length; i < len; i++) {
         let { x: x2, y: y2, w, h: h } = covers[i];
-        if(xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+        if(x >= x2 && y >= y2 && x <= x2 + w && y <= y2 + h) {
           return;
         }
       }

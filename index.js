@@ -1962,13 +1962,13 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var type = e.event.type,
-            xe = e.rx,
-            ye = e.ry,
+            x = e.x,
+            y = e.y,
             covers = e.covers;
         var listener = this.listener,
             style = this.style,
-            x = this.x,
-            y = this.y,
+            rx = this.rx,
+            ry = this.ry,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight;
 
@@ -1984,10 +1984,7 @@
 
         if (force) {
           cb && cb(e);
-          return;
-        }
-
-        if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+        } else if (x >= rx && y >= ry && x <= rx + outerWidth && y <= ry + outerHeight) {
           for (var i = 0, len = covers.length; i < len; i++) {
             var _covers$i = covers[i],
                 x2 = _covers$i.x,
@@ -1995,7 +1992,7 @@
                 w = _covers$i.w,
                 h = _covers$i.h;
 
-            if (xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+            if (x >= x2 && y >= y2 && x <= x2 + w && y <= y2 + h) {
               return;
             }
           }
@@ -3304,14 +3301,14 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var type = e.event.type,
-            xe = e.rx,
-            ye = e.ry,
+            x = e.x,
+            y = e.y,
             covers = e.covers;
         var listener = this.listener,
             children = this.children,
             style = this.style,
-            x = this.x,
-            y = this.y,
+            rx = this.rx,
+            ry = this.ry,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight;
 
@@ -3363,7 +3360,7 @@
           });
           cb && cb(e);
         } // 否则判断坐标是否位于自己内部，以及没被遮挡
-        else if (xe >= x && ye >= y && xe <= x + outerWidth && ye <= y + outerHeight) {
+        else if (x >= rx && y >= ry && x <= rx + outerWidth && y <= ry + outerHeight) {
             for (var _i6 = 0, len = covers.length; _i6 < len; _i6++) {
               var _covers$_i = covers[_i6],
                   x2 = _covers$_i.x,
@@ -3371,7 +3368,7 @@
                   w = _covers$_i.w,
                   h = _covers$_i.h;
 
-              if (xe >= x2 && ye >= y2 && xe <= x2 + w && ye <= y2 + h) {
+              if (x >= x2 && y >= y2 && x <= x2 + w && y <= y2 + h) {
                 return;
               }
             }

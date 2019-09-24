@@ -20,6 +20,9 @@ function parserOneBorder(style, direction) {
   if(c && [4, 7].indexOf(c[0].length) > -1) {
     style[key + 'Color'] = c[0];
   }
+  else if(/\btransparent\b/i.test(style[key])) {
+    style[key + 'Color'] = 'transparent';
+  }
 }
 
 function normalize(style) {
@@ -69,6 +72,9 @@ function normalize(style) {
   }
   if(style.padding) {
     style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+  }
+  if(style.borderRadius) {
+    style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = style.borderRadius;
   }
   if(style.transform) {
     let match = style.transform.match(/\w+\(.+?\)/g);
@@ -224,6 +230,10 @@ function normalize(style) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
+    'borderTopLeftRadius',
+    'borderTopRightRadius',
+    'borderBottomLeftRadius',
+    'borderBottomRightRadius',
     'top',
     'right',
     'bottom',

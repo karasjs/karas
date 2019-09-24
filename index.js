@@ -202,7 +202,7 @@
 
       this.__x = 0;
       this.__y = 0;
-      this.__ox = 0; // relative或transform造成的偏移量
+      this.__ox = 0; // relative/transform2d/margin:auto/text-align等造成的偏移量
 
       this.__oy = 0;
       this.__width = 0;
@@ -395,6 +395,135 @@
 
     return arr;
   }
+  /* 获取合适的虚线实体空白宽度ps/pd和数量n
+   * 总长total，start边长bs，end边长be，内容长w，
+   * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
+   */
+
+
+  function getFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
+    var n = 1;
+    var ps = 1;
+    var pd = 1; // 从最大实体空白长开始尝试
+
+    outer: for (var i = smax; i >= smin; i--) {
+      for (var j = dmax; j >= dmin; j--) {
+        // 已知实体空白长度，n实体和n-1空白组成total，计算获取n数量
+        var per = i + j;
+        var num = Math.floor((total + j) / per);
+        var k = j; // 可能除不尽，此时扩展空白长
+
+        if (num * per < j + total) {
+          var free = total - num * i;
+          k = free / (num - 1);
+
+          if (k > dmax) {
+            continue;
+          }
+        }
+
+        per = i + k; // bs比实体大才有效，因为小的话必定和第一个实体完整相连
+
+        if (bs > 1 && bs > i) {
+          var mo = bs % per;
+
+          if (mo > i) {
+            continue;
+          }
+
+          if (be > 1) {
+            var _mo = (bs + w) % per;
+
+            if (_mo > i) {
+              continue;
+            }
+          }
+        }
+
+        if (be > 1) {
+          var _mo2 = (bs + w) % per;
+
+          if (_mo2 > i) {
+            continue;
+          }
+        }
+
+        if (num > 0) {
+          n = num;
+          ps = i;
+          pd = k;
+        }
+
+        break outer;
+      }
+    }
+
+    return {
+      n: n,
+      ps: ps,
+      pd: pd
+    };
+  } // dashed时n个实线和n-1虚线默认以3:1宽度组成，dotted则是n和n以1:1组成
+
+
+  function getDashed(style, m1, m2, m3, m4, bw) {
+    var total = m4 - m1;
+    var w = m3 - m2;
+    var bs = m2 - m1;
+    var be = m4 - m3;
+
+    if (style === 'dotted') {
+      return getFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
+    } else {
+      var _getFitDashed = getFitDashed(total, bs, be, w, bw, bw * 3, Math.max(1, bw * 0.25), bw * 2),
+          n = _getFitDashed.n,
+          ps = _getFitDashed.ps,
+          pd = _getFitDashed.pd;
+
+      if (n === 1) {
+        return getFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
+      } // 降级为dotted
+
+
+      return {
+        n: n,
+        ps: ps,
+        pd: pd
+      };
+    }
+  }
+
+  function renderBorder(renderMode, points, color, ctx, virtualDom) {
+    if (renderMode === mode.CANVAS) {
+      points.forEach(function (point) {
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.moveTo(point[0], point[1]);
+
+        for (var i = 2, len = point.length; i < len; i += 2) {
+          ctx.lineTo(point[i], point[i + 1]);
+        }
+
+        ctx.fill();
+        ctx.closePath();
+      });
+    } else if (renderMode === mode.SVG) {
+      var s = '';
+      points.forEach(function (point) {
+        s += "M ".concat(point[0], " ").concat(point[1]);
+
+        for (var i = 2, len = point.length; i < len; i += 2) {
+          s += "L ".concat(point[i], " ").concat(point[i + 1], " ");
+        }
+      });
+      var item = {
+        type: 'item',
+        tagName: 'path',
+        props: [['d', s], ['fill', color]]
+      };
+      virtualDom.bb.push(item);
+    }
+  }
 
   var Xom =
   /*#__PURE__*/
@@ -526,19 +655,19 @@
             right = style.right,
             bottom = style.bottom,
             left = style.left,
-            backgroundColor = style.backgroundColor,
+            bgc = style.backgroundColor,
             borderTopWidth = style.borderTopWidth,
-            borderTopColor = style.borderTopColor,
-            borderTopStyle = style.borderTopStyle,
+            btc = style.borderTopColor,
+            bts = style.borderTopStyle,
             borderRightWidth = style.borderRightWidth,
-            borderRightColor = style.borderRightColor,
-            borderRightStyle = style.borderRightStyle,
+            brc = style.borderRightColor,
+            brs = style.borderRightStyle,
             borderBottomWidth = style.borderBottomWidth,
-            borderBottomColor = style.borderBottomColor,
-            borderBottomStyle = style.borderBottomStyle,
+            bbc = style.borderBottomColor,
+            bbs = style.borderBottomStyle,
             borderLeftWidth = style.borderLeftWidth,
-            borderLeftColor = style.borderLeftColor,
-            borderLeftStyle = style.borderLeftStyle,
+            blc = style.borderLeftColor,
+            bls = style.borderLeftStyle,
             transform = style.transform;
 
         if (display === 'none') {
@@ -589,214 +718,439 @@
 
             this.__offsetY(_diff5);
           }
-        }
+        } // 使用rx和ry渲染位置，考虑了relative和translate影响
+
 
         var x = this.rx,
             y = this.ry;
-        x += mlw;
-        y += mtw;
+        var btw = borderTopWidth.value;
+        var brw = borderRightWidth.value;
+        var bbw = borderBottomWidth.value;
+        var blw = borderLeftWidth.value;
+        var x1 = x + mlw;
+        var x2 = x1 + blw;
+        var x3 = x2 + width + plw + prw;
+        var x4 = x3 + brw;
+        var y1 = y + mtw;
+        var y2 = y1 + btw;
+        var y3 = y2 + height + ptw + pbw;
+        var y4 = y3 + bbw;
 
-        if (backgroundColor) {
-          var x1 = x;
-
-          if (borderLeftWidth) {
-            x1 += borderLeftWidth.value;
-          }
-
-          var y1 = y;
-
-          if (borderTopWidth) {
-            y1 += borderTopWidth.value;
-          }
-
+        if (bgc && bgc !== 'transparent') {
           var w = width + plw + prw;
 
           var _h = height + ptw + pbw;
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = backgroundColor;
-            ctx.rect(x1, y1, w, _h);
+            ctx.fillStyle = bgc;
+            ctx.rect(x2, y2, w, _h);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
             virtualDom.bb.push({
               type: 'item',
               tagName: 'rect',
-              props: [['x', x1], ['y', y1], ['width', w], ['height', _h], ['fill', backgroundColor]]
+              props: [['x', x2], ['y', y2], ['width', w], ['height', _h], ['fill', bgc]]
             });
           }
+        } // 边框需考虑尖角，两条相交边平分45°夹角
+
+
+        if (btw > 0 && btc !== 'transparent') {
+          var points = [];
+
+          if (['dashed', 'dotted'].indexOf(bts) > -1) {
+            // 寻找一个合适的虚线线段长度和之间空白边距长度
+            var _getDashed = getDashed(bts, x1, x2, x3, x4, btw),
+                n = _getDashed.n,
+                ps = _getDashed.ps,
+                pd = _getDashed.pd;
+
+            if (n <= 1) {
+              points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
+            } else {
+              var deg1 = Math.atan(btw / blw);
+              var deg2 = Math.atan(btw / brw);
+
+              for (var i = 0; i < n; i++) {
+                // 最后一个可能没有到底，延长之
+                var isLast = i === n - 1;
+                var xx1 = i ? x1 + ps * i + pd * i : x1;
+                var xx4 = xx1 + ps;
+                var yy1 = void 0;
+                var yy2 = void 0; // 整个和borderLeft重叠
+
+                if (xx4 < x2) {
+                  if (isLast) {
+                    points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
+                  } else {
+                    yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
+                    yy2 = y1 + (xx4 - x1) * Math.tan(deg1);
+                    points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
+                  }
+                } // 整个和borderRight重叠
+                else if (xx1 > x3) {
+                    yy1 = y1 + (x4 - xx1) * Math.tan(deg2);
+                    yy2 = y1 + (x4 - xx4) * Math.tan(deg2);
+
+                    if (isLast) {
+                      points.push([xx1, y1, x4, y1, xx1, yy1]);
+                    } else {
+                      points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
+                    }
+                  } // 不被整个重叠的情况再细分
+                  else {
+                      // 上部分和borderLeft重叠
+                      if (xx1 < x2) {
+                        yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
+
+                        if (isLast) {
+                          points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
+                        } else {
+                          // 下部分和borderRight重叠
+                          if (xx4 > x3) {
+                            points.push([xx1, y1, xx4, y1, x3, y2, x2, y2, xx1, yy1]);
+                          } // 下部独立
+                          else {
+                              points.push([xx1, y1, xx4, y1, xx4, y2, x2, y2, xx1, yy1]);
+                            }
+                        }
+                      } // 下部分和borderRight重叠
+                      else if (xx4 > x3) {
+                          yy1 = y1 + (x4 - xx4) * Math.tan(deg2); // 上部分和borderLeft重叠
+
+                          if (xx1 < x2) {
+                            if (isLast) {
+                              points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
+                            } else {
+                              points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, x2, y2, xx1, yy1]);
+                            }
+                          } // 上部独立
+                          else {
+                              if (isLast) {
+                                points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
+                              } else {
+                                points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, xx1, y2]);
+                              }
+                            }
+                        } // 完全独立
+                        else {
+                            if (isLast) {
+                              points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
+                            } else {
+                              points.push([xx1, y1, xx4, y1, xx4, y2, xx1, y2]);
+                            }
+                          }
+                    }
+              }
+            }
+          } else {
+            points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
+          }
+
+          renderBorder(renderMode, points, btc, ctx, virtualDom);
         }
 
-        if (borderTopWidth.value) {
-          var _x = x + borderLeftWidth.value;
+        if (brw > 0 && brc !== 'transparent') {
+          var _points = [];
 
-          var _y = y + borderTopWidth.value * 0.5;
+          if (['dashed', 'dotted'].indexOf(brs) > -1) {
+            // 寻找一个合适的虚线线段长度和之间空白边距长度
+            var _getDashed2 = getDashed(brs, y1, y2, y3, y4, brw),
+                _n = _getDashed2.n,
+                _ps = _getDashed2.ps,
+                _pd = _getDashed2.pd;
 
-          var x2 = _x + width;
-          x2 += plw + prw;
-
-          if (renderMode === mode.CANVAS) {
-            ctx.beginPath();
-            ctx.lineWidth = borderTopWidth.value;
-            ctx.strokeStyle = borderTopColor;
-
-            if (borderTopStyle === 'dashed') {
-              ctx.setLineDash([borderTopWidth.value * 3, borderTopWidth.value * 2]);
-            } else if (borderTopStyle === 'dotted') {
-              ctx.setLineDash([borderTopWidth.value, borderTopWidth.value]);
+            if (_n <= 1) {
+              _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
             } else {
-              ctx.setLineDash([]);
+              var _deg = Math.atan(brw / btw);
+
+              var _deg2 = Math.atan(brw / bbw);
+
+              for (var _i = 0; _i < _n; _i++) {
+                // 最后一个可能没有到底，延长之
+                var _isLast = _i === _n - 1;
+
+                var _yy = _i ? y1 + _ps * _i + _pd * _i : y1;
+
+                var yy4 = _yy + _ps;
+
+                var _xx = void 0;
+
+                var xx2 = void 0; // 整个和borderTop重叠
+
+                if (yy4 < y2) {
+                  if (_isLast) {
+                    _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
+                  } else {
+                    _xx = x4 - (yy4 - y1) * Math.tan(_deg);
+                    xx2 = x4 - (_yy - y1) * Math.tan(_deg);
+
+                    _points.push([_xx, yy4, xx2, _yy, x4, _yy, x4, yy4]);
+                  }
+                } // 整个和borderBottom重叠
+                else if (_yy > y3) {
+                    _xx = x3 + (_yy - y3) * Math.tan(_deg2);
+                    xx2 = x3 + (yy4 - y3) * Math.tan(_deg2);
+
+                    if (_isLast) {
+                      _points.push([_xx, _yy, x4, _yy, x4, y4]);
+                    } else {
+                      _points.push([_xx, _yy, x4, _yy, x4, yy4, xx2, yy4]);
+                    }
+                  } // 不被整个重叠的情况再细分
+                  else {
+                      // 上部分和borderTop重叠
+                      if (_yy < y2) {
+                        _xx = x3 + (y2 - _yy) * Math.tan(_deg);
+
+                        if (_isLast) {
+                          _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y4]);
+                        } else {
+                          // 下部分和borderBottom重叠
+                          if (yy4 > y3) {
+                            _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
+                          } // 下部独立
+                          else {
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, x3, yy4]);
+                            }
+                        }
+                      } // 下部分和borderBottom重叠
+                      else if (yy4 > y3) {
+                          _xx = x3 + (yy4 - y3) * Math.tan(_deg2); // 上部分和borderTop重叠
+
+                          if (_yy < y2) {
+                            if (_isLast) {
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y3]);
+                            } else {
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
+                            }
+                          } // 上部独立
+                          else {
+                              if (_isLast) {
+                                _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
+                              } else {
+                                _points.push([x3, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
+                              }
+                            }
+                        } // 完全独立
+                        else {
+                            if (_isLast) {
+                              _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
+                            } else {
+                              _points.push([x3, _yy, x4, _yy, x4, yy4, x3, yy4]);
+                            }
+                          }
+                    }
+              }
             }
-
-            ctx.moveTo(_x, _y);
-            ctx.lineTo(x2, _y);
-            ctx.stroke();
-            ctx.closePath();
-          } else if (renderMode === mode.SVG) {
-            var item = {
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', _x], ['y1', _y], ['x2', x2], ['y2', _y], ['stroke-width', borderTopWidth.value], ['stroke', borderTopColor]]
-            };
-
-            if (borderTopStyle === 'dashed') {
-              item.props.push(['stroke-dasharray', "".concat(borderTopWidth.value * 3, ", ").concat(borderTopWidth.value * 2)]);
-            } else if (borderTopStyle === 'dotted') {
-              item.props.push(['stroke-dasharray', "".concat(borderTopWidth.value, ", ").concat(borderTopWidth.value)]);
-            }
-
-            virtualDom.bb.push(item);
+          } else {
+            _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
           }
+
+          renderBorder(renderMode, _points, brc, ctx, virtualDom);
         }
 
-        if (borderRightWidth.value) {
-          var _x2 = x + width + borderLeftWidth.value + borderRightWidth.value * 0.5;
+        if (bbw > 0 && bbc !== 'transparent') {
+          var _points2 = []; // 寻找一个合适的虚线线段长度和之间空白边距长度
 
-          var _y2 = y;
-          var y2 = _y2 + height + borderTopWidth.value + borderBottomWidth.value;
-          _x2 += plw + prw;
-          y2 += ptw + pbw;
+          if (['dashed', 'dotted'].indexOf(bbs) > -1) {
+            // 寻找一个合适的虚线线段长度和之间空白边距长度
+            var _getDashed3 = getDashed(bbs, x1, x2, x3, x4, bbw),
+                _n2 = _getDashed3.n,
+                _ps2 = _getDashed3.ps,
+                _pd2 = _getDashed3.pd;
 
-          if (renderMode === mode.CANVAS) {
-            ctx.beginPath();
-            ctx.lineWidth = borderRightWidth.value;
-            ctx.strokeStyle = borderRightColor;
+            var _deg3 = Math.atan(bbw / blw);
 
-            if (borderRightStyle === 'dashed') {
-              ctx.setLineDash([borderRightWidth.value * 3, borderRightWidth.value * 2]);
-            } else if (borderRightStyle === 'dotted') {
-              ctx.setLineDash([borderRightWidth.value, borderRightWidth.value * 2]);
-            } else {
-              ctx.setLineDash([]);
+            var _deg4 = Math.atan(bbw / brw);
+
+            for (var _i2 = 0; _i2 < _n2; _i2++) {
+              // 最后一个可能没有到底，延长之
+              var _isLast2 = _i2 === _n2 - 1;
+
+              var _xx2 = _i2 ? x1 + _ps2 * _i2 + _pd2 * _i2 : x1;
+
+              var _xx3 = _xx2 + _ps2;
+
+              var _yy2 = void 0;
+
+              var _yy3 = void 0; // 整个和borderLeft重叠
+
+
+              if (_xx3 < x2) {
+                if (_isLast2) {
+                  _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
+                } else {
+                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg3);
+                  _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg3);
+
+                  _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
+                }
+              } // 整个和borderRight重叠
+              else if (_xx2 > x3) {
+                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg4);
+                  _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg4);
+
+                  if (_isLast2) {
+                    _points2.push([_xx2, _yy2, x4, y4, _xx2, y4]);
+                  } else {
+                    _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
+                  }
+                } // 不被整个重叠的情况再细分
+                else {
+                    // 上部分和borderLeft重叠
+                    if (_xx2 < x2) {
+                      _yy2 = y3 + (_xx2 - x1) * Math.tan(_deg3);
+
+                      if (_isLast2) {
+                        _points2.push([_xx2, _yy2, x2, y3, x3, y3, x4, y4, _xx2, y4]);
+                      } else {
+                        // 下部分和borderRight重叠
+                        if (_xx3 > x3) {
+                          _points2.push([_xx2, _yy2, x2, y3, x3, y3, _xx3, y4, _xx2, y4]);
+                        } // 下部独立
+                        else {
+                            _points2.push([_xx2, _yy2, x2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
+                          }
+                      }
+                    } // 下部分和borderRight重叠
+                    else if (_xx3 > x3) {
+                        _yy2 = y4 - (x4 - _xx3) * Math.tan(_deg4); // 上部分和borderLeft重叠
+
+                        if (_xx2 < x2) {
+                          if (_isLast2) {
+                            _points2.push([_xx2, _yy2, x3, y3, x4, y4, _xx2, y4]);
+                          } else {
+                            _points2.push([_xx2, _yy2, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
+                          }
+                        } // 上部独立
+                        else {
+                            if (_isLast2) {
+                              _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
+                            } else {
+                              _points2.push([_xx2, y3, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
+                            }
+                          }
+                      } // 完全独立
+                      else {
+                          if (_isLast2) {
+                            _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
+                          } else {
+                            _points2.push([_xx2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
+                          }
+                        }
+                  }
             }
-
-            ctx.moveTo(_x2, _y2);
-            ctx.lineTo(_x2, y2);
-            ctx.stroke();
-            ctx.closePath();
-          } else if (renderMode === mode.SVG) {
-            var _item = {
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', _x2], ['y1', _y2], ['x2', _x2], ['y2', y2], ['stroke-width', borderRightWidth.value], ['stroke', borderRightColor]]
-            };
-
-            if (borderRightStyle === 'dashed') {
-              _item.props.push(['stroke-dasharray', "".concat(borderRightWidth.value * 3, ", ").concat(borderRightWidth.value * 2)]);
-            } else if (borderTopStyle === 'dotted') {
-              _item.props.push(['stroke-dasharray', "".concat(borderRightWidth.value, ", ").concat(borderRightWidth.value)]);
-            }
-
-            virtualDom.bb.push(_item);
+          } else {
+            _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
           }
+
+          renderBorder(renderMode, _points2, bbc, ctx, virtualDom);
         }
 
-        if (borderBottomWidth.value) {
-          var _x3 = x + borderLeftWidth.value;
+        if (blw > 0 && blc !== 'transparent') {
+          var _points3 = [];
 
-          var _y3 = y + height + borderTopWidth.value + borderBottomWidth.value * 0.5;
+          if (['dashed', 'dotted'].indexOf(bls) > -1) {
+            // 寻找一个合适的虚线线段长度和之间空白边距长度
+            var _getDashed4 = getDashed(bls, y1, y2, y3, y4, blw),
+                _n3 = _getDashed4.n,
+                _ps3 = _getDashed4.ps,
+                _pd3 = _getDashed4.pd;
 
-          var _x4 = _x3 + width;
-
-          _x4 += plw + prw;
-          _y3 += ptw + pbw;
-
-          if (renderMode === mode.CANVAS) {
-            ctx.beginPath();
-            ctx.lineWidth = borderBottomWidth.value;
-            ctx.strokeStyle = borderBottomColor;
-
-            if (borderBottomStyle === 'dashed') {
-              ctx.setLineDash([borderBottomWidth.value * 3, borderBottomWidth.value * 2]);
-            } else if (borderBottomStyle === 'dotted') {
-              ctx.setLineDash([borderBottomWidth.value, borderBottomWidth.value * 2]);
+            if (_n3 <= 1) {
+              _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
             } else {
-              ctx.setLineDash([]);
+              var _deg5 = Math.atan(blw / btw);
+
+              var _deg6 = Math.atan(blw / bbw);
+
+              for (var _i3 = 0; _i3 < _n3; _i3++) {
+                // 最后一个可能没有到底，延长之
+                var _isLast3 = _i3 === _n3 - 1;
+
+                var _yy4 = _i3 ? y1 + _ps3 * _i3 + _pd3 * _i3 : y1;
+
+                var _yy5 = _yy4 + _ps3;
+
+                var _xx4 = void 0;
+
+                var _xx5 = void 0; // 整个和borderTop重叠
+
+
+                if (_yy5 < y2) {
+                  if (_isLast3) {
+                    _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
+                  } else {
+                    _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
+                    _xx5 = x1 + (_yy5 - y1) * Math.tan(_deg5);
+
+                    _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
+                  }
+                } // 整个和borderBottom重叠
+                else if (_yy4 > y3) {
+                    _xx4 = x1 + (y4 - _yy4) * Math.tan(_deg6);
+                    _xx5 = x1 + (y4 - _yy5) * Math.tan(_deg6);
+
+                    if (_isLast3) {
+                      _points3.push([x1, _yy4, _xx4, _yy4, x1, y4]);
+                    } else {
+                      _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
+                    }
+                  } // 不被整个重叠的情况再细分
+                  else {
+                      // 上部分和borderTop重叠
+                      if (_yy4 < y2) {
+                        _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
+
+                        if (_isLast3) {
+                          _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
+                        } else {
+                          // 下部分和borderBottom重叠
+                          if (_yy5 > y3) {
+                            _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
+                          } // 下部独立
+                          else {
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, _yy5, x1, _yy5]);
+                            }
+                        }
+                      } // 下部分和borderBottom重叠
+                      else if (_yy5 > y3) {
+                          _xx4 = x1 + (y4 - _yy5) * Math.tan(_deg6); // 上部分和borderTop重叠
+
+                          if (_yy4 < y2) {
+                            if (_isLast3) {
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
+                            } else {
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
+                            }
+                          } // 上部独立
+                          else {
+                              if (_isLast3) {
+                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
+                              } else {
+                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, _xx4, _yy5, x1, _yy5]);
+                              }
+                            }
+                        } // 完全独立
+                        else {
+                            if (_isLast3) {
+                              _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
+                            } else {
+                              _points3.push([x1, _yy4, x2, _yy4, x2, _yy5, x1, _yy5]);
+                            }
+                          }
+                    }
+              }
             }
-
-            ctx.moveTo(_x3, _y3);
-            ctx.lineTo(_x4, _y3);
-            ctx.stroke();
-            ctx.closePath();
-          } else if (renderMode === mode.SVG) {
-            var _item2 = {
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', _x3], ['y1', _y3], ['x2', _x4], ['y2', _y3], ['stroke-width', borderBottomWidth.value], ['stroke', borderBottomColor]]
-            };
-
-            if (borderBottomStyle === 'dashed') {
-              _item2.props.push(['stroke-dasharray', "".concat(borderBottomWidth.value * 3, ", ").concat(borderBottomWidth.value * 2)]);
-            } else if (borderBottomStyle === 'dotted') {
-              _item2.props.push(['stroke-dasharray', "".concat(borderBottomWidth.value, ", ").concat(borderBottomWidth.value)]);
-            }
-
-            virtualDom.bb.push(_item2);
+          } else {
+            _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
           }
-        }
 
-        if (borderLeftWidth.value) {
-          var _x5 = x + borderLeftWidth.value * 0.5;
-
-          var _y4 = y;
-
-          var _y5 = _y4 + height + borderTopWidth.value + borderBottomWidth.value;
-
-          _y5 += ptw + pbw;
-
-          if (renderMode === mode.CANVAS) {
-            ctx.beginPath();
-            ctx.lineWidth = borderLeftWidth.value;
-            ctx.strokeStyle = borderLeftColor;
-
-            if (borderLeftStyle === 'dashed') {
-              ctx.setLineDash([borderLeftWidth.value * 3, borderLeftWidth.value * 2]);
-            } else if (borderLeftStyle === 'dotted') {
-              ctx.setLineDash([borderLeftWidth.value, borderLeftWidth.value * 2]);
-            } else {
-              ctx.setLineDash([]);
-            }
-
-            ctx.moveTo(_x5, _y4);
-            ctx.lineTo(_x5, _y5);
-            ctx.stroke();
-            ctx.closePath();
-          } else if (renderMode === mode.SVG) {
-            var _item3 = {
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', _x5], ['y1', _y4], ['x2', _x5], ['y2', _y5], ['stroke-width', borderLeftWidth.value], ['stroke', borderLeftColor]]
-            };
-
-            if (borderLeftStyle === 'dashed') {
-              _item3.props.push(['stroke-dasharray', "".concat(borderLeftWidth.value * 3, ", ").concat(borderLeftWidth.value * 2)]);
-            } else if (borderLeftStyle === 'dotted') {
-              _item3.props.push(['stroke-dasharray', "".concat(borderLeftWidth.value, ", ").concat(borderLeftWidth.value)]);
-            }
-
-            virtualDom.bb.push(_item3);
-          }
+          renderBorder(renderMode, _points3, blc, ctx, virtualDom);
         }
       }
     }, {
@@ -919,10 +1273,18 @@
     borderRightWidth: 0,
     borderBottomWidth: 0,
     borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
     borderTopStyle: 'solid',
     borderRightStyle: 'solid',
     borderBottomStyle: 'solid',
     borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     verticalAlign: 'baseline',
     width: 'auto',
     height: 'auto',
@@ -1076,6 +1438,8 @@
 
     if (c && [4, 7].indexOf(c[0].length) > -1) {
       style[key + 'Color'] = c[0];
+    } else if (/\btransparent\b/i.test(style[key])) {
+      style[key + 'Color'] = 'transparent';
     }
   }
 
@@ -1126,6 +1490,10 @@
 
     if (style.padding) {
       style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+    }
+
+    if (style.borderRadius) {
+      style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = style.borderRadius;
     }
 
     if (style.transform) {
@@ -1262,7 +1630,7 @@
     parserOneBorder(style, 'Bottom');
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis'].forEach(function (k) {
       var v = style[k]; // 编译工具前置解析优化跳出
 
       if (!util.isNil(v) && v.unit) {
@@ -2463,7 +2831,10 @@
           w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
         }
 
-        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw; // 递归布局，将inline的节点组成lineGroup一行
+        if (height.unit === unit.AUTO) {
+          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        } // 递归布局，将inline的节点组成lineGroup一行
+
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -2674,7 +3045,10 @@
           w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
         }
 
-        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        if (height.unit === unit.AUTO) {
+          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        }
+
         var isDirectionRow = flexDirection === 'row'; // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
 
         if (!isDirectionRow && !fixedHeight) {
@@ -3056,7 +3430,10 @@
           w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
         }
 
-        h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw; // 递归布局，将inline的节点组成lineGroup一行
+        if (height.unit === unit.AUTO) {
+          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        } // 递归布局，将inline的节点组成lineGroup一行
+
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -4958,16 +5335,16 @@
   Geom.register('$ellipse', Ellipse);
   Geom.register('$grid', Grid);
   var karas = {
-    render: function render(cs, dom) {
-      if (!(cs instanceof Root)) {
+    render: function render(root, dom) {
+      if (!(root instanceof Root)) {
         throw new Error('render root muse be canvas or svg');
       }
 
       if (dom) {
-        cs.appendTo(dom);
+        root.appendTo(dom);
       }
 
-      return cs;
+      return root;
     },
     createVd: function createVd(tagName, props, children) {
       if (['canvas', 'svg'].indexOf(tagName) > -1) {

@@ -332,7 +332,9 @@ class Dom extends Xom {
     if(width.unit === unit.AUTO) {
       w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
     }
-    h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    if(height.unit === unit.AUTO) {
+      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    }
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
@@ -512,7 +514,9 @@ class Dom extends Xom {
     if(width.unit === unit.AUTO) {
       w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
     }
-    h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    if(height.unit === unit.AUTO) {
+      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    }
     let isDirectionRow = flexDirection === 'row';
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
@@ -844,7 +848,9 @@ class Dom extends Xom {
     if(width.unit === unit.AUTO) {
       w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
     }
-    h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    if(height.unit === unit.AUTO) {
+      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+    }
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {

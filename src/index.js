@@ -21,14 +21,14 @@ Geom.register('$ellipse', Ellipse);
 Geom.register('$grid', Grid);
 
 let karas = {
-  render(cs, dom) {
-    if(!(cs instanceof Root)) {
+  render(root, dom) {
+    if(!(root instanceof Root)) {
       throw new Error('render root muse be canvas or svg');
     }
     if(dom) {
-      cs.appendTo(dom);
+      root.appendTo(dom);
     }
-    return cs;
+    return root;
   },
   createVd(tagName, props, children) {
     if(['canvas', 'svg'].indexOf(tagName) > -1) {

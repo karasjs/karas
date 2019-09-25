@@ -1440,6 +1440,12 @@
       style[key + 'Color'] = c[0];
     } else if (/\btransparent\b/i.test(style[key])) {
       style[key + 'Color'] = 'transparent';
+    } else {
+      c = /rgba?\(.+\)/i.exec(style[key]);
+
+      if (c) {
+        style[key + 'Color'] = c[0];
+      }
     }
   }
 
@@ -1450,13 +1456,18 @@
         style[item.k] = item.v;
       }
     }); // 处理缩写
-    // TODO: 重复声明时优先级
 
     if (style.background) {
       var bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
 
       if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
         style.backgroundColor = bgc[0];
+      } else {
+        bgc = /rgba?\(.+\)/i.exec(style.background);
+
+        if (bgc) {
+          style.backgroundColor = bgc[0];
+        }
       }
     }
 
@@ -1485,7 +1496,7 @@
     }
 
     if (style.margin) {
-      var match = style.margin.match(/([\d.]+(px|%)?)|(auto)/ig);
+      var match = style.margin.toString().match(/([\d.]+(px|%)?)|(auto)/ig);
 
       if (match) {
         if (match.length === 1) {
@@ -1505,7 +1516,7 @@
     }
 
     if (style.padding) {
-      var _match = style.padding.match(/([\d.]+(px|%)?)|(auto)/ig);
+      var _match = style.padding.toString().match(/([\d.]+(px|%)?)|(auto)/ig);
 
       if (_match) {
         if (_match.length === 1) {
@@ -1529,7 +1540,7 @@
     }
 
     if (style.transform) {
-      var _match2 = style.transform.match(/\w+\(.+?\)/g);
+      var _match2 = style.transform.toString().match(/\w+\(.+?\)/g);
 
       if (_match2) {
         var transform = style.transform = {};

@@ -23,6 +23,12 @@ function parserOneBorder(style, direction) {
   else if(/\btransparent\b/i.test(style[key])) {
     style[key + 'Color'] = 'transparent';
   }
+  else {
+    c = /rgba?\(.+\)/i.exec(style[key]);
+    if(c) {
+      style[key + 'Color'] = c[0];
+    }
+  }
 }
 
 function normalize(style) {
@@ -33,11 +39,16 @@ function normalize(style) {
     }
   });
   // 处理缩写
-  // TODO: 重复声明时优先级
   if(style.background) {
     let bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
       style.backgroundColor = bgc[0];
+    }
+    else {
+      bgc = /rgba?\(.+\)/i.exec(style.background);
+      if(bgc) {
+        style.backgroundColor = bgc[0];
+      }
     }
   }
   if(style.flex) {
@@ -68,7 +79,7 @@ function normalize(style) {
     style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = style.border;
   }
   if(style.margin) {
-    let match = style.margin.match(/([\d.]+(px|%)?)|(auto)/ig);
+    let match = style.margin.toString().match(/([\d.]+(px|%)?)|(auto)/ig);
     if(match) {
       if(match.length === 1) {
         match[3] = match[2] = match[1] = match[0];
@@ -87,7 +98,7 @@ function normalize(style) {
     }
   }
   if(style.padding) {
-    let match = style.padding.match(/([\d.]+(px|%)?)|(auto)/ig);
+    let match = style.padding.toString().match(/([\d.]+(px|%)?)|(auto)/ig);
     if(match) {
       if(match.length === 1) {
         match[3] = match[2] = match[1] = match[0];
@@ -109,7 +120,7 @@ function normalize(style) {
     style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = style.borderRadius;
   }
   if(style.transform) {
-    let match = style.transform.match(/\w+\(.+?\)/g);
+    let match = style.transform.toString().match(/\w+\(.+?\)/g);
     if(match) {
       let transform = style.transform = {};
       match.forEach(item => {

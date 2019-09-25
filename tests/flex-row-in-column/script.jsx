@@ -1,7 +1,7 @@
 karas.render(
   <canvas width="360" height="360">
     <div style={{display:'flex',flexDirection:'column'}}>
-      <span style={{borderBottom:'1px solid #CCC'}}>1</span>
+      <span>1</span>
       <div style={{display:'flex',background:'#F00'}}>
         <span style={{flex:1}}>2</span>
         <span style={{flex:1}}>3</span>

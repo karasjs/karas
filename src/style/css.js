@@ -68,10 +68,42 @@ function normalize(style) {
     style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = style.border;
   }
   if(style.margin) {
-    style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = style.margin;
+    let match = style.margin.match(/([\d.]+(px|%)?)|(auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[3] = match[2] = match[1] = match[0];
+      }
+      else if(match.length === 2) {
+        match[2] = match[0];
+        match[3] = match[1];
+      }
+      else if(match.length === 3) {
+        match[3] = match[1];
+      }
+      style.marginTop = match[0];
+      style.marginRight = match[1];
+      style.marginBottom = match[2];
+      style.marginLeft = match[3];
+    }
   }
   if(style.padding) {
-    style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+    let match = style.padding.match(/([\d.]+(px|%)?)|(auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[3] = match[2] = match[1] = match[0];
+      }
+      else if(match.length === 2) {
+        match[2] = match[0];
+        match[3] = match[1];
+      }
+      else if(match.length === 3) {
+        match[3] = match[1];
+      }
+      style.paddingTop = match[0];
+      style.paddingRight = match[1];
+      style.paddingBottom = match[2];
+      style.paddingLeft = match[3];
+    }
   }
   if(style.borderRadius) {
     style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = style.borderRadius;

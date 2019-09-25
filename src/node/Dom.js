@@ -295,6 +295,8 @@ class Dom extends Xom {
     let {
       width,
       height,
+      marginLeft,
+      marginRight,
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -461,6 +463,13 @@ class Dom extends Xom {
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;
+    // 处理margin:xx auto居中对齐
+    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+      let ow = this.outerWidth;
+      if(ow < data.w) {
+        this.__offsetX((data.w - ow) * 0.5);
+      }
+    }
   }
 
   // 弹性布局时的计算位置
@@ -809,6 +818,8 @@ class Dom extends Xom {
     let {
       width,
       height,
+      marginLeft,
+      marginRight,
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -968,6 +979,13 @@ class Dom extends Xom {
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;
+    // 处理margin:xx auto居中对齐
+    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+      let ow = this.outerWidth;
+      if(ow < data.w) {
+        this.__offsetX((data.w - ow) * 0.5);
+      }
+    }
   }
 
   // 只针对绝对定位children布局

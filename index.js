@@ -1485,11 +1485,43 @@
     }
 
     if (style.margin) {
-      style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = style.margin;
+      var match = style.margin.match(/([\d.]+(px|%)?)|(auto)/ig);
+
+      if (match) {
+        if (match.length === 1) {
+          match[3] = match[2] = match[1] = match[0];
+        } else if (match.length === 2) {
+          match[2] = match[0];
+          match[3] = match[1];
+        } else if (match.length === 3) {
+          match[3] = match[1];
+        }
+
+        style.marginTop = match[0];
+        style.marginRight = match[1];
+        style.marginBottom = match[2];
+        style.marginLeft = match[3];
+      }
     }
 
     if (style.padding) {
-      style.paddingTop = style.paddingRight = style.paddingBottom = style.paddingLeft = style.padding;
+      var _match = style.padding.match(/([\d.]+(px|%)?)|(auto)/ig);
+
+      if (_match) {
+        if (_match.length === 1) {
+          _match[3] = _match[2] = _match[1] = _match[0];
+        } else if (_match.length === 2) {
+          _match[2] = _match[0];
+          _match[3] = _match[1];
+        } else if (_match.length === 3) {
+          _match[3] = _match[1];
+        }
+
+        style.paddingTop = _match[0];
+        style.paddingRight = _match[1];
+        style.paddingBottom = _match[2];
+        style.paddingLeft = _match[3];
+      }
     }
 
     if (style.borderRadius) {
@@ -1497,11 +1529,12 @@
     }
 
     if (style.transform) {
-      var match = style.transform.match(/\w+\(.+?\)/g);
+      var _match2 = style.transform.match(/\w+\(.+?\)/g);
 
-      if (match) {
+      if (_match2) {
         var transform = style.transform = {};
-        match.forEach(function (item) {
+
+        _match2.forEach(function (item) {
           var i = item.indexOf('(');
           var k = item.slice(0, i);
           var v = item.slice(i + 1, item.length - 1);
@@ -1601,6 +1634,7 @@
             transform.perspective = parseFloat(v);
           }
         });
+
         ['translateX', 'translateY', 'translateZ'].forEach(function (k) {
           var v = transform[k]; // 编译工具前置解析优化跳出
 
@@ -2787,6 +2821,8 @@
             pbw = this.pbw;
         var width = style.width,
             height = style.height,
+            marginLeft = style.marginLeft,
+            marginRight = style.marginRight,
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
@@ -2971,7 +3007,15 @@
 
         this.__width = w;
         this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y;
+        this.__flowY = y; // 处理margin:xx auto居中对齐
+
+        if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+          var ow = this.outerWidth;
+
+          if (ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5);
+          }
+        }
       } // 弹性布局时的计算位置
 
     }, {
@@ -3383,6 +3427,8 @@
             pbw = this.pbw;
         var width = style.width,
             height = style.height,
+            marginLeft = style.marginLeft,
+            marginRight = style.marginRight,
             borderTopWidth = style.borderTopWidth,
             borderRightWidth = style.borderRightWidth,
             borderBottomWidth = style.borderBottomWidth,
@@ -3562,7 +3608,15 @@
 
         this.__width = fixedWidth ? w : maxX - data.x;
         this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y;
+        this.__flowY = y; // 处理margin:xx auto居中对齐
+
+        if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+          var ow = this.outerWidth;
+
+          if (ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5);
+          }
+        }
       } // 只针对绝对定位children布局
 
     }, {

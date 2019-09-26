@@ -101,7 +101,7 @@ function joinVd(vd) {
 }
 
 function joinDef(item) {
-  let s = `<${item.k} id="${item.uuid}" x1="${item.c[0]}" y1="${item.c[1]}" x2="${item.c[2]}" y2="${item.c[3]}">`;
+  let s = `<${item.k} id="${item.uuid}" x1="${item.c[0]}" y1="${item.c[1]}" x2="${item.c[2]}" y2="${item.c[3]}" gradientUnits="userSpaceOnUse">`;
   if(item.k === 'linearGradient') {
     item.v.forEach(item2 => {
       s += `<stop stop-color="${item2[0]}" offset="${item2[1] * 100}%"/>`;

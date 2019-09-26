@@ -159,8 +159,9 @@ class Root extends Dom {
     if(renderMode === mode.SVG) {
       let nvd = this.virtualDom;
       let nd = this.__defs.value;
+      nvd.defs = nd;
       if(this.node.__karasInit) {
-        domDiff(this.node, this.node.__ovd, nvd, this.node.__od, nd);
+        domDiff(this.node, this.node.__ovd, nvd);
       } else {
         this.node.innerHTML = util.joinVirtualDom(nvd, nd);
       }

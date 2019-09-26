@@ -470,7 +470,7 @@
   }
 
   function joinDef(item) {
-    var s = "<".concat(item.k, " id=\"").concat(item.uuid, "\" x1=\"").concat(item.c[0], "\" y1=\"").concat(item.c[1], "\" x2=\"").concat(item.c[2], "\" y2=\"").concat(item.c[3], "\">");
+    var s = "<".concat(item.k, " id=\"").concat(item.uuid, "\" x1=\"").concat(item.c[0], "\" y1=\"").concat(item.c[1], "\" x2=\"").concat(item.c[2], "\" y2=\"").concat(item.c[3], "\" gradientUnits=\"userSpaceOnUse\">");
 
     if (item.k === 'linearGradient') {
       item.v.forEach(function (item2) {
@@ -1071,28 +1071,28 @@
             var xx1 = x2;
             var yy1 = y2;
 
-            if (deg > 270) {
+            if (deg >= 270) {
               var _r = util.r2d(360 - deg);
 
               xx0 = cx + Math.sin(_r) * half;
               yy0 = cy + Math.cos(_r) * half;
               xx1 = cx - Math.sin(_r) * half;
               yy1 = cy - Math.cos(_r) * half;
-            } else if (deg > 180) {
+            } else if (deg >= 180) {
               var _r2 = util.r2d(deg - 180);
 
               xx0 = cx + Math.sin(_r2) * half;
               yy0 = cy - Math.cos(_r2) * half;
               xx1 = cx - Math.sin(_r2) * half;
               yy1 = cy + Math.cos(_r2) * half;
-            } else if (deg > 90) {
+            } else if (deg >= 90) {
               var _r3 = util.r2d(180 - deg);
 
               xx0 = cx - Math.sin(_r3) * half;
               yy0 = cy - Math.cos(_r3) * half;
               xx1 = cx + Math.sin(_r3) * half;
               yy1 = cy + Math.cos(_r3) * half;
-            } else if (deg > 0) {
+            } else if (deg >= 0) {
               var _r4 = util.r2d(deg);
 
               xx0 = cx - Math.sin(_r4) * half;
@@ -1104,7 +1104,7 @@
 
             var list = []; // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
 
-            for (var i = 1, len = v.length; i < len; i++) {
+            for (var i = 1, _len2 = v.length; i < _len2; i++) {
               var item = v[i]; // 考虑是否声明了位置
 
               var arr = item.trim().split(/\s+/);
@@ -1139,7 +1139,7 @@
 
             var start = list[0][1];
 
-            for (var _i = 0, _len2 = list.length; _i < _len2 - 1; _i++) {
+            for (var _i = 0, _len3 = list.length; _i < _len3 - 1; _i++) {
               var _item = list[_i];
 
               if (Array.isArray(_item)) {
@@ -1148,7 +1148,7 @@
                 var j = _i + 1;
                 var end = list[list.length - 1][1];
 
-                for (; j < _len2; j++) {
+                for (; j < _len3; j++) {
                   var _item2 = list[j];
 
                   if (Array.isArray(_item2)) {
@@ -1172,103 +1172,114 @@
 
                 _i = k;
               }
+            } // 每个不能小于前面的，canvas不能兼容这种情况，需处理
+
+
+            for (var _i2 = 1, _len4 = list.length; _i2 < _len4; _i2++) {
+              var _item4 = list[_i2];
+              var prev = list[_i2 - 1];
+
+              if (_item4[1] < prev[1]) {
+                _item4[1] = prev[1];
+              }
+            } // 0之前的和1之后的要过滤掉
+
+
+            for (var _i3 = 0, _len5 = list.length; _i3 < _len5 - 1; _i3++) {
+              var _item5 = list[_i3];
+
+              if (_item5[1] > 1) {
+                list.splice(_i3 + 1);
+                break;
+              }
             }
 
-            if (renderMode === mode.CANVAS) {
-              // 每个不能小于前面的，canvas不能兼容这种情况，需处理
-              for (var _i2 = 1, _len4 = list.length; _i2 < _len4; _i2++) {
-                var _item4 = list[_i2];
-                var prev = list[_i2 - 1];
+            for (var _i4 = list.length - 1; _i4 > 0; _i4--) {
+              var _item6 = list[_i4];
 
-                if (_item4[1] < prev[1]) {
-                  _item4[1] = prev[1];
+              if (_item6[1] < 0) {
+                list.splice(0, _i4);
+                break;
+              }
+            } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+
+
+            var len = list.length; // 在只有1个的情况下可简化
+
+            if (len === 1) {
+              list[0][1] = 0;
+            } else {
+              // 全部都在[0,1]之外也可以简化
+              var allBefore = true;
+              var allAfter = true;
+
+              for (var _i5 = len - 1; _i5 >= 0; _i5--) {
+                var _item7 = list[_i5];
+                var _p = _item7[1];
+
+                if (_p > 0) {
+                  allBefore = false;
                 }
-              } // 0之前的和1之后的要过滤掉
 
-
-              for (var _i3 = 0, _len5 = list.length; _i3 < _len5 - 1; _i3++) {
-                var _item5 = list[_i3];
-
-                if (_item5[1] > 1) {
-                  list.splice(_i3 + 1);
-                  break;
+                if (_p < 1) {
+                  allAfter = false;
                 }
               }
 
-              for (var _i4 = list.length - 1; _i4 > 0; _i4--) {
-                var _item6 = list[_i4];
-
-                if (_item6[1] < 0) {
-                  list.splice(0, _i4);
-                  break;
-                }
-              } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-
-
-              var _len3 = list.length; // 在只有1个的情况下可简化
-
-              if (_len3 === 1) {
+              if (allBefore) {
+                list.splice(0, len - 1);
                 list[0][1] = 0;
-              } else {
-                // 全部都在[0,1]之外也可以简化
-                var allBefore = true;
-                var allAfter = true;
+              } else if (allAfter) {
+                list.splice(1);
+                list[0][1] = 0;
+              } // 部分在区间之外需复杂计算
+              else {
+                  var first = list[0];
+                  var last = list[len - 1]; // 只要2个的情况下就是首尾都落在外面
 
-                for (var _i5 = _len3 - 1; _i5 >= 0; _i5--) {
-                  var _item7 = list[_i5];
-                  var _p = _item7[1];
-
-                  if (_p > 0) {
-                    allBefore = false;
-                  }
-
-                  if (_p < 1) {
-                    allAfter = false;
-                  }
-                }
-
-                if (allBefore) {
-                  list.splice(0, _len3 - 1);
-                  list[0][1] = 0;
-                } else if (allAfter) {
-                  list.splice(1);
-                  list[0][1] = 0;
-                } // 部分在区间之外需复杂计算
-                else {
-                    var first = list[0];
-                    var last = list[_len3 - 1]; // 只要2个的情况下就是首尾都落在外面
-
-                    if (_len3 === 2) {
+                  if (len === 2) {
+                    if (first[1] < 0 && last[1] > 1) {
                       getLgLimit(first, last, length);
-                    } // 只有1个在外面的情况较为容易
-                    else {
-                        if (first[1] < 0) {
-                          var next = list[1];
-                          var c1 = util.rgb2int(first[0]);
-                          var c2 = util.rgb2int(next[0]);
+                    }
+                  } // 只有1个在外面的情况较为容易
+                  else {
+                      if (first[1] < 0) {
+                        var next = list[1];
+                        var c1 = util.rgb2int(first[0]);
+                        var c2 = util.rgb2int(next[0]);
 
-                          var _c7 = getLgStartLimit(c1, first[1], c2, next[1], length);
+                        var _c7 = getLgStartLimit(c1, first[1], c2, next[1], length);
 
-                          first[0] = "rgba(".concat(_c7[0], ",").concat(_c7[1], ",").concat(_c7[2], ",").concat(_c7[3], ")");
-                          first[1] = 0;
-                        }
-
-                        if (last[1] > 1) {
-                          var _prev = list[_len3 - 2];
-
-                          var _c8 = util.rgb2int(_prev[0]);
-
-                          var _c9 = util.rgb2int(last[0]);
-
-                          var _c10 = getLgEndLimit(_c8, _prev[1], _c9, last[1], length);
-
-                          last[0] = "rgba(".concat(_c10[0], ",").concat(_c10[1], ",").concat(_c10[2], ",").concat(_c10[3], ")");
-                          last[1] = 1;
-                        }
+                        first[0] = "rgba(".concat(_c7[0], ",").concat(_c7[1], ",").concat(_c7[2], ",").concat(_c7[3], ")");
+                        first[1] = 0;
                       }
-                  }
-              }
 
+                      if (last[1] > 1) {
+                        var _prev = list[len - 2];
+
+                        var _c8 = util.rgb2int(_prev[0]);
+
+                        var _c9 = util.rgb2int(last[0]);
+
+                        var _c10 = getLgEndLimit(_c8, _prev[1], _c9, last[1], length);
+
+                        last[0] = "rgba(".concat(_c10[0], ",").concat(_c10[1], ",").concat(_c10[2], ",").concat(_c10[3], ")");
+                        last[1] = 1;
+                      }
+                    }
+                }
+            } // 防止精度计算溢出[0,1]
+
+
+            list.forEach(function (item) {
+              if (item[1] < 0) {
+                item[1] = 0;
+              } else if (item[1] > 1) {
+                item[1] = 1;
+              }
+            });
+
+            if (renderMode === mode.CANVAS) {
               var lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
               list.forEach(function (item) {
                 lg.addColorStop(item[1], item[0]);
@@ -1279,11 +1290,9 @@
               ctx.fill();
               ctx.closePath();
             } else {
-              var root = this.root;
               var uuid = this.defs.add({
                 k: 'linearGradient',
-                c: [(xx0 - x2) / w, (yy0 - y2) / _h, (xx1 - x2) / w, (yy1 - y2) / _h],
-                // c: [xx0, yy0, xx1, yy1],
+                c: [xx0, yy0, xx1, yy1],
                 v: list
               });
               virtualDom.bb.push({
@@ -4389,9 +4398,9 @@
     return Dom;
   }(Xom);
 
-  function diff(elem, ovd, nvd, od, nd) {
+  function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
-    diffDefs(cns[0], od, nd);
+    diffDefs(cns[0], ovd.defs, nvd.defs);
     diffBb(cns[1], ovd.bb, nvd.bb);
     diffD2D(elem, ovd, nvd, true);
   }
@@ -4915,9 +4924,10 @@
         if (renderMode === mode.SVG) {
           var nvd = this.virtualDom;
           var nd = this.__defs.value;
+          nvd.defs = nd;
 
           if (this.node.__karasInit) {
-            diff(this.node, this.node.__ovd, nvd, this.node.__od, nd);
+            diff(this.node, this.node.__ovd, nvd);
           } else {
             this.node.innerHTML = util.joinVirtualDom(nvd, nd);
           }

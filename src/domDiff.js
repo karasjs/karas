@@ -1,8 +1,8 @@
 import util from './util';
 
-function diff(elem, ovd, nvd, od, nd) {
+function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
-  diffDefs(cns[0], od, nd);
+  diffDefs(cns[0], ovd.defs, nvd.defs);
   diffBb(cns[1], ovd.bb, nvd.bb);
   diffD2D(elem, ovd, nvd, true);
 }

@@ -429,28 +429,28 @@ class Xom extends Node {
         let yy0 = y3;
         let xx1 = x2;
         let yy1 = y2;
-        if(deg > 270) {
+        if(deg >= 270) {
           let r = util.r2d(360 - deg);
           xx0 = cx + Math.sin(r) * half;
           yy0 = cy + Math.cos(r) * half;
           xx1 = cx - Math.sin(r) * half;
           yy1 = cy - Math.cos(r) * half;
         }
-        else if(deg > 180) {
+        else if(deg >= 180) {
           let r = util.r2d(deg - 180);
           xx0 = cx + Math.sin(r) * half;
           yy0 = cy - Math.cos(r) * half;
           xx1 = cx - Math.sin(r) * half;
           yy1 = cy + Math.cos(r) * half;
         }
-        else if(deg > 90) {
+        else if(deg >= 90) {
           let r = util.r2d(180 - deg);
           xx0 = cx - Math.sin(r) * half;
           yy0 = cy - Math.cos(r) * half;
           xx1 = cx + Math.sin(r) * half;
           yy1 = cy + Math.cos(r) * half;
         }
-        else if(deg > 0) {
+        else if(deg >= 0) {
           let r = util.r2d(deg);
           xx0 = cx - Math.sin(r) * half;
           yy0 = cy + Math.cos(r) * half;
@@ -520,87 +520,98 @@ class Xom extends Node {
             i = k;
           }
         }
-        if(renderMode === mode.CANVAS) {
-          // 每个不能小于前面的，canvas不能兼容这种情况，需处理
-          for(let i = 1, len = list.length; i < len; i++) {
+        // 每个不能小于前面的，canvas不能兼容这种情况，需处理
+        for(let i = 1, len = list.length; i < len; i++) {
+          let item = list[i];
+          let prev = list[i - 1];
+          if(item[1] < prev[1]) {
+            item[1] = prev[1];
+          }
+        }
+        // 0之前的和1之后的要过滤掉
+        for(let i = 0, len = list.length; i < len - 1; i++) {
+          let item = list[i];
+          if(item[1] > 1) {
+            list.splice(i + 1);
+            break;
+          }
+        }
+        for(let i = list.length - 1; i > 0; i--) {
+          let item = list[i];
+          if(item[1] < 0) {
+            list.splice(0, i);
+            break;
+          }
+        }
+        // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+        let len = list.length;
+        // 在只有1个的情况下可简化
+        if(len === 1) {
+          list[0][1] = 0;
+        }
+        else {
+          // 全部都在[0,1]之外也可以简化
+          let allBefore = true;
+          let allAfter = true;
+          for(let i = len - 1; i >= 0; i--) {
             let item = list[i];
-            let prev = list[i - 1];
-            if(item[1] < prev[1]) {
-              item[1] = prev[1];
+            let p = item[1];
+            if(p > 0) {
+              allBefore = false;
+            }
+            if(p < 1) {
+              allAfter = false;
             }
           }
-          // 0之前的和1之后的要过滤掉
-          for(let i = 0, len = list.length; i < len - 1; i++) {
-            let item = list[i];
-            if(item[1] > 1) {
-              list.splice(i + 1);
-              break;
-            }
-          }
-          for(let i = list.length - 1; i > 0; i--) {
-            let item = list[i];
-            if(item[1] < 0) {
-              list.splice(0, i);
-              break;
-            }
-          }
-          // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-          let len = list.length;
-          // 在只有1个的情况下可简化
-          if(len === 1) {
+          if(allBefore) {
+            list.splice(0, len - 1);
             list[0][1] = 0;
           }
+          else if(allAfter) {
+            list.splice(1);
+            list[0][1] = 0;
+          }
+          // 部分在区间之外需复杂计算
           else {
-            // 全部都在[0,1]之外也可以简化
-            let allBefore = true;
-            let allAfter = true;
-            for(let i = len - 1; i >= 0; i--) {
-              let item = list[i];
-              let p = item[1];
-              if(p > 0) {
-                allBefore = false;
-              }
-              if(p < 1) {
-                allAfter = false;
-              }
-            }
-            if(allBefore) {
-              list.splice(0, len - 1);
-              list[0][1] = 0;
-            }
-            else if(allAfter) {
-              list.splice(1);
-              list[0][1] = 0;
-            }
-            // 部分在区间之外需复杂计算
-            else {
-              let first = list[0];
-              let last = list[len - 1];
-              // 只要2个的情况下就是首尾都落在外面
-              if(len === 2) {
+            let first = list[0];
+            let last = list[len - 1];
+            // 只要2个的情况下就是首尾都落在外面
+            if(len === 2) {
+              if(first[1] < 0 && last[1] > 1) {
                 getLgLimit(first, last, length);
               }
-              // 只有1个在外面的情况较为容易
-              else {
-                if(first[1] < 0) {
-                  let next = list[1];
-                  let c1 = util.rgb2int(first[0]);
-                  let c2 = util.rgb2int(next[0]);
-                  let c = getLgStartLimit(c1, first[1], c2, next[1], length);
-                  first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
-                  first[1] = 0;
-                }
-                if(last[1] > 1) {
-                  let prev = list[len - 2];
-                  let c1 = util.rgb2int(prev[0]);
-                  let c2 = util.rgb2int(last[0]);
-                  let c = getLgEndLimit(c1, prev[1], c2, last[1], length);
-                  last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
-                  last[1] = 1;
-                }
+            }
+            // 只有1个在外面的情况较为容易
+            else {
+              if(first[1] < 0) {
+                let next = list[1];
+                let c1 = util.rgb2int(first[0]);
+                let c2 = util.rgb2int(next[0]);
+                let c = getLgStartLimit(c1, first[1], c2, next[1], length);
+                first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+                first[1] = 0;
+              }
+              if(last[1] > 1) {
+                let prev = list[len - 2];
+                let c1 = util.rgb2int(prev[0]);
+                let c2 = util.rgb2int(last[0]);
+                let c = getLgEndLimit(c1, prev[1], c2, last[1], length);
+                last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+                last[1] = 1;
               }
             }
           }
+        }
+        // 防止精度计算溢出[0,1]
+        list.forEach(item => {
+          if(item[1] < 0) {
+            item[1] = 0;
+          }
+          else if(item[1] > 1) {
+            item[1] = 1;
+          }
+        });
+        if(renderMode === mode.CANVAS) {
           let lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
           list.forEach(item => {
             lg.addColorStop(item[1], item[0]);
@@ -612,11 +623,9 @@ class Xom extends Node {
           ctx.closePath();
         }
         else {
-          let root = this.root;
           let uuid = this.defs.add({
             k: 'linearGradient',
-            c: [(xx0 - x2) / w, (yy0 - y2) / h, (xx1 - x2) / w, (yy1 - y2) / h],
-            // c: [xx0, yy0, xx1, yy1],
+            c: [xx0, yy0, xx1, yy1],
             v: list,
           });
           virtualDom.bb.push({

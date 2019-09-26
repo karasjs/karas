@@ -1121,19 +1121,32 @@
               } else {
                 list.push(arr[0]);
               }
+            } // 首尾默认为[0, 1]
+
+
+            if (list.length > 1) {
+              if (!Array.isArray(list[0])) {
+                list[0] = [list[0], 0];
+              }
+
+              if (!Array.isArray(list[list.length - 1])) {
+                list[list.length - 1] = [list[list.length - 1], 1];
+              }
+            } else if (!Array.isArray(list[0])) {
+              list[0] = [list[0], 0];
             } // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
 
 
-            var start = 0;
+            var start = list[0][1];
 
-            for (var _i = 0, _len2 = list.length; _i < _len2; _i++) {
+            for (var _i = 0, _len2 = list.length; _i < _len2 - 1; _i++) {
               var _item = list[_i];
 
               if (Array.isArray(_item)) {
                 start = _item[1];
               } else {
                 var j = _i + 1;
-                var end = start;
+                var end = list[list.length - 1][1];
 
                 for (; j < _len2; j++) {
                   var _item2 = list[j];
@@ -1144,13 +1157,7 @@
                   }
                 }
 
-                var num = j - _i; // 到最后也没有遇到声明的，则直接是结尾区间1
-
-                if (j === _len2) {
-                  num++;
-                  end = 1;
-                }
-
+                var num = j - _i + 1;
                 var per = (end - start) / num;
 
                 for (var _k = _i; _k < j; _k++) {

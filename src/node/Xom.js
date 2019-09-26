@@ -478,16 +478,28 @@ class Xom extends Node {
             list.push(arr[0]);
           }
         }
+        // 首尾默认为[0, 1]
+        if(list.length > 1) {
+          if(!Array.isArray(list[0])) {
+            list[0] = [list[0], 0];
+          }
+          if(!Array.isArray(list[list.length - 1])) {
+            list[list.length - 1] = [list[list.length - 1], 1];
+          }
+        }
+        else if(!Array.isArray(list[0])) {
+          list[0] = [list[0], 0];
+        }
         // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
-        let start = 0;
-        for(let i = 0, len = list.length; i < len; i++) {
+        let start = list[0][1];
+        for(let i = 0, len = list.length; i < len - 1; i++) {
           let item = list[i];
           if(Array.isArray(item)) {
             start = item[1];
           }
           else {
             let j = i + 1;
-            let end = start;
+            let end = list[list.length - 1][1];
             for(; j < len; j++) {
               let item = list[j];
               if(Array.isArray(item)) {
@@ -495,12 +507,7 @@ class Xom extends Node {
                 break;
               }
             }
-            let num = j - i;
-            // 到最后也没有遇到声明的，则直接是结尾区间1
-            if(j === len) {
-              num++;
-              end = 1;
-            }
+            let num = j - i + 1;
             let per = (end - start) / num;
             for(let k = i; k < j; k++) {
               let item = list[k];

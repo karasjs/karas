@@ -495,12 +495,13 @@ class Xom extends Node {
                 break;
               }
             }
+            let num = j - i;
             // 到最后也没有遇到声明的，则直接是结尾区间1
             if(j === len) {
-              j = len - 1;
+              num++;
               end = 1;
             }
-            let per = (end - start) / (j + 1 - i);
+            let per = (end - start) / num;
             for(let k = i; k < j; k++) {
               let item = list[k];
               list[k] = [item, start + per * (k + 1 - i)];

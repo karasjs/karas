@@ -1142,15 +1142,16 @@
                     end = _item2[1];
                     break;
                   }
-                } // 到最后也没有遇到声明的，则直接是结尾区间1
+                }
 
+                var num = j - _i; // 到最后也没有遇到声明的，则直接是结尾区间1
 
                 if (j === _len2) {
-                  j = _len2 - 1;
+                  num++;
                   end = 1;
                 }
 
-                var per = (end - start) / (j + 1 - _i);
+                var per = (end - start) / num;
 
                 for (var _k = _i; _k < j; _k++) {
                   var _item3 = list[_k];

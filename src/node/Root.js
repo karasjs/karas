@@ -2,6 +2,7 @@ import Dom from '../node/Dom';
 import util from '../util';
 import mode from '../mode';
 import domDiff from '../domDiff';
+import Defs from './Defs';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -24,6 +25,8 @@ function renderProp(k, v) {
   }
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
+
+let uuid = 1;
 
 class Root extends Dom {
   constructor(tagName, props, children) {
@@ -106,6 +109,9 @@ class Root extends Dom {
         this.__node = dom.querySelector(this.tagName);
       }
     }
+    this.__uuid = this.__node.__uuid || uuid++;
+    this.__defs = Defs.getInstance(this.__uuid);
+    this.__defs.clear();
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
@@ -137,7 +143,7 @@ class Root extends Dom {
     if(style.position === 'absolute') {
       style.position = 'static';
     }
-    this.__traverse(this.__ctx, renderMode);
+    this.__traverse(this.__ctx, this.__defs, renderMode);
     // canvas的宽高固定初始化
     style.width = this.width;
     style.height = this.height;
@@ -152,12 +158,14 @@ class Root extends Dom {
     this.render(renderMode);
     if(renderMode === mode.SVG) {
       let nvd = this.virtualDom;
+      let nd = this.__defs.value;
       if(this.node.__karasInit) {
-        domDiff(this.node.firstChild, this.node.__ovd, nvd);
+        domDiff(this.node, this.node.__ovd, nvd, this.node.__od, nd);
       } else {
-        this.node.innerHTML = util.joinVirtualDom(nvd);
+        this.node.innerHTML = util.joinVirtualDom(nvd, nd);
       }
       this.node.__ovd = nvd;
+      this.node.__od = nd;
     }
     if(!this.node.__karasInit) {
       this.node.__karasInit = true;

@@ -30,11 +30,11 @@ class Dom extends Xom {
    * 2. 打平children中的数组，变成一维
    * 3. 合并相连的Text节点
    * 4. 检测inline不能包含block和flex
-   * 5. 设置parent和prev/next和ctx和mode
+   * 5. 设置parent和prev/next和ctx和defs和mode
    */
-  __traverse(ctx, renderMode) {
+  __traverse(ctx, defs, renderMode) {
     let list = [];
-    this.__traverseChildren(this.children, list, ctx, renderMode);
+    this.__traverseChildren(this.children, list, ctx, defs, renderMode);
     for(let i = list.length - 1; i > 0; i--) {
       let item = list[i];
       if(item instanceof Text) {
@@ -59,6 +59,7 @@ class Dom extends Xom {
     let prev = null;
     list.forEach(item => {
       item.__ctx = ctx;
+      item.__defs = defs;
       if(prev) {
         prev.__next = item;
       }
@@ -74,15 +75,15 @@ class Dom extends Xom {
     this.__children = list;
   }
 
-  __traverseChildren(children, list, ctx, renderMode) {
+  __traverseChildren(children, list, ctx, defs, renderMode) {
     if(Array.isArray(children)) {
       children.forEach(item => {
-        this.__traverseChildren(item, list, ctx, renderMode);
+        this.__traverseChildren(item, list, ctx, defs, renderMode);
       });
     }
     else if(children instanceof Dom) {
       list.push(children);
-      children.__traverse(ctx, renderMode);
+      children.__traverse(ctx, defs, renderMode);
     }
     // 图形没有children
     else if(children instanceof Geom) {

@@ -1,6 +1,7 @@
 import Node from './Node';
 import mode from '../mode';
 import unit from '../style/unit';
+import util from '../util';
 
 function arr2hash(arr) {
   let hash = {};
@@ -154,6 +155,56 @@ function renderBorder(renderMode, points, color, ctx, virtualDom) {
   }
 }
 
+// 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
+function getLgStartLimit(c1, p1, c2, p2, length) {
+  let [ r1, g1, b1, a1 = 1 ] = c1;
+  let [ r2, g2, b2, a2 = 1 ] = c2;
+  let l1 = Math.abs(p1) * length;
+  let l2 = p2 * length;
+  let p = l1 / (l2 + l1);
+  let r = Math.floor(r1 + (r2 - r1) * p);
+  let g = Math.floor(g1 + (g2 - g1) * p);
+  let b = Math.floor(b1 + (b2 - b1) * p);
+  let a = a1 + (a2 - a1) * p;
+  return [r, g, b, a];
+}
+
+function getLgEndLimit(c1, p1, c2, p2, length) {
+  let [ r1, g1, b1, a1 = 1 ] = c1;
+  let [ r2, g2, b2, a2 = 1 ] = c2;
+  let l1 = p1 * length;
+  let l2 = p2 * length;
+  let p = (length - l1) / (l2 - l1);
+  let r = Math.floor(r1 + (r2 - r1) * p);
+  let g = Math.floor(g1 + (g2 - g1) * p);
+  let b = Math.floor(b1 + (b2 - b1) * p);
+  let a = a1 + (a2 - a1) * p;
+  return [r, g, b, a];
+}
+
+function getLgLimit(first, last, length) {
+  let c1 = util.rgb2int(first[0]);
+  let c2 = util.rgb2int(last[0]);
+  let [ r1, g1, b1, a1 = 1 ] = c1;
+  let [ r2, g2, b2, a2 = 1 ] = c2;
+  let l1 = Math.abs(first[1]) * length;
+  let l2 = last[1] * length;
+  let p = l1 / (l1 + l2);
+  let r = Math.floor(r1 + (r2 - r1) * p);
+  let g = Math.floor(g1 + (g2 - g1) * p);
+  let b = Math.floor(b1 + (b2 - b1) * p);
+  let a = a1 + (a2 - a1) * p;
+  first[0] = `rgba(${r},${g},${b},${a})`;
+  first[1] = 0;
+  p = (length + l1) / (l1 + l2);
+  r = Math.floor(r1 + (r2 - r1) * p);
+  g = Math.floor(g1 + (g2 - g1) * p);
+  b = Math.floor(b1 + (b2 - b1) * p);
+  a = a1 + (a2 - a1) * p;
+  last[0] = `rgba(${r},${g},${b},${a})`;
+  last[1] = 1;
+}
+
 class Xom extends Node {
   constructor(tagName, props) {
     super();
@@ -256,6 +307,7 @@ class Xom extends Node {
       right,
       bottom,
       left,
+      backgroundGradient: bgg,
       backgroundColor: bgc,
       borderTopWidth,
       borderTopColor: btc,
@@ -321,7 +373,260 @@ class Xom extends Node {
     let y2 = y1 + btw;
     let y3 = y2 + height + ptw + pbw;
     let y4 = y3 + bbw;
-    if(bgc && bgc !== 'transparent') {
+    // 先渲染渐变，没有则背景色
+    if(bgg) {
+      let w = width + plw + prw;
+      let h = height + ptw + pbw;
+      let { k, v } = bgg;
+      if(k === 'linear') {
+        let deg = 180;
+        if(v[0] === 'to top') {
+          deg = 0;
+        }
+        else if(v[0] === 'to top right') {
+          deg = 45;
+        }
+        else if(v[0] === 'to right') {
+          deg = 90;
+        }
+        else if(v[0] === 'to bottom right') {
+          deg = 135;
+        }
+        // else if(v[0] === 'to bottom') {
+        // }
+        else if(v[0] === 'to bottom left') {
+          deg = 225;
+        }
+        else if(v[0] === 'to left') {
+          deg = 270;
+        }
+        else if(v[0] === 'to top left') {
+          deg = 315;
+        }
+        // 数字角度，没有的话取默认角度
+        else {
+          let match = /([\d.]+)deg/.exec(v[0]);
+          if(match) {
+            deg = parseFloat(match[1]);
+          }
+          else {
+            v.unshift(deg);
+          }
+        }
+        // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
+        let r = util.r2d(deg);
+        let length = Math.abs(w * Math.sin(r)) + Math.abs(h * Math.cos(r));
+        let half = length * 0.5;
+        if(deg >= 360) {
+          deg = deg % 360;
+        }
+        while(deg < 0) {
+          deg += 360;
+        }
+        let cx = x2 + w * 0.5;
+        let cy = y2 + h * 0.5;
+        let xx0 = x3;
+        let yy0 = y3;
+        let xx1 = x2;
+        let yy1 = y2;
+        if(deg > 270) {
+          let r = util.r2d(360 - deg);
+          xx0 = cx + Math.sin(r) * half;
+          yy0 = cy + Math.cos(r) * half;
+          xx1 = cx - Math.sin(r) * half;
+          yy1 = cy - Math.cos(r) * half;
+        }
+        else if(deg > 180) {
+          let r = util.r2d(deg - 180);
+          xx0 = cx + Math.sin(r) * half;
+          yy0 = cy - Math.cos(r) * half;
+          xx1 = cx - Math.sin(r) * half;
+          yy1 = cy + Math.cos(r) * half;
+        }
+        else if(deg > 90) {
+          let r = util.r2d(180 - deg);
+          xx0 = cx - Math.sin(r) * half;
+          yy0 = cy - Math.cos(r) * half;
+          xx1 = cx + Math.sin(r) * half;
+          yy1 = cy + Math.cos(r) * half;
+        }
+        else if(deg > 0) {
+          let r = util.r2d(deg);
+          xx0 = cx - Math.sin(r) * half;
+          yy0 = cy + Math.cos(r) * half;
+          xx1 = cx + Math.sin(r) * half;
+          yy1 = cy - Math.cos(r) * half;
+        }
+        // 计算colorStop
+        let list = [];
+        // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+        for(let i = 1, len = v.length; i < len; i++) {
+          let item = v[i];
+          // 考虑是否声明了位置
+          let arr = item.trim().split(/\s+/);
+          if(arr.length > 1) {
+            let c = arr[0];
+            let p = arr[1];
+            if(/%$/.test(p)) {
+              list.push([c, parseFloat(p) * 0.01]);
+            }
+            else {
+              list.push([c, parseFloat(p) / length]);
+            }
+          }
+          else {
+            list.push(arr[0]);
+          }
+        }
+        // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
+        let start = 0;
+        for(let i = 0, len = list.length; i < len; i++) {
+          let item = list[i];
+          if(Array.isArray(item)) {
+            start = item[1];
+          }
+          else {
+            let j = i + 1;
+            let end = start;
+            for(; j < len; j++) {
+              let item = list[j];
+              if(Array.isArray(item)) {
+                end = item[1];
+                break;
+              }
+            }
+            // 到最后也没有遇到声明的，则直接是结尾区间1
+            if(j === len) {
+              j = len - 1;
+              end = 1;
+            }
+            let per = (end - start) / (j + 1 - i);
+            for(let k = i; k < j; k++) {
+              let item = list[k];
+              list[k] = [item, start + per * (k + 1 - i)];
+            }
+            // 第一个要特殊处理下
+            if(i === 0) {
+              list[0][1] = 0;
+            }
+            i = k;
+          }
+        }
+        if(renderMode === mode.CANVAS) {
+          // 每个不能小于前面的，canvas不能兼容这种情况，需处理
+          for(let i = 1, len = list.length; i < len; i++) {
+            let item = list[i];
+            let prev = list[i - 1];
+            if(item[1] < prev[1]) {
+              item[1] = prev[1];
+            }
+          }
+          // 0之前的和1之后的要过滤掉
+          for(let i = 0, len = list.length; i < len - 1; i++) {
+            let item = list[i];
+            if(item[1] > 1) {
+              list.splice(i + 1);
+              break;
+            }
+          }
+          for(let i = list.length - 1; i > 0; i--) {
+            let item = list[i];
+            if(item[1] < 0) {
+              list.splice(0, i);
+              break;
+            }
+          }
+          // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+          let len = list.length;
+          // 在只有1个的情况下可简化
+          if(len === 1) {
+            list[0][1] = 0;
+          }
+          else {
+            // 全部都在[0,1]之外也可以简化
+            let allBefore = true;
+            let allAfter = true;
+            for(let i = len - 1; i >= 0; i--) {
+              let item = list[i];
+              let p = item[1];
+              if(p > 0) {
+                allBefore = false;
+              }
+              if(p < 1) {
+                allAfter = false;
+              }
+            }
+            if(allBefore) {
+              list.splice(0, len - 1);
+              list[0][1] = 0;
+            }
+            else if(allAfter) {
+              list.splice(1);
+              list[0][1] = 0;
+            }
+            // 部分在区间之外需复杂计算
+            else {
+              let first = list[0];
+              let last = list[len - 1];
+              // 只要2个的情况下就是首尾都落在外面
+              if(len === 2) {
+                getLgLimit(first, last, length);
+              }
+              // 只有1个在外面的情况较为容易
+              else {
+                if(first[1] < 0) {
+                  let next = list[1];
+                  let c1 = util.rgb2int(first[0]);
+                  let c2 = util.rgb2int(next[0]);
+                  let c = getLgStartLimit(c1, first[1], c2, next[1], length);
+                  first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+                  first[1] = 0;
+                }
+                if(last[1] > 1) {
+                  let prev = list[len - 2];
+                  let c1 = util.rgb2int(prev[0]);
+                  let c2 = util.rgb2int(last[0]);
+                  let c = getLgEndLimit(c1, prev[1], c2, last[1], length);
+                  last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+                  last[1] = 1;
+                }
+              }
+            }
+          }
+          let lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
+          list.forEach(item => {
+            lg.addColorStop(item[1], item[0]);
+          });
+          ctx.beginPath();
+          ctx.fillStyle = lg;
+          ctx.rect(x2, y2, w, h);
+          ctx.fill();
+          ctx.closePath();
+        }
+        else {
+          let root = this.root;
+          let uuid = this.defs.add({
+            k: 'linearGradient',
+            c: [(xx0 - x2) / w, (yy0 - y2) / h, (xx1 - x2) / w, (yy1 - y2) / h],
+            // c: [xx0, yy0, xx1, yy1],
+            v: list,
+          });
+          virtualDom.bb.push({
+            type: 'item',
+            tagName: 'rect',
+            props: [
+              ['x', x2],
+              ['y', y2],
+              ['width', w],
+              ['height', h],
+              ['fill', `url(#${uuid})`]
+            ],
+          });
+        }
+      }
+      else if(k === 'radial-gradient') {}
+    }
+    else if(bgc && bgc !== 'transparent') {
       let w = width + plw + prw;
       let h = height + ptw + pbw;
       if(renderMode === mode.CANVAS) {

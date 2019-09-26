@@ -40,14 +40,23 @@ function normalize(style) {
   });
   // 处理缩写
   if(style.background) {
-    let bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
-    if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = bgc[0];
+    // 优先gradient，没有再考虑颜色
+    let gradient = /\b(\w+)-gradient\((.+)\)/.exec(style.background);
+    if(gradient) {
+      style.backgroundGradient = {
+        k: gradient[1],
+        v: gradient[2].split(/\s*,\s*/),
+      };
     }
     else {
-      bgc = /rgba?\(.+\)/i.exec(style.background);
-      if(bgc) {
+      let bgc = /#[0-9a-f]{3,6}/i.exec(style.background);
+      if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
         style.backgroundColor = bgc[0];
+      } else {
+        bgc = /rgba?\(.+\)/i.exec(style.background);
+        if(bgc) {
+          style.backgroundColor = bgc[0];
+        }
       }
     }
   }
@@ -128,7 +137,7 @@ function normalize(style) {
         let k = item.slice(0, i);
         let v = item.slice(i + 1, item.length - 1);
         if(k === 'matrix') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           arr = arr.map(item => parseFloat(item));
           if(arr.length > 6) {
             arr = arr.slice(0, 6);
@@ -141,7 +150,7 @@ function normalize(style) {
           transform.matrix = arr;
         }
         else if(k === 'matrix3d') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           arr = arr.map(item => parseFloat(item));
           if(arr.length > 9) {
             arr = arr.slice(0, 9);
@@ -163,12 +172,12 @@ function normalize(style) {
           transform.translateZ = v;
         }
         else if(k === 'translate') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.translateX = arr[0];
           transform.translateY = arr[1];
         }
         else if(k === 'translate3d') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.translateX = arr[0];
           transform.translateY = arr[1];
           transform.translateZ = arr[2];
@@ -183,12 +192,12 @@ function normalize(style) {
           transform.scaleZ = parseFloat(v) || 0;
         }
         else if(k === 'scale') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.scaleX = parseFloat(arr[0]) || 0;
           transform.scaleY = parseFloat(arr[1]) || 0;
         }
         else if(k === 'scale3d') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.scaleX = parseFloat(arr[0]) || 0;
           transform.scaleY = parseFloat(arr[1]) || 0;
           transform.scaleZ = parseFloat(arr[2]) || 0;
@@ -203,12 +212,12 @@ function normalize(style) {
           transform.rotateZ = parseFloat(v) || 0;
         }
         else if(k === 'rotate') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.rotateX = parseFloat(arr[0]) || 0;
           transform.rotateY = parseFloat(arr[1]) || 0;
         }
         else if(k === 'rotate3d') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.rotateX = parseFloat(arr[0]) || 0;
           transform.rotateY = parseFloat(arr[1]) || 0;
           transform.rotateZ = parseFloat(arr[2]) || 0;
@@ -220,7 +229,7 @@ function normalize(style) {
           transform.skewY = parseFloat(v) || 0;
         }
         else if(k === 'skew') {
-          let arr = v.split(',');
+          let arr = v.split(/\s*,\s*/);
           transform.skewX = parseFloat(arr[0]) || 0;
           transform.skewY = parseFloat(arr[1]) || 0;
         }

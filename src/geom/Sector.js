@@ -106,7 +106,7 @@ class Sector extends Geom {
       [ x1, y1 ] = getCoordByDegree(originX, originY, r, start);
       [ x2, y2 ] = getCoordByDegree(originX, originY, r, end);
       let large = (end - start) > 180 ? 1 : 0;
-      virtualDom.content.push({
+      virtualDom.children.push({
         type: 'item',
         tagName: 'path',
         props: [

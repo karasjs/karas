@@ -96,7 +96,7 @@ class Polyline extends Geom {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
       }
-      virtualDom.content.push({
+      virtualDom.children.push({
         type: 'item',
         tagName: 'polyline',
         props: [

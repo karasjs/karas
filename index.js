@@ -202,9 +202,12 @@
 
       this.__x = 0;
       this.__y = 0;
-      this.__ox = 0; // relative/transform2d/margin:auto/text-align等造成的偏移量
+      this.__ox = 0; // relative/margin:auto/text-align等造成的偏移量
 
       this.__oy = 0;
+      this.__tx = 0;
+      this.__ty = 0; // transform2d造成的偏移量
+
       this.__width = 0;
       this.__height = 0;
       this.__prev = null;
@@ -251,6 +254,16 @@
         return this.__oy;
       }
     }, {
+      key: "tx",
+      get: function get() {
+        return this.__tx;
+      }
+    }, {
+      key: "ty",
+      get: function get() {
+        return this.__ty;
+      }
+    }, {
       key: "rx",
       get: function get() {
         return this.x + this.ox;
@@ -259,6 +272,17 @@
       key: "ry",
       get: function get() {
         return this.y + this.oy;
+      } // svg的translate2d使用css实现
+
+    }, {
+      key: "sx",
+      get: function get() {
+        return this.rx - this.tx;
+      }
+    }, {
+      key: "sy",
+      get: function get() {
+        return this.ry - this.ty;
       }
     }, {
       key: "width",
@@ -444,8 +468,9 @@
         _s += joinVd(item);
       });
       return "<g>".concat(_s, "</g>");
-    } else if (vd.type === 'dom') {
-      var _s2 = '<g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = "<g transform=\"".concat(joinTransform(vd.transform), "\">");
+
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
@@ -455,30 +480,27 @@
       });
       _s2 += '</g>';
       return "<g>".concat(_s2, "</g>");
-    } else if (vd.type === 'geom') {
-      var _s3 = '<g>';
-      vd.bb.forEach(function (item) {
-        _s3 += joinVd(item);
-      });
-      _s3 += '</g><g>';
-      vd.content.forEach(function (item) {
-        _s3 += joinVd(item);
-      });
-      _s3 += '</g>';
-      return "<g>".concat(_s3, "</g>");
     }
   }
 
-  function joinDef(item) {
-    var s = "<".concat(item.k, " id=\"").concat(item.uuid, "\" x1=\"").concat(item.c[0], "\" y1=\"").concat(item.c[1], "\" x2=\"").concat(item.c[2], "\" y2=\"").concat(item.c[3], "\" gradientUnits=\"userSpaceOnUse\">");
+  function joinTransform(transform) {
+    var s = '';
+    transform.forEach(function (item) {
+      s += "".concat(item[0], "(").concat(item[1], ")");
+    });
+    return s;
+  }
 
-    if (item.k === 'linearGradient') {
-      item.v.forEach(function (item2) {
-        s += "<stop stop-color=\"".concat(item2[0], "\" offset=\"").concat(item2[1] * 100, "%\"/>");
-      });
-    }
-
-    s += "</".concat(item.k, ">");
+  function joinDef(def) {
+    var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\" gradientUnits=\"userSpaceOnUse\"");
+    def.props.forEach(function (item) {
+      s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+    });
+    s += '>';
+    def.stop.forEach(function (item) {
+      s += "<stop stop-color=\"".concat(item[0], "\" offset=\"").concat(item[1] * 100, "%\"/>");
+    });
+    s += "</".concat(def.tagName, ">");
     return s;
   }
 
@@ -516,26 +538,6 @@
     return res;
   }
 
-  var util = {
-    isObject: isType('Object'),
-    isString: isType('String'),
-    isFunction: isType('Function'),
-    isNumber: isNumber,
-    isBoolean: isType('Boolean'),
-    isDate: isType('Date'),
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    isNil: isNil,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    r2d: r2d,
-    rgb2int: rgb2int
-  };
-
   function arr2hash(arr) {
     var hash = {};
 
@@ -565,6 +567,29 @@
 
     return arr;
   }
+
+  var util = {
+    isObject: isType('Object'),
+    isString: isType('String'),
+    isFunction: isType('Function'),
+    isNumber: isNumber,
+    isBoolean: isType('Boolean'),
+    isDate: isType('Date'),
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    isNil: isNil,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinTransform: joinTransform,
+    joinDef: joinDef,
+    r2d: r2d,
+    rgb2int: rgb2int,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr
+  };
 
   function spread(arr) {
     for (var i = 0, len = arr.length; i < len; i++) {
@@ -682,7 +707,7 @@
     }
   }
 
-  function renderBorder(renderMode, points, color, ctx, virtualDom) {
+  function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
       points.forEach(function (point) {
         ctx.beginPath();
@@ -705,17 +730,12 @@
           s += "L ".concat(point[i], " ").concat(point[i + 1], " ");
         }
       });
-      var item = {
-        type: 'item',
-        tagName: 'path',
-        props: [['d', s], ['fill', color]]
-      };
-      virtualDom.bb.push(item);
+      xom.addBorder([['d', s], ['fill', color]]);
     }
   } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
 
 
-  function getLgStartLimit(c1, p1, c2, p2, length) {
+  function getCsStartLimit(c1, p1, c2, p2, length) {
     var _c = _slicedToArray(c1, 4),
         r1 = _c[0],
         g1 = _c[1],
@@ -740,7 +760,7 @@
     return [r, g, b, a];
   }
 
-  function getLgEndLimit(c1, p1, c2, p2, length) {
+  function getCsEndLimit(c1, p1, c2, p2, length) {
     var _c3 = _slicedToArray(c1, 4),
         r1 = _c3[0],
         g1 = _c3[1],
@@ -765,7 +785,7 @@
     return [r, g, b, a];
   }
 
-  function getLgLimit(first, last, length) {
+  function getCsLimit(first, last, length) {
     var c1 = util.rgb2int(first[0]);
     var c2 = util.rgb2int(last[0]);
 
@@ -799,6 +819,182 @@
     a = a1 + (a2 - a1) * p;
     last[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
     last[1] = 1;
+  } // 获取color-stop区间范围，去除无用值
+
+
+  function getColorStop(v, length) {
+    var list = []; // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+
+    for (var i = 1, _len2 = v.length; i < _len2; i++) {
+      var item = v[i]; // 考虑是否声明了位置
+
+      var arr = item.trim().split(/\s+/);
+
+      if (arr.length > 1) {
+        var c = arr[0];
+        var p = arr[1];
+
+        if (/%$/.test(p)) {
+          list.push([c, parseFloat(p) * 0.01]);
+        } else {
+          list.push([c, parseFloat(p) / Math.max(xl, yl)]);
+        }
+      } else {
+        list.push(arr[0]);
+      }
+    } // 首尾不声明默认为[0, 1]
+
+
+    if (list.length > 1) {
+      if (!Array.isArray(list[0])) {
+        list[0] = [list[0], 0];
+      }
+
+      if (!Array.isArray(list[list.length - 1])) {
+        list[list.length - 1] = [list[list.length - 1], 1];
+      }
+    } else if (!Array.isArray(list[0])) {
+      list[0] = [list[0], 0];
+    } // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
+
+
+    var start = list[0][1];
+
+    for (var _i = 1, _len3 = list.length; _i < _len3 - 1; _i++) {
+      var _item = list[_i];
+
+      if (Array.isArray(_item)) {
+        start = _item[1];
+      } else {
+        var j = _i + 1;
+        var end = list[list.length - 1][1];
+
+        for (; j < _len3 - 1; j++) {
+          var _item2 = list[j];
+
+          if (Array.isArray(_item2)) {
+            end = _item2[1];
+            break;
+          }
+        }
+
+        var num = j - _i + 1;
+        var per = (end - start) / num;
+
+        for (var k = _i; k < j; k++) {
+          var _item3 = list[k];
+          list[k] = [_item3, start + per * (k + 1 - _i)];
+        }
+
+        _i = j;
+      }
+    } // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
+
+
+    for (var _i2 = 1, _len4 = list.length; _i2 < _len4; _i2++) {
+      var _item4 = list[_i2];
+      var prev = list[_i2 - 1];
+
+      if (_item4[1] < prev[1]) {
+        _item4[1] = prev[1];
+      }
+    } // 0之前的和1之后的要过滤掉
+
+
+    for (var _i3 = 0, _len5 = list.length; _i3 < _len5 - 1; _i3++) {
+      var _item5 = list[_i3];
+
+      if (_item5[1] > 1) {
+        list.splice(_i3 + 1);
+        break;
+      }
+    }
+
+    for (var _i4 = list.length - 1; _i4 > 0; _i4--) {
+      var _item6 = list[_i4];
+
+      if (_item6[1] < 0) {
+        list.splice(0, _i4);
+        break;
+      }
+    } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+
+
+    var len = list.length; // 在只有1个的情况下可简化
+
+    if (len === 1) {
+      list[0][1] = 0;
+    } else {
+      // 全部都在[0,1]之外也可以简化
+      var allBefore = true;
+      var allAfter = true;
+
+      for (var _i5 = len - 1; _i5 >= 0; _i5--) {
+        var _item7 = list[_i5];
+        var _p = _item7[1];
+
+        if (_p > 0) {
+          allBefore = false;
+        }
+
+        if (_p < 1) {
+          allAfter = false;
+        }
+      }
+
+      if (allBefore) {
+        list.splice(0, len - 1);
+        list[0][1] = 0;
+      } else if (allAfter) {
+        list.splice(1);
+        list[0][1] = 0;
+      } // 部分在区间之外需复杂计算
+      else {
+          var first = list[0];
+          var last = list[len - 1]; // 只要2个的情况下就是首尾都落在外面
+
+          if (len === 2) {
+            if (first[1] < 0 && last[1] > 1) {
+              getCsLimit(first, last, length);
+            }
+          } // 只有1个在外面的情况较为容易
+          else {
+              if (first[1] < 0) {
+                var next = list[1];
+                var c1 = util.rgb2int(first[0]);
+                var c2 = util.rgb2int(next[0]);
+
+                var _c7 = getCsStartLimit(c1, first[1], c2, next[1], length);
+
+                first[0] = "rgba(".concat(_c7[0], ",").concat(_c7[1], ",").concat(_c7[2], ",").concat(_c7[3], ")");
+                first[1] = 0;
+              }
+
+              if (last[1] > 1) {
+                var _prev = list[len - 2];
+
+                var _c8 = util.rgb2int(_prev[0]);
+
+                var _c9 = util.rgb2int(last[0]);
+
+                var _c10 = getCsEndLimit(_c8, _prev[1], _c9, last[1], length);
+
+                last[0] = "rgba(".concat(_c10[0], ",").concat(_c10[1], ",").concat(_c10[2], ",").concat(_c10[3], ")");
+                last[1] = 1;
+              }
+            }
+        }
+    } // 防止精度计算溢出[0,1]
+
+
+    list.forEach(function (item) {
+      if (item[1] < 0) {
+        item[1] = 0;
+      } else if (item[1] > 1) {
+        item[1] = 1;
+      }
+    });
+    return list;
   }
 
   var Xom =
@@ -815,11 +1011,11 @@
       props = props || []; // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
-        _this.props = arr2hash(props);
+        _this.props = util.arr2hash(props);
         _this.__props = spread(props);
       } else {
         _this.props = props;
-        _this.__props = hash2arr(props);
+        _this.__props = util.hash2arr(props);
       }
 
       _this.__tagName = tagName;
@@ -911,9 +1107,14 @@
     }, {
       key: "render",
       value: function render(renderMode) {
-        this.__virtualDom = {
-          bb: []
-        };
+        if (renderMode === mode.SVG) {
+          this.__virtualDom = {
+            bb: [],
+            children: [],
+            transform: []
+          };
+        }
+
         var ctx = this.ctx,
             style = this.style,
             width = this.width,
@@ -923,8 +1124,7 @@
             plw = this.plw,
             ptw = this.ptw,
             prw = this.prw,
-            pbw = this.pbw,
-            virtualDom = this.virtualDom;
+            pbw = this.pbw;
         var display = style.display,
             position = style.position,
             top = style.top,
@@ -983,17 +1183,34 @@
         if (transform) {
           var translateX = transform.translateX,
               translateY = transform.translateY;
+          var svgTf = [];
 
           if (translateX) {
             var _diff4 = translateX.unit === unit.PX ? translateX.value : translateX.value * width * 0.01;
 
-            this.__offsetX(_diff4);
+            this.__tx = _diff4; // canvas无法实现css的translate2d，直接变换坐标
+
+            if (renderMode === mode.CANVAS) {
+              this.__offsetX(_diff4);
+            } else if (renderMode === mode.SVG) {
+              svgTf.push(_diff4);
+            }
           }
 
           if (translateY) {
             var _diff5 = translateY.unit === unit.PX ? translateY.value : translateY.value * height * 0.01;
 
-            this.__offsetY(_diff5);
+            this.__ty = _diff5;
+
+            if (renderMode === mode.CANVAS) {
+              this.__offsetY(_diff5);
+            } else if (renderMode === mode.SVG) {
+              svgTf.push(_diff5);
+            }
+          }
+
+          if (renderMode === mode.SVG) {
+            this.addTransform(['translate', svgTf.join(',')]);
           }
         } // 使用rx和ry渲染位置，考虑了relative和translate影响
 
@@ -1011,13 +1228,11 @@
         var y1 = y + mtw;
         var y2 = y1 + btw;
         var y3 = y2 + height + ptw + pbw;
-        var y4 = y3 + bbw; // 先渲染渐变，没有则背景色
+        var y4 = y3 + bbw;
+        var iw = width + plw + prw;
+        var ih = height + ptw + pbw; // 先渲染渐变，没有则背景色
 
         if (bgg) {
-          var w = width + plw + prw;
-
-          var _h = height + ptw + pbw;
-
           var k = bgg.k,
               v = bgg.v;
 
@@ -1032,28 +1247,26 @@
               deg = 90;
             } else if (v[0] === 'to bottom right') {
               deg = 135;
-            } // else if(v[0] === 'to bottom') {
-            // }
-            else if (v[0] === 'to bottom left') {
-                deg = 225;
-              } else if (v[0] === 'to left') {
-                deg = 270;
-              } else if (v[0] === 'to top left') {
-                deg = 315;
-              } // 数字角度，没有的话取默认角度
-              else {
-                  var match = /([\d.]+)deg/.exec(v[0]);
+            } else if (v[0] === 'to bottom') ; else if (v[0] === 'to bottom left') {
+              deg = 225;
+            } else if (v[0] === 'to left') {
+              deg = 270;
+            } else if (v[0] === 'to top left') {
+              deg = 315;
+            } // 数字角度，没有的话取默认角度
+            else {
+                var match = /([\d.]+)deg/.exec(v[0]);
 
-                  if (match) {
-                    deg = parseFloat(match[1]);
-                  } else {
-                    v.unshift(deg);
-                  }
-                } // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
+                if (match) {
+                  deg = parseFloat(match[1]);
+                } else {
+                  v.unshift(null);
+                }
+              } // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
 
 
             var r = util.r2d(deg);
-            var length = Math.abs(w * Math.sin(r)) + Math.abs(_h * Math.cos(r));
+            var length = Math.abs(iw * Math.sin(r)) + Math.abs(ih * Math.cos(r));
             var half = length * 0.5;
 
             if (deg >= 360) {
@@ -1064,8 +1277,8 @@
               deg += 360;
             }
 
-            var cx = x2 + w * 0.5;
-            var cy = y2 + _h * 0.5;
+            var cx = x2 + iw * 0.5;
+            var cy = y2 + ih * 0.5;
             var xx0 = x3;
             var yy0 = y3;
             var xx1 = x2;
@@ -1102,182 +1315,7 @@
             } // 计算colorStop
 
 
-            var list = []; // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
-
-            for (var i = 1, _len2 = v.length; i < _len2; i++) {
-              var item = v[i]; // 考虑是否声明了位置
-
-              var arr = item.trim().split(/\s+/);
-
-              if (arr.length > 1) {
-                var c = arr[0];
-                var p = arr[1];
-
-                if (/%$/.test(p)) {
-                  list.push([c, parseFloat(p) * 0.01]);
-                } else {
-                  list.push([c, parseFloat(p) / length]);
-                }
-              } else {
-                list.push(arr[0]);
-              }
-            } // 首尾默认为[0, 1]
-
-
-            if (list.length > 1) {
-              if (!Array.isArray(list[0])) {
-                list[0] = [list[0], 0];
-              }
-
-              if (!Array.isArray(list[list.length - 1])) {
-                list[list.length - 1] = [list[list.length - 1], 1];
-              }
-            } else if (!Array.isArray(list[0])) {
-              list[0] = [list[0], 0];
-            } // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
-
-
-            var start = list[0][1];
-
-            for (var _i = 0, _len3 = list.length; _i < _len3 - 1; _i++) {
-              var _item = list[_i];
-
-              if (Array.isArray(_item)) {
-                start = _item[1];
-              } else {
-                var j = _i + 1;
-                var end = list[list.length - 1][1];
-
-                for (; j < _len3; j++) {
-                  var _item2 = list[j];
-
-                  if (Array.isArray(_item2)) {
-                    end = _item2[1];
-                    break;
-                  }
-                }
-
-                var num = j - _i + 1;
-                var per = (end - start) / num;
-
-                for (var _k = _i; _k < j; _k++) {
-                  var _item3 = list[_k];
-                  list[_k] = [_item3, start + per * (_k + 1 - _i)];
-                } // 第一个要特殊处理下
-
-
-                if (_i === 0) {
-                  list[0][1] = 0;
-                }
-
-                _i = k;
-              }
-            } // 每个不能小于前面的，canvas不能兼容这种情况，需处理
-
-
-            for (var _i2 = 1, _len4 = list.length; _i2 < _len4; _i2++) {
-              var _item4 = list[_i2];
-              var prev = list[_i2 - 1];
-
-              if (_item4[1] < prev[1]) {
-                _item4[1] = prev[1];
-              }
-            } // 0之前的和1之后的要过滤掉
-
-
-            for (var _i3 = 0, _len5 = list.length; _i3 < _len5 - 1; _i3++) {
-              var _item5 = list[_i3];
-
-              if (_item5[1] > 1) {
-                list.splice(_i3 + 1);
-                break;
-              }
-            }
-
-            for (var _i4 = list.length - 1; _i4 > 0; _i4--) {
-              var _item6 = list[_i4];
-
-              if (_item6[1] < 0) {
-                list.splice(0, _i4);
-                break;
-              }
-            } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-
-
-            var len = list.length; // 在只有1个的情况下可简化
-
-            if (len === 1) {
-              list[0][1] = 0;
-            } else {
-              // 全部都在[0,1]之外也可以简化
-              var allBefore = true;
-              var allAfter = true;
-
-              for (var _i5 = len - 1; _i5 >= 0; _i5--) {
-                var _item7 = list[_i5];
-                var _p = _item7[1];
-
-                if (_p > 0) {
-                  allBefore = false;
-                }
-
-                if (_p < 1) {
-                  allAfter = false;
-                }
-              }
-
-              if (allBefore) {
-                list.splice(0, len - 1);
-                list[0][1] = 0;
-              } else if (allAfter) {
-                list.splice(1);
-                list[0][1] = 0;
-              } // 部分在区间之外需复杂计算
-              else {
-                  var first = list[0];
-                  var last = list[len - 1]; // 只要2个的情况下就是首尾都落在外面
-
-                  if (len === 2) {
-                    if (first[1] < 0 && last[1] > 1) {
-                      getLgLimit(first, last, length);
-                    }
-                  } // 只有1个在外面的情况较为容易
-                  else {
-                      if (first[1] < 0) {
-                        var next = list[1];
-                        var c1 = util.rgb2int(first[0]);
-                        var c2 = util.rgb2int(next[0]);
-
-                        var _c7 = getLgStartLimit(c1, first[1], c2, next[1], length);
-
-                        first[0] = "rgba(".concat(_c7[0], ",").concat(_c7[1], ",").concat(_c7[2], ",").concat(_c7[3], ")");
-                        first[1] = 0;
-                      }
-
-                      if (last[1] > 1) {
-                        var _prev = list[len - 2];
-
-                        var _c8 = util.rgb2int(_prev[0]);
-
-                        var _c9 = util.rgb2int(last[0]);
-
-                        var _c10 = getLgEndLimit(_c8, _prev[1], _c9, last[1], length);
-
-                        last[0] = "rgba(".concat(_c10[0], ",").concat(_c10[1], ",").concat(_c10[2], ",").concat(_c10[3], ")");
-                        last[1] = 1;
-                      }
-                    }
-                }
-            } // 防止精度计算溢出[0,1]
-
-
-            list.forEach(function (item) {
-              if (item[1] < 0) {
-                item[1] = 0;
-              } else if (item[1] > 1) {
-                item[1] = 1;
-              }
-            });
+            var list = getColorStop(v, length);
 
             if (renderMode === mode.CANVAS) {
               var lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
@@ -1286,39 +1324,206 @@
               });
               ctx.beginPath();
               ctx.fillStyle = lg;
-              ctx.rect(x2, y2, w, _h);
+              ctx.rect(x2, y2, iw, ih);
               ctx.fill();
               ctx.closePath();
-            } else {
+            } else if (renderMode === mode.SVG) {
               var uuid = this.defs.add({
-                k: 'linearGradient',
-                c: [xx0, yy0, xx1, yy1],
-                v: list
+                tagName: 'linearGradient',
+                props: [['x1', xx0], ['y1', yy0], ['x2', xx1], ['y2', yy1]],
+                stop: list
               });
-              virtualDom.bb.push({
-                type: 'item',
-                tagName: 'rect',
-                props: [['x', x2], ['y', y2], ['width', w], ['height', _h], ['fill', "url(#".concat(uuid, ")")]]
+              this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(uuid, ")")]]);
+            }
+          } else if (k === 'radial') {
+            var _cx = x2 + iw * 0.5;
+
+            var _cy = y2 + ih * 0.5;
+
+            var size = 'farthest-corner';
+
+            var _r5; // 半径
+            // 申明了形状、圆心、size等
+
+
+            if (/circle|ellipse|at|closest|farthest/i.test(v[0]) || !/#[0-9a-f]{3,6}/i.test(v[0]) && !/\brgba?\(.*\)/i.test(v[0])) {
+              var i = v[0].indexOf('at');
+              var at;
+              var s;
+
+              if (i > -1) {
+                at = v[0].slice(i + 2);
+                s = v[0].slice(0, i - 1);
+              }
+
+              s = /(closest|farthest)-(side|corner)/.exec(s);
+
+              if (s) {
+                size = s[0];
+              } // 指定宽高后size失效，置null标识
+              else {
+                  s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
+
+                  if (s) {
+                    size = null;
+
+                    if (s[1].indexOf('px') > -1) {
+                      _r5 = parseFloat(s[1]) * 0.5;
+                    } else {
+                      _r5 = parseFloat(s[1]) * iw * 0.005;
+                    }
+                  }
+                }
+
+              if (at) {
+                s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
+
+                if (s) {
+                  if (s[1].indexOf('px') > -1) {
+                    _cx = x2 + parseFloat(s[1]);
+                  } else {
+                    _cx = x2 + parseFloat(s[1]) * iw * 0.01;
+                  } // y可以省略，此时等同于x
+
+
+                  var by = s[2] || s[1];
+
+                  if (by.indexOf('px') > -1) {
+                    _cy = y2 + parseFloat(by);
+                  } else {
+                    _cy = y2 + parseFloat(by) * ih * 0.01;
+                  }
+                }
+              }
+            } else {
+              v.unshift(null);
+            }
+
+            if (size) {
+              if (size === 'closest-side') {
+                // 在边外特殊情况只有end颜色填充
+                if (_cx <= x2 || _cx >= x3 || _cy <= y2 || _cy >= y3) {
+                  _r5 = 0;
+                } else {
+                  var _xl;
+
+                  var _yl;
+
+                  if (_cx < x2 + iw * 0.5) {
+                    _xl = _cx - x2;
+                  } else {
+                    _xl = x3 - _cx;
+                  }
+
+                  if (_cy < y2 + ih * 0.5) {
+                    _yl = _cy - y2;
+                  } else {
+                    _yl = y3 - _cy;
+                  }
+
+                  _r5 = Math.min(_xl, _yl);
+                }
+              } else if (size === 'closest-corner') {
+                var _xl2;
+
+                var _yl2;
+
+                if (_cx < x2 + iw * 0.5) {
+                  _xl2 = _cx - x2;
+                } else {
+                  _xl2 = x3 - _cx;
+                }
+
+                if (_cy < y2 + ih * 0.5) {
+                  _yl2 = _cy - y2;
+                } else {
+                  _yl2 = y3 - _cy;
+                }
+
+                _r5 = Math.sqrt(Math.pow(_xl2, 2) + Math.pow(_yl2, 2));
+              } else if (size === 'farthest-side') {
+                if (_cx <= x2) {
+                  _r5 = x2 - _cx + iw;
+                } else if (_cx >= x3) {
+                  _r5 = _cx - x3 + iw;
+                } else if (_cy <= y2) {
+                  _r5 = y2 - _cy + ih;
+                } else if (_cx >= y3) {
+                  _r5 = _cy - y3 + ih;
+                } else {
+                  var _xl3 = Math.max(x3 - _cx, _cx - x2);
+
+                  var _yl3 = Math.max(y3 - _cy, _cy - y2);
+
+                  _r5 = Math.max(_xl3, _yl3);
+                }
+              } // 默认farthest-corner
+              else {
+                  var _xl4;
+
+                  var _yl4;
+
+                  if (_cx < x2 + iw * 0.5) {
+                    _xl4 = x3 - _cx;
+                  } else {
+                    _xl4 = _cx - x2;
+                  }
+
+                  if (_cy < y2 + ih * 0.5) {
+                    _yl4 = y3 - _cy;
+                  } else {
+                    _yl4 = _cy - y2;
+                  }
+
+                  _r5 = Math.sqrt(Math.pow(_xl4, 2) + Math.pow(_yl4, 2));
+                }
+            } // 计算colorStop
+
+
+            var _list = getColorStop(v, _r5 * 2); // 超限情况等同于只显示end的bgc
+
+
+            if (_r5 <= 0) {
+              var end = _list[_list.length - 1];
+              end[1] = 0;
+              _list = [end];
+              _cx = x2;
+              _cy = y2; // 肯定大于最长直径
+
+              _r5 = iw + ih;
+            }
+
+            if (renderMode === mode.CANVAS) {
+              var rg = ctx.createRadialGradient(_cx, _cy, 0, _cx, _cy, _r5);
+
+              _list.forEach(function (item) {
+                rg.addColorStop(item[1], item[0]);
               });
+
+              ctx.beginPath();
+              ctx.fillStyle = rg;
+              ctx.rect(x2, y2, iw, ih);
+              ctx.fill();
+              ctx.closePath();
+            } else if (renderMode === mode.SVG) {
+              var _uuid = this.defs.add({
+                tagName: 'radialGradient',
+                props: [['cx', _cx], ['cy', _cy], ['r', _r5]],
+                stop: _list
+              });
+
+              this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(_uuid, ")")]]);
             }
           }
         } else if (bgc && bgc !== 'transparent') {
-          var _w = width + plw + prw;
-
-          var _h2 = height + ptw + pbw;
-
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.fillStyle = bgc;
-            ctx.rect(x2, y2, _w, _h2);
+            ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            virtualDom.bb.push({
-              type: 'item',
-              tagName: 'rect',
-              props: [['x', x2], ['y', y2], ['width', _w], ['height', _h2], ['fill', bgc]]
-            });
+            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', bgc]]);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -1419,7 +1624,7 @@
             points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
           }
 
-          renderBorder(renderMode, points, btc, ctx, virtualDom);
+          renderBorder(renderMode, points, btc, ctx, this);
         }
 
         if (brw > 0 && brc !== 'transparent') {
@@ -1520,7 +1725,7 @@
             _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
           }
 
-          renderBorder(renderMode, _points, brc, ctx, virtualDom);
+          renderBorder(renderMode, _points, brc, ctx, this);
         }
 
         if (bbw > 0 && bbc !== 'transparent') {
@@ -1618,7 +1823,7 @@
             _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
           }
 
-          renderBorder(renderMode, _points2, bbc, ctx, virtualDom);
+          renderBorder(renderMode, _points2, bbc, ctx, this);
         }
 
         if (blw > 0 && blc !== 'transparent') {
@@ -1720,8 +1925,31 @@
             _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
           }
 
-          renderBorder(renderMode, _points3, blc, ctx, virtualDom);
+          renderBorder(renderMode, _points3, blc, ctx, this);
         }
+      }
+    }, {
+      key: "addBorder",
+      value: function addBorder(props) {
+        this.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: props
+        });
+      }
+    }, {
+      key: "addBackground",
+      value: function addBackground(props) {
+        this.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'rect',
+          props: props
+        });
+      }
+    }, {
+      key: "addTransform",
+      value: function addTransform(props) {
+        this.virtualDom.transform.push(props);
       }
     }, {
       key: "tagName",
@@ -2905,8 +3133,7 @@
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
-            type: 'geom',
-            content: []
+            type: 'geom'
           });
         }
       }
@@ -4544,6 +4771,14 @@
   }
 
   function diffG2G(elem, ovd, nvd) {
+    if (!equalArr(ovd.transform, nvd.transform)) {
+      var transform = util.joinTransform(nvd.transform);
+
+      if (elem.getAttribute('transform') !== transform) {
+        elem.setAttribute('transform', transform);
+      }
+    }
+
     diffBb(elem.firstChild, ovd.bb, nvd.bb);
     var ol = ovd.content.length;
     var nl = nvd.content.length;
@@ -4668,13 +4903,27 @@
     }
   }
 
+  function equalArr(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   var Defs =
   /*#__PURE__*/
   function () {
     function Defs(uuid) {
       _classCallCheck(this, Defs);
 
-      this.id = uuid++;
+      this.id = uuid;
       this.count = 0;
       this.list = [];
     }
@@ -4682,7 +4931,7 @@
     _createClass(Defs, [{
       key: "add",
       value: function add(data) {
-        data.uuid = "__karas-defs-".concat(this.id, "-").concat(this.count++);
+        data.uuid = "karas-defs-".concat(this.id, "-").concat(this.count++);
         this.list.push(data);
         return data.uuid;
       }
@@ -4735,7 +4984,7 @@
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
   }
 
-  var uuid = 1;
+  var uuid = 0;
 
   var Root =
   /*#__PURE__*/
@@ -5060,19 +5309,19 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           if (curve === 2) {
-            virtualDom.content.push({
+            virtualDom.children.push({
               type: 'item',
               tagName: 'path',
               props: [['d', "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
             });
           } else if (curve === 1) {
-            virtualDom.content.push({
+            virtualDom.children.push({
               type: 'item',
               tagName: 'path',
               props: [['d', "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
             });
           } else {
-            virtualDom.content.push({
+            virtualDom.children.push({
               type: 'item',
               tagName: 'line',
               props: [['x1', x1], ['y1', y1], ['x2', x2], ['y2', y2], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5215,7 +5464,7 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'polyline',
             props: [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5362,7 +5611,7 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'polygon',
             props: [['points', _points], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5520,7 +5769,7 @@
           x2 = _getCoordByDegree4[0];
           y2 = _getCoordByDegree4[1];
           var large = end - start > 180 ? 1 : 0;
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'path',
             props: [['d', "M".concat(originX, " ").concat(originY, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5607,7 +5856,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'rect',
             props: [['x', x], ['y', y], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5697,7 +5946,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'circle',
             props: [['cx', originX], ['cy', originY], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5802,7 +6051,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.content.push({
+          virtualDom.children.push({
             type: 'item',
             tagName: 'ellipse',
             props: [['cx', originX], ['cy', originY], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
@@ -5941,14 +6190,14 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           lx.forEach(function (item) {
-            virtualDom.content.push({
+            virtualDom.children.push({
               type: 'item',
               tagName: 'line',
               props: [['x1', originX], ['y1', item], ['x2', endX], ['y2', item], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
             });
           });
           ly.forEach(function (item) {
-            virtualDom.content.push({
+            virtualDom.children.push({
               type: 'item',
               tagName: 'line',
               props: [['x1', item], ['y1', originY], ['x2', item], ['y2', endY], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]

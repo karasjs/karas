@@ -197,7 +197,6 @@ class Geom extends Xom {
       this.__virtualDom = {
         ...super.virtualDom,
         type: 'geom',
-        content: [],
       };
     }
   }

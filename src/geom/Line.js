@@ -76,7 +76,7 @@ class Line extends Geom {
     }
     else if(renderMode === mode.SVG) {
       if(curve === 2) {
-        virtualDom.content.push({
+        virtualDom.children.push({
           type: 'item',
           tagName: 'path',
           props: [
@@ -89,7 +89,7 @@ class Line extends Geom {
         });
       }
       else if(curve === 1) {
-        virtualDom.content.push({
+        virtualDom.children.push({
           type: 'item',
           tagName: 'path',
           props: [
@@ -102,7 +102,7 @@ class Line extends Geom {
         });
       }
       else {
-        virtualDom.content.push({
+        virtualDom.children.push({
           type: 'item',
           tagName: 'line',
           props: [

@@ -3,32 +3,6 @@ import mode from '../mode';
 import unit from '../style/unit';
 import util from '../util';
 
-function arr2hash(arr) {
-  let hash = {};
-  for(let i = 0, len = arr.length; i < len; i++) {
-    let item = arr[i];
-    if(Array.isArray(item)) {
-      hash[item[0]] = item[1];
-    }
-    else {
-      for(let list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-        let k = list[j];
-        hash[k] = item[k];
-      }
-    }
-  }
-  return hash;
-}
-
-function hash2arr(hash) {
-  let arr = [];
-  for(let list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-    let k = list[i];
-    arr.push([k, hash[k]]);
-  }
-  return arr;
-}
-
 function spread(arr) {
   for(let i = 0, len = arr.length; i < len; i++) {
     let item = arr[i];
@@ -122,7 +96,7 @@ function getDashed(style, m1, m2, m3, m4, bw) {
   }
 }
 
-function renderBorder(renderMode, points, color, ctx, virtualDom) {
+function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
     points.forEach(point => {
       ctx.beginPath();
@@ -151,12 +125,15 @@ function renderBorder(renderMode, points, color, ctx, virtualDom) {
         ['fill', color],
       ],
     };
-    virtualDom.bb.push(item);
+    xom.addBorder([
+      ['d', s],
+      ['fill', color],
+    ]);
   }
 }
 
 // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
-function getLgStartLimit(c1, p1, c2, p2, length) {
+function getCsStartLimit(c1, p1, c2, p2, length) {
   let [ r1, g1, b1, a1 = 1 ] = c1;
   let [ r2, g2, b2, a2 = 1 ] = c2;
   let l1 = Math.abs(p1) * length;
@@ -169,7 +146,7 @@ function getLgStartLimit(c1, p1, c2, p2, length) {
   return [r, g, b, a];
 }
 
-function getLgEndLimit(c1, p1, c2, p2, length) {
+function getCsEndLimit(c1, p1, c2, p2, length) {
   let [ r1, g1, b1, a1 = 1 ] = c1;
   let [ r2, g2, b2, a2 = 1 ] = c2;
   let l1 = p1 * length;
@@ -182,7 +159,7 @@ function getLgEndLimit(c1, p1, c2, p2, length) {
   return [r, g, b, a];
 }
 
-function getLgLimit(first, last, length) {
+function getCsLimit(first, last, length) {
   let c1 = util.rgb2int(first[0]);
   let c2 = util.rgb2int(last[0]);
   let [ r1, g1, b1, a1 = 1 ] = c1;
@@ -205,18 +182,172 @@ function getLgLimit(first, last, length) {
   last[1] = 1;
 }
 
+// 获取color-stop区间范围，去除无用值
+function getColorStop(v, length) {
+  let list = [];
+  // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
+  for(let i = 1, len = v.length; i < len; i++) {
+    let item = v[i];
+    // 考虑是否声明了位置
+    let arr = item.trim().split(/\s+/);
+    if(arr.length > 1) {
+      let c = arr[0];
+      let p = arr[1];
+      if(/%$/.test(p)) {
+        list.push([c, parseFloat(p) * 0.01]);
+      }
+      else {
+        list.push([c, parseFloat(p) / Math.max(xl, yl)]);
+      }
+    }
+    else {
+      list.push(arr[0]);
+    }
+  }
+  // 首尾不声明默认为[0, 1]
+  if(list.length > 1) {
+    if(!Array.isArray(list[0])) {
+      list[0] = [list[0], 0];
+    }
+    if(!Array.isArray(list[list.length - 1])) {
+      list[list.length - 1] = [list[list.length - 1], 1];
+    }
+  }
+  else if(!Array.isArray(list[0])) {
+    list[0] = [list[0], 0];
+  }
+  // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
+  let start = list[0][1];
+  for(let i = 1, len = list.length; i < len - 1; i++) {
+    let item = list[i];
+    if(Array.isArray(item)) {
+      start = item[1];
+    }
+    else {
+      let j = i + 1;
+      let end = list[list.length - 1][1];
+      for(; j < len - 1; j++) {
+        let item = list[j];
+        if(Array.isArray(item)) {
+          end = item[1];
+          break;
+        }
+      }
+      let num = j - i + 1;
+      let per = (end - start) / num;
+      for(let k = i;k < j; k++) {
+        let item = list[k];
+        list[k] = [item, start + per * (k + 1 - i)];
+      }
+      i = j;
+    }
+  }
+  // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
+  for(let i = 1, len = list.length; i < len; i++) {
+    let item = list[i];
+    let prev = list[i - 1];
+    if(item[1] < prev[1]) {
+      item[1] = prev[1];
+    }
+  }
+  // 0之前的和1之后的要过滤掉
+  for(let i = 0, len = list.length; i < len - 1; i++) {
+    let item = list[i];
+    if(item[1] > 1) {
+      list.splice(i + 1);
+      break;
+    }
+  }
+  for(let i = list.length - 1; i > 0; i--) {
+    let item = list[i];
+    if(item[1] < 0) {
+      list.splice(0, i);
+      break;
+    }
+  }
+  // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
+  let len = list.length;
+  // 在只有1个的情况下可简化
+  if(len === 1) {
+    list[0][1] = 0;
+  }
+  else {
+    // 全部都在[0,1]之外也可以简化
+    let allBefore = true;
+    let allAfter = true;
+    for(let i = len - 1; i >= 0; i--) {
+      let item = list[i];
+      let p = item[1];
+      if(p > 0) {
+        allBefore = false;
+      }
+      if(p < 1) {
+        allAfter = false;
+      }
+    }
+    if(allBefore) {
+      list.splice(0, len - 1);
+      list[0][1] = 0;
+    }
+    else if(allAfter) {
+      list.splice(1);
+      list[0][1] = 0;
+    }
+    // 部分在区间之外需复杂计算
+    else {
+      let first = list[0];
+      let last = list[len - 1];
+      // 只要2个的情况下就是首尾都落在外面
+      if(len === 2) {
+        if(first[1] < 0 && last[1] > 1) {
+          getCsLimit(first, last, length);
+        }
+      }
+      // 只有1个在外面的情况较为容易
+      else {
+        if(first[1] < 0) {
+          let next = list[1];
+          let c1 = util.rgb2int(first[0]);
+          let c2 = util.rgb2int(next[0]);
+          let c = getCsStartLimit(c1, first[1], c2, next[1], length);
+          first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+          first[1] = 0;
+        }
+        if(last[1] > 1) {
+          let prev = list[len - 2];
+          let c1 = util.rgb2int(prev[0]);
+          let c2 = util.rgb2int(last[0]);
+          let c = getCsEndLimit(c1, prev[1], c2, last[1], length);
+          last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+          last[1] = 1;
+        }
+      }
+    }
+  }
+  // 防止精度计算溢出[0,1]
+  list.forEach(item => {
+    if(item[1] < 0) {
+      item[1] = 0;
+    }
+    else if(item[1] > 1) {
+      item[1] = 1;
+    }
+  });
+  return list;
+}
+
 class Xom extends Node {
   constructor(tagName, props) {
     super();
     props = props || [];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
-      this.props = arr2hash(props);
+      this.props = util.arr2hash(props);
       this.__props = spread(props);
     }
     else {
       this.props = props;
-      this.__props = hash2arr(props);
+      this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
@@ -296,10 +427,14 @@ class Xom extends Node {
   }
 
   render(renderMode) {
-    this.__virtualDom = {
-      bb: [],
-    };
-    let { ctx, style, width, height, mlw, mtw, plw, ptw, prw, pbw, virtualDom } = this;
+    if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        bb: [],
+        children: [],
+        transform: [],
+      };
+    }
+    let { ctx, style, width, height, mlw, mtw, plw, ptw, prw, pbw } = this;
     let {
       display,
       position,
@@ -350,13 +485,30 @@ class Xom extends Node {
     // translate相对于自身
     if(transform) {
       let { translateX, translateY } = transform;
+      let svgTf = [];
       if(translateX) {
         let diff = translateX.unit === unit.PX ? translateX.value : translateX.value * width * 0.01;
-        this.__offsetX(diff);
+        this.__tx = diff;
+        // canvas无法实现css的translate2d，直接变换坐标
+        if(renderMode === mode.CANVAS) {
+          this.__offsetX(diff);
+        }
+        else if(renderMode === mode.SVG) {
+          svgTf.push(diff);
+        }
       }
       if(translateY) {
         let diff = translateY.unit === unit.PX ? translateY.value : translateY.value * height * 0.01;
-        this.__offsetY(diff);
+        this.__ty = diff;
+        if(renderMode === mode.CANVAS) {
+          this.__offsetY(diff);
+        }
+        else if(renderMode === mode.SVG) {
+          svgTf.push(diff);
+        }
+      }
+      if(renderMode === mode.SVG) {
+        this.addTransform(['translate', svgTf.join(',')]);
       }
     }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
@@ -373,10 +525,10 @@ class Xom extends Node {
     let y2 = y1 + btw;
     let y3 = y2 + height + ptw + pbw;
     let y4 = y3 + bbw;
+    let iw = width + plw + prw;
+    let ih = height + ptw + pbw;
     // 先渲染渐变，没有则背景色
     if(bgg) {
-      let w = width + plw + prw;
-      let h = height + ptw + pbw;
       let { k, v } = bgg;
       if(k === 'linear') {
         let deg = 180;
@@ -392,8 +544,8 @@ class Xom extends Node {
         else if(v[0] === 'to bottom right') {
           deg = 135;
         }
-        // else if(v[0] === 'to bottom') {
-        // }
+        else if(v[0] === 'to bottom') {
+        }
         else if(v[0] === 'to bottom left') {
           deg = 225;
         }
@@ -410,12 +562,12 @@ class Xom extends Node {
             deg = parseFloat(match[1]);
           }
           else {
-            v.unshift(deg);
+            v.unshift(null);
           }
         }
         // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
         let r = util.r2d(deg);
-        let length = Math.abs(w * Math.sin(r)) + Math.abs(h * Math.cos(r));
+        let length = Math.abs(iw * Math.sin(r)) + Math.abs(ih * Math.cos(r));
         let half = length * 0.5;
         if(deg >= 360) {
           deg = deg % 360;
@@ -423,8 +575,8 @@ class Xom extends Node {
         while(deg < 0) {
           deg += 360;
         }
-        let cx = x2 + w * 0.5;
-        let cy = y2 + h * 0.5;
+        let cx = x2 + iw * 0.5;
+        let cy = y2 + ih * 0.5;
         let xx0 = x3;
         let yy0 = y3;
         let xx1 = x2;
@@ -458,159 +610,7 @@ class Xom extends Node {
           yy1 = cy - Math.cos(r) * half;
         }
         // 计算colorStop
-        let list = [];
-        // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
-        for(let i = 1, len = v.length; i < len; i++) {
-          let item = v[i];
-          // 考虑是否声明了位置
-          let arr = item.trim().split(/\s+/);
-          if(arr.length > 1) {
-            let c = arr[0];
-            let p = arr[1];
-            if(/%$/.test(p)) {
-              list.push([c, parseFloat(p) * 0.01]);
-            }
-            else {
-              list.push([c, parseFloat(p) / length]);
-            }
-          }
-          else {
-            list.push(arr[0]);
-          }
-        }
-        // 首尾默认为[0, 1]
-        if(list.length > 1) {
-          if(!Array.isArray(list[0])) {
-            list[0] = [list[0], 0];
-          }
-          if(!Array.isArray(list[list.length - 1])) {
-            list[list.length - 1] = [list[list.length - 1], 1];
-          }
-        }
-        else if(!Array.isArray(list[0])) {
-          list[0] = [list[0], 0];
-        }
-        // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
-        let start = list[0][1];
-        for(let i = 0, len = list.length; i < len - 1; i++) {
-          let item = list[i];
-          if(Array.isArray(item)) {
-            start = item[1];
-          }
-          else {
-            let j = i + 1;
-            let end = list[list.length - 1][1];
-            for(; j < len; j++) {
-              let item = list[j];
-              if(Array.isArray(item)) {
-                end = item[1];
-                break;
-              }
-            }
-            let num = j - i + 1;
-            let per = (end - start) / num;
-            for(let k = i; k < j; k++) {
-              let item = list[k];
-              list[k] = [item, start + per * (k + 1 - i)];
-            }
-            // 第一个要特殊处理下
-            if(i === 0) {
-              list[0][1] = 0;
-            }
-            i = k;
-          }
-        }
-        // 每个不能小于前面的，canvas不能兼容这种情况，需处理
-        for(let i = 1, len = list.length; i < len; i++) {
-          let item = list[i];
-          let prev = list[i - 1];
-          if(item[1] < prev[1]) {
-            item[1] = prev[1];
-          }
-        }
-        // 0之前的和1之后的要过滤掉
-        for(let i = 0, len = list.length; i < len - 1; i++) {
-          let item = list[i];
-          if(item[1] > 1) {
-            list.splice(i + 1);
-            break;
-          }
-        }
-        for(let i = list.length - 1; i > 0; i--) {
-          let item = list[i];
-          if(item[1] < 0) {
-            list.splice(0, i);
-            break;
-          }
-        }
-        // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-        let len = list.length;
-        // 在只有1个的情况下可简化
-        if(len === 1) {
-          list[0][1] = 0;
-        }
-        else {
-          // 全部都在[0,1]之外也可以简化
-          let allBefore = true;
-          let allAfter = true;
-          for(let i = len - 1; i >= 0; i--) {
-            let item = list[i];
-            let p = item[1];
-            if(p > 0) {
-              allBefore = false;
-            }
-            if(p < 1) {
-              allAfter = false;
-            }
-          }
-          if(allBefore) {
-            list.splice(0, len - 1);
-            list[0][1] = 0;
-          }
-          else if(allAfter) {
-            list.splice(1);
-            list[0][1] = 0;
-          }
-          // 部分在区间之外需复杂计算
-          else {
-            let first = list[0];
-            let last = list[len - 1];
-            // 只要2个的情况下就是首尾都落在外面
-            if(len === 2) {
-              if(first[1] < 0 && last[1] > 1) {
-                getLgLimit(first, last, length);
-              }
-            }
-            // 只有1个在外面的情况较为容易
-            else {
-              if(first[1] < 0) {
-                let next = list[1];
-                let c1 = util.rgb2int(first[0]);
-                let c2 = util.rgb2int(next[0]);
-                let c = getLgStartLimit(c1, first[1], c2, next[1], length);
-                first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
-                first[1] = 0;
-              }
-              if(last[1] > 1) {
-                let prev = list[len - 2];
-                let c1 = util.rgb2int(prev[0]);
-                let c2 = util.rgb2int(last[0]);
-                let c = getLgEndLimit(c1, prev[1], c2, last[1], length);
-                last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
-                last[1] = 1;
-              }
-            }
-          }
-        }
-        // 防止精度计算溢出[0,1]
-        list.forEach(item => {
-          if(item[1] < 0) {
-            item[1] = 0;
-          }
-          else if(item[1] > 1) {
-            item[1] = 1;
-          }
-        });
+        let list = getColorStop(v, length);
         if(renderMode === mode.CANVAS) {
           let lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
           list.forEach(item => {
@@ -618,53 +618,221 @@ class Xom extends Node {
           });
           ctx.beginPath();
           ctx.fillStyle = lg;
-          ctx.rect(x2, y2, w, h);
+          ctx.rect(x2, y2, iw, ih);
           ctx.fill();
           ctx.closePath();
         }
-        else {
+        else if(renderMode === mode.SVG) {
           let uuid = this.defs.add({
-            k: 'linearGradient',
-            c: [xx0, yy0, xx1, yy1],
-            v: list,
-          });
-          virtualDom.bb.push({
-            type: 'item',
-            tagName: 'rect',
+            tagName: 'linearGradient',
             props: [
-              ['x', x2],
-              ['y', y2],
-              ['width', w],
-              ['height', h],
-              ['fill', `url(#${uuid})`]
+              ['x1', xx0],
+              ['y1', yy0],
+              ['x2', xx1],
+              ['y2', yy1]
             ],
+            stop: list,
           });
+          this.addBackground([
+            ['x', x2],
+            ['y', y2],
+            ['width', iw],
+            ['height', ih],
+            ['fill', `url(#${uuid})`]
+          ]);
         }
       }
-      else if(k === 'radial-gradient') {}
+      else if(k === 'radial') {
+        let cx = x2 + iw * 0.5;
+        let cy = y2 + ih * 0.5;
+        let size = 'farthest-corner';
+        let r; // 半径
+        // 申明了形状、圆心、size等
+        if(/circle|ellipse|at|closest|farthest/i.test(v[0])
+          || !/#[0-9a-f]{3,6}/i.test(v[0]) && !/\brgba?\(.*\)/i.test(v[0])) {
+          let i = v[0].indexOf('at');
+          let at;
+          let s;
+          if(i > -1) {
+            at = v[0].slice(i + 2);
+            s = v[0].slice(0, i - 1);
+          }
+          s = /(closest|farthest)-(side|corner)/.exec(s);
+          if(s) {
+            size = s[0];
+          }
+          // 指定宽高后size失效，置null标识
+          else {
+            s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
+            if(s) {
+              size = null;
+              if(s[1].indexOf('px') > -1) {
+                r = parseFloat(s[1]) * 0.5;
+              }
+              else {
+                r = parseFloat(s[1]) * iw * 0.005;
+              }
+            }
+          }
+          if(at) {
+            s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
+            if(s) {
+              if(s[1].indexOf('px') > -1) {
+                cx = x2 + parseFloat(s[1]);
+              }
+              else {
+                cx =  x2 + parseFloat(s[1]) * iw * 0.01;
+              }
+              // y可以省略，此时等同于x
+              let by = s[2] || s[1];
+              if(by.indexOf('px') > -1) {
+                cy = y2 + parseFloat(by);
+              }
+              else {
+                cy = y2 + parseFloat(by) * ih * 0.01;
+              }
+            }
+          }
+        }
+        else {
+          v.unshift(null);
+        }
+        if(size) {
+          if(size === 'closest-side') {
+            // 在边外特殊情况只有end颜色填充
+            if(cx <= x2 || cx >= x3 || cy <= y2 || cy >= y3) {
+              r = 0;
+            }
+            else {
+              let xl;
+              let yl;
+              if(cx < x2 + iw * 0.5) {
+                xl = cx - x2;
+              } else {
+                xl = x3 - cx;
+              }
+              if(cy < y2 + ih * 0.5) {
+                yl = cy - y2;
+              } else {
+                yl = y3 - cy;
+              }
+              r = Math.min(xl, yl);
+            }
+          }
+          else if(size === 'closest-corner') {
+            let xl;
+            let yl;
+            if(cx < x2 + iw * 0.5) {
+              xl = cx - x2;
+            }
+            else {
+              xl = x3 - cx;
+            }
+            if(cy < y2 + ih * 0.5) {
+              yl = cy - y2;
+            }
+            else {
+              yl = y3 - cy;
+            }
+            r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+          }
+          else if(size === 'farthest-side') {
+            if(cx <= x2) {
+              r = x2 - cx + iw;
+            }
+            else if(cx >= x3) {
+              r = cx - x3 + iw;
+            }
+            else if(cy <= y2) {
+              r = y2 - cy + ih;
+            }
+            else if(cx >= y3) {
+              r = cy - y3 + ih;
+            }
+            else {
+              let xl = Math.max(x3 - cx, cx - x2);
+              let yl = Math.max(y3 - cy, cy - y2);
+              r = Math.max(xl, yl);
+            }
+          }
+          // 默认farthest-corner
+          else {
+            let xl;
+            let yl;
+            if(cx < x2 + iw * 0.5) {
+              xl = x3 - cx;
+            }
+            else {
+              xl = cx - x2;
+            }
+            if(cy < y2 + ih * 0.5) {
+              yl = y3 - cy;
+            }
+            else {
+              yl = cy - y2;
+            }
+            r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+          }
+        }
+        // 计算colorStop
+        let list = getColorStop(v, r * 2);
+        // 超限情况等同于只显示end的bgc
+        if(r <= 0) {
+          let end = list[list.length - 1];
+          end[1] = 0;
+          list = [end];
+          cx = x2;
+          cy = y2;
+          // 肯定大于最长直径
+          r = iw + ih;
+        }
+        if(renderMode === mode.CANVAS) {
+          let rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+          list.forEach(item => {
+            rg.addColorStop(item[1], item[0]);
+          });
+          ctx.beginPath();
+          ctx.fillStyle = rg;
+          ctx.rect(x2, y2, iw, ih);
+          ctx.fill();
+          ctx.closePath();
+        }
+        else if(renderMode === mode.SVG) {
+          let uuid = this.defs.add({
+            tagName: 'radialGradient',
+            props: [
+              ['cx', cx],
+              ['cy', cy],
+              ['r', r]
+            ],
+            stop: list,
+          });
+          this.addBackground([
+            ['x', x2],
+            ['y', y2],
+            ['width', iw],
+            ['height', ih],
+            ['fill', `url(#${uuid})`]
+          ]);
+        }
+      }
     }
     else if(bgc && bgc !== 'transparent') {
-      let w = width + plw + prw;
-      let h = height + ptw + pbw;
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.fillStyle = bgc;
-        ctx.rect(x2, y2, w, h);
+        ctx.rect(x2, y2, iw, ih);
         ctx.fill();
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.bb.push({
-          type: 'item',
-          tagName: 'rect',
-          props: [
-            ['x', x2],
-            ['y', y2],
-            ['width', w],
-            ['height', h],
-            ['fill', bgc]
-          ],
-        });
+        this.addBackground([
+          ['x', x2],
+          ['y', y2],
+          ['width', iw],
+          ['height', ih],
+          ['fill', bgc]
+        ]);
       }
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
@@ -765,7 +933,7 @@ class Xom extends Node {
       else {
         points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
       }
-      renderBorder(renderMode, points, btc, ctx, virtualDom);
+      renderBorder(renderMode, points, btc, ctx, this);
     }
     if(brw > 0 && brc !== 'transparent') {
       let points = [];
@@ -864,7 +1032,7 @@ class Xom extends Node {
       else {
         points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
       }
-      renderBorder(renderMode, points, brc, ctx, virtualDom);
+      renderBorder(renderMode, points, brc, ctx, this);
     }
     if(bbw > 0 && bbc !== 'transparent') {
       let points = [];
@@ -959,7 +1127,7 @@ class Xom extends Node {
       else {
         points.push([x1, y4, x2, y3, x3, y3, x4, y4]);
       }
-      renderBorder(renderMode, points, bbc, ctx, virtualDom);
+      renderBorder(renderMode, points, bbc, ctx, this);
     }
     if(blw > 0 && blc !== 'transparent') {
       let points = [];
@@ -1058,8 +1226,28 @@ class Xom extends Node {
       else {
         points.push([x1, y1, x2, y2, x2, y3, x1, y4]);
       }
-      renderBorder(renderMode, points, blc, ctx, virtualDom);
+      renderBorder(renderMode, points, blc, ctx, this);
     }
+  }
+
+  addBorder(props) {
+    this.virtualDom.bb.push({
+      type: 'item',
+      tagName: 'path',
+      props,
+    });
+  }
+
+  addBackground(props) {
+    this.virtualDom.bb.push({
+      type: 'item',
+      tagName: 'rect',
+      props,
+    });
+  }
+
+  addTransform(props) {
+    this.virtualDom.transform.push(props);
   }
 
   get tagName() {

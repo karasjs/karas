@@ -146,6 +146,12 @@ function diffG2D(elem, ovd, nvd) {
 }
 
 function diffG2G(elem, ovd, nvd) {
+  if(!equalArr(ovd.transform, nvd.transform)) {
+    let transform = util.joinTransform(nvd.transform);
+    if(elem.getAttribute('transform') !== transform) {
+      elem.setAttribute('transform', transform);
+    }
+  }
   diffBb(elem.firstChild, ovd.bb, nvd.bb);
   let ol = ovd.content.length;
   let nl = nvd.content.length;
@@ -253,6 +259,18 @@ function removeAt(elem, cns, index) {
   if(cns[index]) {
     elem.removeChild(cns[index]);
   }
+}
+
+function equalArr(a, b) {
+  if(a.length !== b.length) {
+    return false;
+  }
+  for(let i = 0, len = a.length; i < len; i++) {
+    if(a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 export default diff;

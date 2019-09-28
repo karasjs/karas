@@ -63,7 +63,7 @@ class Polygon extends Geom {
         let point = points[i];
         points += `${point[0]},${point[1]} `;
       }
-      virtualDom.content.push({
+      virtualDom.children.push({
         type: 'item',
         tagName: 'polygon',
         props: [

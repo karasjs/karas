@@ -79,7 +79,7 @@ class Grid extends Geom {
     }
     else if(renderMode === mode.SVG) {
       lx.forEach(item => {
-        virtualDom.content.push({
+        virtualDom.children.push({
           type: 'item',
           tagName: 'line',
           props: [
@@ -94,7 +94,7 @@ class Grid extends Geom {
         });
       });
       ly.forEach(item => {
-        virtualDom.content.push({
+        virtualDom.children.push({
           type: 'item',
           tagName: 'line',
           props: [

@@ -74,8 +74,8 @@ function joinVd(vd) {
     });
     return `<g>${s}</g>`;
   }
-  else if(vd.type === 'dom') {
-    let s = '<g>';
+  else if(vd.type === 'dom' || vd.type === 'geom') {
+    let s = `<g transform="${joinTransform(vd.transform)}">`;
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
@@ -86,28 +86,26 @@ function joinVd(vd) {
     s += '</g>';
     return `<g>${s}</g>`;
   }
-  else if(vd.type === 'geom') {
-    let s = '<g>';
-    vd.bb.forEach(item => {
-      s += joinVd(item);
-    });
-    s += '</g><g>';
-    vd.content.forEach(item => {
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return `<g>${s}</g>`;
-  }
 }
 
-function joinDef(item) {
-  let s = `<${item.k} id="${item.uuid}" x1="${item.c[0]}" y1="${item.c[1]}" x2="${item.c[2]}" y2="${item.c[3]}" gradientUnits="userSpaceOnUse">`;
-  if(item.k === 'linearGradient') {
-    item.v.forEach(item2 => {
-      s += `<stop stop-color="${item2[0]}" offset="${item2[1] * 100}%"/>`;
-    });
-  }
-  s += `</${item.k}>`;
+function joinTransform(transform) {
+  let s = '';
+  transform.forEach(item => {
+    s += `${item[0]}(${item[1]})`;
+  });
+  return s;
+}
+
+function joinDef(def) {
+  let s = `<${def.tagName} id="${def.uuid}" gradientUnits="userSpaceOnUse"`;
+  def.props.forEach(item => {
+    s += ` ${item[0]}="${item[1]}"`;
+  });
+  s += '>';
+  def.stop.forEach(item => {
+    s += `<stop stop-color="${item[0]}" offset="${item[1] * 100}%"/>`;
+  });
+  s += `</${def.tagName}>`;
   return s;
 }
 
@@ -142,6 +140,32 @@ function rgb2int(color) {
   return res;
 }
 
+function arr2hash(arr) {
+  let hash = {};
+  for(let i = 0, len = arr.length; i < len; i++) {
+    let item = arr[i];
+    if(Array.isArray(item)) {
+      hash[item[0]] = item[1];
+    }
+    else {
+      for(let list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+        let k = list[j];
+        hash[k] = item[k];
+      }
+    }
+  }
+  return hash;
+}
+
+function hash2arr(hash) {
+  let arr = [];
+  for(let list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+    let k = list[i];
+    arr.push([k, hash[k]]);
+  }
+  return arr;
+}
+
 let util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -157,9 +181,12 @@ let util = {
   isNil,
   joinVirtualDom,
   joinVd,
+  joinTransform,
   joinDef,
   r2d,
   rgb2int,
+  arr2hash,
+  hash2arr,
 };
 
 export default util;

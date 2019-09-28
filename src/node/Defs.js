@@ -1,11 +1,11 @@
 class Defs {
   constructor(uuid) {
-    this.id = uuid++;
+    this.id = uuid;
     this.count = 0;
     this.list = [];
   }
   add(data) {
-    data.uuid = `__karas-defs-${this.id}-${this.count++}`;
+    data.uuid = `karas-defs-${this.id}-${this.count++}`;
     this.list.push(data);
     return data.uuid;
   }

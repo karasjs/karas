@@ -2,8 +2,10 @@ class Node {
   constructor() {
     this.__x = 0;
     this.__y = 0;
-    this.__ox = 0; // relative/transform2d/margin:auto/text-align等造成的偏移量
+    this.__ox = 0; // relative/margin:auto/text-align等造成的偏移量
     this.__oy = 0;
+    this.__tx = 0;
+    this.__ty = 0; // transform2d造成的偏移量
     this.__width = 0;
     this.__height = 0;
     this.__prev = null;
@@ -36,11 +38,24 @@ class Node {
   get oy() {
     return this.__oy;
   }
+  get tx() {
+    return this.__tx;
+  }
+  get ty() {
+    return this.__ty;
+  }
   get rx() {
     return this.x + this.ox;
   }
   get ry() {
     return this.y + this.oy;
+  }
+  // svg的translate2d使用css实现
+  get sx() {
+    return this.rx - this.tx;
+  }
+  get sy() {
+    return this.ry - this.ty;
   }
   get width() {
     return this.__width;

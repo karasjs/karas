@@ -40,7 +40,7 @@ class Rect extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      virtualDom.content.push({
+      virtualDom.children.push({
         type: 'item',
         tagName: 'rect',
         props: [

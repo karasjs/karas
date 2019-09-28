@@ -26,7 +26,7 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
-let uuid = 1;
+let uuid = 0;
 
 class Root extends Dom {
   constructor(tagName, props, children) {

@@ -837,7 +837,7 @@
         if (/%$/.test(p)) {
           list.push([c, parseFloat(p) * 0.01]);
         } else {
-          list.push([c, parseFloat(p) / Math.max(xl, yl)]);
+          list.push([c, parseFloat(p) / length]);
         }
       } else {
         list.push(arr[0]);
@@ -1405,42 +1405,41 @@
                 if (_cx <= x2 || _cx >= x3 || _cy <= y2 || _cy >= y3) {
                   _r5 = 0;
                 } else {
-                  var _xl;
-
-                  var _yl;
+                  var xl;
+                  var yl;
 
                   if (_cx < x2 + iw * 0.5) {
-                    _xl = _cx - x2;
+                    xl = _cx - x2;
                   } else {
-                    _xl = x3 - _cx;
+                    xl = x3 - _cx;
                   }
 
                   if (_cy < y2 + ih * 0.5) {
-                    _yl = _cy - y2;
+                    yl = _cy - y2;
                   } else {
-                    _yl = y3 - _cy;
+                    yl = y3 - _cy;
                   }
 
-                  _r5 = Math.min(_xl, _yl);
+                  _r5 = Math.min(xl, yl);
                 }
               } else if (size === 'closest-corner') {
-                var _xl2;
+                var _xl;
 
-                var _yl2;
+                var _yl;
 
                 if (_cx < x2 + iw * 0.5) {
-                  _xl2 = _cx - x2;
+                  _xl = _cx - x2;
                 } else {
-                  _xl2 = x3 - _cx;
+                  _xl = x3 - _cx;
                 }
 
                 if (_cy < y2 + ih * 0.5) {
-                  _yl2 = _cy - y2;
+                  _yl = _cy - y2;
                 } else {
-                  _yl2 = y3 - _cy;
+                  _yl = y3 - _cy;
                 }
 
-                _r5 = Math.sqrt(Math.pow(_xl2, 2) + Math.pow(_yl2, 2));
+                _r5 = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
               } else if (size === 'farthest-side') {
                 if (_cx <= x2) {
                   _r5 = x2 - _cx + iw;
@@ -1451,31 +1450,31 @@
                 } else if (_cx >= y3) {
                   _r5 = _cy - y3 + ih;
                 } else {
-                  var _xl3 = Math.max(x3 - _cx, _cx - x2);
+                  var _xl2 = Math.max(x3 - _cx, _cx - x2);
 
-                  var _yl3 = Math.max(y3 - _cy, _cy - y2);
+                  var _yl2 = Math.max(y3 - _cy, _cy - y2);
 
-                  _r5 = Math.max(_xl3, _yl3);
+                  _r5 = Math.max(_xl2, _yl2);
                 }
               } // 默认farthest-corner
               else {
-                  var _xl4;
+                  var _xl3;
 
-                  var _yl4;
+                  var _yl3;
 
                   if (_cx < x2 + iw * 0.5) {
-                    _xl4 = x3 - _cx;
+                    _xl3 = x3 - _cx;
                   } else {
-                    _xl4 = _cx - x2;
+                    _xl3 = _cx - x2;
                   }
 
                   if (_cy < y2 + ih * 0.5) {
-                    _yl4 = y3 - _cy;
+                    _yl3 = y3 - _cy;
                   } else {
-                    _yl4 = _cy - y2;
+                    _yl3 = _cy - y2;
                   }
 
-                  _r5 = Math.sqrt(Math.pow(_xl4, 2) + Math.pow(_yl4, 2));
+                  _r5 = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
                 }
             } // 计算colorStop
 

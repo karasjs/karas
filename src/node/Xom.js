@@ -197,7 +197,7 @@ function getColorStop(v, length) {
         list.push([c, parseFloat(p) * 0.01]);
       }
       else {
-        list.push([c, parseFloat(p) / Math.max(xl, yl)]);
+        list.push([c, parseFloat(p) / length]);
       }
     }
     else {

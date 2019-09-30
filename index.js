@@ -1330,12 +1330,14 @@
 
           var _y = y + mtw + btw + ih + bbw + mbw;
 
+          var ow = _x - x;
+          var oh = _y - y;
           var tfo = [];
           transformOrigin.forEach(function (item, i) {
             if (item.unit === unit.PX) {
               tfo.push(item.value);
             } else if (item.unit === unit.PERCENT) {
-              tfo.push(item.value * (i ? _x - x : _y - y) * 0.01);
+              tfo.push((i ? y : x) + item.value * (i ? oh : ow) * 0.01);
             } else if (item.value === 'left') {
               tfo.push(x);
             } else if (item.value === 'right') {
@@ -1345,13 +1347,13 @@
             } else if (item.value === 'bottom') {
               tfo.push(y + _y);
             } else {
-              tfo.push(i ? y + (_y - y) * 0.5 : x + (_x - x) * 0.5);
+              tfo.push(i ? y + oh * 0.5 : x + ow * 0.5);
             }
           });
           this.__tox = tfo[0];
           this.__toy = tfo[1];
-          var list = tf.normalize(transform, tfo[0], tfo[1], _x - x, _y - y);
-          var matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+          var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
+          var matrix = this.__matrix = tf.calMatrix(list, tfo[0], tfo[1]);
 
           if (renderMode === mode.CANVAS) {
             // TODO: canvas递归transform处理
@@ -2062,7 +2064,7 @@
 
     }, {
       key: "__emitEvent",
-      value: function __emitEvent(e, force, first) {
+      value: function __emitEvent(e, force) {
         var type = e.event.type,
             x = e.x,
             y = e.y,
@@ -2088,7 +2090,7 @@
         if (force) {
           children.forEach(function (child) {
             if (child instanceof Xom && !child.isGeom()) {
-              child.__emitEvent(e, force, first);
+              child.__emitEvent(e, force);
             }
           });
           cb && cb(e);
@@ -2275,6 +2277,11 @@
       key: "renderMode",
       get: function get() {
         return this.__renderMode;
+      }
+    }, {
+      key: "matrix",
+      get: function get() {
+        return this.__matrix;
       }
     }]);
 

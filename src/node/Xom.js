@@ -498,13 +498,15 @@ class Xom extends Node {
     if(transform) {
       let x4 = x + mlw + blw + iw + brw + mrw;
       let y4 = y + mtw + btw + ih + bbw + mbw;
+      let ow = x4 - x;
+      let oh = y4 - y;
       let tfo = [];
       transformOrigin.forEach((item, i) => {
         if(item.unit === unit.PX) {
           tfo.push(item.value);
         }
         else if(item.unit === unit.PERCENT) {
-          tfo.push(item.value * (i ? (x4 - x) : (y4 - y)) * 0.01);
+          tfo.push((i ? y : x) + item.value * (i ? oh : ow) * 0.01);
         }
         else if(item.value === 'left') {
           tfo.push(x);
@@ -519,13 +521,13 @@ class Xom extends Node {
           tfo.push(y + y4);
         }
         else {
-          tfo.push(i ? (y + (y4 - y) * 0.5) : (x + (x4 - x) * 0.5));
+          tfo.push(i ? (y + oh * 0.5) : (x + ow * 0.5));
         }
       });
       this.__tox = tfo[0];
       this.__toy = tfo[1];
-      let list = tf.normalize(transform, tfo[0], tfo[1], x4 - x, y4 - y);
-      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
+      let matrix = this.__matrix = tf.calMatrix(list, tfo[0], tfo[1]);
       if(renderMode === mode.CANVAS) {
         // TODO: canvas递归transform处理
         ctx.setTransform(...matrix);
@@ -1237,7 +1239,7 @@ class Xom extends Node {
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
-  __emitEvent(e, force, first) {
+  __emitEvent(e, force) {
     let { event: { type }, x, y, covers } = e;
     let { listener, children, style, outerWidth, outerHeight, matrix } = this;
     if(style.display === 'none') {
@@ -1251,7 +1253,7 @@ class Xom extends Node {
     if(force) {
       children.forEach(child => {
         if(child instanceof Xom && !child.isGeom()) {
-          child.__emitEvent(e, force, first);
+          child.__emitEvent(e, force);
         }
       });
       cb && cb(e);
@@ -1403,6 +1405,9 @@ class Xom extends Node {
   }
   get renderMode() {
     return this.__renderMode;
+  }
+  get matrix() {
+    return this.__matrix;
   }
 }
 

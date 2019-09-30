@@ -105,48 +105,8 @@ function normalize(transform, ox, oy, w, h) {
   return transform;
 }
 
-// 1上层，2下层
-function alphaBlend(im1, im2) {
-  let d1 = im1.data;
-  let d2 = im2.data;
-  for(let i = 0, len = d1.length; i < len; i += 4) {
-    let r1 = d1[i];
-    let g1 = d1[i + 1];
-    let b1 = d1[i + 2];
-    let a1 = d1[i + 3];
-    let r2 = d2[i];
-    let g2 = d2[i + 1];
-    let b2 = d2[i + 2];
-    let a2 = d2[i + 3];
-    if(a2 === 0) {
-    }
-    else if(a1 === 0) {
-      d1[i] = r2;
-      d1[i + 1] = g2;
-      d1[i + 2] = b2;
-      d1[i + 3] = a2;
-    }
-    else {
-      a1 /= 255;
-      a2 /= 255;
-      r1 = r1 * a1 + r2 * a2 * (1 - a1);
-      b1 = g1 * a1 + g2 * a2 * (1 - a1);
-      b1 = b1 * a1 + b2 * a2 * (1 - a1);
-      a1 = 1 - (1 - a1) * ( 1 - a2);
-      r1 = r1 / a1;
-      g1 = g1 / a1;
-      b1 = b1 / a1;
-      d1[i] = r1;
-      d1[i + 1] = g1;
-      d1[i + 2] = b1;
-      d1[i + 3] = a1;
-    }
-  }
-}
-
 export default {
   calMatrix,
   pointInQuadrilateral,
   normalize,
-  alphaBlend,
 };

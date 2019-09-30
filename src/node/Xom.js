@@ -457,22 +457,6 @@ class Xom extends Node {
     if(display === 'none') {
       return;
     }
-    // 使用rx和ry渲染位置，考虑了relative和translate影响
-    let { rx: x, ry: y } = this;
-    let btw = borderTopWidth.value;
-    let brw = borderRightWidth.value;
-    let bbw = borderBottomWidth.value;
-    let blw = borderLeftWidth.value;
-    let x1 = x + mlw;
-    let x2 = x1 + blw;
-    let x3 = x2 + width + plw + prw;
-    let x4 = x3 + brw;
-    let y1 = y + mtw;
-    let y2 = y1 + btw;
-    let y3 = y2 + height + ptw + pbw;
-    let y4 = y3 + bbw;
-    let iw = width + plw + prw;
-    let ih = height + ptw + pbw;
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
     if(position === 'relative' && this.parent) {
       let { width, height } = this.parent;
@@ -494,6 +478,22 @@ class Xom extends Node {
         this.__offsetY(-diff);
       }
     }
+    // 使用rx和ry渲染位置，考虑了relative和translate影响
+    let { rx: x, ry: y } = this;
+    let btw = borderTopWidth.value;
+    let brw = borderRightWidth.value;
+    let bbw = borderBottomWidth.value;
+    let blw = borderLeftWidth.value;
+    let x1 = x + mlw;
+    let x2 = x1 + blw;
+    let x3 = x2 + width + plw + prw;
+    let x4 = x3 + brw;
+    let y1 = y + mtw;
+    let y2 = y1 + btw;
+    let y3 = y2 + height + ptw + pbw;
+    let y4 = y3 + bbw;
+    let iw = width + plw + prw;
+    let ih = height + ptw + pbw;
     // translate相对于自身
     if(transform) {
       let x4 = x + mlw + blw + iw + brw + mrw;

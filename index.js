@@ -715,51 +715,12 @@
       }
     });
     return transform;
-  } // 1上层，2下层
-
-
-  function alphaBlend(im1, im2) {
-    var d1 = im1.data;
-    var d2 = im2.data;
-
-    for (var i = 0, len = d1.length; i < len; i += 4) {
-      var r1 = d1[i];
-      var g1 = d1[i + 1];
-      var b1 = d1[i + 2];
-      var a1 = d1[i + 3];
-      var r2 = d2[i];
-      var g2 = d2[i + 1];
-      var b2 = d2[i + 2];
-      var a2 = d2[i + 3];
-
-      if (a2 === 0) ; else if (a1 === 0) {
-        d1[i] = r2;
-        d1[i + 1] = g2;
-        d1[i + 2] = b2;
-        d1[i + 3] = a2;
-      } else {
-        a1 /= 255;
-        a2 /= 255;
-        r1 = r1 * a1 + r2 * a2 * (1 - a1);
-        b1 = g1 * a1 + g2 * a2 * (1 - a1);
-        b1 = b1 * a1 + b2 * a2 * (1 - a1);
-        a1 = 1 - (1 - a1) * (1 - a2);
-        r1 = r1 / a1;
-        g1 = g1 / a1;
-        b1 = b1 / a1;
-        d1[i] = r1;
-        d1[i + 1] = g1;
-        d1[i + 2] = b1;
-        d1[i + 3] = a1;
-      }
-    }
   }
 
   var tf = {
     calMatrix: calMatrix,
     pointInQuadrilateral: pointInQuadrilateral,
-    normalize: normalize,
-    alphaBlend: alphaBlend
+    normalize: normalize
   };
 
   /* 获取合适的虚线实体空白宽度ps/pd和数量n
@@ -1316,25 +1277,8 @@
 
         if (display === 'none') {
           return;
-        } // 使用rx和ry渲染位置，考虑了relative和translate影响
+        } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
 
-
-        var x = this.rx,
-            y = this.ry;
-        var btw = borderTopWidth.value;
-        var brw = borderRightWidth.value;
-        var bbw = borderBottomWidth.value;
-        var blw = borderLeftWidth.value;
-        var x1 = x + mlw;
-        var x2 = x1 + blw;
-        var x3 = x2 + width + plw + prw;
-        var x4 = x3 + brw;
-        var y1 = y + mtw;
-        var y2 = y1 + btw;
-        var y3 = y2 + height + ptw + pbw;
-        var y4 = y3 + bbw;
-        var iw = width + plw + prw;
-        var ih = height + ptw + pbw; // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
 
         if (position === 'relative' && this.parent) {
           var _this$parent = this.parent,
@@ -1361,8 +1305,25 @@
 
             this.__offsetY(-_diff3);
           }
-        } // translate相对于自身
+        } // 使用rx和ry渲染位置，考虑了relative和translate影响
 
+
+        var x = this.rx,
+            y = this.ry;
+        var btw = borderTopWidth.value;
+        var brw = borderRightWidth.value;
+        var bbw = borderBottomWidth.value;
+        var blw = borderLeftWidth.value;
+        var x1 = x + mlw;
+        var x2 = x1 + blw;
+        var x3 = x2 + width + plw + prw;
+        var x4 = x3 + brw;
+        var y1 = y + mtw;
+        var y2 = y1 + btw;
+        var y3 = y2 + height + ptw + pbw;
+        var y4 = y3 + bbw;
+        var iw = width + plw + prw;
+        var ih = height + ptw + pbw; // translate相对于自身
 
         if (transform) {
           var _x = x + mlw + blw + iw + brw + mrw;

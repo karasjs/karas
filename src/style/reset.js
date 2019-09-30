@@ -47,6 +47,7 @@ const RESET = {
   alignItems: 'stretch',
   textAlign: 'left',
   visibility: 'visible',
+  transformOrigin: 'center',
   fill: '#000',
   stroke: '#000',
   strokeWidth: 0,

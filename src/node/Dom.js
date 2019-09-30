@@ -1087,82 +1087,9 @@ class Dom extends Xom {
     });
   }
 
-  __emitEvent(e, force) {
-    let { event: { type }, x, y, covers } = e;
-    let { listener, children, style, rx, ry, outerWidth, outerHeight } = this;
-    if(style.display === 'none') {
-      return;
-    }
-    let cb;
-    if(listener.hasOwnProperty(type)) {
-      cb = listener[type];
-    }
-    let hasChildEmit;
-    // 先响应absolute/relative高优先级
-    for(let i = children.length - 1; i >= 0; i--) {
-      let child = children[i];
-      if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
-        if(child.__emitEvent(e, force)) {
-          hasChildEmit = true;
-        }
-      }
-    }
-    // 再看普通流
-    for(let i = children.length - 1; i >= 0; i--) {
-      let child = children[i];
-      if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
-        if(child.__emitEvent(e, force)) {
-          hasChildEmit = true;
-        }
-      }
-    }
-    if(force) {
-      cb && cb(e);
-      return;
-    }
-    // child触发则parent一定触发
-    if(hasChildEmit) {
-      covers.push({
-        x,
-        y,
-        w: outerWidth,
-        h: outerHeight,
-      });
-      cb && cb(e);
-    }
-    // 否则判断坐标是否位于自己内部，以及没被遮挡
-    else if(x >= rx && y >= ry && x <= rx + outerWidth && y <= ry + outerHeight) {
-      for(let i = 0, len = covers.length; i < len; i++) {
-        let { x: x2, y: y2, w, h: h } = covers[i];
-        if(x >= x2 && y >= y2 && x <= x2 + w && y <= y2 + h) {
-          return;
-        }
-      }
-      if(!e.target) {
-        e.target = this;
-      }
-      covers.push({
-        x,
-        y,
-        w: outerWidth,
-        h: outerHeight,
-      });
-      cb && cb(e);
-    }
-  }
-
   render(renderMode) {
     super.render(renderMode);
-    let { style, flowChildren, children } = this;
-    let {
-      display,
-      position,
-      top,
-      right,
-      bottom,
-      left,
-      height: h,
-    } = style;
+    let { style: { display }, flowChildren, children } = this;
     if(display === 'none') {
       return;
     }

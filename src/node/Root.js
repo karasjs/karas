@@ -60,6 +60,7 @@ class Root extends Dom {
     return res;
   }
 
+  // 类似touchend/touchcancel这种无需判断是否发生于元素上，直接强制响应
   __cb(e, force) {
     if(e.touches && e.touches.length > 1) {
       return;
@@ -176,6 +177,9 @@ class Root extends Dom {
 
   get node() {
     return this.__node;
+  }
+  get imageData() {
+    return this.__imageData;
   }
 }
 

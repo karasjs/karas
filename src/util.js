@@ -75,7 +75,7 @@ function joinVd(vd) {
     return `<g>${s}</g>`;
   }
   else if(vd.type === 'dom' || vd.type === 'geom') {
-    let s = `<g transform="${joinTransform(vd.transform)}">`;
+    let s = '<g>';
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
@@ -84,14 +84,14 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    return `<g>${s}</g>`;
+    return `<g transform="${joinTransform(vd.transform)}">${s}</g>`;
   }
 }
 
 function joinTransform(transform) {
   let s = '';
   transform.forEach(item => {
-    s += `${item[0]}(${item[1]})`;
+    s += `${item[0]}(${item[1]}) `;
   });
   return s;
 }

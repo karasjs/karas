@@ -158,39 +158,6 @@ class Geom extends Xom {
     return 0;
   }
 
-  __emitEvent(e, force) {
-    let { event: { type }, x, y, covers } = e;
-    let { listener, style, rx, ry, outerWidth, outerHeight } = this;
-    if(style.display === 'none') {
-      return;
-    }
-    let cb;
-    if(listener.hasOwnProperty(type)) {
-      cb = listener[type];
-    }
-    if(force) {
-      cb && cb(e);
-    }
-    else if(x >= rx && y >= ry && x <= rx + outerWidth && y <= ry + outerHeight) {
-      for(let i = 0, len = covers.length; i < len; i++) {
-        let { x: x2, y: y2, w, h: h } = covers[i];
-        if(x >= x2 && y >= y2 && x <= x2 + w && y <= y2 + h) {
-          return;
-        }
-      }
-      if(!e.target) {
-        e.target = this;
-      }
-      covers.push({
-        x,
-        y,
-        w: outerWidth,
-        h: outerHeight,
-      });
-      cb && cb(e);
-    }
-  }
-
   render(renderMode) {
     super.render(renderMode);
     if(renderMode === mode.SVG) {

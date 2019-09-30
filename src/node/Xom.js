@@ -1,22 +1,8 @@
 import Node from './Node';
 import mode from '../mode';
 import unit from '../style/unit';
+import tf from '../style/transform';
 import util from '../util';
-
-function spread(arr) {
-  for(let i = 0, len = arr.length; i < len; i++) {
-    let item = arr[i];
-    if(!Array.isArray(item)) {
-      let temp = [];
-      for(let list = Object.keys(item), j = 0, len = list.length; j < len; j++) {
-        let k = list[j];
-        temp.push([k, item[k]]);
-      }
-      arr.splice(i, 1, ...temp);
-    }
-  }
-  return arr;
-}
 
 /* 获取合适的虚线实体空白宽度ps/pd和数量n
  * 总长total，start边长bs，end边长be，内容长w，
@@ -343,7 +329,7 @@ class Xom extends Node {
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
-      this.__props = spread(props);
+      this.__props = props;
     }
     else {
       this.props = props;
@@ -415,6 +401,10 @@ class Xom extends Node {
     }
   }
 
+  isGeom() {
+    return this.tagName.charAt(0) === '$';
+  }
+
   // 获取margin/padding的实际值
   __mpWidth(mp, w) {
     if(mp.unit === unit.PX) {
@@ -427,6 +417,7 @@ class Xom extends Node {
   }
 
   render(renderMode) {
+    this.__renderMode = renderMode;
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -434,7 +425,11 @@ class Xom extends Node {
         transform: [],
       };
     }
-    let { ctx, style, width, height, mlw, mtw, plw, ptw, prw, pbw } = this;
+    let { ctx, style, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
+    // 恢复默认，防止其它matrix影响
+    if(renderMode === mode.CANVAS) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
     let {
       display,
       position,
@@ -457,10 +452,27 @@ class Xom extends Node {
       borderLeftColor: blc,
       borderLeftStyle : bls,
       transform,
+      transformOrigin,
     } = style;
     if(display === 'none') {
       return;
     }
+    // 使用rx和ry渲染位置，考虑了relative和translate影响
+    let { rx: x, ry: y } = this;
+    let btw = borderTopWidth.value;
+    let brw = borderRightWidth.value;
+    let bbw = borderBottomWidth.value;
+    let blw = borderLeftWidth.value;
+    let x1 = x + mlw;
+    let x2 = x1 + blw;
+    let x3 = x2 + width + plw + prw;
+    let x4 = x3 + brw;
+    let y1 = y + mtw;
+    let y2 = y1 + btw;
+    let y3 = y2 + height + ptw + pbw;
+    let y4 = y3 + bbw;
+    let iw = width + plw + prw;
+    let ih = height + ptw + pbw;
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
     if(position === 'relative' && this.parent) {
       let { width, height } = this.parent;
@@ -484,49 +496,43 @@ class Xom extends Node {
     }
     // translate相对于自身
     if(transform) {
-      let { translateX, translateY } = transform;
-      let svgTf = [];
-      if(translateX) {
-        let diff = translateX.unit === unit.PX ? translateX.value : translateX.value * width * 0.01;
-        this.__tx = diff;
-        // canvas无法实现css的translate2d，直接变换坐标
-        if(renderMode === mode.CANVAS) {
-          this.__offsetX(diff);
+      let x4 = x + mlw + blw + iw + brw + mrw;
+      let y4 = y + mtw + btw + ih + bbw + mbw;
+      let tfo = [];
+      transformOrigin.forEach((item, i) => {
+        if(item.unit === unit.PX) {
+          tfo.push(item.value);
         }
-        else if(renderMode === mode.SVG) {
-          svgTf.push(diff);
+        else if(item.unit === unit.PERCENT) {
+          tfo.push(item.value * (i ? (x4 - x) : (y4 - y)) * 0.01);
         }
-      }
-      if(translateY) {
-        let diff = translateY.unit === unit.PX ? translateY.value : translateY.value * height * 0.01;
-        this.__ty = diff;
-        if(renderMode === mode.CANVAS) {
-          this.__offsetY(diff);
+        else if(item.value === 'left') {
+          tfo.push(x);
         }
-        else if(renderMode === mode.SVG) {
-          svgTf.push(diff);
+        else if(item.value === 'right') {
+          tfo.push(x4);
         }
-      }
-      if(renderMode === mode.SVG) {
-        this.addTransform(['translate', svgTf.join(',')]);
+        else if(item.value === 'top') {
+          tfo.push(y);
+        }
+        else if(item.value === 'bottom') {
+          tfo.push(y + y4);
+        }
+        else {
+          tfo.push(i ? (y + (y4 - y) * 0.5) : (x + (x4 - x) * 0.5));
+        }
+      });
+      this.__tox = tfo[0];
+      this.__toy = tfo[1];
+      let list = tf.normalize(transform, tfo[0], tfo[1], x4 - x, y4 - y);
+      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      if(renderMode === mode.CANVAS) {
+        // TODO: canvas递归transform处理
+        ctx.setTransform(...matrix);
+      } else if(renderMode === mode.SVG) {
+        this.addTransform(['matrix', matrix.join(',')]);
       }
     }
-    // 使用rx和ry渲染位置，考虑了relative和translate影响
-    let { rx: x, ry: y } = this;
-    let btw = borderTopWidth.value;
-    let brw = borderRightWidth.value;
-    let bbw = borderBottomWidth.value;
-    let blw = borderLeftWidth.value;
-    let x1 = x + mlw;
-    let x2 = x1 + blw;
-    let x3 = x2 + width + plw + prw;
-    let x4 = x3 + brw;
-    let y1 = y + mtw;
-    let y2 = y1 + btw;
-    let y3 = y2 + height + ptw + pbw;
-    let y4 = y3 + bbw;
-    let iw = width + plw + prw;
-    let ih = height + ptw + pbw;
     // 先渲染渐变，没有则背景色
     if(bgg) {
       let { k, v } = bgg;
@@ -1230,6 +1236,95 @@ class Xom extends Node {
     }
   }
 
+  // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
+  __emitEvent(e, force, first) {
+    let { event: { type }, x, y, covers } = e;
+    let { listener, children, style, outerWidth, outerHeight, matrix } = this;
+    if(style.display === 'none') {
+      return;
+    }
+    let cb;
+    if(listener.hasOwnProperty(type)) {
+      cb = listener[type];
+    }
+    // touchend之类强制的直接通知即可
+    if(force) {
+      children.forEach(child => {
+        if(child instanceof Xom && !child.isGeom()) {
+          child.__emitEvent(e, force, first);
+        }
+      });
+      cb && cb(e);
+      return;
+    }
+    let childWillResponse;
+    if(!this.isGeom()) {
+      // 先响应absolute/relative高优先级，从后往前遮挡顺序
+      for(let i = children.length - 1; i >= 0; i--) {
+        let child = children[i];
+        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+          if(child.__emitEvent(e)) {
+            childWillResponse = true;
+          }
+        }
+      }
+      // 再看普通流，从后往前遮挡顺序
+      for(let i = children.length - 1; i >= 0; i--) {
+        let child = children[i];
+        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
+          if(child.__emitEvent(e)) {
+            childWillResponse = true;
+          }
+        }
+      }
+    }
+    // child触发则parent一定触发，否则判断事件坐标是否在节点内且未被遮挡
+    if(childWillResponse || this.willResponseEvent(e)) {
+      // 根据是否matrix存入遮罩坐标
+      covers.push({
+        x,
+        y,
+        w: outerWidth,
+        h: outerHeight,
+        matrix,
+      });
+      if(!e.target) {
+        e.target = this;
+      }
+      cb && cb(e);
+    }
+  }
+
+  willResponseEvent(e) {
+    let { x, y, covers } = e;
+    let { rx, ry, outerWidth, outerHeight, matrix } = this;
+    let inThis = tf.pointInQuadrilateral(x - rx, y - ry,
+      0, 0,
+      outerWidth,0,
+      0, outerHeight,
+      outerWidth, outerHeight,
+      matrix);
+    if(inThis) {
+      // 不能被遮挡
+      for(let i = 0, len = covers.length; i < len; i++) {
+        let { x: x2, y: y2, w, h, matrix } = covers[i];
+        if(tf.pointInQuadrilateral(x - rx, y - ry,
+          x2 - rx, y2 - ry,
+          x2 - rx + w,y2 - ry,
+          x2 - rx, y2 - ry + h,
+          x2 - rx + w, y2 - ry + h,
+          matrix)
+        ) {
+          return;
+        }
+      }
+      if(!e.target) {
+        e.target = this;
+      }
+      return true;
+    }
+  }
+
   addBorder(props) {
     this.virtualDom.bb.push({
       type: 'item',
@@ -1305,6 +1400,9 @@ class Xom extends Node {
   }
   get listener() {
     return this.__listener;
+  }
+  get renderMode() {
+    return this.__renderMode;
   }
 }
 

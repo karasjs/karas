@@ -2407,7 +2407,7 @@
       };
     } else if (/%$/.test(v)) {
       // border不支持百分比
-      if (k.indexOf('border') === 0) {
+      if (k.toString().indexOf('border') === 0) {
         obj[k] = {
           value: 0,
           unit: unit.PX

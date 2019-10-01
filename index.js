@@ -4245,7 +4245,6 @@
       value: function __layoutInline(data) {
         var _this4 = this;
 
-        var maxX = x;
         var flowChildren = this.flowChildren,
             style = this.style,
             lineGroups = this.lineGroups;
@@ -4260,8 +4259,9 @@
             x = _this$__preLayout3.x,
             y = _this$__preLayout3.y,
             w = _this$__preLayout3.w,
-            h = _this$__preLayout3.h; // 递归布局，将inline的节点组成lineGroup一行
+            h = _this$__preLayout3.h;
 
+        var maxX = x; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {

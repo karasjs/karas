@@ -733,7 +733,6 @@ class Dom extends Xom {
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
-    let maxX = x;
     let { flowChildren, style, lineGroups } = this;
     let {
       width,
@@ -742,6 +741,7 @@ class Dom extends Xom {
       textAlign,
     } = style;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
+    let maxX = x;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {

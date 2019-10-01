@@ -1,7 +1,7 @@
 import unit from '../style/unit';
 import util from '../util';
 
-function calMatrix(transform, ox, oy) {
+function calMatrix(transform, ox, oy, x, y, ow, oh) {
   let matrix = [
     [1, 0, 0],
     [0, 1, 0],
@@ -15,6 +15,7 @@ function calMatrix(transform, ox, oy) {
         [0, 1, 0],
         [v, 0, 1]
       ]);
+      ox += v;
     }
     else if(k === 'translateY') {
       matrix = multiply(matrix, [
@@ -22,19 +23,40 @@ function calMatrix(transform, ox, oy) {
         [0, 1, 0],
         [0, v, 1]
       ]);
+      oy += v;
     }
     else if(k === 'scaleX') {
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [-ox, 0, 1]
+      ]);
       matrix = multiply(matrix, [
         [v, 0, 0],
         [0, 1, 0],
         [0, 0, 1]
       ]);
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [ox, 0, 1]
+      ]);
     }
     else if(k === 'scaleY') {
       matrix = multiply(matrix, [
         [1, 0, 0],
+        [0, 1, 0],
+        [0, -oy, 1]
+      ]);
+      matrix = multiply(matrix, [
+        [1, 0, 0],
         [0, v, 0],
         [0, 0, 1]
+      ]);
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, oy, 1]
       ]);
     }
     else if(k === 'skewX') {

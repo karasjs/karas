@@ -74,6 +74,7 @@ class Xom extends Node {
     this.__pbw = 0;
     this.__plw = 0;
     this.__matrix = null;
+    this.__matrixSelf = null;
   }
 
   __layout(data) {
@@ -282,20 +283,21 @@ class Xom extends Node {
       let oh = y4 - y;
       let tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
       let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      let matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], x, y, ow, oh);
       // 单位矩阵无需变换
-      if(matrix[0] !== 1
-        || matrix[1] !== 0
-        || matrix[2] !== 0
-        || matrix[3] !== 1
-        || matrix[4] !== 0
-        || matrix[5] !== 0) {
+      if(matrixSelf[0] !== 1
+        || matrixSelf[1] !== 0
+        || matrixSelf[2] !== 0
+        || matrixSelf[3] !== 1
+        || matrixSelf[4] !== 0
+        || matrixSelf[5] !== 0) {
+        this.__matrixSelf = matrixSelf;
         // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
-        let matrixSelf = matrix;
+        let matrix = matrixSelf;
         let parent = this.parent;
         while(parent) {
-          if(parent.matrix) {
-            matrix = tf.mergeMatrix(matrix, parent.matrix);
+          if(parent.matrixSelf) {
+            matrix = tf.mergeMatrix(matrix, parent.matrixSelf);
           }
           parent = parent.parent;
         }
@@ -979,6 +981,9 @@ class Xom extends Node {
   }
   get matrix() {
     return this.__matrix;
+  }
+  get matrixSelf() {
+    return this.__matrixSelf;
   }
 }
 

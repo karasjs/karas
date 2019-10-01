@@ -587,7 +587,7 @@
     hash2arr: hash2arr
   };
 
-  function calMatrix(transform, ox, oy) {
+  function calMatrix(transform, ox, oy, x, y, ow, oh) {
     var matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
     transform.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
@@ -596,12 +596,18 @@
 
       if (k === 'translateX') {
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]);
+        ox += v;
       } else if (k === 'translateY') {
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]);
+        oy += v;
       } else if (k === 'scaleX') {
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, 0, 1]]);
         matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [ox, 0, 1]]);
       } else if (k === 'scaleY') {
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, -oy, 1]]);
         matrix = multiply(matrix, [[1, 0, 0], [0, v, 0], [0, 0, 1]]);
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, oy, 1]]);
       } else if (k === 'skewX') {
         v = util.r2d(v);
         var tan = Math.tan(v);
@@ -1423,6 +1429,7 @@
       _this.__pbw = 0;
       _this.__plw = 0;
       _this.__matrix = null;
+      _this.__matrixSelf = null;
       return _this;
     }
 
@@ -1683,16 +1690,17 @@
           var oh = _y - y;
           var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrix = tf.calMatrix(list, tfo[0], tfo[1]); // 单位矩阵无需变换
+          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], x, y, ow, oh); // 单位矩阵无需变换
 
-          if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[2] !== 0 || matrix[3] !== 1 || matrix[4] !== 0 || matrix[5] !== 0) {
-            // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
-            var matrixSelf = matrix;
+          if (matrixSelf[0] !== 1 || matrixSelf[1] !== 0 || matrixSelf[2] !== 0 || matrixSelf[3] !== 1 || matrixSelf[4] !== 0 || matrixSelf[5] !== 0) {
+            this.__matrixSelf = matrixSelf; // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
+
+            var matrix = matrixSelf;
             var parent = this.parent;
 
             while (parent) {
-              if (parent.matrix) {
-                matrix = tf.mergeMatrix(matrix, parent.matrix);
+              if (parent.matrixSelf) {
+                matrix = tf.mergeMatrix(matrix, parent.matrixSelf);
               }
 
               parent = parent.parent;
@@ -2427,6 +2435,11 @@
       key: "matrix",
       get: function get() {
         return this.__matrix;
+      }
+    }, {
+      key: "matrixSelf",
+      get: function get() {
+        return this.__matrixSelf;
       }
     }]);
 

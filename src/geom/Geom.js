@@ -61,46 +61,7 @@ class Geom extends Xom {
   }
 
   __layoutBlock(data) {
-    let { x, y, w, h } = data;
-    this.__x = x;
-    this.__y = y;
-    this.__width = w;
-    let { style } = this;
-    let {
-      width,
-      height,
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
-    } = style;
-    // 除了auto外都是固定高度
-    let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
-      switch(width.unit) {
-        case unit.PX:
-          w = width.value;
-          break;
-      }
-    }
-    if(height && height.unit !== unit.AUTO) {
-      fixedHeight = true;
-      switch(height.unit) {
-        case unit.PX:
-          h = height.value;
-          break;
-        case unit.PERCENT:
-          h *= height.value * 0.01;
-          break;
-      }
-    }
-    // border影响x和y和尺寸
-    x += borderLeftWidth.value;
-    data.x = x;
-    y += borderTopWidth.value;
-    data.y = y;
-    w -= borderLeftWidth.value + borderRightWidth.value;
-    h -= borderTopWidth.value + borderBottomWidth.value;
+    let { fixedHeight, w, h } = this.__preLayout(data);
     this.__width = w;
     this.__height = fixedHeight ? h : 0;
   }
@@ -111,44 +72,7 @@ class Geom extends Xom {
   }
 
   __layoutInline(data) {
-    let { x, y, w, h } = data;
-    this.__x = x;
-    this.__y = y;
-    let { style } = this;
-    let {
-      width,
-      height,
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
-    } = style;
-    // 除了auto外都是固定高度
-    let fixedWidth;
-    let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
-      fixedWidth = true;
-      switch(width.unit) {
-        case unit.PX:
-          w = width.value;
-          break;
-      }
-    }
-    if(height && height.unit !== unit.AUTO) {
-      fixedHeight = true;
-      switch(height.unit) {
-        case unit.PX:
-          h = height.value;
-          break;
-      }
-    }
-    // border影响x和y
-    x += borderLeftWidth.value;
-    data.x = x;
-    y += borderTopWidth.value;
-    data.y = y;
-    w -= borderLeftWidth.value + borderRightWidth.value;
-    h -= borderTopWidth.value + borderBottomWidth.value;
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : x - data.x;
     this.__height = fixedHeight ? h : y - data.y;

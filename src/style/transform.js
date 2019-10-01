@@ -105,8 +105,37 @@ function normalize(transform, ox, oy, w, h) {
   return transform;
 }
 
+function getOrigin(transformOrigin, x, y, w, h) {
+  let tfo = [];
+  transformOrigin.forEach((item, i) => {
+    if(item.unit === unit.PX) {
+      tfo.push(item.value);
+    }
+    else if(item.unit === unit.PERCENT) {
+      tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+    }
+    else if(item.value === 'left') {
+      tfo.push(x);
+    }
+    else if(item.value === 'right') {
+      tfo.push(x + w);
+    }
+    else if(item.value === 'top') {
+      tfo.push(y);
+    }
+    else if(item.value === 'bottom') {
+      tfo.push(y + h);
+    }
+    else {
+      tfo.push(i ? (y + h * 0.5) : (x + w * 0.5));
+    }
+  });
+  return tfo;
+}
+
 export default {
   calMatrix,
   pointInQuadrilateral,
   normalize,
+  getOrigin,
 };

@@ -288,56 +288,14 @@ class Dom extends Xom {
 
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data) {
-    let { x, y, w, h } = data;
-    this.__x = x;
-    this.__y = y;
-    this.__width = w;
-    let { flowChildren, style, lineGroups, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { flowChildren, style, lineGroups } = this;
     let {
       width,
-      height,
       marginLeft,
       marginRight,
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
       textAlign,
     } = style;
-    // 除了auto外都是固定高度
-    let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
-      switch(width.unit) {
-        case unit.PX:
-          w = width.value;
-          break;
-        case unit.PERCENT:
-          w *= width.value * 0.01;
-          break;
-      }
-    }
-    if(height && height.unit !== unit.AUTO) {
-      fixedHeight = true;
-      switch(height.unit) {
-        case unit.PX:
-          h = height.value;
-          break;
-        case unit.PERCENT:
-          h *= height.value * 0.01;
-          break;
-      }
-    }
-    // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth.value + mlw + plw;
-    data.x = x;
-    y += borderTopWidth.value + mtw + ptw;
-    data.y = y;
-    if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-    }
-    if(height.unit === unit.AUTO) {
-      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-    }
+    let { fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
@@ -475,58 +433,15 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data) {
-    let { x, y, w, h } = data;
-    this.__x = x;
-    this.__y = y;
-    this.__width = w;
-    let { flowChildren, style, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { flowChildren, style } = this;
     let {
-      width,
-      height,
+      marginLeft,
+      marginRight,
       flexDirection,
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
       justifyContent,
       alignItems,
     } = style;
-    // 除了auto外都是固定高度
-    let fixedWidth;
-    let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
-      fixedWidth = true;
-      switch(width.unit) {
-        case unit.PX:
-          w = width.value;
-          break;
-        case unit.PERCENT:
-          w *= width.value * 0.01;
-          break;
-      }
-    }
-    if(height && height.unit !== unit.AUTO) {
-      fixedHeight = true;
-      switch(height.unit) {
-        case unit.PX:
-          h = height.value;
-          break;
-        case unit.PERCENT:
-          h *= height.value * 0.01;
-          break;
-      }
-    }
-    // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth.value + mlw + plw;
-    data.x = x;
-    y += borderTopWidth.value + mtw + ptw;
-    data.y = y;
-    if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-    }
-    if(height.unit === unit.AUTO) {
-      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-    }
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     let isDirectionRow = flexDirection === 'row';
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
@@ -782,8 +697,8 @@ class Dom extends Xom {
         else {
           if(style.width.unit === unit.AUTO) {
             item.__width = maxCross - mlw - mrw - plw - prw
-              - borderRightWidth.value
-              - borderLeftWidth.value;
+              - style.borderRightWidth.value
+              - style.borderLeftWidth.value;
           }
         }
       });
@@ -807,62 +722,26 @@ class Dom extends Xom {
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;
+    // 处理margin:xx auto居中对齐
+    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+      let ow = this.outerWidth;
+      if(ow < data.w) {
+        this.__offsetX((data.w - ow) * 0.5);
+      }
+    }
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
-    let { x, y, w, h } = data;
-    this.__x = x;
-    this.__y = y;
     let maxX = x;
-    let { flowChildren, style, lineGroups, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { flowChildren, style, lineGroups } = this;
     let {
       width,
-      height,
       marginLeft,
       marginRight,
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
       textAlign,
     } = style;
-    // 除了auto外都是固定高度
-    let fixedWidth;
-    let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
-      fixedWidth = true;
-      switch(width.unit) {
-        case unit.PX:
-          w = width.value;
-          break;
-        case unit.PERCENT:
-          w *= width.value * 0.01;
-          break;
-      }
-    }
-    if(height && height.unit !== unit.AUTO) {
-      fixedHeight = true;
-      switch(height.unit) {
-        case unit.PX:
-          h = height.value;
-          break;
-        case unit.PERCENT:
-          h *= height.value * 0.01;
-          break;
-      }
-    }
-    // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth.value + mlw + plw;
-    data.x = x;
-    y += borderTopWidth.value + mtw + ptw;
-    data.y = y;
-    if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-    }
-    if(height.unit === unit.AUTO) {
-      h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-    }
+    let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
@@ -991,11 +870,13 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container) {
-    let { x, y, flowY, width, height, children, absChildren, style, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { x, y, flowY, width, height, children, absChildren, style, mlw, mtw, plw, ptw, prw, pbw } = this;
     let {
       borderTopWidth,
       borderLeftWidth,
     } = style;
+    x += mlw + borderLeftWidth.value;
+    y += mtw + borderTopWidth.value;
     let pw = width + plw + prw;
     let ph = height + ptw + pbw;
     // 递归进行，遇到absolute/relative的设置新容器
@@ -1006,65 +887,61 @@ class Dom extends Xom {
     });
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
-      let { mtw, mlw, style, style: {
+      let { style, style: {
         left, top, right, bottom, width: width2, height: height2
       } } = item;
       let x2, y2, w2, h2;
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-        x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
-        w2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - x2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
+        x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
+        w2 = right.unit === unit.PX ? x + pw - right.value - x2 : x + pw - width * right.value * 0.01 - x2;
       }
       else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-        x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
+        x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
         w2 = width2.unit === unit.PX ? width2.value : width;
       }
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         w2 = width2.unit === unit.PX ? width2.value : width;
         let widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-        x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - widthPx : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - widthPx;
+        x2 = right.unit === unit.PX ? x + pw - right.value - widthPx : x + pw - width * right.value * 0.01 - widthPx;
       }
       else if(left.unit !== unit.AUTO) {
-        x2 = left.unit === unit.PX ? x + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
+        x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
         w2 = item.__calAbs(true);
       }
       else if(right.unit !== unit.AUTO) {
         w2 = item.__calAbs(true);
-        x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - w2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - w2;
+        x2 = right.unit === unit.PX ? x + pw - right.value - w2 : x + pw - width * right.value * 0.01 - w2;
       }
       else if(width2.unit !== unit.AUTO) {
-        x2 = x + mlw + borderLeftWidth.value;
+        x2 = x;
         w2 = width2.unit === unit.PX ? width2.value : width;
       }
       else {
-        x2 = x + mlw + borderLeftWidth.value;
+        x2 = x;
         w2 = item.__calAbs(true);
       }
       // top/bottom/height优先级同上
       if(top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
-        y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
-        h2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - y2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - y2;
-        style.height = {
-          value: h2,
-          unit: unit.PX,
-        };
+        y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
+        h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
       }
       else if(top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-        y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
+        y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
         h2 = height2.unit === unit.PX ? height2.value : height;
       }
       else if(bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
         h2 = height2.unit === unit.PX ? height2.value : height;
         let heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-        y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - heightPx : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - heightPx;
+        y2 = bottom.unit === unit.PX ? y + ph - bottom.value - heightPx : y + ph - height * bottom.value * 0.01 - heightPx;
       }
       else if(top.unit !== unit.AUTO) {
-        y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
+        y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
         h2 = item.__calAbs();
       }
       else if(bottom.unit !== unit.AUTO) {
         h2 = item.__calAbs();
-        y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - h2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - h2;
+        y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
       }
       else if(height2.unit !== unit.AUTO) {
         y2 = flowY + mtw + borderTopWidth.value;

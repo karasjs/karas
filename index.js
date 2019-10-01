@@ -717,221 +717,72 @@
     return transform;
   }
 
+  function getOrigin(transformOrigin, x, y, w, h) {
+    var tfo = [];
+    transformOrigin.forEach(function (item, i) {
+      if (item.unit === unit.PX) {
+        tfo.push(item.value);
+      } else if (item.unit === unit.PERCENT) {
+        tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+      } else if (item.value === 'left') {
+        tfo.push(x);
+      } else if (item.value === 'right') {
+        tfo.push(x + w);
+      } else if (item.value === 'top') {
+        tfo.push(y);
+      } else if (item.value === 'bottom') {
+        tfo.push(y + h);
+      } else {
+        tfo.push(i ? y + h * 0.5 : x + w * 0.5);
+      }
+    });
+    return tfo;
+  }
+
   var tf = {
     calMatrix: calMatrix,
     pointInQuadrilateral: pointInQuadrilateral,
-    normalize: normalize
+    normalize: normalize,
+    getOrigin: getOrigin
   };
 
-  /* 获取合适的虚线实体空白宽度ps/pd和数量n
-   * 总长total，start边长bs，end边长be，内容长w，
-   * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
-   */
+  function getLinearDeg(v) {
+    var deg = 180;
 
-  function getFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
-    var n = 1;
-    var ps = 1;
-    var pd = 1; // 从最大实体空白长开始尝试
+    if (v[0] === 'to top') {
+      deg = 0;
+    } else if (v[0] === 'to top right') {
+      deg = 45;
+    } else if (v[0] === 'to right') {
+      deg = 90;
+    } else if (v[0] === 'to bottom right') {
+      deg = 135;
+    } else if (v[0] === 'to bottom') ; else if (v[0] === 'to bottom left') {
+      deg = 225;
+    } else if (v[0] === 'to left') {
+      deg = 270;
+    } else if (v[0] === 'to top left') {
+      deg = 315;
+    } // 数字角度，没有的话取默认角度
+    else {
+        var match = /([\d.]+)deg/.exec(v[0]);
 
-    outer: for (var i = smax; i >= smin; i--) {
-      for (var j = dmax; j >= dmin; j--) {
-        // 已知实体空白长度，n实体和n-1空白组成total，计算获取n数量
-        var per = i + j;
-        var num = Math.floor((total + j) / per);
-        var k = j; // 可能除不尽，此时扩展空白长
-
-        if (num * per < j + total) {
-          var free = total - num * i;
-          k = free / (num - 1);
-
-          if (k > dmax) {
-            continue;
-          }
+        if (match) {
+          deg = parseFloat(match[1]);
+        } else {
+          v.unshift(null);
         }
-
-        per = i + k; // bs比实体大才有效，因为小的话必定和第一个实体完整相连
-
-        if (bs > 1 && bs > i) {
-          var mo = bs % per;
-
-          if (mo > i) {
-            continue;
-          }
-
-          if (be > 1) {
-            var _mo = (bs + w) % per;
-
-            if (_mo > i) {
-              continue;
-            }
-          }
-        }
-
-        if (be > 1) {
-          var _mo2 = (bs + w) % per;
-
-          if (_mo2 > i) {
-            continue;
-          }
-        }
-
-        if (num > 0) {
-          n = num;
-          ps = i;
-          pd = k;
-        }
-
-        break outer;
       }
+
+    while (deg >= 360) {
+      deg = deg % 360;
     }
 
-    return {
-      n: n,
-      ps: ps,
-      pd: pd
-    };
-  } // dashed时n个实线和n-1虚线默认以3:1宽度组成，dotted则是n和n以1:1组成
-
-
-  function getDashed(style, m1, m2, m3, m4, bw) {
-    var total = m4 - m1;
-    var w = m3 - m2;
-    var bs = m2 - m1;
-    var be = m4 - m3;
-
-    if (style === 'dotted') {
-      return getFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
-    } else {
-      var _getFitDashed = getFitDashed(total, bs, be, w, bw, bw * 3, Math.max(1, bw * 0.25), bw * 2),
-          n = _getFitDashed.n,
-          ps = _getFitDashed.ps,
-          pd = _getFitDashed.pd;
-
-      if (n === 1) {
-        return getFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
-      } // 降级为dotted
-
-
-      return {
-        n: n,
-        ps: ps,
-        pd: pd
-      };
+    while (deg < 0) {
+      deg += 360;
     }
-  }
 
-  function renderBorder(renderMode, points, color, ctx, xom) {
-    if (renderMode === mode.CANVAS) {
-      points.forEach(function (point) {
-        ctx.beginPath();
-        ctx.fillStyle = color;
-        ctx.moveTo(point[0], point[1]);
-
-        for (var i = 2, len = point.length; i < len; i += 2) {
-          ctx.lineTo(point[i], point[i + 1]);
-        }
-
-        ctx.fill();
-        ctx.closePath();
-      });
-    } else if (renderMode === mode.SVG) {
-      var s = '';
-      points.forEach(function (point) {
-        s += "M ".concat(point[0], " ").concat(point[1]);
-
-        for (var i = 2, len = point.length; i < len; i += 2) {
-          s += "L ".concat(point[i], " ").concat(point[i + 1], " ");
-        }
-      });
-      xom.addBorder([['d', s], ['fill', color]]);
-    }
-  } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
-
-
-  function getCsStartLimit(c1, p1, c2, p2, length) {
-    var _c = _slicedToArray(c1, 4),
-        r1 = _c[0],
-        g1 = _c[1],
-        b1 = _c[2],
-        _c$ = _c[3],
-        a1 = _c$ === void 0 ? 1 : _c$;
-
-    var _c2 = _slicedToArray(c2, 4),
-        r2 = _c2[0],
-        g2 = _c2[1],
-        b2 = _c2[2],
-        _c2$ = _c2[3],
-        a2 = _c2$ === void 0 ? 1 : _c2$;
-
-    var l1 = Math.abs(p1) * length;
-    var l2 = p2 * length;
-    var p = l1 / (l2 + l1);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    return [r, g, b, a];
-  }
-
-  function getCsEndLimit(c1, p1, c2, p2, length) {
-    var _c3 = _slicedToArray(c1, 4),
-        r1 = _c3[0],
-        g1 = _c3[1],
-        b1 = _c3[2],
-        _c3$ = _c3[3],
-        a1 = _c3$ === void 0 ? 1 : _c3$;
-
-    var _c4 = _slicedToArray(c2, 4),
-        r2 = _c4[0],
-        g2 = _c4[1],
-        b2 = _c4[2],
-        _c4$ = _c4[3],
-        a2 = _c4$ === void 0 ? 1 : _c4$;
-
-    var l1 = p1 * length;
-    var l2 = p2 * length;
-    var p = (length - l1) / (l2 - l1);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    return [r, g, b, a];
-  }
-
-  function getCsLimit(first, last, length) {
-    var c1 = util.rgb2int(first[0]);
-    var c2 = util.rgb2int(last[0]);
-
-    var _c5 = _slicedToArray(c1, 4),
-        r1 = _c5[0],
-        g1 = _c5[1],
-        b1 = _c5[2],
-        _c5$ = _c5[3],
-        a1 = _c5$ === void 0 ? 1 : _c5$;
-
-    var _c6 = _slicedToArray(c2, 4),
-        r2 = _c6[0],
-        g2 = _c6[1],
-        b2 = _c6[2],
-        _c6$ = _c6[3],
-        a2 = _c6$ === void 0 ? 1 : _c6$;
-
-    var l1 = Math.abs(first[1]) * length;
-    var l2 = last[1] * length;
-    var p = l1 / (l1 + l2);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    first[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
-    first[1] = 0;
-    p = (length + l1) / (l1 + l2);
-    r = Math.floor(r1 + (r2 - r1) * p);
-    g = Math.floor(g1 + (g2 - g1) * p);
-    b = Math.floor(b1 + (b2 - b1) * p);
-    a = a1 + (a2 - a1) * p;
-    last[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
-    last[1] = 1;
+    return deg;
   } // 获取color-stop区间范围，去除无用值
 
 
@@ -1077,22 +928,22 @@
                 var c1 = util.rgb2int(first[0]);
                 var c2 = util.rgb2int(next[0]);
 
-                var _c7 = getCsStartLimit(c1, first[1], c2, next[1], length);
+                var _c = getCsStartLimit(c1, first[1], c2, next[1], length);
 
-                first[0] = "rgba(".concat(_c7[0], ",").concat(_c7[1], ",").concat(_c7[2], ",").concat(_c7[3], ")");
+                first[0] = "rgba(".concat(_c[0], ",").concat(_c[1], ",").concat(_c[2], ",").concat(_c[3], ")");
                 first[1] = 0;
               }
 
               if (last[1] > 1) {
                 var _prev = list[len - 2];
 
-                var _c8 = util.rgb2int(_prev[0]);
+                var _c2 = util.rgb2int(_prev[0]);
 
-                var _c9 = util.rgb2int(last[0]);
+                var _c3 = util.rgb2int(last[0]);
 
-                var _c10 = getCsEndLimit(_c8, _prev[1], _c9, last[1], length);
+                var _c4 = getCsEndLimit(_c2, _prev[1], _c3, last[1], length);
 
-                last[0] = "rgba(".concat(_c10[0], ",").concat(_c10[1], ",").concat(_c10[2], ",").concat(_c10[3], ")");
+                last[0] = "rgba(".concat(_c4[0], ",").concat(_c4[1], ",").concat(_c4[2], ",").concat(_c4[3], ")");
                 last[1] = 1;
               }
             }
@@ -1108,6 +959,406 @@
       }
     });
     return list;
+  } // 根据角度和圆心获取渐变的4个点坐标
+
+
+  function calLinearCoords(deg, length, cx, cy) {
+    var x0;
+    var y0;
+    var x1;
+    var y1;
+
+    if (deg >= 270) {
+      var r = util.r2d(360 - deg);
+      x0 = cx + Math.sin(r) * length;
+      y0 = cy + Math.cos(r) * length;
+      x1 = cx - Math.sin(r) * length;
+      y1 = cy - Math.cos(r) * length;
+    } else if (deg >= 180) {
+      var _r = util.r2d(deg - 180);
+
+      x0 = cx + Math.sin(_r) * length;
+      y0 = cy - Math.cos(_r) * length;
+      x1 = cx - Math.sin(_r) * length;
+      y1 = cy + Math.cos(_r) * length;
+    } else if (deg >= 90) {
+      var _r2 = util.r2d(180 - deg);
+
+      x0 = cx - Math.sin(_r2) * length;
+      y0 = cy - Math.cos(_r2) * length;
+      x1 = cx + Math.sin(_r2) * length;
+      y1 = cy + Math.cos(_r2) * length;
+    } else {
+      var _r3 = util.r2d(deg);
+
+      x0 = cx - Math.sin(_r3) * length;
+      y0 = cy + Math.cos(_r3) * length;
+      x1 = cx + Math.sin(_r3) * length;
+      y1 = cy - Math.cos(_r3) * length;
+    }
+
+    return [x0, y0, x1, y1];
+  } // 获取径向渐变半径
+
+
+  function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
+    var size = 'farthest-corner';
+    var r; // 半径
+
+    if (/circle|ellipse|at|closest|farthest/i.test(v[0]) || !/#[0-9a-f]{3,6}/i.test(v[0]) && !/\brgba?\(.*\)/i.test(v[0])) {
+      var i = v[0].indexOf('at');
+      var at;
+      var s;
+
+      if (i > -1) {
+        at = v[0].slice(i + 2);
+        s = v[0].slice(0, i - 1);
+      }
+
+      s = /(closest|farthest)-(side|corner)/.exec(s);
+
+      if (s) {
+        size = s[0];
+      } // 指定宽高后size失效，置null标识
+      else {
+          s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
+
+          if (s) {
+            size = null;
+
+            if (s[1].indexOf('px') > -1) {
+              r = parseFloat(s[1]) * 0.5;
+            } else {
+              r = parseFloat(s[1]) * iw * 0.005;
+            }
+          }
+        }
+
+      if (at) {
+        s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
+
+        if (s) {
+          if (s[1].indexOf('px') > -1) {
+            cx = x2 + parseFloat(s[1]);
+          } else {
+            cx = x2 + parseFloat(s[1]) * iw * 0.01;
+          } // y可以省略，此时等同于x
+
+
+          var by = s[2] || s[1];
+
+          if (by.indexOf('px') > -1) {
+            cy = y2 + parseFloat(by);
+          } else {
+            cy = y2 + parseFloat(by) * ih * 0.01;
+          }
+        }
+      }
+    } else {
+      v.unshift(null);
+    }
+
+    if (size) {
+      if (size === 'closest-side') {
+        // 在边外特殊情况只有end颜色填充
+        if (cx <= x2 || cx >= x3 || cy <= y2 || cy >= y3) {
+          r = 0;
+        } else {
+          var xl;
+          var yl;
+
+          if (cx < x2 + iw * 0.5) {
+            xl = cx - x2;
+          } else {
+            xl = x3 - cx;
+          }
+
+          if (cy < y2 + ih * 0.5) {
+            yl = cy - y2;
+          } else {
+            yl = y3 - cy;
+          }
+
+          r = Math.min(xl, yl);
+        }
+      } else if (size === 'closest-corner') {
+        var _xl;
+
+        var _yl;
+
+        if (cx < x2 + iw * 0.5) {
+          _xl = cx - x2;
+        } else {
+          _xl = x3 - cx;
+        }
+
+        if (cy < y2 + ih * 0.5) {
+          _yl = cy - y2;
+        } else {
+          _yl = y3 - cy;
+        }
+
+        r = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
+      } else if (size === 'farthest-side') {
+        if (cx <= x2) {
+          r = x2 - cx + iw;
+        } else if (cx >= x3) {
+          r = cx - x3 + iw;
+        } else if (cy <= y2) {
+          r = y2 - cy + ih;
+        } else if (cx >= y3) {
+          r = cy - y3 + ih;
+        } else {
+          var _xl2 = Math.max(x3 - cx, cx - x2);
+
+          var _yl2 = Math.max(y3 - cy, cy - y2);
+
+          r = Math.max(_xl2, _yl2);
+        }
+      } // 默认farthest-corner
+      else {
+          var _xl3;
+
+          var _yl3;
+
+          if (cx < x2 + iw * 0.5) {
+            _xl3 = x3 - cx;
+          } else {
+            _xl3 = cx - x2;
+          }
+
+          if (cy < y2 + ih * 0.5) {
+            _yl3 = y3 - cy;
+          } else {
+            _yl3 = cy - y2;
+          }
+
+          r = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
+        }
+    }
+
+    return r;
+  } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
+
+
+  function getCsStartLimit(c1, p1, c2, p2, length) {
+    var _c5 = _slicedToArray(c1, 4),
+        r1 = _c5[0],
+        g1 = _c5[1],
+        b1 = _c5[2],
+        _c5$ = _c5[3],
+        a1 = _c5$ === void 0 ? 1 : _c5$;
+
+    var _c6 = _slicedToArray(c2, 4),
+        r2 = _c6[0],
+        g2 = _c6[1],
+        b2 = _c6[2],
+        _c6$ = _c6[3],
+        a2 = _c6$ === void 0 ? 1 : _c6$;
+
+    var l1 = Math.abs(p1) * length;
+    var l2 = p2 * length;
+    var p = l1 / (l2 + l1);
+    var r = Math.floor(r1 + (r2 - r1) * p);
+    var g = Math.floor(g1 + (g2 - g1) * p);
+    var b = Math.floor(b1 + (b2 - b1) * p);
+    var a = a1 + (a2 - a1) * p;
+    return [r, g, b, a];
+  }
+
+  function getCsEndLimit(c1, p1, c2, p2, length) {
+    var _c7 = _slicedToArray(c1, 4),
+        r1 = _c7[0],
+        g1 = _c7[1],
+        b1 = _c7[2],
+        _c7$ = _c7[3],
+        a1 = _c7$ === void 0 ? 1 : _c7$;
+
+    var _c8 = _slicedToArray(c2, 4),
+        r2 = _c8[0],
+        g2 = _c8[1],
+        b2 = _c8[2],
+        _c8$ = _c8[3],
+        a2 = _c8$ === void 0 ? 1 : _c8$;
+
+    var l1 = p1 * length;
+    var l2 = p2 * length;
+    var p = (length - l1) / (l2 - l1);
+    var r = Math.floor(r1 + (r2 - r1) * p);
+    var g = Math.floor(g1 + (g2 - g1) * p);
+    var b = Math.floor(b1 + (b2 - b1) * p);
+    var a = a1 + (a2 - a1) * p;
+    return [r, g, b, a];
+  }
+
+  function getCsLimit(first, last, length) {
+    var c1 = util.rgb2int(first[0]);
+    var c2 = util.rgb2int(last[0]);
+
+    var _c9 = _slicedToArray(c1, 4),
+        r1 = _c9[0],
+        g1 = _c9[1],
+        b1 = _c9[2],
+        _c9$ = _c9[3],
+        a1 = _c9$ === void 0 ? 1 : _c9$;
+
+    var _c10 = _slicedToArray(c2, 4),
+        r2 = _c10[0],
+        g2 = _c10[1],
+        b2 = _c10[2],
+        _c10$ = _c10[3],
+        a2 = _c10$ === void 0 ? 1 : _c10$;
+
+    var l1 = Math.abs(first[1]) * length;
+    var l2 = last[1] * length;
+    var p = l1 / (l1 + l2);
+    var r = Math.floor(r1 + (r2 - r1) * p);
+    var g = Math.floor(g1 + (g2 - g1) * p);
+    var b = Math.floor(b1 + (b2 - b1) * p);
+    var a = a1 + (a2 - a1) * p;
+    first[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
+    first[1] = 0;
+    p = (length + l1) / (l1 + l2);
+    r = Math.floor(r1 + (r2 - r1) * p);
+    g = Math.floor(g1 + (g2 - g1) * p);
+    b = Math.floor(b1 + (b2 - b1) * p);
+    a = a1 + (a2 - a1) * p;
+    last[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
+    last[1] = 1;
+  }
+
+  var gradient = {
+    getLinearDeg: getLinearDeg,
+    getColorStop: getColorStop,
+    calLinearCoords: calLinearCoords,
+    calRadialRadius: calRadialRadius
+  };
+
+  /* 获取合适的虚线实体空白宽度ps/pd和数量n
+   * 总长total，start边长bs，end边长be，内容长w，
+   * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
+   */
+  function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
+    var n = 1;
+    var ps = 1;
+    var pd = 1; // 从最大实体空白长开始尝试
+
+    outer: for (var i = smax; i >= smin; i--) {
+      for (var j = dmax; j >= dmin; j--) {
+        // 已知实体空白长度，n实体和n-1空白组成total，计算获取n数量
+        var per = i + j;
+        var num = Math.floor((total + j) / per);
+        var k = j; // 可能除不尽，此时扩展空白长
+
+        if (num * per < j + total) {
+          var free = total - num * i;
+          k = free / (num - 1);
+
+          if (k > dmax) {
+            continue;
+          }
+        }
+
+        per = i + k; // bs比实体大才有效，因为小的话必定和第一个实体完整相连
+
+        if (bs > 1 && bs > i) {
+          var mo = bs % per;
+
+          if (mo > i) {
+            continue;
+          }
+
+          if (be > 1) {
+            var _mo = (bs + w) % per;
+
+            if (_mo > i) {
+              continue;
+            }
+          }
+        }
+
+        if (be > 1) {
+          var _mo2 = (bs + w) % per;
+
+          if (_mo2 > i) {
+            continue;
+          }
+        }
+
+        if (num > 0) {
+          n = num;
+          ps = i;
+          pd = k;
+        }
+
+        break outer;
+      }
+    }
+
+    return {
+      n: n,
+      ps: ps,
+      pd: pd
+    };
+  } // dashed时n个实线和n-1虚线默认以3:1宽度组成，dotted则是n和n以1:1组成
+
+
+  function calDashed(style, m1, m2, m3, m4, bw) {
+    var total = m4 - m1;
+    var w = m3 - m2;
+    var bs = m2 - m1;
+    var be = m4 - m3;
+
+    if (style === 'dotted') {
+      return calFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
+    } else {
+      var _calFitDashed = calFitDashed(total, bs, be, w, bw, bw * 3, Math.max(1, bw * 0.25), bw * 2),
+          n = _calFitDashed.n,
+          ps = _calFitDashed.ps,
+          pd = _calFitDashed.pd;
+
+      if (n === 1) {
+        return calFitDashed(total, bs, be, w, bw, bw, Math.max(1, bw * 0.25), bw * 2);
+      } // 降级为dotted
+
+
+      return {
+        n: n,
+        ps: ps,
+        pd: pd
+      };
+    }
+  }
+
+  var border = {
+    calDashed: calDashed
+  };
+
+  function renderBorder(renderMode, points, color, ctx, xom) {
+    if (renderMode === mode.CANVAS) {
+      points.forEach(function (point) {
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.moveTo(point[0], point[1]);
+
+        for (var i = 2, len = point.length; i < len; i += 2) {
+          ctx.lineTo(point[i], point[i + 1]);
+        }
+
+        ctx.fill();
+        ctx.closePath();
+      });
+    } else if (renderMode === mode.SVG) {
+      var s = '';
+      points.forEach(function (point) {
+        s += "M ".concat(point[0], " ").concat(point[1]);
+
+        for (var i = 2, len = point.length; i < len; i += 2) {
+          s += "L ".concat(point[i], " ").concat(point[i + 1], " ");
+        }
+      });
+      xom.addBorder([['d', s], ['fill', color]]);
+    }
   }
 
   var Xom =
@@ -1223,6 +1474,85 @@
         return 0;
       }
     }, {
+      key: "__preLayout",
+      value: function __preLayout(data) {
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h;
+        this.__x = x;
+        this.__y = y;
+        var style = this.style,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            mrw = this.mrw,
+            mbw = this.mbw,
+            plw = this.plw,
+            ptw = this.ptw,
+            prw = this.prw,
+            pbw = this.pbw;
+        var width = style.width,
+            height = style.height,
+            borderTopWidth = style.borderTopWidth,
+            borderRightWidth = style.borderRightWidth,
+            borderBottomWidth = style.borderBottomWidth,
+            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定宽高度
+
+        var fixedWidth;
+        var fixedHeight;
+
+        if (width && width.unit !== unit.AUTO) {
+          fixedWidth = true;
+
+          switch (width.unit) {
+            case unit.PX:
+              w = width.value;
+              break;
+
+            case unit.PERCENT:
+              w *= width.value * 0.01;
+              break;
+          }
+        }
+
+        if (height && height.unit !== unit.AUTO) {
+          fixedHeight = true;
+
+          switch (height.unit) {
+            case unit.PX:
+              h = height.value;
+              break;
+
+            case unit.PERCENT:
+              h *= height.value * 0.01;
+              break;
+          }
+        } // margin/padding/border影响x和y和尺寸
+
+
+        x += borderLeftWidth.value + mlw + plw;
+        data.x = x;
+        y += borderTopWidth.value + mtw + ptw;
+        data.y = y;
+
+        if (width.unit === unit.AUTO) {
+          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+        }
+
+        if (height.unit === unit.AUTO) {
+          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        }
+
+        return {
+          fixedWidth: fixedWidth,
+          fixedHeight: fixedHeight,
+          x: x,
+          y: y,
+          w: w,
+          h: h
+        };
+      }
+    }, {
       key: "render",
       value: function render(renderMode) {
         this.__renderMode = renderMode;
@@ -1332,26 +1662,7 @@
 
           var ow = _x - x;
           var oh = _y - y;
-          var tfo = [];
-          transformOrigin.forEach(function (item, i) {
-            if (item.unit === unit.PX) {
-              tfo.push(item.value);
-            } else if (item.unit === unit.PERCENT) {
-              tfo.push((i ? y : x) + item.value * (i ? oh : ow) * 0.01);
-            } else if (item.value === 'left') {
-              tfo.push(x);
-            } else if (item.value === 'right') {
-              tfo.push(_x);
-            } else if (item.value === 'top') {
-              tfo.push(y);
-            } else if (item.value === 'bottom') {
-              tfo.push(y + _y);
-            } else {
-              tfo.push(i ? y + oh * 0.5 : x + ow * 0.5);
-            }
-          });
-          this.__tox = tfo[0];
-          this.__toy = tfo[1];
+          var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
           var matrix = this.__matrix = tf.calMatrix(list, tfo[0], tfo[1]);
 
@@ -1367,87 +1678,23 @@
         if (bgg) {
           var k = bgg.k,
               v = bgg.v;
+          var cx = x2 + iw * 0.5;
+          var cy = y2 + ih * 0.5;
 
           if (k === 'linear') {
-            var deg = 180;
-
-            if (v[0] === 'to top') {
-              deg = 0;
-            } else if (v[0] === 'to top right') {
-              deg = 45;
-            } else if (v[0] === 'to right') {
-              deg = 90;
-            } else if (v[0] === 'to bottom right') {
-              deg = 135;
-            } else if (v[0] === 'to bottom') ; else if (v[0] === 'to bottom left') {
-              deg = 225;
-            } else if (v[0] === 'to left') {
-              deg = 270;
-            } else if (v[0] === 'to top left') {
-              deg = 315;
-            } // 数字角度，没有的话取默认角度
-            else {
-                var match = /([\d.]+)deg/.exec(v[0]);
-
-                if (match) {
-                  deg = parseFloat(match[1]);
-                } else {
-                  v.unshift(null);
-                }
-              } // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
-
+            var deg = gradient.getLinearDeg(v); // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
 
             var r = util.r2d(deg);
             var length = Math.abs(iw * Math.sin(r)) + Math.abs(ih * Math.cos(r));
-            var half = length * 0.5;
 
-            if (deg >= 360) {
-              deg = deg % 360;
-            }
+            var _gradient$calLinearCo = gradient.calLinearCoords(deg, length * 0.5, cx, cy),
+                _gradient$calLinearCo2 = _slicedToArray(_gradient$calLinearCo, 4),
+                xx0 = _gradient$calLinearCo2[0],
+                yy0 = _gradient$calLinearCo2[1],
+                xx1 = _gradient$calLinearCo2[2],
+                yy1 = _gradient$calLinearCo2[3];
 
-            while (deg < 0) {
-              deg += 360;
-            }
-
-            var cx = x2 + iw * 0.5;
-            var cy = y2 + ih * 0.5;
-            var xx0 = x3;
-            var yy0 = y3;
-            var xx1 = x2;
-            var yy1 = y2;
-
-            if (deg >= 270) {
-              var _r = util.r2d(360 - deg);
-
-              xx0 = cx + Math.sin(_r) * half;
-              yy0 = cy + Math.cos(_r) * half;
-              xx1 = cx - Math.sin(_r) * half;
-              yy1 = cy - Math.cos(_r) * half;
-            } else if (deg >= 180) {
-              var _r2 = util.r2d(deg - 180);
-
-              xx0 = cx + Math.sin(_r2) * half;
-              yy0 = cy - Math.cos(_r2) * half;
-              xx1 = cx - Math.sin(_r2) * half;
-              yy1 = cy + Math.cos(_r2) * half;
-            } else if (deg >= 90) {
-              var _r3 = util.r2d(180 - deg);
-
-              xx0 = cx - Math.sin(_r3) * half;
-              yy0 = cy - Math.cos(_r3) * half;
-              xx1 = cx + Math.sin(_r3) * half;
-              yy1 = cy + Math.cos(_r3) * half;
-            } else if (deg >= 0) {
-              var _r4 = util.r2d(deg);
-
-              xx0 = cx - Math.sin(_r4) * half;
-              yy0 = cy + Math.cos(_r4) * half;
-              xx1 = cx + Math.sin(_r4) * half;
-              yy1 = cy - Math.cos(_r4) * half;
-            } // 计算colorStop
-
-
-            var _list = getColorStop(v, length);
+            var _list = gradient.getColorStop(v, length);
 
             if (renderMode === mode.CANVAS) {
               var lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
@@ -1470,164 +1717,24 @@
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(uuid, ")")]]);
             }
           } else if (k === 'radial') {
-            var _cx = x2 + iw * 0.5;
-
-            var _cy = y2 + ih * 0.5;
-
-            var size = 'farthest-corner';
-
-            var _r5; // 半径
-            // 申明了形状、圆心、size等
+            var _r = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3); // 计算colorStop
 
 
-            if (/circle|ellipse|at|closest|farthest/i.test(v[0]) || !/#[0-9a-f]{3,6}/i.test(v[0]) && !/\brgba?\(.*\)/i.test(v[0])) {
-              var i = v[0].indexOf('at');
-              var at;
-              var s;
-
-              if (i > -1) {
-                at = v[0].slice(i + 2);
-                s = v[0].slice(0, i - 1);
-              }
-
-              s = /(closest|farthest)-(side|corner)/.exec(s);
-
-              if (s) {
-                size = s[0];
-              } // 指定宽高后size失效，置null标识
-              else {
-                  s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
-
-                  if (s) {
-                    size = null;
-
-                    if (s[1].indexOf('px') > -1) {
-                      _r5 = parseFloat(s[1]) * 0.5;
-                    } else {
-                      _r5 = parseFloat(s[1]) * iw * 0.005;
-                    }
-                  }
-                }
-
-              if (at) {
-                s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
-
-                if (s) {
-                  if (s[1].indexOf('px') > -1) {
-                    _cx = x2 + parseFloat(s[1]);
-                  } else {
-                    _cx = x2 + parseFloat(s[1]) * iw * 0.01;
-                  } // y可以省略，此时等同于x
+            var _list2 = gradient.getColorStop(v, _r * 2); // 超限情况等同于只显示end的bgc
 
 
-                  var by = s[2] || s[1];
-
-                  if (by.indexOf('px') > -1) {
-                    _cy = y2 + parseFloat(by);
-                  } else {
-                    _cy = y2 + parseFloat(by) * ih * 0.01;
-                  }
-                }
-              }
-            } else {
-              v.unshift(null);
-            }
-
-            if (size) {
-              if (size === 'closest-side') {
-                // 在边外特殊情况只有end颜色填充
-                if (_cx <= x2 || _cx >= x3 || _cy <= y2 || _cy >= y3) {
-                  _r5 = 0;
-                } else {
-                  var xl;
-                  var yl;
-
-                  if (_cx < x2 + iw * 0.5) {
-                    xl = _cx - x2;
-                  } else {
-                    xl = x3 - _cx;
-                  }
-
-                  if (_cy < y2 + ih * 0.5) {
-                    yl = _cy - y2;
-                  } else {
-                    yl = y3 - _cy;
-                  }
-
-                  _r5 = Math.min(xl, yl);
-                }
-              } else if (size === 'closest-corner') {
-                var _xl;
-
-                var _yl;
-
-                if (_cx < x2 + iw * 0.5) {
-                  _xl = _cx - x2;
-                } else {
-                  _xl = x3 - _cx;
-                }
-
-                if (_cy < y2 + ih * 0.5) {
-                  _yl = _cy - y2;
-                } else {
-                  _yl = y3 - _cy;
-                }
-
-                _r5 = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
-              } else if (size === 'farthest-side') {
-                if (_cx <= x2) {
-                  _r5 = x2 - _cx + iw;
-                } else if (_cx >= x3) {
-                  _r5 = _cx - x3 + iw;
-                } else if (_cy <= y2) {
-                  _r5 = y2 - _cy + ih;
-                } else if (_cx >= y3) {
-                  _r5 = _cy - y3 + ih;
-                } else {
-                  var _xl2 = Math.max(x3 - _cx, _cx - x2);
-
-                  var _yl2 = Math.max(y3 - _cy, _cy - y2);
-
-                  _r5 = Math.max(_xl2, _yl2);
-                }
-              } // 默认farthest-corner
-              else {
-                  var _xl3;
-
-                  var _yl3;
-
-                  if (_cx < x2 + iw * 0.5) {
-                    _xl3 = x3 - _cx;
-                  } else {
-                    _xl3 = _cx - x2;
-                  }
-
-                  if (_cy < y2 + ih * 0.5) {
-                    _yl3 = y3 - _cy;
-                  } else {
-                    _yl3 = _cy - y2;
-                  }
-
-                  _r5 = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
-                }
-            } // 计算colorStop
-
-
-            var _list2 = getColorStop(v, _r5 * 2); // 超限情况等同于只显示end的bgc
-
-
-            if (_r5 <= 0) {
+            if (_r <= 0) {
               var end = _list2[_list2.length - 1];
               end[1] = 0;
               _list2 = [end];
-              _cx = x2;
-              _cy = y2; // 肯定大于最长直径
+              cx = x2;
+              cy = y2; // 肯定大于最长直径
 
-              _r5 = iw + ih;
+              _r = iw + ih;
             }
 
             if (renderMode === mode.CANVAS) {
-              var rg = ctx.createRadialGradient(_cx, _cy, 0, _cx, _cy, _r5);
+              var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, _r);
 
               _list2.forEach(function (item) {
                 rg.addColorStop(item[1], item[0]);
@@ -1641,7 +1748,7 @@
             } else if (renderMode === mode.SVG) {
               var _uuid = this.defs.add({
                 tagName: 'radialGradient',
-                props: [['cx', _cx], ['cy', _cy], ['r', _r5]],
+                props: [['cx', cx], ['cy', cy], ['r', _r]],
                 stop: _list2
               });
 
@@ -1666,10 +1773,10 @@
 
           if (['dashed', 'dotted'].indexOf(bts) > -1) {
             // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _getDashed = getDashed(bts, x1, x2, x3, x4, btw),
-                n = _getDashed.n,
-                ps = _getDashed.ps,
-                pd = _getDashed.pd;
+            var _border$calDashed = border.calDashed(bts, x1, x2, x3, x4, btw),
+                n = _border$calDashed.n,
+                ps = _border$calDashed.ps,
+                pd = _border$calDashed.pd;
 
             if (n <= 1) {
               points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
@@ -1677,11 +1784,11 @@
               var deg1 = Math.atan(btw / blw);
               var deg2 = Math.atan(btw / brw);
 
-              for (var _i6 = 0; _i6 < n; _i6++) {
+              for (var i = 0; i < n; i++) {
                 // 最后一个可能没有到底，延长之
-                var isLast = _i6 === n - 1;
+                var isLast = i === n - 1;
 
-                var _xx = _i6 ? x1 + ps * _i6 + pd * _i6 : x1;
+                var _xx = i ? x1 + ps * i + pd * i : x1;
 
                 var xx4 = _xx + ps;
 
@@ -1765,10 +1872,10 @@
 
           if (['dashed', 'dotted'].indexOf(brs) > -1) {
             // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _getDashed2 = getDashed(brs, y1, y2, y3, y4, brw),
-                _n = _getDashed2.n,
-                _ps = _getDashed2.ps,
-                _pd = _getDashed2.pd;
+            var _border$calDashed2 = border.calDashed(brs, y1, y2, y3, y4, brw),
+                _n = _border$calDashed2.n,
+                _ps = _border$calDashed2.ps,
+                _pd = _border$calDashed2.pd;
 
             if (_n <= 1) {
               _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
@@ -1777,11 +1884,11 @@
 
               var _deg2 = Math.atan(brw / bbw);
 
-              for (var _i7 = 0; _i7 < _n; _i7++) {
+              for (var _i = 0; _i < _n; _i++) {
                 // 最后一个可能没有到底，延长之
-                var _isLast = _i7 === _n - 1;
+                var _isLast = _i === _n - 1;
 
-                var _yy2 = _i7 ? y1 + _ps * _i7 + _pd * _i7 : y1;
+                var _yy2 = _i ? y1 + _ps * _i + _pd * _i : y1;
 
                 var yy4 = _yy2 + _ps;
 
@@ -1866,20 +1973,20 @@
 
           if (['dashed', 'dotted'].indexOf(bbs) > -1) {
             // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _getDashed3 = getDashed(bbs, x1, x2, x3, x4, bbw),
-                _n2 = _getDashed3.n,
-                _ps2 = _getDashed3.ps,
-                _pd2 = _getDashed3.pd;
+            var _border$calDashed3 = border.calDashed(bbs, x1, x2, x3, x4, bbw),
+                _n2 = _border$calDashed3.n,
+                _ps2 = _border$calDashed3.ps,
+                _pd2 = _border$calDashed3.pd;
 
             var _deg3 = Math.atan(bbw / blw);
 
             var _deg4 = Math.atan(bbw / brw);
 
-            for (var _i8 = 0; _i8 < _n2; _i8++) {
+            for (var _i2 = 0; _i2 < _n2; _i2++) {
               // 最后一个可能没有到底，延长之
-              var _isLast2 = _i8 === _n2 - 1;
+              var _isLast2 = _i2 === _n2 - 1;
 
-              var _xx3 = _i8 ? x1 + _ps2 * _i8 + _pd2 * _i8 : x1;
+              var _xx3 = _i2 ? x1 + _ps2 * _i2 + _pd2 * _i2 : x1;
 
               var _xx4 = _xx3 + _ps2;
 
@@ -1964,10 +2071,10 @@
 
           if (['dashed', 'dotted'].indexOf(bls) > -1) {
             // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _getDashed4 = getDashed(bls, y1, y2, y3, y4, blw),
-                _n3 = _getDashed4.n,
-                _ps3 = _getDashed4.ps,
-                _pd3 = _getDashed4.pd;
+            var _border$calDashed4 = border.calDashed(bls, y1, y2, y3, y4, blw),
+                _n3 = _border$calDashed4.n,
+                _ps3 = _border$calDashed4.ps,
+                _pd3 = _border$calDashed4.pd;
 
             if (_n3 <= 1) {
               _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
@@ -1976,11 +2083,11 @@
 
               var _deg6 = Math.atan(blw / bbw);
 
-              for (var _i9 = 0; _i9 < _n3; _i9++) {
+              for (var _i3 = 0; _i3 < _n3; _i3++) {
                 // 最后一个可能没有到底，延长之
-                var _isLast3 = _i9 === _n3 - 1;
+                var _isLast3 = _i3 === _n3 - 1;
 
-                var _yy5 = _i9 ? y1 + _ps3 * _i9 + _pd3 * _i9 : y1;
+                var _yy5 = _i3 ? y1 + _ps3 * _i3 + _pd3 * _i3 : y1;
 
                 var _yy6 = _yy5 + _ps3;
 
@@ -2112,8 +2219,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-            var _child = children[_i10];
+          for (var _i4 = children.length - 1; _i4 >= 0; _i4--) {
+            var _child = children[_i4];
 
             if (_child instanceof Xom && ['absolute', 'relative'].indexOf(_child.style.position) === -1) {
               if (_child.__emitEvent(e)) {
@@ -3212,52 +3319,11 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data) {
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
-        this.__width = w;
-        var style = this.style;
-        var width = style.width,
-            height = style.height,
-            borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+        var _this$__preLayout = this.__preLayout(data),
+            fixedHeight = _this$__preLayout.fixedHeight,
+            w = _this$__preLayout.w,
+            h = _this$__preLayout.h;
 
-        var fixedHeight;
-
-        if (width && width.unit !== unit.AUTO) {
-          switch (width.unit) {
-            case unit.PX:
-              w = width.value;
-              break;
-          }
-        }
-
-        if (height && height.unit !== unit.AUTO) {
-          fixedHeight = true;
-
-          switch (height.unit) {
-            case unit.PX:
-              h = height.value;
-              break;
-
-            case unit.PERCENT:
-              h *= height.value * 0.01;
-              break;
-          }
-        } // border影响x和y和尺寸
-
-
-        x += borderLeftWidth.value;
-        data.x = x;
-        y += borderTopWidth.value;
-        data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value;
-        h -= borderTopWidth.value + borderBottomWidth.value;
         this.__width = w;
         this.__height = fixedHeight ? h : 0;
       }
@@ -3270,50 +3336,14 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data) {
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
-        var style = this.style;
-        var width = style.width,
-            height = style.height,
-            borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth; // 除了auto外都是固定高度
+        var _this$__preLayout2 = this.__preLayout(data),
+            fixedWidth = _this$__preLayout2.fixedWidth,
+            fixedHeight = _this$__preLayout2.fixedHeight,
+            x = _this$__preLayout2.x,
+            y = _this$__preLayout2.y,
+            w = _this$__preLayout2.w,
+            h = _this$__preLayout2.h; // 元素的width不能超过父元素w
 
-        var fixedWidth;
-        var fixedHeight;
-
-        if (width && width.unit !== unit.AUTO) {
-          fixedWidth = true;
-
-          switch (width.unit) {
-            case unit.PX:
-              w = width.value;
-              break;
-          }
-        }
-
-        if (height && height.unit !== unit.AUTO) {
-          fixedHeight = true;
-
-          switch (height.unit) {
-            case unit.PX:
-              h = height.value;
-              break;
-          }
-        } // border影响x和y
-
-
-        x += borderLeftWidth.value;
-        data.x = x;
-        y += borderTopWidth.value;
-        data.y = y;
-        w -= borderLeftWidth.value + borderRightWidth.value;
-        h -= borderTopWidth.value + borderBottomWidth.value; // 元素的width不能超过父元素w
 
         this.__width = fixedWidth ? w : x - data.x;
         this.__height = fixedHeight ? h : y - data.y;
@@ -3712,75 +3742,20 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data) {
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
-        this.__width = w;
         var flowChildren = this.flowChildren,
             style = this.style,
-            lineGroups = this.lineGroups,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw;
+            lineGroups = this.lineGroups;
         var width = style.width,
-            height = style.height,
             marginLeft = style.marginLeft,
             marginRight = style.marginRight,
-            borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            textAlign = style.textAlign; // 除了auto外都是固定高度
+            textAlign = style.textAlign;
 
-        var fixedHeight;
-
-        if (width && width.unit !== unit.AUTO) {
-          switch (width.unit) {
-            case unit.PX:
-              w = width.value;
-              break;
-
-            case unit.PERCENT:
-              w *= width.value * 0.01;
-              break;
-          }
-        }
-
-        if (height && height.unit !== unit.AUTO) {
-          fixedHeight = true;
-
-          switch (height.unit) {
-            case unit.PX:
-              h = height.value;
-              break;
-
-            case unit.PERCENT:
-              h *= height.value * 0.01;
-              break;
-          }
-        } // margin/padding/border影响x和y和尺寸
-
-
-        x += borderLeftWidth.value + mlw + plw;
-        data.x = x;
-        y += borderTopWidth.value + mtw + ptw;
-        data.y = y;
-
-        if (width.unit === unit.AUTO) {
-          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-        }
-
-        if (height.unit === unit.AUTO) {
-          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-        } // 递归布局，将inline的节点组成lineGroup一行
+        var _this$__preLayout = this.__preLayout(data),
+            fixedHeight = _this$__preLayout.fixedHeight,
+            x = _this$__preLayout.x,
+            y = _this$__preLayout.y,
+            w = _this$__preLayout.w,
+            h = _this$__preLayout.h; // 递归布局，将inline的节点组成lineGroup一行
 
 
         var lineGroup = new LineGroup(x, y);
@@ -3932,77 +3907,21 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data) {
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
-        this.__width = w;
         var flowChildren = this.flowChildren,
-            style = this.style,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw;
-        var width = style.width,
-            height = style.height,
+            style = this.style;
+        var marginLeft = style.marginLeft,
+            marginRight = style.marginRight,
             flexDirection = style.flexDirection,
-            borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth,
             justifyContent = style.justifyContent,
-            alignItems = style.alignItems; // 除了auto外都是固定高度
+            alignItems = style.alignItems;
 
-        var fixedWidth;
-        var fixedHeight;
-
-        if (width && width.unit !== unit.AUTO) {
-          fixedWidth = true;
-
-          switch (width.unit) {
-            case unit.PX:
-              w = width.value;
-              break;
-
-            case unit.PERCENT:
-              w *= width.value * 0.01;
-              break;
-          }
-        }
-
-        if (height && height.unit !== unit.AUTO) {
-          fixedHeight = true;
-
-          switch (height.unit) {
-            case unit.PX:
-              h = height.value;
-              break;
-
-            case unit.PERCENT:
-              h *= height.value * 0.01;
-              break;
-          }
-        } // margin/padding/border影响x和y和尺寸
-
-
-        x += borderLeftWidth.value + mlw + plw;
-        data.x = x;
-        y += borderTopWidth.value + mtw + ptw;
-        data.y = y;
-
-        if (width.unit === unit.AUTO) {
-          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-        }
-
-        if (height.unit === unit.AUTO) {
-          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-        }
+        var _this$__preLayout2 = this.__preLayout(data),
+            fixedWidth = _this$__preLayout2.fixedWidth,
+            fixedHeight = _this$__preLayout2.fixedHeight,
+            x = _this$__preLayout2.x,
+            y = _this$__preLayout2.y,
+            w = _this$__preLayout2.w,
+            h = _this$__preLayout2.h;
 
         var isDirectionRow = flexDirection === 'row'; // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
 
@@ -4134,32 +4053,32 @@
 
           if (item instanceof Xom) {
             var _style2 = item.style,
-                _mlw = item.mlw,
-                _mtw = item.mtw,
-                _mrw = item.mrw,
-                _mbw = item.mbw,
-                _plw = item.plw,
-                _ptw = item.ptw,
-                _prw = item.prw,
-                _pbw = item.pbw,
+                mlw = item.mlw,
+                mtw = item.mtw,
+                mrw = item.mrw,
+                mbw = item.mbw,
+                plw = item.plw,
+                ptw = item.ptw,
+                prw = item.prw,
+                pbw = item.pbw,
                 _item$style3 = item.style,
                 display = _item$style3.display,
                 _flexDirection2 = _item$style3.flexDirection,
                 _width2 = _item$style3.width,
-                _height = _item$style3.height,
-                _borderTopWidth = _item$style3.borderTopWidth,
-                _borderRightWidth = _item$style3.borderRightWidth,
-                _borderBottomWidth = _item$style3.borderBottomWidth,
-                _borderLeftWidth = _item$style3.borderLeftWidth;
+                height = _item$style3.height,
+                borderTopWidth = _item$style3.borderTopWidth,
+                borderRightWidth = _item$style3.borderRightWidth,
+                borderBottomWidth = _item$style3.borderBottomWidth,
+                borderLeftWidth = _item$style3.borderLeftWidth;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
               if (display === 'inline') {
                 _style2.display = 'block';
               } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && _height.unit === unit.AUTO) {
-                  _height.value = h;
-                  _height.unit = unit.PX;
+              else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && height.unit === unit.AUTO) {
+                  height.value = h;
+                  height.unit = unit.PX;
                 }
 
               item.__layout({
@@ -4189,15 +4108,15 @@
 
             if (isOverflow && shrink) {
               if (isDirectionRow) {
-                item.__width = main - _mlw - _mrw - _plw - _prw - _borderLeftWidth.value - _borderRightWidth.value;
+                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
               } else {
-                item.__height = main - _mtw - _mbw - _ptw - _pbw - _borderTopWidth.value - _borderBottomWidth.value;
+                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
               }
             } else if (!isOverflow && grow) {
               if (isDirectionRow) {
-                item.__width = main - _mlw - _mrw - _plw - _prw - _borderLeftWidth.value - _borderRightWidth.value;
+                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
               } else {
-                item.__height = main - _mtw - _mbw - _ptw - _pbw - _borderTopWidth.value - _borderBottomWidth.value;
+                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
               }
             }
           } else {
@@ -4286,7 +4205,7 @@
               }
             } else {
               if (style.width.unit === unit.AUTO) {
-                item.__width = maxCross - mlw - mrw - plw - prw - borderRightWidth.value - borderLeftWidth.value;
+                item.__width = maxCross - mlw - mrw - plw - prw - style.borderRightWidth.value - style.borderLeftWidth.value;
               }
             }
           });
@@ -4310,7 +4229,15 @@
 
         this.__width = w;
         this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y;
+        this.__flowY = y; // 处理margin:xx auto居中对齐
+
+        if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+          var ow = this.outerWidth;
+
+          if (ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5);
+          }
+        }
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
 
     }, {
@@ -4318,78 +4245,22 @@
       value: function __layoutInline(data) {
         var _this4 = this;
 
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
         var maxX = x;
         var flowChildren = this.flowChildren,
             style = this.style,
-            lineGroups = this.lineGroups,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw;
+            lineGroups = this.lineGroups;
         var width = style.width,
-            height = style.height,
             marginLeft = style.marginLeft,
             marginRight = style.marginRight,
-            borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            textAlign = style.textAlign; // 除了auto外都是固定高度
+            textAlign = style.textAlign;
 
-        var fixedWidth;
-        var fixedHeight;
-
-        if (width && width.unit !== unit.AUTO) {
-          fixedWidth = true;
-
-          switch (width.unit) {
-            case unit.PX:
-              w = width.value;
-              break;
-
-            case unit.PERCENT:
-              w *= width.value * 0.01;
-              break;
-          }
-        }
-
-        if (height && height.unit !== unit.AUTO) {
-          fixedHeight = true;
-
-          switch (height.unit) {
-            case unit.PX:
-              h = height.value;
-              break;
-
-            case unit.PERCENT:
-              h *= height.value * 0.01;
-              break;
-          }
-        } // margin/padding/border影响x和y和尺寸
-
-
-        x += borderLeftWidth.value + mlw + plw;
-        data.x = x;
-        y += borderTopWidth.value + mtw + ptw;
-        data.y = y;
-
-        if (width.unit === unit.AUTO) {
-          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
-        }
-
-        if (height.unit === unit.AUTO) {
-          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-        } // 递归布局，将inline的节点组成lineGroup一行
+        var _this$__preLayout3 = this.__preLayout(data),
+            fixedWidth = _this$__preLayout3.fixedWidth,
+            fixedHeight = _this$__preLayout3.fixedHeight,
+            x = _this$__preLayout3.x,
+            y = _this$__preLayout3.y,
+            w = _this$__preLayout3.w,
+            h = _this$__preLayout3.h; // 递归布局，将inline的节点组成lineGroup一行
 
 
         var lineGroup = new LineGroup(x, y);
@@ -4543,14 +4414,14 @@
             style = this.style,
             mlw = this.mlw,
             mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
             plw = this.plw,
             ptw = this.ptw,
             prw = this.prw,
             pbw = this.pbw;
         var borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth;
+        x += mlw + borderLeftWidth.value;
+        y += mtw + borderTopWidth.value;
         var pw = width + plw + prw;
         var ph = height + ptw + pbw; // 递归进行，遇到absolute/relative的设置新容器
 
@@ -4561,9 +4432,7 @@
         }); // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
-          var mtw = item.mtw,
-              mlw = item.mlw,
-              style = item.style,
+          var style = item.style,
               _item$style4 = item.style,
               left = _item$style4.left,
               top = _item$style4.top,
@@ -4574,50 +4443,46 @@
           var x2, y2, w2, h2; // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
 
           if (left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
-            w2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - x2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - x2;
+            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
+            w2 = right.unit === unit.PX ? x + pw - right.value - x2 : x + pw - width * right.value * 0.01 - x2;
           } else if (left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + mlw + borderLeftWidth.value + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
+            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
             w2 = width2.unit === unit.PX ? width2.value : width;
             var widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-            x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - widthPx : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - widthPx;
+            x2 = right.unit === unit.PX ? x + pw - right.value - widthPx : x + pw - width * right.value * 0.01 - widthPx;
           } else if (left.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + mlw + borderLeftWidth.value + width * left.value * 0.01;
+            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
             w2 = item.__calAbs(true);
           } else if (right.unit !== unit.AUTO) {
             w2 = item.__calAbs(true);
-            x2 = right.unit === unit.PX ? x + mlw + borderLeftWidth.value + pw - right.value - w2 : x + mlw + borderLeftWidth.value + pw - width * right.value * 0.01 - w2;
+            x2 = right.unit === unit.PX ? x + pw - right.value - w2 : x + pw - width * right.value * 0.01 - w2;
           } else if (width2.unit !== unit.AUTO) {
-            x2 = x + mlw + borderLeftWidth.value;
+            x2 = x;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else {
-            x2 = x + mlw + borderLeftWidth.value;
+            x2 = x;
             w2 = item.__calAbs(true);
           } // top/bottom/height优先级同上
 
 
           if (top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
-            h2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - y2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - y2;
-            style.height = {
-              value: h2,
-              unit: unit.PX
-            };
+            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
+            h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
           } else if (top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
+            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else if (bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
             h2 = height2.unit === unit.PX ? height2.value : height;
             var heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-            y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - heightPx : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - heightPx;
+            y2 = bottom.unit === unit.PX ? y + ph - bottom.value - heightPx : y + ph - height * bottom.value * 0.01 - heightPx;
           } else if (top.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + mtw + borderTopWidth.value + height * top.value * 0.01;
+            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = item.__calAbs();
           } else if (bottom.unit !== unit.AUTO) {
             h2 = item.__calAbs();
-            y2 = bottom.unit === unit.PX ? y + mtw + borderTopWidth.value + ph - bottom.value - h2 : y + mtw + borderTopWidth.value + ph - height * bottom.value * 0.01 - h2;
+            y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
           } else if (height2.unit !== unit.AUTO) {
             y2 = flowY + mtw + borderTopWidth.value;
             h2 = height2.unit === unit.PX ? height2.value : height;

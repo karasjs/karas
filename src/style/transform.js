@@ -1,29 +1,36 @@
 import unit from '../style/unit';
 import util from '../util';
 
-function calMatrix(transform, ox, oy) {
+function calMatrix(transform, ox, oy, ow, oh) {
   let matrix = [
     [1, 0, 0],
     [0, 1, 0],
     [0, 0, 1]
   ];
+  let deg = 0;
   transform.forEach(item => {
     let [k, v] = item;
     if(k === 'translateX') {
+      let dx = v * Math.cos(deg);
+      let dy = v * Math.sin(deg);
       matrix = multiply(matrix, [
         [1, 0, 0],
         [0, 1, 0],
-        [v, 0, 1]
+        [dx, dy, 1]
       ]);
-      ox += v;
+      ox += dx;
+      oy += dy;
     }
     else if(k === 'translateY') {
+      let dx = -v * Math.cos(deg);
+      let dy = v * Math.sin(deg);
       matrix = multiply(matrix, [
         [1, 0, 0],
         [0, 1, 0],
-        [0, v, 1]
+        [dx, dy, 1]
       ]);
-      oy += v;
+      ox += dx;
+      oy += dy;
     }
     else if(k === 'scaleX') {
       matrix = multiply(matrix, [
@@ -79,6 +86,7 @@ function calMatrix(transform, ox, oy) {
     }
     else if(k === 'rotate') {
       v = util.r2d(v);
+      deg += v;
       let sin = Math.sin(v);
       let cos = Math.cos(v);
       matrix = multiply(matrix, [

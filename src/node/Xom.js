@@ -283,7 +283,7 @@ class Xom extends Node {
       let oh = y4 - y;
       let tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
       let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-      let matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], x, y, ow, oh);
+      let matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], ow, oh);
       // 单位矩阵无需变换
       if(matrixSelf[0] !== 1
         || matrixSelf[1] !== 0

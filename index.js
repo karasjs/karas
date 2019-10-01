@@ -587,19 +587,28 @@
     hash2arr: hash2arr
   };
 
-  function calMatrix(transform, ox, oy) {
+  function calMatrix(transform, ox, oy, ow, oh) {
     var matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    var deg = 0;
     transform.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
 
       if (k === 'translateX') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]);
-        ox += v;
+        var dx = v * Math.cos(deg);
+        var dy = v * Math.sin(deg);
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [dx, dy, 1]]);
+        ox += dx;
+        oy += dy;
       } else if (k === 'translateY') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]);
-        oy += v;
+        var _dx = -v * Math.cos(deg);
+
+        var _dy = v * Math.sin(deg);
+
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [_dx, _dy, 1]]);
+        ox += _dx;
+        oy += _dy;
       } else if (k === 'scaleX') {
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, 0, 1]]);
         matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);
@@ -620,6 +629,7 @@
         matrix = multiply(matrix, [[1, _tan, 0], [0, 1, 0], [0, 0, 1]]);
       } else if (k === 'rotate') {
         v = util.r2d(v);
+        deg += v;
         var sin = Math.sin(v);
         var cos = Math.cos(v);
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, -oy, 1]]);
@@ -1696,7 +1706,7 @@
           var oh = _y - y;
           var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], x, y, ow, oh); // 单位矩阵无需变换
+          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], ow, oh); // 单位矩阵无需变换
 
           if (matrixSelf[0] !== 1 || matrixSelf[1] !== 0 || matrixSelf[2] !== 0 || matrixSelf[3] !== 1 || matrixSelf[4] !== 0 || matrixSelf[5] !== 0) {
             this.__matrixSelf = matrixSelf; // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算

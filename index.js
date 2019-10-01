@@ -595,11 +595,9 @@
           v = _item[1];
 
       if (k === 'translateX') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]);
-        ox += v;
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]); // ox += v;
       } else if (k === 'translateY') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]);
-        oy += v;
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]); // oy += v;
       } else if (k === 'scaleX') {
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, 0, 1]]);
         matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);
@@ -622,7 +620,13 @@
         v = util.r2d(v);
         var sin = Math.sin(v);
         var cos = Math.cos(v);
-        matrix = multiply(matrix, [[cos, sin, 0], [-sin, cos, 0], [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]]);
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, -oy, 1]]);
+        matrix = multiply(matrix, [[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]]);
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [ox, oy, 1]]); // matrix = multiply(matrix, [
+        //   [cos, sin, 0],
+        //   [-sin, cos, 0],
+        //   [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
+        // ]);
       }
     });
     return [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];

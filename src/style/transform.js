@@ -15,7 +15,7 @@ function calMatrix(transform, ox, oy, x, y, ow, oh) {
         [0, 1, 0],
         [v, 0, 1]
       ]);
-      ox += v;
+      // ox += v;
     }
     else if(k === 'translateY') {
       matrix = multiply(matrix, [
@@ -23,7 +23,7 @@ function calMatrix(transform, ox, oy, x, y, ow, oh) {
         [0, 1, 0],
         [0, v, 1]
       ]);
-      oy += v;
+      // oy += v;
     }
     else if(k === 'scaleX') {
       matrix = multiply(matrix, [
@@ -82,10 +82,25 @@ function calMatrix(transform, ox, oy, x, y, ow, oh) {
       let sin = Math.sin(v);
       let cos = Math.cos(v);
       matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [-ox, -oy, 1]
+      ]);
+      matrix = multiply(matrix, [
         [cos, sin, 0],
         [-sin, cos, 0],
-        [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
+        [0, 0, 1]
       ]);
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [ox, oy, 1]
+      ]);
+      // matrix = multiply(matrix, [
+      //   [cos, sin, 0],
+      //   [-sin, cos, 0],
+      //   [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
+      // ]);
     }
   });
   return [

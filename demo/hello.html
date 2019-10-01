@@ -8,18 +8,19 @@
 </head>
 <body>
 <div id="example"></div>
-<pre><code class="brush:jsx"></code></pre>
+<pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   karas.render(
     <canvas width="360" height="360">
-      <span style={{ fontSize: 50 }}>Hello </span>
-      <span>world!</span>
+      <span>Hello world!</span>
     </canvas>,
     '#example'
   );
 </script>
 <script src="sea.js"></script>
 <script src="../index.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
 <script>
   seajs.config({
       alias: {
@@ -32,16 +33,31 @@
       }]
   });
   define('fs', {});
-  seajs.use(['jssc', '../init', 'yurine'], function(jssc, karas, yurine) {
-    var code = document.querySelector('pre code');
-    var jsx = document.querySelector('script[type="text/jsx"]');
-    var source = jsx.textContent || jsx.text;
-    source = source.trim().replace(/\n[ ]{2}/g, '\n');
-    var text = document.createTextNode(source);
-    code.appendChild(text);
-    jssc.exec();
-    yurine.init();
-    karas.init();
+  seajs.use(['jssc'], function(jssc) {
+      var code = document.querySelector('pre code');
+      var jsx = document.querySelector('script[type="text/jsx"]');
+      var source = jsx.textContent || jsx.text;
+      source = source.trim().replace(/\n[ ]{2}/g, '\n');
+      var text = document.createTextNode(source);
+      code.appendChild(text);
+      jssc.exec();
+      var head = document.head || document.getElementsByTagName('head')[0];
+      var jsx = document.querySelectorAll('script');
+      for(var i = 0, len = jsx.length; i < len; i++) {
+          var node = jsx[i];
+          if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+              node.setAttribute('yurine', 1);
+              var code = node.textContent || node.text;
+              if(!code) {
+                  continue;
+              }
+              code = yurine.parse(code);
+              var script = document.createElement('script');
+              script.async = true;
+              script.text = code;
+              head.appendChild(script);
+          }
+      }
   });
 </script>
 </body>

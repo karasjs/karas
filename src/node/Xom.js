@@ -73,6 +73,7 @@ class Xom extends Node {
     this.__prw = 0;
     this.__pbw = 0;
     this.__plw = 0;
+    this.__matrix = null;
   }
 
   __layout(data) {
@@ -281,12 +282,30 @@ class Xom extends Node {
       let oh = y4 - y;
       let tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
       let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-      let matrix = this.__matrix = tf.calMatrix(list, tfo[0], tfo[1]);
-      if(renderMode === mode.CANVAS) {
-        // TODO: canvas递归transform处理
-        ctx.setTransform(...matrix);
-      } else if(renderMode === mode.SVG) {
-        this.addTransform(['matrix', matrix.join(',')]);
+      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      // 单位矩阵无需变换
+      if(matrix[0] !== 1
+        || matrix[1] !== 0
+        || matrix[2] !== 0
+        || matrix[3] !== 1
+        || matrix[4] !== 0
+        || matrix[5] !== 0) {
+        // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
+        let matrixSelf = matrix;
+        let parent = this.parent;
+        while(parent) {
+          if(parent.matrix) {
+            matrix = tf.mergeMatrix(matrix, parent.matrix);
+          }
+          parent = parent.parent;
+        }
+        this.__matrix = matrix;
+        if(renderMode === mode.CANVAS) {
+          ctx.setTransform(...matrix);
+        }
+        else if(renderMode === mode.SVG) {
+          this.addTransform(['matrix', matrixSelf.join(',')]);
+        }
       }
     }
     // 先渲染渐变，没有则背景色

@@ -588,55 +588,64 @@
   };
 
   function calMatrix(transform, ox, oy) {
-    var matrix = [1, 0, 0, 1, 0, 0];
-    var tx = 0;
-    var ty = 0;
-    var rd = 0;
-    var sdx = 0;
-    var sdy = 0;
-    var sx = 1;
-    var sy = 1;
-    var hasRotate;
+    var matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
     transform.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
 
       if (k === 'translateX') {
-        tx += v;
-
-        if (hasRotate) {
-          ox -= v;
-        }
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]);
       } else if (k === 'translateY') {
-        ty += v;
-
-        if (hasRotate) {
-          oy -= v;
-        }
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]);
       } else if (k === 'scaleX') {
-        sx *= v;
+        matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);
       } else if (k === 'scaleY') {
-        sy *= v;
+        matrix = multiply(matrix, [[1, 0, 0], [0, v, 0], [0, 0, 1]]);
       } else if (k === 'skewX') {
-        sdx += v;
+        v = util.r2d(v);
+        var tan = Math.tan(v);
+        matrix = multiply(matrix, [[1, 0, 0], [tan, 1, 0], [0, 0, 1]]);
       } else if (k === 'skewY') {
-        sdy += v;
+        v = util.r2d(v);
+
+        var _tan = Math.tan(v);
+
+        matrix = multiply(matrix, [[1, _tan, 0], [0, 1, 0], [0, 0, 1]]);
       } else if (k === 'rotate') {
-        rd += v;
-        hasRotate = true;
+        v = util.r2d(v);
+        var sin = Math.sin(v);
+        var cos = Math.cos(v);
+        matrix = multiply(matrix, [[cos, sin, 0], [-sin, cos, 0], [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]]);
       }
     });
-    rd = util.r2d(rd);
-    sdx = util.r2d(sdx);
-    sdy = util.r2d(sdy);
-    matrix[0] = sx * Math.cos(rd);
-    matrix[1] = sy * Math.sin(rd) + sy * Math.tan(sdy);
-    matrix[2] = -sx * Math.sin(rd) + sx * Math.tan(sdx);
-    matrix[3] = sy * Math.cos(rd);
-    matrix[4] = (-ox * Math.cos(rd) + oy * Math.sin(rd) + ox) * sx + tx + ox - sx * ox;
-    matrix[5] = (-ox * Math.sin(rd) - oy * Math.cos(rd) + oy) * sy + ty + oy - sy * oy;
-    return matrix;
+    return [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];
+  } // 矩阵a*b
+
+
+  function multiply(a, b) {
+    var res = [];
+    var m = a[0].length;
+    var p = a.length;
+    var n = b.length;
+
+    for (var i = 0; i < m; i++) {
+      var col = [];
+
+      for (var j = 0; j < n; j++) {
+        var s = 0;
+
+        for (var k = 0; k < p; k++) {
+          s += a[i][k] * b[k][j];
+        }
+
+        col.push(s);
+      }
+
+      res.push(col);
+    }
+
+    return res;
   }
 
   function transformPoint(matrix, x, y) {
@@ -695,6 +704,7 @@
   }
 
   function normalize(transform, ox, oy, w, h) {
+    var res = [];
     transform.forEach(function (item) {
       var _item2 = _slicedToArray(item, 2),
           k = _item2[0],
@@ -702,19 +712,21 @@
 
       if (k === 'translateX') {
         if (v.unit === unit.PERCENT) {
-          item[1] = v.value * w * 0.01;
+          res.push([item[0], v.value * w * 0.01]);
         } else {
-          item[1] = v.value;
+          res.push([item[0], item[1].value]);
         }
       } else if (k === 'translateY') {
         if (v.unit === unit.PERCENT) {
-          item[1] = v.value * h * 0.01;
+          res.push([item[0], v.value * h * 0.01]);
         } else {
-          item[1] = v.value;
+          res.push([item[0], item[1].value]);
         }
+      } else {
+        res.push([item[0], item[1]]);
       }
     });
-    return transform;
+    return res;
   }
 
   function getOrigin(transformOrigin, x, y, w, h) {
@@ -739,11 +751,17 @@
     return tfo;
   }
 
+  function mergeMatrix(a, b) {
+    var matrix = multiply([[a[0], a[1], 0], [a[2], a[3], 0], [a[4], a[5], 1]], [[b[0], b[1], 0], [b[2], b[3], 0], [b[4], b[5], 1]]);
+    return [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];
+  }
+
   var tf = {
     calMatrix: calMatrix,
     pointInQuadrilateral: pointInQuadrilateral,
     normalize: normalize,
-    getOrigin: getOrigin
+    getOrigin: getOrigin,
+    mergeMatrix: mergeMatrix
   };
 
   function getLinearDeg(v) {
@@ -1404,6 +1422,7 @@
       _this.__prw = 0;
       _this.__pbw = 0;
       _this.__plw = 0;
+      _this.__matrix = null;
       return _this;
     }
 
@@ -1664,13 +1683,28 @@
           var oh = _y - y;
           var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrix = this.__matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+          var matrix = tf.calMatrix(list, tfo[0], tfo[1]); // 单位矩阵无需变换
 
-          if (renderMode === mode.CANVAS) {
-            // TODO: canvas递归transform处理
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-          } else if (renderMode === mode.SVG) {
-            this.addTransform(['matrix', matrix.join(',')]);
+          if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[2] !== 0 || matrix[3] !== 1 || matrix[4] !== 0 || matrix[5] !== 0) {
+            // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
+            var matrixSelf = matrix;
+            var parent = this.parent;
+
+            while (parent) {
+              if (parent.matrix) {
+                matrix = tf.mergeMatrix(matrix, parent.matrix);
+              }
+
+              parent = parent.parent;
+            }
+
+            this.__matrix = matrix;
+
+            if (renderMode === mode.CANVAS) {
+              ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+            } else if (renderMode === mode.SVG) {
+              this.addTransform(['matrix', matrixSelf.join(',')]);
+            }
           }
         } // 先渲染渐变，没有则背景色
 

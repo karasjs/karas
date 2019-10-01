@@ -2,56 +2,94 @@ import unit from '../style/unit';
 import util from '../util';
 
 function calMatrix(transform, ox, oy) {
-  let matrix = [1, 0, 0, 1, 0, 0];
-  let tx = 0;
-  let ty = 0;
-  let rd = 0;
-  let sdx = 0;
-  let sdy = 0;
-  let sx = 1;
-  let sy = 1;
-  let hasRotate;
+  let matrix = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
+  ];
   transform.forEach(item => {
     let [k, v] = item;
     if(k === 'translateX') {
-      tx += v;
-      if(hasRotate) {
-        ox -= v;
-      }
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [v, 0, 1]
+      ]);
     }
     else if(k === 'translateY') {
-      ty += v;
-      if(hasRotate) {
-        oy -= v;
-      }
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, v, 1]
+      ]);
     }
     else if(k === 'scaleX') {
-      sx *= v;
+      matrix = multiply(matrix, [
+        [v, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+      ]);
     }
     else if(k === 'scaleY') {
-      sy *= v;
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [0, v, 0],
+        [0, 0, 1]
+      ]);
     }
     else if(k === 'skewX') {
-      sdx += v;
+      v = util.r2d(v);
+      let tan = Math.tan(v);
+      matrix = multiply(matrix, [
+        [1, 0, 0],
+        [tan, 1, 0],
+        [0, 0, 1]
+      ]);
     }
     else if(k === 'skewY') {
-      sdy += v;
+      v = util.r2d(v);
+      let tan = Math.tan(v);
+      matrix = multiply(matrix, [
+        [1, tan, 0],
+        [0, 1, 0],
+        [0, 0, 1]
+      ]);
     }
     else if(k === 'rotate') {
-      rd += v;
-      hasRotate = true;
+      v = util.r2d(v);
+      let sin = Math.sin(v);
+      let cos = Math.cos(v);
+      matrix = multiply(matrix, [
+        [cos, sin, 0],
+        [-sin, cos, 0],
+        [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
+      ]);
     }
   });
-  rd = util.r2d(rd);
-  sdx = util.r2d(sdx);
-  sdy = util.r2d(sdy);
-  matrix[0] = sx * Math.cos(rd);
-  matrix[1] = sy * Math.sin(rd) + sy * Math.tan(sdy);
-  matrix[2] = -sx * Math.sin(rd) + sx * Math.tan(sdx);
-  matrix[3] = sy * Math.cos(rd);
-  matrix[4] = (-ox * Math.cos(rd) + oy * Math.sin(rd) + ox) * sx + tx + ox - sx * ox;
-  matrix[5] = (-ox * Math.sin(rd) - oy * Math.cos(rd) + oy) * sy + ty + oy - sy * oy;
-  return matrix;
+  return [
+    matrix[0][0], matrix[0][1],
+    matrix[1][0], matrix[1][1],
+    matrix[2][0], matrix[2][1]];
+}
+
+// 矩阵a*b
+function multiply(a, b) {
+  let res = [];
+  let m = a[0].length;
+  let p = a.length;
+  let n = b.length;
+  for(let i = 0; i < m; i++) {
+    let col = [];
+    for(let j = 0; j < n; j++) {
+      let s = 0;
+      for(let k = 0; k < p; k++) {
+        s += a[i][k] * b[k][j];
+      }
+      col.push(s);
+    }
+    res.push(col);
+  }
+  return res;
 }
 
 function transformPoint(matrix, x, y) {
@@ -83,26 +121,30 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
 }
 
 function normalize(transform, ox, oy, w, h) {
+  let res = [];
   transform.forEach(item => {
     let [k, v] = item;
     if(k === 'translateX') {
       if(v.unit === unit.PERCENT) {
-        item[1] = v.value * w * 0.01;
+        res.push([item[0], v.value * w * 0.01]);
       }
       else {
-        item[1] = v.value;
+        res.push([item[0], item[1].value]);
       }
     }
     else if(k === 'translateY') {
       if(v.unit === unit.PERCENT) {
-        item[1] = v.value * h * 0.01;
+        res.push([item[0], v.value * h * 0.01]);
       }
       else {
-        item[1] = v.value;
+        res.push([item[0], item[1].value]);
       }
     }
+    else {
+      res.push([item[0], item[1]]);
+    }
   });
-  return transform;
+  return res;
 }
 
 function getOrigin(transformOrigin, x, y, w, h) {
@@ -133,9 +175,29 @@ function getOrigin(transformOrigin, x, y, w, h) {
   return tfo;
 }
 
+function mergeMatrix(a, b) {
+  let matrix = multiply(
+    [
+      [a[0], a[1], 0],
+      [a[2], a[3], 0],
+      [a[4], a[5], 1]
+    ],
+    [
+      [b[0], b[1], 0],
+      [b[2], b[3], 0],
+      [b[4], b[5], 1]
+    ]
+  );
+  return [
+    matrix[0][0], matrix[0][1],
+    matrix[1][0], matrix[1][1],
+    matrix[2][0], matrix[2][1]];
+}
+
 export default {
   calMatrix,
   pointInQuadrilateral,
   normalize,
   getOrigin,
+  mergeMatrix,
 };

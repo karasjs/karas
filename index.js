@@ -587,7 +587,7 @@
     hash2arr: hash2arr
   };
 
-  function calMatrix(transform, ox, oy, x, y, ow, oh) {
+  function calMatrix(transform, ox, oy) {
     var matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
     transform.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
@@ -595,9 +595,11 @@
           v = _item[1];
 
       if (k === 'translateX') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]); // ox += v;
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [v, 0, 1]]);
+        ox += v;
       } else if (k === 'translateY') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]); // oy += v;
+        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, v, 1]]);
+        oy += v;
       } else if (k === 'scaleX') {
         matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, 0, 1]]);
         matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);

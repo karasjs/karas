@@ -925,6 +925,10 @@ class Dom extends Xom {
       if(top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
         h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
+        style.height = {
+          value: h2,
+          unit: unit.PX,
+        };
       }
       else if(top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;

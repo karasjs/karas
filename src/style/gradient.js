@@ -365,7 +365,7 @@ function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
       r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
     }
   }
-  return r;
+  return [r, cx, cy];
 }
 
 // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值

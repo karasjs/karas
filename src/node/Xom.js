@@ -333,7 +333,7 @@ class Xom extends Node {
         }
       }
       else if(k === 'radial') {
-        let r = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3);
+        let [r, cx2, cy2] = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3);
         // 计算colorStop
         let list = gradient.getColorStop(v, r * 2);
         // 超限情况等同于只显示end的bgc
@@ -341,13 +341,13 @@ class Xom extends Node {
           let end = list[list.length - 1];
           end[1] = 0;
           list = [end];
-          cx = x2;
-          cy = y2;
+          cx2 = x2;
+          cy2 = y2;
           // 肯定大于最长直径
           r = iw + ih;
         }
         if(renderMode === mode.CANVAS) {
-          let rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+          let rg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, r);
           list.forEach(item => {
             rg.addColorStop(item[1], item[0]);
           });
@@ -361,8 +361,8 @@ class Xom extends Node {
           let uuid = this.defs.add({
             tagName: 'radialGradient',
             props: [
-              ['cx', cx],
-              ['cy', cy],
+              ['cx', cx2],
+              ['cy', cy2],
               ['r', r]
             ],
             stop: list,

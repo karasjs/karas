@@ -1137,7 +1137,7 @@
         }
     }
 
-    return r;
+    return [r, cx, cy];
   } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
 
 
@@ -1717,7 +1717,11 @@
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(uuid, ")")]]);
             }
           } else if (k === 'radial') {
-            var _r = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3); // 计算colorStop
+            var _gradient$calRadialRa = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3),
+                _gradient$calRadialRa2 = _slicedToArray(_gradient$calRadialRa, 3),
+                _r = _gradient$calRadialRa2[0],
+                cx2 = _gradient$calRadialRa2[1],
+                cy2 = _gradient$calRadialRa2[2]; // 计算colorStop
 
 
             var _list2 = gradient.getColorStop(v, _r * 2); // 超限情况等同于只显示end的bgc
@@ -1727,14 +1731,14 @@
               var end = _list2[_list2.length - 1];
               end[1] = 0;
               _list2 = [end];
-              cx = x2;
-              cy = y2; // 肯定大于最长直径
+              cx2 = x2;
+              cy2 = y2; // 肯定大于最长直径
 
               _r = iw + ih;
             }
 
             if (renderMode === mode.CANVAS) {
-              var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, _r);
+              var rg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, _r);
 
               _list2.forEach(function (item) {
                 rg.addColorStop(item[1], item[0]);
@@ -1748,7 +1752,7 @@
             } else if (renderMode === mode.SVG) {
               var _uuid = this.defs.add({
                 tagName: 'radialGradient',
-                props: [['cx', cx], ['cy', cy], ['r', _r]],
+                props: [['cx', cx2], ['cy', cy2], ['r', _r]],
                 stop: _list2
               });
 
@@ -4470,6 +4474,10 @@
           if (top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
+            style.height = {
+              value: h2,
+              unit: unit.PX
+            };
           } else if (top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = height2.unit === unit.PX ? height2.value : height;

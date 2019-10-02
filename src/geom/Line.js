@@ -1,7 +1,7 @@
 import Geom from './Geom';
 import mode from '../mode';
 import gradient from '../style/gradient';
-import util from "../util";
+import util from '../util';
 
 class Line extends Geom {
   constructor(tagName, props) {

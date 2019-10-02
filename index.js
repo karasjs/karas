@@ -3507,6 +3507,15 @@
         });
       }
     }, {
+      key: "addEllipse",
+      value: function addEllipse(props) {
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: 'ellipse',
+          props: props
+        });
+      }
+    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -5418,11 +5427,7 @@
           var go = gradient.parseGradient(stroke);
 
           if (go) {
-            var w = x2 - x1;
-            var h = y2 - y1;
-            var cx = x1 + w * 0.5;
-            var cy = y1 + w * 0.5;
-            slg = gradient.getLinear(go.v, cx, cy, w, h);
+            slg = gradient.getLinear(go.v, originX, originY, width, height);
           }
         }
 
@@ -6055,10 +6060,10 @@
           return;
         }
 
-        var cx = x + borderLeftWidth.value + mlw + plw;
-        var cy = y + borderTopWidth.value + mtw + ptw;
-        cx += width * 0.5;
-        cy += height * 0.5;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
         r *= Math.min(width, height) * 0.5;
         var slg;
 
@@ -6066,8 +6071,7 @@
           var go = gradient.parseGradient(stroke);
 
           if (go) {
-            var w = r + strokeWidth;
-            slg = gradient.getLinear(go.v, cx, cy, w, w);
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
           }
         }
 
@@ -6078,14 +6082,13 @@
           var _go = gradient.parseGradient(fill);
 
           if (_go) {
-            var _w = r;
-            flg = gradient.getLinear(_go.v, cx, cy, _w, _w);
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
           }
         } else if (fill.indexOf('radial-gradient') > -1) {
           var _go2 = gradient.parseGradient(fill);
 
           if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, cx - r, cy - r, cx + r, cy + r);
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
           }
         }
 
@@ -6148,23 +6151,23 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径0~1，默认1
 
-      _this.__rx = 1;
+      _this.__xr = 1;
 
       if (_this.props.rx) {
-        _this.__rx = parseFloat(_this.props.rx);
+        _this.__xr = parseFloat(_this.props.rx);
 
-        if (isNaN(_this.rx)) {
-          _this.__rx = 1;
+        if (isNaN(_this.xr)) {
+          _this.__xr = 1;
         }
       }
 
-      _this.__ry = 1;
+      _this.__yr = 1;
 
       if (_this.props.ry) {
-        _this.__ry = parseFloat(_this.props.ry);
+        _this.__yr = parseFloat(_this.props.ry);
 
-        if (isNaN(_this.rx)) {
-          _this.__ry = 1;
+        if (isNaN(_this.yr)) {
+          _this.__yr = 1;
         }
       }
 
@@ -6186,9 +6189,8 @@
             ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
-            rx = this.rx,
-            ry = this.ry,
-            virtualDom = this.virtualDom;
+            xr = this.xr,
+            yr = this.yr;
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth,
@@ -6203,43 +6205,83 @@
 
         var originX = x + borderLeftWidth.value + mlw + plw;
         var originY = y + borderTopWidth.value + mtw + ptw;
-        originX += width * 0.5;
-        originY += height * 0.5;
-        rx *= width * 0.5;
-        ry *= height * 0.5;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        xr *= width * 0.5;
+        yr *= height * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
-          ctx.beginPath();
-          ctx.moveTo(originX, originY);
-          ctx.ellipse && ctx.ellipse(originX, originY, rx, ry, 0, 0, 2 * Math.PI);
-          ctx.fill();
 
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
+          if (flg) {
+            ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+          } else if (frg) {
+            ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+          } else {
+            ctx.fillStyle = fill;
           }
 
+          ctx.setLineDash(strokeDasharray);
+          ctx.beginPath();
+          ctx.ellipse && ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'ellipse',
-            props: [['cx', originX], ['cy', originY], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
+          }
+
+          if (flg) {
+            var _uuid = gradient.createSvgLg(this.defs, flg);
+
+            fill = "url(#".concat(_uuid, ")");
+          } else if (frg) {
+            var _uuid2 = gradient.createSvgRg(this.defs, frg);
+
+            fill = "url(#".concat(_uuid2, ")");
+          }
+
+          this.addEllipse([['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
-      key: "rx",
+      key: "xr",
       get: function get() {
-        return this.__rx;
+        return this.__xr;
       }
     }, {
-      key: "ry",
+      key: "yr",
       get: function get() {
-        return this.__ry;
+        return this.__yr;
       }
     }]);
 

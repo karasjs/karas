@@ -30,17 +30,16 @@ class Circle extends Geom {
     if(display === 'none') {
       return;
     }
-    let cx = x + borderLeftWidth.value + mlw + plw;
-    let cy = y + borderTopWidth.value + mtw + ptw;
-    cx += width * 0.5;
-    cy += height * 0.5;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
     r *= Math.min(width, height) * 0.5;
     let slg;
     if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {
-        let w = r + strokeWidth;
-        slg = gradient.getLinear(go.v, cx, cy, w, w);
+        slg = gradient.getLinear(go.v, cx, cy, width, height);
       }
     }
     let flg;
@@ -48,15 +47,13 @@ class Circle extends Geom {
     if(fill.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        let w = r;
-        flg = gradient.getLinear(go.v, cx, cy, w, w);
+        flg = gradient.getLinear(go.v, cx, cy, width, height);
       }
     }
     else if(fill.indexOf('radial-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        let w = r;
-        frg = gradient.getRadial(go.v, cx, cy, cx - r, cy - r, cx + r, cy + r);
+        frg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
       }
     }
     if(renderMode === mode.CANVAS) {

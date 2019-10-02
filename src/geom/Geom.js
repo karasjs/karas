@@ -108,6 +108,14 @@ class Geom extends Xom {
     });
   }
 
+  addEllipse(props) {
+    this.virtualDom.children.push({
+      type: 'item',
+      tagName: 'ellipse',
+      props,
+    });
+  }
+
   get tagName() {
     return this.__tagName;
   }

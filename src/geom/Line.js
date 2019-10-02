@@ -60,11 +60,7 @@ class Line extends Geom {
     if(stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {
-        let w = x2 - x1;
-        let h = y2 - y1;
-        let cx = x1 + w * 0.5;
-        let cy = y1 + w * 0.5;
-        slg = gradient.getLinear(go.v, cx, cy, w, h);
+        slg = gradient.getLinear(go.v, originX, originY, width, height);
       }
     }
     if(renderMode === mode.CANVAS) {

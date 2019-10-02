@@ -161,22 +161,26 @@ function getOrigin(transformOrigin, x, y, w, h) {
 }
 
 function mergeMatrix(a, b) {
-  let matrix = multiply(
-    [
-      [a[0], a[1], 0],
-      [a[2], a[3], 0],
-      [a[4], a[5], 1]
-    ],
-    [
-      [b[0], b[1], 0],
-      [b[2], b[3], 0],
-      [b[4], b[5], 1]
-    ]
-  );
+  let m1 = identity();
+  m1[0] = a[0];
+  m1[1] = a[1];
+  m1[4] = a[2];
+  m1[5] = a[3];
+  m1[12] = a[4];
+  m1[13] = a[5];
+  let m2 = identity();
+  m2[0] = b[0];
+  m2[1] = b[1];
+  m2[4] = b[2];
+  m2[5] = b[3];
+  m2[12] = b[4];
+  m2[13] = b[5];
+  let matrix = multiply(m1, m2);
   return [
-    matrix[0][0], matrix[0][1],
-    matrix[1][0], matrix[1][1],
-    matrix[2][0], matrix[2][1]];
+    matrix[0], matrix[1],
+    matrix[4], matrix[5],
+    matrix[12], matrix[13]
+  ];
 }
 
 export default {

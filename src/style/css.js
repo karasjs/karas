@@ -217,13 +217,10 @@ function normalize(style) {
         }
         else if(k === 'scale') {
           let arr = v.split(/\s*,\s*/);
-          transform.push(['scaleX', parseFloat(arr[0]) || 0]);
-          if(arr.length === 1) {
-            transform.push(['scaleY', parseFloat(arr[0]) || 0]);
-          }
-          else {
-            transform.push(['scaleY', parseFloat(arr[1]) || 0]);
-          }
+          let x = parseFloat(arr[0]) || 0;
+          let y = parseFloat(arr[arr.length - 1]) || 0;
+          transform.push(['scaleX', x]);
+          transform.push(['scaleY', y]);
         }
         else if(k === 'rotateZ' || k === 'rotate') {
           transform.push(['rotateZ', parseFloat(v) || 0]);
@@ -236,8 +233,10 @@ function normalize(style) {
         }
         else if(k === 'skew') {
           let arr = v.split(/\s*,\s*/);
-          transform.push(['skewX', parseFloat(arr[0]) || 0]);
-          transform.push(['skewY', parseFloat(arr[1]) || 0]);
+          let x = parseFloat(arr[0]) || 0;
+          let y = parseFloat(arr[arr.length - 1]) || 0;
+          transform.push(['skewX', x]);
+          transform.push(['skewY', y]);
         }
       });
     }

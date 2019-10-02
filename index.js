@@ -767,8 +767,22 @@
   }
 
   function mergeMatrix(a, b) {
-    var matrix = multiply([[a[0], a[1], 0], [a[2], a[3], 0], [a[4], a[5], 1]], [[b[0], b[1], 0], [b[2], b[3], 0], [b[4], b[5], 1]]);
-    return [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];
+    var m1 = identity();
+    m1[0] = a[0];
+    m1[1] = a[1];
+    m1[4] = a[2];
+    m1[5] = a[3];
+    m1[12] = a[4];
+    m1[13] = a[5];
+    var m2 = identity();
+    m2[0] = b[0];
+    m2[1] = b[1];
+    m2[4] = b[2];
+    m2[5] = b[3];
+    m2[12] = b[4];
+    m2[13] = b[5];
+    var matrix = multiply(m1, m2);
+    return [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]];
   }
 
   var tf = {
@@ -2763,13 +2777,10 @@
           } else if (k === 'scale') {
             var _arr4 = v.split(/\s*,\s*/);
 
-            transform.push(['scaleX', parseFloat(_arr4[0]) || 0]);
-
-            if (_arr4.length === 1) {
-              transform.push(['scaleY', parseFloat(_arr4[0]) || 0]);
-            } else {
-              transform.push(['scaleY', parseFloat(_arr4[1]) || 0]);
-            }
+            var x = parseFloat(_arr4[0]) || 0;
+            var y = parseFloat(_arr4[_arr4.length - 1]) || 0;
+            transform.push(['scaleX', x]);
+            transform.push(['scaleY', y]);
           } else if (k === 'rotateZ' || k === 'rotate') {
             transform.push(['rotateZ', parseFloat(v) || 0]);
           } else if (k === 'skewX') {
@@ -2779,8 +2790,12 @@
           } else if (k === 'skew') {
             var _arr5 = v.split(/\s*,\s*/);
 
-            transform.push(['skewX', parseFloat(_arr5[0]) || 0]);
-            transform.push(['skewY', parseFloat(_arr5[1]) || 0]);
+            var _x = parseFloat(_arr5[0]) || 0;
+
+            var _y = parseFloat(_arr5[_arr5.length - 1]) || 0;
+
+            transform.push(['skewX', _x]);
+            transform.push(['skewY', _y]);
           }
         });
       }

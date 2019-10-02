@@ -3479,6 +3479,73 @@
         return 0;
       }
     }, {
+      key: "__getPreRender",
+      value: function __getPreRender() {
+        var x = this.rx,
+            y = this.ry,
+            width = this.width,
+            height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
+            style = this.style;
+        var borderTopWidth = style.borderTopWidth,
+            borderLeftWidth = style.borderLeftWidth,
+            display = style.display,
+            stroke = style.stroke,
+            strokeWidth = style.strokeWidth,
+            strokeDasharray = style.strokeDasharray,
+            fill = style.fill;
+        var originX = x + borderLeftWidth.value + mlw + plw;
+        var originY = y + borderTopWidth.value + mtw + ptw;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
+          }
+        }
+
+        return {
+          x: x,
+          y: y,
+          originX: originX,
+          originY: originY,
+          cx: cx,
+          cy: cy,
+          display: display,
+          stroke: stroke,
+          strokeWidth: strokeWidth,
+          strokeDasharray: strokeDasharray,
+          fill: fill,
+          slg: slg,
+          flg: flg,
+          frg: frg
+        };
+      }
+    }, {
       key: "render",
       value: function render(renderMode) {
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
@@ -5353,38 +5420,30 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode);
 
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
+        var width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
             ctx = this.ctx,
             start = this.start,
             end = this.end,
-            control = this.control,
-            virtualDom = this.virtualDom;
+            control = this.control;
 
         if (start.length < 2 || end.length < 2) {
           return;
         }
 
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray;
+        var _this$__getPreRender = this.__getPreRender(),
+            originX = _this$__getPreRender.originX,
+            originY = _this$__getPreRender.originY,
+            display = _this$__getPreRender.display,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg;
 
         if (display === 'none') {
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
         var x1 = originX + start[0] * width;
         var y1 = originY + start[1] * height;
         var x2 = originX + end[0] * width;
@@ -5403,16 +5462,6 @@
           curve++;
           cx2 = originX + control[1][0] * width;
           cy2 = originY + control[1][1] * height;
-        }
-
-        var slg;
-
-        if (stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, originX, originY, width, height);
-          }
         }
 
         if (renderMode === mode.CANVAS) {
@@ -5504,19 +5553,11 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode);
 
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
+        var width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
             ctx = this.ctx,
             points = this.points,
-            origin = this.origin,
-            virtualDom = this.virtualDom;
+            origin = this.origin;
 
         if (points.length < 2) {
           return;
@@ -5528,19 +5569,19 @@
           }
         }
 
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray;
+        var _this$__getPreRender = this.__getPreRender(),
+            originX = _this$__getPreRender.originX,
+            originY = _this$__getPreRender.originY,
+            display = _this$__getPreRender.display,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg;
 
         if (display === 'none') {
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
         var pts = this.__pts = [];
 
         if (origin === 'TOP_LEFT') {
@@ -5559,16 +5600,6 @@
           points.forEach(function (item) {
             pts.push([originX + width - item[0] * width, originY + height - item[1] * height]);
           });
-        }
-
-        var slg;
-
-        if (stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, originX, originY, width, height);
-          }
         }
 
         if (renderMode === mode.CANVAS) {
@@ -5642,18 +5673,10 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode);
 
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
+        var width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
             ctx = this.ctx,
-            points = this.points,
-            virtualDom = this.virtualDom;
+            points = this.points;
 
         if (points.length < 3) {
           return;
@@ -5665,47 +5688,20 @@
           }
         }
 
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray,
-            fill = style.fill;
+        var _this$__getPreRender = this.__getPreRender(),
+            originX = _this$__getPreRender.originX,
+            originY = _this$__getPreRender.originY,
+            display = _this$__getPreRender.display,
+            fill = _this$__getPreRender.fill,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg,
+            flg = _this$__getPreRender.flg,
+            frg = _this$__getPreRender.frg;
 
         if (display === 'none') {
           return;
-        }
-
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        var slg;
-
-        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, cx, cy, width, height);
-          }
-        }
-
-        var flg;
-        var frg;
-
-        if (fill.indexOf('linear-gradient') > -1) {
-          var _go = gradient.parseGradient(fill);
-
-          if (_go) {
-            flg = gradient.getLinear(_go.v, cx, cy, width, height);
-          }
-        } else if (fill.indexOf('radial-gradient') > -1) {
-          var _go2 = gradient.parseGradient(fill);
-
-          if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
-          }
         }
 
         points.forEach(function (item) {
@@ -5859,49 +5855,23 @@
           return;
         }
 
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray,
-            fill = style.fill;
+        var _this$__getPreRender = this.__getPreRender(),
+            cx = _this$__getPreRender.cx,
+            cy = _this$__getPreRender.cy,
+            display = _this$__getPreRender.display,
+            fill = _this$__getPreRender.fill,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg,
+            flg = _this$__getPreRender.flg,
+            frg = _this$__getPreRender.frg;
 
         if (display === 'none') {
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
         r *= Math.min(width, height) * 0.5;
-        var slg;
-
-        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, cx, cy, width, height);
-          }
-        }
-
-        var flg;
-        var frg;
-
-        if (fill.indexOf('linear-gradient') > -1) {
-          var _go = gradient.parseGradient(fill);
-
-          if (_go) {
-            flg = gradient.getLinear(_go.v, cx, cy, width, height);
-          }
-        } else if (fill.indexOf('radial-gradient') > -1) {
-          var _go2 = gradient.parseGradient(fill);
-
-          if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
-          }
-        }
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
@@ -5999,54 +5969,22 @@
             y = this.ry,
             width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
-            ctx = this.ctx,
-            virtualDom = this.virtualDom;
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray,
-            fill = style.fill;
+            ctx = this.ctx;
+
+        var _this$__getPreRender = this.__getPreRender(),
+            originX = _this$__getPreRender.originX,
+            originY = _this$__getPreRender.originY,
+            display = _this$__getPreRender.display,
+            fill = _this$__getPreRender.fill,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg,
+            flg = _this$__getPreRender.flg,
+            frg = _this$__getPreRender.frg;
 
         if (display === 'none') {
           return;
-        }
-
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        var slg;
-
-        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, cx, cy, width, height);
-          }
-        }
-
-        var flg;
-        var frg;
-
-        if (fill.indexOf('linear-gradient') > -1) {
-          var _go = gradient.parseGradient(fill);
-
-          if (_go) {
-            flg = gradient.getLinear(_go.v, cx, cy, width, height);
-          }
-        } else if (fill.indexOf('radial-gradient') > -1) {
-          var _go2 = gradient.parseGradient(fill);
-
-          if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
-          }
         }
 
         if (renderMode === mode.CANVAS) {
@@ -6125,61 +6063,28 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode);
 
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
+        var width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
             ctx = this.ctx,
-            r = this.r,
-            virtualDom = this.virtualDom;
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray,
-            fill = style.fill;
+            r = this.r;
+
+        var _this$__getPreRender = this.__getPreRender(),
+            cx = _this$__getPreRender.cx,
+            cy = _this$__getPreRender.cy,
+            display = _this$__getPreRender.display,
+            fill = _this$__getPreRender.fill,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg,
+            flg = _this$__getPreRender.flg,
+            frg = _this$__getPreRender.frg;
 
         if (display === 'none') {
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
         r *= Math.min(width, height) * 0.5;
-        var slg;
-
-        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, cx, cy, width, height);
-          }
-        }
-
-        var flg;
-        var frg;
-
-        if (fill.indexOf('linear-gradient') > -1) {
-          var _go = gradient.parseGradient(fill);
-
-          if (_go) {
-            flg = gradient.getLinear(_go.v, cx, cy, width, height);
-          }
-        } else if (fill.indexOf('radial-gradient') > -1) {
-          var _go2 = gradient.parseGradient(fill);
-
-          if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
-          }
-        }
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
@@ -6268,62 +6173,30 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode);
 
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
+        var width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
             ctx = this.ctx,
             xr = this.xr,
             yr = this.yr;
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray,
-            fill = style.fill;
+
+        var _this$__getPreRender = this.__getPreRender(),
+            cx = _this$__getPreRender.cx,
+            cy = _this$__getPreRender.cy,
+            display = _this$__getPreRender.display,
+            fill = _this$__getPreRender.fill,
+            stroke = _this$__getPreRender.stroke,
+            strokeWidth = _this$__getPreRender.strokeWidth,
+            strokeDasharray = _this$__getPreRender.strokeDasharray,
+            slg = _this$__getPreRender.slg,
+            flg = _this$__getPreRender.flg,
+            frg = _this$__getPreRender.frg;
 
         if (display === 'none') {
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
         xr *= width * 0.5;
         yr *= height * 0.5;
-        var slg;
-
-        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-          var go = gradient.parseGradient(stroke);
-
-          if (go) {
-            slg = gradient.getLinear(go.v, cx, cy, width, height);
-          }
-        }
-
-        var flg;
-        var frg;
-
-        if (fill.indexOf('linear-gradient') > -1) {
-          var _go = gradient.parseGradient(fill);
-
-          if (_go) {
-            flg = gradient.getLinear(_go.v, cx, cy, width, height);
-          }
-        } else if (fill.indexOf('radial-gradient') > -1) {
-          var _go2 = gradient.parseGradient(fill);
-
-          if (_go2) {
-            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
-          }
-        }
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;

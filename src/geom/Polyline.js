@@ -21,7 +21,7 @@ class Polyline extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, points, origin, virtualDom } = this;
+    let { width, height, ctx, points, origin } = this;
     if(points.length < 2) {
       return;
     }
@@ -31,18 +31,12 @@ class Polyline extends Geom {
       }
     }
     let {
-      display,
-      borderTopWidth,
-      borderLeftWidth,
-      stroke,
-      strokeWidth,
-      strokeDasharray,
-    } = style;
+      originX, originY, display,
+      stroke, strokeWidth, strokeDasharray,
+      slg } = this.__getPreRender();
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + mlw + plw;
-    let originY = y + borderTopWidth.value + mtw + ptw;
     let pts = this.__pts = [];
     if(origin === 'TOP_LEFT') {
       points.forEach(item => {
@@ -75,13 +69,6 @@ class Polyline extends Geom {
           originY + height - item[1] * height
         ]);
       });
-    }
-    let slg;
-    if(stroke.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(stroke);
-      if(go) {
-        slg = gradient.getLinear(go.v, originX, originY, width, height);
-      }
     }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;

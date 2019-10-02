@@ -3,6 +3,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../mode';
 import util from '../util';
+import gradient from '../style/gradient';
 
 const REGISTER = {};
 
@@ -81,6 +82,60 @@ class Geom extends Xom {
 
   __calAbs() {
     return 0;
+  }
+
+  __getPreRender() {
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style } = this;
+    let {
+      borderTopWidth,
+      borderLeftWidth,
+      display,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      fill,
+    } = style;
+    let originX = x + borderLeftWidth.value + mlw + plw;
+    let originY = y + borderTopWidth.value + mtw + ptw;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
+    let slg;
+    if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+      let go = gradient.parseGradient(stroke);
+      if(go) {
+        slg = gradient.getLinear(go.v, cx, cy, width, height);
+      }
+    }
+    let flg;
+    let frg;
+    if(fill.indexOf('linear-gradient') > -1) {
+      let go = gradient.parseGradient(fill);
+      if(go) {
+        flg = gradient.getLinear(go.v, cx, cy, width, height);
+      }
+    }
+    else if(fill.indexOf('radial-gradient') > -1) {
+      let go = gradient.parseGradient(fill);
+      if(go) {
+        frg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
+      }
+    }
+    return {
+      x,
+      y,
+      originX,
+      originY,
+      cx,
+      cy,
+      display,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      fill,
+      slg,
+      flg,
+      frg,
+    };
   }
 
   render(renderMode) {

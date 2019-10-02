@@ -67,43 +67,13 @@ class Sector extends Geom {
       return;
     }
     let {
-      display,
-      borderTopWidth,
-      borderLeftWidth,
-      stroke,
-      strokeWidth,
-      strokeDasharray,
-      fill,
-    } = style;
+      cx, cy, display, fill,
+      stroke, strokeWidth, strokeDasharray,
+      slg, flg, frg } = this.__getPreRender();
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + mlw + plw;
-    let originY = y + borderTopWidth.value + mtw + ptw;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
     r *= Math.min(width, height) * 0.5;
-    let slg;
-    if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(stroke);
-      if(go) {
-        slg = gradient.getLinear(go.v, cx, cy, width, height);
-      }
-    }
-    let flg;
-    let frg;
-    if(fill.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        flg = gradient.getLinear(go.v, cx, cy, width, height);
-      }
-    }
-    else if(fill.indexOf('radial-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        frg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
-      }
-    }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
       ctx.lineWidth = strokeWidth;

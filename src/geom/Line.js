@@ -22,23 +22,17 @@ class Line extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, start, end, control, virtualDom } = this;
+    let { width, height, ctx, start, end, control } = this;
     if(start.length < 2 || end.length < 2) {
       return;
     }
     let {
-      display,
-      borderTopWidth,
-      borderLeftWidth,
-      stroke,
-      strokeWidth,
-      strokeDasharray,
-    } = style;
+      originX, originY, display,
+      stroke, strokeWidth, strokeDasharray,
+      slg } = this.__getPreRender();
     if(display === 'none') {
       return;
     }
-    let originX = x + borderLeftWidth.value + mlw + plw;
-    let originY = y + borderTopWidth.value + mtw + ptw;
     let x1 = originX + start[0] * width;
     let y1 = originY + start[1] * height;
     let x2 = originX + end[0] * width;
@@ -55,13 +49,6 @@ class Line extends Geom {
       curve++;
       cx2 = originX + control[1][0] * width;
       cy2 = originY + control[1][1] * height;
-    }
-    let slg;
-    if(stroke.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(stroke);
-      if(go) {
-        slg = gradient.getLinear(go.v, originX, originY, width, height);
-      }
     }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;

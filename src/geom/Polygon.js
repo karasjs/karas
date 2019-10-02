@@ -14,7 +14,7 @@ class Polygon extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, points, virtualDom } = this;
+    let { width, height, ctx, points } = this;
     if(points.length < 3) {
       return;
     }
@@ -24,41 +24,11 @@ class Polygon extends Geom {
       }
     }
     let {
-      display,
-      borderTopWidth,
-      borderLeftWidth,
-      stroke,
-      strokeWidth,
-      strokeDasharray,
-      fill,
-    } = style;
+      originX, originY, display, fill,
+      stroke, strokeWidth, strokeDasharray,
+      slg, flg, frg } = this.__getPreRender();
     if(display === 'none') {
       return;
-    }
-    let originX = x + borderLeftWidth.value + mlw + plw;
-    let originY = y + borderTopWidth.value + mtw + ptw;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
-    let slg;
-    if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(stroke);
-      if(go) {
-        slg = gradient.getLinear(go.v, cx, cy, width, height);
-      }
-    }
-    let flg;
-    let frg;
-    if(fill.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        flg = gradient.getLinear(go.v, cx, cy, width, height);
-      }
-    }
-    else if(fill.indexOf('radial-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        frg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
-      }
     }
     points.forEach(item => {
       item[0] = originX + item[0] * width;

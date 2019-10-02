@@ -74,8 +74,7 @@ class Xom extends Node {
     this.__pbw = 0;
     this.__plw = 0;
     this.__matrix = null;
-    this.__matrixSelf = null;
-    this.__tfo = null;
+    this.__matrixEvent = null;
   }
 
   __layout(data) {
@@ -284,32 +283,21 @@ class Xom extends Node {
       let oh = y4 - y;
       let tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
       let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-      let matrixSelf = tf.calMatrix(list, tfo[0], tfo[1]);
-      // 单位矩阵无需变换
-      if(matrixSelf[0] !== 1
-        || matrixSelf[1] !== 0
-        || matrixSelf[2] !== 0
-        || matrixSelf[3] !== 1
-        || matrixSelf[4] !== 0
-        || matrixSelf[5] !== 0) {
-        this.__tfo = tfo;
-        this.__matrixSelf = matrixSelf;
-        // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
-        let matrix = matrixSelf;
-        let parent = this.parent;
-        while(parent) {
-          if(parent.matrixSelf) {
-            matrix = tf.mergeMatrix(parent.matrixSelf, matrix);
-          }
-          parent = parent.parent;
+      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      this.__matrix = matrix;
+      let parent = this.parent;
+      while(parent) {
+        if(parent.matrix) {
+          matrix = tf.mergeMatrix(parent.matrix, matrix);
         }
-        this.__matrix = matrix;
-        if(renderMode === mode.CANVAS) {
-          ctx.setTransform(...matrix);
-        }
-        else if(renderMode === mode.SVG) {
-          this.addTransform(['matrix', matrixSelf.join(',')]);
-        }
+        parent = parent.parent;
+      }
+      this.__matrixEvent = matrix;
+      if(renderMode === mode.CANVAS) {
+        ctx.setTransform(...matrix);
+      }
+      else if(renderMode === mode.SVG) {
+        this.addTransform(['matrix', this.matrix.join(',')]);
       }
     }
     // 先渲染渐变，没有则背景色
@@ -407,7 +395,7 @@ class Xom extends Node {
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
     let { event: { type }, x, y, covers } = e;
-    let { listener, children, style, outerWidth, outerHeight, matrix } = this;
+    let { listener, children, style, outerWidth, outerHeight, matrixEvent } = this;
     if(style.display === 'none') {
       return;
     }
@@ -454,7 +442,7 @@ class Xom extends Node {
         y,
         w: outerWidth,
         h: outerHeight,
-        matrix,
+        matrixEvent,
       });
       if(!e.target) {
         e.target = this;
@@ -465,23 +453,23 @@ class Xom extends Node {
 
   willResponseEvent(e) {
     let { x, y, covers } = e;
-    let { rx, ry, outerWidth, outerHeight, matrix } = this;
+    let { rx, ry, outerWidth, outerHeight, matrixEvent } = this;
     let inThis = tf.pointInQuadrilateral(x - rx, y - ry,
       0, 0,
       outerWidth,0,
       0, outerHeight,
       outerWidth, outerHeight,
-      matrix);
+      matrixEvent);
     if(inThis) {
       // 不能被遮挡
       for(let i = 0, len = covers.length; i < len; i++) {
-        let { x: x2, y: y2, w, h, matrix } = covers[i];
+        let { x: x2, y: y2, w, h, matrixEvent } = covers[i];
         if(tf.pointInQuadrilateral(x - rx, y - ry,
           x2 - rx, y2 - ry,
           x2 - rx + w,y2 - ry,
           x2 - rx, y2 - ry + h,
           x2 - rx + w, y2 - ry + h,
-          matrix)
+          matrixEvent)
         ) {
           return;
         }
@@ -575,11 +563,8 @@ class Xom extends Node {
   get matrix() {
     return this.__matrix;
   }
-  get matrixSelf() {
-    return this.__matrixSelf;
-  }
-  get tfo() {
-    return this.__tfo;
+  get matrixEvent() {
+    return this.__matrixEvent;
   }
 }
 

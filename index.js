@@ -1860,8 +1860,7 @@
       _this.__pbw = 0;
       _this.__plw = 0;
       _this.__matrix = null;
-      _this.__matrixSelf = null;
-      _this.__tfo = null;
+      _this.__matrixEvent = null;
       return _this;
     }
 
@@ -2122,30 +2121,24 @@
           var oh = _y - y;
           var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1]); // 单位矩阵无需变换
+          var matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+          this.__matrix = matrix;
+          var parent = this.parent;
 
-          if (matrixSelf[0] !== 1 || matrixSelf[1] !== 0 || matrixSelf[2] !== 0 || matrixSelf[3] !== 1 || matrixSelf[4] !== 0 || matrixSelf[5] !== 0) {
-            this.__tfo = tfo;
-            this.__matrixSelf = matrixSelf; // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
-
-            var matrix = matrixSelf;
-            var parent = this.parent;
-
-            while (parent) {
-              if (parent.matrixSelf) {
-                matrix = tf.mergeMatrix(parent.matrixSelf, matrix);
-              }
-
-              parent = parent.parent;
+          while (parent) {
+            if (parent.matrix) {
+              matrix = tf.mergeMatrix(parent.matrix, matrix);
             }
 
-            this.__matrix = matrix;
+            parent = parent.parent;
+          }
 
-            if (renderMode === mode.CANVAS) {
-              ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-            } else if (renderMode === mode.SVG) {
-              this.addTransform(['matrix', matrixSelf.join(',')]);
-            }
+          this.__matrixEvent = matrix;
+
+          if (renderMode === mode.CANVAS) {
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+          } else if (renderMode === mode.SVG) {
+            this.addTransform(['matrix', this.matrix.join(',')]);
           }
         } // 先渲染渐变，没有则背景色
 
@@ -2247,7 +2240,7 @@
             style = this.style,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
-            matrix = this.matrix;
+            matrixEvent = this.matrixEvent;
 
         if (style.display === 'none') {
           return;
@@ -2304,7 +2297,7 @@
             y: y,
             w: outerWidth,
             h: outerHeight,
-            matrix: matrix
+            matrixEvent: matrixEvent
           });
 
           if (!e.target) {
@@ -2324,8 +2317,8 @@
             ry = this.ry,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
-            matrix = this.matrix;
-        var inThis = tf.pointInQuadrilateral(x - rx, y - ry, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrix);
+            matrixEvent = this.matrixEvent;
+        var inThis = tf.pointInQuadrilateral(x - rx, y - ry, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
 
         if (inThis) {
           // 不能被遮挡
@@ -2335,9 +2328,9 @@
                 y2 = _covers$i.y,
                 w = _covers$i.w,
                 h = _covers$i.h,
-                _matrix = _covers$i.matrix;
+                _matrixEvent = _covers$i.matrixEvent;
 
-            if (tf.pointInQuadrilateral(x - rx, y - ry, x2 - rx, y2 - ry, x2 - rx + w, y2 - ry, x2 - rx, y2 - ry + h, x2 - rx + w, y2 - ry + h, _matrix)) {
+            if (tf.pointInQuadrilateral(x - rx, y - ry, x2 - rx, y2 - ry, x2 - rx + w, y2 - ry, x2 - rx, y2 - ry + h, x2 - rx + w, y2 - ry + h, _matrixEvent)) {
               return;
             }
           }
@@ -2457,14 +2450,9 @@
         return this.__matrix;
       }
     }, {
-      key: "matrixSelf",
+      key: "matrixEvent",
       get: function get() {
-        return this.__matrixSelf;
-      }
-    }, {
-      key: "tfo",
-      get: function get() {
-        return this.__tfo;
+        return this.__matrixEvent;
       }
     }]);
 
@@ -5200,7 +5188,7 @@
         var node = this.node;
         ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
           node.addEventListener(type, function (e) {
-            _this2.__cb(e, ['touchend', 'touchcancel'].indexOf(type) > -1);
+            _this2.__cb(e, ['touchend', 'touchcancel', 'touchmove', 'mousemove'].indexOf(type) > -1);
           });
         });
       }
@@ -5827,6 +5815,21 @@
         }
 
         r *= Math.min(width, height) * 0.5;
+        var x1, y1, x2, y2;
+
+        var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin);
+
+        var _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2);
+
+        x1 = _getCoordsByDegree2[0];
+        y1 = _getCoordsByDegree2[1];
+
+        var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end);
+
+        var _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2);
+
+        x2 = _getCoordsByDegree4[0];
+        y2 = _getCoordsByDegree4[1];
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
@@ -5842,36 +5845,21 @@
 
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-
-          if (this.edge) {
-            ctx.moveTo(cx, cy);
-          }
-
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
           if (this.edge) {
             ctx.lineTo(cx, cy);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+          } else {
+            ctx.stroke();
+            ctx.lineTo(cx, cy);
+            ctx.lineTo(x1, y1);
           }
 
           ctx.fill();
-          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var x1, y1, x2, y2;
-
-          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin);
-
-          var _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2);
-
-          x1 = _getCoordsByDegree2[0];
-          y1 = _getCoordsByDegree2[1];
-
-          var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end);
-
-          var _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2);
-
-          x2 = _getCoordsByDegree4[0];
-          y2 = _getCoordsByDegree4[1];
           var large = end - begin > 180 ? 1 : 0;
 
           if (slg) {
@@ -5889,15 +5877,12 @@
             fill = "url(#".concat(_uuid2, ")");
           }
 
-          var d;
-
           if (this.edge) {
-            d = "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z");
+            this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
           } else {
-            d = "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2);
+            this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill]]);
+            this.addGeom('path', [['d', "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
           }
-
-          this.addGeom('path', [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {

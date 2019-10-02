@@ -79,6 +79,9 @@ class Sector extends Geom {
       return;
     }
     r *= Math.min(width, height) * 0.5;
+    let x1, y1, x2, y2;
+    [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
+    [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
       ctx.lineWidth = strokeWidth;
@@ -93,21 +96,21 @@ class Sector extends Geom {
       }
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
-      if(this.edge) {
-        ctx.moveTo(cx, cy);
-      }
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
       if(this.edge) {
         ctx.lineTo(cx, cy);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+      }
+      else {
+        ctx.stroke();
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(x1, y1);
       }
       ctx.fill();
-      ctx.stroke();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let x1, y1, x2, y2;
-      [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
-      [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
       let large = (end - begin) > 180 ? 1 : 0;
       if(slg) {
         let uuid = gradient.createSvgLg(this.defs, slg);
@@ -121,20 +124,28 @@ class Sector extends Geom {
         let uuid = gradient.createSvgRg(this.defs, frg);
         fill = `url(#${uuid})`;
       }
-      let d;
       if(this.edge) {
-        d = `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`;
+        this.addGeom('path', [
+          ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+          ['fill', fill],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ]);
       }
       else {
-        d = `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+        this.addGeom('path', [
+          ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+          ['fill', fill]
+        ]);
+        this.addGeom('path', [
+          ['d', `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2}`],
+          ['fill', 'transparent'],
+          ['stroke', stroke],
+          ['stroke-width', strokeWidth],
+          ['stroke-dasharray', strokeDasharray]
+        ]);
       }
-      this.addGeom('path', [
-        ['d', d],
-        ['fill', fill],
-        ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
-      ]);
     }
   }
 

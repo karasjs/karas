@@ -182,12 +182,9 @@ function normalize(style) {
           if(arr.length > 6) {
             arr = arr.slice(0, 6);
           }
-          else if(arr.length < 6) {
-            while(arr.length < 6) {
-              arr.push(0);
-            }
+          if(arr.length === 6) {
+            transform.push(['matrix', arr]);
           }
-          transform.push(['matrix', arr]);
         }
         else if(k === 'translateX') {
           let arr = ['translateX', v];

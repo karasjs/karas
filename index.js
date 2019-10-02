@@ -627,6 +627,13 @@
         target[0] = target[5] = cos;
         target[1] = sin;
         target[4] = -sin;
+      } else if (k === 'matrix') {
+        target[0] = v[0];
+        target[1] = v[1];
+        target[4] = v[2];
+        target[5] = v[3];
+        target[12] = v[4];
+        target[13] = v[5];
       }
 
       matrix = multiply(matrix, target);
@@ -2790,13 +2797,11 @@
 
             if (arr.length > 6) {
               arr = arr.slice(0, 6);
-            } else if (arr.length < 6) {
-              while (arr.length < 6) {
-                arr.push(0);
-              }
             }
 
-            transform.push(['matrix', arr]);
+            if (arr.length === 6) {
+              transform.push(['matrix', arr]);
+            }
           } else if (k === 'translateX') {
             var _arr = ['translateX', v];
             transform.push(calUnit(_arr, 1, v));

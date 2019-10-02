@@ -40,6 +40,14 @@ function calMatrix(transform, ox, oy) {
       target[1] = sin;
       target[4] = -sin;
     }
+    else if(k === 'matrix') {
+      target[0] = v[0];
+      target[1] = v[1];
+      target[4] = v[2];
+      target[5] = v[3];
+      target[12] = v[4];
+      target[13] = v[5];
+    }
     matrix = multiply(matrix, target);
   });
   let target = identity();

@@ -1453,6 +1453,7 @@
       _this.__plw = 0;
       _this.__matrix = null;
       _this.__matrixSelf = null;
+      _this.__tfo = null;
       return _this;
     }
 
@@ -1713,9 +1714,10 @@
           var oh = _y - y;
           var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
           var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1], ow, oh); // 单位矩阵无需变换
+          var matrixSelf = tf.calMatrix(list, tfo[0], tfo[1]); // 单位矩阵无需变换
 
           if (matrixSelf[0] !== 1 || matrixSelf[1] !== 0 || matrixSelf[2] !== 0 || matrixSelf[3] !== 1 || matrixSelf[4] !== 0 || matrixSelf[5] !== 0) {
+            this.__tfo = tfo;
             this.__matrixSelf = matrixSelf; // canvas的matrix不叠加，需手动计算，另svg绘制自动叠加，但响应事件也需手动计算
 
             var matrix = matrixSelf;
@@ -1723,7 +1725,7 @@
 
             while (parent) {
               if (parent.matrixSelf) {
-                matrix = tf.mergeMatrix(matrix, parent.matrixSelf);
+                matrix = tf.mergeMatrix(parent.matrixSelf, matrix);
               }
 
               parent = parent.parent;
@@ -2463,6 +2465,11 @@
       key: "matrixSelf",
       get: function get() {
         return this.__matrixSelf;
+      }
+    }, {
+      key: "tfo",
+      get: function get() {
+        return this.__tfo;
       }
     }]);
 

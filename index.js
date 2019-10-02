@@ -587,84 +587,77 @@
     hash2arr: hash2arr
   };
 
-  function calMatrix(transform, ox, oy, ow, oh) {
-    var matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-    var deg = 0;
+  function calMatrix(transform, ox, oy) {
+    var matrix = identity();
+    matrix[12] = ox;
+    matrix[13] = oy;
     transform.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
 
+      var target = identity();
+
       if (k === 'translateX') {
-        var dx = v * Math.cos(deg);
-        var dy = v * Math.sin(deg);
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [dx, dy, 1]]);
-        ox += dx;
-        oy += dy;
+        target[12] = v;
       } else if (k === 'translateY') {
-        var _dx = -v * Math.cos(deg);
-
-        var _dy = v * Math.sin(deg);
-
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [_dx, _dy, 1]]);
-        ox += _dx;
-        oy += _dy;
+        target[13] = v;
       } else if (k === 'scaleX') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, 0, 1]]);
-        matrix = multiply(matrix, [[v, 0, 0], [0, 1, 0], [0, 0, 1]]);
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [ox, 0, 1]]);
+        target[0] = v;
       } else if (k === 'scaleY') {
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, -oy, 1]]);
-        matrix = multiply(matrix, [[1, 0, 0], [0, v, 0], [0, 0, 1]]);
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [0, oy, 1]]);
+        target[5] = v;
       } else if (k === 'skewX') {
         v = util.r2d(v);
         var tan = Math.tan(v);
-        matrix = multiply(matrix, [[1, 0, 0], [tan, 1, 0], [0, 0, 1]]);
+        target[4] = tan;
       } else if (k === 'skewY') {
         v = util.r2d(v);
 
         var _tan = Math.tan(v);
 
-        matrix = multiply(matrix, [[1, _tan, 0], [0, 1, 0], [0, 0, 1]]);
-      } else if (k === 'rotate') {
+        target[1] = _tan;
+      } else if (k === 'rotateZ') {
         v = util.r2d(v);
-        deg += v;
         var sin = Math.sin(v);
         var cos = Math.cos(v);
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [-ox, -oy, 1]]);
-        matrix = multiply(matrix, [[cos, sin, 0], [-sin, cos, 0], [0, 0, 1]]);
-        matrix = multiply(matrix, [[1, 0, 0], [0, 1, 0], [ox, oy, 1]]); // matrix = multiply(matrix, [
-        //   [cos, sin, 0],
-        //   [-sin, cos, 0],
-        //   [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
-        // ]);
+        target[0] = target[5] = cos;
+        target[1] = sin;
+        target[4] = -sin;
       }
+
+      matrix = multiply(matrix, target);
     });
-    return [matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1], matrix[2][0], matrix[2][1]];
+    var target = identity();
+    target[12] = -ox;
+    target[13] = -oy;
+    matrix = multiply(matrix, target);
+    return [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]];
+  } // 生成4*4单位矩阵
+
+
+  function identity() {
+    var matrix = [];
+
+    for (var i = 0; i < 16; i++) {
+      matrix.push(i % 5 === 0 ? 1 : 0);
+    }
+
+    return matrix;
   } // 矩阵a*b
 
 
   function multiply(a, b) {
     var res = [];
-    var m = a[0].length;
-    var p = a.length;
-    var n = b.length;
 
-    for (var i = 0; i < m; i++) {
-      var col = [];
+    for (var i = 0; i < 4; i++) {
+      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
 
-      for (var j = 0; j < n; j++) {
-        var s = 0;
-
-        for (var k = 0; k < p; k++) {
-          s += a[i][k] * b[k][j];
-        }
-
-        col.push(s);
+      for (var j = 0; j < 4; j++) {
+        var k = j * 4;
+        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
+        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
+        res[i + k] = n;
       }
-
-      res.push(col);
     }
 
     return res;
@@ -2771,9 +2764,14 @@
             var _arr4 = v.split(/\s*,\s*/);
 
             transform.push(['scaleX', parseFloat(_arr4[0]) || 0]);
-            transform.push(['scaleX', parseFloat(_arr4[1]) || 0]);
+
+            if (_arr4.length === 1) {
+              transform.push(['scaleY', parseFloat(_arr4[0]) || 0]);
+            } else {
+              transform.push(['scaleY', parseFloat(_arr4[1]) || 0]);
+            }
           } else if (k === 'rotateZ' || k === 'rotate') {
-            transform.push(['rotate', parseFloat(v) || 0]);
+            transform.push(['rotateZ', parseFloat(v) || 0]);
           } else if (k === 'skewX') {
             transform.push(['skewX', parseFloat(v) || 0]);
           } else if (k === 'skewY') {

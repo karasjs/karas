@@ -218,10 +218,15 @@ function normalize(style) {
         else if(k === 'scale') {
           let arr = v.split(/\s*,\s*/);
           transform.push(['scaleX', parseFloat(arr[0]) || 0]);
-          transform.push(['scaleX', parseFloat(arr[1]) || 0]);
+          if(arr.length === 1) {
+            transform.push(['scaleY', parseFloat(arr[0]) || 0]);
+          }
+          else {
+            transform.push(['scaleY', parseFloat(arr[1]) || 0]);
+          }
         }
         else if(k === 'rotateZ' || k === 'rotate') {
-          transform.push(['rotate', parseFloat(v) || 0]);
+          transform.push(['rotateZ', parseFloat(v) || 0]);
         }
         else if(k === 'skewX') {
           transform.push(['skewX', parseFloat(v) || 0]);

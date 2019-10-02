@@ -1,138 +1,78 @@
 import unit from '../style/unit';
 import util from '../util';
 
-function calMatrix(transform, ox, oy, ow, oh) {
-  let matrix = [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1]
-  ];
+function calMatrix(transform, ox, oy) {
+  let matrix = identity();
+  matrix[12] = ox;
+  matrix[13] = oy;
   let deg = 0;
   transform.forEach(item => {
     let [k, v] = item;
+    let target = identity();
     if(k === 'translateX') {
-      let dx = v * Math.cos(deg);
-      let dy = v * Math.sin(deg);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [dx, dy, 1]
-      ]);
-      ox += dx;
-      oy += dy;
+      target[12] = v;
     }
     else if(k === 'translateY') {
-      let dx = -v * Math.cos(deg);
-      let dy = v * Math.sin(deg);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [dx, dy, 1]
-      ]);
-      ox += dx;
-      oy += dy;
+      target[13] = v;
     }
     else if(k === 'scaleX') {
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [-ox, 0, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [v, 0, 0],
-        [0, 1, 0],
-        [0, 0, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [ox, 0, 1]
-      ]);
+      target[0] = v;
     }
     else if(k === 'scaleY') {
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, -oy, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, v, 0],
-        [0, 0, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [0, oy, 1]
-      ]);
+      target[5] = v;
     }
     else if(k === 'skewX') {
       v = util.r2d(v);
       let tan = Math.tan(v);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [tan, 1, 0],
-        [0, 0, 1]
-      ]);
+      target[4] = tan;
     }
     else if(k === 'skewY') {
       v = util.r2d(v);
       let tan = Math.tan(v);
-      matrix = multiply(matrix, [
-        [1, tan, 0],
-        [0, 1, 0],
-        [0, 0, 1]
-      ]);
+      target[1] = tan;
     }
-    else if(k === 'rotate') {
+    else if(k === 'rotateZ') {
       v = util.r2d(v);
       deg += v;
       let sin = Math.sin(v);
       let cos = Math.cos(v);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [-ox, -oy, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [cos, sin, 0],
-        [-sin, cos, 0],
-        [0, 0, 1]
-      ]);
-      matrix = multiply(matrix, [
-        [1, 0, 0],
-        [0, 1, 0],
-        [ox, oy, 1]
-      ]);
-      // matrix = multiply(matrix, [
-      //   [cos, sin, 0],
-      //   [-sin, cos, 0],
-      //   [-ox * cos + oy * sin + ox, -ox * sin - oy * cos + oy, 1]
-      // ]);
+      target[0] = target[5] = cos;
+      target[1] = sin;
+      target[4] = -sin;
     }
+    matrix = multiply(matrix, target);
   });
+  let target = identity();
+  target[12] = -ox;
+  target[13] = -oy;
+  matrix = multiply(matrix, target);
   return [
-    matrix[0][0], matrix[0][1],
-    matrix[1][0], matrix[1][1],
-    matrix[2][0], matrix[2][1]];
+    matrix[0], matrix[1],
+    matrix[4], matrix[5],
+    matrix[12], matrix[13]
+  ];
+}
+
+// 生成4*4单位矩阵
+function identity() {
+  const matrix = [];
+  for (let i = 0; i < 16; i++) {
+    matrix.push(i % 5 === 0 ? 1 : 0);
+  }
+  return matrix;
 }
 
 // 矩阵a*b
 function multiply(a, b) {
   let res = [];
-  let m = a[0].length;
-  let p = a.length;
-  let n = b.length;
-  for(let i = 0; i < m; i++) {
-    let col = [];
-    for(let j = 0; j < n; j++) {
-      let s = 0;
-      for(let k = 0; k < p; k++) {
-        s += a[i][k] * b[k][j];
-      }
-      col.push(s);
+  for(let i = 0; i < 4; i++) {
+    const row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
+    for(let j = 0; j < 4; j++) {
+      let k = j * 4;
+      let col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
+      let n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
+      res[i + k] = n;
     }
-    res.push(col);
   }
   return res;
 }

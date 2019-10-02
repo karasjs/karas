@@ -88,7 +88,7 @@ class Circle extends Geom {
         let uuid = gradient.createSvgRg(this.defs, frg);
         fill = `url(#${uuid})`;
       }
-      this.addCircle([
+      this.addGeom('circle', [
         ['cx', cx],
         ['cy', cy],
         ['r', r],

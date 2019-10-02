@@ -158,6 +158,9 @@ function arr2hash(arr) {
 }
 
 function hash2arr(hash) {
+  if(Array.isArray(hash)) {
+    return hash;
+  }
   let arr = [];
   for(let list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
     let k = list[i];

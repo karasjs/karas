@@ -96,7 +96,7 @@ class Line extends Geom {
       else {
         d = `M${x1} ${y1} L${x2} ${y2}`;
       }
-      this.addLine([
+      this.addGeom('path', [
         ['d', d],
         ['fill', 'none'],
         ['stroke', stroke],

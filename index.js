@@ -554,6 +554,10 @@
   }
 
   function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
     var arr = [];
 
     for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
@@ -821,15 +825,7 @@
         }
       }
 
-    while (deg >= 360) {
-      deg = deg % 360;
-    }
-
-    while (deg < 0) {
-      deg += 360;
-    }
-
-    return deg;
+    return deg % 360;
   } // 获取color-stop区间范围，去除无用值
 
 
@@ -3489,29 +3485,12 @@
         }
       }
     }, {
-      key: "addLine",
-      value: function addLine(props) {
+      key: "addGeom",
+      value: function addGeom(tagName, props) {
+        props = util.hash2arr(props);
         this.virtualDom.children.push({
           type: 'item',
-          tagName: 'path',
-          props: props
-        });
-      }
-    }, {
-      key: "addCircle",
-      value: function addCircle(props) {
-        this.virtualDom.children.push({
-          type: 'item',
-          tagName: 'circle',
-          props: props
-        });
-      }
-    }, {
-      key: "addEllipse",
-      value: function addEllipse(props) {
-        this.virtualDom.children.push({
-          type: 'item',
-          tagName: 'ellipse',
+          tagName: tagName,
           props: props
         });
       }
@@ -5464,7 +5443,7 @@
             d = "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2);
           }
 
-          this.addLine([['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          this.addGeom('path', [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -5509,7 +5488,7 @@
       if (['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
         _this.__origin = _this.props.origin;
       } else {
-        _this.__origin = 'BOTTOM_LEFT';
+        _this.__origin = 'TOP_LEFT';
       }
 
       return _this;
@@ -5577,22 +5556,29 @@
           });
         }
 
+        var slg;
+
+        if (stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, originX, originY, width, height);
+          }
+        }
+
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(pts[0][0], originY + pts[0][1]);
+          ctx.moveTo(pts[0][0], pts[0][1]);
 
           for (var _i = 1, _len = pts.length; _i < _len; _i++) {
             var point = pts[_i];
             ctx.lineTo(point[0], point[1]);
           }
 
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
-          }
-
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var _points = '';
@@ -5602,41 +5588,13 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'polyline',
-            props: [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
-        }
-      }
-    }, {
-      key: "getPointsByX",
-      value: function getPointsByX(x) {
-        var min = Infinity;
-        var len = this.__pts.length;
-        var res = [];
-
-        for (var i = 0; i < len; i++) {
-          var diff = Math.abs(this.__pts[i][0] - x);
-
-          if (diff < min) {
-            min = diff;
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
           }
+
+          this.addGeom('polyline', [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
-
-        for (var _i3 = 0; _i3 < len; _i3++) {
-          var _diff = Math.abs(this.__pts[_i3][0] - x);
-
-          if (_diff === min) {
-            res.push({
-              index: _i3,
-              x: this.__pts[_i3][0],
-              y: this.__pts[_i3][1]
-            });
-          }
-        }
-
-        return res;
       }
     }, {
       key: "points",
@@ -5716,44 +5674,89 @@
 
         var originX = x + borderLeftWidth.value + mlw + plw;
         var originY = y + borderTopWidth.value + mtw + ptw;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
+          }
+        }
+
         points.forEach(function (item) {
           item[0] = originX + item[0] * width;
           item[1] = originY + item[1] * height;
         });
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
+
+          if (flg) {
+            ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+          } else if (frg) {
+            ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+          } else {
+            ctx.fillStyle = fill;
+          }
+
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(points[0][0], originY + points[0][1]);
+          ctx.moveTo(points[0][0], points[0][1]);
 
           for (var _i = 1, _len = points.length; _i < _len; _i++) {
             var point = points[_i];
             ctx.lineTo(point[0], point[1]);
           }
 
+          ctx.lineTo(points[0][0], points[0][1]);
           ctx.fill();
-
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
-          }
-
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var _points = '';
+          var pts = '';
 
-          for (var _i2 = 0, _len2 = _points.length; _i2 < _len2; _i2++) {
-            var _point = _points[_i2];
-            _points += "".concat(_point[0], ",").concat(_point[1], " ");
+          for (var _i2 = 0, _len2 = points.length; _i2 < _len2; _i2++) {
+            var _point = points[_i2];
+            pts += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'polygon',
-            props: [['points', _points], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
+          }
+
+          if (flg) {
+            var _uuid = gradient.createSvgLg(this.defs, flg);
+
+            fill = "url(#".concat(_uuid, ")");
+          } else if (frg) {
+            var _uuid2 = gradient.createSvgRg(this.defs, frg);
+
+            fill = "url(#".concat(_uuid2, ")");
+          }
+
+          this.addGeom('polygon', [['points', pts], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -5768,14 +5771,8 @@
 
   var OFFSET = Math.PI * 0.5;
 
-  function getCoordByDegree(x, y, r, d) {
-    while (d > 360) {
-      d -= 360;
-    }
-
-    while (d < 0) {
-      d += 360;
-    }
+  function getCoordsByDegree(x, y, r, d) {
+    d = d % 360;
 
     if (d >= 0 && d < 90) {
       return [x + Math.sin(d * Math.PI / 180) * r, y - Math.cos(d * Math.PI / 180) * r];
@@ -5871,47 +5868,90 @@
 
         var originX = x + borderLeftWidth.value + mlw + plw;
         var originY = y + borderTopWidth.value + mtw + ptw;
-        originX += width * 0.5;
-        originY += height * 0.5;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
         r *= Math.min(width, height) * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
-          ctx.beginPath();
-          ctx.moveTo(originX, originY);
-          ctx.arc(originX, originY, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
-          ctx.fill();
 
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
+          if (flg) {
+            ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+          } else if (frg) {
+            ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+          } else {
+            ctx.fillStyle = fill;
           }
 
+          ctx.setLineDash(strokeDasharray);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
+          ctx.lineTo(cx, cy);
+          ctx.fill();
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var x1, y1, x2, y2;
 
-          var _getCoordByDegree = getCoordByDegree(originX, originY, r, start);
+          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, start);
 
-          var _getCoordByDegree2 = _slicedToArray(_getCoordByDegree, 2);
+          var _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2);
 
-          x1 = _getCoordByDegree2[0];
-          y1 = _getCoordByDegree2[1];
+          x1 = _getCoordsByDegree2[0];
+          y1 = _getCoordsByDegree2[1];
 
-          var _getCoordByDegree3 = getCoordByDegree(originX, originY, r, end);
+          var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end);
 
-          var _getCoordByDegree4 = _slicedToArray(_getCoordByDegree3, 2);
+          var _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2);
 
-          x2 = _getCoordByDegree4[0];
-          y2 = _getCoordByDegree4[1];
+          x2 = _getCoordsByDegree4[0];
+          y2 = _getCoordsByDegree4[1];
           var large = end - start > 180 ? 1 : 0;
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'path',
-            props: [['d', "M".concat(originX, " ").concat(originY, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
+
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
+          }
+
+          if (flg) {
+            var _uuid = gradient.createSvgLg(this.defs, flg);
+
+            fill = "url(#".concat(_uuid, ")");
+          } else if (frg) {
+            var _uuid2 = gradient.createSvgRg(this.defs, frg);
+
+            fill = "url(#".concat(_uuid2, ")");
+          }
+
+          this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -5975,30 +6015,74 @@
 
         var originX = x + borderLeftWidth.value + mlw + plw;
         var originY = y + borderTopWidth.value + mtw + ptw;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            slg = gradient.getLinear(go.v, cx, cy, width, height);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            flg = gradient.getLinear(_go.v, cx, cy, width, height);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + width, originY + height);
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
+
+          if (flg) {
+            ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+          } else if (frg) {
+            ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+          } else {
+            ctx.fillStyle = fill;
+          }
+
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(originX, originY);
           ctx.lineTo(originX + width, originY);
           ctx.lineTo(originX + width, originY + height);
           ctx.lineTo(originX, originY + height);
+          ctx.lineTo(originX, originY);
           ctx.fill();
-
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
-          }
-
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'rect',
-            props: [['x', x], ['y', y], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
+          }
+
+          if (flg) {
+            var _uuid = gradient.createSvgLg(this.defs, flg);
+
+            fill = "url(#".concat(_uuid, ")");
+          } else if (frg) {
+            var _uuid2 = gradient.createSvgRg(this.defs, frg);
+
+            fill = "url(#".concat(_uuid2, ")");
+          }
+
+          this.addGeom('rect', [['x', x], ['y', y], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }]);
@@ -6126,7 +6210,7 @@
             fill = "url(#".concat(_uuid2, ")");
           }
 
-          this.addCircle([['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          this.addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -6270,7 +6354,7 @@
             fill = "url(#".concat(_uuid2, ")");
           }
 
-          this.addEllipse([['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          this.addGeom('ellipse', [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -6288,158 +6372,6 @@
     return Ellipse;
   }(Geom);
 
-  var Grid =
-  /*#__PURE__*/
-  function (_Geom) {
-    _inherits(Grid, _Geom);
-
-    function Grid(tagName, props) {
-      var _this;
-
-      _classCallCheck(this, Grid);
-
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Grid).call(this, tagName, props)); // x,y被分为几格
-
-      _this.__nx = 0;
-
-      if (_this.props.nx) {
-        _this.__nx = parseFloat(_this.props.nx);
-
-        if (isNaN(_this.nx)) {
-          _this.__nx = 0;
-        }
-      }
-
-      _this.__ny = 0;
-
-      if (_this.props.ny) {
-        _this.__ny = parseFloat(_this.props.ny);
-
-        if (isNaN(_this.ny)) {
-          _this.__ny = 0;
-        }
-      }
-
-      return _this;
-    }
-
-    _createClass(Grid, [{
-      key: "render",
-      value: function render(renderMode) {
-        _get(_getPrototypeOf(Grid.prototype), "render", this).call(this, renderMode);
-
-        var x = this.rx,
-            y = this.ry,
-            width = this.width,
-            height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            style = this.style,
-            ctx = this.ctx,
-            nx = this.nx,
-            ny = this.ny,
-            virtualDom = this.virtualDom;
-
-        if (width <= 0 || height <= 0) {
-          return;
-        }
-
-        if (nx < 3 && ny < 3) {
-          return;
-        }
-
-        var display = style.display,
-            borderTopWidth = style.borderTopWidth,
-            borderLeftWidth = style.borderLeftWidth,
-            stroke = style.stroke,
-            strokeWidth = style.strokeWidth,
-            strokeDasharray = style.strokeDasharray;
-
-        if (display === 'none') {
-          return;
-        }
-
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        var endX = originX + width;
-        var endY = originY + height;
-        var lx = [];
-        var ly = [];
-
-        if (nx >= 3) {
-          var per = width / (nx - 1);
-
-          for (var i = 0; i < nx; i++) {
-            ly.push(originX + i * per);
-          }
-        }
-
-        if (ny >= 3) {
-          var _per = height / (ny - 1);
-
-          for (var _i = 0; _i < ny; _i++) {
-            lx.push(originY + _i * _per);
-          }
-        }
-
-        if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(strokeDasharray);
-          ctx.beginPath();
-          lx.forEach(function (item) {
-            ctx.moveTo(originX, item);
-            ctx.lineTo(endX, item);
-          });
-          ly.forEach(function (item) {
-            ctx.moveTo(item, originY);
-            ctx.lineTo(item, endY);
-          });
-
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
-          }
-
-          ctx.closePath();
-        } else if (renderMode === mode.SVG) {
-          lx.forEach(function (item) {
-            virtualDom.children.push({
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', originX], ['y1', item], ['x2', endX], ['y2', item], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-            });
-          });
-          ly.forEach(function (item) {
-            virtualDom.children.push({
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', item], ['y1', originY], ['x2', item], ['y2', endY], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-            });
-          });
-        }
-      }
-    }, {
-      key: "nx",
-      get: function get() {
-        return this.__nx;
-      }
-    }, {
-      key: "ny",
-      get: function get() {
-        return this.__ny;
-      }
-    }, {
-      key: "dash",
-      get: function get() {
-        return this.__dash;
-      }
-    }]);
-
-    return Grid;
-  }(Geom);
-
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -6447,7 +6379,6 @@
   Geom.register('$rect', Rect);
   Geom.register('$circle', Circle);
   Geom.register('$ellipse', Ellipse);
-  Geom.register('$grid', Grid);
   var karas = {
     render: function render(root, dom) {
       if (!(root instanceof Root)) {

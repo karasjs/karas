@@ -2,6 +2,7 @@ import Xom from '../node/Xom';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../mode';
+import util from '../util';
 
 const REGISTER = {};
 
@@ -92,26 +93,11 @@ class Geom extends Xom {
     }
   }
 
-  addLine(props) {
+  addGeom(tagName, props) {
+    props = util.hash2arr(props);
     this.virtualDom.children.push({
       type: 'item',
-      tagName: 'path',
-      props,
-    });
-  }
-
-  addCircle(props) {
-    this.virtualDom.children.push({
-      type: 'item',
-      tagName: 'circle',
-      props,
-    });
-  }
-
-  addEllipse(props) {
-    this.virtualDom.children.push({
-      type: 'item',
-      tagName: 'ellipse',
+      tagName,
       props,
     });
   }

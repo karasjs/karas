@@ -96,7 +96,7 @@ class Ellipse extends Geom {
         let uuid = gradient.createSvgRg(this.defs, frg);
         fill = `url(#${uuid})`;
       }
-      this.addEllipse([
+      this.addGeom('ellipse', [
         ['cx', cx],
         ['cy', cy],
         ['rx', xr],

@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../mode';
+import gradient from "../style/gradient";
 
 class Polyline extends Geom {
   constructor(tagName, props) {
@@ -14,7 +15,7 @@ class Polyline extends Geom {
       this.__origin = this.props.origin;
     }
     else {
-      this.__origin = 'BOTTOM_LEFT';
+      this.__origin = 'TOP_LEFT';
     }
   }
 
@@ -75,19 +76,24 @@ class Polyline extends Geom {
         ]);
       });
     }
+    let slg;
+    if(stroke.indexOf('linear-gradient') > -1) {
+      let go = gradient.parseGradient(stroke);
+      if(go) {
+        slg = gradient.getLinear(go.v, originX, originY, width, height);
+      }
+    }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
+      ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
-      ctx.moveTo(pts[0][0], originY + pts[0][1]);
+      ctx.moveTo(pts[0][0], pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {
         let point = pts[i];
         ctx.lineTo(point[0], point[1]);
       }
-      if(strokeWidth && stroke !== 'transparent') {
-        ctx.stroke();
-      }
+      ctx.stroke();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
@@ -96,41 +102,18 @@ class Polyline extends Geom {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
       }
-      virtualDom.children.push({
-        type: 'item',
-        tagName: 'polyline',
-        props: [
-          ['points', points],
-          ['fill', 'none'],
-          ['stroke', stroke],
-          ['stroke-width', strokeWidth],
-          ['stroke-dasharray', strokeDasharray]
-        ],
-      });
-    }
-  }
-
-  getPointsByX(x) {
-    let min = Infinity;
-    let len = this.__pts.length;
-    let res = [];
-    for(let i = 0; i < len; i++) {
-      let diff = Math.abs(this.__pts[i][0] - x);
-      if(diff < min) {
-        min = diff;
+      if(slg) {
+        let uuid = gradient.createSvgLg(this.defs, slg);
+        stroke = `url(#${uuid})`;
       }
+      this.addGeom('polyline', [
+        ['points', points],
+        ['fill', 'none'],
+        ['stroke', stroke],
+        ['stroke-width', strokeWidth],
+        ['stroke-dasharray', strokeDasharray]
+      ]);
     }
-    for(let i = 0; i < len; i++) {
-      let diff = Math.abs(this.__pts[i][0] - x);
-      if(diff === min) {
-        res.push({
-          index: i,
-          x: this.__pts[i][0],
-          y: this.__pts[i][1],
-        });
-      }
-    }
-    return res;
   }
 
   get points() {

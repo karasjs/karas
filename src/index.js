@@ -9,7 +9,6 @@ import Sector from './geom/Sector';
 import Rect from './geom/Rect';
 import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
-import Grid from './geom/Grid';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -18,7 +17,6 @@ Geom.register('$sector', Sector);
 Geom.register('$rect', Rect);
 Geom.register('$circle', Circle);
 Geom.register('$ellipse', Ellipse);
-Geom.register('$grid', Grid);
 
 let karas = {
   render(root, dom) {

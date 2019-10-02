@@ -35,13 +35,7 @@ function getLinearDeg(v) {
       v.unshift(null);
     }
   }
-  while(deg >= 360) {
-    deg = deg % 360;
-  }
-  while(deg < 0) {
-    deg += 360;
-  }
-  return deg;
+  return deg % 360;
 }
 
 // 获取color-stop区间范围，去除无用值

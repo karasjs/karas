@@ -5,12 +5,12 @@ import gradient from '../style/gradient';
 class Line extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
-    // start和end表明线段的首尾坐标，control表明控制点坐标
-    this.__start = [0, 0];
+    // begin和end表明线段的首尾坐标，control表明控制点坐标
+    this.__begin = [0, 0];
     this.__end = [1, 1];
     this.__control = [];
-    if(Array.isArray(this.props.start)) {
-      this.__start = this.props.start;
+    if(Array.isArray(this.props.begin)) {
+      this.__begin = this.props.begin;
     }
     if(Array.isArray(this.props.end)) {
       this.__end = this.props.end;
@@ -22,8 +22,8 @@ class Line extends Geom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { width, height, ctx, start, end, control } = this;
-    if(start.length < 2 || end.length < 2) {
+    let { width, height, ctx, begin, end, control } = this;
+    if(begin.length < 2 || end.length < 2) {
       return;
     }
     let {
@@ -33,8 +33,8 @@ class Line extends Geom {
     if(display === 'none') {
       return;
     }
-    let x1 = originX + start[0] * width;
-    let y1 = originY + start[1] * height;
+    let x1 = originX + begin[0] * width;
+    let y1 = originY + begin[1] * height;
     let x2 = originX + end[0] * width;
     let y2 = originY + end[1] * height;
     let curve = 0;
@@ -93,8 +93,8 @@ class Line extends Geom {
     }
   }
 
-  get start() {
-    return this.__start;
+  get begin() {
+    return this.__begin;
   }
   get end() {
     return this.__end;

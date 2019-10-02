@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../mode';
-import gradient from "../style/gradient";
+import gradient from '../style/gradient';
 
 const OFFSET = Math.PI * 0.5;
 
@@ -36,12 +36,12 @@ class Sector extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 角度
-    this.__start = 0;
+    this.__begin = 0;
     this.__end = 0;
-    if(this.props.start) {
-      this.__start = parseFloat(this.props.start);
-      if(isNaN(this.start)) {
-        this.__start = 0;
+    if(this.props.begin) {
+      this.__begin = parseFloat(this.props.begin);
+      if(isNaN(this.begin)) {
+        this.__begin = 0;
       }
     }
     if(this.props.end) {
@@ -58,12 +58,17 @@ class Sector extends Geom {
         this.__r = 1;
       }
     }
+    // 扇形两侧是否有边
+    this.__edge = false;
+    if(this.props.edge !== undefined) {
+      this.__edge = !!this.props.edge;
+    }
   }
 
   render(renderMode) {
     super.render(renderMode);
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, start, end, r, virtualDom } = this;
-    if(start === end) {
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, begin, end, r, virtualDom } = this;
+    if(begin === end) {
       return;
     }
     let {
@@ -88,18 +93,22 @@ class Sector extends Geom {
       }
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
-      ctx.lineTo(cx, cy);
+      if(this.edge) {
+        ctx.moveTo(cx, cy);
+      }
+      ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
+      if(this.edge) {
+        ctx.lineTo(cx, cy);
+      }
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let x1, y1, x2, y2;
-      [ x1, y1 ] = getCoordsByDegree(cx, cy, r, start);
+      [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
       [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
-      let large = (end - start) > 180 ? 1 : 0;
+      let large = (end - begin) > 180 ? 1 : 0;
       if(slg) {
         let uuid = gradient.createSvgLg(this.defs, slg);
         stroke = `url(#${uuid})`;
@@ -112,8 +121,15 @@ class Sector extends Geom {
         let uuid = gradient.createSvgRg(this.defs, frg);
         fill = `url(#${uuid})`;
       }
+      let d;
+      if(this.edge) {
+        d = `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`;
+      }
+      else {
+        d = `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+      }
       this.addGeom('path', [
-        ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+        ['d', d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth],
@@ -122,14 +138,17 @@ class Sector extends Geom {
     }
   }
 
-  get start() {
-    return this.__start;
+  get begin() {
+    return this.__begin;
   }
   get end() {
     return this.__end;
   }
   get r() {
     return this.__r;
+  }
+  get edge() {
+    return this.__edge;
   }
 }
 

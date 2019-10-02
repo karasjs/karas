@@ -1476,10 +1476,317 @@
         pd: pd
       };
     }
+  } // 获取边框分割为几块的坐标，虚线分割为若干四边形和三边型
+  // direction为上右下左0123
+
+
+  function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, direction) {
+    var points = [];
+
+    if (['dashed', 'dotted'].indexOf(borderStyle) > -1) {
+      // 寻找一个合适的虚线线段长度和之间空白边距长度
+      var _ref = direction === 0 || direction === 2 ? calDashed(borderStyle, x1, x2, x3, x4, borderWidth) : calDashed(borderStyle, y1, y2, y3, y4, borderWidth),
+          n = _ref.n,
+          ps = _ref.ps,
+          pd = _ref.pd;
+
+      if (n > 1) {
+        for (var i = 0; i < n; i++) {
+          // 最后一个可能没有到底，延长之
+          var isLast = i === n - 1;
+          var main1 = void 0;
+          var main2 = void 0;
+          var cross1 = void 0;
+          var cross2 = void 0;
+
+          if (direction === 0 || direction === 2) {
+            main1 = i ? x1 + ps * i + pd * i : x1;
+          } else {
+            main1 = i ? y1 + ps * i + pd * i : y1;
+          }
+
+          main2 = main1 + ps;
+
+          if (direction === 0) {
+            // 整个和borderLeft重叠
+            if (main2 < x2) {
+              if (isLast) {
+                points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
+              } else {
+                cross1 = y1 + (main1 - x1) * Math.tan(deg1);
+                cross2 = y1 + (main2 - x1) * Math.tan(deg1);
+                points.push([main1, y1, main2, y1, main2, cross2, main1, cross1]);
+              }
+            } // 整个和borderRight重叠
+            else if (main1 > x3) {
+                cross1 = y1 + (x4 - main1) * Math.tan(deg2);
+                cross2 = y1 + (x4 - main2) * Math.tan(deg2);
+
+                if (isLast) {
+                  points.push([main1, y1, x4, y1, main1, cross1]);
+                } else {
+                  points.push([main1, y1, main2, y1, main2, cross2, main1, cross1]);
+                }
+              } // 不被整个重叠的情况再细分
+              else {
+                  // 上部分和borderLeft重叠
+                  if (main1 < x2) {
+                    cross1 = y1 + (main1 - x1) * Math.tan(deg1);
+
+                    if (isLast) {
+                      points.push([main1, y1, x4, y1, x3, y2, x2, y2, main1, cross1]);
+                    } else {
+                      // 下部分和borderRight重叠
+                      if (main2 > x3) {
+                        points.push([main1, y1, main2, y1, x3, y2, x2, y2, main1, cross1]);
+                      } // 下部独立
+                      else {
+                          points.push([main1, y1, main2, y1, main2, y2, x2, y2, main1, cross1]);
+                        }
+                    }
+                  } // 下部分和borderRight重叠
+                  else if (main2 > x3) {
+                      cross1 = y1 + (x4 - main2) * Math.tan(deg2); // 上部分和borderLeft重叠
+
+                      if (main1 < x2) {
+                        if (isLast) {
+                          points.push([main1, y1, x4, y1, x3, y2, x2, y2, main1, cross1]);
+                        } else {
+                          points.push([main1, y1, main2, y1, main2, cross1, x3, y2, x2, y2, main1, cross1]);
+                        }
+                      } // 上部独立
+                      else {
+                          if (isLast) {
+                            points.push([main1, y1, x4, y1, x3, y2, main1, y2]);
+                          } else {
+                            points.push([main1, y1, main2, y1, main2, cross1, x3, y2, main1, y2]);
+                          }
+                        }
+                    } // 完全独立
+                    else {
+                        if (isLast) {
+                          points.push([main1, y1, x4, y1, x3, y2, main1, y2]);
+                        } else {
+                          points.push([main1, y1, main2, y1, main2, y2, main1, y2]);
+                        }
+                      }
+                }
+          } else if (direction === 1) {
+            // 整个和borderTop重叠
+            if (main2 < y2) {
+              if (isLast) {
+                points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
+              } else {
+                cross1 = x4 - (main2 - y1) * Math.tan(deg1);
+                cross2 = x4 - (main1 - y1) * Math.tan(deg1);
+                points.push([cross1, main2, cross2, main1, x4, main1, x4, main2]);
+              }
+            } // 整个和borderBottom重叠
+            else if (main1 > y3) {
+                cross1 = x3 + (main1 - y3) * Math.tan(deg2);
+                cross2 = x3 + (main2 - y3) * Math.tan(deg2);
+
+                if (isLast) {
+                  points.push([cross1, main1, x4, main1, x4, y4]);
+                } else {
+                  points.push([cross1, main1, x4, main1, x4, main2, cross2, main2]);
+                }
+              } // 不被整个重叠的情况再细分
+              else {
+                  // 上部分和borderTop重叠
+                  if (main1 < y2) {
+                    cross1 = x3 + (y2 - main1) * Math.tan(deg1);
+
+                    if (isLast) {
+                      points.push([x3, y2, cross1, main1, x4, main1, x4, y4, x3, y4]);
+                    } else {
+                      // 下部分和borderBottom重叠
+                      if (main2 > y3) {
+                        points.push([x3, y2, cross1, main1, x4, main1, x4, main2, cross1, main2, x3, y3]);
+                      } // 下部独立
+                      else {
+                          points.push([x3, y2, cross1, main1, x4, main1, x4, main2, x3, main2]);
+                        }
+                    }
+                  } // 下部分和borderBottom重叠
+                  else if (main2 > y3) {
+                      cross1 = x3 + (main2 - y3) * Math.tan(deg2); // 上部分和borderTop重叠
+
+                      if (main1 < y2) {
+                        if (isLast) {
+                          points.push([x3, y2, cross1, main1, x4, main1, x4, y4, x3, y3]);
+                        } else {
+                          points.push([x3, y2, cross1, main1, x4, main1, x4, main2, cross1, main2, x3, y3]);
+                        }
+                      } // 上部独立
+                      else {
+                          if (isLast) {
+                            points.push([x3, main1, x4, main1, x4, y4, x3, y3]);
+                          } else {
+                            points.push([x3, main1, x4, main1, x4, main2, cross1, main2, x3, y3]);
+                          }
+                        }
+                    } // 完全独立
+                    else {
+                        if (isLast) {
+                          points.push([x3, main1, x4, main1, x4, y4, x3, y3]);
+                        } else {
+                          points.push([x3, main1, x4, main1, x4, main2, x3, main2]);
+                        }
+                      }
+                }
+          } else if (direction === 2) {
+            // 整个和borderLeft重叠
+            if (main2 < x2) {
+              if (isLast) {
+                points.push([x1, y4, x2, y3, x3, y3, x4, y4]);
+              } else {
+                cross1 = y4 - (main1 - x1) * Math.tan(deg1);
+                cross2 = y4 - (main2 - x1) * Math.tan(deg1);
+                points.push([main1, cross1, main2, cross2, main2, y4, main1, y4]);
+              }
+            } // 整个和borderRight重叠
+            else if (main1 > x3) {
+                cross1 = y4 - (main1 - x1) * Math.tan(deg2);
+                cross2 = y4 - (main2 - x1) * Math.tan(deg2);
+
+                if (isLast) {
+                  points.push([main1, cross1, x4, y4, main1, y4]);
+                } else {
+                  points.push([main1, cross1, main2, cross2, main2, y4, main1, y4]);
+                }
+              } // 不被整个重叠的情况再细分
+              else {
+                  // 上部分和borderLeft重叠
+                  if (main1 < x2) {
+                    cross1 = y3 + (main1 - x1) * Math.tan(deg1);
+
+                    if (isLast) {
+                      points.push([main1, cross1, x2, y3, x3, y3, x4, y4, main1, y4]);
+                    } else {
+                      // 下部分和borderRight重叠
+                      if (main2 > x3) {
+                        points.push([main1, cross1, x2, y3, x3, y3, main2, y4, main1, y4]);
+                      } // 下部独立
+                      else {
+                          points.push([main1, cross1, x2, y3, main2, y3, main2, y4, main1, y4]);
+                        }
+                    }
+                  } // 下部分和borderRight重叠
+                  else if (main2 > x3) {
+                      cross1 = y4 - (x4 - main2) * Math.tan(deg2); // 上部分和borderLeft重叠
+
+                      if (main1 < x2) {
+                        if (isLast) {
+                          points.push([main1, cross1, x3, y3, x4, y4, main1, y4]);
+                        } else {
+                          points.push([main1, cross1, x3, y3, main2, cross1, main2, y4, main1, y4]);
+                        }
+                      } // 上部独立
+                      else {
+                          if (isLast) {
+                            points.push([main1, y3, x3, y3, x4, y4, main1, y4]);
+                          } else {
+                            points.push([main1, y3, x3, y3, main2, cross1, main2, y4, main1, y4]);
+                          }
+                        }
+                    } // 完全独立
+                    else {
+                        if (isLast) {
+                          points.push([main1, y3, x3, y3, x4, y4, main1, y4]);
+                        } else {
+                          points.push([main1, y3, main2, y3, main2, y4, main1, y4]);
+                        }
+                      }
+                }
+          } else if (direction === 3) {
+            // 整个和borderTop重叠
+            if (main2 < y2) {
+              if (isLast) {
+                points.push([x1, y1, x2, y2, x2, y3, x1, y4]);
+              } else {
+                cross1 = x1 + (main1 - y1) * Math.tan(deg1);
+                cross2 = x1 + (main2 - y1) * Math.tan(deg1);
+                points.push([x1, main1, cross1, main1, cross2, main2, x1, main2]);
+              }
+            } // 整个和borderBottom重叠
+            else if (main1 > y3) {
+                cross1 = x1 + (y4 - main1) * Math.tan(deg2);
+                cross2 = x1 + (y4 - main2) * Math.tan(deg2);
+
+                if (isLast) {
+                  points.push([x1, main1, cross1, main1, x1, y4]);
+                } else {
+                  points.push([x1, main1, cross1, main1, cross2, main2, x1, main2]);
+                }
+              } // 不被整个重叠的情况再细分
+              else {
+                  // 上部分和borderTop重叠
+                  if (main1 < y2) {
+                    cross1 = x1 + (main1 - y1) * Math.tan(deg1);
+
+                    if (isLast) {
+                      points.push([x1, main1, cross1, main1, x2, y2, x2, y3, x1, y4]);
+                    } else {
+                      // 下部分和borderBottom重叠
+                      if (main2 > y3) {
+                        points.push([x1, main1, cross1, main1, x2, y2, x2, y3, cross1, main2, x1, main2]);
+                      } // 下部独立
+                      else {
+                          points.push([x1, main1, cross1, main1, x2, y2, x2, main2, x1, main2]);
+                        }
+                    }
+                  } // 下部分和borderBottom重叠
+                  else if (main2 > y3) {
+                      cross1 = x1 + (y4 - main2) * Math.tan(deg2); // 上部分和borderTop重叠
+
+                      if (main1 < y2) {
+                        if (isLast) {
+                          points.push([x1, main1, cross1, main1, x2, y2, x2, y3, x1, y4]);
+                        } else {
+                          points.push([x1, main1, cross1, main1, x2, y2, x2, y3, cross1, main2, x1, main2]);
+                        }
+                      } // 上部独立
+                      else {
+                          if (isLast) {
+                            points.push([x1, main1, x2, main1, x2, y3, x1, y4]);
+                          } else {
+                            points.push([x1, main1, x2, main1, x2, y3, cross1, main2, x1, main2]);
+                          }
+                        }
+                    } // 完全独立
+                    else {
+                        if (isLast) {
+                          points.push([x1, main1, x2, main1, x2, y3, x1, y4]);
+                        } else {
+                          points.push([x1, main1, x2, main1, x2, main2, x1, main2]);
+                        }
+                      }
+                }
+          }
+        }
+
+        return points;
+      }
+    } // 兜底返回实线
+
+
+    if (direction === 0) {
+      points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
+    } else if (direction === 1) {
+      points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
+    } else if (direction === 2) {
+      points.push([x1, y4, x2, y3, x3, y3, x4, y4]);
+    } else if (direction === 3) {
+      points.push([x1, y1, x2, y2, x2, y3, x1, y4]);
+    }
+
+    return points;
   }
 
   var border = {
-    calDashed: calDashed
+    calDashed: calDashed,
+    calPoints: calPoints
   };
 
   function renderBorder(renderMode, points, color, ctx, xom) {
@@ -1891,397 +2198,38 @@
 
 
         if (btw > 0 && btc !== 'transparent') {
-          var points = [];
-
-          if (['dashed', 'dotted'].indexOf(bts) > -1) {
-            // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _border$calDashed = border.calDashed(bts, x1, x2, x3, x4, btw),
-                n = _border$calDashed.n,
-                ps = _border$calDashed.ps,
-                pd = _border$calDashed.pd;
-
-            if (n <= 1) {
-              points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
-            } else {
-              var deg1 = Math.atan(btw / blw);
-              var deg2 = Math.atan(btw / brw);
-
-              for (var i = 0; i < n; i++) {
-                // 最后一个可能没有到底，延长之
-                var isLast = i === n - 1;
-                var xx1 = i ? x1 + ps * i + pd * i : x1;
-                var xx4 = xx1 + ps;
-                var yy1 = void 0;
-                var yy2 = void 0; // 整个和borderLeft重叠
-
-                if (xx4 < x2) {
-                  if (isLast) {
-                    points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
-                  } else {
-                    yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
-                    yy2 = y1 + (xx4 - x1) * Math.tan(deg1);
-                    points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
-                  }
-                } // 整个和borderRight重叠
-                else if (xx1 > x3) {
-                    yy1 = y1 + (x4 - xx1) * Math.tan(deg2);
-                    yy2 = y1 + (x4 - xx4) * Math.tan(deg2);
-
-                    if (isLast) {
-                      points.push([xx1, y1, x4, y1, xx1, yy1]);
-                    } else {
-                      points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
-                    }
-                  } // 不被整个重叠的情况再细分
-                  else {
-                      // 上部分和borderLeft重叠
-                      if (xx1 < x2) {
-                        yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
-
-                        if (isLast) {
-                          points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
-                        } else {
-                          // 下部分和borderRight重叠
-                          if (xx4 > x3) {
-                            points.push([xx1, y1, xx4, y1, x3, y2, x2, y2, xx1, yy1]);
-                          } // 下部独立
-                          else {
-                              points.push([xx1, y1, xx4, y1, xx4, y2, x2, y2, xx1, yy1]);
-                            }
-                        }
-                      } // 下部分和borderRight重叠
-                      else if (xx4 > x3) {
-                          yy1 = y1 + (x4 - xx4) * Math.tan(deg2); // 上部分和borderLeft重叠
-
-                          if (xx1 < x2) {
-                            if (isLast) {
-                              points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
-                            } else {
-                              points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, x2, y2, xx1, yy1]);
-                            }
-                          } // 上部独立
-                          else {
-                              if (isLast) {
-                                points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
-                              } else {
-                                points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, xx1, y2]);
-                              }
-                            }
-                        } // 完全独立
-                        else {
-                            if (isLast) {
-                              points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
-                            } else {
-                              points.push([xx1, y1, xx4, y1, xx4, y2, xx1, y2]);
-                            }
-                          }
-                    }
-              }
-            }
-          } else {
-            points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
-          }
-
+          var deg1 = Math.atan(btw / blw);
+          var deg2 = Math.atan(btw / brw);
+          var points = border.calPoints(btw, bts, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
           renderBorder(renderMode, points, btc, ctx, this);
         }
 
         if (brw > 0 && brc !== 'transparent') {
-          var _points = [];
+          var _deg = Math.atan(brw / btw);
 
-          if (['dashed', 'dotted'].indexOf(brs) > -1) {
-            // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _border$calDashed2 = border.calDashed(brs, y1, y2, y3, y4, brw),
-                _n = _border$calDashed2.n,
-                _ps = _border$calDashed2.ps,
-                _pd = _border$calDashed2.pd;
+          var _deg2 = Math.atan(brw / bbw);
 
-            if (_n <= 1) {
-              _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
-            } else {
-              var _deg = Math.atan(brw / btw);
-
-              var _deg2 = Math.atan(brw / bbw);
-
-              for (var _i = 0; _i < _n; _i++) {
-                // 最后一个可能没有到底，延长之
-                var _isLast = _i === _n - 1;
-
-                var _yy = _i ? y1 + _ps * _i + _pd * _i : y1;
-
-                var yy4 = _yy + _ps;
-
-                var _xx = void 0;
-
-                var xx2 = void 0; // 整个和borderTop重叠
-
-                if (yy4 < y2) {
-                  if (_isLast) {
-                    _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
-                  } else {
-                    _xx = x4 - (yy4 - y1) * Math.tan(_deg);
-                    xx2 = x4 - (_yy - y1) * Math.tan(_deg);
-
-                    _points.push([_xx, yy4, xx2, _yy, x4, _yy, x4, yy4]);
-                  }
-                } // 整个和borderBottom重叠
-                else if (_yy > y3) {
-                    _xx = x3 + (_yy - y3) * Math.tan(_deg2);
-                    xx2 = x3 + (yy4 - y3) * Math.tan(_deg2);
-
-                    if (_isLast) {
-                      _points.push([_xx, _yy, x4, _yy, x4, y4]);
-                    } else {
-                      _points.push([_xx, _yy, x4, _yy, x4, yy4, xx2, yy4]);
-                    }
-                  } // 不被整个重叠的情况再细分
-                  else {
-                      // 上部分和borderTop重叠
-                      if (_yy < y2) {
-                        _xx = x3 + (y2 - _yy) * Math.tan(_deg);
-
-                        if (_isLast) {
-                          _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y4]);
-                        } else {
-                          // 下部分和borderBottom重叠
-                          if (yy4 > y3) {
-                            _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
-                          } // 下部独立
-                          else {
-                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, x3, yy4]);
-                            }
-                        }
-                      } // 下部分和borderBottom重叠
-                      else if (yy4 > y3) {
-                          _xx = x3 + (yy4 - y3) * Math.tan(_deg2); // 上部分和borderTop重叠
-
-                          if (_yy < y2) {
-                            if (_isLast) {
-                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y3]);
-                            } else {
-                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
-                            }
-                          } // 上部独立
-                          else {
-                              if (_isLast) {
-                                _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
-                              } else {
-                                _points.push([x3, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
-                              }
-                            }
-                        } // 完全独立
-                        else {
-                            if (_isLast) {
-                              _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
-                            } else {
-                              _points.push([x3, _yy, x4, _yy, x4, yy4, x3, yy4]);
-                            }
-                          }
-                    }
-              }
-            }
-          } else {
-            _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
-          }
+          var _points = border.calPoints(brw, brs, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
 
           renderBorder(renderMode, _points, brc, ctx, this);
         }
 
         if (bbw > 0 && bbc !== 'transparent') {
-          var _points2 = []; // 寻找一个合适的虚线线段长度和之间空白边距长度
+          var _deg3 = Math.atan(bbw / blw);
 
-          if (['dashed', 'dotted'].indexOf(bbs) > -1) {
-            // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _border$calDashed3 = border.calDashed(bbs, x1, x2, x3, x4, bbw),
-                _n2 = _border$calDashed3.n,
-                _ps2 = _border$calDashed3.ps,
-                _pd2 = _border$calDashed3.pd;
+          var _deg4 = Math.atan(bbw / brw);
 
-            var _deg3 = Math.atan(bbw / blw);
-
-            var _deg4 = Math.atan(bbw / brw);
-
-            for (var _i2 = 0; _i2 < _n2; _i2++) {
-              // 最后一个可能没有到底，延长之
-              var _isLast2 = _i2 === _n2 - 1;
-
-              var _xx2 = _i2 ? x1 + _ps2 * _i2 + _pd2 * _i2 : x1;
-
-              var _xx3 = _xx2 + _ps2;
-
-              var _yy2 = void 0;
-
-              var _yy3 = void 0; // 整个和borderLeft重叠
-
-
-              if (_xx3 < x2) {
-                if (_isLast2) {
-                  _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
-                } else {
-                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg3);
-                  _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg3);
-
-                  _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
-                }
-              } // 整个和borderRight重叠
-              else if (_xx2 > x3) {
-                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg4);
-                  _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg4);
-
-                  if (_isLast2) {
-                    _points2.push([_xx2, _yy2, x4, y4, _xx2, y4]);
-                  } else {
-                    _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
-                  }
-                } // 不被整个重叠的情况再细分
-                else {
-                    // 上部分和borderLeft重叠
-                    if (_xx2 < x2) {
-                      _yy2 = y3 + (_xx2 - x1) * Math.tan(_deg3);
-
-                      if (_isLast2) {
-                        _points2.push([_xx2, _yy2, x2, y3, x3, y3, x4, y4, _xx2, y4]);
-                      } else {
-                        // 下部分和borderRight重叠
-                        if (_xx3 > x3) {
-                          _points2.push([_xx2, _yy2, x2, y3, x3, y3, _xx3, y4, _xx2, y4]);
-                        } // 下部独立
-                        else {
-                            _points2.push([_xx2, _yy2, x2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
-                          }
-                      }
-                    } // 下部分和borderRight重叠
-                    else if (_xx3 > x3) {
-                        _yy2 = y4 - (x4 - _xx3) * Math.tan(_deg4); // 上部分和borderLeft重叠
-
-                        if (_xx2 < x2) {
-                          if (_isLast2) {
-                            _points2.push([_xx2, _yy2, x3, y3, x4, y4, _xx2, y4]);
-                          } else {
-                            _points2.push([_xx2, _yy2, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
-                          }
-                        } // 上部独立
-                        else {
-                            if (_isLast2) {
-                              _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
-                            } else {
-                              _points2.push([_xx2, y3, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
-                            }
-                          }
-                      } // 完全独立
-                      else {
-                          if (_isLast2) {
-                            _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
-                          } else {
-                            _points2.push([_xx2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
-                          }
-                        }
-                  }
-            }
-          } else {
-            _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
-          }
+          var _points2 = border.calPoints(bbw, bbs, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
 
           renderBorder(renderMode, _points2, bbc, ctx, this);
         }
 
         if (blw > 0 && blc !== 'transparent') {
-          var _points3 = [];
+          var _deg5 = Math.atan(blw / btw);
 
-          if (['dashed', 'dotted'].indexOf(bls) > -1) {
-            // 寻找一个合适的虚线线段长度和之间空白边距长度
-            var _border$calDashed4 = border.calDashed(bls, y1, y2, y3, y4, blw),
-                _n3 = _border$calDashed4.n,
-                _ps3 = _border$calDashed4.ps,
-                _pd3 = _border$calDashed4.pd;
+          var _deg6 = Math.atan(blw / bbw);
 
-            if (_n3 <= 1) {
-              _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
-            } else {
-              var _deg5 = Math.atan(blw / btw);
-
-              var _deg6 = Math.atan(blw / bbw);
-
-              for (var _i3 = 0; _i3 < _n3; _i3++) {
-                // 最后一个可能没有到底，延长之
-                var _isLast3 = _i3 === _n3 - 1;
-
-                var _yy4 = _i3 ? y1 + _ps3 * _i3 + _pd3 * _i3 : y1;
-
-                var _yy5 = _yy4 + _ps3;
-
-                var _xx4 = void 0;
-
-                var _xx5 = void 0; // 整个和borderTop重叠
-
-
-                if (_yy5 < y2) {
-                  if (_isLast3) {
-                    _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
-                  } else {
-                    _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
-                    _xx5 = x1 + (_yy5 - y1) * Math.tan(_deg5);
-
-                    _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
-                  }
-                } // 整个和borderBottom重叠
-                else if (_yy4 > y3) {
-                    _xx4 = x1 + (y4 - _yy4) * Math.tan(_deg6);
-                    _xx5 = x1 + (y4 - _yy5) * Math.tan(_deg6);
-
-                    if (_isLast3) {
-                      _points3.push([x1, _yy4, _xx4, _yy4, x1, y4]);
-                    } else {
-                      _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
-                    }
-                  } // 不被整个重叠的情况再细分
-                  else {
-                      // 上部分和borderTop重叠
-                      if (_yy4 < y2) {
-                        _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
-
-                        if (_isLast3) {
-                          _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
-                        } else {
-                          // 下部分和borderBottom重叠
-                          if (_yy5 > y3) {
-                            _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
-                          } // 下部独立
-                          else {
-                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, _yy5, x1, _yy5]);
-                            }
-                        }
-                      } // 下部分和borderBottom重叠
-                      else if (_yy5 > y3) {
-                          _xx4 = x1 + (y4 - _yy5) * Math.tan(_deg6); // 上部分和borderTop重叠
-
-                          if (_yy4 < y2) {
-                            if (_isLast3) {
-                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
-                            } else {
-                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
-                            }
-                          } // 上部独立
-                          else {
-                              if (_isLast3) {
-                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
-                              } else {
-                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, _xx4, _yy5, x1, _yy5]);
-                              }
-                            }
-                        } // 完全独立
-                        else {
-                            if (_isLast3) {
-                              _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
-                            } else {
-                              _points3.push([x1, _yy4, x2, _yy4, x2, _yy5, x1, _yy5]);
-                            }
-                          }
-                    }
-              }
-            }
-          } else {
-            _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
-          }
+          var _points3 = border.calPoints(blw, bls, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
 
           renderBorder(renderMode, _points3, blc, ctx, this);
         }
@@ -2337,8 +2285,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i4 = children.length - 1; _i4 >= 0; _i4--) {
-            var _child = children[_i4];
+          for (var _i = children.length - 1; _i >= 0; _i--) {
+            var _child = children[_i];
 
             if (_child instanceof Xom && ['absolute', 'relative'].indexOf(_child.style.position) === -1) {
               if (_child.__emitEvent(e)) {
@@ -5394,14 +5342,14 @@
 
       _classCallCheck(this, Line);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, tagName, props)); // start和end表明线段的首尾坐标，control表明控制点坐标
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, tagName, props)); // begin和end表明线段的首尾坐标，control表明控制点坐标
 
-      _this.__start = [0, 0];
+      _this.__begin = [0, 0];
       _this.__end = [1, 1];
       _this.__control = [];
 
-      if (Array.isArray(_this.props.start)) {
-        _this.__start = _this.props.start;
+      if (Array.isArray(_this.props.begin)) {
+        _this.__begin = _this.props.begin;
       }
 
       if (Array.isArray(_this.props.end)) {
@@ -5423,11 +5371,11 @@
         var width = this.width,
             height = this.height,
             ctx = this.ctx,
-            start = this.start,
+            begin = this.begin,
             end = this.end,
             control = this.control;
 
-        if (start.length < 2 || end.length < 2) {
+        if (begin.length < 2 || end.length < 2) {
           return;
         }
 
@@ -5444,8 +5392,8 @@
           return;
         }
 
-        var x1 = originX + start[0] * width;
-        var y1 = originY + start[1] * height;
+        var x1 = originX + begin[0] * width;
+        var y1 = originY + begin[1] * height;
         var x2 = originX + end[0] * width;
         var y2 = originY + end[1] * height;
         var curve = 0; // 控制点，曲线
@@ -5501,9 +5449,9 @@
         }
       }
     }, {
-      key: "start",
+      key: "begin",
       get: function get() {
-        return this.__start;
+        return this.__begin;
       }
     }, {
       key: "end",
@@ -5798,14 +5746,14 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Sector).call(this, tagName, props)); // 角度
 
-      _this.__start = 0;
+      _this.__begin = 0;
       _this.__end = 0;
 
-      if (_this.props.start) {
-        _this.__start = parseFloat(_this.props.start);
+      if (_this.props.begin) {
+        _this.__begin = parseFloat(_this.props.begin);
 
-        if (isNaN(_this.start)) {
-          _this.__start = 0;
+        if (isNaN(_this.begin)) {
+          _this.__begin = 0;
         }
       }
 
@@ -5826,6 +5774,13 @@
         if (isNaN(_this.r)) {
           _this.__r = 1;
         }
+      } // 扇形两侧是否有边
+
+
+      _this.__edge = false;
+
+      if (_this.props.edge !== undefined) {
+        _this.__edge = !!_this.props.edge;
       }
 
       return _this;
@@ -5846,12 +5801,12 @@
             ptw = this.ptw,
             style = this.style,
             ctx = this.ctx,
-            start = this.start,
+            begin = this.begin,
             end = this.end,
             r = this.r,
             virtualDom = this.virtualDom;
 
-        if (start === end) {
+        if (begin === end) {
           return;
         }
 
@@ -5887,16 +5842,24 @@
 
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.arc(cx, cy, r, start * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
-          ctx.lineTo(cx, cy);
+
+          if (this.edge) {
+            ctx.moveTo(cx, cy);
+          }
+
+          ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
+
+          if (this.edge) {
+            ctx.lineTo(cx, cy);
+          }
+
           ctx.fill();
           ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var x1, y1, x2, y2;
 
-          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, start);
+          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin);
 
           var _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2);
 
@@ -5909,7 +5872,7 @@
 
           x2 = _getCoordsByDegree4[0];
           y2 = _getCoordsByDegree4[1];
-          var large = end - start > 180 ? 1 : 0;
+          var large = end - begin > 180 ? 1 : 0;
 
           if (slg) {
             var uuid = gradient.createSvgLg(this.defs, slg);
@@ -5926,13 +5889,21 @@
             fill = "url(#".concat(_uuid2, ")");
           }
 
-          this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var d;
+
+          if (this.edge) {
+            d = "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z");
+          } else {
+            d = "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2);
+          }
+
+          this.addGeom('path', [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
-      key: "start",
+      key: "begin",
       get: function get() {
-        return this.__start;
+        return this.__begin;
       }
     }, {
       key: "end",
@@ -5943,6 +5914,11 @@
       key: "r",
       get: function get() {
         return this.__r;
+      }
+    }, {
+      key: "edge",
+      get: function get() {
+        return this.__edge;
       }
     }]);
 

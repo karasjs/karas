@@ -1826,7 +1826,7 @@
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(_uuid, ")")]]);
             }
           }
-        } else if (bgc && bgc !== 'transparent') {
+        } else if (bgc !== 'transparent') {
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
             ctx.fillStyle = bgc;
@@ -2513,6 +2513,7 @@
     fontStyle: 'normal',
     fontWeight: 400,
     lineHeight: 'normal',
+    backgroundColor: 'transparent',
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -2543,7 +2544,7 @@
     transformOrigin: 'center',
     fill: '#000',
     stroke: '#000',
-    strokeWidth: 0,
+    strokeWidth: 1,
     strokeDasharray: []
   };
   var reset = [];
@@ -3450,6 +3451,15 @@
             type: 'geom'
           });
         }
+      }
+    }, {
+      key: "addLine",
+      value: function addLine(props) {
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: 'path',
+          props: props
+        });
       }
     }, {
       key: "tagName",
@@ -5276,8 +5286,8 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, tagName, props)); // start和end表明线段的首尾坐标，control表明控制点坐标
 
-      _this.__start = [];
-      _this.__end = [];
+      _this.__start = [0, 0];
+      _this.__end = [1, 1];
       _this.__control = [];
 
       if (Array.isArray(_this.props.start)) {
@@ -5321,8 +5331,6 @@
 
         var display = style.display,
             borderTopWidth = style.borderTopWidth,
-            borderRightWidth = style.borderRightWidth,
-            borderBottomWidth = style.borderBottomWidth,
             borderLeftWidth = style.borderLeftWidth,
             stroke = style.stroke,
             strokeWidth = style.strokeWidth,
@@ -5353,8 +5361,48 @@
           cy2 = originY + control[1][1] * height;
         }
 
+        var lg;
+
+        if (stroke.indexOf('linear-gradient') > -1) {
+          var v = /\((.+)\)/.exec(stroke);
+
+          if (v) {
+            var cx = x1 + (x2 - x1) * 0.5;
+            var cy = y1 + (y2 - y1) * 0.5;
+            v = v[1].split(/\s*,\s*/);
+            var deg = gradient.getLinearDeg(v);
+            var r = util.r2d(deg);
+            var length = Math.abs(Math.abs(y2 - y1) * Math.sin(r)) + Math.abs(Math.abs(x2 - x1) * Math.cos(r));
+
+            var _gradient$calLinearCo = gradient.calLinearCoords(deg, length * 0.5, cx, cy),
+                _gradient$calLinearCo2 = _slicedToArray(_gradient$calLinearCo, 4),
+                xx0 = _gradient$calLinearCo2[0],
+                yy0 = _gradient$calLinearCo2[1],
+                xx1 = _gradient$calLinearCo2[2],
+                yy1 = _gradient$calLinearCo2[3];
+
+            var list = gradient.getColorStop(v, length);
+            lg = {
+              xx0: xx0,
+              yy0: yy0,
+              xx1: xx1,
+              yy1: yy1,
+              list: list
+            };
+          }
+        }
+
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          if (lg) {
+            var clg = ctx.createLinearGradient(lg.xx0, lg.yy0, lg.xx1, lg.yy1);
+            lg.list.forEach(function (item) {
+              clg.addColorStop(item[1], item[0]);
+            });
+            ctx.strokeStyle = clg;
+          } else {
+            ctx.strokeStyle = stroke;
+          }
+
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
@@ -5371,24 +5419,21 @@
           ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
+          if (lg) {
+            var uuid = this.defs.add({
+              tagName: 'linearGradient',
+              props: [['x1', lg.xx0], ['y1', lg.yy0], ['x2', lg.xx1], ['y2', lg.yy1]],
+              stop: lg.list
+            });
+            stroke = "url(#".concat(uuid, ")");
+          }
+
           if (curve === 2) {
-            virtualDom.children.push({
-              type: 'item',
-              tagName: 'path',
-              props: [['d', "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-            });
+            this.addLine([['d', "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
           } else if (curve === 1) {
-            virtualDom.children.push({
-              type: 'item',
-              tagName: 'path',
-              props: [['d', "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-            });
+            this.addLine([['d', "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
           } else {
-            virtualDom.children.push({
-              type: 'item',
-              tagName: 'line',
-              props: [['x1', x1], ['y1', y1], ['x2', x2], ['y2', y2], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-            });
+            this.addLine([['d', "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
           }
         }
       }

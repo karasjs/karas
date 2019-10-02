@@ -400,7 +400,7 @@ class Xom extends Node {
         }
       }
     }
-    else if(bgc && bgc !== 'transparent') {
+    else if(bgc !== 'transparent') {
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
         ctx.fillStyle = bgc;

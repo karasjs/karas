@@ -92,6 +92,14 @@ class Geom extends Xom {
     }
   }
 
+  addLine(props) {
+    this.virtualDom.children.push({
+      type: 'item',
+      tagName: 'path',
+      props,
+    });
+  }
+
   get tagName() {
     return this.__tagName;
   }

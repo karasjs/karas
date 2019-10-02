@@ -20,6 +20,7 @@ const RESET = {
   fontStyle: 'normal',
   fontWeight: 400,
   lineHeight: 'normal',
+  backgroundColor: 'transparent',
   borderTopWidth: 0,
   borderRightWidth: 0,
   borderBottomWidth: 0,
@@ -50,7 +51,7 @@ const RESET = {
   transformOrigin: 'center',
   fill: '#000',
   stroke: '#000',
-  strokeWidth: 0,
+  strokeWidth: 1,
   strokeDasharray: [],
 };
 

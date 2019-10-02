@@ -1,6 +1,7 @@
 import unit from './unit';
 import font from './font';
 import reset from './reset';
+import gradient from './gradient';
 
 function parserOneBorder(style, direction) {
   let key = `border${direction}`;
@@ -77,15 +78,12 @@ function normalize(style) {
     }
   });
   let temp = style.background;
-  // 处理缩写
+  // 处理渐变背景色
   if(temp) {
     // 优先gradient，没有再考虑颜色
-    let gradient = /\b(\w+)-gradient\((.+)\)/.exec(temp);
-    if(gradient) {
-      style.backgroundGradient = {
-        k: gradient[1],
-        v: gradient[2].split(/\s*,\s*/),
-      };
+    let gd = gradient.parseGradient(temp);
+    if(gd) {
+      style.backgroundGradient = gd;
     }
     else {
       let bgc = /#[0-9a-f]{3,6}/i.exec(temp);
@@ -99,6 +97,7 @@ function normalize(style) {
       }
     }
   }
+  // 处理缩写
   temp = style.flex;
   if(temp) {
     if(temp === 'none') {
@@ -167,10 +166,6 @@ function normalize(style) {
       style.paddingBottom = match[2];
       style.paddingLeft = match[3];
     }
-  }
-  temp = style.borderRadius;
-  if(temp) {
-    style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = temp;
   }
   temp = style.transform;
   if(temp) {

@@ -3,7 +3,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../mode';
 
-const IMPLEMENT = {};
+const REGISTER = {};
 
 class Geom extends Xom {
   constructor(tagName, props) {
@@ -100,6 +100,14 @@ class Geom extends Xom {
     });
   }
 
+  addCircle(props) {
+    this.virtualDom.children.push({
+      type: 'item',
+      tagName: 'circle',
+      props,
+    });
+  }
+
   get tagName() {
     return this.__tagName;
   }
@@ -107,17 +115,20 @@ class Geom extends Xom {
     return this.__height;
   }
 
-  static getImplement(name) {
-    if(!IMPLEMENT.hasOwnProperty(name)) {
+  static getRegister(name) {
+    if(!REGISTER.hasOwnProperty(name)) {
       throw new Error(`Geom has not register: ${name}`);
     }
-    return IMPLEMENT[name];
+    return REGISTER[name];
   }
-  static register(name, implement) {
-    if(IMPLEMENT.hasOwnProperty(name)) {
+  static register(name, obj) {
+    if(Geom.hasRegister(name)) {
       throw new Error(`Geom has already register: ${name}`);
     }
-    IMPLEMENT[name] = implement;
+    REGISTER[name] = obj;
+  }
+  static hasRegister(name) {
+    return REGISTER.hasOwnProperty(name);
   }
 }
 

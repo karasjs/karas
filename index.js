@@ -1048,7 +1048,7 @@
   } // 获取径向渐变半径
 
 
-  function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
+  function calRadialRadius(v, iw, ih, cx, cy, x1, y1, x2, y2) {
     var size = 'farthest-corner';
     var r; // 半径
 
@@ -1086,18 +1086,18 @@
 
         if (s) {
           if (s[1].indexOf('px') > -1) {
-            cx = x2 + parseFloat(s[1]);
+            cx = x1 + parseFloat(s[1]);
           } else {
-            cx = x2 + parseFloat(s[1]) * iw * 0.01;
+            cx = x1 + parseFloat(s[1]) * iw * 0.01;
           } // y可以省略，此时等同于x
 
 
           var by = s[2] || s[1];
 
           if (by.indexOf('px') > -1) {
-            cy = y2 + parseFloat(by);
+            cy = y1 + parseFloat(by);
           } else {
-            cy = y2 + parseFloat(by) * ih * 0.01;
+            cy = y1 + parseFloat(by) * ih * 0.01;
           }
         }
       }
@@ -1108,22 +1108,22 @@
     if (size) {
       if (size === 'closest-side') {
         // 在边外特殊情况只有end颜色填充
-        if (cx <= x2 || cx >= x3 || cy <= y2 || cy >= y3) {
+        if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
           r = 0;
         } else {
           var xl;
           var yl;
 
-          if (cx < x2 + iw * 0.5) {
-            xl = cx - x2;
+          if (cx < x1 + iw * 0.5) {
+            xl = cx - x1;
           } else {
-            xl = x3 - cx;
+            xl = x2 - cx;
           }
 
-          if (cy < y2 + ih * 0.5) {
-            yl = cy - y2;
+          if (cy < y1 + ih * 0.5) {
+            yl = cy - y1;
           } else {
-            yl = y3 - cy;
+            yl = y2 - cy;
           }
 
           r = Math.min(xl, yl);
@@ -1133,32 +1133,32 @@
 
         var _yl;
 
-        if (cx < x2 + iw * 0.5) {
-          _xl = cx - x2;
+        if (cx < x1 + iw * 0.5) {
+          _xl = cx - x1;
         } else {
-          _xl = x3 - cx;
+          _xl = x2 - cx;
         }
 
-        if (cy < y2 + ih * 0.5) {
-          _yl = cy - y2;
+        if (cy < y1 + ih * 0.5) {
+          _yl = cy - y1;
         } else {
-          _yl = y3 - cy;
+          _yl = y2 - cy;
         }
 
         r = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
       } else if (size === 'farthest-side') {
-        if (cx <= x2) {
-          r = x2 - cx + iw;
-        } else if (cx >= x3) {
-          r = cx - x3 + iw;
-        } else if (cy <= y2) {
-          r = y2 - cy + ih;
-        } else if (cx >= y3) {
-          r = cy - y3 + ih;
+        if (cx <= x1) {
+          r = x1 - cx + iw;
+        } else if (cx >= x2) {
+          r = cx - x2 + iw;
+        } else if (cy <= y1) {
+          r = y1 - cy + ih;
+        } else if (cx >= y2) {
+          r = cy - y2 + ih;
         } else {
-          var _xl2 = Math.max(x3 - cx, cx - x2);
+          var _xl2 = Math.max(x2 - cx, cx - x1);
 
-          var _yl2 = Math.max(y3 - cy, cy - y2);
+          var _yl2 = Math.max(y2 - cy, cy - y1);
 
           r = Math.max(_xl2, _yl2);
         }
@@ -1168,16 +1168,16 @@
 
           var _yl3;
 
-          if (cx < x2 + iw * 0.5) {
-            _xl3 = x3 - cx;
+          if (cx < x1 + iw * 0.5) {
+            _xl3 = x2 - cx;
           } else {
-            _xl3 = cx - x2;
+            _xl3 = cx - x1;
           }
 
-          if (cy < y2 + ih * 0.5) {
-            _yl3 = y3 - cy;
+          if (cy < y1 + ih * 0.5) {
+            _yl3 = y2 - cy;
           } else {
-            _yl3 = cy - y2;
+            _yl3 = cy - y1;
           }
 
           r = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
@@ -1274,11 +1274,109 @@
     last[1] = 1;
   }
 
+  function parseGradient(s) {
+    var gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
+
+    if (gradient) {
+      return {
+        k: gradient[1],
+        v: gradient[2].split(/\s*,\s*/)
+      };
+    }
+  }
+
+  function getLinear(v, cx, cy, w, h) {
+    var deg = getLinearDeg(v);
+    var theta = util.r2d(deg);
+    var length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
+
+    var _calLinearCoords = calLinearCoords(deg, length * 0.5, cx, cy),
+        _calLinearCoords2 = _slicedToArray(_calLinearCoords, 4),
+        x1 = _calLinearCoords2[0],
+        y1 = _calLinearCoords2[1],
+        x2 = _calLinearCoords2[2],
+        y2 = _calLinearCoords2[3];
+
+    var stop = getColorStop(v, length);
+    return {
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2,
+      stop: stop
+    };
+  }
+
+  function getRadial(v, cx, cy, x1, y1, x2, y2) {
+    var w = x2 - x1;
+    var h = y2 - y1;
+
+    var _calRadialRadius = calRadialRadius(v, w, h, cx, cy, x1, y1, x2, y2),
+        _calRadialRadius2 = _slicedToArray(_calRadialRadius, 3),
+        r = _calRadialRadius2[0],
+        cx2 = _calRadialRadius2[1],
+        cy2 = _calRadialRadius2[2];
+
+    var stop = getColorStop(v, r * 2); // 超限情况等同于只显示end的bgc
+
+    if (r <= 0) {
+      var end = stop[stop.length - 1];
+      end[1] = 0;
+      stop = [end];
+      cx2 = x1;
+      cy2 = y1; // 肯定大于最长直径
+
+      r = w + h;
+    }
+
+    return {
+      cx: cx2,
+      cy: cy2,
+      r: r,
+      stop: stop
+    };
+  }
+
+  function createCanvasLg(ctx, gd) {
+    var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+    gd.stop.forEach(function (item) {
+      lg.addColorStop(item[1], item[0]);
+    });
+    return lg;
+  }
+
+  function createSvgLg(defs, gd) {
+    return defs.add({
+      tagName: 'linearGradient',
+      props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
+      stop: gd.stop
+    });
+  }
+
+  function createCanvasRg(ctx, gd) {
+    var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+    gd.stop.forEach(function (item) {
+      rg.addColorStop(item[1], item[0]);
+    });
+    return rg;
+  }
+
+  function createSvgRg(defs, gd) {
+    return defs.add({
+      tagName: 'radialGradient',
+      props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
+      stop: gd.stop
+    });
+  }
+
   var gradient = {
-    getLinearDeg: getLinearDeg,
-    getColorStop: getColorStop,
-    calLinearCoords: calLinearCoords,
-    calRadialRadius: calRadialRadius
+    parseGradient: parseGradient,
+    getLinear: getLinear,
+    getRadial: getRadial,
+    createCanvasLg: createCanvasLg,
+    createSvgLg: createSvgLg,
+    createCanvasRg: createCanvasRg,
+    createSvgRg: createSvgRg
   };
 
   /* 获取合适的虚线实体空白宽度ps/pd和数量n
@@ -1746,82 +1844,32 @@
           var k = bgg.k,
               v = bgg.v;
           var cx = x2 + iw * 0.5;
-          var cy = y2 + ih * 0.5;
+          var cy = y2 + ih * 0.5; // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
 
           if (k === 'linear') {
-            var deg = gradient.getLinearDeg(v); // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
-
-            var r = util.r2d(deg);
-            var length = Math.abs(iw * Math.sin(r)) + Math.abs(ih * Math.cos(r));
-
-            var _gradient$calLinearCo = gradient.calLinearCoords(deg, length * 0.5, cx, cy),
-                _gradient$calLinearCo2 = _slicedToArray(_gradient$calLinearCo, 4),
-                xx0 = _gradient$calLinearCo2[0],
-                yy0 = _gradient$calLinearCo2[1],
-                xx1 = _gradient$calLinearCo2[2],
-                yy1 = _gradient$calLinearCo2[3];
-
-            var _list = gradient.getColorStop(v, length);
+            var gd = gradient.getLinear(v, cx, cy, iw, ih);
 
             if (renderMode === mode.CANVAS) {
-              var lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
-
-              _list.forEach(function (item) {
-                lg.addColorStop(item[1], item[0]);
-              });
-
               ctx.beginPath();
-              ctx.fillStyle = lg;
+              ctx.fillStyle = gradient.createCanvasLg(ctx, gd);
               ctx.rect(x2, y2, iw, ih);
               ctx.fill();
               ctx.closePath();
             } else if (renderMode === mode.SVG) {
-              var uuid = this.defs.add({
-                tagName: 'linearGradient',
-                props: [['x1', xx0], ['y1', yy0], ['x2', xx1], ['y2', yy1]],
-                stop: _list
-              });
+              var uuid = gradient.createSvgLg(this.defs, gd);
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(uuid, ")")]]);
             }
           } else if (k === 'radial') {
-            var _gradient$calRadialRa = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3),
-                _gradient$calRadialRa2 = _slicedToArray(_gradient$calRadialRa, 3),
-                _r = _gradient$calRadialRa2[0],
-                cx2 = _gradient$calRadialRa2[1],
-                cy2 = _gradient$calRadialRa2[2]; // 计算colorStop
-
-
-            var _list2 = gradient.getColorStop(v, _r * 2); // 超限情况等同于只显示end的bgc
-
-
-            if (_r <= 0) {
-              var end = _list2[_list2.length - 1];
-              end[1] = 0;
-              _list2 = [end];
-              cx2 = x2;
-              cy2 = y2; // 肯定大于最长直径
-
-              _r = iw + ih;
-            }
+            var _gd = gradient.getRadial(v, cx, cy, x2, y2, x3, y3);
 
             if (renderMode === mode.CANVAS) {
-              var rg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, _r);
-
-              _list2.forEach(function (item) {
-                rg.addColorStop(item[1], item[0]);
-              });
-
               ctx.beginPath();
-              ctx.fillStyle = rg;
+              ctx.fillStyle = gradient.createCanvasRg(ctx, _gd);
               ctx.rect(x2, y2, iw, ih);
               ctx.fill();
               ctx.closePath();
             } else if (renderMode === mode.SVG) {
-              var _uuid = this.defs.add({
-                tagName: 'radialGradient',
-                props: [['cx', cx2], ['cy', cy2], ['r', _r]],
-                stop: _list2
-              });
+              var _uuid = gradient.createSvgRg(this.defs, _gd);
 
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', "url(#".concat(_uuid, ")")]]);
             }
@@ -1858,74 +1906,70 @@
               for (var i = 0; i < n; i++) {
                 // 最后一个可能没有到底，延长之
                 var isLast = i === n - 1;
-
-                var _xx = i ? x1 + ps * i + pd * i : x1;
-
-                var xx4 = _xx + ps;
-
-                var _yy = void 0;
-
+                var xx1 = i ? x1 + ps * i + pd * i : x1;
+                var xx4 = xx1 + ps;
+                var yy1 = void 0;
                 var yy2 = void 0; // 整个和borderLeft重叠
 
                 if (xx4 < x2) {
                   if (isLast) {
                     points.push([x1, y1, x4, y1, x3, y2, x2, y2]);
                   } else {
-                    _yy = y1 + (_xx - x1) * Math.tan(deg1);
+                    yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
                     yy2 = y1 + (xx4 - x1) * Math.tan(deg1);
-                    points.push([_xx, y1, xx4, y1, xx4, yy2, _xx, _yy]);
+                    points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
                   }
                 } // 整个和borderRight重叠
-                else if (_xx > x3) {
-                    _yy = y1 + (x4 - _xx) * Math.tan(deg2);
+                else if (xx1 > x3) {
+                    yy1 = y1 + (x4 - xx1) * Math.tan(deg2);
                     yy2 = y1 + (x4 - xx4) * Math.tan(deg2);
 
                     if (isLast) {
-                      points.push([_xx, y1, x4, y1, _xx, _yy]);
+                      points.push([xx1, y1, x4, y1, xx1, yy1]);
                     } else {
-                      points.push([_xx, y1, xx4, y1, xx4, yy2, _xx, _yy]);
+                      points.push([xx1, y1, xx4, y1, xx4, yy2, xx1, yy1]);
                     }
                   } // 不被整个重叠的情况再细分
                   else {
                       // 上部分和borderLeft重叠
-                      if (_xx < x2) {
-                        _yy = y1 + (_xx - x1) * Math.tan(deg1);
+                      if (xx1 < x2) {
+                        yy1 = y1 + (xx1 - x1) * Math.tan(deg1);
 
                         if (isLast) {
-                          points.push([_xx, y1, x4, y1, x3, y2, x2, y2, _xx, _yy]);
+                          points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
                         } else {
                           // 下部分和borderRight重叠
                           if (xx4 > x3) {
-                            points.push([_xx, y1, xx4, y1, x3, y2, x2, y2, _xx, _yy]);
+                            points.push([xx1, y1, xx4, y1, x3, y2, x2, y2, xx1, yy1]);
                           } // 下部独立
                           else {
-                              points.push([_xx, y1, xx4, y1, xx4, y2, x2, y2, _xx, _yy]);
+                              points.push([xx1, y1, xx4, y1, xx4, y2, x2, y2, xx1, yy1]);
                             }
                         }
                       } // 下部分和borderRight重叠
                       else if (xx4 > x3) {
-                          _yy = y1 + (x4 - xx4) * Math.tan(deg2); // 上部分和borderLeft重叠
+                          yy1 = y1 + (x4 - xx4) * Math.tan(deg2); // 上部分和borderLeft重叠
 
-                          if (_xx < x2) {
+                          if (xx1 < x2) {
                             if (isLast) {
-                              points.push([_xx, y1, x4, y1, x3, y2, x2, y2, _xx, _yy]);
+                              points.push([xx1, y1, x4, y1, x3, y2, x2, y2, xx1, yy1]);
                             } else {
-                              points.push([_xx, y1, xx4, y1, xx4, _yy, x3, y2, x2, y2, _xx, _yy]);
+                              points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, x2, y2, xx1, yy1]);
                             }
                           } // 上部独立
                           else {
                               if (isLast) {
-                                points.push([_xx, y1, x4, y1, x3, y2, _xx, y2]);
+                                points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
                               } else {
-                                points.push([_xx, y1, xx4, y1, xx4, _yy, x3, y2, _xx, y2]);
+                                points.push([xx1, y1, xx4, y1, xx4, yy1, x3, y2, xx1, y2]);
                               }
                             }
                         } // 完全独立
                         else {
                             if (isLast) {
-                              points.push([_xx, y1, x4, y1, x3, y2, _xx, y2]);
+                              points.push([xx1, y1, x4, y1, x3, y2, xx1, y2]);
                             } else {
-                              points.push([_xx, y1, xx4, y1, xx4, y2, _xx, y2]);
+                              points.push([xx1, y1, xx4, y1, xx4, y2, xx1, y2]);
                             }
                           }
                     }
@@ -1959,11 +2003,11 @@
                 // 最后一个可能没有到底，延长之
                 var _isLast = _i === _n - 1;
 
-                var _yy2 = _i ? y1 + _ps * _i + _pd * _i : y1;
+                var _yy = _i ? y1 + _ps * _i + _pd * _i : y1;
 
-                var yy4 = _yy2 + _ps;
+                var yy4 = _yy + _ps;
 
-                var _xx2 = void 0;
+                var _xx = void 0;
 
                 var xx2 = void 0; // 整个和borderTop重叠
 
@@ -1971,62 +2015,62 @@
                   if (_isLast) {
                     _points.push([x3, y2, x4, y1, x4, y4, x3, y3]);
                   } else {
-                    _xx2 = x4 - (yy4 - y1) * Math.tan(_deg);
-                    xx2 = x4 - (_yy2 - y1) * Math.tan(_deg);
+                    _xx = x4 - (yy4 - y1) * Math.tan(_deg);
+                    xx2 = x4 - (_yy - y1) * Math.tan(_deg);
 
-                    _points.push([_xx2, yy4, xx2, _yy2, x4, _yy2, x4, yy4]);
+                    _points.push([_xx, yy4, xx2, _yy, x4, _yy, x4, yy4]);
                   }
                 } // 整个和borderBottom重叠
-                else if (_yy2 > y3) {
-                    _xx2 = x3 + (_yy2 - y3) * Math.tan(_deg2);
+                else if (_yy > y3) {
+                    _xx = x3 + (_yy - y3) * Math.tan(_deg2);
                     xx2 = x3 + (yy4 - y3) * Math.tan(_deg2);
 
                     if (_isLast) {
-                      _points.push([_xx2, _yy2, x4, _yy2, x4, y4]);
+                      _points.push([_xx, _yy, x4, _yy, x4, y4]);
                     } else {
-                      _points.push([_xx2, _yy2, x4, _yy2, x4, yy4, xx2, yy4]);
+                      _points.push([_xx, _yy, x4, _yy, x4, yy4, xx2, yy4]);
                     }
                   } // 不被整个重叠的情况再细分
                   else {
                       // 上部分和borderTop重叠
-                      if (_yy2 < y2) {
-                        _xx2 = x3 + (y2 - _yy2) * Math.tan(_deg);
+                      if (_yy < y2) {
+                        _xx = x3 + (y2 - _yy) * Math.tan(_deg);
 
                         if (_isLast) {
-                          _points.push([x3, y2, _xx2, _yy2, x4, _yy2, x4, y4, x3, y4]);
+                          _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y4]);
                         } else {
                           // 下部分和borderBottom重叠
                           if (yy4 > y3) {
-                            _points.push([x3, y2, _xx2, _yy2, x4, _yy2, x4, yy4, _xx2, yy4, x3, y3]);
+                            _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
                           } // 下部独立
                           else {
-                              _points.push([x3, y2, _xx2, _yy2, x4, _yy2, x4, yy4, x3, yy4]);
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, x3, yy4]);
                             }
                         }
                       } // 下部分和borderBottom重叠
                       else if (yy4 > y3) {
-                          _xx2 = x3 + (yy4 - y3) * Math.tan(_deg2); // 上部分和borderTop重叠
+                          _xx = x3 + (yy4 - y3) * Math.tan(_deg2); // 上部分和borderTop重叠
 
-                          if (_yy2 < y2) {
+                          if (_yy < y2) {
                             if (_isLast) {
-                              _points.push([x3, y2, _xx2, _yy2, x4, _yy2, x4, y4, x3, y3]);
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, y4, x3, y3]);
                             } else {
-                              _points.push([x3, y2, _xx2, _yy2, x4, _yy2, x4, yy4, _xx2, yy4, x3, y3]);
+                              _points.push([x3, y2, _xx, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
                             }
                           } // 上部独立
                           else {
                               if (_isLast) {
-                                _points.push([x3, _yy2, x4, _yy2, x4, y4, x3, y3]);
+                                _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
                               } else {
-                                _points.push([x3, _yy2, x4, _yy2, x4, yy4, _xx2, yy4, x3, y3]);
+                                _points.push([x3, _yy, x4, _yy, x4, yy4, _xx, yy4, x3, y3]);
                               }
                             }
                         } // 完全独立
                         else {
                             if (_isLast) {
-                              _points.push([x3, _yy2, x4, _yy2, x4, y4, x3, y3]);
+                              _points.push([x3, _yy, x4, _yy, x4, y4, x3, y3]);
                             } else {
-                              _points.push([x3, _yy2, x4, _yy2, x4, yy4, x3, yy4]);
+                              _points.push([x3, _yy, x4, _yy, x4, yy4, x3, yy4]);
                             }
                           }
                     }
@@ -2057,75 +2101,75 @@
               // 最后一个可能没有到底，延长之
               var _isLast2 = _i2 === _n2 - 1;
 
-              var _xx3 = _i2 ? x1 + _ps2 * _i2 + _pd2 * _i2 : x1;
+              var _xx2 = _i2 ? x1 + _ps2 * _i2 + _pd2 * _i2 : x1;
 
-              var _xx4 = _xx3 + _ps2;
+              var _xx3 = _xx2 + _ps2;
 
-              var _yy3 = void 0;
+              var _yy2 = void 0;
 
-              var _yy4 = void 0; // 整个和borderLeft重叠
+              var _yy3 = void 0; // 整个和borderLeft重叠
 
 
-              if (_xx4 < x2) {
+              if (_xx3 < x2) {
                 if (_isLast2) {
                   _points2.push([x1, y4, x2, y3, x3, y3, x4, y4]);
                 } else {
+                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg3);
                   _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg3);
-                  _yy4 = y4 - (_xx4 - x1) * Math.tan(_deg3);
 
-                  _points2.push([_xx3, _yy3, _xx4, _yy4, _xx4, y4, _xx3, y4]);
+                  _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
                 }
               } // 整个和borderRight重叠
-              else if (_xx3 > x3) {
+              else if (_xx2 > x3) {
+                  _yy2 = y4 - (_xx2 - x1) * Math.tan(_deg4);
                   _yy3 = y4 - (_xx3 - x1) * Math.tan(_deg4);
-                  _yy4 = y4 - (_xx4 - x1) * Math.tan(_deg4);
 
                   if (_isLast2) {
-                    _points2.push([_xx3, _yy3, x4, y4, _xx3, y4]);
+                    _points2.push([_xx2, _yy2, x4, y4, _xx2, y4]);
                   } else {
-                    _points2.push([_xx3, _yy3, _xx4, _yy4, _xx4, y4, _xx3, y4]);
+                    _points2.push([_xx2, _yy2, _xx3, _yy3, _xx3, y4, _xx2, y4]);
                   }
                 } // 不被整个重叠的情况再细分
                 else {
                     // 上部分和borderLeft重叠
-                    if (_xx3 < x2) {
-                      _yy3 = y3 + (_xx3 - x1) * Math.tan(_deg3);
+                    if (_xx2 < x2) {
+                      _yy2 = y3 + (_xx2 - x1) * Math.tan(_deg3);
 
                       if (_isLast2) {
-                        _points2.push([_xx3, _yy3, x2, y3, x3, y3, x4, y4, _xx3, y4]);
+                        _points2.push([_xx2, _yy2, x2, y3, x3, y3, x4, y4, _xx2, y4]);
                       } else {
                         // 下部分和borderRight重叠
-                        if (_xx4 > x3) {
-                          _points2.push([_xx3, _yy3, x2, y3, x3, y3, _xx4, y4, _xx3, y4]);
+                        if (_xx3 > x3) {
+                          _points2.push([_xx2, _yy2, x2, y3, x3, y3, _xx3, y4, _xx2, y4]);
                         } // 下部独立
                         else {
-                            _points2.push([_xx3, _yy3, x2, y3, _xx4, y3, _xx4, y4, _xx3, y4]);
+                            _points2.push([_xx2, _yy2, x2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
                           }
                       }
                     } // 下部分和borderRight重叠
-                    else if (_xx4 > x3) {
-                        _yy3 = y4 - (x4 - _xx4) * Math.tan(_deg4); // 上部分和borderLeft重叠
+                    else if (_xx3 > x3) {
+                        _yy2 = y4 - (x4 - _xx3) * Math.tan(_deg4); // 上部分和borderLeft重叠
 
-                        if (_xx3 < x2) {
+                        if (_xx2 < x2) {
                           if (_isLast2) {
-                            _points2.push([_xx3, _yy3, x3, y3, x4, y4, _xx3, y4]);
+                            _points2.push([_xx2, _yy2, x3, y3, x4, y4, _xx2, y4]);
                           } else {
-                            _points2.push([_xx3, _yy3, x3, y3, _xx4, _yy3, _xx4, y4, _xx3, y4]);
+                            _points2.push([_xx2, _yy2, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
                           }
                         } // 上部独立
                         else {
                             if (_isLast2) {
-                              _points2.push([_xx3, y3, x3, y3, x4, y4, _xx3, y4]);
+                              _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
                             } else {
-                              _points2.push([_xx3, y3, x3, y3, _xx4, _yy3, _xx4, y4, _xx3, y4]);
+                              _points2.push([_xx2, y3, x3, y3, _xx3, _yy2, _xx3, y4, _xx2, y4]);
                             }
                           }
                       } // 完全独立
                       else {
                           if (_isLast2) {
-                            _points2.push([_xx3, y3, x3, y3, x4, y4, _xx3, y4]);
+                            _points2.push([_xx2, y3, x3, y3, x4, y4, _xx2, y4]);
                           } else {
-                            _points2.push([_xx3, y3, _xx4, y3, _xx4, y4, _xx3, y4]);
+                            _points2.push([_xx2, y3, _xx3, y3, _xx3, y4, _xx2, y4]);
                           }
                         }
                   }
@@ -2158,75 +2202,75 @@
                 // 最后一个可能没有到底，延长之
                 var _isLast3 = _i3 === _n3 - 1;
 
-                var _yy5 = _i3 ? y1 + _ps3 * _i3 + _pd3 * _i3 : y1;
+                var _yy4 = _i3 ? y1 + _ps3 * _i3 + _pd3 * _i3 : y1;
 
-                var _yy6 = _yy5 + _ps3;
+                var _yy5 = _yy4 + _ps3;
 
-                var _xx5 = void 0;
+                var _xx4 = void 0;
 
-                var _xx6 = void 0; // 整个和borderTop重叠
+                var _xx5 = void 0; // 整个和borderTop重叠
 
 
-                if (_yy6 < y2) {
+                if (_yy5 < y2) {
                   if (_isLast3) {
                     _points3.push([x1, y1, x2, y2, x2, y3, x1, y4]);
                   } else {
+                    _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
                     _xx5 = x1 + (_yy5 - y1) * Math.tan(_deg5);
-                    _xx6 = x1 + (_yy6 - y1) * Math.tan(_deg5);
 
-                    _points3.push([x1, _yy5, _xx5, _yy5, _xx6, _yy6, x1, _yy6]);
+                    _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
                   }
                 } // 整个和borderBottom重叠
-                else if (_yy5 > y3) {
+                else if (_yy4 > y3) {
+                    _xx4 = x1 + (y4 - _yy4) * Math.tan(_deg6);
                     _xx5 = x1 + (y4 - _yy5) * Math.tan(_deg6);
-                    _xx6 = x1 + (y4 - _yy6) * Math.tan(_deg6);
 
                     if (_isLast3) {
-                      _points3.push([x1, _yy5, _xx5, _yy5, x1, y4]);
+                      _points3.push([x1, _yy4, _xx4, _yy4, x1, y4]);
                     } else {
-                      _points3.push([x1, _yy5, _xx5, _yy5, _xx6, _yy6, x1, _yy6]);
+                      _points3.push([x1, _yy4, _xx4, _yy4, _xx5, _yy5, x1, _yy5]);
                     }
                   } // 不被整个重叠的情况再细分
                   else {
                       // 上部分和borderTop重叠
-                      if (_yy5 < y2) {
-                        _xx5 = x1 + (_yy5 - y1) * Math.tan(_deg5);
+                      if (_yy4 < y2) {
+                        _xx4 = x1 + (_yy4 - y1) * Math.tan(_deg5);
 
                         if (_isLast3) {
-                          _points3.push([x1, _yy5, _xx5, _yy5, x2, y2, x2, y3, x1, y4]);
+                          _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
                         } else {
                           // 下部分和borderBottom重叠
-                          if (_yy6 > y3) {
-                            _points3.push([x1, _yy5, _xx5, _yy5, x2, y2, x2, y3, _xx5, _yy6, x1, _yy6]);
+                          if (_yy5 > y3) {
+                            _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
                           } // 下部独立
                           else {
-                              _points3.push([x1, _yy5, _xx5, _yy5, x2, y2, x2, _yy6, x1, _yy6]);
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, _yy5, x1, _yy5]);
                             }
                         }
                       } // 下部分和borderBottom重叠
-                      else if (_yy6 > y3) {
-                          _xx5 = x1 + (y4 - _yy6) * Math.tan(_deg6); // 上部分和borderTop重叠
+                      else if (_yy5 > y3) {
+                          _xx4 = x1 + (y4 - _yy5) * Math.tan(_deg6); // 上部分和borderTop重叠
 
-                          if (_yy5 < y2) {
+                          if (_yy4 < y2) {
                             if (_isLast3) {
-                              _points3.push([x1, _yy5, _xx5, _yy5, x2, y2, x2, y3, x1, y4]);
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, x1, y4]);
                             } else {
-                              _points3.push([x1, _yy5, _xx5, _yy5, x2, y2, x2, y3, _xx5, _yy6, x1, _yy6]);
+                              _points3.push([x1, _yy4, _xx4, _yy4, x2, y2, x2, y3, _xx4, _yy5, x1, _yy5]);
                             }
                           } // 上部独立
                           else {
                               if (_isLast3) {
-                                _points3.push([x1, _yy5, x2, _yy5, x2, y3, x1, y4]);
+                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
                               } else {
-                                _points3.push([x1, _yy5, x2, _yy5, x2, y3, _xx5, _yy6, x1, _yy6]);
+                                _points3.push([x1, _yy4, x2, _yy4, x2, y3, _xx4, _yy5, x1, _yy5]);
                               }
                             }
                         } // 完全独立
                         else {
                             if (_isLast3) {
-                              _points3.push([x1, _yy5, x2, _yy5, x2, y3, x1, y4]);
+                              _points3.push([x1, _yy4, x2, _yy4, x2, y3, x1, y4]);
                             } else {
-                              _points3.push([x1, _yy5, x2, _yy5, x2, _yy6, x1, _yy6]);
+                              _points3.push([x1, _yy4, x2, _yy4, x2, _yy5, x1, _yy5]);
                             }
                           }
                     }
@@ -2542,7 +2586,7 @@
     textAlign: 'left',
     visibility: 'visible',
     transformOrigin: 'center',
-    fill: '#000',
+    fill: 'transparent',
     stroke: '#000',
     strokeWidth: 1,
     strokeDasharray: []
@@ -2633,17 +2677,14 @@
         style[item.k] = item.v;
       }
     });
-    var temp = style.background; // 处理缩写
+    var temp = style.background; // 处理渐变背景色
 
     if (temp) {
       // 优先gradient，没有再考虑颜色
-      var gradient = /\b(\w+)-gradient\((.+)\)/.exec(temp);
+      var gd = gradient.parseGradient(temp);
 
-      if (gradient) {
-        style.backgroundGradient = {
-          k: gradient[1],
-          v: gradient[2].split(/\s*,\s*/)
-        };
+      if (gd) {
+        style.backgroundGradient = gd;
       } else {
         var bgc = /#[0-9a-f]{3,6}/i.exec(temp);
 
@@ -2657,7 +2698,8 @@
           }
         }
       }
-    }
+    } // 处理缩写
+
 
     temp = style.flex;
 
@@ -2729,12 +2771,6 @@
         style.paddingBottom = _match[2];
         style.paddingLeft = _match[3];
       }
-    }
-
-    temp = style.borderRadius;
-
-    if (temp) {
-      style.borderTopRightRadius = style.borderTopLeftRadius = style.borderBottomRightRadius = style.borderBottomLeftRadius = temp;
     }
 
     temp = style.transform;
@@ -3331,7 +3367,7 @@
     return LineGroup;
   }();
 
-  var IMPLEMENT = {};
+  var REGISTER = {};
 
   var Geom =
   /*#__PURE__*/
@@ -3462,6 +3498,15 @@
         });
       }
     }, {
+      key: "addCircle",
+      value: function addCircle(props) {
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: 'circle',
+          props: props
+        });
+      }
+    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -3472,22 +3517,27 @@
         return this.__height;
       }
     }], [{
-      key: "getImplement",
-      value: function getImplement(name) {
-        if (!IMPLEMENT.hasOwnProperty(name)) {
+      key: "getRegister",
+      value: function getRegister(name) {
+        if (!REGISTER.hasOwnProperty(name)) {
           throw new Error("Geom has not register: ".concat(name));
         }
 
-        return IMPLEMENT[name];
+        return REGISTER[name];
       }
     }, {
       key: "register",
-      value: function register(name, implement) {
-        if (IMPLEMENT.hasOwnProperty(name)) {
+      value: function register(name, obj) {
+        if (Geom.hasRegister(name)) {
           throw new Error("Geom has already register: ".concat(name));
         }
 
-        IMPLEMENT[name] = implement;
+        REGISTER[name] = obj;
+      }
+    }, {
+      key: "hasRegister",
+      value: function hasRegister(name) {
+        return REGISTER.hasOwnProperty(name);
       }
     }]);
 
@@ -5346,7 +5396,8 @@
         var y1 = originY + start[1] * height;
         var x2 = originX + end[0] * width;
         var y2 = originY + end[1] * height;
-        var curve = 0;
+        var curve = 0; // 控制点，曲线
+
         var cx1, cy1, cx2, cy2;
 
         if (Array.isArray(control[0])) {
@@ -5361,48 +5412,22 @@
           cy2 = originY + control[1][1] * height;
         }
 
-        var lg;
+        var slg;
 
         if (stroke.indexOf('linear-gradient') > -1) {
-          var v = /\((.+)\)/.exec(stroke);
+          var go = gradient.parseGradient(stroke);
 
-          if (v) {
-            var cx = x1 + (x2 - x1) * 0.5;
-            var cy = y1 + (y2 - y1) * 0.5;
-            v = v[1].split(/\s*,\s*/);
-            var deg = gradient.getLinearDeg(v);
-            var r = util.r2d(deg);
-            var length = Math.abs(Math.abs(y2 - y1) * Math.sin(r)) + Math.abs(Math.abs(x2 - x1) * Math.cos(r));
-
-            var _gradient$calLinearCo = gradient.calLinearCoords(deg, length * 0.5, cx, cy),
-                _gradient$calLinearCo2 = _slicedToArray(_gradient$calLinearCo, 4),
-                xx0 = _gradient$calLinearCo2[0],
-                yy0 = _gradient$calLinearCo2[1],
-                xx1 = _gradient$calLinearCo2[2],
-                yy1 = _gradient$calLinearCo2[3];
-
-            var list = gradient.getColorStop(v, length);
-            lg = {
-              xx0: xx0,
-              yy0: yy0,
-              xx1: xx1,
-              yy1: yy1,
-              list: list
-            };
+          if (go) {
+            var w = x2 - x1;
+            var h = y2 - y1;
+            var cx = x1 + w * 0.5;
+            var cy = y1 + w * 0.5;
+            slg = gradient.getLinear(go.v, cx, cy, w, h);
           }
         }
 
         if (renderMode === mode.CANVAS) {
-          if (lg) {
-            var clg = ctx.createLinearGradient(lg.xx0, lg.yy0, lg.xx1, lg.yy1);
-            lg.list.forEach(function (item) {
-              clg.addColorStop(item[1], item[0]);
-            });
-            ctx.strokeStyle = clg;
-          } else {
-            ctx.strokeStyle = stroke;
-          }
-
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
@@ -5419,22 +5444,22 @@
           ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          if (lg) {
-            var uuid = this.defs.add({
-              tagName: 'linearGradient',
-              props: [['x1', lg.xx0], ['y1', lg.yy0], ['x2', lg.xx1], ['y2', lg.yy1]],
-              stop: lg.list
-            });
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
             stroke = "url(#".concat(uuid, ")");
           }
 
+          var d;
+
           if (curve === 2) {
-            this.addLine([['d', "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+            d = "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2);
           } else if (curve === 1) {
-            this.addLine([['d', "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+            d = "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2);
           } else {
-            this.addLine([['d', "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2)], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+            d = "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2);
           }
+
+          this.addLine([['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -6030,35 +6055,75 @@
           return;
         }
 
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
-        originX += width * 0.5;
-        originY += height * 0.5;
+        var cx = x + borderLeftWidth.value + mlw + plw;
+        var cy = y + borderTopWidth.value + mtw + ptw;
+        cx += width * 0.5;
+        cy += height * 0.5;
         r *= Math.min(width, height) * 0.5;
+        var slg;
+
+        if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
+          var go = gradient.parseGradient(stroke);
+
+          if (go) {
+            var w = r + strokeWidth;
+            slg = gradient.getLinear(go.v, cx, cy, w, w);
+          }
+        }
+
+        var flg;
+        var frg;
+
+        if (fill.indexOf('linear-gradient') > -1) {
+          var _go = gradient.parseGradient(fill);
+
+          if (_go) {
+            var _w = r;
+            flg = gradient.getLinear(_go.v, cx, cy, _w, _w);
+          }
+        } else if (fill.indexOf('radial-gradient') > -1) {
+          var _go2 = gradient.parseGradient(fill);
+
+          if (_go2) {
+            frg = gradient.getRadial(_go2.v, cx, cy, cx - r, cy - r, cx + r, cy + r);
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
+          ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
+
+          if (flg) {
+            ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+          } else if (frg) {
+            ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+          } else {
+            ctx.fillStyle = fill;
+          }
+
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.arc(originX, originY, r, 0, 2 * Math.PI);
-
-          if (fill !== 'transparent') {
-            ctx.fill();
-          }
-
-          if (strokeWidth && stroke !== 'transparent') {
-            ctx.stroke();
-          }
-
+          ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.stroke();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          virtualDom.children.push({
-            type: 'item',
-            tagName: 'circle',
-            props: [['cx', originX], ['cy', originY], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]
-          });
+          if (slg) {
+            var uuid = gradient.createSvgLg(this.defs, slg);
+            stroke = "url(#".concat(uuid, ")");
+          }
+
+          if (flg) {
+            var _uuid = gradient.createSvgLg(this.defs, flg);
+
+            fill = "url(#".concat(_uuid, ")");
+          } else if (frg) {
+            var _uuid2 = gradient.createSvgRg(this.defs, frg);
+
+            fill = "url(#".concat(_uuid2, ")");
+          }
+
+          this.addCircle([['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {
@@ -6365,7 +6430,7 @@
       throw new Error('can not use marker: ' + tagName);
     },
     createGm: function createGm(tagName, props) {
-      var klass = Geom.getImplement(tagName);
+      var klass = Geom.getRegister(tagName);
       return new klass(tagName, props);
     },
     createCp: function createCp(cp, props) {

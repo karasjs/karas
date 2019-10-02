@@ -236,7 +236,7 @@ function calLinearCoords(deg, length, cx, cy) {
 }
 
 // 获取径向渐变半径
-function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
+function calRadialRadius(v, iw, ih, cx, cy, x1, y1, x2, y2) {
   let size = 'farthest-corner';
   let r; // 半径
   if(/circle|ellipse|at|closest|farthest/i.test(v[0])
@@ -269,18 +269,18 @@ function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
       s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
       if(s) {
         if(s[1].indexOf('px') > -1) {
-          cx = x2 + parseFloat(s[1]);
+          cx = x1 + parseFloat(s[1]);
         }
         else {
-          cx =  x2 + parseFloat(s[1]) * iw * 0.01;
+          cx =  x1 + parseFloat(s[1]) * iw * 0.01;
         }
         // y可以省略，此时等同于x
         let by = s[2] || s[1];
         if(by.indexOf('px') > -1) {
-          cy = y2 + parseFloat(by);
+          cy = y1 + parseFloat(by);
         }
         else {
-          cy = y2 + parseFloat(by) * ih * 0.01;
+          cy = y1 + parseFloat(by) * ih * 0.01;
         }
       }
     }
@@ -291,21 +291,21 @@ function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
   if(size) {
     if(size === 'closest-side') {
       // 在边外特殊情况只有end颜色填充
-      if(cx <= x2 || cx >= x3 || cy <= y2 || cy >= y3) {
+      if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
         r = 0;
       }
       else {
         let xl;
         let yl;
-        if(cx < x2 + iw * 0.5) {
-          xl = cx - x2;
+        if(cx < x1 + iw * 0.5) {
+          xl = cx - x1;
         } else {
-          xl = x3 - cx;
+          xl = x2 - cx;
         }
-        if(cy < y2 + ih * 0.5) {
-          yl = cy - y2;
+        if(cy < y1 + ih * 0.5) {
+          yl = cy - y1;
         } else {
-          yl = y3 - cy;
+          yl = y2 - cy;
         }
         r = Math.min(xl, yl);
       }
@@ -313,36 +313,36 @@ function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
     else if(size === 'closest-corner') {
       let xl;
       let yl;
-      if(cx < x2 + iw * 0.5) {
-        xl = cx - x2;
+      if(cx < x1 + iw * 0.5) {
+        xl = cx - x1;
       }
       else {
-        xl = x3 - cx;
+        xl = x2 - cx;
       }
-      if(cy < y2 + ih * 0.5) {
-        yl = cy - y2;
+      if(cy < y1 + ih * 0.5) {
+        yl = cy - y1;
       }
       else {
-        yl = y3 - cy;
+        yl = y2 - cy;
       }
       r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
     }
     else if(size === 'farthest-side') {
-      if(cx <= x2) {
-        r = x2 - cx + iw;
+      if(cx <= x1) {
+        r = x1 - cx + iw;
       }
-      else if(cx >= x3) {
-        r = cx - x3 + iw;
+      else if(cx >= x2) {
+        r = cx - x2 + iw;
       }
-      else if(cy <= y2) {
-        r = y2 - cy + ih;
+      else if(cy <= y1) {
+        r = y1 - cy + ih;
       }
-      else if(cx >= y3) {
-        r = cy - y3 + ih;
+      else if(cx >= y2) {
+        r = cy - y2 + ih;
       }
       else {
-        let xl = Math.max(x3 - cx, cx - x2);
-        let yl = Math.max(y3 - cy, cy - y2);
+        let xl = Math.max(x2 - cx, cx - x1);
+        let yl = Math.max(y2 - cy, cy - y1);
         r = Math.max(xl, yl);
       }
     }
@@ -350,17 +350,17 @@ function calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3) {
     else {
       let xl;
       let yl;
-      if(cx < x2 + iw * 0.5) {
-        xl = x3 - cx;
+      if(cx < x1 + iw * 0.5) {
+        xl = x2 - cx;
       }
       else {
-        xl = cx - x2;
+        xl = cx - x1;
       }
-      if(cy < y2 + ih * 0.5) {
-        yl = y3 - cy;
+      if(cy < y1 + ih * 0.5) {
+        yl = y2 - cy;
       }
       else {
-        yl = cy - y2;
+        yl = cy - y1;
       }
       r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
     }
@@ -418,9 +418,101 @@ function getCsLimit(first, last, length) {
   last[1] = 1;
 }
 
+function parseGradient(s) {
+  let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
+  if(gradient) {
+    return {
+      k: gradient[1],
+      v: gradient[2].split(/\s*,\s*/),
+    };
+  }
+}
+
+function getLinear(v, cx, cy, w, h) {
+  let deg = getLinearDeg(v);
+  let theta = util.r2d(deg);
+  let length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
+  let [x1, y1, x2, y2] = calLinearCoords(deg, length * 0.5, cx, cy);
+  let stop = getColorStop(v, length);
+  return {
+    x1,
+    y1,
+    x2,
+    y2,
+    stop,
+  };
+}
+
+function getRadial(v, cx, cy, x1, y1, x2, y2) {
+  let w = x2 - x1;
+  let h = y2 - y1;
+  let [r, cx2, cy2] = calRadialRadius(v, w, h, cx, cy, x1, y1, x2, y2);
+  let stop = getColorStop(v, r * 2);
+  // 超限情况等同于只显示end的bgc
+  if(r <= 0) {
+    let end = stop[stop.length - 1];
+    end[1] = 0;
+    stop = [end];
+    cx2 = x1;
+    cy2 = y1;
+    // 肯定大于最长直径
+    r = w + h;
+  }
+  return {
+    cx: cx2,
+    cy: cy2,
+    r,
+    stop,
+  };
+}
+
+function createCanvasLg(ctx, gd) {
+  let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+  gd.stop.forEach(item => {
+    lg.addColorStop(item[1], item[0]);
+  });
+  return lg;
+}
+
+function createSvgLg(defs, gd) {
+  return defs.add({
+    tagName: 'linearGradient',
+    props: [
+      ['x1', gd.x1],
+      ['y1', gd.y1],
+      ['x2', gd.x2],
+      ['y2', gd.y2]
+    ],
+    stop: gd.stop,
+  });
+}
+
+function createCanvasRg(ctx, gd) {
+  let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+  gd.stop.forEach(item => {
+    rg.addColorStop(item[1], item[0]);
+  });
+  return rg;
+}
+
+function createSvgRg(defs, gd) {
+  return defs.add({
+    tagName: 'radialGradient',
+    props: [
+      ['cx', gd.cx],
+      ['cy', gd.cy],
+      ['r', gd.r]
+    ],
+    stop: gd.stop,
+  });
+}
+
 export default {
-  getLinearDeg,
-  getColorStop,
-  calLinearCoords,
-  calRadialRadius,
+  parseGradient,
+  getLinear,
+  getRadial,
+  createCanvasLg,
+  createSvgLg,
+  createCanvasRg,
+  createSvgRg,
 };

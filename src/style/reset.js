@@ -49,7 +49,7 @@ const RESET = {
   textAlign: 'left',
   visibility: 'visible',
   transformOrigin: 'center',
-  fill: '#000',
+  fill: 'transparent',
   stroke: '#000',
   strokeWidth: 1,
   strokeDasharray: [],

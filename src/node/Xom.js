@@ -317,35 +317,18 @@ class Xom extends Node {
       let { k, v } = bgg;
       let cx = x2 + iw * 0.5;
       let cy = y2 + ih * 0.5;
+      // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
       if(k === 'linear') {
-        let deg = gradient.getLinearDeg(v);
-        // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
-        let r = util.r2d(deg);
-        let length = Math.abs(iw * Math.sin(r)) + Math.abs(ih * Math.cos(r));
-        let [xx0, yy0, xx1, yy1] = gradient.calLinearCoords(deg, length * 0.5, cx, cy);
-        let list = gradient.getColorStop(v, length);
+        let gd = gradient.getLinear(v, cx, cy, iw, ih);
         if(renderMode === mode.CANVAS) {
-          let lg = ctx.createLinearGradient(xx0, yy0, xx1, yy1);
-          list.forEach(item => {
-            lg.addColorStop(item[1], item[0]);
-          });
           ctx.beginPath();
-          ctx.fillStyle = lg;
+          ctx.fillStyle = gradient.createCanvasLg(ctx, gd);
           ctx.rect(x2, y2, iw, ih);
           ctx.fill();
           ctx.closePath();
         }
         else if(renderMode === mode.SVG) {
-          let uuid = this.defs.add({
-            tagName: 'linearGradient',
-            props: [
-              ['x1', xx0],
-              ['y1', yy0],
-              ['x2', xx1],
-              ['y2', yy1]
-            ],
-            stop: list,
-          });
+          let uuid = gradient.createSvgLg(this.defs, gd);
           this.addBackground([
             ['x', x2],
             ['y', y2],
@@ -356,40 +339,16 @@ class Xom extends Node {
         }
       }
       else if(k === 'radial') {
-        let [r, cx2, cy2] = gradient.calRadialRadius(v, iw, ih, cx, cy, x2, y2, x3, y3);
-        // 计算colorStop
-        let list = gradient.getColorStop(v, r * 2);
-        // 超限情况等同于只显示end的bgc
-        if(r <= 0) {
-          let end = list[list.length - 1];
-          end[1] = 0;
-          list = [end];
-          cx2 = x2;
-          cy2 = y2;
-          // 肯定大于最长直径
-          r = iw + ih;
-        }
+        let gd = gradient.getRadial(v, cx, cy, x2, y2, x3, y3);
         if(renderMode === mode.CANVAS) {
-          let rg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, r);
-          list.forEach(item => {
-            rg.addColorStop(item[1], item[0]);
-          });
           ctx.beginPath();
-          ctx.fillStyle = rg;
+          ctx.fillStyle = gradient.createCanvasRg(ctx, gd);
           ctx.rect(x2, y2, iw, ih);
           ctx.fill();
           ctx.closePath();
         }
         else if(renderMode === mode.SVG) {
-          let uuid = this.defs.add({
-            tagName: 'radialGradient',
-            props: [
-              ['cx', cx2],
-              ['cy', cy2],
-              ['r', r]
-            ],
-            stop: list,
-          });
+          let uuid = gradient.createSvgRg(this.defs, gd);
           this.addBackground([
             ['x', x2],
             ['y', y2],

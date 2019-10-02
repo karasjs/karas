@@ -40,7 +40,7 @@ let karas = {
     throw new Error('can not use marker: ' + tagName);
   },
   createGm(tagName, props) {
-    let klass = Geom.getImplement(tagName);
+    let klass = Geom.getRegister(tagName);
     return new klass(tagName, props);
   },
   createCp(cp, props) {

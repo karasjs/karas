@@ -2970,8 +2970,21 @@
         h
       } = this.__preLayout(data);
 
+      let {
+        marginLeft,
+        marginRight,
+        width
+      } = this.style;
       this.__width = w;
-      this.__height = fixedHeight ? h : 0;
+      this.__height = fixedHeight ? h : 0; // 处理margin:xx auto居中对齐
+
+      if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+        let ow = this.outerWidth;
+
+        if (ow < data.w) {
+          this.__offsetX((data.w - ow) * 0.5);
+        }
+      }
     }
 
     __layoutFlex(data) {

@@ -899,7 +899,8 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container) {
-    let { x, y, flowY, width, height, children, absChildren, style, mlw, mtw, plw, ptw, prw, pbw } = this;
+    let { x, y, flowY, width, height, style, mlw, mtw, plw, ptw, prw, pbw } = container;
+    let { children, absChildren } = this;
     let {
       borderTopWidth,
       borderLeftWidth,

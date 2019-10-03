@@ -4169,8 +4169,6 @@
         flowY,
         width,
         height,
-        children,
-        absChildren,
         style,
         mlw,
         mtw,
@@ -4178,6 +4176,10 @@
         ptw,
         prw,
         pbw
+      } = container;
+      let {
+        children,
+        absChildren
       } = this;
       let {
         borderTopWidth,

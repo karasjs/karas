@@ -597,7 +597,7 @@
         ox = _getOrigin2[0],
         oy = _getOrigin2[1];
 
-    var list = normalize(transform);
+    var list = normalize(transform, ox, oy, ow, oh);
     var matrix = identity();
     matrix[12] = ox;
     matrix[13] = oy;

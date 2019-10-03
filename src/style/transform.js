@@ -3,7 +3,7 @@ import util from '../util';
 
 function calMatrix(transform, transformOrigin, x, y, ow, oh) {
   let [ox, oy] = getOrigin(transformOrigin, x, y, ow, oh);
-  let list = normalize(transform, ox, oy);
+  let list = normalize(transform, ox, oy, ow, oh);
   let matrix = identity();
   matrix[12] = ox;
   matrix[13] = oy;

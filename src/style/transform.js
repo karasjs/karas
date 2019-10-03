@@ -1,12 +1,14 @@
 import unit from '../style/unit';
 import util from '../util';
 
-function calMatrix(transform, ox, oy) {
+function calMatrix(transform, transformOrigin, x, y, ow, oh) {
+  let [ox, oy] = getOrigin(transformOrigin, x, y, ow, oh);
+  let list = normalize(transform, ox, oy);
   let matrix = identity();
   matrix[12] = ox;
   matrix[13] = oy;
   let deg = 0;
-  transform.forEach(item => {
+  list.forEach(item => {
     let [k, v] = item;
     let target = identity();
     if(k === 'translateX') {
@@ -194,7 +196,5 @@ function mergeMatrix(a, b) {
 export default {
   calMatrix,
   pointInQuadrilateral,
-  normalize,
-  getOrigin,
   mergeMatrix,
 };

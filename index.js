@@ -591,11 +591,17 @@
     hash2arr: hash2arr
   };
 
-  function calMatrix(transform, ox, oy) {
+  function calMatrix(transform, transformOrigin, x, y, ow, oh) {
+    var _getOrigin = getOrigin(transformOrigin, x, y, ow, oh),
+        _getOrigin2 = _slicedToArray(_getOrigin, 2),
+        ox = _getOrigin2[0],
+        oy = _getOrigin2[1];
+
+    var list = normalize(transform);
     var matrix = identity();
     matrix[12] = ox;
     matrix[13] = oy;
-    transform.forEach(function (item) {
+    list.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
@@ -799,8 +805,6 @@
   var tf = {
     calMatrix: calMatrix,
     pointInQuadrilateral: pointInQuadrilateral,
-    normalize: normalize,
-    getOrigin: getOrigin,
     mergeMatrix: mergeMatrix
   };
 
@@ -2119,9 +2123,7 @@
 
           var ow = _x - x;
           var oh = _y - y;
-          var tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
-          var list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-          var matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+          var matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
           this.__matrix = matrix;
           var parent = this.parent;
 
@@ -5188,7 +5190,7 @@
         var node = this.node;
         ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
           node.addEventListener(type, function (e) {
-            _this2.__cb(e, ['touchend', 'touchcancel', 'touchmove', 'mousemove'].indexOf(type) > -1);
+            _this2.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
           });
         });
       }

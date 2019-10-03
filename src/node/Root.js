@@ -84,7 +84,7 @@ class Root extends Dom {
     let { node } = this;
     ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
       node.addEventListener(type, e => {
-        this.__cb(e, ['touchend', 'touchcancel', 'touchmove', 'mousemove'].indexOf(type) > -1);
+        this.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
       });
     });
   }

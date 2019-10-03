@@ -281,9 +281,7 @@ class Xom extends Node {
       let y4 = y + mtw + btw + ih + bbw + mbw;
       let ow = x4 - x;
       let oh = y4 - y;
-      let tfo = tf.getOrigin(transformOrigin, x, y, ow, oh);
-      let list = tf.normalize(transform, tfo[0], tfo[1], ow, oh);
-      let matrix = tf.calMatrix(list, tfo[0], tfo[1]);
+      let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
       this.__matrix = matrix;
       let parent = this.parent;
       while(parent) {

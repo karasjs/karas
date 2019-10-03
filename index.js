@@ -2548,7 +2548,7 @@
       return;
     }
 
-    var w = /\b\d+px\b/i.exec(style[key]);
+    var w = /\b[\d.]+px\b/i.exec(style[key]);
 
     if (w) {
       style[key + 'Width'] = w[0];

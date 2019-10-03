@@ -8,7 +8,7 @@ function parserOneBorder(style, direction) {
   if(!style[key]) {
     return;
   }
-  let w = /\b\d+px\b/i.exec(style[key]);
+  let w = /\b[\d.]+px\b/i.exec(style[key]);
   if(w) {
     style[key + 'Width'] = w[0];
   }

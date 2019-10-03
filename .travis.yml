@@ -9,7 +9,7 @@ before_script:
   - google-chrome --version
 
 script:
-  - make test
+  - npm run test
 
 dist: xenial
 

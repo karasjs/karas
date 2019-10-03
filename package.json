@@ -12,7 +12,7 @@
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
     "dist": "rollup -c rollup.config.dist.js",
-    "test": "make test"
+    "test": "gulp build-test && nightwatch --filter test.js"
   },
   "repository": {
     "type": "git",

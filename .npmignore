@@ -5,9 +5,7 @@ Makefile
 .npmignore
 .spmignore
 .babelrc
-webpack.config.js
-webpack-dev.config.js
-webpack-dist.config.js
+rollup.config.js
 gulpfile.js
 nightwatch.json
 nightwatch.conf.js

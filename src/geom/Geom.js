@@ -138,47 +138,6 @@ class Geom extends Xom {
     };
   }
 
-  getCanvasLg(gd) {
-    let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-    gd.stop.forEach(item => {
-      lg.addColorStop(item[1], item[0]);
-    });
-    return lg;
-  }
-
-  getCanvasRg(gd) {
-    let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-    gd.stop.forEach(item => {
-      rg.addColorStop(item[1], item[0]);
-    });
-    return rg;
-  }
-
-  getSvgLg(gd) {
-    return this.defs.add({
-      tagName: 'linearGradient',
-      props: [
-        ['x1', gd.x1],
-        ['y1', gd.y1],
-        ['x2', gd.x2],
-        ['y2', gd.y2]
-      ],
-      stop: gd.stop,
-    });
-  }
-
-  getSvgRg(gd) {
-    return this.defs.add({
-      tagName: 'radialGradient',
-      props: [
-        ['cx', gd.cx],
-        ['cy', gd.cy],
-        ['r', gd.r]
-      ],
-      stop: gd.stop,
-    });
-  }
-
   render(renderMode) {
     super.render(renderMode);
     if(renderMode === mode.SVG) {

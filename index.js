@@ -1787,12 +1787,12 @@
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = gradient.createCanvasLg(ctx, gd);
+            ctx.fillStyle = this.getCanvasLg(gd);
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = gradient.createSvgLg(this.defs, gd);
+            let uuid = this.getSvgLg(gd);
             this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
           }
         } else if (k === 'radial') {
@@ -1800,12 +1800,12 @@
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = gradient.createCanvasRg(ctx, gd);
+            ctx.fillStyle = this.getCanvasRg(gd);
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = gradient.createSvgRg(this.defs, gd);
+            let uuid = this.getSvgRg(gd);
             this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
           }
         }
@@ -1973,6 +1973,38 @@
 
         return true;
       }
+    }
+
+    getCanvasLg(gd) {
+      let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+      gd.stop.forEach(item => {
+        lg.addColorStop(item[1], item[0]);
+      });
+      return lg;
+    }
+
+    getCanvasRg(gd) {
+      let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+      gd.stop.forEach(item => {
+        rg.addColorStop(item[1], item[0]);
+      });
+      return rg;
+    }
+
+    getSvgLg(gd) {
+      return this.defs.add({
+        tagName: 'linearGradient',
+        props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
+        stop: gd.stop
+      });
+    }
+
+    getSvgRg(gd) {
+      return this.defs.add({
+        tagName: 'radialGradient',
+        props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
+        stop: gd.stop
+      });
     }
 
     addBorder(props) {
@@ -3034,38 +3066,6 @@
         flg,
         frg
       };
-    }
-
-    getCanvasLg(gd) {
-      let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-      gd.stop.forEach(item => {
-        lg.addColorStop(item[1], item[0]);
-      });
-      return lg;
-    }
-
-    getCanvasRg(gd) {
-      let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-      gd.stop.forEach(item => {
-        rg.addColorStop(item[1], item[0]);
-      });
-      return rg;
-    }
-
-    getSvgLg(gd) {
-      return this.defs.add({
-        tagName: 'linearGradient',
-        props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
-        stop: gd.stop
-      });
-    }
-
-    getSvgRg(gd) {
-      return this.defs.add({
-        tagName: 'radialGradient',
-        props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
-        stop: gd.stop
-      });
     }
 
     render(renderMode) {

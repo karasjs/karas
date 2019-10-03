@@ -42,7 +42,9 @@ class Circle extends Geom {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.stroke();
+      if(strokeWidth > 0) {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

@@ -117,7 +117,7 @@ function diffD2D(elem, ovd, nvd, root) {
 
 function diffD2G(elem, ovd, nvd) {
   diffBb(elem.firstChild, ovd.bb, nvd.bb);
-  replaceWith(elem.lastChild, nvd.content);
+  replaceWith(elem.lastChild, nvd.children);
 }
 
 function diffT2T(elem, ovd, nvd) {
@@ -153,13 +153,13 @@ function diffG2G(elem, ovd, nvd) {
     }
   }
   diffBb(elem.firstChild, ovd.bb, nvd.bb);
-  let ol = ovd.content.length;
-  let nl = nvd.content.length;
+  let ol = ovd.children.length;
+  let nl = nvd.children.length;
   let i = 0;
   let lastChild = elem.lastChild;
   let cns = lastChild.childNodes;
   for(; i < Math.min(ol, nl); i++) {
-    diffItem(lastChild, i, ovd.content[i], nvd.content[i]);
+    diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
   }
   if(i < ol) {
     for(; i < ol; i++) {
@@ -168,7 +168,7 @@ function diffG2G(elem, ovd, nvd) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(lastChild, cns, i, util.joinVd(nvd.content[i]));
+      insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
     }
   }
 }

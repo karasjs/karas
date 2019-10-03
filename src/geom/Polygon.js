@@ -55,7 +55,9 @@ class Polygon extends Geom {
       }
       ctx.lineTo(points[0][0], points[0][1]);
       ctx.fill();
-      ctx.stroke();
+      if(strokeWidth > 0) {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

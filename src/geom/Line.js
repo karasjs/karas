@@ -65,7 +65,9 @@ class Line extends Geom {
       else {
         ctx.lineTo(x2, y2);
       }
-      ctx.stroke();
+      if(strokeWidth > 0) {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

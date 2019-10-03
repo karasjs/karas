@@ -100,10 +100,14 @@ class Sector extends Geom {
       if(this.edge) {
         ctx.lineTo(cx, cy);
         ctx.lineTo(x1, y1);
-        ctx.stroke();
+        if(strokeWidth > 0) {
+          ctx.stroke();
+        }
       }
       else {
-        ctx.stroke();
+        if(strokeWidth > 0) {
+          ctx.stroke();
+        }
         ctx.lineTo(cx, cy);
         ctx.lineTo(x1, y1);
       }

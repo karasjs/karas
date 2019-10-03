@@ -80,7 +80,9 @@ class Polyline extends Geom {
         let point = pts[i];
         ctx.lineTo(point[0], point[1]);
       }
-      ctx.stroke();
+      if(strokeWidth > 0) {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

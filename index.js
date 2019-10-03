@@ -4446,7 +4446,7 @@
 
   function diffD2G(elem, ovd, nvd) {
     diffBb(elem.firstChild, ovd.bb, nvd.bb);
-    replaceWith(elem.lastChild, nvd.content);
+    replaceWith(elem.lastChild, nvd.children);
   }
 
   function diffT2T(elem, ovd, nvd) {
@@ -4486,14 +4486,14 @@
     }
 
     diffBb(elem.firstChild, ovd.bb, nvd.bb);
-    let ol = ovd.content.length;
-    let nl = nvd.content.length;
+    let ol = ovd.children.length;
+    let nl = nvd.children.length;
     let i = 0;
     let lastChild = elem.lastChild;
     let cns = lastChild.childNodes;
 
     for (; i < Math.min(ol, nl); i++) {
-      diffItem(lastChild, i, ovd.content[i], nvd.content[i]);
+      diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
     }
 
     if (i < ol) {
@@ -4502,7 +4502,7 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(lastChild, cns, i, util.joinVd(nvd.content[i]));
+        insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
       }
     }
   }
@@ -4961,7 +4961,10 @@
           ctx.lineTo(x2, y2);
         }
 
-        ctx.stroke();
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         if (slg) {
@@ -5081,7 +5084,10 @@
           ctx.lineTo(point[0], point[1]);
         }
 
-        ctx.stroke();
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         let points = '';
@@ -5185,7 +5191,11 @@
 
         ctx.lineTo(points[0][0], points[0][1]);
         ctx.fill();
-        ctx.stroke();
+
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         let pts = '';
@@ -5340,9 +5350,15 @@
         if (this.edge) {
           ctx.lineTo(cx, cy);
           ctx.lineTo(x1, y1);
-          ctx.stroke();
+
+          if (strokeWidth > 0) {
+            ctx.stroke();
+          }
         } else {
-          ctx.stroke();
+          if (strokeWidth > 0) {
+            ctx.stroke();
+          }
+
           ctx.lineTo(cx, cy);
           ctx.lineTo(x1, y1);
         }
@@ -5443,7 +5459,11 @@
         ctx.lineTo(originX, originY + height);
         ctx.lineTo(originX, originY);
         ctx.fill();
-        ctx.stroke();
+
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         if (slg) {
@@ -5523,7 +5543,11 @@
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.stroke();
+
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         if (slg) {
@@ -5619,7 +5643,11 @@
         ctx.beginPath();
         ctx.ellipse && ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.stroke();
+
+        if (strokeWidth > 0) {
+          ctx.stroke();
+        }
+
         ctx.closePath();
       } else if (renderMode === mode.SVG) {
         if (slg) {

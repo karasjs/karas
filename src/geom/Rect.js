@@ -37,7 +37,9 @@ class Rect extends Geom {
       ctx.lineTo(originX, originY + height);
       ctx.lineTo(originX, originY);
       ctx.fill();
-      ctx.stroke();
+      if(strokeWidth > 0) {
+        ctx.stroke();
+      }
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

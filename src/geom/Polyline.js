@@ -33,7 +33,7 @@ class Polyline extends Geom {
     let {
       originX, originY, display,
       stroke, strokeWidth, strokeDasharray,
-      slg } = this.__getPreRender();
+      slg } = this.getPreRender();
     if(display === 'none') {
       return;
     }
@@ -71,7 +71,7 @@ class Polyline extends Geom {
       });
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
+      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
@@ -90,7 +90,7 @@ class Polyline extends Geom {
         points += `${point[0]},${point[1]} `;
       }
       if(slg) {
-        let uuid = gradient.createSvgLg(this.defs, slg);
+        let uuid = this.getSvgLg(slg);
         stroke = `url(#${uuid})`;
       }
       this.addGeom('polyline', [

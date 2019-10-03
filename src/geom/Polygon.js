@@ -26,7 +26,7 @@ class Polygon extends Geom {
     let {
       originX, originY, display, fill,
       stroke, strokeWidth, strokeDasharray,
-      slg, flg, frg } = this.__getPreRender();
+      slg, flg, frg } = this.getPreRender();
     if(display === 'none') {
       return;
     }
@@ -35,13 +35,13 @@ class Polygon extends Geom {
       item[1] = originY + item[1] * height;
     });
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
+      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
       ctx.lineWidth = strokeWidth;
       if(flg) {
-        ctx.fillStyle = gradient.createCanvasLg(ctx, flg);
+        ctx.fillStyle = this.getCanvasLg(flg);
       }
       else if(frg) {
-        ctx.fillStyle = gradient.createCanvasRg(ctx, frg);
+        ctx.fillStyle = this.getCanvasRg(frg);
       }
       else {
         ctx.fillStyle = fill;
@@ -65,15 +65,15 @@ class Polygon extends Geom {
         pts += `${point[0]},${point[1]} `;
       }
       if(slg) {
-        let uuid = gradient.createSvgLg(this.defs, slg);
+        let uuid = this.getSvgLg(slg);
         stroke = `url(#${uuid})`;
       }
       if(flg) {
-        let uuid = gradient.createSvgLg(this.defs, flg);
+        let uuid = this.getSvgLg(flg);
         fill = `url(#${uuid})`;
       }
       else if(frg) {
-        let uuid = gradient.createSvgRg(this.defs, frg);
+        let uuid = this.getSvgRg(frg);
         fill = `url(#${uuid})`;
       }
       this.addGeom('polygon', [

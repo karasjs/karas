@@ -29,7 +29,7 @@ class Line extends Geom {
     let {
       originX, originY, display,
       stroke, strokeWidth, strokeDasharray,
-      slg } = this.__getPreRender();
+      slg } = this.getPreRender();
     if(display === 'none') {
       return;
     }
@@ -51,7 +51,7 @@ class Line extends Geom {
       cy2 = originY + control[1][1] * height;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? gradient.createCanvasLg(ctx, slg) : stroke;
+      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
@@ -70,7 +70,7 @@ class Line extends Geom {
     }
     else if(renderMode === mode.SVG) {
       if(slg) {
-        let uuid = gradient.createSvgLg(this.defs, slg);
+        let uuid = this.getSvgLg(slg);
         stroke = `url(#${uuid})`;
       }
       let d;

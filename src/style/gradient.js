@@ -460,53 +460,8 @@ function getRadial(v, cx, cy, x1, y1, x2, y2) {
   };
 }
 
-function createCanvasLg(ctx, gd) {
-  let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-  gd.stop.forEach(item => {
-    lg.addColorStop(item[1], item[0]);
-  });
-  return lg;
-}
-
-function createSvgLg(defs, gd) {
-  return defs.add({
-    tagName: 'linearGradient',
-    props: [
-      ['x1', gd.x1],
-      ['y1', gd.y1],
-      ['x2', gd.x2],
-      ['y2', gd.y2]
-    ],
-    stop: gd.stop,
-  });
-}
-
-function createCanvasRg(ctx, gd) {
-  let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-  gd.stop.forEach(item => {
-    rg.addColorStop(item[1], item[0]);
-  });
-  return rg;
-}
-
-function createSvgRg(defs, gd) {
-  return defs.add({
-    tagName: 'radialGradient',
-    props: [
-      ['cx', gd.cx],
-      ['cy', gd.cy],
-      ['r', gd.r]
-    ],
-    stop: gd.stop,
-  });
-}
-
 export default {
   parseGradient,
   getLinear,
   getRadial,
-  createCanvasLg,
-  createSvgLg,
-  createCanvasRg,
-  createSvgRg,
 };

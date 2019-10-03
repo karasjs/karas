@@ -335,6 +335,7 @@ function normalize(style) {
 
 function setFontStyle(style) {
   let { fontStyle, fontWeight, fontSize, fontFamily } = style;
+  fontFamily = 'arial';
   return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
 }
 

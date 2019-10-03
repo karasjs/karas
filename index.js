@@ -134,6 +134,7 @@
       }
 
       div.style.fontSize = style.fontSize + 'px';
+      div.style.fontFamily = style.fontFamily;
       div.innerText = s;
       let css = window.getComputedStyle(div, null);
       return parseFloat(css.width);
@@ -2511,6 +2512,7 @@
       fontSize,
       fontFamily
     } = style;
+    fontFamily = 'arial';
     return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
   }
 
@@ -2557,7 +2559,7 @@
         this.__virtualDom = {
           type: 'item',
           tagName: 'text',
-          props: [['x', x], ['y', y], ['fill', style.color], ['font-size', `${style.fontSize}px`]],
+          props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-size', `${style.fontSize}px`]],
           content
         };
       }
@@ -3323,14 +3325,6 @@
       let min = 0;
       let max = 0;
       let {
-        mtw,
-        mrw,
-        mbw,
-        mlw,
-        ptw,
-        prw,
-        pbw,
-        plw,
         flowChildren,
         style
       } = this; // 计算需考虑style的属性
@@ -3338,6 +3332,14 @@
       let {
         width,
         height,
+        marginLeft,
+        marginTop,
+        marginRight,
+        marginBottom,
+        paddingLeft,
+        paddingTop,
+        paddingRight,
+        paddingBottom,
         borderTopWidth,
         borderRightWidth,
         borderBottomWidth,
@@ -3379,18 +3381,22 @@
           min = Math.max(min, item.height);
           max = Math.max(max, item.height);
         }
-      }); // margin/padding/border也得计算在内
+      }); // margin/padding/border也得计算在内，此时还没有，百分比相对于父flex元素的宽度
 
       if (isDirectionRow) {
-        let w = borderRightWidth.value + borderLeftWidth.value + mlw + mrw + plw + prw;
-        b += w;
-        max += w;
-        min += w;
+        let mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
+
+        let w2 = borderRightWidth.value + borderLeftWidth.value + mp;
+        b += w2;
+        max += w2;
+        min += w2;
       } else {
-        let h = borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
-        b += h;
-        max += h;
-        min += h;
+        let mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
+
+        let h2 = borderTopWidth.value + borderBottomWidth.value + mp;
+        b += h2;
+        max += h2;
+        min += h2;
       }
 
       return {
@@ -3398,6 +3404,20 @@
         min,
         max
       };
+    }
+
+    __calMp(v, w) {
+      let n = 0;
+
+      if (v.unit === unit.PX) {
+        n += v.value;
+      } else if (v.unit === unit.PERCENT) {
+        v.value *= w * 0.01;
+        v.unit = unit.PX;
+        n += v.value;
+      }
+
+      return n;
     }
 
     __calAbs(isDirectionRow) {

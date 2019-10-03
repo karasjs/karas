@@ -28,6 +28,7 @@ class LineBox {
           ['x', x],
           ['y', y],
           ['fill', style.color],
+          ['font-family', style.fontFamily],
           ['font-size', `${style.fontSize}px`]
         ],
         content,

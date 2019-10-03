@@ -16,6 +16,7 @@ export default {
       document.body.appendChild(div);
     }
     div.style.fontSize = style.fontSize + 'px';
+    div.style.fontFamily = style.fontFamily;
     div.innerText = s;
     let css = window.getComputedStyle(div, null);
     return parseFloat(css.width);

@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../mode';
-import gradient from '../style/gradient';
 
 class Line extends Geom {
   constructor(tagName, props) {
@@ -21,16 +20,12 @@ class Line extends Geom {
   }
 
   render(renderMode) {
-    super.render(renderMode);
-    let { width, height, ctx, begin, end, control } = this;
-    if(begin.length < 2 || end.length < 2) {
+    let { display, originX, originY, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(display === 'none') {
       return;
     }
-    let {
-      originX, originY, display,
-      stroke, strokeWidth, strokeDasharray,
-      slg } = this.getPreRender();
-    if(display === 'none') {
+    let { width, height, ctx, begin, end, control } = this;
+    if(begin.length < 2 || end.length < 2) {
       return;
     }
     let x1 = originX + begin[0] * width;
@@ -51,7 +46,7 @@ class Line extends Geom {
       cy2 = originY + control[1][1] * height;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
@@ -71,10 +66,6 @@ class Line extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      if(slg) {
-        let uuid = this.getSvgLg(slg);
-        stroke = `url(#${uuid})`;
-      }
       let d;
       if(curve === 2) {
         d = `M${x1} ${y1} C${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`;

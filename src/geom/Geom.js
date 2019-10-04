@@ -96,7 +96,7 @@ class Geom extends Xom {
     return 0;
   }
 
-  getPreRender() {
+  __preRender(renderMode) {
     let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style } = this;
     let {
       borderTopWidth,
@@ -111,25 +111,40 @@ class Geom extends Xom {
     let originY = y + borderTopWidth.value + mtw + ptw;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
-    let slg;
     if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {
-        slg = gradient.getLinear(go.v, cx, cy, width, height);
+        let lg = gradient.getLinear(go.v, cx, cy, width, height);
+        if(renderMode === mode.CANVAS) {
+          stroke = this.getCanvasLg(lg);
+        }
+        else if(renderMode === mode.SVG) {
+          stroke = `url(#${this.getSvgLg(lg)})`;
+        }
       }
     }
-    let flg;
-    let frg;
     if(fill.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        flg = gradient.getLinear(go.v, cx, cy, width, height);
+        let lg = gradient.getLinear(go.v, cx, cy, width, height);
+        if(renderMode === mode.CANVAS) {
+          fill = this.getCanvasLg(lg);
+        }
+        else if(renderMode === mode.SVG) {
+          fill = `url(#${this.getSvgLg(lg)})`;
+        }
       }
     }
     else if(fill.indexOf('radial-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        frg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
+        let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
+        if(renderMode === mode.CANVAS) {
+          fill = this.getCanvasRg(rg);
+        }
+        else if(renderMode === mode.SVG) {
+          fill = `url(#${this.getSvgRg(rg)})`;
+        }
       }
     }
     return {
@@ -144,9 +159,6 @@ class Geom extends Xom {
       strokeWidth,
       strokeDasharray,
       fill,
-      slg,
-      flg,
-      frg,
     };
   }
 
@@ -158,6 +170,7 @@ class Geom extends Xom {
         type: 'geom',
       };
     }
+    return this.__preRender(renderMode);
   }
 
   addGeom(tagName, props) {

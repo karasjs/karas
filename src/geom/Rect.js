@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../mode';
-import gradient from '../style/gradient';
 
 class Rect extends Geom {
   constructor(tagName, props) {
@@ -8,27 +7,15 @@ class Rect extends Geom {
   }
 
   render(renderMode) {
-    super.render(renderMode);
-    let { rx: x, ry: y, width, height, ctx } = this;
-    let {
-      originX, originY, display, fill,
-      stroke, strokeWidth, strokeDasharray,
-      slg, flg, frg } = this.getPreRender();
+    let { originX, originY, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
     if(display === 'none') {
       return;
     }
+    let { width, height, ctx } = this;
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      if(flg) {
-        ctx.fillStyle = this.getCanvasLg(flg);
-      }
-      else if(frg) {
-        ctx.fillStyle = this.getCanvasRg(frg);
-      }
-      else {
-        ctx.fillStyle = fill;
-      }
+      ctx.fillStyle = fill;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(originX, originY);
@@ -43,21 +30,9 @@ class Rect extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      if(slg) {
-        let uuid = this.getSvgLg(slg);
-        stroke = `url(#${uuid})`;
-      }
-      if(flg) {
-        let uuid = this.getSvgLg(flg);
-        fill = `url(#${uuid})`;
-      }
-      else if(frg) {
-        let uuid = this.getSvgRg(frg);
-        fill = `url(#${uuid})`;
-      }
       this.addGeom('rect', [
-        ['x', x],
-        ['y', y],
+        ['x', originX],
+        ['y', originY],
         ['width', width],
         ['height', height],
         ['fill', fill],

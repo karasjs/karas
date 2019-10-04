@@ -66,16 +66,12 @@ class Sector extends Geom {
   }
 
   render(renderMode) {
-    super.render(renderMode);
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style, ctx, begin, end, r, virtualDom } = this;
-    if(begin === end) {
+    let { cx, cy, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(display === 'none') {
       return;
     }
-    let {
-      cx, cy, display, fill,
-      stroke, strokeWidth, strokeDasharray,
-      slg, flg, frg } = this.getPreRender();
-    if(display === 'none') {
+    let { width, height, ctx, begin, end, r } = this;
+    if(begin === end) {
       return;
     }
     r *= Math.min(width, height) * 0.5;
@@ -83,17 +79,9 @@ class Sector extends Geom {
     [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
     [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      if(flg) {
-        ctx.fillStyle = this.getCanvasLg(flg);
-      }
-      else if(frg) {
-        ctx.fillStyle = this.getCanvasRg(frg);
-      }
-      else {
-        ctx.fillStyle = fill;
-      }
+      ctx.fillStyle = fill;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
@@ -116,18 +104,6 @@ class Sector extends Geom {
     }
     else if(renderMode === mode.SVG) {
       let large = (end - begin) > 180 ? 1 : 0;
-      if(slg) {
-        let uuid = this.getSvgLg(slg);
-        stroke = `url(#${uuid})`;
-      }
-      if(flg) {
-        let uuid = this.getSvgLg(flg);
-        fill = `url(#${uuid})`;
-      }
-      else if(frg) {
-        let uuid = this.getSvgRg(frg);
-        fill = `url(#${uuid})`;
-      }
       if(this.edge) {
         this.addGeom('path', [
           ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],

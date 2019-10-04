@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../mode';
-import gradient from "../style/gradient";
 
 class Polyline extends Geom {
   constructor(tagName, props) {
@@ -20,7 +19,10 @@ class Polyline extends Geom {
   }
 
   render(renderMode) {
-    super.render(renderMode);
+    let { originX, originY, display, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(display === 'none') {
+      return;
+    }
     let { width, height, ctx, points, origin } = this;
     if(points.length < 2) {
       return;
@@ -29,13 +31,6 @@ class Polyline extends Geom {
       if(!Array.isArray(points[i]) || points[i].length < 2) {
         return;
       }
-    }
-    let {
-      originX, originY, display,
-      stroke, strokeWidth, strokeDasharray,
-      slg } = this.getPreRender();
-    if(display === 'none') {
-      return;
     }
     let pts = this.__pts = [];
     if(origin === 'TOP_LEFT') {
@@ -71,7 +66,7 @@ class Polyline extends Geom {
       });
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = slg ? this.getCanvasLg(slg) : stroke;
+      ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
@@ -90,10 +85,6 @@ class Polyline extends Geom {
       for(let i = 0, len = pts.length; i < len; i++) {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
-      }
-      if(slg) {
-        let uuid = this.getSvgLg(slg);
-        stroke = `url(#${uuid})`;
       }
       this.addGeom('polyline', [
         ['points', points],

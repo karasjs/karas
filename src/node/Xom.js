@@ -403,11 +403,16 @@ class Xom extends Node {
     }
     // touchend之类强制的直接通知即可
     if(force) {
-      children.forEach(child => {
-        if(child instanceof Xom && !child.isGeom()) {
-          child.__emitEvent(e, force);
-        }
-      });
+      if(!this.isGeom()) {
+        children.forEach(child => {
+          if(child instanceof Xom) {
+            child.__emitEvent(e, force);
+          }
+        });
+      }
+      if(type === 'touchmove' || type === 'touchend') {
+        e.target = this.root.__touchstartTarget;
+      }
       cb && cb(e);
       return;
     }
@@ -442,9 +447,6 @@ class Xom extends Node {
         h: outerHeight,
         matrixEvent,
       });
-      if(!e.target) {
-        e.target = this;
-      }
       cb && cb(e);
     }
   }
@@ -474,6 +476,10 @@ class Xom extends Node {
       }
       if(!e.target) {
         e.target = this;
+        // 缓存target给move用
+        if(e.event.type === 'touchstart') {
+          this.root.__touchstartTarget = this;
+        }
       }
       return true;
     }

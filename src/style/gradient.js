@@ -27,7 +27,7 @@ function getLinearDeg(v) {
   }
   // 数字角度，没有的话取默认角度
   else {
-    let match = /([\d.]+)deg/.exec(v[0]);
+    let match = /(-?[\d.]+)deg/.exec(v[0]);
     if(match) {
       deg = parseFloat(match[1]);
     }
@@ -415,7 +415,11 @@ function getCsLimit(first, last, length) {
 function parseGradient(s) {
   let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
   if(gradient) {
+    let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/.exec(gradient[2]);
     let v = gradient[2].match(/(#[0-9a-f]{3,6})|(rgba?\(.+?\))/ig);
+    if(deg) {
+      v.unshift(deg[0]);
+    }
     return {
       k: gradient[1],
       v,

@@ -558,7 +558,7 @@
       deg = 315;
     } // 数字角度，没有的话取默认角度
     else {
-        let match = /([\d.]+)deg/.exec(v[0]);
+        let match = /(-?[\d.]+)deg/.exec(v[0]);
 
         if (match) {
           deg = parseFloat(match[1]);
@@ -966,7 +966,13 @@
     let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
 
     if (gradient) {
+      let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/.exec(gradient[2]);
       let v = gradient[2].match(/(#[0-9a-f]{3,6})|(rgba?\(.+?\))/ig);
+
+      if (deg) {
+        v.unshift(deg[0]);
+      }
+
       return {
         k: gradient[1],
         v
@@ -1889,11 +1895,18 @@
 
 
       if (force) {
-        children.forEach(child => {
-          if (child instanceof Xom && !child.isGeom()) {
-            child.__emitEvent(e, force);
-          }
-        });
+        if (!this.isGeom()) {
+          children.forEach(child => {
+            if (child instanceof Xom) {
+              child.__emitEvent(e, force);
+            }
+          });
+        }
+
+        if (type === 'touchmove' || type === 'touchend') {
+          e.target = this.root.__touchstartTarget;
+        }
+
         cb && cb(e);
         return;
       }
@@ -1934,11 +1947,6 @@
           h: outerHeight,
           matrixEvent
         });
-
-        if (!e.target) {
-          e.target = this;
-        }
-
         cb && cb(e);
       }
     }
@@ -1975,7 +1983,11 @@
         }
 
         if (!e.target) {
-          e.target = this;
+          e.target = this; // 缓存target给move用
+
+          if (e.event.type === 'touchstart') {
+            this.root.__touchstartTarget = this;
+          }
         }
 
         return true;
@@ -4783,7 +4795,7 @@
 
       res += `></${this.tagName}>`;
       return res;
-    } // 类似touchend/touchcancel这种无需判断是否发生于元素上，直接强制响应
+    } // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接强制响应
 
 
     __cb(e, force) {

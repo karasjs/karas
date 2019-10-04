@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>flare</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">结合图形标签和径向渐变，可以制作出火苗燃动的效果。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  function render(list) {
+    karas.render(
+      <canvas width="360" height="360">
+        {
+          list.map(item => {
+            return <$ellipse style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: item[4],
+              height: item[5],
+              strokeWidth: 0,
+              fill: `radial-gradient(rgba(${item[0]},${item[1]},${item[2]},${item[3]}),rgba(${item[0]},${item[1]},${item[2]},0))`,
+              transform: `translate(-50%,-90%)`
+            }}/>
+          })
+        }
+      </canvas>,
+      '#example'
+    );
+    karas.render(
+      <svg width="360" height="360">
+        {
+          list.map(item => {
+            return <$ellipse style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: item[4],
+              height: item[5],
+              strokeWidth: 0,
+              fill: `radial-gradient(rgba(${item[0]},${item[1]},${item[2]},${item[3]}),rgba(${item[0]},${item[1]},${item[2]},0))`,
+              transform: `translate(-50%,-90%)`
+            }}/>
+          })
+        }
+      </svg>,
+      '#example2'
+    );
+  }
+  let list = [];
+  function animate() {
+    if(list.length > 100) {
+      list.shift();
+    }
+    list.forEach(item => {
+      item[3] -= 0.0002;
+      item[4] += item[6];
+      item[5] += item[6] * 1.3;
+    });
+    let r = 235 + Math.ceil(Math.random() * 10);
+    let g = 100 + Math.ceil(Math.random() * 20);
+    let b = Math.ceil(Math.random() * 30);
+    let a = 0.05;
+    let w = 10 + Math.ceil(Math.random() * 3);
+    let h = 10 + Math.ceil(Math.random() * 5);
+    let increase = Math.random();
+    list.push([r, g, b, a, w, h, increase]);
+    render(list);
+    requestAnimationFrame(animate);
+  }
+  animate();
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>3d</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">结合自定义图形和线性渐变，以及结合线性渐变和transform，比如3d柱状图。
+下面展示了2种不同的方式，红色css要简单一些，但蓝色自定义图形使用性和复用性都更好。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  class Cuboid extends karas.Geom {
+    constructor(tagName, props) {
+      super(tagName, props);
+    }
+
+    render(renderMode) {
+      super.render(renderMode);
+      let { rx: x, ry: y, width, height, ctx } = this;
+      let percent = parseFloat(this.props.percent) || 1;
+      let h = height - 20;
+      let x1 = x + width * 0.5 - 20;
+      let y1 = y + height - 10;
+      let l = percent * h;
+      let front = [
+        [x1, y1],
+        [x1, y1 - l],
+        [x1 + 20, y1 - l + 10],
+        [x1 + 20, y1 + 10]
+      ];
+      let side = [
+        [x1 + 20, y1 - l + 10],
+        [x1 + 40, y1 - l],
+        [x1 + 40, y1],
+        [x1 + 20, y1 + 10]
+      ];
+      let top = [
+        [x1, y1 - l],
+        [x1 + 20, y1 - l + 10],
+        [x1 + 40, y1 - l],
+        [x1 + 20, y1 - l - 10],
+      ];
+      if(renderMode === karas.mode.CANVAS) {
+        let lg = ctx.createLinearGradient(x + width, y + height, x, y);
+        lg.addColorStop(0, '#39F');
+        lg.addColorStop(1, '#9CF');
+        ctx.fillStyle = lg;
+        ctx.beginPath();
+        front.forEach((item, i) => {
+          if(i) {
+            ctx.lineTo(item[0], item[1]);
+          }
+          else {
+            ctx.moveTo(item[0], item[1]);
+          }
+        });
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+        lg = ctx.createLinearGradient(x + width, y + height, x, y);
+        lg.addColorStop(0, '#06F');
+        lg.addColorStop(1, '#39F');
+        ctx.fillStyle = lg;
+        side.forEach((item, i) => {
+          if(i) {
+            ctx.lineTo(item[0], item[1]);
+          }
+          else {
+            ctx.moveTo(item[0], item[1]);
+          }
+        });
+        ctx.fill();
+        ctx.closePath();
+        ctx.beginPath();
+        lg = ctx.createLinearGradient(x + width, y, x, y);
+        lg.addColorStop(0, '#6AF');
+        lg.addColorStop(1, '#9CF');
+        ctx.fillStyle = lg;
+        top.forEach((item, i) => {
+          if(i) {
+            ctx.lineTo(item[0], item[1]);
+          }
+          else {
+            ctx.moveTo(item[0], item[1]);
+          }
+        });
+        ctx.fill();
+        ctx.closePath();
+      }
+      else if(renderMode === karas.mode.SVG) {
+        let lg = this.defs.add({
+          tagName: 'linearGradient',
+          props: [
+            ['x1', x + width],
+            ['y1', y + height],
+            ['x2', x],
+            ['y2', y]
+          ],
+          stop: [
+            ['#39F', 0],
+            ['#9CF', 1]
+          ],
+        });
+        this.addGeom('polygon', {
+          points: front,
+          fill: `url(#${lg})`,
+        });
+        lg = this.defs.add({
+          tagName: 'linearGradient',
+          props: [
+            ['x1', x + width],
+            ['y1', y + height],
+            ['x2', x],
+            ['y2', y]
+          ],
+          stop: [
+            ['#06F', 0],
+            ['#39F', 1]
+          ],
+        });
+        this.addGeom('polygon', {
+          points: side,
+          fill: `url(#${lg})`,
+        });
+        lg = this.defs.add({
+          tagName: 'linearGradient',
+          props: [
+            ['x1', x + width],
+            ['y1', y],
+            ['x2', x],
+            ['y2', y]
+          ],
+          stop: [
+            ['#6AF', 0],
+            ['#9CF', 1]
+          ],
+        });
+        this.addGeom('polygon', {
+          points: top,
+          fill: `url(#${lg})`,
+        });
+      }
+    }
+  }
+  karas.Geom.register('$cuboid', Cuboid);
+
+  karas.render(
+    <canvas width="360" height="360">
+      <div style={{display:'flex',height:'100%'}}>
+        <div style={{flex:1,position:'relative'}}>
+          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(#F63,#F30)',transform:'skewY(-25deg)'}}/>
+          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(130deg,#FA9,#F63)',transform:'translateX(-100%)skewY(25deg)'}}/>
+          <$rect style={{position:'absolute',left:'50%',bottom:200,width:17,height:22,strokeWidth:0,background:'linear-gradient(120deg,#FCB,#F86)',transform:'translate(-49%,27%)rotate(-65deg)skewY(40deg)'}}/>
+        </div>
+        <$cuboid style={{flex:1}}/>
+        <$cuboid style={{flex:1}} percent={0.5}/>
+      </div>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <div style={{display:'flex',height:'100%'}}>
+        <div style={{flex:1,position:'relative'}}>
+          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(#F63,#F30)',transform:'skewY(-25deg)'}}/>
+          <$rect style={{position:'absolute',left:'50%',bottom:0,width:20,height:200,strokeWidth:0,background:'linear-gradient(130deg,#FA9,#F63)',transform:'translateX(-100%)skewY(25deg)'}}/>
+          <$rect style={{position:'absolute',left:'50%',bottom:200,width:17,height:22,strokeWidth:0,background:'linear-gradient(120deg,#FCB,#F86)',transform:'translate(-49%,27%)rotate(-65deg)skewY(40deg)'}}/>
+        </div>
+        <$cuboid style={{flex:1}}/>
+        <$cuboid style={{flex:1}} percent={0.5}/>
+      </div>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

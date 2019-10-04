@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>csx</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">csx取名借鉴自jsx，Canvas-Svg-Xml，根据根节点的不同，自动切换为canvas或svg类型，两者功能完全等价。
+csx所做的核心事情有3件：实现一个精简的css布局引擎，统一表现模式；实现css标准样式渲染，抹平canvas和svg的差异；借鉴svg标准增加基本图形节点语法，实现几何绘图。
+如此解决了绘图中布局处理困难、学习维护成本高、兼容实现麻烦、复用难统一标准的问题。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.render(
+    <canvas width="360" height="360">
+      <div style={{background:'#FF6',color:'#F00'}}>Hello world!</div>
+      <span style={{background:'#9CF'}}>csx!</span>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <div style={{background:'#FF6',color:'#F00'}}>Hello world!</div>
+      <span style={{background:'#9CF'}}>csx!</span>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

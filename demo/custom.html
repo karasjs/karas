@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>custom</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">如果觉得基本的几何图形不够用，或者为了复用代码，可以注册自定义几何标签。
+需要继承Geom类，覆盖render方法。这里以线图中常见的背景grid线框为例。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  class Grid extends karas.Geom {
+    constructor(tagName, props) {
+      super(tagName, props);
+    }
+
+    render(renderMode) {
+      // 基类render中已经帮我们计算好许多必需的属性
+      let { originX, originY, display, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+      if(display === 'none') {
+        return;
+      }
+      let { width, height, ctx } = this;
+      // x,y被分为几格
+      let nx = this.props.nx || 0;
+      let ny = this.props.ny || 0;
+      if(nx < 2 && ny < 2) {
+        return;
+      }
+      let endX = originX + width;
+      let endY = originY + height;
+      let lx = [];
+      let ly = [];
+      let pw = width / (nx - 1);
+      for(let i = 0; i < nx; i++) {
+        ly.push(originX + i * pw);
+      }
+      let ph = height / (ny - 1);
+      for(let i = 0; i < ny; i++) {
+        lx.push(originY + i * ph);
+      }
+      if(renderMode === karas.mode.CANVAS) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = strokeWidth;
+        ctx.setLineDash(strokeDasharray);
+        ctx.beginPath();
+        lx.forEach(item => {
+          ctx.moveTo(originX, item);
+          ctx.lineTo(endX, item);
+        });
+        ly.forEach(item => {
+          ctx.moveTo(item, originY);
+          ctx.lineTo(item, endY);
+        });
+        ctx.stroke();
+        ctx.closePath();
+      }
+      else if(renderMode === karas.mode.SVG) {
+        lx.forEach(item => {
+          // 基类也为添加基本svg图形封装好了方法
+          this.addGeom('line', [
+            ['x1', originX],
+            ['y1', item],
+            ['x2', endX],
+            ['y2', item],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ]);
+        });
+        ly.forEach(item => {
+          this.addGeom('line', [
+            ['x1', item],
+            ['y1', originY],
+            ['x2', item],
+            ['y2', endY],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth],
+            ['stroke-dasharray', strokeDasharray]
+          ]);
+        });
+      }
+    }
+  }
+  karas.Geom.register('$grid', Grid);
+
+  karas.render(
+    <canvas width="360" height="360">
+      <$grid style={{margin:'1px auto',width:200,height:200,strokeDasharray:[4,1]}} nx={3} ny={4}/>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <$grid style={{margin:'1px auto',width:200,height:200,strokeDasharray:[4,1]}} nx={3} ny={4}/>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

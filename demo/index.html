@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>yurine</title>
+  <title>karas</title>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
   <style>
@@ -24,9 +24,69 @@
 <ol>
   <li>
     <a href="hello.html" title="hello">Hello World!</a>
-    <span>基本的render方法接收2个参数：模板和渲染对象</span>
+    <span>基本的render方法接收2个参数：图表程序和渲染dom对象。</span>
+  </li>
+  <li>
+    <a href="csx.html" title="csx">csx</a>
+    <span>csx取名借鉴自jsx，Canvas-Svg-Xml，根据根节点的不同，自动切换为canvas或svg类型，两者功能完全等价。</span>
+  </li>
+  <li>
+    <a href="dpr.html" title="dpr">高清方案</a>
+    <span>在高清屏（如手机、mac）中，canvas会模糊或者1px边框问题，请自行调整meta元素的scale缩放（默认为1），或者为canvas设置style，使其宽高为属性的0.5倍（对应dpr为2的倒数）。</span>
+  </li>
+  <li>
+    <a href="tag.html" title="tag">dom标签</a>
+    <span>目前只有2种标签：div和span，分别对应block和inline元素。</span>
+  </li>
+  <li>
+    <a href="flex.html" title="flex">弹性布局</a>
+    <span>flex基本被支持，这是在布局中很常见且实用的布局。</span>
+  </li>
+  <li>
+    <a href="absolute.html" title="absolute">绝对定位</a>
+    <span>绝对定位也很重要，在一些提示窗口中有重大作用。</span>
+  </li>
+  <li>
+    <a href="gradient.html" title="gradient">渐变</a>
+    <span>线性渐变和径向渐变可以丰富图形表现，css、canvas、svg写法定义均不相同，统一至css标准。</span>
+  </li>
+  <li>
+    <a href="transform.html" title="transform">变形</a>
+    <span>变形转换提供了便利的几何变换，css、canvas、svg写法定义均不相同，统一至css标准。</span>
+  </li>
+  <li>
+    <a href="event.html" title="event">事件支持</a>
+    <span>和jsx的事件标准一样，以on{Event}形式书写，所有事件被顶层canvas/svg劫持实现响应。</span>
+  </li>
+  <li>
+    <a href="geom.html" title="geom">几何标签</a>
+    <span>几何标签规定以$开头，默认内置了几种基础几何形状：line/circle/rect/ellipse/sector/polyline/polygon。</span>
+  </li>
+  <li>
+    <a href="custom.html" title="custom">自定义几何标签</a>
+    <span>如果觉得基本的几何图形不够用，或者为了复用代码，可以注册自定义几何标签。</span>
+  </li>
+  <li>
+    <a href="dom-diff.html" title="dom-diff">dom-diff</a>
+    <span>改变图形时需要重新渲染，对于canvas来说就是重绘，而svg重新生成的成本太大了，因此内置了dom-diff来提升性能。</span>
+  </li>
+  <li>
+    <a href="response-event.html" title="response-event">响应事件</a>
+    <span>是否响应某个事件，内置已做好解析，确保事件发生的坐标在dom内且没有被遮盖，并考虑了matrix。如果想要自定义图形更加精准的响应，需要覆盖willResponseEvent方法。</span>
+  </li>
+  <li>
+    <a href="chart.html" title="chart">图表示例</a>
+    <span>这里以常见的图表为例，展示了如何编写一个折线图，体现出代码量少、css规范零学习成本易维护的特点。</span>
+  </li>
+  <li>
+    <a href="3d.html" title="3d">3d</a>
+    <span>结合自定义图形和线性渐变，以及结合线性渐变和transform，可以简单制作出较为炫的效果，比如3d柱状图。</span>
+  </li>
+  <li>
+    <a href="flare.html" title="flare">火苗效果</a>
+    <span>结合图形标签和径向渐变，可以制作出火苗燃动的效果。</span>
   </li>
 </ol>
-<p><a href="https://github.com/yurine-graphics/yurine" target="_blank" title="github">github source</a></p>
+<p><a href="https://github.com/karasjs/karas" target="_blank" title="github">github source</a></p>
 </body>
 </html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>response-event</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">是否响应某个事件，内置已做好解析，确保事件发生的坐标在dom内且没有被遮盖，并考虑了matrix。如果想要自定义图形更加精准的响应，需要覆盖willResponseEvent方法。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  class ICircle extends karas.Geom {
+    constructor(tagName, props) {
+      super(tagName, props);
+    }
+
+    willResponseEvent(e) {
+      if(!super.willResponseEvent(e)) {
+        return false;
+      }
+      // 判断是否点在圆内才响应
+      let { x, y, width, height, ctx } = this;
+      let cx = x + width * 0.5;
+      let cy = y + height * 0.5;
+      let r = Math.min(width, height) * 0.5;
+      let a = Math.pow(cx - e.x, 2);
+      let b = Math.pow(cy - e.y, 2);
+      let r2 = Math.sqrt(a + b);
+      if(r2 <= r) {
+        return true;
+      }
+    }
+
+    render(renderMode) {
+      let { x, y, width, height, ctx } = this;
+      let cx = x + width * 0.5;
+      let cy = y + height * 0.5;
+      let r = Math.min(width, height) * 0.5;
+      super.render(renderMode);
+      if(renderMode === karas.mode.CANVAS) {
+        ctx.fillStyle = '#0FF';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.closePath();
+      }
+      else if(renderMode === karas.mode.SVG) {
+        this.addGeom('circle', [
+          ['cx', cx],
+          ['cy', cy],
+          ['r', r],
+          ['fill', '#0FF'],
+        ]);
+      }
+    }
+  }
+  karas.Geom.register('$iCircle', ICircle);
+
+  karas.render(
+    <canvas width="360" height="360">
+      <div style={{marginBottom:30,width:100,height:100,background:'#F00',transform:'translate(20)skewX(-10deg)rotate(20deg)'}} onClick={() => {alert('click')}}>点原本矩形是没用的，必须点matrix后的红色部分</div>
+      <$iCircle style={{width:100,height:100,border:'1px solid #CCC'}} onClick={()=>{alert('圆内')}}/>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <div style={{marginBottom:30,width:100,height:100,background:'#F00',transform:'translate(20)skewX(-10deg)rotate(20deg)'}} onClick={() => {alert('click')}}>点原本矩形是没用的，必须点matrix后的红色部分</div>
+      <$iCircle style={{width:100,height:100,border:'1px solid #CCC'}} onClick={()=>{alert('圆内')}}/>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

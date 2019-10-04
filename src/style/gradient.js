@@ -415,10 +415,11 @@ function getCsLimit(first, last, length) {
 function parseGradient(s) {
   let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
   if(gradient) {
-    let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/.exec(gradient[2]);
+    let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
     if(deg) {
-      v.unshift(deg[0]);
+      let i = gradient[2].indexOf(',');
+      v.unshift(gradient[2].slice(0, i));
     }
     return {
       k: gradient[1],

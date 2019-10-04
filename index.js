@@ -259,10 +259,14 @@
     });
     s += '>';
     def.stop.forEach(item => {
-      s += `<stop stop-color="${item[0]}" offset="${item[1] * 100}%"/>`;
+      s += joinStop(item);
     });
     s += `</${def.tagName}>`;
     return s;
+  }
+
+  function joinStop(item) {
+    return `<stop stop-color="${item[0]}" offset="${item[1] * 100}%"/>`;
   }
 
   function r2d(n) {
@@ -352,6 +356,7 @@
     joinVd,
     joinTransform,
     joinDef,
+    joinStop,
     r2d,
     rgb2int,
     arr2hash,
@@ -961,9 +966,10 @@
     let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
 
     if (gradient) {
+      let v = gradient[2].match(/(#[0-9a-f]{3,6})|(rgba?\(.+?\))/ig);
       return {
         k: gradient[1],
-        v: gradient[2].split(/\s*,\s*/)
+        v
       };
     }
   }
@@ -2395,9 +2401,9 @@
           } else if (k === 'translate') {
             let arr = v.split(/\s*,\s*/);
             let arr1 = ['translateX', arr[0]];
-            let arr2 = ['translateY', arr[1]];
+            let arr2 = ['translateY', arr[1] || arr[0]];
             transform.push(calUnit(arr1, 1, arr[0]));
-            transform.push(calUnit(arr2, 1, arr[1]));
+            transform.push(calUnit(arr2, 1, arr[1] || arr[0]));
           } else if (k === 'scaleX') {
             transform.push(['scaleX', parseFloat(v) || 0]);
           } else if (k === 'scaleY') {
@@ -4369,6 +4375,12 @@
     for (; i < Math.min(ol, nl); i++) {
       diffDef(cns[i], od[i], nd[i]);
     }
+
+    if (i < ol) {
+      removeAt(elem, cns, i);
+    } else if (i < nl) {
+      insertAt(elem, cns, i, util.joinDef(nd[i]));
+    }
   }
 
   function diffDef(elem, od, nd) {
@@ -4376,28 +4388,47 @@
       elem.insertAdjacentHTML('afterend', util.joinDef(nd));
       elem.parentNode.removeChild(elem);
     } else {
-      for (let i = 0; i < 4; i++) {
-        if (od.c[i] !== nd.c[i]) {
-          elem.setAttribute(['x1', 'y1', 'x2', 'y2'][i], nd.c[i]);
+      if (od.uuid !== nd.uuid) {
+        elem.setAttribute('id', nd.uuid);
+      }
+
+      let op = {};
+
+      for (let j = 0, len = od.props.length; j < len; j++) {
+        let prop = od.props[j];
+        let [k, v] = prop;
+        op[k] = v;
+      }
+
+      for (let j = 0, len = nd.props.length; j < len; j++) {
+        let prop = nd.props[j];
+        let [k, v] = prop; // 已有不等更新，没有添加
+
+        if (op.hasOwnProperty(k)) {
+          if (op[k] !== v) {
+            elem.setAttribute(k, v);
+          }
+
+          delete op[k];
+        } else {
+          elem.setAttribute(k, v);
+        }
+      } // 多余的删除
+
+
+      for (let k in op) {
+        if (op.hasOwnProperty(k)) {
+          elem.removeAttribute(k);
         }
       }
 
-      let ol = od.v.length;
-      let nl = nd.v.length;
-      let i = 0;
       let cns = elem.childNodes;
+      let ol = od.stop.length;
+      let nl = nd.stop.length;
+      let i = 0;
 
       for (; i < Math.min(ol, nl); i++) {
-        let o = od.v[i];
-        let n = nd.v[i];
-
-        if (o[0] !== n[0]) {
-          cns[i].setAttribute('stop-color', n[0]);
-        }
-
-        if (o[1] !== n[1]) {
-          cns[i].setAttribute('offset', n[1]);
-        }
+        diffStop(cns[i], od.stop[i], nd.stop[i]);
       }
 
       if (i < ol) {
@@ -4406,9 +4437,19 @@
         }
       } else if (i < nl) {
         for (; i < nl; i++) {
-          insertAt(elem, cns, i, util.joinDef(nd.v[i]));
+          insertAt(elem, cns, i, util.joinStop(nd.stop[i]));
         }
       }
+    }
+  }
+
+  function diffStop(elem, os, ns) {
+    if (os[0] !== ns[0]) {
+      elem.setAttribute('stop-color', ns[0]);
+    }
+
+    if (os[1] !== ns[1]) {
+      elem.setAttribute('offset', ns[1]);
     }
   }
 
@@ -4581,7 +4622,7 @@
       } // 多余的删除
 
 
-      for (var k in op) {
+      for (let k in op) {
         if (op.hasOwnProperty(k)) {
           cns[i].removeAttribute(k);
         }
@@ -4801,7 +4842,7 @@
         }
 
       this.__uuid = this.__node.__uuid || uuid++;
-      this.__defs = Defs.getInstance(this.__uuid);
+      this.__defs = this.node.__od || Defs.getInstance(this.__uuid);
 
       this.__defs.clear(); // 没有设置width/height则采用css计算形式
 
@@ -4868,13 +4909,13 @@
 
       if (renderMode === mode.SVG) {
         let nvd = this.virtualDom;
-        let nd = this.__defs.value;
-        nvd.defs = nd;
+        let nd = this.__defs;
+        nvd.defs = nd.value;
 
         if (this.node.__karasInit) {
           diff(this.node, this.node.__ovd, nvd);
         } else {
-          this.node.innerHTML = util.joinVirtualDom(nvd, nd);
+          this.node.innerHTML = util.joinVirtualDom(nvd, nd.value);
         }
 
         this.node.__ovd = nvd;

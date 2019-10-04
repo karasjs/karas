@@ -197,9 +197,9 @@ function normalize(style) {
         else if(k === 'translate') {
           let arr = v.split(/\s*,\s*/);
           let arr1 = ['translateX', arr[0]];
-          let arr2 = ['translateY', arr[1]];
+          let arr2 = ['translateY', arr[1] || arr[0]];
           transform.push(calUnit(arr1, 1, arr[0]));
-          transform.push(calUnit(arr2, 1, arr[1]));
+          transform.push(calUnit(arr2, 1, arr[1] || arr[0]));
         }
         else if(k === 'scaleX') {
           transform.push(['scaleX', parseFloat(v) || 0]);

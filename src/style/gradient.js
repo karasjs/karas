@@ -415,9 +415,10 @@ function getCsLimit(first, last, length) {
 function parseGradient(s) {
   let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
   if(gradient) {
+    let v = gradient[2].match(/(#[0-9a-f]{3,6})|(rgba?\(.+?\))/ig);
     return {
       k: gradient[1],
-      v: gradient[2].split(/\s*,\s*/),
+      v,
     };
   }
 }

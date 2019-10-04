@@ -111,7 +111,7 @@ class Root extends Dom {
       }
     }
     this.__uuid = this.__node.__uuid || uuid++;
-    this.__defs = Defs.getInstance(this.__uuid);
+    this.__defs = this.node.__od || Defs.getInstance(this.__uuid);
     this.__defs.clear();
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
@@ -159,12 +159,12 @@ class Root extends Dom {
     this.render(renderMode);
     if(renderMode === mode.SVG) {
       let nvd = this.virtualDom;
-      let nd = this.__defs.value;
-      nvd.defs = nd;
+      let nd = this.__defs;
+      nvd.defs = nd.value;
       if(this.node.__karasInit) {
         domDiff(this.node, this.node.__ovd, nvd);
       } else {
-        this.node.innerHTML = util.joinVirtualDom(nvd, nd);
+        this.node.innerHTML = util.joinVirtualDom(nvd, nd.value);
       }
       this.node.__ovd = nvd;
       this.node.__od = nd;

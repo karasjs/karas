@@ -103,10 +103,14 @@ function joinDef(def) {
   });
   s += '>';
   def.stop.forEach(item => {
-    s += `<stop stop-color="${item[0]}" offset="${item[1] * 100}%"/>`;
+    s += joinStop(item);
   });
   s += `</${def.tagName}>`;
   return s;
+}
+
+function joinStop(item) {
+  return `<stop stop-color="${item[0]}" offset="${item[1] * 100}%"/>`;
 }
 
 function r2d(n) {
@@ -186,6 +190,7 @@ let util = {
   joinVd,
   joinTransform,
   joinDef,
+  joinStop,
   r2d,
   rgb2int,
   arr2hash,

@@ -97,7 +97,7 @@ class Geom extends Xom {
   }
 
   __preRender(renderMode) {
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, style } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, prw, pbw, style } = this;
     let {
       borderTopWidth,
       borderLeftWidth,
@@ -111,10 +111,12 @@ class Geom extends Xom {
     let originY = y + borderTopWidth.value + mtw + ptw;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
+    let iw = width + plw + prw;
+    let ih = height + ptw + pbw;
     if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {
-        let lg = gradient.getLinear(go.v, cx, cy, width, height);
+        let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
         if(renderMode === mode.CANVAS) {
           stroke = this.getCanvasLg(lg);
         }
@@ -126,7 +128,7 @@ class Geom extends Xom {
     if(fill.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        let lg = gradient.getLinear(go.v, cx, cy, width, height);
+        let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
         if(renderMode === mode.CANVAS) {
           fill = this.getCanvasLg(lg);
         }
@@ -138,7 +140,7 @@ class Geom extends Xom {
     else if(fill.indexOf('radial-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
-        let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
+        let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + iw, originY + ih);
         if(renderMode === mode.CANVAS) {
           fill = this.getCanvasRg(rg);
         }

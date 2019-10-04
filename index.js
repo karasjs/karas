@@ -967,7 +967,7 @@
 
     if (gradient) {
       let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/.exec(gradient[2]);
-      let v = gradient[2].match(/(#[0-9a-f]{3,6})|(rgba?\(.+?\))/ig);
+      let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
 
       if (deg) {
         v.unshift(deg[0]);
@@ -3041,6 +3041,8 @@
         mtw,
         plw,
         ptw,
+        prw,
+        pbw,
         style
       } = this;
       let {
@@ -3056,12 +3058,14 @@
       let originY = y + borderTopWidth.value + mtw + ptw;
       let cx = originX + width * 0.5;
       let cy = originY + height * 0.5;
+      let iw = width + plw + prw;
+      let ih = height + ptw + pbw;
 
       if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
         let go = gradient.parseGradient(stroke);
 
         if (go) {
-          let lg = gradient.getLinear(go.v, cx, cy, width, height);
+          let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
 
           if (renderMode === mode.CANVAS) {
             stroke = this.getCanvasLg(lg);
@@ -3075,7 +3079,7 @@
         let go = gradient.parseGradient(fill);
 
         if (go) {
-          let lg = gradient.getLinear(go.v, cx, cy, width, height);
+          let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
 
           if (renderMode === mode.CANVAS) {
             fill = this.getCanvasLg(lg);
@@ -3087,7 +3091,7 @@
         let go = gradient.parseGradient(fill);
 
         if (go) {
-          let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + width, originY + height);
+          let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + iw, originY + ih);
 
           if (renderMode === mode.CANVAS) {
             fill = this.getCanvasRg(rg);

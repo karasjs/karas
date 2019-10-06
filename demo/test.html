@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>test</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">ui测试是个非常麻烦的事情，这里提供了一种用virtual-dom来测试的方法。
+svg的渲染会返回virtualDom对象，json序列化后对应dom树，测试只需要asset这个json字符串是否达到预期即可，渲染结果由框架和浏览器保证。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.render(
+    <canvas width="360" height="360">
+      <div style={{padding:10,border:'1px dashed #CCC'}}>Hello world!</div>
+    </canvas>,
+    '#example'
+  );
+  let svg = karas.render(
+    <svg width="360" height="360">
+      <div style={{padding:10,border:'1px dashed #CCC'}}>Hello world!</div>
+    </svg>,
+    '#example2'
+  );
+  // svg的渲染会返回virtualDom对象，json序列化后对应dom树，
+  // 测试只需要asset这个json字符串是否达到预期即可，渲染结果由框架和浏览器保证。
+  console.log(svg.virtualDom);
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

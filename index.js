@@ -4804,6 +4804,10 @@
 
 
     __cb(e, force) {
+      if (e.type === 'touchmove' && !this.__touchstartTarget) {
+        return;
+      }
+
       if (e.touches && e.touches.length > 1) {
         return;
       }

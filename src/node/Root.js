@@ -62,6 +62,9 @@ class Root extends Dom {
 
   // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接强制响应
   __cb(e, force) {
+    if(e.type === 'touchmove' && !this.__touchstartTarget) {
+      return;
+    }
     if(e.touches && e.touches.length > 1) {
       return;
     }

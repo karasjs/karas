@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../mode';
-import gradient from '../style/gradient';
 
 const OFFSET = Math.PI * 0.5;
 

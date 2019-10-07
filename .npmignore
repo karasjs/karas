@@ -6,6 +6,7 @@ Makefile
 .spmignore
 .babelrc
 rollup.config.js
+rollup.*.js
 gulpfile.js
 nightwatch.json
 nightwatch.conf.js

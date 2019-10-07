@@ -117,36 +117,21 @@ class Geom extends Xom {
       let go = gradient.parseGradient(stroke);
       if(go) {
         let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
-        if(renderMode === mode.CANVAS) {
-          stroke = this.getCanvasLg(lg);
-        }
-        else if(renderMode === mode.SVG) {
-          stroke = `url(#${this.getSvgLg(lg)})`;
-        }
+        stroke = this.__getBgLg(renderMode, lg);
       }
     }
     if(fill.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
         let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
-        if(renderMode === mode.CANVAS) {
-          fill = this.getCanvasLg(lg);
-        }
-        else if(renderMode === mode.SVG) {
-          fill = `url(#${this.getSvgLg(lg)})`;
-        }
+        fill = this.__getBgLg(renderMode, lg);
       }
     }
     else if(fill.indexOf('radial-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
         let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + iw, originY + ih);
-        if(renderMode === mode.CANVAS) {
-          fill = this.getCanvasRg(rg);
-        }
-        else if(renderMode === mode.SVG) {
-          fill = `url(#${this.getSvgRg(rg)})`;
-        }
+        fill = this.__getBgRg(rg);
       }
     }
     return {

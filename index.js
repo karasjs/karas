@@ -1801,12 +1801,13 @@
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = this.getCanvasLg(gd);
+            ctx.fillStyle = this.__getBgLg(renderMode, gd);
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = this.getSvgLg(gd);
+            let uuid = this.__getBgLg(renderMode, gd);
+
             this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
           }
         } else if (k === 'radial') {
@@ -1814,12 +1815,13 @@
 
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = this.getCanvasRg(gd);
+            ctx.fillStyle = this.__getBgRg(renderMode, gd);
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = this.getSvgRg(gd);
+            let uuid = this.__getBgRg(renderMode, gd);
+
             this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
           }
         }
@@ -1995,36 +1997,36 @@
       }
     }
 
-    getCanvasLg(gd) {
-      let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
-      gd.stop.forEach(item => {
-        lg.addColorStop(item[1], item[0]);
-      });
-      return lg;
+    __getBgLg(renderMode, gd) {
+      if (renderMode === mode.CANVAS) {
+        let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+        gd.stop.forEach(item => {
+          lg.addColorStop(item[1], item[0]);
+        });
+        return lg;
+      } else if (renderMode === mode.SVG) {
+        return this.defs.add({
+          tagName: 'linearGradient',
+          props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
+          stop: gd.stop
+        });
+      }
     }
 
-    getCanvasRg(gd) {
-      let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-      gd.stop.forEach(item => {
-        rg.addColorStop(item[1], item[0]);
-      });
-      return rg;
-    }
-
-    getSvgLg(gd) {
-      return this.defs.add({
-        tagName: 'linearGradient',
-        props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
-        stop: gd.stop
-      });
-    }
-
-    getSvgRg(gd) {
-      return this.defs.add({
-        tagName: 'radialGradient',
-        props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
-        stop: gd.stop
-      });
+    __getBgRg(renderMode, gd) {
+      if (renderMode === mode.CANVAS) {
+        let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+        gd.stop.forEach(item => {
+          rg.addColorStop(item[1], item[0]);
+        });
+        return rg;
+      } else if (renderMode === mode.SVG) {
+        return this.defs.add({
+          tagName: 'radialGradient',
+          props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
+          stop: gd.stop
+        });
+      }
     }
 
     addBorder(props) {
@@ -3067,12 +3069,7 @@
 
         if (go) {
           let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
-
-          if (renderMode === mode.CANVAS) {
-            stroke = this.getCanvasLg(lg);
-          } else if (renderMode === mode.SVG) {
-            stroke = `url(#${this.getSvgLg(lg)})`;
-          }
+          stroke = this.__getBgLg(renderMode, lg);
         }
       }
 
@@ -3081,24 +3078,14 @@
 
         if (go) {
           let lg = gradient.getLinear(go.v, cx, cy, iw, ih);
-
-          if (renderMode === mode.CANVAS) {
-            fill = this.getCanvasLg(lg);
-          } else if (renderMode === mode.SVG) {
-            fill = `url(#${this.getSvgLg(lg)})`;
-          }
+          fill = this.__getBgLg(renderMode, lg);
         }
       } else if (fill.indexOf('radial-gradient') > -1) {
         let go = gradient.parseGradient(fill);
 
         if (go) {
           let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + iw, originY + ih);
-
-          if (renderMode === mode.CANVAS) {
-            fill = this.getCanvasRg(rg);
-          } else if (renderMode === mode.SVG) {
-            fill = `url(#${this.getSvgRg(rg)})`;
-          }
+          fill = this.__getBgRg(rg);
         }
       }
 
@@ -5626,6 +5613,13 @@
 
   }
 
+  class Component {
+    constructor(tagName, props, children) {}
+
+    render(renderMode) {}
+
+  }
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -5668,7 +5662,8 @@
     },
 
     Geom,
-    mode
+    mode,
+    Component
   };
 
   if (typeof window != 'undefined') {

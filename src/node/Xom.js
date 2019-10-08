@@ -494,7 +494,7 @@ class Xom extends Node {
       return lg;
     }
     else if(renderMode === mode.SVG) {
-      return this.defs.add({
+      let uuid = this.defs.add({
         tagName: 'linearGradient',
         props: [
           ['x1', gd.x1],
@@ -504,6 +504,7 @@ class Xom extends Node {
         ],
         stop: gd.stop,
       });
+      return `url(#${uuid})`;
     }
   }
 
@@ -516,7 +517,7 @@ class Xom extends Node {
       return rg;
     }
     else if(renderMode === mode.SVG) {
-      return this.defs.add({
+      let uuid = this.defs.add({
         tagName: 'radialGradient',
         props: [
           ['cx', gd.cx],
@@ -525,6 +526,7 @@ class Xom extends Node {
         ],
         stop: gd.stop,
       });
+      return `url(#${uuid})`;
     }
   }
 

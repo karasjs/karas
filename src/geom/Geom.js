@@ -131,7 +131,7 @@ class Geom extends Xom {
       let go = gradient.parseGradient(fill);
       if(go) {
         let rg = gradient.getRadial(go.v, cx, cy, originX, originY, originY + iw, originY + ih);
-        fill = this.__getBgRg(rg);
+        fill = this.__getBgRg(renderMode, rg);
       }
     }
     return {

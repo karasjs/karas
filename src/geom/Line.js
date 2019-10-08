@@ -4,18 +4,28 @@ import mode from '../mode';
 class Line extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
-    // begin和end表明线段的首尾坐标，control表明控制点坐标
-    this.__begin = [0, 0];
-    this.__end = [1, 1];
-    this.__control = [];
-    if(Array.isArray(this.props.begin)) {
-      this.__begin = this.props.begin;
+    // x1,y1和x2,y2表明线段的首尾坐标，control表明控制点坐标
+    this.__x1 = this.__y1 = 0;
+    this.__x2 = this.__y2 = 1;
+    this.__controlA = [];
+    this.__controlB = [];
+    if(this.props.x1 !== undefined) {
+      this.__x1 = parseFloat(this.props.x1) || 0;
     }
-    if(Array.isArray(this.props.end)) {
-      this.__end = this.props.end;
+    if(this.props.y1 !== undefined) {
+      this.__y1 = parseFloat(this.props.y1) || 0;
     }
-    if(Array.isArray(this.props.control)) {
-      this.__control = this.props.control;
+    if(this.props.x2 !== undefined) {
+      this.__x2 = parseFloat(this.props.x2) || 0;
+    }
+    if(this.props.y2 !== undefined) {
+      this.__y2 = parseFloat(this.props.y2) || 0;
+    }
+    if(Array.isArray(this.props.controlA)) {
+      this.__controlA = this.props.controlA;
+    }
+    if(Array.isArray(this.props.controlB)) {
+      this.__controlB = this.props.controlB;
     }
   }
 
@@ -24,26 +34,23 @@ class Line extends Geom {
     if(display === 'none') {
       return;
     }
-    let { width, height, ctx, begin, end, control } = this;
-    if(begin.length < 2 || end.length < 2) {
-      return;
-    }
-    let x1 = originX + begin[0] * width;
-    let y1 = originY + begin[1] * height;
-    let x2 = originX + end[0] * width;
-    let y2 = originY + end[1] * height;
+    let { width, height, ctx, x1, y1, x2, y2, controlA, controlB } = this;
+    x1 = originX + x1 * width;
+    y1 = originY + y1 * height;
+    x2 = originX + x2 * width;
+    y2 = originY + y2 * height;
     let curve = 0;
     // 控制点，曲线
     let cx1, cy1, cx2, cy2;
-    if(Array.isArray(control[0])) {
+    if(controlA.length === 2) {
       curve++;
-      cx1 = originX + control[0][0] * width;
-      cy1 = originY + control[0][1] * height;
+      cx1 = originX + controlA[0] * width;
+      cy1 = originY + controlA[1] * height;
     }
-    if(Array.isArray(control[1])) {
-      curve++;
-      cx2 = originX + control[1][0] * width;
-      cy2 = originY + control[1][1] * height;
+    if(controlB.length === 2) {
+      curve += 2;
+      cx2 = originX + controlB[0] * width;
+      cy2 = originY + controlB[1] * height;
     }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
@@ -51,8 +58,11 @@ class Line extends Geom {
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
-      if(curve === 2) {
+      if(curve === 3) {
         ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2);
+      }
+      else if(curve === 2) {
+        ctx.quadraticCurveTo(cx2, cy2, x2, y2);
       }
       else if(curve === 1) {
         ctx.quadraticCurveTo(cx1, cy1, x2, y2);
@@ -67,8 +77,11 @@ class Line extends Geom {
     }
     else if(renderMode === mode.SVG) {
       let d;
-      if(curve === 2) {
+      if(curve === 3) {
         d = `M${x1} ${y1} C${cx1} ${cy1} ${cx2} ${cy2} ${x2} ${y2}`;
+      }
+      else if(curve === 2) {
+        d = `M${x1} ${y1} Q${cx2} ${cy2} ${x2} ${y2}`;
       }
       else if(curve === 1) {
         d = `M${x1} ${y1} Q${cx1} ${cy1} ${x2} ${y2}`;
@@ -86,14 +99,23 @@ class Line extends Geom {
     }
   }
 
-  get begin() {
-    return this.__begin;
+  get x1() {
+    return this.__x1;
   }
-  get end() {
-    return this.__end;
+  get y1() {
+    return this.__y1;
   }
-  get control() {
-    return this.__control;
+  get x2() {
+    return this.__x2;
+  }
+  get y2() {
+    return this.__y2;
+  }
+  get controlA() {
+    return this.__controlA;
+  }
+  get controlB() {
+    return this.__controlB;
   }
 }
 

@@ -1806,9 +1806,9 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = this.__getBgLg(renderMode, gd);
+            let fill = this.__getBgLg(renderMode, gd);
 
-            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
+            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', fill]]);
           }
         } else if (k === 'radial') {
           let gd = gradient.getRadial(v, cx, cy, x2, y2, x3, y3);
@@ -1820,9 +1820,9 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            let uuid = this.__getBgRg(renderMode, gd);
+            let fill = this.__getBgRg(renderMode, gd);
 
-            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', `url(#${uuid})`]]);
+            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', fill]]);
           }
         }
       } else if (bgc !== 'transparent') {

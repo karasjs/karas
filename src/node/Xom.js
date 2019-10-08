@@ -314,13 +314,13 @@ class Xom extends Node {
           ctx.closePath();
         }
         else if(renderMode === mode.SVG) {
-          let uuid = this.__getBgLg(renderMode, gd);
+          let fill = this.__getBgLg(renderMode, gd);
           this.addBackground([
             ['x', x2],
             ['y', y2],
             ['width', iw],
             ['height', ih],
-            ['fill', `url(#${uuid})`]
+            ['fill', fill]
           ]);
         }
       }
@@ -334,13 +334,13 @@ class Xom extends Node {
           ctx.closePath();
         }
         else if(renderMode === mode.SVG) {
-          let uuid = this.__getBgRg(renderMode, gd);
+          let fill = this.__getBgRg(renderMode, gd);
           this.addBackground([
             ['x', x2],
             ['y', y2],
             ['width', iw],
             ['height', ih],
-            ['fill', `url(#${uuid})`]
+            ['fill', fill]
           ]);
         }
       }

@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "鸦",
   "maintainers": [
     {
@@ -19,7 +19,7 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "yurine": "~0.1.0"
+    "yurine": "~0.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",

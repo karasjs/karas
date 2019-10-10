@@ -3521,8 +3521,8 @@
     }
 
     _createClass(Geom, [{
-      key: "__initStyle",
-      value: function __initStyle() {
+      key: "__init",
+      value: function __init() {
         css.normalize(this.style);
       }
     }, {

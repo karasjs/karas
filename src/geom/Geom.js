@@ -12,7 +12,7 @@ class Geom extends Xom {
     super(tagName, props);
   }
 
-  __initStyle() {
+  __init() {
     css.normalize(this.style);
   }
 

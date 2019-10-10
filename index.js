@@ -5479,7 +5479,8 @@
 
         x = clientX - x;
         y = clientY - y;
-        if (e.type === 'click') this.__emitEvent({
+
+        this.__emitEvent({
           event: e,
           stopPropagation: function stopPropagation() {
             this.__stopPropagation = true;
@@ -5497,15 +5498,7 @@
           y: y,
           covers: []
         }, force);
-      } // __initEvent() {
-      //   let { node } = this;
-      //   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
-      //     node.addEventListener(type, e => {
-      //       this.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
-      //     });
-      //   });
-      // }
-
+      }
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
@@ -5627,8 +5620,7 @@
 
         if (!this.node.__karasInit) {
           initEvent(this.node);
-          this.node.__karasInit = true; // this.__initEvent();
-
+          this.node.__karasInit = true;
           this.node.__uuid = this.__uuid;
         }
       }

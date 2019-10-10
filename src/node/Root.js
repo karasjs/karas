@@ -85,7 +85,7 @@ class Root extends Dom {
     y = y || right || 0;
     let { clientX, clientY } = e.touches ? (e.touches[0] || {}) : e;
     x = clientX - x;
-    y = clientY - y; if(e.type === 'click')
+    y = clientY - y;
     this.__emitEvent({
       event: e,
       stopPropagation() {
@@ -105,15 +105,6 @@ class Root extends Dom {
       covers: [],
     }, force);
   }
-
-  // __initEvent() {
-  //   let { node } = this;
-  //   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
-  //     node.addEventListener(type, e => {
-  //       this.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
-  //     });
-  //   });
-  // }
 
   appendTo(dom) {
     dom = getDom(dom);
@@ -208,7 +199,6 @@ class Root extends Dom {
     if(!this.node.__karasInit) {
       initEvent(this.node);
       this.node.__karasInit = true;
-      // this.__initEvent();
       this.node.__uuid = this.__uuid;
     }
   }

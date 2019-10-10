@@ -3,6 +3,7 @@ import util from '../util';
 import mode from '../mode';
 import domDiff from '../domDiff';
 import Defs from './Defs';
+import unit from '../style/unit';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -26,6 +27,14 @@ function renderProp(k, v) {
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
+function initEvent(node) {
+  ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
+    node.addEventListener(type, e => {
+      node.__root.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
+    });
+  });
+}
+
 let uuid = 0;
 
 class Root extends Dom {
@@ -35,15 +44,17 @@ class Root extends Dom {
   }
 
   __initProps() {
-    if(this.props.width !== undefined) {
-      let value = parseInt(this.props.width);
-      if(!isNaN(value) && value > 0) {
+    let w = this.props.width;
+    if(!util.isNil(w)) {
+      let value = parseInt(w) || 0;
+      if(value > 0) {
         this.__width = value;
       }
     }
-    if(this.props.height !== undefined) {
-      let value = parseInt(this.props.height);
-      if(!isNaN(value) && value > 0) {
+    let h = this.props.height;
+    if(!util.isNil(h)) {
+      let value = parseInt(h) || 0;
+      if(value > 0) {
         this.__height = value;
       }
     }
@@ -74,23 +85,35 @@ class Root extends Dom {
     y = y || right || 0;
     let { clientX, clientY } = e.touches ? (e.touches[0] || {}) : e;
     x = clientX - x;
-    y = clientY - y;
+    y = clientY - y; if(e.type === 'click')
     this.__emitEvent({
       event: e,
+      stopPropagation() {
+        this.__stopPropagation = true;
+        e.stopPropagation();
+      },
+      stopImmediatePropagation() {
+        this.__stopPropagation = true;
+        this.__stopImmediatePropagation = true;
+        e.stopImmediatePropagation();
+      },
+      preventDefault() {
+        e.preventDefault();
+      },
       x,
       y,
       covers: [],
     }, force);
   }
 
-  __initEvent() {
-    let { node } = this;
-    ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
-      node.addEventListener(type, e => {
-        this.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
-      });
-    });
-  }
+  // __initEvent() {
+  //   let { node } = this;
+  //   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
+  //     node.addEventListener(type, e => {
+  //       this.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
+  //     });
+  //   });
+  // }
 
   appendTo(dom) {
     dom = getDom(dom);
@@ -113,7 +136,7 @@ class Root extends Dom {
         this.__node = dom.querySelector(this.tagName);
       }
     }
-    this.__uuid = this.__node.__uuid || uuid++;
+    this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
     this.__defs = this.node.__od || Defs.getInstance(this.__uuid);
     this.__defs.clear();
     // 没有设置width/height则采用css计算形式
@@ -129,14 +152,13 @@ class Root extends Dom {
       }
     }
     // 只有canvas有ctx，svg用真实dom
-    let renderMode;
     if(this.tagName === 'canvas') {
       this.__ctx = this.__node.getContext('2d');
       this.__ctx.clearRect(0, 0, this.width, this.height);
-      renderMode = mode.CANVAS;
+      this.__renderMode = mode.CANVAS;
     }
     else if(this.tagName === 'svg') {
-      renderMode = mode.SVG;
+      this.__renderMode = mode.SVG;
     }
     // canvas/svg作为根节点一定是block或flex，不会是inline
     let { style } = this;
@@ -147,11 +169,21 @@ class Root extends Dom {
     if(style.position === 'absolute') {
       style.position = 'static';
     }
-    this.__traverse(this.__ctx, this.__defs, renderMode);
-    // canvas的宽高固定初始化
-    style.width = this.width;
-    style.height = this.height;
-    this.__initStyle();
+    this.__traverse(this.__ctx, this.__defs, this.__renderMode);
+    this.__init();
+    this.refresh();
+  }
+
+  refresh() {
+    let { renderMode, style } = this;
+    style.width = {
+      value: this.width,
+      unit: unit.PX,
+    };
+    style.height = {
+      value: this.height,
+      unit: unit.PX,
+    };
     this.__layout({
       x: 0,
       y: 0,
@@ -172,17 +204,32 @@ class Root extends Dom {
       this.node.__ovd = nvd;
       this.node.__od = nd;
     }
+    this.node.__root = this;
     if(!this.node.__karasInit) {
+      initEvent(this.node);
       this.node.__karasInit = true;
-      this.__initEvent();
+      // this.__initEvent();
+      this.node.__uuid = this.__uuid;
     }
   }
 
   get node() {
     return this.__node;
   }
-  get imageData() {
-    return this.__imageData;
+  get width() {
+    return this.__width;
+  }
+  set width(v) {
+    this.__width = v;
+  }
+  get height() {
+    return this.__height;
+  }
+  set height(v) {
+    this.__height = v;
+  }
+  get renderMode() {
+    return this.__renderMode;
   }
 }
 

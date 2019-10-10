@@ -42,8 +42,8 @@ let karas = {
     let klass = Geom.getRegister(tagName);
     return new klass(tagName, props);
   },
-  createCp(cp, props) {
-    return new cp(props);
+  createCp(cp, props, children) {
+    return new cp(props, children);
   },
   Geom,
   mode,

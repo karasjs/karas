@@ -11,4 +11,3 @@ function render(color, size) {
 
 render('#F00', 10);
 render('#00F', 100);
-

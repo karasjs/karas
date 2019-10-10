@@ -63,11 +63,25 @@ class Node {
   get parent() {
     return this.__parent;
   }
+  // canvas/svg根节点
   get root() {
+    if(this.host) {
+      return this.host.root;
+    }
     if(this.parent) {
       return this.parent.root;
     }
     return this;
+  }
+  // component根节点
+  get host() {
+    let parent = this.parent;
+    while(parent) {
+      if(/A-Z/.test(parent.tagName.charAt(0))) {
+        return parent.host;
+      }
+      parent = parent.parent;
+    }
   }
   get style() {
     return this.__style;

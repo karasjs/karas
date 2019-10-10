@@ -6,6 +6,7 @@ import util from '../util';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../mode';
+import Component from './Component';
 
 const TAG_NAME = {
   'div': true,
@@ -51,7 +52,7 @@ class Dom extends Xom {
     if(this.style.display === 'inline' && this.parent.style.display !== 'flex') {
       for(let i = list.length - 1; i >= 0; i--) {
         let item = list[i];
-        if(item instanceof Dom && item.style.display !== 'inline') {
+        if((item instanceof Xom || item instanceof Component) && item.style.display !== 'inline') {
           throw new Error('inline can not contain block/flex');
         }
       }
@@ -65,12 +66,6 @@ class Dom extends Xom {
       }
       item.__parent = this;
       item.__prev = prev;
-      if(item instanceof Text || item.style.position !== 'absolute') {
-        this.__flowChildren.push(item);
-      }
-      else {
-        this.__absChildren.push(item);
-      }
     });
     this.__children = list;
   }
@@ -81,7 +76,7 @@ class Dom extends Xom {
         this.__traverseChildren(item, list, ctx, defs, renderMode);
       });
     }
-    else if(children instanceof Dom) {
+    else if(children instanceof Dom || children instanceof Component) {
       list.push(children);
       children.__traverse(ctx, defs, renderMode);
     }
@@ -98,7 +93,7 @@ class Dom extends Xom {
   }
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
-  __initStyle() {
+  __init() {
     let style = this.__style;
     // 仅支持flex/block/inline/none
     if(!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
@@ -122,13 +117,19 @@ class Dom extends Xom {
     // 标准化处理，默认值、简写属性
     css.normalize(style);
     this.children.forEach(item => {
-      if(item instanceof Xom) {
-        item.__initStyle();
+      if(item instanceof Xom || item instanceof Component) {
+        item.__init();
       }
       else {
         item.__style = style;
         // 文字首先测量所有字符宽度
         item.__measure();
+      }
+      if(item instanceof Text || item.style.position !== 'absolute') {
+        this.__flowChildren.push(item);
+      }
+      else {
+        this.__absChildren.push(item);
       }
     });
   }
@@ -210,16 +211,18 @@ class Dom extends Xom {
     }
     // 递归children取最大值
     flowChildren.forEach(item => {
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
         b = Math.max(b, b2);
         min = Math.max(min, min2);
         max = Math.max(max, max2);
       }
+      // 文本
       else if(isDirectionRow) {
         min = Math.max(item.charWidth, min);
         max = Math.max(item.textWidth, max);
       }
+      // Geom
       else {
         item.__layout({
           x: 0,
@@ -255,6 +258,7 @@ class Dom extends Xom {
     return { b, min, max };
   }
 
+  // 换算margin/padding为px单位
   __calMp(v, w) {
     let n = 0;
     if(v.unit === unit.PX) {
@@ -328,7 +332,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         if(item.style.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
@@ -475,7 +479,7 @@ class Dom extends Xom {
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
       flowChildren.forEach(item => {
-        if(item instanceof Xom) {
+        if(item instanceof Xom || item instanceof Component) {
           const { style, style: { display, flexDirection, width }} = item;
           // column的flex的child如果是inline，变为block
           if(display === 'inline') {
@@ -518,7 +522,7 @@ class Dom extends Xom {
     let basisSum = 0;
     let maxSum = 0;
     flowChildren.forEach(item => {
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         let { flexGrow, flexShrink, flexBasis } = item.style;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
@@ -585,7 +589,7 @@ class Dom extends Xom {
       }
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         const { style, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw, style: {
           display,
           flexDirection,
@@ -774,7 +778,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         // 绝对定位跳过
         if(item.style.position === 'absolute') {
           this.absChildren.push(item);
@@ -911,7 +915,7 @@ class Dom extends Xom {
     let ph = height + ptw + pbw;
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {
-      if(item instanceof Dom) {
+      if(item instanceof Dom || item instanceof Component) {
         item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
       }
     });
@@ -1009,11 +1013,17 @@ class Dom extends Xom {
       if(item instanceof Text || item.style.position === 'static') {
         item.render(renderMode);
       }
+      if(item instanceof Component && item.style.position === 'static') {
+        item.shadowRoot.render(renderMode);
+      }
     });
     // 再绘制relative和absolute
     children.forEach(item => {
       if((item instanceof Xom) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
         item.render(renderMode);
+      }
+      if((item instanceof Component) && ['relative', 'absolute'].indexOf(item.style.position) > -1) {
+        item.shadowRoot.render(renderMode);
       }
     });
     if(renderMode === mode.SVG) {

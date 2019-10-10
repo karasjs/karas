@@ -5,6 +5,7 @@ import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
 import util from '../util';
+import Component from './Component';
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -61,7 +62,9 @@ class Xom extends Node {
     this.__props.forEach(item => {
       let k = item[0];
       if(/^on[a-zA-Z]/.test(k)) {
-        this.__listener[k.slice(2).toLowerCase()] = item[1];
+        k = k.slice(2).toLowerCase();
+        let arr = this.__listener[k] = this.__listener[k] || [];
+        arr.push(item[1]);
       }
     });
     // margin和padding的宽度
@@ -394,34 +397,56 @@ class Xom extends Node {
   __emitEvent(e, force) {
     let { event: { type }, x, y, covers } = e;
     let { listener, children, style, outerWidth, outerHeight, matrixEvent } = this;
-    if(style.display === 'none') {
+    if(style.display === 'none' || e.__stopPropagation) {
       return;
     }
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];
     }
-    // touchend之类强制的直接通知即可
+    let childWillResponse;
+    // touchmove之类强制的直接通知即可
     if(force) {
       if(!this.isGeom()) {
         children.forEach(child => {
-          if(child instanceof Xom) {
-            child.__emitEvent(e, force);
+          if(child instanceof Xom || child instanceof Component) {
+            if(child.__emitEvent(e, force)) {
+              childWillResponse = true;
+            }
           }
         });
       }
-      if(type === 'touchmove' || type === 'touchend') {
+      // touchmove之类也需要考虑target是否是自己以及孩子
+      if(!childWillResponse && this.root.__touchstartTarget !== this) {
+        return;
+      }
+      if(e.__stopPropagation) {
+        return;
+      }
+      if(type === 'touchmove' || type === 'touchend' || type === 'touchcancel') {
         e.target = this.root.__touchstartTarget;
       }
-      cb && cb(e);
-      return;
+      if(cb) {
+        cb.forEach(item => {
+          if(e.__stopImmediatePropagation) {
+            return;
+          }
+          item(e);
+        });
+      }
+      return true;
     }
-    let childWillResponse;
     if(!this.isGeom()) {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
         if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+          if(child.__emitEvent(e)) {
+            childWillResponse = true;
+          }
+        }
+        // 组件要形成shadowDom，除了shadowRoot，其它节点事件不冒泡
+        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -435,7 +460,15 @@ class Xom extends Node {
             childWillResponse = true;
           }
         }
+        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
+          if(child.__emitEvent(e)) {
+            childWillResponse = true;
+          }
+        }
       }
+    }
+    if(e.__stopPropagation) {
+      return;
     }
     // child触发则parent一定触发，否则判断事件坐标是否在节点内且未被遮挡
     if(childWillResponse || this.willResponseEvent(e)) {
@@ -447,7 +480,15 @@ class Xom extends Node {
         h: outerHeight,
         matrixEvent,
       });
-      cb && cb(e);
+      if(cb) {
+        cb.forEach(item => {
+          if(e.__stopImmediatePropagation) {
+            return;
+          }
+          item(e);
+        });
+      }
+      return true;
     }
   }
 

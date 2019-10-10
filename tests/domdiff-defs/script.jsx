@@ -12,4 +12,3 @@ function render(color) {
 render('radial-gradient(#F00,#00F)');
 render('radial-gradient(rgba(0,0,0),rgb(255,255,0))');
 render('radial-gradient(#0F0,rgb(0,0,0))');
-

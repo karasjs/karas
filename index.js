@@ -1790,29 +1790,169 @@
     calPoints: calPoints
   };
 
-  var Component =
+  var Event =
   /*#__PURE__*/
   function () {
+    function Event() {
+      _classCallCheck(this, Event);
+
+      this.__eHash = {};
+    }
+
+    _createClass(Event, [{
+      key: "on",
+      value: function on(id, handle) {
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.on(id[i], handle);
+          }
+        } else if (handle) {
+          if (!self.__eHash.hasOwnProperty(id)) {
+            self.__eHash[id] = [];
+          } // 遍历防止此handle被侦听过了
+
+
+          for (var _i = 0, item = self.__eHash[id], _len = item.length; _i < _len; _i++) {
+            if (item[_i] === handle) {
+              return self;
+            }
+          }
+
+          self.__eHash[id].push(handle);
+        }
+
+        return self;
+      }
+    }, {
+      key: "once",
+      value: function once(id, handle) {
+        var self = this;
+
+        function cb() {
+          for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
+            data[_key] = arguments[_key];
+          }
+
+          handle.apply(self, data);
+          self.off(id, cb);
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.once(id[i], handle);
+          }
+        } else if (handle) {
+          self.on(id, cb);
+        }
+
+        return this;
+      }
+    }, {
+      key: "off",
+      value: function off(id, handle) {
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.off(id[i], handle);
+          }
+        } else if (self.__eHash.hasOwnProperty(id)) {
+          if (handle) {
+            for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
+              if (item[_i2] === handle) {
+                item.splice(_i2, 1);
+                break;
+              }
+            }
+          } // 未定义为全部清除
+          else {
+              delete self.__eHash[id];
+            }
+        }
+
+        return this;
+      }
+    }, {
+      key: "emit",
+      value: function emit(id) {
+        var self = this;
+
+        for (var _len4 = arguments.length, data = new Array(_len4 > 1 ? _len4 - 1 : 0), _key2 = 1; _key2 < _len4; _key2++) {
+          data[_key2 - 1] = arguments[_key2];
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.emit(id[i], data);
+          }
+        } else {
+          if (self.__eHash.hasOwnProperty(id)) {
+            var list = self.__eHash[id];
+
+            if (list.length) {
+              list = list.slice();
+
+              for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
+                list[_i3].apply(self, data);
+              }
+            }
+          }
+        }
+
+        return this;
+      }
+    }], [{
+      key: "mix",
+      value: function mix() {
+        for (var i = arguments.length - 1; i >= 0; i--) {
+          var o = i < 0 || arguments.length <= i ? undefined : arguments[i];
+          var event = new Event();
+          o.__eHash = {};
+          var fns = ['on', 'once', 'off', 'emit'];
+
+          for (var j = fns.length - 1; j >= 0; j--) {
+            var fn = fns[j];
+            o[fn] = event[fn];
+          }
+        }
+      }
+    }]);
+
+    return Event;
+  }();
+
+  var Component =
+  /*#__PURE__*/
+  function (_Event) {
+    _inherits(Component, _Event);
+
     function Component(tagName, props, children) {
+      var _this;
+
       _classCallCheck(this, Component);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Component).call(this));
 
       if (!util.isString(tagName)) {
         throw new Error('Component must have a tagName');
       }
 
-      this.__tagName = tagName;
+      _this.__tagName = tagName;
       props = props || []; // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
-        this.props = util.arr2hash(props);
-        this.__props = props;
+        _this.props = util.arr2hash(props);
+        _this.__props = props;
       } else {
-        this.props = props;
-        this.__props = util.hash2arr(props);
+        _this.props = props;
+        _this.__props = util.hash2arr(props);
       }
 
-      this.__children = children || [];
-      this.__shadowRoot = null;
+      _this.__children = children || [];
+      _this.__shadowRoot = null;
+      return _this;
     }
 
     _createClass(Component, [{
@@ -1833,7 +1973,7 @@
     }, {
       key: "__init",
       value: function __init() {
-        var _this = this;
+        var _this2 = this;
 
         var sr = this.shadowRoot;
 
@@ -1841,8 +1981,26 @@
 
         var style = this.props.style || {};
         Object.assign(sr.style, style);
+
+        this.__props.forEach(function (item) {
+          var k = item[0];
+          var v = item[1];
+
+          if (/^on[a-zA-Z]/.test(k)) {
+            k = k.slice(2).toLowerCase();
+            var arr = sr.listener[k] = sr.listener[k] || [];
+            arr.push(v);
+          } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+            k = k.slice(3);
+
+            _this2.on(k, function () {
+              v.apply(void 0, arguments);
+            });
+          }
+        });
+
         ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
-          Object.defineProperty(_this, fn, {
+          Object.defineProperty(_this2, fn, {
             get: function get() {
               return sr[fn];
             }
@@ -1861,19 +2019,9 @@
           return sr.__emitEvent(e, force);
         }
 
-        var ne = Object.assign({}, e);
+        var res = sr.__emitEvent(e);
 
-        var res = sr.__emitEvent(ne);
-
-        if (res && ne.target === sr) {
-          if (ne.__stopImmediatePropagation) {
-            e.__stopPropagation = ne.__stopImmediatePropagation;
-          }
-
-          if (ne.__stopImmediatePropagation) {
-            e.__stopImmediatePropagation = ne.__stopImmediatePropagation;
-          }
-
+        if (res) {
           e.target = this;
           return true;
         }
@@ -1896,7 +2044,7 @@
     }]);
 
     return Component;
-  }();
+  }(Event);
 
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs'].forEach(function (fn) {
     Component.prototype[fn] = function () {
@@ -6475,7 +6623,8 @@
     },
     Geom: Geom,
     mode: mode,
-    Component: Component
+    Component: Component,
+    Event: Event
   };
 
   if (typeof window != 'undefined') {

@@ -1,8 +1,10 @@
+import Event from '../Event';
 import Node from './Node';
 import util from '../util';
 
-class Component {
+class Component extends Event {
   constructor(tagName, props, children) {
+    super();
     if(!util.isString(tagName)) {
       throw new Error('Component must have a tagName');
     }
@@ -37,6 +39,21 @@ class Component {
     sr.__init();
     let style = this.props.style || {};
     Object.assign(sr.style, style);
+    this.__props.forEach(item => {
+      let k = item[0];
+      let v = item[1];
+      if(/^on[a-zA-Z]/.test(k)) {
+        k = k.slice(2).toLowerCase();
+        let arr = sr.listener[k] = sr.listener[k] || [];
+        arr.push(v);
+      }
+      else if(/^on-[a-zA-Z\d_$]/.test(k)) {
+        k = k.slice(3);
+        this.on(k, function(...args) {
+          v(...args);
+        });
+      }
+    });
 
     [
       'x',
@@ -71,15 +88,8 @@ class Component {
     if(force) {
       return sr.__emitEvent(e, force);
     }
-    let ne = Object.assign({}, e);
-    let res = sr.__emitEvent(ne);
-    if(res && ne.target === sr) {
-      if(ne.__stopImmediatePropagation) {
-        e.__stopPropagation = ne.__stopImmediatePropagation;
-      }
-      if(ne.__stopImmediatePropagation) {
-        e.__stopImmediatePropagation = ne.__stopImmediatePropagation;
-      }
+    let res = sr.__emitEvent(e);
+    if(res) {
       e.target = this;
       return true;
     }

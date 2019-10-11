@@ -10,6 +10,7 @@ import Rect from './geom/Rect';
 import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
+import Event from './Event';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -48,6 +49,7 @@ let karas = {
   Geom,
   mode,
   Component,
+  Event,
 };
 
 if(typeof window != 'undefined') {

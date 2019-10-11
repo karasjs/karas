@@ -3304,7 +3304,7 @@
             type: 'item',
             tagName: 'text',
             props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-size', "".concat(style.fontSize, "px")]],
-            content: content
+            content: util.encodeHtml(content)
           };
         }
       }

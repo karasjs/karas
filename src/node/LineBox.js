@@ -1,4 +1,5 @@
 import css from '../style/css';
+import util from '../util';
 import mode from '../mode';
 
 class LineBox {
@@ -31,7 +32,7 @@ class LineBox {
           ['font-family', style.fontFamily],
           ['font-size', `${style.fontSize}px`]
         ],
-        content,
+        content: util.encodeHtml(content),
       };
     }
   }

@@ -38,7 +38,11 @@ class Component extends Event {
     let sr = this.shadowRoot;
     sr.__init();
     let style = this.props.style || {};
-    Object.assign(sr.style, style);
+    for(let i in style) {
+      if(style.hasOwnProperty(i)) {
+        sr.style = style[i];
+      }
+    }
     this.__props.forEach(item => {
       let k = item[0];
       let v = item[1];

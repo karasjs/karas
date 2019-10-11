@@ -1980,7 +1980,12 @@
         sr.__init();
 
         var style = this.props.style || {};
-        Object.assign(sr.style, style);
+
+        for (var i in style) {
+          if (style.hasOwnProperty(i)) {
+            sr.style = style[i];
+          }
+        }
 
         this.__props.forEach(function (item) {
           var k = item[0];

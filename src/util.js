@@ -39,9 +39,9 @@ function isNil(v) {
   return v === undefined || v === null;
 }
 
-function joinVirtualDom(vd, nd) {
+function joinVirtualDom(vd) {
   let s = '<defs>';
-  nd.forEach(item => {
+  vd.defs.forEach(item => {
     s += joinDef(item);
   });
   s += '</defs><g>';
@@ -173,6 +173,19 @@ function hash2arr(hash) {
   return arr;
 }
 
+function clone(obj) {
+  if(isNil(obj) || typeof obj !== 'object') {
+    return obj;
+  }
+  let n = Array.isArray(obj) ? [] : {};
+  for(let i in obj) {
+    if(obj.hasOwnProperty(i)) {
+      n[i] = clone(obj[i]);
+    }
+  }
+  return n;
+}
+
 let util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -195,6 +208,7 @@ let util = {
   rgb2int,
   arr2hash,
   hash2arr,
+  clone,
 };
 
 export default util;

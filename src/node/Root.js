@@ -163,6 +163,12 @@ class Root extends Dom {
     this.__traverse(this.__ctx, this.__defs, this.__renderMode);
     this.__init();
     this.refresh();
+    this.node.__root = this;
+    if(!this.node.__karasInit) {
+      initEvent(this.node);
+      this.node.__karasInit = true;
+      this.node.__uuid = this.__uuid;
+    }
   }
 
   refresh() {
@@ -187,19 +193,13 @@ class Root extends Dom {
       let nvd = this.virtualDom;
       let nd = this.__defs;
       nvd.defs = nd.value;
+      nvd = util.clone(nvd);
       if(this.node.__karasInit) {
         domDiff(this.node, this.node.__ovd, nvd);
       } else {
-        this.node.innerHTML = util.joinVirtualDom(nvd, nd.value);
+        this.node.innerHTML = util.joinVirtualDom(nvd);
       }
       this.node.__ovd = nvd;
-      this.node.__od = nd;
-    }
-    this.node.__root = this;
-    if(!this.node.__karasInit) {
-      initEvent(this.node);
-      this.node.__karasInit = true;
-      this.node.__uuid = this.__uuid;
     }
   }
 

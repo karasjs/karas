@@ -4,6 +4,20 @@
   (global = global || self, global.karas = factory());
 }(this, function () { 'use strict';
 
+  function _typeof(obj) {
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+      _typeof = function (obj) {
+        return typeof obj;
+      };
+    } else {
+      _typeof = function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+    }
+
+    return _typeof(obj);
+  }
+
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -450,9 +464,9 @@
     return v === undefined || v === null;
   }
 
-  function joinVirtualDom(vd, nd) {
+  function joinVirtualDom(vd) {
     var s = '<defs>';
-    nd.forEach(function (item) {
+    vd.defs.forEach(function (item) {
       s += joinDef(item);
     });
     s += '</defs><g>';
@@ -592,6 +606,22 @@
     return arr;
   }
 
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+
+    for (var i in obj) {
+      if (obj.hasOwnProperty(i)) {
+        n[i] = clone(obj[i]);
+      }
+    }
+
+    return n;
+  }
+
   var util = {
     isObject: isType('Object'),
     isString: isType('String'),
@@ -613,7 +643,8 @@
     r2d: r2d,
     rgb2int: rgb2int,
     arr2hash: arr2hash,
-    hash2arr: hash2arr
+    hash2arr: hash2arr,
+    clone: clone
   };
 
   function calMatrix(transform, transformOrigin, x, y, ow, oh) {
@@ -5728,6 +5759,13 @@
         this.__init();
 
         this.refresh();
+        this.node.__root = this;
+
+        if (!this.node.__karasInit) {
+          initEvent(this.node);
+          this.node.__karasInit = true;
+          this.node.__uuid = this.__uuid;
+        }
       }
     }, {
       key: "refresh",
@@ -5758,23 +5796,15 @@
           var nvd = this.virtualDom;
           var nd = this.__defs;
           nvd.defs = nd.value;
+          nvd = util.clone(nvd);
 
           if (this.node.__karasInit) {
             diff(this.node, this.node.__ovd, nvd);
           } else {
-            this.node.innerHTML = util.joinVirtualDom(nvd, nd.value);
+            this.node.innerHTML = util.joinVirtualDom(nvd);
           }
 
           this.node.__ovd = nvd;
-          this.node.__od = nd;
-        }
-
-        this.node.__root = this;
-
-        if (!this.node.__karasInit) {
-          initEvent(this.node);
-          this.node.__karasInit = true;
-          this.node.__uuid = this.__uuid;
         }
       }
     }, {

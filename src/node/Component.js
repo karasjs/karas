@@ -1,6 +1,8 @@
 import Event from '../Event';
 import Node from './Node';
+import Text from './Text';
 import util from '../util';
+import css from '../style/css';
 
 class Component extends Event {
   constructor(tagName, props, children) {
@@ -45,9 +47,23 @@ class Component extends Event {
 
   __traverse(ctx, defs, renderMode) {
     let sr = this.__shadowRoot = this.render(renderMode);
-    // TODO: 不限制return内容
-    if(!(sr instanceof Node) && !sr.tagName) {
-      throw new Error(`Component ${this.tagName || ''} must return a Node by render()`);
+    // 可能返回的还是一个Component，递归处理
+    while(sr instanceof Component) {
+      sr = this.__shadowRoot = sr.render(renderMode);
+    }
+    // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
+    if(!(sr instanceof Node)) {
+      let s = '';
+      if(!util.isNil(sr)) {
+        s = util.encodeHtml(sr.toString());
+      }
+      sr = new Text(s);
+      sr.__ctx = ctx;
+      sr.__defs = defs;
+      sr.__renderMode = renderMode;
+      sr.__measure();
+      this.__shadowRoot = sr;
+      return;
     }
     sr.__ctx = ctx;
     sr.__defs = defs;
@@ -57,28 +73,36 @@ class Component extends Event {
   // 组件传入的样式需覆盖shadowRoot的
   __init(isSetState) {
     let sr = this.shadowRoot;
-    sr.__init();
+    // 返回text节点特殊处理，赋予基本样式
+    if(sr instanceof Text) {
+      css.normalize(sr.style);
+    }
+    else {
+      sr.__init();
+    }
     let style = this.props.style || {};
     for(let i in style) {
       if(style.hasOwnProperty(i)) {
         sr.style[i] = style[i];
       }
     }
-    this.__props.forEach(item => {
-      let k = item[0];
-      let v = item[1];
-      if(/^on[a-zA-Z]/.test(k)) {
-        k = k.slice(2).toLowerCase();
-        let arr = sr.listener[k] = sr.listener[k] || [];
-        arr.push(v);
-      }
-      else if(/^on-[a-zA-Z\d_$]/.test(k)) {
-        k = k.slice(3);
-        this.on(k, function(...args) {
-          v(...args);
-        });
-      }
-    });
+    if(!(sr instanceof Text)) {
+      this.__props.forEach(item => {
+        let k = item[0];
+        let v = item[1];
+        if(/^on[a-zA-Z]/.test(k)) {
+          k = k.slice(2).toLowerCase();
+          let arr = sr.listener[k] = sr.listener[k] || [];
+          arr.push(v);
+        }
+        else if(/^on-[a-zA-Z\d_$]/.test(k)) {
+          k = k.slice(3);
+          this.on(k, function(...args) {
+            v(...args);
+          });
+        }
+      });
+    }
     // 防止重复
     if(isSetState) {
       return;
@@ -102,7 +126,7 @@ class Component extends Event {
     ].forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {
-          return this.__shadowRoot[fn];
+          return this.shadowRoot[fn];
         },
       });
     });
@@ -113,6 +137,9 @@ class Component extends Event {
 
   __emitEvent(e, force) {
     let sr = this.shadowRoot;
+    if(sr instanceof Text) {
+      return;
+    }
     if(force) {
       return sr.__emitEvent(e, force);
     }
@@ -152,7 +179,9 @@ class Component extends Event {
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;
-    sr[fn].apply(sr, arguments);
+    if(sr[fn]) {
+      sr[fn].apply(sr, arguments);
+    }
   };
 });
 

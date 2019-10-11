@@ -49,7 +49,7 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { ctx, content, style, lineBoxes, charWidthList, renderMode } = this;
+    let { content, style, lineBoxes, charWidthList } = this;
     // 顺序尝试分割字符串为lineBox，形成多行
     let begin = 0;
     let i = 0;

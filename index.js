@@ -1954,6 +1954,754 @@
     return Event;
   }();
 
+  var font = {
+    arial: {
+      lhr: 1.14990234375,
+      // 默认line-height ratio，(67+1854+434)/2048
+      car: 1.1171875,
+      // content-area ratio，(1854+434)/2048
+      blr: 0.9052734375,
+      // base-line ratio，1854/2048
+      mdr: 0.64599609375,
+      // middle ratio，(1854-1062/2)/2048
+      lgr: 0.03271484375 // line-gap ratio，67/2048
+
+    }
+  };
+
+  var RESET = {
+    position: 'static',
+    display: 'block',
+    borderSizing: 'content-box',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 16,
+    fontFamily: 'arial',
+    color: '#000',
+    fontStyle: 'normal',
+    fontWeight: 400,
+    lineHeight: 'normal',
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    verticalAlign: 'baseline',
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'left',
+    visibility: 'visible',
+    transformOrigin: 'center',
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: []
+  };
+  var reset = [];
+  Object.keys(RESET).forEach(function (k) {
+    var v = RESET[k];
+    reset.push({
+      k: k,
+      v: v
+    });
+  });
+
+  function parserOneBorder(style, direction) {
+    var key = "border".concat(direction);
+
+    if (!style[key]) {
+      return;
+    }
+
+    var w = /\b[\d.]+px\b/i.exec(style[key]);
+
+    if (w) {
+      style[key + 'Width'] = w[0];
+    }
+
+    var s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
+
+    if (s) {
+      style[key + 'Style'] = s[1];
+    }
+
+    var c = /#[0-9a-f]{3,6}/i.exec(style[key]);
+
+    if (c && [4, 7].indexOf(c[0].length) > -1) {
+      style[key + 'Color'] = c[0];
+    } else if (/\btransparent\b/i.test(style[key])) {
+      style[key + 'Color'] = 'transparent';
+    } else {
+      c = /rgba?\(.+\)/i.exec(style[key]);
+
+      if (c) {
+        style[key + 'Color'] = c[0];
+      }
+    }
+  }
+
+  function calUnit(obj, k, v) {
+    if (v === 'auto') {
+      obj[k] = {
+        unit: unit.AUTO
+      };
+    } else if (/px$/.test(v)) {
+      v = parseFloat(v) || 0;
+      obj[k] = {
+        value: v,
+        unit: unit.PX
+      };
+    } else if (/%$/.test(v)) {
+      // border不支持百分比
+      if (k.toString().indexOf('border') === 0) {
+        obj[k] = {
+          value: 0,
+          unit: unit.PX
+        };
+      } else {
+        v = parseFloat(v) || 0;
+        obj[k] = {
+          value: v,
+          unit: unit.PERCENT
+        };
+      }
+    } else {
+      v = parseFloat(v) || 0;
+      obj[k] = {
+        value: v,
+        unit: unit.PX
+      };
+    }
+
+    return obj;
+  }
+
+  function normalize$1(style) {
+    // 默认reset
+    reset.forEach(function (item) {
+      if (!style.hasOwnProperty(item.k)) {
+        style[item.k] = item.v;
+      }
+    });
+    var temp = style.background; // 处理渐变背景色
+
+    if (temp) {
+      // 优先gradient，没有再考虑颜色
+      var gd = gradient.parseGradient(temp);
+
+      if (gd) {
+        style.backgroundGradient = gd;
+      } else {
+        var bgc = /#[0-9a-f]{3,6}/i.exec(temp);
+
+        if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
+          style.backgroundColor = bgc[0];
+        } else {
+          bgc = /rgba?\(.+\)/i.exec(temp);
+
+          if (bgc) {
+            style.backgroundColor = bgc[0];
+          }
+        }
+      }
+    } // 处理缩写
+
+
+    temp = style.flex;
+
+    if (temp) {
+      if (temp === 'none') {
+        style.flexGrow = 0;
+        style.flexShrink = 0;
+        style.flexBasis = 'auto';
+      } else if (temp === 'auto') {
+        style.flexGrow = 1;
+        style.flexShrink = 1;
+        style.flexBasis = 'auto';
+      } else if (/^[\d.]+$/.test(temp)) {
+        style.flexGrow = parseFloat(temp);
+        style.flexShrink = 1;
+        style.flexBasis = 0;
+      } else if (/^[\d.]+px$/.test(temp)) ; else if (/^[\d.]+%$/.test(temp)) ; else {
+        style.flexGrow = 0;
+        style.flexShrink = 1;
+        style.flexBasis = 'auto';
+      }
+    }
+
+    temp = style.border;
+
+    if (temp) {
+      style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = temp;
+    }
+
+    temp = style.margin;
+
+    if (temp) {
+      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+
+      if (match) {
+        if (match.length === 1) {
+          match[3] = match[2] = match[1] = match[0];
+        } else if (match.length === 2) {
+          match[2] = match[0];
+          match[3] = match[1];
+        } else if (match.length === 3) {
+          match[3] = match[1];
+        }
+
+        style.marginTop = match[0];
+        style.marginRight = match[1];
+        style.marginBottom = match[2];
+        style.marginLeft = match[3];
+      }
+    }
+
+    temp = style.padding;
+
+    if (temp) {
+      var _match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+
+      if (_match) {
+        if (_match.length === 1) {
+          _match[3] = _match[2] = _match[1] = _match[0];
+        } else if (_match.length === 2) {
+          _match[2] = _match[0];
+          _match[3] = _match[1];
+        } else if (_match.length === 3) {
+          _match[3] = _match[1];
+        }
+
+        style.paddingTop = _match[0];
+        style.paddingRight = _match[1];
+        style.paddingBottom = _match[2];
+        style.paddingLeft = _match[3];
+      }
+    }
+
+    temp = style.transform;
+
+    if (temp) {
+      var _match2 = temp.toString().match(/\w+\(.+?\)/g);
+
+      if (_match2) {
+        var transform = style.transform = [];
+
+        _match2.forEach(function (item) {
+          var i = item.indexOf('(');
+          var k = item.slice(0, i);
+          var v = item.slice(i + 1, item.length - 1);
+
+          if (k === 'matrix') {
+            var arr = v.split(/\s*,\s*/);
+            arr = arr.map(function (item) {
+              return parseFloat(item);
+            });
+
+            if (arr.length > 6) {
+              arr = arr.slice(0, 6);
+            }
+
+            if (arr.length === 6) {
+              transform.push(['matrix', arr]);
+            }
+          } else if (k === 'translateX') {
+            var _arr = ['translateX', v];
+            transform.push(calUnit(_arr, 1, v));
+          } else if (k === 'translateY') {
+            var _arr2 = ['translateY', v];
+            transform.push(calUnit(_arr2, 1, v));
+          } else if (k === 'translate') {
+            var _arr3 = v.split(/\s*,\s*/);
+
+            var arr1 = ['translateX', _arr3[0]];
+            var arr2 = ['translateY', _arr3[1] || _arr3[0]];
+            transform.push(calUnit(arr1, 1, _arr3[0]));
+            transform.push(calUnit(arr2, 1, _arr3[1] || _arr3[0]));
+          } else if (k === 'scaleX') {
+            transform.push(['scaleX', parseFloat(v) || 0]);
+          } else if (k === 'scaleY') {
+            transform.push(['scaleY', parseFloat(v) || 0]);
+          } else if (k === 'scale') {
+            var _arr4 = v.split(/\s*,\s*/);
+
+            var x = parseFloat(_arr4[0]) || 0;
+            var y = parseFloat(_arr4[_arr4.length - 1]) || 0;
+            transform.push(['scaleX', x]);
+            transform.push(['scaleY', y]);
+          } else if (k === 'rotateZ' || k === 'rotate') {
+            transform.push(['rotateZ', parseFloat(v) || 0]);
+          } else if (k === 'skewX') {
+            transform.push(['skewX', parseFloat(v) || 0]);
+          } else if (k === 'skewY') {
+            transform.push(['skewY', parseFloat(v) || 0]);
+          } else if (k === 'skew') {
+            var _arr5 = v.split(/\s*,\s*/);
+
+            var _x = parseFloat(_arr5[0]) || 0;
+
+            var _y = parseFloat(_arr5[_arr5.length - 1]) || 0;
+
+            transform.push(['skewX', _x]);
+            transform.push(['skewY', _y]);
+          }
+        });
+      }
+    }
+
+    temp = style.transformOrigin;
+
+    if (temp) {
+      var _match3 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
+
+      if (_match3) {
+        if (_match3.length === 1) {
+          _match3[1] = _match3[0];
+        }
+
+        var tfo = [];
+
+        for (var i = 0; i < 2; i++) {
+          var item = _match3[i];
+
+          if (/px$/.test(item)) {
+            tfo.push({
+              value: parseFloat(item),
+              unit: unit.PX
+            });
+          } else if (/%$/.test(item)) {
+            tfo.push({
+              value: parseFloat(item),
+              unit: unit.PERCENT
+            });
+          } else {
+            tfo.push({
+              value: item,
+              unit: unit.POSITION
+            });
+          }
+        }
+
+        style.transformOrigin = tfo;
+      }
+    }
+
+    parserOneBorder(style, 'Top');
+    parserOneBorder(style, 'Right');
+    parserOneBorder(style, 'Bottom');
+    parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
+
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis'].forEach(function (k) {
+      var v = style[k];
+      calUnit(style, k, v);
+    }); // 计算lineHeight为px值，最小范围
+
+    var lineHeight = style.lineHeight;
+
+    if (lineHeight === 'normal') {
+      lineHeight = {
+        value: style.fontSize * font.arial.lhr,
+        unit: unit.PX
+      };
+    } else if (/px$/.test(lineHeight)) {
+      lineHeight = parseFloat(lineHeight);
+      lineHeight = {
+        value: Math.max(style.fontSize, lineHeight),
+        unit: unit.PX
+      };
+    } // 纯数字比例
+    else {
+        lineHeight = parseFloat(lineHeight) || 'normal'; // 非法数字
+
+        if (lineHeight === 'normal') {
+          lineHeight = {
+            value: style.fontSize * font.arial.lhr,
+            unit: unit.PX
+          };
+        } else {
+          lineHeight = {
+            value: lineHeight * style.fontSize,
+            unit: unit.PX
+          };
+        }
+      }
+
+    style.lineHeight = lineHeight;
+  }
+
+  function setFontStyle(style) {
+    var fontStyle = style.fontStyle,
+        fontWeight = style.fontWeight,
+        fontSize = style.fontSize,
+        fontFamily = style.fontFamily;
+    fontFamily = 'arial';
+    return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+  }
+
+  function getBaseLine(style) {
+    var normal = style.fontSize * font.arial.lhr;
+    return (style.lineHeight.value - normal) * 0.5 + style.fontSize * font.arial.blr;
+  }
+
+  var css = {
+    normalize: normalize$1,
+    setFontStyle: setFontStyle,
+    getBaseLine: getBaseLine
+  };
+
+  var LineBox =
+  /*#__PURE__*/
+  function () {
+    function LineBox(parent, x, y, w, content, style) {
+      _classCallCheck(this, LineBox);
+
+      this.__parent = parent;
+      this.__x = x;
+      this.__y = y;
+      this.__width = w;
+      this.__content = content;
+      this.__style = style;
+      this.__virtualDom = {};
+    }
+
+    _createClass(LineBox, [{
+      key: "render",
+      value: function render(renderMode, ctx) {
+        var style = this.style,
+            content = this.content,
+            x = this.x,
+            y = this.y,
+            _this$parent = this.parent,
+            ox = _this$parent.ox,
+            oy = _this$parent.oy;
+        y += css.getBaseLine(style);
+        x += ox;
+        y += oy;
+
+        if (renderMode === mode.CANVAS) {
+          ctx.fillText(content, x, y);
+        } else if (renderMode === mode.SVG) {
+          this.__virtualDom = {
+            type: 'item',
+            tagName: 'text',
+            props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-size', "".concat(style.fontSize, "px")]],
+            content: util.encodeHtml(content)
+          };
+        }
+      }
+    }, {
+      key: "__offsetX",
+      value: function __offsetX(diff) {
+        this.__x += diff;
+      }
+    }, {
+      key: "__offsetY",
+      value: function __offsetY(diff) {
+        this.__y += diff;
+      }
+    }, {
+      key: "x",
+      get: function get() {
+        return this.__x;
+      }
+    }, {
+      key: "y",
+      get: function get() {
+        return this.__y;
+      }
+    }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "content",
+      get: function get() {
+        return this.__content;
+      }
+    }, {
+      key: "style",
+      get: function get() {
+        return this.__style;
+      }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        return css.getBaseLine(this.style);
+      }
+    }, {
+      key: "virtualDom",
+      get: function get() {
+        return this.__virtualDom;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
+      }
+    }]);
+
+    return LineBox;
+  }();
+
+  var CHAR_WIDTH_CACHE = {};
+
+  var Text =
+  /*#__PURE__*/
+  function (_Node) {
+    _inherits(Text, _Node);
+
+    function Text(content) {
+      var _this;
+
+      _classCallCheck(this, Text);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
+      _this.__content = content.toString();
+      _this.__lineBoxes = [];
+      _this.__charWidthList = [];
+      _this.__charWidth = 0;
+      _this.__textWidth = 0;
+      return _this;
+    } // 预先计算每个字的宽度
+
+
+    _createClass(Text, [{
+      key: "__measure",
+      value: function __measure() {
+        this.__charWidthList = [];
+        var ctx = this.ctx,
+            content = this.content,
+            style = this.style,
+            charWidthList = this.charWidthList,
+            renderMode = this.renderMode;
+
+        if (renderMode === mode.CANVAS) {
+          ctx.font = css.setFontStyle(style);
+        }
+
+        var cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
+        var length = content.length;
+        var sum = 0;
+
+        for (var i = 0; i < length; i++) {
+          var _char = content.charAt(i);
+
+          var mw = void 0;
+
+          if (cache.hasOwnProperty(_char)) {
+            mw = cache[_char];
+          } else if (renderMode === mode.CANVAS) {
+            mw = cache[_char] = ctx.measureText(_char).width;
+          } else if (renderMode === mode.SVG) {
+            mw = cache[_char] = mode.measure(_char, style);
+          }
+
+          charWidthList.push(mw);
+          sum += mw;
+          this.__charWidth = Math.max(this.charWidth, mw);
+        }
+
+        this.__textWidth = sum;
+      }
+    }, {
+      key: "__layout",
+      value: function __layout(data, isVirtual) {
+        var _this2 = this;
+
+        var x = data.x,
+            y = data.y,
+            w = data.w,
+            h = data.h;
+        this.__x = x;
+        this.__y = y;
+        var maxX = x;
+        var content = this.content,
+            style = this.style,
+            lineBoxes = this.lineBoxes,
+            charWidthList = this.charWidthList; // 顺序尝试分割字符串为lineBox，形成多行
+
+        var begin = 0;
+        var i = 0;
+        var count = 0;
+        var length = content.length;
+
+        while (i < length) {
+          count += charWidthList[i];
+
+          if (count === w) {
+            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), style);
+            lineBoxes.push(lineBox);
+            maxX = Math.max(maxX, x + count);
+            y += this.style.lineHeight.value;
+            begin = i + 1;
+            i = begin + 1;
+            count = 0;
+          } else if (count > w) {
+            // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+            if (i === begin) {
+              i = begin + 1;
+            }
+
+            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), style);
+
+            lineBoxes.push(_lineBox);
+            maxX = Math.max(maxX, x + count - charWidthList[i]);
+            y += this.style.lineHeight.value;
+            begin = i;
+            i = i + 1;
+            count = 0;
+          } else {
+            i++;
+          }
+        }
+
+        if (begin < length && begin < i) {
+          count = 0;
+
+          for (i = begin; i < length; i++) {
+            count += charWidthList[i];
+          }
+
+          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length), style);
+
+          lineBoxes.push(_lineBox2);
+          maxX = Math.max(maxX, x + count);
+          y += style.lineHeight.value;
+        }
+
+        this.__width = maxX - x;
+        this.__height = y - data.y;
+
+        if (isVirtual) {
+          this.__lineBoxes = [];
+        } else {
+          var textAlign = style.textAlign;
+
+          if (['center', 'right'].indexOf(textAlign) > -1) {
+            lineBoxes.forEach(function (lineBox) {
+              var diff = _this2.__width - lineBox.width;
+
+              if (diff > 0) {
+                lineBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
+              }
+            });
+          }
+        }
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode) {
+        var ctx = this.ctx,
+            style = this.style;
+
+        if (renderMode === mode.CANVAS) {
+          ctx.font = css.setFontStyle(style);
+          ctx.fillStyle = style.color;
+        }
+
+        this.lineBoxes.forEach(function (item) {
+          item.render(renderMode, ctx);
+        });
+
+        if (renderMode === mode.SVG) {
+          this.__virtualDom = {
+            type: 'text',
+            children: this.lineBoxes.map(function (lineBox) {
+              return lineBox.virtualDom;
+            })
+          };
+        }
+      }
+    }, {
+      key: "__tryLayInline",
+      value: function __tryLayInline(w) {
+        return w - this.textWidth;
+      }
+    }, {
+      key: "__calMaxAndMinWidth",
+      value: function __calMaxAndMinWidth() {
+        var n = 0;
+        this.charWidthList.forEach(function (item) {
+          n = Math.max(n, item);
+        });
+        return {
+          max: this.textWidth,
+          min: n
+        };
+      }
+    }, {
+      key: "content",
+      get: function get() {
+        return this.__content;
+      },
+      set: function set(v) {
+        this.__content = v;
+      }
+    }, {
+      key: "lineBoxes",
+      get: function get() {
+        return this.__lineBoxes;
+      }
+    }, {
+      key: "charWidthList",
+      get: function get() {
+        return this.__charWidthList;
+      }
+    }, {
+      key: "charWidth",
+      get: function get() {
+        return this.__charWidth;
+      }
+    }, {
+      key: "textWidth",
+      get: function get() {
+        return this.__textWidth;
+      }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        var last = this.lineBoxes[this.lineBoxes.length - 1];
+        return last.y - this.y + last.baseLine;
+      }
+    }, {
+      key: "renderMode",
+      get: function get() {
+        return this.__renderMode;
+      }
+    }]);
+
+    return Text;
+  }(Node);
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -2013,10 +2761,29 @@
     }, {
       key: "__traverse",
       value: function __traverse(ctx, defs, renderMode) {
-        var sr = this.__shadowRoot = this.render(renderMode); // TODO: 不限制return内容
+        var sr = this.__shadowRoot = this.render(renderMode); // 可能返回的还是一个Component，递归处理
 
-        if (!(sr instanceof Node) && !sr.tagName) {
-          throw new Error("Component ".concat(this.tagName || '', " must return a Node by render()"));
+        while (sr instanceof Component) {
+          sr = this.__shadowRoot = sr.render(renderMode);
+        } // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
+
+
+        if (!(sr instanceof Node)) {
+          var s = '';
+
+          if (!util.isNil(sr)) {
+            s = util.encodeHtml(sr.toString());
+          }
+
+          sr = new Text(s);
+          sr.__ctx = ctx;
+          sr.__defs = defs;
+          sr.__renderMode = renderMode;
+
+          sr.__measure();
+
+          this.__shadowRoot = sr;
+          return;
         }
 
         sr.__ctx = ctx;
@@ -2030,9 +2797,13 @@
       value: function __init(isSetState) {
         var _this2 = this;
 
-        var sr = this.shadowRoot;
+        var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
 
-        sr.__init();
+        if (sr instanceof Text) {
+          css.normalize(sr.style);
+        } else {
+          sr.__init();
+        }
 
         var style = this.props.style || {};
 
@@ -2042,22 +2813,24 @@
           }
         }
 
-        this.__props.forEach(function (item) {
-          var k = item[0];
-          var v = item[1];
+        if (!(sr instanceof Text)) {
+          this.__props.forEach(function (item) {
+            var k = item[0];
+            var v = item[1];
 
-          if (/^on[a-zA-Z]/.test(k)) {
-            k = k.slice(2).toLowerCase();
-            var arr = sr.listener[k] = sr.listener[k] || [];
-            arr.push(v);
-          } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-            k = k.slice(3);
+            if (/^on[a-zA-Z]/.test(k)) {
+              k = k.slice(2).toLowerCase();
+              var arr = sr.listener[k] = sr.listener[k] || [];
+              arr.push(v);
+            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+              k = k.slice(3);
 
-            _this2.on(k, function () {
-              v.apply(void 0, arguments);
-            });
-          }
-        }); // 防止重复
+              _this2.on(k, function () {
+                v.apply(void 0, arguments);
+              });
+            }
+          });
+        } // 防止重复
 
 
         if (isSetState) {
@@ -2067,7 +2840,7 @@
         ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
-              return this.__shadowRoot[fn];
+              return this.shadowRoot[fn];
             }
           });
         });
@@ -2079,6 +2852,10 @@
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          return;
+        }
 
         if (force) {
           return sr.__emitEvent(e, force);
@@ -2124,7 +2901,10 @@
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
-      sr[fn].apply(sr, arguments);
+
+      if (sr[fn]) {
+        sr[fn].apply(sr, arguments);
+      }
     };
   });
 
@@ -2882,756 +3662,6 @@
     }]);
 
     return Xom;
-  }(Node);
-
-  var font = {
-    arial: {
-      lhr: 1.14990234375,
-      // 默认line-height ratio，(67+1854+434)/2048
-      car: 1.1171875,
-      // content-area ratio，(1854+434)/2048
-      blr: 0.9052734375,
-      // base-line ratio，1854/2048
-      mdr: 0.64599609375,
-      // middle ratio，(1854-1062/2)/2048
-      lgr: 0.03271484375 // line-gap ratio，67/2048
-
-    }
-  };
-
-  var RESET = {
-    position: 'static',
-    display: 'block',
-    borderSizing: 'content-box',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 16,
-    fontFamily: 'arial',
-    color: '#000',
-    fontStyle: 'normal',
-    fontWeight: 400,
-    lineHeight: 'normal',
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    verticalAlign: 'baseline',
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'left',
-    visibility: 'visible',
-    transformOrigin: 'center',
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: []
-  };
-  var reset = [];
-  Object.keys(RESET).forEach(function (k) {
-    var v = RESET[k];
-    reset.push({
-      k: k,
-      v: v
-    });
-  });
-
-  function parserOneBorder(style, direction) {
-    var key = "border".concat(direction);
-
-    if (!style[key]) {
-      return;
-    }
-
-    var w = /\b[\d.]+px\b/i.exec(style[key]);
-
-    if (w) {
-      style[key + 'Width'] = w[0];
-    }
-
-    var s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
-
-    if (s) {
-      style[key + 'Style'] = s[1];
-    }
-
-    var c = /#[0-9a-f]{3,6}/i.exec(style[key]);
-
-    if (c && [4, 7].indexOf(c[0].length) > -1) {
-      style[key + 'Color'] = c[0];
-    } else if (/\btransparent\b/i.test(style[key])) {
-      style[key + 'Color'] = 'transparent';
-    } else {
-      c = /rgba?\(.+\)/i.exec(style[key]);
-
-      if (c) {
-        style[key + 'Color'] = c[0];
-      }
-    }
-  }
-
-  function calUnit(obj, k, v) {
-    if (v === 'auto') {
-      obj[k] = {
-        unit: unit.AUTO
-      };
-    } else if (/px$/.test(v)) {
-      v = parseFloat(v) || 0;
-      obj[k] = {
-        value: v,
-        unit: unit.PX
-      };
-    } else if (/%$/.test(v)) {
-      // border不支持百分比
-      if (k.toString().indexOf('border') === 0) {
-        obj[k] = {
-          value: 0,
-          unit: unit.PX
-        };
-      } else {
-        v = parseFloat(v) || 0;
-        obj[k] = {
-          value: v,
-          unit: unit.PERCENT
-        };
-      }
-    } else {
-      v = parseFloat(v) || 0;
-      obj[k] = {
-        value: v,
-        unit: unit.PX
-      };
-    }
-
-    return obj;
-  }
-
-  function normalize$1(style) {
-    // 默认reset
-    reset.forEach(function (item) {
-      if (!style.hasOwnProperty(item.k)) {
-        style[item.k] = item.v;
-      }
-    });
-    var temp = style.background; // 处理渐变背景色
-
-    if (temp) {
-      // 优先gradient，没有再考虑颜色
-      var gd = gradient.parseGradient(temp);
-
-      if (gd) {
-        style.backgroundGradient = gd;
-      } else {
-        var bgc = /#[0-9a-f]{3,6}/i.exec(temp);
-
-        if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-          style.backgroundColor = bgc[0];
-        } else {
-          bgc = /rgba?\(.+\)/i.exec(temp);
-
-          if (bgc) {
-            style.backgroundColor = bgc[0];
-          }
-        }
-      }
-    } // 处理缩写
-
-
-    temp = style.flex;
-
-    if (temp) {
-      if (temp === 'none') {
-        style.flexGrow = 0;
-        style.flexShrink = 0;
-        style.flexBasis = 'auto';
-      } else if (temp === 'auto') {
-        style.flexGrow = 1;
-        style.flexShrink = 1;
-        style.flexBasis = 'auto';
-      } else if (/^[\d.]+$/.test(temp)) {
-        style.flexGrow = parseFloat(temp);
-        style.flexShrink = 1;
-        style.flexBasis = 0;
-      } else if (/^[\d.]+px$/.test(temp)) ; else if (/^[\d.]+%$/.test(temp)) ; else {
-        style.flexGrow = 0;
-        style.flexShrink = 1;
-        style.flexBasis = 'auto';
-      }
-    }
-
-    temp = style.border;
-
-    if (temp) {
-      style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = temp;
-    }
-
-    temp = style.margin;
-
-    if (temp) {
-      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-
-      if (match) {
-        if (match.length === 1) {
-          match[3] = match[2] = match[1] = match[0];
-        } else if (match.length === 2) {
-          match[2] = match[0];
-          match[3] = match[1];
-        } else if (match.length === 3) {
-          match[3] = match[1];
-        }
-
-        style.marginTop = match[0];
-        style.marginRight = match[1];
-        style.marginBottom = match[2];
-        style.marginLeft = match[3];
-      }
-    }
-
-    temp = style.padding;
-
-    if (temp) {
-      var _match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-
-      if (_match) {
-        if (_match.length === 1) {
-          _match[3] = _match[2] = _match[1] = _match[0];
-        } else if (_match.length === 2) {
-          _match[2] = _match[0];
-          _match[3] = _match[1];
-        } else if (_match.length === 3) {
-          _match[3] = _match[1];
-        }
-
-        style.paddingTop = _match[0];
-        style.paddingRight = _match[1];
-        style.paddingBottom = _match[2];
-        style.paddingLeft = _match[3];
-      }
-    }
-
-    temp = style.transform;
-
-    if (temp) {
-      var _match2 = temp.toString().match(/\w+\(.+?\)/g);
-
-      if (_match2) {
-        var transform = style.transform = [];
-
-        _match2.forEach(function (item) {
-          var i = item.indexOf('(');
-          var k = item.slice(0, i);
-          var v = item.slice(i + 1, item.length - 1);
-
-          if (k === 'matrix') {
-            var arr = v.split(/\s*,\s*/);
-            arr = arr.map(function (item) {
-              return parseFloat(item);
-            });
-
-            if (arr.length > 6) {
-              arr = arr.slice(0, 6);
-            }
-
-            if (arr.length === 6) {
-              transform.push(['matrix', arr]);
-            }
-          } else if (k === 'translateX') {
-            var _arr = ['translateX', v];
-            transform.push(calUnit(_arr, 1, v));
-          } else if (k === 'translateY') {
-            var _arr2 = ['translateY', v];
-            transform.push(calUnit(_arr2, 1, v));
-          } else if (k === 'translate') {
-            var _arr3 = v.split(/\s*,\s*/);
-
-            var arr1 = ['translateX', _arr3[0]];
-            var arr2 = ['translateY', _arr3[1] || _arr3[0]];
-            transform.push(calUnit(arr1, 1, _arr3[0]));
-            transform.push(calUnit(arr2, 1, _arr3[1] || _arr3[0]));
-          } else if (k === 'scaleX') {
-            transform.push(['scaleX', parseFloat(v) || 0]);
-          } else if (k === 'scaleY') {
-            transform.push(['scaleY', parseFloat(v) || 0]);
-          } else if (k === 'scale') {
-            var _arr4 = v.split(/\s*,\s*/);
-
-            var x = parseFloat(_arr4[0]) || 0;
-            var y = parseFloat(_arr4[_arr4.length - 1]) || 0;
-            transform.push(['scaleX', x]);
-            transform.push(['scaleY', y]);
-          } else if (k === 'rotateZ' || k === 'rotate') {
-            transform.push(['rotateZ', parseFloat(v) || 0]);
-          } else if (k === 'skewX') {
-            transform.push(['skewX', parseFloat(v) || 0]);
-          } else if (k === 'skewY') {
-            transform.push(['skewY', parseFloat(v) || 0]);
-          } else if (k === 'skew') {
-            var _arr5 = v.split(/\s*,\s*/);
-
-            var _x = parseFloat(_arr5[0]) || 0;
-
-            var _y = parseFloat(_arr5[_arr5.length - 1]) || 0;
-
-            transform.push(['skewX', _x]);
-            transform.push(['skewY', _y]);
-          }
-        });
-      }
-    }
-
-    temp = style.transformOrigin;
-
-    if (temp) {
-      var _match3 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
-
-      if (_match3) {
-        if (_match3.length === 1) {
-          _match3[1] = _match3[0];
-        }
-
-        var tfo = [];
-
-        for (var i = 0; i < 2; i++) {
-          var item = _match3[i];
-
-          if (/px$/.test(item)) {
-            tfo.push({
-              value: parseFloat(item),
-              unit: unit.PX
-            });
-          } else if (/%$/.test(item)) {
-            tfo.push({
-              value: parseFloat(item),
-              unit: unit.PERCENT
-            });
-          } else {
-            tfo.push({
-              value: item,
-              unit: unit.POSITION
-            });
-          }
-        }
-
-        style.transformOrigin = tfo;
-      }
-    }
-
-    parserOneBorder(style, 'Top');
-    parserOneBorder(style, 'Right');
-    parserOneBorder(style, 'Bottom');
-    parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
-
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis'].forEach(function (k) {
-      var v = style[k];
-      calUnit(style, k, v);
-    }); // 计算lineHeight为px值，最小范围
-
-    var lineHeight = style.lineHeight;
-
-    if (lineHeight === 'normal') {
-      lineHeight = {
-        value: style.fontSize * font.arial.lhr,
-        unit: unit.PX
-      };
-    } else if (/px$/.test(lineHeight)) {
-      lineHeight = parseFloat(lineHeight);
-      lineHeight = {
-        value: Math.max(style.fontSize, lineHeight),
-        unit: unit.PX
-      };
-    } // 纯数字比例
-    else {
-        lineHeight = parseFloat(lineHeight) || 'normal'; // 非法数字
-
-        if (lineHeight === 'normal') {
-          lineHeight = {
-            value: style.fontSize * font.arial.lhr,
-            unit: unit.PX
-          };
-        } else {
-          lineHeight = {
-            value: lineHeight * style.fontSize,
-            unit: unit.PX
-          };
-        }
-      }
-
-    style.lineHeight = lineHeight;
-  }
-
-  function setFontStyle(style) {
-    var fontStyle = style.fontStyle,
-        fontWeight = style.fontWeight,
-        fontSize = style.fontSize,
-        fontFamily = style.fontFamily;
-    fontFamily = 'arial';
-    return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
-  }
-
-  function getBaseLine(style) {
-    var normal = style.fontSize * font.arial.lhr;
-    return (style.lineHeight.value - normal) * 0.5 + style.fontSize * font.arial.blr;
-  }
-
-  var css = {
-    normalize: normalize$1,
-    setFontStyle: setFontStyle,
-    getBaseLine: getBaseLine
-  };
-
-  var LineBox =
-  /*#__PURE__*/
-  function () {
-    function LineBox(parent, x, y, w, content, style) {
-      _classCallCheck(this, LineBox);
-
-      this.__parent = parent;
-      this.__x = x;
-      this.__y = y;
-      this.__width = w;
-      this.__content = content;
-      this.__style = style;
-      this.__virtualDom = {};
-    }
-
-    _createClass(LineBox, [{
-      key: "render",
-      value: function render(renderMode, ctx) {
-        var style = this.style,
-            content = this.content,
-            x = this.x,
-            y = this.y,
-            _this$parent = this.parent,
-            ox = _this$parent.ox,
-            oy = _this$parent.oy;
-        y += css.getBaseLine(style);
-        x += ox;
-        y += oy;
-
-        if (renderMode === mode.CANVAS) {
-          ctx.fillText(content, x, y);
-        } else if (renderMode === mode.SVG) {
-          this.__virtualDom = {
-            type: 'item',
-            tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-size', "".concat(style.fontSize, "px")]],
-            content: util.encodeHtml(content)
-          };
-        }
-      }
-    }, {
-      key: "__offsetX",
-      value: function __offsetX(diff) {
-        this.__x += diff;
-      }
-    }, {
-      key: "__offsetY",
-      value: function __offsetY(diff) {
-        this.__y += diff;
-      }
-    }, {
-      key: "x",
-      get: function get() {
-        return this.__x;
-      }
-    }, {
-      key: "y",
-      get: function get() {
-        return this.__y;
-      }
-    }, {
-      key: "width",
-      get: function get() {
-        return this.__width;
-      }
-    }, {
-      key: "content",
-      get: function get() {
-        return this.__content;
-      }
-    }, {
-      key: "style",
-      get: function get() {
-        return this.__style;
-      }
-    }, {
-      key: "baseLine",
-      get: function get() {
-        return css.getBaseLine(this.style);
-      }
-    }, {
-      key: "virtualDom",
-      get: function get() {
-        return this.__virtualDom;
-      }
-    }, {
-      key: "parent",
-      get: function get() {
-        return this.__parent;
-      }
-    }]);
-
-    return LineBox;
-  }();
-
-  var CHAR_WIDTH_CACHE = {};
-
-  var Text =
-  /*#__PURE__*/
-  function (_Node) {
-    _inherits(Text, _Node);
-
-    function Text(content) {
-      var _this;
-
-      _classCallCheck(this, Text);
-
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
-      _this.__content = content.toString();
-      _this.__lineBoxes = [];
-      _this.__charWidthList = [];
-      _this.__charWidth = 0;
-      _this.__textWidth = 0;
-      return _this;
-    } // 预先计算每个字的宽度
-
-
-    _createClass(Text, [{
-      key: "__measure",
-      value: function __measure() {
-        this.__charWidthList = [];
-        var ctx = this.ctx,
-            content = this.content,
-            style = this.style,
-            charWidthList = this.charWidthList,
-            renderMode = this.renderMode;
-
-        if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(style);
-        }
-
-        var cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
-        var length = content.length;
-        var sum = 0;
-
-        for (var i = 0; i < length; i++) {
-          var _char = content.charAt(i);
-
-          var mw = void 0;
-
-          if (cache.hasOwnProperty(_char)) {
-            mw = cache[_char];
-          } else if (renderMode === mode.CANVAS) {
-            mw = cache[_char] = ctx.measureText(_char).width;
-          } else if (renderMode === mode.SVG) {
-            mw = cache[_char] = mode.measure(_char, style);
-          }
-
-          charWidthList.push(mw);
-          sum += mw;
-          this.__charWidth = Math.max(this.charWidth, mw);
-        }
-
-        this.__textWidth = sum;
-      }
-    }, {
-      key: "__layout",
-      value: function __layout(data, isVirtual) {
-        var _this2 = this;
-
-        var x = data.x,
-            y = data.y,
-            w = data.w,
-            h = data.h;
-        this.__x = x;
-        this.__y = y;
-        var maxX = x;
-        var ctx = this.ctx,
-            content = this.content,
-            style = this.style,
-            lineBoxes = this.lineBoxes,
-            charWidthList = this.charWidthList,
-            renderMode = this.renderMode; // 顺序尝试分割字符串为lineBox，形成多行
-
-        var begin = 0;
-        var i = 0;
-        var count = 0;
-        var length = content.length;
-
-        while (i < length) {
-          count += charWidthList[i];
-
-          if (count === w) {
-            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), style);
-            lineBoxes.push(lineBox);
-            maxX = Math.max(maxX, x + count);
-            y += this.style.lineHeight.value;
-            begin = i + 1;
-            i = begin + 1;
-            count = 0;
-          } else if (count > w) {
-            // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
-            if (i === begin) {
-              i = begin + 1;
-            }
-
-            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), style);
-
-            lineBoxes.push(_lineBox);
-            maxX = Math.max(maxX, x + count - charWidthList[i]);
-            y += this.style.lineHeight.value;
-            begin = i;
-            i = i + 1;
-            count = 0;
-          } else {
-            i++;
-          }
-        }
-
-        if (begin < length && begin < i) {
-          count = 0;
-
-          for (i = begin; i < length; i++) {
-            count += charWidthList[i];
-          }
-
-          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length), style);
-
-          lineBoxes.push(_lineBox2);
-          maxX = Math.max(maxX, x + count);
-          y += style.lineHeight.value;
-        }
-
-        this.__width = maxX - x;
-        this.__height = y - data.y;
-
-        if (isVirtual) {
-          this.__lineBoxes = [];
-        } else {
-          var textAlign = style.textAlign;
-
-          if (['center', 'right'].indexOf(textAlign) > -1) {
-            lineBoxes.forEach(function (lineBox) {
-              var diff = _this2.__width - lineBox.width;
-
-              if (diff > 0) {
-                lineBox.__offsetX(textAlign === 'center' ? diff * 0.5 : diff);
-              }
-            });
-          }
-        }
-      }
-    }, {
-      key: "render",
-      value: function render(renderMode) {
-        var ctx = this.ctx,
-            style = this.style;
-
-        if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(style);
-          ctx.fillStyle = style.color;
-        }
-
-        this.lineBoxes.forEach(function (item) {
-          item.render(renderMode, ctx);
-        });
-
-        if (renderMode === mode.SVG) {
-          this.__virtualDom = {
-            type: 'text',
-            children: this.lineBoxes.map(function (lineBox) {
-              return lineBox.virtualDom;
-            })
-          };
-        }
-      }
-    }, {
-      key: "__tryLayInline",
-      value: function __tryLayInline(w) {
-        return w - this.textWidth;
-      }
-    }, {
-      key: "__calMaxAndMinWidth",
-      value: function __calMaxAndMinWidth() {
-        var n = 0;
-        this.charWidthList.forEach(function (item) {
-          n = Math.max(n, item);
-        });
-        return {
-          max: this.textWidth,
-          min: n
-        };
-      }
-    }, {
-      key: "content",
-      get: function get() {
-        return this.__content;
-      },
-      set: function set(v) {
-        this.__content = v;
-      }
-    }, {
-      key: "lineBoxes",
-      get: function get() {
-        return this.__lineBoxes;
-      }
-    }, {
-      key: "charWidthList",
-      get: function get() {
-        return this.__charWidthList;
-      }
-    }, {
-      key: "charWidth",
-      get: function get() {
-        return this.__charWidth;
-      }
-    }, {
-      key: "textWidth",
-      get: function get() {
-        return this.__textWidth;
-      }
-    }, {
-      key: "baseLine",
-      get: function get() {
-        var last = this.lineBoxes[this.lineBoxes.length - 1];
-        return last.y - this.y + last.baseLine;
-      }
-    }, {
-      key: "renderMode",
-      get: function get() {
-        return this.__renderMode;
-      }
-    }]);
-
-    return Text;
   }(Node);
 
   var LineGroup =

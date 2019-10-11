@@ -1983,13 +1983,37 @@
 
       _this.__children = children || [];
       _this.__shadowRoot = null;
+      _this.__parent = null;
+      _this.state = {};
       return _this;
     }
 
     _createClass(Component, [{
+      key: "setState",
+      value: function setState(n, cb) {
+        if (util.isNil(n)) {
+          this.state = {};
+        } else {
+          for (var i in n) {
+            if (n.hasOwnProperty(i)) {
+              this.state[i] = n[i];
+            }
+          }
+        }
+
+        var o = this.shadowRoot;
+
+        this.__traverse(o.ctx, o.defs, this.root.renderMode);
+
+        this.__init(true);
+
+        this.root.refresh();
+        cb && cb();
+      }
+    }, {
       key: "__traverse",
       value: function __traverse(ctx, defs, renderMode) {
-        var sr = this.__shadowRoot = this.render(renderMode);
+        var sr = this.__shadowRoot = this.render(renderMode); // TODO: 不限制return内容
 
         if (!(sr instanceof Node) && !sr.tagName) {
           throw new Error("Component ".concat(this.tagName || '', " must return a Node by render()"));
@@ -2003,7 +2027,7 @@
 
     }, {
       key: "__init",
-      value: function __init() {
+      value: function __init(isSetState) {
         var _this2 = this;
 
         var sr = this.shadowRoot;
@@ -2033,12 +2057,17 @@
               v.apply(void 0, arguments);
             });
           }
-        });
+        }); // 防止重复
+
+
+        if (isSetState) {
+          return;
+        }
 
         ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
-              return sr[fn];
+              return this.__shadowRoot[fn];
             }
           });
         });
@@ -2076,6 +2105,16 @@
       key: "shadowRoot",
       get: function get() {
         return this.__shadowRoot;
+      }
+    }, {
+      key: "root",
+      get: function get() {
+        return this.parent.root;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
       }
     }]);
 
@@ -5595,6 +5634,8 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Root).call(this, tagName, props, children));
       _this.__node = null; // 真实DOM引用
 
+      _this.__mw = 0;
+      _this.__mh = 0;
       return _this;
     }
 
@@ -5734,9 +5775,6 @@
 
         if (this.tagName === 'canvas') {
           this.__ctx = this.__node.getContext('2d');
-
-          this.__ctx.clearRect(0, 0, this.width, this.height);
-
           this.__renderMode = mode.CANVAS;
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
@@ -5789,6 +5827,14 @@
         });
 
         this.__layoutAbs(this);
+
+        if (renderMode === mode.CANVAS) {
+          // 可能会调整宽高，所以每次清除用最大值
+          this.__mw = Math.max(this.__mw, this.width);
+          this.__mh = Math.max(this.__mh, this.height);
+
+          this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+        }
 
         this.render(renderMode);
 

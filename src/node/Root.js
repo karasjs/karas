@@ -41,6 +41,8 @@ class Root extends Dom {
   constructor(tagName, props, children) {
     super(tagName, props, children);
     this.__node = null; // 真实DOM引用
+    this.__mw = 0;
+    this.__mh = 0;
   }
 
   __initProps() {
@@ -145,7 +147,6 @@ class Root extends Dom {
     // 只有canvas有ctx，svg用真实dom
     if(this.tagName === 'canvas') {
       this.__ctx = this.__node.getContext('2d');
-      this.__ctx.clearRect(0, 0, this.width, this.height);
       this.__renderMode = mode.CANVAS;
     }
     else if(this.tagName === 'svg') {
@@ -188,6 +189,12 @@ class Root extends Dom {
       h: this.height,
     });
     this.__layoutAbs(this);
+    if(renderMode === mode.CANVAS) {
+      // 可能会调整宽高，所以每次清除用最大值
+      this.__mw = Math.max(this.__mw, this.width);
+      this.__mh = Math.max(this.__mh, this.height);
+      this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+    }
     this.render(renderMode);
     if(renderMode === mode.SVG) {
       let nvd = this.virtualDom;

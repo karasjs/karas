@@ -40,7 +40,7 @@ class Component extends Event {
     let style = this.props.style || {};
     for(let i in style) {
       if(style.hasOwnProperty(i)) {
-        sr.style = style[i];
+        sr.style[i] = style[i];
       }
     }
     this.__props.forEach(item => {

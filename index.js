@@ -2014,7 +2014,7 @@
 
         for (var i in style) {
           if (style.hasOwnProperty(i)) {
-            sr.style = style[i];
+            sr.style[i] = style[i];
           }
         }
 

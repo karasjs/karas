@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>component</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">组件可以极大地复用代码，同时它拥有setState()改变数据的能力，另外贴合WebComponent标准，对事件、样式形成ShadowDom。
+setState()等同于目前流行的react库方法。
+WebComponent是指，组件可以用shadowRoot访问到内部根节点，反过来host可以访问到组件容器。用组件的样式和外部是隔离的。
+ShadowDom的影响是，内外部样式隔离，组件上的style可以覆盖内部shadowRoot，所有可冒泡的事件的target都指向组件。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  class Component extends karas.Component {
+    constructor(props) {
+      // 组件必需传入一个固定名称，这是为后续css伪类预留，如::cp
+      super('cp', props);
+      this.state = {
+        text: 'please click component',
+      };
+    }
+    click() {
+      this.setState({
+        text: 'has clicked',
+      });
+    }
+    // 同样需实现render()返回
+    render() {
+      return <div style={{color:this.props.color}} onClick={()=>this.click()}>{this.state.text}</div>;
+    }
+  }
+  karas.render(
+    <canvas width="360" height="360">
+      <Component color="#F00"/>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <Component color="#F00"/>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

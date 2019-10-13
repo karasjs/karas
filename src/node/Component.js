@@ -24,7 +24,8 @@ class Component extends Event {
     this.__children = children || [];
     this.__shadowRoot = null;
     this.__parent = null;
-    this.state = {};
+    this.__ref = {};
+    this.__state = {};
   }
 
   setState(n, cb) {
@@ -38,7 +39,11 @@ class Component extends Event {
         }
       }
     }
+    // 构造函数中调用还未render
     let o = this.shadowRoot;
+    if(!o) {
+      return;
+    }
     this.__traverse(o.ctx, o.defs, this.root.renderMode);
     this.__init(true);
     this.root.refresh();
@@ -67,6 +72,7 @@ class Component extends Event {
     }
     sr.__ctx = ctx;
     sr.__defs = defs;
+    sr.__host = this;
     sr.__traverse(ctx, defs, renderMode);
   }
 
@@ -164,6 +170,15 @@ class Component extends Event {
   }
   get parent() {
     return this.__parent;
+  }
+  get ref() {
+    return this.__ref;
+  }
+  get state() {
+    return this.__state;
+  }
+  set state(v) {
+    this.__state = v;
   }
 }
 

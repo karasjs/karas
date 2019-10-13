@@ -252,6 +252,7 @@
 
       this.__baseLine = 0;
       this.__virtualDom = {};
+      this.__host = null;
     }
 
     _createClass(Node, [{
@@ -347,14 +348,12 @@
     }, {
       key: "host",
       get: function get() {
-        var parent = this.parent;
+        if (this.__host) {
+          return this.__host;
+        }
 
-        while (parent) {
-          if (/A-Z/.test(parent.tagName.charAt(0))) {
-            return parent.host;
-          }
-
-          parent = parent.parent;
+        if (this.parent) {
+          return this.parent.host;
         }
       }
     }, {
@@ -2732,7 +2731,8 @@
       _this.__children = children || [];
       _this.__shadowRoot = null;
       _this.__parent = null;
-      _this.state = {};
+      _this.__ref = {};
+      _this.__state = {};
       return _this;
     }
 
@@ -2747,9 +2747,14 @@
               this.state[i] = n[i];
             }
           }
-        }
+        } // 构造函数中调用还未render
+
 
         var o = this.shadowRoot;
+
+        if (!o) {
+          return;
+        }
 
         this.__traverse(o.ctx, o.defs, this.root.renderMode);
 
@@ -2788,6 +2793,7 @@
 
         sr.__ctx = ctx;
         sr.__defs = defs;
+        sr.__host = this;
 
         sr.__traverse(ctx, defs, renderMode);
       } // 组件传入的样式需覆盖shadowRoot的
@@ -2892,6 +2898,19 @@
       key: "parent",
       get: function get() {
         return this.__parent;
+      }
+    }, {
+      key: "ref",
+      get: function get() {
+        return this.__ref;
+      }
+    }, {
+      key: "state",
+      get: function get() {
+        return this.__state;
+      },
+      set: function set(v) {
+        this.__state = v;
       }
     }]);
 
@@ -4093,6 +4112,11 @@
           item.__prev = prev;
         });
         this.__children = list;
+        var ref = this.props.ref;
+
+        if (ref && this.host) {
+          this.host.ref[ref] = this;
+        }
       }
     }, {
       key: "__traverseChildren",

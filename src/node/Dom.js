@@ -68,6 +68,10 @@ class Dom extends Xom {
       item.__prev = prev;
     });
     this.__children = list;
+    let ref = this.props.ref;
+    if(ref && this.host) {
+      this.host.ref[ref] = this;
+    }
   }
 
   __traverseChildren(children, list, ctx, defs, renderMode) {

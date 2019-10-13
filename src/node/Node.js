@@ -14,6 +14,7 @@ class Node {
     this.__style = {}; // style被解析后的k-v形式
     this.__baseLine = 0;
     this.__virtualDom = {};
+    this.__host = null;
   }
 
   __offsetX(diff) {
@@ -75,12 +76,11 @@ class Node {
   }
   // component根节点
   get host() {
-    let parent = this.parent;
-    while(parent) {
-      if(/A-Z/.test(parent.tagName.charAt(0))) {
-        return parent.host;
-      }
-      parent = parent.parent;
+    if(this.__host) {
+      return this.__host;
+    }
+    if(this.parent) {
+      return this.parent.host;
     }
   }
   get style() {

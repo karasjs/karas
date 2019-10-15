@@ -8,7 +8,9 @@ class Component extends Event {
   constructor(tagName, props, children) {
     super();
     if(!util.isString(tagName)) {
-      throw new Error('Component must have a tagName');
+      children = props;
+      props = tagName;
+      tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
     }
     this.__tagName = tagName;
     props = props || [];

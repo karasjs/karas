@@ -2714,7 +2714,9 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Component).call(this));
 
       if (!util.isString(tagName)) {
-        throw new Error('Component must have a tagName');
+        children = props;
+        props = tagName;
+        tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
       }
 
       _this.__tagName = tagName;

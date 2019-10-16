@@ -20,10 +20,10 @@ function jsx(file, enc, cb) {
 }
 
 gulp.task('build-test', function() {
-  return gulp.src(['./tests/**/*.jsx'])
+  return gulp.src(['./test/**/*.jsx'])
     .pipe(through2.obj(jsx))
     .pipe(rename({
       extname:'.js'
     }))
-    .pipe(gulp.dest('./tests/'));
+    .pipe(gulp.dest('./test/'));
 });

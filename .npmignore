@@ -10,7 +10,7 @@ rollup.*.js
 gulpfile.js
 nightwatch.json
 nightwatch.conf.js
-tests/
+test/
 demo/
 node_modules/
 .DS_Store

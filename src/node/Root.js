@@ -1,7 +1,7 @@
 import Dom from '../node/Dom';
-import util from '../util';
-import mode from '../mode';
-import domDiff from '../domDiff';
+import util from '../util/util';
+import mode from '../util/mode';
+import diff from '../util/diff';
 import Defs from './Defs';
 import unit from '../style/unit';
 
@@ -162,6 +162,7 @@ class Root extends Dom {
       style.position = 'static';
     }
     this.__traverse(this.__ctx, this.__defs, this.__renderMode);
+    this.__traverseCss(this, this.props.css);
     this.__init();
     this.refresh();
     this.node.__root = this;
@@ -202,7 +203,7 @@ class Root extends Dom {
       nvd.defs = nd.value;
       nvd = util.clone(nvd);
       if(this.node.__karasInit) {
-        domDiff(this.node, this.node.__ovd, nvd);
+        diff(this.node, this.node.__ovd, nvd);
       } else {
         this.node.innerHTML = util.joinVirtualDom(nvd);
       }

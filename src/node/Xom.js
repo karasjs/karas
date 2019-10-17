@@ -1,10 +1,11 @@
 import Node from './Node';
-import mode from '../mode';
+import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
-import util from '../util';
+import match from '../style/match';
+import util from '../util/util';
 import Component from './Component';
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -61,10 +62,20 @@ class Xom extends Node {
     this.__listener = {};
     this.__props.forEach(item => {
       let k = item[0];
+      let v = item[1];
       if(/^on[a-zA-Z]/.test(k)) {
         k = k.slice(2).toLowerCase();
         let arr = this.__listener[k] = this.__listener[k] || [];
-        arr.push(item[1]);
+        arr.push(v);
+      }
+      else if(k === 'id' && v) {
+        this.__id = v;
+      }
+      else if(k === 'class' && v) {
+        v = match.splitClass(v);
+        if(v) {
+          this.__class = v;
+        }
       }
     });
     // margin和padding的宽度
@@ -78,6 +89,18 @@ class Xom extends Node {
     this.__plw = 0;
     this.__matrix = null;
     this.__matrixEvent = null;
+  }
+
+  // 设置了css时，解析匹配
+  __traverseCss(top, css) {
+    if(!this.isGeom()) {
+      this.children.forEach(item => {
+        if(item instanceof Xom) {
+          item.__traverseCss(top, css);
+        }
+      });
+    }
+    this.__style = match.parse(this, top, css) || this.__style;
   }
 
   __layout(data) {
@@ -655,6 +678,12 @@ class Xom extends Node {
   }
   get matrixEvent() {
     return this.__matrixEvent;
+  }
+  get id() {
+    return this.__id;
+  }
+  get class() {
+    return this.__class || [];
   }
 }
 

@@ -2,10 +2,10 @@ import Xom from './Xom';
 import Text from './Text';
 import LineGroup from './LineGroup';
 import Geom from '../geom/Geom';
-import util from '../util';
+import util from '../util/util';
 import css from '../style/css';
 import unit from '../style/unit';
-import mode from '../mode';
+import mode from '../util/mode';
 import Component from './Component';
 
 const TAG_NAME = {
@@ -63,9 +63,10 @@ class Dom extends Xom {
       item.__defs = defs;
       if(prev) {
         prev.__next = item;
+        item.__prev = prev;
       }
       item.__parent = this;
-      item.__prev = prev;
+      prev = item;
     });
     this.__children = list;
     let ref = this.props.ref;

@@ -1820,138 +1820,61 @@
     calPoints: calPoints
   };
 
-  var Event =
-  /*#__PURE__*/
-  function () {
-    function Event() {
-      _classCallCheck(this, Event);
-
-      this.__eHash = {};
+  function quickSort(arr, begin, end, compare) {
+    if (begin >= end) {
+      return;
     }
 
-    _createClass(Event, [{
-      key: "on",
-      value: function on(id, handle) {
-        var self = this;
+    var i = begin,
+        j = end,
+        p = i,
+        v = arr[p],
+        seq = true;
 
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.on(id[i], handle);
-          }
-        } else if (handle) {
-          if (!self.__eHash.hasOwnProperty(id)) {
-            self.__eHash[id] = [];
-          } // 遍历防止此handle被侦听过了
-
-
-          for (var _i = 0, item = self.__eHash[id], _len = item.length; _i < _len; _i++) {
-            if (item[_i] === handle) {
-              return self;
-            }
-          }
-
-          self.__eHash[id].push(handle);
-        }
-
-        return self;
-      }
-    }, {
-      key: "once",
-      value: function once(id, handle) {
-        var self = this;
-
-        function cb() {
-          for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
-            data[_key] = arguments[_key];
-          }
-
-          handle.apply(self, data);
-          self.off(id, cb);
-        }
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.once(id[i], handle);
-          }
-        } else if (handle) {
-          self.on(id, cb);
-        }
-
-        return this;
-      }
-    }, {
-      key: "off",
-      value: function off(id, handle) {
-        var self = this;
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.off(id[i], handle);
-          }
-        } else if (self.__eHash.hasOwnProperty(id)) {
-          if (handle) {
-            for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
-              if (item[_i2] === handle) {
-                item.splice(_i2, 1);
-                break;
-              }
-            }
-          } // 未定义为全部清除
-          else {
-              delete self.__eHash[id];
-            }
-        }
-
-        return this;
-      }
-    }, {
-      key: "emit",
-      value: function emit(id) {
-        var self = this;
-
-        for (var _len4 = arguments.length, data = new Array(_len4 > 1 ? _len4 - 1 : 0), _key2 = 1; _key2 < _len4; _key2++) {
-          data[_key2 - 1] = arguments[_key2];
-        }
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.emit(id[i], data);
-          }
-        } else {
-          if (self.__eHash.hasOwnProperty(id)) {
-            var list = self.__eHash[id];
-
-            if (list.length) {
-              list = list.slice();
-
-              for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
-                list[_i3].apply(self, data);
-              }
-            }
+    while (i < j) {
+      if (seq) {
+        for (; i < j; j--) {
+          if (compare.call(arr, v, arr[j])) {
+            swap(arr, p, j);
+            p = j;
+            seq = !seq;
+            i++;
+            break;
           }
         }
-
-        return this;
-      }
-    }], [{
-      key: "mix",
-      value: function mix() {
-        for (var i = arguments.length - 1; i >= 0; i--) {
-          var o = i < 0 || arguments.length <= i ? undefined : arguments[i];
-          var event = new Event();
-          o.__eHash = {};
-          var fns = ['on', 'once', 'off', 'emit'];
-
-          for (var j = fns.length - 1; j >= 0; j--) {
-            var fn = fns[j];
-            o[fn] = event[fn];
+      } else {
+        for (; i < j; i++) {
+          if (compare.call(arr, arr[i], v)) {
+            swap(arr, p, i);
+            p = i;
+            seq = !seq;
+            j--;
+            break;
           }
         }
       }
-    }]);
+    }
 
-    return Event;
-  }();
+    quickSort(arr, begin, p - 1, compare);
+    quickSort(arr, p + 1, end, compare);
+  }
+
+  function swap(arr, a, b) {
+    var temp = arr[a];
+    arr[a] = arr[b];
+    arr[b] = temp;
+  }
+
+  function sort (arr, compare) {
+    if (!Array.isArray(arr) || arr.length < 2) {
+      return arr;
+    }
+
+    compare = compare || function () {};
+
+    quickSort(arr, 0, arr.length - 1, compare);
+    return arr;
+  }
 
   var font = {
     arial: {
@@ -2701,6 +2624,352 @@
     return Text;
   }(Node);
 
+  function splitClass(s) {
+    s = (s || '').trim();
+
+    if (s) {
+      return s.split(/\s+/);
+    }
+  }
+
+  function parse(dom, top, json) {
+    if (!json) {
+      return;
+    }
+
+    var list = [];
+    matchSel(dom, top, json, list);
+    sort(list, function (a, b) {
+      var pa = a[2];
+      var pb = b[2]; // 先比较优先级
+
+      for (var i = 0; i < 3; i++) {
+        if (pa[i] !== pb[i]) {
+          return pa[i] > pb[i];
+        }
+      } // 优先级相等比较出现顺序
+
+
+      return a[0] > b[0];
+    });
+    var res = {};
+
+    for (var i = list.length - 1; i >= 0; i--) {
+      var item = list[i];
+
+      var _item$ = _slicedToArray(item[1], 2),
+          k = _item$[0],
+          v = _item$[1];
+
+      if (!res.hasOwnProperty(k)) {
+        res[k] = v;
+      }
+    }
+
+    return res;
+  } // 从底部往上匹配，即.a .b这样的选择器是.b->.a逆序对比
+
+
+  function matchSel(dom, top, json, res) {
+    var _this = this;
+
+    var selList = combo(dom, json);
+    selList.forEach(function (sel) {
+      if (json.hasOwnProperty(sel)) {
+        var item = json[sel]; // 还未到根节点需继续向上，注意可以递归向上，多层级时需递归所有父层级组合
+
+        var parent = dom.parent;
+
+        while (parent) {
+          matchSel(parent, top, item, res);
+          parent = parent.parent;
+        } // 将当前层次的值存入
+
+
+        if (item.hasOwnProperty('_v')) {
+          dealStyle(res, item);
+        } // 父子选择器
+
+
+        if (item.hasOwnProperty('_>')) {
+          var parentStyle = item['_>'];
+          matchSel(dom.parent, _this, parentStyle, res);
+        } // 相邻兄弟选择器
+
+
+        if (item.hasOwnProperty('_+')) {
+          var sibling = item['_+'];
+          var prev = dom.prev;
+
+          if (prev && !(prev instanceof Text)) {
+            var prevSelList = combo(prev, sibling);
+            var hash = arr2hash$1(prevSelList);
+            Object.keys(sibling).forEach(function (k) {
+              var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
+
+              if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
+                dealStyle(res, item2);
+              }
+            });
+          }
+        } // 兄弟选择器，不一定相邻，一直往前找
+
+
+        if (item.hasOwnProperty('_~')) {
+          (function () {
+            var sibling = item['_~'];
+            var prev = dom.prev;
+
+            var _loop = function _loop() {
+              if (prev instanceof Text) {
+                prev = prev.prev;
+                return "continue";
+              }
+
+              var prevSelList = combo(prev, sibling);
+              var hash = arr2hash$1(prevSelList);
+              Object.keys(sibling).forEach(function (k) {
+                var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
+
+                if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
+                  dealStyle(res, item2);
+                }
+              });
+              prev = prev.prev;
+            };
+
+            while (prev) {
+              var _ret = _loop();
+
+              if (_ret === "continue") continue;
+            }
+          })();
+        }
+      }
+    });
+  } // 组合出dom的所有sel可能
+
+
+  function combo(dom, json) {
+    var klass = dom["class"],
+        tagName = dom.tagName,
+        id = dom.id;
+    klass = klass.slice();
+    sort(klass, function (a, b) {
+      return a > b;
+    });
+    var ks = [];
+
+    if (klass.length) {
+      comboClass(klass, ks, klass.length, 0);
+    } // 各种*的情况标识，只有存在时才放入sel组合，可以减少循环次数
+
+
+    var hasStarClass = json.hasOwnProperty('_*.');
+    var hasStarId = json.hasOwnProperty('_*#');
+    var hasStarIdClass = json.hasOwnProperty('_*.#');
+    var res = [tagName]; // 只有当前有_*时说明有*才匹配
+
+    if (json.hasOwnProperty('_*')) {
+      res.push('*');
+    }
+
+    if (id) {
+      id = '#' + id;
+      res.push(id);
+      res.push(tagName + id);
+
+      if (hasStarId) {
+        res.push('*' + id);
+      }
+    }
+
+    ks.forEach(function (klass) {
+      res.push(klass);
+      res.push(tagName + klass);
+
+      if (hasStarClass) {
+        res.push('*' + klass);
+      }
+
+      if (id) {
+        res.push(klass + id);
+        res.push(tagName + klass + id);
+
+        if (hasStarIdClass) {
+          res.push('*' + klass + id);
+        }
+      }
+    });
+    return res;
+  } // 组合出klass里多个的可能，如.b.a和.c.b.a，注意有排序，可以使得相等比较更容易
+
+
+  function comboClass(arr, res, len, i) {
+    if (len - i > 1) {
+      comboClass(arr, res, len, i + 1);
+
+      for (var j = 0, len2 = res.length; j < len2; j++) {
+        res.push(res[j] + '.' + arr[i]);
+      }
+    }
+
+    res.push('.' + arr[i]);
+  }
+
+  function dealStyle(res, item) {
+    item._v.forEach(function (style) {
+      style[2] = item._p;
+      res.push(style);
+    });
+  }
+
+  function arr2hash$1(arr) {
+    var hash = {};
+    arr.forEach(function (item) {
+      hash[item] = true;
+    });
+    return hash;
+  }
+
+  var match = {
+    parse: parse,
+    splitClass: splitClass
+  };
+
+  var Event =
+  /*#__PURE__*/
+  function () {
+    function Event() {
+      _classCallCheck(this, Event);
+
+      this.__eHash = {};
+    }
+
+    _createClass(Event, [{
+      key: "on",
+      value: function on(id, handle) {
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.on(id[i], handle);
+          }
+        } else if (handle) {
+          if (!self.__eHash.hasOwnProperty(id)) {
+            self.__eHash[id] = [];
+          } // 遍历防止此handle被侦听过了
+
+
+          for (var _i = 0, item = self.__eHash[id], _len = item.length; _i < _len; _i++) {
+            if (item[_i] === handle) {
+              return self;
+            }
+          }
+
+          self.__eHash[id].push(handle);
+        }
+
+        return self;
+      }
+    }, {
+      key: "once",
+      value: function once(id, handle) {
+        var self = this;
+
+        function cb() {
+          for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
+            data[_key] = arguments[_key];
+          }
+
+          handle.apply(self, data);
+          self.off(id, cb);
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.once(id[i], handle);
+          }
+        } else if (handle) {
+          self.on(id, cb);
+        }
+
+        return this;
+      }
+    }, {
+      key: "off",
+      value: function off(id, handle) {
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.off(id[i], handle);
+          }
+        } else if (self.__eHash.hasOwnProperty(id)) {
+          if (handle) {
+            for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
+              if (item[_i2] === handle) {
+                item.splice(_i2, 1);
+                break;
+              }
+            }
+          } // 未定义为全部清除
+          else {
+              delete self.__eHash[id];
+            }
+        }
+
+        return this;
+      }
+    }, {
+      key: "emit",
+      value: function emit(id) {
+        var self = this;
+
+        for (var _len4 = arguments.length, data = new Array(_len4 > 1 ? _len4 - 1 : 0), _key2 = 1; _key2 < _len4; _key2++) {
+          data[_key2 - 1] = arguments[_key2];
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.emit(id[i], data);
+          }
+        } else {
+          if (self.__eHash.hasOwnProperty(id)) {
+            var list = self.__eHash[id];
+
+            if (list.length) {
+              list = list.slice();
+
+              for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
+                list[_i3].apply(self, data);
+              }
+            }
+          }
+        }
+
+        return this;
+      }
+    }], [{
+      key: "mix",
+      value: function mix() {
+        for (var i = arguments.length - 1; i >= 0; i--) {
+          var o = i < 0 || arguments.length <= i ? undefined : arguments[i];
+          var event = new Event();
+          o.__eHash = {};
+          var fns = ['on', 'once', 'off', 'emit'];
+
+          for (var j = fns.length - 1; j >= 0; j--) {
+            var fn = fns[j];
+            o[fn] = event[fn];
+          }
+        }
+      }
+    }]);
+
+    return Event;
+  }();
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -2798,6 +3067,15 @@
         sr.__host = this;
 
         sr.__traverse(ctx, defs, renderMode);
+      }
+    }, {
+      key: "__traverseCss",
+      value: function __traverseCss() {
+        var sr = this.__shadowRoot;
+
+        if (!(sr instanceof Text)) {
+          sr.__traverseCss(sr, this.props.css);
+        }
       } // 组件传入的样式需覆盖shadowRoot的
 
     }, {
@@ -2914,6 +3192,11 @@
       set: function set(v) {
         this.__state = v;
       }
+    }, {
+      key: "css",
+      get: function get() {
+        return this.__css;
+      }
     }]);
 
     return Component;
@@ -2984,11 +3267,20 @@
 
       _this.__props.forEach(function (item) {
         var k = item[0];
+        var v = item[1];
 
         if (/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
           var arr = _this.__listener[k] = _this.__listener[k] || [];
-          arr.push(item[1]);
+          arr.push(v);
+        } else if (k === 'id' && v) {
+          _this.__id = v;
+        } else if (k === 'class' && v) {
+          v = match.splitClass(v);
+
+          if (v) {
+            _this.__class = v;
+          }
         }
       }); // margin和padding的宽度
 
@@ -3004,9 +3296,23 @@
       _this.__matrix = null;
       _this.__matrixEvent = null;
       return _this;
-    }
+    } // 设置了css时，解析匹配
+
 
     _createClass(Xom, [{
+      key: "__traverseCss",
+      value: function __traverseCss(top, css) {
+        if (!this.isGeom()) {
+          this.children.forEach(function (item) {
+            if (item instanceof Xom) {
+              item.__traverseCss(top, css);
+            }
+          });
+        }
+
+        this.__style = match.parse(this, top, css) || this.__style;
+      }
+    }, {
       key: "__layout",
       value: function __layout(data) {
         var w = data.w;
@@ -3680,6 +3986,16 @@
       get: function get() {
         return this.__matrixEvent;
       }
+    }, {
+      key: "id",
+      get: function get() {
+        return this.__id;
+      }
+    }, {
+      key: "class",
+      get: function get() {
+        return this.__class || [];
+      }
     }]);
 
     return Xom;
@@ -4110,8 +4426,13 @@
           item.__ctx = ctx;
           item.__defs = defs;
 
+          if (prev) {
+            prev.__next = item;
+            item.__prev = prev;
+          }
+
           item.__parent = _this2;
-          item.__prev = prev;
+          prev = item;
         });
         this.__children = list;
         var ref = this.props.ref;
@@ -5850,6 +6171,8 @@
 
         this.__traverse(this.__ctx, this.__defs, this.__renderMode);
 
+        this.__traverseCss(this, this.props.css);
+
         this.__init();
 
         this.refresh();
@@ -6761,7 +7084,8 @@
     Geom: Geom,
     mode: mode,
     Component: Component,
-    Event: Event
+    Event: Event,
+    sort: sort
   };
 
   if (typeof window != 'undefined') {

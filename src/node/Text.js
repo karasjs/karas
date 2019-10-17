@@ -1,7 +1,7 @@
 import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
-import mode from '../mode';
+import mode from '../util/mode';
 
 const CHAR_WIDTH_CACHE = {};
 

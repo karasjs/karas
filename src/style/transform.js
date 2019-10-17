@@ -1,5 +1,5 @@
 import unit from '../style/unit';
-import util from '../util';
+import util from '../util/util';
 
 function calMatrix(transform, transformOrigin, x, y, ow, oh) {
   let [ox, oy] = getOrigin(transformOrigin, x, y, ow, oh);

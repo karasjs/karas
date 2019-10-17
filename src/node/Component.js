@@ -1,7 +1,7 @@
-import Event from '../Event';
+import Event from '../util/Event';
 import Node from './Node';
 import Text from './Text';
-import util from '../util';
+import util from '../util/util';
 import css from '../style/css';
 
 class Component extends Event {
@@ -76,6 +76,13 @@ class Component extends Event {
     sr.__defs = defs;
     sr.__host = this;
     sr.__traverse(ctx, defs, renderMode);
+  }
+
+  __traverseCss() {
+    let sr = this.__shadowRoot;
+    if(!(sr instanceof Text)) {
+      sr.__traverseCss(sr, this.props.css);
+    }
   }
 
   // 组件传入的样式需覆盖shadowRoot的
@@ -181,6 +188,9 @@ class Component extends Event {
   }
   set state(v) {
     this.__state = v;
+  }
+  get css() {
+    return this.__css;
   }
 }
 

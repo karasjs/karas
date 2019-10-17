@@ -1,8 +1,8 @@
 import Xom from '../node/Xom';
 import css from '../style/css';
 import unit from '../style/unit';
-import mode from '../mode';
-import util from '../util';
+import mode from '../util/mode';
+import util from '../util/util';
 import gradient from '../style/gradient';
 
 const REGISTER = {};

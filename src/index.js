@@ -1,6 +1,6 @@
 import Dom from './node/Dom';
 import Root from './node/Root';
-import mode from './mode';
+import mode from './util/mode';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polyline from './geom/Polyline';
@@ -10,7 +10,8 @@ import Rect from './geom/Rect';
 import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
-import Event from './Event';
+import Event from './util/Event';
+import sort from './util/sort';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -50,6 +51,7 @@ let karas = {
   mode,
   Component,
   Event,
+  sort,
 };
 
 if(typeof window != 'undefined') {

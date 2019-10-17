@@ -1,16 +1,19 @@
-var gulp = require('gulp');
-var util = require('gulp-util');
-var rename = require('gulp-rename');
-var through2 = require('through2');
-var yurine = require('yurine');
-var babel = require('@babel/core');
+let gulp = require('gulp');
+let util = require('gulp-util');
+let rename = require('gulp-rename');
+let through2 = require('through2');
+let yurine = require('yurine');
+let selenite = require('selenite');
+let babel = require('@babel/core');
 
-var fs = require('fs');
-var path = require('path');
+let path = require('path');
 
 function jsx(file, enc, cb) {
   util.log(path.relative(file.cwd, file.path));
-  var content = file.contents.toString('utf-8');
+  let content = file.contents.toString('utf-8');
+  content = content.replace(/selenite.parse\(`([\s\S]+)`\)/, function($0, $1) {
+    return JSON.stringify(selenite.parse($1));
+  });
   content = yurine.parse(content);
   content = babel.transformSync(content, {
     presets: ['@babel/preset-env']

@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../mode';
+import mode from '../util/mode';
 
 class Rect extends Geom {
   constructor(tagName, props) {

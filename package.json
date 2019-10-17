@@ -12,9 +12,7 @@
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
     "dist": "rollup -c rollup.config.dist.js",
-    "test": "npm run test-mocha && npm run test-nightwatch",
-    "test-mocha": "mocha test/test.js -R spec",
-    "test-nightwatch": "gulp build-test && nightwatch --filter test.js"
+    "test": "gulp build-test & mocha test/test.js & nightwatch --filter test.js"
   },
   "repository": {
     "type": "git",

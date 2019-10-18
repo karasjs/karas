@@ -95,12 +95,18 @@ class Xom extends Node {
   __traverseCss(top, css) {
     if(!this.isGeom()) {
       this.children.forEach(item => {
-        if(item instanceof Xom) {
+        if(item instanceof Xom || item instanceof Component) {
           item.__traverseCss(top, css);
         }
       });
     }
-    this.__style = match.parse(this, top, css) || this.__style;
+    // inline拥有最高优先级
+    let style = match.parse(this, top, css) || {};
+    for(let i in style) {
+      if(style.hasOwnProperty(i) && !this.__style.hasOwnProperty(i)) {
+        this.__style[i] = style[i];
+      }
+    }
   }
 
   __layout(data) {

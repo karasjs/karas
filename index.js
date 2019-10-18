@@ -2244,7 +2244,8 @@
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomLeftRadius', 'borderBottomRightRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis'].forEach(function (k) {
       var v = style[k];
       calUnit(style, k, v);
-    }); // 计算lineHeight为px值，最小范围
+    });
+    style.fontSize = parseInt(style.fontSize) || 0; // 计算lineHeight为px值，最小范围
 
     var lineHeight = style.lineHeight;
 
@@ -2832,9 +2833,38 @@
     return hash;
   }
 
+  function mergeCss(a, b) {
+    if (!b) {
+      return a;
+    }
+
+    if (!a) {
+      return b;
+    }
+
+    for (var i in b) {
+      if (b.hasOwnProperty(i)) {
+        var o = b[i];
+        var flag = {
+          _v: true,
+          _p: true
+        }.hasOwnProperty(i);
+
+        if (!flag && _typeof(o) === 'object' && a.hasOwnProperty(i)) {
+          a[i] = mergeCss(a[i], o);
+        } else {
+          a[i] = o;
+        }
+      }
+    }
+
+    return a;
+  }
+
   var match = {
     parse: parse,
-    splitClass: splitClass
+    splitClass: splitClass,
+    mergeCss: mergeCss
   };
 
   var Event =
@@ -3071,10 +3101,14 @@
     }, {
       key: "__traverseCss",
       value: function __traverseCss() {
-        var sr = this.__shadowRoot;
+        var sr = this.__shadowRoot; // shadowDom可以设置props.css，同时host的会覆盖它
 
         if (!(sr instanceof Text)) {
-          sr.__traverseCss(sr, this.props.css);
+          // console.log(sr.props.css);
+          // console.log(this.props.css);
+          var m = match.mergeCss(sr.props.css, this.props.css); // console.log(m);
+
+          sr.__traverseCss(sr, m);
         }
       } // 组件传入的样式需覆盖shadowRoot的
 
@@ -3304,13 +3338,20 @@
       value: function __traverseCss(top, css) {
         if (!this.isGeom()) {
           this.children.forEach(function (item) {
-            if (item instanceof Xom) {
+            if (item instanceof Xom || item instanceof Component) {
               item.__traverseCss(top, css);
             }
           });
-        }
+        } // inline拥有最高优先级
 
-        this.__style = match.parse(this, top, css) || this.__style;
+
+        var style = match.parse(this, top, css) || {};
+
+        for (var i in style) {
+          if (style.hasOwnProperty(i) && !this.__style.hasOwnProperty(i)) {
+            this.__style[i] = style[i];
+          }
+        }
       }
     }, {
       key: "__layout",

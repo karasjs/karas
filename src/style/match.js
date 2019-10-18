@@ -1,4 +1,5 @@
 import sort from '../util/sort';
+import util from '../util/util';
 import Text from '../node/Text';
 
 function splitClass(s) {
@@ -171,7 +172,33 @@ function arr2hash(arr) {
   return hash;
 }
 
+function mergeCss(a, b) {
+  if(!b) {
+    return a;
+  }
+  if(!a) {
+    return b;
+  }
+  for(let i in b) {
+    if(b.hasOwnProperty(i)) {
+      let o = b[i];
+      let flag = {
+        _v: true,
+        _p: true,
+      }.hasOwnProperty(i);
+      if(!flag && typeof o === 'object' && a.hasOwnProperty(i)) {
+        a[i] = mergeCss(a[i], o);
+      }
+      else {
+        a[i] = o;
+      }
+    }
+  }
+  return a;
+}
+
 export default {
   parse,
   splitClass,
+  mergeCss,
 };

@@ -298,6 +298,7 @@ function normalize(style) {
     let v = style[k];
     calUnit(style, k, v);
   });
+  style.fontSize = parseInt(style.fontSize) || 0;
   // 计算lineHeight为px值，最小范围
   let lineHeight = style.lineHeight;
   if(lineHeight === 'normal') {

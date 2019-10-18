@@ -3,6 +3,7 @@ import Node from './Node';
 import Text from './Text';
 import util from '../util/util';
 import css from '../style/css';
+import match from '../style/match';
 
 class Component extends Event {
   constructor(tagName, props, children) {
@@ -80,8 +81,13 @@ class Component extends Event {
 
   __traverseCss() {
     let sr = this.__shadowRoot;
+    // shadowDom可以设置props.css，同时host的会覆盖它
     if(!(sr instanceof Text)) {
-      sr.__traverseCss(sr, this.props.css);
+      // console.log(sr.props.css);
+      // console.log(this.props.css);
+      let m = match.mergeCss(sr.props.css, this.props.css);
+      // console.log(m);
+      sr.__traverseCss(sr, m);
     }
   }
 

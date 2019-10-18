@@ -11,6 +11,9 @@ before_script:
 script:
   - npm run test
 
+cache:
+  npm: false
+
 dist: xenial
 
 services:

@@ -83,10 +83,7 @@ class Component extends Event {
     let sr = this.__shadowRoot;
     // shadowDom可以设置props.css，同时host的会覆盖它
     if(!(sr instanceof Text)) {
-      // console.log(sr.props.css);
-      // console.log(this.props.css);
       let m = match.mergeCss(sr.props.css, this.props.css);
-      // console.log(m);
       sr.__traverseCss(sr, m);
     }
   }

@@ -3104,9 +3104,7 @@
         var sr = this.__shadowRoot; // shadowDom可以设置props.css，同时host的会覆盖它
 
         if (!(sr instanceof Text)) {
-          // console.log(sr.props.css);
-          // console.log(this.props.css);
-          var m = match.mergeCss(sr.props.css, this.props.css); // console.log(m);
+          var m = match.mergeCss(sr.props.css, this.props.css);
 
           sr.__traverseCss(sr, m);
         }
@@ -3309,7 +3307,7 @@
           arr.push(v);
         } else if (k === 'id' && v) {
           _this.__id = v;
-        } else if (k === 'class' && v) {
+        } else if (['class', 'className'].indexOf(k) > -1 && v) {
           v = match.splitClass(v);
 
           if (v) {

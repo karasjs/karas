@@ -71,7 +71,7 @@ class Xom extends Node {
       else if(k === 'id' && v) {
         this.__id = v;
       }
-      else if(k === 'class' && v) {
+      else if(['class', 'className'].indexOf(k) > -1 && v) {
         v = match.splitClass(v);
         if(v) {
           this.__class = v;

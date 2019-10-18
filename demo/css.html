@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>css</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">inline样式虽然可用但缺陷很多，传统css书写后为节点增加class的方式才是更好的方式。同样css也需要被预编译为cssx，传给根元素。
+这个例子使用selenite将css预编译到window._css上，然后根节点可以设置css属性。优先级等均符合规范。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:css">.a{color:#F00}
+.b{color:#00F}
+.a.b{color:#0F0}
+.a .b{color:#777}</code></pre>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.render(
+    <canvas width="360" height="360" css={window._css}>
+      <div class="a">a</div>
+      <div class="b">b</div>
+      <div class="a b">ab</div>
+      <div class="a">
+        <div class="b">b</div>
+      </div>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360" css={window._css}>
+      <div class="a">a</div>
+      <div class="b">b</div>
+      <div class="a b">ab</div>
+      <div class="a">
+        <div class="b">b</div>
+      </div>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="selenite.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelectorAll('pre code')[1];
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var css = document.querySelector('pre code');
+    window._css = selenite.parse(css.textContent || css.text);
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "鸦",
   "maintainers": [
     {
@@ -12,8 +12,7 @@
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
     "dist": "rollup -c rollup.config.dist.js",
-    "test": "gulp build-test && nightwatch --filter test.js",
-    "test-mocha": "mocha test/test.js"
+    "test": "gulp build-test && nightwatch --filter test.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +20,7 @@
   },
   "dependencies": {
     "yurine": "~0.3.0",
-    "selenite": "~0.3.1"
+    "selenite": "~0.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",
@@ -30,7 +29,6 @@
     "expect.js": "^0.3.1",
     "gulp": "^3.9.0",
     "gulp-rename": "^1.4.0",
-    "mocha": "^6.2.1",
     "nightwatch": "^1.1.0",
     "rollup": "^1.21.2",
     "rollup-plugin-babel": "^4.3.3",

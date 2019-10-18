@@ -11,7 +11,7 @@ let path = require('path');
 function jsx(file, enc, cb) {
   util.log(path.relative(file.cwd, file.path));
   let content = file.contents.toString('utf-8');
-  content = content.replace(/selenite.parse\(`([\s\S]+)`\)/, function($0, $1) {
+  content = content.replace(/selenite.parse\(`([^`]+)`\)/g, function($0, $1) {
     return JSON.stringify(selenite.parse($1));
   });
   content = yurine.parse(content);

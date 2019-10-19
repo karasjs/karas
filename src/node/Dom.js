@@ -918,12 +918,6 @@ class Dom extends Xom {
     y += mtw + borderTopWidth.value;
     let pw = width + plw + prw;
     let ph = height + ptw + pbw;
-    // 递归进行，遇到absolute/relative的设置新容器
-    children.forEach(item => {
-      if(item instanceof Dom || item instanceof Component) {
-        item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
-      }
-    });
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { style, style: {
@@ -1004,6 +998,18 @@ class Dom extends Xom {
         w: w2,
         h: h2,
       });
+    });
+    // 递归进行，遇到absolute/relative的设置新容器
+    children.forEach(item => {
+      if(item instanceof Dom) {
+        item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
+      }
+      else if(item instanceof Component) {
+        let sr = item.shadowRoot;
+        if(sr instanceof Dom) {
+          sr.__layoutAbs(sr);
+        }
+      }
     });
   }
 

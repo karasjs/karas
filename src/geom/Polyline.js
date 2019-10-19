@@ -32,7 +32,7 @@ class Polyline extends Geom {
         return;
       }
     }
-    let pts = this.__pts = [];
+    let pts = [];
     if(origin === 'TOP_LEFT') {
       points.forEach(item => {
         pts.push([

@@ -3096,7 +3096,9 @@
         sr.__defs = defs;
         sr.__host = this;
 
-        sr.__traverse(ctx, defs, renderMode);
+        if (!sr.isGeom()) {
+          sr.__traverse(ctx, defs, renderMode);
+        }
       }
     }, {
       key: "__traverseCss",
@@ -3120,15 +3122,15 @@
         if (sr instanceof Text) {
           css.normalize(sr.style);
         } else {
-          sr.__init();
-        }
+          var style = this.props.style || {};
 
-        var style = this.props.style || {};
-
-        for (var i in style) {
-          if (style.hasOwnProperty(i)) {
-            sr.style[i] = style[i];
+          for (var i in style) {
+            if (style.hasOwnProperty(i)) {
+              sr.style[i] = style[i];
+            }
           }
+
+          sr.__init();
         }
 
         if (!(sr instanceof Text)) {
@@ -5445,13 +5447,7 @@
         x += mlw + borderLeftWidth.value;
         y += mtw + borderTopWidth.value;
         var pw = width + plw + prw;
-        var ph = height + ptw + pbw; // 递归进行，遇到absolute/relative的设置新容器
-
-        children.forEach(function (item) {
-          if (item instanceof Dom || item instanceof Component) {
-            item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
-          }
-        }); // 对absolute的元素进行相对容器布局
+        var ph = height + ptw + pbw; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
           var style = item.style,
@@ -5528,6 +5524,18 @@
             w: w2,
             h: h2
           });
+        }); // 递归进行，遇到absolute/relative的设置新容器
+
+        children.forEach(function (item) {
+          if (item instanceof Dom) {
+            item.__layoutAbs(['absolute', 'relative'].indexOf(item.style.position) > -1 ? item : container);
+          } else if (item instanceof Component) {
+            var sr = item.shadowRoot;
+
+            if (sr instanceof Dom) {
+              sr.__layoutAbs(sr);
+            }
+          }
         });
       }
     }, {
@@ -6522,7 +6530,7 @@
           }
         }
 
-        var pts = this.__pts = [];
+        var pts = [];
 
         if (origin === 'TOP_LEFT') {
           points.forEach(function (item) {
@@ -6637,9 +6645,9 @@
           }
         }
 
+        var pts = [];
         points.forEach(function (item) {
-          item[0] = originX + item[0] * width;
-          item[1] = originY + item[1] * height;
+          pts.push([originX + item[0] * width, originY + item[1] * height]);
         });
 
         if (renderMode === mode.CANVAS) {
@@ -6648,14 +6656,14 @@
           ctx.fillStyle = fill;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(points[0][0], points[0][1]);
+          ctx.moveTo(pts[0][0], pts[0][1]);
 
-          for (var _i = 1, _len = points.length; _i < _len; _i++) {
-            var point = points[_i];
+          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
+            var point = pts[_i];
             ctx.lineTo(point[0], point[1]);
           }
 
-          ctx.lineTo(points[0][0], points[0][1]);
+          ctx.lineTo(pts[0][0], pts[0][1]);
           ctx.fill();
 
           if (strokeWidth > 0) {
@@ -6664,14 +6672,14 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var pts = '';
+          var s = '';
 
-          for (var _i2 = 0, _len2 = points.length; _i2 < _len2; _i2++) {
-            var _point = points[_i2];
-            pts += "".concat(_point[0], ",").concat(_point[1], " ");
+          for (var _i2 = 0, _len2 = pts.length; _i2 < _len2; _i2++) {
+            var _point = pts[_i2];
+            s += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          this.addGeom('polygon', [['points', pts], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          this.addGeom('polygon', [['points', s], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
         }
       }
     }, {

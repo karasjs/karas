@@ -76,7 +76,9 @@ class Component extends Event {
     sr.__ctx = ctx;
     sr.__defs = defs;
     sr.__host = this;
-    sr.__traverse(ctx, defs, renderMode);
+    if(!sr.isGeom()) {
+      sr.__traverse(ctx, defs, renderMode);
+    }
   }
 
   __traverseCss() {
@@ -96,13 +98,13 @@ class Component extends Event {
       css.normalize(sr.style);
     }
     else {
-      sr.__init();
-    }
-    let style = this.props.style || {};
-    for(let i in style) {
-      if(style.hasOwnProperty(i)) {
-        sr.style[i] = style[i];
+      let style = this.props.style || {};
+      for(let i in style) {
+        if(style.hasOwnProperty(i)) {
+          sr.style[i] = style[i];
+        }
       }
+      sr.__init();
     }
     if(!(sr instanceof Text)) {
       this.__props.forEach(item => {

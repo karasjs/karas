@@ -17,3 +17,4 @@ node_modules/
 reports/
 .idea/
 .travis.yml
+index.min.js*

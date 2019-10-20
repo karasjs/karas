@@ -2454,8 +2454,8 @@
         }
       }
     }, {
-      key: "measureCb",
-      value: function measureCb() {
+      key: "__measureCb",
+      value: function __measureCb() {
         var content = this.content,
             style = this.style,
             charWidthList = this.charWidthList;
@@ -3109,9 +3109,6 @@
           sr.__ctx = ctx;
           sr.__defs = defs;
           sr.__renderMode = renderMode;
-
-          sr.__measure();
-
           this.__shadowRoot = sr;
           return;
         }
@@ -3145,6 +3142,8 @@
 
         if (sr instanceof Text) {
           css.normalize(sr.style);
+
+          sr.__measure();
         } else {
           var style = this.props.style || {};
 
@@ -6088,11 +6087,10 @@
         var _char2 = chars[_i];
         var css = window.getComputedStyle(node, null);
         CHAR_WIDTH_CACHE[_key][_char2] = parseFloat(css.width);
-        console.log(css.width);
       }
 
       list.forEach(function (text) {
-        return text.measureCb();
+        return text.__measureCb();
       });
       cb();
       MEASURE_TEXT.list = [];
@@ -6156,6 +6154,7 @@
 
       _this.__mh = 0;
       _this.__task = [];
+      Event.mix(_assertThisInitialized(_this));
       return _this;
     }
 
@@ -6381,6 +6380,8 @@
           }
 
           cb && cb();
+
+          _this2.emit('refresh');
         });
       }
     }, {

@@ -5,6 +5,7 @@ import diff from '../util/diff';
 import Defs from './Defs';
 import unit from '../style/unit';
 import inject from '../util/inject';
+import Event from '../util/Event';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -45,6 +46,7 @@ class Root extends Dom {
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
     this.__task = [];
+    Event.mix(this);
   }
 
   __initProps() {
@@ -215,6 +217,7 @@ class Root extends Dom {
         this.node.__ovd = nvd;
       }
       cb && cb();
+      this.emit('refresh');
     });
   }
 

@@ -68,7 +68,6 @@ class Component extends Event {
       sr.__ctx = ctx;
       sr.__defs = defs;
       sr.__renderMode = renderMode;
-      sr.__measure();
       this.__shadowRoot = sr;
       return;
     }
@@ -95,6 +94,7 @@ class Component extends Event {
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
       css.normalize(sr.style);
+      sr.__measure();
     }
     else {
       let style = this.props.style || {};

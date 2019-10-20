@@ -43,9 +43,8 @@ export default {
       let char = chars[i];
       let css = window.getComputedStyle(node, null);
       CHAR_WIDTH_CACHE[key][char] = parseFloat(css.width);
-      console.log(css.width);
     }
-    list.forEach(text => text.measureCb());
+    list.forEach(text => text.__measureCb());
     cb();
     MEASURE_TEXT.list = [];
     MEASURE_TEXT.data = {};

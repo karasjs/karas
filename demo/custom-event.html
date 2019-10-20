@@ -14,10 +14,6 @@
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
   class Component extends karas.Component {
-    constructor(props) {
-      // 组件必需传入一个固定名称，这是为后续css伪类预留，如::cp
-      super('cp', props);
-    }
     click() {
       this.emit('hello', 'world');
     }

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>icon</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">复杂的动态icon效果。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  class Fg extends karas.Component {
+    render() {
+      let { i } = this.props;
+      let transform = [
+        'scaleY(0.9) translateY(5%)',
+        'scaleY(0.8) translateY(10%)',
+        'scaleY(0.7) translateY(15%)',
+        'scaleY(0.72) translateY(13%)',
+        'scaleY(0.73) translateY(10%)',
+        'scaleY(0.74) translateY(6%)',
+        'translateX(-4%) scaleX(0.9) scaleY(0.745) translateY(1%) rotate(-0.5deg)',
+        'translateX(-9%) scaleX(0.8) scaleY(0.75) translateY(-3%) rotate(-1.1deg)',
+        'translateX(-15%) scaleX(0.7) scaleY(0.754) translateY(-6%) rotate(-1.7deg)',
+        'translateX(-19%) scaleX(0.6) scaleY(0.757) translateY(-8%) rotate(-2.1deg)',
+        'translateX(-22%) scaleX(0.5) scaleY(0.76) translateY(-9%) rotate(-2.4deg)',
+        'translateX(-25%) scaleX(0.4) scaleY(0.76) translateY(-9%) rotate(-2.4deg)',
+        'translateX(-28%) scaleX(0.3) scaleY(0.757) translateY(-9%) rotate(-2.1deg)',
+        'translateX(-29%) scaleX(0.2) scaleY(0.754) translateY(-6%) rotate(-1.7deg)',
+        'translateX(-30%) scaleX(0.1) scaleY(0.75) translateY(-3%) rotate(-1.1deg)',
+        'translateX(-30%) scaleX(0.1) scaleY(0.745) translateY(1%) rotate(-0.5deg)',
+        'scale(0)',
+        'scale(0)',
+        'scale(0)',
+        'scale(0)',
+        'scale(0)',
+        'scale(0)',
+        'scale(0.3)',
+        'scale(0.6)',
+        'scale(0.8)',
+        'scale(0.9)'
+      ];
+      let begin = 0;
+      if(i > 35) {
+        begin = 360 - (i - 35) * 10;
+      }
+      else if(i > 20) {
+        begin = 360;
+      }
+      begin = Math.max(begin, 90);
+      return (
+        <div>
+          <$circle
+            r="0.2"
+            style={{
+              width:'100%',
+              height:'100%',
+              strokeWidth:0,
+              fill:'#FFF',
+              transform: transform[i],
+            }}
+          />
+          <$sector
+            r="0.15"
+            begin={begin}
+            end="360"
+            style={{
+              position:'absolute',
+              left:0,
+              top:0,
+              width:'100%',
+              height:'100%',
+              strokeWidth:0,
+              fill:'#108ee9',
+              transform: transform[i],
+            }}
+          />
+        </div>
+      );
+    }
+  }
+  class Bg extends karas.Component {
+    render() {
+      let { i } = this.props;
+      let transform = [
+        'scaleY(0.9) translateY(5%)',
+        'scaleY(0.8) translateY(10%)',
+        'scaleY(0.7) translateY(15%)',
+        'scaleY(0.72) translateY(13%)',
+        'scaleY(0.73) translateY(10%)',
+        'scaleY(0.74) translateY(6%)',
+        'scaleX(1.05) scaleY(0.745) translateY(1%) rotate(-0.5deg)',
+        'scaleX(1.1) scaleY(0.75) translateY(-3%) rotate(-1.1deg)',
+        'scaleX(1.2) scaleY(0.754) translateY(-6%) rotate(-1.7deg)',
+        'scaleX(1.25) scaleY(0.757) translateY(-8%) rotate(-2.1deg)',
+        'scaleX(1.3) scaleY(0.76) translateY(-9%) rotate(-2.4deg)',
+        'scaleX(1.3) scaleY(0.76) translateY(-9%) rotate(-2.4deg)',
+        'scaleX(1.25) scaleY(0.757) translateY(-9%) rotate(-2.1deg)',
+        'scaleX(1.2) scaleY(0.754) translateY(-6%) rotate(-1.7deg)',
+        'scaleX(1.1) scaleY(0.75) translateY(-3%) rotate(-1.1deg)',
+        'scaleX(1.05) scaleY(0.745) translateY(1%) rotate(-0.5deg)',
+        'scaleY(0.74) translateY(6%)',
+        'scaleY(0.73) translateY(10%)',
+        'scaleY(0.72) translateY(13%)',
+        'scaleY(0.7) translateY(15%)',
+        'scaleY(0.8) translateY(10%)',
+        'scaleY(0.9) translateY(5%)',
+      ];
+      return (
+        <$polygon
+          points={[
+            [0.5, 0.2],
+            [0.8, 0.4],
+            [0.8, 0.8],
+            [0.2, 0.8],
+            [0.2, 0.4]
+          ]}
+          style={{
+            fill:'#108ee9',
+            strokeWidth:0,
+            transform:transform[i]
+          }}
+        />
+      );
+    }
+  }
+  class Component extends karas.Component {
+    constructor(...data) {
+      super(...data);
+      this.state = {
+        i: 0,
+      };
+      setInterval(() => this.frame(), 30);
+    }
+    frame() {
+      let { i } = this.state;
+      i++;
+      if(i > 80) {
+        i = 0;
+      }
+      this.setState({
+        i,
+      });
+    }
+    render() {
+      let { i } = this.state;
+      return <div>
+        <Bg i={i}
+            style={{
+              width:'100%',
+              height:'100%'
+            }}
+        />
+        <Fg i={i}
+            style={{
+              position:'absolute',
+              left:0,
+              top:'4%',
+              width:'100%',
+              height:'100%'
+            }}
+        />
+      </div>;
+    }
+  }
+  karas.render(
+    <canvas width="360" height="360">
+      <Component style={{width:50,height:50}}/>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <Component style={{width:50,height:50}}/>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

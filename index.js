@@ -2317,7 +2317,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-size', "".concat(style.fontSize, "px")]],
+            props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-weight', style.fontWeight], ['font-style', style.fontStyle], ['font-size', "".concat(style.fontSize, "px")]],
             content: util.encodeHtml(content)
           };
         }

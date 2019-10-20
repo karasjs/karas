@@ -30,6 +30,8 @@ class LineBox {
           ['y', y],
           ['fill', style.color],
           ['font-family', style.fontFamily],
+          ['font-weight', style.fontWeight],
+          ['font-style', style.fontStyle],
           ['font-size', `${style.fontSize}px`]
         ],
         content: util.encodeHtml(content),

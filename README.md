@@ -12,7 +12,7 @@ npm install karas
 https://github.com/karasjs/karas/wiki/%E6%96%87%E6%A1%A3
 
 ## API
-https://github.com/karasjs/karas/wiki/API
+https://github.com/karasjs/karas/wiki/api
 
 ## Demo
 * demo目录下是一个web端的使用教程示例，本地浏览需要npm install安装依赖

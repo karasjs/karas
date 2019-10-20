@@ -4,6 +4,7 @@ import mode from '../util/mode';
 import diff from '../util/diff';
 import Defs from './Defs';
 import unit from '../style/unit';
+import inject from '../util/inject';
 
 function getDom(dom) {
   if(util.isString(dom)) {
@@ -161,16 +162,19 @@ class Root extends Dom {
     if(style.position === 'absolute') {
       style.position = 'static';
     }
-    this.__traverse(this.__ctx, this.__defs, this.__renderMode);
+    let { renderMode, ctx } = this;
+    this.__traverse(ctx, this.__defs, renderMode);
     this.__traverseCss(this, this.props.css);
     this.__init();
-    this.refresh();
-    this.node.__root = this;
-    if(!this.node.__karasInit) {
-      initEvent(this.node);
-      this.node.__karasInit = true;
-      this.node.__uuid = this.__uuid;
-    }
+    inject.measureText(() => {
+      this.refresh();
+      this.node.__root = this;
+      if(!this.node.__karasInit) {
+        initEvent(this.node);
+        this.node.__karasInit = true;
+        this.node.__uuid = this.__uuid;
+      }
+    });
   }
 
   refresh() {

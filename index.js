@@ -388,26 +388,9 @@
 
   var CANVAS = 0;
   var SVG = 1;
-  var div;
   var mode = {
     CANVAS: CANVAS,
-    SVG: SVG,
-    measure: function measure(s, style) {
-      if (!div) {
-        div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.left = '99999px';
-        div.style.top = '-99999px';
-        div.style.visibility = 'hidden';
-        document.body.appendChild(div);
-      }
-
-      div.style.fontSize = style.fontSize + 'px';
-      div.style.fontFamily = style.fontFamily;
-      div.innerText = s;
-      var css = window.getComputedStyle(div, null);
-      return parseFloat(css.width);
-    }
+    SVG: SVG
   };
 
   var unit = {
@@ -2395,8 +2378,6 @@
     return LineBox;
   }();
 
-  var CHAR_WIDTH_CACHE = {};
-
   var Text =
   /*#__PURE__*/
   function (_Node) {
@@ -2414,26 +2395,28 @@
       _this.__charWidth = 0;
       _this.__textWidth = 0;
       return _this;
-    } // 预先计算每个字的宽度
-
+    }
 
     _createClass(Text, [{
       key: "__measure",
+      // 预先计算每个字的宽度
       value: function __measure() {
-        this.__charWidthList = [];
         var ctx = this.ctx,
             content = this.content,
             style = this.style,
             charWidthList = this.charWidthList,
             renderMode = this.renderMode;
-
-        if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(style);
-        }
-
-        var cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
+        var key = style.fontSize + ',' + style.fontFamily;
+        var wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
+          key: key,
+          style: style,
+          hash: {},
+          s: []
+        };
+        var cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
         var length = content.length;
         var sum = 0;
+        var needMeasure = false;
 
         for (var i = 0; i < length; i++) {
           var _char = content.charAt(i);
@@ -2442,18 +2425,50 @@
 
           if (cache.hasOwnProperty(_char)) {
             mw = cache[_char];
+            charWidthList.push(mw);
+            sum += mw;
+            this.__charWidth = Math.max(this.charWidth, mw);
           } else if (renderMode === mode.CANVAS) {
             mw = cache[_char] = ctx.measureText(_char).width;
-          } else if (renderMode === mode.SVG) {
-            mw = cache[_char] = mode.measure(_char, style);
-          }
+            charWidthList.push(mw);
+            sum += mw;
+            this.__charWidth = Math.max(this.charWidth, mw);
+          } else {
+            if (!wait.hash.hasOwnProperty(_char)) {
+              wait.s += _char;
+            } // 先预存标识位-1，测量完后替换它
 
-          charWidthList.push(mw);
-          sum += mw;
-          this.__charWidth = Math.max(this.charWidth, mw);
+
+            charWidthList.push(-1);
+            needMeasure = true;
+          }
         }
 
         this.__textWidth = sum;
+
+        if (needMeasure) {
+          Text.MEASURE_TEXT.list.push(this);
+        }
+      }
+    }, {
+      key: "measureCb",
+      value: function measureCb() {
+        var content = this.content,
+            style = this.style,
+            charWidthList = this.charWidthList;
+        var key = style.fontSize + ',' + style.fontFamily;
+        var cache = Text.CHAR_WIDTH_CACHE[key];
+        var sum = 0;
+
+        for (var i = 0, len = charWidthList.length; i < len; i++) {
+          if (charWidthList[i] < 0) {
+            var mw = charWidthList[i] = cache[content.charAt(i)];
+            sum += mw;
+            this.__charWidth = Math.max(this.charWidth, mw);
+          }
+        }
+
+        this.__textWidth += sum;
       }
     }, {
       key: "__layout",
@@ -2522,7 +2537,7 @@
         }
 
         this.__width = maxX - x;
-        this.__height = y - data.y;
+        this.__height = y - data.y; // flex前置计算无需真正布局
 
         if (isVirtual) {
           this.__lineBoxes = [];
@@ -2624,6 +2639,13 @@
 
     return Text;
   }(Node);
+
+  _defineProperty(Text, "CHAR_WIDTH_CACHE", {});
+
+  _defineProperty(Text, "MEASURE_TEXT", {
+    list: [],
+    data: {}
+  });
 
   function splitClass(s) {
     s = (s || '').trim();
@@ -6007,6 +6029,74 @@
     return Defs;
   }();
 
+  var div;
+  var inject = {
+    measureText: function measureText(cb) {
+      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
+          list = _Text$MEASURE_TEXT.list,
+          data = _Text$MEASURE_TEXT.data;
+      var html = '';
+      var keys = [];
+      var chars = [];
+
+      for (var i in data) {
+        if (data.hasOwnProperty(i)) {
+          var _data$i = data[i],
+              key = _data$i.key,
+              style = _data$i.style,
+              s = _data$i.s;
+
+          if (s) {
+            var inline = "display:block;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
+
+            for (var j = 0, len = s.length; j < len; j++) {
+              keys.push(key);
+
+              var _char = s.charAt(j);
+
+              chars.push(_char);
+              html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;'), "</span>");
+            }
+          }
+        }
+      }
+
+      if (!html) {
+        cb();
+        return;
+      }
+
+      if (!div) {
+        div = document.createElement('div');
+        div.style.position = 'absolute';
+        div.style.left = '99999px';
+        div.style.top = '-99999px';
+        div.style.visibility = 'hidden';
+        document.body.appendChild(div);
+      }
+
+      div.innerHTML = html;
+      var cns = div.childNodes;
+      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
+          MEASURE_TEXT = Text.MEASURE_TEXT;
+
+      for (var _i = 0, _len = cns.length; _i < _len; _i++) {
+        var node = cns[_i];
+        var _key = keys[_i];
+        var _char2 = chars[_i];
+        var css = window.getComputedStyle(node, null);
+        CHAR_WIDTH_CACHE[_key][_char2] = parseFloat(css.width);
+      }
+
+      list.forEach(function (text) {
+        return text.measureCb();
+      });
+      cb();
+      MEASURE_TEXT.list = [];
+      MEASURE_TEXT.data = {};
+    }
+  };
+
   function getDom(dom) {
     if (util.isString(dom)) {
       var o = document.querySelector(dom);
@@ -6151,6 +6241,8 @@
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
+        var _this2 = this;
+
         dom = getDom(dom);
 
         this.__initProps(); // 已有root节点
@@ -6216,20 +6308,26 @@
           style.position = 'static';
         }
 
-        this.__traverse(this.__ctx, this.__defs, this.__renderMode);
+        var renderMode = this.renderMode,
+            ctx = this.ctx;
+
+        this.__traverse(ctx, this.__defs, renderMode);
 
         this.__traverseCss(this, this.props.css);
 
         this.__init();
 
-        this.refresh();
-        this.node.__root = this;
+        inject.measureText(function () {
+          _this2.refresh();
 
-        if (!this.node.__karasInit) {
-          initEvent(this.node);
-          this.node.__karasInit = true;
-          this.node.__uuid = this.__uuid;
-        }
+          _this2.node.__root = _this2;
+
+          if (!_this2.node.__karasInit) {
+            initEvent(_this2.node);
+            _this2.node.__karasInit = true;
+            _this2.node.__uuid = _this2.__uuid;
+          }
+        });
       }
     }, {
       key: "refresh",

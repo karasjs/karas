@@ -19,11 +19,12 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "yurine": "~0.3.0",
-    "selenite": "~0.3.2"
+    "selenite": "~0.3.2",
+    "yurine": "~0.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/preset-env": "^7.4.3",
     "chromedriver": "^77.0.0",
     "expect.js": "^0.3.1",

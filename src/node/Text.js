@@ -15,33 +15,69 @@ class Text extends Node {
     this.__textWidth = 0;
   }
 
+  static CHAR_WIDTH_CACHE = {};
+  static MEASURE_TEXT = {
+    list: [],
+    data: {},
+  };
+
   // 预先计算每个字的宽度
   __measure() {
-    this.__charWidthList = [];
     let { ctx, content, style, charWidthList, renderMode } = this;
-    if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(style);
-    }
-    let cache = CHAR_WIDTH_CACHE[style.fontSize] = CHAR_WIDTH_CACHE[style.fontSize] || {};
+    let key = style.fontSize + ',' + style.fontFamily;
+    let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
+      key,
+      style,
+      hash: {},
+      s: [],
+    };
+    let cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
     let length = content.length;
     let sum = 0;
+    let needMeasure = false;
     for(let i = 0; i < length; i++) {
       let char = content.charAt(i);
       let mw;
       if(cache.hasOwnProperty(char)) {
         mw = cache[char];
+        charWidthList.push(mw);
+        sum += mw;
+        this.__charWidth = Math.max(this.charWidth, mw);
       }
       else if(renderMode === mode.CANVAS) {
         mw = cache[char] = ctx.measureText(char).width;
+        charWidthList.push(mw);
+        sum += mw;
+        this.__charWidth = Math.max(this.charWidth, mw);
       }
-      else if(renderMode === mode.SVG) {
-        mw = cache[char] = mode.measure(char, style);
+      else {
+        if(!wait.hash.hasOwnProperty(char)) {
+          wait.s += char;
+        }
+        // 先预存标识位-1，测量完后替换它
+        charWidthList.push(-1);
+        needMeasure = true;
       }
-      charWidthList.push(mw);
-      sum += mw;
-      this.__charWidth = Math.max(this.charWidth, mw);
     }
     this.__textWidth = sum;
+    if(needMeasure) {
+      Text.MEASURE_TEXT.list.push(this);
+    }
+  }
+
+  measureCb() {
+    let { content, style, charWidthList } = this;
+    let key = style.fontSize + ',' + style.fontFamily;
+    let cache = Text.CHAR_WIDTH_CACHE[key];
+    let sum = 0;
+    for(let i = 0, len = charWidthList.length; i < len; i++) {
+      if(charWidthList[i] < 0) {
+        let mw = charWidthList[i] = cache[content.charAt(i)];
+        sum += mw;
+        this.__charWidth = Math.max(this.charWidth, mw);
+      }
+    }
+    this.__textWidth += sum;
   }
 
   __layout(data, isVirtual) {
@@ -95,6 +131,7 @@ class Text extends Node {
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
+    // flex前置计算无需真正布局
     if(isVirtual) {
       this.__lineBoxes = [];
     }

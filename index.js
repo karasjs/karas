@@ -6049,7 +6049,7 @@
               s = _data$i.s;
 
           if (s) {
-            var inline = "display:block;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
+            var inline = "position:absolute;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
 
             for (var j = 0, len = s.length; j < len; j++) {
               keys.push(key);
@@ -6088,6 +6088,7 @@
         var _char2 = chars[_i];
         var css = window.getComputedStyle(node, null);
         CHAR_WIDTH_CACHE[_key][_char2] = parseFloat(css.width);
+        console.log(css.width);
       }
 
       list.forEach(function (text) {
@@ -6096,6 +6097,7 @@
       cb();
       MEASURE_TEXT.list = [];
       MEASURE_TEXT.data = {};
+      div.innerHTML = '';
     }
   };
 

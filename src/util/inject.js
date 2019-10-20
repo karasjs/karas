@@ -12,7 +12,7 @@ export default {
       if(data.hasOwnProperty(i)) {
         let { key, style, s } = data[i];
         if(s) {
-          let inline = `display:block;font-family:${style.fontFamily};font-size:${style.fontSize}px`;
+          let inline = `position:absolute;font-family:${style.fontFamily};font-size:${style.fontSize}px`;
           for(let j = 0, len = s.length; j < len; j++) {
             keys.push(key);
             let char = s.charAt(j);
@@ -43,10 +43,12 @@ export default {
       let char = chars[i];
       let css = window.getComputedStyle(node, null);
       CHAR_WIDTH_CACHE[key][char] = parseFloat(css.width);
+      console.log(css.width);
     }
     list.forEach(text => text.measureCb());
     cb();
     MEASURE_TEXT.list = [];
     MEASURE_TEXT.data = {};
+    div.innerHTML = '';
   },
 };

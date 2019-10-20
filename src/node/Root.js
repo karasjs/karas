@@ -208,7 +208,8 @@ class Root extends Dom {
         nvd = util.clone(nvd);
         if(this.node.__karasInit) {
           diff(this.node, this.node.__ovd, nvd);
-        } else {
+        }
+        else {
           this.node.innerHTML = util.joinVirtualDom(nvd);
         }
         this.node.__ovd = nvd;

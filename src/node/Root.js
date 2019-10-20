@@ -42,8 +42,9 @@ class Root extends Dom {
   constructor(tagName, props, children) {
     super(tagName, props, children);
     this.__node = null; // 真实DOM引用
-    this.__mw = 0;
+    this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
+    this.__task = [];
   }
 
   __initProps() {
@@ -175,7 +176,7 @@ class Root extends Dom {
     }
   }
 
-  refresh() {
+  refresh(cb) {
     let { renderMode, style } = this;
     style.width = {
       value: this.width,
@@ -212,7 +213,23 @@ class Root extends Dom {
         }
         this.node.__ovd = nvd;
       }
+      cb && cb();
     });
+  }
+
+  refreshTask(cb) {
+    let { task } = this;
+    if(!task.length) {
+      setTimeout(() => {
+        this.refresh(() => {
+          task.forEach(cb => {
+            cb && cb();
+          });
+          task.splice(0);
+        });
+      }, 1);
+    }
+    task.push(cb);
   }
 
   get node() {
@@ -232,6 +249,9 @@ class Root extends Dom {
   }
   get renderMode() {
     return this.__renderMode;
+  }
+  get task() {
+    return this.__task;
   }
 }
 

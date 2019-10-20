@@ -3086,8 +3086,7 @@
 
         this.__init(true);
 
-        this.root.refresh();
-        cb && cb();
+        this.root.refreshTask(cb);
       }
     }, {
       key: "__traverse",
@@ -6151,8 +6150,10 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Root).call(this, tagName, props, children));
       _this.__node = null; // 真实DOM引用
 
-      _this.__mw = 0;
+      _this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
+
       _this.__mh = 0;
+      _this.__task = [];
       return _this;
     }
 
@@ -6329,7 +6330,7 @@
       }
     }, {
       key: "refresh",
-      value: function refresh() {
+      value: function refresh(cb) {
         var _this2 = this;
 
         var renderMode = this.renderMode,
@@ -6376,7 +6377,29 @@
 
             _this2.node.__ovd = nvd;
           }
+
+          cb && cb();
         });
+      }
+    }, {
+      key: "refreshTask",
+      value: function refreshTask(cb) {
+        var _this3 = this;
+
+        var task = this.task;
+
+        if (!task.length) {
+          setTimeout(function () {
+            _this3.refresh(function () {
+              task.forEach(function (cb) {
+                cb && cb();
+              });
+              task.splice(0);
+            });
+          }, 1);
+        }
+
+        task.push(cb);
       }
     }, {
       key: "node",
@@ -6403,6 +6426,11 @@
       key: "renderMode",
       get: function get() {
         return this.__renderMode;
+      }
+    }, {
+      key: "task",
+      get: function get() {
+        return this.__task;
       }
     }]);
 

@@ -166,15 +166,13 @@ class Root extends Dom {
     this.__traverse(ctx, this.__defs, renderMode);
     this.__traverseCss(this, this.props.css);
     this.__init();
-    inject.measureText(() => {
-      this.refresh();
-      this.node.__root = this;
-      if(!this.node.__karasInit) {
-        initEvent(this.node);
-        this.node.__karasInit = true;
-        this.node.__uuid = this.__uuid;
-      }
-    });
+    this.refresh();
+    this.node.__root = this;
+    if(!this.node.__karasInit) {
+      initEvent(this.node);
+      this.node.__karasInit = true;
+      this.node.__uuid = this.__uuid;
+    }
   }
 
   refresh() {
@@ -187,32 +185,34 @@ class Root extends Dom {
       value: this.height,
       unit: unit.PX,
     };
-    this.__layout({
-      x: 0,
-      y: 0,
-      w: this.width,
-      h: this.height,
-    });
-    this.__layoutAbs(this);
-    if(renderMode === mode.CANVAS) {
-      // 可能会调整宽高，所以每次清除用最大值
-      this.__mw = Math.max(this.__mw, this.width);
-      this.__mh = Math.max(this.__mh, this.height);
-      this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
-    }
-    this.render(renderMode);
-    if(renderMode === mode.SVG) {
-      let nvd = this.virtualDom;
-      let nd = this.__defs;
-      nvd.defs = nd.value;
-      nvd = util.clone(nvd);
-      if(this.node.__karasInit) {
-        diff(this.node, this.node.__ovd, nvd);
-      } else {
-        this.node.innerHTML = util.joinVirtualDom(nvd);
+    inject.measureText(() => {
+      this.__layout({
+        x: 0,
+        y: 0,
+        w: this.width,
+        h: this.height,
+      });
+      this.__layoutAbs(this);
+      if(renderMode === mode.CANVAS) {
+        // 可能会调整宽高，所以每次清除用最大值
+        this.__mw = Math.max(this.__mw, this.width);
+        this.__mh = Math.max(this.__mh, this.height);
+        this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
-      this.node.__ovd = nvd;
-    }
+      this.render(renderMode);
+      if(renderMode === mode.SVG) {
+        let nvd = this.virtualDom;
+        let nd = this.__defs;
+        nvd.defs = nd.value;
+        nvd = util.clone(nvd);
+        if(this.node.__karasInit) {
+          diff(this.node, this.node.__ovd, nvd);
+        } else {
+          this.node.innerHTML = util.joinVirtualDom(nvd);
+        }
+        this.node.__ovd = nvd;
+      }
+    });
   }
 
   get node() {

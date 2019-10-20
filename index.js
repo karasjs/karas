@@ -2268,7 +2268,6 @@
         fontWeight = style.fontWeight,
         fontSize = style.fontSize,
         fontFamily = style.fontFamily;
-    fontFamily = 'arial';
     return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
   }
 
@@ -2406,6 +2405,11 @@
             style = this.style,
             charWidthList = this.charWidthList,
             renderMode = this.renderMode;
+
+        if (renderMode === mode.CANVAS) {
+          ctx.font = css.setFontStyle(style);
+        }
+
         var key = style.fontSize + ',' + style.fontFamily;
         var wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
           key: key,
@@ -2414,11 +2418,10 @@
           s: []
         };
         var cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
-        var length = content.length;
         var sum = 0;
         var needMeasure = false;
 
-        for (var i = 0; i < length; i++) {
+        for (var i = 0, length = content.length; i < length; i++) {
           var _char = content.charAt(i);
 
           var mw = void 0;
@@ -6241,8 +6244,6 @@
     }, {
       key: "appendTo",
       value: function appendTo(dom) {
-        var _this2 = this;
-
         dom = getDom(dom);
 
         this.__initProps(); // 已有root节点
@@ -6317,21 +6318,20 @@
 
         this.__init();
 
-        inject.measureText(function () {
-          _this2.refresh();
+        this.refresh();
+        this.node.__root = this;
 
-          _this2.node.__root = _this2;
-
-          if (!_this2.node.__karasInit) {
-            initEvent(_this2.node);
-            _this2.node.__karasInit = true;
-            _this2.node.__uuid = _this2.__uuid;
-          }
-        });
+        if (!this.node.__karasInit) {
+          initEvent(this.node);
+          this.node.__karasInit = true;
+          this.node.__uuid = this.__uuid;
+        }
       }
     }, {
       key: "refresh",
       value: function refresh() {
+        var _this2 = this;
+
         var renderMode = this.renderMode,
             style = this.style;
         style.width = {
@@ -6342,40 +6342,41 @@
           value: this.height,
           unit: unit.PX
         };
+        inject.measureText(function () {
+          _this2.__layout({
+            x: 0,
+            y: 0,
+            w: _this2.width,
+            h: _this2.height
+          });
 
-        this.__layout({
-          x: 0,
-          y: 0,
-          w: this.width,
-          h: this.height
-        });
+          _this2.__layoutAbs(_this2);
 
-        this.__layoutAbs(this);
+          if (renderMode === mode.CANVAS) {
+            // 可能会调整宽高，所以每次清除用最大值
+            _this2.__mw = Math.max(_this2.__mw, _this2.width);
+            _this2.__mh = Math.max(_this2.__mh, _this2.height);
 
-        if (renderMode === mode.CANVAS) {
-          // 可能会调整宽高，所以每次清除用最大值
-          this.__mw = Math.max(this.__mw, this.width);
-          this.__mh = Math.max(this.__mh, this.height);
-
-          this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
-        }
-
-        this.render(renderMode);
-
-        if (renderMode === mode.SVG) {
-          var nvd = this.virtualDom;
-          var nd = this.__defs;
-          nvd.defs = nd.value;
-          nvd = util.clone(nvd);
-
-          if (this.node.__karasInit) {
-            diff(this.node, this.node.__ovd, nvd);
-          } else {
-            this.node.innerHTML = util.joinVirtualDom(nvd);
+            _this2.__ctx.clearRect(0, 0, _this2.__mw, _this2.__mh);
           }
 
-          this.node.__ovd = nvd;
-        }
+          _this2.render(renderMode);
+
+          if (renderMode === mode.SVG) {
+            var nvd = _this2.virtualDom;
+            var nd = _this2.__defs;
+            nvd.defs = nd.value;
+            nvd = util.clone(nvd);
+
+            if (_this2.node.__karasInit) {
+              diff(_this2.node, _this2.node.__ovd, nvd);
+            } else {
+              _this2.node.innerHTML = util.joinVirtualDom(nvd);
+            }
+
+            _this2.node.__ovd = nvd;
+          }
+        });
       }
     }, {
       key: "node",

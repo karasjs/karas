@@ -24,6 +24,9 @@ class Text extends Node {
   // 预先计算每个字的宽度
   __measure() {
     let { ctx, content, style, charWidthList, renderMode } = this;
+    if(renderMode === mode.CANVAS) {
+      ctx.font = css.setFontStyle(style);
+    }
     let key = style.fontSize + ',' + style.fontFamily;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
@@ -32,10 +35,9 @@ class Text extends Node {
       s: [],
     };
     let cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
-    let length = content.length;
     let sum = 0;
     let needMeasure = false;
-    for(let i = 0; i < length; i++) {
+    for(let i = 0, length = content.length; i < length; i++) {
       let char = content.charAt(i);
       let mw;
       if(cache.hasOwnProperty(char)) {

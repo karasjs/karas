@@ -3109,6 +3109,7 @@
           sr.__ctx = ctx;
           sr.__defs = defs;
           sr.__renderMode = renderMode;
+          sr.__style = this.props.style || {};
           this.__shadowRoot = sr;
           return;
         }

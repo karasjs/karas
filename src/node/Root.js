@@ -216,6 +216,10 @@ class Root extends Dom {
         }
         this.node.__ovd = nvd;
       }
+      this.__task.forEach(cb => {
+        cb && cb();
+      });
+      this.__task.splice(0);
       cb && cb();
       this.emit('refresh');
     });
@@ -223,14 +227,12 @@ class Root extends Dom {
 
   refreshTask(cb) {
     let { task } = this;
+    // 第一个添加延迟侦听
     if(!task.length) {
       setTimeout(() => {
-        this.refresh(() => {
-          task.forEach(cb => {
-            cb && cb();
-          });
-          task.splice(0);
-        });
+        if(task.length) {
+          this.refresh();
+        }
       }, 1);
     }
     task.push(cb);

@@ -6380,6 +6380,12 @@
             _this2.node.__ovd = nvd;
           }
 
+          _this2.__task.forEach(function (cb) {
+            cb && cb();
+          });
+
+          _this2.__task.splice(0);
+
           cb && cb();
 
           _this2.emit('refresh');
@@ -6390,16 +6396,13 @@
       value: function refreshTask(cb) {
         var _this3 = this;
 
-        var task = this.task;
+        var task = this.task; // 第一个添加延迟侦听
 
         if (!task.length) {
           setTimeout(function () {
-            _this3.refresh(function () {
-              task.forEach(function (cb) {
-                cb && cb();
-              });
-              task.splice(0);
-            });
+            if (task.length) {
+              _this3.refresh();
+            }
           }, 1);
         }
 

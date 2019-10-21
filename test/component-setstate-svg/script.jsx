@@ -11,7 +11,7 @@ class Component extends karas.Component {
     };
   }
   render() {
-    return <div onClick={() => {this.setState({text:456});r()}}>{this.state.text}</div>;
+    return <div onClick={() => {this.setState({text:456}, r)}}>{this.state.text}</div>;
   }
 }
 

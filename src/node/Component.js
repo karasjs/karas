@@ -48,7 +48,7 @@ class Component extends Event {
       return;
     }
     this.__traverse(o.ctx, o.defs, this.root.renderMode);
-    this.__init(true);
+    this.__init();
     this.root.refreshTask(cb);
   }
 
@@ -90,7 +90,7 @@ class Component extends Event {
   }
 
   // 组件传入的样式需覆盖shadowRoot的
-  __init(isSetState) {
+  __init() {
     let sr = this.shadowRoot;
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
@@ -124,9 +124,10 @@ class Component extends Event {
       });
     }
     // 防止重复
-    if(isSetState) {
+    if(this.__hasInit) {
       return;
     }
+    this.__hasInit = true;
     [
       'x',
       'y',

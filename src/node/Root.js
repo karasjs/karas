@@ -8,7 +8,7 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 
 function getDom(dom) {
-  if(util.isString(dom)) {
+  if(util.isString(dom) && dom) {
     let o = document.querySelector(dom);
     if(!o) {
       throw new Error('can not find dom of selector: ' + dom);
@@ -134,7 +134,7 @@ class Root extends Dom {
       }
     }
     this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
-    this.__defs = this.node.__od || Defs.getInstance(this.__uuid);
+    this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
     this.__defs.clear();
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
@@ -209,12 +209,13 @@ class Root extends Dom {
         nvd.defs = nd.value;
         nvd = util.clone(nvd);
         if(this.node.__karasInit) {
-          diff(this.node, this.node.__ovd, nvd);
+          diff(this.node, this.node.__vd, nvd);
         }
         else {
           this.node.innerHTML = util.joinVirtualDom(nvd);
         }
-        this.node.__ovd = nvd;
+        this.node.__vd = nvd;
+        this.node.__defs = nd;
       }
       this.__task.forEach(cb => {
         cb && cb();

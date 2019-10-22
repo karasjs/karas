@@ -3084,7 +3084,7 @@
 
         this.__traverse(o.ctx, o.defs, this.root.renderMode);
 
-        this.__init(true);
+        this.__init();
 
         this.root.refreshTask(cb);
       }
@@ -3136,7 +3136,7 @@
 
     }, {
       key: "__init",
-      value: function __init(isSetState) {
+      value: function __init() {
         var _this2 = this;
 
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
@@ -3177,10 +3177,11 @@
         } // 防止重复
 
 
-        if (isSetState) {
+        if (this.__hasInit) {
           return;
         }
 
+        this.__hasInit = true;
         ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
@@ -6101,7 +6102,7 @@
   };
 
   function getDom(dom) {
-    if (util.isString(dom)) {
+    if (util.isString(dom) && dom) {
       var o = document.querySelector(dom);
 
       if (!o) {
@@ -6273,7 +6274,7 @@
           }
 
         this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
-        this.__defs = this.node.__od || Defs.getInstance(this.__uuid);
+        this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
 
         this.__defs.clear(); // 没有设置width/height则采用css计算形式
 
@@ -6372,12 +6373,13 @@
             nvd = util.clone(nvd);
 
             if (_this2.node.__karasInit) {
-              diff(_this2.node, _this2.node.__ovd, nvd);
+              diff(_this2.node, _this2.node.__vd, nvd);
             } else {
               _this2.node.innerHTML = util.joinVirtualDom(nvd);
             }
 
-            _this2.node.__ovd = nvd;
+            _this2.node.__vd = nvd;
+            _this2.node.__defs = nd;
           }
 
           _this2.__task.forEach(function (cb) {

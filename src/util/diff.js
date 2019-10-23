@@ -92,33 +92,38 @@ function diffChild(elem, ovd, nvd) {
     if(nvd.type === 'dom') {
       diffD2D(elem, ovd, nvd);
     }
-    else if(nvd.type === 'text') {
+    else if(nvd.type === 'text' || nvd.type === 'img') {
       replaceWith(elem, nvd);
     }
     else if(nvd.type === 'geom') {
       diffD2G(elem, ovd, nvd);
     }
   }
-  else if(nvd.type === 'text') {
-    if(nvd.type === 'dom') {
+  else if(ovd.type === 'text') {
+    if(nvd.type === 'dom' || nvd.type === 'geom' || nvd.type === 'img') {
       replaceWith(elem, nvd);
     }
     else if(nvd.type === 'text') {
       diffT2T(elem, ovd, nvd);
     }
-    else if(nvd.type === 'geom') {
-      replaceWith(elem, nvd);
-    }
   }
-  else if(nvd.type === 'geom') {
+  else if(ovd.type === 'geom') {
     if(nvd.type === 'dom') {
       diffG2D(elem, ovd, nvd);
     }
-    else if(nvd.type === 'text') {
+    else if(nvd.type === 'text' || nvd.type === 'img') {
       replaceWith(elem, nvd);
     }
     else if(nvd.type === 'geom') {
       diffG2G(elem, ovd, nvd);
+    }
+  }
+  else if(ovd.type === 'img') {
+    if(nvd.type === 'img') {
+      diffItemSelf(elem, ovd, nvd);
+    }
+    else {
+      replaceWith(elem, nvd);
     }
   }
 }
@@ -231,34 +236,38 @@ function diffItem(elem, i, ovd, nvd, isText) {
     replaceWith(cns[i], nvd);
   }
   else {
-    let op = {};
-    for(let j = 0, len = ovd.props.length; j < len; j++) {
-      let prop = ovd.props[j];
-      let [k, v] = prop;
-      op[k] = v;
-    }
-    for(let j = 0, len = nvd.props.length; j < len; j++) {
-      let prop = nvd.props[j];
-      let [k, v] = prop;
-      // 已有不等更新，没有添加
-      if(op.hasOwnProperty(k)) {
-        if(op[k] !== v) {
-          cns[i].setAttribute(k, v);
-        }
-        delete op[k];
-      }
-      else {
-        cns[i].setAttribute(k, v);
-      }
-    }
-    // 多余的删除
-    for(let k in op) {
-      if(op.hasOwnProperty(k)) {
-        cns[i].removeAttribute(k);
-      }
-    }
+    diffItemSelf(cns[i], ovd, nvd);
     if(isText && ovd.content !== nvd.content) {
       cns[i].textContent = nvd.content;
+    }
+  }
+}
+
+function diffItemSelf(elem, ovd, nvd) {
+  let op = {};
+  for(let j = 0, len = ovd.props.length; j < len; j++) {
+    let prop = ovd.props[j];
+    let [k, v] = prop;
+    op[k] = v;
+  }
+  for(let j = 0, len = nvd.props.length; j < len; j++) {
+    let prop = nvd.props[j];
+    let [k, v] = prop;
+    // 已有不等更新，没有添加
+    if(op.hasOwnProperty(k)) {
+      if(op[k] !== v) {
+        elem.setAttribute(k, v);
+      }
+      delete op[k];
+    }
+    else {
+      elem.setAttribute(k, v);
+    }
+  }
+  // 多余的删除
+  for(let k in op) {
+    if(op.hasOwnProperty(k)) {
+      elem.removeAttribute(k);
     }
   }
 }

@@ -464,7 +464,7 @@
   }
 
   function joinVd(vd) {
-    if (vd.type === 'item') {
+    if (vd.type === 'item' || vd.type === 'img') {
       var s = '';
       vd.props.forEach(function (item) {
         s += " ".concat(item[0], "=\"").concat(item[1], "\"");
@@ -486,7 +486,15 @@
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
-      _s2 += '</g><g>';
+      _s2 += '</g><g';
+
+      if (vd.props) {
+        vd.props.forEach(function (item) {
+          _s2 += " ".concat(item[0], "=\"").concat(item[1], "\"");
+        });
+      }
+
+      _s2 += '>';
       vd.children.forEach(function (item) {
         _s2 += joinVd(item);
       });
@@ -840,7 +848,7 @@
     return [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]];
   }
 
-  var tf = {
+  var transform = {
     calMatrix: calMatrix,
     pointInQuadrilateral: pointInQuadrilateral,
     mergeMatrix: mergeMatrix
@@ -3573,7 +3581,7 @@
             borderLeftWidth = style.borderLeftWidth,
             blc = style.borderLeftColor,
             bls = style.borderLeftStyle,
-            transform = style.transform,
+            transform$1 = style.transform,
             transformOrigin = style.transformOrigin;
 
         if (display === 'none') {
@@ -3626,20 +3634,20 @@
         var iw = width + plw + prw;
         var ih = height + ptw + pbw; // translate相对于自身
 
-        if (transform) {
+        if (transform$1) {
           var _x = x + mlw + blw + iw + brw + mrw;
 
           var _y = y + mtw + btw + ih + bbw + mbw;
 
           var ow = _x - x;
           var oh = _y - y;
-          var matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
+          var matrix = transform.calMatrix(transform$1, transformOrigin, x, y, ow, oh);
           this.__matrix = matrix;
           var parent = this.parent;
 
           while (parent) {
             if (parent.matrix) {
-              matrix = tf.mergeMatrix(parent.matrix, matrix);
+              matrix = transform.mergeMatrix(parent.matrix, matrix);
             }
 
             parent = parent.parent;
@@ -3876,7 +3884,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = tf.pointInQuadrilateral(x - rx, y - ry, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
+        var inThis = transform.pointInQuadrilateral(x - rx, y - ry, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
 
         if (inThis) {
           // 不能被遮挡
@@ -3888,7 +3896,7 @@
                 h = _covers$i.h,
                 _matrixEvent = _covers$i.matrixEvent;
 
-            if (tf.pointInQuadrilateral(x - rx, y - ry, x2 - rx, y2 - ry, x2 - rx + w, y2 - ry, x2 - rx, y2 - ry + h, x2 - rx + w, y2 - ry + h, _matrixEvent)) {
+            if (transform.pointInQuadrilateral(x - rx, y - ry, x2 - rx, y2 - ry, x2 - rx + w, y2 - ry, x2 - rx, y2 - ry + h, x2 - rx + w, y2 - ry + h, _matrixEvent)) {
               return;
             }
           }
@@ -4416,10 +4424,12 @@
 
   var TAG_NAME = {
     'div': true,
-    'span': true
+    'span': true,
+    'img': true
   };
   var INLINE = {
-    'span': true
+    'span': true,
+    'img': true
   };
 
   var Dom =
@@ -5658,6 +5668,346 @@
     return Dom;
   }(Xom);
 
+  var inject = {
+    measureText: function measureText(cb) {
+      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
+          list = _Text$MEASURE_TEXT.list,
+          data = _Text$MEASURE_TEXT.data;
+      var html = '';
+      var keys = [];
+      var chars = [];
+
+      for (var i in data) {
+        if (data.hasOwnProperty(i)) {
+          var _data$i = data[i],
+              key = _data$i.key,
+              style = _data$i.style,
+              s = _data$i.s;
+
+          if (s) {
+            var inline = "position:absolute;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
+
+            for (var j = 0, len = s.length; j < len; j++) {
+              keys.push(key);
+
+              var _char = s.charAt(j);
+
+              chars.push(_char);
+              html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;'), "</span>");
+            }
+          }
+        }
+      }
+
+      if (!html) {
+        cb();
+        return;
+      }
+
+      var div = document.createElement('div');
+      div.style.position = 'absolute';
+      div.style.left = '99999px';
+      div.style.top = '-99999px';
+      div.style.visibility = 'hidden';
+      document.body.appendChild(div);
+      div.innerHTML = html;
+      var cns = div.childNodes;
+      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
+          MEASURE_TEXT = Text.MEASURE_TEXT;
+
+      for (var _i = 0, _len = cns.length; _i < _len; _i++) {
+        var node = cns[_i];
+        var _key = keys[_i];
+        var _char2 = chars[_i];
+        var css = window.getComputedStyle(node, null);
+        CHAR_WIDTH_CACHE[_key][_char2] = parseFloat(css.width);
+      }
+
+      list.forEach(function (text) {
+        return text.__measureCb();
+      });
+      cb();
+      MEASURE_TEXT.list = [];
+      MEASURE_TEXT.data = {};
+      document.body.removeChild(div);
+    },
+    measureImg: function measureImg(url, cb) {
+      var img = document.createElement('img');
+      img.style.position = 'absolute';
+      img.style.left = '99999px';
+      img.style.top = '-99999px';
+      img.style.visibility = 'hidden';
+
+      img.onload = function () {
+        cb({
+          success: true,
+          width: img.width,
+          height: img.height,
+          source: img
+        });
+      };
+
+      img.onerror = function () {
+        cb({
+          success: false
+        });
+      };
+
+      img.src = url;
+    }
+  };
+
+  var CACHE = {};
+  var INIT = 0;
+  var LOADING = 1;
+  var LOADED = 2;
+
+  var Img =
+  /*#__PURE__*/
+  function (_Dom) {
+    _inherits(Img, _Dom);
+
+    function Img(tagName, props) {
+      var _this;
+
+      _classCallCheck(this, Img);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props, [])); // 空url用错误图代替
+
+      if (!_this.src || !_this.src.trim()) {
+        _this.__error = true;
+
+        var _assertThisInitialize = _assertThisInitialized(_this),
+            _assertThisInitialize2 = _assertThisInitialize.style,
+            width = _assertThisInitialize2.width,
+            height = _assertThisInitialize2.height;
+
+        if (width.unit === unit.AUTO) {
+          width.value = 32;
+          width.unit = unit.PX;
+        }
+
+        if (height.unit === unit.AUTO) {
+          height.value = 32;
+          height.unit = unit.PX;
+        }
+      }
+
+      return _this;
+    }
+
+    _createClass(Img, [{
+      key: "__layout",
+      value: function __layout(data) {
+        var _this2 = this;
+
+        _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
+
+        var src = this.src,
+            _this$style = this.style,
+            width = _this$style.width,
+            height = _this$style.height,
+            marginLeft = _this$style.marginLeft,
+            marginRight = _this$style.marginRight;
+
+        var _this$__preLayout = this.__preLayout(data),
+            w = _this$__preLayout.w,
+            h = _this$__preLayout.h;
+
+        var cache = CACHE[CACHE] = CACHE[CACHE] || {
+          state: INIT,
+          task: []
+        };
+
+        var cb = function cb(cache) {
+          _this2.__imgWidth = cache.width;
+          _this2.__imgHeight = cache.height; // 宽高都为auto，使用加载测量的数据
+
+          if (width.unit === unit.AUTO && height.unit === unit.AUTO) {
+            width.value = cache.width;
+            width.unit = unit.PX;
+            height.value = cache.height;
+            height.unit = unit.PX;
+          } // 否则有一方定义则按比例调整另一方适应
+          else if (width.unit === unit.AUTO) {
+              width.value = h * cache.width / cache.height;
+              width.unit = unit.PX;
+            } else if (height.unit === unit.AUTO) {
+              height.value = w * cache.height / cache.width;
+              height.unit = unit.PX;
+            }
+
+          _this2.__width = width.value;
+          _this2.__height = height.value; // 处理margin:xx auto居中对齐
+
+          if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+            var ow = _this2.outerWidth;
+
+            if (ow < cache.w) {
+              _this2.__offsetX((cache.w - ow) * 0.5);
+            }
+          }
+        };
+
+        if (cache.state === LOADED) {
+          cb(cache);
+        } else if (cache.state === LOADING) {
+          cache.task.push(cb);
+        } else if (cache.state === INIT) {
+          cache.state = LOADING;
+          cache.task.push(cb);
+          inject.measureImg(src, function (res) {
+            if (res.success) {
+              _this2.__source = res.source;
+              cache.width = res.width;
+              cache.height = res.height;
+            } else {
+              _this2.__error = true;
+              cache.width = 32;
+              cache.height = 32;
+            }
+
+            cache.state = LOADED;
+            cache.task.forEach(function (cb) {
+              return cb(cache);
+            });
+            cache.task = [];
+
+            _this2.root.refreshTask();
+          });
+        }
+      }
+    }, {
+      key: "__addGeom",
+      value: function __addGeom(tagName, props) {
+        props = util.hash2arr(props);
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: tagName,
+          props: props
+        });
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode) {
+        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode);
+
+        var ctx = this.ctx,
+            x = this.rx,
+            y = this.ry,
+            width = this.width,
+            height = this.height,
+            mlw = this.mlw,
+            mtw = this.mtw,
+            plw = this.plw,
+            ptw = this.ptw,
+            src = this.src,
+            _this$style2 = this.style,
+            display = _this$style2.display,
+            borderTopWidth = _this$style2.borderTopWidth,
+            borderLeftWidth = _this$style2.borderLeftWidth;
+
+        if (display === 'none') {
+          return;
+        }
+
+        var btw = borderTopWidth.value;
+        var blw = borderLeftWidth.value;
+        var originX = x + mlw + blw + plw;
+        var originY = y + mtw + btw + ptw;
+
+        if (this.__error) {
+          var strokeWidth = Math.min(width, height) * 0.02;
+          var stroke = '#CCC';
+          var fill = '#DDD';
+          var cx = originX + width * 0.7;
+          var cy = originY + height * 0.3;
+          var r = strokeWidth * 5;
+          var pts = [[originX + width * 0.15, originY + height * 0.7], [originX + width * 0.3, originY + height * 0.4], [originX + width * 0.5, originY + height * 0.6], [originX + width * 0.6, originY + height * 0.5], [originX + width * 0.9, originY + height * 0.8], [originX + width * 0.15, originY + height * 0.8]];
+
+          if (renderMode === mode.CANVAS) {
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = strokeWidth;
+            ctx.fillStyle = fill;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX + width, originY);
+            ctx.lineTo(originX + width, originY + height);
+            ctx.lineTo(originX, originY + height);
+            ctx.lineTo(originX, originY);
+            ctx.stroke();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.closePath();
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1]);
+
+            for (var i = 1, len = pts.length; i < len; i++) {
+              var point = pts[i];
+              ctx.lineTo(point[0], point[1]);
+            }
+
+            ctx.lineTo(pts[0][0], pts[0][1]);
+            ctx.fill();
+            ctx.closePath();
+          } else if (renderMode === mode.SVG) {
+            this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'transparent']]);
+
+            this.__addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill]]);
+
+            var s = '';
+
+            for (var _i = 0, _len = pts.length; _i < _len; _i++) {
+              var _point = pts[_i];
+              s += "".concat(_point[0], ",").concat(_point[1], " ");
+            }
+
+            this.__addGeom('polygon', [['points', s], ['fill', fill]]);
+          }
+        } else if (renderMode === mode.CANVAS) {
+          if (this.__source) {
+            ctx.drawImage(this.__source, originX, originY, width, height);
+          }
+        } else if (renderMode === mode.SVG) {
+          var matrix;
+
+          if (width !== this.__imgWidth || height !== this.__imgHeight) {
+            var list = [['scaleY', '2']];
+            matrix = transform.calMatrix(list, [{
+              value: 0,
+              unit: unit.PERCENT
+            }, {
+              value: 0,
+              unit: unit.PERCENT
+            }], x, y, this.outerWidth, this.outerHeight);
+            matrix = 'matrix(' + matrix.join(',') + ')';
+          }
+
+          var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth], ['height', this.__imgHeight], ['transform', matrix]];
+
+          if (matrix) {
+            props.push(['transform', matrix]);
+          }
+
+          this.virtualDom.children.push({
+            type: 'img',
+            tagName: 'image',
+            props: props
+          });
+        }
+      }
+    }, {
+      key: "src",
+      get: function get() {
+        return this.props.src;
+      }
+    }]);
+
+    return Img;
+  }(Dom);
+
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
@@ -5764,26 +6114,30 @@
     if (ovd.type === 'dom') {
       if (nvd.type === 'dom') {
         diffD2D(elem, ovd, nvd);
-      } else if (nvd.type === 'text') {
+      } else if (nvd.type === 'text' || nvd.type === 'img') {
         replaceWith(elem, nvd);
       } else if (nvd.type === 'geom') {
         diffD2G(elem, ovd, nvd);
       }
-    } else if (nvd.type === 'text') {
-      if (nvd.type === 'dom') {
+    } else if (ovd.type === 'text') {
+      if (nvd.type === 'dom' || nvd.type === 'geom' || nvd.type === 'img') {
         replaceWith(elem, nvd);
       } else if (nvd.type === 'text') {
         diffT2T(elem, ovd, nvd);
-      } else if (nvd.type === 'geom') {
-        replaceWith(elem, nvd);
       }
-    } else if (nvd.type === 'geom') {
+    } else if (ovd.type === 'geom') {
       if (nvd.type === 'dom') {
         diffG2D(elem, ovd, nvd);
-      } else if (nvd.type === 'text') {
+      } else if (nvd.type === 'text' || nvd.type === 'img') {
         replaceWith(elem, nvd);
       } else if (nvd.type === 'geom') {
         diffG2G(elem, ovd, nvd);
+      }
+    } else if (ovd.type === 'img') {
+      if (nvd.type === 'img') {
+        diffItemSelf(elem, ovd, nvd);
+      } else {
+        replaceWith(elem, nvd);
       }
     }
   }
@@ -5905,46 +6259,50 @@
     if (ovd.tagName !== nvd.tagName) {
       replaceWith(cns[i], nvd);
     } else {
-      var op = {};
-
-      for (var j = 0, len = ovd.props.length; j < len; j++) {
-        var prop = ovd.props[j];
-
-        var _prop4 = _slicedToArray(prop, 2),
-            k = _prop4[0],
-            v = _prop4[1];
-
-        op[k] = v;
-      }
-
-      for (var _j2 = 0, _len2 = nvd.props.length; _j2 < _len2; _j2++) {
-        var _prop5 = nvd.props[_j2];
-
-        var _prop6 = _slicedToArray(_prop5, 2),
-            k = _prop6[0],
-            v = _prop6[1]; // 已有不等更新，没有添加
-
-
-        if (op.hasOwnProperty(k)) {
-          if (op[k] !== v) {
-            cns[i].setAttribute(k, v);
-          }
-
-          delete op[k];
-        } else {
-          cns[i].setAttribute(k, v);
-        }
-      } // 多余的删除
-
-
-      for (var k in op) {
-        if (op.hasOwnProperty(k)) {
-          cns[i].removeAttribute(k);
-        }
-      }
+      diffItemSelf(cns[i], ovd, nvd);
 
       if (isText && ovd.content !== nvd.content) {
         cns[i].textContent = nvd.content;
+      }
+    }
+  }
+
+  function diffItemSelf(elem, ovd, nvd) {
+    var op = {};
+
+    for (var j = 0, len = ovd.props.length; j < len; j++) {
+      var prop = ovd.props[j];
+
+      var _prop4 = _slicedToArray(prop, 2),
+          k = _prop4[0],
+          v = _prop4[1];
+
+      op[k] = v;
+    }
+
+    for (var _j2 = 0, _len2 = nvd.props.length; _j2 < _len2; _j2++) {
+      var _prop5 = nvd.props[_j2];
+
+      var _prop6 = _slicedToArray(_prop5, 2),
+          k = _prop6[0],
+          v = _prop6[1]; // 已有不等更新，没有添加
+
+
+      if (op.hasOwnProperty(k)) {
+        if (op[k] !== v) {
+          elem.setAttribute(k, v);
+        }
+
+        delete op[k];
+      } else {
+        elem.setAttribute(k, v);
+      }
+    } // 多余的删除
+
+
+    for (var k in op) {
+      if (op.hasOwnProperty(k)) {
+        elem.removeAttribute(k);
       }
     }
   }
@@ -6031,75 +6389,6 @@
 
     return Defs;
   }();
-
-  var div;
-  var inject = {
-    measureText: function measureText(cb) {
-      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
-          list = _Text$MEASURE_TEXT.list,
-          data = _Text$MEASURE_TEXT.data;
-      var html = '';
-      var keys = [];
-      var chars = [];
-
-      for (var i in data) {
-        if (data.hasOwnProperty(i)) {
-          var _data$i = data[i],
-              key = _data$i.key,
-              style = _data$i.style,
-              s = _data$i.s;
-
-          if (s) {
-            var inline = "position:absolute;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
-
-            for (var j = 0, len = s.length; j < len; j++) {
-              keys.push(key);
-
-              var _char = s.charAt(j);
-
-              chars.push(_char);
-              html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;'), "</span>");
-            }
-          }
-        }
-      }
-
-      if (!html) {
-        cb();
-        return;
-      }
-
-      if (!div) {
-        div = document.createElement('div');
-        div.style.position = 'absolute';
-        div.style.left = '99999px';
-        div.style.top = '-99999px';
-        div.style.visibility = 'hidden';
-        document.body.appendChild(div);
-      }
-
-      div.innerHTML = html;
-      var cns = div.childNodes;
-      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
-          MEASURE_TEXT = Text.MEASURE_TEXT;
-
-      for (var _i = 0, _len = cns.length; _i < _len; _i++) {
-        var node = cns[_i];
-        var _key = keys[_i];
-        var _char2 = chars[_i];
-        var css = window.getComputedStyle(node, null);
-        CHAR_WIDTH_CACHE[_key][_char2] = parseFloat(css.width);
-      }
-
-      list.forEach(function (text) {
-        return text.__measureCb();
-      });
-      cb();
-      MEASURE_TEXT.list = [];
-      MEASURE_TEXT.data = {};
-      div.innerHTML = '';
-    }
-  };
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
@@ -7252,6 +7541,10 @@
       }
 
       if (Dom.isValid(tagName)) {
+        if (tagName === 'img') {
+          return new Img(tagName, props);
+        }
+
         return new Dom(tagName, props, children);
       }
 

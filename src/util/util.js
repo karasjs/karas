@@ -57,7 +57,7 @@ function joinVirtualDom(vd) {
 }
 
 function joinVd(vd) {
-  if(vd.type === 'item') {
+  if(vd.type === 'item' || vd.type === 'img') {
     let s = '';
     vd.props.forEach(item => {
       s += ` ${item[0]}="${item[1]}"`;
@@ -79,7 +79,13 @@ function joinVd(vd) {
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
-    s += '</g><g>';
+    s += '</g><g';
+    if(vd.props) {
+      vd.props.forEach(item => {
+        s += ` ${item[0]}="${item[1]}"`;
+      });
+    }
+    s += '>';
     vd.children.forEach(item => {
       s += joinVd(item);
     });

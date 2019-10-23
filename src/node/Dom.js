@@ -11,9 +11,11 @@ import Component from './Component';
 const TAG_NAME = {
   'div': true,
   'span': true,
+  'img': true,
 };
 const INLINE = {
   'span': true,
+  'img': true,
 };
 
 class Dom extends Xom {

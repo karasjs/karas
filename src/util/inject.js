@@ -1,7 +1,5 @@
 import Text from '../node/Text';
 
-let div;
-
 export default {
   measureText(cb) {
     let { list, data } = Text.MEASURE_TEXT;
@@ -26,14 +24,12 @@ export default {
       cb();
       return;
     }
-    if(!div) {
-      div = document.createElement('div');
-      div.style.position = 'absolute';
-      div.style.left = '99999px';
-      div.style.top = '-99999px';
-      div.style.visibility = 'hidden';
-      document.body.appendChild(div);
-    }
+    let div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '99999px';
+    div.style.top = '-99999px';
+    div.style.visibility = 'hidden';
+    document.body.appendChild(div);
     div.innerHTML = html;
     let cns = div.childNodes;
     let { CHAR_WIDTH_CACHE, MEASURE_TEXT } = Text;
@@ -48,6 +44,27 @@ export default {
     cb();
     MEASURE_TEXT.list = [];
     MEASURE_TEXT.data = {};
-    div.innerHTML = '';
+    document.body.removeChild(div);
+  },
+  measureImg(url, cb) {
+    let img = document.createElement('img');
+    img.style.position = 'absolute';
+    img.style.left = '99999px';
+    img.style.top = '-99999px';
+    img.style.visibility = 'hidden';
+    img.onload = function() {
+      cb({
+        success: true,
+        width: img.width,
+        height: img.height,
+        source: img,
+      });
+    };
+    img.onerror = function() {
+      cb({
+        success: false,
+      });
+    };
+    img.src = url;
   },
 };

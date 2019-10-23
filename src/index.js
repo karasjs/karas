@@ -1,4 +1,5 @@
 import Dom from './node/Dom';
+import Img from './node/Img';
 import Root from './node/Root';
 import mode from './util/mode';
 import Geom from './geom/Geom';
@@ -36,6 +37,9 @@ let karas = {
       return new Root(tagName, props, children);
     }
     if(Dom.isValid(tagName)) {
+      if(tagName === 'img') {
+        return new Img(tagName, props);
+      }
       return new Dom(tagName, props, children);
     }
     throw new Error('can not use marker: ' + tagName);

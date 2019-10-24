@@ -5900,12 +5900,18 @@
             w = _this$__preLayout.w,
             h = _this$__preLayout.h;
 
-        var cache = CACHE[CACHE] = CACHE[CACHE] || {
+        var cache = CACHE[this.src] = CACHE[this.src] || {
           state: INIT,
           task: []
         };
 
         var cb = function cb(cache) {
+          if (cache.success) {
+            _this2.__source = cache.source;
+          } else {
+            _this2.__error = true;
+          }
+
           _this2.__imgWidth = cache.width;
           _this2.__imgHeight = cache.height; // 宽高都为auto，使用加载测量的数据
 
@@ -5929,9 +5935,13 @@
           if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
             var ow = _this2.outerWidth;
 
-            if (ow < cache.w) {
-              _this2.__offsetX((cache.w - ow) * 0.5);
+            if (ow < cache.width) {
+              _this2.__offsetX((cache.width - ow) * 0.5);
             }
+          }
+
+          if (_this2.root) {
+            _this2.root.refreshTask();
           }
         };
 
@@ -5943,12 +5953,13 @@
           cache.state = LOADING;
           cache.task.push(cb);
           inject.measureImg(src, function (res) {
+            cache.success = res.success;
+
             if (res.success) {
-              _this2.__source = res.source;
               cache.width = res.width;
               cache.height = res.height;
+              cache.source = res.source;
             } else {
-              _this2.__error = true;
               cache.width = 32;
               cache.height = 32;
             }
@@ -5957,9 +5968,7 @@
             cache.task.forEach(function (cb) {
               return cb(cache);
             });
-            cache.task = [];
-
-            _this2.root.refreshTask();
+            cache.task.splice(0);
           });
         }
       }
@@ -6100,6 +6109,11 @@
       key: "src",
       get: function get() {
         return this.props.src;
+      }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        return this.height;
       }
     }]);
 

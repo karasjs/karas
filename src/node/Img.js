@@ -41,11 +41,17 @@ class Img extends Dom {
       return;
     }
     let { w, h } = this.__preLayout(data);
-    let cache = CACHE[CACHE] = CACHE[CACHE] || {
+    let cache = CACHE[this.src] = CACHE[this.src] || {
       state: INIT,
       task: [],
     };
     let cb = cache => {
+      if(cache.success) {
+        this.__source = cache.source;
+      }
+      else {
+        this.__error = true;
+      }
       this.__imgWidth = cache.width;
       this.__imgHeight = cache.height;
       // 宽高都为auto，使用加载测量的数据
@@ -69,9 +75,12 @@ class Img extends Dom {
       // 处理margin:xx auto居中对齐
       if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
         let ow = this.outerWidth;
-        if(ow < cache.w) {
-          this.__offsetX((cache.w - ow) * 0.5);
+        if(ow < cache.width) {
+          this.__offsetX((cache.width - ow) * 0.5);
         }
+      }
+      if(this.root) {
+        this.root.refreshTask();
       }
     };
     if(cache.state === LOADED) {
@@ -84,20 +93,19 @@ class Img extends Dom {
       cache.state = LOADING;
       cache.task.push(cb);
       inject.measureImg(src, res => {
+        cache.success = res.success;
         if(res.success) {
-          this.__source = res.source;
           cache.width = res.width;
           cache.height = res.height;
+          cache.source = res.source;
         }
         else {
-          this.__error = true;
           cache.width = 32;
           cache.height = 32;
         }
         cache.state = LOADED;
         cache.task.forEach(cb => cb(cache));
-        cache.task = [];
-        this.root.refreshTask();
+        cache.task.splice(0);
       });
     }
   }
@@ -246,6 +254,9 @@ class Img extends Dom {
 
   get src() {
     return this.props.src;
+  }
+  get baseLine() {
+    return this.height;
   }
 }
 

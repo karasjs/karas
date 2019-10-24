@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 500)
-      .assert.value('input', '{"bb":[],"children":[{"bb":[],"children":[{"type":"img","tagName":"image","props":[["xlink:href","../error.png"],["x",0],["y",0],["width",0],["height",0]]}],"transform":[],"type":"dom"}],"transform":[],"type":"dom","defs":[]}')
+      .assert.value('input', '{"bb":[],"children":[{"bb":[],"children":[{"type":"item","tagName":"rect","props":[["x",0],["y",0],["width",32],["height",32],["stroke","#CCC"],["stroke-width",0.64],["fill","transparent"]]},{"type":"item","tagName":"circle","props":[["cx",22.4],["cy",9.6],["r",3.2],["fill","#DDD"]]},{"type":"item","tagName":"polygon","props":[["points","4.8,22.4 9.6,12.8 16,19.2 19.2,16 28.8,25.6 4.8,25.6 "],["fill","#DDD"]]}],"transform":[],"type":"dom"}],"transform":[],"type":"dom","defs":[]}')
       .end();
   }
 };

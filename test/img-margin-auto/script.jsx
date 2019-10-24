@@ -1,6 +1,6 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <img src="../error.png"/>
+    <img src="../image.png" style={{margin:'auto'}}/>
   </canvas>,
   '#test'
 );

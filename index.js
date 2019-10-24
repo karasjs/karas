@@ -3033,6 +3033,8 @@
     return Event;
   }();
 
+  _defineProperty(Event, "KARAS_REFRESH", 'karas-refresh');
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -5972,9 +5974,10 @@
           }
         } else if (renderMode === mode.SVG) {
           var matrix;
+          var needMatrix = this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight);
 
-          if (width !== this.__imgWidth || height !== this.__imgHeight) {
-            var list = [['scaleY', '2']];
+          if (needMatrix) {
+            var list = [['scaleX', width / this.__imgWidth], ['scaleY', height / this.__imgHeight]];
             matrix = transform.calMatrix(list, [{
               value: 0,
               unit: unit.PERCENT
@@ -5982,10 +5985,15 @@
               value: 0,
               unit: unit.PERCENT
             }], x, y, this.outerWidth, this.outerHeight);
+
+            if (this.__matrix) {
+              matrix = transform.mergeMatrix(this.__matrix, matrix);
+            }
+
             matrix = 'matrix(' + matrix.join(',') + ')';
           }
 
-          var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth], ['height', this.__imgHeight], ['transform', matrix]];
+          var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', needMatrix ? this.__imgWidth : this.width], ['height', needMatrix ? this.__imgHeight : this.height]];
 
           if (matrix) {
             props.push(['transform', matrix]);
@@ -6679,7 +6687,7 @@
 
           cb && cb();
 
-          _this2.emit('refresh');
+          _this2.emit(Event.KARAS_REFRESH);
         });
       }
     }, {

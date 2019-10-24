@@ -191,9 +191,12 @@ class Img extends Dom {
     }
     else if(renderMode === mode.SVG) {
       let matrix;
-      if(width !== this.__imgWidth || height !== this.__imgHeight) {
+      let needMatrix = this.__imgWidth !== undefined
+        && (width !== this.__imgWidth || height !== this.__imgHeight);
+      if(needMatrix) {
         let list = [
-          ['scaleY', '2']
+          ['scaleX', width / this.__imgWidth],
+          ['scaleY', height / this.__imgHeight]
         ];
         matrix = transform.calMatrix(list, [
           {
@@ -205,15 +208,17 @@ class Img extends Dom {
             unit: unit.PERCENT,
           }
         ], x, y, this.outerWidth, this.outerHeight);
+        if(this.__matrix) {
+          matrix = transform.mergeMatrix(this.__matrix, matrix);
+        }
         matrix = 'matrix(' + matrix.join(',') + ')';
       }
       let props = [
         ['xlink:href', src],
         ['x', originX],
         ['y', originY],
-        ['width', this.__imgWidth],
-        ['height', this.__imgHeight],
-        ['transform', matrix]
+        ['width', needMatrix ? this.__imgWidth : this.width],
+        ['height', needMatrix ? this.__imgHeight : this.height]
       ];
       if(matrix) {
         props.push(['transform', matrix]);

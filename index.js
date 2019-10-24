@@ -3231,6 +3231,10 @@
         if (this.shadowRoot) {
           this.shadowRoot.__destroy();
         }
+
+        this.children.splice(0);
+        this.__shadowRoot = null;
+        this.__parent = null;
       }
     }, {
       key: "__emitEvent",
@@ -3270,7 +3274,9 @@
     }, {
       key: "root",
       get: function get() {
-        return this.parent.root;
+        if (this.parent) {
+          return this.parent.root;
+        }
       }
     }, {
       key: "parent",
@@ -5683,6 +5689,10 @@
         this.children.forEach(function (child) {
           child.__destroy();
         });
+        this.children.splice(0);
+        this.flowChildren.splice(0);
+        this.absChildren.splice(0);
+        this.lineGroups.splice(0);
       }
     }, {
       key: "tagName",

@@ -160,6 +160,9 @@ class Component extends Event {
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }
+    this.children.splice(0);
+    this.__shadowRoot = null;
+    this.__parent = null;
   }
 
   __emitEvent(e, force) {
@@ -187,7 +190,9 @@ class Component extends Event {
     return this.__shadowRoot;
   }
   get root() {
-    return this.parent.root;
+    if(this.parent) {
+      return this.parent.root;
+    }
   }
   get parent() {
     return this.__parent;

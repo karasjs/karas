@@ -1057,6 +1057,10 @@ class Dom extends Xom {
     this.children.forEach(child => {
       child.__destroy();
     });
+    this.children.splice(0);
+    this.flowChildren.splice(0);
+    this.absChildren.splice(0);
+    this.lineGroups.splice(0);
   }
 
   get tagName() {

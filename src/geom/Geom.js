@@ -151,6 +151,13 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
+    let { isDestroyed, style: { display } } = this;
+    if(isDestroyed || display === 'none') {
+      return {
+        isDestroyed,
+        display,
+      };
+    }
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         ...super.virtualDom,

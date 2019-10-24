@@ -266,6 +266,12 @@
         this.__oy += diff;
       }
     }, {
+      key: "__destroy",
+      value: function __destroy() {
+        this.__isDestroyed = true;
+        this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = null;
+      }
+    }, {
       key: "x",
       get: function get() {
         return this.__x;
@@ -380,6 +386,11 @@
       key: "virtualDom",
       get: function get() {
         return this.__virtualDom;
+      }
+    }, {
+      key: "isDestroyed",
+      get: function get() {
+        return this.__isDestroyed;
       }
     }]);
 
@@ -2493,10 +2504,16 @@
         this.__x = x;
         this.__y = y;
         var maxX = x;
-        var content = this.content,
+        var isDestroyed = this.isDestroyed,
+            content = this.content,
             style = this.style,
             lineBoxes = this.lineBoxes,
-            charWidthList = this.charWidthList; // 顺序尝试分割字符串为lineBox，形成多行
+            charWidthList = this.charWidthList;
+
+        if (isDestroyed || style.display === 'none') {
+          return;
+        } // 顺序尝试分割字符串为lineBox，形成多行
+
 
         var begin = 0;
         var i = 0;
@@ -2569,8 +2586,13 @@
     }, {
       key: "render",
       value: function render(renderMode) {
-        var ctx = this.ctx,
+        var isDestroyed = this.isDestroyed,
+            ctx = this.ctx,
             style = this.style;
+
+        if (isDestroyed || style.display === 'none') {
+          return;
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.font = css.setFontStyle(style);
@@ -3204,6 +3226,13 @@
       key: "render",
       value: function render() {}
     }, {
+      key: "__destroy",
+      value: function __destroy() {
+        if (this.shadowRoot) {
+          this.shadowRoot.__destroy();
+        }
+      }
+    }, {
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
         var sr = this.shadowRoot;
@@ -3392,7 +3421,8 @@
       key: "__layout",
       value: function __layout(data) {
         var w = data.w;
-        var _this$style = this.style,
+        var isDestroyed = this.isDestroyed,
+            _this$style = this.style,
             display = _this$style.display,
             width = _this$style.width,
             marginTop = _this$style.marginTop,
@@ -3404,7 +3434,7 @@
             paddingBottom = _this$style.paddingBottom,
             paddingLeft = _this$style.paddingLeft;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -3546,7 +3576,8 @@
           };
         }
 
-        var ctx = this.ctx,
+        var isDestroyed = this.isDestroyed,
+            ctx = this.ctx,
             style = this.style,
             width = this.width,
             height = this.height,
@@ -3586,7 +3617,7 @@
             transform$1 = style.transform,
             transformOrigin = style.transformOrigin;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
 
@@ -3749,6 +3780,13 @@
 
           renderBorder(renderMode, _points3, blc, ctx, this);
         }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
+
+        this.__matrix = this.__matrixEvent = null;
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -3758,14 +3796,15 @@
             x = e.x,
             y = e.y,
             covers = e.covers;
-        var listener = this.listener,
+        var isDestroyed = this.isDestroyed,
+            listener = this.listener,
             children = this.children,
             style = this.style,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
 
-        if (style.display === 'none' || e.__stopPropagation) {
+        if (isDestroyed || style.display === 'none' || e.__stopPropagation) {
           return;
         }
 
@@ -4367,6 +4406,16 @@
       key: "render",
       value: function render(renderMode) {
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
+
+        var isDestroyed = this.isDestroyed,
+            display = this.style.display;
+
+        if (isDestroyed || display === 'none') {
+          return {
+            isDestroyed: isDestroyed,
+            display: display
+          };
+        }
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
@@ -5477,10 +5526,17 @@
             ptw = container.ptw,
             prw = container.prw,
             pbw = container.pbw;
-        var children = this.children,
+        var isDestroyed = this.isDestroyed,
+            children = this.children,
             absChildren = this.absChildren;
-        var borderTopWidth = style.borderTopWidth,
+        var display = style.display,
+            borderTopWidth = style.borderTopWidth,
             borderLeftWidth = style.borderLeftWidth;
+
+        if (isDestroyed || display === 'none') {
+          return;
+        }
+
         x += mlw + borderLeftWidth.value;
         y += mtw + borderTopWidth.value;
         var pw = width + plw + prw;
@@ -5580,11 +5636,12 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
 
-        var display = this.style.display,
+        var isDestroyed = this.isDestroyed,
+            display = this.style.display,
             flowChildren = this.flowChildren,
             children = this.children;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         } // 先绘制static
 
@@ -5617,6 +5674,15 @@
             })
           });
         }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);
+
+        this.children.forEach(function (child) {
+          child.__destroy();
+        });
       }
     }, {
       key: "tagName",
@@ -5805,12 +5871,18 @@
 
         _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
 
-        var src = this.src,
+        var isDestroyed = this.isDestroyed,
+            src = this.src,
             _this$style = this.style,
+            display = _this$style.display,
             width = _this$style.width,
             height = _this$style.height,
             marginLeft = _this$style.marginLeft,
             marginRight = _this$style.marginRight;
+
+        if (isDestroyed || display === 'none') {
+          return;
+        }
 
         var _this$__preLayout = this.__preLayout(data),
             w = _this$__preLayout.w,
@@ -5904,12 +5976,13 @@
             plw = this.plw,
             ptw = this.ptw,
             src = this.src,
+            isDestroyed = this.isDestroyed,
             _this$style2 = this.style,
             display = _this$style2.display,
             borderTopWidth = _this$style2.borderTopWidth,
             borderLeftWidth = _this$style2.borderLeftWidth;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -6005,6 +6078,11 @@
             props: props
           });
         }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
       }
     }, {
       key: "src",
@@ -6620,13 +6698,15 @@
         this.__init();
 
         this.refresh();
-        this.node.__root = this;
 
-        if (!this.node.__karasInit) {
+        if (this.node.__root) {
+          this.node.__root.__destroy();
+        } else {
           initEvent(this.node);
-          this.node.__karasInit = true;
           this.node.__uuid = this.__uuid;
         }
+
+        this.node.__root = this;
       }
     }, {
       key: "refresh",
@@ -6669,7 +6749,7 @@
             nvd.defs = nd.value;
             nvd = util.clone(nvd);
 
-            if (_this2.node.__karasInit) {
+            if (_this2.node.__root) {
               diff(_this2.node, _this2.node.__vd, nvd);
             } else {
               _this2.node.innerHTML = util.joinVirtualDom(nvd);
@@ -6791,6 +6871,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             display = _get$call.display,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -6798,7 +6879,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -6936,6 +7017,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -6943,7 +7025,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -7051,6 +7133,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -7059,7 +7142,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -7197,6 +7280,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -7205,7 +7289,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -7314,6 +7398,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -7322,7 +7407,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -7386,6 +7471,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -7394,7 +7480,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 
@@ -7471,6 +7557,7 @@
       key: "render",
       value: function render(renderMode) {
         var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode),
+            isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -7479,7 +7566,7 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (display === 'none') {
+        if (isDestroyed || display === 'none') {
           return;
         }
 

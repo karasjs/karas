@@ -911,11 +911,15 @@ class Dom extends Xom {
   // 只针对绝对定位children布局
   __layoutAbs(container) {
     let { x, y, flowY, width, height, style, mlw, mtw, plw, ptw, prw, pbw } = container;
-    let { children, absChildren } = this;
+    let { isDestroyed, children, absChildren } = this;
     let {
+      display,
       borderTopWidth,
       borderLeftWidth,
     } = style;
+    if(isDestroyed || display === 'none') {
+      return;
+    }
     x += mlw + borderLeftWidth.value;
     y += mtw + borderTopWidth.value;
     let pw = width + plw + prw;
@@ -1017,8 +1021,8 @@ class Dom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { style: { display }, flowChildren, children } = this;
-    if(display === 'none') {
+    let { isDestroyed, style: { display }, flowChildren, children } = this;
+    if(isDestroyed || display === 'none') {
       return;
     }
     // 先绘制static
@@ -1046,6 +1050,13 @@ class Dom extends Xom {
         children: this.children.map(item => item.virtualDom),
       };
     }
+  }
+
+  __destroy() {
+    super.__destroy();
+    this.children.forEach(child => {
+      child.__destroy();
+    });
   }
 
   get tagName() {

@@ -87,7 +87,10 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { content, style, lineBoxes, charWidthList } = this;
+    let { isDestroyed, content, style, lineBoxes, charWidthList } = this;
+    if(isDestroyed || style.display === 'none') {
+      return;
+    }
     // 顺序尝试分割字符串为lineBox，形成多行
     let begin = 0;
     let i = 0;
@@ -151,7 +154,10 @@ class Text extends Node {
   }
 
   render(renderMode) {
-    const { ctx, style } = this;
+    const { isDestroyed, ctx, style } = this;
+    if(isDestroyed || style.display === 'none') {
+      return;
+    }
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(style);
       ctx.fillStyle = style.color;

@@ -7,8 +7,8 @@ class Rect extends Geom {
   }
 
   render(renderMode) {
-    let { originX, originY, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
-    if(display === 'none') {
+    let { isDestroyed, originX, originY, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(isDestroyed || display === 'none') {
       return;
     }
     let { width, height, ctx } = this;

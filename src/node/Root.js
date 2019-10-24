@@ -170,12 +170,14 @@ class Root extends Dom {
     this.__traverseCss(this, this.props.css);
     this.__init();
     this.refresh();
-    this.node.__root = this;
-    if(!this.node.__karasInit) {
+    if(this.node.__root) {
+      this.node.__root.__destroy();
+    }
+    else {
       initEvent(this.node);
-      this.node.__karasInit = true;
       this.node.__uuid = this.__uuid;
     }
+    this.node.__root = this;
   }
 
   refresh(cb) {
@@ -208,7 +210,7 @@ class Root extends Dom {
         let nd = this.__defs;
         nvd.defs = nd.value;
         nvd = util.clone(nvd);
-        if(this.node.__karasInit) {
+        if(this.node.__root) {
           diff(this.node, this.node.__vd, nvd);
         }
         else {

@@ -111,7 +111,7 @@ class Xom extends Node {
 
   __layout(data) {
     let { w } = data;
-    let { style: {
+    let { isDestroyed, style: {
       display,
       width,
       marginTop,
@@ -123,7 +123,7 @@ class Xom extends Node {
       paddingBottom,
       paddingLeft,
     } } = this;
-    if(display === 'none') {
+    if(isDestroyed || display === 'none') {
       return;
     }
     if(width && width.unit !== unit.AUTO) {
@@ -238,7 +238,7 @@ class Xom extends Node {
         transform: [],
       };
     }
-    let { ctx, style, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
+    let { isDestroyed, ctx, style, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
     // 恢复默认，防止其它matrix影响
     if(renderMode === mode.CANVAS) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -267,7 +267,7 @@ class Xom extends Node {
       transform,
       transformOrigin,
     } = style;
-    if(display === 'none') {
+    if(isDestroyed || display === 'none') {
       return;
     }
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
@@ -422,11 +422,16 @@ class Xom extends Node {
     }
   }
 
+  __destroy() {
+    super.__destroy();
+    this.__matrix = this.__matrixEvent = null;
+  }
+
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
     let { event: { type }, x, y, covers } = e;
-    let { listener, children, style, outerWidth, outerHeight, matrixEvent } = this;
-    if(style.display === 'none' || e.__stopPropagation) {
+    let { isDestroyed, listener, children, style, outerWidth, outerHeight, matrixEvent } = this;
+    if(isDestroyed || style.display === 'none' || e.__stopPropagation) {
       return;
     }
     let cb;

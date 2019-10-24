@@ -25,6 +25,11 @@ class Node {
     this.__oy += diff;
   }
 
+  __destroy() {
+    this.__isDestroyed = true;
+    this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = null;
+  }
+
   get x() {
     return this.__x;
   }
@@ -97,6 +102,9 @@ class Node {
   }
   get virtualDom() {
     return this.__virtualDom;
+  }
+  get isDestroyed() {
+    return this.__isDestroyed;
   }
 }
 

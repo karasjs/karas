@@ -30,7 +30,16 @@ class Img extends Dom {
 
   __layout(data) {
     super.__layout(data);
-    let { src, style: { width, height, marginLeft, marginRight } } = this;
+    let { isDestroyed, src, style: {
+      display,
+      width,
+      height,
+      marginLeft,
+      marginRight,
+    } } = this;
+    if(isDestroyed || display === 'none') {
+      return;
+    }
     let { w, h } = this.__preLayout(data);
     let cache = CACHE[CACHE] = CACHE[CACHE] || {
       state: INIT,
@@ -104,12 +113,12 @@ class Img extends Dom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { ctx, rx: x, ry: y, width, height, mlw, mtw, plw, ptw, src, style: {
+    let { ctx, rx: x, ry: y, width, height, mlw, mtw, plw, ptw, src, isDestroyed, style: {
       display,
       borderTopWidth,
       borderLeftWidth,
     } } = this;
-    if(display === 'none') {
+    if(isDestroyed || display === 'none') {
       return;
     }
     let btw = borderTopWidth.value;
@@ -229,6 +238,10 @@ class Img extends Dom {
         props,
       });
     }
+  }
+
+  __destroy() {
+    super.__destroy();
   }
 
   get src() {

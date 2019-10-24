@@ -156,6 +156,12 @@ class Component extends Event {
   render() {
   }
 
+  __destroy() {
+    if(this.shadowRoot) {
+      this.shadowRoot.__destroy();
+    }
+  }
+
   __emitEvent(e, force) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {

@@ -9,7 +9,7 @@ module.exports = {
       .moveToElement('svg', 1, 1)
       .mouseButtonClick(0)
       .pause(100)
-      .assert.value('input', '3')
+      .assert.value('input', '1')
       .end();
   }
 };

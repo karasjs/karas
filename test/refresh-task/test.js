@@ -5,7 +5,7 @@ module.exports = {
   'init': function(browser) {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
-      .waitForElementVisible('body', 500)
+      .waitForElementVisible('body', 1000)
       .moveToElement('svg', 1, 1)
       .mouseButtonClick(0)
       .pause(100)

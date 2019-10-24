@@ -172,6 +172,9 @@ class Root extends Dom {
     this.refresh();
     if(this.node.__root) {
       this.node.__root.__destroy();
+      delete this.node.__root.__node;
+      delete this.node.__root.__vd;
+      delete this.node.__root.__defs;
     }
     else {
       initEvent(this.node);

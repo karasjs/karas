@@ -3118,7 +3118,9 @@
 
         this.__init();
 
-        this.root.refreshTask(cb);
+        if (this.root) {
+          this.root.refreshTask(cb);
+        }
       }
     }, {
       key: "__traverse",
@@ -6711,6 +6713,10 @@
 
         if (this.node.__root) {
           this.node.__root.__destroy();
+
+          delete this.node.__root.__node;
+          delete this.node.__root.__vd;
+          delete this.node.__root.__defs;
         } else {
           initEvent(this.node);
           this.node.__uuid = this.__uuid;

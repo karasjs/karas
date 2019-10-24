@@ -222,7 +222,7 @@ class Root extends Dom {
       });
       this.__task.splice(0);
       cb && cb();
-      this.emit('refresh');
+      this.emit(Event.KARAS_REFRESH);
     });
   }
 

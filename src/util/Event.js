@@ -95,6 +95,8 @@ class Event {
       }
     }
   }
+
+  static KARAS_REFRESH = 'karas-refresh';
 }
 
 export default Event;

@@ -7,5 +7,5 @@ coverage/
 .idea/
 .DS_Store
 *.swp
-tests/**/script.js
+test/**/script.js
 index.min.js*

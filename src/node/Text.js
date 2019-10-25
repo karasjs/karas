@@ -3,8 +3,6 @@ import LineBox from './LineBox';
 import css from '../style/css';
 import mode from '../util/mode';
 
-const CHAR_WIDTH_CACHE = {};
-
 class Text extends Node {
   constructor(content) {
     super();
@@ -91,6 +89,8 @@ class Text extends Node {
     if(isDestroyed || style.display === 'none') {
       return;
     }
+    this.__ox = this.__oy = 0;
+    lineBoxes.splice(0);
     // 顺序尝试分割字符串为lineBox，形成多行
     let begin = 0;
     let i = 0;

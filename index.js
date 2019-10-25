@@ -2512,8 +2512,10 @@
 
         if (isDestroyed || style.display === 'none') {
           return;
-        } // 顺序尝试分割字符串为lineBox，形成多行
+        }
 
+        this.__ox = this.__oy = 0;
+        lineBoxes.splice(0); // 顺序尝试分割字符串为lineBox，形成多行
 
         var begin = 0;
         var i = 0;
@@ -3466,6 +3468,7 @@
         this.__ptw = this.__mpWidth(paddingTop, w);
         this.__prw = this.__mpWidth(paddingRight, w);
         this.__pbw = this.__mpWidth(paddingBottom, w);
+        this.__ox = this.__oy = 0;
 
         if (display === 'block') {
           this.__layoutBlock(data);

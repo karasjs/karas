@@ -144,6 +144,7 @@ class Xom extends Node {
     this.__ptw = this.__mpWidth(paddingTop, w);
     this.__prw = this.__mpWidth(paddingRight, w);
     this.__pbw = this.__mpWidth(paddingBottom, w);
+    this.__ox = this.__oy = 0;
     if(display === 'block') {
       this.__layoutBlock(data);
     }

@@ -129,6 +129,12 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffD2D(elem, ovd, nvd, root) {
+  if(!equalArr(ovd.transform, nvd.transform)) {
+    let transform = util.joinTransform(nvd.transform);
+    if(elem.getAttribute('transform') !== transform) {
+      elem.setAttribute('transform', transform);
+    }
+  }
   if(!root) {
     diffBb(elem.firstChild, ovd.bb, nvd.bb);
   }

@@ -145,6 +145,7 @@ class Xom extends Node {
     this.__prw = this.__mpWidth(paddingRight, w);
     this.__pbw = this.__mpWidth(paddingBottom, w);
     this.__ox = this.__oy = 0;
+    this.__matrix = this.__matrixEvent = null;
     if(display === 'block') {
       this.__layoutBlock(data);
     }
@@ -338,7 +339,7 @@ class Xom extends Node {
       let oh = y4 - y;
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
       // 初始化有可能继承祖先的matrix
-      this.__matrix = this.__matrix ? tf.mergeMatrix(this.__matrix, matrix) : matrix;
+      this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
       let parent = this.parent;
       while(parent) {
         if(parent.matrixEvent) {

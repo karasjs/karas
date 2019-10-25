@@ -3469,6 +3469,7 @@
         this.__prw = this.__mpWidth(paddingRight, w);
         this.__pbw = this.__mpWidth(paddingBottom, w);
         this.__ox = this.__oy = 0;
+        this.__matrix = this.__matrixEvent = null;
 
         if (display === 'block') {
           this.__layoutBlock(data);
@@ -3709,7 +3710,7 @@
           var _matrix = transform.calMatrix(transform$1, transformOrigin, x, y, ow, oh); // 初始化有可能继承祖先的matrix
 
 
-          this.__matrix = this.__matrix ? transform.mergeMatrix(this.__matrix, _matrix) : _matrix;
+          this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;
           var _parent = this.parent;
 
           while (_parent) {
@@ -6288,6 +6289,14 @@
   }
 
   function diffD2D(elem, ovd, nvd, root) {
+    if (!equalArr(ovd.transform, nvd.transform)) {
+      var transform = util.joinTransform(nvd.transform);
+
+      if (elem.getAttribute('transform') !== transform) {
+        elem.setAttribute('transform', transform);
+      }
+    }
+
     if (!root) {
       diffBb(elem.firstChild, ovd.bb, nvd.bb);
     }

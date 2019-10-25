@@ -201,16 +201,10 @@ class Img extends Dom {
         ]);
       }
     }
-    else if(renderMode === mode.CANVAS) {
-      if(this.__source) {
-        ctx.drawImage(this.__source, originX, originY, width, height);
-      }
-    }
-    else if(renderMode === mode.SVG) {
+    else {
       let matrix;
-      let needMatrix = this.__imgWidth !== undefined
-        && (width !== this.__imgWidth || height !== this.__imgHeight);
-      if(needMatrix) {
+      if(this.__imgWidth !== undefined
+        && (width !== this.__imgWidth || height !== this.__imgHeight)) {
         let list = [
           ['scaleX', width / this.__imgWidth],
           ['scaleY', height / this.__imgHeight]
@@ -225,26 +219,38 @@ class Img extends Dom {
             unit: unit.PERCENT,
           }
         ], x, y, this.outerWidth, this.outerHeight);
-        if(this.__matrix) {
-          matrix = transform.mergeMatrix(this.__matrix, matrix);
+        // 缩放图片的同时要考虑原先的矩阵，以及影响事件
+        if(this.matrix) {
+          this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
+          this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
+        }
+        else {
+          this.__matrixEvent = matrix;
         }
         matrix = 'matrix(' + matrix.join(',') + ')';
       }
-      let props = [
-        ['xlink:href', src],
-        ['x', originX],
-        ['y', originY],
-        ['width', needMatrix ? this.__imgWidth : this.width],
-        ['height', needMatrix ? this.__imgHeight : this.height]
-      ];
-      if(matrix) {
-        props.push(['transform', matrix]);
+      if(renderMode === mode.CANVAS) {
+        if(this.__source) {
+          ctx.drawImage(this.__source, originX, originY, width, height);
+        }
       }
-      this.virtualDom.children.push({
-        type: 'img',
-        tagName: 'image',
-        props,
-      });
+      else if(renderMode === mode.SVG) {
+        let props = [
+          ['xlink:href', src],
+          ['x', originX],
+          ['y', originY],
+          ['width', matrix ? this.__imgWidth : this.width],
+          ['height', matrix ? this.__imgHeight : this.height]
+        ];
+        if(matrix) {
+          props.push(['transform', matrix]);
+        }
+        this.virtualDom.children.push({
+          type: 'img',
+          tagName: 'image',
+          props,
+        });
+      }
     }
   }
 

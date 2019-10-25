@@ -240,9 +240,31 @@ class Xom extends Node {
       };
     }
     let { isDestroyed, ctx, style, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
-    // 恢复默认，防止其它matrix影响
+    let parent = this.parent;
+    let matrix = [1, 0, 0, 1, 0, 0];
+    while(parent) {
+      if(parent.matrixEvent) {
+        matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+        break;
+      }
+      parent = parent.parent;
+    }
+    // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+    if(matrix[0] !== 1
+      || matrix[1] !== 0
+      || matrix[1] !== 0
+      || matrix[1] !== 1
+      || matrix[1] !== 0
+      || matrix[1] !== 0) {
+      if(renderMode === mode.CANVAS) {
+        this.__matrix = this.__matrixEvent = matrix;
+      }
+      else if(renderMode === mode.SVG) {
+        this.__matrixEvent = matrix;
+      }
+    }
     if(renderMode === mode.CANVAS) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.setTransform(...matrix);
     }
     let {
       display,
@@ -308,18 +330,20 @@ class Xom extends Node {
     let y4 = y3 + bbw;
     let iw = width + plw + prw;
     let ih = height + ptw + pbw;
-    // translate相对于自身
+    // transform相对于自身
     if(transform) {
       let x4 = x + mlw + blw + iw + brw + mrw;
       let y4 = y + mtw + btw + ih + bbw + mbw;
       let ow = x4 - x;
       let oh = y4 - y;
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
-      this.__matrix = matrix;
+      // 初始化有可能继承祖先的matrix
+      this.__matrix = this.__matrix ? tf.mergeMatrix(this.__matrix, matrix) : matrix;
       let parent = this.parent;
       while(parent) {
-        if(parent.matrix) {
-          matrix = tf.mergeMatrix(parent.matrix, matrix);
+        if(parent.matrixEvent) {
+          matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+          break;
         }
         parent = parent.parent;
       }
@@ -520,7 +544,9 @@ class Xom extends Node {
           if(e.__stopImmediatePropagation) {
             return;
           }
-          item(e);
+          if(util.isFunction(item)) {
+            item(e);
+          }
         });
       }
       return true;

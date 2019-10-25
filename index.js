@@ -3599,10 +3599,30 @@
             plw = this.plw,
             ptw = this.ptw,
             prw = this.prw,
-            pbw = this.pbw; // 恢复默认，防止其它matrix影响
+            pbw = this.pbw;
+        var parent = this.parent;
+        var matrix = [1, 0, 0, 1, 0, 0];
+
+        while (parent) {
+          if (parent.matrixEvent) {
+            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+            break;
+          }
+
+          parent = parent.parent;
+        } // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+
+
+        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[1] !== 0 || matrix[1] !== 1 || matrix[1] !== 0 || matrix[1] !== 0) {
+          if (renderMode === mode.CANVAS) {
+            this.__matrix = this.__matrixEvent = matrix;
+          } else if (renderMode === mode.SVG) {
+            this.__matrixEvent = matrix;
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
         }
 
         var display = style.display,
@@ -3676,7 +3696,7 @@
         var y3 = y2 + height + ptw + pbw;
         var y4 = y3 + bbw;
         var iw = width + plw + prw;
-        var ih = height + ptw + pbw; // translate相对于自身
+        var ih = height + ptw + pbw; // transform相对于自身
 
         if (transform$1) {
           var _x = x + mlw + blw + iw + brw + mrw;
@@ -3685,22 +3705,26 @@
 
           var ow = _x - x;
           var oh = _y - y;
-          var matrix = transform.calMatrix(transform$1, transformOrigin, x, y, ow, oh);
-          this.__matrix = matrix;
-          var parent = this.parent;
 
-          while (parent) {
-            if (parent.matrix) {
-              matrix = transform.mergeMatrix(parent.matrix, matrix);
+          var _matrix = transform.calMatrix(transform$1, transformOrigin, x, y, ow, oh); // 初始化有可能继承祖先的matrix
+
+
+          this.__matrix = this.__matrix ? transform.mergeMatrix(this.__matrix, _matrix) : _matrix;
+          var _parent = this.parent;
+
+          while (_parent) {
+            if (_parent.matrixEvent) {
+              _matrix = transform.mergeMatrix(_parent.matrixEvent, _matrix);
+              break;
             }
 
-            parent = parent.parent;
+            _parent = _parent.parent;
           }
 
-          this.__matrixEvent = matrix;
+          this.__matrixEvent = _matrix;
 
           if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+            ctx.setTransform.apply(ctx, _toConsumableArray(_matrix));
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
@@ -3918,7 +3942,9 @@
                 return;
               }
 
-              item(e);
+              if (util.isFunction(item)) {
+                item(e);
+              }
             });
           }
 
@@ -6065,15 +6091,10 @@
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
-        } else if (renderMode === mode.CANVAS) {
-          if (this.__source) {
-            ctx.drawImage(this.__source, originX, originY, width, height);
-          }
-        } else if (renderMode === mode.SVG) {
+        } else {
           var matrix;
-          var needMatrix = this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight);
 
-          if (needMatrix) {
+          if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
             var list = [['scaleX', width / this.__imgWidth], ['scaleY', height / this.__imgHeight]];
             matrix = transform.calMatrix(list, [{
               value: 0,
@@ -6081,26 +6102,35 @@
             }, {
               value: 0,
               unit: unit.PERCENT
-            }], x, y, this.outerWidth, this.outerHeight);
+            }], x, y, this.outerWidth, this.outerHeight); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
 
-            if (this.__matrix) {
-              matrix = transform.mergeMatrix(this.__matrix, matrix);
+            if (this.matrix) {
+              this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
+              this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
+            } else {
+              this.__matrixEvent = matrix;
             }
 
             matrix = 'matrix(' + matrix.join(',') + ')';
           }
 
-          var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', needMatrix ? this.__imgWidth : this.width], ['height', needMatrix ? this.__imgHeight : this.height]];
+          if (renderMode === mode.CANVAS) {
+            if (this.__source) {
+              ctx.drawImage(this.__source, originX, originY, width, height);
+            }
+          } else if (renderMode === mode.SVG) {
+            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', matrix ? this.__imgWidth : this.width], ['height', matrix ? this.__imgHeight : this.height]];
 
-          if (matrix) {
-            props.push(['transform', matrix]);
+            if (matrix) {
+              props.push(['transform', matrix]);
+            }
+
+            this.virtualDom.children.push({
+              type: 'img',
+              tagName: 'image',
+              props: props
+            });
           }
-
-          this.virtualDom.children.push({
-            type: 'img',
-            tagName: 'image',
-            props: props
-          });
         }
       }
     }, {

@@ -91,7 +91,7 @@ function getColorStop(v, length) {
       }
       let num = j - i + 1;
       let per = (end - start) / num;
-      for(let k = i;k < j; k++) {
+      for(let k = i; k < j; k++) {
         let item = list[k];
         list[k] = [item, start + per * (k + 1 - i)];
       }

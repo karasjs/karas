@@ -6793,10 +6793,10 @@
             ptw = this.ptw,
             src = this.src,
             isDestroyed = this.isDestroyed,
-            _this$style = this.style,
-            display = _this$style.display,
-            borderTopWidth = _this$style.borderTopWidth,
-            borderLeftWidth = _this$style.borderLeftWidth;
+            _this$computedStyle2 = this.computedStyle,
+            display = _this$computedStyle2.display,
+            borderTopWidth = _this$computedStyle2.borderTopWidth,
+            borderLeftWidth = _this$computedStyle2.borderLeftWidth;
 
         if (isDestroyed || display === 'none') {
           return;

@@ -112,7 +112,7 @@ class Img extends Dom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { ctx, rx: x, ry: y, width, height, mlw, mtw, plw, ptw, src, isDestroyed, style: {
+    let { ctx, rx: x, ry: y, width, height, mlw, mtw, plw, ptw, src, isDestroyed, computedStyle: {
       display,
       borderTopWidth,
       borderLeftWidth,

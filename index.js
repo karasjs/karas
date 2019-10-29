@@ -1961,14 +1961,39 @@
     },
     warn: function warn(s) {
       console.warn(s);
+    },
+    requestAnimationFrame: function (_requestAnimationFrame) {
+      function requestAnimationFrame(_x) {
+        return _requestAnimationFrame.apply(this, arguments);
+      }
+
+      requestAnimationFrame.toString = function () {
+        return _requestAnimationFrame.toString();
+      };
+
+      return requestAnimationFrame;
+    }(function (cb) {
+      if (typeof requestAnimationFrame !== 'undefined') {
+        inject.requestAnimationFrame = requestAnimationFrame;
+        requestAnimationFrame(cb);
+      } else {
+        setTimeout(cb, 16.7);
+
+        inject.requestAnimationFrame = function (cb) {
+          setTimeout(cb, 16.7);
+        };
+      }
+    }),
+    now: function now() {
+      if (typeof performance !== 'undefined') {
+        inject.now = performance.now.bind(performance);
+        return performance.now();
+      }
+
+      inject.now = Date.now.bind(Date);
+      return Date.now();
     }
   };
-
-  inject.requestAnimationFrame = window.requestAnimationFrame.bind(window) || function (cb) {
-    setTimeout(cb, 16.7);
-  };
-
-  inject.now = window.performance ? window.performance.now.bind(window.performance) : Date.now.bind(Date);
 
   var Text =
   /*#__PURE__*/

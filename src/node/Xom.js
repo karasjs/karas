@@ -80,15 +80,6 @@ class Xom extends Node {
         }
       }
     });
-    // margin和padding的宽度
-    this.__mtw = 0;
-    this.__mrw = 0;
-    this.__mbw = 0;
-    this.__mlw = 0;
-    this.__ptw = 0;
-    this.__prw = 0;
-    this.__pbw = 0;
-    this.__plw = 0;
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animation = null;
@@ -114,7 +105,8 @@ class Xom extends Node {
 
   __layout(data) {
     let { w } = data;
-    let { isDestroyed, computedStyle: {
+    let { isDestroyed, computedStyle } = this;
+    let {
       display,
       width,
       marginTop,
@@ -125,7 +117,7 @@ class Xom extends Node {
       paddingRight,
       paddingBottom,
       paddingLeft,
-    } } = this;
+    } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -139,14 +131,14 @@ class Xom extends Node {
           break;
       }
     }
-    this.__mlw = this.__mpWidth(marginLeft, w);
-    this.__mtw = this.__mpWidth(marginTop, w);
-    this.__mrw = this.__mpWidth(marginRight, w);
-    this.__mbw = this.__mpWidth(marginBottom, w);
-    this.__plw = this.__mpWidth(paddingLeft, w);
-    this.__ptw = this.__mpWidth(paddingTop, w);
-    this.__prw = this.__mpWidth(paddingRight, w);
-    this.__pbw = this.__mpWidth(paddingBottom, w);
+    computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
+    computedStyle.marginTop = this.__mpWidth(marginTop, w);
+    computedStyle.marginRight = this.__mpWidth(marginRight, w);
+    computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
+    computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
+    computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
+    computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
+    computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
     this.__ox = this.__oy = 0;
     this.__matrix = this.__matrixEvent = null;
     if(display === 'block') {
@@ -158,15 +150,21 @@ class Xom extends Node {
     else if(display === 'inline') {
       this.__layoutInline(data);
     }
+    // 计算结果存入computedStyle
+    computedStyle.width = this.width;
+    computedStyle.height = this.height;
   }
 
   isGeom() {
     return this.tagName.charAt(0) === '$';
   }
 
-  // 获取margin/padding的实际值
+  // 获取margin/padding的实际值，当动画执行时，mp可能为computedStyle，此时已经计算好直接返回
   __mpWidth(mp, w) {
-    if(mp.unit === unit.PX) {
+    if(util.isNumber(mp)) {
+      return mp;
+    }
+    else if(mp.unit === unit.PX) {
       return mp.value;
     }
     else if(mp.unit === unit.PERCENT) {
@@ -179,7 +177,7 @@ class Xom extends Node {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
-    let { computedStyle, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { computedStyle } = this;
     let {
       width,
       height,
@@ -187,11 +185,23 @@ class Xom extends Node {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = computedStyle;
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(width && width.unit !== unit.AUTO) {
+    if(util.isNumber(width)) {
+      fixedWidth = true;
+      w = width;
+    }
+    else if(width.unit !== unit.AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case unit.PX:
@@ -202,7 +212,11 @@ class Xom extends Node {
           break;
       }
     }
-    if(height && height.unit !== unit.AUTO) {
+    if(util.isNumber(height)) {
+      fixedHeight = true;
+      h = height;
+    }
+    else if(height.unit !== unit.AUTO) {
       fixedHeight = true;
       switch(height.unit) {
         case unit.PX:
@@ -214,15 +228,15 @@ class Xom extends Node {
       }
     }
     // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth + mlw + plw;
+    x += borderLeftWidth + marginLeft + paddingLeft;
     data.x = x;
-    y += borderTopWidth + mtw + ptw;
+    y += borderTopWidth + marginTop + paddingTop;
     data.y = y;
     if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth + borderRightWidth + mlw + mrw + plw + prw;
+      w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
     }
     if(height.unit === unit.AUTO) {
-      h -= borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
+      h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
     }
     return {
       fixedWidth,
@@ -243,7 +257,7 @@ class Xom extends Node {
         transform: [],
       };
     }
-    let { isDestroyed, ctx, computedStyle, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
+    let { isDestroyed, ctx, computedStyle, width, height } = this;
     let parent = this.parent;
     let matrix = [1, 0, 0, 1, 0, 0];
     while(parent) {
@@ -277,6 +291,14 @@ class Xom extends Node {
       right,
       bottom,
       left,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
       backgroundGradient: bgg,
       backgroundColor: bgc,
       borderTopWidth,
@@ -320,20 +342,20 @@ class Xom extends Node {
     }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
     let { rx: x, ry: y } = this;
-    let x1 = x + mlw;
+    let x1 = x + marginLeft;
     let x2 = x1 + borderLeftWidth;
-    let x3 = x2 + width + plw + prw;
+    let x3 = x2 + width + paddingLeft + paddingRight;
     let x4 = x3 + borderRightWidth;
-    let y1 = y + mtw;
+    let y1 = y + marginTop;
     let y2 = y1 + borderTopWidth;
-    let y3 = y2 + height + ptw + pbw;
+    let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    let iw = width + plw + prw;
-    let ih = height + ptw + pbw;
+    let iw = width + paddingLeft + paddingRight;
+    let ih = height + paddingTop + paddingBottom;
     // transform相对于自身
     if(transform) {
-      let x4 = x + mlw + borderLeftWidth + iw + borderRightWidth + mrw;
-      let y4 = y + mtw + borderTopWidth + ih + borderBottomWidth + mbw;
+      let x4 = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
+      let y4 = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
       let ow = x4 - x;
       let oh = y4 - y;
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
@@ -667,55 +689,39 @@ class Xom extends Node {
   get tagName() {
     return this.__tagName;
   }
-  get mtw() {
-    return this.__mtw;
-  }
-  get mrw() {
-    return this.__mrw;
-  }
-  get mbw() {
-    return this.__mbw;
-  }
-  get mlw() {
-    return this.__mlw;
-  }
-  get ptw() {
-    return this.__ptw;
-  }
-  get prw() {
-    return this.__prw;
-  }
-  get pbw() {
-    return this.__pbw;
-  }
-  get plw() {
-    return this.__plw;
-  }
   get outerWidth() {
-    let { mlw, mrw, plw, prw, computedStyle: {
+    let { computedStyle: {
       borderLeftWidth,
       borderRightWidth,
+      marginRight,
+      marginLeft,
+      paddingRight,
+      paddingLeft,
     } } = this;
     return this.width
       + borderLeftWidth
       + borderRightWidth
-      + mlw
-      + mrw
-      + plw
-      + prw;
+      + marginLeft
+      + marginRight
+      + paddingLeft
+      + paddingRight;
   }
   get outerHeight() {
-    let { mtw, mbw, ptw, pbw, computedStyle: {
+    let { computedStyle: {
       borderTopWidth,
       borderBottomWidth,
+      marginTop,
+      marginBottom,
+      paddingTop,
+      paddingBottom,
     } } = this;
     return this.height
       + borderTopWidth
       + borderBottomWidth
-      + mtw
-      + mbw
-      + ptw
-      + pbw;
+      + marginTop
+      + marginBottom
+      + paddingTop
+      + paddingBottom;
   }
   get listener() {
     return this.__listener;

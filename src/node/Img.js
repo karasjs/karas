@@ -112,16 +112,20 @@ class Img extends Dom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { ctx, rx: x, ry: y, width, height, mlw, mtw, plw, ptw, src, isDestroyed, computedStyle: {
+    let { ctx, rx: x, ry: y, width, height, src, isDestroyed, computedStyle: {
       display,
       borderTopWidth,
       borderLeftWidth,
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingLeft,
     } } = this;
     if(isDestroyed || display === 'none') {
       return;
     }
-    let originX = x + mlw + borderLeftWidth + plw;
-    let originY = y + mtw + borderTopWidth + ptw;
+    let originX = x + marginLeft + borderLeftWidth + paddingLeft;
+    let originY = y + marginTop + borderTopWidth + paddingTop;
     if(this.__error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';

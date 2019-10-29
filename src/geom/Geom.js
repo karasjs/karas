@@ -99,7 +99,7 @@ class Geom extends Xom {
   }
 
   __preRender(renderMode) {
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, prw, pbw, computedStyle } = this;
+    let { rx: x, ry: y, width, height, computedStyle } = this;
     let {
       borderTopWidth,
       borderLeftWidth,
@@ -108,13 +108,19 @@ class Geom extends Xom {
       strokeWidth,
       strokeDasharray,
       fill,
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = computedStyle;
-    let originX = x + borderLeftWidth + mlw + plw;
-    let originY = y + borderTopWidth + mtw + ptw;
+    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = y + borderTopWidth + marginTop + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
-    let iw = width + plw + prw;
-    let ih = height + ptw + pbw;
+    let iw = width + paddingLeft + paddingRight;
+    let ih = height + paddingTop + paddingBottom;
     if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {

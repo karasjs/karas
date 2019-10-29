@@ -265,7 +265,7 @@ class Dom extends Xom {
 
   __calAbs(isDirectionRow) {
     let max = 0;
-    let { mtw, mrw, mbw, mlw, ptw, prw, pbw, plw, flowChildren, computedStyle } = this;
+    let { flowChildren, computedStyle } = this;
     // 计算需考虑style的属性
     let {
       width,
@@ -274,6 +274,14 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit === unit.PX) {
@@ -300,11 +308,11 @@ class Dom extends Xom {
     });
     // margin/padding/border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth + borderLeftWidth + mlw + mrw + plw + prw;
+      let w = borderRightWidth + borderLeftWidth + marginLeft + marginRight + paddingLeft + paddingRight;
       max += w;
     }
     else {
-      let h = borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
+      let h = borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
       max += h;
     }
     return max;
@@ -514,24 +522,30 @@ class Dom extends Xom {
     let maxSum = 0;
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
-        let { flexGrow, flexShrink, flexBasis } = item.computedStyle;
+        let { computedStyle } = item;
+        let { flexGrow, flexShrink, flexBasis } = computedStyle;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
         growSum += flexGrow;
         shrinkSum += flexShrink;
         let { b, min, max } = item.__calAutoBasis(isDirectionRow, w, h);
-        // 根据basis不同，计算方式不同
-        if(flexBasis.unit === unit.AUTO) {
+        // 根据basis不同，计算方式不同，数字代表动画执行时已经计算过的
+        if(util.isNumber(flexBasis)) {
+          b = flexBasis;
+          basisList.push(b);
+          basisSum += b;
+        }
+        else if(flexBasis.unit === unit.AUTO) {
           basisList.push(max);
           basisSum += max;
         }
         else if(flexBasis.unit === unit.PX) {
-          b = flexBasis.value;
+          computedStyle.flexBasis = b = flexBasis.value;
           basisList.push(b);
           basisSum += b;
         }
         else if(flexBasis.unit === unit.PERCENT) {
-          b = (isDirectionRow ? w : h) * flexBasis.value;
+          b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value;
           basisList.push(b);
           basisSum += b;
         }
@@ -581,7 +595,7 @@ class Dom extends Xom {
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Xom || item instanceof Component) {
-        const { computedStyle, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw, computedStyle: {
+        const { computedStyle, computedStyle: {
           display,
           flexDirection,
           width,
@@ -590,6 +604,14 @@ class Dom extends Xom {
           borderRightWidth,
           borderBottomWidth,
           borderLeftWidth,
+          marginTop,
+          marginRight,
+          marginBottom,
+          marginLeft,
+          paddingTop,
+          paddingRight,
+          paddingBottom,
+          paddingLeft,
         }} = item;
         if(isDirectionRow) {
           // row的flex的child如果是inline，变为block
@@ -626,20 +648,12 @@ class Dom extends Xom {
           });
         }
         // 重设因伸缩而导致的主轴长度
-        if(isOverflow && shrink) {
+        if(isOverflow && shrink || !isOverflow && grow) {
           if(isDirectionRow) {
-            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
+            item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
           }
           else {
-            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
-          }
-        }
-        else if(!isOverflow && grow) {
-          if(isDirectionRow) {
-            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
-          }
-          else {
-            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
+            item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
       }
@@ -710,19 +724,29 @@ class Dom extends Xom {
     if(alignItems === 'stretch') {
       // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
       flowChildren.forEach(item => {
-        let { computedStyle, mlw, mtw, mrw, mbw, ptw, prw, plw, pbw } = item;
+        let { computedStyle } = item;
+        let {
+          borderTopWidth,
+          borderRightWidth,
+          borderBottomWidth,
+          borderLeftWidth,
+          marginTop,
+          marginRight,
+          marginBottom,
+          marginLeft,
+          paddingTop,
+          paddingRight,
+          paddingBottom,
+          paddingLeft,
+        } = computedStyle;
         if(isDirectionRow) {
           if(computedStyle.height.unit === unit.AUTO) {
-            item.__height = maxCross - mtw - mbw - ptw - pbw
-              - computedStyle.borderTopWidth
-              - computedStyle.borderBottomWidth;
+            item.__height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
           if(computedStyle.width.unit === unit.AUTO) {
-            item.__width = maxCross - mlw - mrw - plw - prw
-              - computedStyle.borderRightWidth
-              - computedStyle.borderLeftWidth;
+            item.__width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
       });
@@ -884,20 +908,26 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container) {
-    let { x, y, flowY, width, height, computedStyle, mlw, mtw, plw, ptw, prw, pbw } = container;
+    let { x, y, flowY, width, height, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       display,
       borderTopWidth,
       borderLeftWidth,
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
     } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
-    x += mlw + borderLeftWidth;
-    y += mtw + borderTopWidth;
-    let pw = width + plw + prw;
-    let ph = height + ptw + pbw;
+    x += marginLeft + borderLeftWidth;
+    y += marginTop + borderTopWidth;
+    let iw = width + paddingLeft + paddingRight;
+    let ih = height + paddingTop + paddingBottom;
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { computedStyle, computedStyle: {
@@ -907,7 +937,7 @@ class Dom extends Xom {
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
-        w2 = right.unit === unit.PX ? x + pw - right.value - x2 : x + pw - width * right.value * 0.01 - x2;
+        w2 = right.unit === unit.PX ? x + iw - right.value - x2 : x + iw - width * right.value * 0.01 - x2;
       }
       else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
@@ -916,7 +946,7 @@ class Dom extends Xom {
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         w2 = width2.unit === unit.PX ? width2.value : width;
         let widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-        x2 = right.unit === unit.PX ? x + pw - right.value - widthPx : x + pw - width * right.value * 0.01 - widthPx;
+        x2 = right.unit === unit.PX ? x + iw - right.value - widthPx : x + iw - width * right.value * 0.01 - widthPx;
       }
       else if(left.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
@@ -924,7 +954,7 @@ class Dom extends Xom {
       }
       else if(right.unit !== unit.AUTO) {
         w2 = item.__calAbs(true);
-        x2 = right.unit === unit.PX ? x + pw - right.value - w2 : x + pw - width * right.value * 0.01 - w2;
+        x2 = right.unit === unit.PX ? x + iw - right.value - w2 : x + iw - width * right.value * 0.01 - w2;
       }
       else if(width2.unit !== unit.AUTO) {
         x2 = x;
@@ -937,7 +967,7 @@ class Dom extends Xom {
       // top/bottom/height优先级同上
       if(top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
-        h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
+        h2 = bottom.unit === unit.PX ? y + ih - bottom.value - y2 : y + ih - height * bottom.value * 0.01 - y2;
         computedStyle.height = {
           value: h2,
           unit: unit.PX,
@@ -950,7 +980,7 @@ class Dom extends Xom {
       else if(bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
         h2 = height2.unit === unit.PX ? height2.value : height;
         let heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-        y2 = bottom.unit === unit.PX ? y + ph - bottom.value - heightPx : y + ph - height * bottom.value * 0.01 - heightPx;
+        y2 = bottom.unit === unit.PX ? y + ih - bottom.value - heightPx : y + ih - height * bottom.value * 0.01 - heightPx;
       }
       else if(top.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
@@ -958,14 +988,14 @@ class Dom extends Xom {
       }
       else if(bottom.unit !== unit.AUTO) {
         h2 = item.__calAbs();
-        y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
+        y2 = bottom.unit === unit.PX ? y + ih - bottom.value - h2 : y + ih - height * bottom.value * 0.01 - h2;
       }
       else if(height2.unit !== unit.AUTO) {
-        y2 = flowY + mtw + borderTopWidth;
+        y2 = flowY + marginTop + borderTopWidth;
         h2 = height2.unit === unit.PX ? height2.value : height;
       }
       else {
-        y2 = flowY + mtw + borderTopWidth;
+        y2 = flowY + marginTop + borderTopWidth;
         h2 = item.__calAbs();
       }
       // absolute时inline强制block

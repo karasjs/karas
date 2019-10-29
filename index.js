@@ -4254,17 +4254,8 @@
             _this.__class = v;
           }
         }
-      }); // margin和padding的宽度
+      });
 
-
-      _this.__mtw = 0;
-      _this.__mrw = 0;
-      _this.__mbw = 0;
-      _this.__mlw = 0;
-      _this.__ptw = 0;
-      _this.__prw = 0;
-      _this.__pbw = 0;
-      _this.__plw = 0;
       _this.__matrix = null;
       _this.__matrixEvent = null;
       _this.__animation = null;
@@ -4297,17 +4288,17 @@
       value: function __layout(data) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
-            _this$computedStyle = this.computedStyle,
-            display = _this$computedStyle.display,
-            width = _this$computedStyle.width,
-            marginTop = _this$computedStyle.marginTop,
-            marginRight = _this$computedStyle.marginRight,
-            marginBottom = _this$computedStyle.marginBottom,
-            marginLeft = _this$computedStyle.marginLeft,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingRight = _this$computedStyle.paddingRight,
-            paddingBottom = _this$computedStyle.paddingBottom,
-            paddingLeft = _this$computedStyle.paddingLeft;
+            computedStyle = this.computedStyle;
+        var display = computedStyle.display,
+            width = computedStyle.width,
+            marginTop = computedStyle.marginTop,
+            marginRight = computedStyle.marginRight,
+            marginBottom = computedStyle.marginBottom,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -4325,14 +4316,14 @@
           }
         }
 
-        this.__mlw = this.__mpWidth(marginLeft, w);
-        this.__mtw = this.__mpWidth(marginTop, w);
-        this.__mrw = this.__mpWidth(marginRight, w);
-        this.__mbw = this.__mpWidth(marginBottom, w);
-        this.__plw = this.__mpWidth(paddingLeft, w);
-        this.__ptw = this.__mpWidth(paddingTop, w);
-        this.__prw = this.__mpWidth(paddingRight, w);
-        this.__pbw = this.__mpWidth(paddingBottom, w);
+        computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
+        computedStyle.marginTop = this.__mpWidth(marginTop, w);
+        computedStyle.marginRight = this.__mpWidth(marginRight, w);
+        computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
+        computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
+        computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
+        computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
+        computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
         this.__ox = this.__oy = 0;
         this.__matrix = this.__matrixEvent = null;
 
@@ -4342,18 +4333,24 @@
           this.__layoutFlex(data);
         } else if (display === 'inline') {
           this.__layoutInline(data);
-        }
+        } // 计算结果存入computedStyle
+
+
+        computedStyle.width = this.width;
+        computedStyle.height = this.height;
       }
     }, {
       key: "isGeom",
       value: function isGeom() {
         return this.tagName.charAt(0) === '$';
-      } // 获取margin/padding的实际值
+      } // 获取margin/padding的实际值，当动画执行时，mp可能为computedStyle，此时已经计算好直接返回
 
     }, {
       key: "__mpWidth",
       value: function __mpWidth(mp, w) {
-        if (mp.unit === unit.PX) {
+        if (util.isNumber(mp)) {
+          return mp;
+        } else if (mp.unit === unit.PX) {
           return mp.value;
         } else if (mp.unit === unit.PERCENT) {
           return mp.value * w * 0.01;
@@ -4370,26 +4367,29 @@
             h = data.h;
         this.__x = x;
         this.__y = y;
-        var computedStyle = this.computedStyle,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw;
+        var computedStyle = this.computedStyle;
         var width = computedStyle.width,
             height = computedStyle.height,
             borderTopWidth = computedStyle.borderTopWidth,
             borderRightWidth = computedStyle.borderRightWidth,
             borderBottomWidth = computedStyle.borderBottomWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth; // 除了auto外都是固定宽高度
+            borderLeftWidth = computedStyle.borderLeftWidth,
+            marginTop = computedStyle.marginTop,
+            marginRight = computedStyle.marginRight,
+            marginBottom = computedStyle.marginBottom,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft; // 除了auto外都是固定宽高度
 
         var fixedWidth;
         var fixedHeight;
 
-        if (width && width.unit !== unit.AUTO) {
+        if (util.isNumber(width)) {
+          fixedWidth = true;
+          w = width;
+        } else if (width.unit !== unit.AUTO) {
           fixedWidth = true;
 
           switch (width.unit) {
@@ -4403,7 +4403,10 @@
           }
         }
 
-        if (height && height.unit !== unit.AUTO) {
+        if (util.isNumber(height)) {
+          fixedHeight = true;
+          h = height;
+        } else if (height.unit !== unit.AUTO) {
           fixedHeight = true;
 
           switch (height.unit) {
@@ -4418,17 +4421,17 @@
         } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth + mlw + plw;
+        x += borderLeftWidth + marginLeft + paddingLeft;
         data.x = x;
-        y += borderTopWidth + mtw + ptw;
+        y += borderTopWidth + marginTop + paddingTop;
         data.y = y;
 
         if (width.unit === unit.AUTO) {
-          w -= borderLeftWidth + borderRightWidth + mlw + mrw + plw + prw;
+          w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
         }
 
         if (height.unit === unit.AUTO) {
-          h -= borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
+          h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
         }
 
         return {
@@ -4457,15 +4460,7 @@
             ctx = this.ctx,
             computedStyle = this.computedStyle,
             width = this.width,
-            height = this.height,
-            mlw = this.mlw,
-            mrw = this.mrw,
-            mtw = this.mtw,
-            mbw = this.mbw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw;
+            height = this.height;
         var parent = this.parent;
         var matrix = [1, 0, 0, 1, 0, 0];
 
@@ -4497,6 +4492,14 @@
             right = computedStyle.right,
             bottom = computedStyle.bottom,
             left = computedStyle.left,
+            marginTop = computedStyle.marginTop,
+            marginRight = computedStyle.marginRight,
+            marginBottom = computedStyle.marginBottom,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft,
             bgg = computedStyle.backgroundGradient,
             bgc = computedStyle.backgroundColor,
             borderTopWidth = computedStyle.borderTopWidth,
@@ -4549,21 +4552,21 @@
 
         var x = this.rx,
             y = this.ry;
-        var x1 = x + mlw;
+        var x1 = x + marginLeft;
         var x2 = x1 + borderLeftWidth;
-        var x3 = x2 + width + plw + prw;
+        var x3 = x2 + width + paddingLeft + paddingRight;
         var x4 = x3 + borderRightWidth;
-        var y1 = y + mtw;
+        var y1 = y + marginTop;
         var y2 = y1 + borderTopWidth;
-        var y3 = y2 + height + ptw + pbw;
+        var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth;
-        var iw = width + plw + prw;
-        var ih = height + ptw + pbw; // transform相对于自身
+        var iw = width + paddingLeft + paddingRight;
+        var ih = height + paddingTop + paddingBottom; // transform相对于自身
 
         if (transform$1) {
-          var _x = x + mlw + borderLeftWidth + iw + borderRightWidth + mrw;
+          var _x = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
 
-          var _y = y + mtw + borderTopWidth + ih + borderBottomWidth + mbw;
+          var _y = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
 
           var ow = _x - x;
           var oh = _y - y;
@@ -4932,68 +4935,28 @@
         return this.__tagName;
       }
     }, {
-      key: "mtw",
-      get: function get() {
-        return this.__mtw;
-      }
-    }, {
-      key: "mrw",
-      get: function get() {
-        return this.__mrw;
-      }
-    }, {
-      key: "mbw",
-      get: function get() {
-        return this.__mbw;
-      }
-    }, {
-      key: "mlw",
-      get: function get() {
-        return this.__mlw;
-      }
-    }, {
-      key: "ptw",
-      get: function get() {
-        return this.__ptw;
-      }
-    }, {
-      key: "prw",
-      get: function get() {
-        return this.__prw;
-      }
-    }, {
-      key: "pbw",
-      get: function get() {
-        return this.__pbw;
-      }
-    }, {
-      key: "plw",
-      get: function get() {
-        return this.__plw;
-      }
-    }, {
       key: "outerWidth",
       get: function get() {
-        var mlw = this.mlw,
-            mrw = this.mrw,
-            plw = this.plw,
-            prw = this.prw,
-            _this$computedStyle2 = this.computedStyle,
-            borderLeftWidth = _this$computedStyle2.borderLeftWidth,
-            borderRightWidth = _this$computedStyle2.borderRightWidth;
-        return this.width + borderLeftWidth + borderRightWidth + mlw + mrw + plw + prw;
+        var _this$computedStyle = this.computedStyle,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            borderRightWidth = _this$computedStyle.borderRightWidth,
+            marginRight = _this$computedStyle.marginRight,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingRight = _this$computedStyle.paddingRight,
+            paddingLeft = _this$computedStyle.paddingLeft;
+        return this.width + borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
       }
     }, {
       key: "outerHeight",
       get: function get() {
-        var mtw = this.mtw,
-            mbw = this.mbw,
-            ptw = this.ptw,
-            pbw = this.pbw,
-            _this$computedStyle3 = this.computedStyle,
-            borderTopWidth = _this$computedStyle3.borderTopWidth,
-            borderBottomWidth = _this$computedStyle3.borderBottomWidth;
-        return this.height + borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
+        var _this$computedStyle2 = this.computedStyle,
+            borderTopWidth = _this$computedStyle2.borderTopWidth,
+            borderBottomWidth = _this$computedStyle2.borderBottomWidth,
+            marginTop = _this$computedStyle2.marginTop,
+            marginBottom = _this$computedStyle2.marginBottom,
+            paddingTop = _this$computedStyle2.paddingTop,
+            paddingBottom = _this$computedStyle2.paddingBottom;
+        return this.height + borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
       }
     }, {
       key: "listener",
@@ -5262,12 +5225,6 @@
             y = this.ry,
             width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw,
             computedStyle = this.computedStyle;
         var borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
@@ -5275,13 +5232,19 @@
             stroke = computedStyle.stroke,
             strokeWidth = computedStyle.strokeWidth,
             strokeDasharray = computedStyle.strokeDasharray,
-            fill = computedStyle.fill;
-        var originX = x + borderLeftWidth + mlw + plw;
-        var originY = y + borderTopWidth + mtw + ptw;
+            fill = computedStyle.fill,
+            marginTop = computedStyle.marginTop,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft;
+        var originX = x + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = y + borderTopWidth + marginTop + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
-        var iw = width + plw + prw;
-        var ih = height + ptw + pbw;
+        var iw = width + paddingLeft + paddingRight;
+        var ih = height + paddingTop + paddingBottom;
 
         if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
           var go = gradient.parseGradient(stroke);
@@ -5696,15 +5659,7 @@
       key: "__calAbs",
       value: function __calAbs(isDirectionRow) {
         var max = 0;
-        var mtw = this.mtw,
-            mrw = this.mrw,
-            mbw = this.mbw,
-            mlw = this.mlw,
-            ptw = this.ptw,
-            prw = this.prw,
-            pbw = this.pbw,
-            plw = this.plw,
-            flowChildren = this.flowChildren,
+        var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle; // 计算需考虑style的属性
 
         var width = computedStyle.width,
@@ -5712,7 +5667,15 @@
             borderTopWidth = computedStyle.borderTopWidth,
             borderRightWidth = computedStyle.borderRightWidth,
             borderBottomWidth = computedStyle.borderBottomWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth;
+            borderLeftWidth = computedStyle.borderLeftWidth,
+            marginTop = computedStyle.marginTop,
+            marginRight = computedStyle.marginRight,
+            marginBottom = computedStyle.marginBottom,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft;
         var main = isDirectionRow ? width : height;
 
         if (main.unit === unit.PX) {
@@ -5740,10 +5703,10 @@
         }); // margin/padding/border也得计算在内
 
         if (isDirectionRow) {
-          var w = borderRightWidth + borderLeftWidth + mlw + mrw + plw + prw;
+          var w = borderRightWidth + borderLeftWidth + marginLeft + marginRight + paddingLeft + paddingRight;
           max += w;
         } else {
-          var h = borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
+          var h = borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
           max += h;
         }
 
@@ -5988,10 +5951,10 @@
         var maxSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
-            var _item$computedStyle2 = item.computedStyle,
-                flexGrow = _item$computedStyle2.flexGrow,
-                flexShrink = _item$computedStyle2.flexShrink,
-                flexBasis = _item$computedStyle2.flexBasis;
+            var _computedStyle2 = item.computedStyle;
+            var flexGrow = _computedStyle2.flexGrow,
+                flexShrink = _computedStyle2.flexShrink,
+                flexBasis = _computedStyle2.flexBasis;
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
@@ -6000,18 +5963,22 @@
             var _item$__calAutoBasis2 = item.__calAutoBasis(isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
                 min = _item$__calAutoBasis2.min,
-                max = _item$__calAutoBasis2.max; // 根据basis不同，计算方式不同
+                max = _item$__calAutoBasis2.max; // 根据basis不同，计算方式不同，数字代表动画执行时已经计算过的
 
 
-            if (flexBasis.unit === unit.AUTO) {
+            if (util.isNumber(flexBasis)) {
+              b = flexBasis;
+              basisList.push(b);
+              basisSum += b;
+            } else if (flexBasis.unit === unit.AUTO) {
               basisList.push(max);
               basisSum += max;
             } else if (flexBasis.unit === unit.PX) {
-              b = flexBasis.value;
+              _computedStyle2.flexBasis = b = flexBasis.value;
               basisList.push(b);
               basisSum += b;
             } else if (flexBasis.unit === unit.PERCENT) {
-              b = (isDirectionRow ? w : h) * flexBasis.value;
+              b = _computedStyle2.flexBasis = (isDirectionRow ? w : h) * flexBasis.value;
               basisList.push(b);
               basisSum += b;
             }
@@ -6063,29 +6030,29 @@
           main = Math.max(main, minList[i]);
 
           if (item instanceof Xom || item instanceof Component) {
-            var _computedStyle2 = item.computedStyle,
-                mlw = item.mlw,
-                mtw = item.mtw,
-                mrw = item.mrw,
-                mbw = item.mbw,
-                plw = item.plw,
-                ptw = item.ptw,
-                prw = item.prw,
-                pbw = item.pbw,
-                _item$computedStyle3 = item.computedStyle,
-                display = _item$computedStyle3.display,
-                _flexDirection2 = _item$computedStyle3.flexDirection,
-                _width2 = _item$computedStyle3.width,
-                height = _item$computedStyle3.height,
-                borderTopWidth = _item$computedStyle3.borderTopWidth,
-                borderRightWidth = _item$computedStyle3.borderRightWidth,
-                borderBottomWidth = _item$computedStyle3.borderBottomWidth,
-                borderLeftWidth = _item$computedStyle3.borderLeftWidth;
+            var _computedStyle3 = item.computedStyle,
+                _item$computedStyle2 = item.computedStyle,
+                display = _item$computedStyle2.display,
+                _flexDirection2 = _item$computedStyle2.flexDirection,
+                _width2 = _item$computedStyle2.width,
+                height = _item$computedStyle2.height,
+                borderTopWidth = _item$computedStyle2.borderTopWidth,
+                borderRightWidth = _item$computedStyle2.borderRightWidth,
+                borderBottomWidth = _item$computedStyle2.borderBottomWidth,
+                borderLeftWidth = _item$computedStyle2.borderLeftWidth,
+                marginTop = _item$computedStyle2.marginTop,
+                _marginRight = _item$computedStyle2.marginRight,
+                marginBottom = _item$computedStyle2.marginBottom,
+                _marginLeft = _item$computedStyle2.marginLeft,
+                paddingTop = _item$computedStyle2.paddingTop,
+                paddingRight = _item$computedStyle2.paddingRight,
+                paddingBottom = _item$computedStyle2.paddingBottom,
+                paddingLeft = _item$computedStyle2.paddingLeft;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
               if (display === 'inline') {
-                _computedStyle2.display = 'block';
+                _computedStyle3.display = 'block';
               } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
               else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && height.unit === unit.AUTO) {
                   height.value = h;
@@ -6101,7 +6068,7 @@
             } else {
               // column的flex的child如果是inline，变为block
               if (display === 'inline') {
-                _computedStyle2.display = 'block';
+                _computedStyle3.display = 'block';
               } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
               else if (display === 'flex' && _flexDirection2 === 'row' && _width2.unit === unit.AUTO) {
                   _width2.value = w;
@@ -6117,17 +6084,11 @@
             } // 重设因伸缩而导致的主轴长度
 
 
-            if (isOverflow && shrink) {
+            if (isOverflow && shrink || !isOverflow && grow) {
               if (isDirectionRow) {
-                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
+                item.__width = main - _marginLeft - _marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
               } else {
-                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
-              }
-            } else if (!isOverflow && grow) {
-              if (isDirectionRow) {
-                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
-              } else {
-                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
+                item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               }
             }
           } else {
@@ -6200,23 +6161,27 @@
         if (alignItems === 'stretch') {
           // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
           flowChildren.forEach(function (item) {
-            var computedStyle = item.computedStyle,
-                mlw = item.mlw,
-                mtw = item.mtw,
-                mrw = item.mrw,
-                mbw = item.mbw,
-                ptw = item.ptw,
-                prw = item.prw,
-                plw = item.plw,
-                pbw = item.pbw;
+            var computedStyle = item.computedStyle;
+            var borderTopWidth = computedStyle.borderTopWidth,
+                borderRightWidth = computedStyle.borderRightWidth,
+                borderBottomWidth = computedStyle.borderBottomWidth,
+                borderLeftWidth = computedStyle.borderLeftWidth,
+                marginTop = computedStyle.marginTop,
+                marginRight = computedStyle.marginRight,
+                marginBottom = computedStyle.marginBottom,
+                marginLeft = computedStyle.marginLeft,
+                paddingTop = computedStyle.paddingTop,
+                paddingRight = computedStyle.paddingRight,
+                paddingBottom = computedStyle.paddingBottom,
+                paddingLeft = computedStyle.paddingLeft;
 
             if (isDirectionRow) {
               if (computedStyle.height.unit === unit.AUTO) {
-                item.__height = maxCross - mtw - mbw - ptw - pbw - computedStyle.borderTopWidth - computedStyle.borderBottomWidth;
+                item.__height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               }
             } else {
               if (computedStyle.width.unit === unit.AUTO) {
-                item.__width = maxCross - mlw - mrw - plw - prw - computedStyle.borderRightWidth - computedStyle.borderLeftWidth;
+                item.__width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               }
             }
           });
@@ -6408,56 +6373,56 @@
             flowY = container.flowY,
             width = container.width,
             height = container.height,
-            computedStyle = container.computedStyle,
-            mlw = container.mlw,
-            mtw = container.mtw,
-            plw = container.plw,
-            ptw = container.ptw,
-            prw = container.prw,
-            pbw = container.pbw;
+            computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
             absChildren = this.absChildren;
         var display = computedStyle.display,
             borderTopWidth = computedStyle.borderTopWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth;
+            borderLeftWidth = computedStyle.borderLeftWidth,
+            marginTop = computedStyle.marginTop,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft;
 
         if (isDestroyed || display === 'none') {
           return;
         }
 
-        x += mlw + borderLeftWidth;
-        y += mtw + borderTopWidth;
-        var pw = width + plw + prw;
-        var ph = height + ptw + pbw; // 对absolute的元素进行相对容器布局
+        x += marginLeft + borderLeftWidth;
+        y += marginTop + borderTopWidth;
+        var iw = width + paddingLeft + paddingRight;
+        var ih = height + paddingTop + paddingBottom; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
           var computedStyle = item.computedStyle,
-              _item$computedStyle4 = item.computedStyle,
-              left = _item$computedStyle4.left,
-              top = _item$computedStyle4.top,
-              right = _item$computedStyle4.right,
-              bottom = _item$computedStyle4.bottom,
-              width2 = _item$computedStyle4.width,
-              height2 = _item$computedStyle4.height;
+              _item$computedStyle3 = item.computedStyle,
+              left = _item$computedStyle3.left,
+              top = _item$computedStyle3.top,
+              right = _item$computedStyle3.right,
+              bottom = _item$computedStyle3.bottom,
+              width2 = _item$computedStyle3.width,
+              height2 = _item$computedStyle3.height;
           var x2, y2, w2, h2; // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
 
           if (left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
             x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
-            w2 = right.unit === unit.PX ? x + pw - right.value - x2 : x + pw - width * right.value * 0.01 - x2;
+            w2 = right.unit === unit.PX ? x + iw - right.value - x2 : x + iw - width * right.value * 0.01 - x2;
           } else if (left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
             x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
             w2 = width2.unit === unit.PX ? width2.value : width;
             var widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-            x2 = right.unit === unit.PX ? x + pw - right.value - widthPx : x + pw - width * right.value * 0.01 - widthPx;
+            x2 = right.unit === unit.PX ? x + iw - right.value - widthPx : x + iw - width * right.value * 0.01 - widthPx;
           } else if (left.unit !== unit.AUTO) {
             x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
             w2 = item.__calAbs(true);
           } else if (right.unit !== unit.AUTO) {
             w2 = item.__calAbs(true);
-            x2 = right.unit === unit.PX ? x + pw - right.value - w2 : x + pw - width * right.value * 0.01 - w2;
+            x2 = right.unit === unit.PX ? x + iw - right.value - w2 : x + iw - width * right.value * 0.01 - w2;
           } else if (width2.unit !== unit.AUTO) {
             x2 = x;
             w2 = width2.unit === unit.PX ? width2.value : width;
@@ -6469,7 +6434,7 @@
 
           if (top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
-            h2 = bottom.unit === unit.PX ? y + ph - bottom.value - y2 : y + ph - height * bottom.value * 0.01 - y2;
+            h2 = bottom.unit === unit.PX ? y + ih - bottom.value - y2 : y + ih - height * bottom.value * 0.01 - y2;
             computedStyle.height = {
               value: h2,
               unit: unit.PX
@@ -6480,18 +6445,18 @@
           } else if (bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
             h2 = height2.unit === unit.PX ? height2.value : height;
             var heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-            y2 = bottom.unit === unit.PX ? y + ph - bottom.value - heightPx : y + ph - height * bottom.value * 0.01 - heightPx;
+            y2 = bottom.unit === unit.PX ? y + ih - bottom.value - heightPx : y + ih - height * bottom.value * 0.01 - heightPx;
           } else if (top.unit !== unit.AUTO) {
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = item.__calAbs();
           } else if (bottom.unit !== unit.AUTO) {
             h2 = item.__calAbs();
-            y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
+            y2 = bottom.unit === unit.PX ? y + ih - bottom.value - h2 : y + ih - height * bottom.value * 0.01 - h2;
           } else if (height2.unit !== unit.AUTO) {
-            y2 = flowY + mtw + borderTopWidth;
+            y2 = flowY + marginTop + borderTopWidth;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else {
-            y2 = flowY + mtw + borderTopWidth;
+            y2 = flowY + marginTop + borderTopWidth;
             h2 = item.__calAbs();
           } // absolute时inline强制block
 
@@ -6774,23 +6739,23 @@
             y = this.ry,
             width = this.width,
             height = this.height,
-            mlw = this.mlw,
-            mtw = this.mtw,
-            plw = this.plw,
-            ptw = this.ptw,
             src = this.src,
             isDestroyed = this.isDestroyed,
             _this$computedStyle2 = this.computedStyle,
             display = _this$computedStyle2.display,
             borderTopWidth = _this$computedStyle2.borderTopWidth,
-            borderLeftWidth = _this$computedStyle2.borderLeftWidth;
+            borderLeftWidth = _this$computedStyle2.borderLeftWidth,
+            marginTop = _this$computedStyle2.marginTop,
+            marginLeft = _this$computedStyle2.marginLeft,
+            paddingTop = _this$computedStyle2.paddingTop,
+            paddingLeft = _this$computedStyle2.paddingLeft;
 
         if (isDestroyed || display === 'none') {
           return;
         }
 
-        var originX = x + mlw + borderLeftWidth + plw;
-        var originY = y + mtw + borderTopWidth + ptw;
+        var originX = x + marginLeft + borderLeftWidth + paddingLeft;
+        var originY = y + marginTop + borderTopWidth + paddingTop;
 
         if (this.__error) {
           var strokeWidth = Math.min(width, height) * 0.02;

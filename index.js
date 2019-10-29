@@ -5459,16 +5459,6 @@
           }
         }
 
-        if (this.style.display === 'inline' && this.parent.style.display !== 'flex') {
-          for (var _i = list.length - 1; _i >= 0; _i--) {
-            var _item = list[_i];
-
-            if ((_item instanceof Xom || _item instanceof Component) && _item.style.display !== 'inline') {
-              throw new Error('inline can not contain block/flex');
-            }
-          }
-        }
-
         var prev = null;
         list.forEach(function (item) {
           item.__ctx = ctx;
@@ -6171,23 +6161,23 @@
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i2 = 0; _i2 < len; _i2++) {
-              var _child = flowChildren[_i2];
+            for (var _i = 0; _i < len; _i++) {
+              var _child = flowChildren[_i];
               isDirectionRow ? _child.__offsetX(center) : _child.__offsetY(center);
             }
           } else if (justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i3 = 1; _i3 < len; _i3++) {
-              var _child2 = flowChildren[_i3];
-              isDirectionRow ? _child2.__offsetX(between * _i3) : _child2.__offsetY(between * _i3);
+            for (var _i2 = 1; _i2 < len; _i2++) {
+              var _child2 = flowChildren[_i2];
+              isDirectionRow ? _child2.__offsetX(between * _i2) : _child2.__offsetY(between * _i2);
             }
           } else if (justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i4 = 0; _i4 < len; _i4++) {
-              var _child3 = flowChildren[_i4];
-              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1)) : _child3.__offsetY(around * (_i4 + 1));
+            for (var _i3 = 0; _i3 < len; _i3++) {
+              var _child3 = flowChildren[_i3];
+              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1)) : _child3.__offsetY(around * (_i3 + 1));
             }
           }
         } // 子元素侧轴伸展
@@ -6269,10 +6259,7 @@
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
-        var width = computedStyle.width,
-            marginLeft = computedStyle.marginLeft,
-            marginRight = computedStyle.marginRight,
-            textAlign = computedStyle.textAlign;
+        var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout3 = this.__preLayout(data),
             fixedWidth = _this$__preLayout3.fixedWidth,

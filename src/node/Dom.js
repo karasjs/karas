@@ -51,14 +51,6 @@ class Dom extends Xom {
         }
       }
     }
-    if(this.style.display === 'inline' && this.parent.style.display !== 'flex') {
-      for(let i = list.length - 1; i >= 0; i--) {
-        let item = list[i];
-        if((item instanceof Xom || item instanceof Component) && item.style.display !== 'inline') {
-          throw new Error('inline can not contain block/flex');
-        }
-      }
-    }
     let prev = null;
     list.forEach(item => {
       item.__ctx = ctx;
@@ -767,9 +759,6 @@ class Dom extends Xom {
   __layoutInline(data) {
     let { flowChildren, computedStyle, lineGroups } = this;
     let {
-      width,
-      marginLeft,
-      marginRight,
       textAlign,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);

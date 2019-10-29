@@ -239,7 +239,7 @@ class Dom extends Xom {
         + this.__calMp(marginRight, w)
         + this.__calMp(paddingLeft, w)
         + this.__calMp(paddingRight, w);
-      let w2 = borderRightWidth.value + borderLeftWidth.value + mp;
+      let w2 = borderRightWidth + borderLeftWidth + mp;
       b += w2;
       max += w2;
       min += w2;
@@ -249,7 +249,7 @@ class Dom extends Xom {
         + this.__calMp(marginBottom, w)
         + this.__calMp(paddingTop, w)
         + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth.value + borderBottomWidth.value + mp;
+      let h2 = borderTopWidth + borderBottomWidth + mp;
       b += h2;
       max += h2;
       min += h2;
@@ -308,11 +308,11 @@ class Dom extends Xom {
     });
     // margin/padding/border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth.value + borderLeftWidth.value + mlw + mrw + plw + prw;
+      let w = borderRightWidth + borderLeftWidth + mlw + mrw + plw + prw;
       max += w;
     }
     else {
-      let h = borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+      let h = borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
       max += h;
     }
     return max;
@@ -636,18 +636,18 @@ class Dom extends Xom {
         // 重设因伸缩而导致的主轴长度
         if(isOverflow && shrink) {
           if(isDirectionRow) {
-            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
+            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
           }
           else {
-            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
+            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
           }
         }
         else if(!isOverflow && grow) {
           if(isDirectionRow) {
-            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
+            item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
           }
           else {
-            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
+            item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
           }
         }
       }
@@ -722,15 +722,15 @@ class Dom extends Xom {
         if(isDirectionRow) {
           if(computedStyle.height.unit === unit.AUTO) {
             item.__height = maxCross - mtw - mbw - ptw - pbw
-              - computedStyle.borderTopWidth.value
-              - computedStyle.borderBottomWidth.value;
+              - computedStyle.borderTopWidth
+              - computedStyle.borderBottomWidth;
           }
         }
         else {
           if(computedStyle.width.unit === unit.AUTO) {
             item.__width = maxCross - mlw - mrw - plw - prw
-              - computedStyle.borderRightWidth.value
-              - computedStyle.borderLeftWidth.value;
+              - computedStyle.borderRightWidth
+              - computedStyle.borderLeftWidth;
           }
         }
       });
@@ -905,8 +905,8 @@ class Dom extends Xom {
     if(isDestroyed || display === 'none') {
       return;
     }
-    x += mlw + borderLeftWidth.value;
-    y += mtw + borderTopWidth.value;
+    x += mlw + borderLeftWidth;
+    y += mtw + borderTopWidth;
     let pw = width + plw + prw;
     let ph = height + ptw + pbw;
     // 对absolute的元素进行相对容器布局
@@ -972,11 +972,11 @@ class Dom extends Xom {
         y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
       }
       else if(height2.unit !== unit.AUTO) {
-        y2 = flowY + mtw + borderTopWidth.value;
+        y2 = flowY + mtw + borderTopWidth;
         h2 = height2.unit === unit.PX ? height2.value : height;
       }
       else {
-        y2 = flowY + mtw + borderTopWidth.value;
+        y2 = flowY + mtw + borderTopWidth;
         h2 = item.__calAbs();
       }
       // absolute时inline强制block

@@ -461,11 +461,6 @@
     borderRightStyle: 'solid',
     borderBottomStyle: 'solid',
     borderLeftStyle: 'solid',
-    // borderTopLeftRadius: 0,
-    // borderTopRightRadius: 0,
-    // borderBottomLeftRadius: 0,
-    // borderBottomRightRadius: 0,
-    // verticalAlign: 'baseline',
     width: 'auto',
     height: 'auto',
     flexGrow: 0,
@@ -1576,11 +1571,7 @@
     parserOneBorder(style, 'Bottom');
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', // 'borderTopLeftRadius',
-    // 'borderTopRightRadius',
-    // 'borderBottomLeftRadius',
-    // 'borderBottomRightRadius',
-    'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize'].forEach(function (k) {
       var v = style[k];
 
       if (!style.hasOwnProperty(k)) {
@@ -1652,7 +1643,7 @@
     var computedStyle = xom.__computedStyle = util.clone(style);
     var parent = xom.parent;
     var parentStyle = parent && parent.style;
-    var parentComputedStyle = parent && parent.computedStyle;
+    var parentComputedStyle = parent && parent.computedStyle; // 处理继承的属性
 
     if (fontStyle === 'inherit') {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -1706,7 +1697,13 @@
 
     if (textAlign === 'inherit') {
       computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
-    }
+    } // 处理可提前计算的属性，如border百分比
+
+
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
+      var v = computedStyle[k];
+      computedStyle[k] = v.value;
+    });
   }
 
   function setFontStyle(style) {
@@ -4421,17 +4418,17 @@
         } // margin/padding/border影响x和y和尺寸
 
 
-        x += borderLeftWidth.value + mlw + plw;
+        x += borderLeftWidth + mlw + plw;
         data.x = x;
-        y += borderTopWidth.value + mtw + ptw;
+        y += borderTopWidth + mtw + ptw;
         data.y = y;
 
         if (width.unit === unit.AUTO) {
-          w -= borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+          w -= borderLeftWidth + borderRightWidth + mlw + mrw + plw + prw;
         }
 
         if (height.unit === unit.AUTO) {
-          h -= borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+          h -= borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
         }
 
         return {
@@ -4552,25 +4549,21 @@
 
         var x = this.rx,
             y = this.ry;
-        var btw = borderTopWidth.value;
-        var brw = borderRightWidth.value;
-        var bbw = borderBottomWidth.value;
-        var blw = borderLeftWidth.value;
         var x1 = x + mlw;
-        var x2 = x1 + blw;
+        var x2 = x1 + borderLeftWidth;
         var x3 = x2 + width + plw + prw;
-        var x4 = x3 + brw;
+        var x4 = x3 + borderRightWidth;
         var y1 = y + mtw;
-        var y2 = y1 + btw;
+        var y2 = y1 + borderTopWidth;
         var y3 = y2 + height + ptw + pbw;
-        var y4 = y3 + bbw;
+        var y4 = y3 + borderBottomWidth;
         var iw = width + plw + prw;
         var ih = height + ptw + pbw; // transform相对于自身
 
         if (transform$1) {
-          var _x = x + mlw + blw + iw + brw + mrw;
+          var _x = x + mlw + borderLeftWidth + iw + borderRightWidth + mrw;
 
-          var _y = y + mtw + btw + ih + bbw + mbw;
+          var _y = y + mtw + borderTopWidth + ih + borderBottomWidth + mbw;
 
           var ow = _x - x;
           var oh = _y - y;
@@ -4648,39 +4641,39 @@
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
-        if (btw > 0 && btc !== 'transparent') {
-          var deg1 = Math.atan(btw / blw);
-          var deg2 = Math.atan(btw / brw);
-          var points = border.calPoints(btw, bts, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
+        if (borderTopWidth > 0 && btc !== 'transparent') {
+          var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+          var deg2 = Math.atan(borderTopWidth / borderRightWidth);
+          var points = border.calPoints(borderTopWidth, bts, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
           renderBorder(renderMode, points, btc, ctx, this);
         }
 
-        if (brw > 0 && brc !== 'transparent') {
-          var _deg = Math.atan(brw / btw);
+        if (borderRightWidth > 0 && brc !== 'transparent') {
+          var _deg = Math.atan(borderRightWidth / borderTopWidth);
 
-          var _deg2 = Math.atan(brw / bbw);
+          var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-          var _points = border.calPoints(brw, brs, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+          var _points = border.calPoints(borderRightWidth, brs, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
 
           renderBorder(renderMode, _points, brc, ctx, this);
         }
 
-        if (bbw > 0 && bbc !== 'transparent') {
-          var _deg3 = Math.atan(bbw / blw);
+        if (borderBottomWidth > 0 && bbc !== 'transparent') {
+          var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
 
-          var _deg4 = Math.atan(bbw / brw);
+          var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-          var _points2 = border.calPoints(bbw, bbs, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+          var _points2 = border.calPoints(borderBottomWidth, bbs, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
 
           renderBorder(renderMode, _points2, bbc, ctx, this);
         }
 
-        if (blw > 0 && blc !== 'transparent') {
-          var _deg5 = Math.atan(blw / btw);
+        if (borderLeftWidth > 0 && blc !== 'transparent') {
+          var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
 
-          var _deg6 = Math.atan(blw / bbw);
+          var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-          var _points3 = border.calPoints(blw, bls, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+          var _points3 = border.calPoints(borderLeftWidth, bls, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
 
           renderBorder(renderMode, _points3, blc, ctx, this);
         }
@@ -4988,7 +4981,7 @@
             _this$computedStyle2 = this.computedStyle,
             borderLeftWidth = _this$computedStyle2.borderLeftWidth,
             borderRightWidth = _this$computedStyle2.borderRightWidth;
-        return this.width + borderLeftWidth.value + borderRightWidth.value + mlw + mrw + plw + prw;
+        return this.width + borderLeftWidth + borderRightWidth + mlw + mrw + plw + prw;
       }
     }, {
       key: "outerHeight",
@@ -5000,7 +4993,7 @@
             _this$computedStyle3 = this.computedStyle,
             borderTopWidth = _this$computedStyle3.borderTopWidth,
             borderBottomWidth = _this$computedStyle3.borderBottomWidth;
-        return this.height + borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+        return this.height + borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
       }
     }, {
       key: "listener",
@@ -5194,13 +5187,13 @@
 
 
         if (isDirectionRow) {
-          var _w = borderRightWidth.value + borderLeftWidth.value;
+          var _w = borderRightWidth + borderLeftWidth;
 
           b += _w;
           max += _w;
           min += _w;
         } else {
-          var _h = borderTopWidth.value + borderBottomWidth.value;
+          var _h = borderTopWidth + borderBottomWidth;
 
           b += _h;
           max += _h;
@@ -5283,8 +5276,8 @@
             strokeWidth = computedStyle.strokeWidth,
             strokeDasharray = computedStyle.strokeDasharray,
             fill = computedStyle.fill;
-        var originX = x + borderLeftWidth.value + mlw + plw;
-        var originY = y + borderTopWidth.value + mtw + ptw;
+        var originX = x + borderLeftWidth + mlw + plw;
+        var originY = y + borderTopWidth + mtw + ptw;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         var iw = width + plw + prw;
@@ -5674,14 +5667,14 @@
         if (isDirectionRow) {
           var mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
 
-          var w2 = borderRightWidth.value + borderLeftWidth.value + mp;
+          var w2 = borderRightWidth + borderLeftWidth + mp;
           b += w2;
           max += w2;
           min += w2;
         } else {
           var _mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
 
-          var h2 = borderTopWidth.value + borderBottomWidth.value + _mp;
+          var h2 = borderTopWidth + borderBottomWidth + _mp;
           b += h2;
           max += h2;
           min += h2;
@@ -5757,10 +5750,10 @@
         }); // margin/padding/border也得计算在内
 
         if (isDirectionRow) {
-          var w = borderRightWidth.value + borderLeftWidth.value + mlw + mrw + plw + prw;
+          var w = borderRightWidth + borderLeftWidth + mlw + mrw + plw + prw;
           max += w;
         } else {
-          var h = borderTopWidth.value + borderBottomWidth.value + mtw + mbw + ptw + pbw;
+          var h = borderTopWidth + borderBottomWidth + mtw + mbw + ptw + pbw;
           max += h;
         }
 
@@ -6136,15 +6129,15 @@
 
             if (isOverflow && shrink) {
               if (isDirectionRow) {
-                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
+                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
               } else {
-                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
+                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
               }
             } else if (!isOverflow && grow) {
               if (isDirectionRow) {
-                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth.value - borderRightWidth.value;
+                item.__width = main - mlw - mrw - plw - prw - borderLeftWidth - borderRightWidth;
               } else {
-                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth.value - borderBottomWidth.value;
+                item.__height = main - mtw - mbw - ptw - pbw - borderTopWidth - borderBottomWidth;
               }
             }
           } else {
@@ -6229,11 +6222,11 @@
 
             if (isDirectionRow) {
               if (computedStyle.height.unit === unit.AUTO) {
-                item.__height = maxCross - mtw - mbw - ptw - pbw - computedStyle.borderTopWidth.value - computedStyle.borderBottomWidth.value;
+                item.__height = maxCross - mtw - mbw - ptw - pbw - computedStyle.borderTopWidth - computedStyle.borderBottomWidth;
               }
             } else {
               if (computedStyle.width.unit === unit.AUTO) {
-                item.__width = maxCross - mlw - mrw - plw - prw - computedStyle.borderRightWidth.value - computedStyle.borderLeftWidth.value;
+                item.__width = maxCross - mlw - mrw - plw - prw - computedStyle.borderRightWidth - computedStyle.borderLeftWidth;
               }
             }
           });
@@ -6446,8 +6439,8 @@
           return;
         }
 
-        x += mlw + borderLeftWidth.value;
-        y += mtw + borderTopWidth.value;
+        x += mlw + borderLeftWidth;
+        y += mtw + borderTopWidth;
         var pw = width + plw + prw;
         var ph = height + ptw + pbw; // 对absolute的元素进行相对容器布局
 
@@ -6508,10 +6501,10 @@
             h2 = item.__calAbs();
             y2 = bottom.unit === unit.PX ? y + ph - bottom.value - h2 : y + ph - height * bottom.value * 0.01 - h2;
           } else if (height2.unit !== unit.AUTO) {
-            y2 = flowY + mtw + borderTopWidth.value;
+            y2 = flowY + mtw + borderTopWidth;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else {
-            y2 = flowY + mtw + borderTopWidth.value;
+            y2 = flowY + mtw + borderTopWidth;
             h2 = item.__calAbs();
           } // absolute时inline强制block
 
@@ -6809,10 +6802,8 @@
           return;
         }
 
-        var btw = borderTopWidth.value;
-        var blw = borderLeftWidth.value;
-        var originX = x + mlw + blw + plw;
-        var originY = y + mtw + btw + ptw;
+        var originX = x + mlw + borderLeftWidth + plw;
+        var originY = y + mtw + borderTopWidth + ptw;
 
         if (this.__error) {
           var strokeWidth = Math.min(width, height) * 0.02;

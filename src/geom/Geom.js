@@ -50,13 +50,13 @@ class Geom extends Xom {
     }
     // border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth.value + borderLeftWidth.value;
+      let w = borderRightWidth + borderLeftWidth;
       b += w;
       max += w;
       min += w;
     }
     else {
-      let h = borderTopWidth.value + borderBottomWidth.value;
+      let h = borderTopWidth + borderBottomWidth;
       b += h;
       max += h;
       min += h;
@@ -109,8 +109,8 @@ class Geom extends Xom {
       strokeDasharray,
       fill,
     } = computedStyle;
-    let originX = x + borderLeftWidth.value + mlw + plw;
-    let originY = y + borderTopWidth.value + mtw + ptw;
+    let originX = x + borderLeftWidth + mlw + plw;
+    let originY = y + borderTopWidth + mtw + ptw;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     let iw = width + plw + prw;

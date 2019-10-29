@@ -120,10 +120,8 @@ class Img extends Dom {
     if(isDestroyed || display === 'none') {
       return;
     }
-    let btw = borderTopWidth.value;
-    let blw = borderLeftWidth.value;
-    let originX = x + mlw + blw + plw;
-    let originY = y + mtw + btw + ptw;
+    let originX = x + mlw + borderLeftWidth + plw;
+    let originY = y + mtw + borderTopWidth + ptw;
     if(this.__error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';

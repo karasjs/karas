@@ -292,10 +292,6 @@ function normalize(style, noReset) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
-    // 'borderTopLeftRadius',
-    // 'borderTopRightRadius',
-    // 'borderBottomLeftRadius',
-    // 'borderBottomRightRadius',
     'top',
     'right',
     'bottom',
@@ -370,6 +366,7 @@ function computed(xom, isRoot) {
   let parent = xom.parent;
   let parentStyle = parent && parent.style;
   let parentComputedStyle = parent && parent.computedStyle;
+  // 处理继承的属性
   if(fontStyle === 'inherit') {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
@@ -425,6 +422,16 @@ function computed(xom, isRoot) {
   if(textAlign === 'inherit') {
     computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
   }
+  // 处理可提前计算的属性，如border百分比
+  [
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth'
+  ].forEach(k => {
+    let v = computedStyle[k];
+    computedStyle[k] = v.value;
+  });
 }
 
 function setFontStyle(style) {

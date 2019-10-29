@@ -664,7 +664,8 @@ class Xom extends Node {
     return animation.play();
   }
 
-  __updateStyle(style) {
+  __animateStyle(style) {
+    this.__computedStyle = style;
   }
 
   get tagName() {

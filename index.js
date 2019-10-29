@@ -1640,53 +1640,7 @@
     return style;
   }
 
-  function root(xom) {
-    var style = xom.style;
-    var fontStyle = style.fontStyle,
-        fontWeight = style.fontWeight,
-        fontSize = style.fontSize,
-        fontFamily = style.fontFamily,
-        color = style.color,
-        lineHeight = style.lineHeight,
-        textAlign = style.textAlign;
-    var computedStyle = xom.__computedStyle = util.clone(style);
-
-    if (fontStyle === 'inherit') {
-      computedStyle.fontStyle = 'normal';
-    }
-
-    if (fontWeight === 'inherit') {
-      computedStyle.fontWeight = 400;
-    }
-
-    if (fontSize.unit === unit.PX) {
-      computedStyle.fontSize = fontSize.value;
-    } else {
-      computedStyle.fontSize = 16;
-    }
-
-    if (fontFamily === 'inherit') {
-      computedStyle.fontFamily = 'arial';
-    }
-
-    if (color === 'inherit') {
-      computedStyle.color = '#000';
-    }
-
-    if (lineHeight.unit === unit.PX) {
-      computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
-    } else if (lineHeight.unit === unit.NUMBER) {
-      computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
-    } else {
-      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-    }
-
-    if (textAlign === 'inherit') {
-      computedStyle.textAlign = 'left';
-    }
-  }
-
-  function inherit(xom) {
+  function computed(xom, isRoot) {
     var style = xom.style;
     var fontStyle = style.fontStyle,
         fontWeight = style.fontWeight,
@@ -1697,55 +1651,61 @@
         textAlign = style.textAlign;
     var computedStyle = xom.__computedStyle = util.clone(style);
     var parent = xom.parent;
-    var parentStyle = parent.style;
-    var parentComputedStyle = parent.computedStyle;
+    var parentStyle = parent && parent.style;
+    var parentComputedStyle = parent && parent.computedStyle;
 
     if (fontStyle === 'inherit') {
-      computedStyle.fontStyle = parentComputedStyle.fontStyle;
+      computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
     }
 
     if (fontWeight === 'inherit') {
-      computedStyle.fontWeight = parentComputedStyle.fontWeight;
+      computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
     }
 
     if (fontSize.unit === unit.INHERIT) {
-      computedStyle.fontSize = parentComputedStyle.fontSize;
+      computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
     } else if (fontSize.unit === unit.PX) {
       computedStyle.fontSize = fontSize.value;
     } else if (fontSize.unit === unit.PERCENT) {
-      computedStyle.fontSize = parentComputedStyle.fontSize * fontSize.value;
+      computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
     } else {
       computedStyle.fontSize = 16;
     }
 
     if (fontFamily === 'inherit') {
-      computedStyle.fontFamily = parentComputedStyle.fontFamily;
+      computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
     }
 
     if (color === 'inherit') {
-      computedStyle.color = parentComputedStyle.color;
+      computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
     }
 
     if (lineHeight.unit === unit.INHERIT) {
-      var pl = parentStyle.lineHeight;
-
-      if (pl.unit === unit.PX) {
-        computedStyle.lineHeight = parentComputedStyle.lineHeight;
-      } else if (pl.unit === unit.NUMBER) {
-        computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
-      } else {
+      if (isRoot) {
         computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+      } else {
+        var pl = parentStyle.lineHeight;
+
+        if (pl.unit === unit.PX) {
+          computedStyle.lineHeight = parentComputedStyle.lineHeight;
+        } else if (pl.unit === unit.NUMBER) {
+          computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+        } else {
+          computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+        }
       }
     } else if (lineHeight.unit === unit.PX) {
       computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
     } else if (lineHeight.unit === unit.NUMBER) {
+      // 防止为0
       computedStyle.lineHeight = lineHeight.value * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
     } else {
+      // normal
       computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
     }
 
     if (textAlign === 'inherit') {
-      computedStyle.textAlign = parentComputedStyle.textAlign;
+      computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
     }
   }
 
@@ -1764,8 +1724,7 @@
 
   var css = {
     normalize: normalize,
-    inherit: inherit,
-    root: root,
+    computed: computed,
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine
   };
@@ -3463,7 +3422,7 @@
 
         if (sr instanceof Text) {
           css.normalize(sr.style);
-          css.root(sr);
+          css.computed(sr, true);
 
           sr.__measure();
         } else {
@@ -3754,6 +3713,50 @@
   function structuring(style, xom) {
     color2array(style);
     length2px(style, xom);
+  }
+
+  function stringify$1(style) {
+    KEY_COLOR.forEach(function (k) {
+      var v = style[k];
+
+      if (v[3] === 1) {
+        style[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+      } else {
+        style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+      }
+    });
+    KEY_LENGTH.forEach(function (k) {
+      var v = style[k];
+
+      if (v === -1) {
+        style[k] = {
+          unit: unit.AUTO
+        };
+      } else {
+        style[k] = {
+          value: v,
+          unit: unit.PX
+        };
+      }
+    });
+    var transform = style.transform;
+
+    if (transform) {
+      transform.forEach(function (item) {
+        var _item2 = _slicedToArray(item, 2),
+            k = _item2[0],
+            v = _item2[1];
+
+        if (['translateX', 'translateY'].indexOf(k) > -1) {
+          item[1] = {
+            value: v,
+            unit: unit.PX
+          };
+        }
+      });
+    }
+
+    return style;
   }
 
   function framing(style, current) {
@@ -4072,7 +4075,8 @@
             var current = frames[i]; // 最后一帧结束动画
 
             if (i === length - 1) {
-              // this.xom.__updateStyle(stringify(current.style));
+              _this2.xom.__animateStyle(stringify$1(current.style));
+
               frame.offFrame(_this2.cb);
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
@@ -4081,10 +4085,16 @@
                 var _diff = now - current.time;
 
                 var percent = _diff / total;
-                var style = calStyle(current, percent); // this.xom.__updateStyle(stringify(style));
+                var style = calStyle(current, percent);
+
+                _this2.xom.__animateStyle(stringify$1(style));
               }
 
-            _this2.xom.root.refresh();
+            var root = _this2.xom.root;
+
+            if (root) {
+              root.refresh();
+            }
           };
         }
 
@@ -4919,8 +4929,10 @@
         return animation.play();
       }
     }, {
-      key: "__updateStyle",
-      value: function __updateStyle(style) {}
+      key: "__animateStyle",
+      value: function __animateStyle(style) {
+        this.__computedStyle = style;
+      }
     }, {
       key: "tagName",
       get: function get() {
@@ -5144,7 +5156,7 @@
       value: function __init(isRoot) {
         var style = this.style;
         css.normalize(style);
-        isRoot ? css.root(this) : css.inherit(this);
+        css.computed(this, isRoot);
       }
     }, {
       key: "__tryLayInline",
@@ -5525,13 +5537,7 @@
 
 
         css.normalize(style);
-
-        if (isRoot) {
-          css.root(this);
-        } else {
-          css.inherit(this);
-        }
-
+        css.computed(this, isRoot);
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();

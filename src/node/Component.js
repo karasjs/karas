@@ -97,7 +97,7 @@ class Component extends Event {
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
       css.normalize(sr.style);
-      css.root(sr);
+      css.computed(sr, true);
       sr.__measure();
     }
     else {

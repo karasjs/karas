@@ -363,96 +363,67 @@ function normalize(style, noReset) {
   return style;
 }
 
-function root(xom) {
-  let { style } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
-  let computedStyle = xom.__computedStyle = util.clone(style);
-  if(fontStyle === 'inherit') {
-    computedStyle.fontStyle = 'normal';
-  }
-  if(fontWeight === 'inherit') {
-    computedStyle.fontWeight = 400;
-  }
-  if(fontSize.unit === unit.PX) {
-    computedStyle.fontSize = fontSize.value;
-  }
-  else {
-    computedStyle.fontSize = 16;
-  }
-  if(fontFamily === 'inherit') {
-    computedStyle.fontFamily = 'arial';
-  }
-  if(color === 'inherit') {
-    computedStyle.color = '#000';
-  }
-  if(lineHeight.unit === unit.PX) {
-    computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
-  }
-  else if(lineHeight.unit === unit.NUMBER) {
-    computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
-  }
-  else {
-    computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-  }
-  if(textAlign === 'inherit') {
-    computedStyle.textAlign = 'left';
-  }
-}
-
-function inherit(xom) {
+function computed(xom, isRoot) {
   let { style } = xom;
   let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
   let computedStyle = xom.__computedStyle = util.clone(style);
   let parent = xom.parent;
-  let parentStyle = parent.style;
-  let parentComputedStyle = parent.computedStyle;
+  let parentStyle = parent && parent.style;
+  let parentComputedStyle = parent && parent.computedStyle;
   if(fontStyle === 'inherit') {
-    computedStyle.fontStyle = parentComputedStyle.fontStyle;
+    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
   if(fontWeight === 'inherit') {
-    computedStyle.fontWeight = parentComputedStyle.fontWeight;
+    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
   }
   if(fontSize.unit === unit.INHERIT) {
-    computedStyle.fontSize = parentComputedStyle.fontSize;
+    computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
   }
   else if(fontSize.unit === unit.PX) {
     computedStyle.fontSize = fontSize.value;
   }
   else if(fontSize.unit === unit.PERCENT) {
-    computedStyle.fontSize = parentComputedStyle.fontSize * fontSize.value;
+    computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
   }
   else {
     computedStyle.fontSize = 16;
   }
   if(fontFamily === 'inherit') {
-    computedStyle.fontFamily = parentComputedStyle.fontFamily;
+    computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
   }
   if(color === 'inherit') {
-    computedStyle.color = parentComputedStyle.color;
+    computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
   }
   if(lineHeight.unit === unit.INHERIT) {
-    let pl = parentStyle.lineHeight;
-    if(pl.unit === unit.PX) {
-      computedStyle.lineHeight = parentComputedStyle.lineHeight;
-    }
-    else if(pl.unit === unit.NUMBER) {
-      computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+    if(isRoot) {
+      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
     }
     else {
-      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+      let pl = parentStyle.lineHeight;
+      if(pl.unit === unit.PX) {
+        computedStyle.lineHeight = parentComputedStyle.lineHeight;
+      }
+      else if(pl.unit === unit.NUMBER) {
+        computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+      }
+      else {
+        computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+      }
     }
   }
   else if(lineHeight.unit === unit.PX) {
     computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
   }
   else if(lineHeight.unit === unit.NUMBER) {
+    // 防止为0
     computedStyle.lineHeight = lineHeight.value * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
   }
   else {
+    // normal
     computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
   }
   if(textAlign === 'inherit') {
-    computedStyle.textAlign = parentComputedStyle.textAlign;
+    computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
   }
 }
 
@@ -468,8 +439,7 @@ function getBaseLine(style) {
 
 export default {
   normalize,
-  inherit,
-  root,
+  computed,
   setFontStyle,
   getBaseLine,
 };

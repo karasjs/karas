@@ -440,7 +440,7 @@ class Animation extends Event {
         let current = frames[i];
         // 最后一帧结束动画
         if(i === length - 1) {
-          // this.xom.__updateStyle(stringify(current.style));
+          this.xom.__animateStyle(stringify(current.style));
           frame.offFrame(this.cb);
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -449,9 +449,12 @@ class Animation extends Event {
           let diff = now - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
-          // this.xom.__updateStyle(stringify(style));
+          this.xom.__animateStyle(stringify(style));
         }
-        this.xom.root.refresh();
+        let root = this.xom.root;
+        if(root) {
+          root.refresh();
+        }
       };
     }
     frame.onFrame(this.cb);

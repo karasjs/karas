@@ -15,7 +15,7 @@ class Geom extends Xom {
   __init(isRoot) {
     let style = this.style;
     css.normalize(style);
-    isRoot ? css.root(this) : css.inherit(this);
+    css.computed(this, isRoot);
   }
 
   __tryLayInline(w, total) {

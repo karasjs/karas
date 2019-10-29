@@ -113,12 +113,7 @@ class Dom extends Xom {
     }
     // 标准化处理，默认值、简写属性
     css.normalize(style);
-    if(isRoot) {
-      css.root(this);
-    }
-    else {
-      css.inherit(this);
-    }
+    css.computed(this, isRoot);
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();

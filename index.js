@@ -3503,7 +3503,7 @@
         }
 
         this.__hasInit = true;
-        ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
+        ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
               return this.shadowRoot[fn];
@@ -3593,11 +3593,6 @@
       },
       set: function set(v) {
         this.__state = v;
-      }
-    }, {
-      key: "css",
-      get: function get() {
-        return this.__css;
       }
     }]);
 

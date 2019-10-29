@@ -143,6 +143,7 @@ class Component extends Event {
       'outerWidth',
       'outerHeight',
       'style',
+      'computedStyle',
       'ctx',
       'defs',
       'baseLine',
@@ -215,9 +216,6 @@ class Component extends Event {
   }
   set state(v) {
     this.__state = v;
-  }
-  get css() {
-    return this.__css;
   }
 }
 

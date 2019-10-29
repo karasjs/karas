@@ -5141,10 +5141,10 @@
 
     _createClass(Geom, [{
       key: "__init",
-      value: function __init() {
+      value: function __init(isRoot) {
         var style = this.style;
         css.normalize(style);
-        css.inherit(this);
+        isRoot ? css.root(this) : css.inherit(this);
       }
     }, {
       key: "__tryLayInline",

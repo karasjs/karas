@@ -12,10 +12,10 @@ class Geom extends Xom {
     super(tagName, props);
   }
 
-  __init() {
+  __init(isRoot) {
     let style = this.style;
     css.normalize(style);
-    css.inherit(this);
+    isRoot ? css.root(this) : css.inherit(this);
   }
 
   __tryLayInline(w, total) {

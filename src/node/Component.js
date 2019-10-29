@@ -97,6 +97,7 @@ class Component extends Event {
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
       css.normalize(sr.style);
+      css.root(sr);
       sr.__measure();
     }
     else {
@@ -106,7 +107,7 @@ class Component extends Event {
           sr.style[i] = style[i];
         }
       }
-      sr.__init();
+      sr.__init(true);
     }
     if(!(sr instanceof Text)) {
       this.__props.forEach(item => {
@@ -179,6 +180,13 @@ class Component extends Event {
     if(res) {
       e.target = this;
       return true;
+    }
+  }
+
+  animate(list, option) {
+    let sr = this.shadowRoot;
+    if(sr) {
+      sr.animate(list, option);
     }
   }
 

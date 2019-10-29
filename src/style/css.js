@@ -2,6 +2,7 @@ import unit from './unit';
 import font from './font';
 import reset from './reset';
 import gradient from './gradient';
+import util from '../util/util';
 
 function parserOneBorder(style, direction) {
   let key = `border${direction}`;
@@ -37,6 +38,11 @@ function calUnit(obj, k, v) {
       unit: unit.AUTO,
     };
   }
+  else if(v === 'inherit') {
+    obj[k] = {
+      unit: unit.INHERIT,
+    };
+  }
   else if(/px$/.test(v)) {
     v = parseFloat(v) || 0;
     obj[k] = {
@@ -70,13 +76,15 @@ function calUnit(obj, k, v) {
   return obj;
 }
 
-function normalize(style) {
+function normalize(style, noReset) {
   // 默认reset
-  reset.forEach(item => {
-    if(!style.hasOwnProperty(item.k)) {
-      style[item.k] = item.v;
-    }
-  });
+  if(!noReset) {
+    reset.forEach(item => {
+      if(!style.hasOwnProperty(item.k)) {
+        style[item.k] = item.v;
+      }
+    });
+  }
   let temp = style.background;
   // 处理渐变背景色
   if(temp) {
@@ -89,7 +97,8 @@ function normalize(style) {
       let bgc = /#[0-9a-f]{3,6}/i.exec(temp);
       if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
         style.backgroundColor = bgc[0];
-      } else {
+      }
+      else {
         bgc = /rgba?\(.+\)/i.exec(temp);
         if(bgc) {
           style.backgroundColor = bgc[0];
@@ -283,10 +292,10 @@ function normalize(style) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
-    'borderTopLeftRadius',
-    'borderTopRightRadius',
-    'borderBottomLeftRadius',
-    'borderBottomRightRadius',
+    // 'borderTopLeftRadius',
+    // 'borderTopRightRadius',
+    // 'borderBottomLeftRadius',
+    // 'borderBottomRightRadius',
     'top',
     'right',
     'bottom',
@@ -294,44 +303,157 @@ function normalize(style) {
     'width',
     'height',
     'flexBasis',
+    'fontSize',
   ].forEach(k => {
     let v = style[k];
+    if(!style.hasOwnProperty(k)) {
+      return;
+    }
     calUnit(style, k, v);
   });
-  style.fontSize = parseInt(style.fontSize) || 0;
-  // 计算lineHeight为px值，最小范围
-  let lineHeight = style.lineHeight;
-  if(lineHeight === 'normal') {
-    lineHeight = {
-      value: style.fontSize * font.arial.lhr,
-      unit: unit.PX,
-    };
+  temp = style.fontWeight;
+  if(temp || temp === 0) {
+    if(temp === 'bold') {
+      style.fontWeight = 700;
+    }
+    else if(temp === 'normal') {
+      style.fontWeight = 400;
+    }
+    else if(temp === 'lighter') {
+      style.fontWeight = 200;
+    }
+    else if(temp !== 'inherit') {
+      style.fontWeight = parseInt(temp) || 400;
+    }
   }
-  else if(/px$/.test(lineHeight)) {
-    lineHeight = parseFloat(lineHeight);
-    lineHeight = {
-      value: Math.max(style.fontSize, lineHeight),
-      unit: unit.PX,
-    };
-  }
-  // 纯数字比例
-  else {
-    lineHeight = parseFloat(lineHeight) || 'normal';
-    // 非法数字
-    if(lineHeight === 'normal') {
-      lineHeight = {
-        value: style.fontSize * font.arial.lhr,
+  temp = style.lineHeight;
+  if(temp || temp === 0) {
+    if(temp === 'inherit') {
+      style.lineHeight = {
+        unit: unit.INHERIT,
+      };
+    }
+    if(temp === 'normal') {
+      style.lineHeight = {
+        unit: unit.AUTO,
+      };
+    }
+    else if(/px$/.test(temp)) {
+      style.lineHeight = {
+        value: parseFloat(temp),
         unit: unit.PX,
       };
     }
     else {
-      lineHeight = {
-        value: lineHeight * style.fontSize,
-        unit: unit.PX,
-      };
+      let n = parseFloat(temp) || 'normal';
+      // 非法数字
+      if(n === 'normal') {
+        style.lineHeight = {
+          unit: unit.AUTO,
+        };
+      }
+      else {
+        style.lineHeight = {
+          value: n,
+          unit: unit.NUMBER,
+        };
+      }
     }
   }
-  style.lineHeight = lineHeight;
+  return style;
+}
+
+function root(xom) {
+  let { style } = xom;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
+  let computedStyle = xom.__computedStyle = util.clone(style);
+  if(fontStyle === 'inherit') {
+    computedStyle.fontStyle = 'normal';
+  }
+  if(fontWeight === 'inherit') {
+    computedStyle.fontWeight = 400;
+  }
+  if(fontSize.unit === unit.PX) {
+    computedStyle.fontSize = fontSize.value;
+  }
+  else {
+    computedStyle.fontSize = 16;
+  }
+  if(fontFamily === 'inherit') {
+    computedStyle.fontFamily = 'arial';
+  }
+  if(color === 'inherit') {
+    computedStyle.color = '#000';
+  }
+  if(lineHeight.unit === unit.PX) {
+    computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
+  }
+  else if(lineHeight.unit === unit.NUMBER) {
+    computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
+  }
+  else {
+    computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+  }
+  if(textAlign === 'inherit') {
+    computedStyle.textAlign = 'left';
+  }
+}
+
+function inherit(xom) {
+  let { style } = xom;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
+  let computedStyle = xom.__computedStyle = util.clone(style);
+  let parent = xom.parent;
+  let parentStyle = parent.style;
+  let parentComputedStyle = parent.computedStyle;
+  if(fontStyle === 'inherit') {
+    computedStyle.fontStyle = parentComputedStyle.fontStyle;
+  }
+  if(fontWeight === 'inherit') {
+    computedStyle.fontWeight = parentComputedStyle.fontWeight;
+  }
+  if(fontSize.unit === unit.INHERIT) {
+    computedStyle.fontSize = parentComputedStyle.fontSize;
+  }
+  else if(fontSize.unit === unit.PX) {
+    computedStyle.fontSize = fontSize.value;
+  }
+  else if(fontSize.unit === unit.PERCENT) {
+    computedStyle.fontSize = parentComputedStyle.fontSize * fontSize.value;
+  }
+  else {
+    computedStyle.fontSize = 16;
+  }
+  if(fontFamily === 'inherit') {
+    computedStyle.fontFamily = parentComputedStyle.fontFamily;
+  }
+  if(color === 'inherit') {
+    computedStyle.color = parentComputedStyle.color;
+  }
+  if(lineHeight.unit === unit.INHERIT) {
+    let pl = parentStyle.lineHeight;
+    if(pl.unit === unit.PX) {
+      computedStyle.lineHeight = parentComputedStyle.lineHeight;
+    }
+    else if(pl.unit === unit.NUMBER) {
+      computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+    }
+    else {
+      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+    }
+  }
+  else if(lineHeight.unit === unit.PX) {
+    computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
+  }
+  else if(lineHeight.unit === unit.NUMBER) {
+    computedStyle.lineHeight = lineHeight.value * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
+  }
+  else {
+    computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
+  }
+  if(textAlign === 'inherit') {
+    computedStyle.textAlign = parentComputedStyle.textAlign;
+  }
 }
 
 function setFontStyle(style) {
@@ -341,11 +463,13 @@ function setFontStyle(style) {
 
 function getBaseLine(style) {
   let normal = style.fontSize * font.arial.lhr;
-  return (style.lineHeight.value - normal) * 0.5 + style.fontSize * font.arial.blr;
+  return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
 }
 
 export default {
   normalize,
+  inherit,
+  root,
   setFontStyle,
   getBaseLine,
 };

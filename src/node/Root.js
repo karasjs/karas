@@ -6,6 +6,7 @@ import Defs from './Defs';
 import unit from '../style/unit';
 import inject from '../util/inject';
 import Event from '../util/Event';
+import frame from '../animate/frame';
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {
@@ -168,7 +169,7 @@ class Root extends Dom {
     let { renderMode, ctx } = this;
     this.__traverse(ctx, this.__defs, renderMode);
     this.__traverseCss(this, this.props.css);
-    this.__init();
+    this.__init(true);
     this.refresh();
     if(this.node.__root) {
       this.node.__root.__destroy();
@@ -235,11 +236,11 @@ class Root extends Dom {
     let { task } = this;
     // 第一个添加延迟侦听
     if(!task.length) {
-      setTimeout(() => {
+      frame.nextFrame(() => {
         if(task.length) {
           this.refresh();
         }
-      }, 1);
+      });
     }
     task.push(cb);
   }

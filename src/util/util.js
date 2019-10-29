@@ -131,11 +131,16 @@ function rgb2int(color) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
       res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
       res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-    } else if(color.length === 6) {
+    }
+    else if(color.length === 6) {
       res.push(parseInt(color.slice(0, 2), 16));
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4), 16));
     }
+    res[3] = 1;
+  }
+  else if(color === 'transparent') {
+    return [0, 0, 0, 0];
   }
   else {
     let c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
@@ -144,7 +149,9 @@ function rgb2int(color) {
       if(c[4]) {
         res[3] = parseFloat(c[4]);
       }
-
+      else {
+        res[3] = 1;
+      }
     }
   }
   return res;

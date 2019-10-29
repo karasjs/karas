@@ -1,4 +1,5 @@
 import Node from './Node';
+import Text from './Text';
 import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
@@ -7,6 +8,7 @@ import border from '../style/border';
 import match from '../style/match';
 import util from '../util/util';
 import Component from './Component';
+import Animation from '../animate/Animation';
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -89,6 +91,7 @@ class Xom extends Node {
     this.__plw = 0;
     this.__matrix = null;
     this.__matrixEvent = null;
+    this.__animation = null;
   }
 
   // 设置了css时，解析匹配
@@ -111,7 +114,7 @@ class Xom extends Node {
 
   __layout(data) {
     let { w } = data;
-    let { isDestroyed, style: {
+    let { isDestroyed, computedStyle: {
       display,
       width,
       marginTop,
@@ -176,7 +179,7 @@ class Xom extends Node {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
-    let { style, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
+    let { computedStyle, mlw, mtw, mrw, mbw, plw, ptw, prw, pbw } = this;
     let {
       width,
       height,
@@ -184,7 +187,7 @@ class Xom extends Node {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = style;
+    } = computedStyle;
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
@@ -240,7 +243,7 @@ class Xom extends Node {
         transform: [],
       };
     }
-    let { isDestroyed, ctx, style, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
+    let { isDestroyed, ctx, computedStyle, width, height, mlw, mrw, mtw, mbw, plw, ptw, prw, pbw } = this;
     let parent = this.parent;
     let matrix = [1, 0, 0, 1, 0, 0];
     while(parent) {
@@ -290,14 +293,14 @@ class Xom extends Node {
       borderLeftStyle : bls,
       transform,
       transformOrigin,
-    } = style;
+    } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
     if(position === 'relative' && this.parent) {
       let { width, height } = this.parent;
-      let h = this.parent.style.height;
+      let h = this.parent.computedStyle.height;
       if(left.unit !== unit.AUTO) {
         let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
         this.__offsetX(diff);
@@ -456,8 +459,8 @@ class Xom extends Node {
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
     let { event: { type }, x, y, covers } = e;
-    let { isDestroyed, listener, children, style, outerWidth, outerHeight, matrixEvent } = this;
-    if(isDestroyed || style.display === 'none' || e.__stopPropagation) {
+    let { isDestroyed, listener, children, computedStyle, outerWidth, outerHeight, matrixEvent } = this;
+    if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
       return;
     }
     let cb;
@@ -500,13 +503,13 @@ class Xom extends Node {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
-        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
         }
         // 组件要形成shadowDom，除了shadowRoot，其它节点事件不冒泡
-        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.style.position) > -1) {
+        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -515,12 +518,12 @@ class Xom extends Node {
       // 再看普通流，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
-        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
+        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
         }
-        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.style.position) === -1) {
+        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -653,6 +656,17 @@ class Xom extends Node {
     this.virtualDom.transform.push(props);
   }
 
+  animate(list, option) {
+    if(this.animation) {
+      this.animation.cancel();
+    }
+    let animation = this.__animation = new Animation(this, list, option);
+    return animation.play();
+  }
+
+  __updateStyle(style) {
+  }
+
   get tagName() {
     return this.__tagName;
   }
@@ -681,7 +695,7 @@ class Xom extends Node {
     return this.__plw;
   }
   get outerWidth() {
-    let { mlw, mrw, plw, prw, style: {
+    let { mlw, mrw, plw, prw, computedStyle: {
       borderLeftWidth,
       borderRightWidth,
     } } = this;
@@ -694,7 +708,7 @@ class Xom extends Node {
       + prw;
   }
   get outerHeight() {
-    let { mtw, mbw, ptw, pbw, style: {
+    let { mtw, mbw, ptw, pbw, computedStyle: {
       borderTopWidth,
       borderBottomWidth,
     } } = this;
@@ -723,6 +737,9 @@ class Xom extends Node {
   }
   get class() {
     return this.__class || [];
+  }
+  get animation() {
+    return this.__animation;
   }
 }
 

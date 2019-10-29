@@ -3,4 +3,6 @@ export default {
   PX: 1,
   PERCENT: 2,
   POSITION: 3,
+  NUMBER: 4,
+  INHERIT: 5,
 };

@@ -13,12 +13,14 @@ class Geom extends Xom {
   }
 
   __init() {
-    css.normalize(this.style);
+    let style = this.style;
+    css.normalize(style);
+    css.inherit(this);
   }
 
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
-    let { style: { width } } = this;
+    let { computedStyle: { width } } = this;
     if(width.unit === unit.PX) {
       return w - width.value;
     }
@@ -32,7 +34,7 @@ class Geom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { style } = this;
+    let { computedStyle } = this;
     // 计算需考虑style的属性
     let {
       width,
@@ -41,7 +43,7 @@ class Geom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = style;
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit !== unit.AUTO) {
       b = max += main.value;
@@ -68,7 +70,7 @@ class Geom extends Xom {
       marginLeft,
       marginRight,
       width,
-    } = this.style;
+    } = this.computedStyle;
     this.__width = w;
     this.__height = fixedHeight ? h : 0;
     // 处理margin:xx auto居中对齐
@@ -97,7 +99,7 @@ class Geom extends Xom {
   }
 
   __preRender(renderMode) {
-    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, prw, pbw, style } = this;
+    let { rx: x, ry: y, width, height, mlw, mtw, plw, ptw, prw, pbw, computedStyle } = this;
     let {
       borderTopWidth,
       borderLeftWidth,
@@ -106,7 +108,7 @@ class Geom extends Xom {
       strokeWidth,
       strokeDasharray,
       fill,
-    } = style;
+    } = computedStyle;
     let originX = x + borderLeftWidth.value + mlw + plw;
     let originY = y + borderTopWidth.value + mtw + ptw;
     let cx = originX + width * 0.5;
@@ -151,7 +153,7 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { isDestroyed, style: { display } } = this;
+    let { isDestroyed, computedStyle: { display } } = this;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,

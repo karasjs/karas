@@ -12,6 +12,7 @@ class Node {
     this.__defs = null; // svg的defs
     this.__parent = null;
     this.__style = {}; // style被解析后的k-v形式
+    this.__computedStyle = {};
     this.__baseLine = 0;
     this.__virtualDom = {};
     this.__host = null;
@@ -90,6 +91,9 @@ class Node {
   }
   get style() {
     return this.__style;
+  }
+  get computedStyle() {
+    return this.__computedStyle;
   }
   get ctx() {
     return this.__ctx;

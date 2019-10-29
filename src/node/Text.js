@@ -2,6 +2,7 @@ import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
 import mode from '../util/mode';
+import inject from '../util/inject';
 
 class Text extends Node {
   constructor(content) {
@@ -21,14 +22,14 @@ class Text extends Node {
 
   // 预先计算每个字的宽度
   __measure() {
-    let { ctx, content, style, charWidthList, renderMode } = this;
+    let { ctx, content, computedStyle, charWidthList, renderMode } = this;
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(style);
+      ctx.font = css.setFontStyle(computedStyle);
     }
-    let key = style.fontSize + ',' + style.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
-      style,
+      style: computedStyle,
       hash: {},
       s: [],
     };
@@ -66,8 +67,8 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, style, charWidthList } = this;
-    let key = style.fontSize + ',' + style.fontFamily;
+    let { content, computedStyle, charWidthList } = this;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {
@@ -85,8 +86,8 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { isDestroyed, content, style, lineBoxes, charWidthList } = this;
-    if(isDestroyed || style.display === 'none') {
+    let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
+    if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
     this.__ox = this.__oy = 0;
@@ -98,24 +99,24 @@ class Text extends Node {
     let length = content.length;
     while(i < length) {
       count += charWidthList[i];
-      if (count === w) {
-        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), style);
+      if(count === w) {
+        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), computedStyle);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
-        y += this.style.lineHeight.value;
+        y += computedStyle.lineHeight;
         begin = i + 1;
         i = begin + 1;
         count = 0;
       }
-      else if (count > w) {
+      else if(count > w) {
         // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), style);
+        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), computedStyle);
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
-        y += this.style.lineHeight.value;
+        y += computedStyle.lineHeight;
         begin = i;
         i = i + 1;
         count = 0;
@@ -129,10 +130,10 @@ class Text extends Node {
       for(i = begin ;i < length; i++) {
         count += charWidthList[i];
       }
-      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length), style);
+      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length), computedStyle);
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
-      y += style.lineHeight.value;
+      y += computedStyle.lineHeight;
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
@@ -141,7 +142,7 @@ class Text extends Node {
       this.__lineBoxes = [];
     }
     else {
-      let { textAlign } = style;
+      let { textAlign } = computedStyle;
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxes.forEach(lineBox => {
           let diff = this.__width - lineBox.width;
@@ -154,13 +155,13 @@ class Text extends Node {
   }
 
   render(renderMode) {
-    const { isDestroyed, ctx, style } = this;
-    if(isDestroyed || style.display === 'none') {
+    const { isDestroyed, ctx, computedStyle } = this;
+    if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(style);
-      ctx.fillStyle = style.color;
+      ctx.font = css.setFontStyle(computedStyle);
+      ctx.fillStyle = computedStyle.color;
     }
     this.lineBoxes.forEach(item => {
       item.render(renderMode, ctx);
@@ -183,6 +184,10 @@ class Text extends Node {
       n = Math.max(n, item);
     });
     return { max: this.textWidth, min: n };
+  }
+
+  animate() {
+    inject.warn('Text can not use animate()');
   }
 
   get content() {

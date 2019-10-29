@@ -30,12 +30,10 @@ class Img extends Dom {
 
   __layout(data) {
     super.__layout(data);
-    let { isDestroyed, src, style: {
+    let { isDestroyed, src, computedStyle: {
       display,
       width,
       height,
-      marginLeft,
-      marginRight,
     } } = this;
     if(isDestroyed || display === 'none') {
       return;
@@ -72,13 +70,6 @@ class Img extends Dom {
       }
       this.__width = width.value;
       this.__height = height.value;
-      // 处理margin:xx auto居中对齐
-      if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-        let ow = this.outerWidth;
-        if(ow < cache.width) {
-          this.__offsetX((cache.width - ow) * 0.5);
-        }
-      }
       if(this.root) {
         this.root.refreshTask();
       }

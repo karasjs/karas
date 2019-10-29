@@ -896,13 +896,6 @@ class Dom extends Xom {
         }
       });
     }
-    // 处理margin:xx auto居中对齐
-    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5);
-      }
-    }
   }
 
   // 只针对绝对定位children布局

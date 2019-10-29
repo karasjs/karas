@@ -185,12 +185,12 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode, style } = this;
-    style.width = {
+    let { renderMode, computedStyle } = this;
+    computedStyle.width = {
       value: this.width,
       unit: unit.PX,
     };
-    style.height = {
+    computedStyle.height = {
       value: this.height,
       unit: unit.PX,
     };

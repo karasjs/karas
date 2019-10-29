@@ -1974,7 +1974,7 @@
       return requestAnimationFrame;
     }(function (cb) {
       if (typeof requestAnimationFrame !== 'undefined') {
-        inject.requestAnimationFrame = requestAnimationFrame;
+        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
         requestAnimationFrame(cb);
       } else {
         setTimeout(cb, 16.7);
@@ -6411,15 +6411,6 @@
               lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
             }
           });
-        } // 处理margin:xx auto居中对齐
-
-
-        if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-          var ow = this.outerWidth;
-
-          if (ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5);
-          }
         }
       } // 只针对绝对定位children布局
 
@@ -6700,12 +6691,10 @@
 
         var isDestroyed = this.isDestroyed,
             src = this.src,
-            _this$style = this.style,
-            display = _this$style.display,
-            width = _this$style.width,
-            height = _this$style.height,
-            marginLeft = _this$style.marginLeft,
-            marginRight = _this$style.marginRight;
+            _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
+            width = _this$computedStyle.width,
+            height = _this$computedStyle.height;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -6745,15 +6734,7 @@
             }
 
           _this2.__width = width.value;
-          _this2.__height = height.value; // 处理margin:xx auto居中对齐
-
-          if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-            var ow = _this2.outerWidth;
-
-            if (ow < cache.width) {
-              _this2.__offsetX((cache.width - ow) * 0.5);
-            }
-          }
+          _this2.__height = height.value;
 
           if (_this2.root) {
             _this2.root.refreshTask();
@@ -6813,10 +6794,10 @@
             ptw = this.ptw,
             src = this.src,
             isDestroyed = this.isDestroyed,
-            _this$style2 = this.style,
-            display = _this$style2.display,
-            borderTopWidth = _this$style2.borderTopWidth,
-            borderLeftWidth = _this$style2.borderLeftWidth;
+            _this$style = this.style,
+            display = _this$style.display,
+            borderTopWidth = _this$style.borderTopWidth,
+            borderLeftWidth = _this$style.borderLeftWidth;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -7571,12 +7552,12 @@
         var _this2 = this;
 
         var renderMode = this.renderMode,
-            style = this.style;
-        style.width = {
+            computedStyle = this.computedStyle;
+        computedStyle.width = {
           value: this.width,
           unit: unit.PX
         };
-        style.height = {
+        computedStyle.height = {
           value: this.height,
           unit: unit.PX
         };

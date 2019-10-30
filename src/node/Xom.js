@@ -121,7 +121,7 @@ class Xom extends Node {
     if(isDestroyed || display === 'none') {
       return;
     }
-    if(width && width.unit !== unit.AUTO) {
+    if(width.unit !== unit.AUTO) {
       switch(width.unit) {
         case unit.PX:
           w = width.value;
@@ -169,6 +169,9 @@ class Xom extends Node {
     }
     else if(mp.unit === unit.PERCENT) {
       return mp.value * w * 0.01;
+    }
+    else if(mp.unit === unit.AUTO) {
+      return 'auto';
     }
     return 0;
   }

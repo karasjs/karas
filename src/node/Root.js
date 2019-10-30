@@ -186,14 +186,39 @@ class Root extends Dom {
 
   refresh(cb) {
     let { renderMode, computedStyle } = this;
-    computedStyle.width = {
-      value: this.width,
-      unit: unit.PX,
-    };
-    computedStyle.height = {
-      value: this.height,
-      unit: unit.PX,
-    };
+    let {
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft
+    } = computedStyle;
+    computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
+    computedStyle.width = this.width;
+    computedStyle.height = this.height;
+    if(paddingTop.unit === unit.PX) {
+      computedStyle.paddingTop = Math.max(0, paddingTop.value);
+    }
+    else if(paddingTop.unit === unit.PERCENT) {
+      computedStyle.paddingTop = Math.max(0, computedStyle.height * paddingTop.value * 0.01);
+    }
+    if(paddingRight.unit === unit.PX) {
+      computedStyle.paddingRight = Math.max(0, paddingRight.value);
+    }
+    else if(paddingRight.unit === unit.PERCENT) {
+      computedStyle.paddingRight = Math.max(0, computedStyle.width * paddingRight.value * 0.01);
+    }
+    if(paddingBottom.unit === unit.PX) {
+      computedStyle.paddingBottom = Math.max(0, paddingBottom.value);
+    }
+    else if(paddingBottom.unit === unit.PERCENT) {
+      computedStyle.paddingBottom = Math.max(0, computedStyle.height * paddingBottom.value * 0.01);
+    }
+    if(paddingLeft.unit === unit.PX) {
+      computedStyle.paddingLeft = Math.max(0, paddingLeft.value);
+    }
+    else if(paddingRight.unit === unit.PERCENT) {
+      computedStyle.paddingLeft = Math.max(0, computedStyle.width * paddingLeft.value * 0.01);
+    }
     inject.measureText(() => {
       this.__layout({
         x: 0,
@@ -201,7 +226,12 @@ class Root extends Dom {
         w: this.width,
         h: this.height,
       });
-      this.__layoutAbs(this);
+      this.__layoutAbs(this, {
+        x: 0,
+        y: 0,
+        w: this.width,
+        h: this.height,
+      });
       if(renderMode === mode.CANVAS) {
         // 可能会调整宽高，所以每次清除用最大值
         this.__mw = Math.max(this.__mw, this.width);

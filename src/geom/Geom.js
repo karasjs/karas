@@ -94,10 +94,6 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
   }
 
-  __calAbs() {
-    return 0;
-  }
-
   __preRender(renderMode) {
     let { rx: x, ry: y, width, height, computedStyle } = this;
     let {

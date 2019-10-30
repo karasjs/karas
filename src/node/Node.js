@@ -18,12 +18,22 @@ class Node {
     this.__host = null;
   }
 
-  __offsetX(diff) {
-    this.__ox += diff;
+  __offsetX(diff, isLayout) {
+    if(isLayout) {
+      this.__x += diff;
+    }
+    else {
+      this.__ox += diff;
+    }
   }
 
-  __offsetY(diff) {
-    this.__oy += diff;
+  __offsetY(diff, isLayout) {
+    if(isLayout) {
+      this.__y += diff;
+    }
+    else {
+      this.__oy += diff;
+    }
   }
 
   __destroy() {

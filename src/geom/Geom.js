@@ -111,8 +111,8 @@ class Geom extends Xom {
       paddingBottom,
       paddingLeft,
     } = computedStyle;
-    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = y + borderTopWidth + marginTop + paddingTop;
+    let originX = x + borderLeftWidth + css.parseAuto(marginLeft) + paddingLeft;
+    let originY = y + borderTopWidth + css.parseAuto(marginTop) + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     let iw = width + paddingLeft + paddingRight;

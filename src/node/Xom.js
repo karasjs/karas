@@ -1,11 +1,11 @@
 import Node from './Node';
-import Text from './Text';
 import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
 import match from '../style/match';
+import css from '../style/css';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
@@ -232,15 +232,15 @@ class Xom extends Node {
       }
     }
     // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth + marginLeft + paddingLeft;
+    x += borderLeftWidth + css.parseAuto(marginLeft) + paddingLeft;
     data.x = x;
-    y += borderTopWidth + marginTop + paddingTop;
+    y += borderTopWidth + css.parseAuto(marginTop) + paddingTop;
     data.y = y;
     if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
+      w -= borderLeftWidth + borderRightWidth + css.parseAuto(marginLeft) + css.parseAuto(marginRight) + paddingLeft + paddingRight;
     }
     if(height.unit === unit.AUTO) {
-      h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
+      h -= borderTopWidth + borderBottomWidth + css.parseAuto(marginTop) + css.parseAuto(marginBottom) + paddingTop + paddingBottom;
     }
     return {
       fixedWidth,
@@ -705,8 +705,8 @@ class Xom extends Node {
     return this.width
       + borderLeftWidth
       + borderRightWidth
-      + marginLeft
-      + marginRight
+      + css.parseAuto(marginLeft)
+      + css.parseAuto(marginRight)
       + paddingLeft
       + paddingRight;
   }
@@ -722,8 +722,8 @@ class Xom extends Node {
     return this.height
       + borderTopWidth
       + borderBottomWidth
-      + marginTop
-      + marginBottom
+      + css.parseAuto(marginTop)
+      + css.parseAuto(marginBottom)
       + paddingTop
       + paddingBottom;
   }

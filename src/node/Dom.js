@@ -399,10 +399,10 @@ class Dom extends Xom {
       });
     }
     // 处理margin:xx auto居中对齐
-    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+    if(marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5);
+        this.__offsetX((data.w - ow) * 0.5, true);
       }
     }
   }
@@ -594,10 +594,10 @@ class Dom extends Xom {
         // 重设因伸缩而导致的主轴长度
         if(isOverflow && shrink || !isOverflow && grow) {
           if(isDirectionRow) {
-            item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
+            item.__width = main - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
           }
           else {
-            item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            item.__height = main - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
       }
@@ -685,12 +685,12 @@ class Dom extends Xom {
         } = computedStyle;
         if(isDirectionRow) {
           if(computedStyle.height.unit === unit.AUTO) {
-            item.__height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            item.__height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
           if(computedStyle.width.unit === unit.AUTO) {
-            item.__width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+            item.__width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
       });
@@ -715,7 +715,7 @@ class Dom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;
     // 处理margin:xx auto居中对齐
-    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
+    if(marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5);
@@ -886,7 +886,7 @@ class Dom extends Xom {
       }
       else if(left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
-        w2 = width2.unit === unit.PX ? width2.value : width;
+        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
       }
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
         w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
@@ -913,7 +913,7 @@ class Dom extends Xom {
       }
       else if(top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
-        h2 = height2.unit === unit.PX ? height2.value : height;
+        h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
       }
       else if(bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
         h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;

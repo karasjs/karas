@@ -198,7 +198,11 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(width.unit !== unit.AUTO) {
+    if(util.isNumber(width)) {
+      fixedWidth = true;
+      w = width;
+    }
+    else if(width.unit !== unit.AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case unit.PX:

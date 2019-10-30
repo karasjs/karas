@@ -4417,7 +4417,10 @@
         var fixedWidth;
         var fixedHeight;
 
-        if (width.unit !== unit.AUTO) {
+        if (util.isNumber(width)) {
+          fixedWidth = true;
+          w = width;
+        } else if (width.unit !== unit.AUTO) {
           fixedWidth = true;
 
           switch (width.unit) {
@@ -6672,8 +6675,6 @@
             } else if (height.unit === unit.AUTO) {
               _this2.__height = computedStyle.height = w * cache.height / cache.width;
             }
-
-          _this2.__marginAuto(style, data);
 
           if (_this2.root) {
             _this2.root.refreshTask();

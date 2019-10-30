@@ -63,7 +63,6 @@ class Img extends Dom {
       else if(height.unit === unit.AUTO) {
         this.__height = computedStyle.height = w * cache.height / cache.width;
       }
-      this.__marginAuto(style, data);
       if(this.root) {
         this.root.refreshTask();
       }

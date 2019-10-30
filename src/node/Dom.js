@@ -875,10 +875,10 @@ class Dom extends Xom {
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { computedStyle } = item;
-      let { display, left, top, right, bottom, width: width2, height: height2 } = computedStyle;
+      let { left, top, right, bottom, width: width2, height: height2 } = computedStyle;
       let x2, y2, w2, h2;
       let onlyRight;
-      let onlyBottom
+      let onlyBottom;
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
@@ -889,9 +889,8 @@ class Dom extends Xom {
         w2 = width2.unit === unit.PX ? width2.value : width;
       }
       else if(right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-        w2 = width2.unit === unit.PX ? width2.value : width;
-        let widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-        x2 = right.unit === unit.PX ? x + iw - right.value - widthPx : x + iw - width * right.value * 0.01 - widthPx;
+        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+        x2 = right.unit === unit.PX ? x + iw - right.value - w2 : x + iw - width * right.value * 0.01 - w2;
       }
       else if(left.unit !== unit.AUTO) {
         x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
@@ -917,9 +916,8 @@ class Dom extends Xom {
         h2 = height2.unit === unit.PX ? height2.value : height;
       }
       else if(bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-        h2 = height2.unit === unit.PX ? height2.value : height;
-        let heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-        y2 = bottom.unit === unit.PX ? y + ih - bottom.value - heightPx : y + ih - height * bottom.value * 0.01 - heightPx;
+        h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+        y2 = bottom.unit === unit.PX ? y + ih - bottom.value - h2 : y + ih - height * bottom.value * 0.01 - h2;
       }
       else if(top.unit !== unit.AUTO) {
         y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
@@ -949,7 +947,7 @@ class Dom extends Xom {
         item.__layout({
           x: x2,
           y: y2,
-          w: x2,
+          w: w2,
           h: h2,
         });
         item.__offsetX(-item.width, true);
@@ -959,7 +957,7 @@ class Dom extends Xom {
         item.__layout({
           x: x2,
           y: y2,
-          w: x2,
+          w: w2,
           h: data.h - y2,
         });
         item.__offsetX(-item.width, true);

@@ -156,16 +156,20 @@ class Text extends Node {
 
   __offsetX(diff, isLayout) {
     super.__offsetX(diff, isLayout);
-    this.lineBoxes.forEach(item => {
-      item.__offsetX(diff);
-    });
+    if(isLayout) {
+      this.lineBoxes.forEach(item => {
+        item.__offsetX(diff);
+      });
+    }
   }
 
   __offsetY(diff, isLayout) {
     super.__offsetY(diff, isLayout);
-    this.lineBoxes.forEach(item => {
-      item.__offsetY(diff);
-    });
+    if(isLayout) {
+      this.lineBoxes.forEach(item => {
+        item.__offsetY(diff);
+      });
+    }
   }
 
   render(renderMode) {

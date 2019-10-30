@@ -176,6 +176,7 @@ class Xom extends Node {
     return 0;
   }
 
+  // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data) {
     let { x, y, w, h } = data;
     this.__x = x;

@@ -2153,18 +2153,22 @@
       value: function __offsetX(diff, isLayout) {
         _get(_getPrototypeOf(Text.prototype), "__offsetX", this).call(this, diff, isLayout);
 
-        this.lineBoxes.forEach(function (item) {
-          item.__offsetX(diff);
-        });
+        if (isLayout) {
+          this.lineBoxes.forEach(function (item) {
+            item.__offsetX(diff);
+          });
+        }
       }
     }, {
       key: "__offsetY",
       value: function __offsetY(diff, isLayout) {
         _get(_getPrototypeOf(Text.prototype), "__offsetY", this).call(this, diff, isLayout);
 
-        this.lineBoxes.forEach(function (item) {
-          item.__offsetY(diff);
-        });
+        if (isLayout) {
+          this.lineBoxes.forEach(function (item) {
+            item.__offsetY(diff);
+          });
+        }
       }
     }, {
       key: "render",
@@ -4385,7 +4389,8 @@
         }
 
         return 0;
-      }
+      } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
+
     }, {
       key: "__preLayout",
       value: function __preLayout(data) {
@@ -6363,8 +6368,7 @@
 
         absChildren.forEach(function (item) {
           var computedStyle = item.computedStyle;
-          var display = computedStyle.display,
-              left = computedStyle.left,
+          var left = computedStyle.left,
               top = computedStyle.top,
               right = computedStyle.right,
               bottom = computedStyle.bottom,
@@ -6381,9 +6385,8 @@
             x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
             w2 = width2.unit === unit.PX ? width2.value : width;
           } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-            w2 = width2.unit === unit.PX ? width2.value : width;
-            var widthPx = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-            x2 = right.unit === unit.PX ? x + iw - right.value - widthPx : x + iw - width * right.value * 0.01 - widthPx;
+            w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+            x2 = right.unit === unit.PX ? x + iw - right.value - w2 : x + iw - width * right.value * 0.01 - w2;
           } else if (left.unit !== unit.AUTO) {
             x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
           } else if (right.unit !== unit.AUTO) {
@@ -6404,9 +6407,8 @@
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
             h2 = height2.unit === unit.PX ? height2.value : height;
           } else if (bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-            h2 = height2.unit === unit.PX ? height2.value : height;
-            var heightPx = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-            y2 = bottom.unit === unit.PX ? y + ih - bottom.value - heightPx : y + ih - height * bottom.value * 0.01 - heightPx;
+            h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+            y2 = bottom.unit === unit.PX ? y + ih - bottom.value - h2 : y + ih - height * bottom.value * 0.01 - h2;
           } else if (top.unit !== unit.AUTO) {
             y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
           } else if (bottom.unit !== unit.AUTO) {
@@ -6435,7 +6437,7 @@
             item.__layout({
               x: x2,
               y: y2,
-              w: x2,
+              w: w2,
               h: h2
             });
 
@@ -6446,7 +6448,7 @@
             item.__layout({
               x: x2,
               y: y2,
-              w: x2,
+              w: w2,
               h: data.h - y2
             });
 

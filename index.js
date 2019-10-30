@@ -6141,7 +6141,8 @@
         if (alignItems === 'stretch') {
           // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
           flowChildren.forEach(function (item) {
-            var computedStyle = item.computedStyle;
+            var computedStyle = item.computedStyle,
+                style = item.style;
             var borderTopWidth = computedStyle.borderTopWidth,
                 borderRightWidth = computedStyle.borderRightWidth,
                 borderBottomWidth = computedStyle.borderBottomWidth,
@@ -6156,12 +6157,12 @@
                 paddingLeft = computedStyle.paddingLeft;
 
             if (isDirectionRow) {
-              if (computedStyle.height.unit === unit.AUTO) {
-                item.__height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              if (style.height.unit === unit.AUTO) {
+                item.__height = computedStyle.height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               }
             } else {
-              if (computedStyle.width.unit === unit.AUTO) {
-                item.__width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+              if (style.width.unit === unit.AUTO) {
+                item.__width = computedStyle.width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               }
             }
           });

@@ -672,7 +672,7 @@ class Dom extends Xom {
     if(alignItems === 'stretch') {
       // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
       flowChildren.forEach(item => {
-        let { computedStyle } = item;
+        let { computedStyle, style } = item;
         let {
           borderTopWidth,
           borderRightWidth,
@@ -688,13 +688,13 @@ class Dom extends Xom {
           paddingLeft,
         } = computedStyle;
         if(isDirectionRow) {
-          if(computedStyle.height.unit === unit.AUTO) {
-            item.__height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+          if(style.height.unit === unit.AUTO) {
+            item.__height = computedStyle.height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
-          if(computedStyle.width.unit === unit.AUTO) {
-            item.__width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+          if(style.width.unit === unit.AUTO) {
+            item.__width = computedStyle.width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
       });

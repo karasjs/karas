@@ -170,7 +170,7 @@ class Xom extends Node {
     else if(mp.unit === unit.PERCENT) {
       return mp.value * w * 0.01;
     }
-    else if(mp.unit === unit.AUTO) {
+    else if(mp === 'auto' || mp.unit === unit.AUTO) {
       return 'auto';
     }
     return 0;

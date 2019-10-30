@@ -264,9 +264,8 @@ class Dom extends Xom {
 
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data) {
-    let { flowChildren, computedStyle, lineGroups } = this;
+    let { flowChildren, style, computedStyle, lineGroups } = this;
     let {
-      width,
       marginLeft,
       marginRight,
       textAlign,
@@ -399,7 +398,7 @@ class Dom extends Xom {
       });
     }
     // 处理margin:xx auto居中对齐
-    if(marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
+    if(marginLeft === 'auto' && marginRight === 'auto' && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);

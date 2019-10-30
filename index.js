@@ -4393,7 +4393,7 @@
           return mp.value;
         } else if (mp.unit === unit.PERCENT) {
           return mp.value * w * 0.01;
-        } else if (mp.unit === unit.AUTO) {
+        } else if (mp === 'auto' || mp.unit === unit.AUTO) {
           return 'auto';
         }
 
@@ -5696,10 +5696,10 @@
       key: "__layoutBlock",
       value: function __layoutBlock(data) {
         var flowChildren = this.flowChildren,
+            style = this.style,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
-        var width = computedStyle.width,
-            marginLeft = computedStyle.marginLeft,
+        var marginLeft = computedStyle.marginLeft,
             marginRight = computedStyle.marginRight,
             textAlign = computedStyle.textAlign;
 
@@ -5848,7 +5848,7 @@
         } // 处理margin:xx auto居中对齐
 
 
-        if (marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
+        if (marginLeft === 'auto' && marginRight === 'auto' && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
           var ow = this.outerWidth;
 
           if (ow < data.w) {
@@ -6665,10 +6665,8 @@
           return;
         }
 
-        var _this$__preLayout = this.__preLayout(data),
-            w = _this$__preLayout.w,
-            h = _this$__preLayout.h;
-
+        var w = this.width,
+            h = this.height;
         var cache = CACHE[this.src] = CACHE[this.src] || {
           state: INIT,
           task: []
@@ -6685,21 +6683,14 @@
           _this2.__imgHeight = cache.height; // 宽高都为auto，使用加载测量的数据
 
           if (width.unit === unit.AUTO && height.unit === unit.AUTO) {
-            width.value = cache.width;
-            width.unit = unit.PX;
-            height.value = cache.height;
-            height.unit = unit.PX;
+            _this2.__width = computedStyle.width = cache.width;
+            _this2.__height = computedStyle.height = cache.height;
           } // 否则有一方定义则按比例调整另一方适应
           else if (width.unit === unit.AUTO) {
-              width.value = h * cache.width / cache.height;
-              width.unit = unit.PX;
+              _this2.__width = computedStyle.width = h * cache.width / cache.height;
             } else if (height.unit === unit.AUTO) {
-              height.value = w * cache.height / cache.width;
-              height.unit = unit.PX;
+              _this2.__height = computedStyle.height = w * cache.height / cache.width;
             }
-
-          _this2.__width = computedStyle.width = width.value;
-          _this2.__height = computedStyle.height = height.value;
 
           if (_this2.root) {
             _this2.root.refreshTask();

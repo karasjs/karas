@@ -37,7 +37,7 @@ class Img extends Dom {
     if(isDestroyed || display === 'none') {
       return;
     }
-    let { w, h } = this.__preLayout(data);
+    let { width: w, height: h } = this;
     let cache = CACHE[this.src] = CACHE[this.src] || {
       state: INIT,
       task: [],
@@ -53,22 +53,16 @@ class Img extends Dom {
       this.__imgHeight = cache.height;
       // 宽高都为auto，使用加载测量的数据
       if(width.unit === unit.AUTO && height.unit === unit.AUTO) {
-        width.value = cache.width;
-        width.unit = unit.PX;
-        height.value = cache.height;
-        height.unit = unit.PX;
+        this.__width = computedStyle.width = cache.width;
+        this.__height = computedStyle.height = cache.height;
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
-        width.value = h * cache.width / cache.height;
-        width.unit = unit.PX;
+        this.__width = computedStyle.width = h * cache.width / cache.height;
       }
       else if(height.unit === unit.AUTO) {
-        height.value = w * cache.height / cache.width;
-        height.unit = unit.PX;
+        this.__height = computedStyle.height = w * cache.height / cache.width;
       }
-      this.__width = computedStyle.width = width.value;
-      this.__height = computedStyle.height = height.value;
       if(this.root) {
         this.root.refreshTask();
       }

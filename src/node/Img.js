@@ -63,6 +63,7 @@ class Img extends Dom {
       else if(height.unit === unit.AUTO) {
         this.__height = computedStyle.height = w * cache.height / cache.width;
       }
+      this.__marginAuto(style, data);
       if(this.root) {
         this.root.refreshTask();
       }
@@ -117,8 +118,8 @@ class Img extends Dom {
     if(isDestroyed || display === 'none') {
       return;
     }
-    let originX = x + css.parseAuto(marginLeft) + borderLeftWidth + paddingLeft;
-    let originY = y + css.parseAuto(marginTop) + borderTopWidth + paddingTop;
+    let originX = x + marginLeft + borderLeftWidth + paddingLeft;
+    let originY = y + marginTop + borderTopWidth + paddingTop;
     if(this.__error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';

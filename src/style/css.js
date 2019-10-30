@@ -444,17 +444,9 @@ function getBaseLine(style) {
   return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
 }
 
-function parseAuto(n) {
-  if(n === 'auto') {
-    return 0;
-  }
-  return n;
-}
-
 export default {
   normalize,
   computed,
   setFontStyle,
   getBaseLine,
-  parseAuto,
 };

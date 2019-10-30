@@ -266,8 +266,6 @@ class Dom extends Xom {
   __layoutBlock(data) {
     let { flowChildren, style, computedStyle, lineGroups } = this;
     let {
-      marginLeft,
-      marginRight,
       textAlign,
     } = computedStyle;
     let { fixedHeight, x, y, w, h } = this.__preLayout(data);
@@ -397,8 +395,12 @@ class Dom extends Xom {
         }
       });
     }
-    // 处理margin:xx auto居中对齐
-    if(marginLeft === 'auto' && marginRight === 'auto' && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
+    this.__marginAuto(style, data);
+  }
+
+  // 处理margin:xx auto居中对齐
+  __marginAuto(style, data) {
+    if(style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);
@@ -408,11 +410,8 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data) {
-    let { flowChildren, computedStyle } = this;
+    let { flowChildren, style, computedStyle } = this;
     let {
-      width,
-      marginLeft,
-      marginRight,
       flexDirection,
       justifyContent,
       alignItems,
@@ -597,10 +596,10 @@ class Dom extends Xom {
             paddingLeft,
           } = computedStyle;
           if(isDirectionRow) {
-            item.__width = main - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
+            item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
           }
           else {
-            item.__height = main - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
       }
@@ -688,12 +687,12 @@ class Dom extends Xom {
         } = computedStyle;
         if(isDirectionRow) {
           if(style.height.unit === unit.AUTO) {
-            item.__height = computedStyle.height = maxCross - css.parseAuto(marginTop) - css.parseAuto(marginBottom) - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
           if(style.width.unit === unit.AUTO) {
-            item.__width = computedStyle.width = maxCross - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+            item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
       });
@@ -717,13 +716,7 @@ class Dom extends Xom {
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
     this.__flowY = y;
-    // 处理margin:xx auto居中对齐
-    if(marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5, true);
-      }
-    }
+    this.__marginAuto(style, data);
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移

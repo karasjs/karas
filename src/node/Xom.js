@@ -170,9 +170,6 @@ class Xom extends Node {
     else if(mp.unit === unit.PERCENT) {
       return mp.value * w * 0.01;
     }
-    else if(mp === 'auto' || mp.unit === unit.AUTO) {
-      return 'auto';
-    }
     return 0;
   }
 
@@ -201,11 +198,7 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(util.isNumber(width)) {
-      fixedWidth = true;
-      w = width;
-    }
-    else if(width.unit !== unit.AUTO) {
+    if(width.unit !== unit.AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case unit.PX:
@@ -232,15 +225,15 @@ class Xom extends Node {
       }
     }
     // margin/padding/border影响x和y和尺寸
-    x += borderLeftWidth + css.parseAuto(marginLeft) + paddingLeft;
+    x += borderLeftWidth + marginLeft + paddingLeft;
     data.x = x;
-    y += borderTopWidth + css.parseAuto(marginTop) + paddingTop;
+    y += borderTopWidth + marginTop + paddingTop;
     data.y = y;
     if(width.unit === unit.AUTO) {
-      w -= borderLeftWidth + borderRightWidth + css.parseAuto(marginLeft) + css.parseAuto(marginRight) + paddingLeft + paddingRight;
+      w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
     }
     if(height.unit === unit.AUTO) {
-      h -= borderTopWidth + borderBottomWidth + css.parseAuto(marginTop) + css.parseAuto(marginBottom) + paddingTop + paddingBottom;
+      h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
     }
     return {
       fixedWidth,
@@ -323,10 +316,10 @@ class Xom extends Node {
     if(isDestroyed || display === 'none') {
       return;
     }
-    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有一定高则为0
+    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(position === 'relative' && this.parent) {
       let { width, height } = this.parent;
-      let h = this.parent.computedStyle.height;
+      let h = this.parent.style.height;
       if(left.unit !== unit.AUTO) {
         let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
         this.__offsetX(diff);
@@ -346,11 +339,11 @@ class Xom extends Node {
     }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
     let { rx: x, ry: y } = this;
-    let x1 = x + css.parseAuto(marginLeft);
+    let x1 = x + marginLeft;
     let x2 = x1 + borderLeftWidth;
     let x3 = x2 + width + paddingLeft + paddingRight;
     let x4 = x3 + borderRightWidth;
-    let y1 = y + css.parseAuto(marginTop);
+    let y1 = y + marginTop;
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
@@ -358,8 +351,8 @@ class Xom extends Node {
     let ih = height + paddingTop + paddingBottom;
     // transform相对于自身
     if(transform) {
-      let x4 = x + css.parseAuto(marginLeft) + borderLeftWidth + iw + borderRightWidth + css.parseAuto(marginRight);
-      let y4 = y + css.parseAuto(marginTop) + borderTopWidth + ih + borderBottomWidth + css.parseAuto(marginBottom);
+      let x4 = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
+      let y4 = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
       let ow = x4 - x;
       let oh = y4 - y;
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
@@ -705,8 +698,8 @@ class Xom extends Node {
     return this.width
       + borderLeftWidth
       + borderRightWidth
-      + css.parseAuto(marginLeft)
-      + css.parseAuto(marginRight)
+      + marginLeft
+      + marginRight
       + paddingLeft
       + paddingRight;
   }
@@ -722,8 +715,8 @@ class Xom extends Node {
     return this.height
       + borderTopWidth
       + borderBottomWidth
-      + css.parseAuto(marginTop)
-      + css.parseAuto(marginBottom)
+      + marginTop
+      + marginBottom
       + paddingTop
       + paddingBottom;
   }

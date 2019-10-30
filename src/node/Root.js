@@ -185,7 +185,7 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode, computedStyle } = this;
+    let { renderMode, style, computedStyle } = this;
     let {
       paddingTop,
       paddingRight,
@@ -195,6 +195,14 @@ class Root extends Dom {
     computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    style.width = {
+      value: this.width,
+      unit: unit.PX,
+    };
+    style.height = {
+      value: this.height,
+      unit: unit.PX,
+    };
     if(paddingTop.unit === unit.PX) {
       computedStyle.paddingTop = Math.max(0, paddingTop.value);
     }
@@ -277,18 +285,6 @@ class Root extends Dom {
 
   get node() {
     return this.__node;
-  }
-  get width() {
-    return this.__width;
-  }
-  set width(v) {
-    this.__width = v;
-  }
-  get height() {
-    return this.__height;
-  }
-  set height(v) {
-    this.__height = v;
   }
   get renderMode() {
     return this.__renderMode;

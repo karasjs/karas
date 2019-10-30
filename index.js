@@ -6362,30 +6362,56 @@
         var ih = height + paddingTop + paddingBottom; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
-          var computedStyle = item.computedStyle;
+          var style = item.style,
+              computedStyle = item.computedStyle;
           var left = computedStyle.left,
               top = computedStyle.top,
               right = computedStyle.right,
-              bottom = computedStyle.bottom,
-              width2 = computedStyle.width,
-              height2 = computedStyle.height;
+              bottom = computedStyle.bottom;
+          var width2 = style.width,
+              height2 = style.height;
           var x2, y2, w2, h2;
           var onlyRight;
-          var onlyBottom; // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
+          var onlyBottom;
+          var fixedTop;
+          var fixedRight;
+          var fixedBottom;
+          var fixedLeft;
 
-          if (left.unit !== unit.AUTO && right.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
-            w2 = right.unit === unit.PX ? x + iw - right.value - x2 : x + iw - width * right.value * 0.01 - x2;
-          } else if (left.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
+          if (!util.isNumber(left) && left.unit !== unit.AUTO) {
+            fixedLeft = true;
+            computedStyle.left = left.unit === unit.PX ? left.value : width * left.value * 0.01;
+          }
+
+          if (!util.isNumber(right) && right.unit !== unit.AUTO) {
+            fixedRight = true;
+            computedStyle.right = right.unit === unit.PX ? right.value : width * right.value * 0.01;
+          }
+
+          if (!util.isNumber(top) && top.unit !== unit.AUTO) {
+            fixedTop = true;
+            computedStyle.top = top.unit === unit.PX ? top.value : height * top.value * 0.01;
+          }
+
+          if (!util.isNumber(bottom) && bottom.unit !== unit.AUTO) {
+            fixedBottom = true;
+            computedStyle.bottom = bottom.unit === unit.PX ? bottom.value : height * bottom.value * 0.01;
+          } // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
+
+
+          if (fixedLeft && fixedRight) {
+            x2 = x + computedStyle.left;
+            w2 = x + iw - computedStyle.right - x2;
+          } else if (fixedLeft && width2.unit !== unit.AUTO) {
+            x2 = x + computedStyle.left;
             w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-          } else if (right.unit !== unit.AUTO && width2.unit !== unit.AUTO) {
+          } else if (fixedRight && width2.unit !== unit.AUTO) {
             w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-            x2 = right.unit === unit.PX ? x + iw - right.value - w2 : x + iw - width * right.value * 0.01 - w2;
-          } else if (left.unit !== unit.AUTO) {
-            x2 = left.unit === unit.PX ? x + left.value : x + width * left.value * 0.01;
-          } else if (right.unit !== unit.AUTO) {
-            x2 = right.unit === unit.PX ? x + iw - right.value : x + iw - width * right.value * 0.01;
+            x2 = x + iw - computedStyle.right - w2;
+          } else if (fixedLeft) {
+            x2 = computedStyle.left;
+          } else if (fixedRight) {
+            x2 = x + iw - computedStyle.right;
             onlyRight = true;
           } else if (width2.unit !== unit.AUTO) {
             x2 = x;
@@ -6395,19 +6421,19 @@
           } // top/bottom/height优先级同上
 
 
-          if (top.unit !== unit.AUTO && bottom.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
-            h2 = bottom.unit === unit.PX ? y + ih - bottom.value - y2 : y + ih - height * bottom.value * 0.01 - y2;
-          } else if (top.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
+          if (fixedTop && fixedBottom) {
+            y2 = y + computedStyle.top;
+            h2 = y + ih - computedStyle.bottom - y2;
+          } else if (fixedTop && height2.unit !== unit.AUTO) {
+            y2 = y + computedStyle.top;
             h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-          } else if (bottom.unit !== unit.AUTO && height2.unit !== unit.AUTO) {
+          } else if (fixedBottom && height2.unit !== unit.AUTO) {
             h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-            y2 = bottom.unit === unit.PX ? y + ih - bottom.value - h2 : y + ih - height * bottom.value * 0.01 - h2;
-          } else if (top.unit !== unit.AUTO) {
-            y2 = top.unit === unit.PX ? y + top.value : y + height * top.value * 0.01;
-          } else if (bottom.unit !== unit.AUTO) {
-            y2 = bottom.unit === unit.PX ? y + ih - bottom.value : y + ih - height * bottom.value * 0.01;
+            y2 = y + ih - computedStyle.bottom - h2;
+          } else if (fixedTop) {
+            y2 = computedStyle.top;
+          } else if (fixedBottom) {
+            y2 = y + ih - computedStyle.bottom;
             onlyBottom = true;
           } else if (height2.unit !== unit.AUTO) {
             y2 = flowY + marginTop + borderTopWidth;
@@ -6425,7 +6451,7 @@
           } // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
 
 
-          computedStyle.display = 'inline'; // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
+          style.display = computedStyle.display = 'inline'; // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
           // 并且布局完成后还要偏移回来
 
           if (onlyRight && onlyBottom) {
@@ -6467,7 +6493,7 @@
           } // 布局完成后强制为block
 
 
-          computedStyle.display = 'block';
+          style.display = computedStyle.display = 'block';
         }); // 递归进行，遇到absolute/relative的设置新容器
 
         children.forEach(function (item) {
@@ -7490,6 +7516,7 @@
         var _this2 = this;
 
         var renderMode = this.renderMode,
+            style = this.style,
             computedStyle = this.computedStyle;
         var paddingTop = computedStyle.paddingTop,
             paddingRight = computedStyle.paddingRight,
@@ -7498,6 +7525,14 @@
         computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
         computedStyle.width = this.width;
         computedStyle.height = this.height;
+        style.width = {
+          value: this.width,
+          unit: unit.PX
+        };
+        style.height = {
+          value: this.height,
+          unit: unit.PX
+        };
 
         if (paddingTop.unit === unit.PX) {
           computedStyle.paddingTop = Math.max(0, paddingTop.value);
@@ -7596,22 +7631,6 @@
       key: "node",
       get: function get() {
         return this.__node;
-      }
-    }, {
-      key: "width",
-      get: function get() {
-        return this.__width;
-      },
-      set: function set(v) {
-        this.__width = v;
-      }
-    }, {
-      key: "height",
-      get: function get() {
-        return this.__height;
-      },
-      set: function set(v) {
-        this.__height = v;
       }
     }, {
       key: "renderMode",

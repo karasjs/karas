@@ -411,6 +411,7 @@ class Dom extends Xom {
   __layoutFlex(data) {
     let { flowChildren, computedStyle } = this;
     let {
+      width,
       marginLeft,
       marginRight,
       flexDirection,
@@ -539,24 +540,13 @@ class Dom extends Xom {
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Xom || item instanceof Component) {
-        const { computedStyle, computedStyle: {
+        let { computedStyle } = item;
+        let {
           display,
           flexDirection,
           width,
           height,
-          borderTopWidth,
-          borderRightWidth,
-          borderBottomWidth,
-          borderLeftWidth,
-          marginTop,
-          marginRight,
-          marginBottom,
-          marginLeft,
-          paddingTop,
-          paddingRight,
-          paddingBottom,
-          paddingLeft,
-        }} = item;
+        } = computedStyle;
         if(isDirectionRow) {
           // row的flex的child如果是inline，变为block
           if(display === 'inline') {
@@ -572,7 +562,7 @@ class Dom extends Xom {
             y,
             w: main,
             h,
-          })
+          });
         }
         else {
           // column的flex的child如果是inline，变为block
@@ -593,6 +583,20 @@ class Dom extends Xom {
         }
         // 重设因伸缩而导致的主轴长度
         if(isOverflow && shrink || !isOverflow && grow) {
+          let {
+            borderTopWidth,
+            borderRightWidth,
+            borderBottomWidth,
+            borderLeftWidth,
+            marginTop,
+            marginRight,
+            marginBottom,
+            marginLeft,
+            paddingTop,
+            paddingRight,
+            paddingBottom,
+            paddingLeft,
+          } = computedStyle;
           if(isDirectionRow) {
             item.__width = main - css.parseAuto(marginLeft) - css.parseAuto(marginRight) - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
           }
@@ -626,28 +630,28 @@ class Dom extends Xom {
       if(justifyContent === 'flex-end') {
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];
-          isDirectionRow ? child.__offsetX(diff) : child.__offsetY(diff);
+          isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
         }
       }
       else if(justifyContent === 'center') {
         let center = diff * 0.5;
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];
-          isDirectionRow ? child.__offsetX(center) : child.__offsetY(center);
+          isDirectionRow ? child.__offsetX(center, true) : child.__offsetY(center, true);
         }
       }
       else if(justifyContent === 'space-between') {
         let between = diff / (len - 1);
         for(let i = 1; i < len; i++) {
           let child = flowChildren[i];
-          isDirectionRow ? child.__offsetX(between * i) : child.__offsetY(between * i);
+          isDirectionRow ? child.__offsetX(between * i, true) : child.__offsetY(between * i, true);
         }
       }
       else if(justifyContent === 'space-around') {
         let around = diff / (len + 1);
         for(let i = 0; i < len; i++) {
           let child = flowChildren[i];
-          isDirectionRow ? child.__offsetX(around * (i + 1)) : child.__offsetY(around * (i + 1));
+          isDirectionRow ? child.__offsetX(around * (i + 1), true) : child.__offsetY(around * (i + 1), true);
         }
       }
     }
@@ -699,7 +703,7 @@ class Dom extends Xom {
       flowChildren.forEach(item => {
         let diff = maxCross - item.outerHeight;
         if(diff > 0) {
-          item.__offsetY(diff * 0.5);
+          item.__offsetY(diff * 0.5, true);
         }
       });
     }
@@ -707,7 +711,7 @@ class Dom extends Xom {
       flowChildren.forEach(item => {
         let diff = maxCross - item.outerHeight;
         if(diff > 0) {
-          item.__offsetY(diff);
+          item.__offsetY(diff, true);
         }
       });
     }
@@ -718,7 +722,7 @@ class Dom extends Xom {
     if(marginLeft === 'auto' && marginRight === 'auto' && width.unit !== unit.AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5);
+        this.__offsetX((data.w - ow) * 0.5, true);
       }
     }
   }

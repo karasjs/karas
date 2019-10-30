@@ -303,20 +303,20 @@ class Xom extends Node {
       paddingRight,
       paddingBottom,
       paddingLeft,
-      backgroundGradient: bgg,
-      backgroundColor: bgc,
+      backgroundGradient,
+      backgroundColor,
       borderTopWidth,
-      borderTopColor: btc,
-      borderTopStyle: bts,
+      borderTopColor,
+      borderTopStyle,
       borderRightWidth,
-      borderRightColor: brc,
-      borderRightStyle: brs,
+      borderRightColor,
+      borderRightStyle,
       borderBottomWidth,
-      borderBottomColor: bbc,
-      borderBottomStyle: bbs,
+      borderBottomColor,
+      borderBottomStyle,
       borderLeftWidth,
-      borderLeftColor: blc,
-      borderLeftStyle : bls,
+      borderLeftColor,
+      borderLeftStyle,
       transform,
       transformOrigin,
     } = computedStyle;
@@ -346,11 +346,11 @@ class Xom extends Node {
     }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
     let { rx: x, ry: y } = this;
-    let x1 = x + marginLeft;
+    let x1 = x + css.parseAuto(marginLeft);
     let x2 = x1 + borderLeftWidth;
     let x3 = x2 + width + paddingLeft + paddingRight;
     let x4 = x3 + borderRightWidth;
-    let y1 = y + marginTop;
+    let y1 = y + css.parseAuto(marginTop);
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
@@ -358,8 +358,8 @@ class Xom extends Node {
     let ih = height + paddingTop + paddingBottom;
     // transform相对于自身
     if(transform) {
-      let x4 = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
-      let y4 = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
+      let x4 = x + css.parseAuto(marginLeft) + borderLeftWidth + iw + borderRightWidth + css.parseAuto(marginRight);
+      let y4 = y + css.parseAuto(marginTop) + borderTopWidth + ih + borderBottomWidth + css.parseAuto(marginBottom);
       let ow = x4 - x;
       let oh = y4 - y;
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
@@ -382,8 +382,8 @@ class Xom extends Node {
       }
     }
     // 先渲染渐变，没有则背景色
-    if(bgg) {
-      let { k, v } = bgg;
+    if(backgroundGradient) {
+      let { k, v } = backgroundGradient;
       let cx = x2 + iw * 0.5;
       let cy = y2 + ih * 0.5;
       // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
@@ -428,10 +428,10 @@ class Xom extends Node {
         }
       }
     }
-    else if(bgc !== 'transparent') {
+    else if(backgroundColor !== 'transparent') {
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
-        ctx.fillStyle = bgc;
+        ctx.fillStyle = backgroundColor;
         ctx.rect(x2, y2, iw, ih);
         ctx.fill();
         ctx.closePath();
@@ -442,34 +442,34 @@ class Xom extends Node {
           ['y', y2],
           ['width', iw],
           ['height', ih],
-          ['fill', bgc]
+          ['fill', backgroundColor]
         ]);
       }
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
-    if(borderTopWidth > 0 && btc !== 'transparent') {
+    if(borderTopWidth > 0 && borderTopColor !== 'transparent') {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-      let points = border.calPoints(borderTopWidth, bts, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
-      renderBorder(renderMode, points, btc, ctx, this);
+      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
+      renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
-    if(borderRightWidth > 0 && brc !== 'transparent') {
+    if(borderRightWidth > 0 && borderRightColor !== 'transparent') {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-      let points = border.calPoints(borderRightWidth, brs, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
-      renderBorder(renderMode, points, brc, ctx, this);
+      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+      renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
-    if(borderBottomWidth > 0 && bbc !== 'transparent') {
+    if(borderBottomWidth > 0 && borderBottomColor !== 'transparent') {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-      let points = border.calPoints(borderBottomWidth, bbs, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
-      renderBorder(renderMode, points, bbc, ctx, this);
+      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+      renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
-    if(borderLeftWidth > 0 && blc !== 'transparent') {
+    if(borderLeftWidth > 0 && borderLeftColor !== 'transparent') {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-      let points = border.calPoints(borderLeftWidth, bls, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
-      renderBorder(renderMode, points, blc, ctx, this);
+      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+      renderBorder(renderMode, points, borderLeftColor, ctx, this);
     }
   }
 

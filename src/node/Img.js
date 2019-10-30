@@ -1,8 +1,9 @@
 import Dom from './Dom';
 import mode from '../util/mode';
 import inject from '../util/inject';
-import util from "../util/util";
+import util from '../util/util';
 import unit from '../style/unit';
+import css from '../style/css';
 import transform from '../style/transform';
 
 const CACHE = {};
@@ -30,11 +31,9 @@ class Img extends Dom {
 
   __layout(data) {
     super.__layout(data);
-    let { isDestroyed, src, computedStyle: {
-      display,
-      width,
-      height,
-    } } = this;
+    let { isDestroyed, src, computedStyle, style } = this;
+    let { width, height } = style;
+    let { display } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -68,8 +67,8 @@ class Img extends Dom {
         height.value = w * cache.height / cache.width;
         height.unit = unit.PX;
       }
-      this.__width = width.value;
-      this.__height = height.value;
+      this.__width = computedStyle.width = width.value;
+      this.__height = computedStyle.height = height.value;
       if(this.root) {
         this.root.refreshTask();
       }
@@ -124,8 +123,8 @@ class Img extends Dom {
     if(isDestroyed || display === 'none') {
       return;
     }
-    let originX = x + marginLeft + borderLeftWidth + paddingLeft;
-    let originY = y + marginTop + borderTopWidth + paddingTop;
+    let originX = x + css.parseAuto(marginLeft) + borderLeftWidth + paddingLeft;
+    let originY = y + css.parseAuto(marginTop) + borderTopWidth + paddingTop;
     if(this.__error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';

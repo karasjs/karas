@@ -4542,20 +4542,20 @@
             paddingRight = computedStyle.paddingRight,
             paddingBottom = computedStyle.paddingBottom,
             paddingLeft = computedStyle.paddingLeft,
-            bgg = computedStyle.backgroundGradient,
-            bgc = computedStyle.backgroundColor,
+            backgroundGradient = computedStyle.backgroundGradient,
+            backgroundColor = computedStyle.backgroundColor,
             borderTopWidth = computedStyle.borderTopWidth,
-            btc = computedStyle.borderTopColor,
-            bts = computedStyle.borderTopStyle,
+            borderTopColor = computedStyle.borderTopColor,
+            borderTopStyle = computedStyle.borderTopStyle,
             borderRightWidth = computedStyle.borderRightWidth,
-            brc = computedStyle.borderRightColor,
-            brs = computedStyle.borderRightStyle,
+            borderRightColor = computedStyle.borderRightColor,
+            borderRightStyle = computedStyle.borderRightStyle,
             borderBottomWidth = computedStyle.borderBottomWidth,
-            bbc = computedStyle.borderBottomColor,
-            bbs = computedStyle.borderBottomStyle,
+            borderBottomColor = computedStyle.borderBottomColor,
+            borderBottomStyle = computedStyle.borderBottomStyle,
             borderLeftWidth = computedStyle.borderLeftWidth,
-            blc = computedStyle.borderLeftColor,
-            bls = computedStyle.borderLeftStyle,
+            borderLeftColor = computedStyle.borderLeftColor,
+            borderLeftStyle = computedStyle.borderLeftStyle,
             transform$1 = computedStyle.transform,
             transformOrigin = computedStyle.transformOrigin;
 
@@ -4594,11 +4594,11 @@
 
         var x = this.rx,
             y = this.ry;
-        var x1 = x + marginLeft;
+        var x1 = x + css.parseAuto(marginLeft);
         var x2 = x1 + borderLeftWidth;
         var x3 = x2 + width + paddingLeft + paddingRight;
         var x4 = x3 + borderRightWidth;
-        var y1 = y + marginTop;
+        var y1 = y + css.parseAuto(marginTop);
         var y2 = y1 + borderTopWidth;
         var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth;
@@ -4606,9 +4606,9 @@
         var ih = height + paddingTop + paddingBottom; // transform相对于自身
 
         if (transform$1) {
-          var _x = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
+          var _x = x + css.parseAuto(marginLeft) + borderLeftWidth + iw + borderRightWidth + css.parseAuto(marginRight);
 
-          var _y = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
+          var _y = y + css.parseAuto(marginTop) + borderTopWidth + ih + borderBottomWidth + css.parseAuto(marginBottom);
 
           var ow = _x - x;
           var oh = _y - y;
@@ -4638,9 +4638,9 @@
         } // 先渲染渐变，没有则背景色
 
 
-        if (bgg) {
-          var k = bgg.k,
-              v = bgg.v;
+        if (backgroundGradient) {
+          var k = backgroundGradient.k,
+              v = backgroundGradient.v;
           var cx = x2 + iw * 0.5;
           var cy = y2 + ih * 0.5; // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
 
@@ -4673,54 +4673,54 @@
               this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', _fill]]);
             }
           }
-        } else if (bgc !== 'transparent') {
+        } else if (backgroundColor !== 'transparent') {
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = bgc;
+            ctx.fillStyle = backgroundColor;
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', bgc]]);
+            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', backgroundColor]]);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
-        if (borderTopWidth > 0 && btc !== 'transparent') {
+        if (borderTopWidth > 0 && borderTopColor !== 'transparent') {
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
           var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-          var points = border.calPoints(borderTopWidth, bts, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
-          renderBorder(renderMode, points, btc, ctx, this);
+          var points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
+          renderBorder(renderMode, points, borderTopColor, ctx, this);
         }
 
-        if (borderRightWidth > 0 && brc !== 'transparent') {
+        if (borderRightWidth > 0 && borderRightColor !== 'transparent') {
           var _deg = Math.atan(borderRightWidth / borderTopWidth);
 
           var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-          var _points = border.calPoints(borderRightWidth, brs, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+          var _points = border.calPoints(borderRightWidth, borderRightStyle, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
 
-          renderBorder(renderMode, _points, brc, ctx, this);
+          renderBorder(renderMode, _points, borderRightColor, ctx, this);
         }
 
-        if (borderBottomWidth > 0 && bbc !== 'transparent') {
+        if (borderBottomWidth > 0 && borderBottomColor !== 'transparent') {
           var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
 
           var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-          var _points2 = border.calPoints(borderBottomWidth, bbs, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+          var _points2 = border.calPoints(borderBottomWidth, borderBottomStyle, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
 
-          renderBorder(renderMode, _points2, bbc, ctx, this);
+          renderBorder(renderMode, _points2, borderBottomColor, ctx, this);
         }
 
-        if (borderLeftWidth > 0 && blc !== 'transparent') {
+        if (borderLeftWidth > 0 && borderLeftColor !== 'transparent') {
           var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
 
           var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-          var _points3 = border.calPoints(borderLeftWidth, bls, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+          var _points3 = border.calPoints(borderLeftWidth, borderLeftStyle, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
 
-          renderBorder(renderMode, _points3, blc, ctx, this);
+          renderBorder(renderMode, _points3, borderLeftColor, ctx, this);
         }
       }
     }, {
@@ -5862,7 +5862,8 @@
       value: function __layoutFlex(data) {
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle;
-        var marginLeft = computedStyle.marginLeft,
+        var width = computedStyle.width,
+            marginLeft = computedStyle.marginLeft,
             marginRight = computedStyle.marginRight,
             flexDirection = computedStyle.flexDirection,
             justifyContent = computedStyle.justifyContent,
@@ -6009,24 +6010,11 @@
           main = Math.max(main, minList[i]);
 
           if (item instanceof Xom || item instanceof Component) {
-            var _computedStyle3 = item.computedStyle,
-                _item$computedStyle2 = item.computedStyle,
-                display = _item$computedStyle2.display,
-                _flexDirection2 = _item$computedStyle2.flexDirection,
-                _width2 = _item$computedStyle2.width,
-                height = _item$computedStyle2.height,
-                borderTopWidth = _item$computedStyle2.borderTopWidth,
-                borderRightWidth = _item$computedStyle2.borderRightWidth,
-                borderBottomWidth = _item$computedStyle2.borderBottomWidth,
-                borderLeftWidth = _item$computedStyle2.borderLeftWidth,
-                marginTop = _item$computedStyle2.marginTop,
-                _marginRight = _item$computedStyle2.marginRight,
-                marginBottom = _item$computedStyle2.marginBottom,
-                _marginLeft = _item$computedStyle2.marginLeft,
-                paddingTop = _item$computedStyle2.paddingTop,
-                paddingRight = _item$computedStyle2.paddingRight,
-                paddingBottom = _item$computedStyle2.paddingBottom,
-                paddingLeft = _item$computedStyle2.paddingLeft;
+            var _computedStyle3 = item.computedStyle;
+            var display = _computedStyle3.display,
+                _flexDirection2 = _computedStyle3.flexDirection,
+                _width2 = _computedStyle3.width,
+                height = _computedStyle3.height;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
@@ -6064,6 +6052,19 @@
 
 
             if (isOverflow && shrink || !isOverflow && grow) {
+              var borderTopWidth = _computedStyle3.borderTopWidth,
+                  borderRightWidth = _computedStyle3.borderRightWidth,
+                  borderBottomWidth = _computedStyle3.borderBottomWidth,
+                  borderLeftWidth = _computedStyle3.borderLeftWidth,
+                  marginTop = _computedStyle3.marginTop,
+                  _marginRight = _computedStyle3.marginRight,
+                  marginBottom = _computedStyle3.marginBottom,
+                  _marginLeft = _computedStyle3.marginLeft,
+                  paddingTop = _computedStyle3.paddingTop,
+                  paddingRight = _computedStyle3.paddingRight,
+                  paddingBottom = _computedStyle3.paddingBottom,
+                  paddingLeft = _computedStyle3.paddingLeft;
+
               if (isDirectionRow) {
                 item.__width = main - css.parseAuto(_marginLeft) - css.parseAuto(_marginRight) - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
               } else {
@@ -6096,28 +6097,28 @@
           if (justifyContent === 'flex-end') {
             for (var i = 0; i < len; i++) {
               var child = flowChildren[i];
-              isDirectionRow ? child.__offsetX(diff) : child.__offsetY(diff);
+              isDirectionRow ? child.__offsetX(diff, true) : child.__offsetY(diff, true);
             }
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
             for (var _i = 0; _i < len; _i++) {
               var _child = flowChildren[_i];
-              isDirectionRow ? _child.__offsetX(center) : _child.__offsetY(center);
+              isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
             for (var _i2 = 1; _i2 < len; _i2++) {
               var _child2 = flowChildren[_i2];
-              isDirectionRow ? _child2.__offsetX(between * _i2) : _child2.__offsetY(between * _i2);
+              isDirectionRow ? _child2.__offsetX(between * _i2, true) : _child2.__offsetY(between * _i2, true);
             }
           } else if (justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
             for (var _i3 = 0; _i3 < len; _i3++) {
               var _child3 = flowChildren[_i3];
-              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1)) : _child3.__offsetY(around * (_i3 + 1));
+              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1), true) : _child3.__offsetY(around * (_i3 + 1), true);
             }
           }
         } // 子元素侧轴伸展
@@ -6169,7 +6170,7 @@
             var diff = maxCross - item.outerHeight;
 
             if (diff > 0) {
-              item.__offsetY(diff * 0.5);
+              item.__offsetY(diff * 0.5, true);
             }
           });
         } else if (alignItems === 'flex-end') {
@@ -6177,7 +6178,7 @@
             var diff = maxCross - item.outerHeight;
 
             if (diff > 0) {
-              item.__offsetY(diff);
+              item.__offsetY(diff, true);
             }
           });
         }
@@ -6190,7 +6191,7 @@
           var ow = this.outerWidth;
 
           if (ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5);
+            this.__offsetX((data.w - ow) * 0.5, true);
           }
         }
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -6653,10 +6654,11 @@
 
         var isDestroyed = this.isDestroyed,
             src = this.src,
-            _this$computedStyle = this.computedStyle,
-            display = _this$computedStyle.display,
-            width = _this$computedStyle.width,
-            height = _this$computedStyle.height;
+            computedStyle = this.computedStyle,
+            style = this.style;
+        var width = style.width,
+            height = style.height;
+        var display = computedStyle.display;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -6695,8 +6697,8 @@
               height.unit = unit.PX;
             }
 
-          _this2.__width = width.value;
-          _this2.__height = height.value;
+          _this2.__width = computedStyle.width = width.value;
+          _this2.__height = computedStyle.height = height.value;
 
           if (_this2.root) {
             _this2.root.refreshTask();
@@ -6752,21 +6754,21 @@
             height = this.height,
             src = this.src,
             isDestroyed = this.isDestroyed,
-            _this$computedStyle2 = this.computedStyle,
-            display = _this$computedStyle2.display,
-            borderTopWidth = _this$computedStyle2.borderTopWidth,
-            borderLeftWidth = _this$computedStyle2.borderLeftWidth,
-            marginTop = _this$computedStyle2.marginTop,
-            marginLeft = _this$computedStyle2.marginLeft,
-            paddingTop = _this$computedStyle2.paddingTop,
-            paddingLeft = _this$computedStyle2.paddingLeft;
+            _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
+            borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            marginTop = _this$computedStyle.marginTop,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingTop = _this$computedStyle.paddingTop,
+            paddingLeft = _this$computedStyle.paddingLeft;
 
         if (isDestroyed || display === 'none') {
           return;
         }
 
-        var originX = x + marginLeft + borderLeftWidth + paddingLeft;
-        var originY = y + marginTop + borderTopWidth + paddingTop;
+        var originX = x + css.parseAuto(marginLeft) + borderLeftWidth + paddingLeft;
+        var originY = y + css.parseAuto(marginTop) + borderTopWidth + paddingTop;
 
         if (this.__error) {
           var strokeWidth = Math.min(width, height) * 0.02;

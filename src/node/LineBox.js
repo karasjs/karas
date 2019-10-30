@@ -3,19 +3,19 @@ import util from '../util/util';
 import mode from '../util/mode';
 
 class LineBox {
-  constructor(parent, x, y, w, content, style) {
+  constructor(parent, x, y, w, content) {
     this.__parent = parent;
     this.__x = x;
     this.__y = y;
     this.__width = w;
     this.__content = content;
-    this.__style = style;
     this.__virtualDom = {};
   }
 
   render(renderMode, ctx) {
-    let { style, content, x, y, parent: { ox, oy } } = this;
-    y += css.getBaseLine(style);
+    let { content, x, y, parent } = this;
+    let { ox, oy, computedStyle } = parent;
+    y += css.getBaseLine(computedStyle);
     x += ox;
     y += oy;
     if(renderMode === mode.CANVAS) {
@@ -28,11 +28,11 @@ class LineBox {
         props: [
           ['x', x],
           ['y', y],
-          ['fill', style.color],
-          ['font-family', style.fontFamily],
-          ['font-weight', style.fontWeight],
-          ['font-style', style.fontStyle],
-          ['font-size', `${style.fontSize}px`]
+          ['fill', computedStyle.color],
+          ['font-family', computedStyle.fontFamily],
+          ['font-weight', computedStyle.fontWeight],
+          ['font-style', computedStyle.fontStyle],
+          ['font-size', `${computedStyle.fontSize}px`]
         ],
         content: util.encodeHtml(content),
       };
@@ -59,11 +59,8 @@ class LineBox {
   get content() {
     return this.__content;
   }
-  get style() {
-    return this.__style;
-  }
   get baseLine() {
-    return css.getBaseLine(this.style);
+    return css.getBaseLine(this.parent.computedStyle);
   }
   get virtualDom() {
     return this.__virtualDom;

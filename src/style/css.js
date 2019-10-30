@@ -391,34 +391,7 @@ function computed(xom, isRoot) {
   if(color === 'inherit') {
     computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
   }
-  if(lineHeight.unit === unit.INHERIT) {
-    if(isRoot) {
-      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-    }
-    else {
-      let pl = parentStyle.lineHeight;
-      if(pl.unit === unit.PX) {
-        computedStyle.lineHeight = parentComputedStyle.lineHeight;
-      }
-      else if(pl.unit === unit.NUMBER) {
-        computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
-      }
-      else {
-        computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-      }
-    }
-  }
-  else if(lineHeight.unit === unit.PX) {
-    computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
-  }
-  else if(lineHeight.unit === unit.NUMBER) {
-    // 防止为0
-    computedStyle.lineHeight = lineHeight.value * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
-  }
-  else {
-    // normal
-    computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-  }
+  calLineHeight(xom, lineHeight, computedStyle);
   if(textAlign === 'inherit') {
     computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
   }
@@ -444,9 +417,59 @@ function getBaseLine(style) {
   return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
 }
 
+function calLineHeight(xom, lineHeight, computedStyle) {
+  if(lineHeight.unit === unit.INHERIT) {
+    let parent = xom.parent;
+    if(parent) {
+      let pl = parent.style.lineHeight;
+      // 一直继承向上查找直到root
+      if(pl.unit === unit.INHERIT) {
+        parent = parent.parent;
+        while(parent) {
+          pl = parent.style.lineHeight;
+          if(pl.unit !== unit.INHERIT) {
+            break;
+          }
+        }
+      }
+      let parentComputedStyle = parent.computedStyle;
+      if(pl.unit === unit.PX) {
+        computedStyle.lineHeight = parentComputedStyle.lineHeight;
+      }
+      else if(pl.unit === unit.NUMBER) {
+        computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+      }
+      else {
+        computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+      }
+    }
+    else {
+      // root的继承强制为normal
+      lineHeight.unit = unit.AUTO;
+      computedStyle.lineHeight = calLineHeight(computedStyle);
+    }
+  }
+  // 防止为0
+  else if(lineHeight.unit === unit.PX) {
+    computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight.unit === unit.NUMBER) {
+    computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
+  }
+  // normal
+  else {
+    computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+  }
+}
+
+function calNormalLineHeight(computedStyle) {
+  return computedStyle.fontSize * font.arial.lhr;
+}
+
 export default {
   normalize,
   computed,
   setFontStyle,
   getBaseLine,
+  calLineHeight,
 };

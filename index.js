@@ -2366,29 +2366,7 @@
       computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
     }
 
-    if (lineHeight.unit === unit.INHERIT) {
-      if (isRoot) {
-        computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-      } else {
-        var pl = parentStyle.lineHeight;
-
-        if (pl.unit === unit.PX) {
-          computedStyle.lineHeight = parentComputedStyle.lineHeight;
-        } else if (pl.unit === unit.NUMBER) {
-          computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
-        } else {
-          computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-        }
-      }
-    } else if (lineHeight.unit === unit.PX) {
-      computedStyle.lineHeight = lineHeight.value || computedStyle.fontSize * font.arial.lhr;
-    } else if (lineHeight.unit === unit.NUMBER) {
-      // 防止为0
-      computedStyle.lineHeight = lineHeight.value * computedStyle.fontSize || computedStyle.fontSize * font.arial.lhr;
-    } else {
-      // normal
-      computedStyle.lineHeight = computedStyle.fontSize * font.arial.lhr;
-    }
+    calLineHeight(xom, lineHeight, computedStyle);
 
     if (textAlign === 'inherit') {
       computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
@@ -2414,17 +2392,66 @@
     return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
   }
 
+  function calLineHeight(xom, lineHeight, computedStyle) {
+    if (lineHeight.unit === unit.INHERIT) {
+      var parent = xom.parent;
+
+      if (parent) {
+        var pl = parent.style.lineHeight; // 一直继承向上查找直到root
+
+        if (pl.unit === unit.INHERIT) {
+          parent = parent.parent;
+
+          while (parent) {
+            pl = parent.style.lineHeight;
+
+            if (pl.unit !== unit.INHERIT) {
+              break;
+            }
+          }
+        }
+
+        var parentComputedStyle = parent.computedStyle;
+
+        if (pl.unit === unit.PX) {
+          computedStyle.lineHeight = parentComputedStyle.lineHeight;
+        } else if (pl.unit === unit.NUMBER) {
+          computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
+        } else {
+          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+        }
+      } else {
+        // root的继承强制为normal
+        lineHeight.unit = unit.AUTO;
+        computedStyle.lineHeight = calLineHeight(computedStyle);
+      }
+    } // 防止为0
+    else if (lineHeight.unit === unit.PX) {
+        computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
+      } else if (lineHeight.unit === unit.NUMBER) {
+        computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
+      } // normal
+      else {
+          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+        }
+  }
+
+  function calNormalLineHeight(computedStyle) {
+    return computedStyle.fontSize * font.arial.lhr;
+  }
+
   var css = {
     normalize: normalize$1,
     computed: computed,
     setFontStyle: setFontStyle,
-    getBaseLine: getBaseLine
+    getBaseLine: getBaseLine,
+    calLineHeight: calLineHeight
   };
 
   var LineBox =
   /*#__PURE__*/
   function () {
-    function LineBox(parent, x, y, w, content, style) {
+    function LineBox(parent, x, y, w, content) {
       _classCallCheck(this, LineBox);
 
       this.__parent = parent;
@@ -2432,21 +2459,20 @@
       this.__y = y;
       this.__width = w;
       this.__content = content;
-      this.__style = style;
       this.__virtualDom = {};
     }
 
     _createClass(LineBox, [{
       key: "render",
       value: function render(renderMode, ctx) {
-        var style = this.style,
-            content = this.content,
+        var content = this.content,
             x = this.x,
             y = this.y,
-            _this$parent = this.parent,
-            ox = _this$parent.ox,
-            oy = _this$parent.oy;
-        y += css.getBaseLine(style);
+            parent = this.parent;
+        var ox = parent.ox,
+            oy = parent.oy,
+            computedStyle = parent.computedStyle;
+        y += css.getBaseLine(computedStyle);
         x += ox;
         y += oy;
 
@@ -2456,7 +2482,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', style.color], ['font-family', style.fontFamily], ['font-weight', style.fontWeight], ['font-style', style.fontStyle], ['font-size', "".concat(style.fontSize, "px")]],
+            props: [['x', x], ['y', y], ['fill', computedStyle.color], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', "".concat(computedStyle.fontSize, "px")]],
             content: util.encodeHtml(content)
           };
         }
@@ -2492,14 +2518,9 @@
         return this.__content;
       }
     }, {
-      key: "style",
-      get: function get() {
-        return this.__style;
-      }
-    }, {
       key: "baseLine",
       get: function get() {
-        return css.getBaseLine(this.style);
+        return css.getBaseLine(this.parent.computedStyle);
       }
     }, {
       key: "virtualDom",
@@ -2769,7 +2790,7 @@
           count += charWidthList[i];
 
           if (count === w) {
-            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), computedStyle);
+            var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
             y += computedStyle.lineHeight;
@@ -2782,7 +2803,7 @@
               i = begin + 1;
             }
 
-            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), computedStyle);
+            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
@@ -2802,7 +2823,7 @@
             count += charWidthList[i];
           }
 
-          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length), computedStyle);
+          var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length));
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
@@ -3696,9 +3717,7 @@
 
       var v = style[k];
 
-      if (v.unit === unit.AUTO) {
-        v = -1;
-      } else if (v.unit === unit.PX) {
+      if (v.unit === unit.PX) {
         v = v.value;
       } else if (v.unit === unit.PERCENT) {
         if (k === 'flexBasis') {
@@ -3752,37 +3771,6 @@
         style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
       }
     });
-    KEY_LENGTH.forEach(function (k) {
-      var v = style[k];
-
-      if (v === -1) {
-        style[k] = {
-          unit: unit.AUTO
-        };
-      } else {
-        style[k] = {
-          value: v,
-          unit: unit.PX
-        };
-      }
-    });
-    var transform = style.transform;
-
-    if (transform) {
-      transform.forEach(function (item) {
-        var _item2 = _slicedToArray(item, 2),
-            k = _item2[0],
-            v = _item2[1];
-
-        if (['translateX', 'translateY'].indexOf(k) > -1) {
-          item[1] = {
-            value: v,
-            unit: unit.PX
-          };
-        }
-      });
-    }
-
     return style;
   }
 
@@ -3819,9 +3807,9 @@
       });
       res.v = [];
       next[k].forEach(function (item) {
-        var _item3 = _slicedToArray(item, 2),
-            k = _item3[0],
-            v = _item3[1]; // 老的不存在的项默认为0
+        var _item2 = _slicedToArray(item, 2),
+            k = _item2[0],
+            v = _item2[1]; // 老的不存在的项默认为0
 
 
         var old = exist.hasOwnProperty(k) ? exist[k] : 0;
@@ -3894,17 +3882,17 @@
         });
         var transform = style.transform;
         transform.forEach(function (item) {
-          var _item4 = _slicedToArray(item, 1),
-              k = _item4[0];
+          var _item3 = _slicedToArray(item, 1),
+              k = _item3[0];
 
           item[1] += hash[k];
         });
       } else if (COLOR_HASH.hasOwnProperty(k)) {
-        var _item5 = style[k];
-        _item5[0] += scopeColor(v[0] * percent);
-        _item5[1] += scopeColor(v[1] * percent);
-        _item5[2] += scopeColor(v[2] * percent);
-        _item5[3] += scopeColor(v[3] * percent);
+        var _item4 = style[k];
+        _item4[0] += scopeColor(v[0] * percent);
+        _item4[1] += scopeColor(v[1] * percent);
+        _item4[2] += scopeColor(v[2] * percent);
+        _item4[3] += scopeColor(v[3] * percent);
       } else if (LENGTH_HASH.hasOwnProperty(k)) {
         style[k] += v * percent;
       }
@@ -4121,7 +4109,8 @@
 
             if (root) {
               root.refresh();
-            }
+            } // frame.offFrame(this.cb);
+
           };
         }
 
@@ -4363,6 +4352,54 @@
           this.__layoutFlex(data);
         } else if (display === 'inline') {
           this.__layoutInline(data);
+        } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+
+
+        if (computedStyle.position === 'relative' && this.parent) {
+          var top = computedStyle.top,
+              right = computedStyle.right,
+              bottom = computedStyle.bottom,
+              left = computedStyle.left;
+          var _this$parent = this.parent,
+              _width = _this$parent.width,
+              height = _this$parent.height;
+          var h = this.parent.style.height;
+
+          if (util.isNumber(left)) {
+            this.__offsetX(left);
+          } else if (left.unit !== unit.AUTO) {
+            var diff = left.unit === unit.PX ? left.value : left.value * _width * 0.01;
+
+            this.__offsetX(diff);
+          } else if (util.isNumber(right)) {
+            this.__offsetX(right);
+
+            delete computedStyle.right;
+          } else if (right.unit !== unit.AUTO) {
+            var _diff = right.unit === unit.PX ? right.value : right.value * _width * 0.01;
+
+            this.__offsetX(-_diff);
+
+            delete computedStyle.right;
+          }
+
+          if (util.isNumber(top)) {
+            this.__offsetX(top);
+          } else if (top.unit !== unit.AUTO) {
+            var _diff2 = top.unit === unit.PX ? top.value : top.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+
+            this.__offsetY(_diff2);
+          } else if (util.isNumber(bottom)) {
+            this.__offsetX(bottom);
+
+            delete computedStyle.top;
+          } else if (bottom.unit !== unit.AUTO) {
+            var _diff3 = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+
+            this.__offsetY(-_diff3);
+
+            delete computedStyle.top;
+          }
         } // 计算结果存入computedStyle
 
 
@@ -4550,34 +4587,6 @@
 
         if (isDestroyed || display === 'none') {
           return;
-        } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-
-
-        if (position === 'relative' && this.parent) {
-          var _this$parent = this.parent,
-              _width = _this$parent.width,
-              _height = _this$parent.height;
-          var h = this.parent.style.height;
-
-          if (left.unit !== unit.AUTO) {
-            var diff = left.unit === unit.PX ? left.value : left.value * _width * 0.01;
-
-            this.__offsetX(diff);
-          } else if (right.unit !== unit.AUTO) {
-            var _diff = right.unit === unit.PX ? right.value : right.value * _width * 0.01;
-
-            this.__offsetX(-_diff);
-          }
-
-          if (top.unit !== unit.AUTO) {
-            var _diff2 = top.unit === unit.PX ? top.value : top.value * _height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-
-            this.__offsetY(_diff2);
-          } else if (bottom.unit !== unit.AUTO) {
-            var _diff3 = bottom.unit === unit.PX ? bottom.value : bottom.value * _height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-
-            this.__offsetY(-_diff3);
-          }
         } // 使用rx和ry渲染位置，考虑了relative和translate影响
 
 
@@ -4957,8 +4966,18 @@
       }
     }, {
       key: "__animateStyle",
-      value: function __animateStyle(style) {
-        this.__computedStyle = style;
+      value: function __animateStyle(ns) {
+        var style = this.style,
+            computedStyle = this.computedStyle;
+
+        for (var i in ns) {
+          if (ns.hasOwnProperty(i)) {
+            computedStyle[i] = ns[i];
+          }
+        } // lineHeight除非是固定，否则也要随着fontSize变化
+
+
+        css.calLineHeight(this, style.lineHeight, computedStyle);
       }
     }, {
       key: "tagName",
@@ -7525,6 +7544,7 @@
         computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
         computedStyle.width = this.width;
         computedStyle.height = this.height;
+        computedStyle.top = computedStyle.right = computedStyle.bottom = computedStyle.left = 0;
         style.width = {
           value: this.width,
           unit: unit.PX

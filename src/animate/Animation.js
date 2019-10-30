@@ -65,10 +65,7 @@ function length2px(style, xom) {
       return;
     }
     let v = style[k];
-    if(v.unit === unit.AUTO) {
-      v = -1;
-    }
-    else if(v.unit === unit.PX) {
+    if(v.unit === unit.PX) {
       v = v.value;
     }
     else if(v.unit === unit.PERCENT) {
@@ -132,32 +129,6 @@ function stringify(style) {
       style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
     }
   });
-  KEY_LENGTH.forEach(k => {
-    let v = style[k];
-    if(v === -1) {
-      style[k] = {
-        unit: unit.AUTO,
-      };
-    }
-    else {
-      style[k] = {
-        value: v,
-        unit: unit.PX,
-      };
-    }
-  });
-  let transform = style.transform;
-  if(transform) {
-    transform.forEach(item => {
-      let [k, v] = item;
-      if(['translateX', 'translateY'].indexOf(k) > -1) {
-        item[1] = {
-          value: v,
-          unit: unit.PX,
-        };
-      }
-    });
-  }
   return style;
 }
 

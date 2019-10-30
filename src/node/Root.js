@@ -195,6 +195,7 @@ class Root extends Dom {
     computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    computedStyle.top = computedStyle.right = computedStyle.bottom = computedStyle.left = 0;
     style.width = {
       value: this.width,
       unit: unit.PX,

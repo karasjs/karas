@@ -150,6 +150,44 @@ class Xom extends Node {
     else if(display === 'inline') {
       this.__layoutInline(data);
     }
+    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+    if(computedStyle.position === 'relative' && this.parent) {
+      let { top, right, bottom, left } = computedStyle;
+      let { width, height } = this.parent;
+      let h = this.parent.style.height;
+      if(util.isNumber(left)) {
+        this.__offsetX(left);
+      }
+      else if(left.unit !== unit.AUTO) {
+        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
+        this.__offsetX(diff);
+      }
+      else if(util.isNumber(right)) {
+        this.__offsetX(right);
+        delete computedStyle.right;
+      }
+      else if(right.unit !== unit.AUTO) {
+        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
+        this.__offsetX(-diff);
+        delete computedStyle.right;
+      }
+      if(util.isNumber(top)) {
+        this.__offsetX(top);
+      }
+      else if(top.unit !== unit.AUTO) {
+        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+        this.__offsetY(diff);
+      }
+      else if(util.isNumber(bottom)) {
+        this.__offsetX(bottom);
+        delete computedStyle.top;
+      }
+      else if(bottom.unit !== unit.AUTO) {
+        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
+        this.__offsetY(-diff);
+        delete computedStyle.top;
+      }
+    }
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
@@ -319,27 +357,6 @@ class Xom extends Node {
     } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
-    }
-    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(position === 'relative' && this.parent) {
-      let { width, height } = this.parent;
-      let h = this.parent.style.height;
-      if(left.unit !== unit.AUTO) {
-        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
-        this.__offsetX(diff);
-      }
-      else if(right.unit !== unit.AUTO) {
-        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
-        this.__offsetX(-diff);
-      }
-      if(top.unit !== unit.AUTO) {
-        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-        this.__offsetY(diff);
-      }
-      else if(bottom.unit !== unit.AUTO) {
-        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-        this.__offsetY(-diff);
-      }
     }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
     let { rx: x, ry: y } = this;
@@ -683,8 +700,15 @@ class Xom extends Node {
     return animation.play();
   }
 
-  __animateStyle(style) {
-    this.__computedStyle = style;
+  __animateStyle(ns) {
+    let { style, computedStyle } = this;
+    for(let i in ns) {
+      if(ns.hasOwnProperty(i)) {
+        computedStyle[i] = ns[i];
+      }
+    }
+    // lineHeight除非是固定，否则也要随着fontSize变化
+    css.calLineHeight(this, style.lineHeight, computedStyle);
   }
 
   get tagName() {

@@ -100,7 +100,7 @@ class Text extends Node {
     while(i < length) {
       count += charWidthList[i];
       if(count === w) {
-        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1), computedStyle);
+        let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
         y += computedStyle.lineHeight;
@@ -113,7 +113,7 @@ class Text extends Node {
         if(i === begin) {
           i = begin + 1;
         }
-        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i), computedStyle);
+        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += computedStyle.lineHeight;
@@ -130,7 +130,7 @@ class Text extends Node {
       for(i = begin ;i < length; i++) {
         count += charWidthList[i];
       }
-      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length), computedStyle);
+      let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
       y += computedStyle.lineHeight;

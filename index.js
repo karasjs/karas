@@ -2384,7 +2384,13 @@
 
   function computedAnimate(xom, computedStyle, origin, isRoot) {
     var fontSize = computedStyle.fontSize,
-        lineHeight = computedStyle.lineHeight;
+        lineHeight = computedStyle.lineHeight,
+        top = computedStyle.top,
+        right = computedStyle.right,
+        bottom = computedStyle.bottom,
+        left = computedStyle.left,
+        width = computedStyle.width,
+        height = computedStyle.height;
     var parent = xom.parent;
     var parentComputedStyle = parent && parent.computedStyle;
 
@@ -2402,6 +2408,53 @@
       if (!fontSize) {
         delete computedStyle.fontSize;
       }
+    }
+
+    if (top) {
+      calRelative(computedStyle, 'top', top);
+      delete computedStyle.bottom;
+    } else if (bottom) {
+      calRelative(computedStyle, 'bottom', bottom);
+      delete computedStyle.top;
+    }
+
+    if (left) {
+      calRelative(computedStyle, 'left', left, parent, parentComputedStyle.width, true);
+      delete computedStyle.right;
+    } else if (right) {
+      calRelative(computedStyle, 'right', right, parent, parentComputedStyle.width, true);
+      delete computedStyle.left;
+    }
+
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
+      if (computedStyle.hasOwnProperty(k)) {
+        var v = computedStyle[k];
+        computedStyle[k] = v.value;
+      }
+    });
+
+    if (width) {
+      var v = 0;
+
+      if (width.unit === unit.PX) {
+        v = width.value;
+      } else if (width.unit === unit.PERCENT) {
+        v = width.value * parentComputedStyle.width * 0.01;
+      }
+
+      computedStyle.width = v;
+    }
+
+    if (height) {
+      var _v = 0;
+
+      if (height.unit === unit.PX) {
+        _v = height.value;
+      } else if (height.unit === unit.PERCENT) {
+        _v = height.value * parentComputedStyle.height * 0.01;
+      }
+
+      computedStyle.height = _v;
     }
   }
 
@@ -2468,27 +2521,20 @@
     return computedStyle.fontSize * font.arial.lhr;
   }
 
-  function calPercentRelative(n, parent, k, w) {
-    n *= 0.01;
-
-    while (parent) {
-      var style = parent.style[k];
-
-      if (style.unit === unit.AUTO) {
-        if (k === 'width') {
-          parent = parent.parent;
-        } else {
-          break;
-        }
-      } else if (style.unit === unit.PX) {
-        return n * style.value;
-      } else if (style.unit === unit.PERCENT) {
-        n *= style.value * 0.01;
-        parent = parent.parent;
+  function calRelative(computedStyle, k, v, parent, w, isWidth) {
+    if (util.isNumber(v)) ; else if (v.unit === unit.AUTO) {
+      v = 0;
+    } else if (v.unit === unit.PX) {
+      v = v.value;
+    } else if (v.unit === unit.PERCENT) {
+      if (isWidth) {
+        v = v.value * w * 0.01;
+      } else {
+        v = 0;
       }
     }
 
-    return n;
+    return computedStyle[k] = v;
   }
 
   var css = {
@@ -2498,7 +2544,7 @@
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine,
     calLineHeight: calLineHeight,
-    calPercentRelative: calPercentRelative
+    calRelative: calRelative
   };
 
   var LineBox =
@@ -3758,7 +3804,7 @@
   var LENGTH_HASH = {};
   KEY_LENGTH.forEach(function (k) {
     LENGTH_HASH[k] = true;
-  });
+  }); // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 
   function color2array(style) {
     KEY_COLOR.forEach(function (k) {
@@ -3768,59 +3814,8 @@
 
       style[k] = util.rgb2int(style[k]);
     });
-  }
+  } // 反向将颜色数组转换为css模式
 
-  function length2px(style, xom) {
-    KEY_LENGTH.forEach(function (k) {
-      if (!style.hasOwnProperty(k)) {
-        return;
-      }
-
-      var v = style[k];
-
-      if (v.unit === unit.PX) {
-        v = v.value;
-      } else if (v.unit === unit.PERCENT) {
-        if (k === 'flexBasis') {
-          if (style.flexDirection === 'row') {
-            v = xom.width * v.value * 0.01;
-          } else {
-            v = xom.height * v.value * 0.01;
-          }
-        } else if (['width', 'marginTop', 'marginRight', 'marginLeft', 'marginBottom', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'left', 'right'].indexOf(k) > -1) {
-          v = xom.width * v.value * 0.01;
-        } else if (['height', 'top', 'bottom'].indexOf(k) > -1) {
-          v = xom.height * v.value * 0.01;
-        }
-      }
-
-      style[k] = v;
-    });
-    var transform = style.transform;
-
-    if (transform) {
-      transform.forEach(function (item) {
-        var _item = _slicedToArray(item, 2),
-            k = _item[0],
-            v = _item[1];
-
-        if (['translateX', 'translateY'].indexOf(k) > -1) {
-          if (v.unit === unit.PX) {
-            v = v.value;
-          } else if (v.unit === unit.PERCENT) {
-            v = (k === 'translateX' ? xom.width : xom.height) * v.value * 0.01;
-          }
-
-          item[1] = v;
-        }
-      });
-    }
-  }
-
-  function structuring(style, xom) {
-    color2array(style);
-    length2px(style, xom);
-  }
 
   function stringify$1(style) {
     KEY_COLOR.forEach(function (k) {
@@ -3835,9 +3830,10 @@
       }
     });
     return style;
-  }
+  } // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
 
-  function framing(style, current) {
+
+  function framing(current) {
     var keys = [];
     var st = {};
 
@@ -3869,9 +3865,9 @@
       });
       res.v = [];
       next[k].forEach(function (item) {
-        var _item2 = _slicedToArray(item, 2),
-            k = _item2[0],
-            v = _item2[1]; // 老的不存在的项默认为0
+        var _item = _slicedToArray(item, 2),
+            k = _item[0],
+            v = _item[1]; // 老的不存在的项默认为0
 
 
         var old = exist.hasOwnProperty(k) ? exist[k] : 0;
@@ -3894,7 +3890,7 @@
   }
 
   function calFrame(prev, current) {
-    var next = framing(prev.style, current);
+    var next = framing(current);
     next.keys.forEach(function (k) {
       var ts = calDiff(prev.style, next.style, k); // 可以形成过渡的才会产生结果返回
 
@@ -3943,18 +3939,18 @@
         });
         var transform = style.transform;
         transform.forEach(function (item) {
-          var _item3 = _slicedToArray(item, 1),
-              k = _item3[0];
+          var _item2 = _slicedToArray(item, 1),
+              k = _item2[0];
 
           item[1] += hash[k];
         });
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
-          var _item4 = style[k];
-          _item4[0] += v[0] * percent;
-          _item4[1] += v[1] * percent;
-          _item4[2] += v[2] * percent;
-          _item4[3] += v[3] * percent;
+          var _item3 = style[k];
+          _item3[0] += v[0] * percent;
+          _item3[1] += v[1] * percent;
+          _item3[2] += v[2] * percent;
+          _item3[3] += v[3] * percent;
         } else if (LENGTH_HASH.hasOwnProperty(k)) {
           style[k] += v * percent;
         }
@@ -4024,12 +4020,12 @@
                   offset = current.offset;
                   css.normalize(current, true);
                   css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
-                  structuring(current);
+                  color2array(current);
                 }
           } else {
             css.normalize(current, true);
             css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
-            structuring(current);
+            color2array(current);
           }
         }
 
@@ -4074,7 +4070,7 @@
         } // 转化style为计算后的绝对值结果
 
 
-        structuring(origin, this.xom); // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
+        color2array(origin); // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
         var frames = this.frames;
         var length = list.length;
@@ -4084,13 +4080,12 @@
         var i = 0; // 第一帧要特殊处理，根据offset决定直接应用还是做过渡效果
 
         if (first.offset === 0) {
-          prev = framing(origin, first);
+          prev = framing(first);
           frames.push(prev);
           i = 1;
         } else {
-          prev = framing(origin, {
-            offset: 0
-          });
+          origin.offset = 0;
+          prev = framing(origin);
           frames.push(prev);
         }
 
@@ -4102,9 +4097,9 @@
 
 
         if (last.offset !== 1) {
-          var _next = framing(origin, {
-            offset: 1
-          });
+          origin.offset = 1;
+
+          var _next = framing(origin);
 
           prev = calFrame(prev, _next);
           frames.push(prev);
@@ -4479,44 +4474,32 @@
               left = computedStyle.left;
           var parent = this.parent;
 
-          if (util.isNumber(left)) {
-            this.__offsetX(left);
-          } else if (left.unit === unit.PX) {
-            this.__offsetX(left.value);
-          } else if (left.unit === unit.PERCENT) {
-            this.__offsetX(css.calPercentRelative(left.value, parent, 'width', w));
-          } else if (util.isNumber(right)) {
-            this.__offsetX(-right);
+          if (top !== undefined) {
+            var n = css.calRelative(computedStyle, 'top', top, parent);
 
-            delete computedStyle.right;
-          } else if (right.unit === unit.PX) {
-            this.__offsetX(-right.value);
+            this.__offsetY(n);
 
-            delete computedStyle.right;
-          } else if (right.unit === unit.PERCENT) {
-            this.__offsetX(-css.calPercentRelative(right.value, parent, 'width'));
+            delete computedStyle.bottom;
+          } else if (bottom !== undefined) {
+            var _n = css.calRelative(computedStyle, 'bottom', bottom, parent);
 
-            delete computedStyle.left;
+            this.__offsetY(-_n);
+
+            delete computedStyle.top;
           }
 
-          if (util.isNumber(top)) {
-            this.__offsetY(top);
-          } else if (top.unit === unit.PX) {
-            this.__offsetY(top.value);
-          } else if (top.unit === unit.PERCENT) {
-            this.__offsetY(css.calPercentRelative(top.value, parent, 'height'));
-          } else if (util.isNumber(bottom)) {
-            this.__offsetY(-bottom);
+          if (left !== undefined) {
+            var _n2 = css.calRelative(computedStyle, 'left', left, parent, w, true);
 
-            delete computedStyle.top;
-          } else if (bottom.unit === unit.PX) {
-            this.__offsetY(-bottom.value);
+            this.__offsetX(_n2);
 
-            delete computedStyle.top;
-          } else if (bottom.unit !== unit.AUTO) {
-            this.__offsetY(-css.calPercentRelative(bottom.value, parent, 'height'));
+            delete computedStyle.right;
+          } else if (right !== undefined) {
+            var _n3 = css.calRelative(computedStyle, 'right', right, parent, w, true);
 
-            delete computedStyle.top;
+            this.__offsetX(-_n3);
+
+            delete computedStyle.left;
           }
         } // 计算结果存入computedStyle
 
@@ -4678,11 +4661,6 @@
         }
 
         var display = computedStyle.display,
-            position = computedStyle.position,
-            top = computedStyle.top,
-            right = computedStyle.right,
-            bottom = computedStyle.bottom,
-            left = computedStyle.left,
             marginTop = computedStyle.marginTop,
             marginRight = computedStyle.marginRight,
             marginBottom = computedStyle.marginBottom,

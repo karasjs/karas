@@ -16,7 +16,8 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
+let input = document.querySelector('input');
+input.value = t.computedStyle.stroke;
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  let input = document.querySelector('input');
-  input.value = t.computedStyle.stroke;
+  input.value += '/' + t.computedStyle.stroke;
 });

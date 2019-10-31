@@ -154,47 +154,25 @@ class Xom extends Node {
     if(computedStyle.position === 'relative' && this.parent) {
       let { top, right, bottom, left } = computedStyle;
       let { parent } = this;
-      if(util.isNumber(left)) {
-        this.__offsetX(left);
+      if(top !== undefined) {
+        let n = css.calRelative(computedStyle, 'top', top, parent);
+        this.__offsetY(n);
+        delete computedStyle.bottom;
       }
-      else if(left.unit === unit.PX) {
-        this.__offsetX(left.value);
+      else if(bottom !== undefined) {
+        let n = css.calRelative(computedStyle, 'bottom', bottom, parent);
+        this.__offsetY(-n);
+        delete computedStyle.top;
       }
-      else if(left.unit === unit.PERCENT) {
-        this.__offsetX(css.calPercentRelative(left.value, parent, 'width', w));
-      }
-      else if(util.isNumber(right)) {
-        this.__offsetX(-right);
+      if(left !== undefined) {
+        let n = css.calRelative(computedStyle, 'left', left, parent, w, true);
+        this.__offsetX(n);
         delete computedStyle.right;
       }
-      else if(right.unit === unit.PX) {
-        this.__offsetX(-right.value);
-        delete computedStyle.right;
-      }
-      else if(right.unit === unit.PERCENT) {
-        this.__offsetX(-css.calPercentRelative(right.value, parent, 'width'));
+      else if(right !== undefined) {
+        let n = css.calRelative(computedStyle, 'right', right, parent, w, true);
+        this.__offsetX(-n);
         delete computedStyle.left;
-      }
-      if(util.isNumber(top)) {
-        this.__offsetY(top);
-      }
-      else if(top.unit === unit.PX) {
-        this.__offsetY(top.value);
-      }
-      else if(top.unit === unit.PERCENT) {
-        this.__offsetY(css.calPercentRelative(top.value, parent, 'height'));
-      }
-      else if(util.isNumber(bottom)) {
-        this.__offsetY(-bottom);
-        delete computedStyle.top;
-      }
-      else if(bottom.unit === unit.PX) {
-        this.__offsetY(-bottom.value);
-        delete computedStyle.top;
-      }
-      else if(bottom.unit !== unit.AUTO) {
-        this.__offsetY(-css.calPercentRelative(bottom.value, parent, 'height'));
-        delete computedStyle.top;
       }
     }
     // 计算结果存入computedStyle
@@ -338,11 +316,6 @@ class Xom extends Node {
     }
     let {
       display,
-      position,
-      top,
-      right,
-      bottom,
-      left,
       marginTop,
       marginRight,
       marginBottom,

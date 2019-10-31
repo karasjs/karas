@@ -51,6 +51,7 @@ KEY_LENGTH.forEach(k => {
   LENGTH_HASH[k] = true;
 });
 
+// css模式rgb和init的颜色转换为rgba数组，方便加减运算
 function color2array(style) {
   KEY_COLOR.forEach(k => {
     if(!style.hasOwnProperty(k)) {
@@ -60,66 +61,7 @@ function color2array(style) {
   });
 }
 
-function length2px(style, xom) {
-  KEY_LENGTH.forEach(k => {
-    if(!style.hasOwnProperty(k)) {
-      return;
-    }
-    let v = style[k];
-    if(v.unit === unit.PX) {
-      v = v.value;
-    }
-    else if(v.unit === unit.PERCENT) {
-      if(k === 'flexBasis') {
-        if(style.flexDirection === 'row') {
-          v = xom.width * v.value * 0.01;
-        }
-        else {
-          v = xom.height * v.value * 0.01;
-        }
-      }
-      else if([
-        'width',
-        'marginTop',
-        'marginRight',
-        'marginLeft',
-        'marginBottom',
-        'paddingTop',
-        'paddingRight',
-        'paddingBottom',
-        'paddingLeft',
-        'left',
-        'right'
-      ].indexOf(k) > -1) {
-        v = xom.width * v.value * 0.01;
-      }
-      else if(['height', 'top', 'bottom'].indexOf(k) > -1) {
-        v = xom.height * v.value * 0.01;
-      }
-    }
-    style[k] = v;
-  });
-  let transform = style.transform;
-  if(transform) {
-    transform.forEach(item => {
-      let [k, v] = item;
-      if(['translateX', 'translateY'].indexOf(k) > -1) {
-        if(v.unit === unit.PX) {
-          v = v.value;
-        } else if(v.unit === unit.PERCENT) {
-          v = (k === 'translateX' ? xom.width : xom.height) * v.value * 0.01;
-        }
-        item[1] = v;
-      }
-    });
-  }
-}
-
-function structuring(style, xom) {
-  color2array(style);
-  length2px(style, xom);
-}
-
+// 反向将颜色数组转换为css模式
 function stringify(style) {
   KEY_COLOR.forEach(k => {
     if(style.hasOwnProperty(k)) {
@@ -134,7 +76,8 @@ function stringify(style) {
   return style;
 }
 
-function framing(style, current) {
+// 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
+function framing(current) {
   let keys = [];
   let st = {};
   for(let i in current) {
@@ -192,7 +135,7 @@ function calDiff(prev, next, k) {
 }
 
 function calFrame(prev, current) {
-  let next = framing(prev.style, current);
+  let next = framing(current);
   next.keys.forEach(k => {
     let ts = calDiff(prev.style, next.style, k);
     // 可以形成过渡的才会产生结果返回
@@ -304,13 +247,13 @@ class Animation extends Event {
           offset = current.offset;
           css.normalize(current, true);
           css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
-          structuring(current);
+          color2array(current);
         }
       }
       else {
         css.normalize(current, true);
         css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
-        structuring(current);
+        color2array(current);
       }
     }
     if(!list.length) {
@@ -345,7 +288,7 @@ class Animation extends Event {
       }
     }
     // 转化style为计算后的绝对值结果
-    structuring(origin, this.xom);
+    color2array(origin);
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
     let length = list.length;
@@ -355,12 +298,13 @@ class Animation extends Event {
     let i = 0;
     // 第一帧要特殊处理，根据offset决定直接应用还是做过渡效果
     if(first.offset === 0) {
-      prev = framing(origin, first);
+      prev = framing(first);
       frames.push(prev);
       i = 1;
     }
     else {
-      prev = framing(origin, { offset: 0 });
+      origin.offset = 0;
+      prev = framing(origin);
       frames.push(prev);
     }
     for(; i < length; i++) {
@@ -370,7 +314,8 @@ class Animation extends Event {
     }
     // 最后一帧同第一帧特殊处理
     if(last.offset !== 1) {
-      let next = framing(origin, { offset: 1 });
+      origin.offset = 1;
+      let next = framing(origin);
       prev = calFrame(prev, next);
       frames.push(prev);
     }

@@ -411,7 +411,7 @@ function computed(xom, isRoot) {
 }
 
 function computedAnimate(xom, computedStyle, origin, isRoot) {
-  let { fontSize, lineHeight } = computedStyle;
+  let { fontSize, lineHeight, top, right, bottom, left, width, height } = computedStyle;
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   if(fontSize) {
@@ -425,6 +425,53 @@ function computedAnimate(xom, computedStyle, origin, isRoot) {
     if(!fontSize) {
       delete computedStyle.fontSize;
     }
+  }
+  if(top) {
+    calRelative(computedStyle, 'top', top, parent);
+    delete computedStyle.bottom;
+  }
+  else if(bottom) {
+    calRelative(computedStyle, 'bottom', bottom, parent);
+    delete computedStyle.top;
+  }
+  if(left) {
+    calRelative(computedStyle, 'left', left, parent, parentComputedStyle.width, true);
+    delete computedStyle.right;
+  }
+  else if(right) {
+    calRelative(computedStyle, 'right', right, parent, parentComputedStyle.width, true);
+    delete computedStyle.left;
+  }
+  [
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth'
+  ].forEach(k => {
+    if(computedStyle.hasOwnProperty(k)) {
+      let v = computedStyle[k];
+      computedStyle[k] = v.value;
+    }
+  });
+  if(width) {
+    let v = 0;
+    if(width.unit === unit.PX) {
+      v = width.value;
+    }
+    else if(width.unit === unit.PERCENT) {
+      v = width.value * parentComputedStyle.width * 0.01;
+    }
+    computedStyle.width = v;
+  }
+  if(height) {
+    let v = 0;
+    if(height.unit === unit.PX) {
+      v = height.value;
+    }
+    else if(height.unit === unit.PERCENT) {
+      v = height.value * parentComputedStyle.height * 0.01;
+    }
+    computedStyle.height = v;
   }
 }
 
@@ -488,27 +535,23 @@ function calNormalLineHeight(computedStyle) {
   return computedStyle.fontSize * font.arial.lhr;
 }
 
-function calPercentRelative(n, parent, k, w) {
-  n *= 0.01;
-  while(parent) {
-    let style = parent.style[k];
-    if(style.unit === unit.AUTO) {
-      if(k === 'width') {
-        parent = parent.parent;
-      }
-      else {
-        break;
-      }
+function calRelative(computedStyle, k, v, parent, w, isWidth) {
+  if(util.isNumber(v)) {}
+  else if(v.unit === unit.AUTO) {
+    v = 0;
+  }
+  else if(v.unit === unit.PX) {
+    v = v.value;
+  }
+  else if(v.unit === unit.PERCENT) {
+    if(isWidth) {
+      v = v.value * w * 0.01;
     }
-    else if(style.unit === unit.PX) {
-      return n * style.value;
-    }
-    else if(style.unit === unit.PERCENT) {
-      n *= style.value * 0.01;
-      parent = parent.parent;
+    else {
+      v = 0;
     }
   }
-  return n;
+  return computedStyle[k] = v;
 }
 
 export default {
@@ -518,5 +561,5 @@ export default {
   setFontStyle,
   getBaseLine,
   calLineHeight,
-  calPercentRelative,
+  calRelative,
 };

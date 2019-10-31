@@ -65,7 +65,10 @@ class Dom extends Xom {
     this.__children = list;
     let ref = this.props.ref;
     if(ref && this.host) {
-      this.host.ref[ref] = this;
+      let owner = this.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
     }
   }
 

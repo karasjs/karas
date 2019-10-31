@@ -47,6 +47,7 @@ class Root extends Dom {
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
     this.__task = [];
+    this.__ref = {};
     Event.mix(this);
   }
 
@@ -293,6 +294,9 @@ class Root extends Dom {
   }
   get task() {
     return this.__task;
+  }
+  get ref() {
+    return this.__ref;
   }
 }
 

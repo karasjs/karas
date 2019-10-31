@@ -4383,15 +4383,15 @@
           } else if (left.unit === unit.PERCENT) {
             this.__offsetX(css.calPercentRelative(left.value, parent, 'width', w));
           } else if (util.isNumber(right)) {
-            this.__offsetX(right);
+            this.__offsetX(-right);
 
             delete computedStyle.right;
           } else if (right.unit === unit.PX) {
-            this.__offsetX(right.value);
+            this.__offsetX(-right.value);
 
             delete computedStyle.right;
           } else if (right.unit === unit.PERCENT) {
-            this.__offsetX(css.calPercentRelative(right.value, parent, 'width'));
+            this.__offsetX(-css.calPercentRelative(right.value, parent, 'width'));
 
             delete computedStyle.left;
           }
@@ -4403,15 +4403,15 @@
           } else if (top.unit === unit.PERCENT) {
             this.__offsetY(css.calPercentRelative(top.value, parent, 'height'));
           } else if (util.isNumber(bottom)) {
-            this.__offsetY(bottom);
+            this.__offsetY(-bottom);
 
             delete computedStyle.top;
           } else if (bottom.unit === unit.PX) {
-            this.__offsetY(bottom.value);
+            this.__offsetY(-bottom.value);
 
             delete computedStyle.top;
           } else if (bottom.unit !== unit.AUTO) {
-            this.__offsetY(css.calPercentRelative(bottom.value, parent, 'height'));
+            this.__offsetY(-css.calPercentRelative(bottom.value, parent, 'height'));
 
             delete computedStyle.top;
           }
@@ -5499,7 +5499,11 @@
         var ref = this.props.ref;
 
         if (ref && this.host) {
-          this.host.ref[ref] = this;
+          var owner = this.host || this.root;
+
+          if (owner) {
+            owner.ref[ref] = this;
+          }
         }
       }
     }, {
@@ -7363,6 +7367,7 @@
 
       _this.__mh = 0;
       _this.__task = [];
+      _this.__ref = {};
       Event.mix(_assertThisInitialized(_this));
       return _this;
     }
@@ -7677,6 +7682,11 @@
       key: "task",
       get: function get() {
         return this.__task;
+      }
+    }, {
+      key: "ref",
+      get: function get() {
+        return this.__ref;
       }
     }]);
 

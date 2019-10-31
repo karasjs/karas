@@ -153,8 +153,7 @@ class Xom extends Node {
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(computedStyle.position === 'relative' && this.parent) {
       let { top, right, bottom, left } = computedStyle;
-      let { width, height } = this.parent;
-      let h = this.parent.style.height;
+      let { parent } = this;
       if(util.isNumber(left)) {
         this.__offsetX(left);
       }
@@ -162,7 +161,7 @@ class Xom extends Node {
         this.__offsetX(left.value);
       }
       else if(left.unit === unit.PERCENT) {
-        this.__offsetX(css.calPercentRelative(left.value), parent, 'width');
+        this.__offsetX(css.calPercentRelative(left.value, parent, 'width', w));
       }
       else if(util.isNumber(right)) {
         this.__offsetX(right);
@@ -173,7 +172,7 @@ class Xom extends Node {
         delete computedStyle.right;
       }
       else if(right.unit === unit.PERCENT) {
-        this.__offsetX(css.calPercentRelative(right.value), parent, 'width');
+        this.__offsetX(css.calPercentRelative(right.value, parent, 'width'));
         delete computedStyle.left;
       }
       if(util.isNumber(top)) {
@@ -183,7 +182,7 @@ class Xom extends Node {
         this.__offsetY(top.value);
       }
       else if(top.unit === unit.PERCENT) {
-        this.__offsetY(css.calPercentRelative(top.value), parent, 'height');
+        this.__offsetY(css.calPercentRelative(top.value, parent, 'height'));
       }
       else if(util.isNumber(bottom)) {
         this.__offsetY(bottom);
@@ -194,7 +193,7 @@ class Xom extends Node {
         delete computedStyle.top;
       }
       else if(bottom.unit !== unit.AUTO) {
-        this.__offsetY(css.calPercentRelative(bottom.value), parent, 'height');
+        this.__offsetY(css.calPercentRelative(bottom.value, parent, 'height'));
         delete computedStyle.top;
       }
     }

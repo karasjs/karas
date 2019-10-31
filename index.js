@@ -3374,6 +3374,14 @@
 
   _defineProperty(Event, "KARAS_REFRESH", 'karas-refresh');
 
+  _defineProperty(Event, "KARAS_ANIMATION_PAUSE", 'karas-animation-pause');
+
+  _defineProperty(Event, "KARAS_ANIMATION_FRAME", 'karas-animation-frame');
+
+  _defineProperty(Event, "KARAS_ANIMATION_FINISH", 'karas-animation-finish');
+
+  _defineProperty(Event, "KARAS_ANIMATION_CANCEL", 'karas-animation-cancel');
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -3858,8 +3866,7 @@
   function calFrame(prev, current) {
     var next = framing(prev.style, current);
     next.keys.forEach(function (k) {
-      var ts = calDiff(prev.style, next.style, k);
-      console.log(ts); // 可以形成过渡的才会产生结果返回
+      var ts = calDiff(prev.style, next.style, k); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
         prev.transition.push(ts);
@@ -3930,7 +3937,7 @@
   function (_Event) {
     _inherits(Animation, _Event);
 
-    function Animation(xom, list, option) {
+    function Animation(xom, list, options) {
       var _this;
 
       _classCallCheck(this, Animation);
@@ -3938,15 +3945,12 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__xom = xom;
       _this.__list = list || [];
-      _this.__option = option || {};
+      _this.__options = options || {};
       _this.__frames = [];
       _this.__startTime = 0;
-      _this.__endTime = 0;
       _this.__offsetTime = 0;
       _this.__pauseTime = 0;
       _this.__isPause = false;
-      _this.__lastFrame = 0;
-      _this.__forward = false;
       _this.__cb = null;
 
       _this.__init();
@@ -3958,7 +3962,7 @@
       key: "__init",
       value: function __init() {
         // 没设置时间或非法时间或0，动画过程为空无需执行
-        var duration = parseFloat(this.option.duration);
+        var duration = parseFloat(this.options.duration);
 
         if (isNaN(duration) || duration <= 0) {
           return;
@@ -4037,6 +4041,7 @@
 
 
         var origin = util.clone(this.xom.computedStyle);
+        this.__origin = util.clone(origin);
         structuring(origin, this.xom); // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
         var frames = this.frames;
@@ -4078,7 +4083,9 @@
       value: function play() {
         var _this2 = this;
 
-        // 从头播放还是暂停继续
+        this.__cancelTask(); // 从头播放还是暂停继续
+
+
         if (this.isPause) {
           var now = inject.now();
           var diff = now - this.pauseTime; // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
@@ -4086,15 +4093,18 @@
           diff = Math.max(diff, 0);
           this.__offsetTime = diff;
         } else {
-          var duration = this.option.duration;
+          var _this$options = this.options,
+              duration = _this$options.duration,
+              fill = _this$options.fill;
           var frames = this.frames;
           var length = frames.length;
           var first = true;
 
           this.__cb = function () {
-            var now = inject.now(); // 下一帧才开始播放动画
+            var now = inject.now();
 
             if (first) {
+              _this2.__startTime = now;
               frames.forEach(function (frame) {
                 frame.time = now + duration * frame.offset;
               });
@@ -4123,9 +4133,32 @@
             var root = _this2.xom.root;
 
             if (root) {
-              root.refresh();
+              var task = _this2.__task = function () {
+                _this2.emit(Event.KARAS_ANIMATION_FRAME);
+
+                if (i === length - 1) {
+                  // 停留在最后一帧，触发finish
+                  if (['forwards', 'both'].indexOf(fill) > -1) {
+                    _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                  } // 恢复初始，再刷新一帧，触发finish
+                  else {
+                      _this2.xom.__animateStyle(_this2.__origin);
+
+                      var _task = _this2.__task = function () {
+                        _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                      };
+
+                      root.refreshTask(_task);
+                    }
+                }
+              };
+
+              root.refreshTask(task);
             }
-          };
+          }; // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
+
+
+          this.cb();
         }
 
         frame.onFrame(this.cb);
@@ -4138,19 +4171,72 @@
         this.__isPause = true;
         this.__pauseTime = inject.now();
         frame.offFrame(this.cb);
+
+        this.__cancelTask();
+
+        this.emit(Event.KARAS_ANIMATION_PAUSE);
         return this;
       }
     }, {
       key: "finish",
       value: function finish() {
-        return this.cancel();
+        var _this3 = this;
+
+        var fill = this.options.fill;
+        frame.offFrame(this.cb);
+
+        this.__cancelTask();
+
+        var root = this.xom.root;
+
+        if (root) {
+          // 停留在最后一帧
+          if (['forwards', 'both'].indexOf(fill) > -1) {
+            var last = this.frames[this.frames.length - 1];
+
+            this.xom.__animateStyle(stringify$1(last.style));
+          } else {
+            this.xom.__animateStyle(this.__origin);
+          }
+
+          var task = this.__task = function () {
+            _this3.emit(Event.KARAS_ANIMATION_FINISH);
+          };
+
+          root.refreshTask(task);
+        }
+
+        return this;
       }
     }, {
       key: "cancel",
       value: function cancel() {
-        this.xom.__style = this.xom.__styleBack;
-        this.xom.root.refreshTask();
+        var _this4 = this;
+
+        frame.offFrame(this.cb);
+
+        this.__cancelTask();
+
+        var root = this.xom.root;
+
+        if (this.__origin && root) {
+          this.xom.__animateStyle(this.__origin);
+
+          var task = this.__task = function () {
+            _this4.emit(Event.KARAS_ANIMATION_CANCEL);
+          };
+
+          root.refreshTask(task);
+        }
+
         return this;
+      }
+    }, {
+      key: "__cancelTask",
+      value: function __cancelTask() {
+        if (this.__task && this.xom.root) {
+          this.xom.root.cancelRefreshTask(this.__task);
+        }
       }
     }, {
       key: "xom",
@@ -4163,9 +4249,9 @@
         return this.__list;
       }
     }, {
-      key: "option",
+      key: "options",
       get: function get() {
-        return this.__option;
+        return this.__options;
       }
     }, {
       key: "frames",
@@ -4176,11 +4262,6 @@
       key: "startTime",
       get: function get() {
         return this.__startTime;
-      }
-    }, {
-      key: "endTime",
-      get: function get() {
-        return this.__endTime;
       }
     }, {
       key: "isPause",
@@ -4196,16 +4277,6 @@
       key: "pauseTime",
       get: function get() {
         return this.__pauseTime;
-      }
-    }, {
-      key: "lastFrame",
-      get: function get() {
-        return this.__lastFrame;
-      }
-    }, {
-      key: "forward",
-      get: function get() {
-        return this.__forward;
       }
     }, {
       key: "cb",
@@ -4739,6 +4810,16 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
+        var ref = this.props.ref;
+
+        if (ref) {
+          var owner = this.host || this.root;
+
+          if (owner && owner.ref[ref]) {
+            delete owner.ref[ref];
+          }
+        }
+
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
         this.__matrix = this.__matrixEvent = null;
@@ -5496,15 +5577,6 @@
           prev = item;
         });
         this.__children = list;
-        var ref = this.props.ref;
-
-        if (ref && this.host) {
-          var owner = this.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
-        }
       }
     }, {
       key: "__traverseChildren",
@@ -5564,6 +5636,15 @@
             _this4.__absChildren.push(item);
           }
         });
+        var ref = this.props.ref;
+
+        if (ref) {
+          var owner = this.host || this.root;
+
+          if (owner) {
+            owner.ref[ref] = this;
+          }
+        }
       } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
 
     }, {
@@ -7640,12 +7721,13 @@
             _this2.node.__defs = nd;
           }
 
-          _this2.__task.forEach(function (cb) {
-            cb && cb();
-          });
+          var clone = _this2.__task.slice(0);
 
           _this2.__task.splice(0);
 
+          clone.forEach(function (cb) {
+            cb && cb();
+          });
           cb && cb();
 
           _this2.emit(Event.KARAS_REFRESH);
@@ -7667,6 +7749,18 @@
         }
 
         task.push(cb);
+      }
+    }, {
+      key: "cancelRefreshTask",
+      value: function cancelRefreshTask(cb) {
+        var task = this.task;
+
+        for (var i = 0, len = task.length; i < len; i++) {
+          if (task[i] === cb) {
+            task.splice(i, 1);
+            break;
+          }
+        }
       }
     }, {
       key: "node",

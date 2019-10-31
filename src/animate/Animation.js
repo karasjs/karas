@@ -193,7 +193,7 @@ function calDiff(prev, next, k) {
 function calFrame(prev, current) {
   let next = framing(prev.style, current);
   next.keys.forEach(k => {
-    let ts = calDiff(prev.style, next.style, k); console.log(ts);
+    let ts = calDiff(prev.style, next.style, k);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
       prev.transition.push(ts);
@@ -257,26 +257,23 @@ function calStyle(frame, percent) {
 }
 
 class Animation extends Event {
-  constructor(xom, list, option) {
+  constructor(xom, list, options) {
     super();
     this.__xom = xom;
     this.__list = list || [];
-    this.__option = option || {};
+    this.__options = options || {};
     this.__frames = [];
     this.__startTime = 0;
-    this.__endTime = 0;
     this.__offsetTime = 0;
     this.__pauseTime = 0;
     this.__isPause = false;
-    this.__lastFrame = 0;
-    this.__forward = false;
     this.__cb = null;
     this.__init();
   }
 
   __init() {
     // 没设置时间或非法时间或0，动画过程为空无需执行
-    let duration = parseFloat(this.option.duration);
+    let duration = parseFloat(this.options.duration);
     if(isNaN(duration) || duration <= 0) {
       return;
     }
@@ -344,6 +341,7 @@ class Animation extends Event {
     }
     // 转化style为计算后的绝对值结果
     let origin = util.clone(this.xom.computedStyle);
+    this.__origin = util.clone(origin);
     structuring(origin, this.xom);
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
@@ -376,6 +374,7 @@ class Animation extends Event {
   }
 
   play() {
+    this.__cancelTask();
     // 从头播放还是暂停继续
     if(this.isPause) {
       let now = inject.now();
@@ -385,14 +384,14 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let duration = this.option.duration;
+      let { duration, fill } = this.options;
       let frames = this.frames;
       let length = frames.length;
       let first = true;
       this.__cb = () => {
         let now = inject.now();
-        // 下一帧才开始播放动画
         if(first) {
+          this.__startTime = now;
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
           });
@@ -415,9 +414,28 @@ class Animation extends Event {
         }
         let root = this.xom.root;
         if(root) {
-          root.refresh();
+          let task = this.__task = () => {
+            this.emit(Event.KARAS_ANIMATION_FRAME);
+            if(i === length - 1) {
+              // 停留在最后一帧，触发finish
+              if(['forwards', 'both'].indexOf(fill) > -1) {
+                this.emit(Event.KARAS_ANIMATION_FINISH);
+              }
+              // 恢复初始，再刷新一帧，触发finish
+              else {
+                this.xom.__animateStyle(this.__origin);
+                let task = this.__task = () => {
+                  this.emit(Event.KARAS_ANIMATION_FINISH);
+                };
+                root.refreshTask(task);
+              }
+            }
+          };
+          root.refreshTask(task);
         }
       };
+      // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
+      this.cb();
     }
     frame.onFrame(this.cb);
     this.__isPause = false;
@@ -428,17 +446,51 @@ class Animation extends Event {
     this.__isPause = true;
     this.__pauseTime = inject.now();
     frame.offFrame(this.cb);
+    this.__cancelTask();
+    this.emit(Event.KARAS_ANIMATION_PAUSE);
     return this;
   }
 
   finish() {
-    return this.cancel();
+    let { fill } = this.options;
+    frame.offFrame(this.cb);
+    this.__cancelTask();
+    let root = this.xom.root;
+    if(root) {
+      // 停留在最后一帧
+      if(['forwards', 'both'].indexOf(fill) > -1) {
+        let last = this.frames[this.frames.length - 1];
+        this.xom.__animateStyle(stringify(last.style));
+      }
+      else {
+        this.xom.__animateStyle(this.__origin);
+      }
+      let task = this.__task = () => {
+        this.emit(Event.KARAS_ANIMATION_FINISH);
+      };
+      root.refreshTask(task);
+    }
+    return this;
   }
 
   cancel() {
-    this.xom.__style = this.xom.__styleBack;
-    this.xom.root.refreshTask();
+    frame.offFrame(this.cb);
+    this.__cancelTask();
+    let root = this.xom.root;
+    if(this.__origin && root) {
+      this.xom.__animateStyle(this.__origin);
+      let task = this.__task = () => {
+        this.emit(Event.KARAS_ANIMATION_CANCEL);
+      };
+      root.refreshTask(task);
+    }
     return this;
+  }
+
+  __cancelTask() {
+    if(this.__task && this.xom.root) {
+      this.xom.root.cancelRefreshTask(this.__task);
+    }
   }
 
   get xom() {
@@ -447,17 +499,14 @@ class Animation extends Event {
   get list() {
     return this.__list;
   }
-  get option() {
-    return this.__option;
+  get options() {
+    return this.__options;
   }
   get frames() {
     return this.__frames;
   }
   get startTime() {
     return this.__startTime;
-  }
-  get endTime() {
-    return this.__endTime;
   }
   get isPause() {
     return this.__isPause;
@@ -467,12 +516,6 @@ class Animation extends Event {
   }
   get pauseTime() {
     return this.__pauseTime;
-  }
-  get lastFrame() {
-    return this.__lastFrame;
-  }
-  get forward() {
-    return this.__forward;
   }
   get cb() {
     return this.__cb;

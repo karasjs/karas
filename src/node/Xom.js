@@ -497,6 +497,13 @@ class Xom extends Node {
   }
 
   __destroy() {
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.host || this.root;
+      if(owner && owner.ref[ref]) {
+        delete owner.ref[ref];
+      }
+    }
     super.__destroy();
     this.__matrix = this.__matrixEvent = null;
   }

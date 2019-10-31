@@ -63,13 +63,6 @@ class Dom extends Xom {
       prev = item;
     });
     this.__children = list;
-    let ref = this.props.ref;
-    if(ref && this.host) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
-    }
   }
 
   __traverseChildren(children, list, ctx, defs, renderMode) {
@@ -126,6 +119,13 @@ class Dom extends Xom {
         this.__absChildren.push(item);
       }
     });
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
+    }
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下

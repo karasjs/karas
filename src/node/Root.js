@@ -264,10 +264,11 @@ class Root extends Dom {
         this.node.__vd = nvd;
         this.node.__defs = nd;
       }
-      this.__task.forEach(cb => {
+      let clone = this.__task.slice(0);
+      this.__task.splice(0);
+      clone.forEach(cb => {
         cb && cb();
       });
-      this.__task.splice(0);
       cb && cb();
       this.emit(Event.KARAS_REFRESH);
     });
@@ -284,6 +285,16 @@ class Root extends Dom {
       });
     }
     task.push(cb);
+  }
+
+  cancelRefreshTask(cb) {
+    let { task } = this;
+    for(let i = 0, len = task.length; i < len; i++) {
+      if(task[i] === cb) {
+        task.splice(i, 1);
+        break;
+      }
+    }
   }
 
   get node() {

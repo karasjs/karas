@@ -122,33 +122,33 @@ function structuring(style, xom) {
 
 function stringify(style) {
   KEY_COLOR.forEach(k => {
-    let v = style[k];
-    if(v[3] === 1) {
-      style[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
-    }
-    else {
-      style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+    if(style.hasOwnProperty(k)) {
+      let v = style[k];
+      if(v[3] === 1) {
+        style[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
+      } else {
+        style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+      }
     }
   });
   return style;
 }
 
 function framing(style, current) {
-  let next = util.clone(style);
   let keys = [];
+  let st = {};
   for(let i in current) {
     if(current.hasOwnProperty(i) && i !== 'offset') {
       keys.push(i);
-      next[i] = current[i];
+      st[i] = current[i];
     }
   }
-  next = {
-    style: next,
+  return {
+    style: st,
     offset: current.offset,
     keys,
     transition: [],
   };
-  return next;
 }
 
 function calDiff(prev, next, k) {

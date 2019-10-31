@@ -3824,35 +3824,36 @@
 
   function stringify$1(style) {
     KEY_COLOR.forEach(function (k) {
-      var v = style[k];
+      if (style.hasOwnProperty(k)) {
+        var v = style[k];
 
-      if (v[3] === 1) {
-        style[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
-      } else {
-        style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+        if (v[3] === 1) {
+          style[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+        } else {
+          style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+        }
       }
     });
     return style;
   }
 
   function framing(style, current) {
-    var next = util.clone(style);
     var keys = [];
+    var st = {};
 
     for (var i in current) {
       if (current.hasOwnProperty(i) && i !== 'offset') {
         keys.push(i);
-        next[i] = current[i];
+        st[i] = current[i];
       }
     }
 
-    next = {
-      style: next,
+    return {
+      style: st,
       offset: current.offset,
       keys: keys,
       transition: []
     };
-    return next;
   }
 
   function calDiff(prev, next, k) {

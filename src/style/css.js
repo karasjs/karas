@@ -466,10 +466,28 @@ function calNormalLineHeight(computedStyle) {
   return computedStyle.fontSize * font.arial.lhr;
 }
 
+function calPercentRelative(n, parent, k) {
+  while(parent) {
+    let style = parent.style[k];
+    if(style.unit === unit.AUTO) {
+      return 0;
+    }
+    else if(style.unit === unit.PX) {
+      return n * style.value;
+    }
+    else if(style.unit === unit.PERCENT) {
+      n *= style.value * 0.01;
+      parent = parent.parent;
+    }
+  }
+  return n;
+}
+
 export default {
   normalize,
   computed,
   setFontStyle,
   getBaseLine,
   calLineHeight,
+  calPercentRelative,
 };

@@ -192,6 +192,7 @@ class Root extends Dom {
       paddingBottom,
       paddingLeft
     } = computedStyle;
+    // 根元素特殊处理
     computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
     computedStyle.width = this.width;
     computedStyle.height = this.height;

@@ -158,33 +158,43 @@ class Xom extends Node {
       if(util.isNumber(left)) {
         this.__offsetX(left);
       }
-      else if(left.unit !== unit.AUTO) {
-        let diff = left.unit === unit.PX ? left.value : left.value * width * 0.01;
-        this.__offsetX(diff);
+      else if(left.unit === unit.PX) {
+        this.__offsetX(left.value);
+      }
+      else if(left.unit === unit.PERCENT) {
+        this.__offsetX(css.calPercentRelative(left.value), parent, 'width');
       }
       else if(util.isNumber(right)) {
         this.__offsetX(right);
         delete computedStyle.right;
       }
-      else if(right.unit !== unit.AUTO) {
-        let diff = right.unit === unit.PX ? right.value : right.value * width * 0.01;
-        this.__offsetX(-diff);
+      else if(right.unit === unit.PX) {
+        this.__offsetX(right.value);
         delete computedStyle.right;
       }
-      if(util.isNumber(top)) {
-        this.__offsetX(top);
+      else if(right.unit === unit.PERCENT) {
+        this.__offsetX(css.calPercentRelative(right.value), parent, 'width');
+        delete computedStyle.left;
       }
-      else if(top.unit !== unit.AUTO) {
-        let diff = top.unit === unit.PX ? top.value : top.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-        this.__offsetY(diff);
+      if(util.isNumber(top)) {
+        this.__offsetY(top);
+      }
+      else if(top.unit === unit.PX) {
+        this.__offsetY(top.value);
+      }
+      else if(top.unit === unit.PERCENT) {
+        this.__offsetY(css.calPercentRelative(top.value), parent, 'height');
       }
       else if(util.isNumber(bottom)) {
-        this.__offsetX(bottom);
+        this.__offsetY(bottom);
+        delete computedStyle.top;
+      }
+      else if(bottom.unit === unit.PX) {
+        this.__offsetY(bottom.value);
         delete computedStyle.top;
       }
       else if(bottom.unit !== unit.AUTO) {
-        let diff = bottom.unit === unit.PX ? bottom.value : bottom.value * height * 0.01 * (h.unit === unit.AUTO ? 0 : 1);
-        this.__offsetY(-diff);
+        this.__offsetY(css.calPercentRelative(bottom.value), parent, 'height');
         delete computedStyle.top;
       }
     }

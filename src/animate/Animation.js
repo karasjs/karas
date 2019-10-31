@@ -241,28 +241,19 @@ function calStyle(frame, percent) {
         item[1] += hash[k];
       });
     }
+    // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {
       let item = style[k];
-      item[0] += scopeColor(v[0] * percent);
-      item[1] += scopeColor(v[1] * percent);
-      item[2] += scopeColor(v[2] * percent);
-      item[3] += scopeColor(v[3] * percent);
+      item[0] += v[0] * percent;
+      item[1] += v[1] * percent;
+      item[2] += v[2] * percent;
+      item[3] += v[3] * percent;
     }
     else if(LENGTH_HASH.hasOwnProperty(k)) {
       style[k] += v * percent;
     }
   });
   return style;
-}
-
-function scopeColor(v) {
-  if(v > 255) {
-    return 255;
-  }
-  else if(v < 0) {
-    return 0;
-  }
-  return v;
 }
 
 class Animation extends Event {

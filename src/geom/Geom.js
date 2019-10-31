@@ -16,6 +16,13 @@ class Geom extends Xom {
     let style = this.style;
     css.normalize(style);
     css.computed(this, isRoot);
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
+    }
   }
 
   __tryLayInline(w, total) {

@@ -206,6 +206,10 @@ class Xom extends Node {
     return this.tagName.charAt(0) === '$';
   }
 
+  isRoot() {
+    return !this.parent;
+  }
+
   // 获取margin/padding的实际值，当动画执行时，mp可能为computedStyle，此时已经计算好直接返回
   __mpWidth(mp, w) {
     if(util.isNumber(mp)) {
@@ -724,7 +728,9 @@ class Xom extends Node {
       }
     }
     // lineHeight除非是固定，否则也要随着fontSize变化
-    css.calLineHeight(this, style.lineHeight, computedStyle);
+    if(!ns.hasOwnProperty('lineHeight')) {
+      css.calLineHeight(this, style.lineHeight, computedStyle);
+    }
   }
 
   get tagName() {

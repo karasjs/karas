@@ -359,20 +359,7 @@ function normalize(style, noReset) {
   return style;
 }
 
-function computed(xom, isRoot) {
-  let { style } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
-  let computedStyle = xom.__computedStyle = util.clone(style);
-  let parent = xom.parent;
-  let parentStyle = parent && parent.style;
-  let parentComputedStyle = parent && parent.computedStyle;
-  // 处理继承的属性
-  if(fontStyle === 'inherit') {
-    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
-  }
-  if(fontWeight === 'inherit') {
-    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
-  }
+function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
   if(fontSize.unit === unit.INHERIT) {
     computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
   }
@@ -385,6 +372,22 @@ function computed(xom, isRoot) {
   else {
     computedStyle.fontSize = 16;
   }
+}
+
+function computed(xom, isRoot) {
+  let { style } = xom;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
+  let computedStyle = xom.__computedStyle = util.clone(style);
+  let parent = xom.parent;
+  let parentComputedStyle = parent && parent.computedStyle;
+  // 处理继承的属性
+  if(fontStyle === 'inherit') {
+    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
+  }
+  if(fontWeight === 'inherit') {
+    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
+  }
+  computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
   if(fontFamily === 'inherit') {
     computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
   }
@@ -407,6 +410,24 @@ function computed(xom, isRoot) {
   });
 }
 
+function computedAnimate(xom, computedStyle, origin, isRoot) {
+  let { fontSize, lineHeight } = computedStyle;
+  let parent = xom.parent;
+  let parentComputedStyle = parent && parent.computedStyle;
+  if(fontSize) {
+    computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
+  }
+  if(lineHeight) {
+    if(!fontSize) {
+      computedStyle.fontSize = origin.fontSize;
+    }
+    calLineHeight(xom, lineHeight, computedStyle);
+    if(!fontSize) {
+      delete computedStyle.fontSize;
+    }
+  }
+}
+
 function setFontStyle(style) {
   let { fontStyle, fontWeight, fontSize, fontFamily } = style;
   return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
@@ -418,6 +439,7 @@ function getBaseLine(style) {
 }
 
 function calLineHeight(xom, lineHeight, computedStyle) {
+  if(util.isNumber(lineHeight)) {}
   if(lineHeight.unit === unit.INHERIT) {
     let parent = xom.parent;
     if(parent) {
@@ -492,6 +514,7 @@ function calPercentRelative(n, parent, k, w) {
 export default {
   normalize,
   computed,
+  computedAnimate,
   setFontStyle,
   getBaseLine,
   calLineHeight,

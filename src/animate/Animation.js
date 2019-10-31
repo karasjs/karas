@@ -37,7 +37,8 @@ const KEY_LENGTH = [
   'paddingBottom',
   'paddingLeft',
   'paddingRight',
-  'paddingTop'
+  'paddingTop',
+  'strokeWidth'
 ];
 
 const COLOR_HASH = {};
@@ -272,6 +273,8 @@ class Animation extends Event {
   }
 
   __init() {
+    let origin = util.clone(this.xom.computedStyle);
+    this.__origin = util.clone(origin);
     // 没设置时间或非法时间或0，动画过程为空无需执行
     let duration = parseFloat(this.options.duration);
     if(isNaN(duration) || duration <= 0) {
@@ -300,11 +303,13 @@ class Animation extends Event {
         else {
           offset = current.offset;
           css.normalize(current, true);
+          css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
           structuring(current);
         }
       }
       else {
         css.normalize(current, true);
+        css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
         structuring(current);
       }
     }
@@ -340,8 +345,6 @@ class Animation extends Event {
       }
     }
     // 转化style为计算后的绝对值结果
-    let origin = util.clone(this.xom.computedStyle);
-    this.__origin = util.clone(origin);
     structuring(origin, this.xom);
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;

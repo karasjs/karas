@@ -2326,6 +2326,18 @@
     return style;
   }
 
+  function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
+    if (fontSize.unit === unit.INHERIT) {
+      computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
+    } else if (fontSize.unit === unit.PX) {
+      computedStyle.fontSize = fontSize.value;
+    } else if (fontSize.unit === unit.PERCENT) {
+      computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
+    } else {
+      computedStyle.fontSize = 16;
+    }
+  }
+
   function computed(xom, isRoot) {
     var style = xom.style;
     var fontStyle = style.fontStyle,
@@ -2337,7 +2349,6 @@
         textAlign = style.textAlign;
     var computedStyle = xom.__computedStyle = util.clone(style);
     var parent = xom.parent;
-    var parentStyle = parent && parent.style;
     var parentComputedStyle = parent && parent.computedStyle; // 处理继承的属性
 
     if (fontStyle === 'inherit') {
@@ -2348,15 +2359,7 @@
       computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
     }
 
-    if (fontSize.unit === unit.INHERIT) {
-      computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
-    } else if (fontSize.unit === unit.PX) {
-      computedStyle.fontSize = fontSize.value;
-    } else if (fontSize.unit === unit.PERCENT) {
-      computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
-    } else {
-      computedStyle.fontSize = 16;
-    }
+    computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
 
     if (fontFamily === 'inherit') {
       computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
@@ -2379,6 +2382,29 @@
     });
   }
 
+  function computedAnimate(xom, computedStyle, origin, isRoot) {
+    var fontSize = computedStyle.fontSize,
+        lineHeight = computedStyle.lineHeight;
+    var parent = xom.parent;
+    var parentComputedStyle = parent && parent.computedStyle;
+
+    if (fontSize) {
+      computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
+    }
+
+    if (lineHeight) {
+      if (!fontSize) {
+        computedStyle.fontSize = origin.fontSize;
+      }
+
+      calLineHeight(xom, lineHeight, computedStyle);
+
+      if (!fontSize) {
+        delete computedStyle.fontSize;
+      }
+    }
+  }
+
   function setFontStyle(style) {
     var fontStyle = style.fontStyle,
         fontWeight = style.fontWeight,
@@ -2393,6 +2419,8 @@
   }
 
   function calLineHeight(xom, lineHeight, computedStyle) {
+    if (util.isNumber(lineHeight)) ;
+
     if (lineHeight.unit === unit.INHERIT) {
       var parent = xom.parent;
 
@@ -2466,6 +2494,7 @@
   var css = {
     normalize: normalize$1,
     computed: computed,
+    computedAnimate: computedAnimate,
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine,
     calLineHeight: calLineHeight,
@@ -3721,7 +3750,7 @@
   var frame = new Frame();
 
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'fill', 'stroke'];
-  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop'];
+  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
     COLOR_HASH[k] = true;
@@ -3961,7 +3990,9 @@
     _createClass(Animation, [{
       key: "__init",
       value: function __init() {
-        // 没设置时间或非法时间或0，动画过程为空无需执行
+        var origin = util.clone(this.xom.computedStyle);
+        this.__origin = util.clone(origin); // 没设置时间或非法时间或0，动画过程为空无需执行
+
         var duration = parseFloat(this.options.duration);
 
         if (isNaN(duration) || duration <= 0) {
@@ -3991,10 +4022,12 @@
               else {
                   offset = current.offset;
                   css.normalize(current, true);
+                  css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
                   structuring(current);
                 }
           } else {
             css.normalize(current, true);
+            css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
             structuring(current);
           }
         }
@@ -4040,8 +4073,6 @@
         } // 转化style为计算后的绝对值结果
 
 
-        var origin = util.clone(this.xom.computedStyle);
-        this.__origin = util.clone(origin);
         structuring(origin, this.xom); // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
         var frames = this.frames;
@@ -4496,6 +4527,11 @@
       key: "isGeom",
       value: function isGeom() {
         return this.tagName.charAt(0) === '$';
+      }
+    }, {
+      key: "isRoot",
+      value: function isRoot() {
+        return !this.parent;
       } // 获取margin/padding的实际值，当动画执行时，mp可能为computedStyle，此时已经计算好直接返回
 
     }, {
@@ -5073,7 +5109,9 @@
         } // lineHeight除非是固定，否则也要随着fontSize变化
 
 
-        css.calLineHeight(this, style.lineHeight, computedStyle);
+        if (!ns.hasOwnProperty('lineHeight')) {
+          css.calLineHeight(this, style.lineHeight, computedStyle);
+        }
       }
     }, {
       key: "tagName",
@@ -5259,6 +5297,15 @@
         var style = this.style;
         css.normalize(style);
         css.computed(this, isRoot);
+        var ref = this.props.ref;
+
+        if (ref) {
+          var owner = this.host || this.root;
+
+          if (owner) {
+            owner.ref[ref] = this;
+          }
+        }
       }
     }, {
       key: "__tryLayInline",

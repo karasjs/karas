@@ -4050,19 +4050,18 @@
             css.computedAnimate(this.target, current, origin, this.target.isRoot());
             color2array(current);
           }
-        }
+        } // 必须有2帧及以上描述
 
-        if (!list.length) {
+
+        if (list.length < 2) {
           return;
-        }
+        } // 首尾时间偏移强制为[0, 1]
 
-        list[0].offset = list[0].offset || 0;
 
-        if (list.length > 1) {
-          var _last = list[list.length - 1];
-          _last.offset = _last.offset || 1;
-        } // 计算没有设置offset的时间
-
+        var first = list[0];
+        first.offset = 0;
+        var last = list[list.length - 1];
+        last.offset = 1; // 计算没有设置offset的时间
 
         for (var _i2 = 1, _len = list.length; _i2 < _len; _i2++) {
           var start = list[_i2]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
@@ -4097,34 +4096,14 @@
 
         var frames = this.frames;
         var length = list.length;
-        var first = list[0];
-        var last = list[length - 1];
         var prev;
-        var i = 0; // 第一帧要特殊处理，根据offset决定直接应用还是做过渡效果
 
-        if (first.offset === 0) {
-          prev = framing(first);
-          frames.push(prev);
-          i = 1;
-        } else {
-          origin.offset = 0;
-          prev = framing(origin);
-          frames.push(prev);
-        }
+        prev = framing(first);
+        frames.push(prev);
 
-        for (; i < length; i++) {
-          var next = list[i];
+        for (var _i3 = 1; _i3 < length; _i3++) {
+          var next = list[_i3];
           prev = calFrame(prev, next);
-          frames.push(prev);
-        } // 最后一帧同第一帧特殊处理
-
-
-        if (last.offset !== 1) {
-          origin.offset = 1;
-
-          var _next = framing(origin);
-
-          prev = calFrame(prev, _next);
           frames.push(prev);
         }
       }

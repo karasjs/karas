@@ -256,14 +256,15 @@ class Animation extends Event {
         color2array(current);
       }
     }
-    if(!list.length) {
+    // 必须有2帧及以上描述
+    if(list.length < 2) {
       return;
     }
-    list[0].offset = list[0].offset || 0;
-    if(list.length > 1) {
-      let last = list[list.length - 1];
-      last.offset = last.offset || 1;
-    }
+    // 首尾时间偏移强制为[0, 1]
+    let first = list[0];
+    first.offset = 0;
+    let last = list[list.length - 1];
+    last.offset = 1;
     // 计算没有设置offset的时间
     for(let i = 1, len = list.length; i < len; i++) {
       let start = list[i];
@@ -292,30 +293,13 @@ class Animation extends Event {
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
     let length = list.length;
-    let first = list[0];
-    let last = list[length - 1];
     let prev;
     let i = 0;
-    // 第一帧要特殊处理，根据offset决定直接应用还是做过渡效果
-    if(first.offset === 0) {
-      prev = framing(first);
-      frames.push(prev);
-      i = 1;
-    }
-    else {
-      origin.offset = 0;
-      prev = framing(origin);
-      frames.push(prev);
-    }
-    for(; i < length; i++) {
+    // 第一帧要特殊处理
+    prev = framing(first);
+    frames.push(prev);
+    for(let i = 1; i < length; i++) {
       let next = list[i];
-      prev = calFrame(prev, next);
-      frames.push(prev);
-    }
-    // 最后一帧同第一帧特殊处理
-    if(last.offset !== 1) {
-      origin.offset = 1;
-      let next = framing(origin);
       prev = calFrame(prev, next);
       frames.push(prev);
     }

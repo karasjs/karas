@@ -883,21 +883,25 @@ class Dom extends Xom {
       let fixedRight;
       let fixedBottom;
       let fixedLeft;
-      if(!util.isNumber(left) && left.unit !== unit.AUTO) {
+      if(left !== undefined && left.unit !== unit.AUTO) {
         fixedLeft = true;
-        computedStyle.left = left.unit === unit.PX ? left.value : width * left.value * 0.01;
+        css.calAbsolute(computedStyle, 'left', left, container, true);
+        delete computedStyle.right;
       }
-      if(!util.isNumber(right) && right.unit !== unit.AUTO) {
+      else if(right !== undefined && right.unit !== unit.AUTO) {
         fixedRight = true;
-        computedStyle.right = right.unit === unit.PX ? right.value : width * right.value * 0.01;
+        css.calAbsolute(computedStyle, 'right', right, container, true);
+        delete computedStyle.left;
       }
-      if(!util.isNumber(top) && top.unit !== unit.AUTO) {
+      if(top !== undefined && top.unit !== unit.AUTO) {
         fixedTop = true;
-        computedStyle.top = top.unit === unit.PX ? top.value : height * top.value * 0.01;
+        css.calAbsolute(computedStyle, 'top', top, container);
+        delete computedStyle.bottom;
       }
-      if(!util.isNumber(bottom) && bottom.unit !== unit.AUTO) {
+      if(bottom !== undefined && bottom.unit !== unit.AUTO) {
         fixedBottom = true;
-        computedStyle.bottom = bottom.unit === unit.PX ? bottom.value : height * bottom.value * 0.01;
+        css.calAbsolute(computedStyle, 'bottom', bottom, container);
+        delete computedStyle.top;
       }
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(fixedLeft && fixedRight) {

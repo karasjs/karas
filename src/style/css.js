@@ -577,6 +577,20 @@ function calRelative(computedStyle, k, v, parent, isWidth) {
   return computedStyle[k] = v;
 }
 
+function calAbsolute(computedStyle, k, v, parent, isWidth) {
+  if(util.isNumber(v)) {}
+  else if(v.unit === unit.AUTO) {
+    v = 0;
+  }
+  else if(v.unit === unit.PX) {
+    v = v.value;
+  }
+  else if(v.unit === unit.PERCENT) {
+    v *= parent.computedStyle[isWidth ? 'width' : 'height'] * 0.01;
+  }
+  return computedStyle[k] = v;
+}
+
 export default {
   normalize,
   computed,
@@ -585,4 +599,5 @@ export default {
   getBaseLine,
   calLineHeight,
   calRelative,
+  calAbsolute,
 };

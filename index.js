@@ -2560,6 +2560,18 @@
     return computedStyle[k] = v;
   }
 
+  function calAbsolute(computedStyle, k, v, parent, isWidth) {
+    if (util.isNumber(v)) ; else if (v.unit === unit.AUTO) {
+      v = 0;
+    } else if (v.unit === unit.PX) {
+      v = v.value;
+    } else if (v.unit === unit.PERCENT) {
+      v *= parent.computedStyle[isWidth ? 'width' : 'height'] * 0.01;
+    }
+
+    return computedStyle[k] = v;
+  }
+
   var css = {
     normalize: normalize$1,
     computed: computed,
@@ -2567,7 +2579,8 @@
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine,
     calLineHeight: calLineHeight,
-    calRelative: calRelative
+    calRelative: calRelative,
+    calAbsolute: calAbsolute
   };
 
   var LineBox =
@@ -6547,24 +6560,26 @@
           var fixedBottom;
           var fixedLeft;
 
-          if (!util.isNumber(left) && left.unit !== unit.AUTO) {
+          if (left !== undefined && left.unit !== unit.AUTO) {
             fixedLeft = true;
-            computedStyle.left = left.unit === unit.PX ? left.value : width * left.value * 0.01;
-          }
-
-          if (!util.isNumber(right) && right.unit !== unit.AUTO) {
+            css.calAbsolute(computedStyle, 'left', left, container, true);
+            delete computedStyle.right;
+          } else if (right !== undefined && right.unit !== unit.AUTO) {
             fixedRight = true;
-            computedStyle.right = right.unit === unit.PX ? right.value : width * right.value * 0.01;
+            css.calAbsolute(computedStyle, 'right', right, container, true);
+            delete computedStyle.left;
           }
 
-          if (!util.isNumber(top) && top.unit !== unit.AUTO) {
+          if (top !== undefined && top.unit !== unit.AUTO) {
             fixedTop = true;
-            computedStyle.top = top.unit === unit.PX ? top.value : height * top.value * 0.01;
+            css.calAbsolute(computedStyle, 'top', top, container);
+            delete computedStyle.bottom;
           }
 
-          if (!util.isNumber(bottom) && bottom.unit !== unit.AUTO) {
+          if (bottom !== undefined && bottom.unit !== unit.AUTO) {
             fixedBottom = true;
-            computedStyle.bottom = bottom.unit === unit.PX ? bottom.value : height * bottom.value * 0.01;
+            css.calAbsolute(computedStyle, 'bottom', bottom, container);
+            delete computedStyle.top;
           } // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
 
 

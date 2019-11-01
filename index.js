@@ -3876,6 +3876,10 @@
   }
 
   function calDiff(prev, next, k) {
+    if (!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
+      return;
+    }
+
     var res = {
       k: k
     };
@@ -3994,12 +3998,19 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__target = target;
       _this.__list = list || [];
+
+      if (util.isNumber(options)) {
+        _this.__options = {
+          duration: options
+        };
+      }
+
       _this.__options = options || {};
       _this.__frames = [];
       _this.__startTime = 0;
       _this.__offsetTime = 0;
       _this.__pauseTime = 0;
-      _this.__isPause = false;
+      _this.__pending = false;
       _this.__cb = null;
 
       _this.__init();
@@ -4023,20 +4034,20 @@
 
         var offset = -1;
 
-        for (var _i = 0, len = list.length; _i < len; _i++) {
-          var current = list[_i];
+        for (var i = 0, len = list.length; i < len; i++) {
+          var current = list[i];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(_i, 1);
-              _i--;
+              list.splice(i, 1);
+              i--;
               len--;
             } // <=前面的
             else if (current.offset <= offset) {
-                list.splice(_i, 1);
-                _i--;
+                list.splice(i, 1);
+                i--;
                 len--;
               } // 正常的标准化样式
               else {
@@ -4063,12 +4074,12 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i2 = 1, _len = list.length; _i2 < _len; _i2++) {
-          var start = list[_i2]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i = 1, _len = list.length; _i < _len; _i++) {
+          var start = list[_i]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i2 + 1;
+            var j = _i + 1;
 
             for (; j < _len; j++) {
               end = list[j];
@@ -4078,16 +4089,16 @@
               }
             }
 
-            var num = j - _i2 + 1;
-            start = list[_i2 - 1];
+            var num = j - _i + 1;
+            start = list[_i - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i2; k < j; k++) {
+            for (var k = _i; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i2);
+              item.offset = start.offset + per * (k + 1 - _i);
             }
 
-            _i2 = j;
+            _i = j;
           }
         } // 转化style为计算后的绝对值结果
 
@@ -4096,13 +4107,13 @@
 
         var frames = this.frames;
         var length = list.length;
-        var prev;
+        var prev; // 第一帧要特殊处理
 
         prev = framing(first);
         frames.push(prev);
 
-        for (var _i3 = 1; _i3 < length; _i3++) {
-          var next = list[_i3];
+        for (var _i2 = 1; _i2 < length; _i2++) {
+          var next = list[_i2];
           prev = calFrame(prev, next);
           frames.push(prev);
         }
@@ -4115,7 +4126,7 @@
         this.__cancelTask(); // 从头播放还是暂停继续
 
 
-        if (this.isPause) {
+        if (this.pending) {
           var now = inject.now();
           var diff = now - this.pauseTime; // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
 
@@ -4191,13 +4202,13 @@
         }
 
         frame.onFrame(this.cb);
-        this.__isPause = false;
+        this.__pending = false;
         return this;
       }
     }, {
       key: "pause",
       value: function pause() {
-        this.__isPause = true;
+        this.__pending = true;
         this.__pauseTime = inject.now();
         frame.offFrame(this.cb);
 
@@ -4300,9 +4311,9 @@
         return this.__startTime;
       }
     }, {
-      key: "isPause",
+      key: "pending",
       get: function get() {
-        return this.__isPause;
+        return this.__pending;
       }
     }, {
       key: "offsetTime",

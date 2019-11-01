@@ -13,7 +13,7 @@ let animation = t.animate([
     color: '#00F',
   }
 ], {
-  duration: 100,
+  duration: 200,
   fill: 'forwards',
 });
 let n = 0;

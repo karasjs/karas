@@ -13,7 +13,7 @@ let animation = t.animate([
     color: '#00F',
   }
 ], {
-  duration: 100,
+  duration: 200,
 });
 let n = 0;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {

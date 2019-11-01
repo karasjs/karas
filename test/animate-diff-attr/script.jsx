@@ -10,17 +10,14 @@ let animation = t.animate([
     color: '#F00',
   },
   {
-    color: '#00F',
+    fontSize: 30,
   }
 ], {
   duration: 200,
+  fill: 'forwards',
 });
-let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
-  n++;
-});
+let input = document.querySelector('input');
+input.value = t.computedStyle.color + t.computedStyle.fontSize;
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  let input = document.querySelector('input');
-  input.value = t.computedStyle.color + n;
+  input.value += '/' + t.computedStyle.color + t.computedStyle.fontSize;
 });
-animation.finish();

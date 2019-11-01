@@ -95,6 +95,9 @@ function framing(current) {
 }
 
 function calDiff(prev, next, k) {
+  if(!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
+    return;
+  }
   let res = {
     k,
   };
@@ -205,12 +208,17 @@ class Animation extends Event {
     super();
     this.__target = target;
     this.__list = list || [];
+    if(util.isNumber(options)) {
+      this.__options = {
+        duration: options,
+      };
+    }
     this.__options = options || {};
     this.__frames = [];
     this.__startTime = 0;
     this.__offsetTime = 0;
     this.__pauseTime = 0;
-    this.__isPause = false;
+    this.__pending = false;
     this.__cb = null;
     this.__init();
   }
@@ -294,7 +302,6 @@ class Animation extends Event {
     let frames = this.frames;
     let length = list.length;
     let prev;
-    let i = 0;
     // 第一帧要特殊处理
     prev = framing(first);
     frames.push(prev);
@@ -308,7 +315,7 @@ class Animation extends Event {
   play() {
     this.__cancelTask();
     // 从头播放还是暂停继续
-    if(this.isPause) {
+    if(this.pending) {
       let now = inject.now();
       let diff = now - this.pauseTime;
       // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
@@ -370,12 +377,12 @@ class Animation extends Event {
       this.cb();
     }
     frame.onFrame(this.cb);
-    this.__isPause = false;
+    this.__pending = false;
     return this;
   }
 
   pause() {
-    this.__isPause = true;
+    this.__pending = true;
     this.__pauseTime = inject.now();
     frame.offFrame(this.cb);
     this.__cancelTask();
@@ -445,8 +452,8 @@ class Animation extends Event {
   get startTime() {
     return this.__startTime;
   }
-  get isPause() {
-    return this.__isPause;
+  get pending() {
+    return this.__pending;
   }
   get offsetTime() {
     return this.__offsetTime;

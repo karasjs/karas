@@ -586,7 +586,7 @@ function calAbsolute(computedStyle, k, v, parent, isWidth) {
     v = v.value;
   }
   else if(v.unit === unit.PERCENT) {
-    v *= parent.computedStyle[isWidth ? 'width' : 'height'] * 0.01;
+    v = v.value * parent.computedStyle[isWidth ? 'width' : 'height'] * 0.01;
   }
   return computedStyle[k] = v;
 }

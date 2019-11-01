@@ -535,7 +535,30 @@ function calNormalLineHeight(computedStyle) {
   return computedStyle.fontSize * font.arial.lhr;
 }
 
-function calRelative(computedStyle, k, v, parent, w, isWidth) {
+function calRelativePercent(n, parent, k) {
+  n *= 0.01;
+  while(parent) {
+    let style = parent.style[k];
+    if(style.unit === unit.AUTO) {
+      if(k === 'width') {
+        parent = parent.parent;
+      }
+      else {
+        break;
+      }
+    }
+    else if(style.unit === unit.PX) {
+      return n * style.value;
+    }
+    else if(style.unit === unit.PERCENT) {
+      n *= style.value * 0.01;
+      parent = parent.parent;
+    }
+  }
+  return n;
+}
+
+function calRelative(computedStyle, k, v, parent, isWidth) {
   if(util.isNumber(v)) {}
   else if(v.unit === unit.AUTO) {
     v = 0;
@@ -545,10 +568,10 @@ function calRelative(computedStyle, k, v, parent, w, isWidth) {
   }
   else if(v.unit === unit.PERCENT) {
     if(isWidth) {
-      v = v.value * w * 0.01;
+      v = calRelativePercent(v.value, parent, 'width');
     }
     else {
-      v = 0;
+      v = calRelativePercent(v.value, parent, 'height');
     }
   }
   return computedStyle[k] = v;

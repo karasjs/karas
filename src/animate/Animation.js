@@ -201,9 +201,9 @@ function calStyle(frame, percent) {
 }
 
 class Animation extends Event {
-  constructor(xom, list, options) {
+  constructor(target, list, options) {
     super();
-    this.__xom = xom;
+    this.__target = target;
     this.__list = list || [];
     this.__options = options || {};
     this.__frames = [];
@@ -216,7 +216,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let origin = util.clone(this.xom.computedStyle);
+    let origin = util.clone(this.target.computedStyle);
     this.__origin = util.clone(origin);
     // 没设置时间或非法时间或0，动画过程为空无需执行
     let duration = parseFloat(this.options.duration);
@@ -246,13 +246,13 @@ class Animation extends Event {
         else {
           offset = current.offset;
           css.normalize(current, true);
-          css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
+          css.computedAnimate(this.target, current, origin, this.target.isRoot());
           color2array(current);
         }
       }
       else {
         css.normalize(current, true);
-        css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
+        css.computedAnimate(this.target, current, origin, this.target.isRoot());
         color2array(current);
       }
     }
@@ -349,7 +349,7 @@ class Animation extends Event {
         let current = frames[i];
         // 最后一帧结束动画
         if(i === length - 1) {
-          this.xom.__animateStyle(stringify(current.style));
+          this.target.__animateStyle(stringify(current.style));
           frame.offFrame(this.cb);
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -358,9 +358,9 @@ class Animation extends Event {
           let diff = now - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
-          this.xom.__animateStyle(stringify(style));
+          this.target.__animateStyle(stringify(style));
         }
-        let root = this.xom.root;
+        let root = this.target.root;
         if(root) {
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
@@ -371,7 +371,7 @@ class Animation extends Event {
               }
               // 恢复初始，再刷新一帧，触发finish
               else {
-                this.xom.__animateStyle(this.__origin);
+                this.target.__animateStyle(this.__origin);
                 let task = this.__task = () => {
                   this.emit(Event.KARAS_ANIMATION_FINISH);
                 };
@@ -403,15 +403,15 @@ class Animation extends Event {
     let { fill } = this.options;
     frame.offFrame(this.cb);
     this.__cancelTask();
-    let root = this.xom.root;
+    let root = this.target.root;
     if(root) {
       // 停留在最后一帧
       if(['forwards', 'both'].indexOf(fill) > -1) {
         let last = this.frames[this.frames.length - 1];
-        this.xom.__animateStyle(stringify(last.style));
+        this.target.__animateStyle(stringify(last.style));
       }
       else {
-        this.xom.__animateStyle(this.__origin);
+        this.target.__animateStyle(this.__origin);
       }
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FINISH);
@@ -424,9 +424,9 @@ class Animation extends Event {
   cancel() {
     frame.offFrame(this.cb);
     this.__cancelTask();
-    let root = this.xom.root;
+    let root = this.target.root;
     if(this.__origin && root) {
-      this.xom.__animateStyle(this.__origin);
+      this.target.__animateStyle(this.__origin);
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };
@@ -436,13 +436,18 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    if(this.__task && this.xom.root) {
-      this.xom.root.cancelRefreshTask(this.__task);
+    if(this.__task && this.target.root) {
+      this.target.root.cancelRefreshTask(this.__task);
     }
   }
 
-  get xom() {
-    return this.__xom;
+  __destroy() {
+    frame.offFrame(this.cb);
+    this.__cancelTask();
+  }
+
+  get target() {
+    return this.__target;
   }
   get list() {
     return this.__list;

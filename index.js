@@ -2411,18 +2411,18 @@
     }
 
     if (top) {
-      calRelative(computedStyle, 'top', top);
+      calRelative(computedStyle, 'top', top, parent);
       delete computedStyle.bottom;
     } else if (bottom) {
-      calRelative(computedStyle, 'bottom', bottom);
+      calRelative(computedStyle, 'bottom', bottom, parent);
       delete computedStyle.top;
     }
 
     if (left) {
-      calRelative(computedStyle, 'left', left, parent, parentComputedStyle.width, true);
+      calRelative(computedStyle, 'left', left, parent, parentComputedStyle.width);
       delete computedStyle.right;
     } else if (right) {
-      calRelative(computedStyle, 'right', right, parent, parentComputedStyle.width, true);
+      calRelative(computedStyle, 'right', right, parent, parentComputedStyle.width);
       delete computedStyle.left;
     }
 
@@ -2521,16 +2521,39 @@
     return computedStyle.fontSize * font.arial.lhr;
   }
 
-  function calRelative(computedStyle, k, v, parent, w, isWidth) {
+  function calRelativePercent(n, parent, k) {
+    n *= 0.01;
+
+    while (parent) {
+      var style = parent.style[k];
+
+      if (style.unit === unit.AUTO) {
+        if (k === 'width') {
+          parent = parent.parent;
+        } else {
+          break;
+        }
+      } else if (style.unit === unit.PX) {
+        return n * style.value;
+      } else if (style.unit === unit.PERCENT) {
+        n *= style.value * 0.01;
+        parent = parent.parent;
+      }
+    }
+
+    return n;
+  }
+
+  function calRelative(computedStyle, k, v, parent, isWidth) {
     if (util.isNumber(v)) ; else if (v.unit === unit.AUTO) {
       v = 0;
     } else if (v.unit === unit.PX) {
       v = v.value;
     } else if (v.unit === unit.PERCENT) {
       if (isWidth) {
-        v = v.value * w * 0.01;
+        v = calRelativePercent(v.value, parent, 'width');
       } else {
-        v = 0;
+        v = calRelativePercent(v.value, parent, 'height');
       }
     }
 
@@ -3963,13 +3986,13 @@
   function (_Event) {
     _inherits(Animation, _Event);
 
-    function Animation(xom, list, options) {
+    function Animation(target, list, options) {
       var _this;
 
       _classCallCheck(this, Animation);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
-      _this.__xom = xom;
+      _this.__target = target;
       _this.__list = list || [];
       _this.__options = options || {};
       _this.__frames = [];
@@ -3987,7 +4010,7 @@
     _createClass(Animation, [{
       key: "__init",
       value: function __init() {
-        var origin = util.clone(this.xom.computedStyle);
+        var origin = util.clone(this.target.computedStyle);
         this.__origin = util.clone(origin); // 没设置时间或非法时间或0，动画过程为空无需执行
 
         var duration = parseFloat(this.options.duration);
@@ -4019,12 +4042,12 @@
               else {
                   offset = current.offset;
                   css.normalize(current, true);
-                  css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
+                  css.computedAnimate(this.target, current, origin, this.target.isRoot());
                   color2array(current);
                 }
           } else {
             css.normalize(current, true);
-            css.computedAnimate(this.xom, current, origin, this.xom.isRoot());
+            css.computedAnimate(this.target, current, origin, this.target.isRoot());
             color2array(current);
           }
         }
@@ -4142,7 +4165,7 @@
             var current = frames[i]; // 最后一帧结束动画
 
             if (i === length - 1) {
-              _this2.xom.__animateStyle(stringify$1(current.style));
+              _this2.target.__animateStyle(stringify$1(current.style));
 
               frame.offFrame(_this2.cb);
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -4154,10 +4177,10 @@
                 var percent = _diff / total;
                 var style = calStyle(current, percent);
 
-                _this2.xom.__animateStyle(stringify$1(style));
+                _this2.target.__animateStyle(stringify$1(style));
               }
 
-            var root = _this2.xom.root;
+            var root = _this2.target.root;
 
             if (root) {
               var task = _this2.__task = function () {
@@ -4169,7 +4192,7 @@
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
                   } // 恢复初始，再刷新一帧，触发finish
                   else {
-                      _this2.xom.__animateStyle(_this2.__origin);
+                      _this2.target.__animateStyle(_this2.__origin);
 
                       var _task = _this2.__task = function () {
                         _this2.emit(Event.KARAS_ANIMATION_FINISH);
@@ -4214,16 +4237,16 @@
 
         this.__cancelTask();
 
-        var root = this.xom.root;
+        var root = this.target.root;
 
         if (root) {
           // 停留在最后一帧
           if (['forwards', 'both'].indexOf(fill) > -1) {
             var last = this.frames[this.frames.length - 1];
 
-            this.xom.__animateStyle(stringify$1(last.style));
+            this.target.__animateStyle(stringify$1(last.style));
           } else {
-            this.xom.__animateStyle(this.__origin);
+            this.target.__animateStyle(this.__origin);
           }
 
           var task = this.__task = function () {
@@ -4244,10 +4267,10 @@
 
         this.__cancelTask();
 
-        var root = this.xom.root;
+        var root = this.target.root;
 
         if (this.__origin && root) {
-          this.xom.__animateStyle(this.__origin);
+          this.target.__animateStyle(this.__origin);
 
           var task = this.__task = function () {
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
@@ -4261,14 +4284,21 @@
     }, {
       key: "__cancelTask",
       value: function __cancelTask() {
-        if (this.__task && this.xom.root) {
-          this.xom.root.cancelRefreshTask(this.__task);
+        if (this.__task && this.target.root) {
+          this.target.root.cancelRefreshTask(this.__task);
         }
       }
     }, {
-      key: "xom",
+      key: "__destroy",
+      value: function __destroy() {
+        frame.offFrame(this.cb);
+
+        this.__cancelTask();
+      }
+    }, {
+      key: "target",
       get: function get() {
-        return this.__xom;
+        return this.__target;
       }
     }, {
       key: "list",
@@ -4474,13 +4504,13 @@
               left = computedStyle.left;
           var parent = this.parent;
 
-          if (top !== undefined) {
+          if (top !== undefined && top.unit !== unit.AUTO) {
             var n = css.calRelative(computedStyle, 'top', top, parent);
 
             this.__offsetY(n);
 
             delete computedStyle.bottom;
-          } else if (bottom !== undefined) {
+          } else if (bottom !== undefined && bottom.unit !== unit.AUTO) {
             var _n = css.calRelative(computedStyle, 'bottom', bottom, parent);
 
             this.__offsetY(-_n);
@@ -4488,14 +4518,14 @@
             delete computedStyle.top;
           }
 
-          if (left !== undefined) {
-            var _n2 = css.calRelative(computedStyle, 'left', left, parent, w, true);
+          if (left !== undefined && left.unit !== unit.AUTO) {
+            var _n2 = css.calRelative(computedStyle, 'left', left, parent, true);
 
             this.__offsetX(_n2);
 
             delete computedStyle.right;
-          } else if (right !== undefined) {
-            var _n3 = css.calRelative(computedStyle, 'right', right, parent, w, true);
+          } else if (right !== undefined && right.unit !== unit.AUTO) {
+            var _n3 = css.calRelative(computedStyle, 'right', right, parent, true);
 
             this.__offsetX(-_n3);
 
@@ -4833,6 +4863,10 @@
           if (owner && owner.ref[ref]) {
             delete owner.ref[ref];
           }
+        }
+
+        if (this.animation) {
+          this.animation.__destroy();
         }
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);

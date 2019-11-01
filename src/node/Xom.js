@@ -154,23 +154,23 @@ class Xom extends Node {
     if(computedStyle.position === 'relative' && this.parent) {
       let { top, right, bottom, left } = computedStyle;
       let { parent } = this;
-      if(top !== undefined) {
+      if(top !== undefined && top.unit !== unit.AUTO) {
         let n = css.calRelative(computedStyle, 'top', top, parent);
         this.__offsetY(n);
         delete computedStyle.bottom;
       }
-      else if(bottom !== undefined) {
+      else if(bottom !== undefined && bottom.unit !== unit.AUTO) {
         let n = css.calRelative(computedStyle, 'bottom', bottom, parent);
         this.__offsetY(-n);
         delete computedStyle.top;
       }
-      if(left !== undefined) {
-        let n = css.calRelative(computedStyle, 'left', left, parent, w, true);
+      if(left !== undefined && left.unit !== unit.AUTO) {
+        let n = css.calRelative(computedStyle, 'left', left, parent, true);
         this.__offsetX(n);
         delete computedStyle.right;
       }
-      else if(right !== undefined) {
-        let n = css.calRelative(computedStyle, 'right', right, parent, w, true);
+      else if(right !== undefined && right.unit !== unit.AUTO) {
+        let n = css.calRelative(computedStyle, 'right', right, parent, true);
         this.__offsetX(-n);
         delete computedStyle.left;
       }
@@ -480,6 +480,9 @@ class Xom extends Node {
       if(owner && owner.ref[ref]) {
         delete owner.ref[ref];
       }
+    }
+    if(this.animation) {
+      this.animation.__destroy();
     }
     super.__destroy();
     this.__matrix = this.__matrixEvent = null;

@@ -577,7 +577,7 @@ function calRelative(computedStyle, k, v, parent, isWidth) {
   return computedStyle[k] = v;
 }
 
-function calAbsolute(computedStyle, k, v, parent, isWidth) {
+function calAbsolute(computedStyle, k, v, size) {
   if(util.isNumber(v)) {}
   else if(v.unit === unit.AUTO) {
     v = 0;
@@ -586,7 +586,7 @@ function calAbsolute(computedStyle, k, v, parent, isWidth) {
     v = v.value;
   }
   else if(v.unit === unit.PERCENT) {
-    v = v.value * parent.computedStyle[isWidth ? 'width' : 'height'] * 0.01;
+    v = v.value * size * 0.01;
   }
   return computedStyle[k] = v;
 }

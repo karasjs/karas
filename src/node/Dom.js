@@ -885,23 +885,31 @@ class Dom extends Xom {
       let fixedLeft;
       if(left !== undefined && left.unit !== unit.AUTO) {
         fixedLeft = true;
-        css.calAbsolute(computedStyle, 'left', left, container, true);
-        delete computedStyle.right;
+        css.calAbsolute(computedStyle, 'left', left, width);
       }
-      else if(right !== undefined && right.unit !== unit.AUTO) {
-        fixedRight = true;
-        css.calAbsolute(computedStyle, 'right', right, container, true);
+      else {
         delete computedStyle.left;
+      }
+      if(right !== undefined && right.unit !== unit.AUTO) {
+        fixedRight = true;
+        css.calAbsolute(computedStyle, 'right', right, width);
+      }
+      else {
+        delete computedStyle.right;
       }
       if(top !== undefined && top.unit !== unit.AUTO) {
         fixedTop = true;
-        css.calAbsolute(computedStyle, 'top', top, container);
-        delete computedStyle.bottom;
+        css.calAbsolute(computedStyle, 'top', top, height);
+      }
+      else {
+        delete computedStyle.top;
       }
       if(bottom !== undefined && bottom.unit !== unit.AUTO) {
         fixedBottom = true;
-        css.calAbsolute(computedStyle, 'bottom', bottom, container);
-        delete computedStyle.top;
+        css.calAbsolute(computedStyle, 'bottom', bottom, height);
+      }
+      else {
+        delete computedStyle.bottom;
       }
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(fixedLeft && fixedRight) {

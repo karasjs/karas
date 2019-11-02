@@ -3765,21 +3765,19 @@
     function Frame() {
       _classCallCheck(this, Frame);
 
-      this.__taskList = [];
+      this.__task = [];
     }
 
     _createClass(Frame, [{
       key: "__init",
-      value: function __init() {
-        var list = this.taskList;
-
+      value: function __init(task) {
         function cb() {
           inject.requestAnimationFrame(function () {
-            if (!list.length) {
+            if (!task.length) {
               return;
             }
 
-            list.forEach(function (handle) {
+            task.forEach(function (handle) {
               return handle();
             });
             cb();
@@ -3791,18 +3789,22 @@
     }, {
       key: "onFrame",
       value: function onFrame(handle) {
-        this.taskList.push(handle);
+        var task = this.task;
 
-        this.__init();
+        if (!task.length) {
+          this.__init(task);
+        }
+
+        this.task.push(handle);
       }
     }, {
       key: "offFrame",
       value: function offFrame(handle) {
-        var list = this.taskList;
+        var task = this.task;
 
-        for (var i = 0, len = list.length; i < len; i++) {
-          if (list[i] === handle) {
-            list.splice(i, 1);
+        for (var i = 0, len = task.length; i < len; i++) {
+          if (task[i] === handle) {
+            task.splice(i, 1);
             break;
           }
         }
@@ -3820,9 +3822,9 @@
         this.onFrame(cb);
       }
     }, {
-      key: "taskList",
+      key: "task",
       get: function get() {
-        return this.__taskList;
+        return this.__task;
       }
     }]);
 
@@ -6745,9 +6747,17 @@
         });
 
         if (renderMode === mode.SVG) {
+          // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+          var _children = this.children.slice(0);
+
+          sort(_children, function (a, b) {
+            if (b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
+              return true;
+            }
+          });
           this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
             type: 'dom',
-            children: this.children.map(function (item) {
+            children: _children.map(function (item) {
               return item.virtualDom;
             })
           });

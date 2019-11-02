@@ -6,6 +6,7 @@ import util from '../util/util';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
+import sort from '../util/sort';
 import Component from './Component';
 
 const TAG_NAME = {
@@ -1058,10 +1059,17 @@ class Dom extends Xom {
       }
     });
     if(renderMode === mode.SVG) {
+      // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+      let children = this.children.slice(0);
+      sort(children, function(a, b) {
+        if(b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
+          return true;
+        }
+      });
       this.__virtualDom = {
         ...super.virtualDom,
         type: 'dom',
-        children: this.children.map(item => item.virtualDom),
+        children: children.map(item => item.virtualDom),
       };
     }
   }

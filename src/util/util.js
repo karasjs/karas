@@ -8,9 +8,9 @@ function isType(type) {
 let isNumber = isType('Number');
 
 function joinSourceArray(arr) {
-  var res = '';
-  for(var i = 0, len = arr.length; i < len; i++) {
-    var item = arr[i];
+  let res = '';
+  for(let i = 0, len = arr.length; i < len; i++) {
+    let item = arr[i];
     if(Array.isArray(item)) {
       res += joinSourceArray(item);
     }

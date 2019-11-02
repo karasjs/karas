@@ -2,17 +2,16 @@ import inject from '../util/inject';
 
 class Frame {
   constructor() {
-    this.__taskList = [];
+    this.__task = [];
   }
 
-  __init() {
-    let list = this.taskList;
+  __init(task) {
     function cb() {
       inject.requestAnimationFrame(function() {
-        if(!list.length) {
+        if(!task.length) {
           return;
         }
-        list.forEach(handle => handle());
+        task.forEach(handle => handle());
         cb();
       });
     }
@@ -20,15 +19,18 @@ class Frame {
   }
 
   onFrame(handle) {
-    this.taskList.push(handle);
-    this.__init();
+    let { task } = this;
+    if(!task.length) {
+      this.__init(task);
+    }
+    this.task.push(handle);
   }
 
   offFrame(handle) {
-    let list = this.taskList;
-    for(let i = 0, len = list.length; i < len; i++) {
-      if(list[i] === handle) {
-        list.splice(i, 1);
+    let { task } = this;
+    for(let i = 0, len = task.length; i < len; i++) {
+      if(task[i] === handle) {
+        task.splice(i, 1);
         break;
       }
     }
@@ -43,8 +45,8 @@ class Frame {
     this.onFrame(cb);
   }
 
-  get taskList() {
-    return this.__taskList;
+  get task() {
+    return this.__task;
   }
 }
 

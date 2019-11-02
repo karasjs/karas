@@ -25,7 +25,6 @@ class Dom extends Xom {
     this.__flowChildren = []; // 非绝对定位孩子
     this.__absChildren = []; // 绝对定位孩子
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
-    this.__flowY = 0; // 文档流布局结束后的y坐标，供absolute布局默认位置使用
   }
 
   /**
@@ -388,7 +387,6 @@ class Dom extends Xom {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__flowY = y;
     // text-align
     if(['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {
@@ -718,7 +716,6 @@ class Dom extends Xom {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__flowY = y;
     this.__marginAuto(style, data);
   }
 
@@ -837,7 +834,6 @@ class Dom extends Xom {
     // 元素的width不能超过父元素w
     this.__width = fixedWidth ? w : maxX - data.x;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__flowY = y;
     // text-align
     if(['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {
@@ -851,7 +847,7 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container, data) {
-    let { x, y, flowY, width, height, computedStyle } = container;
+    let { x, y, width, height, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       display,
@@ -874,8 +870,7 @@ class Dom extends Xom {
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { style, computedStyle } = item;
-      let { left, top, right, bottom } = computedStyle;
-      let { width: width2, height: height2 } = style;
+      let { left, top, right, bottom, width, height } = computedStyle;
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;
@@ -885,28 +880,28 @@ class Dom extends Xom {
       let fixedLeft;
       if(left !== undefined && left.unit !== unit.AUTO) {
         fixedLeft = true;
-        css.calAbsolute(computedStyle, 'left', left, width);
+        css.calAbsolute(computedStyle, 'left', left, iw);
       }
       else {
         delete computedStyle.left;
       }
       if(right !== undefined && right.unit !== unit.AUTO) {
         fixedRight = true;
-        css.calAbsolute(computedStyle, 'right', right, width);
+        css.calAbsolute(computedStyle, 'right', right, iw);
       }
       else {
         delete computedStyle.right;
       }
       if(top !== undefined && top.unit !== unit.AUTO) {
         fixedTop = true;
-        css.calAbsolute(computedStyle, 'top', top, height);
+        css.calAbsolute(computedStyle, 'top', top, ih);
       }
       else {
         delete computedStyle.top;
       }
       if(bottom !== undefined && bottom.unit !== unit.AUTO) {
         fixedBottom = true;
-        css.calAbsolute(computedStyle, 'bottom', bottom, height);
+        css.calAbsolute(computedStyle, 'bottom', bottom, ih);
       }
       else {
         delete computedStyle.bottom;
@@ -916,54 +911,64 @@ class Dom extends Xom {
         x2 = x + computedStyle.left;
         w2 = x + iw - computedStyle.right - x2;
       }
-      else if(fixedLeft && width2.unit !== unit.AUTO) {
+      else if(fixedLeft && width.unit !== unit.AUTO) {
         x2 = x + computedStyle.left;
-        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+        w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
       }
-      else if(fixedRight && width2.unit !== unit.AUTO) {
-        w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+      else if(fixedRight && width.unit !== unit.AUTO) {
+        w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
         x2 = x + iw - computedStyle.right - w2;
       }
       else if(fixedLeft) {
-        x2 = computedStyle.left;
+        x2 = x + computedStyle.left;
       }
       else if(fixedRight) {
         x2 = x + iw - computedStyle.right;
         onlyRight = true;
       }
-      else if(width2.unit !== unit.AUTO) {
-        x2 = x;
-        w2 = width2.unit === unit.PX ? width2.value : width;
-      }
       else {
-        x2 = x;
+        x2 = x + paddingLeft;
+        if(width.unit !== unit.AUTO) {
+          w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+        }
       }
       // top/bottom/height优先级同上
       if(fixedTop && fixedBottom) {
         y2 = y + computedStyle.top;
         h2 = y + ih - computedStyle.bottom - y2;
       }
-      else if(fixedTop && height2.unit !== unit.AUTO) {
+      else if(fixedTop && height.unit !== unit.AUTO) {
         y2 = y + computedStyle.top;
-        h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+        h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
       }
-      else if(fixedBottom && height2.unit !== unit.AUTO) {
-        h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+      else if(fixedBottom && height.unit !== unit.AUTO) {
+        h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
         y2 = y + ih - computedStyle.bottom - h2;
       }
       else if(fixedTop) {
-        y2 = computedStyle.top;
+        y2 = y + computedStyle.top;
       }
       else if(fixedBottom) {
         y2 = y + ih - computedStyle.bottom;
         onlyBottom = true;
       }
-      else if(height2.unit !== unit.AUTO) {
-        y2 = flowY + marginTop + borderTopWidth;
-        h2 = height2.unit === unit.PX ? height2.value : height;
-      }
+      // 未声明y的找到之前的流布局child，紧随其下
       else {
-        y2 = flowY + marginTop + borderTopWidth;
+        y2 = y;
+        let prev = item.prev;
+        while(prev) {
+          if(prev instanceof Text || prev.computedStyle.position !== 'absolute') {
+            y2 = prev.y + prev.outerHeight;
+            break;
+          }
+          prev = prev.prev;
+        }
+        if(!prev) {
+          y2 = y;
+        }
+        if(height.unit !== unit.AUTO) {
+          h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+        }
       }
       if(w2 !== undefined) {
         computedStyle.width = w2;
@@ -1094,9 +1099,6 @@ class Dom extends Xom {
       return last.y - this.y + last.baseLine;
     }
     return this.y;
-  }
-  get flowY() {
-    return this.__flowY;
   }
 
   static isValid(s) {

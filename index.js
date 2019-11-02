@@ -5589,8 +5589,6 @@
 
       _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
-      _this.__flowY = 0; // 文档流布局结束后的y坐标，供absolute布局默认位置使用
-
       return _this;
     }
     /**
@@ -6003,8 +6001,7 @@
         }
 
         this.__width = w;
-        this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y; // text-align
+        this.__height = fixedHeight ? h : y - data.y; // text-align
 
         if (['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
@@ -6358,7 +6355,6 @@
 
         this.__width = w;
         this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y;
 
         this.__marginAuto(style, data);
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -6498,8 +6494,7 @@
 
 
         this.__width = fixedWidth ? w : maxX - data.x;
-        this.__height = fixedHeight ? h : y - data.y;
-        this.__flowY = y; // text-align
+        this.__height = fixedHeight ? h : y - data.y; // text-align
 
         if (['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
@@ -6517,7 +6512,6 @@
       value: function __layoutAbs(container, data) {
         var x = container.x,
             y = container.y,
-            flowY = container.flowY,
             width = container.width,
             height = container.height,
             computedStyle = container.computedStyle;
@@ -6549,9 +6543,9 @@
           var left = computedStyle.left,
               top = computedStyle.top,
               right = computedStyle.right,
-              bottom = computedStyle.bottom;
-          var width2 = style.width,
-              height2 = style.height;
+              bottom = computedStyle.bottom,
+              width = computedStyle.width,
+              height = computedStyle.height;
           var x2, y2, w2, h2;
           var onlyRight;
           var onlyBottom;
@@ -6562,28 +6556,28 @@
 
           if (left !== undefined && left.unit !== unit.AUTO) {
             fixedLeft = true;
-            css.calAbsolute(computedStyle, 'left', left, width);
+            css.calAbsolute(computedStyle, 'left', left, iw);
           } else {
             delete computedStyle.left;
           }
 
           if (right !== undefined && right.unit !== unit.AUTO) {
             fixedRight = true;
-            css.calAbsolute(computedStyle, 'right', right, width);
+            css.calAbsolute(computedStyle, 'right', right, iw);
           } else {
             delete computedStyle.right;
           }
 
           if (top !== undefined && top.unit !== unit.AUTO) {
             fixedTop = true;
-            css.calAbsolute(computedStyle, 'top', top, height);
+            css.calAbsolute(computedStyle, 'top', top, ih);
           } else {
             delete computedStyle.top;
           }
 
           if (bottom !== undefined && bottom.unit !== unit.AUTO) {
             fixedBottom = true;
-            css.calAbsolute(computedStyle, 'bottom', bottom, height);
+            css.calAbsolute(computedStyle, 'bottom', bottom, ih);
           } else {
             delete computedStyle.bottom;
           } // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
@@ -6592,45 +6586,62 @@
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle.left;
             w2 = x + iw - computedStyle.right - x2;
-          } else if (fixedLeft && width2.unit !== unit.AUTO) {
+          } else if (fixedLeft && width.unit !== unit.AUTO) {
             x2 = x + computedStyle.left;
-            w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
-          } else if (fixedRight && width2.unit !== unit.AUTO) {
-            w2 = width2.unit === unit.PX ? width2.value : width * width2.value * 0.01;
+            w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+          } else if (fixedRight && width.unit !== unit.AUTO) {
+            w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
             x2 = x + iw - computedStyle.right - w2;
           } else if (fixedLeft) {
-            x2 = computedStyle.left;
+            x2 = x + computedStyle.left;
           } else if (fixedRight) {
             x2 = x + iw - computedStyle.right;
             onlyRight = true;
-          } else if (width2.unit !== unit.AUTO) {
-            x2 = x;
-            w2 = width2.unit === unit.PX ? width2.value : width;
           } else {
-            x2 = x;
+            x2 = x + paddingLeft;
+
+            if (width.unit !== unit.AUTO) {
+              w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+            }
           } // top/bottom/height优先级同上
 
 
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle.top;
             h2 = y + ih - computedStyle.bottom - y2;
-          } else if (fixedTop && height2.unit !== unit.AUTO) {
+          } else if (fixedTop && height.unit !== unit.AUTO) {
             y2 = y + computedStyle.top;
-            h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
-          } else if (fixedBottom && height2.unit !== unit.AUTO) {
-            h2 = height2.unit === unit.PX ? height2.value : height * height2.value * 0.01;
+            h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+          } else if (fixedBottom && height.unit !== unit.AUTO) {
+            h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
             y2 = y + ih - computedStyle.bottom - h2;
           } else if (fixedTop) {
-            y2 = computedStyle.top;
+            y2 = y + computedStyle.top;
           } else if (fixedBottom) {
             y2 = y + ih - computedStyle.bottom;
             onlyBottom = true;
-          } else if (height2.unit !== unit.AUTO) {
-            y2 = flowY + marginTop + borderTopWidth;
-            h2 = height2.unit === unit.PX ? height2.value : height;
-          } else {
-            y2 = flowY + marginTop + borderTopWidth;
-          }
+          } // 未声明y的找到之前的流布局child，紧随其下
+          else {
+              y2 = y;
+              var prev = item.prev;
+
+              while (prev) {
+                if (prev instanceof Text || prev.computedStyle.position !== 'absolute') {
+                  y2 = prev.y + prev.outerHeight;
+                  break;
+                }
+
+                prev = prev.prev;
+              }
+
+              if (!prev) {
+                y2 = y;
+              }
+
+              if (height.unit !== unit.AUTO) {
+                h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+              }
+            }
 
           if (w2 !== undefined) {
             computedStyle.width = w2;
@@ -6791,11 +6802,6 @@
         }
 
         return this.y;
-      }
-    }, {
-      key: "flowY",
-      get: function get() {
-        return this.__flowY;
       }
     }], [{
       key: "isValid",

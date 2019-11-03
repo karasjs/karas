@@ -74,6 +74,11 @@ function stringify(style, target) {
       }
     }
   });
+  for(let i in style) {
+    if(style.hasOwnProperty(i)) {
+      animateStyle[i] = style[i];
+    }
+  }
 }
 
 // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
@@ -94,7 +99,8 @@ function framing(current) {
   };
 }
 
-function calDiff(prev, next, k) {
+// 计算两帧之间的差，必须都含有某个属性，单位不同的以后面为准
+function calDiff(prev, next, k, target) {
   if(!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
     return;
   }
@@ -129,7 +135,16 @@ function calDiff(prev, next, k) {
     ];
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
-    res.v = next[k] - prev[k];
+    let p = prev[k];
+    let n = next[k];
+    if(p.unit === n.unit && [unit.PX, unit.PERCENT].indexOf(p.unit) > -1) {
+      res.v = n.value - p.value;
+    }
+    else if(p.unit === unit.PX && n.unit === unit.PERCENT) {}
+    else if(p.unit === unit.PERCENT && n.unit === unit.PX) {}
+    else {
+      return;
+    }
   }
   else {
     return;
@@ -137,10 +152,10 @@ function calDiff(prev, next, k) {
   return res;
 }
 
-function calFrame(prev, current) {
+function calFrame(prev, current, target) {
   let next = framing(current);
   next.keys.forEach(k => {
-    let ts = calDiff(prev.style, next.style, k);
+    let ts = calDiff(prev.style, next.style, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
       prev.transition.push(ts);
@@ -197,7 +212,7 @@ function calStyle(frame, percent) {
       item[3] += v[3] * percent;
     }
     else if(LENGTH_HASH.hasOwnProperty(k)) {
-      style[k] += v * percent;
+      style[k].value += v * percent;
     }
   });
   return style;
@@ -226,15 +241,17 @@ class Animation extends Event {
 
   __init() {
     let { target } = this;
-    let style = target.__animateStyle = util.clone(target.style);
-    style = util.clone(style);
+    let style = util.clone(target.style);
     // 没设置时间或非法时间或0，动画过程为空无需执行
     let duration = parseFloat(this.options.duration);
     if(isNaN(duration) || duration <= 0) {
       return;
     }
-    let list = this.list;
+    target.__animateStyle = util.clone(style);
+    // 转化style为计算后的绝对值结果
+    color2array(style);
     // 过滤时间非法的，过滤后续offset<=前面的
+    let list = this.list;
     let offset = -1;
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
@@ -296,8 +313,6 @@ class Animation extends Event {
         i = j;
       }
     }
-    // 转化style为计算后的绝对值结果
-    color2array(style);
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
     let length = list.length;
@@ -307,7 +322,7 @@ class Animation extends Event {
     frames.push(prev);
     for(let i = 1; i < length; i++) {
       let next = list[i];
-      prev = calFrame(prev, next);
+      prev = calFrame(prev, next, target);
       frames.push(prev);
     }
   }

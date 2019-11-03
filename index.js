@@ -3904,6 +3904,12 @@
         }
       }
     });
+
+    for (var i in style) {
+      if (style.hasOwnProperty(i)) {
+        animateStyle[i] = style[i];
+      }
+    }
   } // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
 
 
@@ -3924,9 +3930,10 @@
       keys: keys,
       transition: []
     };
-  }
+  } // 计算两帧之间的差，必须都含有某个属性，单位不同的以后面为准
 
-  function calDiff(prev, next, k) {
+
+  function calDiff(prev, next, k, target) {
     if (!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
       return;
     }
@@ -3959,7 +3966,14 @@
       var n = next[k];
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
-      res.v = next[k] - prev[k];
+      var _p = prev[k];
+      var _n = next[k];
+
+      if (_p.unit === _n.unit && [unit.PX, unit.PERCENT].indexOf(_p.unit) > -1) {
+        res.v = _n.value - _p.value;
+      } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) ; else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) ; else {
+        return;
+      }
     } else {
       return;
     }
@@ -3967,7 +3981,7 @@
     return res;
   }
 
-  function calFrame(prev, current) {
+  function calFrame(prev, current, target) {
     var next = framing(current);
     next.keys.forEach(function (k) {
       var ts = calDiff(prev.style, next.style, k); // 可以形成过渡的才会产生结果返回
@@ -4030,7 +4044,7 @@
           _item3[2] += v[2] * percent;
           _item3[3] += v[3] * percent;
         } else if (LENGTH_HASH.hasOwnProperty(k)) {
-          style[k] += v * percent;
+          style[k].value += v * percent;
         }
     });
     return style;
@@ -4074,8 +4088,7 @@
       key: "__init",
       value: function __init() {
         var target = this.target;
-        var style = target.__animateStyle = util.clone(target.style);
-        style = util.clone(style); // 没设置时间或非法时间或0，动画过程为空无需执行
+        var style = util.clone(target.style); // 没设置时间或非法时间或0，动画过程为空无需执行
 
         var duration = parseFloat(this.options.duration);
 
@@ -4083,8 +4096,11 @@
           return;
         }
 
-        var list = this.list; // 过滤时间非法的，过滤后续offset<=前面的
+        target.__animateStyle = util.clone(style); // 转化style为计算后的绝对值结果
 
+        color2array(style); // 过滤时间非法的，过滤后续offset<=前面的
+
+        var list = this.list;
         var offset = -1;
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -4151,10 +4167,8 @@
 
             _i = j;
           }
-        } // 转化style为计算后的绝对值结果
+        } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
-
-        color2array(style); // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
         var frames = this.frames;
         var length = list.length;

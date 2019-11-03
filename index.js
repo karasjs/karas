@@ -3898,9 +3898,9 @@
         var v = style[k];
 
         if (v[3] === 1) {
-          animateStyle[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+          style[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
         } else {
-          animateStyle[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+          style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
         }
       }
     });

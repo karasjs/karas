@@ -68,9 +68,9 @@ function stringify(style, target) {
     if(style.hasOwnProperty(k)) {
       let v = style[k];
       if(v[3] === 1) {
-        animateStyle[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
+        style[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
       } else {
-        animateStyle[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+        style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
       }
     }
   });

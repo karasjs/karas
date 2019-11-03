@@ -175,7 +175,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, currentStyle } = this;
+    let { flowChildren, currentStyle, computedStyle } = this;
     // 计算需考虑style的属性
     let {
       width,
@@ -188,11 +188,13 @@ class Dom extends Xom {
       paddingTop,
       paddingRight,
       paddingBottom,
+    } = currentStyle;
+    let {
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = currentStyle;
+    } = computedStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit === unit.PX) {
       b = max = main.value;

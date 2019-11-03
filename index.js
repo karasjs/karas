@@ -5870,7 +5870,8 @@
         var min = 0;
         var max = 0;
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle; // 计算需考虑style的属性
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle; // 计算需考虑style的属性
 
         var width = currentStyle.width,
             height = currentStyle.height,
@@ -5881,11 +5882,11 @@
             paddingLeft = currentStyle.paddingLeft,
             paddingTop = currentStyle.paddingTop,
             paddingRight = currentStyle.paddingRight,
-            paddingBottom = currentStyle.paddingBottom,
-            borderTopWidth = currentStyle.borderTopWidth,
-            borderRightWidth = currentStyle.borderRightWidth,
-            borderBottomWidth = currentStyle.borderBottomWidth,
-            borderLeftWidth = currentStyle.borderLeftWidth;
+            paddingBottom = currentStyle.paddingBottom;
+        var borderTopWidth = computedStyle.borderTopWidth,
+            borderRightWidth = computedStyle.borderRightWidth,
+            borderBottomWidth = computedStyle.borderBottomWidth,
+            borderLeftWidth = computedStyle.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
         if (main.unit === unit.PX) {

@@ -190,25 +190,35 @@ class Xom extends Node {
     if(currentStyle.position === 'relative' && this.parent) {
       let { top, right, bottom, left } = currentStyle;
       let { parent } = this;
-      if(top !== undefined && top.unit !== unit.AUTO) {
+      if(top.unit !== unit.AUTO) {
         let n = css.calRelative(currentStyle, 'top', top, parent);
         this.__offsetY(n);
+        computedStyle.top = n;
         computedStyle.bottom = 'auto';
       }
-      else if(bottom !== undefined && bottom.unit !== unit.AUTO) {
+      else if(bottom.unit !== unit.AUTO) {
         let n = css.calRelative(currentStyle, 'bottom', bottom, parent);
         this.__offsetY(-n);
+        computedStyle.bottom = n;
         computedStyle.top = 'auto';
       }
-      if(left !== undefined && left.unit !== unit.AUTO) {
+      else {
+        computedStyle.top = computedStyle.bottom = 'auto';
+      }
+      if(left.unit !== unit.AUTO) {
         let n = css.calRelative(currentStyle, 'left', left, parent, true);
         this.__offsetX(n);
+        computedStyle.left = n;
         computedStyle.right = 'auto';
       }
-      else if(right !== undefined && right.unit !== unit.AUTO) {
+      else if(right.unit !== unit.AUTO) {
         let n = css.calRelative(currentStyle, 'right', right, parent, true);
         this.__offsetX(-n);
+        computedStyle.right = n;
         computedStyle.left = 'auto';
+      }
+      else {
+        computedStyle.left = computedStyle.right = 'auto';
       }
     }
     // 计算结果存入computedStyle

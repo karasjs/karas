@@ -269,10 +269,10 @@ class Dom extends Xom {
 
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data) {
-    let { flowChildren, currentStyle, lineGroups } = this;
+    let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
     let {
       textAlign,
-    } = currentStyle;
+    } = computedStyle;
     let { fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
@@ -720,10 +720,10 @@ class Dom extends Xom {
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
-    let { flowChildren, currentStyle, lineGroups } = this;
+    let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
     let {
       textAlign,
-    } = currentStyle;
+    } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     let maxX = x;
     // 递归布局，将inline的节点组成lineGroup一行

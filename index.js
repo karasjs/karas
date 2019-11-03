@@ -4606,32 +4606,40 @@
               left = currentStyle.left;
           var parent = this.parent;
 
-          if (top !== undefined && top.unit !== unit.AUTO) {
+          if (top.unit !== unit.AUTO) {
             var n = css.calRelative(currentStyle, 'top', top, parent);
 
             this.__offsetY(n);
 
+            computedStyle.top = n;
             computedStyle.bottom = 'auto';
-          } else if (bottom !== undefined && bottom.unit !== unit.AUTO) {
+          } else if (bottom.unit !== unit.AUTO) {
             var _n = css.calRelative(currentStyle, 'bottom', bottom, parent);
 
             this.__offsetY(-_n);
 
+            computedStyle.bottom = _n;
             computedStyle.top = 'auto';
+          } else {
+            computedStyle.top = computedStyle.bottom = 'auto';
           }
 
-          if (left !== undefined && left.unit !== unit.AUTO) {
+          if (left.unit !== unit.AUTO) {
             var _n2 = css.calRelative(currentStyle, 'left', left, parent, true);
 
             this.__offsetX(_n2);
 
+            computedStyle.left = _n2;
             computedStyle.right = 'auto';
-          } else if (right !== undefined && right.unit !== unit.AUTO) {
+          } else if (right.unit !== unit.AUTO) {
             var _n3 = css.calRelative(currentStyle, 'right', right, parent, true);
 
             this.__offsetX(-_n3);
 
+            computedStyle.right = _n3;
             computedStyle.left = 'auto';
+          } else {
+            computedStyle.left = computedStyle.right = 'auto';
           }
         } // 计算结果存入computedStyle
 
@@ -5973,8 +5981,9 @@
       value: function __layoutBlock(data) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
-        var textAlign = currentStyle.textAlign;
+        var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout = this.__preLayout(data),
             fixedHeight = _this$__preLayout.fixedHeight,
@@ -6470,8 +6479,9 @@
 
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
-        var textAlign = currentStyle.textAlign;
+        var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout3 = this.__preLayout(data),
             fixedWidth = _this$__preLayout3.fixedWidth,

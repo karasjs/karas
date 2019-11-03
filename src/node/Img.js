@@ -63,20 +63,12 @@ class Img extends Dom {
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
-        currentStyle.height = {
-          value: cache.height,
-          unit: unit.PX,
-        };
         currentStyle.width = {
           value: h * cache.width / cache.height,
           unit: unit.PX,
         };
       }
       else if(height.unit === unit.AUTO) {
-        currentStyle.width = {
-          value: cache.width,
-          unit: unit.PX,
-        };
         currentStyle.height = {
           value: w * cache.height / cache.width,
           unit: unit.PX,

@@ -374,13 +374,14 @@ class Animation extends Event {
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
             if(i === length - 1) {
+              this.__playState = 'finished';
               // 停留在最后一帧，触发finish
               if(['forwards', 'both'].indexOf(fill) > -1) {
-                this.__playState = 'finished';
                 this.emit(Event.KARAS_ANIMATION_FINISH);
               }
               // 恢复初始，再刷新一帧，触发finish
               else {
+                target.__computed();
                 let task = this.__task = () => {
                   this.__playState = 'finished';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
@@ -440,8 +441,10 @@ class Animation extends Event {
     frame.offFrame(this.cb);
     this.__cancelTask();
     this.__playState = 'idle';
-    let root = this.target.root;
+    let { target } = this;
+    let root = target.root;
     if(root) {
+      target.__computed();
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };

@@ -17,7 +17,12 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-input.value = t.computedStyle.strokeWidth;
+let n = 0;
+animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+  if(n++ === 0) {
+    input.value = t.computedStyle.strokeWidth;
+  }
+});
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   input.value += '/' + t.computedStyle.strokeWidth;
 });

@@ -4240,13 +4240,14 @@
                 _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
                 if (i === length - 1) {
-                  // 停留在最后一帧，触发finish
-                  if (['forwards', 'both'].indexOf(fill) > -1) {
-                    _this2.__playState = 'finished';
+                  _this2.__playState = 'finished'; // 停留在最后一帧，触发finish
 
+                  if (['forwards', 'both'].indexOf(fill) > -1) {
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
                   } // 恢复初始，再刷新一帧，触发finish
                   else {
+                      target.__computed();
+
                       var _task = _this2.__task = function () {
                         _this2.__playState = 'finished';
 
@@ -4329,9 +4330,12 @@
         this.__cancelTask();
 
         this.__playState = 'idle';
-        var root = this.target.root;
+        var target = this.target;
+        var root = target.root;
 
         if (root) {
+          target.__computed();
+
           var task = this.__task = function () {
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
           };

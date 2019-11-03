@@ -1,3 +1,5 @@
+import util from './util';
+
 class Event {
   constructor() {
     this.__eHash = {};
@@ -24,6 +26,9 @@ class Event {
     return self;
   }
   once(id, handle) {
+    if(!util.isFunction(handle)) {
+      return;
+    }
     let self = this;
     function cb(...data) {
       handle.apply(self, data);
@@ -75,7 +80,10 @@ class Event {
         if(list.length) {
           list = list.slice();
           for(let i = 0, len = list.length; i < len; i++) {
-            list[i].apply(self, data);
+            let cb = list[i];
+            if(util.isFunction(cb)) {
+              cb.apply(self, data);
+            }
           }
         }
       }

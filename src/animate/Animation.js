@@ -256,13 +256,11 @@ class Animation extends Event {
         else {
           offset = current.offset;
           css.normalize(current, true);
-          // css.computedAnimate(target, current, style, target.isRoot());
           color2array(current);
         }
       }
       else {
         css.normalize(current, true);
-        // css.computedAnimate(target, current, style, target.isRoot());
         color2array(current);
       }
     }
@@ -363,13 +361,13 @@ class Animation extends Event {
             if(i === length - 1) {
               // 停留在最后一帧，触发finish
               if(['forwards', 'both'].indexOf(fill) > -1) {
-                this.__playState = 'idle';
+                this.__playState = 'finished';
                 this.emit(Event.KARAS_ANIMATION_FINISH);
               }
               // 恢复初始，再刷新一帧，触发finish
               else {
                 let task = this.__task = () => {
-                  this.__playState = 'idle';
+                  this.__playState = 'finished';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
                 };
                 root.refreshTask(task);
@@ -401,13 +399,19 @@ class Animation extends Event {
     let { fill } = this.options;
     frame.offFrame(this.cb);
     this.__cancelTask();
-    this.__playState = 'finished';
-    let root = this.target.root;
+    let { target } = this;
+    let root = target.root;
     if(root) {
       // 停留在最后一帧
       if(['forwards', 'both'].indexOf(fill) > -1) {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, this.target);
+        target.__computed();
+        this.__playState = 'finished';
+      }
+      else {
+        this.__playState = 'finished';
+        target.__computed();
       }
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FINISH);

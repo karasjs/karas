@@ -801,7 +801,7 @@ class Xom extends Node {
     return this.__animateStyle;
   }
   get currentStyle() {
-    return this.animation && this.animation.playState !== 'idle' ? this.animateStyle : this.style;
+    return this.animation && ['idle', 'finished'].indexOf(this.animation.playState) === -1 ? this.animateStyle : this.style;
   }
 }
 

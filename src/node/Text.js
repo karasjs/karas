@@ -67,8 +67,8 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, currentStyle, charWidthList } = this;
-    let key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
+    let { content, computedStyle, charWidthList } = this;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {

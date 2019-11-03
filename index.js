@@ -2875,9 +2875,9 @@
       key: "__measureCb",
       value: function __measureCb() {
         var content = this.content,
-            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
             charWidthList = this.charWidthList;
-        var key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
+        var key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
         var cache = Text.CHAR_WIDTH_CACHE[key];
         var sum = 0;
 
@@ -3399,6 +3399,10 @@
     }, {
       key: "once",
       value: function once(id, handle) {
+        if (!util.isFunction(handle)) {
+          return;
+        }
+
         var self = this;
 
         function cb() {
@@ -3466,7 +3470,11 @@
               list = list.slice();
 
               for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
-                list[_i3].apply(self, data);
+                var cb = list[_i3];
+
+                if (util.isFunction(cb)) {
+                  cb.apply(self, data);
+                }
               }
             }
           }
@@ -4097,13 +4105,11 @@
               } // 正常的标准化样式
               else {
                   offset = current.offset;
-                  css.normalize(current, true); // css.computedAnimate(target, current, style, target.isRoot());
-
+                  css.normalize(current, true);
                   color2array(current);
                 }
           } else {
-            css.normalize(current, true); // css.computedAnimate(target, current, style, target.isRoot());
-
+            css.normalize(current, true);
             color2array(current);
           }
         } // 必须有2帧及以上描述
@@ -4227,13 +4233,13 @@
                 if (i === length - 1) {
                   // 停留在最后一帧，触发finish
                   if (['forwards', 'both'].indexOf(fill) > -1) {
-                    _this2.__playState = 'idle';
+                    _this2.__playState = 'finished';
 
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
                   } // 恢复初始，再刷新一帧，触发finish
                   else {
                       var _task = _this2.__task = function () {
-                        _this2.__playState = 'idle';
+                        _this2.__playState = 'finished';
 
                         _this2.emit(Event.KARAS_ANIMATION_FINISH);
                       };
@@ -4277,14 +4283,22 @@
 
         this.__cancelTask();
 
-        this.__playState = 'finished';
-        var root = this.target.root;
+        var target = this.target;
+        var root = target.root;
 
         if (root) {
           // 停留在最后一帧
           if (['forwards', 'both'].indexOf(fill) > -1) {
             var last = this.frames[this.frames.length - 1];
             stringify$1(last.style, this.target);
+
+            target.__computed();
+
+            this.__playState = 'finished';
+          } else {
+            this.__playState = 'finished';
+
+            target.__computed();
           }
 
           var task = this.__task = function () {
@@ -5267,7 +5281,7 @@
     }, {
       key: "currentStyle",
       get: function get() {
-        return this.animation && this.animation.playState !== 'idle' ? this.animateStyle : this.style;
+        return this.animation && ['idle', 'finished'].indexOf(this.animation.playState) === -1 ? this.animateStyle : this.style;
       }
     }]);
 

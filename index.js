@@ -6716,11 +6716,17 @@
             }
 
           if (w2 !== undefined) {
-            computedStyle.width = w2;
+            currentStyle.width = {
+              value: w2,
+              unit: unit.PX
+            };
           }
 
           if (h2 !== undefined) {
-            computedStyle.height = h2;
+            currentStyle.height = {
+              value: h2,
+              unit: unit.PX
+            };
           } // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
 
 

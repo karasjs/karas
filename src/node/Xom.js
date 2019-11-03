@@ -9,6 +9,7 @@ import css from '../style/css';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
+import Text from "./Text";
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -44,6 +45,23 @@ function renderBorder(renderMode, points, color, ctx, xom) {
       ['fill', color],
     ]);
   }
+}
+
+function borderWidth(computedStyle, currentStyle) {
+  [
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth'
+  ].forEach(k => {
+    let v = currentStyle[k];
+    if(v.unit === unit.PX) {
+      computedStyle[k] = v.value;
+    }
+    else {
+      computedStyle[k] = 0
+    }
+  });
 }
 
 class Xom extends Node {
@@ -83,6 +101,8 @@ class Xom extends Node {
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animation = null;
+    this.__style = {}; // style被解析后的k-v形式
+    this.__animateStyle = {}; // 动画过程中的样式
   }
 
   // 设置了css时，解析匹配
@@ -103,9 +123,26 @@ class Xom extends Node {
     }
   }
 
+  __measure() {
+    let { children } = this;
+    if(children) {
+      children.forEach(child => {
+        if(child instanceof Xom) {
+          child.__measure();
+        }
+        else if(child instanceof Component) {
+          child.shadowRoot.__measure();
+        }
+        else {
+          child.__measure();
+        }
+      });
+    }
+  }
+
   __layout(data) {
     let { w } = data;
-    let { isDestroyed, computedStyle } = this;
+    let { isDestroyed, currentStyle, computedStyle } = this;
     let {
       display,
       width,
@@ -117,7 +154,7 @@ class Xom extends Node {
       paddingRight,
       paddingBottom,
       paddingLeft,
-    } = computedStyle;
+    } = currentStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -139,6 +176,7 @@ class Xom extends Node {
     computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
     computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
     computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
+    borderWidth(computedStyle, currentStyle);
     this.__ox = this.__oy = 0;
     this.__matrix = this.__matrixEvent = null;
     if(display === 'block') {
@@ -151,28 +189,28 @@ class Xom extends Node {
       this.__layoutInline(data);
     }
     // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(computedStyle.position === 'relative' && this.parent) {
-      let { top, right, bottom, left } = computedStyle;
+    if(currentStyle.position === 'relative' && this.parent) {
+      let { top, right, bottom, left } = currentStyle;
       let { parent } = this;
       if(top !== undefined && top.unit !== unit.AUTO) {
-        let n = css.calRelative(computedStyle, 'top', top, parent);
+        let n = css.calRelative(currentStyle, 'top', top, parent);
         this.__offsetY(n);
-        delete computedStyle.bottom;
+        computedStyle.bottom = 'auto';
       }
       else if(bottom !== undefined && bottom.unit !== unit.AUTO) {
-        let n = css.calRelative(computedStyle, 'bottom', bottom, parent);
+        let n = css.calRelative(currentStyle, 'bottom', bottom, parent);
         this.__offsetY(-n);
-        delete computedStyle.top;
+        computedStyle.top = 'auto';
       }
       if(left !== undefined && left.unit !== unit.AUTO) {
-        let n = css.calRelative(computedStyle, 'left', left, parent, true);
+        let n = css.calRelative(currentStyle, 'left', left, parent, true);
         this.__offsetX(n);
-        delete computedStyle.right;
+        computedStyle.right = 'auto';
       }
       else if(right !== undefined && right.unit !== unit.AUTO) {
-        let n = css.calRelative(computedStyle, 'right', right, parent, true);
+        let n = css.calRelative(currentStyle, 'right', right, parent, true);
         this.__offsetX(-n);
-        delete computedStyle.left;
+        computedStyle.left = 'auto';
       }
     }
     // 计算结果存入computedStyle
@@ -188,12 +226,9 @@ class Xom extends Node {
     return !this.parent;
   }
 
-  // 获取margin/padding的实际值，当动画执行时，mp可能为computedStyle，此时已经计算好直接返回
+  // 获取margin/padding的实际值
   __mpWidth(mp, w) {
-    if(util.isNumber(mp)) {
-      return mp;
-    }
-    else if(mp.unit === unit.PX) {
+    if(mp.unit === unit.PX) {
       return mp.value;
     }
     else if(mp.unit === unit.PERCENT) {
@@ -207,10 +242,12 @@ class Xom extends Node {
     let { x, y, w, h } = data;
     this.__x = x;
     this.__y = y;
-    let { computedStyle } = this;
+    let { currentStyle, computedStyle } = this;
     let {
       width,
       height,
+    } = currentStyle;
+    let {
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -227,11 +264,7 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(util.isNumber(width)) {
-      fixedWidth = true;
-      w = width;
-    }
-    else if(width.unit !== unit.AUTO) {
+    if(width.unit !== unit.AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case unit.PX:
@@ -242,11 +275,7 @@ class Xom extends Node {
           break;
       }
     }
-    if(util.isNumber(height)) {
-      fixedHeight = true;
-      h = height;
-    }
-    else if(height.unit !== unit.AUTO) {
+    if(height.unit !== unit.AUTO) {
       fixedHeight = true;
       switch(height.unit) {
         case unit.PX:
@@ -287,7 +316,7 @@ class Xom extends Node {
         transform: [],
       };
     }
-    let { isDestroyed, ctx, computedStyle, width, height } = this;
+    let { isDestroyed, ctx, currentStyle, computedStyle, width, height } = this;
     let parent = this.parent;
     let matrix = [1, 0, 0, 1, 0, 0];
     while(parent) {
@@ -696,16 +725,19 @@ class Xom extends Node {
     return animation.play();
   }
 
-  __animateStyle(ns) {
-    let { style, computedStyle } = this;
-    for(let i in ns) {
-      if(ns.hasOwnProperty(i)) {
-        computedStyle[i] = ns[i];
-      }
-    }
-    // lineHeight除非是固定，否则也要随着fontSize变化
-    if(!ns.hasOwnProperty('lineHeight')) {
-      css.calLineHeight(this, style.lineHeight, computedStyle);
+  __computed() {
+    css.computed(this, this.isRoot());
+    if(!this.isGeom()) {
+      this.children.forEach(item => {
+        if(item instanceof Xom || item instanceof Component) {
+          item.__computed();
+        }
+        else {
+          css.computed(item);
+          // 文字首先测量所有字符宽度
+          item.__measure();
+        }
+      });
     }
   }
 
@@ -766,6 +798,12 @@ class Xom extends Node {
   }
   get animation() {
     return this.__animation;
+  }
+  get animateStyle() {
+    return this.__animateStyle;
+  }
+  get currentStyle() {
+    return this.animation && this.animation.playState !== 'idle' ? this.animateStyle : this.style;
   }
 }
 

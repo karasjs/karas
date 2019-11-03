@@ -61,19 +61,19 @@ function color2array(style) {
   });
 }
 
-// 反向将颜色数组转换为css模式
-function stringify(style) {
+// 反向将颜色数组转换为css模式，同时计算target及其孩子的computedStyle
+function stringify(style, target) {
+  let animateStyle = target.animateStyle;
   KEY_COLOR.forEach(k => {
     if(style.hasOwnProperty(k)) {
       let v = style[k];
       if(v[3] === 1) {
-        style[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
+        animateStyle[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
       } else {
-        style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+        animateStyle[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
       }
     }
   });
-  return style;
 }
 
 // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
@@ -219,13 +219,15 @@ class Animation extends Event {
     this.__offsetTime = 0;
     this.__pauseTime = 0;
     this.__pending = false;
+    this.__playState = 'idle';
     this.__cb = null;
     this.__init();
   }
 
   __init() {
-    let origin = util.clone(this.target.computedStyle);
-    this.__origin = util.clone(origin);
+    let { target } = this;
+    let style = target.__animateStyle = util.clone(target.style);
+    style = util.clone(style);
     // 没设置时间或非法时间或0，动画过程为空无需执行
     let duration = parseFloat(this.options.duration);
     if(isNaN(duration) || duration <= 0) {
@@ -254,13 +256,13 @@ class Animation extends Event {
         else {
           offset = current.offset;
           css.normalize(current, true);
-          css.computedAnimate(this.target, current, origin, this.target.isRoot());
+          // css.computedAnimate(target, current, style, target.isRoot());
           color2array(current);
         }
       }
       else {
         css.normalize(current, true);
-        css.computedAnimate(this.target, current, origin, this.target.isRoot());
+        // css.computedAnimate(target, current, style, target.isRoot());
         color2array(current);
       }
     }
@@ -297,7 +299,7 @@ class Animation extends Event {
       }
     }
     // 转化style为计算后的绝对值结果
-    color2array(origin);
+    color2array(style);
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
     let length = list.length;
@@ -314,6 +316,7 @@ class Animation extends Event {
 
   play() {
     this.__cancelTask();
+    this.__playState = 'running';
     // 从头播放还是暂停继续
     if(this.pending) {
       let now = inject.now();
@@ -324,7 +327,7 @@ class Animation extends Event {
     }
     else {
       let { duration, fill } = this.options;
-      let frames = this.frames;
+      let { frames, target } = this;
       let length = frames.length;
       let first = true;
       this.__cb = () => {
@@ -334,13 +337,13 @@ class Animation extends Event {
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
           });
+          first = false;
         }
-        first = false;
         let i = binarySearch(0, frames.length - 1,now + this.offsetTime, frames);
         let current = frames[i];
         // 最后一帧结束动画
         if(i === length - 1) {
-          this.target.__animateStyle(stringify(current.style));
+          stringify(current.style, target);
           frame.offFrame(this.cb);
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -349,21 +352,24 @@ class Animation extends Event {
           let diff = now - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
-          this.target.__animateStyle(stringify(style));
+          stringify(style, target);
         }
-        let root = this.target.root;
+        let root = target.root;
         if(root) {
+          // 可能涉及字号变化，引发布局变更重新测量
+          target.__computed();
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
             if(i === length - 1) {
               // 停留在最后一帧，触发finish
               if(['forwards', 'both'].indexOf(fill) > -1) {
+                this.__playState = 'idle';
                 this.emit(Event.KARAS_ANIMATION_FINISH);
               }
               // 恢复初始，再刷新一帧，触发finish
               else {
-                this.target.__animateStyle(this.__origin);
                 let task = this.__task = () => {
+                  this.__playState = 'idle';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
                 };
                 root.refreshTask(task);
@@ -373,9 +379,9 @@ class Animation extends Event {
           root.refreshTask(task);
         }
       };
-      // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
-      this.cb();
     }
+    // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
+    this.cb();
     frame.onFrame(this.cb);
     this.__pending = false;
     return this;
@@ -384,6 +390,7 @@ class Animation extends Event {
   pause() {
     this.__pending = true;
     this.__pauseTime = inject.now();
+    this.__playState = 'paused';
     frame.offFrame(this.cb);
     this.__cancelTask();
     this.emit(Event.KARAS_ANIMATION_PAUSE);
@@ -394,15 +401,13 @@ class Animation extends Event {
     let { fill } = this.options;
     frame.offFrame(this.cb);
     this.__cancelTask();
+    this.__playState = 'finished';
     let root = this.target.root;
     if(root) {
       // 停留在最后一帧
       if(['forwards', 'both'].indexOf(fill) > -1) {
         let last = this.frames[this.frames.length - 1];
-        this.target.__animateStyle(stringify(last.style));
-      }
-      else {
-        this.target.__animateStyle(this.__origin);
+        stringify(last.style, this.target);
       }
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FINISH);
@@ -415,9 +420,9 @@ class Animation extends Event {
   cancel() {
     frame.offFrame(this.cb);
     this.__cancelTask();
+    this.__playState = 'idle';
     let root = this.target.root;
-    if(this.__origin && root) {
-      this.target.__animateStyle(this.__origin);
+    if(root) {
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };
@@ -460,6 +465,9 @@ class Animation extends Event {
   }
   get pauseTime() {
     return this.__pauseTime;
+  }
+  get playState() {
+    return this.__playState;
   }
   get cb() {
     return this.__cb;

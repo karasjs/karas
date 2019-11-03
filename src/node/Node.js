@@ -11,8 +11,7 @@ class Node {
     this.__ctx = null; // canvas的context
     this.__defs = null; // svg的defs
     this.__parent = null;
-    this.__style = {}; // style被解析后的k-v形式
-    this.__computedStyle = {};
+    this.__computedStyle = {}; // 计算为绝对值的样式
     this.__baseLine = 0;
     this.__virtualDom = {};
     this.__host = null;

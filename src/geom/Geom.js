@@ -27,7 +27,7 @@ class Geom extends Xom {
 
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
-    let { computedStyle: { width } } = this;
+    let { currentStyle: { width } } = this;
     if(width.unit === unit.PX) {
       return w - width.value;
     }
@@ -37,15 +37,17 @@ class Geom extends Xom {
     return w;
   }
 
-  __calAutoBasis(isDirectionRow, w, h) {
+  __calAutoBasis(isDirectionRow) {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { computedStyle } = this;
+    let { currentStyle, computedStyle } = this;
     // 计算需考虑style的属性
     let {
       width,
       height,
+    } = currentStyle;
+    let {
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
@@ -77,7 +79,7 @@ class Geom extends Xom {
       marginLeft,
       marginRight,
       width,
-    } = this.computedStyle;
+    } = this.currentStyle;
     this.__width = w;
     this.__height = fixedHeight ? h : 0;
     // 处理margin:xx auto居中对齐

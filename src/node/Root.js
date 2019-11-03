@@ -186,50 +186,20 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode, style, computedStyle } = this;
-    let {
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft
-    } = computedStyle;
+    let { renderMode, currentStyle } = this;
     // 根元素特殊处理
-    computedStyle.marginTop = computedStyle.marginRight = computedStyle.marginBottom = computedStyle.marginLeft = 0;
-    computedStyle.width = this.width;
-    computedStyle.height = this.height;
-    computedStyle.top = computedStyle.right = computedStyle.bottom = computedStyle.left = 0;
-    style.width = {
+    currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = {
+      value: 0,
+      unit: unit.PX,
+    };
+    currentStyle.width = {
       value: this.width,
       unit: unit.PX,
     };
-    style.height = {
+    currentStyle.height = {
       value: this.height,
       unit: unit.PX,
     };
-    if(paddingTop.unit === unit.PX) {
-      computedStyle.paddingTop = Math.max(0, paddingTop.value);
-    }
-    else if(paddingTop.unit === unit.PERCENT) {
-      computedStyle.paddingTop = Math.max(0, computedStyle.height * paddingTop.value * 0.01);
-    }
-    if(paddingRight.unit === unit.PX) {
-      computedStyle.paddingRight = Math.max(0, paddingRight.value);
-    }
-    else if(paddingRight.unit === unit.PERCENT) {
-      computedStyle.paddingRight = Math.max(0, computedStyle.width * paddingRight.value * 0.01);
-    }
-    if(paddingBottom.unit === unit.PX) {
-      computedStyle.paddingBottom = Math.max(0, paddingBottom.value);
-    }
-    else if(paddingBottom.unit === unit.PERCENT) {
-      computedStyle.paddingBottom = Math.max(0, computedStyle.height * paddingBottom.value * 0.01);
-    }
-    if(paddingLeft.unit === unit.PX) {
-      computedStyle.paddingLeft = Math.max(0, paddingLeft.value);
-    }
-    else if(paddingRight.unit === unit.PERCENT) {
-      computedStyle.paddingLeft = Math.max(0, computedStyle.width * paddingLeft.value * 0.01);
-    }
     inject.measureText(() => {
       this.__layout({
         x: 0,
@@ -264,8 +234,7 @@ class Root extends Dom {
         this.node.__vd = nvd;
         this.node.__defs = nd;
       }
-      let clone = this.__task.slice(0);
-      this.__task.splice(0);
+      let clone = this.__task.splice(0);
       clone.forEach(cb => {
         cb && cb();
       });

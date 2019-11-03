@@ -22,14 +22,14 @@ class Text extends Node {
 
   // 预先计算每个字的宽度
   __measure() {
-    let { ctx, content, computedStyle, charWidthList, renderMode } = this;
+    let { ctx, content, currentStyle, charWidthList, renderMode } = this;
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(computedStyle);
+      ctx.font = css.setFontStyle(currentStyle);
     }
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
-      style: computedStyle,
+      style: currentStyle,
       hash: {},
       s: [],
     };
@@ -67,8 +67,8 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, computedStyle, charWidthList } = this;
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let { content, currentStyle, charWidthList } = this;
+    let key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {
@@ -86,8 +86,8 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
+    let { isDestroyed, content, currentStyle, lineBoxes, charWidthList } = this;
+    if(isDestroyed || currentStyle.display === 'none') {
       return;
     }
     this.__ox = this.__oy = 0;
@@ -103,7 +103,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
-        y += computedStyle.lineHeight;
+        y += currentStyle.lineHeight;
         begin = i + 1;
         i = begin + 1;
         count = 0;
@@ -116,7 +116,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
-        y += computedStyle.lineHeight;
+        y += currentStyle.lineHeight;
         begin = i;
         i = i + 1;
         count = 0;
@@ -133,7 +133,7 @@ class Text extends Node {
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
-      y += computedStyle.lineHeight;
+      y += currentStyle.lineHeight;
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
@@ -142,7 +142,7 @@ class Text extends Node {
       this.__lineBoxes = [];
     }
     else {
-      let { textAlign } = computedStyle;
+      let { textAlign } = currentStyle;
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxes.forEach(lineBox => {
           let diff = this.__width - lineBox.width;
@@ -229,6 +229,12 @@ class Text extends Node {
   get baseLine() {
     let last = this.lineBoxes[this.lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
+  }
+  get style() {
+    return this.parent.style;
+  }
+  get currentStyle() {
+    return this.parent.currentStyle;
   }
   get renderMode() {
     return this.__renderMode;

@@ -375,9 +375,9 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
 }
 
 function computed(xom, isRoot) {
-  let { style } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = style;
-  let computedStyle = xom.__computedStyle = util.clone(style);
+  let { currentStyle } = xom;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = currentStyle;
+  let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   // 处理继承的属性

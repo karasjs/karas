@@ -2,16 +2,26 @@ import inject from '../util/inject';
 
 class Frame {
   constructor() {
+    this.__inFrame = false;
     this.__task = [];
   }
 
   __init(task) {
+    let self = this;
     function cb() {
       inject.requestAnimationFrame(function() {
         if(!task.length) {
           return;
         }
+        self.__inFrame = true;
         task.forEach(handle => handle());
+        self.__inFrame = false;
+        let afterCb = self.__afterFrame;
+        afterCb && afterCb();
+        self.__afterFrame = null;
+        if(!task.length) {
+          return;
+        }
         cb();
       });
     }
@@ -42,7 +52,12 @@ class Frame {
       handle();
       self.offFrame(cb);
     }
-    this.onFrame(cb);
+    if(self.__inFrame) {
+      self.__afterFrame = cb;
+    }
+    else {
+      self.onFrame(cb);
+    }
   }
 
   get task() {

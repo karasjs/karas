@@ -107,12 +107,11 @@ class Dom extends Xom {
         item.__init();
       }
       else {
-        item.__style = style;
-        item.__computedStyle = this.computedStyle;
+        css.computed(item);
         // 文字首先测量所有字符宽度
         item.__measure();
       }
-      if(item instanceof Text || item.computedStyle.position !== 'absolute') {
+      if(item instanceof Text || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);
       }
       else {
@@ -130,7 +129,7 @@ class Dom extends Xom {
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
   __tryLayInline(w, total) {
-    let { flowChildren, computedStyle: { width } } = this;
+    let { flowChildren, currentStyle: { width } } = this;
     if(width.unit === unit.PX) {
       return w - width.value;
     }
@@ -176,7 +175,7 @@ class Dom extends Xom {
     let b = 0;
     let min = 0;
     let max = 0;
-    let { flowChildren, computedStyle } = this;
+    let { flowChildren, currentStyle } = this;
     // 计算需考虑style的属性
     let {
       width,
@@ -193,7 +192,7 @@ class Dom extends Xom {
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = computedStyle;
+    } = currentStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit === unit.PX) {
       b = max = main.value;
@@ -267,16 +266,16 @@ class Dom extends Xom {
 
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data) {
-    let { flowChildren, style, computedStyle, lineGroups } = this;
+    let { flowChildren, currentStyle, lineGroups } = this;
     let {
       textAlign,
-    } = computedStyle;
+    } = currentStyle;
     let { fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
-        if(item.computedStyle.display === 'inline') {
+        if(item.currentStyle.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
             lineGroup.add(item);
@@ -397,7 +396,7 @@ class Dom extends Xom {
         }
       });
     }
-    this.__marginAuto(style, data);
+    this.__marginAuto(currentStyle, data);
   }
 
   // 处理margin:xx auto居中对齐
@@ -412,22 +411,23 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data) {
-    let { flowChildren, style, computedStyle } = this;
+    let { flowChildren, style, currentStyle } = this;
     let {
       flexDirection,
       justifyContent,
       alignItems,
-    } = computedStyle;
+    } = currentStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     let isDirectionRow = flexDirection === 'row';
     // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
     if(!isDirectionRow && !fixedHeight) {
       flowChildren.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
-          const { computedStyle, computedStyle: { display, flexDirection, width }} = item;
+          let { currentStyle, computedStyle } = item;
+          let { display, flexDirection, width } = currentStyle;
           // column的flex的child如果是inline，变为block
           if(display === 'inline') {
-            computedStyle.display = 'block';
+            currentStyle.display = computedStyle.display = 'block';
           }
           // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
           else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
@@ -467,20 +467,15 @@ class Dom extends Xom {
     let maxSum = 0;
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
-        let { computedStyle } = item;
-        let { flexGrow, flexShrink, flexBasis } = computedStyle;
+        let { currentStyle, computedStyle } = item;
+        let { flexGrow, flexShrink, flexBasis } = currentStyle;
         growList.push(flexGrow);
         shrinkList.push(flexShrink);
         growSum += flexGrow;
         shrinkSum += flexShrink;
         let { b, min, max } = item.__calAutoBasis(isDirectionRow, w, h);
-        // 根据basis不同，计算方式不同，数字代表动画执行时已经计算过的
-        if(util.isNumber(flexBasis)) {
-          b = flexBasis;
-          basisList.push(b);
-          basisSum += b;
-        }
-        else if(flexBasis.unit === unit.AUTO) {
+        // 根据basis不同，计算方式不同
+        if(flexBasis.unit === unit.AUTO) {
           basisList.push(max);
           basisSum += max;
         }
@@ -490,7 +485,7 @@ class Dom extends Xom {
           basisSum += b;
         }
         else if(flexBasis.unit === unit.PERCENT) {
-          b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value;
+          b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value * 0.01;
           basisList.push(b);
           basisSum += b;
         }
@@ -540,17 +535,17 @@ class Dom extends Xom {
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
       if(item instanceof Xom || item instanceof Component) {
-        let { computedStyle } = item;
+        let { currentStyle, computedStyle } = item;
         let {
           display,
           flexDirection,
           width,
           height,
-        } = computedStyle;
+        } = currentStyle;
         if(isDirectionRow) {
           // row的flex的child如果是inline，变为block
           if(display === 'inline') {
-            computedStyle.display = 'block';
+            currentStyle.display = computedStyle.display = 'block';
           }
           // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
           else if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
@@ -567,7 +562,7 @@ class Dom extends Xom {
         else {
           // column的flex的child如果是inline，变为block
           if(display === 'inline') {
-            computedStyle.display = 'block';
+            currentStyle.display = computedStyle.display = 'block';
           }
           // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
           else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
@@ -672,7 +667,7 @@ class Dom extends Xom {
     if(alignItems === 'stretch') {
       // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
       flowChildren.forEach(item => {
-        let { computedStyle, style } = item;
+        let { computedStyle, currentStyle } = item;
         let {
           borderTopWidth,
           borderRightWidth,
@@ -688,12 +683,12 @@ class Dom extends Xom {
           paddingLeft,
         } = computedStyle;
         if(isDirectionRow) {
-          if(style.height.unit === unit.AUTO) {
+          if(currentStyle.height.unit === unit.AUTO) {
             item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
-          if(style.width.unit === unit.AUTO) {
+          if(currentStyle.width.unit === unit.AUTO) {
             item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
@@ -717,15 +712,15 @@ class Dom extends Xom {
     }
     this.__width = w;
     this.__height = fixedHeight ? h : y - data.y;
-    this.__marginAuto(style, data);
+    this.__marginAuto(currentStyle, data);
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
-    let { flowChildren, computedStyle, lineGroups } = this;
+    let { flowChildren, currentStyle, lineGroups } = this;
     let {
       textAlign,
-    } = computedStyle;
+    } = currentStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     let maxX = x;
     // 递归布局，将inline的节点组成lineGroup一行
@@ -733,11 +728,11 @@ class Dom extends Xom {
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         // 绝对定位跳过
-        if(item.computedStyle.position === 'absolute') {
+        if(item.currentStyle.position === 'absolute') {
           this.absChildren.push(item);
           return;
         }
-        item.computedStyle.display = 'inline';
+        item.currentStyle.display = item.computedStyle = 'inline';
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -848,10 +843,12 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container, data) {
-    let { x, y, width, height, computedStyle } = container;
+    let { x, y, width, height, currentStyle, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       display,
+    } = currentStyle;
+    let {
       borderTopWidth,
       borderLeftWidth,
       marginTop,
@@ -870,8 +867,8 @@ class Dom extends Xom {
     let ih = height + paddingTop + paddingBottom;
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
-      let { style, computedStyle } = item;
-      let { left, top, right, bottom, width, height } = computedStyle;
+      let { currentStyle, computedStyle } = item;
+      let { left, top, right, bottom, width, height } = currentStyle;
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;
@@ -881,31 +878,31 @@ class Dom extends Xom {
       let fixedLeft;
       if(left !== undefined && left.unit !== unit.AUTO) {
         fixedLeft = true;
-        css.calAbsolute(computedStyle, 'left', left, iw);
+        computedStyle.left = css.calAbsolute(currentStyle, 'left', left, iw);
       }
       else {
-        delete computedStyle.left;
+        computedStyle.left = 'auto';
       }
       if(right !== undefined && right.unit !== unit.AUTO) {
         fixedRight = true;
-        css.calAbsolute(computedStyle, 'right', right, iw);
+        computedStyle.right = css.calAbsolute(currentStyle, 'right', right, iw);
       }
       else {
-        delete computedStyle.right;
+        computedStyle.right = 'auto';
       }
       if(top !== undefined && top.unit !== unit.AUTO) {
         fixedTop = true;
-        css.calAbsolute(computedStyle, 'top', top, ih);
+        computedStyle.top = css.calAbsolute(currentStyle, 'top', top, ih);
       }
       else {
-        delete computedStyle.top;
+        computedStyle.top = 'auto';
       }
       if(bottom !== undefined && bottom.unit !== unit.AUTO) {
         fixedBottom = true;
-        css.calAbsolute(computedStyle, 'bottom', bottom, ih);
+        computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, ih);
       }
       else {
-        delete computedStyle.bottom;
+        computedStyle.bottom = 'auto';
       }
       // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
       if(fixedLeft && fixedRight) {
@@ -978,7 +975,7 @@ class Dom extends Xom {
         computedStyle.height = h2;
       }
       // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
-      style.display = computedStyle.display = 'inline';
+      currentStyle.display = 'inline';
       // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
       // 并且布局完成后还要偏移回来
       if(onlyRight && onlyBottom) {
@@ -1018,7 +1015,7 @@ class Dom extends Xom {
         });
       }
       // 布局完成后强制为block
-      style.display = computedStyle.display = 'block';
+      currentStyle.display = computedStyle.display = 'block';
     });
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {

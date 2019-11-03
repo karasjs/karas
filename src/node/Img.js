@@ -31,9 +31,8 @@ class Img extends Dom {
 
   __layout(data) {
     super.__layout(data);
-    let { isDestroyed, src, computedStyle, style } = this;
-    let { width, height } = style;
-    let { display } = computedStyle;
+    let { isDestroyed, src, currentStyle } = this;
+    let { display, width, height } = currentStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -53,15 +52,35 @@ class Img extends Dom {
       this.__imgHeight = cache.height;
       // 宽高都为auto，使用加载测量的数据
       if(width.unit === unit.AUTO && height.unit === unit.AUTO) {
-        this.__width = computedStyle.width = cache.width;
-        this.__height = computedStyle.height = cache.height;
+        currentStyle.width = {
+          value: cache.width,
+          unit: unit.PX,
+        };
+        currentStyle.height = {
+          value: cache.height,
+          unit: unit.PX,
+        };
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
-        this.__width = computedStyle.width = h * cache.width / cache.height;
+        currentStyle.height = {
+          value: cache.height,
+          unit: unit.PX,
+        };
+        currentStyle.width = {
+          value: h * cache.width / cache.height,
+          unit: unit.PX,
+        };
       }
       else if(height.unit === unit.AUTO) {
-        this.__height = computedStyle.height = w * cache.height / cache.width;
+        currentStyle.width = {
+          value: cache.width,
+          unit: unit.PX,
+        };
+        currentStyle.height = {
+          value: w * cache.height / cache.width,
+          unit: unit.PX,
+        };
       }
       if(this.root) {
         this.root.refreshTask();

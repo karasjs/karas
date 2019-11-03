@@ -6125,7 +6125,7 @@
     }, {
       key: "__marginAuto",
       value: function __marginAuto(style, data) {
-        if (style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
+        if (style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && style.width.unit !== unit.AUTO) {
           var ow = this.outerWidth;
 
           if (ow < data.w) {
@@ -6493,7 +6493,7 @@
               return;
             }
 
-            item.currentStyle.display = item.__computedStyle.display = 'inline'; // inline开头，不用考虑是否放得下直接放
+            item.currentStyle.display = item.computedStyle.display = 'inline'; // inline开头，不用考虑是否放得下直接放
 
             if (x === data.x) {
               lineGroup.add(item);
@@ -6980,11 +6980,10 @@
 
         var isDestroyed = this.isDestroyed,
             src = this.src,
-            computedStyle = this.computedStyle,
-            style = this.style;
-        var width = style.width,
-            height = style.height;
-        var display = computedStyle.display;
+            currentStyle = this.currentStyle;
+        var display = currentStyle.display,
+            width = currentStyle.width,
+            height = currentStyle.height;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -7008,13 +7007,33 @@
           _this2.__imgHeight = cache.height; // 宽高都为auto，使用加载测量的数据
 
           if (width.unit === unit.AUTO && height.unit === unit.AUTO) {
-            _this2.__width = computedStyle.width = cache.width;
-            _this2.__height = computedStyle.height = cache.height;
+            currentStyle.width = {
+              value: cache.width,
+              unit: unit.PX
+            };
+            currentStyle.height = {
+              value: cache.height,
+              unit: unit.PX
+            };
           } // 否则有一方定义则按比例调整另一方适应
           else if (width.unit === unit.AUTO) {
-              _this2.__width = computedStyle.width = h * cache.width / cache.height;
+              currentStyle.height = {
+                value: cache.height,
+                unit: unit.PX
+              };
+              currentStyle.width = {
+                value: h * cache.width / cache.height,
+                unit: unit.PX
+              };
             } else if (height.unit === unit.AUTO) {
-              _this2.__height = computedStyle.height = w * cache.height / cache.width;
+              currentStyle.width = {
+                value: cache.width,
+                unit: unit.PX
+              };
+              currentStyle.height = {
+                value: w * cache.height / cache.width,
+                unit: unit.PX
+              };
             }
 
           if (_this2.root) {

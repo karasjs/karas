@@ -404,7 +404,7 @@ class Dom extends Xom {
 
   // 处理margin:xx auto居中对齐
   __marginAuto(style, data) {
-    if(style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && (this.tagName === 'img' || style.width.unit !== unit.AUTO)) {
+    if(style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && style.width.unit !== unit.AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);
@@ -735,7 +735,7 @@ class Dom extends Xom {
           this.absChildren.push(item);
           return;
         }
-        item.currentStyle.display = item.__computedStyle.display = 'inline';
+        item.currentStyle.display = item.computedStyle.display = 'inline';
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);

@@ -3093,14 +3093,9 @@
         return last.y - this.y + last.baseLine;
       }
     }, {
-      key: "style",
-      get: function get() {
-        return this.parent.style;
-      }
-    }, {
       key: "currentStyle",
       get: function get() {
-        return this.parent.currentStyle;
+        return this.style;
       }
     }, {
       key: "renderMode",
@@ -3672,7 +3667,7 @@
         }
 
         this.__hasInit = true;
-        ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom'].forEach(function (fn) {
+        ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
               return this.shadowRoot[fn];
@@ -5209,6 +5204,8 @@
     }, {
       key: "__computed",
       value: function __computed() {
+        var _this2 = this;
+
         css.computed(this, this.isRoot());
 
         if (!this.isGeom()) {
@@ -5216,6 +5213,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__computed();
             } else {
+              item.__style = _this2.currentStyle;
               css.computed(item); // 文字首先测量所有字符宽度
 
               item.__measure();
@@ -5789,6 +5787,7 @@
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
           } else {
+            item.__style = style;
             css.computed(item); // 文字首先测量所有字符宽度
 
             item.__measure();

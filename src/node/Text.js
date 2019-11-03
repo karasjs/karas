@@ -230,11 +230,8 @@ class Text extends Node {
     let last = this.lineBoxes[this.lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
   }
-  get style() {
-    return this.parent.style;
-  }
   get currentStyle() {
-    return this.parent.currentStyle;
+    return this.style;
   }
   get renderMode() {
     return this.__renderMode;

@@ -147,7 +147,8 @@ class Component extends Event {
       'ctx',
       'defs',
       'baseLine',
-      'virtualDom'
+      'virtualDom',
+      'currentStyle'
     ].forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {

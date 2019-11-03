@@ -107,6 +107,7 @@ class Dom extends Xom {
         item.__init();
       }
       else {
+        item.__style = style;
         css.computed(item);
         // 文字首先测量所有字符宽度
         item.__measure();

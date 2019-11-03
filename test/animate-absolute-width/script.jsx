@@ -18,7 +18,12 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
-input.value += t.computedStyle.width;
+let n = 0;
+animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+  if(n++ === 0) {
+    input.value += '/' + t.computedStyle.width;
+  }
+});
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   input.value += '/' + t.computedStyle.width;
 });

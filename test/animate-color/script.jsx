@@ -16,7 +16,12 @@ let animation = t.animate([
   duration: 200,
 });
 let input = document.querySelector('input');
-input.value = t.computedStyle.color;
+let n = 0;
+animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+  if(n++ === 0) {
+    input.value = t.computedStyle.color;
+  }
+});
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   input.value += '/' + t.computedStyle.color;
 });

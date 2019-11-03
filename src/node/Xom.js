@@ -731,6 +731,7 @@ class Xom extends Node {
           item.__computed();
         }
         else {
+          item.__style = this.currentStyle;
           css.computed(item);
           // 文字首先测量所有字符宽度
           item.__measure();

@@ -22,14 +22,14 @@ class Text extends Node {
 
   // 预先计算每个字的宽度
   __measure() {
-    let { ctx, content, currentStyle, charWidthList, renderMode } = this;
+    let { ctx, content, currentStyle, computedStyle, charWidthList, renderMode } = this;
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(currentStyle);
+      ctx.font = css.setFontStyle(computedStyle);
     }
-    let key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
-      style: currentStyle,
+      style: computedStyle,
       hash: {},
       s: [],
     };
@@ -86,7 +86,7 @@ class Text extends Node {
     this.__x = x;
     this.__y = y;
     let maxX = x;
-    let { isDestroyed, content, currentStyle, lineBoxes, charWidthList } = this;
+    let { isDestroyed, content, currentStyle, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || currentStyle.display === 'none') {
       return;
     }
@@ -103,7 +103,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count);
-        y += currentStyle.lineHeight;
+        y += computedStyle.lineHeight;
         begin = i + 1;
         i = begin + 1;
         count = 0;
@@ -116,7 +116,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
         lineBoxes.push(lineBox);
         maxX = Math.max(maxX, x + count - charWidthList[i]);
-        y += currentStyle.lineHeight;
+        y += computedStyle.lineHeight;
         begin = i;
         i = i + 1;
         count = 0;
@@ -133,7 +133,7 @@ class Text extends Node {
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
       maxX = Math.max(maxX, x + count);
-      y += currentStyle.lineHeight;
+      y += computedStyle.lineHeight;
     }
     this.__width = maxX - x;
     this.__height = y - data.y;

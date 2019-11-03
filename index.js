@@ -2820,17 +2820,18 @@
         var ctx = this.ctx,
             content = this.content,
             currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
             charWidthList = this.charWidthList,
             renderMode = this.renderMode;
 
         if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(currentStyle);
+          ctx.font = css.setFontStyle(computedStyle);
         }
 
-        var key = currentStyle.fontSize + ',' + currentStyle.fontFamily;
+        var key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
         var wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
           key: key,
-          style: currentStyle,
+          style: computedStyle,
           hash: {},
           s: []
         };
@@ -2905,6 +2906,7 @@
         var isDestroyed = this.isDestroyed,
             content = this.content,
             currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle,
             lineBoxes = this.lineBoxes,
             charWidthList = this.charWidthList;
 
@@ -2927,7 +2929,7 @@
             var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
             lineBoxes.push(lineBox);
             maxX = Math.max(maxX, x + count);
-            y += currentStyle.lineHeight;
+            y += computedStyle.lineHeight;
             begin = i + 1;
             i = begin + 1;
             count = 0;
@@ -2941,7 +2943,7 @@
 
             lineBoxes.push(_lineBox);
             maxX = Math.max(maxX, x + count - charWidthList[i]);
-            y += currentStyle.lineHeight;
+            y += computedStyle.lineHeight;
             begin = i;
             i = i + 1;
             count = 0;
@@ -2961,7 +2963,7 @@
 
           lineBoxes.push(_lineBox2);
           maxX = Math.max(maxX, x + count);
-          y += currentStyle.lineHeight;
+          y += computedStyle.lineHeight;
         }
 
         this.__width = maxX - x;
@@ -4448,6 +4450,8 @@
       _this.__tagName = tagName;
       _this.__style = _this.props.style || {}; // style被解析后的k-v形式
 
+      _this.__animateStyle = {}; // 动画过程中的样式
+
       _this.__listener = {};
 
       _this.__props.forEach(function (item) {
@@ -4472,10 +4476,6 @@
       _this.__matrix = null;
       _this.__matrixEvent = null;
       _this.__animation = null;
-      _this.__style = {}; // style被解析后的k-v形式
-
-      _this.__animateStyle = {}; // 动画过程中的样式
-
       return _this;
     } // 设置了css时，解析匹配
 

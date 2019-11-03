@@ -9,7 +9,6 @@ import css from '../style/css';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
-import Text from "./Text";
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -79,6 +78,7 @@ class Xom extends Node {
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
+    this.__animateStyle = {}; // 动画过程中的样式
     this.__listener = {};
     this.__props.forEach(item => {
       let k = item[0];
@@ -101,8 +101,6 @@ class Xom extends Node {
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animation = null;
-    this.__style = {}; // style被解析后的k-v形式
-    this.__animateStyle = {}; // 动画过程中的样式
   }
 
   // 设置了css时，解析匹配

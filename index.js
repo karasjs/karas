@@ -2654,7 +2654,7 @@
     }, {
       key: "baseLine",
       get: function get() {
-        return css.getBaseLine(this.parent.currentStyle);
+        return css.getBaseLine(this.parent.computedStyle);
       }
     }, {
       key: "virtualDom",
@@ -5317,14 +5317,15 @@
     }, {
       key: "verticalAlign",
       value: function verticalAlign() {
-        var _this = this;
+        var n = this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
 
-        this.__baseLine = this.__calBaseLine(); // 仅当有2个和以上时才需要vertical对齐调整
 
         if (this.list.length > 1) {
           this.list.forEach(function (item) {
-            if (item.baseLine !== _this.baseLine) {
-              item.__offsetY(_this.baseLine - item.baseLine);
+            var m = item.baseLine;
+
+            if (m !== n) {
+              item.__offsetY(n - m);
             }
           });
         }

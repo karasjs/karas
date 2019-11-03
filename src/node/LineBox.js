@@ -60,7 +60,7 @@ class LineBox {
     return this.__content;
   }
   get baseLine() {
-    return css.getBaseLine(this.parent.currentStyle);
+    return css.getBaseLine(this.parent.computedStyle);
   }
   get virtualDom() {
     return this.__virtualDom;

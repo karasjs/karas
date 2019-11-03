@@ -19,12 +19,13 @@ class LineGroup {
   }
 
   verticalAlign() {
-    this.__baseLine = this.__calBaseLine();
+    let n = this.__baseLine = this.__calBaseLine();
     // 仅当有2个和以上时才需要vertical对齐调整
     if(this.list.length > 1) {
       this.list.forEach(item => {
-        if(item.baseLine !== this.baseLine) {
-          item.__offsetY(this.baseLine - item.baseLine);
+        let m = item.baseLine;
+        if(m !== n) {
+          item.__offsetY(n - m);
         }
       });
     }

@@ -735,7 +735,7 @@ class Dom extends Xom {
           this.absChildren.push(item);
           return;
         }
-        item.currentStyle.display = item.computedStyle = 'inline';
+        item.currentStyle.display = item.__computedStyle.display = 'inline';
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);

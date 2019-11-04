@@ -97,8 +97,8 @@ class Component extends Event {
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
       css.normalize(sr.style);
-      css.computed(sr, true);
-      sr.__measure();
+      // css.computed(sr, true);
+      // sr.__measure();
     }
     else {
       let style = this.props.style || {};
@@ -107,7 +107,7 @@ class Component extends Event {
           sr.style[i] = style[i];
         }
       }
-      sr.__init(true);
+      sr.__init();
     }
     if(!(sr instanceof Text)) {
       this.__props.forEach(item => {
@@ -148,7 +148,7 @@ class Component extends Event {
       'defs',
       'baseLine',
       'virtualDom',
-      'currentStyle'
+      'currentStyle',
     ].forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {
@@ -187,8 +187,19 @@ class Component extends Event {
 
   animate(list, option) {
     let sr = this.shadowRoot;
-    if(sr) {
+    if(!(sr instanceof Text)) {
       sr.animate(list, option);
+    }
+  }
+
+  __computed() {
+    let sr = this.shadowRoot;
+    if(sr instanceof Text) {
+      css.computed(sr);
+      sr.__measure();
+    }
+    else {
+      sr.__computed();
     }
   }
 

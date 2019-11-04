@@ -3054,11 +3054,6 @@
         };
       }
     }, {
-      key: "animate",
-      value: function animate() {
-        inject.warn('Text can not use animate()');
-      }
-    }, {
       key: "content",
       get: function get() {
         return this.__content;
@@ -3626,10 +3621,8 @@
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
 
         if (sr instanceof Text) {
-          css.normalize(sr.style);
-          css.computed(sr, true);
-
-          sr.__measure();
+          css.normalize(sr.style); // css.computed(sr, true);
+          // sr.__measure();
         } else {
           var style = this.props.style || {};
 
@@ -3639,7 +3632,7 @@
             }
           }
 
-          sr.__init(true);
+          sr.__init();
         }
 
         if (!(sr instanceof Text)) {
@@ -3714,8 +3707,21 @@
       value: function animate(list, option) {
         var sr = this.shadowRoot;
 
-        if (sr) {
+        if (!(sr instanceof Text)) {
           sr.animate(list, option);
+        }
+      }
+    }, {
+      key: "__computed",
+      value: function __computed() {
+        var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          css.computed(sr);
+
+          sr.__measure();
+        } else {
+          sr.__computed();
         }
       }
     }, {
@@ -3905,6 +3911,8 @@
         animateStyle[i] = style[i];
       }
     }
+
+    target.__needCompute = true;
   } // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
 
 
@@ -3964,7 +3972,7 @@
       var _p = prev[k];
       var _n = next[k];
 
-      if (_p.unit === _n.unit && [unit.PX, unit.PERCENT].indexOf(_p.unit) > -1) {
+      if (_p.unit === _n.unit) {
         res.v = _n.value - _p.value;
       } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) ; else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) ; else {
         return;
@@ -4234,8 +4242,7 @@
 
             if (root) {
               // 可能涉及字号变化，引发布局变更重新测量
-              target.__computed();
-
+              // target.__computed();
               var task = _this2.__task = function () {
                 _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
@@ -4246,11 +4253,10 @@
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
                   } // 恢复初始，再刷新一帧，触发finish
                   else {
-                      target.__computed();
+                      target.__needCompute = true; // target.__computed();
 
                       var _task = _this2.__task = function () {
-                        _this2.__playState = 'finished';
-
+                        // this.__playState = 'finished';
                         _this2.emit(Event.KARAS_ANIMATION_FINISH);
                       };
 
@@ -4300,16 +4306,17 @@
           // 停留在最后一帧
           if (['forwards', 'both'].indexOf(fill) > -1) {
             var last = this.frames[this.frames.length - 1];
-            stringify$1(last.style, this.target);
+            stringify$1(last.style, this.target); // target.__computed();
+            // this.__playState = 'finished';
+          } // else {
+          //   target.__needCompute = true;
+          //   this.__playState = 'finished';
+          //   // target.__computed();
+          // }
 
-            target.__computed();
 
-            this.__playState = 'finished';
-          } else {
-            this.__playState = 'finished';
-
-            target.__computed();
-          }
+          this.__playState = 'finished';
+          target.__needCompute = true;
 
           var task = this.__task = function () {
             _this3.emit(Event.KARAS_ANIMATION_FINISH);
@@ -4334,7 +4341,7 @@
         var root = target.root;
 
         if (root) {
-          target.__computed();
+          target.__needCompute = true; // target.__computed();
 
           var task = this.__task = function () {
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
@@ -4503,6 +4510,7 @@
       _this.__matrix = null;
       _this.__matrixEvent = null;
       _this.__animation = null;
+      _this.__needCompute = true;
       return _this;
     } // 设置了css时，解析匹配
 
@@ -5218,13 +5226,19 @@
       value: function __computed() {
         var _this2 = this;
 
-        css.computed(this, this.isRoot());
+        var needCompute = this.needCompute;
+
+        if (needCompute) {
+          this.__needCompute = false;
+          css.computed(this, this.isRoot());
+        } // 即便自己不需要计算，但children还要继续递归检查
+
 
         if (!this.isGeom()) {
           this.children.forEach(function (item) {
             if (item instanceof Xom || item instanceof Component) {
               item.__computed();
-            } else {
+            } else if (needCompute) {
               item.__style = _this2.currentStyle;
               css.computed(item); // 文字首先测量所有字符宽度
 
@@ -5305,7 +5319,27 @@
     }, {
       key: "currentStyle",
       get: function get() {
-        return this.animation && ['idle', 'finished'].indexOf(this.animation.playState) === -1 ? this.animateStyle : this.style;
+        var animation = this.animation;
+
+        if (animation) {
+          var playState = animation.playState,
+              options = animation.options;
+
+          if (playState === 'idle') {
+            return this.style;
+          } else if (playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
+            return this.style;
+          }
+
+          return this.animateStyle;
+        }
+
+        return this.style;
+      }
+    }, {
+      key: "needCompute",
+      get: function get() {
+        return this.__needCompute;
       }
     }]);
 
@@ -5779,7 +5813,7 @@
 
     }, {
       key: "__init",
-      value: function __init(isRoot) {
+      value: function __init() {
         var _this4 = this;
 
         var style = this.__style; // 仅支持flex/block/inline/none
@@ -5793,16 +5827,15 @@
         } // 标准化处理，默认值、简写属性
 
 
-        css.normalize(style);
-        css.computed(this, isRoot);
+        css.normalize(style); // css.computed(this, isRoot);
+
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
           } else {
-            item.__style = style;
-            css.computed(item); // 文字首先测量所有字符宽度
-
-            item.__measure();
+            item.__style = style; // css.computed(item);
+            // 文字首先测量所有字符宽度
+            // item.__measure();
           }
 
           if (item instanceof Text || item.style.position !== 'absolute') {
@@ -7830,7 +7863,7 @@
 
         this.__traverseCss(this, this.props.css);
 
-        this.__init(true);
+        this.__init();
 
         this.refresh();
 
@@ -7866,7 +7899,10 @@
         currentStyle.height = {
           value: this.height,
           unit: unit.PX
-        };
+        }; // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
+
+        this.__computed();
+
         inject.measureText(function () {
           _this2.__layout({
             x: 0,

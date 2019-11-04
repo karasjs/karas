@@ -88,7 +88,7 @@ class Dom extends Xom {
   }
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
-  __init(isRoot) {
+  __init() {
     let style = this.__style;
     // 仅支持flex/block/inline/none
     if(!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
@@ -101,16 +101,16 @@ class Dom extends Xom {
     }
     // 标准化处理，默认值、简写属性
     css.normalize(style);
-    css.computed(this, isRoot);
+    // css.computed(this, isRoot);
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();
       }
       else {
         item.__style = style;
-        css.computed(item);
+        // css.computed(item);
         // 文字首先测量所有字符宽度
-        item.__measure();
+        // item.__measure();
       }
       if(item instanceof Text || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);

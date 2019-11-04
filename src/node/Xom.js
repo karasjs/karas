@@ -101,6 +101,7 @@ class Xom extends Node {
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animation = null;
+    this.__needCompute = true;
   }
 
   // 设置了css时，解析匹配
@@ -734,13 +735,18 @@ class Xom extends Node {
   }
 
   __computed() {
-    css.computed(this, this.isRoot());
+    let { needCompute } = this;
+    if(needCompute) {
+      this.__needCompute = false;
+      css.computed(this, this.isRoot());
+    }
+    // 即便自己不需要计算，但children还要继续递归检查
     if(!this.isGeom()) {
       this.children.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
           item.__computed();
         }
-        else {
+        else if(needCompute) {
           item.__style = this.currentStyle;
           css.computed(item);
           // 文字首先测量所有字符宽度
@@ -812,7 +818,21 @@ class Xom extends Node {
     return this.__animateStyle;
   }
   get currentStyle() {
-    return this.animation && ['idle', 'finished'].indexOf(this.animation.playState) === -1 ? this.animateStyle : this.style;
+    let { animation } = this;
+    if(animation) {
+      let { playState, options } = animation;
+      if(playState === 'idle') {
+        return this.style;
+      }
+      else if(playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
+        return this.style;
+      }
+      return this.animateStyle;
+    }
+    return this.style;
+  }
+  get needCompute() {
+    return this.__needCompute;
   }
 }
 

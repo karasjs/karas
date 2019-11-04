@@ -20,7 +20,12 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-input.value = i.computedStyle.color;
+let n = 0;
+animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+  if(n++ === 0) {
+    input.value = i.computedStyle.color;
+  }
+});
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   input.value += '/' + i.computedStyle.color;
 });

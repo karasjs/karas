@@ -170,7 +170,7 @@ class Root extends Dom {
     let { renderMode, ctx } = this;
     this.__traverse(ctx, this.__defs, renderMode);
     this.__traverseCss(this, this.props.css);
-    this.__init(true);
+    this.__init();
     this.refresh();
     if(this.node.__root) {
       this.node.__root.__destroy();
@@ -200,6 +200,8 @@ class Root extends Dom {
       value: this.height,
       unit: unit.PX,
     };
+    // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
+    this.__computed();
     inject.measureText(() => {
       this.__layout({
         x: 0,

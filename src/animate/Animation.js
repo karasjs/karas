@@ -79,6 +79,7 @@ function stringify(style, target) {
       animateStyle[i] = style[i];
     }
   }
+  target.__needCompute = true;
 }
 
 // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
@@ -137,7 +138,7 @@ function calDiff(prev, next, k, target) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     let p = prev[k];
     let n = next[k];
-    if(p.unit === n.unit && [unit.PX, unit.PERCENT].indexOf(p.unit) > -1) {
+    if(p.unit === n.unit) {
       res.v = n.value - p.value;
     }
     else if(p.unit === unit.PX && n.unit === unit.PERCENT) {}
@@ -370,7 +371,7 @@ class Animation extends Event {
         let root = target.root;
         if(root) {
           // 可能涉及字号变化，引发布局变更重新测量
-          target.__computed();
+          // target.__computed();
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
             if(i === length - 1) {
@@ -381,9 +382,10 @@ class Animation extends Event {
               }
               // 恢复初始，再刷新一帧，触发finish
               else {
-                target.__computed();
+                target.__needCompute = true;
+                // target.__computed();
                 let task = this.__task = () => {
-                  this.__playState = 'finished';
+                  // this.__playState = 'finished';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
                 };
                 root.refreshTask(task);
@@ -422,13 +424,16 @@ class Animation extends Event {
       if(['forwards', 'both'].indexOf(fill) > -1) {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, this.target);
-        target.__computed();
-        this.__playState = 'finished';
+        // target.__computed();
+        // this.__playState = 'finished';
       }
-      else {
-        this.__playState = 'finished';
-        target.__computed();
-      }
+      // else {
+      //   target.__needCompute = true;
+      //   this.__playState = 'finished';
+      //   // target.__computed();
+      // }
+      this.__playState = 'finished';
+      target.__needCompute = true;
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FINISH);
       };
@@ -444,7 +449,8 @@ class Animation extends Event {
     let { target } = this;
     let root = target.root;
     if(root) {
-      target.__computed();
+      target.__needCompute = true;
+      // target.__computed();
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };

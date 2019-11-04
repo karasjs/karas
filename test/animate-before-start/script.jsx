@@ -7,24 +7,22 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    fontSize: 16,
-    lineHeight: 2,
+    color: '#F00',
   },
   {
-    fontSize: 30,
-    lineHeight: 3,
+    color: '#00F',
   }
 ], {
-  duration: 2000,
-  fill: 'forwards',
+  duration: 200,
 });
 let input = document.querySelector('input');
 let n = 0;
+input.value = t.computedStyle.color;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.fontSize + ',' + t.computedStyle.lineHeight;
+    input.value += '/' + t.computedStyle.color;
   }
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.fontSize + ',' + t.computedStyle.lineHeight;
+  input.value += '/' + t.computedStyle.color;
 });

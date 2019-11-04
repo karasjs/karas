@@ -204,10 +204,6 @@ class Text extends Node {
     return { max: this.textWidth, min: n };
   }
 
-  animate() {
-    inject.warn('Text can not use animate()');
-  }
-
   get content() {
     return this.__content;
   }

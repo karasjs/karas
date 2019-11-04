@@ -613,6 +613,7 @@ class Animation extends Event {
   __destroy() {
     frame.offFrame(this.cb);
     this.__cancelTask();
+    this.__playState = 'idle';
   }
 
   get target() {

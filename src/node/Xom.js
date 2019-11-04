@@ -736,7 +736,7 @@ class Xom extends Node {
 
   animate(list, option) {
     if(this.animation) {
-      this.animation.cancel();
+      this.animation.__destroy();
     }
     let animation = this.__animation = new Animation(this, list, option);
     return animation.play();

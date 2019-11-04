@@ -4552,6 +4552,8 @@
         frame.offFrame(this.cb);
 
         this.__cancelTask();
+
+        this.__playState = 'idle';
       }
     }, {
       key: "target",
@@ -5409,7 +5411,7 @@
       key: "animate",
       value: function animate(list, option) {
         if (this.animation) {
-          this.animation.cancel();
+          this.animation.__destroy();
         }
 
         var animation = this.__animation = new Animation(this, list, option);

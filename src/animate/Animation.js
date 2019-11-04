@@ -123,11 +123,21 @@ function calDiff(prev, next, k, target) {
     let key = k;
     next[k].forEach(item => {
       let [k, v] = item;
-      // 老的不存在的项默认为0
+      // 都存在的计算差值
       if(pExist.hasOwnProperty(k)) {
         let p = pExist[k];
         let n = nExist[k];
-        if(p.unit === n.unit) {
+        if(k === 'matrix') {
+          let t = [];
+          for(let i = 0; i < 6; i++) {
+            t[i] = n[i] - p[i];
+          }
+          res.v.push({
+            k,
+            v: t,
+          });
+        }
+        else if(p.unit === n.unit) {
           res.v.push({
             k,
             v: v.value - p.value,
@@ -160,6 +170,20 @@ function calDiff(prev, next, k, target) {
           });
         }
       }
+      // matrix老的不存在的项默认为单位矩阵
+      else if(k === 'matrix') {
+        let id = [1, 0, 0, 1, 0, 0];
+        prev[key].push([k, id]);
+        let t = [];
+        for(let i = 0; i < 6; i++) {
+          t[i] = v[i] - id[i];
+        }
+        res.v.push({
+          k,
+          v: t,
+        });
+      }
+      // 老的不存在的项默认为0
       else {
         prev[key].push([k, {
           value: 0,
@@ -173,16 +197,30 @@ function calDiff(prev, next, k, target) {
     });
     prev[k].forEach(item => {
       let [k, v] = item;
-      // 新的不存在的项默认为0
+      // 新的不存在的项默认为0或单位矩阵
       if(!nExist.hasOwnProperty(k)) {
-        next[key].push([k, {
-          value: 0,
-          unit: v.unit,
-        }]);
-        res.v.push({
-          k,
-          v: -v.value,
-        });
+        if(k === 'matrix') {
+          let id = [1, 0, 0, 1, 0, 0];
+          next[key].push([k, id]);
+          let t = [];
+          for(let i = 0; i < 6; i++) {
+            t[i] = id[i] - v[i];
+          }
+          res.v.push({
+            k,
+            v: t,
+          });
+        }
+        else {
+          next[key].push([k, {
+            value: 0,
+            unit: v.unit,
+          }]);
+          res.v.push({
+            k,
+            v: -v.value,
+          });
+        }
       }
     });
   }
@@ -295,7 +333,14 @@ function calStyle(frame, percent) {
       });
       v.forEach(item => {
         let { k, v } = item;
-        hash[k].value += v * percent;
+        if(k === 'matrix') {
+          for(let i = 0; i < 6; i++) {
+            hash[k][i] += v[i] * percent;
+          }
+        }
+        else {
+          hash[k].value += v * percent;
+        }
       });
     }
     else if(k === 'transformOrigin') {
@@ -461,6 +506,9 @@ class Animation extends Event {
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
         else {
           // 增加的fps功能，当<60时计算跳帧
+          if(!util.isNumber(fps) || fps < 0) {
+            fps = 60;
+          }
           if(!first && fps < 60) {
             let time = now - this.lastTime;
             if(time < 1000 / fps) {

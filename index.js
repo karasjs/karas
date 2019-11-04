@@ -3986,14 +3986,25 @@
       next[k].forEach(function (item) {
         var _item = _slicedToArray(item, 2),
             k = _item[0],
-            v = _item[1]; // 老的不存在的项默认为0
+            v = _item[1]; // 都存在的计算差值
 
 
         if (pExist.hasOwnProperty(k)) {
           var p = pExist[k];
           var n = nExist[k];
 
-          if (p.unit === n.unit) {
+          if (k === 'matrix') {
+            var t = [];
+
+            for (var i = 0; i < 6; i++) {
+              t[i] = n[i] - p[i];
+            }
+
+            res.v.push({
+              k: k,
+              v: t
+            });
+          } else if (p.unit === n.unit) {
             res.v.push({
               k: k,
               v: v.value - p.value
@@ -4023,32 +4034,62 @@
               v: n.value - p.value
             });
           }
-        } else {
-          prev[key].push([k, {
-            value: 0,
-            unit: v.unit
-          }]);
-          res.v.push({
-            k: k,
-            v: v.value
-          });
-        }
+        } // matrix老的不存在的项默认为单位矩阵
+        else if (k === 'matrix') {
+            var id = [1, 0, 0, 1, 0, 0];
+            prev[key].push([k, id]);
+            var _t = [];
+
+            for (var _i = 0; _i < 6; _i++) {
+              _t[_i] = v[_i] - id[_i];
+            }
+
+            res.v.push({
+              k: k,
+              v: _t
+            });
+          } // 老的不存在的项默认为0
+          else {
+              prev[key].push([k, {
+                value: 0,
+                unit: v.unit
+              }]);
+              res.v.push({
+                k: k,
+                v: v.value
+              });
+            }
       });
       prev[k].forEach(function (item) {
         var _item2 = _slicedToArray(item, 2),
             k = _item2[0],
-            v = _item2[1]; // 新的不存在的项默认为0
+            v = _item2[1]; // 新的不存在的项默认为0或单位矩阵
 
 
         if (!nExist.hasOwnProperty(k)) {
-          next[key].push([k, {
-            value: 0,
-            unit: v.unit
-          }]);
-          res.v.push({
-            k: k,
-            v: -v.value
-          });
+          if (k === 'matrix') {
+            var id = [1, 0, 0, 1, 0, 0];
+            next[key].push([k, id]);
+            var t = [];
+
+            for (var i = 0; i < 6; i++) {
+              t[i] = id[i] - v[i];
+            }
+
+            res.v.push({
+              k: k,
+              v: t
+            });
+          } else {
+            next[key].push([k, {
+              value: 0,
+              unit: v.unit
+            }]);
+            res.v.push({
+              k: k,
+              v: -v.value
+            });
+          }
         }
       });
     } else if (k === 'transformOrigin') {
@@ -4155,7 +4196,14 @@
         v.forEach(function (item) {
           var k = item.k,
               v = item.v;
-          hash[k].value += v * percent;
+
+          if (k === 'matrix') {
+            for (var i = 0; i < 6; i++) {
+              hash[k][i] += v[i] * percent;
+            }
+          } else {
+            hash[k].value += v * percent;
+          }
         });
       } else if (k === 'transformOrigin') {
         style[k][0].value += v[0] * percent;
@@ -4266,12 +4314,12 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i = 1, _len = list.length; _i < _len; _i++) {
-          var start = list[_i]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i2 = 1, _len = list.length; _i2 < _len; _i2++) {
+          var start = list[_i2]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i + 1;
+            var j = _i2 + 1;
 
             for (; j < _len; j++) {
               end = list[j];
@@ -4281,16 +4329,16 @@
               }
             }
 
-            var num = j - _i + 1;
-            start = list[_i - 1];
+            var num = j - _i2 + 1;
+            start = list[_i2 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i; k < j; k++) {
+            for (var k = _i2; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i);
+              item.offset = start.offset + per * (k + 1 - _i2);
             }
 
-            _i = j;
+            _i2 = j;
           }
         } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
@@ -4302,8 +4350,8 @@
         prev = framing(first);
         frames.push(prev);
 
-        for (var _i2 = 1; _i2 < length; _i2++) {
-          var next = list[_i2];
+        for (var _i3 = 1; _i3 < length; _i3++) {
+          var next = list[_i3];
           prev = calFrame(prev, next, target);
           frames.push(prev);
         }
@@ -4352,6 +4400,10 @@
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
                 // 增加的fps功能，当<60时计算跳帧
+                if (!util.isNumber(fps) || fps < 0) {
+                  fps = 60;
+                }
+
                 if (!first && fps < 60) {
                   var time = now - _this2.lastTime;
 

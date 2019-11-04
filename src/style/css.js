@@ -377,7 +377,7 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
 
 function computed(xom, isRoot) {
   let { currentStyle } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign, strokeWidth } = currentStyle;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = currentStyle;
   let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;

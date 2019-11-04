@@ -219,6 +219,8 @@ class Root extends Dom {
         // 可能会调整宽高，所以每次清除用最大值
         this.__mw = Math.max(this.__mw, this.width);
         this.__mh = Math.max(this.__mh, this.height);
+        // 清除前得恢复默认matrix，防止每次布局改变了属性
+        this.__ctx.setTransform([1, 0, 0, 1, 0, 0]);
         this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
       this.render(renderMode);

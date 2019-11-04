@@ -376,9 +376,11 @@ class Xom extends Node {
       borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
+    } = computedStyle;
+    let {
       transform,
       transformOrigin,
-    } = computedStyle;
+    } = currentStyle;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -403,6 +405,7 @@ class Xom extends Node {
       let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
       // 初始化有可能继承祖先的matrix
       this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
+      computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
       let parent = this.parent;
       while(parent) {
         if(parent.matrixEvent) {
@@ -418,6 +421,9 @@ class Xom extends Node {
       else if(renderMode === mode.SVG) {
         this.addTransform(['matrix', this.matrix.join(',')]);
       }
+    }
+    else {
+      computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
     }
     // 先渲染渐变，没有则背景色
     if(backgroundGradient) {

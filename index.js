@@ -2345,8 +2345,7 @@
         fontFamily = currentStyle.fontFamily,
         color = currentStyle.color,
         lineHeight = currentStyle.lineHeight,
-        textAlign = currentStyle.textAlign,
-        strokeWidth = currentStyle.strokeWidth;
+        textAlign = currentStyle.textAlign;
     var computedStyle = xom.__computedStyle = util.clone(currentStyle);
     var parent = xom.parent;
     var parentComputedStyle = parent && parent.computedStyle; // 处理继承的属性
@@ -3946,23 +3945,85 @@
     };
 
     if (k === 'transform') {
-      // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，以next为准
-      var exist = {};
+      // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
+      var pExist = {};
       prev[k].forEach(function (item) {
-        exist[item[0]] = item[1];
+        pExist[item[0]] = item[1];
+      });
+      var nExist = {};
+      next[k].forEach(function (item) {
+        nExist[item[0]] = item[1];
       });
       res.v = [];
+      var computedStyle = target.computedStyle;
+      var key = k;
       next[k].forEach(function (item) {
         var _item = _slicedToArray(item, 2),
             k = _item[0],
             v = _item[1]; // 老的不存在的项默认为0
 
 
-        var old = exist.hasOwnProperty(k) ? exist[k] : 0;
-        res.v.push({
-          k: k,
-          v: v - old
-        });
+        if (pExist.hasOwnProperty(k)) {
+          var p = pExist[k];
+          var n = nExist[k];
+
+          if (p.unit === n.unit) {
+            res.v.push({
+              k: k,
+              v: v.value - p.value
+            });
+          } else if (p.unit === unit.PX && n.unit === unit.PERCENT) {
+            if (k === 'translateX') {
+              p.value = p.value * 100 / computedStyle.width;
+            } else if (k === 'translateY') {
+              p.value = p.value * 100 / computedStyle.height;
+            }
+
+            p.unit = unit.PERCENT;
+            res.v.push({
+              k: k,
+              v: n.value - p.value
+            });
+          } else if (p.unit === unit.PERCENT && n.unit === unit.PX) {
+            if (k === 'translateX') {
+              p.value = p.value * 0.01 * computedStyle.width;
+            } else if (k === 'translateY') {
+              p.value = p.value * 0.01 * computedStyle.width;
+            }
+
+            p.unit = unit.PX;
+            res.v.push({
+              k: k,
+              v: n.value - p.value
+            });
+          }
+        } else {
+          prev[key].push([k, {
+            value: 0,
+            unit: v.unit
+          }]);
+          res.v.push({
+            k: k,
+            v: v.value
+          });
+        }
+      });
+      prev[k].forEach(function (item) {
+        var _item2 = _slicedToArray(item, 2),
+            k = _item2[0],
+            v = _item2[1]; // 新的不存在的项默认为0
+
+
+        if (!nExist.hasOwnProperty(k)) {
+          next[key].push([k, {
+            value: 0,
+            unit: v.unit
+          }]);
+          res.v.push({
+            k: k,
+            v: -v.value
+          });
+        }
       });
     } else if (COLOR_HASH.hasOwnProperty(k)) {
       var p = prev[k];
@@ -3976,9 +4037,19 @@
         return;
       }
 
+      var parentComputedStyle = (target.parent || target).computedStyle;
+
       if (_p.unit === _n.unit) {
         res.v = _n.value - _p.value;
-      } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) ; else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) ; else {
+      } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) {
+        _p.value = _p.value * 100 / parentComputedStyle[k];
+        _p.unit = unit.PERCENT;
+        res.v = _n.value - _p.value;
+      } else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) {
+        _p.value = _p.value * 0.01 * parentComputedStyle[k];
+        _p.unit = unit.PX;
+        res.v = _n.value - _p.value;
+      } else {
         return;
       }
     } else {
@@ -3991,7 +4062,7 @@
   function calFrame(prev, current, target) {
     var next = framing(current);
     next.keys.forEach(function (k) {
-      var ts = calDiff(prev.style, next.style, k); // 可以形成过渡的才会产生结果返回
+      var ts = calDiff(prev.style, next.style, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
         prev.transition.push(ts);
@@ -4030,18 +4101,15 @@
           v = item.v;
 
       if (k === 'transform') {
+        var transform = style.transform;
         var hash = {};
+        transform.forEach(function (item) {
+          hash[item[0]] = item[1];
+        });
         v.forEach(function (item) {
           var k = item.k,
               v = item.v;
-          hash[k] = v * percent;
-        });
-        var transform = style.transform;
-        transform.forEach(function (item) {
-          var _item2 = _slicedToArray(item, 1),
-              k = _item2[0];
-
-          item[1] += hash[k];
+          hash[k].value += v * percent;
         });
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
@@ -4186,7 +4254,7 @@
 
         for (var _i2 = 1; _i2 < length; _i2++) {
           var next = list[_i2];
-          prev = calFrame(prev, next);
+          prev = calFrame(prev, next, target);
           frames.push(prev);
         }
       }
@@ -4821,9 +4889,9 @@
             borderBottomStyle = computedStyle.borderBottomStyle,
             borderLeftWidth = computedStyle.borderLeftWidth,
             borderLeftColor = computedStyle.borderLeftColor,
-            borderLeftStyle = computedStyle.borderLeftStyle,
-            transform$1 = computedStyle.transform,
-            transformOrigin = computedStyle.transformOrigin;
+            borderLeftStyle = computedStyle.borderLeftStyle;
+        var transform$1 = currentStyle.transform,
+            transformOrigin = currentStyle.transformOrigin;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -4855,6 +4923,7 @@
 
 
           this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;
+          computedStyle.transform = 'matrix(' + _matrix.join(', ') + ')';
           var _parent = this.parent;
 
           while (_parent) {
@@ -4873,6 +4942,8 @@
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
+        } else {
+          computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
         } // 先渲染渐变，没有则背景色
 
 
@@ -7914,7 +7985,9 @@
           if (renderMode === mode.CANVAS) {
             // 可能会调整宽高，所以每次清除用最大值
             _this2.__mw = Math.max(_this2.__mw, _this2.width);
-            _this2.__mh = Math.max(_this2.__mh, _this2.height);
+            _this2.__mh = Math.max(_this2.__mh, _this2.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
+
+            _this2.__ctx.setTransform([1, 0, 0, 1, 0, 0]);
 
             _this2.__ctx.clearRect(0, 0, _this2.__mw, _this2.__mh);
           }

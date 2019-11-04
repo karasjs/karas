@@ -109,20 +109,81 @@ function calDiff(prev, next, k, target) {
     k,
   };
   if(k === 'transform') {
-    // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，以next为准
-    let exist = {};
+    // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
+    let pExist = {};
     prev[k].forEach(item => {
-      exist[item[0]] = item[1];
+      pExist[item[0]] = item[1];
+    });
+    let nExist = {};
+    next[k].forEach(item => {
+      nExist[item[0]] = item[1];
     });
     res.v = [];
+    let computedStyle = target.computedStyle;
+    let key = k;
     next[k].forEach(item => {
       let [k, v] = item;
       // 老的不存在的项默认为0
-      let old = exist.hasOwnProperty(k) ? exist[k] : 0;
-      res.v.push({
-        k,
-        v: v - old,
-      });
+      if(pExist.hasOwnProperty(k)) {
+        let p = pExist[k];
+        let n = nExist[k];
+        if(p.unit === n.unit) {
+          res.v.push({
+            k,
+            v: v.value - p.value,
+          });
+        }
+        else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+          if(k === 'translateX') {
+            p.value = p.value * 100 / computedStyle.width;
+          }
+          else if(k === 'translateY') {
+            p.value = p.value * 100 / computedStyle.height;
+          }
+          p.unit = unit.PERCENT;
+          res.v.push({
+            k,
+            v: n.value - p.value,
+          });
+        }
+        else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+          if(k === 'translateX') {
+            p.value = p.value * 0.01 * computedStyle.width;
+          }
+          else if(k === 'translateY') {
+            p.value = p.value * 0.01 * computedStyle.width;
+          }
+          p.unit = unit.PX;
+          res.v.push({
+            k,
+            v: n.value - p.value,
+          });
+        }
+      }
+      else {
+        prev[key].push([k, {
+          value: 0,
+          unit: v.unit,
+        }]);
+        res.v.push({
+          k,
+          v: v.value,
+        });
+      }
+    });
+    prev[k].forEach(item => {
+      let [k, v] = item;
+      // 新的不存在的项默认为0
+      if(!nExist.hasOwnProperty(k)) {
+        next[key].push([k, {
+          value: 0,
+          unit: v.unit,
+        }]);
+        res.v.push({
+          k,
+          v: -v.value,
+        });
+      }
     });
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
@@ -142,11 +203,20 @@ function calDiff(prev, next, k, target) {
     if(p.unit === unit.AUTO || n.unit === unit.AUTO) {
       return;
     }
+    let parentComputedStyle = (target.parent || target).computedStyle;
     if(p.unit === n.unit) {
       res.v = n.value - p.value;
     }
-    else if(p.unit === unit.PX && n.unit === unit.PERCENT) {}
-    else if(p.unit === unit.PERCENT && n.unit === unit.PX) {}
+    else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+      p.value = p.value * 100 / parentComputedStyle[k];
+      p.unit = unit.PERCENT;
+      res.v = n.value - p.value;
+    }
+    else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+      p.value = p.value * 0.01 * parentComputedStyle[k];
+      p.unit = unit.PX;
+      res.v = n.value - p.value;
+    }
     else {
       return;
     }
@@ -197,15 +267,14 @@ function calStyle(frame, percent) {
   frame.transition.forEach(item => {
     let { k, v } = item;
     if(k === 'transform') {
+      let transform = style.transform;
       let hash = {};
+      transform.forEach(item => {
+        hash[item[0]] = item[1];
+      });
       v.forEach(item => {
         let { k, v } = item;
-        hash[k] = v * percent;
-      });
-      let transform = style.transform;
-      transform.forEach(item => {
-        let [k] = item;
-        item[1] += hash[k];
+        hash[k].value += v * percent;
       });
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心

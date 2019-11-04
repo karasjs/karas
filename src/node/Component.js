@@ -97,8 +97,6 @@ class Component extends Event {
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
       css.normalize(sr.style);
-      // css.computed(sr, true);
-      // sr.__measure();
     }
     else {
       let style = this.props.style || {};
@@ -195,10 +193,8 @@ class Component extends Event {
   __computed(force) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      if(force) {
-        css.computed(sr, true);
-        sr.__measure();
-      }
+      css.computed(sr, true);
+      sr.__measure();
     }
     else {
       sr.__computed(force);

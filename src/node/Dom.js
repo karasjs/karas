@@ -101,16 +101,12 @@ class Dom extends Xom {
     }
     // 标准化处理，默认值、简写属性
     css.normalize(style);
-    // css.computed(this, isRoot);
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();
       }
       else {
         item.__style = style;
-        // css.computed(item);
-        // 文字首先测量所有字符宽度
-        // item.__measure();
       }
       if(item instanceof Text || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);

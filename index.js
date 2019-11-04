@@ -3622,8 +3622,7 @@
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
 
         if (sr instanceof Text) {
-          css.normalize(sr.style); // css.computed(sr, true);
-          // sr.__measure();
+          css.normalize(sr.style);
         } else {
           var style = this.props.style || {};
 
@@ -3718,11 +3717,9 @@
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
-          if (force) {
-            css.computed(sr, true);
+          css.computed(sr, true);
 
-            sr.__measure();
-          }
+          sr.__measure();
         } else {
           sr.__computed(force);
         }
@@ -3973,7 +3970,11 @@
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       var _p = prev[k];
-      var _n = next[k];
+      var _n = next[k]; // auto不做动画
+
+      if (_p.unit === unit.AUTO || _n.unit === unit.AUTO) {
+        return;
+      }
 
       if (_p.unit === _n.unit) {
         res.v = _n.value - _p.value;
@@ -4245,7 +4246,6 @@
 
             if (root) {
               // 可能涉及字号变化，引发布局变更重新测量
-              // target.__computed();
               var task = _this2.__task = function () {
                 _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
@@ -4256,7 +4256,7 @@
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
                   } // 恢复初始，再刷新一帧，触发finish
                   else {
-                      target.__needCompute = true; // target.__computed();
+                      target.__needCompute = true;
 
                       var _task = _this2.__task = function () {
                         // this.__playState = 'finished';
@@ -4309,14 +4309,8 @@
           // 停留在最后一帧
           if (['forwards', 'both'].indexOf(fill) > -1) {
             var last = this.frames[this.frames.length - 1];
-            stringify$1(last.style, this.target); // target.__computed();
-            // this.__playState = 'finished';
-          } // else {
-          //   target.__needCompute = true;
-          //   this.__playState = 'finished';
-          //   // target.__computed();
-          // }
-
+            stringify$1(last.style, this.target);
+          }
 
           this.__playState = 'finished';
           target.__needCompute = true;
@@ -4344,7 +4338,7 @@
         var root = target.root;
 
         if (root) {
-          target.__needCompute = true; // target.__computed();
+          target.__needCompute = true;
 
           var task = this.__task = function () {
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
@@ -5461,10 +5455,9 @@
 
     _createClass(Geom, [{
       key: "__init",
-      value: function __init(isRoot) {
+      value: function __init() {
         var style = this.style;
         css.normalize(style);
-        css.computed(this, isRoot);
         var ref = this.props.ref;
 
         if (ref) {
@@ -5830,15 +5823,12 @@
         } // 标准化处理，默认值、简写属性
 
 
-        css.normalize(style); // css.computed(this, isRoot);
-
+        css.normalize(style);
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
           } else {
-            item.__style = style; // css.computed(item);
-            // 文字首先测量所有字符宽度
-            // item.__measure();
+            item.__style = style;
           }
 
           if (item instanceof Text || item.style.position !== 'absolute') {

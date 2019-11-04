@@ -12,10 +12,9 @@ class Geom extends Xom {
     super(tagName, props);
   }
 
-  __init(isRoot) {
+  __init() {
     let style = this.style;
     css.normalize(style);
-    css.computed(this, isRoot);
     let ref = this.props.ref;
     if(ref) {
       let owner = this.host || this.root;

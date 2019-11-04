@@ -138,6 +138,10 @@ function calDiff(prev, next, k, target) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     let p = prev[k];
     let n = next[k];
+    // auto不做动画
+    if(p.unit === unit.AUTO || n.unit === unit.AUTO) {
+      return;
+    }
     if(p.unit === n.unit) {
       res.v = n.value - p.value;
     }
@@ -371,7 +375,6 @@ class Animation extends Event {
         let root = target.root;
         if(root) {
           // 可能涉及字号变化，引发布局变更重新测量
-          // target.__computed();
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
             if(i === length - 1) {
@@ -383,7 +386,6 @@ class Animation extends Event {
               // 恢复初始，再刷新一帧，触发finish
               else {
                 target.__needCompute = true;
-                // target.__computed();
                 let task = this.__task = () => {
                   // this.__playState = 'finished';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
@@ -424,14 +426,7 @@ class Animation extends Event {
       if(['forwards', 'both'].indexOf(fill) > -1) {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, this.target);
-        // target.__computed();
-        // this.__playState = 'finished';
       }
-      // else {
-      //   target.__needCompute = true;
-      //   this.__playState = 'finished';
-      //   // target.__computed();
-      // }
       this.__playState = 'finished';
       target.__needCompute = true;
       let task = this.__task = () => {
@@ -450,7 +445,6 @@ class Animation extends Event {
     let root = target.root;
     if(root) {
       target.__needCompute = true;
-      // target.__computed();
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };

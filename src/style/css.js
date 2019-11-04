@@ -211,33 +211,60 @@ function normalize(style, noReset) {
           transform.push(calUnit(arr2, 1, arr[1] || arr[0]));
         }
         else if(k === 'scaleX') {
-          transform.push(['scaleX', parseFloat(v) || 0]);
+          transform.push(['scaleX', {
+            value: parseFloat(v) || 0,
+            unit: unit.NUMBER,
+          }]);
         }
         else if(k === 'scaleY') {
-          transform.push(['scaleY', parseFloat(v) || 0]);
+          transform.push(['scaleY', {
+            value: parseFloat(v) || 0,
+            unit: unit.NUMBER,
+          }]);
         }
         else if(k === 'scale') {
           let arr = v.split(/\s*,\s*/);
           let x = parseFloat(arr[0]) || 0;
           let y = parseFloat(arr[arr.length - 1]) || 0;
-          transform.push(['scaleX', x]);
-          transform.push(['scaleY', y]);
+          transform.push(['scaleX', {
+            value: x,
+            unit: unit.NUMBER,
+          }]);
+          transform.push(['scaleY', {
+            value: y,
+            unit: unit.NUMBER,
+          }]);
         }
         else if(k === 'rotateZ' || k === 'rotate') {
-          transform.push(['rotateZ', parseFloat(v) || 0]);
+          transform.push(['rotateZ', {
+            value: parseFloat(v) || 0,
+            unit: unit.DEG,
+          }]);
         }
         else if(k === 'skewX') {
-          transform.push(['skewX', parseFloat(v) || 0]);
+          transform.push(['skewX', {
+            value: parseFloat(v) || 0,
+            unit: unit.DEG,
+          }]);
         }
         else if(k === 'skewY') {
-          transform.push(['skewY', parseFloat(v) || 0]);
+          transform.push(['skewY', {
+            value: parseFloat(v) || 0,
+            unit: unit.DEG,
+          }]);
         }
         else if(k === 'skew') {
           let arr = v.split(/\s*,\s*/);
           let x = parseFloat(arr[0]) || 0;
           let y = parseFloat(arr[arr.length - 1]) || 0;
-          transform.push(['skewX', x]);
-          transform.push(['skewY', y]);
+          transform.push(['skewX', {
+            value: x,
+            unit: unit.DEG,
+          }]);
+          transform.push(['skewY', {
+            value: y,
+            unit: unit.DEG,
+          }]);
         }
       });
     }
@@ -266,8 +293,14 @@ function normalize(style, noReset) {
         }
         else {
           tfo.push({
-            value: item,
-            unit: unit.POSITION,
+            value: {
+              top: 0,
+              left: 0,
+              center: 50,
+              right: 100,
+              bottom: 100,
+            }[item],
+            unit: unit.PERCENT,
           });
         }
       }

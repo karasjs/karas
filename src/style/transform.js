@@ -2,7 +2,7 @@ import unit from '../style/unit';
 import util from '../util/util';
 
 function calMatrix(transform, transformOrigin, x, y, ow, oh) {
-  let [ox, oy] = getOrigin(transformOrigin, x, y, ow, oh);
+  let [ox, oy] = transformOrigin;
   let list = normalize(transform, ox, oy, ow, oh);
   let matrix = identity();
   matrix[12] = ox;
@@ -136,13 +136,13 @@ function normalize(transform, ox, oy, w, h) {
       }
     }
     else {
-      res.push([item[0], item[1]]);
+      res.push([item[0], item[1].value]);
     }
   });
   return res;
 }
 
-function getOrigin(transformOrigin, x, y, w, h) {
+function calOrigin(transformOrigin, x, y, w, h) {
   let tfo = [];
   transformOrigin.forEach((item, i) => {
     if(item.unit === unit.PX) {
@@ -150,21 +150,6 @@ function getOrigin(transformOrigin, x, y, w, h) {
     }
     else if(item.unit === unit.PERCENT) {
       tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
-    }
-    else if(item.value === 'left') {
-      tfo.push(x);
-    }
-    else if(item.value === 'right') {
-      tfo.push(x + w);
-    }
-    else if(item.value === 'top') {
-      tfo.push(y);
-    }
-    else if(item.value === 'bottom') {
-      tfo.push(y + h);
-    }
-    else {
-      tfo.push(i ? (y + h * 0.5) : (x + w * 0.5));
     }
   });
   return tfo;
@@ -195,6 +180,7 @@ function mergeMatrix(a, b) {
 
 export default {
   calMatrix,
+  calOrigin,
   pointInQuadrilateral,
   mergeMatrix,
 };

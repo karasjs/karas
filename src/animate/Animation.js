@@ -186,6 +186,27 @@ function calDiff(prev, next, k, target) {
       }
     });
   }
+  else if(k === 'transformOrigin') {
+    res.v = [];
+    let computedStyle = target.computedStyle;
+    for(let i = 0; i < 2; i++) {
+      let p = prev[k][i];
+      let n = next[k][i];
+      if(p.unit === n.unit) {
+        res.v.push(n.value - p.value);
+      }
+      else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+        p.value = p.value * 100 / computedStyle[i ? 'outerHeight' : 'outerWidth'];
+        p.unit = unit.PERCENT;
+        res.v = n.value - p.value;
+      }
+      else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+        p.value = p.value * 0.01 * computedStyle[i ? 'outerHeight' : 'outerWidth'];
+        p.unit = unit.PX;
+        res.v = n.value - p.value;
+      }
+    }
+  }
   else if(COLOR_HASH.hasOwnProperty(k)) {
     let p = prev[k];
     let n = next[k];
@@ -276,6 +297,10 @@ function calStyle(frame, percent) {
         let { k, v } = item;
         hash[k].value += v * percent;
       });
+    }
+    else if(k === 'transformOrigin') {
+      style[k][0].value += v[0] * percent;
+      style[k][1].value += v[1] * percent;
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {

@@ -423,7 +423,8 @@
     PERCENT: 2,
     POSITION: 3,
     NUMBER: 4,
-    INHERIT: 5
+    INHERIT: 5,
+    DEG: 6
   };
 
   var toString = {}.toString;
@@ -670,10 +671,10 @@
   };
 
   function calMatrix(transform, transformOrigin, x, y, ow, oh) {
-    var _getOrigin = getOrigin(transformOrigin, x, y, ow, oh),
-        _getOrigin2 = _slicedToArray(_getOrigin, 2),
-        ox = _getOrigin2[0],
-        oy = _getOrigin2[1];
+    // let [ox, oy] = calOrigin(transformOrigin, x, y, ow, oh);
+    var _transformOrigin = _slicedToArray(transformOrigin, 2),
+        ox = _transformOrigin[0],
+        oy = _transformOrigin[1];
 
     var list = normalize(transform, ox, oy, ow, oh);
     var matrix = identity();
@@ -833,29 +834,19 @@
           res.push([item[0], item[1].value]);
         }
       } else {
-        res.push([item[0], item[1]]);
+        res.push([item[0], item[1].value]);
       }
     });
     return res;
   }
 
-  function getOrigin(transformOrigin, x, y, w, h) {
+  function calOrigin(transformOrigin, x, y, w, h) {
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
       if (item.unit === unit.PX) {
         tfo.push(item.value);
       } else if (item.unit === unit.PERCENT) {
         tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
-      } else if (item.value === 'left') {
-        tfo.push(x);
-      } else if (item.value === 'right') {
-        tfo.push(x + w);
-      } else if (item.value === 'top') {
-        tfo.push(y);
-      } else if (item.value === 'bottom') {
-        tfo.push(y + h);
-      } else {
-        tfo.push(i ? y + h * 0.5 : x + w * 0.5);
       }
     });
     return tfo;
@@ -882,6 +873,7 @@
 
   var transform = {
     calMatrix: calMatrix,
+    calOrigin: calOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
     mergeMatrix: mergeMatrix
   };
@@ -2193,22 +2185,43 @@
             transform.push(calUnit(arr1, 1, _arr3[0]));
             transform.push(calUnit(arr2, 1, _arr3[1] || _arr3[0]));
           } else if (k === 'scaleX') {
-            transform.push(['scaleX', parseFloat(v) || 0]);
+            transform.push(['scaleX', {
+              value: parseFloat(v) || 0,
+              unit: unit.NUMBER
+            }]);
           } else if (k === 'scaleY') {
-            transform.push(['scaleY', parseFloat(v) || 0]);
+            transform.push(['scaleY', {
+              value: parseFloat(v) || 0,
+              unit: unit.NUMBER
+            }]);
           } else if (k === 'scale') {
             var _arr4 = v.split(/\s*,\s*/);
 
             var x = parseFloat(_arr4[0]) || 0;
             var y = parseFloat(_arr4[_arr4.length - 1]) || 0;
-            transform.push(['scaleX', x]);
-            transform.push(['scaleY', y]);
+            transform.push(['scaleX', {
+              value: x,
+              unit: unit.NUMBER
+            }]);
+            transform.push(['scaleY', {
+              value: y,
+              unit: unit.NUMBER
+            }]);
           } else if (k === 'rotateZ' || k === 'rotate') {
-            transform.push(['rotateZ', parseFloat(v) || 0]);
+            transform.push(['rotateZ', {
+              value: parseFloat(v) || 0,
+              unit: unit.DEG
+            }]);
           } else if (k === 'skewX') {
-            transform.push(['skewX', parseFloat(v) || 0]);
+            transform.push(['skewX', {
+              value: parseFloat(v) || 0,
+              unit: unit.DEG
+            }]);
           } else if (k === 'skewY') {
-            transform.push(['skewY', parseFloat(v) || 0]);
+            transform.push(['skewY', {
+              value: parseFloat(v) || 0,
+              unit: unit.DEG
+            }]);
           } else if (k === 'skew') {
             var _arr5 = v.split(/\s*,\s*/);
 
@@ -2216,8 +2229,14 @@
 
             var _y = parseFloat(_arr5[_arr5.length - 1]) || 0;
 
-            transform.push(['skewX', _x]);
-            transform.push(['skewY', _y]);
+            transform.push(['skewX', {
+              value: _x,
+              unit: unit.DEG
+            }]);
+            transform.push(['skewY', {
+              value: _y,
+              unit: unit.DEG
+            }]);
           }
         });
       }
@@ -2250,8 +2269,14 @@
             });
           } else {
             tfo.push({
-              value: item,
-              unit: unit.POSITION
+              value: {
+                top: 0,
+                left: 0,
+                center: 50,
+                right: 100,
+                bottom: 100
+              }[item],
+              unit: unit.PERCENT
             });
           }
         }
@@ -4025,30 +4050,50 @@
           });
         }
       });
-    } else if (COLOR_HASH.hasOwnProperty(k)) {
-      var p = prev[k];
-      var n = next[k];
-      res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
-    } else if (LENGTH_HASH.hasOwnProperty(k)) {
-      var _p = prev[k];
-      var _n = next[k]; // auto不做动画
+    } else if (k === 'transformOrigin') {
+      res.v = [];
+      var _computedStyle = target.computedStyle;
 
-      if (_p.unit === unit.AUTO || _n.unit === unit.AUTO) {
+      for (var i = 0; i < 2; i++) {
+        var p = prev[k][i];
+        var n = next[k][i];
+
+        if (p.unit === n.unit) {
+          res.v.push(n.value - p.value);
+        } else if (p.unit === unit.PX && n.unit === unit.PERCENT) {
+          p.value = p.value * 100 / _computedStyle[i ? 'outerHeight' : 'outerWidth'];
+          p.unit = unit.PERCENT;
+          res.v = n.value - p.value;
+        } else if (p.unit === unit.PERCENT && n.unit === unit.PX) {
+          p.value = p.value * 0.01 * _computedStyle[i ? 'outerHeight' : 'outerWidth'];
+          p.unit = unit.PX;
+          res.v = n.value - p.value;
+        }
+      }
+    } else if (COLOR_HASH.hasOwnProperty(k)) {
+      var _p = prev[k];
+      var _n = next[k];
+      res.v = [_n[0] - _p[0], _n[1] - _p[1], _n[2] - _p[2], _n[3] - _p[3]];
+    } else if (LENGTH_HASH.hasOwnProperty(k)) {
+      var _p2 = prev[k];
+      var _n2 = next[k]; // auto不做动画
+
+      if (_p2.unit === unit.AUTO || _n2.unit === unit.AUTO) {
         return;
       }
 
       var parentComputedStyle = (target.parent || target).computedStyle;
 
-      if (_p.unit === _n.unit) {
-        res.v = _n.value - _p.value;
-      } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) {
-        _p.value = _p.value * 100 / parentComputedStyle[k];
-        _p.unit = unit.PERCENT;
-        res.v = _n.value - _p.value;
-      } else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) {
-        _p.value = _p.value * 0.01 * parentComputedStyle[k];
-        _p.unit = unit.PX;
-        res.v = _n.value - _p.value;
+      if (_p2.unit === _n2.unit) {
+        res.v = _n2.value - _p2.value;
+      } else if (_p2.unit === unit.PX && _n2.unit === unit.PERCENT) {
+        _p2.value = _p2.value * 100 / parentComputedStyle[k];
+        _p2.unit = unit.PERCENT;
+        res.v = _n2.value - _p2.value;
+      } else if (_p2.unit === unit.PERCENT && _n2.unit === unit.PX) {
+        _p2.value = _p2.value * 0.01 * parentComputedStyle[k];
+        _p2.unit = unit.PX;
+        res.v = _n2.value - _p2.value;
       } else {
         return;
       }
@@ -4111,6 +4156,9 @@
               v = item.v;
           hash[k].value += v * percent;
         });
+      } else if (k === 'transformOrigin') {
+        style[k][0].value += v[0] * percent;
+        style[k][1].value += v[1] * percent;
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
           var _item3 = style[k];
@@ -4719,6 +4767,8 @@
 
         computedStyle.width = this.width;
         computedStyle.height = this.height;
+        computedStyle.outerWidth = this.outerWidth;
+        computedStyle.outerHeight = this.outerHeight;
       }
     }, {
       key: "isGeom",
@@ -4909,17 +4959,14 @@
         var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth;
         var iw = width + paddingLeft + paddingRight;
-        var ih = height + paddingTop + paddingBottom; // transform相对于自身
+        var ih = height + paddingTop + paddingBottom;
+        var ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
+        var oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom;
+        var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
+        computedStyle.transformOrigin = tfo; // transform相对于自身
 
         if (transform$1) {
-          var _x = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
-
-          var _y = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
-
-          var ow = _x - x;
-          var oh = _y - y;
-
-          var _matrix = transform.calMatrix(transform$1, transformOrigin, x, y, ow, oh); // 初始化有可能继承祖先的matrix
+          var _matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh); // 初始化有可能继承祖先的matrix
 
 
           this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;

@@ -225,6 +225,8 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    computedStyle.outerWidth = this.outerWidth;
+    computedStyle.outerHeight = this.outerHeight;
   }
 
   isGeom() {
@@ -396,13 +398,13 @@ class Xom extends Node {
     let y4 = y3 + borderBottomWidth;
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
+    let ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
+    let oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom;
+    let tfo = tf.calOrigin(transformOrigin, x, y, ow, oh);
+    computedStyle.transformOrigin = tfo;
     // transform相对于自身
     if(transform) {
-      let x4 = x + marginLeft + borderLeftWidth + iw + borderRightWidth + marginRight;
-      let y4 = y + marginTop + borderTopWidth + ih + borderBottomWidth + marginBottom;
-      let ow = x4 - x;
-      let oh = y4 - y;
-      let matrix = tf.calMatrix(transform, transformOrigin, x, y, ow, oh);
+      let matrix = tf.calMatrix(transform, tfo, x, y, ow, oh);
       // 初始化有可能继承祖先的matrix
       this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
       computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';

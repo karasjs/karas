@@ -5,4 +5,5 @@ export default {
   POSITION: 3,
   NUMBER: 4,
   INHERIT: 5,
+  DEG: 6,
 };

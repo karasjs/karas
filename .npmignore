@@ -18,3 +18,4 @@ reports/
 .idea/
 .travis.yml
 index.min.js*
+selenium-debug.log

@@ -410,11 +410,9 @@
     return Node;
   }();
 
-  var CANVAS = 0;
-  var SVG = 1;
   var mode = {
-    CANVAS: CANVAS,
-    SVG: SVG
+    CANVAS: 0,
+    SVG: 1
   };
 
   var unit = {

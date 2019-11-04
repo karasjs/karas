@@ -1,5 +1,4 @@
 import sort from '../util/sort';
-import util from '../util/util';
 import Text from '../node/Text';
 
 function splitClass(s) {

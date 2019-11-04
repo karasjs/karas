@@ -1,4 +1,4 @@
-import util from "../util/util";
+import util from '../util/util';
 
 function getLinearDeg(v) {
   let deg = 180;

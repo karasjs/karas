@@ -332,6 +332,7 @@ class Animation extends Event {
     this.__startTime = 0;
     this.__offsetTime = 0;
     this.__pauseTime = 0;
+    this.__lastTime = 0;
     this.__pending = false;
     this.__playState = 'idle';
     this.__cb = null;
@@ -438,7 +439,7 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { duration, fill } = this.options;
+      let { duration, fill, fps } = this.options;
       let { frames, target } = this;
       let length = frames.length;
       let first = true;
@@ -449,7 +450,6 @@ class Animation extends Event {
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
           });
-          first = false;
         }
         let i = binarySearch(0, frames.length - 1,now + this.offsetTime, frames);
         let current = frames[i];
@@ -460,12 +460,21 @@ class Animation extends Event {
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
         else {
+          // 增加的fps功能，当<60时计算跳帧
+          if(!first && fps < 60) {
+            let time = now - this.lastTime;
+            if(time < 1000 / fps) {
+              return;
+            }
+          }
           let total = frames[i + 1].time - current.time;
           let diff = now - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
           stringify(style, target);
         }
+        this.__lastTime = now;
+        first = false;
         let root = target.root;
         if(root) {
           // 可能涉及字号变化，引发布局变更重新测量
@@ -572,6 +581,9 @@ class Animation extends Event {
   }
   get startTime() {
     return this.__startTime;
+  }
+  get lastTime() {
+    return this.__lastTime;
   }
   get pending() {
     return this.__pending;

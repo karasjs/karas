@@ -671,7 +671,6 @@
   };
 
   function calMatrix(transform, transformOrigin, x, y, ow, oh) {
-    // let [ox, oy] = calOrigin(transformOrigin, x, y, ow, oh);
     var _transformOrigin = _slicedToArray(transformOrigin, 2),
         ox = _transformOrigin[0],
         oy = _transformOrigin[1];
@@ -833,6 +832,8 @@
         } else {
           res.push([item[0], item[1].value]);
         }
+      } else if (k === 'matrix') {
+        res.push([item[0], item[1]]);
       } else {
         res.push([item[0], item[1].value]);
       }
@@ -4198,6 +4199,7 @@
       _this.__startTime = 0;
       _this.__offsetTime = 0;
       _this.__pauseTime = 0;
+      _this.__lastTime = 0;
       _this.__pending = false;
       _this.__playState = 'idle';
       _this.__cb = null;
@@ -4324,7 +4326,8 @@
         } else {
           var _this$options = this.options,
               duration = _this$options.duration,
-              fill = _this$options.fill;
+              fill = _this$options.fill,
+              fps = _this$options.fps;
           var frames = this.frames,
               target = this.target;
           var length = frames.length;
@@ -4338,7 +4341,6 @@
               frames.forEach(function (frame) {
                 frame.time = now + duration * frame.offset;
               });
-              first = false;
             }
 
             var i = binarySearch(0, frames.length - 1, now + _this2.offsetTime, frames);
@@ -4349,6 +4351,15 @@
               frame.offFrame(_this2.cb);
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
+                // 增加的fps功能，当<60时计算跳帧
+                if (!first && fps < 60) {
+                  var time = now - _this2.lastTime;
+
+                  if (time < 1000 / fps) {
+                    return;
+                  }
+                }
+
                 var total = frames[i + 1].time - current.time;
 
                 var _diff = now - current.time;
@@ -4358,6 +4369,8 @@
                 stringify$1(style, target);
               }
 
+            _this2.__lastTime = now;
+            first = false;
             var root = target.root;
 
             if (root) {
@@ -4503,6 +4516,11 @@
       key: "startTime",
       get: function get() {
         return this.__startTime;
+      }
+    }, {
+      key: "lastTime",
+      get: function get() {
+        return this.__lastTime;
       }
     }, {
       key: "pending",
@@ -7306,14 +7324,23 @@
           var matrix;
 
           if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-            var list = [['scaleX', width / this.__imgWidth], ['scaleY', height / this.__imgHeight]];
-            matrix = transform.calMatrix(list, [{
+            var list = [['scaleX', {
+              value: width / this.__imgWidth,
+              unit: unit.NUMBER
+            }], ['scaleY', {
+              value: height / this.__imgHeight,
+              unit: unit.NUMBER
+            }]];
+            var ow = this.outerWidth;
+            var oh = this.outerHeight;
+            var tfo = transform.calOrigin([{
               value: 0,
               unit: unit.PERCENT
             }, {
               value: 0,
               unit: unit.PERCENT
-            }], x, y, this.outerWidth, this.outerHeight); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
+            }], x, y, ow, oh);
+            matrix = transform.calMatrix(list, tfo, x, y, ow, oh); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
 
             if (this.matrix) {
               this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);

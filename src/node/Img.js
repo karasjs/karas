@@ -203,10 +203,18 @@ class Img extends Dom {
       if(this.__imgWidth !== undefined
         && (width !== this.__imgWidth || height !== this.__imgHeight)) {
         let list = [
-          ['scaleX', width / this.__imgWidth],
-          ['scaleY', height / this.__imgHeight]
+          ['scaleX', {
+            value: width / this.__imgWidth,
+            unit: unit.NUMBER,
+          }],
+          ['scaleY', {
+            value: height / this.__imgHeight,
+            unit: unit.NUMBER,
+          }]
         ];
-        matrix = transform.calMatrix(list, [
+        let ow = this.outerWidth;
+        let oh = this.outerHeight;
+        let tfo = transform.calOrigin([
           {
             value: 0,
             unit: unit.PERCENT,
@@ -215,7 +223,8 @@ class Img extends Dom {
             value: 0,
             unit: unit.PERCENT,
           }
-        ], x, y, this.outerWidth, this.outerHeight);
+        ], x, y, ow, oh);
+        matrix = transform.calMatrix(list, tfo, x, y, ow, oh);
         // 缩放图片的同时要考虑原先的矩阵，以及影响事件
         if(this.matrix) {
           this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);

@@ -135,6 +135,9 @@ function normalize(transform, ox, oy, w, h) {
         res.push([item[0], item[1].value]);
       }
     }
+    else if(k === 'matrix') {
+      res.push([item[0], item[1]]);
+    }
     else {
       res.push([item[0], item[1].value]);
     }

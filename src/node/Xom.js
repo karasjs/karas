@@ -734,9 +734,9 @@ class Xom extends Node {
     return animation.play();
   }
 
-  __computed() {
+  __computed(force) {
     let { needCompute } = this;
-    if(needCompute) {
+    if(needCompute || force) {
       this.__needCompute = false;
       css.computed(this, this.isRoot());
     }
@@ -744,9 +744,9 @@ class Xom extends Node {
     if(!this.isGeom()) {
       this.children.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
-          item.__computed();
+          item.__computed(needCompute || force);
         }
-        else if(needCompute) {
+        else if(needCompute || force) {
           item.__style = this.currentStyle;
           css.computed(item);
           // 文字首先测量所有字符宽度

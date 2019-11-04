@@ -192,14 +192,16 @@ class Component extends Event {
     }
   }
 
-  __computed() {
+  __computed(force) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      css.computed(sr);
-      sr.__measure();
+      if(force) {
+        css.computed(sr, true);
+        sr.__measure();
+      }
     }
     else {
-      sr.__computed();
+      sr.__computed(force);
     }
   }
 

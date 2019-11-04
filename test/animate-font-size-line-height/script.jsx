@@ -15,7 +15,7 @@ let animation = t.animate([
     lineHeight: 3,
   }
 ], {
-  duration: 2000,
+  duration: 200,
   fill: 'forwards',
 });
 let input = document.querySelector('input');

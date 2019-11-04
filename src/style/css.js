@@ -52,7 +52,7 @@ function calUnit(obj, k, v) {
   }
   else if(/%$/.test(v)) {
     // border不支持百分比
-    if(k.toString().indexOf('border') === 0) {
+    if(k.toString().indexOf('border') === 0 || k.toString() === 'strokeWidth') {
       obj[k] = {
         value: 0,
         unit: unit.PX,
@@ -300,6 +300,7 @@ function normalize(style, noReset) {
     'height',
     'flexBasis',
     'fontSize',
+    'strokeWidth'
   ].forEach(k => {
     let v = style[k];
     if(!style.hasOwnProperty(k)) {
@@ -376,7 +377,7 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
 
 function computed(xom, isRoot) {
   let { currentStyle } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = currentStyle;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign, strokeWidth } = currentStyle;
   let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
@@ -403,7 +404,8 @@ function computed(xom, isRoot) {
     'borderTopWidth',
     'borderRightWidth',
     'borderBottomWidth',
-    'borderLeftWidth'
+    'borderLeftWidth',
+    'strokeWidth'
   ].forEach(k => {
     let v = computedStyle[k];
     computedStyle[k] = v.value;

@@ -2024,7 +2024,7 @@
       };
     } else if (/%$/.test(v)) {
       // border不支持百分比
-      if (k.toString().indexOf('border') === 0) {
+      if (k.toString().indexOf('border') === 0 || k.toString() === 'strokeWidth') {
         obj[k] = {
           value: 0,
           unit: unit.PX
@@ -2265,7 +2265,7 @@
     parserOneBorder(style, 'Bottom');
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
       if (!style.hasOwnProperty(k)) {
@@ -2345,7 +2345,8 @@
         fontFamily = currentStyle.fontFamily,
         color = currentStyle.color,
         lineHeight = currentStyle.lineHeight,
-        textAlign = currentStyle.textAlign;
+        textAlign = currentStyle.textAlign,
+        strokeWidth = currentStyle.strokeWidth;
     var computedStyle = xom.__computedStyle = util.clone(currentStyle);
     var parent = xom.parent;
     var parentComputedStyle = parent && parent.computedStyle; // 处理继承的属性
@@ -2375,7 +2376,7 @@
     } // 处理可提前计算的属性，如border百分比
 
 
-    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'strokeWidth'].forEach(function (k) {
       var v = computedStyle[k];
       computedStyle[k] = v.value;
     });
@@ -3713,15 +3714,17 @@
       }
     }, {
       key: "__computed",
-      value: function __computed() {
+      value: function __computed(force) {
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
-          css.computed(sr);
+          if (force) {
+            css.computed(sr, true);
 
-          sr.__measure();
+            sr.__measure();
+          }
         } else {
-          sr.__computed();
+          sr.__computed(force);
         }
       }
     }, {
@@ -5223,12 +5226,12 @@
       }
     }, {
       key: "__computed",
-      value: function __computed() {
+      value: function __computed(force) {
         var _this2 = this;
 
         var needCompute = this.needCompute;
 
-        if (needCompute) {
+        if (needCompute || force) {
           this.__needCompute = false;
           css.computed(this, this.isRoot());
         } // 即便自己不需要计算，但children还要继续递归检查
@@ -5237,8 +5240,8 @@
         if (!this.isGeom()) {
           this.children.forEach(function (item) {
             if (item instanceof Xom || item instanceof Component) {
-              item.__computed();
-            } else if (needCompute) {
+              item.__computed(needCompute || force);
+            } else if (needCompute || force) {
               item.__style = _this2.currentStyle;
               css.computed(item); // 文字首先测量所有字符宽度
 

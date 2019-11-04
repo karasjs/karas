@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>animate</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">实现了Web Animation Api标准接口，并且增加了fps帧数控制。这个例子展示如何写出一个复杂的动态icon效果。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  let c = karas.render(
+    <canvas width="360" height="360">
+      <div ref="t">123</div>
+    </canvas>,
+    '#example'
+  );
+  c.ref.t.animate([
+    {
+      transform: 'translateX(0)'
+    },
+    {
+      transform: 'translateX(200px)'
+    }
+  ], {
+    duration: 2000,
+    fill: 'forwards',
+  });
+  let s = karas.render(
+    <svg width="360" height="360">
+      <div ref="t">123</div>
+    </svg>,
+    '#example2'
+  );
+  s.ref.t.animate([
+    {
+      transform: 'translateX(0)'
+    },
+    {
+      transform: 'translateX(200px)'
+    }
+  ], {
+    duration: 2000,
+    fill: 'forwards',
+  });
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

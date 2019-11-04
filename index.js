@@ -3812,6 +3812,7 @@
 
       this.__inFrame = false;
       this.__task = [];
+      this.__afterFrame = [];
     }
 
     _createClass(Frame, [{
@@ -3831,8 +3832,14 @@
             });
             self.__inFrame = false;
             var afterCb = self.__afterFrame;
-            afterCb && afterCb();
-            self.__afterFrame = null;
+
+            if (afterCb) {
+              afterCb.forEach(function (item) {
+                return item();
+              });
+            }
+
+            self.__afterFrame = [];
 
             if (!task.length) {
               return;
@@ -3878,7 +3885,9 @@
         }
 
         if (self.__inFrame) {
-          self.__afterFrame = cb;
+          self.__afterFrame = self.__afterFrame || [];
+
+          self.__afterFrame.push(cb);
         } else {
           self.onFrame(cb);
         }

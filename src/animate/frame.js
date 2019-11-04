@@ -4,6 +4,7 @@ class Frame {
   constructor() {
     this.__inFrame = false;
     this.__task = [];
+    this.__afterFrame = [];
   }
 
   __init(task) {
@@ -17,8 +18,10 @@ class Frame {
         task.forEach(handle => handle());
         self.__inFrame = false;
         let afterCb = self.__afterFrame;
-        afterCb && afterCb();
-        self.__afterFrame = null;
+        if(afterCb) {
+          afterCb.forEach(item => item());
+        }
+        self.__afterFrame = [];
         if(!task.length) {
           return;
         }
@@ -53,7 +56,8 @@ class Frame {
       self.offFrame(cb);
     }
     if(self.__inFrame) {
-      self.__afterFrame = cb;
+      self.__afterFrame = self.__afterFrame || [];
+      self.__afterFrame.push(cb);
     }
     else {
       self.onFrame(cb);

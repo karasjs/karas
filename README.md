@@ -1,4 +1,5 @@
 # karas(鸦)
+A flexible JavaScript framework for graphics programming on Canvas/Svg.
 
 [![NPM version](https://img.shields.io/npm/v/karas.svg)](https://npmjs.org/package/karas)
 [![Build Status](https://img.shields.io/travis/karasjs/karas.svg)](https://travis-ci.org/karasjs/karas)

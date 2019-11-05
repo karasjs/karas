@@ -1,7 +1,7 @@
 {
   "name": "karas",
-  "version": "0.6.0",
-  "description": "鸦",
+  "version": "0.6.1",
+  "description": "A flexible JavaScript framework for graphics programming on Canvas/Svg.",
   "maintainers": [
     {
       "name": "army8735",

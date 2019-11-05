@@ -164,11 +164,12 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { isDestroyed, computedStyle: { display } } = this;
+    let { isDestroyed, computedStyle: { display, visibility } } = this;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,
         display,
+        visibility,
       };
     }
     if(renderMode === mode.SVG) {

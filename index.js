@@ -3512,7 +3512,8 @@
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     textAlign: 'inherit',
-    transformOrigin: 'center'
+    transformOrigin: 'center',
+    visibility: 'visible'
   };
   var GEOM = {
     fill: 'transparent',
@@ -4785,10 +4786,6 @@
             paddingBottom = currentStyle.paddingBottom,
             paddingLeft = currentStyle.paddingLeft;
 
-        if (isDestroyed || display === 'none') {
-          return;
-        }
-
         if (width.unit !== unit.AUTO) {
           switch (width.unit) {
             case unit.PX:
@@ -4812,6 +4809,10 @@
         borderWidth(computedStyle, currentStyle);
         this.__ox = this.__oy = 0;
         this.__matrix = this.__matrixEvent = null;
+
+        if (isDestroyed || display === 'none') {
+          return;
+        }
 
         if (display === 'block') {
           this.__layoutBlock(data);
@@ -5041,14 +5042,10 @@
             borderBottomStyle = computedStyle.borderBottomStyle,
             borderLeftWidth = computedStyle.borderLeftWidth,
             borderLeftColor = computedStyle.borderLeftColor,
-            borderLeftStyle = computedStyle.borderLeftStyle;
+            borderLeftStyle = computedStyle.borderLeftStyle,
+            visibility = computedStyle.visibility;
         var transform$1 = currentStyle.transform,
-            transformOrigin = currentStyle.transformOrigin;
-
-        if (isDestroyed || display === 'none') {
-          return;
-        } // 使用rx和ry渲染位置，考虑了relative和translate影响
-
+            transformOrigin = currentStyle.transformOrigin; // 使用rx和ry渲染位置，考虑了relative和translate影响
 
         var x = this.rx,
             y = this.ry;
@@ -5093,6 +5090,10 @@
           }
         } else {
           computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+        }
+
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+          return;
         } // 先渲染渐变，没有则背景色
 
 
@@ -5860,12 +5861,15 @@
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
 
         var isDestroyed = this.isDestroyed,
-            display = this.computedStyle.display;
+            _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
+            visibility = _this$computedStyle.visibility;
 
         if (isDestroyed || display === 'none') {
           return {
             isDestroyed: isDestroyed,
-            display: display
+            display: display,
+            visibility: visibility
           };
         }
 
@@ -7082,11 +7086,13 @@
         _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
 
         var isDestroyed = this.isDestroyed,
-            display = this.computedStyle.display,
+            _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
+            visibility = _this$computedStyle.visibility,
             flowChildren = this.flowChildren,
             children = this.children;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         } // 先绘制static
 
@@ -8166,9 +8172,14 @@
           var clone = _this2.__task.splice(0);
 
           clone.forEach(function (cb) {
-            cb && cb();
+            if (util.isFunction(cb)) {
+              cb();
+            }
           });
-          cb && cb();
+
+          if (util.isFunction(cb)) {
+            cb();
+          }
 
           _this2.emit(Event.KARAS_REFRESH);
         });
@@ -8277,13 +8288,14 @@
         var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode),
             isDestroyed = _get$call.isDestroyed,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             originX = _get$call.originX,
             originY = _get$call.originY,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8425,11 +8437,12 @@
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8541,12 +8554,13 @@
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8688,12 +8702,13 @@
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8806,12 +8821,13 @@
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8879,12 +8895,13 @@
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -8965,12 +8982,13 @@
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
+            visibility = _get$call.visibility,
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 
@@ -9063,7 +9081,9 @@
     mode: mode,
     Component: Component,
     Event: Event,
-    sort: sort
+    sort: sort,
+    util: util,
+    frame: frame
   };
 
   if (typeof window != 'undefined') {

@@ -30,8 +30,8 @@ class Line extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, display, originX, originY, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, display, visibility, originX, originY, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let { width, height, ctx, x1, y1, x2, y2, controlA, controlB } = this;

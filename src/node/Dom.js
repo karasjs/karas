@@ -1039,8 +1039,8 @@ class Dom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { isDestroyed, computedStyle: { display }, flowChildren, children } = this;
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, computedStyle: { display, visibility }, flowChildren, children } = this;
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     // 先绘制static

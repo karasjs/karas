@@ -12,8 +12,8 @@ class Polygon extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, originX, originY, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, originX, originY, display, visibility, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let { width, height, ctx, points } = this;

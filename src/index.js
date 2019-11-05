@@ -13,6 +13,8 @@ import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
 import sort from './util/sort';
+import util from './util/util';
+import frame from './animate/frame';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -59,6 +61,8 @@ let karas = {
   Component,
   Event,
   sort,
+  util,
+  frame,
 };
 
 if(typeof window != 'undefined') {

@@ -240,9 +240,13 @@ class Root extends Dom {
       }
       let clone = this.__task.splice(0);
       clone.forEach(cb => {
-        cb && cb();
+        if(util.isFunction(cb)) {
+          cb();
+        }
       });
-      cb && cb();
+      if(util.isFunction(cb)) {
+        cb();
+      }
       this.emit(Event.KARAS_REFRESH);
     });
   }

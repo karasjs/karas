@@ -19,8 +19,8 @@ class Polyline extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, originX, originY, display, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, originX, originY, display, visibility, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let { width, height, ctx, points, origin } = this;

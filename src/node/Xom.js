@@ -154,9 +154,6 @@ class Xom extends Node {
       paddingBottom,
       paddingLeft,
     } = currentStyle;
-    if(isDestroyed || display === 'none') {
-      return;
-    }
     if(width.unit !== unit.AUTO) {
       switch(width.unit) {
         case unit.PX:
@@ -178,6 +175,9 @@ class Xom extends Node {
     borderWidth(computedStyle, currentStyle);
     this.__ox = this.__oy = 0;
     this.__matrix = this.__matrixEvent = null;
+    if(isDestroyed || display === 'none') {
+      return;
+    }
     if(display === 'block') {
       this.__layoutBlock(data);
     }
@@ -378,14 +378,12 @@ class Xom extends Node {
       borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
+      visibility,
     } = computedStyle;
     let {
       transform,
       transformOrigin,
     } = currentStyle;
-    if(isDestroyed || display === 'none') {
-      return;
-    }
     // 使用rx和ry渲染位置，考虑了relative和translate影响
     let { rx: x, ry: y } = this;
     let x1 = x + marginLeft;
@@ -426,6 +424,9 @@ class Xom extends Node {
     }
     else {
       computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+    }
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+      return;
     }
     // 先渲染渐变，没有则背景色
     if(backgroundGradient) {

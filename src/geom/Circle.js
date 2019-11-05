@@ -15,8 +15,8 @@ class Circle extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, cx, cy, display, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, cx, cy, display, visibility, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let { width, height, ctx, r } = this;

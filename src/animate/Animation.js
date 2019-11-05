@@ -307,7 +307,7 @@ function binarySearch(i, j, now, frames) {
     return i;
   }
   else {
-    let middle = i + (j - i) >> 1;
+    let middle = i + ((j - i) >> 1);
     let frame = frames[middle];
     if(frame.time === now) {
       return middle;

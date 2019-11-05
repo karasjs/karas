@@ -4199,7 +4199,7 @@
 
       return i;
     } else {
-      var middle = i + (j - i) >> 1;
+      var middle = i + (j - i >> 1);
       var _frame2 = frames[middle];
 
       if (_frame2.time === now) {

@@ -4811,6 +4811,7 @@
         this.__matrix = this.__matrixEvent = null;
 
         if (isDestroyed || display === 'none') {
+          computedStyle.width = computedStyle.height = computedStyle.outerWidth = computedStyle.outerHeight = 0;
           return;
         }
 

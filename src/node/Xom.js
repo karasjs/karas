@@ -176,6 +176,7 @@ class Xom extends Node {
     this.__ox = this.__oy = 0;
     this.__matrix = this.__matrixEvent = null;
     if(isDestroyed || display === 'none') {
+      computedStyle.width = computedStyle.height = computedStyle.outerWidth = computedStyle.outerHeight = 0;
       return;
     }
     if(display === 'block') {

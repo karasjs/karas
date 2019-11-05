@@ -1905,65 +1905,6 @@
     }
   };
 
-  var RESET = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'arial',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'normal',
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'inherit',
-    visibility: 'visible',
-    transformOrigin: 'center',
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: []
-  };
-  var reset = [];
-  Object.keys(RESET).forEach(function (k) {
-    var v = RESET[k];
-    reset.push({
-      k: k,
-      v: v
-    });
-  });
-
   function parserOneBorder(style, direction) {
     var key = "border".concat(direction);
 
@@ -2038,9 +1979,9 @@
     return obj;
   }
 
-  function normalize$1(style, noReset) {
+  function normalize$1(style, reset) {
     // 默认reset
-    if (!noReset) {
+    if (reset) {
       reset.forEach(function (item) {
         if (!style.hasOwnProperty(item.k)) {
           style[item.k] = item.v;
@@ -2400,8 +2341,10 @@
 
 
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'strokeWidth'].forEach(function (k) {
-      var v = computedStyle[k];
-      computedStyle[k] = v.value;
+      if (currentStyle.hasOwnProperty(k)) {
+        var v = currentStyle[k];
+        computedStyle[k] = v.value;
+      }
     });
   }
 
@@ -3526,6 +3469,86 @@
 
   _defineProperty(Event, "KARAS_ANIMATION_CANCEL", 'karas-animation-cancel');
 
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'arial',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'normal',
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'inherit',
+    transformOrigin: 'center'
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: []
+  };
+  var dom = [];
+
+  for (var k in DOM) {
+    if (DOM.hasOwnProperty(k)) {
+      var v = DOM[k];
+      dom.push({
+        k: k,
+        v: v
+      });
+    }
+  }
+
+  var geom = util.clone(dom);
+
+  for (var _k in GEOM) {
+    if (GEOM.hasOwnProperty(_k)) {
+      var _v = GEOM[_k];
+      geom.push({
+        k: _k,
+        v: _v
+      });
+    }
+  }
+
+  var reset = {
+    dom: dom,
+    geom: geom
+  };
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -3645,7 +3668,7 @@
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
 
         if (sr instanceof Text) {
-          css.normalize(sr.style);
+          css.normalize(sr.style, reset.dom);
         } else {
           var style = this.props.style || {};
 
@@ -4301,11 +4324,11 @@
               } // 正常的标准化样式
               else {
                   offset = current.offset;
-                  css.normalize(current, true);
+                  css.normalize(current);
                   color2array(current);
                 }
           } else {
-            css.normalize(current, true);
+            css.normalize(current);
             color2array(current);
           }
         } // 必须有2帧及以上描述
@@ -5654,7 +5677,7 @@
       key: "__init",
       value: function __init() {
         var style = this.style;
-        css.normalize(style);
+        css.normalize(style, reset.geom);
         var ref = this.props.ref;
 
         if (ref) {
@@ -6020,7 +6043,7 @@
         } // 标准化处理，默认值、简写属性
 
 
-        css.normalize(style);
+        css.normalize(style, reset.dom);
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
@@ -7431,11 +7454,6 @@
             });
           }
         }
-      }
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        _get(_getPrototypeOf(Img.prototype), "__destroy", this).call(this);
       }
     }, {
       key: "src",

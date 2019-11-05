@@ -260,10 +260,6 @@ class Img extends Dom {
     }
   }
 
-  __destroy() {
-    super.__destroy();
-  }
-
   get src() {
     return this.props.src;
   }

@@ -1,6 +1,5 @@
 import unit from './unit';
 import font from './font';
-import reset from './reset';
 import gradient from './gradient';
 import util from '../util/util';
 
@@ -76,9 +75,9 @@ function calUnit(obj, k, v) {
   return obj;
 }
 
-function normalize(style, noReset) {
+function normalize(style, reset) {
   // 默认reset
-  if(!noReset) {
+  if(reset) {
     reset.forEach(item => {
       if(!style.hasOwnProperty(item.k)) {
         style[item.k] = item.v;
@@ -440,8 +439,10 @@ function computed(xom, isRoot) {
     'borderLeftWidth',
     'strokeWidth'
   ].forEach(k => {
-    let v = computedStyle[k];
-    computedStyle[k] = v.value;
+    if(currentStyle.hasOwnProperty(k)) {
+      let v = currentStyle[k];
+      computedStyle[k] = v.value;
+    }
   });
 }
 

@@ -417,12 +417,12 @@ class Animation extends Event {
         // 正常的标准化样式
         else {
           offset = current.offset;
-          css.normalize(current, true);
+          css.normalize(current);
           color2array(current);
         }
       }
       else {
-        css.normalize(current, true);
+        css.normalize(current);
         color2array(current);
       }
     }

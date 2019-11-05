@@ -3,6 +3,7 @@ import Text from './Text';
 import LineGroup from './LineGroup';
 import Geom from '../geom/Geom';
 import util from '../util/util';
+import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
@@ -100,7 +101,7 @@ class Dom extends Xom {
       }
     }
     // 标准化处理，默认值、简写属性
-    css.normalize(style);
+    css.normalize(style, reset.dom);
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();

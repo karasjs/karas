@@ -2,6 +2,7 @@ import Event from '../util/Event';
 import Node from './Node';
 import Text from './Text';
 import util from '../util/util';
+import reset from '../style/reset';
 import css from '../style/css';
 import match from '../style/match';
 
@@ -96,7 +97,7 @@ class Component extends Event {
     let sr = this.shadowRoot;
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
-      css.normalize(sr.style);
+      css.normalize(sr.style, reset.dom);
     }
     else {
       let style = this.props.style || {};

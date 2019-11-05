@@ -1,4 +1,5 @@
 import Xom from '../node/Xom';
+import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
@@ -14,7 +15,7 @@ class Geom extends Xom {
 
   __init() {
     let style = this.style;
-    css.normalize(style);
+    css.normalize(style, reset.geom);
     let ref = this.props.ref;
     if(ref) {
       let owner = this.host || this.root;

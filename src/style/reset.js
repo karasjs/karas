@@ -1,4 +1,6 @@
-const RESET = {
+import util from '../util/util';
+
+const DOM = {
   position: 'static',
   display: 'block',
   top: 'auto',
@@ -41,22 +43,39 @@ const RESET = {
   justifyContent: 'flex-start',
   alignItems: 'stretch',
   textAlign: 'inherit',
-  visibility: 'visible',
   transformOrigin: 'center',
+};
+
+const GEOM = {
   fill: 'transparent',
   stroke: '#000',
   strokeWidth: 1,
   strokeDasharray: [],
 };
 
-let reset = [];
+let dom = [];
+for(let k in DOM) {
+  if(DOM.hasOwnProperty(k)) {
+    let v = DOM[k];
+    dom.push({
+      k,
+      v,
+    });
+  }
+}
 
-Object.keys(RESET).forEach(k => {
-  let v = RESET[k];
-  reset.push({
-    k,
-    v,
-  });
-});
+let geom = util.clone(dom);
+for(let k in GEOM) {
+  if(GEOM.hasOwnProperty(k)) {
+    let v = GEOM[k];
+    geom.push({
+      k,
+      v,
+    });
+  }
+}
 
-export default reset;
+export default {
+  dom,
+  geom,
+};

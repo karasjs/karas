@@ -3820,7 +3820,7 @@
       var sr = this.shadowRoot;
 
       if (sr[fn]) {
-        sr[fn].apply(sr, arguments);
+        return sr[fn].apply(sr, arguments);
       }
     };
   });
@@ -8140,7 +8140,7 @@
             _this2.__mw = Math.max(_this2.__mw, _this2.width);
             _this2.__mh = Math.max(_this2.__mh, _this2.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
 
-            _this2.__ctx.setTransform([1, 0, 0, 1, 0, 0]);
+            _this2.__ctx.setTransform(1, 0, 0, 1, 0, 0);
 
             _this2.__ctx.clearRect(0, 0, _this2.__mw, _this2.__mh);
           }
@@ -9056,6 +9056,9 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
+    Root: Root,
+    Dom: Dom,
+    Img: Img,
     Geom: Geom,
     mode: mode,
     Component: Component,

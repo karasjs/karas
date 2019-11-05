@@ -51,6 +51,9 @@ let karas = {
   createCp(cp, props, children) {
     return new cp(props, children);
   },
+  Root,
+  Dom,
+  Img,
   Geom,
   mode,
   Component,

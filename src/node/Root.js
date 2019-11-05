@@ -220,7 +220,7 @@ class Root extends Dom {
         this.__mw = Math.max(this.__mw, this.width);
         this.__mh = Math.max(this.__mh, this.height);
         // 清除前得恢复默认matrix，防止每次布局改变了属性
-        this.__ctx.setTransform([1, 0, 0, 1, 0, 0]);
+        this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
       this.render(renderMode);

@@ -243,7 +243,7 @@ class Component extends Event {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;
     if(sr[fn]) {
-      sr[fn].apply(sr, arguments);
+      return sr[fn].apply(sr, arguments);
     }
   };
 });

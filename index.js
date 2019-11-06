@@ -632,6 +632,10 @@
       return obj;
     }
 
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
     var n = Array.isArray(obj) ? [] : {};
 
     for (var i in obj) {
@@ -4003,7 +4007,11 @@
     };
 
     if (k === 'transform') {
-      // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
+      if (!prev[k] || !next[k]) {
+        return;
+      } // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
+
+
       var pExist = {};
       prev[k].forEach(function (item) {
         pExist[item[0]] = item[1];
@@ -9100,8 +9108,10 @@
     }
 
     var tagName = json.tagName,
-        props = json.props,
-        children = json.children,
+        _json$props = json.props,
+        props = _json$props === void 0 ? {} : _json$props,
+        _json$children = json.children,
+        children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
     var ref = props.ref;
 
@@ -9166,6 +9176,7 @@
       var data = {
         animate: []
       };
+      json = util.clone(json);
 
       var vd = parse$1(this, json, data);
 

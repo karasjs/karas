@@ -190,6 +190,9 @@ function clone(obj) {
   if(isNil(obj) || typeof obj !== 'object') {
     return obj;
   }
+  if(util.isDate(obj)) {
+    return new Date(obj);
+  }
   let n = Array.isArray(obj) ? [] : {};
   for(let i in obj) {
     if(obj.hasOwnProperty(i)) {

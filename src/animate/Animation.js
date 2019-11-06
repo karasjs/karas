@@ -110,6 +110,9 @@ function calDiff(prev, next, k, target) {
     k,
   };
   if(k === 'transform') {
+    if(!prev[k] || !next[k]) {
+      return;
+    }
     // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
     let pExist = {};
     prev[k].forEach(item => {

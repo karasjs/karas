@@ -4,7 +4,7 @@ function parse(karas, json, data) {
   if(util.isString(json)) {
     return json;
   }
-  let { tagName, props, children, animate } = json;
+  let { tagName, props = {}, children = [], animate } = json;
   let ref = props.ref;
   if(animate && ref) {
     data.animate.push({

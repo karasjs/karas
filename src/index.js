@@ -59,6 +59,7 @@ let karas = {
     let data = {
       animate: [],
     };
+    json = util.clone(json);
     let vd = parse(this, json, data);
     this.render(vd, dom);
     data.animate.forEach(item => {

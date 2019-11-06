@@ -14,8 +14,9 @@ import Component from './node/Component';
 import Event from './util/Event';
 import sort from './util/sort';
 import util from './util/util';
-import frame from './animate/frame';
 import parse from './util/parse';
+import inject from './util/inject';
+import frame from './animate/frame';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -75,6 +76,7 @@ let karas = {
   Event,
   sort,
   util,
+  inject,
   frame,
 };
 

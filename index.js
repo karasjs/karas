@@ -9186,6 +9186,7 @@
     Event: Event,
     sort: sort,
     util: util,
+    inject: inject,
     frame: frame
   };
 

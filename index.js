@@ -3949,6 +3949,7 @@
 
 
   function stringify$1(style, target) {
+    style = util.clone(style);
     var animateStyle = target.animateStyle;
     KEY_COLOR.forEach(function (k) {
       if (style.hasOwnProperty(k)) {
@@ -4283,7 +4284,9 @@
       _this.__lastTime = 0;
       _this.__pending = false;
       _this.__playState = 'idle';
+      _this.__playCount = 0;
       _this.__cb = null;
+      _this.__isDestroyed = true;
 
       _this.__init();
 
@@ -4293,15 +4296,33 @@
     _createClass(Animation, [{
       key: "__init",
       value: function __init() {
-        var target = this.target;
-        var style = util.clone(target.style); // 没设置时间或非法时间或0，动画过程为空无需执行
+        var target = this.target,
+            options = this.options;
+        var style = util.clone(target.style);
+        var duration = options.duration,
+            iterations = options.iterations; // 没设置时间或非法时间或0，动画过程为空无需执行
 
-        var duration = parseFloat(this.options.duration);
+        duration = parseFloat(duration);
 
         if (isNaN(duration) || duration <= 0) {
           return;
         }
 
+        if (util.isNil(iterations)) {
+          iterations = 1;
+        } // 执行次数<1也无需执行
+
+
+        if (iterations !== Infinity) {
+          iterations = parseInt(iterations);
+        }
+
+        if (isNaN(iterations) || iterations < 1) {
+          return;
+        }
+
+        options.duration = duration;
+        options.iterations = iterations;
         target.__animateStyle = util.clone(style); // 转化style为计算后的绝对值结果
 
         color2array(style); // 过滤时间非法的，过滤后续offset<=前面的
@@ -4388,11 +4409,17 @@
           prev = calFrame(prev, next, target);
           frames.push(prev);
         }
+
+        this.__isDestroyed = false;
       }
     }, {
       key: "play",
       value: function play() {
         var _this2 = this;
+
+        if (this.isDestroyed) {
+          return;
+        }
 
         this.__cancelTask();
 
@@ -4408,9 +4435,11 @@
           var _this$options = this.options,
               duration = _this$options.duration,
               fill = _this$options.fill,
-              fps = _this$options.fps;
+              fps = _this$options.fps,
+              iterations = _this$options.iterations;
           var frames = this.frames,
-              target = this.target;
+              target = this.target,
+              playCount = this.playCount;
           var length = frames.length;
           var first = true;
 
@@ -4424,12 +4453,17 @@
               });
             }
 
-            var i = binarySearch(0, frames.length - 1, now + _this2.offsetTime, frames);
+            var countTime = playCount * duration;
+            var i = binarySearch(0, frames.length - 1, now + _this2.offsetTime - countTime, frames);
             var current = frames[i]; // 最后一帧结束动画
 
             if (i === length - 1) {
               stringify$1(current.style, target);
-              frame.offFrame(_this2.cb);
+              playCount = ++_this2.playCount;
+
+              if (iterations !== Infinity && playCount >= iterations) {
+                frame.offFrame(_this2.cb);
+              }
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
                 // 增加的fps功能，当<60时计算跳帧
@@ -4447,7 +4481,7 @@
 
                 var total = frames[i + 1].time - current.time;
 
-                var _diff = now - current.time;
+                var _diff = now - countTime - current.time;
 
                 var percent = _diff / total;
                 var style = calStyle(current, percent);
@@ -4464,6 +4498,13 @@
                 _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
                 if (i === length - 1) {
+                  // 没到播放次数结束时继续
+                  if (iterations === Infinity || playCount < iterations) {
+                    _this2.emit(Event.KARAS_ANIMATION_FINISH);
+
+                    return;
+                  }
+
                   _this2.__playState = 'finished'; // 停留在最后一帧，触发finish
 
                   if (['forwards', 'both'].indexOf(fill) > -1) {
@@ -4473,7 +4514,6 @@
                       target.__needCompute = true;
 
                       var _task = _this2.__task = function () {
-                        // this.__playState = 'finished';
                         _this2.emit(Event.KARAS_ANIMATION_FINISH);
                       };
 
@@ -4578,6 +4618,7 @@
         this.__cancelTask();
 
         this.__playState = 'idle';
+        this.__isDestroyed = true;
       }
     }, {
       key: "target",
@@ -4630,9 +4671,22 @@
         return this.__playState;
       }
     }, {
+      key: "playCount",
+      get: function get() {
+        return this.__playCount;
+      },
+      set: function set(v) {
+        this.__playCount = v;
+      }
+    }, {
       key: "cb",
       get: function get() {
         return this.__cb;
+      }
+    }, {
+      key: "isDestroyed",
+      get: function get() {
+        return this.__isDestroyed;
       }
     }]);
 
@@ -9038,6 +9092,33 @@
     return Ellipse;
   }(Geom);
 
+  function parse$1(karas, json, data) {
+    if (util.isString(json)) {
+      return json;
+    }
+
+    var tagName = json.tagName,
+        props = json.props,
+        children = json.children,
+        animate = json.animate;
+    var ref = props.ref;
+
+    if (animate && ref) {
+      data.animate.push({
+        ref: ref,
+        animate: animate
+      });
+    }
+
+    if (tagName.charAt(0) === '$') {
+      return karas.createGm(tagName, props);
+    }
+
+    return karas.createVd(tagName, props, children.map(function (item) {
+      return parse$1(karas, item, data);
+    }));
+  }
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -9078,6 +9159,21 @@
     },
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
+    },
+    parse: function parse(json, dom) {
+      var data = {
+        animate: []
+      };
+
+      var vd = parse$1(this, json, data);
+
+      this.render(vd, dom);
+      data.animate.forEach(function (item) {
+        var ref = item.ref,
+            animate = item.animate;
+        vd.ref[ref].animate(animate.value, animate.options);
+      });
+      return vd;
     },
     Root: Root,
     Dom: Dom,

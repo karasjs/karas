@@ -63,6 +63,7 @@ function color2array(style) {
 
 // 反向将颜色数组转换为css模式，同时计算target及其孩子的computedStyle
 function stringify(style, target) {
+  style = util.clone(style);
   let animateStyle = target.animateStyle;
   KEY_COLOR.forEach(k => {
     if(style.hasOwnProperty(k)) {
@@ -383,18 +384,33 @@ class Animation extends Event {
     this.__lastTime = 0;
     this.__pending = false;
     this.__playState = 'idle';
+    this.__playCount = 0;
     this.__cb = null;
+    this.__isDestroyed = true;
     this.__init();
   }
 
   __init() {
-    let { target } = this;
+    let { target, options } = this;
     let style = util.clone(target.style);
+    let { duration, iterations } = options;
     // 没设置时间或非法时间或0，动画过程为空无需执行
-    let duration = parseFloat(this.options.duration);
+    duration = parseFloat(duration);
     if(isNaN(duration) || duration <= 0) {
       return;
     }
+    if(util.isNil(iterations)) {
+      iterations = 1;
+    }
+    // 执行次数<1也无需执行
+    if(iterations !== Infinity) {
+      iterations = parseInt(iterations);
+    }
+    if(isNaN(iterations) || iterations < 1) {
+      return;
+    }
+    options.duration = duration;
+    options.iterations = iterations;
     target.__animateStyle = util.clone(style);
     // 转化style为计算后的绝对值结果
     color2array(style);
@@ -473,9 +489,13 @@ class Animation extends Event {
       prev = calFrame(prev, next, target);
       frames.push(prev);
     }
+    this.__isDestroyed = false;
   }
 
   play() {
+    if(this.isDestroyed) {
+      return;
+    }
     this.__cancelTask();
     this.__playState = 'running';
     // 从头播放还是暂停继续
@@ -487,8 +507,8 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { duration, fill, fps } = this.options;
-      let { frames, target } = this;
+      let { duration, fill, fps, iterations } = this.options;
+      let { frames, target, playCount } = this;
       let length = frames.length;
       let first = true;
       this.__cb = () => {
@@ -499,12 +519,16 @@ class Animation extends Event {
             frame.time = now + duration * frame.offset;
           });
         }
-        let i = binarySearch(0, frames.length - 1,now + this.offsetTime, frames);
+        let countTime = playCount * duration;
+        let i = binarySearch(0, frames.length - 1,now + this.offsetTime - countTime, frames);
         let current = frames[i];
         // 最后一帧结束动画
         if(i === length - 1) {
           stringify(current.style, target);
-          frame.offFrame(this.cb);
+          playCount = ++this.playCount;
+          if(iterations !== Infinity && playCount >= iterations) {
+            frame.offFrame(this.cb);
+          }
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
         else {
@@ -519,7 +543,7 @@ class Animation extends Event {
             }
           }
           let total = frames[i + 1].time - current.time;
-          let diff = now - current.time;
+          let diff = now - countTime - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
           stringify(style, target);
@@ -532,6 +556,11 @@ class Animation extends Event {
           let task = this.__task = () => {
             this.emit(Event.KARAS_ANIMATION_FRAME);
             if(i === length - 1) {
+              // 没到播放次数结束时继续
+              if(iterations === Infinity || playCount < iterations) {
+                this.emit(Event.KARAS_ANIMATION_FINISH);
+                return;
+              }
               this.__playState = 'finished';
               // 停留在最后一帧，触发finish
               if(['forwards', 'both'].indexOf(fill) > -1) {
@@ -541,7 +570,6 @@ class Animation extends Event {
               else {
                 target.__needCompute = true;
                 let task = this.__task = () => {
-                  // this.__playState = 'finished';
                   this.emit(Event.KARAS_ANIMATION_FINISH);
                 };
                 root.refreshTask(task);
@@ -617,6 +645,7 @@ class Animation extends Event {
     frame.offFrame(this.cb);
     this.__cancelTask();
     this.__playState = 'idle';
+    this.__isDestroyed = true;
   }
 
   get target() {
@@ -649,8 +678,17 @@ class Animation extends Event {
   get playState() {
     return this.__playState;
   }
+  get playCount() {
+    return this.__playCount;
+  }
+  set playCount(v) {
+    this.__playCount = v;
+  }
   get cb() {
     return this.__cb;
+  }
+  get isDestroyed() {
+    return this.__isDestroyed;
   }
 }
 

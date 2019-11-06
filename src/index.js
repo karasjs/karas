@@ -15,6 +15,7 @@ import Event from './util/Event';
 import sort from './util/sort';
 import util from './util/util';
 import frame from './animate/frame';
+import parse from './util/parse';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -52,6 +53,18 @@ let karas = {
   },
   createCp(cp, props, children) {
     return new cp(props, children);
+  },
+  parse(json, dom) {
+    let data = {
+      animate: [],
+    };
+    let vd = parse(this, json, data);
+    this.render(vd, dom);
+    data.animate.forEach(item => {
+      let { ref, animate } = item;
+      vd.ref[ref].animate(animate.value, animate.options);
+    });
+    return vd;
   },
   Root,
   Dom,

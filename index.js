@@ -4308,7 +4308,9 @@
           return;
         }
 
-        if (util.isNil(iterations)) {
+        if (iterations === 'Infinity') {
+          iterations = Infinity;
+        } else if (util.isNil(iterations)) {
           iterations = 1;
         } // 执行次数<1也无需执行
 

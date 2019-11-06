@@ -11,7 +11,6 @@
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
-    "dist": "rollup -c rollup.config.dist.js",
     "test": "mocha test/event.js -R spec && gulp build-test && nightwatch --filter test.js"
   },
   "repository": {

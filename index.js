@@ -4308,7 +4308,7 @@
           return;
         }
 
-        if (iterations === 'Infinity') {
+        if (iterations === 'Infinity' || iterations === 'infinity') {
           iterations = Infinity;
         } else if (util.isNil(iterations)) {
           iterations = 1;

@@ -399,7 +399,7 @@ class Animation extends Event {
     if(isNaN(duration) || duration <= 0) {
       return;
     }
-    if(iterations === 'Infinity') {
+    if(iterations === 'Infinity' || iterations === 'infinity') {
       iterations = Infinity;
     }
     else if(util.isNil(iterations)) {

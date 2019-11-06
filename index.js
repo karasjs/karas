@@ -4171,7 +4171,7 @@
         return;
       }
     } else {
-      return;
+      res.v = prev[k];
     }
 
     return res;
@@ -4248,6 +4248,8 @@
           _item3[3] += v[3] * percent;
         } else if (LENGTH_HASH.hasOwnProperty(k)) {
           style[k].value += v * percent;
+        } else {
+          style[k] = v;
         }
     });
     return style;
@@ -5808,7 +5810,8 @@
             paddingTop = computedStyle.paddingTop,
             paddingRight = computedStyle.paddingRight,
             paddingBottom = computedStyle.paddingBottom,
-            paddingLeft = computedStyle.paddingLeft;
+            paddingLeft = computedStyle.paddingLeft,
+            visibility = computedStyle.visibility;
         var originX = x + borderLeftWidth + marginLeft + paddingLeft;
         var originY = y + borderTopWidth + marginTop + paddingTop;
         var cx = originX + width * 0.5;
@@ -5853,7 +5856,8 @@
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
-          fill: fill
+          fill: fill,
+          visibility: visibility
         };
       }
     }, {

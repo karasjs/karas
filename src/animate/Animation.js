@@ -281,7 +281,7 @@ function calDiff(prev, next, k, target) {
     }
   }
   else {
-    return;
+    res.v = prev[k];
   }
   return res;
 }
@@ -357,6 +357,9 @@ function calStyle(frame, percent) {
     }
     else if(LENGTH_HASH.hasOwnProperty(k)) {
       style[k].value += v * percent;
+    }
+    else {
+      style[k] = v;
     }
   });
   return style;

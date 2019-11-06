@@ -119,6 +119,7 @@ class Geom extends Xom {
       paddingRight,
       paddingBottom,
       paddingLeft,
+      visibility,
     } = computedStyle;
     let originX = x + borderLeftWidth + marginLeft + paddingLeft;
     let originY = y + borderTopWidth + marginTop + paddingTop;
@@ -159,6 +160,7 @@ class Geom extends Xom {
       strokeWidth,
       strokeDasharray,
       fill,
+      visibility,
     };
   }
 

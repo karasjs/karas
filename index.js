@@ -9144,6 +9144,14 @@
 
           if (ctx.ellipse) {
             ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+          } else {
+            var ox = xr * .5522848;
+            var oy = yr * .5522848;
+            ctx.moveTo(cx - xr, cy);
+            ctx.bezierCurveTo(cx - xr, cy - oy, cx - ox, cy - yr, cx, cy - yr);
+            ctx.bezierCurveTo(cx + ox, cy - yr, cx + xr, cy - oy, cx + xr, cy);
+            ctx.bezierCurveTo(cx + xr, cy + oy, cx + ox, cy + yr, cx, cy + yr);
+            ctx.bezierCurveTo(cx - ox, cy + yr, cx - xr, cy + oy, cx - xr, cy);
           }
 
           ctx.fill();

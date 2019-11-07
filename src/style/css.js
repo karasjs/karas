@@ -392,10 +392,12 @@ function normalize(style, reset) {
   temp = style.strokeDasharray;
   if(temp) {
     let match = temp.toString().match(/[\d.]+/g);
-    style.strokeDasharray = match.map(item => parseFloat(item));
-  }
-  else {
-    style.strokeDasharray = [];
+    if(match) {
+      style.strokeDasharray = match.join(', ');
+    }
+    else {
+      style.strokeDasharray = '';
+    }
   }
   return style;
 }
@@ -452,7 +454,6 @@ function computed(xom, isRoot) {
       computedStyle[k] = v.value;
     }
   });
-  computedStyle.strokeDasharray = strokeDasharray.join(', ');
 }
 
 function computedAnimate(xom, computedStyle, origin, isRoot) {

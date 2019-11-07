@@ -2296,11 +2296,11 @@
     if (temp) {
       var _match4 = temp.toString().match(/[\d.]+/g);
 
-      style.strokeDasharray = _match4.map(function (item) {
-        return parseFloat(item);
-      });
-    } else {
-      style.strokeDasharray = [];
+      if (_match4) {
+        style.strokeDasharray = _match4.join(', ');
+      } else {
+        style.strokeDasharray = '';
+      }
     }
 
     return style;
@@ -2363,7 +2363,6 @@
         computedStyle[k] = v.value;
       }
     });
-    computedStyle.strokeDasharray = strokeDasharray.join(', ');
   }
 
   function computedAnimate(xom, computedStyle, origin, isRoot) {
@@ -9261,7 +9260,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]];
+          var props = [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharray]);

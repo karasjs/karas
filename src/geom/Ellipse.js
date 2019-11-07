@@ -73,8 +73,7 @@ class Ellipse extends Geom {
         ['ry', yr],
         ['fill', fill],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
+        ['stroke-width', strokeWidth]
       ];
       if(strokeDasharray.length) {
         props.push(['stroke-dasharray', strokeDasharray]);

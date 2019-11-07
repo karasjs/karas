@@ -4,6 +4,7 @@ import util from '../util/util';
 import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from './frame';
+import easing from './easing';
 
 const KEY_COLOR = [
   'backgroundColor',
@@ -88,7 +89,10 @@ function framing(current) {
   let keys = [];
   let st = {};
   for(let i in current) {
-    if(current.hasOwnProperty(i) && i !== 'offset') {
+    if(current.hasOwnProperty(i) && !{
+      offset: true,
+      easing: true,
+    }.hasOwnProperty(i)) {
       keys.push(i);
       st[i] = current[i];
     }
@@ -96,6 +100,7 @@ function framing(current) {
   return {
     style: st,
     offset: current.offset,
+    easing: current.easing,
     keys,
     transition: [],
   };
@@ -327,6 +332,10 @@ function binarySearch(i, j, now, frames) {
 
 function calStyle(frame, percent) {
   let style = util.clone(frame.style);
+  let timingFunction = easing[frame.easing] || easing.linear;
+  if(percent !== 0 && percent !== 1) {
+    percent = timingFunction(percent);
+  }
   frame.transition.forEach(item => {
     let { k, v } = item;
     if(k === 'transform') {
@@ -569,7 +578,10 @@ class Animation extends Event {
               }
               this.__playState = 'finished';
               // 停留在最后一帧，触发finish
-              if(['forwards', 'both'].indexOf(fill) > -1) {
+              if({
+                forwards: true,
+                both: true
+              }.hasOwnProperty(fill)) {
                 this.emit(Event.KARAS_ANIMATION_FINISH);
               }
               // 恢复初始，再刷新一帧，触发finish
@@ -611,7 +623,10 @@ class Animation extends Event {
     let root = target.root;
     if(root) {
       // 停留在最后一帧
-      if(['forwards', 'both'].indexOf(fill) > -1) {
+      if({
+        forwards: true,
+        both: true
+      }.hasOwnProperty(fill)) {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, this.target);
       }

@@ -87,7 +87,12 @@ class Node {
     if(this.parent) {
       return this.parent.root;
     }
-    return this;
+    if(this.tagName && {
+      canvas: true,
+      svg: true,
+    }.hasOwnProperty(this.tagName)) {
+      return this;
+    }
   }
   // component根节点
   get host() {

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>input</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+  <style>
+    textarea{width:80%;padding:5px;height:300px;background:#252;border:1px solid #333;color:#FFF;font-size:13px;font-family:Consolas,momospace,"宋体","Courier New";border-radius:5px;}
+    #btn{vertical-align:top}
+  </style>
+</head>
+<body>
+<div>
+<textarea id="ta" autocomplete="off">{
+  "tagName": "$rect",
+  "props": {
+    "ref": "r",
+    "style": {
+      "width": 100,
+      "height": 100,
+      "strokeWidth": 0,
+      "fill": "#F00"
+    }
+  },
+  "animate": {
+    "value": [
+      {
+        "transform": "translateX(0)"
+      },
+      {
+        "transform": "translateX(200px)"
+      }
+    ],
+    "options": {
+      "duration": 5000
+    }
+  }
+}</textarea>
+<input id="btn" type="button" value="ok"/>
+</div>
+<div id="example"></div>
+<div id="example2"></div>
+<script src="../index.js"></script>
+<script>
+  var ta = document.getElementById('ta');
+  var input = document.getElementById('btn');
+  function exec(s) {
+    let json = JSON.parse(s);
+    karas.parse({
+      tagName: 'canvas',
+      props: {
+        width: 360,
+        height: 360,
+      },
+      children: [
+        json,
+      ],
+    }, '#example');
+    karas.parse({
+      tagName: 'svg',
+      props: {
+        width: 360,
+        height: 360,
+      },
+      children: [
+        json,
+      ],
+    }, '#example2');
+  }
+  input.onclick = function() {
+    exec(ta.value);
+    location.hash = encodeURIComponent(ta.value);
+  };
+  function hashChange(first) {
+    var s = location.hash.replace(/^#/, '');
+    if(s) {
+      s = decodeURIComponent(s);
+      ta.value = s;
+      exec(s);
+    }
+    else if(first) {
+      exec(ta.value);
+    }
+  }
+  hashChange(true);
+  window.onhashchange = hashChange;
+</script>
+</body>
+</html>

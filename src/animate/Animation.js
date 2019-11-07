@@ -383,6 +383,25 @@ class Animation extends Event {
     super();
     this.__target = target;
     this.__list = list || [];
+    // 动画过程另外一种形式，object描述k-v形式
+    if(!Array.isArray(this.__list)) {
+      let nl = [];
+      let l = this.__list;
+      for(let k in l) {
+        if(l.hasOwnProperty(k)) {
+          let v = l[k];
+          if(Array.isArray(v)) {
+            for(let i = 0, len = v.length; i < len; i++) {
+              let o = nl[i] = nl[i] || {
+                offset: i / (len - 1),
+              };
+              o[k] = v[i];
+            }
+          }
+        }
+      }
+      this.__list = nl;
+    }
     if(util.isNumber(options)) {
       this.__options = {
         duration: options,

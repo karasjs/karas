@@ -3630,11 +3630,11 @@
           return;
         }
 
-        this.__traverse(o.ctx, o.defs, this.root.renderMode);
-
-        this.__init();
-
         if (this.root) {
+          this.__traverse(o.ctx, o.defs, this.root.renderMode);
+
+          this.__init();
+
           this.root.refreshTask(cb);
         }
       }
@@ -4442,7 +4442,29 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__target = target;
-      _this.__list = list || [];
+      _this.__list = list || []; // 动画过程另外一种形式，object描述k-v形式
+
+      if (!Array.isArray(_this.__list)) {
+        var nl = [];
+        var l = _this.__list;
+
+        for (var k in l) {
+          if (l.hasOwnProperty(k)) {
+            var v = l[k];
+
+            if (Array.isArray(v)) {
+              for (var i = 0, len = v.length; i < len; i++) {
+                var o = nl[i] = nl[i] || {
+                  offset: i / (len - 1)
+                };
+                o[k] = v[i];
+              }
+            }
+          }
+        }
+
+        _this.__list = nl;
+      }
 
       if (util.isNumber(options)) {
         _this.__options = {

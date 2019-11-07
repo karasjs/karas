@@ -48,9 +48,9 @@ class Component extends Event {
     if(!o) {
       return;
     }
-    this.__traverse(o.ctx, o.defs, this.root.renderMode);
-    this.__init();
     if(this.root) {
+      this.__traverse(o.ctx, o.defs, this.root.renderMode);
+      this.__init();
       this.root.refreshTask(cb);
     }
   }

@@ -65,7 +65,18 @@ class Sector extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, cx, cy, display, visibility, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    let {
+      isDestroyed,
+      cx,
+      cy,
+      display,
+      visibility,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+    } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -81,7 +92,8 @@ class Sector extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
       if(this.edge) {
@@ -104,26 +116,38 @@ class Sector extends Geom {
     else if(renderMode === mode.SVG) {
       let large = (end - begin) > 180 ? 1 : 0;
       if(this.edge) {
-        this.addGeom('path', [
+        let props = [
           ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
           ['fill', fill],
           ['stroke', stroke],
-          ['stroke-width', strokeWidth],
-          ['stroke-dasharray', strokeDasharray]
-        ]);
+          ['stroke-width', strokeWidth]
+        ];
+        if(strokeDasharray.length) {
+          props.push(['stroke-dasharray', strokeDasharray]);
+        }
+        if(strokeLinecap !== 'butt') {
+          props.push(['stroke-linecap', strokeLinecap]);
+        }
+        this.addGeom('path', props);
       }
       else {
         this.addGeom('path', [
           ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
           ['fill', fill]
         ]);
-        this.addGeom('path', [
+        let props = [
           ['d', `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2}`],
           ['fill', 'transparent'],
           ['stroke', stroke],
-          ['stroke-width', strokeWidth],
-          ['stroke-dasharray', strokeDasharray]
-        ]);
+          ['stroke-width', strokeWidth]
+        ];
+        if(strokeDasharray.length) {
+          props.push(['stroke-dasharray', strokeDasharray]);
+        }
+        if(strokeLinecap !== 'butt') {
+          props.push(['stroke-linecap', strokeLinecap]);
+        }
+        this.addGeom('path', props);
       }
     }
   }

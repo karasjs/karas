@@ -30,7 +30,17 @@ class Line extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, display, visibility, originX, originY, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    let {
+      isDestroyed,
+      display,
+      visibility,
+      originX,
+      originY,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+    } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -55,7 +65,8 @@ class Line extends Geom {
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       if(curve === 3) {
@@ -89,13 +100,19 @@ class Line extends Geom {
       else {
         d = `M${x1} ${y1} L${x2} ${y2}`;
       }
-      this.addGeom('path', [
+      let props = [
         ['d', d],
         ['fill', 'none'],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
-      ]);
+        ['stroke-width', strokeWidth]
+      ];
+      if(strokeDasharray.length) {
+        props.push(['stroke-dasharray', strokeDasharray]);
+      }
+      if(strokeLinecap !== 'butt') {
+        props.push(['stroke-linecap', strokeLinecap]);
+      }
+      this.addGeom('path', props);
     }
   }
 

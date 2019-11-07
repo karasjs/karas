@@ -112,6 +112,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeLinecap,
       fill,
       marginTop,
       marginLeft,
@@ -159,6 +160,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeLinecap,
       fill,
       visibility,
     };

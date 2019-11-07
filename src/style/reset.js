@@ -51,7 +51,8 @@ const GEOM = {
   fill: 'transparent',
   stroke: '#000',
   strokeWidth: 1,
-  strokeDasharray: [],
+  strokeDasharray: '',
+  strokeLinecap: 'butt',
 };
 
 let dom = [];

@@ -22,7 +22,18 @@ class Ellipse extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, cx, cy, display, visibility, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    let {
+      isDestroyed,
+      cx,
+      cy,
+      display,
+      visibility,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+    } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -33,7 +44,8 @@ class Ellipse extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       if(ctx.ellipse) {
         ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
@@ -54,7 +66,7 @@ class Ellipse extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      this.addGeom('ellipse', [
+      let props = [
         ['cx', cx],
         ['cy', cy],
         ['rx', xr],
@@ -63,7 +75,14 @@ class Ellipse extends Geom {
         ['stroke', stroke],
         ['stroke-width', strokeWidth],
         ['stroke-dasharray', strokeDasharray]
-      ]);
+      ];
+      if(strokeDasharray.length) {
+        props.push(['stroke-dasharray', strokeDasharray]);
+      }
+      if(strokeLinecap !== 'butt') {
+        props.push(['stroke-linecap', strokeLinecap]);
+      }
+      this.addGeom('ellipse', props);
     }
   }
 

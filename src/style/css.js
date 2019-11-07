@@ -389,6 +389,14 @@ function normalize(style, reset) {
       }
     }
   }
+  temp = style.strokeDasharray;
+  if(temp) {
+    let match = temp.toString().match(/[\d.]+/g);
+    style.strokeDasharray = match.map(item => parseFloat(item));
+  }
+  else {
+    style.strokeDasharray = [];
+  }
   return style;
 }
 
@@ -409,7 +417,7 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
 
 function computed(xom, isRoot) {
   let { currentStyle } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign } = currentStyle;
+  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign, strokeDasharray } = currentStyle;
   let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
@@ -444,6 +452,7 @@ function computed(xom, isRoot) {
       computedStyle[k] = v.value;
     }
   });
+  computedStyle.strokeDasharray = strokeDasharray.join(', ');
 }
 
 function computedAnimate(xom, computedStyle, origin, isRoot) {

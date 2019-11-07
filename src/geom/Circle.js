@@ -15,7 +15,18 @@ class Circle extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, cx, cy, display, visibility, fill, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    let {
+      isDestroyed,
+      cx,
+      cy,
+      display,
+      visibility,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+    } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -25,7 +36,8 @@ class Circle extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, 2 * Math.PI);
       ctx.fill();
@@ -35,15 +47,21 @@ class Circle extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      this.addGeom('circle', [
+      let props = [
         ['cx', cx],
         ['cy', cy],
         ['r', r],
         ['fill', fill],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
-      ]);
+        ['stroke-width', strokeWidth]
+      ];
+      if(strokeDasharray.length) {
+        props.push(['stroke-dasharray', strokeDasharray]);
+      }
+      if(strokeLinecap !== 'butt') {
+        props.push(['stroke-linecap', strokeLinecap]);
+      }
+      this.addGeom('circle', props);
     }
   }
 

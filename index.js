@@ -2291,6 +2291,18 @@
       }
     }
 
+    temp = style.strokeDasharray;
+
+    if (temp) {
+      var _match4 = temp.toString().match(/[\d.]+/g);
+
+      style.strokeDasharray = _match4.map(function (item) {
+        return parseFloat(item);
+      });
+    } else {
+      style.strokeDasharray = [];
+    }
+
     return style;
   }
 
@@ -2314,7 +2326,8 @@
         fontFamily = currentStyle.fontFamily,
         color = currentStyle.color,
         lineHeight = currentStyle.lineHeight,
-        textAlign = currentStyle.textAlign;
+        textAlign = currentStyle.textAlign,
+        strokeDasharray = currentStyle.strokeDasharray;
     var computedStyle = xom.__computedStyle = util.clone(currentStyle);
     var parent = xom.parent;
     var parentComputedStyle = parent && parent.computedStyle; // 处理继承的属性
@@ -2350,6 +2363,7 @@
         computedStyle[k] = v.value;
       }
     });
+    computedStyle.strokeDasharray = strokeDasharray.join(', ');
   }
 
   function computedAnimate(xom, computedStyle, origin, isRoot) {
@@ -3523,7 +3537,8 @@
     fill: 'transparent',
     stroke: '#000',
     strokeWidth: 1,
-    strokeDasharray: []
+    strokeDasharray: '',
+    strokeLinecap: 'butt'
   };
   var dom = [];
 
@@ -5868,6 +5883,7 @@
             stroke = computedStyle.stroke,
             strokeWidth = computedStyle.strokeWidth,
             strokeDasharray = computedStyle.strokeDasharray,
+            strokeLinecap = computedStyle.strokeLinecap,
             fill = computedStyle.fill,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
@@ -5920,6 +5936,7 @@
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
+          strokeLinecap: strokeLinecap,
           fill: fill,
           visibility: visibility
         };
@@ -8362,7 +8379,8 @@
             originY = _get$call.originY,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -8400,7 +8418,8 @@
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
           ctx.moveTo(x1, y1);
 
@@ -8432,7 +8451,17 @@
             d = "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2);
           }
 
-          this.addGeom('path', [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          this.addGeom('path', props);
         }
       }
     }, {
@@ -8509,7 +8538,8 @@
             visibility = _get$call.visibility,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -8554,7 +8584,8 @@
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -8576,7 +8607,17 @@
             _points += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          this.addGeom('polyline', [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          this.addGeom('polyline', props);
         }
       }
     }, {
@@ -8627,7 +8668,8 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -8657,7 +8699,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -8682,7 +8725,17 @@
             s += "".concat(_point[0], ",").concat(_point[1], " ");
           }
 
-          this.addGeom('polygon', [['points', s], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['points', s], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          this.addGeom('polygon', props);
         }
       }
     }, {
@@ -8775,7 +8828,8 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -8813,7 +8867,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
@@ -8839,10 +8894,30 @@
           var large = end - begin > 180 ? 1 : 0;
 
           if (this.edge) {
-            this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+            var props = [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+            if (strokeDasharray.length) {
+              props.push(['stroke-dasharray', strokeDasharray]);
+            }
+
+            if (strokeLinecap !== 'butt') {
+              props.push(['stroke-linecap', strokeLinecap]);
+            }
+
+            this.addGeom('path', props);
           } else {
             this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill]]);
-            this.addGeom('path', [['d', "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+            var _props = [['d', "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+            if (strokeDasharray.length) {
+              _props.push(['stroke-dasharray', strokeDasharray]);
+            }
+
+            if (strokeLinecap !== 'butt') {
+              _props.push(['stroke-linecap', strokeLinecap]);
+            }
+
+            this.addGeom('path', _props);
           }
         }
       }
@@ -8918,7 +8993,8 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -8938,7 +9014,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
 
           if (xr === 0 && yr === 0) {
@@ -8969,7 +9046,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]];
+          var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (xr) {
             props.push(['rx', xr]);
@@ -8977,6 +9054,14 @@
 
           if (yr) {
             props.push(['ry', yr]);
+          }
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
           }
 
           this.addGeom('rect', props);
@@ -9034,7 +9119,8 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -9050,7 +9136,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, 2 * Math.PI);
           ctx.fill();
@@ -9061,7 +9148,17 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          this.addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          this.addGeom('circle', props);
         }
       }
     }, {
@@ -9121,7 +9218,8 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray;
+            strokeDasharray = _get$call.strokeDasharray,
+            strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -9139,7 +9237,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
-          ctx.setLineDash(strokeDasharray);
+          ctx.lineCap = strokeLinecap;
+          ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
 
           if (ctx.ellipse) {
@@ -9162,7 +9261,17 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          this.addGeom('ellipse', [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]];
+
+          if (strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+
+          if (strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          this.addGeom('ellipse', props);
         }
       }
     }, {

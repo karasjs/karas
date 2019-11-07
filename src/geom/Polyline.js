@@ -19,7 +19,17 @@ class Polyline extends Geom {
   }
 
   render(renderMode) {
-    let { isDestroyed, originX, originY, display, visibility, stroke, strokeWidth, strokeDasharray } = super.render(renderMode);
+    let {
+      isDestroyed,
+      originX,
+      originY,
+      display,
+      visibility,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+    } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -68,7 +78,8 @@ class Polyline extends Geom {
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       ctx.moveTo(pts[0][0], pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {
@@ -86,13 +97,19 @@ class Polyline extends Geom {
         let point = pts[i];
         points += `${point[0]},${point[1]} `;
       }
-      this.addGeom('polyline', [
+      let props = [
         ['points', points],
         ['fill', 'none'],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
-      ]);
+        ['stroke-width', strokeWidth]
+      ];
+      if(strokeDasharray.length) {
+        props.push(['stroke-dasharray', strokeDasharray]);
+      }
+      if(strokeLinecap !== 'butt') {
+        props.push(['stroke-linecap', strokeLinecap]);
+      }
+      this.addGeom('polyline', props);
     }
   }
 

@@ -32,6 +32,7 @@ class Rect extends Geom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeLinecap,
     } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
@@ -45,7 +46,8 @@ class Rect extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
-      ctx.setLineDash(strokeDasharray);
+      ctx.lineCap = strokeLinecap;
+      ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       if(xr === 0 && yr === 0) {
         ctx.moveTo(originX, originY);
@@ -81,14 +83,19 @@ class Rect extends Geom {
         ['height', height],
         ['fill', fill],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth],
-        ['stroke-dasharray', strokeDasharray]
+        ['stroke-width', strokeWidth]
       ];
       if(xr) {
         props.push(['rx', xr]);
       }
       if(yr) {
         props.push(['ry', yr]);
+      }
+      if(strokeDasharray.length) {
+        props.push(['stroke-dasharray', strokeDasharray]);
+      }
+      if(strokeLinecap !== 'butt') {
+        props.push(['stroke-linecap', strokeLinecap]);
       }
       this.addGeom('rect', props);
     }

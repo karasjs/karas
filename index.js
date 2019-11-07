@@ -8810,6 +8810,13 @@
 
       if (_this.props.edge !== undefined) {
         _this.__edge = !!_this.props.edge;
+      } // 扇形大于180°时，是否闭合两端
+
+
+      _this.__closure = false;
+
+      if (_this.props.closure !== undefined) {
+        _this.__closure = !!_this.props.closure;
       }
 
       return _this;
@@ -8839,7 +8846,9 @@
             ctx = this.ctx,
             begin = this.begin,
             end = this.end,
-            r = this.r;
+            r = this.r,
+            edge = this.edge,
+            closure = this.closure;
 
         if (begin === end) {
           return;
@@ -8861,6 +8870,7 @@
 
         x2 = _getCoordsByDegree4[0];
         y2 = _getCoordsByDegree4[1];
+        var large = end - begin > 180 ? 1 : 0;
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -8871,8 +8881,11 @@
           ctx.beginPath();
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
-          if (this.edge) {
-            ctx.lineTo(cx, cy);
+          if (edge) {
+            if (!large || !closure) {
+              ctx.lineTo(cx, cy);
+            }
+
             ctx.lineTo(x1, y1);
 
             if (strokeWidth > 0) {
@@ -8883,17 +8896,18 @@
               ctx.stroke();
             }
 
-            ctx.lineTo(cx, cy);
+            if (!large || !closure) {
+              ctx.lineTo(cx, cy);
+            }
+
             ctx.lineTo(x1, y1);
           }
 
           ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var large = end - begin > 180 ? 1 : 0;
-
-          if (this.edge) {
-            var props = [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          if (edge) {
+            var props = [['d', closure ? "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z") : "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
             if (strokeDasharray.length) {
               props.push(['stroke-dasharray', strokeDasharray]);
@@ -8905,7 +8919,7 @@
 
             this.addGeom('path', props);
           } else {
-            this.addGeom('path', [['d', "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill]]);
+            this.addGeom('path', [['d', closure ? "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z") : "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill]]);
             var _props = [['d', "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
             if (strokeDasharray.length) {
@@ -8939,6 +8953,11 @@
       key: "edge",
       get: function get() {
         return this.__edge;
+      }
+    }, {
+      key: "closure",
+      get: function get() {
+        return this.__closure;
       }
     }]);
 

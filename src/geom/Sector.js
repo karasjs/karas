@@ -62,6 +62,11 @@ class Sector extends Geom {
     if(this.props.edge !== undefined) {
       this.__edge = !!this.props.edge;
     }
+    // 扇形大于180°时，是否闭合两端
+    this.__closure = false;
+    if(this.props.closure !== undefined) {
+      this.__closure = !!this.props.closure;
+    }
   }
 
   render(renderMode) {
@@ -80,7 +85,7 @@ class Sector extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, begin, end, r } = this;
+    let { width, height, ctx, begin, end, r, edge, closure } = this;
     if(begin === end) {
       return;
     }
@@ -88,6 +93,7 @@ class Sector extends Geom {
     let x1, y1, x2, y2;
     [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
     [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
+    let large = (end - begin) > 180 ? 1 : 0;
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
@@ -96,8 +102,10 @@ class Sector extends Geom {
       ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
-      if(this.edge) {
-        ctx.lineTo(cx, cy);
+      if(edge) {
+        if(!large || !closure) {
+          ctx.lineTo(cx, cy);
+        }
         ctx.lineTo(x1, y1);
         if(strokeWidth > 0) {
           ctx.stroke();
@@ -107,17 +115,20 @@ class Sector extends Geom {
         if(strokeWidth > 0) {
           ctx.stroke();
         }
-        ctx.lineTo(cx, cy);
+        if(!large || !closure) {
+          ctx.lineTo(cx, cy);
+        }
         ctx.lineTo(x1, y1);
       }
       ctx.fill();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let large = (end - begin) > 180 ? 1 : 0;
-      if(this.edge) {
+      if(edge) {
         let props = [
-          ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+          ['d', closure
+            ? `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`
+            : `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
           ['fill', fill],
           ['stroke', stroke],
           ['stroke-width', strokeWidth]
@@ -132,7 +143,9 @@ class Sector extends Geom {
       }
       else {
         this.addGeom('path', [
-          ['d', `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+          ['d', closure
+            ? `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`
+            : `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
           ['fill', fill]
         ]);
         let props = [
@@ -163,6 +176,9 @@ class Sector extends Geom {
   }
   get edge() {
     return this.__edge;
+  }
+  get closure() {
+    return this.__closure;
   }
 }
 

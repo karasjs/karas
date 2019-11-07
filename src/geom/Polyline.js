@@ -10,7 +10,7 @@ class Polyline extends Geom {
       this.__points = this.props.points;
     }
     // 原点位置，4个角，默认左下
-    if(['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(this.props.origin) > -1) {
+    if(['TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(this.props.origin) > -1) {
       this.__origin = this.props.origin;
     }
     else {

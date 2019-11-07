@@ -8489,7 +8489,7 @@
       } // 原点位置，4个角，默认左下
 
 
-      if (['TOP_LEFT', 'TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
+      if (['TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
         _this.__origin = _this.props.origin;
       } else {
         _this.__origin = 'TOP_LEFT';
@@ -8877,9 +8877,33 @@
     _inherits(Rect, _Geom);
 
     function Rect(tagName, props) {
+      var _this;
+
       _classCallCheck(this, Rect);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, tagName, props));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, tagName, props)); // 圆角
+
+      _this.__xr = 0;
+
+      if (_this.props.rx) {
+        _this.__xr = parseFloat(_this.props.rx);
+
+        if (isNaN(_this.xr)) {
+          _this.__xr = 0;
+        }
+      }
+
+      _this.__yr = 0;
+
+      if (_this.props.ry) {
+        _this.__yr = parseFloat(_this.props.ry);
+
+        if (isNaN(_this.yr)) {
+          _this.__yr = 0;
+        }
+      }
+
+      return _this;
     }
 
     _createClass(Rect, [{
@@ -8902,7 +8926,13 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx;
+            ctx = this.ctx,
+            xr = this.xr,
+            yr = this.yr;
+        xr = Math.min(xr, 0.5);
+        yr = Math.min(yr, 0.5);
+        xr *= width;
+        yr *= height;
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -8910,11 +8940,27 @@
           ctx.fillStyle = fill;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.moveTo(originX, originY);
-          ctx.lineTo(originX + width, originY);
-          ctx.lineTo(originX + width, originY + height);
-          ctx.lineTo(originX, originY + height);
-          ctx.lineTo(originX, originY);
+
+          if (xr === 0 && yr === 0) {
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX + width, originY);
+            ctx.lineTo(originX + width, originY + height);
+            ctx.lineTo(originX, originY + height);
+            ctx.lineTo(originX, originY);
+          } else {
+            var ox = xr * .5522848;
+            var oy = yr * .5522848;
+            ctx.moveTo(originX + xr, originY);
+            ctx.lineTo(originX + width - xr, originY);
+            ctx.bezierCurveTo(originX + width + ox - xr, originY, originX + width, originY + yr - oy, originX + width, originY + yr);
+            ctx.lineTo(originX + width, originY + height - yr);
+            ctx.bezierCurveTo(originX + width, originY + height + oy - yr, originX + width + ox - xr, originY + height, originX + width - xr, originY + height);
+            ctx.lineTo(originX + xr, originY + height);
+            ctx.bezierCurveTo(originX + xr - ox, originY + height, originX, originY + height + oy - yr, originX, originY + height - yr);
+            ctx.lineTo(originX, originY + yr);
+            ctx.bezierCurveTo(originX, originY + yr - oy, originX + xr - ox, originY, originX + xr, originY);
+          }
+
           ctx.fill();
 
           if (strokeWidth > 0) {
@@ -8923,8 +8969,28 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          this.addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]]);
+          var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth], ['stroke-dasharray', strokeDasharray]];
+
+          if (xr) {
+            props.push(['rx', xr]);
+          }
+
+          if (yr) {
+            props.push(['ry', yr]);
+          }
+
+          this.addGeom('rect', props);
         }
+      }
+    }, {
+      key: "xr",
+      get: function get() {
+        return this.__xr;
+      }
+    }, {
+      key: "yr",
+      get: function get() {
+        return this.__yr;
       }
     }]);
 
@@ -9075,7 +9141,11 @@
           ctx.fillStyle = fill;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
-          ctx.ellipse && ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+
+          if (ctx.ellipse) {
+            ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+          }
+
           ctx.fill();
 
           if (strokeWidth > 0) {

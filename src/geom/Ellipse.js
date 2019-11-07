@@ -35,7 +35,10 @@ class Ellipse extends Geom {
       ctx.fillStyle = fill;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
-      ctx.ellipse && ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+      if(ctx.ellipse) {
+        ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+      }
+      else {}
       ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();

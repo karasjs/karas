@@ -2,9 +2,9 @@ import Xom from '../node/Xom';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
+import gradient from '../style/gradient';
 import mode from '../util/mode';
 import util from '../util/util';
-import gradient from '../style/gradient';
 
 const REGISTER = {};
 

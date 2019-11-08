@@ -4110,8 +4110,22 @@
       }
 
       for (var i = 0, len = a.length; i < len; i++) {
-        if (a[i][0] !== b[i][0] || a[i][1].value !== b[i][1].value || a[i][1].unit !== b[i][1].unit) {
+        var k1 = a[i][0];
+        var k2 = b[i][0];
+
+        if (k1 !== k2) {
           return false;
+        } else {
+          var v1 = a[i][1];
+          var v2 = b[i][1];
+
+          if (k1 === 'matrix') {
+            if (v1[0] !== v2[0] || v1[1] !== v2[1] || v1[2] !== v2[2] || v1[3] !== v2[3] || v1[4] !== v2[4] || v1[5] !== v2[5]) {
+              return false;
+            }
+          } else if (v1.value !== v2.value || v1.unit !== v2.unit) {
+            return false;
+          }
         }
       }
 

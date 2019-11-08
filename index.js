@@ -4065,12 +4065,8 @@
 
     return function BezierEasing(x) {
       // Because JavaScript number are imprecise, we should guarantee the extremes are right.
-      if (x === 0) {
-        return 0;
-      }
-
-      if (x === 1) {
-        return 1;
+      if (x === 0 || x === 1) {
+        return x;
       }
 
       return calcBezier(getTForX(x), mY1, mY2);
@@ -4105,10 +4101,59 @@
 
       style[k] = util.rgb2int(style[k]);
     });
+  }
+
+  function equalStyle(k, a, b) {
+    if (k === 'transform') {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var i = 0, len = a.length; i < len; i++) {
+        if (a[i][0] !== b[i][0] || a[i][1].value !== b[i][1].value || a[i][1].unit !== b[i][1].unit) {
+          return false;
+        }
+      }
+
+      return true;
+    } else if (LENGTH_HASH.hasOwnProperty(k)) {
+      return a.value === b.value && a.unit === b.unit;
+    }
+
+    return a === b;
   } // 反向将颜色数组转换为css模式，同时计算target及其孩子的computedStyle
 
 
-  function stringify$1(style, target) {
+  function stringify$1(style, lastStyle, target) {
+    if (lastStyle) {
+      var res = false;
+
+      for (var i in style) {
+        if (style.hasOwnProperty(i) && lastStyle.hasOwnProperty(i)) {
+          if (!equalStyle(i, style[i], lastStyle[i])) {
+            res = true;
+            break;
+          }
+        } // 不同的属性说明要更新提前跳出
+        else if (style.hasOwnProperty(i) || lastStyle.hasOwnProperty(i)) {
+            res = true;
+            break;
+          }
+      } // 防止last有style没有
+
+
+      for (var _i in lastStyle) {
+        if (lastStyle.hasOwnProperty(_i) && !style.hasOwnProperty(_i)) {
+          res = true;
+          break;
+        }
+      }
+
+      if (!res) {
+        return false;
+      }
+    }
+
     style = util.clone(style);
     var animateStyle = target.animateStyle;
     KEY_COLOR.forEach(function (k) {
@@ -4123,13 +4168,14 @@
       }
     });
 
-    for (var i in style) {
-      if (style.hasOwnProperty(i)) {
-        animateStyle[i] = style[i];
+    for (var _i2 in style) {
+      if (style.hasOwnProperty(_i2)) {
+        animateStyle[_i2] = style[_i2];
       }
     }
 
     target.__needCompute = true;
+    return true;
   } // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
 
 
@@ -4240,8 +4286,8 @@
             prev[key].push([k, id]);
             var _t = [];
 
-            for (var _i = 0; _i < 6; _i++) {
-              _t[_i] = v[_i] - id[_i];
+            for (var _i3 = 0; _i3 < 6; _i3++) {
+              _t[_i3] = v[_i3] - id[_i3];
             }
 
             res.v.push({
@@ -4385,7 +4431,7 @@
     var style = util.clone(frame.style);
     var timingFunction = easing[frame.easing] || easing.linear;
 
-    if (percent !== 0 && percent !== 1) {
+    if (timingFunction !== easing.linear) {
       percent = timingFunction(percent);
     }
 
@@ -4430,6 +4476,8 @@
     return style;
   }
 
+  var uuid = 0;
+
   var Animation =
   /*#__PURE__*/
   function (_Event) {
@@ -4441,6 +4489,7 @@
       _classCallCheck(this, Animation);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
+      _this.__id = uuid++;
       _this.__target = target;
       _this.__list = list || []; // 动画过程另外一种形式，object描述k-v形式
 
@@ -4566,12 +4615,12 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i2 = 1, _len = list.length; _i2 < _len; _i2++) {
-          var start = list[_i2]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i4 = 1, _len = list.length; _i4 < _len; _i4++) {
+          var start = list[_i4]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i2 + 1;
+            var j = _i4 + 1;
 
             for (; j < _len; j++) {
               end = list[j];
@@ -4581,16 +4630,16 @@
               }
             }
 
-            var num = j - _i2 + 1;
-            start = list[_i2 - 1];
+            var num = j - _i4 + 1;
+            start = list[_i4 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i2; k < j; k++) {
+            for (var k = _i4; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i2);
+              item.offset = start.offset + per * (k + 1 - _i4);
             }
 
-            _i2 = j;
+            _i4 = j;
           }
         } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
@@ -4602,8 +4651,8 @@
         prev = framing(first);
         frames.push(prev);
 
-        for (var _i3 = 1; _i3 < length; _i3++) {
-          var next = list[_i3];
+        for (var _i5 = 1; _i5 < length; _i5++) {
+          var next = list[_i5];
           prev = calFrame(prev, next, target);
           frames.push(prev);
         }
@@ -4653,10 +4702,11 @@
 
             var countTime = playCount * duration;
             var i = binarySearch(0, frames.length - 1, now + _this2.offsetTime - countTime, frames);
-            var current = frames[i]; // 最后一帧结束动画
+            var current = frames[i];
+            var needRefresh; // 最后一帧结束动画
 
             if (i === length - 1) {
-              stringify$1(current.style, target);
+              needRefresh = stringify$1(current.style, _this2.__lastStyle, target);
               playCount = ++_this2.playCount;
 
               if (iterations !== Infinity && playCount >= iterations) {
@@ -4683,12 +4733,13 @@
 
                 var percent = _diff / total;
                 var style = calStyle(current, percent);
-                stringify$1(style, target);
+                needRefresh = stringify$1(style, _this2.__lastStyle, target);
               }
 
             _this2.__lastTime = now;
+            _this2.__lastStyle = current.style;
             first = false;
-            var root = target.root;
+            var root = target.root; // 两帧之间没有变化，不触发刷新
 
             if (root) {
               // 可能涉及字号变化，引发布局变更重新测量
@@ -4723,7 +4774,11 @@
                 }
               };
 
-              root.refreshTask(task);
+              if (needRefresh) {
+                root.refreshTask(task);
+              } else {
+                frame.nextFrame(task);
+              }
             }
           };
         } // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
@@ -4757,7 +4812,8 @@
 
         this.__cancelTask();
 
-        var target = this.target;
+        var target = this.target,
+            lastStyle = this.lastStyle;
         var root = target.root;
 
         if (root) {
@@ -4767,7 +4823,7 @@
             both: true
           }.hasOwnProperty(fill)) {
             var last = this.frames[this.frames.length - 1];
-            stringify$1(last.style, this.target);
+            stringify$1(last.style, lastStyle, this.target);
           }
 
           this.__playState = 'finished';
@@ -4823,6 +4879,11 @@
 
         this.__playState = 'idle';
         this.__isDestroyed = true;
+      }
+    }, {
+      key: "id",
+      get: function get() {
+        return this.__id;
       }
     }, {
       key: "target",
@@ -4891,6 +4952,11 @@
       key: "isDestroyed",
       get: function get() {
         return this.__isDestroyed;
+      }
+    }, {
+      key: "lastStyle",
+      get: function get() {
+        return this.__lastStyle;
       }
     }]);
 
@@ -8167,7 +8233,7 @@
     });
   }
 
-  var uuid = 0;
+  var uuid$1 = 0;
 
   var Root =
   /*#__PURE__*/
@@ -8304,7 +8370,7 @@
             }
           }
 
-        this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
+        this.__uuid = util.isNil(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
 
         this.__defs.clear(); // 没有设置width/height则采用css计算形式

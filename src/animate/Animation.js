@@ -62,8 +62,52 @@ function color2array(style) {
   });
 }
 
+function equalStyle(k, a, b) {
+  if(k === 'transform') {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      if(a[i][0] !== b[i][0] || a[i][1].value !== b[i][1].value || a[i][1].unit !== b[i][1].unit) {
+        return false;
+      }
+    }
+    return true;
+  }
+  else if(LENGTH_HASH.hasOwnProperty(k)) {
+    return a.value === b.value && a.unit === b.unit;
+  }
+  return a === b;
+}
+
 // 反向将颜色数组转换为css模式，同时计算target及其孩子的computedStyle
-function stringify(style, target) {
+function stringify(style, lastStyle, target) {
+  if(lastStyle) {
+    let res = false;
+    for(let i in style) {
+      if(style.hasOwnProperty(i) && lastStyle.hasOwnProperty(i)) {
+        if(!equalStyle(i, style[i], lastStyle[i])) {
+          res = true;
+          break;
+        }
+      }
+      // 不同的属性说明要更新提前跳出
+      else if(style.hasOwnProperty(i) || lastStyle.hasOwnProperty(i)) {
+        res = true;
+        break;
+      }
+    }
+    // 防止last有style没有
+    for(let i in lastStyle) {
+      if(lastStyle.hasOwnProperty(i) && !style.hasOwnProperty(i)) {
+        res = true;
+        break;
+      }
+    }
+    if(!res) {
+      return false;
+    }
+  }
   style = util.clone(style);
   let animateStyle = target.animateStyle;
   KEY_COLOR.forEach(k => {
@@ -82,6 +126,7 @@ function stringify(style, target) {
     }
   }
   target.__needCompute = true;
+  return true;
 }
 
 // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
@@ -333,7 +378,7 @@ function binarySearch(i, j, now, frames) {
 function calStyle(frame, percent) {
   let style = util.clone(frame.style);
   let timingFunction = easing[frame.easing] || easing.linear;
-  if(percent !== 0 && percent !== 1) {
+  if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
@@ -378,9 +423,12 @@ function calStyle(frame, percent) {
   return style;
 }
 
+let uuid = 0;
+
 class Animation extends Event {
   constructor(target, list, options) {
     super();
+    this.__id = uuid++;
     this.__target = target;
     this.__list = list || [];
     // 动画过程另外一种形式，object描述k-v形式
@@ -556,9 +604,10 @@ class Animation extends Event {
         let countTime = playCount * duration;
         let i = binarySearch(0, frames.length - 1,now + this.offsetTime - countTime, frames);
         let current = frames[i];
+        let needRefresh;
         // 最后一帧结束动画
         if(i === length - 1) {
-          stringify(current.style, target);
+          needRefresh = stringify(current.style, this.__lastStyle, target);
           playCount = ++this.playCount;
           if(iterations !== Infinity && playCount >= iterations) {
             frame.offFrame(this.cb);
@@ -580,11 +629,13 @@ class Animation extends Event {
           let diff = now - countTime - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
-          stringify(style, target);
+          needRefresh = stringify(style, this.__lastStyle, target);
         }
         this.__lastTime = now;
+        this.__lastStyle = current.style;
         first = false;
         let root = target.root;
+        // 两帧之间没有变化，不触发刷新
         if(root) {
           // 可能涉及字号变化，引发布局变更重新测量
           let task = this.__task = () => {
@@ -613,7 +664,12 @@ class Animation extends Event {
               }
             }
           };
-          root.refreshTask(task);
+          if(needRefresh) {
+            root.refreshTask(task);
+          }
+          else {
+            frame.nextFrame(task);
+          }
         }
       };
     }
@@ -638,7 +694,7 @@ class Animation extends Event {
     let { fill } = this.options;
     frame.offFrame(this.cb);
     this.__cancelTask();
-    let { target } = this;
+    let { target, lastStyle } = this;
     let root = target.root;
     if(root) {
       // 停留在最后一帧
@@ -647,7 +703,7 @@ class Animation extends Event {
         both: true
       }.hasOwnProperty(fill)) {
         let last = this.frames[this.frames.length - 1];
-        stringify(last.style, this.target);
+        stringify(last.style, lastStyle, this.target);
       }
       this.__playState = 'finished';
       target.__needCompute = true;
@@ -688,6 +744,9 @@ class Animation extends Event {
     this.__isDestroyed = true;
   }
 
+  get id() {
+    return this.__id;
+  }
   get target() {
     return this.__target;
   }
@@ -729,6 +788,9 @@ class Animation extends Event {
   }
   get isDestroyed() {
     return this.__isDestroyed;
+  }
+  get lastStyle() {
+    return this.__lastStyle;
   }
 }
 

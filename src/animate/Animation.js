@@ -42,6 +42,22 @@ const KEY_LENGTH = [
   'strokeWidth'
 ];
 
+const PROP_GEOM = [
+  'x1',
+  'y1',
+  'x2',
+  'y2',
+  'controlA',
+  'controlB',
+  'r',
+  'rx',
+  'ry',
+  'begin',
+  'end',
+  'points',
+  'controls'
+];
+
 const COLOR_HASH = {};
 KEY_COLOR.forEach(k => {
   COLOR_HASH[k] = true;
@@ -50,6 +66,11 @@ KEY_COLOR.forEach(k => {
 const LENGTH_HASH = {};
 KEY_LENGTH.forEach(k => {
   LENGTH_HASH[k] = true;
+});
+
+const GEOM_HASH = {};
+PROP_GEOM.forEach(k => {
+  GEOM_HASH[k] = true;
 });
 
 // css模式rgb和init的颜色转换为rgba数组，方便加减运算
@@ -96,6 +117,28 @@ function equalStyle(k, a, b) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
+  else if(GEOM_HASH.hasOwnProperty(k)) {
+    if(k === 'points' || k === 'controls') {
+      if(a.length !== b.length) {
+        return false;
+      }
+      for(let i = 0, len = a.length; i < len; i++) {
+        if(a[i] === b[i]) {
+          continue;
+        }
+        if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
+          return false;
+        }
+      }
+      return true;
+    }
+    else if(k === 'controlA' || k === 'controlB') {
+      if(a.length !== b.length) {
+        return false;
+      }
+      return a[0] === b[0] && a[1] === b[1];
+    }
+  }
   return a === b;
 }
 
@@ -141,7 +184,12 @@ function stringify(style, lastStyle, target) {
   });
   for(let i in style) {
     if(style.hasOwnProperty(i)) {
-      animateStyle[i] = style[i];
+      if(GEOM_HASH.hasOwnProperty(i)) {
+        target['__' + i] = style[i];
+      }
+      else {
+        animateStyle[i] = style[i];
+      }
     }
   }
   target.__needCompute = true;
@@ -353,6 +401,41 @@ function calDiff(prev, next, k, target) {
       return;
     }
   }
+  else if(GEOM_HASH.hasOwnProperty(k)) {
+    let p = prev[k];
+    let n = next[k];
+    if(k === 'points' || k === 'controls') {
+      res.v = [];
+      for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+        let pv = p[i];
+        let nv = n[i];
+        if(util.isNil(pv) || util.isNil(nv)) {
+          res.v.push(pv);
+        }
+        else {
+          let v = [];
+          for(let j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
+            if(util.isNil(pv[j]) || util.isNil(nv[j])) {
+              v.push(pv[j]);
+            }
+            else {
+              v.push(nv[j] - pv[j]);
+            }
+          }
+          res.v.push(v);
+        }
+      }
+    }
+    else if(k === 'controlA' || k === 'controlB') {
+      res.v = [
+        n[0] - p[0],
+        n[1] - p[1]
+      ];
+    }
+    else {
+      res.v = n - p;
+    }
+  }
   else {
     res.v = prev[k];
   }
@@ -434,6 +517,28 @@ function calStyle(frame, percent) {
     }
     else if(LENGTH_HASH.hasOwnProperty(k)) {
       style[k].value += v * percent;
+    }
+    else if(GEOM_HASH.hasOwnProperty(k)) {
+      let st = style[k];
+      if(k === 'points' || k === 'controls') {
+        for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+          if(util.isNil(st[i]) || !st[i].length) {
+            continue;
+          }
+          for(let j = 0, len2 = Math.min(st[i].length, v[i].length); j < len2; j++) {
+            if(!util.isNil(st[i][j]) && !util.isNil(v[i][j])) {
+              st[i][j] += v[i][j] * percent;
+            }
+          }
+        }
+      }
+      else if(k === 'controlA' || k === 'controlB') {
+        st[0] += v[0] * percent;
+        st[1] += v[1] * percent;
+      }
+      else {
+        style[k] += v * percent;
+      }
     }
     else {
       style[k] = v;

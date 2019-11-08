@@ -5,18 +5,18 @@ class Ellipse extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 半径0~1，默认1
-    this.__xr = 1;
+    this.__rx = 1;
     if(this.props.rx) {
-      this.__xr = parseFloat(this.props.rx);
-      if(isNaN(this.xr)) {
-        this.__xr = 1;
+      this.__rx = parseFloat(this.props.rx);
+      if(isNaN(this.rx)) {
+        this.__rx = 1;
       }
     }
-    this.__yr = 1;
+    this.__ry = 1;
     if(this.props.ry) {
-      this.__yr = parseFloat(this.props.ry);
-      if(isNaN(this.yr)) {
-        this.__yr = 1;
+      this.__ry = parseFloat(this.props.ry);
+      if(isNaN(this.ry)) {
+        this.__ry = 1;
       }
     }
   }
@@ -37,9 +37,9 @@ class Ellipse extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, xr, yr } = this;
-    xr *= width * 0.5;
-    yr *= height * 0.5;
+    let { width, height, ctx, rx, ry } = this;
+    rx *= width * 0.5;
+    ry *= height * 0.5;
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
@@ -48,16 +48,16 @@ class Ellipse extends Geom {
       ctx.setLineDash(strokeDasharray.split(','));
       ctx.beginPath();
       if(ctx.ellipse) {
-        ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
       }
       else {
-        let ox = xr * .5522848;
-        let oy = yr * .5522848;
-        ctx.moveTo(cx - xr, cy);
-        ctx.bezierCurveTo(cx - xr, cy - oy, cx - ox, cy - yr, cx, cy - yr);
-        ctx.bezierCurveTo(cx + ox, cy - yr, cx + xr, cy - oy, cx + xr, cy);
-        ctx.bezierCurveTo(cx + xr, cy + oy, cx + ox, cy + yr, cx, cy + yr);
-        ctx.bezierCurveTo(cx - ox, cy + yr, cx - xr, cy + oy, cx - xr, cy);
+        let ox = rx * .5522848;
+        let oy = ry * .5522848;
+        ctx.moveTo(cx - rx, cy);
+        ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
+        ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
+        ctx.bezierCurveTo(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
+        ctx.bezierCurveTo(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
       }
       ctx.fill();
       if(strokeWidth > 0) {
@@ -69,8 +69,8 @@ class Ellipse extends Geom {
       let props = [
         ['cx', cx],
         ['cy', cy],
-        ['rx', xr],
-        ['ry', yr],
+        ['rx', rx],
+        ['ry', ry],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
@@ -85,11 +85,11 @@ class Ellipse extends Geom {
     }
   }
 
-  get xr() {
-    return this.__xr;
+  get rx() {
+    return this.__rx;
   }
-  get yr() {
-    return this.__yr;
+  get ry() {
+    return this.__ry;
   }
 }
 

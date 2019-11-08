@@ -300,12 +300,12 @@
         return this.__oy;
       }
     }, {
-      key: "rx",
+      key: "sx",
       get: function get() {
         return this.x + this.ox;
       }
     }, {
-      key: "ry",
+      key: "sy",
       get: function get() {
         return this.y + this.oy;
       }
@@ -1965,7 +1965,7 @@
       };
     } else if (/%$/.test(v)) {
       // border不支持百分比
-      if (k.toString().indexOf('border') === 0 || k.toString() === 'strokeWidth') {
+      if (k.toString().indexOf('border') === 0) {
         obj[k] = {
           value: 0,
           unit: unit.PX
@@ -2362,7 +2362,7 @@
     } // 处理可提前计算的属性，如border百分比
 
 
-    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'strokeWidth'].forEach(function (k) {
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       if (currentStyle.hasOwnProperty(k)) {
         var v = currentStyle[k];
         computedStyle[k] = v.value;
@@ -3730,7 +3730,7 @@
         }
 
         this.__hasInit = true;
-        ['x', 'y', 'ox', 'oy', 'rx', 'ry', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle'].forEach(function (fn) {
+        ['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle', 'points', 'controlA', 'controlB', 'controls', 'r', 'rx', 'ry', 'begin', 'end', 'x1', 'y1', 'x2', 'y2'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
               return this.shadowRoot[fn];
@@ -4084,6 +4084,7 @@
 
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'fill', 'stroke'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
+  var PROP_GEOM = ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'r', 'rx', 'ry', 'begin', 'end', 'points', 'controls'];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
     COLOR_HASH[k] = true;
@@ -4091,6 +4092,10 @@
   var LENGTH_HASH = {};
   KEY_LENGTH.forEach(function (k) {
     LENGTH_HASH[k] = true;
+  });
+  var GEOM_HASH = {};
+  PROP_GEOM.forEach(function (k) {
+    GEOM_HASH[k] = true;
   }); // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 
   function color2array(style) {
@@ -4132,6 +4137,30 @@
       return true;
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
+    } else if (GEOM_HASH.hasOwnProperty(k)) {
+      if (k === 'points' || k === 'controls') {
+        if (a.length !== b.length) {
+          return false;
+        }
+
+        for (var _i = 0, _len = a.length; _i < _len; _i++) {
+          if (a[_i] === b[_i]) {
+            continue;
+          }
+
+          if (a[_i][0] !== b[_i][0] || a[_i][1] !== b[_i][1]) {
+            return false;
+          }
+        }
+
+        return true;
+      } else if (k === 'controlA' || k === 'controlB') {
+        if (a.length !== b.length) {
+          return false;
+        }
+
+        return a[0] === b[0] && a[1] === b[1];
+      }
     }
 
     return a === b;
@@ -4156,8 +4185,8 @@
       } // 防止last有style没有
 
 
-      for (var _i in lastStyle) {
-        if (lastStyle.hasOwnProperty(_i) && !style.hasOwnProperty(_i)) {
+      for (var _i2 in lastStyle) {
+        if (lastStyle.hasOwnProperty(_i2) && !style.hasOwnProperty(_i2)) {
           res = true;
           break;
         }
@@ -4182,9 +4211,13 @@
       }
     });
 
-    for (var _i2 in style) {
-      if (style.hasOwnProperty(_i2)) {
-        animateStyle[_i2] = style[_i2];
+    for (var _i3 in style) {
+      if (style.hasOwnProperty(_i3)) {
+        if (GEOM_HASH.hasOwnProperty(_i3)) {
+          target['__' + _i3] = style[_i3];
+        } else {
+          animateStyle[_i3] = style[_i3];
+        }
       }
     }
 
@@ -4300,8 +4333,8 @@
             prev[key].push([k, id]);
             var _t = [];
 
-            for (var _i3 = 0; _i3 < 6; _i3++) {
-              _t[_i3] = v[_i3] - id[_i3];
+            for (var _i4 = 0; _i4 < 6; _i4++) {
+              _t[_i4] = v[_i4] - id[_i4];
             }
 
             res.v.push({
@@ -4399,6 +4432,38 @@
       } else {
         return;
       }
+    } else if (GEOM_HASH.hasOwnProperty(k)) {
+      var _p3 = prev[k];
+      var _n3 = next[k];
+
+      if (k === 'points' || k === 'controls') {
+        res.v = [];
+
+        for (var _i5 = 0, len = Math.min(_p3.length, _n3.length); _i5 < len; _i5++) {
+          var pv = _p3[_i5];
+          var nv = _n3[_i5];
+
+          if (util.isNil(pv) || util.isNil(nv)) {
+            res.v.push(pv);
+          } else {
+            var v = [];
+
+            for (var j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
+              if (util.isNil(pv[j]) || util.isNil(nv[j])) {
+                v.push(pv[j]);
+              } else {
+                v.push(nv[j] - pv[j]);
+              }
+            }
+
+            res.v.push(v);
+          }
+        }
+      } else if (k === 'controlA' || k === 'controlB') {
+        res.v = [_n3[0] - _p3[0], _n3[1] - _p3[1]];
+      } else {
+        res.v = _n3 - _p3;
+      }
     } else {
       res.v = prev[k];
     }
@@ -4483,6 +4548,27 @@
           _item3[3] += v[3] * percent;
         } else if (LENGTH_HASH.hasOwnProperty(k)) {
           style[k].value += v * percent;
+        } else if (GEOM_HASH.hasOwnProperty(k)) {
+          var st = style[k];
+
+          if (k === 'points' || k === 'controls') {
+            for (var i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+              if (util.isNil(st[i]) || !st[i].length) {
+                continue;
+              }
+
+              for (var j = 0, len2 = Math.min(st[i].length, v[i].length); j < len2; j++) {
+                if (!util.isNil(st[i][j]) && !util.isNil(v[i][j])) {
+                  st[i][j] += v[i][j] * percent;
+                }
+              }
+            }
+          } else if (k === 'controlA' || k === 'controlB') {
+            st[0] += v[0] * percent;
+            st[1] += v[1] * percent;
+          } else {
+            style[k] += v * percent;
+          }
         } else {
           style[k] = v;
         }
@@ -4629,14 +4715,14 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i4 = 1, _len = list.length; _i4 < _len; _i4++) {
-          var start = list[_i4]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i6 = 1, _len2 = list.length; _i6 < _len2; _i6++) {
+          var start = list[_i6]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i4 + 1;
+            var j = _i6 + 1;
 
-            for (; j < _len; j++) {
+            for (; j < _len2; j++) {
               end = list[j];
 
               if (end.offset) {
@@ -4644,16 +4730,16 @@
               }
             }
 
-            var num = j - _i4 + 1;
-            start = list[_i4 - 1];
+            var num = j - _i6 + 1;
+            start = list[_i6 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i4; k < j; k++) {
+            for (var k = _i6; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i4);
+              item.offset = start.offset + per * (k + 1 - _i6);
             }
 
-            _i4 = j;
+            _i6 = j;
           }
         } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
@@ -4665,8 +4751,8 @@
         prev = framing(first);
         frames.push(prev);
 
-        for (var _i5 = 1; _i5 < length; _i5++) {
-          var next = list[_i5];
+        for (var _i7 = 1; _i7 < length; _i7++) {
+          var next = list[_i7];
           prev = calFrame(prev, next, target);
           frames.push(prev);
         }
@@ -5386,10 +5472,10 @@
             borderLeftStyle = computedStyle.borderLeftStyle,
             visibility = computedStyle.visibility;
         var transform$1 = currentStyle.transform,
-            transformOrigin = currentStyle.transformOrigin; // 使用rx和ry渲染位置，考虑了relative和translate影响
+            transformOrigin = currentStyle.transformOrigin; // 使用sx和sy渲染位置，考虑了relative和translate影响
 
-        var x = this.rx,
-            y = this.ry;
+        var x = this.sx,
+            y = this.sy;
         var x1 = x + marginLeft;
         var x2 = x1 + borderLeftWidth;
         var x3 = x2 + width + paddingLeft + paddingRight;
@@ -5678,12 +5764,12 @@
         var x = e.x,
             y = e.y,
             covers = e.covers;
-        var rx = this.rx,
-            ry = this.ry,
+        var sx = this.sx,
+            sy = this.sy,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = transform.pointInQuadrilateral(x - rx, y - ry, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
+        var inThis = transform.pointInQuadrilateral(x - sx, y - sy, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
 
         if (inThis) {
           // 不能被遮挡
@@ -5695,7 +5781,7 @@
                 h = _covers$i.h,
                 _matrixEvent = _covers$i.matrixEvent;
 
-            if (transform.pointInQuadrilateral(x - rx, y - ry, x2 - rx, y2 - ry, x2 - rx + w, y2 - ry, x2 - rx, y2 - ry + h, x2 - rx + w, y2 - ry + h, _matrixEvent)) {
+            if (transform.pointInQuadrilateral(x - sx, y - sy, x2 - sx, y2 - sy, x2 - sx + w, y2 - sy, x2 - sx, y2 - sy + h, x2 - sx + w, y2 - sy + h, _matrixEvent)) {
               return;
             }
           }
@@ -6131,16 +6217,17 @@
     }, {
       key: "__preRender",
       value: function __preRender(renderMode) {
-        var x = this.rx,
-            y = this.ry,
+        var x = this.sx,
+            y = this.sy,
             width = this.width,
             height = this.height,
+            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
+        var strokeWidth = currentStyle.strokeWidth;
         var borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             display = computedStyle.display,
             stroke = computedStyle.stroke,
-            strokeWidth = computedStyle.strokeWidth,
             strokeDasharray = computedStyle.strokeDasharray,
             strokeLinecap = computedStyle.strokeLinecap,
             fill = computedStyle.fill,
@@ -6157,6 +6244,16 @@
         var cy = originY + height * 0.5;
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom;
+
+        if (strokeWidth.unit === unit.PX) {
+          strokeWidth = strokeWidth.value;
+        } else if (strokeWidth.unit === unit.PERCENT) {
+          strokeWidth = strokeWidth.value * width * 0.01;
+        } else {
+          strokeWidth = 0;
+        }
+
+        computedStyle.strokeWidth = strokeWidth;
 
         if (strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
           var go = gradient.parseGradient(stroke);
@@ -7683,8 +7780,8 @@
         _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode);
 
         var ctx = this.ctx,
-            x = this.rx,
-            y = this.ry,
+            x = this.sx,
+            y = this.sy,
             width = this.width,
             height = this.height,
             src = this.src,
@@ -8781,6 +8878,13 @@
         _this.__origin = _this.props.origin;
       } else {
         _this.__origin = 'TOP_LEFT';
+      } // 控制点
+
+
+      _this.__controls = [];
+
+      if (Array.isArray(_this.props.controls)) {
+        _this.__controls = _this.props.controls;
       }
 
       return _this;
@@ -8808,6 +8912,7 @@
             height = this.height,
             ctx = this.ctx,
             points = this.points,
+            controls = this.controls,
             origin = this.origin;
 
         if (points.length < 2) {
@@ -8821,22 +8926,88 @@
         }
 
         var pts = [];
+        var cls = [];
+        var hasControll;
 
         if (origin === 'TOP_LEFT') {
           points.forEach(function (item) {
             pts.push([originX + item[0] * width, originY + item[1] * height]);
           });
+          controls.forEach(function (item) {
+            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+              var arr = [];
+              item.forEach(function (item2, i) {
+                if (i === 0 || i === 2) {
+                  arr.push(originX + item[i] * width);
+                } else {
+                  arr.push(originY + item[i] * height);
+                }
+              });
+              cls.push(arr);
+              hasControll = true;
+            } else {
+              cls.push(null);
+            }
+          });
         } else if (origin === 'TOP_RIGHT') {
           points.forEach(function (item) {
             pts.push([originX + width - item[0] * width, originY + item[1] * height]);
+          });
+          controls.forEach(function (item) {
+            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+              var arr = [];
+              item.forEach(function (item2, i) {
+                if (i === 0 || i === 2) {
+                  arr.push(originX + width - item[i] * width);
+                } else {
+                  arr.push(originY + item[i] * height);
+                }
+              });
+              cls.push(arr);
+              hasControll = true;
+            } else {
+              cls.push(null);
+            }
           });
         } else if (origin === 'BOTTOM_LEFT') {
           points.forEach(function (item) {
             pts.push([originX + item[0] * width, originY + height - item[1] * height]);
           });
+          controls.forEach(function (item) {
+            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+              var arr = [];
+              item.forEach(function (item2, i) {
+                if (i === 0 || i === 2) {
+                  arr.push(originX + item[i] * width);
+                } else {
+                  arr.push(originY + height - item[i] * height);
+                }
+              });
+              cls.push(arr);
+              hasControll = true;
+            } else {
+              cls.push(null);
+            }
+          });
         } else if (origin === 'BOTTOM_RIGHT') {
           points.forEach(function (item) {
             pts.push([originX + width - item[0] * width, originY + height - item[1] * height]);
+          });
+          controls.forEach(function (item) {
+            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+              var arr = [];
+              item.forEach(function (item2, i) {
+                if (i === 0 || i === 2) {
+                  arr.push(originX + width - item[i] * width);
+                } else {
+                  arr.push(originY + height - item[i] * height);
+                }
+              });
+              cls.push(arr);
+              hasControll = true;
+            } else {
+              cls.push(null);
+            }
           });
         }
 
@@ -8850,7 +9021,15 @@
 
           for (var _i = 1, _len = pts.length; _i < _len; _i++) {
             var point = pts[_i];
-            ctx.lineTo(point[0], point[1]);
+            var cl = cls[_i - 1];
+
+            if (!cl) {
+              ctx.lineTo(point[0], point[1]);
+            } else if (cl.length === 4) {
+              ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
+            } else {
+              ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
+            }
           }
 
           if (strokeWidth > 0) {
@@ -8859,14 +9038,48 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var _points = '';
+          var props = [];
+          var tagName;
 
-          for (var _i2 = 0, _len2 = pts.length; _i2 < _len2; _i2++) {
-            var _point = pts[_i2];
-            _points += "".concat(_point[0], ",").concat(_point[1], " ");
+          if (hasControll) {
+            var _s = "M".concat(pts[0][0], " ").concat(pts[0][1]);
+
+            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
+              var _point = pts[_i2];
+              var _cl2 = cls[_i2 - 1];
+
+              if (!_cl2) {
+                _s += "L".concat(_point[0], " ").concat(_point[1]);
+              } else if (_cl2.length === 4) {
+                _s += "C".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_cl2[2], " ").concat(_cl2[3], " ").concat(_point[0], " ").concat(_point[1]);
+              } else {
+                _s += "Q".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_point[0], " ").concat(_point[1]);
+              }
+            }
+
+            var _cl = cls[pts.length - 1];
+
+            if (!_cl) {
+              _s += "L".concat(pts[0][0], " ").concat(pts[0][1]);
+            } else if (_cl.length === 4) {
+              _s += "C".concat(_cl[0], " ").concat(_cl[1], " ").concat(_cl[2], " ").concat(_cl[3], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+            } else {
+              _s += "Q".concat(_cl[0], " ").concat(_cl[1], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+            }
+
+            props.push(['d', _s]);
+            tagName = 'path';
+          } else {
+            var _points = '';
+
+            for (var _i3 = 0, _len3 = pts.length; _i3 < _len3; _i3++) {
+              var _point2 = pts[_i3];
+              _points += "".concat(_point2[0], ",").concat(_point2[1], " ");
+            }
+
+            props.push(['points', s]);
+            tagName = 'polyline';
           }
-
-          var props = [['points', _points], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharray]);
@@ -8876,13 +9089,18 @@
             props.push(['stroke-linecap', strokeLinecap]);
           }
 
-          this.addGeom('polyline', props);
+          this.addGeom(tagName, props);
         }
       }
     }, {
       key: "points",
       get: function get() {
         return this.__points;
+      }
+    }, {
+      key: "controls",
+      get: function get() {
+        return this.__controls;
       }
     }, {
       key: "origin",
@@ -8910,6 +9128,13 @@
 
       if (Array.isArray(_this.props.points)) {
         _this.__points = _this.props.points;
+      } // 控制点
+
+
+      _this.__controls = [];
+
+      if (Array.isArray(_this.props.controls)) {
+        _this.__controls = _this.props.controls;
       }
 
       return _this;
@@ -8937,7 +9162,8 @@
         var width = this.width,
             height = this.height,
             ctx = this.ctx,
-            points = this.points;
+            points = this.points,
+            controls = this.controls;
 
         if (points.length < 3) {
           return;
@@ -8953,6 +9179,24 @@
         points.forEach(function (item) {
           pts.push([originX + item[0] * width, originY + item[1] * height]);
         });
+        var cls = [];
+        var hasControll;
+        controls.forEach(function (item) {
+          if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+            var arr = [];
+            item.forEach(function (item2, i) {
+              if (i === 0 || i === 2) {
+                arr.push(originX + item[i] * width);
+              } else {
+                arr.push(originY + item[i] * height);
+              }
+            });
+            cls.push(arr);
+            hasControll = true;
+          } else {
+            cls.push(null);
+          }
+        });
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -8965,10 +9209,27 @@
 
           for (var _i = 1, _len = pts.length; _i < _len; _i++) {
             var point = pts[_i];
-            ctx.lineTo(point[0], point[1]);
+            var _cl = cls[_i - 1];
+
+            if (!_cl) {
+              ctx.lineTo(point[0], point[1]);
+            } else if (_cl.length === 4) {
+              ctx.bezierCurveTo(_cl[0], _cl[1], _cl[2], _cl[3], point[0], point[1]);
+            } else {
+              ctx.quadraticCurveTo(_cl[0], _cl[1], point[0], point[1]);
+            }
           }
 
-          ctx.lineTo(pts[0][0], pts[0][1]);
+          var cl = cls[pts.length - 1];
+
+          if (!cl) {
+            ctx.lineTo(pts[0][0], pts[0][1]);
+          } else if (cl.length === 4) {
+            ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], pts[0][0], pts[0][1]);
+          } else {
+            ctx.quadraticCurveTo(cl[0], cl[1], pts[0][0], pts[0][1]);
+          }
+
           ctx.fill();
 
           if (strokeWidth > 0) {
@@ -8977,14 +9238,50 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var s = '';
+          var props = [];
+          var tagName;
 
-          for (var _i2 = 0, _len2 = pts.length; _i2 < _len2; _i2++) {
-            var _point = pts[_i2];
-            s += "".concat(_point[0], ",").concat(_point[1], " ");
+          if (hasControll) {
+            var s = "M".concat(pts[0][0], " ").concat(pts[0][1]);
+
+            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
+              var _point = pts[_i2];
+              var _cl3 = cls[_i2 - 1];
+
+              if (!_cl3) {
+                s += "L".concat(_point[0], " ").concat(_point[1]);
+              } else if (_cl3.length === 4) {
+                s += "C".concat(_cl3[0], " ").concat(_cl3[1], " ").concat(_cl3[2], " ").concat(_cl3[3], " ").concat(_point[0], " ").concat(_point[1]);
+              } else {
+                s += "Q".concat(_cl3[0], " ").concat(_cl3[1], " ").concat(_point[0], " ").concat(_point[1]);
+              }
+            }
+
+            var _cl2 = cls[pts.length - 1];
+
+            if (!_cl2) {
+              s += "L".concat(pts[0][0], " ").concat(pts[0][1]);
+            } else if (_cl2.length === 4) {
+              s += "C".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_cl2[2], " ").concat(_cl2[3], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+            } else {
+              s += "Q".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+            }
+
+            props.push(['d', s]);
+            tagName = 'path';
+          } else {
+            var _s = '';
+
+            for (var _i3 = 0, _len3 = pts.length; _i3 < _len3; _i3++) {
+              var _point2 = pts[_i3];
+              _s += "".concat(_point2[0], ",").concat(_point2[1], " ");
+            }
+
+            props.push(['points', _s]);
+            tagName = 'polygon';
           }
 
-          var props = [['points', s], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          props = props.concat([['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]);
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharray]);
@@ -8994,13 +9291,18 @@
             props.push(['stroke-linecap', strokeLinecap]);
           }
 
-          this.addGeom('polygon', props);
+          this.addGeom(tagName, props);
         }
       }
     }, {
       key: "points",
       get: function get() {
         return this.__points;
+      }
+    }, {
+      key: "controls",
+      get: function get() {
+        return this.__controls;
       }
     }]);
 
@@ -9236,23 +9538,23 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, tagName, props)); // 圆角
 
-      _this.__xr = 0;
+      _this.__rx = 0;
 
       if (_this.props.rx) {
-        _this.__xr = parseFloat(_this.props.rx);
+        _this.__rx = parseFloat(_this.props.rx);
 
-        if (isNaN(_this.xr)) {
-          _this.__xr = 0;
+        if (isNaN(_this.rx)) {
+          _this.__rx = 0;
         }
       }
 
-      _this.__yr = 0;
+      _this.__ry = 0;
 
       if (_this.props.ry) {
-        _this.__yr = parseFloat(_this.props.ry);
+        _this.__ry = parseFloat(_this.props.ry);
 
-        if (isNaN(_this.yr)) {
-          _this.__yr = 0;
+        if (isNaN(_this.ry)) {
+          _this.__ry = 0;
         }
       }
 
@@ -9281,12 +9583,12 @@
         var width = this.width,
             height = this.height,
             ctx = this.ctx,
-            xr = this.xr,
-            yr = this.yr;
-        xr = Math.min(xr, 0.5);
-        yr = Math.min(yr, 0.5);
-        xr *= width;
-        yr *= height;
+            rx = this.rx,
+            ry = this.ry;
+        rx = Math.min(rx, 0.5);
+        ry = Math.min(ry, 0.5);
+        rx *= width;
+        ry *= height;
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -9296,24 +9598,24 @@
           ctx.setLineDash(strokeDasharray.split(','));
           ctx.beginPath();
 
-          if (xr === 0 && yr === 0) {
+          if (rx === 0 && ry === 0) {
             ctx.moveTo(originX, originY);
             ctx.lineTo(originX + width, originY);
             ctx.lineTo(originX + width, originY + height);
             ctx.lineTo(originX, originY + height);
             ctx.lineTo(originX, originY);
           } else {
-            var ox = xr * .5522848;
-            var oy = yr * .5522848;
-            ctx.moveTo(originX + xr, originY);
-            ctx.lineTo(originX + width - xr, originY);
-            ctx.bezierCurveTo(originX + width + ox - xr, originY, originX + width, originY + yr - oy, originX + width, originY + yr);
-            ctx.lineTo(originX + width, originY + height - yr);
-            ctx.bezierCurveTo(originX + width, originY + height + oy - yr, originX + width + ox - xr, originY + height, originX + width - xr, originY + height);
-            ctx.lineTo(originX + xr, originY + height);
-            ctx.bezierCurveTo(originX + xr - ox, originY + height, originX, originY + height + oy - yr, originX, originY + height - yr);
-            ctx.lineTo(originX, originY + yr);
-            ctx.bezierCurveTo(originX, originY + yr - oy, originX + xr - ox, originY, originX + xr, originY);
+            var ox = rx * .5522848;
+            var oy = ry * .5522848;
+            ctx.moveTo(originX + rx, originY);
+            ctx.lineTo(originX + width - rx, originY);
+            ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
+            ctx.lineTo(originX + width, originY + height - ry);
+            ctx.bezierCurveTo(originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height);
+            ctx.lineTo(originX + rx, originY + height);
+            ctx.bezierCurveTo(originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry);
+            ctx.lineTo(originX, originY + ry);
+            ctx.bezierCurveTo(originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY);
           }
 
           ctx.fill();
@@ -9326,12 +9628,12 @@
         } else if (renderMode === mode.SVG) {
           var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (xr) {
-            props.push(['rx', xr]);
+          if (rx) {
+            props.push(['rx', rx]);
           }
 
-          if (yr) {
-            props.push(['ry', yr]);
+          if (ry) {
+            props.push(['ry', ry]);
           }
 
           if (strokeDasharray.length) {
@@ -9346,14 +9648,14 @@
         }
       }
     }, {
-      key: "xr",
+      key: "rx",
       get: function get() {
-        return this.__xr;
+        return this.__rx;
       }
     }, {
-      key: "yr",
+      key: "ry",
       get: function get() {
-        return this.__yr;
+        return this.__ry;
       }
     }]);
 
@@ -9461,23 +9763,23 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径0~1，默认1
 
-      _this.__xr = 1;
+      _this.__rx = 1;
 
       if (_this.props.rx) {
-        _this.__xr = parseFloat(_this.props.rx);
+        _this.__rx = parseFloat(_this.props.rx);
 
-        if (isNaN(_this.xr)) {
-          _this.__xr = 1;
+        if (isNaN(_this.rx)) {
+          _this.__rx = 1;
         }
       }
 
-      _this.__yr = 1;
+      _this.__ry = 1;
 
       if (_this.props.ry) {
-        _this.__yr = parseFloat(_this.props.ry);
+        _this.__ry = parseFloat(_this.props.ry);
 
-        if (isNaN(_this.yr)) {
-          _this.__yr = 1;
+        if (isNaN(_this.ry)) {
+          _this.__ry = 1;
         }
       }
 
@@ -9506,10 +9808,10 @@
         var width = this.width,
             height = this.height,
             ctx = this.ctx,
-            xr = this.xr,
-            yr = this.yr;
-        xr *= width * 0.5;
-        yr *= height * 0.5;
+            rx = this.rx,
+            ry = this.ry;
+        rx *= width * 0.5;
+        ry *= height * 0.5;
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
@@ -9520,15 +9822,15 @@
           ctx.beginPath();
 
           if (ctx.ellipse) {
-            ctx.ellipse(cx, cy, xr, yr, 0, 0, 2 * Math.PI);
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
           } else {
-            var ox = xr * .5522848;
-            var oy = yr * .5522848;
-            ctx.moveTo(cx - xr, cy);
-            ctx.bezierCurveTo(cx - xr, cy - oy, cx - ox, cy - yr, cx, cy - yr);
-            ctx.bezierCurveTo(cx + ox, cy - yr, cx + xr, cy - oy, cx + xr, cy);
-            ctx.bezierCurveTo(cx + xr, cy + oy, cx + ox, cy + yr, cx, cy + yr);
-            ctx.bezierCurveTo(cx - ox, cy + yr, cx - xr, cy + oy, cx - xr, cy);
+            var ox = rx * .5522848;
+            var oy = ry * .5522848;
+            ctx.moveTo(cx - rx, cy);
+            ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
+            ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
+            ctx.bezierCurveTo(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
+            ctx.bezierCurveTo(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
           }
 
           ctx.fill();
@@ -9539,7 +9841,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['cx', cx], ['cy', cy], ['rx', xr], ['ry', yr], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['cx', cx], ['cy', cy], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharray]);
@@ -9553,14 +9855,14 @@
         }
       }
     }, {
-      key: "xr",
+      key: "rx",
       get: function get() {
-        return this.__xr;
+        return this.__rx;
       }
     }, {
-      key: "yr",
+      key: "ry",
       get: function get() {
-        return this.__yr;
+        return this.__ry;
       }
     }]);
 

@@ -104,13 +104,13 @@ class Geom extends Xom {
   }
 
   __preRender(renderMode) {
-    let { rx: x, ry: y, width, height, computedStyle } = this;
+    let { sx: x, sy: y, width, height, currentStyle, computedStyle } = this;
+    let { strokeWidth } = currentStyle;
     let {
       borderTopWidth,
       borderLeftWidth,
       display,
       stroke,
-      strokeWidth,
       strokeDasharray,
       strokeLinecap,
       fill,
@@ -128,6 +128,16 @@ class Geom extends Xom {
     let cy = originY + height * 0.5;
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
+    if(strokeWidth.unit === unit.PX) {
+      strokeWidth = strokeWidth.value;
+    }
+    else if(strokeWidth.unit === unit.PERCENT) {
+      strokeWidth = strokeWidth.value * width * 0.01;
+    }
+    else {
+      strokeWidth = 0;
+    }
+    computedStyle.strokeWidth = strokeWidth;
     if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(stroke);
       if(go) {

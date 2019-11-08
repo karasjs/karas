@@ -16,6 +16,11 @@ class Polyline extends Geom {
     else {
       this.__origin = 'TOP_LEFT';
     }
+    // 控制点
+    this.__controls = [];
+    if(Array.isArray(this.props.controls)) {
+      this.__controls = this.props.controls;
+    }
   }
 
   render(renderMode) {
@@ -33,7 +38,7 @@ class Polyline extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, points, origin } = this;
+    let { width, height, ctx, points, controls, origin } = this;
     if(points.length < 2) {
       return;
     }
@@ -43,12 +48,32 @@ class Polyline extends Geom {
       }
     }
     let pts = [];
+    let cls = [];
+    let hasControll;
     if(origin === 'TOP_LEFT') {
       points.forEach(item => {
         pts.push([
           originX + item[0] * width,
           originY + item[1] * height
         ]);
+      });
+      controls.forEach(item => {
+        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+          let arr = [];
+          item.forEach((item2, i) => {
+            if(i === 0 || i === 2) {
+              arr.push(originX + item[i] * width);
+            }
+            else {
+              arr.push(originY + item[i] * height);
+            }
+          });
+          cls.push(arr);
+          hasControll = true;
+        }
+        else {
+          cls.push(null);
+        }
       });
     }
     else if(origin === 'TOP_RIGHT') {
@@ -58,6 +83,24 @@ class Polyline extends Geom {
           originY + item[1] * height
         ]);
       });
+      controls.forEach(item => {
+        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+          let arr = [];
+          item.forEach((item2, i) => {
+            if(i === 0 || i === 2) {
+              arr.push(originX + width - item[i] * width);
+            }
+            else {
+              arr.push(originY + item[i] * height);
+            }
+          });
+          cls.push(arr);
+          hasControll = true;
+        }
+        else {
+          cls.push(null);
+        }
+      });
     }
     else if(origin === 'BOTTOM_LEFT') {
       points.forEach(item => {
@@ -66,6 +109,24 @@ class Polyline extends Geom {
           originY + height - item[1] * height
         ]);
       });
+      controls.forEach(item => {
+        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+          let arr = [];
+          item.forEach((item2, i) => {
+            if(i === 0 || i === 2) {
+              arr.push(originX + item[i] * width);
+            }
+            else {
+              arr.push(originY + height - item[i] * height);
+            }
+          });
+          cls.push(arr);
+          hasControll = true;
+        }
+        else {
+          cls.push(null);
+        }
+      });
     }
     else if(origin === 'BOTTOM_RIGHT') {
       points.forEach(item => {
@@ -73,6 +134,24 @@ class Polyline extends Geom {
           originX + width - item[0] * width,
           originY + height - item[1] * height
         ]);
+      });
+      controls.forEach(item => {
+        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+          let arr = [];
+          item.forEach((item2, i) => {
+            if(i === 0 || i === 2) {
+              arr.push(originX + width - item[i] * width);
+            }
+            else {
+              arr.push(originY + height - item[i] * height);
+            }
+          });
+          cls.push(arr);
+          hasControll = true;
+        }
+        else {
+          cls.push(null);
+        }
       });
     }
     if(renderMode === mode.CANVAS) {
@@ -84,7 +163,16 @@ class Polyline extends Geom {
       ctx.moveTo(pts[0][0], pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {
         let point = pts[i];
-        ctx.lineTo(point[0], point[1]);
+        let cl = cls[i - 1];
+        if(!cl) {
+          ctx.lineTo(point[0], point[1]);
+        }
+        else if(cl.length === 4) {
+          ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
+        }
+        else {
+          ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
+        }
       }
       if(strokeWidth > 0) {
         ctx.stroke();
@@ -92,29 +180,60 @@ class Polyline extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let points = '';
-      for(let i = 0, len = pts.length; i < len; i++) {
-        let point = pts[i];
-        points += `${point[0]},${point[1]} `;
+      let props = [];
+      let tagName;
+      if(hasControll) {
+        let s = `M${pts[0][0]} ${pts[0][1]}`;
+        for(let i = 1, len = pts.length; i < len; i++) {
+          let point = pts[i];
+          let cl = cls[i - 1];
+          if(!cl) {
+            s += `L${point[0]} ${point[1]}`;
+          }
+          else if(cl.length === 4) {
+            s += `C${cl[0]} ${cl[1]} ${cl[2]} ${cl[3]} ${point[0]} ${point[1]}`;
+          }
+          else {
+            s += `Q${cl[0]} ${cl[1]} ${point[0]} ${point[1]}`;
+          }
+        }
+        let cl = cls[pts.length - 1];
+        if(!cl) {
+          s += `L${pts[0][0]} ${pts[0][1]}`;
+        }
+        else if(cl.length === 4) {
+          s += `C${cl[0]} ${cl[1]} ${cl[2]} ${cl[3]} ${pts[0][0]} ${pts[0][1]}`;
+        }
+        else {
+          s += `Q${cl[0]} ${cl[1]} ${pts[0][0]} ${pts[0][1]}`;
+        }
+        props.push(['d', s]);
+        tagName = 'path';
       }
-      let props = [
-        ['points', points],
-        ['fill', 'none'],
-        ['stroke', stroke],
-        ['stroke-width', strokeWidth]
-      ];
+      else {
+        let points = '';
+        for(let i = 0, len = pts.length; i < len; i++) {
+          let point = pts[i];
+          points += `${point[0]},${point[1]} `;
+        }
+        props.push(['points', s]);
+        tagName = 'polyline';
+      }
       if(strokeDasharray.length) {
         props.push(['stroke-dasharray', strokeDasharray]);
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);
       }
-      this.addGeom('polyline', props);
+      this.addGeom(tagName, props);
     }
   }
 
   get points() {
     return this.__points;
+  }
+  get controls() {
+    return this.__controls;
   }
   get origin() {
     return this.__origin;

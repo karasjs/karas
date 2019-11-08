@@ -52,10 +52,10 @@ class Node {
   get oy() {
     return this.__oy;
   }
-  get rx() {
+  get sx() {
     return this.x + this.ox;
   }
-  get ry() {
+  get sy() {
     return this.y + this.oy;
   }
   get width() {

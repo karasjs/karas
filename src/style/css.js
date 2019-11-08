@@ -51,7 +51,7 @@ function calUnit(obj, k, v) {
   }
   else if(/%$/.test(v)) {
     // border不支持百分比
-    if(k.toString().indexOf('border') === 0 || k.toString() === 'strokeWidth') {
+    if(k.toString().indexOf('border') === 0) {
       obj[k] = {
         value: 0,
         unit: unit.PX,
@@ -446,8 +446,7 @@ function computed(xom, isRoot) {
     'borderTopWidth',
     'borderRightWidth',
     'borderBottomWidth',
-    'borderLeftWidth',
-    'strokeWidth'
+    'borderLeftWidth'
   ].forEach(k => {
     if(currentStyle.hasOwnProperty(k)) {
       let v = currentStyle[k];

@@ -135,8 +135,8 @@ class Component extends Event {
       'y',
       'ox',
       'oy',
-      'rx',
-      'ry',
+      'sx',
+      'sy',
       'width',
       'height',
       'outerWidth',
@@ -148,6 +148,19 @@ class Component extends Event {
       'baseLine',
       'virtualDom',
       'currentStyle',
+      'points',
+      'controlA',
+      'controlB',
+      'controls',
+      'r',
+      'rx',
+      'ry',
+      'begin',
+      'end',
+      'x1',
+      'y1',
+      'x2',
+      'y2'
     ].forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {

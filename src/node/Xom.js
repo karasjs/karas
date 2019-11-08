@@ -385,8 +385,8 @@ class Xom extends Node {
       transform,
       transformOrigin,
     } = currentStyle;
-    // 使用rx和ry渲染位置，考虑了relative和translate影响
-    let { rx: x, ry: y } = this;
+    // 使用sx和sy渲染位置，考虑了relative和translate影响
+    let { sx: x, sy: y } = this;
     let x1 = x + marginLeft;
     let x2 = x1 + borderLeftWidth;
     let x3 = x2 + width + paddingLeft + paddingRight;
@@ -639,8 +639,8 @@ class Xom extends Node {
 
   willResponseEvent(e) {
     let { x, y, covers } = e;
-    let { rx, ry, outerWidth, outerHeight, matrixEvent } = this;
-    let inThis = tf.pointInQuadrilateral(x - rx, y - ry,
+    let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
+    let inThis = tf.pointInQuadrilateral(x - sx, y - sy,
       0, 0,
       outerWidth,0,
       0, outerHeight,
@@ -650,11 +650,11 @@ class Xom extends Node {
       // 不能被遮挡
       for(let i = 0, len = covers.length; i < len; i++) {
         let { x: x2, y: y2, w, h, matrixEvent } = covers[i];
-        if(tf.pointInQuadrilateral(x - rx, y - ry,
-          x2 - rx, y2 - ry,
-          x2 - rx + w,y2 - ry,
-          x2 - rx, y2 - ry + h,
-          x2 - rx + w, y2 - ry + h,
+        if(tf.pointInQuadrilateral(x - sx, y - sy,
+          x2 - sx, y2 - sy,
+          x2 - sx + w,y2 - sy,
+          x2 - sx, y2 - sy + h,
+          x2 - sx + w, y2 - sy + h,
           matrixEvent)
         ) {
           return;

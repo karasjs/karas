@@ -180,7 +180,10 @@ class Polyline extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let props = [];
+      let props = [
+        ['fill', 'none'],
+        ['stroke', stroke]
+      ];
       let tagName;
       if(hasControll) {
         let s = `M${pts[0][0]} ${pts[0][1]}`;

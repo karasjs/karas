@@ -11,7 +11,6 @@ module.exports = {
       .mouseButtonClick(0)
       .pause(100)
       .assert.value('input', '0')
-      .moveToElement('canvas', 1, 1)
       .mouseButtonClick(0)
       .pause(100)
       .assert.value('input', '1')

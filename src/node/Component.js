@@ -5,6 +5,7 @@ import util from '../util/util';
 import reset from '../style/reset';
 import css from '../style/css';
 import match from '../style/match';
+import level from '../animate/level';
 
 class Component extends Event {
   constructor(tagName, props, children) {
@@ -48,10 +49,12 @@ class Component extends Event {
     if(!o) {
       return;
     }
-    if(this.root) {
+    let root = this.root;
+    if(root) {
+      root.setRefreshLevel(level.REFLOW);
       this.__traverse(o.ctx, o.defs, this.root.renderMode);
       this.__init();
-      this.root.addRefreshTask(cb);
+      root.addRefreshTask(cb);
     }
   }
 

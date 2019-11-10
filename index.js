@@ -3393,6 +3393,11 @@
     geom: geom
   };
 
+  var level = {
+    REPAINT: 0,
+    REFLOW: 1
+  };
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -3450,12 +3455,16 @@
           return;
         }
 
-        if (this.root) {
+        var root = this.root;
+
+        if (root) {
+          root.setRefreshLevel(level.REFLOW);
+
           this.__traverse(o.ctx, o.defs, this.root.renderMode);
 
           this.__init();
 
-          this.root.addRefreshTask(cb);
+          root.addRefreshTask(cb);
         }
       }
     }, {
@@ -4034,11 +4043,6 @@
     ease: bezier(0.25, 0.1, 0.25, 1),
     easeInOut: bezier(0.42, 0, 0.58, 1),
     cubicBezier: bezier
-  };
-
-  var level = {
-    REPAINT: 0,
-    REFLOW: 1
   };
 
   var repaint$1 = {
@@ -9054,7 +9058,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [];
+          var props = [['fill', 'none'], ['stroke', stroke]];
           var tagName;
 
           if (hasControll) {

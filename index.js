@@ -5223,7 +5223,6 @@
         this.__mp(currentStyle, computedStyle, w);
 
         this.__ox = this.__oy = 0;
-        this.__matrix = this.__matrixEvent = null;
 
         if (isDestroyed || display === 'none') {
           computedStyle.width = computedStyle.height = computedStyle.outerWidth = computedStyle.outerHeight = 0;
@@ -5399,6 +5398,32 @@
             computedStyle = this.computedStyle,
             width = this.width,
             height = this.height;
+        this.__matrix = this.__matrixEvent = null;
+        var parent = this.parent;
+        var matrix = [1, 0, 0, 1, 0, 0];
+
+        while (parent) {
+          if (parent.matrixEvent) {
+            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+            break;
+          }
+
+          parent = parent.parent;
+        } // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+
+
+        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[1] !== 0 || matrix[1] !== 1 || matrix[1] !== 0 || matrix[1] !== 0) {
+          if (renderMode === mode.CANVAS) {
+            this.__matrix = this.__matrixEvent = matrix;
+          } else if (renderMode === mode.SVG) {
+            this.__matrixEvent = matrix;
+          }
+        }
+
+        if (renderMode === mode.CANVAS) {
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+        }
+
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginRight = computedStyle.marginRight,
@@ -5444,31 +5469,30 @@
         computedStyle.transformOrigin = tfo; // transform相对于自身
 
         if (transform$1) {
-          var matrix = this.__matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh);
-          computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
-          var parent = this.parent;
+          var _matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh); // 初始化有可能继承祖先的matrix
 
-          while (parent) {
-            if (parent.matrixEvent) {
-              matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+
+          this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;
+          computedStyle.transform = 'matrix(' + _matrix.join(', ') + ')';
+          var _parent = this.parent;
+
+          while (_parent) {
+            if (_parent.matrixEvent) {
+              _matrix = transform.mergeMatrix(_parent.matrixEvent, _matrix);
               break;
             }
 
-            parent = parent.parent;
+            _parent = _parent.parent;
           }
 
-          this.__matrixEvent = matrix;
+          this.__matrixEvent = _matrix;
 
           if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+            ctx.setTransform.apply(ctx, _toConsumableArray(_matrix));
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
         } else {
-          if (renderMode === mode.CANVAS) {
-            ctx.setTransform([1, 0, 0, 1, 0, 0]);
-          }
-
           computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
         }
 

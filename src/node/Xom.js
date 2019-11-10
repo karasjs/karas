@@ -172,7 +172,6 @@ class Xom extends Node {
     }
     this.__mp(currentStyle, computedStyle, w);
     this.__ox = this.__oy = 0;
-    this.__matrix = this.__matrixEvent = null;
     if(isDestroyed || display === 'none') {
       computedStyle.width = computedStyle.height = computedStyle.outerWidth = computedStyle.outerHeight = 0;
       return;
@@ -316,6 +315,33 @@ class Xom extends Node {
       };
     }
     let { isDestroyed, ctx, currentStyle, computedStyle, width, height } = this;
+    this.__matrix = this.__matrixEvent = null;
+    let parent = this.parent;
+    let matrix = [1, 0, 0, 1, 0, 0];
+    while(parent) {
+      if(parent.matrixEvent) {
+        matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+        break;
+      }
+      parent = parent.parent;
+    }
+    // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+    if(matrix[0] !== 1
+      || matrix[1] !== 0
+      || matrix[1] !== 0
+      || matrix[1] !== 1
+      || matrix[1] !== 0
+      || matrix[1] !== 0) {
+      if(renderMode === mode.CANVAS) {
+        this.__matrix = this.__matrixEvent = matrix;
+      }
+      else if(renderMode === mode.SVG) {
+        this.__matrixEvent = matrix;
+      }
+    }
+    if(renderMode === mode.CANVAS) {
+      ctx.setTransform(...matrix);
+    }
     let {
       display,
       marginTop,
@@ -364,7 +390,9 @@ class Xom extends Node {
     computedStyle.transformOrigin = tfo;
     // transform相对于自身
     if(transform) {
-      let matrix = this.__matrix = tf.calMatrix(transform, tfo, x, y, ow, oh);
+      let matrix = tf.calMatrix(transform, tfo, x, y, ow, oh);
+      // 初始化有可能继承祖先的matrix
+      this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
       computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
       let parent = this.parent;
       while(parent) {
@@ -383,9 +411,6 @@ class Xom extends Node {
       }
     }
     else {
-      if(renderMode === mode.CANVAS) {
-        ctx.setTransform([1, 0, 0, 1, 0, 0]);
-      }
       computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {

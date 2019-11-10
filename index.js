@@ -282,38 +282,6 @@
         } else {
           this.__oy += diff;
         }
-      } // 获取margin/padding的实际值
-
-    }, {
-      key: "__mp",
-      value: function __mp(currentStyle, computedStyle, w) {
-        var marginTop = currentStyle.marginTop,
-            marginRight = currentStyle.marginRight,
-            marginBottom = currentStyle.marginBottom,
-            marginLeft = currentStyle.marginLeft,
-            paddingTop = currentStyle.paddingTop,
-            paddingRight = currentStyle.paddingRight,
-            paddingBottom = currentStyle.paddingBottom,
-            paddingLeft = currentStyle.paddingLeft;
-        computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
-        computedStyle.marginTop = this.__mpWidth(marginTop, w);
-        computedStyle.marginRight = this.__mpWidth(marginRight, w);
-        computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
-        computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
-        computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
-        computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
-        computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
-      }
-    }, {
-      key: "__mpWidth",
-      value: function __mpWidth(mp, w) {
-        if (mp.unit === unit.PX) {
-          return mp.value;
-        } else if (mp.unit === unit.PERCENT) {
-          return mp.value * w * 0.01;
-        }
-
-        return 0;
       }
     }, {
       key: "__destroy",
@@ -2376,8 +2344,6 @@
     var parent = xom.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-
-    xom.__mp(currentStyle, computedStyle, isRoot ? xom.width : parent.width);
   }
 
   function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
@@ -4217,24 +4183,20 @@
       }
     }
 
-    style = util.clone(style);
     var animateStyle = target.animateStyle;
-    KEY_COLOR.forEach(function (k) {
-      if (style.hasOwnProperty(k)) {
-        var v = style[k];
-
-        if (v[3] === 1) {
-          style[k] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
-        } else {
-          style[k] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
-        }
-      }
-    });
 
     for (var _i3 in style) {
       if (style.hasOwnProperty(_i3)) {
         if (repaint$1.GEOM.hasOwnProperty(_i3)) {
           target['__' + _i3] = style[_i3];
+        } else if (COLOR_HASH.hasOwnProperty(_i3)) {
+          var v = style[_i3];
+
+          if (v[3] === 1) {
+            animateStyle[_i3] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+          } else {
+            animateStyle[_i3] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+          }
         } else {
           animateStyle[_i3] = style[_i3];
         }
@@ -5203,6 +5165,38 @@
             }
           });
         }
+      } // 获取margin/padding的实际值
+
+    }, {
+      key: "__mp",
+      value: function __mp(currentStyle, computedStyle, w) {
+        var marginTop = currentStyle.marginTop,
+            marginRight = currentStyle.marginRight,
+            marginBottom = currentStyle.marginBottom,
+            marginLeft = currentStyle.marginLeft,
+            paddingTop = currentStyle.paddingTop,
+            paddingRight = currentStyle.paddingRight,
+            paddingBottom = currentStyle.paddingBottom,
+            paddingLeft = currentStyle.paddingLeft;
+        computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
+        computedStyle.marginTop = this.__mpWidth(marginTop, w);
+        computedStyle.marginRight = this.__mpWidth(marginRight, w);
+        computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
+        computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
+        computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
+        computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
+        computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
+      }
+    }, {
+      key: "__mpWidth",
+      value: function __mpWidth(mp, w) {
+        if (mp.unit === unit.PX) {
+          return mp.value;
+        } else if (mp.unit === unit.PERCENT) {
+          return mp.value * w * 0.01;
+        }
+
+        return 0;
       }
     }, {
       key: "__layout",
@@ -5405,31 +5399,6 @@
             computedStyle = this.computedStyle,
             width = this.width,
             height = this.height;
-        var parent = this.parent;
-        var matrix = [1, 0, 0, 1, 0, 0];
-
-        while (parent) {
-          if (parent.matrixEvent) {
-            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
-            break;
-          }
-
-          parent = parent.parent;
-        } // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
-
-
-        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[1] !== 0 || matrix[1] !== 1 || matrix[1] !== 0 || matrix[1] !== 0) {
-          if (renderMode === mode.CANVAS) {
-            this.__matrix = this.__matrixEvent = matrix;
-          } else if (renderMode === mode.SVG) {
-            this.__matrixEvent = matrix;
-          }
-        }
-
-        if (renderMode === mode.CANVAS) {
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-        }
-
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginRight = computedStyle.marginRight,
@@ -5475,30 +5444,31 @@
         computedStyle.transformOrigin = tfo; // transform相对于自身
 
         if (transform$1) {
-          var _matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh); // 初始化有可能继承祖先的matrix
+          var matrix = this.__matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh);
+          computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
+          var parent = this.parent;
 
-
-          this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;
-          computedStyle.transform = 'matrix(' + _matrix.join(', ') + ')';
-          var _parent = this.parent;
-
-          while (_parent) {
-            if (_parent.matrixEvent) {
-              _matrix = transform.mergeMatrix(_parent.matrixEvent, _matrix);
+          while (parent) {
+            if (parent.matrixEvent) {
+              matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
               break;
             }
 
-            _parent = _parent.parent;
+            parent = parent.parent;
           }
 
-          this.__matrixEvent = _matrix;
+          this.__matrixEvent = matrix;
 
           if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(_matrix));
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
         } else {
+          if (renderMode === mode.CANVAS) {
+            ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          }
+
           computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
         }
 
@@ -6213,14 +6183,14 @@
             height = this.height,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var strokeWidth = currentStyle.strokeWidth;
+        var strokeWidth = currentStyle.strokeWidth,
+            fill = currentStyle.fill,
+            stroke = currentStyle.stroke,
+            strokeDasharray = currentStyle.strokeDasharray,
+            strokeLinecap = currentStyle.strokeLinecap;
         var borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             display = computedStyle.display,
-            stroke = computedStyle.stroke,
-            strokeDasharray = computedStyle.strokeDasharray,
-            strokeLinecap = computedStyle.strokeLinecap,
-            fill = computedStyle.fill,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
             paddingTop = computedStyle.paddingTop,
@@ -6271,6 +6241,11 @@
           }
         }
 
+        computedStyle.fill = fill;
+        computedStyle.stroke = stroke;
+        computedStyle.strokeWidth = strokeWidth;
+        computedStyle.strokeDasharray = strokeDasharray;
+        computedStyle.strokeLinecap = strokeLinecap;
         return {
           x: x,
           y: y,

@@ -435,7 +435,6 @@ function repaint(xom, isRoot) {
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-  xom.__mp(currentStyle, computedStyle, isRoot ? xom.width : parent.width);
 }
 
 function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {

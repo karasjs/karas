@@ -105,15 +105,17 @@ class Geom extends Xom {
 
   __preRender(renderMode) {
     let { sx: x, sy: y, width, height, currentStyle, computedStyle } = this;
-    let { strokeWidth } = currentStyle;
+    let {
+      strokeWidth,
+      fill,
+      stroke,
+      strokeDasharray,
+      strokeLinecap,
+    } = currentStyle;
     let {
       borderTopWidth,
       borderLeftWidth,
       display,
-      stroke,
-      strokeDasharray,
-      strokeLinecap,
-      fill,
       marginTop,
       marginLeft,
       paddingTop,
@@ -159,6 +161,11 @@ class Geom extends Xom {
         fill = this.__getBgRg(renderMode, rg);
       }
     }
+    computedStyle.fill = fill;
+    computedStyle.stroke = stroke;
+    computedStyle.strokeWidth = strokeWidth;
+    computedStyle.strokeDasharray = strokeDasharray;
+    computedStyle.strokeLinecap = strokeLinecap;
     return {
       x,
       y,

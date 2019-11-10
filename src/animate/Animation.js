@@ -151,22 +151,19 @@ function stringify(style, lastStyle, target) {
       return false;
     }
   }
-  style = util.clone(style);
   let animateStyle = target.animateStyle;
-  KEY_COLOR.forEach(k => {
-    if(style.hasOwnProperty(k)) {
-      let v = style[k];
-      if(v[3] === 1) {
-        style[k] = `rgb(${v[0]},${v[1]},${v[2]})`;
-      } else {
-        style[k] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
-      }
-    }
-  });
   for(let i in style) {
     if(style.hasOwnProperty(i)) {
       if(repaint.GEOM.hasOwnProperty(i)) {
         target['__' + i] = style[i];
+      }
+      else if(COLOR_HASH.hasOwnProperty(i)) {
+        let v = style[i];
+        if(v[3] === 1) {
+          animateStyle[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
+        } else {
+          animateStyle[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+        }
       }
       else {
         animateStyle[i] = style[i];

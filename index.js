@@ -2005,7 +2005,7 @@
       var gd = gradient.parseGradient(temp);
 
       if (gd) {
-        style.backgroundGradient = gd;
+        style.backgroundImage = gd;
       } else {
         var bgc = /#[0-9a-f]{3,6}/i.exec(temp);
 
@@ -2383,7 +2383,7 @@
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       computedStyle[k] = currentStyle[k].value || 0;
     });
-    ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor'].forEach(function (k) {
+    ['visibility', 'backgroundColor', 'backgroundImage', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
   }
@@ -5439,8 +5439,8 @@
             paddingRight = computedStyle.paddingRight,
             paddingBottom = computedStyle.paddingBottom,
             paddingLeft = computedStyle.paddingLeft,
-            backgroundGradient = computedStyle.backgroundGradient,
             backgroundColor = computedStyle.backgroundColor,
+            backgroundImage = computedStyle.backgroundImage,
             borderTopWidth = computedStyle.borderTopWidth,
             borderTopColor = computedStyle.borderTopColor,
             borderTopStyle = computedStyle.borderTopStyle,
@@ -5507,50 +5507,35 @@
         } // 先渲染渐变，没有则背景色
 
 
-        if (backgroundGradient) {
-          var k = backgroundGradient.k,
-              v = backgroundGradient.v;
+        var bgc;
+
+        if (backgroundImage) {
+          var k = backgroundImage.k,
+              v = backgroundImage.v;
           var cx = x2 + iw * 0.5;
           var cy = y2 + ih * 0.5; // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
 
           if (k === 'linear') {
             var gd = gradient.getLinear(v, cx, cy, iw, ih);
-
-            if (renderMode === mode.CANVAS) {
-              ctx.beginPath();
-              ctx.fillStyle = this.__getBgLg(renderMode, gd);
-              ctx.rect(x2, y2, iw, ih);
-              ctx.fill();
-              ctx.closePath();
-            } else if (renderMode === mode.SVG) {
-              var fill = this.__getBgLg(renderMode, gd);
-
-              this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', fill]]);
-            }
+            bgc = this.__getBgLg(renderMode, gd);
           } else if (k === 'radial') {
             var _gd = gradient.getRadial(v, cx, cy, x2, y2, x3, y3);
 
-            if (renderMode === mode.CANVAS) {
-              ctx.beginPath();
-              ctx.fillStyle = this.__getBgRg(renderMode, _gd);
-              ctx.rect(x2, y2, iw, ih);
-              ctx.fill();
-              ctx.closePath();
-            } else if (renderMode === mode.SVG) {
-              var _fill = this.__getBgRg(renderMode, _gd);
-
-              this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', _fill]]);
-            }
+            bgc = this.__getBgRg(renderMode, _gd);
           }
         } else if (backgroundColor !== 'transparent') {
+          bgc = backgroundColor;
+        }
+
+        if (bgc) {
           if (renderMode === mode.CANVAS) {
             ctx.beginPath();
-            ctx.fillStyle = backgroundColor;
+            ctx.fillStyle = bgc;
             ctx.rect(x2, y2, iw, ih);
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', backgroundColor]]);
+            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', bgc]]);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -9094,7 +9079,12 @@
 
             for (var _i3 = 0, _len3 = pts.length; _i3 < _len3; _i3++) {
               var _point2 = pts[_i3];
-              _s += "".concat(_point2[0], ",").concat(_point2[1], " ");
+
+              if (_i3) {
+                _s += ' ';
+              }
+
+              _s += "".concat(_point2[0], ",").concat(_point2[1]);
             }
 
             props.push(['points', _s]);

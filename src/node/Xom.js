@@ -352,8 +352,8 @@ class Xom extends Node {
       paddingRight,
       paddingBottom,
       paddingLeft,
-      backgroundGradient,
       backgroundColor,
+      backgroundImage,
       borderTopWidth,
       borderTopColor,
       borderTopStyle,
@@ -417,56 +417,29 @@ class Xom extends Node {
       return;
     }
     // 先渲染渐变，没有则背景色
-    if(backgroundGradient) {
-      let { k, v } = backgroundGradient;
+    let bgc;
+    if(backgroundImage) {
+      let { k, v } = backgroundImage;
       let cx = x2 + iw * 0.5;
       let cy = y2 + ih * 0.5;
       // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
+      let fill;
       if(k === 'linear') {
         let gd = gradient.getLinear(v, cx, cy, iw, ih);
-        if(renderMode === mode.CANVAS) {
-          ctx.beginPath();
-          ctx.fillStyle = this.__getBgLg(renderMode, gd);
-          ctx.rect(x2, y2, iw, ih);
-          ctx.fill();
-          ctx.closePath();
-        }
-        else if(renderMode === mode.SVG) {
-          let fill = this.__getBgLg(renderMode, gd);
-          this.addBackground([
-            ['x', x2],
-            ['y', y2],
-            ['width', iw],
-            ['height', ih],
-            ['fill', fill]
-          ]);
-        }
+        bgc = this.__getBgLg(renderMode, gd);
       }
       else if(k === 'radial') {
         let gd = gradient.getRadial(v, cx, cy, x2, y2, x3, y3);
-        if(renderMode === mode.CANVAS) {
-          ctx.beginPath();
-          ctx.fillStyle = this.__getBgRg(renderMode, gd);
-          ctx.rect(x2, y2, iw, ih);
-          ctx.fill();
-          ctx.closePath();
-        }
-        else if(renderMode === mode.SVG) {
-          let fill = this.__getBgRg(renderMode, gd);
-          this.addBackground([
-            ['x', x2],
-            ['y', y2],
-            ['width', iw],
-            ['height', ih],
-            ['fill', fill]
-          ]);
-        }
+        bgc = this.__getBgRg(renderMode, gd);
       }
     }
     else if(backgroundColor !== 'transparent') {
+      bgc = backgroundColor;
+    }
+    if(bgc) {
       if(renderMode === mode.CANVAS) {
         ctx.beginPath();
-        ctx.fillStyle = backgroundColor;
+        ctx.fillStyle = bgc;
         ctx.rect(x2, y2, iw, ih);
         ctx.fill();
         ctx.closePath();
@@ -477,7 +450,7 @@ class Xom extends Node {
           ['y', y2],
           ['width', iw],
           ['height', ih],
-          ['fill', backgroundColor]
+          ['fill', bgc]
         ]);
       }
     }

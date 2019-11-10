@@ -90,7 +90,7 @@ function normalize(style, reset) {
     // 优先gradient，没有再考虑颜色
     let gd = gradient.parseGradient(temp);
     if(gd) {
-      style.backgroundGradient = gd;
+      style.backgroundImage = gd;
     }
     else {
       let bgc = /#[0-9a-f]{3,6}/i.exec(temp);
@@ -477,6 +477,7 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   [
     'visibility',
     'backgroundColor',
+    'backgroundImage',
     'borderBottomColor',
     'borderLeftColor',
     'borderRightColor',

@@ -4849,6 +4849,8 @@
                   _this2.__playState = 'finished'; // 完全结束多触发complete
 
                   var _task = _this2.__task = function () {
+                    _this2.emit(Event.KARAS_ANIMATION_FRAME);
+
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
 
                     _this2.emit(Event.KARAS_ANIMATION_COMPLETE);
@@ -7709,7 +7711,6 @@
               value: cache.height,
               unit: unit.PX
             };
-            lv = level.REPAINT;
           } // 否则有一方定义则按比例调整另一方适应
           else if (width.unit === unit.AUTO) {
               currentStyle.width = {
@@ -7721,6 +7722,8 @@
                 value: w * cache.height / cache.width,
                 unit: unit.PX
               };
+            } else {
+              lv = level.REPAINT;
             }
 
           var root = _this2.root;

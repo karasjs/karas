@@ -61,7 +61,6 @@ class Img extends Dom {
           value: cache.height,
           unit: unit.PX,
         };
-        lv = level.REPAINT;
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
@@ -75,6 +74,9 @@ class Img extends Dom {
           value: w * cache.height / cache.width,
           unit: unit.PX,
         };
+      }
+      else {
+        lv = level.REPAINT;
       }
       let root = this.root;
       if(root) {

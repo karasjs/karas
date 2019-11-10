@@ -2389,20 +2389,28 @@
 
     if (fontStyle === 'inherit') {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
+    } else {
+      computedStyle.fontStyle = fontStyle;
     }
 
     if (fontWeight === 'inherit') {
       computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
+    } else {
+      computedStyle.fontWeight = fontWeight;
     }
 
     computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
 
     if (fontFamily === 'inherit') {
       computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
+    } else {
+      computedStyle.fontFamily = fontFamily;
     }
 
     if (color === 'inherit') {
       computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
+    } else {
+      computedStyle.color = color;
     } // 处理可提前计算的属性，如border百分比
 
 
@@ -8553,14 +8561,16 @@
           value: this.height,
           unit: unit.PX
         };
+        var lv = this.__refreshLevel; // 预先计算字体相关的继承
+
+        if (lv === level.REFLOW) {
+          this.__computed();
+        }
+
         inject.measureText(function () {
-          var lv = _this2.__refreshLevel; // 没发生REFLOW只需要computed即可
-
+          // 没发生REFLOW只需要computed即可
           if (lv === level.REFLOW) {
-            // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
-            _this2.__computed(); // 布局分为两步，普通流和绝对流，互相递归
-
-
+            // 布局分为两步，普通流和绝对流，互相递归
             _this2.__layout({
               x: 0,
               y: 0,

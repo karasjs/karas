@@ -444,15 +444,27 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   if(fontStyle === 'inherit') {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
+  else {
+    computedStyle.fontStyle = fontStyle;
+  }
   if(fontWeight === 'inherit') {
     computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
+  }
+  else {
+    computedStyle.fontWeight = fontWeight;
   }
   computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
   if(fontFamily === 'inherit') {
     computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
   }
+  else {
+    computedStyle.fontFamily = fontFamily;
+  }
   if(color === 'inherit') {
     computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
+  }
+  else {
+    computedStyle.color = color;
   }
   // 处理可提前计算的属性，如border百分比
   [

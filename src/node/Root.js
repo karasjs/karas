@@ -202,12 +202,14 @@ class Root extends Dom {
       value: this.height,
       unit: unit.PX,
     };
+    let lv = this.__refreshLevel;
+    // 预先计算字体相关的继承
+    if(lv === level.REFLOW) {
+      this.__computed();
+    }
     inject.measureText(() => {
-      let lv = this.__refreshLevel;
       // 没发生REFLOW只需要computed即可
       if(lv === level.REFLOW) {
-        // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
-        this.__computed();
         // 布局分为两步，普通流和绝对流，互相递归
         this.__layout({
           x: 0,

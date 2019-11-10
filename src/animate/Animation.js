@@ -5,6 +5,8 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from './frame';
 import easing from './easing';
+import level from './level';
+import repaint from './repaint';
 
 const KEY_COLOR = [
   'backgroundColor',
@@ -42,22 +44,6 @@ const KEY_LENGTH = [
   'strokeWidth'
 ];
 
-const PROP_GEOM = [
-  'x1',
-  'y1',
-  'x2',
-  'y2',
-  'controlA',
-  'controlB',
-  'r',
-  'rx',
-  'ry',
-  'begin',
-  'end',
-  'points',
-  'controls'
-];
-
 const COLOR_HASH = {};
 KEY_COLOR.forEach(k => {
   COLOR_HASH[k] = true;
@@ -66,11 +52,6 @@ KEY_COLOR.forEach(k => {
 const LENGTH_HASH = {};
 KEY_LENGTH.forEach(k => {
   LENGTH_HASH[k] = true;
-});
-
-const GEOM_HASH = {};
-PROP_GEOM.forEach(k => {
-  GEOM_HASH[k] = true;
 });
 
 // css模式rgb和init的颜色转换为rgba数组，方便加减运算
@@ -117,7 +98,7 @@ function equalStyle(k, a, b) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
-  else if(GEOM_HASH.hasOwnProperty(k)) {
+  else if(repaint.GEOM.hasOwnProperty(k)) {
     if(k === 'points' || k === 'controls') {
       if(a.length !== b.length) {
         return false;
@@ -184,7 +165,7 @@ function stringify(style, lastStyle, target) {
   });
   for(let i in style) {
     if(style.hasOwnProperty(i)) {
-      if(GEOM_HASH.hasOwnProperty(i)) {
+      if(repaint.GEOM.hasOwnProperty(i)) {
         target['__' + i] = style[i];
       }
       else {
@@ -192,7 +173,6 @@ function stringify(style, lastStyle, target) {
       }
     }
   }
-  target.__needCompute = true;
   return true;
 }
 
@@ -401,7 +381,7 @@ function calDiff(prev, next, k, target) {
       return;
     }
   }
-  else if(GEOM_HASH.hasOwnProperty(k)) {
+  else if(repaint.GEOM.hasOwnProperty(k)) {
     let p = prev[k];
     let n = next[k];
     if(k === 'points' || k === 'controls') {
@@ -518,7 +498,7 @@ function calStyle(frame, percent) {
     else if(LENGTH_HASH.hasOwnProperty(k)) {
       style[k].value += v * percent;
     }
-    else if(GEOM_HASH.hasOwnProperty(k)) {
+    else if(repaint.GEOM.hasOwnProperty(k)) {
       let st = style[k];
       if(k === 'points' || k === 'controls') {
         for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
@@ -545,6 +525,17 @@ function calStyle(frame, percent) {
     }
   });
   return style;
+}
+
+function getLevel(style) {
+  for(let i in style) {
+    if(style.hasOwnProperty(i)) {
+      if(!repaint.STYLE.hasOwnProperty(i) && !repaint.GEOM.hasOwnProperty(i)) {
+        return level.REFLOW;
+      }
+    }
+  }
+  return level.REPAINT;
 }
 
 let uuid = 0;
@@ -713,7 +704,7 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { duration, fill, fps, iterations } = this.options;
+      let { duration, fps, iterations } = this.options;
       let { frames, target, playCount } = this;
       let length = frames.length;
       let first = true;
@@ -771,25 +762,17 @@ class Animation extends Event {
                 return;
               }
               this.__playState = 'finished';
-              // 停留在最后一帧，触发finish
-              if({
-                forwards: true,
-                both: true
-              }.hasOwnProperty(fill)) {
+              // 完全结束多触发complete
+              let task = this.__task = () => {
                 this.emit(Event.KARAS_ANIMATION_FINISH);
-              }
-              // 恢复初始，再刷新一帧，触发finish
-              else {
-                target.__needCompute = true;
-                let task = this.__task = () => {
-                  this.emit(Event.KARAS_ANIMATION_FINISH);
-                };
-                root.refreshTask(task);
-              }
+                this.emit(Event.KARAS_ANIMATION_COMPLETE);
+              };
+              root.addRefreshTask(task);
             }
           };
           if(needRefresh) {
-            root.refreshTask(task);
+            root.setRefreshLevel(getLevel(current.style));
+            root.addRefreshTask(task);
           }
           else {
             frame.nextFrame(task);
@@ -797,8 +780,10 @@ class Animation extends Event {
         }
       };
     }
-    // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧则是下一帧的下一帧
+    // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
     this.cb();
+    // 防止重复调用多次cb
+    frame.offFrame(this.cb);
     frame.onFrame(this.cb);
     this.__pending = false;
     return this;
@@ -821,6 +806,7 @@ class Animation extends Event {
     let { target, lastStyle } = this;
     let root = target.root;
     if(root) {
+      this.__playState = 'finished';
       // 停留在最后一帧
       if({
         forwards: true,
@@ -829,12 +815,11 @@ class Animation extends Event {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, lastStyle, this.target);
       }
-      this.__playState = 'finished';
-      target.__needCompute = true;
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FINISH);
+        this.emit(Event.KARAS_ANIMATION_COMPLETE);
       };
-      root.refreshTask(task);
+      root.addRefreshTask(task);
     }
     return this;
   }
@@ -846,18 +831,17 @@ class Animation extends Event {
     let { target } = this;
     let root = target.root;
     if(root) {
-      target.__needCompute = true;
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };
-      root.refreshTask(task);
+      root.addRefreshTask(task);
     }
     return this;
   }
 
   __cancelTask() {
     if(this.__task && this.target.root) {
-      this.target.root.cancelRefreshTask(this.__task);
+      this.target.root.delRefreshTask(this.__task);
     }
   }
 

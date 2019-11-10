@@ -51,7 +51,7 @@ class Component extends Event {
     if(this.root) {
       this.__traverse(o.ctx, o.defs, this.root.renderMode);
       this.__init();
-      this.root.refreshTask(cb);
+      this.root.addRefreshTask(cb);
     }
   }
 
@@ -204,14 +204,24 @@ class Component extends Event {
     }
   }
 
-  __computed(force) {
+  __computed() {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      css.computed(sr, true);
+      css.compute(sr, true);
       sr.__measure();
     }
     else {
-      sr.__computed(force);
+      sr.__computed();
+    }
+  }
+
+  __repaint() {
+    let sr = this.shadowRoot;
+    if(sr instanceof Text) {
+      css.repaint(sr, true);
+    }
+    else {
+      sr.__repaint();
     }
   }
 

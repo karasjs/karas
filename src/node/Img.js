@@ -3,8 +3,8 @@ import mode from '../util/mode';
 import inject from '../util/inject';
 import util from '../util/util';
 import unit from '../style/unit';
-import css from '../style/css';
 import transform from '../style/transform';
+import level from '../animate/level';
 
 const CACHE = {};
 const INIT = 0;
@@ -50,6 +50,7 @@ class Img extends Dom {
       }
       this.__imgWidth = cache.width;
       this.__imgHeight = cache.height;
+      let lv = level.REFLOW;
       // 宽高都为auto，使用加载测量的数据
       if(width.unit === unit.AUTO && height.unit === unit.AUTO) {
         currentStyle.width = {
@@ -60,6 +61,7 @@ class Img extends Dom {
           value: cache.height,
           unit: unit.PX,
         };
+        lv = level.REPAINT;
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
@@ -74,8 +76,10 @@ class Img extends Dom {
           unit: unit.PX,
         };
       }
-      if(this.root) {
-        this.root.refreshTask();
+      let root = this.root;
+      if(root) {
+        root.setRefreshLevel(lv);
+        root.addRefreshTask();
       }
     };
     if(cache.state === LOADED) {

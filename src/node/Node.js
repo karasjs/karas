@@ -1,3 +1,5 @@
+import unit from "../style/unit";
+
 class Node {
   constructor() {
     this.__x = 0;
@@ -33,6 +35,38 @@ class Node {
     else {
       this.__oy += diff;
     }
+  }
+
+  // 获取margin/padding的实际值
+  __mp(currentStyle, computedStyle, w) {
+    let {
+      marginTop,
+      marginRight,
+      marginBottom,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
+    } = currentStyle;
+    computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
+    computedStyle.marginTop = this.__mpWidth(marginTop, w);
+    computedStyle.marginRight = this.__mpWidth(marginRight, w);
+    computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
+    computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
+    computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
+    computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
+    computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
+  }
+
+  __mpWidth(mp, w) {
+    if(mp.unit === unit.PX) {
+      return mp.value;
+    }
+    else if(mp.unit === unit.PERCENT) {
+      return mp.value * w * 0.01;
+    }
+    return 0;
   }
 
   __destroy() {

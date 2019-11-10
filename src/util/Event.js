@@ -108,6 +108,7 @@ class Event {
   static KARAS_ANIMATION_PAUSE = 'karas-animation-pause';
   static KARAS_ANIMATION_FRAME = 'karas-animation-frame';
   static KARAS_ANIMATION_FINISH = 'karas-animation-finish';
+  static KARAS_ANIMATION_COMPLETE = 'karas-animation-complete';
   static KARAS_ANIMATION_CANCEL = 'karas-animation-cancel';
 }
 

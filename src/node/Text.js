@@ -2,7 +2,6 @@ import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
 import mode from '../util/mode';
-import inject from '../util/inject';
 
 class Text extends Node {
   constructor(content) {
@@ -22,7 +21,7 @@ class Text extends Node {
 
   // 预先计算每个字的宽度
   __measure() {
-    let { ctx, content, currentStyle, computedStyle, charWidthList, renderMode } = this;
+    let { ctx, content, computedStyle, charWidthList, renderMode } = this;
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
     }

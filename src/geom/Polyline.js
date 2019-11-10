@@ -211,10 +211,10 @@ class Polyline extends Geom {
         tagName = 'path';
       }
       else {
-        let points = '';
+        let s = '';
         for(let i = 0, len = pts.length; i < len; i++) {
           let point = pts[i];
-          points += `${point[0]},${point[1]} `;
+          s += `${point[0]},${point[1]} `;
         }
         props.push(['points', s]);
         tagName = 'polyline';

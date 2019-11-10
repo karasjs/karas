@@ -417,12 +417,29 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
   }
 }
 
-function computed(xom, isRoot) {
+function compute(xom, isRoot) {
   let { currentStyle } = xom;
-  let { fontStyle, fontWeight, fontSize, fontFamily, color, lineHeight, textAlign, strokeDasharray } = currentStyle;
+  let { lineHeight, textAlign } = currentStyle;
   let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
+  preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
+  calLineHeight(xom, lineHeight, computedStyle);
+  if(textAlign === 'inherit') {
+    computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
+  }
+}
+
+function repaint(xom, isRoot) {
+  let { currentStyle, computedStyle } = xom;
+  let parent = xom.parent;
+  let parentComputedStyle = parent && parent.computedStyle;
+  preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
+  xom.__mp(currentStyle, computedStyle, isRoot ? xom.width : parent.width);
+}
+
+function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
+  let { fontStyle, fontWeight, fontSize, fontFamily, color } = currentStyle;
   // 处理继承的属性
   if(fontStyle === 'inherit') {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -437,10 +454,6 @@ function computed(xom, isRoot) {
   if(color === 'inherit') {
     computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
   }
-  calLineHeight(xom, lineHeight, computedStyle);
-  if(textAlign === 'inherit') {
-    computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
-  }
   // 处理可提前计算的属性，如border百分比
   [
     'borderTopWidth',
@@ -448,76 +461,18 @@ function computed(xom, isRoot) {
     'borderBottomWidth',
     'borderLeftWidth'
   ].forEach(k => {
-    if(currentStyle.hasOwnProperty(k)) {
-      let v = currentStyle[k];
-      computedStyle[k] = v.value;
-    }
+    computedStyle[k] = currentStyle[k].value || 0;
   });
-}
-
-function computedAnimate(xom, computedStyle, origin, isRoot) {
-  let { fontSize, lineHeight, top, right, bottom, left, width, height } = computedStyle;
-  let parent = xom.parent;
-  let parentComputedStyle = parent && parent.computedStyle;
-  if(fontSize) {
-    computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
-  }
-  if(lineHeight) {
-    if(!fontSize) {
-      computedStyle.fontSize = origin.fontSize;
-    }
-    calLineHeight(xom, lineHeight, computedStyle);
-    if(!fontSize) {
-      delete computedStyle.fontSize;
-    }
-  }
-  if(top) {
-    calRelative(computedStyle, 'top', top, parent);
-    delete computedStyle.bottom;
-  }
-  else if(bottom) {
-    calRelative(computedStyle, 'bottom', bottom, parent);
-    delete computedStyle.top;
-  }
-  if(left) {
-    calRelative(computedStyle, 'left', left, parent, parentComputedStyle.width, true);
-    delete computedStyle.right;
-  }
-  else if(right) {
-    calRelative(computedStyle, 'right', right, parent, parentComputedStyle.width, true);
-    delete computedStyle.left;
-  }
   [
-    'borderTopWidth',
-    'borderRightWidth',
-    'borderBottomWidth',
-    'borderLeftWidth'
+    'visibility',
+    'backgroundColor',
+    'borderBottomColor',
+    'borderLeftColor',
+    'borderRightColor',
+    'borderTopColor'
   ].forEach(k => {
-    if(computedStyle.hasOwnProperty(k)) {
-      let v = computedStyle[k];
-      computedStyle[k] = v.value;
-    }
+    computedStyle[k] = currentStyle[k];
   });
-  if(width) {
-    let v = 0;
-    if(width.unit === unit.PX) {
-      v = width.value;
-    }
-    else if(width.unit === unit.PERCENT) {
-      v = width.value * parentComputedStyle.width * 0.01;
-    }
-    computedStyle.width = v;
-  }
-  if(height) {
-    let v = 0;
-    if(height.unit === unit.PX) {
-      v = height.value;
-    }
-    else if(height.unit === unit.PERCENT) {
-      v = height.value * parentComputedStyle.height * 0.01;
-    }
-    computedStyle.height = v;
-  }
 }
 
 function setFontStyle(style) {
@@ -638,8 +593,8 @@ function calAbsolute(computedStyle, k, v, size) {
 
 export default {
   normalize,
-  computed,
-  computedAnimate,
+  compute,
+  repaint,
   setFontStyle,
   getBaseLine,
   calLineHeight,

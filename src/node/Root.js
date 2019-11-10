@@ -7,6 +7,7 @@ import unit from '../style/unit';
 import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from '../animate/frame';
+import level from '../animate/level';
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {
@@ -117,6 +118,7 @@ class Root extends Dom {
   appendTo(dom) {
     dom = getDom(dom);
     this.__initProps();
+    this.__refreshLevel = level.REFLOW;
     // 已有root节点
     if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
       this.__node = dom;
@@ -200,21 +202,29 @@ class Root extends Dom {
       value: this.height,
       unit: unit.PX,
     };
-    // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
-    this.__computed();
     inject.measureText(() => {
-      this.__layout({
-        x: 0,
-        y: 0,
-        w: this.width,
-        h: this.height,
-      });
-      this.__layoutAbs(this, {
-        x: 0,
-        y: 0,
-        w: this.width,
-        h: this.height,
-      });
+      let lv = this.__refreshLevel;
+      // 没发生REFLOW只需要computed即可
+      if(lv === level.REFLOW) {
+        // 预先计算字体相关的继承，边框绝对值，动画每帧刷新需要重复计算
+        this.__computed();
+        // 布局分为两步，普通流和绝对流，互相递归
+        this.__layout({
+          x: 0,
+          y: 0,
+          w: this.width,
+          h: this.height,
+        });
+        this.__layoutAbs(this, {
+          x: 0,
+          y: 0,
+          w: this.width,
+          h: this.height,
+        });
+      }
+      else {
+        this.__repaint();
+      }
       if(renderMode === mode.CANVAS) {
         // 可能会调整宽高，所以每次清除用最大值
         this.__mw = Math.max(this.__mw, this.width);
@@ -248,10 +258,11 @@ class Root extends Dom {
         cb();
       }
       this.emit(Event.KARAS_REFRESH);
+      this.__refreshLevel = level.REPAINT;
     });
   }
 
-  refreshTask(cb) {
+  addRefreshTask(cb) {
     let { task } = this;
     // 第一个添加延迟侦听
     if(!task.length) {
@@ -264,13 +275,19 @@ class Root extends Dom {
     task.push(cb);
   }
 
-  cancelRefreshTask(cb) {
+  delRefreshTask(cb) {
     let { task } = this;
     for(let i = 0, len = task.length; i < len; i++) {
       if(task[i] === cb) {
         task.splice(i, 1);
         break;
       }
+    }
+  }
+
+  setRefreshLevel(lv) {
+    if(lv > this.__refreshLevel) {
+      this.__refreshLevel = lv;
     }
   }
 

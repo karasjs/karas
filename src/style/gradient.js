@@ -1,4 +1,5 @@
 import util from '../util/util';
+import unit from './unit';
 
 function getLinearDeg(v) {
   let deg = 180;
@@ -27,12 +28,9 @@ function getLinearDeg(v) {
   }
   // 数字角度，没有的话取默认角度
   else {
-    let match = /(-?[\d.]+)deg/.exec(v[0]);
+    let match = /(-?[\d.]+)deg/.exec(v);
     if(match) {
       deg = parseFloat(match[1]);
-    }
-    else {
-      v.unshift(null);
     }
   }
   return deg % 360;
@@ -42,22 +40,21 @@ function getLinearDeg(v) {
 function getColorStop(v, length) {
   let list = [];
   // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
-  for(let i = 1, len = v.length; i < len; i++) {
+  for(let i = 0, len = v.length; i < len; i++) {
     let item = v[i];
     // 考虑是否声明了位置
-    let arr = item.trim().split(/\s+/);
-    if(arr.length > 1) {
-      let c = arr[0];
-      let p = arr[1];
-      if(/%$/.test(p)) {
-        list.push([c, parseFloat(p) * 0.01]);
+    if(item.length > 1) {
+      let c = item[0];
+      let p = item[1];
+      if(p.unit === unit.PERCENT) {
+        list.push([c, p.value * 0.01]);
       }
       else {
-        list.push([c, parseFloat(p) / length]);
+        list.push([c, p.value / length]);
       }
     }
     else {
-      list.push(arr[0]);
+      list.push(item[0]);
     }
   }
   // 首尾不声明默认为[0, 1]
@@ -230,17 +227,16 @@ function calLinearCoords(deg, length, cx, cy) {
 }
 
 // 获取径向渐变半径
-function calRadialRadius(v, iw, ih, cx, cy, x1, y1, x2, y2) {
+function calRadialRadius(d, iw, ih, cx, cy, x1, y1, x2, y2) {
   let size = 'farthest-corner';
   let r; // 半径
-  if(/circle|ellipse|at|closest|farthest/i.test(v[0])
-    || !/#[0-9a-f]{3,6}/i.test(v[0]) && !/\brgba?\(.*\)/i.test(v[0])) {
-    let i = v[0].indexOf('at');
+  if(/circle|ellipse|at|closest|farthest/i.test(d)) {
+    let i = d.indexOf('at');
     let at;
     let s;
     if(i > -1) {
-      at = v[0].slice(i + 2);
-      s = v[0].slice(0, i - 1);
+      at = d.slice(i + 2);
+      s = d.slice(0, i - 1);
     }
     s = /(closest|farthest)-(side|corner)/.exec(s);
     if(s) {
@@ -278,9 +274,6 @@ function calRadialRadius(v, iw, ih, cx, cy, x1, y1, x2, y2) {
         }
       }
     }
-  }
-  else {
-    v.unshift(null);
   }
   if(size) {
     if(size === 'closest-side') {
@@ -415,24 +408,59 @@ function getCsLimit(first, last, length) {
 function parseGradient(s) {
   let gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
   if(gradient) {
+    let o = {
+      k: gradient[1],
+    };
     let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
+    o.v = v.map(item => {
+      let arr = item.split(/\s+/);
+      if(arr[1]) {
+        if(/%$/.test(arr[1])) {
+          arr[1] = {
+            value: parseFloat(arr[1]),
+            unit: unit.PERCENT,
+            str: arr[1],
+          };
+        }
+        else {
+          arr[1] = {
+            value: parseFloat(arr[1]),
+            unit: unit.PX,
+            str: arr[1],
+          };
+        }
+      }
+      return arr;
+    });
     if(deg) {
-      let i = gradient[2].indexOf(',');
-      v.unshift(gradient[2].slice(0, i));
+      let i = deg[1].indexOf(',');
+      if(i === -1) {
+        i = deg[1].length;
+      }
+      if(o.k === 'linear') {
+        o.d = getLinearDeg(deg[1].slice(0, i));
+      }
+      else {
+        o.d = deg[1].slice(0, i);
+      }
     }
-    return {
-      k: gradient[1],
-      v,
-    };
+    else {
+      if(o.k === 'linear') {
+        o.d = 180;
+      }
+      else {
+        o.d = '';
+      }
+    }
+    return o;
   }
 }
 
-function getLinear(v, cx, cy, w, h) {
-  let deg = getLinearDeg(v);
-  let theta = util.r2d(deg);
+function getLinear(v, d, cx, cy, w, h) {
+  let theta = util.r2d(d);
   let length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
-  let [x1, y1, x2, y2] = calLinearCoords(deg, length * 0.5, cx, cy);
+  let [x1, y1, x2, y2] = calLinearCoords(d, length * 0.5, cx, cy);
   let stop = getColorStop(v, length);
   return {
     x1,
@@ -443,10 +471,10 @@ function getLinear(v, cx, cy, w, h) {
   };
 }
 
-function getRadial(v, cx, cy, x1, y1, x2, y2) {
+function getRadial(v, d, cx, cy, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
-  let [r, cx2, cy2] = calRadialRadius(v, w, h, cx, cy, x1, y1, x2, y2);
+  let [r, cx2, cy2] = calRadialRadius(d, w, h, cx, cy, x1, y1, x2, y2);
   let stop = getColorStop(v, r * 2);
   // 超限情况等同于只显示end的bgc
   if(r <= 0) {

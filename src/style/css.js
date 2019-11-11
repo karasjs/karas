@@ -399,6 +399,12 @@ function normalize(style, reset) {
       style.strokeDasharray = '';
     }
   }
+  // 删除缩写避免干扰动画计算
+  delete style.background;
+  delete style.flex;
+  delete style.border;
+  delete style.margin;
+  delete style.padding;
   return style;
 }
 
@@ -477,7 +483,6 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   [
     'visibility',
     'backgroundColor',
-    'backgroundImage',
     'borderBottomColor',
     'borderLeftColor',
     'borderRightColor',

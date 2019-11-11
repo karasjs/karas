@@ -62,6 +62,12 @@ function color2array(style) {
     }
     style[k] = util.rgb2int(style[k]);
   });
+  let bgi = style.backgroundImage;
+  if(bgi) {
+    bgi.v.forEach(item => {
+      item[0] = util.rgb2int(item[0]);
+    });
+  }
 }
 
 function equalStyle(k, a, b) {
@@ -161,9 +167,31 @@ function stringify(style, lastStyle, target) {
         let v = style[i];
         if(v[3] === 1) {
           animateStyle[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
-        } else {
+        }
+        else {
           animateStyle[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
         }
+      }
+      else if(i === 'backgroundImage') {
+        let v = style[i];
+        animateStyle[i] = {
+          k: v.k,
+          v: v.v.map(item => {
+            let arr = [];
+            let c = item[0];
+            if(c[3] === 1) {
+              arr.push(`rgb(${c[0]},${c[1]},${c[2]})`);
+            }
+            else {
+              arr.push(`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`);
+            }
+            if(item[1]) {
+              arr.push(util.clone(item[1]));
+            }
+            return arr;
+          }),
+          d: v.d,
+        };
       }
       else {
         animateStyle[i] = style[i];
@@ -343,6 +371,35 @@ function calDiff(prev, next, k, target) {
       }
     }
   }
+  else if(k === 'backgroundImage') {
+    let p = prev[k];
+    let n = next[k];
+    let pv = p.v;
+    let nv = n.v;
+    // 渐变种类或值为空则无法比较
+    if(p.k !== n.k || !pv.length || !nv.length) {
+      return;
+    }
+    res.v = [];
+    for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
+      let a = pv[i];
+      let b = nv[i];
+      let t = [];
+      t.push([
+        b[0][0] - a[0][0],
+        b[0][1] - a[0][1],
+        b[0][2] - a[0][2],
+        b[0][3] - a[0][3]
+      ]);
+      if(a[1] && b[1] && a[1].unit === b[1].unit) {
+        t.push(b[1].value - a[1].value);
+      }
+      res.v.push(t);
+    }
+    if(p.k === 'linear' && n.k === 'linear' && p.d !== undefined && n.d !== undefined) {
+      res.d = n.d - p.d;
+    }
+  }
   else if(COLOR_HASH.hasOwnProperty(k)) {
     let p = prev[k];
     let n = next[k];
@@ -461,7 +518,7 @@ function calStyle(frame, percent) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
-    let { k, v } = item;
+    let { k, v, d } = item;
     if(k === 'transform') {
       let transform = style.transform;
       let hash = {};
@@ -483,6 +540,23 @@ function calStyle(frame, percent) {
     else if(k === 'transformOrigin') {
       style[k][0].value += v[0] * percent;
       style[k][1].value += v[1] * percent;
+    }
+    else if(k === 'backgroundImage') {
+      let item = style[k];
+      for(let i = 0, len = Math.min(item.v.length, v.length); i < len; i++) {
+        let a = item.v[i];
+        let b = v[i];
+        a[0][0] += b[0][0] * percent;
+        a[0][1] += b[0][1] * percent;
+        a[0][2] += b[0][2] * percent;
+        a[0][3] += b[0][3] * percent;
+        if(a[1] && b[1]) {
+          a[1].value += b[1] * percent;
+        }
+      }
+      if(item.k === 'linear' && item.d !== undefined && d !== undefined) {
+        item.d += d * percent;
+      }
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {

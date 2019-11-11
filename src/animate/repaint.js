@@ -21,6 +21,7 @@ export default {
     strokeWidth: true,
     fill: true,
     backgroundColor: true,
+    backgroundImage: true,
     stroke: true,
     borderBottomColor: true,
     borderLeftColor: true,

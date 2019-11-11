@@ -814,6 +814,7 @@ class Animation extends Event {
         stringify(last.style, lastStyle, this.target);
       }
       let task = this.__task = () => {
+        this.emit(Event.KARAS_ANIMATION_FRAME);
         this.emit(Event.KARAS_ANIMATION_FINISH);
         this.emit(Event.KARAS_ANIMATION_COMPLETE);
       };

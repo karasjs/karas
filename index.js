@@ -4921,6 +4921,8 @@
           }
 
           var task = this.__task = function () {
+            _this3.emit(Event.KARAS_ANIMATION_FRAME);
+
             _this3.emit(Event.KARAS_ANIMATION_FINISH);
 
             _this3.emit(Event.KARAS_ANIMATION_COMPLETE);

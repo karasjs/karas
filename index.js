@@ -6358,7 +6358,7 @@
           var go = gradient.parseGradient(stroke);
 
           if (go) {
-            var lg = gradient.getLinear(go.v, cx, cy, iw, ih);
+            var lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
             stroke = this.__getBgLg(renderMode, lg);
           }
         }
@@ -6367,7 +6367,7 @@
           var _go = gradient.parseGradient(fill);
 
           if (_go) {
-            var _lg = gradient.getLinear(_go.v, cx, cy, iw, ih);
+            var _lg = gradient.getLinear(_go.v, _go.d, cx, cy, iw, ih);
 
             fill = this.__getBgLg(renderMode, _lg);
           }
@@ -6375,7 +6375,7 @@
           var _go2 = gradient.parseGradient(fill);
 
           if (_go2) {
-            var rg = gradient.getRadial(_go2.v, cx, cy, originX, originY, originY + iw, originY + ih);
+            var rg = gradient.getRadial(_go2.v, _go2.d, cx, cy, originX, originY, originY + iw, originY + ih);
             fill = this.__getBgRg(renderMode, rg);
           }
         }

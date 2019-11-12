@@ -18,5 +18,5 @@ let animation = t.animate([
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   let input = document.querySelector('input');
-  input.value = JSON.stringify(o.virtualDom);
+  input.value = JSON.stringify(o.virtualDom).replace(/,"uuid":"karas-defs-\d+-\d+"/g, '');
 });

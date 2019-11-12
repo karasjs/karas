@@ -889,19 +889,19 @@
   function getLinearDeg(v) {
     var deg = 180;
 
-    if (v[0] === 'to top') {
+    if (v === 'to top') {
       deg = 0;
-    } else if (v[0] === 'to top right') {
+    } else if (v === 'to top right') {
       deg = 45;
-    } else if (v[0] === 'to right') {
+    } else if (v === 'to right') {
       deg = 90;
-    } else if (v[0] === 'to bottom right') {
+    } else if (v === 'to bottom right') {
       deg = 135;
-    } else if (v[0] === 'to bottom') ; else if (v[0] === 'to bottom left') {
+    } else if (v === 'to bottom') ; else if (v === 'to bottom left') {
       deg = 225;
-    } else if (v[0] === 'to left') {
+    } else if (v === 'to left') {
       deg = 270;
-    } else if (v[0] === 'to top left') {
+    } else if (v === 'to top left') {
       deg = 315;
     } // 数字角度，没有的话取默认角度
     else {
@@ -5630,12 +5630,12 @@
 
           if (k === 'linear') {
             var gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-            bgc = this.__getBgLg(renderMode, gd);
+            bgc = this.__getLg(renderMode, gd);
             computedStyle.backgroundImage += d + 'deg';
           } else if (k === 'radial') {
             var _gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
 
-            bgc = this.__getBgRg(renderMode, _gd);
+            bgc = this.__getRg(renderMode, _gd);
             computedStyle.backgroundImage += d;
           }
 
@@ -5890,8 +5890,8 @@
         }
       }
     }, {
-      key: "__getBgLg",
-      value: function __getBgLg(renderMode, gd) {
+      key: "__getLg",
+      value: function __getLg(renderMode, gd) {
         if (renderMode === mode.CANVAS) {
           var lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach(function (item) {
@@ -5908,8 +5908,8 @@
         }
       }
     }, {
-      key: "__getBgRg",
-      value: function __getBgRg(renderMode, gd) {
+      key: "__getRg",
+      value: function __getRg(renderMode, gd) {
         if (renderMode === mode.CANVAS) {
           var rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
           gd.stop.forEach(function (item) {
@@ -6359,7 +6359,7 @@
 
           if (go) {
             var lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
-            stroke = this.__getBgLg(renderMode, lg);
+            stroke = this.__getLg(renderMode, lg);
           }
         }
 
@@ -6369,14 +6369,14 @@
           if (_go) {
             var _lg = gradient.getLinear(_go.v, _go.d, cx, cy, iw, ih);
 
-            fill = this.__getBgLg(renderMode, _lg);
+            fill = this.__getLg(renderMode, _lg);
           }
         } else if (fill.indexOf('radial-gradient') > -1) {
           var _go2 = gradient.parseGradient(fill);
 
           if (_go2) {
             var rg = gradient.getRadial(_go2.v, _go2.d, cx, cy, originX, originY, originY + iw, originY + ih);
-            fill = this.__getBgRg(renderMode, rg);
+            fill = this.__getRg(renderMode, rg);
           }
         }
 

@@ -144,21 +144,21 @@ class Geom extends Xom {
       let go = gradient.parseGradient(stroke);
       if(go) {
         let lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
-        stroke = this.__getBgLg(renderMode, lg);
+        stroke = this.__getLg(renderMode, lg);
       }
     }
     if(fill.indexOf('linear-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
         let lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
-        fill = this.__getBgLg(renderMode, lg);
+        fill = this.__getLg(renderMode, lg);
       }
     }
     else if(fill.indexOf('radial-gradient') > -1) {
       let go = gradient.parseGradient(fill);
       if(go) {
         let rg = gradient.getRadial(go.v, go.d, cx, cy, originX, originY, originY + iw, originY + ih);
-        fill = this.__getBgRg(renderMode, rg);
+        fill = this.__getRg(renderMode, rg);
       }
     }
     computedStyle.fill = fill;

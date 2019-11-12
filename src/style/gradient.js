@@ -3,27 +3,27 @@ import unit from './unit';
 
 function getLinearDeg(v) {
   let deg = 180;
-  if(v[0] === 'to top') {
+  if(v === 'to top') {
     deg = 0;
   }
-  else if(v[0] === 'to top right') {
+  else if(v === 'to top right') {
     deg = 45;
   }
-  else if(v[0] === 'to right') {
+  else if(v === 'to right') {
     deg = 90;
   }
-  else if(v[0] === 'to bottom right') {
+  else if(v === 'to bottom right') {
     deg = 135;
   }
-  else if(v[0] === 'to bottom') {
+  else if(v === 'to bottom') {
   }
-  else if(v[0] === 'to bottom left') {
+  else if(v === 'to bottom left') {
     deg = 225;
   }
-  else if(v[0] === 'to left') {
+  else if(v === 'to left') {
     deg = 270;
   }
-  else if(v[0] === 'to top left') {
+  else if(v === 'to top left') {
     deg = 315;
   }
   // 数字角度，没有的话取默认角度

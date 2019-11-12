@@ -426,12 +426,12 @@ class Xom extends Node {
       // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
       if(k === 'linear') {
         let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-        bgc = this.__getBgLg(renderMode, gd);
+        bgc = this.__getLg(renderMode, gd);
         computedStyle.backgroundImage += d + 'deg';
       }
       else if(k === 'radial') {
         let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
-        bgc = this.__getBgRg(renderMode, gd);
+        bgc = this.__getRg(renderMode, gd);
         computedStyle.backgroundImage += d;
       }
       v.forEach(item => {
@@ -640,7 +640,7 @@ class Xom extends Node {
     }
   }
 
-  __getBgLg(renderMode, gd) {
+  __getLg(renderMode, gd) {
     if(renderMode === mode.CANVAS) {
       let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
@@ -663,7 +663,7 @@ class Xom extends Node {
     }
   }
 
-  __getBgRg(renderMode, gd) {
+  __getRg(renderMode, gd) {
     if(renderMode === mode.CANVAS) {
       let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {

@@ -1385,16 +1385,12 @@
       });
 
       if (deg) {
-        var i = deg[1].indexOf(',');
-
-        if (i === -1) {
-          i = deg[1].length;
-        }
+        var i = gradient[2].indexOf(',');
 
         if (o.k === 'linear') {
-          o.d = getLinearDeg(deg[1].slice(0, i));
+          o.d = getLinearDeg(gradient[2].slice(0, i));
         } else {
-          o.d = deg[1].slice(0, i);
+          o.d = gradient[2].slice(0, i);
         }
       } else {
         if (o.k === 'linear') {

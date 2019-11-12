@@ -129,6 +129,29 @@ function equalStyle(k, a, b) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
+  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k) {
+    let av = a.v;
+    let bv = b.v;
+    if(a.d !== b.d || av.length !== bv.length) {
+      return false;
+    }
+    for(let i = 0, len = av.length; i < len; i++) {
+      let ai = av[i];
+      let bi = bv[i];
+      if(ai.length !== bi.length) {
+        return false;
+      }
+      for(let j = 0; j < 4; j++) {
+        if(ai[0][j] !== bi[0][j]) {
+          return false;
+        }
+      }
+      if(ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+        return false;
+      }
+    }
+    return true;
+  }
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(k === 'points' || k === 'controls') {
       if(a.length !== b.length) {
@@ -665,8 +688,25 @@ class Animation extends Event {
       this.__options = {
         duration: options,
       };
+      options = this.__options;
     }
-    this.__options = options || {};
+    let op = this.__options = options || {};
+    this.__duration = parseFloat(op.duration) || 0;
+    this.__delay = Math.max(0, parseFloat(op.delay) || 0);
+    this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
+    if(op.iterations === 'Infinity' || op.iterations === 'infinity') {
+      this.__iterations = Infinity;
+    }
+    else {
+      this.__iterations = parseInt(op.iterations);
+      if(isNaN(this.__iterations)) {
+        this.__iterations = 1;
+      }
+    }
+    this.__fps = parseInt(op.fps) || 60;
+    if(this.__fps < 0) {
+      this.__fps = 60;
+    }
     this.__frames = [];
     this.__startTime = 0;
     this.__offsetTime = 0;
@@ -681,29 +721,12 @@ class Animation extends Event {
   }
 
   __init() {
-    let { target, options } = this;
+    let { target, iterations } = this;
     let style = util.clone(target.style);
-    let { duration, iterations } = options;
-    // 没设置时间或非法时间或0，动画过程为空无需执行
-    duration = parseFloat(duration);
-    if(isNaN(duration) || duration <= 0) {
+    // 执行次数小于1无需播放
+    if(iterations < 1) {
       return;
     }
-    if(iterations === 'Infinity' || iterations === 'infinity') {
-      iterations = Infinity;
-    }
-    else if(util.isNil(iterations)) {
-      iterations = 1;
-    }
-    // 执行次数<1也无需执行
-    if(iterations !== Infinity) {
-      iterations = parseInt(iterations);
-    }
-    if(isNaN(iterations) || iterations < 1) {
-      return;
-    }
-    options.duration = duration;
-    options.iterations = iterations;
     target.__animateStyle = util.clone(style);
     // 转化style为计算后的绝对值结果
     color2array(style);
@@ -800,14 +823,21 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { duration, fps, iterations } = this.options;
-      let { frames, target, playCount } = this;
+      let { frames, target, playCount, duration, fps, iterations, delay } = this;
       let length = frames.length;
+      let init = true;
       let first = true;
       this.__cb = () => {
         let now = inject.now();
-        if(first) {
+        if(init) {
           this.__startTime = now;
+          init = false;
+        }
+        // 还没过前置delay
+        if(now - this.offsetTime < this.__startTime + delay) {
+          return;
+        }
+        if(first) {
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
           });
@@ -961,6 +991,21 @@ class Animation extends Event {
   }
   get options() {
     return this.__options;
+  }
+  get duration() {
+    return this.__duration;
+  }
+  get delay() {
+    return this.__delay;
+  }
+  get endDelay() {
+    return this.__endDelay;
+  }
+  get fps() {
+    return this.__fps;
+  }
+  get iterations() {
+    return this.__iterations;
   }
   get frames() {
     return this.__frames;

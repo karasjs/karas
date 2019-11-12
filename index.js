@@ -4200,18 +4200,46 @@
       return true;
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
+    } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k) {
+      var av = a.v;
+      var bv = b.v;
+
+      if (a.d !== b.d || av.length !== bv.length) {
+        return false;
+      }
+
+      for (var _i = 0, _len = av.length; _i < _len; _i++) {
+        var ai = av[_i];
+        var bi = bv[_i];
+
+        if (ai.length !== bi.length) {
+          return false;
+        }
+
+        for (var j = 0; j < 4; j++) {
+          if (ai[0][j] !== bi[0][j]) {
+            return false;
+          }
+        }
+
+        if (ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+          return false;
+        }
+      }
+
+      return true;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
       if (k === 'points' || k === 'controls') {
         if (a.length !== b.length) {
           return false;
         }
 
-        for (var _i = 0, _len = a.length; _i < _len; _i++) {
-          if (a[_i] === b[_i]) {
+        for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+          if (a[_i2] === b[_i2]) {
             continue;
           }
 
-          if (a[_i][0] !== b[_i][0] || a[_i][1] !== b[_i][1]) {
+          if (a[_i2][0] !== b[_i2][0] || a[_i2][1] !== b[_i2][1]) {
             return false;
           }
         }
@@ -4248,8 +4276,8 @@
       } // 防止last有style没有
 
 
-      for (var _i2 in lastStyle) {
-        if (lastStyle.hasOwnProperty(_i2) && !style.hasOwnProperty(_i2)) {
+      for (var _i3 in lastStyle) {
+        if (lastStyle.hasOwnProperty(_i3) && !style.hasOwnProperty(_i3)) {
           res = true;
           break;
         }
@@ -4262,14 +4290,14 @@
 
     var animateStyle = target.animateStyle;
 
-    for (var _i3 in style) {
-      if (style.hasOwnProperty(_i3)) {
-        var v = style[_i3];
+    for (var _i4 in style) {
+      if (style.hasOwnProperty(_i4)) {
+        var v = style[_i4];
 
-        if (repaint$1.GEOM.hasOwnProperty(_i3)) {
-          target['__' + _i3] = v;
-        } else if (GRADIENT_HASH.hasOwnProperty(_i3) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
-          animateStyle[_i3] = {
+        if (repaint$1.GEOM.hasOwnProperty(_i4)) {
+          target['__' + _i4] = v;
+        } else if (GRADIENT_HASH.hasOwnProperty(_i4) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
+          animateStyle[_i4] = {
             k: v.k,
             v: v.v.map(function (item) {
               var arr = [];
@@ -4289,14 +4317,14 @@
             }),
             d: v.d
           };
-        } else if (COLOR_HASH.hasOwnProperty(_i3)) {
+        } else if (COLOR_HASH.hasOwnProperty(_i4)) {
           if (v[3] === 1) {
-            animateStyle[_i3] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+            animateStyle[_i4] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
           } else {
-            animateStyle[_i3] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+            animateStyle[_i4] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
           }
         } else {
-          animateStyle[_i3] = v;
+          animateStyle[_i4] = v;
         }
       }
     }
@@ -4414,8 +4442,8 @@
             prev[key].push([k, id]);
             var _t = [];
 
-            for (var _i4 = 0; _i4 < 6; _i4++) {
-              _t[_i4] = v[_i4] - id[_i4];
+            for (var _i5 = 0; _i5 < 6; _i5++) {
+              _t[_i5] = v[_i5] - id[_i5];
             }
 
             res.v.push({
@@ -4494,9 +4522,9 @@
       var nv = n.v;
       res.v = [];
 
-      for (var _i5 = 0, len = Math.min(pv.length, nv.length); _i5 < len; _i5++) {
-        var a = pv[_i5];
-        var b = nv[_i5];
+      for (var _i6 = 0, len = Math.min(pv.length, nv.length); _i6 < len; _i6++) {
+        var a = pv[_i6];
+        var b = nv[_i6];
         var t = [];
         t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
 
@@ -4545,9 +4573,9 @@
       if (k === 'points' || k === 'controls') {
         res.v = [];
 
-        for (var _i6 = 0, _len2 = Math.min(p.length, n.length); _i6 < _len2; _i6++) {
-          var _pv = p[_i6];
-          var _nv = n[_i6];
+        for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
+          var _pv = p[_i7];
+          var _nv = n[_i7];
 
           if (util.isNil(_pv) || util.isNil(_nv)) {
             res.v.push(_pv);
@@ -4676,14 +4704,14 @@
           var _st = style[k];
 
           if (k === 'points' || k === 'controls') {
-            for (var _i7 = 0, _len3 = Math.min(_st.length, v.length); _i7 < _len3; _i7++) {
-              if (util.isNil(_st[_i7]) || !_st[_i7].length) {
+            for (var _i8 = 0, _len4 = Math.min(_st.length, v.length); _i8 < _len4; _i8++) {
+              if (util.isNil(_st[_i8]) || !_st[_i8].length) {
                 continue;
               }
 
-              for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
-                if (!util.isNil(_st[_i7][j]) && !util.isNil(v[_i7][j])) {
-                  _st[_i7][j] += v[_i7][j] * percent;
+              for (var j = 0, len2 = Math.min(_st[_i8].length, v[_i8].length); j < len2; j++) {
+                if (!util.isNil(_st[_i8][j]) && !util.isNil(v[_i8][j])) {
+                  _st[_i8][j] += v[_i8][j] * percent;
                 }
               }
             }
@@ -4755,9 +4783,30 @@
         _this.__options = {
           duration: options
         };
+        options = _this.__options;
       }
 
-      _this.__options = options || {};
+      var op = _this.__options = options || {};
+      _this.__duration = parseFloat(op.duration) || 0;
+      _this.__delay = Math.max(0, parseFloat(op.delay) || 0);
+      _this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
+
+      if (op.iterations === 'Infinity' || op.iterations === 'infinity') {
+        _this.__iterations = Infinity;
+      } else {
+        _this.__iterations = parseInt(op.iterations);
+
+        if (isNaN(_this.__iterations)) {
+          _this.__iterations = 1;
+        }
+      }
+
+      _this.__fps = parseInt(op.fps) || 60;
+
+      if (_this.__fps < 0) {
+        _this.__fps = 60;
+      }
+
       _this.__frames = [];
       _this.__startTime = 0;
       _this.__offsetTime = 0;
@@ -4778,34 +4827,13 @@
       key: "__init",
       value: function __init() {
         var target = this.target,
-            options = this.options;
-        var style = util.clone(target.style);
-        var duration = options.duration,
-            iterations = options.iterations; // 没设置时间或非法时间或0，动画过程为空无需执行
+            iterations = this.iterations;
+        var style = util.clone(target.style); // 执行次数小于1无需播放
 
-        duration = parseFloat(duration);
-
-        if (isNaN(duration) || duration <= 0) {
+        if (iterations < 1) {
           return;
         }
 
-        if (iterations === 'Infinity' || iterations === 'infinity') {
-          iterations = Infinity;
-        } else if (util.isNil(iterations)) {
-          iterations = 1;
-        } // 执行次数<1也无需执行
-
-
-        if (iterations !== Infinity) {
-          iterations = parseInt(iterations);
-        }
-
-        if (isNaN(iterations) || iterations < 1) {
-          return;
-        }
-
-        options.duration = duration;
-        options.iterations = iterations;
         target.__animateStyle = util.clone(style); // 转化style为计算后的绝对值结果
 
         color2array(style); // 过滤时间非法的，过滤后续offset<=前面的
@@ -4851,14 +4879,14 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i8 = 1, _len4 = list.length; _i8 < _len4; _i8++) {
-          var start = list[_i8]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i9 = 1, _len5 = list.length; _i9 < _len5; _i9++) {
+          var start = list[_i9]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i8 + 1;
+            var j = _i9 + 1;
 
-            for (; j < _len4; j++) {
+            for (; j < _len5; j++) {
               end = list[j];
 
               if (end.offset) {
@@ -4866,16 +4894,16 @@
               }
             }
 
-            var num = j - _i8 + 1;
-            start = list[_i8 - 1];
+            var num = j - _i9 + 1;
+            start = list[_i9 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i8; k < j; k++) {
+            for (var k = _i9; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i8);
+              item.offset = start.offset + per * (k + 1 - _i9);
             }
 
-            _i8 = j;
+            _i9 = j;
           }
         } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
@@ -4887,8 +4915,8 @@
         prev = framing(first);
         frames.push(prev);
 
-        for (var _i9 = 1; _i9 < length; _i9++) {
-          var next = list[_i9];
+        for (var _i10 = 1; _i10 < length; _i10++) {
+          var next = list[_i10];
           prev = calFrame(prev, next, target);
           frames.push(prev);
         }
@@ -4915,21 +4943,31 @@
           diff = Math.max(diff, 0);
           this.__offsetTime = diff;
         } else {
-          var _this$options = this.options,
-              duration = _this$options.duration,
-              fps = _this$options.fps,
-              iterations = _this$options.iterations;
           var frames = this.frames,
               target = this.target,
-              playCount = this.playCount;
+              playCount = this.playCount,
+              duration = this.duration,
+              fps = this.fps,
+              iterations = this.iterations,
+              delay = this.delay;
           var length = frames.length;
+          var init = true;
           var first = true;
 
           this.__cb = function () {
             var now = inject.now();
 
-            if (first) {
+            if (init) {
               _this2.__startTime = now;
+              init = false;
+            } // 还没过前置delay
+
+
+            if (now - _this2.offsetTime < _this2.__startTime + delay) {
+              return;
+            }
+
+            if (first) {
               frames.forEach(function (frame) {
                 frame.time = now + duration * frame.offset;
               });
@@ -5131,6 +5169,31 @@
       key: "options",
       get: function get() {
         return this.__options;
+      }
+    }, {
+      key: "duration",
+      get: function get() {
+        return this.__duration;
+      }
+    }, {
+      key: "delay",
+      get: function get() {
+        return this.__delay;
+      }
+    }, {
+      key: "endDelay",
+      get: function get() {
+        return this.__endDelay;
+      }
+    }, {
+      key: "fps",
+      get: function get() {
+        return this.__fps;
+      }
+    }, {
+      key: "iterations",
+      get: function get() {
+        return this.__iterations;
       }
     }, {
       key: "frames",

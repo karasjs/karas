@@ -447,7 +447,7 @@ function parseGradient(s) {
         o.d = 180;
       }
       else {
-        o.d = '';
+        o.d = 'farthest-corner';
       }
     }
     return o;

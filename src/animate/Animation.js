@@ -44,6 +44,12 @@ const KEY_LENGTH = [
   'strokeWidth'
 ];
 
+const KEY_GRADIENT = [
+  'backgroundImage',
+  'fill',
+  'stroke'
+];
+
 const COLOR_HASH = {};
 KEY_COLOR.forEach(k => {
   COLOR_HASH[k] = true;
@@ -54,20 +60,39 @@ KEY_LENGTH.forEach(k => {
   LENGTH_HASH[k] = true;
 });
 
+const GRADIENT_HASH = {};
+KEY_GRADIENT.forEach(k => {
+  GRADIENT_HASH[k] = true;
+});
+
+const GRADIENT_TYPE = {
+  linear: true,
+  radial: true,
+};
+
 // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 function color2array(style) {
   KEY_COLOR.forEach(k => {
     if(!style.hasOwnProperty(k)) {
       return;
     }
-    style[k] = util.rgb2int(style[k]);
+    let v = style[k];
+    if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
+      return;
+    }
+    style[k] = util.rgb2int(v);
   });
-  let bgi = style.backgroundImage;
-  if(bgi) {
-    bgi.v.forEach(item => {
-      item[0] = util.rgb2int(item[0]);
-    });
-  }
+  KEY_GRADIENT.forEach(k => {
+    if(!style.hasOwnProperty(k)) {
+      return;
+    }
+    let v = style[k];
+    if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
+      v.v.forEach(item => {
+        item[0] = util.rgb2int(item[0]);
+      });
+    }
+  });
 }
 
 function equalStyle(k, a, b) {
@@ -159,21 +184,12 @@ function stringify(style, lastStyle, target) {
   }
   let animateStyle = target.animateStyle;
   for(let i in style) {
+    let v = style[i];
     if(style.hasOwnProperty(i)) {
       if(repaint.GEOM.hasOwnProperty(i)) {
-        target['__' + i] = style[i];
+        target['__' + i] = v;
       }
-      else if(COLOR_HASH.hasOwnProperty(i)) {
-        let v = style[i];
-        if(v[3] === 1) {
-          animateStyle[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
-        }
-        else {
-          animateStyle[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
-        }
-      }
-      else if(i === 'backgroundImage') {
-        let v = style[i];
+      else if(GRADIENT_HASH.hasOwnProperty(i) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
         animateStyle[i] = {
           k: v.k,
           v: v.v.map(item => {
@@ -193,8 +209,16 @@ function stringify(style, lastStyle, target) {
           d: v.d,
         };
       }
+      else if(COLOR_HASH.hasOwnProperty(i)) {
+        if(v[3] === 1) {
+          animateStyle[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
+        }
+        else {
+          animateStyle[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+        }
+      }
       else {
-        animateStyle[i] = style[i];
+        animateStyle[i] = v;
       }
     }
   }
@@ -231,23 +255,25 @@ function calDiff(prev, next, k, target) {
   let res = {
     k,
   };
+  let p = prev[k];
+  let n = next[k];
   if(k === 'transform') {
     if(!prev[k] || !next[k]) {
       return;
     }
     // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
     let pExist = {};
-    prev[k].forEach(item => {
+    p.forEach(item => {
       pExist[item[0]] = item[1];
     });
     let nExist = {};
-    next[k].forEach(item => {
+    n.forEach(item => {
       nExist[item[0]] = item[1];
     });
     res.v = [];
     let computedStyle = target.computedStyle;
     let key = k;
-    next[k].forEach(item => {
+    n.forEach(item => {
       let [k, v] = item;
       // 都存在的计算差值
       if(pExist.hasOwnProperty(k)) {
@@ -321,7 +347,7 @@ function calDiff(prev, next, k, target) {
         });
       }
     });
-    prev[k].forEach(item => {
+    p.forEach(item => {
       let [k, v] = item;
       // 新的不存在的项默认为0或单位矩阵
       if(!nExist.hasOwnProperty(k)) {
@@ -354,32 +380,30 @@ function calDiff(prev, next, k, target) {
     res.v = [];
     let computedStyle = target.computedStyle;
     for(let i = 0; i < 2; i++) {
-      let p = prev[k][i];
-      let n = next[k][i];
-      if(p.unit === n.unit) {
-        res.v.push(n.value - p.value);
+      let pi = p[i];
+      let ni = n[i];
+      if(pi.unit === ni.unit) {
+        res.v.push(ni.value - pi.value);
       }
-      else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
-        p.value = p.value * 100 / computedStyle[i ? 'outerHeight' : 'outerWidth'];
-        p.unit = unit.PERCENT;
-        res.v = n.value - p.value;
+      else if(pi.unit === unit.PX && ni.unit === unit.PERCENT) {
+        pi.value = pi.value * 100 / computedStyle[i ? 'outerHeight' : 'outerWidth'];
+        pi.unit = unit.PERCENT;
+        res.v = ni.value - pi.value;
       }
-      else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
-        p.value = p.value * 0.01 * computedStyle[i ? 'outerHeight' : 'outerWidth'];
-        p.unit = unit.PX;
-        res.v = n.value - p.value;
+      else if(pi.unit === unit.PERCENT && ni.unit === unit.PX) {
+        pi.value = pi.value * 0.01 * computedStyle[i ? 'outerHeight' : 'outerWidth'];
+        pi.unit = unit.PX;
+        res.v = ni.value - pi.value;
       }
     }
   }
-  else if(k === 'backgroundImage') {
-    let p = prev[k];
-    let n = next[k];
+  else if(GRADIENT_HASH.hasOwnProperty(k)
+    && { 'linear': true, 'radial': true }.hasOwnProperty(p.k)
+    && p.k === n.k
+    && p.v.length
+    && p.v.length) {
     let pv = p.v;
     let nv = n.v;
-    // 渐变种类或值为空则无法比较
-    if(p.k !== n.k || !pv.length || !nv.length) {
-      return;
-    }
     res.v = [];
     for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
       let a = pv[i];
@@ -394,15 +418,21 @@ function calDiff(prev, next, k, target) {
       if(a[1] && b[1] && a[1].unit === b[1].unit) {
         t.push(b[1].value - a[1].value);
       }
+      // 单位不同不做运算
+      else {
+        continue;
+      }
       res.v.push(t);
     }
-    if(p.k === 'linear' && n.k === 'linear' && p.d !== undefined && n.d !== undefined) {
+    if(p.k === 'linear' && p.d !== undefined && n.d !== undefined) {
       res.d = n.d - p.d;
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
-    let p = prev[k];
-    let n = next[k];
+    // fill和stroke可能纯色和渐变不一致
+    if(p.k !== n.k) {
+      return;
+    }
     res.v = [
       n[0] - p[0],
       n[1] - p[1],
@@ -411,8 +441,6 @@ function calDiff(prev, next, k, target) {
     ];
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
-    let p = prev[k];
-    let n = next[k];
     // auto不做动画
     if(p.unit === unit.AUTO || n.unit === unit.AUTO) {
       return;
@@ -436,8 +464,6 @@ function calDiff(prev, next, k, target) {
     }
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    let p = prev[k];
-    let n = next[k];
     if(k === 'points' || k === 'controls') {
       res.v = [];
       for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
@@ -471,7 +497,7 @@ function calDiff(prev, next, k, target) {
     }
   }
   else {
-    res.v = prev[k];
+    res.v = p;
   }
   return res;
 }
@@ -541,7 +567,7 @@ function calStyle(frame, percent) {
       style[k][0].value += v[0] * percent;
       style[k][1].value += v[1] * percent;
     }
-    else if(k === 'backgroundImage') {
+    else if(GRADIENT_HASH.hasOwnProperty(k)) {
       let item = style[k];
       for(let i = 0, len = Math.min(item.v.length, v.length); i < len; i++) {
         let a = item.v[i];

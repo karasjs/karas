@@ -140,29 +140,18 @@ class Geom extends Xom {
       strokeWidth = 0;
     }
     computedStyle.strokeWidth = strokeWidth;
-    if(strokeWidth > 0 && stroke.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(stroke);
-      if(go) {
-        let lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
-        stroke = this.__getLg(renderMode, lg);
-      }
+    if(stroke.k === 'linear' || stroke.k === 'radial') {
+      stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
     }
-    if(fill.indexOf('linear-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        let lg = gradient.getLinear(go.v, go.d, cx, cy, iw, ih);
-        fill = this.__getLg(renderMode, lg);
-      }
+    else {
+      computedStyle.stroke = stroke;
     }
-    else if(fill.indexOf('radial-gradient') > -1) {
-      let go = gradient.parseGradient(fill);
-      if(go) {
-        let rg = gradient.getRadial(go.v, go.d, cx, cy, originX, originY, originY + iw, originY + ih);
-        fill = this.__getRg(renderMode, rg);
-      }
+    if(fill.k === 'linear' || fill.k === 'radial') {
+      fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
     }
-    computedStyle.fill = fill;
-    computedStyle.stroke = stroke;
+    else {
+      computedStyle.fill = fill;
+    }
     computedStyle.strokeWidth = strokeWidth;
     computedStyle.strokeDasharray = strokeDasharray;
     computedStyle.strokeLinecap = strokeLinecap;

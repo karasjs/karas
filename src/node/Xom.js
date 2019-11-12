@@ -419,28 +419,7 @@ class Xom extends Node {
     // 先渲染渐变，没有则背景色
     let bgc;
     if(backgroundImage) {
-      let { k, v, d } = backgroundImage;
-      computedStyle.backgroundImage = k + '-gradient(';
-      let cx = x2 + iw * 0.5;
-      let cy = y2 + ih * 0.5;
-      // 需计算角度 https://www.w3cplus.com/css3/do-you-really-understand-css-linear-gradients.html
-      if(k === 'linear') {
-        let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-        bgc = this.__getLg(renderMode, gd);
-        computedStyle.backgroundImage += d + 'deg';
-      }
-      else if(k === 'radial') {
-        let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
-        bgc = this.__getRg(renderMode, gd);
-        computedStyle.backgroundImage += d;
-      }
-      v.forEach(item => {
-        computedStyle.backgroundImage += ', ' + item[0];
-        if(item[1]) {
-          computedStyle.backgroundImage += ' ' + item[1].str;
-        }
-      });
-      computedStyle.backgroundImage += ')';
+      bgc = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
     }
     else if(backgroundColor !== 'transparent') {
       bgc = backgroundColor;
@@ -638,6 +617,32 @@ class Xom extends Node {
       }
       return true;
     }
+  }
+
+  __gradient(renderMode, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+    let { k, v, d } = vs;
+    computedStyle[ks] = k + '-gradient(';
+    let cx = x2 + iw * 0.5;
+    let cy = y2 + ih * 0.5;
+    let res;
+    if(k === 'linear') {
+      let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
+      res = this.__getLg(renderMode, gd);
+      computedStyle[ks] += d + 'deg';
+    }
+    else if(k === 'radial') {
+      let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
+      res = this.__getRg(renderMode, gd);
+      computedStyle[ks] += d;
+    }
+    v.forEach(item => {
+      computedStyle[ks] += ', ' + item[0];
+      if(item[1]) {
+        computedStyle[ks] += ' ' + item[1].str;
+      }
+    });
+    computedStyle[ks] += ')';
+    return res;
   }
 
   __getLg(renderMode, gd) {

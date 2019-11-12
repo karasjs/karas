@@ -399,6 +399,15 @@ function normalize(style, reset) {
       style.strokeDasharray = '';
     }
   }
+  // fill和stroke为渐变时特殊处理
+  temp = style.fill;
+  if(temp && temp.indexOf('-gradient(') > 0) {
+    style.fill = gradient.parseGradient(temp);
+  }
+  temp = style.stroke;
+  if(temp && temp.indexOf('-gradient(') > 0) {
+    style.stroke = gradient.parseGradient(temp);
+  }
   // 删除缩写避免干扰动画计算
   delete style.background;
   delete style.flex;

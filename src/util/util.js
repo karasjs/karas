@@ -90,7 +90,7 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    return `<g transform="${joinTransform(vd.transform)}">${s}</g>`;
+    return `<g opacity="${vd.opacity}" transform="${joinTransform(vd.transform)}">${s}</g>`;
   }
 }
 

@@ -45,6 +45,7 @@ const DOM = {
   textAlign: 'inherit',
   transformOrigin: 'center',
   visibility: 'visible',
+  opacity: 1,
 };
 
 const GEOM = {

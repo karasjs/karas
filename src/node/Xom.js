@@ -312,6 +312,7 @@ class Xom extends Node {
         bb: [],
         children: [],
         transform: [],
+        opacity: 1,
       };
     }
     let { isDestroyed, ctx, currentStyle, computedStyle, width, height } = this;
@@ -371,6 +372,7 @@ class Xom extends Node {
       backgroundImage,
       transform,
       transformOrigin,
+      opacity,
     } = currentStyle;
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
@@ -386,6 +388,19 @@ class Xom extends Node {
     let ih = height + paddingTop + paddingBottom;
     let ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
     let oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom;
+    // 先设置透明度，可以向上累积
+    parent = this.parent;
+    let opa = opacity;
+    while(parent) {
+      opa *= parent.currentStyle.opacity;
+      parent = parent.parent;
+    }
+    if(renderMode === mode.CANVAS) {
+      ctx.globalAlpha = opa;
+    }
+    else {
+      this.__virtualDom.opacity = opacity;
+    }
     let tfo = tf.calOrigin(transformOrigin, x, y, ow, oh);
     computedStyle.transformOrigin = tfo;
     // transform相对于自身

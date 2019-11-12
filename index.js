@@ -529,7 +529,7 @@
         _s2 += joinVd(item);
       });
       _s2 += '</g>';
-      return "<g transform=\"".concat(joinTransform(vd.transform), "\">").concat(_s2, "</g>");
+      return "<g opacity=\"".concat(vd.opacity, "\" transform=\"").concat(joinTransform(vd.transform), "\">").concat(_s2, "</g>");
     }
   }
 
@@ -2259,6 +2259,18 @@
       }
     }
 
+    temp = style.opacity;
+
+    if (temp) {
+      temp = parseFloat(temp);
+
+      if (!isNaN(temp)) {
+        temp = Math.max(temp, 0);
+        temp = Math.min(temp, 1);
+        style.opacity = temp;
+      }
+    }
+
     parserOneBorder(style, 'Top');
     parserOneBorder(style, 'Right');
     parserOneBorder(style, 'Bottom');
@@ -3399,7 +3411,8 @@
     alignItems: 'stretch',
     textAlign: 'inherit',
     transformOrigin: 'center',
-    visibility: 'visible'
+    visibility: 'visible',
+    opacity: 1
   };
   var GEOM = {
     fill: 'transparent',
@@ -4172,6 +4185,8 @@
   }
 
   function equalStyle(k, a, b) {
+    console.log(a, b);
+
     if (k === 'transform') {
       if (a.length !== b.length) {
         return false;
@@ -4200,7 +4215,7 @@
       return true;
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
-    } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k) {
+    } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
       var av = a.v;
       var bv = b.v;
 
@@ -4222,8 +4237,10 @@
           }
         }
 
-        if (ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
-          return false;
+        if (ai.length > 1) {
+          if (ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+            return false;
+          }
         }
       }
 
@@ -4598,6 +4615,8 @@
       } else {
         res.v = n - p;
       }
+    } else if (k === 'opacity') {
+      res.v = n - p;
     } else {
       res.v = p;
     }
@@ -4721,6 +4740,8 @@
           } else {
             style[k] += v * percent;
           }
+        } else if (k === 'opacity') {
+          style[k] += v * percent;
         } else {
           style[k] = v;
         }
@@ -5598,7 +5619,8 @@
           this.__virtualDom = {
             bb: [],
             children: [],
-            transform: []
+            transform: [],
+            opacity: 1
           };
         }
 
@@ -5659,7 +5681,8 @@
             visibility = computedStyle.visibility;
         var backgroundImage = currentStyle.backgroundImage,
             transform$1 = currentStyle.transform,
-            transformOrigin = currentStyle.transformOrigin; // 使用sx和sy渲染位置，考虑了relative和translate影响
+            transformOrigin = currentStyle.transformOrigin,
+            opacity = currentStyle.opacity; // 使用sx和sy渲染位置，考虑了relative和translate影响
 
         var x = this.sx,
             y = this.sy;
@@ -5674,7 +5697,22 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom;
         var ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
-        var oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom;
+        var oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom; // 先设置透明度，可以向上累积
+
+        parent = this.parent;
+        var opa = opacity;
+
+        while (parent) {
+          opa *= parent.currentStyle.opacity;
+          parent = parent.parent;
+        }
+
+        if (renderMode === mode.CANVAS) {
+          ctx.globalAlpha = opa;
+        } else {
+          this.__virtualDom.opacity = opacity;
+        }
+
         var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
         computedStyle.transformOrigin = tfo; // transform相对于自身
 

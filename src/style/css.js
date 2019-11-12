@@ -306,6 +306,15 @@ function normalize(style, reset) {
       style.transformOrigin = tfo;
     }
   }
+  temp = style.opacity;
+  if(temp) {
+    temp = parseFloat(temp);
+    if(!isNaN(temp)) {
+      temp = Math.max(temp, 0);
+      temp = Math.min(temp, 1);
+      style.opacity = temp;
+    }
+  }
   parserOneBorder(style, 'Top');
   parserOneBorder(style, 'Right');
   parserOneBorder(style, 'Bottom');

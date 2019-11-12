@@ -95,7 +95,7 @@ function color2array(style) {
   });
 }
 
-function equalStyle(k, a, b) {
+function equalStyle(k, a, b) { console.log(a,b);
   if(k === 'transform') {
     if(a.length !== b.length) {
       return false;
@@ -129,7 +129,7 @@ function equalStyle(k, a, b) {
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
-  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k) {
+  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
     let av = a.v;
     let bv = b.v;
     if(a.d !== b.d || av.length !== bv.length) {
@@ -146,8 +146,10 @@ function equalStyle(k, a, b) {
           return false;
         }
       }
-      if(ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
-        return false;
+      if(ai.length > 1) {
+        if(ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+          return false;
+        }
       }
     }
     return true;
@@ -519,6 +521,9 @@ function calDiff(prev, next, k, target) {
       res.v = n - p;
     }
   }
+  else if(k === 'opacity') {
+    res.v = n - p;
+  }
   else {
     res.v = p;
   }
@@ -638,6 +643,9 @@ function calStyle(frame, percent) {
       else {
         style[k] += v * percent;
       }
+    }
+    else if(k === 'opacity') {
+      style[k] += v * percent;
     }
     else {
       style[k] = v;

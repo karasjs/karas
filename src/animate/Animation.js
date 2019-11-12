@@ -184,8 +184,8 @@ function stringify(style, lastStyle, target) {
   }
   let animateStyle = target.animateStyle;
   for(let i in style) {
-    let v = style[i];
     if(style.hasOwnProperty(i)) {
+      let v = style[i];
       if(repaint.GEOM.hasOwnProperty(i)) {
         target['__' + i] = v;
       }
@@ -545,6 +545,7 @@ function calStyle(frame, percent) {
   }
   frame.transition.forEach(item => {
     let { k, v, d } = item;
+    let st = style[k];
     if(k === 'transform') {
       let transform = style.transform;
       let hash = {};
@@ -564,13 +565,12 @@ function calStyle(frame, percent) {
       });
     }
     else if(k === 'transformOrigin') {
-      style[k][0].value += v[0] * percent;
-      style[k][1].value += v[1] * percent;
+      st[0].value += v[0] * percent;
+      st[1].value += v[1] * percent;
     }
-    else if(GRADIENT_HASH.hasOwnProperty(k)) {
-      let item = style[k];
-      for(let i = 0, len = Math.min(item.v.length, v.length); i < len; i++) {
-        let a = item.v[i];
+    else if(GRADIENT_HASH.hasOwnProperty(k) && GRADIENT_TYPE.hasOwnProperty(st.k)) {
+      for(let i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
+        let a = st.v[i];
         let b = v[i];
         a[0][0] += b[0][0] * percent;
         a[0][1] += b[0][1] * percent;
@@ -580,17 +580,16 @@ function calStyle(frame, percent) {
           a[1].value += b[1] * percent;
         }
       }
-      if(item.k === 'linear' && item.d !== undefined && d !== undefined) {
-        item.d += d * percent;
+      if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
+        st.d += d * percent;
       }
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {
-      let item = style[k];
-      item[0] += v[0] * percent;
-      item[1] += v[1] * percent;
-      item[2] += v[2] * percent;
-      item[3] += v[3] * percent;
+      st[0] += v[0] * percent;
+      st[1] += v[1] * percent;
+      st[2] += v[2] * percent;
+      st[3] += v[3] * percent;
     }
     else if(LENGTH_HASH.hasOwnProperty(k)) {
       style[k].value += v * percent;

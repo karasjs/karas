@@ -4263,9 +4263,9 @@
     var animateStyle = target.animateStyle;
 
     for (var _i3 in style) {
-      var v = style[_i3];
-
       if (style.hasOwnProperty(_i3)) {
+        var v = style[_i3];
+
         if (repaint$1.GEOM.hasOwnProperty(_i3)) {
           target['__' + _i3] = v;
         } else if (GRADIENT_HASH.hasOwnProperty(_i3) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
@@ -4624,6 +4624,7 @@
       var k = item.k,
           v = item.v,
           d = item.d;
+      var st = style[k];
 
       if (k === 'transform') {
         var transform = style.transform;
@@ -4644,13 +4645,11 @@
           }
         });
       } else if (k === 'transformOrigin') {
-        style[k][0].value += v[0] * percent;
-        style[k][1].value += v[1] * percent;
-      } else if (GRADIENT_HASH.hasOwnProperty(k)) {
-        var _item3 = style[k];
-
-        for (var i = 0, len = Math.min(_item3.v.length, v.length); i < len; i++) {
-          var a = _item3.v[i];
+        st[0].value += v[0] * percent;
+        st[1].value += v[1] * percent;
+      } else if (GRADIENT_HASH.hasOwnProperty(k) && GRADIENT_TYPE.hasOwnProperty(st.k)) {
+        for (var i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
+          var a = st.v[i];
           var b = v[i];
           a[0][0] += b[0][0] * percent;
           a[0][1] += b[0][1] * percent;
@@ -4662,36 +4661,35 @@
           }
         }
 
-        if (_item3.k === 'linear' && _item3.d !== undefined && d !== undefined) {
-          _item3.d += d * percent;
+        if (st.k === 'linear' && st.d !== undefined && d !== undefined) {
+          st.d += d * percent;
         }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
-          var _item4 = style[k];
-          _item4[0] += v[0] * percent;
-          _item4[1] += v[1] * percent;
-          _item4[2] += v[2] * percent;
-          _item4[3] += v[3] * percent;
+          st[0] += v[0] * percent;
+          st[1] += v[1] * percent;
+          st[2] += v[2] * percent;
+          st[3] += v[3] * percent;
         } else if (LENGTH_HASH.hasOwnProperty(k)) {
           style[k].value += v * percent;
         } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-          var st = style[k];
+          var _st = style[k];
 
           if (k === 'points' || k === 'controls') {
-            for (var _i7 = 0, _len3 = Math.min(st.length, v.length); _i7 < _len3; _i7++) {
-              if (util.isNil(st[_i7]) || !st[_i7].length) {
+            for (var _i7 = 0, _len3 = Math.min(_st.length, v.length); _i7 < _len3; _i7++) {
+              if (util.isNil(_st[_i7]) || !_st[_i7].length) {
                 continue;
               }
 
-              for (var j = 0, len2 = Math.min(st[_i7].length, v[_i7].length); j < len2; j++) {
-                if (!util.isNil(st[_i7][j]) && !util.isNil(v[_i7][j])) {
-                  st[_i7][j] += v[_i7][j] * percent;
+              for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
+                if (!util.isNil(_st[_i7][j]) && !util.isNil(v[_i7][j])) {
+                  _st[_i7][j] += v[_i7][j] * percent;
                 }
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
-            st[0] += v[0] * percent;
-            st[1] += v[1] * percent;
+            _st[0] += v[0] * percent;
+            _st[1] += v[1] * percent;
           } else {
             style[k] += v * percent;
           }

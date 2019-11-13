@@ -4826,6 +4826,7 @@
         _this.__fps = 60;
       }
 
+      _this.__fill = op.fill || 'none';
       _this.__frames = [];
       _this.__startTime = 0;
       _this.__offsetTime = 0;
@@ -5096,7 +5097,7 @@
       value: function finish() {
         var _this3 = this;
 
-        var fill = this.options.fill;
+        var fill = this.fill;
         frame.offFrame(this.cb);
 
         this.__cancelTask();
@@ -5213,6 +5214,11 @@
       key: "iterations",
       get: function get() {
         return this.__iterations;
+      }
+    }, {
+      key: "fill",
+      get: function get() {
+        return this.__fill;
       }
     }, {
       key: "frames",

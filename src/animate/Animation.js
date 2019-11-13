@@ -715,6 +715,7 @@ class Animation extends Event {
     if(this.__fps < 0) {
       this.__fps = 60;
     }
+    this.__fill = op.fill || 'none';
     this.__frames = [];
     this.__startTime = 0;
     this.__offsetTime = 0;
@@ -935,7 +936,7 @@ class Animation extends Event {
   }
 
   finish() {
-    let { fill } = this.options;
+    let { fill } = this;
     frame.offFrame(this.cb);
     this.__cancelTask();
     let { target, lastStyle } = this;
@@ -1014,6 +1015,9 @@ class Animation extends Event {
   }
   get iterations() {
     return this.__iterations;
+  }
+  get fill() {
+    return this.__fill;
   }
   get frames() {
     return this.__frames;

@@ -95,7 +95,7 @@ function color2array(style) {
   });
 }
 
-function equalStyle(k, a, b) { console.log(a,b);
+function equalStyle(k, a, b) {
   if(k === 'transform') {
     if(a.length !== b.length) {
       return false;

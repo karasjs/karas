@@ -501,7 +501,7 @@ class Xom extends Node {
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
-    let { event: { type }, x, y, covers } = e;
+    let { event: { type } } = e;
     let { isDestroyed, listener, children, computedStyle, outerWidth, outerHeight, matrixEvent } = this;
     if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
       return;
@@ -514,13 +514,24 @@ class Xom extends Node {
     // touchmove之类强制的直接通知即可
     if(force) {
       if(!this.isGeom()) {
-        children.forEach(child => {
-          if(child instanceof Xom || child instanceof Component) {
+        // 先响应absolute/relative高优先级，从后往前遮挡顺序
+        for(let i = children.length - 1; i >= 0; i--) {
+          let child = children[i];
+          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
             }
           }
-        });
+        }
+        // 再看普通流，从后往前遮挡顺序
+        for(let i = children.length - 1; i >= 0; i--) {
+          let child = children[i];
+          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+            if(child.__emitEvent(e, force)) {
+              childWillResponse = true;
+            }
+          }
+        }
       }
       // touchmove之类也需要考虑target是否是自己以及孩子
       if(!childWillResponse && this.root.__touchstartTarget !== this) {
@@ -546,13 +557,7 @@ class Xom extends Node {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
-        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
-          if(child.__emitEvent(e)) {
-            childWillResponse = true;
-          }
-        }
-        // 组件要形成shadowDom，除了shadowRoot，其它节点事件不冒泡
-        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+        if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -561,12 +566,7 @@ class Xom extends Node {
       // 再看普通流，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
-        if(child instanceof Xom && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
-          if(child.__emitEvent(e)) {
-            childWillResponse = true;
-          }
-        }
-        else if(child instanceof Component && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
+        if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -578,14 +578,7 @@ class Xom extends Node {
     }
     // child触发则parent一定触发，否则判断事件坐标是否在节点内且未被遮挡
     if(childWillResponse || this.willResponseEvent(e)) {
-      // 根据是否matrix存入遮罩坐标
-      covers.push({
-        x,
-        y,
-        w: outerWidth,
-        h: outerHeight,
-        matrixEvent,
-      });
+      e.__hasEmitted = true;
       if(cb) {
         cb.forEach(item => {
           if(e.__stopImmediatePropagation) {
@@ -601,7 +594,10 @@ class Xom extends Node {
   }
 
   willResponseEvent(e) {
-    let { x, y, covers } = e;
+    let { x, y, __hasEmitted } = e;
+    if(__hasEmitted) {
+      return;
+    }
     let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
     let inThis = tf.pointInQuadrilateral(x - sx, y - sy,
       0, 0,
@@ -610,19 +606,6 @@ class Xom extends Node {
       outerWidth, outerHeight,
       matrixEvent);
     if(inThis) {
-      // 不能被遮挡
-      for(let i = 0, len = covers.length; i < len; i++) {
-        let { x: x2, y: y2, w, h, matrixEvent } = covers[i];
-        if(tf.pointInQuadrilateral(x - sx, y - sy,
-          x2 - sx, y2 - sy,
-          x2 - sx + w,y2 - sy,
-          x2 - sx, y2 - sy + h,
-          x2 - sx + w, y2 - sy + h,
-          matrixEvent)
-        ) {
-          return;
-        }
-      }
       if(!e.target) {
         e.target = this;
         // 缓存target给move用

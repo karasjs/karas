@@ -4185,8 +4185,6 @@
   }
 
   function equalStyle(k, a, b) {
-    console.log(a, b);
-
     if (k === 'transform') {
       if (a.length !== b.length) {
         return false;
@@ -5832,10 +5830,7 @@
     }, {
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
-        var type = e.event.type,
-            x = e.x,
-            y = e.y,
-            covers = e.covers;
+        var type = e.event.type;
         var isDestroyed = this.isDestroyed,
             listener = this.listener,
             children = this.children,
@@ -5858,13 +5853,27 @@
 
         if (force) {
           if (!this.isGeom()) {
-            children.forEach(function (child) {
-              if (child instanceof Xom || child instanceof Component) {
+            // 先响应absolute/relative高优先级，从后往前遮挡顺序
+            for (var i = children.length - 1; i >= 0; i--) {
+              var child = children[i];
+
+              if ((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
                 if (child.__emitEvent(e, force)) {
                   childWillResponse = true;
                 }
               }
-            });
+            } // 再看普通流，从后往前遮挡顺序
+
+
+            for (var _i = children.length - 1; _i >= 0; _i--) {
+              var _child = children[_i];
+
+              if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) > -1) {
+                if (_child.__emitEvent(e, force)) {
+                  childWillResponse = true;
+                }
+              }
+            }
           } // touchmove之类也需要考虑target是否是自己以及孩子
 
 
@@ -5895,31 +5904,22 @@
 
         if (!this.isGeom()) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var i = children.length - 1; i >= 0; i--) {
-            var child = children[i];
+          for (var _i2 = children.length - 1; _i2 >= 0; _i2--) {
+            var _child2 = children[_i2];
 
-            if (child instanceof Xom && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
-              if (child.__emitEvent(e)) {
+            if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
+              if (_child2.__emitEvent(e)) {
                 childWillResponse = true;
               }
-            } // 组件要形成shadowDom，除了shadowRoot，其它节点事件不冒泡
-            else if (child instanceof Component && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
-                if (child.__emitEvent(e)) {
-                  childWillResponse = true;
-                }
-              }
+            }
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i = children.length - 1; _i >= 0; _i--) {
-            var _child = children[_i];
+          for (var _i3 = children.length - 1; _i3 >= 0; _i3--) {
+            var _child3 = children[_i3];
 
-            if (_child instanceof Xom && ['absolute', 'relative'].indexOf(_child.computedStyle.position) === -1) {
-              if (_child.__emitEvent(e)) {
-                childWillResponse = true;
-              }
-            } else if (_child instanceof Component && ['absolute', 'relative'].indexOf(_child.computedStyle.position) === -1) {
-              if (_child.__emitEvent(e)) {
+            if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
+              if (_child3.__emitEvent(e)) {
                 childWillResponse = true;
               }
             }
@@ -5932,14 +5932,7 @@
 
 
         if (childWillResponse || this.willResponseEvent(e)) {
-          // 根据是否matrix存入遮罩坐标
-          covers.push({
-            x: x,
-            y: y,
-            w: outerWidth,
-            h: outerHeight,
-            matrixEvent: matrixEvent
-          });
+          e.__hasEmitted = true;
 
           if (cb) {
             cb.forEach(function (item) {
@@ -5961,7 +5954,12 @@
       value: function willResponseEvent(e) {
         var x = e.x,
             y = e.y,
-            covers = e.covers;
+            __hasEmitted = e.__hasEmitted;
+
+        if (__hasEmitted) {
+          return;
+        }
+
         var sx = this.sx,
             sy = this.sy,
             outerWidth = this.outerWidth,
@@ -5970,20 +5968,6 @@
         var inThis = transform.pointInQuadrilateral(x - sx, y - sy, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
 
         if (inThis) {
-          // 不能被遮挡
-          for (var i = 0, len = covers.length; i < len; i++) {
-            var _covers$i = covers[i],
-                x2 = _covers$i.x,
-                y2 = _covers$i.y,
-                w = _covers$i.w,
-                h = _covers$i.h,
-                _matrixEvent = _covers$i.matrixEvent;
-
-            if (transform.pointInQuadrilateral(x - sx, y - sy, x2 - sx, y2 - sy, x2 - sx + w, y2 - sy, x2 - sx, y2 - sy + h, x2 - sx + w, y2 - sy + h, _matrixEvent)) {
-              return;
-            }
-          }
-
           if (!e.target) {
             e.target = this; // 缓存target给move用
 
@@ -8287,10 +8271,11 @@
   function diffD2D(elem, ovd, nvd, root) {
     if (!equalArr(ovd.transform, nvd.transform)) {
       var transform = util.joinTransform(nvd.transform);
+      elem.setAttribute('transform', transform);
+    }
 
-      if (elem.getAttribute('transform') !== transform) {
-        elem.setAttribute('transform', transform);
-      }
+    if (ovd.opacity !== nvd.opacity) {
+      elem.setAttribute('opacity', ovd.opacity);
     }
 
     if (!root) {
@@ -8682,7 +8667,7 @@
           },
           x: x,
           y: y,
-          covers: []
+          __hasEmitted: false
         }, force);
       }
     }, {

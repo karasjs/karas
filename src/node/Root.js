@@ -111,7 +111,7 @@ class Root extends Dom {
       },
       x,
       y,
-      covers: [],
+      __hasEmitted: false,
     }, force);
   }
 

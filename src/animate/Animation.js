@@ -832,20 +832,37 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { frames, target, playCount, duration, fps, iterations, delay } = this;
+      let { frames, target, playCount, duration, fps, iterations, fill, delay, endDelay } = this;
       let length = frames.length;
       let init = true;
       let first = true;
+      let last = true;
       this.__cb = () => {
         let now = inject.now();
+        let root = target.root;
         if(init) {
           this.__startTime = now;
-          init = false;
         }
         // 还没过前置delay
         if(now - this.offsetTime < this.__startTime + delay) {
+          if(init && {
+            backwards: true,
+            both: true,
+          }.hasOwnProperty(fill)) {
+            let current = frames[0];
+            let needRefresh = stringify(current.style, {}, target);
+            let task = this.__task = () => {
+              this.emit(Event.KARAS_ANIMATION_FRAME);
+            };
+            if(needRefresh) {
+              root.setRefreshLevel(getLevel(current.style));
+              root.addRefreshTask(task);
+            }
+          }
+          init = false;
           return;
         }
+        init = false;
         if(first) {
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
@@ -858,9 +875,8 @@ class Animation extends Event {
         // 最后一帧结束动画
         if(i === length - 1) {
           needRefresh = stringify(current.style, this.__lastStyle, target);
-          playCount = ++this.playCount;
-          if(iterations !== Infinity && playCount >= iterations) {
-            frame.offFrame(this.cb);
+          if(playCount < iterations) {
+            playCount = ++this.playCount;
           }
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -884,7 +900,6 @@ class Animation extends Event {
         this.__lastTime = now;
         this.__lastStyle = current.style;
         first = false;
-        let root = target.root;
         // 两帧之间没有变化，不触发刷新
         if(root) {
           // 可能涉及字号变化，引发布局变更重新测量
@@ -893,25 +908,32 @@ class Animation extends Event {
             if(i === length - 1) {
               // 没到播放次数结束时继续
               if(iterations === Infinity || playCount < iterations) {
-                this.emit(Event.KARAS_ANIMATION_FINISH);
                 return;
               }
+              // 播放结束考虑endDelay
               this.__playState = 'finished';
-              // 完全结束多触发complete
-              let task = this.__task = () => {
-                this.emit(Event.KARAS_ANIMATION_FRAME);
+              frame.offFrame(this.cb);
+              let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
+              if(isFinished) {
                 this.emit(Event.KARAS_ANIMATION_FINISH);
-                this.emit(Event.KARAS_ANIMATION_COMPLETE);
-              };
-              root.addRefreshTask(task);
+              }
+              else {
+                now = inject.now();
+                let task = this.__task = () => {
+                  let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
+                  if(isFinished) {
+                    this.emit(Event.KARAS_ANIMATION_FINISH);
+                    frame.offFrame(task);
+                  }
+                  now = inject.now();
+                };
+                frame.onFrame(task);
+              }
             }
           };
           if(needRefresh) {
             root.setRefreshLevel(getLevel(current.style));
             root.addRefreshTask(task);
-          }
-          else {
-            frame.nextFrame(task);
           }
         }
       };
@@ -946,7 +968,7 @@ class Animation extends Event {
       // 停留在最后一帧
       if({
         forwards: true,
-        both: true
+        both: true,
       }.hasOwnProperty(fill)) {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, lastStyle, this.target);
@@ -954,7 +976,6 @@ class Animation extends Event {
       let task = this.__task = () => {
         this.emit(Event.KARAS_ANIMATION_FRAME);
         this.emit(Event.KARAS_ANIMATION_FINISH);
-        this.emit(Event.KARAS_ANIMATION_COMPLETE);
       };
       root.addRefreshTask(task);
     }

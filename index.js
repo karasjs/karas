@@ -3363,8 +3363,6 @@
 
   _defineProperty(Event, "KARAS_ANIMATION_FINISH", 'karas-animation-finish');
 
-  _defineProperty(Event, "KARAS_ANIMATION_COMPLETE", 'karas-animation-complete');
-
   _defineProperty(Event, "KARAS_ANIMATION_CANCEL", 'karas-animation-cancel');
 
   var DOM = {
@@ -4969,23 +4967,46 @@
               duration = this.duration,
               fps = this.fps,
               iterations = this.iterations,
-              delay = this.delay;
+              fill = this.fill,
+              delay = this.delay,
+              endDelay = this.endDelay;
           var length = frames.length;
           var init = true;
           var first = true;
 
           this.__cb = function () {
             var now = inject.now();
+            var root = target.root;
 
             if (init) {
               _this2.__startTime = now;
-              init = false;
             } // 还没过前置delay
 
 
             if (now - _this2.offsetTime < _this2.__startTime + delay) {
+              if (init && {
+                backwards: true,
+                both: true
+              }.hasOwnProperty(fill)) {
+                var _current = frames[0];
+
+                var _needRefresh = stringify$1(_current.style, {}, target);
+
+                var task = _this2.__task = function () {
+                  _this2.emit(Event.KARAS_ANIMATION_FRAME);
+                };
+
+                if (_needRefresh) {
+                  root.setRefreshLevel(getLevel(_current.style));
+                  root.addRefreshTask(task);
+                }
+              }
+
+              init = false;
               return;
             }
+
+            init = false;
 
             if (first) {
               frames.forEach(function (frame) {
@@ -5000,10 +5021,9 @@
 
             if (i === length - 1) {
               needRefresh = stringify$1(current.style, _this2.__lastStyle, target);
-              playCount = ++_this2.playCount;
 
-              if (iterations !== Infinity && playCount >= iterations) {
-                frame.offFrame(_this2.cb);
+              if (playCount < iterations) {
+                playCount = ++_this2.playCount;
               }
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
@@ -5031,41 +5051,49 @@
 
             _this2.__lastTime = now;
             _this2.__lastStyle = current.style;
-            first = false;
-            var root = target.root; // 两帧之间没有变化，不触发刷新
+            first = false; // 两帧之间没有变化，不触发刷新
 
             if (root) {
               // 可能涉及字号变化，引发布局变更重新测量
-              var task = _this2.__task = function () {
+              var _task = _this2.__task = function () {
                 _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
                 if (i === length - 1) {
                   // 没到播放次数结束时继续
                   if (iterations === Infinity || playCount < iterations) {
-                    _this2.emit(Event.KARAS_ANIMATION_FINISH);
-
                     return;
-                  }
+                  } // 播放结束考虑endDelay
 
-                  _this2.__playState = 'finished'; // 完全结束多触发complete
 
-                  var _task = _this2.__task = function () {
-                    _this2.emit(Event.KARAS_ANIMATION_FRAME);
+                  _this2.__playState = 'finished';
+                  frame.offFrame(_this2.cb);
+                  var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
 
+                  if (isFinished) {
                     _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                  } else {
+                    now = inject.now();
 
-                    _this2.emit(Event.KARAS_ANIMATION_COMPLETE);
-                  };
+                    var _task2 = _this2.__task = function () {
+                      var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
 
-                  root.addRefreshTask(_task);
+                      if (isFinished) {
+                        _this2.emit(Event.KARAS_ANIMATION_FINISH);
+
+                        frame.offFrame(_task2);
+                      }
+
+                      now = inject.now();
+                    };
+
+                    frame.onFrame(_task2);
+                  }
                 }
               };
 
               if (needRefresh) {
                 root.setRefreshLevel(getLevel(current.style));
-                root.addRefreshTask(task);
-              } else {
-                frame.nextFrame(task);
+                root.addRefreshTask(_task);
               }
             }
           };
@@ -5121,8 +5149,6 @@
             _this3.emit(Event.KARAS_ANIMATION_FRAME);
 
             _this3.emit(Event.KARAS_ANIMATION_FINISH);
-
-            _this3.emit(Event.KARAS_ANIMATION_COMPLETE);
           };
 
           root.addRefreshTask(task);

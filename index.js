@@ -10157,7 +10157,7 @@
   }(Geom);
 
   function parse$1(karas, json, data) {
-    if (util.isString(json)) {
+    if (util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
       return json;
     }
 
@@ -10167,22 +10167,30 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
-    var ref = props.ref;
+    var animation;
 
-    if (animate && ref) {
-      data.animate.push({
-        ref: ref,
+    if (animate) {
+      animation = {
         animate: animate
-      });
+      };
+      animate = data.animate.push(animation);
     }
+
+    var vd;
 
     if (tagName.charAt(0) === '$') {
-      return karas.createGm(tagName, props);
+      vd = karas.createGm(tagName, props);
+    } else {
+      vd = karas.createVd(tagName, props, children.map(function (item) {
+        return parse$1(karas, item, data);
+      }));
     }
 
-    return karas.createVd(tagName, props, children.map(function (item) {
-      return parse$1(karas, item, data);
-    }));
+    if (animation) {
+      animation.target = vd;
+    }
+
+    return vd;
   }
 
   Geom.register('$line', Line);
@@ -10236,9 +10244,9 @@
 
       this.render(vd, dom);
       data.animate.forEach(function (item) {
-        var ref = item.ref,
+        var target = item.target,
             animate = item.animate;
-        vd.ref[ref].animate(animate.value, animate.options);
+        target.animate(animate.value, animate.options);
       });
       return vd;
     },

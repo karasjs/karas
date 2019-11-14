@@ -63,8 +63,8 @@ let karas = {
     let vd = parse(this, json, data);
     this.render(vd, dom);
     data.animate.forEach(item => {
-      let { ref, animate } = item;
-      vd.ref[ref].animate(animate.value, animate.options);
+      let { target, animate } = item;
+      target.animate(animate.value, animate.options);
     });
     return vd;
   },

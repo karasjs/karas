@@ -836,7 +836,6 @@ class Animation extends Event {
       let length = frames.length;
       let init = true;
       let first = true;
-      let last = true;
       this.__cb = () => {
         let now = inject.now();
         let root = target.root;
@@ -915,15 +914,24 @@ class Animation extends Event {
               frame.offFrame(this.cb);
               let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
               if(isFinished) {
-                this.emit(Event.KARAS_ANIMATION_FINISH);
+                let task = this.__task = () => {
+                  this.emit(Event.KARAS_ANIMATION_FRAME);
+                  this.emit(Event.KARAS_ANIMATION_FINISH);
+                };
+                root.addRefreshTask(task);
               }
               else {
                 now = inject.now();
                 let task = this.__task = () => {
                   let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
                   if(isFinished) {
-                    this.emit(Event.KARAS_ANIMATION_FINISH);
+                    let task = this.__task = () => {
+                      this.emit(Event.KARAS_ANIMATION_FRAME);
+                      this.emit(Event.KARAS_ANIMATION_FINISH);
+                    };
+                    root.addRefreshTask(task);
                     frame.offFrame(task);
+                    return;
                   }
                   now = inject.now();
                 };
@@ -934,6 +942,9 @@ class Animation extends Event {
           if(needRefresh) {
             root.setRefreshLevel(getLevel(current.style));
             root.addRefreshTask(task);
+          }
+          else {
+            frame.nextFrame(task);
           }
         }
       };

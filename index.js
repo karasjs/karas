@@ -5070,23 +5070,35 @@
                   var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
 
                   if (isFinished) {
-                    _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                    var _task2 = _this2.__task = function () {
+                      _this2.emit(Event.KARAS_ANIMATION_FRAME);
+
+                      _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                    };
+
+                    root.addRefreshTask(_task2);
                   } else {
                     now = inject.now();
 
-                    var _task2 = _this2.__task = function () {
+                    var _task3 = _this2.__task = function () {
                       var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
 
                       if (isFinished) {
-                        _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                        var _task4 = _this2.__task = function () {
+                          _this2.emit(Event.KARAS_ANIMATION_FRAME);
 
-                        frame.offFrame(_task2);
+                          _this2.emit(Event.KARAS_ANIMATION_FINISH);
+                        };
+
+                        root.addRefreshTask(_task4);
+                        frame.offFrame(_task4);
+                        return;
                       }
 
                       now = inject.now();
                     };
 
-                    frame.onFrame(_task2);
+                    frame.onFrame(_task3);
                   }
                 }
               };
@@ -5094,6 +5106,8 @@
               if (needRefresh) {
                 root.setRefreshLevel(getLevel(current.style));
                 root.addRefreshTask(_task);
+              } else {
+                frame.nextFrame(_task);
               }
             }
           };

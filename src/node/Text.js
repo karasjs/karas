@@ -191,6 +191,10 @@ class Text extends Node {
     }
   }
 
+  __renderByMask(renderMode) {
+    this.render(renderMode);
+  }
+
   __tryLayInline(w) {
     return w - this.textWidth;
   }

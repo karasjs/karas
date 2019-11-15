@@ -24,7 +24,7 @@ function diffDefs(elem, od, nd) {
 }
 
 function diffDef(elem, od, nd) {
-  if(od.k !== nd.k) {
+  if(od.tagName !== nd.tagName) {
     elem.insertAdjacentHTML('afterend', util.joinDef(nd));
     elem.parentNode.removeChild(elem);
   }
@@ -59,11 +59,11 @@ function diffDef(elem, od, nd) {
       }
     }
     let cns = elem.childNodes;
-    let ol = od.stop.length;
-    let nl = nd.stop.length;
+    let ol = od.children.length;
+    let nl = nd.children.length;
     let i = 0;
     for(; i < Math.min(ol, nl); i++) {
-      diffStop(cns[i], od.stop[i], nd.stop[i]);
+      diffItem(elem, i, od.children[i], nd.children[i]);
     }
     if(i < ol) {
       for(; i < ol; i++) {
@@ -75,15 +75,6 @@ function diffDef(elem, od, nd) {
         insertAt(elem, cns, i, util.joinStop(nd.stop[i]));
       }
     }
-  }
-}
-
-function diffStop(elem, os, ns) {
-  if(os[0] !== ns[0]) {
-    elem.setAttribute('stop-color', ns[0]);
-  }
-  if(os[1] !== ns[1]) {
-    elem.setAttribute('offset', ns[1]);
   }
 }
 
@@ -135,6 +126,14 @@ function diffD2D(elem, ovd, nvd, root) {
   }
   if(ovd.opacity !== nvd.opacity) {
     elem.setAttribute('opacity', ovd.opacity);
+  }
+  if(ovd.mask !== nvd.mask) {
+    if(nvd.mask) {
+      elem.setAttribute('mask', ovd.mask);
+    }
+    else {
+      elem.removeAttribute('mask');
+    }
   }
   if(!root) {
     diffBb(elem.firstChild, ovd.bb, nvd.bb);

@@ -2,7 +2,6 @@ import Xom from '../node/Xom';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import gradient from '../style/gradient';
 import mode from '../util/mode';
 import util from '../util/util';
 
@@ -11,10 +10,18 @@ const REGISTER = {};
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
+    this.__mask = !util.isNil(this.props.mask) || this.props.mask === true;
   }
 
   __init() {
     let style = this.style;
+    if(this.mask) {
+      style.position = 'absolute';
+      style.display = 'block';
+      style.visibility = 'visible';
+      style.background = null;
+      style.border = null;
+    }
     css.normalize(style, reset.geom);
     let ref = this.props.ref;
     if(ref) {
@@ -174,12 +181,11 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { isDestroyed, computedStyle: { display, visibility } } = this;
+    let { isDestroyed, computedStyle: { display } } = this;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,
         display,
-        visibility,
       };
     }
     if(renderMode === mode.SVG) {
@@ -189,6 +195,24 @@ class Geom extends Xom {
       };
     }
     return this.__preRender(renderMode);
+  }
+
+  __renderAsMask(renderMode) {
+    if(renderMode === mode.CANVAS) {}
+    else if(renderMode === mode.SVG) {
+      this.render(renderMode);
+      let vd = this.virtualDom;
+      vd.isMask = true;
+      let maskId = this.defs.add({
+        tagName: 'mask',
+        props: [
+          ['transform', vd.transform],
+          ['opacity', vd.opacity]
+        ],
+        children: vd.children,
+      });
+      this.__maskId = `url(#${maskId})`;
+    }
   }
 
   addGeom(tagName, props) {
@@ -205,6 +229,12 @@ class Geom extends Xom {
   }
   get baseLine() {
     return this.__height;
+  }
+  get mask() {
+    return this.__mask;
+  }
+  get maskId() {
+    return this.__maskId;
   }
 
   static getRegister(name) {

@@ -1043,27 +1043,33 @@ class Dom extends Xom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
+    // 先渲染过滤mask
+    children.forEach(item => {
+      if(item.mask) {
+        item.__renderAsMask(renderMode);
+      }
+    });
     // 先绘制static
     flowChildren.forEach(item => {
-      if(item instanceof Text || item.computedStyle.position === 'static') {
-        item.render(renderMode);
-      }
-      if(item instanceof Component && item.computedStyle.position === 'static') {
-        item.shadowRoot.render(renderMode);
+      if(item.mask) {}
+      else if(item instanceof Text || item.computedStyle.position === 'static') {
+        item.__renderByMask(renderMode);
       }
     });
     // 再绘制relative和absolute
     children.forEach(item => {
-      if((item instanceof Xom) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
-        item.render(renderMode);
-      }
-      if((item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
-        item.shadowRoot.render(renderMode);
+      if(item.mask) {}
+      else if((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
+        item.__renderByMask(renderMode);
       }
     });
     if(renderMode === mode.SVG) {
-      // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+      // 过滤掉mask
       let children = this.children.slice(0);
+      children = children.filter(item => {
+        return !item.mask;
+      });
+      // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
       sort(children, function(a, b) {
         if(b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
           return true;

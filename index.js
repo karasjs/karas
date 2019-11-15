@@ -487,6 +487,10 @@
     });
     s += '</g><g>';
     vd.children.forEach(function (item) {
+      if (item.isMask) {
+        return;
+      }
+
       s += joinVd(item);
     });
     s += '</g>';
@@ -526,10 +530,14 @@
 
       _s2 += '>';
       vd.children.forEach(function (item) {
+        if (item.isMask) {
+          return;
+        }
+
         _s2 += joinVd(item);
       });
       _s2 += '</g>';
-      return "<g opacity=\"".concat(vd.opacity, "\" transform=\"").concat(joinTransform(vd.transform), "\">").concat(_s2, "</g>");
+      return "<g opacity=\"".concat(vd.opacity, "\" transform=\"").concat(joinTransform(vd.transform), "\"").concat(vd.mask ? " mask=\"".concat(vd.mask, "\"") : '', "\">").concat(_s2, "</g>");
     }
   }
 
@@ -542,20 +550,32 @@
   }
 
   function joinDef(def) {
-    var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\" gradientUnits=\"userSpaceOnUse\"");
+    var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\"");
+
+    if (def.tagName === 'mask') {
+      s += ' maskUnits="userSpaceOnUse"';
+    } else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
     def.props.forEach(function (item) {
       s += " ".concat(item[0], "=\"").concat(item[1], "\"");
     });
     s += '>';
-    def.stop.forEach(function (item) {
-      s += joinStop(item);
+    def.children.forEach(function (item) {
+      s += joinItem(item);
     });
     s += "</".concat(def.tagName, ">");
     return s;
   }
 
-  function joinStop(item) {
-    return "<stop stop-color=\"".concat(item[0], "\" offset=\"").concat(item[1] * 100, "%\"/>");
+  function joinItem(item) {
+    var s = "<".concat(item.tagName);
+    item.props.forEach(function (item) {
+      s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+    });
+    s += "></".concat(item.tagName, ">");
+    return s;
   }
 
   function r2d(n) {
@@ -652,6 +672,50 @@
     return n;
   }
 
+  function mergeImageData(bottom, top) {
+    var bd = bottom.data;
+    var td = top.data;
+
+    for (var i = 0, len = bd.length; i < len; i += 4) {
+      var rb = bd[i];
+      var gb = bd[i + 1];
+      var bb = bd[i + 2];
+      var ab = bd[i + 3];
+      var rt = td[i];
+      var gt = td[i + 1];
+      var bt = td[i + 2];
+      var at = td[i + 3];
+
+      if (at === 0) ; else if (ab === 0 || at === 255) {
+        bd[i] = rt;
+        bd[i + 1] = gt;
+        bd[i + 2] = bt;
+        bd[i + 3] = at;
+      } else {
+        var alpha1 = ab / 255;
+        var alpha2 = at / 255;
+        var alpha3 = 1 - alpha1;
+        var r = rb * alpha1 + rt * alpha2 * alpha3;
+        var g = gb * alpha1 + gt * alpha2 * alpha3;
+        var b = bb * alpha1 + bt * alpha2 * alpha3;
+        var a = 1 - (1 - alpha1) * (1 - alpha2);
+
+        if (a !== 0 && a !== 1) {
+          r = r / a;
+          g = g / a;
+          b = b / a;
+        }
+
+        bd[i] = r;
+        bd[i + 1] = g;
+        bd[i + 2] = b;
+        bd[i + 3] = a;
+      }
+    }
+
+    return bottom;
+  }
+
   var util = {
     isObject: isType('Object'),
     isString: isType('String'),
@@ -669,12 +733,13 @@
     joinVd: joinVd,
     joinTransform: joinTransform,
     joinDef: joinDef,
-    joinStop: joinStop,
+    // joinStop,
     r2d: r2d,
     rgb2int: rgb2int,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone
+    clone: clone,
+    mergeImageData: mergeImageData
   };
 
   function calMatrix(transform, transformOrigin, x, y, ow, oh) {
@@ -2900,6 +2965,11 @@
         }
       }
     }, {
+      key: "__renderByMask",
+      value: function __renderByMask(renderMode) {
+        this.render(renderMode);
+      }
+    }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w) {
         return w - this.textWidth;
@@ -3614,7 +3684,7 @@
         }
 
         this.__hasInit = true;
-        ['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle', 'points', 'controlA', 'controlB', 'controls', 'r', 'rx', 'ry', 'begin', 'end', 'x1', 'y1', 'x2', 'y2'].forEach(function (fn) {
+        ['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle', 'points', 'controlA', 'controlB', 'controls', 'r', 'rx', 'ry', 'begin', 'end', 'x1', 'y1', 'x2', 'y2', 'mask', 'maskId'].forEach(function (fn) {
           Object.defineProperty(_this2, fn, {
             get: function get() {
               return this.shadowRoot[fn];
@@ -3734,7 +3804,7 @@
     return Component;
   }(Event);
 
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -3808,11 +3878,7 @@
       document.body.removeChild(div);
     },
     measureImg: function measureImg(url, cb) {
-      var img = document.createElement('img');
-      img.style.position = 'absolute';
-      img.style.left = '99999px';
-      img.style.top = '-99999px';
-      img.style.visibility = 'hidden';
+      var img = new Image();
 
       img.onload = function () {
         cb({
@@ -5852,6 +5918,47 @@
         }
       }
     }, {
+      key: "__renderByMask",
+      value: function __renderByMask(renderMode) {
+        var prev = this.prev;
+        var hasMask = prev && prev.mask;
+
+        if (renderMode === mode.CANVAS) {
+          // 先保存之前的图像
+          var cache1;
+          var cache2;
+
+          if (hasMask) {
+            cache1 = this.root.__getImageData();
+
+            this.root.__clear();
+          } // 然后反向先绘制需要遮罩的图层
+
+
+          this.render(renderMode); // 再用mask反遮罩
+
+          if (hasMask) {
+            this.ctx.globalCompositeOperation = 'destination-in';
+            prev.render(renderMode);
+            cache2 = this.root.__getImageData();
+
+            this.root.__clear();
+          }
+
+          this.ctx.globalCompositeOperation = 'source-over';
+
+          if (hasMask) {
+            this.root.__putImageData(util.mergeImageData(cache1, cache2));
+          }
+        } else if (renderMode === mode.SVG) {
+          this.render(renderMode);
+
+          if (hasMask) {
+            this.virtualDom.mask = prev.maskId;
+          }
+        }
+      }
+    }, {
       key: "__destroy",
       value: function __destroy() {
         var ref = this.props.ref;
@@ -6070,7 +6177,12 @@
           var uuid = this.defs.add({
             tagName: 'linearGradient',
             props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
-            stop: gd.stop
+            children: gd.stop.map(function (item) {
+              return {
+                tagName: 'stop',
+                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
+              };
+            })
           });
           return "url(#".concat(uuid, ")");
         }
@@ -6088,7 +6200,12 @@
           var uuid = this.defs.add({
             tagName: 'radialGradient',
             props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
-            stop: gd.stop
+            children: gd.stop.map(function (item) {
+              return {
+                tagName: 'stop',
+                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
+              };
+            })
           });
           return "url(#".concat(uuid, ")");
         }
@@ -6363,15 +6480,28 @@
     _inherits(Geom, _Xom);
 
     function Geom(tagName, props) {
+      var _this;
+
       _classCallCheck(this, Geom);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this.__mask = !util.isNil(_this.props.mask) || _this.props.mask === true;
+      return _this;
     }
 
     _createClass(Geom, [{
       key: "__init",
       value: function __init() {
         var style = this.style;
+
+        if (this.mask) {
+          style.position = 'absolute';
+          style.display = 'block';
+          style.visibility = 'visible';
+          style.background = null;
+          style.border = null;
+        }
+
         css.normalize(style, reset.geom);
         var ref = this.props.ref;
 
@@ -6559,15 +6689,12 @@
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
 
         var isDestroyed = this.isDestroyed,
-            _this$computedStyle = this.computedStyle,
-            display = _this$computedStyle.display,
-            visibility = _this$computedStyle.visibility;
+            display = this.computedStyle.display;
 
         if (isDestroyed || display === 'none') {
           return {
             isDestroyed: isDestroyed,
-            display: display,
-            visibility: visibility
+            display: display
           };
         }
 
@@ -6578,6 +6705,21 @@
         }
 
         return this.__preRender(renderMode);
+      }
+    }, {
+      key: "__renderAsMask",
+      value: function __renderAsMask(renderMode) {
+        if (renderMode === mode.CANVAS) ; else if (renderMode === mode.SVG) {
+          this.render(renderMode);
+          var vd = this.virtualDom;
+          vd.isMask = true;
+          var maskId = this.defs.add({
+            tagName: 'mask',
+            props: [['transform', vd.transform], ['opacity', vd.opacity]],
+            children: vd.children
+          });
+          this.__maskId = "url(#".concat(maskId, ")");
+        }
       }
     }, {
       key: "addGeom",
@@ -6598,6 +6740,16 @@
       key: "baseLine",
       get: function get() {
         return this.__height;
+      }
+    }, {
+      key: "mask",
+      get: function get() {
+        return this.__mask;
+      }
+    }, {
+      key: "maskId",
+      get: function get() {
+        return this.__maskId;
       }
     }], [{
       key: "getRegister",
@@ -7792,32 +7944,34 @@
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
-        } // 先绘制static
+        } // 先渲染过滤mask
 
+
+        children.forEach(function (item) {
+          if (item.mask) {
+            item.__renderAsMask(renderMode);
+          }
+        }); // 先绘制static
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Text || item.computedStyle.position === 'static') {
-            item.render(renderMode);
-          }
-
-          if (item instanceof Component && item.computedStyle.position === 'static') {
-            item.shadowRoot.render(renderMode);
+          if (item.mask) ; else if (item instanceof Text || item.computedStyle.position === 'static') {
+            item.__renderByMask(renderMode);
           }
         }); // 再绘制relative和absolute
 
         children.forEach(function (item) {
-          if (item instanceof Xom && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
-            item.render(renderMode);
-          }
-
-          if (item instanceof Component && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
-            item.shadowRoot.render(renderMode);
+          if (item.mask) ; else if ((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
+            item.__renderByMask(renderMode);
           }
         });
 
         if (renderMode === mode.SVG) {
-          // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+          // 过滤掉mask
           var _children = this.children.slice(0);
+
+          _children = _children.filter(function (item) {
+            return !item.mask;
+          }); // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
           sort(_children, function (a, b) {
             if (b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
@@ -8205,7 +8359,7 @@
   }
 
   function diffDef(elem, od, nd) {
-    if (od.k !== nd.k) {
+    if (od.tagName !== nd.tagName) {
       elem.insertAdjacentHTML('afterend', util.joinDef(nd));
       elem.parentNode.removeChild(elem);
     } else {
@@ -8252,12 +8406,12 @@
       }
 
       var cns = elem.childNodes;
-      var ol = od.stop.length;
-      var nl = nd.stop.length;
+      var ol = od.children.length;
+      var nl = nd.children.length;
       var i = 0;
 
       for (; i < Math.min(ol, nl); i++) {
-        diffStop(cns[i], od.stop[i], nd.stop[i]);
+        diffItem(elem, i, od.children[i], nd.children[i]);
       }
 
       if (i < ol) {
@@ -8269,16 +8423,6 @@
           insertAt(elem, cns, i, util.joinStop(nd.stop[i]));
         }
       }
-    }
-  }
-
-  function diffStop(elem, os, ns) {
-    if (os[0] !== ns[0]) {
-      elem.setAttribute('stop-color', ns[0]);
-    }
-
-    if (os[1] !== ns[1]) {
-      elem.setAttribute('offset', ns[1]);
     }
   }
 
@@ -8322,6 +8466,14 @@
 
     if (ovd.opacity !== nvd.opacity) {
       elem.setAttribute('opacity', ovd.opacity);
+    }
+
+    if (ovd.mask !== nvd.mask) {
+      if (nvd.mask) {
+        elem.setAttribute('mask', ovd.mask);
+      } else {
+        elem.removeAttribute('mask');
+      }
     }
 
     if (!root) {
@@ -8829,6 +8981,8 @@
           value: this.height,
           unit: unit.PX
         };
+        delete currentStyle.transform;
+        currentStyle.opacity = 1;
         var lv = this.__refreshLevel; // 预先计算字体相关的继承
 
         if (lv === level.REFLOW) {
@@ -8857,13 +9011,7 @@
           }
 
           if (renderMode === mode.CANVAS) {
-            // 可能会调整宽高，所以每次清除用最大值
-            _this2.__mw = Math.max(_this2.__mw, _this2.width);
-            _this2.__mh = Math.max(_this2.__mh, _this2.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
-
-            _this2.__ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-            _this2.__ctx.clearRect(0, 0, _this2.__mw, _this2.__mh);
+            _this2.__clear();
           }
 
           _this2.render(renderMode);
@@ -8936,6 +9084,27 @@
         if (lv > this.__refreshLevel) {
           this.__refreshLevel = lv;
         }
+      }
+    }, {
+      key: "__getImageData",
+      value: function __getImageData() {
+        return this.ctx.getImageData(0, 0, this.width, this.height);
+      }
+    }, {
+      key: "__putImageData",
+      value: function __putImageData(data) {
+        this.ctx.putImageData(data, 0, 0);
+      }
+    }, {
+      key: "__clear",
+      value: function __clear() {
+        // 可能会调整宽高，所以每次清除用最大值
+        this.__mw = Math.max(this.__mw, this.width);
+        this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
+
+        this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
     }, {
       key: "node",

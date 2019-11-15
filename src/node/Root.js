@@ -202,6 +202,8 @@ class Root extends Dom {
       value: this.height,
       unit: unit.PX,
     };
+    delete currentStyle.transform;
+    currentStyle.opacity = 1;
     let lv = this.__refreshLevel;
     // 预先计算字体相关的继承
     if(lv === level.REFLOW) {
@@ -228,12 +230,7 @@ class Root extends Dom {
         this.__repaint();
       }
       if(renderMode === mode.CANVAS) {
-        // 可能会调整宽高，所以每次清除用最大值
-        this.__mw = Math.max(this.__mw, this.width);
-        this.__mh = Math.max(this.__mh, this.height);
-        // 清除前得恢复默认matrix，防止每次布局改变了属性
-        this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
-        this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+        this.__clear();
       }
       this.render(renderMode);
       if(renderMode === mode.SVG) {
@@ -291,6 +288,23 @@ class Root extends Dom {
     if(lv > this.__refreshLevel) {
       this.__refreshLevel = lv;
     }
+  }
+
+  __getImageData() {
+    return this.ctx.getImageData(0, 0, this.width, this.height);
+  }
+
+  __putImageData(data) {
+    this.ctx.putImageData(data, 0, 0);
+  }
+
+  __clear() {
+    // 可能会调整宽高，所以每次清除用最大值
+    this.__mw = Math.max(this.__mw, this.width);
+    this.__mh = Math.max(this.__mh, this.height);
+    // 清除前得恢复默认matrix，防止每次布局改变了属性
+    this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
   }
 
   get node() {

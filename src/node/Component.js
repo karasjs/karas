@@ -163,7 +163,9 @@ class Component extends Event {
       'x1',
       'y1',
       'x2',
-      'y2'
+      'y2',
+      'mask',
+      'maskId'
     ].forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {
@@ -264,7 +266,9 @@ class Component extends Event {
   '__offsetY',
   '__calAutoBasis',
   '__calMp',
-  '__calAbs'
+  '__calAbs',
+  '__renderAsMask',
+  '__renderByMask'
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

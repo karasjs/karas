@@ -484,6 +484,39 @@ class Xom extends Node {
     }
   }
 
+  __renderByMask(renderMode) {
+    let prev = this.prev;
+    let hasMask = prev && prev.mask;
+    if(renderMode === mode.CANVAS) {
+      // 先保存之前的图像
+      let cache1;
+      let cache2;
+      if(hasMask) {
+        cache1 = this.root.__getImageData();
+        this.root.__clear();
+      }
+      // 然后反向先绘制需要遮罩的图层
+      this.render(renderMode);
+      // 再用mask反遮罩
+      if(hasMask) {
+        this.ctx.globalCompositeOperation = 'destination-in';
+        prev.render(renderMode);
+        cache2 = this.root.__getImageData();
+        this.root.__clear();
+      }
+      this.ctx.globalCompositeOperation = 'source-over';
+      if(hasMask) {
+        this.root.__putImageData(util.mergeImageData(cache1, cache2));
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      this.render(renderMode);
+      if(hasMask) {
+        this.virtualDom.mask = prev.maskId;
+      }
+    }
+  }
+
   __destroy() {
     let ref = this.props.ref;
     if(ref) {
@@ -660,7 +693,15 @@ class Xom extends Node {
           ['x2', gd.x2],
           ['y2', gd.y2]
         ],
-        stop: gd.stop,
+        children: gd.stop.map(item => {
+          return {
+            tagName: 'stop',
+            props: [
+              ['stop-color', item[0]],
+              ['offset', item[1] * 100 + '%']
+            ],
+          };
+        }),
       });
       return `url(#${uuid})`;
     }
@@ -682,7 +723,15 @@ class Xom extends Node {
           ['cy', gd.cy],
           ['r', gd.r]
         ],
-        stop: gd.stop,
+        children: gd.stop.map(item => {
+          return {
+            tagName: 'stop',
+            props: [
+              ['stop-color', item[0]],
+              ['offset', item[1] * 100 + '%']
+            ],
+          };
+        }),
       });
       return `url(#${uuid})`;
     }

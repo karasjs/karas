@@ -5,7 +5,7 @@ module.exports = {
   'init': function(browser) {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
-      .waitForElementVisible('body', 1000)
+      .waitForElementVisible('body', 2000)
       .assert.value('input', 'true/true/true/true')
       .end();
   }

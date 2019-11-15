@@ -35,7 +35,7 @@ let animation2 = t2.animate([
     fontSize: 60,
   }
 ], {
-  duration: 200,
+  duration: 1000,
   fill: 'forwards',
 });
 let input = document.querySelector('input');

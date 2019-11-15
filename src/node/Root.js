@@ -139,7 +139,6 @@ class Root extends Dom {
     }
     this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
     this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
-    this.__defs.clear();
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
@@ -204,6 +203,7 @@ class Root extends Dom {
     };
     delete currentStyle.transform;
     currentStyle.opacity = 1;
+    this.__defs.clear();
     let lv = this.__refreshLevel;
     // 预先计算字体相关的继承
     if(lv === level.REFLOW) {

@@ -1045,20 +1045,20 @@ class Dom extends Xom {
     }
     // 先渲染过滤mask
     children.forEach(item => {
-      if(item.mask) {
+      if(item.isMask) {
         item.__renderAsMask(renderMode);
       }
     });
     // 先绘制static
     flowChildren.forEach(item => {
-      if(item.mask) {}
+      if(item.isMask) {}
       else if(item instanceof Text || item.computedStyle.position === 'static') {
         item.__renderByMask(renderMode);
       }
     });
     // 再绘制relative和absolute
     children.forEach(item => {
-      if(item.mask) {}
+      if(item.isMask) {}
       else if((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
         item.__renderByMask(renderMode);
       }
@@ -1067,7 +1067,7 @@ class Dom extends Xom {
       // 过滤掉mask
       let children = this.children.slice(0);
       children = children.filter(item => {
-        return !item.mask;
+        return !item.isMask;
       });
       // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
       sort(children, function(a, b) {

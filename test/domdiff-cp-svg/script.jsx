@@ -10,9 +10,6 @@ function render(child) {
 }
 
 class Component extends karas.Component {
-  constructor(...data) {
-    super('cp', ...data);
-  }
   render() {
     return <span style={{background:'linear-gradient(#F00,#00F)'}}>456</span>;
   }

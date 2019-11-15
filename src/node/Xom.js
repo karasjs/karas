@@ -486,7 +486,7 @@ class Xom extends Node {
 
   __renderByMask(renderMode) {
     let prev = this.prev;
-    let hasMask = prev && prev.mask;
+    let hasMask = prev && prev.isMask;
     if(renderMode === mode.CANVAS) {
       // 先保存之前的图像
       let cache1;

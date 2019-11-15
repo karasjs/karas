@@ -13,7 +13,7 @@ let animation = t.animate([
     fontSize: 60,
   }
 ], {
-  duration: 200,
+  duration: 1000,
   fill: 'forwards',
 });
 let o2 = karas.render(
@@ -56,5 +56,5 @@ o2.on(karas.Event.KARAS_REFRESH, () => {
   nf2++;
 });
 animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value = (n === nf) + '/' + (n === n2) + '/' + (nf > nf2) + '/' + (n2 > nf2);
+  input.value = (n === nf) + '/' + (n === n2) + '/' + (nf === nf2) + '/' + (n2 > nf2);
 });

@@ -8,9 +8,6 @@ function render(child) {
 }
 
 class Component extends karas.Component {
-  constructor(...data) {
-    super('cp', ...data);
-  }
   render() {
     return <span>456</span>;
   }

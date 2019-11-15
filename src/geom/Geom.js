@@ -10,17 +10,18 @@ const REGISTER = {};
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
-    this.__mask = !util.isNil(this.props.mask) || this.props.mask === true;
+    this.__isMask = !util.isNil(this.props.mask) || this.props.mask === true;
   }
 
   __init() {
     let style = this.style;
-    if(this.mask) {
+    if(this.isMask) {
       style.position = 'absolute';
       style.display = 'block';
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
+      style.strokeWidth = 0;
     }
     css.normalize(style, reset.geom);
     let ref = this.props.ref;
@@ -230,8 +231,8 @@ class Geom extends Xom {
   get baseLine() {
     return this.__height;
   }
-  get mask() {
-    return this.__mask;
+  get isMask() {
+    return this.__isMask;
   }
   get maskId() {
     return this.__maskId;

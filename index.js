@@ -5921,7 +5921,7 @@
       key: "__renderByMask",
       value: function __renderByMask(renderMode) {
         var prev = this.prev;
-        var hasMask = prev && prev.mask;
+        var hasMask = prev && prev.isMask;
 
         if (renderMode === mode.CANVAS) {
           // 先保存之前的图像
@@ -6485,7 +6485,7 @@
       _classCallCheck(this, Geom);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
-      _this.__mask = !util.isNil(_this.props.mask) || _this.props.mask === true;
+      _this.__isMask = !util.isNil(_this.props.mask) || _this.props.mask === true;
       return _this;
     }
 
@@ -6494,12 +6494,13 @@
       value: function __init() {
         var style = this.style;
 
-        if (this.mask) {
+        if (this.isMask) {
           style.position = 'absolute';
           style.display = 'block';
           style.visibility = 'visible';
           style.background = null;
           style.border = null;
+          style.strokeWidth = 0;
         }
 
         css.normalize(style, reset.geom);
@@ -6742,9 +6743,9 @@
         return this.__height;
       }
     }, {
-      key: "mask",
+      key: "isMask",
       get: function get() {
-        return this.__mask;
+        return this.__isMask;
       }
     }, {
       key: "maskId",
@@ -7948,19 +7949,19 @@
 
 
         children.forEach(function (item) {
-          if (item.mask) {
+          if (item.isMask) {
             item.__renderAsMask(renderMode);
           }
         }); // 先绘制static
 
         flowChildren.forEach(function (item) {
-          if (item.mask) ; else if (item instanceof Text || item.computedStyle.position === 'static') {
+          if (item.isMask) ; else if (item instanceof Text || item.computedStyle.position === 'static') {
             item.__renderByMask(renderMode);
           }
         }); // 再绘制relative和absolute
 
         children.forEach(function (item) {
-          if (item.mask) ; else if ((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
+          if (item.isMask) ; else if ((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
             item.__renderByMask(renderMode);
           }
         });
@@ -7970,7 +7971,7 @@
           var _children = this.children.slice(0);
 
           _children = _children.filter(function (item) {
-            return !item.mask;
+            return !item.isMask;
           }); // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
           sort(_children, function (a, b) {
@@ -8898,10 +8899,7 @@
           }
 
         this.__uuid = util.isNil(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
-        this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
-
-        this.__defs.clear(); // 没有设置width/height则采用css计算形式
-
+        this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
           var css = window.getComputedStyle(dom, null);
@@ -8983,6 +8981,9 @@
         };
         delete currentStyle.transform;
         currentStyle.opacity = 1;
+
+        this.__defs.clear();
+
         var lv = this.__refreshLevel; // 预先计算字体相关的继承
 
         if (lv === level.REFLOW) {

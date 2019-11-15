@@ -733,7 +733,6 @@
     joinVd: joinVd,
     joinTransform: joinTransform,
     joinDef: joinDef,
-    // joinStop,
     r2d: r2d,
     rgb2int: rgb2int,
     arr2hash: arr2hash,

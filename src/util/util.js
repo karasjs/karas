@@ -277,7 +277,6 @@ let util = {
   joinVd,
   joinTransform,
   joinDef,
-  // joinStop,
   r2d,
   rgb2int,
   arr2hash,

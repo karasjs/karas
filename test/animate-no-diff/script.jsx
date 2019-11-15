@@ -56,5 +56,7 @@ o2.on(karas.Event.KARAS_REFRESH, () => {
   nf2++;
 });
 animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value = (n === nf) + '/' + (n === n2) + '/' + (nf === nf2) + '/' + (n2 > nf2);
+  setTimeout(() => {
+    input.value = (n === nf) + '/' + (Math.abs(n - n2) <= 1) + '/' + (nf === nf2) + '/' + (n2 > nf2);
+  }, 100);
 });

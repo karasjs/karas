@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>mask</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">可以为一个geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。
+注意由于canvas和svg的细节不同，只能统一使用fill填充色做遮罩，不能使用stroke。另外canvas只认透明度，svg除此之外还根据灰度识别遮罩透明。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  karas.render(
+    <canvas width="360" height="360">
+      <div>looooooooooooooong</div>
+      <$polygon
+        mask="true"
+        points={[
+          [0, 0],
+          [1, 1],
+          [0, 1]
+        ]}
+        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
+      <div
+        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
+    </canvas>,
+    '#example'
+  );
+  karas.render(
+    <svg width="360" height="360">
+      <div>looooooooooooooong</div>
+      <$polygon
+        mask="true"
+        points={[
+          [0, 0],
+          [1, 1],
+          [0, 1]
+        ]}
+        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
+      <div
+        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
+    </svg>,
+    '#example2'
+  );
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

@@ -4194,7 +4194,8 @@
       borderLeftColor: true,
       borderRightColor: true,
       borderTopColor: true,
-      visibility: true
+      visibility: true,
+      opacity: true
     }
   };
 

@@ -28,5 +28,6 @@ export default {
     borderRightColor: true,
     borderTopColor: true,
     visibility: true,
+    opacity: true,
   },
 };

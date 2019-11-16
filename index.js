@@ -2503,7 +2503,7 @@
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       computedStyle[k] = currentStyle[k].value || 0;
     });
-    ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor'].forEach(function (k) {
+    ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'opacity'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
   }

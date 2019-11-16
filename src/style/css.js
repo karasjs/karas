@@ -504,7 +504,8 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderBottomColor',
     'borderLeftColor',
     'borderRightColor',
-    'borderTopColor'
+    'borderTopColor',
+    'opacity'
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

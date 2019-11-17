@@ -16,7 +16,9 @@ import sort from './util/sort';
 import util from './util/util';
 import parse from './util/parse';
 import inject from './util/inject';
+import css from './style/css';
 import frame from './animate/frame';
+import math from './math/index';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -78,7 +80,9 @@ let karas = {
   sort,
   util,
   inject,
+  css,
   frame,
+  math,
 };
 
 if(typeof window != 'undefined') {

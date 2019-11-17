@@ -1,16 +1,16 @@
 import unit from '../style/unit';
 import util from '../util/util';
+import matrix from '../math/matrix';
 
 function calMatrix(transform, transformOrigin, x, y, ow, oh) {
   let [ox, oy] = transformOrigin;
   let list = normalize(transform, ox, oy, ow, oh);
-  let matrix = identity();
-  matrix[12] = ox;
-  matrix[13] = oy;
-  let deg = 0;
+  let m = matrix.identity();
+  m[12] = ox;
+  m[13] = oy;
   list.forEach(item => {
     let [k, v] = item;
-    let target = identity();
+    let target = matrix.identity();
     if(k === 'translateX') {
       target[12] = v;
     }
@@ -35,7 +35,6 @@ function calMatrix(transform, transformOrigin, x, y, ow, oh) {
     }
     else if(k === 'rotateZ') {
       v = util.r2d(v);
-      deg += v;
       let sin = Math.sin(v);
       let cos = Math.cos(v);
       target[0] = target[5] = cos;
@@ -50,41 +49,13 @@ function calMatrix(transform, transformOrigin, x, y, ow, oh) {
       target[12] = v[4];
       target[13] = v[5];
     }
-    matrix = multiply(matrix, target);
+    m = matrix.multiply(m, target);
   });
-  let target = identity();
+  let target = matrix.identity();
   target[12] = -ox;
   target[13] = -oy;
-  matrix = multiply(matrix, target);
-  return [
-    matrix[0], matrix[1],
-    matrix[4], matrix[5],
-    matrix[12], matrix[13]
-  ];
-}
-
-// 生成4*4单位矩阵
-function identity() {
-  const matrix = [];
-  for (let i = 0; i < 16; i++) {
-    matrix.push(i % 5 === 0 ? 1 : 0);
-  }
-  return matrix;
-}
-
-// 矩阵a*b
-function multiply(a, b) {
-  let res = [];
-  for(let i = 0; i < 4; i++) {
-    const row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
-    for(let j = 0; j < 4; j++) {
-      let k = j * 4;
-      let col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-      let n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-      res[i + k] = n;
-    }
-  }
-  return res;
+  m = matrix.multiply(m, target);
+  return matrix.t43(m);
 }
 
 function transformPoint(matrix, x, y) {
@@ -158,26 +129,25 @@ function calOrigin(transformOrigin, x, y, w, h) {
   return tfo;
 }
 
+function convert(m3) {
+  let m = matrix.identity();
+  m[0] = m3[0];
+  m[1] = m3[1];
+  m[4] = m3[2];
+  m[5] = m3[3];
+  m[12] = m3[4];
+  m[13] = m3[5];
+  return m;
+}
+
 function mergeMatrix(a, b) {
-  let m1 = identity();
-  m1[0] = a[0];
-  m1[1] = a[1];
-  m1[4] = a[2];
-  m1[5] = a[3];
-  m1[12] = a[4];
-  m1[13] = a[5];
-  let m2 = identity();
-  m2[0] = b[0];
-  m2[1] = b[1];
-  m2[4] = b[2];
-  m2[5] = b[3];
-  m2[12] = b[4];
-  m2[13] = b[5];
-  let matrix = multiply(m1, m2);
+  let m1 = convert(a);
+  let m2 = convert(b);
+  let m = matrix.multiply(m1, m2);
   return [
-    matrix[0], matrix[1],
-    matrix[4], matrix[5],
-    matrix[12], matrix[13]
+    m[0], m[1],
+    m[4], m[5],
+    m[12], m[13]
   ];
 }
 

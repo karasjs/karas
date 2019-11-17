@@ -293,6 +293,7 @@ function normalize(style, reset) {
         else {
           tfo.push({
             value: {
+              0: 0,
               top: 0,
               left: 0,
               center: 50,

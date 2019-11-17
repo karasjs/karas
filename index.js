@@ -741,21 +741,69 @@
     mergeImageData: mergeImageData
   };
 
+  // 生成4*4单位矩阵
+  function identity() {
+    var m = [];
+
+    for (var i = 0; i < 16; i++) {
+      m.push(i % 5 === 0 ? 1 : 0);
+    }
+
+    return m;
+  } // 矩阵a*b
+
+
+  function multiply(a, b) {
+    var res = [];
+
+    for (var i = 0; i < 4; i++) {
+      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
+
+      for (var j = 0; j < 4; j++) {
+        var k = j * 4;
+        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
+        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
+        res[i + k] = n;
+      }
+    }
+
+    return res;
+  }
+
+  function t43(m) {
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
+  }
+
+  function calPoint(point, m) {
+    var _point = _slicedToArray(point, 2),
+        x = _point[0],
+        y = _point[1];
+
+    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  }
+
+  var matrix = {
+    identity: identity,
+    multiply: multiply,
+    t43: t43,
+    calPoint: calPoint
+  };
+
   function calMatrix(transform, transformOrigin, x, y, ow, oh) {
     var _transformOrigin = _slicedToArray(transformOrigin, 2),
         ox = _transformOrigin[0],
         oy = _transformOrigin[1];
 
     var list = normalize(transform, ox, oy, ow, oh);
-    var matrix = identity();
-    matrix[12] = ox;
-    matrix[13] = oy;
+    var m = matrix.identity();
+    m[12] = ox;
+    m[13] = oy;
     list.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
 
-      var target = identity();
+      var target = matrix.identity();
 
       if (k === 'translateX') {
         target[12] = v;
@@ -791,42 +839,13 @@
         target[13] = v[5];
       }
 
-      matrix = multiply(matrix, target);
+      m = matrix.multiply(m, target);
     });
-    var target = identity();
+    var target = matrix.identity();
     target[12] = -ox;
     target[13] = -oy;
-    matrix = multiply(matrix, target);
-    return [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]];
-  } // 生成4*4单位矩阵
-
-
-  function identity() {
-    var matrix = [];
-
-    for (var i = 0; i < 16; i++) {
-      matrix.push(i % 5 === 0 ? 1 : 0);
-    }
-
-    return matrix;
-  } // 矩阵a*b
-
-
-  function multiply(a, b) {
-    var res = [];
-
-    for (var i = 0; i < 4; i++) {
-      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
-
-      for (var j = 0; j < 4; j++) {
-        var k = j * 4;
-        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-        res[i + k] = n;
-      }
-    }
-
-    return res;
+    m = matrix.multiply(m, target);
+    return matrix.t43(m);
   }
 
   function transformPoint(matrix, x, y) {
@@ -924,23 +943,22 @@
     return tfo;
   }
 
+  function convert(m3) {
+    var m = matrix.identity();
+    m[0] = m3[0];
+    m[1] = m3[1];
+    m[4] = m3[2];
+    m[5] = m3[3];
+    m[12] = m3[4];
+    m[13] = m3[5];
+    return m;
+  }
+
   function mergeMatrix(a, b) {
-    var m1 = identity();
-    m1[0] = a[0];
-    m1[1] = a[1];
-    m1[4] = a[2];
-    m1[5] = a[3];
-    m1[12] = a[4];
-    m1[13] = a[5];
-    var m2 = identity();
-    m2[0] = b[0];
-    m2[1] = b[1];
-    m2[4] = b[2];
-    m2[5] = b[3];
-    m2[12] = b[4];
-    m2[13] = b[5];
-    var matrix = multiply(m1, m2);
-    return [matrix[0], matrix[1], matrix[4], matrix[5], matrix[12], matrix[13]];
+    var m1 = convert(a);
+    var m2 = convert(b);
+    var m = matrix.multiply(m1, m2);
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
   var transform = {
@@ -2308,6 +2326,7 @@
           } else {
             tfo.push({
               value: {
+                0: 0,
                 top: 0,
                 left: 0,
                 center: 50,
@@ -10363,6 +10382,79 @@
     return vd;
   }
 
+  function transform$1(x, y, width, height, source, target) {
+    var _source = _slicedToArray(source, 6),
+        sx1 = _source[0],
+        sy1 = _source[1],
+        sx2 = _source[2],
+        sy2 = _source[3],
+        sx3 = _source[4],
+        sy3 = _source[5];
+
+    var _target = _slicedToArray(target, 6),
+        tx1 = _target[0],
+        ty1 = _target[1],
+        tx2 = _target[2],
+        ty2 = _target[3],
+        tx3 = _target[4],
+        ty3 = _target[5]; // 第1步，以第1个定点A为变换原点
+
+
+    var m = matrix.identity();
+    var ox = x + sx1;
+    var oy = y + sy1;
+    m[12] = ox;
+    m[13] = oy; // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
+
+    var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
+    var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
+    var scale = lt / ls;
+    var t = matrix.identity();
+    t[0] = scale;
+    t[5] = scale;
+    m = matrix.multiply(t, m); // 第3步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+
+    var theta = -Math.atan((sy2 - sy1) / (sx2 - sx1));
+    var sin = Math.sin(theta);
+    var cos = Math.cos(theta);
+    t = matrix.identity();
+    t[0] = t[5] = cos;
+    t[1] = sin;
+    t[4] = -sin;
+    m = matrix.multiply(t, m); // 第4步，计算倾斜x角度
+
+    var _matrix$calPoint = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
+        x3 = _matrix$calPoint2[0],
+        y3 = _matrix$calPoint2[1];
+
+    theta = Math.atan((tx3 - x3) / y3);
+    t = matrix.identity();
+    t[4] = Math.tan(theta);
+    m = matrix.multiply(t, m); // 第5步，缩放y，等同于倾斜y
+
+    y3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1];
+    scale = ty3 / y3;
+    t = matrix.identity();
+    t[5] = scale;
+    m = matrix.multiply(t, m); // 变换回初始原点
+
+    t = matrix.identity();
+    t[12] = -ox;
+    t[13] = -oy;
+    m = matrix.multiply(t, m);
+    return matrix.t43(m);
+  }
+
+  var tar = {
+    transform: transform$1
+  };
+
+  var math = {
+    matrix: matrix,
+    tar: tar
+  };
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -10430,7 +10522,9 @@
     sort: sort,
     util: util,
     inject: inject,
-    frame: frame
+    css: css,
+    frame: frame,
+    math: math
   };
 
   if (typeof window != 'undefined') {

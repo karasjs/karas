@@ -83,7 +83,7 @@ class Xom extends Node {
     });
     this.__matrix = null;
     this.__matrixEvent = null;
-    this.__animation = null;
+    this.__animationList = [];
   }
 
   // 设置了css时，解析匹配
@@ -525,9 +525,10 @@ class Xom extends Node {
         delete owner.ref[ref];
       }
     }
-    if(this.animation) {
-      this.animation.__destroy();
-    }
+    // if(this.animation) {
+    //   this.animation.__destroy();
+    // }
+    this.animationList.forEach(item => item.__destroy());
     super.__destroy();
     this.__matrix = this.__matrixEvent = null;
   }
@@ -758,10 +759,8 @@ class Xom extends Node {
   }
 
   animate(list, option) {
-    if(this.animation) {
-      this.animation.__destroy();
-    }
-    let animation = this.__animation = new Animation(this, list, option);
+    let animation = new Animation(this, list, option);
+    this.animationList.push(animation);
     return animation.play();
   }
 
@@ -854,25 +853,27 @@ class Xom extends Node {
   get class() {
     return this.__class || [];
   }
-  get animation() {
-    return this.__animation;
+  get animationList() {
+    return this.__animationList;
   }
   get animateStyle() {
     return this.__animateStyle;
   }
   get currentStyle() {
-    let { animation } = this;
-    if(animation) {
+    let { style, animateStyle, animationList } = this;
+    // 有一个动画在运行则返回animateStyle，否则是style
+    for(let i = 0, len = animationList.length; i < len; i++) {
+      let animation = animationList[i];
       let { playState, options } = animation;
       if(playState === 'idle') {
-        return this.style;
+        continue;
       }
       else if(playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
-        return this.style;
+        continue;
       }
-      return this.animateStyle;
+      return animateStyle;
     }
-    return this.style;
+    return style;
   }
 }
 

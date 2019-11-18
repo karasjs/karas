@@ -177,7 +177,6 @@ class Root extends Dom {
       this.node.__root.__destroy();
       delete this.node.__root.__node;
       delete this.node.__root.__vd;
-      delete this.node.__root.__defs;
     }
     else {
       initEvent(this.node);
@@ -205,6 +204,7 @@ class Root extends Dom {
     currentStyle.opacity = 1;
     this.__defs.clear();
     let lv = this.__refreshLevel;
+    this.__refreshLevel = level.REPAINT;
     // 预先计算字体相关的继承
     if(lv === level.REFLOW) {
       this.__computed();
@@ -257,7 +257,6 @@ class Root extends Dom {
         cb();
       }
       this.emit(Event.KARAS_REFRESH);
-      this.__refreshLevel = level.REPAINT;
     });
   }
 
@@ -275,6 +274,9 @@ class Root extends Dom {
   }
 
   delRefreshTask(cb) {
+    if(!cb) {
+      return;
+    }
     let { task } = this;
     for(let i = 0, len = task.length; i < len; i++) {
       if(task[i] === cb) {

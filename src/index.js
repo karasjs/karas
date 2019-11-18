@@ -66,7 +66,14 @@ let karas = {
     this.render(vd, dom);
     data.animate.forEach(item => {
       let { target, animate } = item;
-      target.animate(animate.value, animate.options);
+      if(Array.isArray(animate)) {
+        animate.forEach(animate => {
+          target.animate(animate.value, animate.options);
+        });
+      }
+      else {
+        target.animate(animate.value, animate.options);
+      }
     });
     return vd;
   },

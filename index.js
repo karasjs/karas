@@ -803,48 +803,44 @@
           k = _item[0],
           v = _item[1];
 
-      var target = matrix.identity();
+      var t = matrix.identity();
 
       if (k === 'translateX') {
-        target[12] = v;
+        t[12] = v;
       } else if (k === 'translateY') {
-        target[13] = v;
+        t[13] = v;
       } else if (k === 'scaleX') {
-        target[0] = v;
+        t[0] = v;
       } else if (k === 'scaleY') {
-        target[5] = v;
+        t[5] = v;
       } else if (k === 'skewX') {
         v = util.r2d(v);
-        var tan = Math.tan(v);
-        target[4] = tan;
+        t[4] = Math.tan(v);
       } else if (k === 'skewY') {
         v = util.r2d(v);
-
-        var _tan = Math.tan(v);
-
-        target[1] = _tan;
+        t[1] = Math.tan(v);
       } else if (k === 'rotateZ') {
         v = util.r2d(v);
         var sin = Math.sin(v);
         var cos = Math.cos(v);
-        target[0] = target[5] = cos;
-        target[1] = sin;
-        target[4] = -sin;
+        t[0] = t[5] = cos;
+        t[1] = sin;
+        t[4] = -sin;
       } else if (k === 'matrix') {
-        target[0] = v[0];
-        target[1] = v[1];
-        target[4] = v[2];
-        target[5] = v[3];
-        target[12] = v[4];
-        target[13] = v[5];
+        t[0] = v[0];
+        t[1] = v[1];
+        t[4] = v[2];
+        t[5] = v[3];
+        t[12] = v[4];
+        t[13] = v[5];
       }
 
-      m = matrix.multiply(m, target);
+      m = matrix.multiply(m, t);
     });
-    var target = matrix.identity();
-    target[12] = -ox;
-    target[13] = -oy;
-    m = matrix.multiply(m, target);
+    var t = matrix.identity();
+    t[12] = -ox;
+    t[13] = -oy;
+    m = matrix.multiply(m, t);
     return matrix.t43(m);
   }
 
@@ -4428,10 +4424,18 @@
     }
 
     return true;
+  }
+
+  function restore(keys, target) {
+    var style = target.style,
+        animateStyle = target.animateStyle;
+    keys.forEach(function (k) {
+      animateStyle[k] = util.clone(style[k]);
+    });
   } // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
 
 
-  function framing(current) {
+  function framing(current, record) {
     var keys = [];
     var st = {};
 
@@ -4440,8 +4444,16 @@
         offset: true,
         easing: true
       }.hasOwnProperty(i)) {
-        keys.push(i);
+        if (keys.indexOf(i) === -1) {
+          keys.push(i);
+        }
+
         st[i] = current[i];
+
+        if (!record.hash.hasOwnProperty(i)) {
+          record.hash[i] = true;
+          record.keys.push(i);
+        }
       }
     }
 
@@ -4705,8 +4717,8 @@
     return res;
   }
 
-  function calFrame(prev, current, target) {
-    var next = framing(current);
+  function calFrame(prev, current, target, record) {
+    var next = framing(current, record);
     next.keys.forEach(function (k) {
       var ts = calDiff(prev.style, next.style, k, target); // 可以形成过渡的才会产生结果返回
 
@@ -4857,7 +4869,7 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = list || []; // 动画过程另外一种形式，object描述k-v形式
+      _this.__list = util.clone(list || []); // 动画过程另外一种形式，object描述k-v形式
 
       if (!Array.isArray(_this.__list)) {
         var nl = [];
@@ -4893,7 +4905,7 @@
       _this.__delay = Math.max(0, parseFloat(op.delay) || 0);
       _this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
 
-      if (op.iterations === 'Infinity' || op.iterations === 'infinity') {
+      if (op.iterations === 'Infinity' || op.iterations === 'infinity' || op.iterations === Infinity) {
         _this.__iterations = Infinity;
       } else {
         _this.__iterations = parseInt(op.iterations);
@@ -4929,6 +4941,8 @@
     _createClass(Animation, [{
       key: "__init",
       value: function __init() {
+        var _this2 = this;
+
         var target = this.target,
             iterations = this.iterations;
         var style = util.clone(target.style); // 执行次数小于1无需播放
@@ -5013,23 +5027,33 @@
 
         var frames = this.frames;
         var length = list.length;
+        var record = this.__record = {
+          keys: [],
+          hash: {}
+        };
         var prev; // 第一帧要特殊处理
 
-        prev = framing(first);
+        prev = framing(first, record);
         frames.push(prev);
 
         for (var _i10 = 1; _i10 < length; _i10++) {
           var next = list[_i10];
-          prev = calFrame(prev, next, target);
+          prev = calFrame(prev, next, target, record);
           frames.push(prev);
         }
 
-        this.__isDestroyed = false;
+        this.__isDestroyed = false; // 生成finish的任务事件
+
+        this.__fin = function () {
+          _this2.emit(Event.KARAS_ANIMATION_FRAME);
+
+          _this2.emit(Event.KARAS_ANIMATION_FINISH);
+        };
       }
     }, {
       key: "play",
       value: function play() {
-        var _this2 = this;
+        var _this3 = this;
 
         if (this.isDestroyed) {
           return;
@@ -5054,7 +5078,9 @@
               iterations = this.iterations,
               fill = this.fill,
               delay = this.delay,
-              endDelay = this.endDelay;
+              endDelay = this.endDelay,
+              __fin = this.__fin,
+              __record = this.__record;
           var length = frames.length;
           var init = true;
           var first = true;
@@ -5064,11 +5090,11 @@
             var root = target.root;
 
             if (init) {
-              _this2.__startTime = now;
+              _this3.__startTime = now;
             } // 还没过前置delay
 
 
-            if (now - _this2.offsetTime < _this2.__startTime + delay) {
+            if (now - _this3.offsetTime < _this3.__startTime + delay) {
               if (init && {
                 backwards: true,
                 both: true
@@ -5077,8 +5103,8 @@
 
                 var _needRefresh = stringify$1(_current.style, {}, target);
 
-                var task = _this2.__task = function () {
-                  _this2.emit(Event.KARAS_ANIMATION_FRAME);
+                var task = _this3.__task = function () {
+                  _this3.emit(Event.KARAS_ANIMATION_FRAME);
                 };
 
                 if (_needRefresh) {
@@ -5100,15 +5126,15 @@
             }
 
             var countTime = playCount * duration;
-            var i = binarySearch(0, frames.length - 1, now + _this2.offsetTime - countTime, frames);
+            var i = binarySearch(0, frames.length - 1, now + _this3.offsetTime - countTime, frames);
             var current = frames[i];
             var needRefresh; // 最后一帧结束动画
 
             if (i === length - 1) {
-              needRefresh = stringify$1(current.style, _this2.__lastStyle, target);
+              needRefresh = stringify$1(current.style, _this3.__lastStyle, target);
 
               if (playCount < iterations) {
-                playCount = ++_this2.playCount;
+                playCount = ++_this3.playCount;
               }
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
@@ -5118,7 +5144,7 @@
                 }
 
                 if (!first && fps < 60) {
-                  var time = now - _this2.lastTime;
+                  var time = now - _this3.lastTime;
 
                   if (time < 1000 / fps) {
                     return;
@@ -5131,17 +5157,17 @@
 
                 var percent = _diff / total;
                 var style = calStyle(current, percent);
-                needRefresh = stringify$1(style, _this2.__lastStyle, target);
+                needRefresh = stringify$1(style, _this3.__lastStyle, target);
               }
 
-            _this2.__lastTime = now;
-            _this2.__lastStyle = current.style;
+            _this3.__lastTime = now;
+            _this3.__lastStyle = current.style;
             first = false; // 两帧之间没有变化，不触发刷新
 
             if (root) {
               // 可能涉及字号变化，引发布局变更重新测量
-              var _task = _this2.__task = function () {
-                _this2.emit(Event.KARAS_ANIMATION_FRAME);
+              var _task = _this3.__task = function () {
+                _this3.emit(Event.KARAS_ANIMATION_FRAME);
 
                 if (i === length - 1) {
                   // 没到播放次数结束时继续
@@ -5150,40 +5176,38 @@
                   } // 播放结束考虑endDelay
 
 
-                  _this2.__playState = 'finished';
-                  frame.offFrame(_this2.cb);
-                  var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
+                  _this3.__playState = 'finished';
+                  frame.offFrame(_this3.cb); // 不是停留在最后一帧还原
+
+                  if (!{
+                    forwards: true,
+                    both: true
+                  }.hasOwnProperty(fill)) {
+                    root.setRefreshLevel(getLevel(__record.hash));
+                    restore(__record.keys, target);
+                  } // 如果有endDelay还要延迟执行
+
+
+                  var isFinished = now - _this3.offsetTime >= _this3.__startTime + delay + playCount * duration + endDelay;
 
                   if (isFinished) {
-                    var _task2 = _this2.__task = function () {
-                      _this2.emit(Event.KARAS_ANIMATION_FRAME);
-
-                      _this2.emit(Event.KARAS_ANIMATION_FINISH);
-                    };
-
-                    root.addRefreshTask(_task2);
+                    root.addRefreshTask(_this3.__task = __fin);
                   } else {
                     now = inject.now();
 
-                    var _task3 = _this2.__task = function () {
-                      var isFinished = now - _this2.offsetTime >= _this2.__startTime + delay + playCount * duration + endDelay;
+                    var _task2 = _this3.__task = function () {
+                      var isFinished = now - _this3.offsetTime >= _this3.__startTime + delay + playCount * duration + endDelay;
 
                       if (isFinished) {
-                        var _task4 = _this2.__task = function () {
-                          _this2.emit(Event.KARAS_ANIMATION_FRAME);
-
-                          _this2.emit(Event.KARAS_ANIMATION_FINISH);
-                        };
-
-                        root.addRefreshTask(_task4);
-                        frame.offFrame(_task4);
+                        root.addRefreshTask(_this3.__task = __fin);
+                        frame.offFrame(_task2);
                         return;
                       }
 
                       now = inject.now();
                     };
 
-                    frame.onFrame(_task3);
+                    frame.onFrame(_task2);
                   }
                 }
               };
@@ -5222,9 +5246,9 @@
     }, {
       key: "finish",
       value: function finish() {
-        var _this3 = this;
-
-        var fill = this.fill;
+        var fill = this.fill,
+            __fin = this.__fin,
+            __record = this.__record;
         frame.offFrame(this.cb);
 
         this.__cancelTask();
@@ -5242,15 +5266,12 @@
           }.hasOwnProperty(fill)) {
             var last = this.frames[this.frames.length - 1];
             stringify$1(last.style, lastStyle, this.target);
+          } else {
+            restore(__record.keys, target);
           }
 
-          var task = this.__task = function () {
-            _this3.emit(Event.KARAS_ANIMATION_FRAME);
-
-            _this3.emit(Event.KARAS_ANIMATION_FINISH);
-          };
-
-          root.addRefreshTask(task);
+          root.setRefreshLevel(level.REFLOW);
+          root.addRefreshTask(this.__task = __fin);
         }
 
         return this;
@@ -5281,8 +5302,11 @@
     }, {
       key: "__cancelTask",
       value: function __cancelTask() {
-        if (this.__task && this.target.root) {
-          this.target.root.delRefreshTask(this.__task);
+        var target = this.target,
+            __task = this.__task;
+
+        if (target.root && __task) {
+          target.root.delRefreshTask(__task);
         }
       }
     }, {
@@ -5484,7 +5508,7 @@
 
       _this.__matrix = null;
       _this.__matrixEvent = null;
-      _this.__animation = null;
+      _this.__animationList = [];
       return _this;
     } // 设置了css时，解析匹配
 
@@ -5988,11 +6012,14 @@
           if (owner && owner.ref[ref]) {
             delete owner.ref[ref];
           }
-        }
+        } // if(this.animation) {
+        //   this.animation.__destroy();
+        // }
 
-        if (this.animation) {
-          this.animation.__destroy();
-        }
+
+        this.animationList.forEach(function (item) {
+          return item.__destroy();
+        });
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
@@ -6255,11 +6282,8 @@
     }, {
       key: "animate",
       value: function animate(list, option) {
-        if (this.animation) {
-          this.animation.__destroy();
-        }
-
-        var animation = this.__animation = new Animation(this, list, option);
+        var animation = new Animation(this, list, option);
+        this.animationList.push(animation);
         return animation.play();
       }
     }, {
@@ -6360,9 +6384,9 @@
         return this.__class || [];
       }
     }, {
-      key: "animation",
+      key: "animationList",
       get: function get() {
-        return this.__animation;
+        return this.__animationList;
       }
     }, {
       key: "animateStyle",
@@ -6372,22 +6396,25 @@
     }, {
       key: "currentStyle",
       get: function get() {
-        var animation = this.animation;
+        var style = this.style,
+            animateStyle = this.animateStyle,
+            animationList = this.animationList; // 有一个动画在运行则返回animateStyle，否则是style
 
-        if (animation) {
+        for (var i = 0, len = animationList.length; i < len; i++) {
+          var animation = animationList[i];
           var playState = animation.playState,
               options = animation.options;
 
           if (playState === 'idle') {
-            return this.style;
+            continue;
           } else if (playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
-            return this.style;
+            continue;
           }
 
-          return this.animateStyle;
+          return animateStyle;
         }
 
-        return this.style;
+        return style;
       }
     }]);
 
@@ -7598,7 +7625,6 @@
         var _this5 = this;
 
         var flowChildren = this.flowChildren,
-            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
         var textAlign = computedStyle.textAlign;
@@ -8970,7 +8996,6 @@
 
           delete this.node.__root.__node;
           delete this.node.__root.__vd;
-          delete this.node.__root.__defs;
         } else {
           initEvent(this.node);
           this.node.__uuid = this.__uuid;
@@ -9003,7 +9028,8 @@
 
         this.__defs.clear();
 
-        var lv = this.__refreshLevel; // 预先计算字体相关的继承
+        var lv = this.__refreshLevel;
+        this.__refreshLevel = level.REPAINT; // 预先计算字体相关的继承
 
         if (lv === level.REFLOW) {
           this.__computed();
@@ -9065,8 +9091,6 @@
           }
 
           _this2.emit(Event.KARAS_REFRESH);
-
-          _this2.__refreshLevel = level.REPAINT;
         });
       }
     }, {
@@ -9089,6 +9113,10 @@
     }, {
       key: "delRefreshTask",
       value: function delRefreshTask(cb) {
+        if (!cb) {
+          return;
+        }
+
         var task = this.task;
 
         for (var i = 0, len = task.length; i < len; i++) {
@@ -10362,7 +10390,7 @@
       animation = {
         animate: animate
       };
-      animate = data.animate.push(animation);
+      data.animate.push(animation);
     }
 
     var vd;
@@ -10508,7 +10536,14 @@
       data.animate.forEach(function (item) {
         var target = item.target,
             animate = item.animate;
-        target.animate(animate.value, animate.options);
+
+        if (Array.isArray(animate)) {
+          animate.forEach(function (animate) {
+            target.animate(animate.value, animate.options);
+          });
+        } else {
+          target.animate(animate.value, animate.options);
+        }
       });
       return vd;
     },

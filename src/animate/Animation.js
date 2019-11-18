@@ -250,8 +250,15 @@ function stringify(style, lastStyle, target) {
   return true;
 }
 
+function restore(keys, target) {
+  let { style, animateStyle } = target;
+  keys.forEach(k => {
+    animateStyle[k] = util.clone(style[k]);
+  });
+}
+
 // 将变化写的样式格式化，提取出offset属性，提取出变化的key，初始化变化过程的存储
-function framing(current) {
+function framing(current, record) {
   let keys = [];
   let st = {};
   for(let i in current) {
@@ -259,8 +266,14 @@ function framing(current) {
       offset: true,
       easing: true,
     }.hasOwnProperty(i)) {
-      keys.push(i);
+      if(keys.indexOf(i) === -1) {
+        keys.push(i);
+      }
       st[i] = current[i];
+      if(!record.hash.hasOwnProperty(i)) {
+        record.hash[i] = true;
+        record.keys.push(i);
+      }
     }
   }
   return {
@@ -530,8 +543,8 @@ function calDiff(prev, next, k, target) {
   return res;
 }
 
-function calFrame(prev, current, target) {
-  let next = framing(current);
+function calFrame(prev, current, target, record) {
+  let next = framing(current, record);
   next.keys.forEach(k => {
     let ts = calDiff(prev.style, next.style, k, target);
     // 可以形成过渡的才会产生结果返回
@@ -672,7 +685,7 @@ class Animation extends Event {
     super();
     this.__id = uuid++;
     this.__target = target;
-    this.__list = list || [];
+    this.__list = util.clone(list || []);
     // 动画过程另外一种形式，object描述k-v形式
     if(!Array.isArray(this.__list)) {
       let nl = [];
@@ -702,7 +715,7 @@ class Animation extends Event {
     this.__duration = parseFloat(op.duration) || 0;
     this.__delay = Math.max(0, parseFloat(op.delay) || 0);
     this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
-    if(op.iterations === 'Infinity' || op.iterations === 'infinity') {
+    if(op.iterations === 'Infinity' || op.iterations === 'infinity' || op.iterations === Infinity) {
       this.__iterations = Infinity;
     }
     else {
@@ -805,16 +818,25 @@ class Animation extends Event {
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
     let frames = this.frames;
     let length = list.length;
+    let record = this.__record = {
+      keys: [],
+      hash: {},
+    };
     let prev;
     // 第一帧要特殊处理
-    prev = framing(first);
+    prev = framing(first, record);
     frames.push(prev);
     for(let i = 1; i < length; i++) {
       let next = list[i];
-      prev = calFrame(prev, next, target);
+      prev = calFrame(prev, next, target, record);
       frames.push(prev);
     }
     this.__isDestroyed = false;
+    // 生成finish的任务事件
+    this.__fin = () => {
+      this.emit(Event.KARAS_ANIMATION_FRAME);
+      this.emit(Event.KARAS_ANIMATION_FINISH);
+    };
   }
 
   play() {
@@ -832,7 +854,7 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { frames, target, playCount, duration, fps, iterations, fill, delay, endDelay } = this;
+      let { frames, target, playCount, duration, fps, iterations, fill, delay, endDelay, __fin, __record } = this;
       let length = frames.length;
       let init = true;
       let first = true;
@@ -912,24 +934,25 @@ class Animation extends Event {
               // 播放结束考虑endDelay
               this.__playState = 'finished';
               frame.offFrame(this.cb);
+              // 不是停留在最后一帧还原
+              if(!{
+                forwards: true,
+                both: true,
+              }.hasOwnProperty(fill)) {
+                root.setRefreshLevel(getLevel(__record.hash));
+                restore(__record.keys, target);
+              }
+              // 如果有endDelay还要延迟执行
               let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
               if(isFinished) {
-                let task = this.__task = () => {
-                  this.emit(Event.KARAS_ANIMATION_FRAME);
-                  this.emit(Event.KARAS_ANIMATION_FINISH);
-                };
-                root.addRefreshTask(task);
+                root.addRefreshTask(this.__task = __fin);
               }
               else {
                 now = inject.now();
                 let task = this.__task = () => {
                   let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
                   if(isFinished) {
-                    let task = this.__task = () => {
-                      this.emit(Event.KARAS_ANIMATION_FRAME);
-                      this.emit(Event.KARAS_ANIMATION_FINISH);
-                    };
-                    root.addRefreshTask(task);
+                    root.addRefreshTask(this.__task = __fin);
                     frame.offFrame(task);
                     return;
                   }
@@ -969,7 +992,7 @@ class Animation extends Event {
   }
 
   finish() {
-    let { fill } = this;
+    let { fill, __fin, __record } = this;
     frame.offFrame(this.cb);
     this.__cancelTask();
     let { target, lastStyle } = this;
@@ -984,11 +1007,11 @@ class Animation extends Event {
         let last = this.frames[this.frames.length - 1];
         stringify(last.style, lastStyle, this.target);
       }
-      let task = this.__task = () => {
-        this.emit(Event.KARAS_ANIMATION_FRAME);
-        this.emit(Event.KARAS_ANIMATION_FINISH);
-      };
-      root.addRefreshTask(task);
+      else {
+        restore(__record.keys, target);
+      }
+      root.setRefreshLevel(level.REFLOW);
+      root.addRefreshTask(this.__task = __fin);
     }
     return this;
   }
@@ -1009,8 +1032,9 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    if(this.__task && this.target.root) {
-      this.target.root.delRefreshTask(this.__task);
+    let { target, __task } = this;
+    if(target.root && __task) {
+      target.root.delRefreshTask(__task);
     }
   }
 

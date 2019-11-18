@@ -717,7 +717,7 @@ class Dom extends Xom {
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
-    let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
+    let { flowChildren, computedStyle, lineGroups } = this;
     let {
       textAlign,
     } = computedStyle;

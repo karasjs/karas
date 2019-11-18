@@ -10,51 +10,49 @@ function calMatrix(transform, transformOrigin, x, y, ow, oh) {
   m[13] = oy;
   list.forEach(item => {
     let [k, v] = item;
-    let target = matrix.identity();
+    let t = matrix.identity();
     if(k === 'translateX') {
-      target[12] = v;
+      t[12] = v;
     }
     else if(k === 'translateY') {
-      target[13] = v;
+      t[13] = v;
     }
     else if(k === 'scaleX') {
-      target[0] = v;
+      t[0] = v;
     }
     else if(k === 'scaleY') {
-      target[5] = v;
+      t[5] = v;
     }
     else if(k === 'skewX') {
       v = util.r2d(v);
-      let tan = Math.tan(v);
-      target[4] = tan;
+      t[4] = Math.tan(v);
     }
     else if(k === 'skewY') {
       v = util.r2d(v);
-      let tan = Math.tan(v);
-      target[1] = tan;
+      t[1] = Math.tan(v);
     }
     else if(k === 'rotateZ') {
       v = util.r2d(v);
       let sin = Math.sin(v);
       let cos = Math.cos(v);
-      target[0] = target[5] = cos;
-      target[1] = sin;
-      target[4] = -sin;
+      t[0] = t[5] = cos;
+      t[1] = sin;
+      t[4] = -sin;
     }
     else if(k === 'matrix') {
-      target[0] = v[0];
-      target[1] = v[1];
-      target[4] = v[2];
-      target[5] = v[3];
-      target[12] = v[4];
-      target[13] = v[5];
+      t[0] = v[0];
+      t[1] = v[1];
+      t[4] = v[2];
+      t[5] = v[3];
+      t[12] = v[4];
+      t[13] = v[5];
     }
-    m = matrix.multiply(m, target);
+    m = matrix.multiply(m, t);
   });
-  let target = matrix.identity();
-  target[12] = -ox;
-  target[13] = -oy;
-  m = matrix.multiply(m, target);
+  let t = matrix.identity();
+  t[12] = -ox;
+  t[13] = -oy;
+  m = matrix.multiply(m, t);
   return matrix.t43(m);
 }
 

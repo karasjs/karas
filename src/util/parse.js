@@ -10,7 +10,7 @@ function parse(karas, json, data) {
     animation = {
       animate,
     };
-    animate = data.animate.push(animation);
+    data.animate.push(animation);
   }
   let vd;
   if(tagName.charAt(0) === '$') {

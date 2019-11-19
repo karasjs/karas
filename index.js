@@ -4949,9 +4949,13 @@
 
         if (iterations < 1) {
           return;
-        }
+        } // 第一个动画执行时进行clone操作，防止2个一起时后面的覆盖前面重新clone导致前面的第一帧失效
 
-        target.__animateStyle = util.clone(style); // 转化style为计算后的绝对值结果
+
+        if (target.animateStyle !== target.currentStyle) {
+          target.__animateStyle = util.clone(style);
+        } // 转化style为计算后的绝对值结果
+
 
         color2array(style); // 过滤时间非法的，过滤后续offset<=前面的
 
@@ -5247,8 +5251,14 @@
       key: "finish",
       value: function finish() {
         var fill = this.fill,
+            playState = this.playState,
             __fin = this.__fin,
             __record = this.__record;
+
+        if (playState === 'finished') {
+          return;
+        }
+
         frame.offFrame(this.cb);
 
         this.__cancelTask();

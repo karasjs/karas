@@ -18,10 +18,10 @@ let animation = t.animate([
 });
 let animation2 = t.animate([
   {
-    width: 100,
+    height: 100,
   },
   {
-    width: 300,
+    height: 200,
   }
 ], {
   duration: 200,
@@ -31,9 +31,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation2.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.width;
+    input.value = t.computedStyle.width + ',' + t.computedStyle.height;
   }
 });
 animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.width;
+  input.value += '/' + t.computedStyle.width + ',' + t.computedStyle.height;
 });

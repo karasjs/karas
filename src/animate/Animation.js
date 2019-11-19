@@ -749,7 +749,10 @@ class Animation extends Event {
     if(iterations < 1) {
       return;
     }
-    target.__animateStyle = util.clone(style);
+    // 第一个动画执行时进行clone操作，防止2个一起时后面的覆盖前面重新clone导致前面的第一帧失效
+    if(target.animateStyle !== target.currentStyle) {
+      target.__animateStyle = util.clone(style);
+    }
     // 转化style为计算后的绝对值结果
     color2array(style);
     // 过滤时间非法的，过滤后续offset<=前面的
@@ -992,7 +995,10 @@ class Animation extends Event {
   }
 
   finish() {
-    let { fill, __fin, __record } = this;
+    let { fill, playState, __fin, __record } = this;
+    if(playState === 'finished') {
+      return;
+    }
     frame.offFrame(this.cb);
     this.__cancelTask();
     let { target, lastStyle } = this;

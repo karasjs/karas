@@ -10427,7 +10427,11 @@
     return vd;
   }
 
-  function transform$1(x, y, width, height, source, target) {
+  function calDeg(x1, y1, x2, y2) {
+    return Math.atan((y2 - y1) / (x2 - x1));
+  }
+
+  function transform$1(source, target) {
     var _source = _slicedToArray(source, 6),
         sx1 = _source[0],
         sy1 = _source[1],
@@ -10442,51 +10446,89 @@
         tx2 = _target[2],
         ty2 = _target[3],
         tx3 = _target[4],
-        ty3 = _target[5]; // 第1步，以第1个定点A为变换原点
+        ty3 = _target[5]; // 前置将目标三角第1个a点移到和源三角一样的原点上
 
 
-    var m = matrix.identity();
-    var ox = x + sx1;
-    var oy = y + sy1;
-    m[12] = ox;
-    m[13] = oy; // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
+    var dx = tx1 - sx1;
+    var dy = tx2 - sx2;
+    tx1 -= dx;
+    ty1 -= dy;
+    tx2 -= dx;
+    ty2 -= dy;
+    tx3 -= dx;
+    ty3 -= dy;
+    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+
+    var theta = calDeg(sx1, sy1, sx2, sy2);
+    var sin = Math.sin(-theta);
+    var cos = Math.cos(-theta);
+    var t = matrix.identity();
+    t[0] = t[5] = cos;
+    t[1] = sin;
+    t[4] = -sin;
+    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
 
     var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
     var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
     var scale = lt / ls;
-    var t = matrix.identity();
+    t = matrix.identity();
     t[0] = scale;
     t[5] = scale;
-    m = matrix.multiply(t, m); // 第3步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+    m = matrix.multiply(t, m); // 第3步，计算倾斜x角度，先将目标旋转到x轴上，再变换坐标计算
 
-    var theta = -Math.atan((sy2 - sy1) / (sx2 - sx1));
-    var sin = Math.sin(theta);
-    var cos = Math.cos(theta);
+    theta = calDeg(tx1, ty1, tx2, ty2);
+    sin = Math.sin(-theta);
+    cos = Math.cos(-theta);
     t = matrix.identity();
     t[0] = t[5] = cos;
     t[1] = sin;
-    t[4] = -sin;
-    m = matrix.multiply(t, m); // 第4步，计算倾斜x角度
+    t[4] = -sin; // 目标三角反向旋转至x轴后的第2、3点坐标，求得偏移y轴角度
 
-    var _matrix$calPoint = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
         _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
-        x3 = _matrix$calPoint2[0],
-        y3 = _matrix$calPoint2[1];
+        ax2 = _matrix$calPoint2[0],
+        ay2 = _matrix$calPoint2[1];
 
-    theta = Math.atan((tx3 - x3) / y3);
+    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
+        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
+        ax3 = _matrix$calPoint4[0],
+        ay3 = _matrix$calPoint4[1];
+
+    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2)); // 源三角正向旋转偏移y轴角度
+
+    var _matrix$calPoint5 = matrix.calPoint([sx2, sy2], matrix.t43(m)),
+        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
+        x2 = _matrix$calPoint6[0],
+        y2 = _matrix$calPoint6[1];
+
+    var _matrix$calPoint7 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+        _matrix$calPoint8 = _slicedToArray(_matrix$calPoint7, 2),
+        x3 = _matrix$calPoint8[0],
+        y3 = _matrix$calPoint8[1];
+
+    var beta = Math.atan((x2 - x3) / (y3 - y2)); // 差值为真正偏移角度
+
+    theta = beta - alpha;
     t = matrix.identity();
     t[4] = Math.tan(theta);
     m = matrix.multiply(t, m); // 第5步，缩放y，等同于倾斜y
 
-    y3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1];
-    scale = ty3 / y3;
+    scale = ay3 / y3;
     t = matrix.identity();
     t[5] = scale;
-    m = matrix.multiply(t, m); // 变换回初始原点
+    m = matrix.multiply(t, m); // 第6步，再次旋转，角度为目标旋转到x轴的负值
+
+    sin = Math.sin(-alpha);
+    cos = Math.cos(-alpha);
+    t = matrix.identity();
+    t[0] = t[5] = cos;
+    t[1] = sin;
+    t[4] = -sin;
+    m = matrix.multiply(t, m); // 第7步，移动第一个点的差值
 
     t = matrix.identity();
-    t[12] = -ox;
-    t[13] = -oy;
+    t[12] = dx;
+    t[13] = dy;
     m = matrix.multiply(t, m);
     return matrix.t43(m);
   }

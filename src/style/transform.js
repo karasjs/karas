@@ -24,15 +24,15 @@ function calMatrix(transform, transformOrigin, x, y, ow, oh) {
       t[5] = v;
     }
     else if(k === 'skewX') {
-      v = util.r2d(v);
+      v = util.d2r(v);
       t[4] = Math.tan(v);
     }
     else if(k === 'skewY') {
-      v = util.r2d(v);
+      v = util.d2r(v);
       t[1] = Math.tan(v);
     }
     else if(k === 'rotateZ') {
-      v = util.r2d(v);
+      v = util.d2r(v);
       let sin = Math.sin(v);
       let cos = Math.cos(v);
       t[0] = t[5] = cos;

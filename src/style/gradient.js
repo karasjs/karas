@@ -196,28 +196,28 @@ function calLinearCoords(deg, length, cx, cy) {
   let x1;
   let y1;
   if(deg >= 270) {
-    let r = util.r2d(360 - deg);
+    let r = util.d2r(360 - deg);
     x0 = cx + Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy - Math.cos(r) * length;
   }
   else if(deg >= 180) {
-    let r = util.r2d(deg - 180);
+    let r = util.d2r(deg - 180);
     x0 = cx + Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else if(deg >= 90) {
-    let r = util.r2d(180 - deg);
+    let r = util.d2r(180 - deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else {
-    let r = util.r2d(deg);
+    let r = util.d2r(deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
@@ -455,7 +455,7 @@ function parseGradient(s) {
 }
 
 function getLinear(v, d, cx, cy, w, h) {
-  let theta = util.r2d(d);
+  let theta = util.d2r(d);
   let length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
   let [x1, y1, x2, y2] = calLinearCoords(d, length * 0.5, cx, cy);
   let stop = getColorStop(v, length);

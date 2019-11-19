@@ -136,7 +136,7 @@ function joinItem(item) {
   return s;
 }
 
-function r2d(n) {
+function d2r(n) {
   return n * Math.PI / 180;
 }
 
@@ -277,7 +277,7 @@ let util = {
   joinVd,
   joinTransform,
   joinDef,
-  r2d,
+  d2r,
   rgb2int,
   arr2hash,
   hash2arr,

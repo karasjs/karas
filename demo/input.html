@@ -16,25 +16,44 @@
   "tagName": "$rect",
   "props": {
     "style": {
+      "position": "absolute",
+      "left": 0,
+      "top": 0,
       "width": 100,
       "height": 100,
       "strokeWidth": 0,
       "fill": "#F00"
     }
   },
-  "animate": {
+  "animate": [{
     "value": [
       {
-        "transform": "translateX(0)"
+        "transform": "translateX(0)",
+        "easing": "easeIn"
       },
       {
         "transform": "translateX(200px)"
       }
     ],
     "options": {
-      "duration": 5000
+      "duration": 5000,
+      "fill": "forwards"
     }
-  }
+  }, {
+    "value": [
+      {
+        "top": 0,
+        "easing": "easeOut"
+      },
+      {
+        "top": 100
+      }
+    ],
+    "options": {
+      "duration": 5000,
+      "fill": "forwards"
+    }
+  }]
 }</textarea>
 <input id="btn" type="button" value="ok"/>
 </div>

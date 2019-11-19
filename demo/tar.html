@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=0.5,maximum-scale=0.5,minimum-scale=0.5,user-scalable=0"/>
+  <title>tar</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">为了实现贴图仿射变换，底层数学库提供了三角形任意变换方法，生成3*3的matrix供transform使用。</div>
+<div id="example"></div>
+<div id="example2"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  let o = karas.render(
+    <canvas width="360" height="360">
+      <$polygon
+        points={[
+          [0.1, 0.2],
+          [1, 0],
+          [1, 1]
+        ]}
+        style={{position:'absolute',left:20,top:20,width:100,height:100,strokeWidth:0,fill:'#f00'}}
+      />
+      <$polygon
+        ref="t"
+        points={[
+          [0, 0],
+          [0.8, 0.1],
+          [0.3, 0.5]
+        ]}
+        style={{position:'absolute',left:20,top:20,width:100,height:100,strokeWidth:0,fill:'rgba(0,0,255,0.5)',transformOrigin:'0 0'}}
+      />
+    </canvas>,
+    '#example'
+  );
+  let o2 = karas.render(
+    <svg width="360" height="360">
+      <$polygon
+        points={[
+          [0.1, 0.2],
+          [1, 0],
+          [1, 1]
+        ]}
+        style={{position:'absolute',left:20,top:20,width:100,height:100,strokeWidth:0,fill:'#f00'}}
+      />
+      <$polygon
+        ref="t"
+        points={[
+          [0, 0],
+          [0.8, 0.1],
+          [0.3, 0.5]
+        ]}
+        style={{position:'absolute',left:20,top:20,width:100,height:100,strokeWidth:0,fill:'rgba(0,0,255,0.5)',transformOrigin:'0 0'}}
+      />
+    </svg>,
+    '#example2'
+  );
+  let t = o.ref.t;
+  let t2 = o2.ref.t;
+  let res = karas.math.tar.transform([0, 0, 80, 10, 30, 50], [10, 20, 100, 0, 100, 100]);
+  let style = {
+    transform: `matrix(${res.join(',')})`,
+  };
+  let n = true;
+  setInterval(function() {
+    if(n) {
+      t.style.transform = karas.css.normalize(style).transform;
+      t2.style.transform = karas.css.normalize(style).transform;
+    }
+    else {
+      t.style.transform = null;
+      t2.style.transform = null;
+    }
+    o.refresh();
+    o2.refresh();
+    n = !n;
+  }, 1000);
+</script>
+<script src="homunculus.js"></script>
+<script src="selenite.js"></script>
+<script src="yurine.js"></script>
+<script src="sea.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

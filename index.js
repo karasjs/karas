@@ -578,7 +578,7 @@
     return s;
   }
 
-  function r2d(n) {
+  function d2r(n) {
     return n * Math.PI / 180;
   }
 
@@ -733,7 +733,7 @@
     joinVd: joinVd,
     joinTransform: joinTransform,
     joinDef: joinDef,
-    r2d: r2d,
+    d2r: d2r,
     rgb2int: rgb2int,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
@@ -814,13 +814,13 @@
       } else if (k === 'scaleY') {
         t[5] = v;
       } else if (k === 'skewX') {
-        v = util.r2d(v);
+        v = util.d2r(v);
         t[4] = Math.tan(v);
       } else if (k === 'skewY') {
-        v = util.r2d(v);
+        v = util.d2r(v);
         t[1] = Math.tan(v);
       } else if (k === 'rotateZ') {
-        v = util.r2d(v);
+        v = util.d2r(v);
         var sin = Math.sin(v);
         var cos = Math.cos(v);
         t[0] = t[5] = cos;
@@ -1175,27 +1175,27 @@
     var y1;
 
     if (deg >= 270) {
-      var r = util.r2d(360 - deg);
+      var r = util.d2r(360 - deg);
       x0 = cx + Math.sin(r) * length;
       y0 = cy + Math.cos(r) * length;
       x1 = cx - Math.sin(r) * length;
       y1 = cy - Math.cos(r) * length;
     } else if (deg >= 180) {
-      var _r = util.r2d(deg - 180);
+      var _r = util.d2r(deg - 180);
 
       x0 = cx + Math.sin(_r) * length;
       y0 = cy - Math.cos(_r) * length;
       x1 = cx - Math.sin(_r) * length;
       y1 = cy + Math.cos(_r) * length;
     } else if (deg >= 90) {
-      var _r2 = util.r2d(180 - deg);
+      var _r2 = util.d2r(180 - deg);
 
       x0 = cx - Math.sin(_r2) * length;
       y0 = cy - Math.cos(_r2) * length;
       x1 = cx + Math.sin(_r2) * length;
       y1 = cy + Math.cos(_r2) * length;
     } else {
-      var _r3 = util.r2d(deg);
+      var _r3 = util.d2r(deg);
 
       x0 = cx - Math.sin(_r3) * length;
       y0 = cy + Math.cos(_r3) * length;
@@ -1483,7 +1483,7 @@
   }
 
   function getLinear(v, d, cx, cy, w, h) {
-    var theta = util.r2d(d);
+    var theta = util.d2r(d);
     var length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
 
     var _calLinearCoords = calLinearCoords(d, length * 0.5, cx, cy),
@@ -10446,7 +10446,7 @@
         tx2 = _target[2],
         ty2 = _target[3],
         tx3 = _target[4],
-        ty3 = _target[5]; // 前置将目标三角第1个a点移到和源三角一样的原点上
+        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
 
 
     var dx = tx1 - sx1;
@@ -10474,7 +10474,7 @@
     t = matrix.identity();
     t[0] = scale;
     t[5] = scale;
-    m = matrix.multiply(t, m); // 第3步，计算倾斜x角度，先将目标旋转到x轴上，再变换坐标计算
+    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
 
     theta = calDeg(tx1, ty1, tx2, ty2);
     sin = Math.sin(-theta);
@@ -10482,7 +10482,7 @@
     t = matrix.identity();
     t[0] = t[5] = cos;
     t[1] = sin;
-    t[4] = -sin; // 目标三角反向旋转至x轴后的第2、3点坐标，求得偏移y轴角度
+    t[4] = -sin; // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
 
     var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
         _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
@@ -10494,29 +10494,23 @@
         ax3 = _matrix$calPoint4[0],
         ay3 = _matrix$calPoint4[1];
 
-    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2)); // 源三角正向旋转偏移y轴角度
+    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
+    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
 
-    var _matrix$calPoint5 = matrix.calPoint([sx2, sy2], matrix.t43(m)),
-        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
-        x2 = _matrix$calPoint6[0],
-        y2 = _matrix$calPoint6[1];
-
-    var _matrix$calPoint7 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
-        _matrix$calPoint8 = _slicedToArray(_matrix$calPoint7, 2),
-        x3 = _matrix$calPoint8[0],
-        y3 = _matrix$calPoint8[1];
-
-    var beta = Math.atan((x2 - x3) / (y3 - y2)); // 差值为真正偏移角度
-
-    theta = beta - alpha;
-    t = matrix.identity();
-    t[4] = Math.tan(theta);
-    m = matrix.multiply(t, m); // 第5步，缩放y，等同于倾斜y
-
-    scale = ay3 / y3;
+    scale = ay3 / by3;
     t = matrix.identity();
     t[5] = scale;
-    m = matrix.multiply(t, m); // 第6步，再次旋转，角度为目标旋转到x轴的负值
+    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
+
+    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
+        x3 = _matrix$calPoint6[0],
+        y3 = _matrix$calPoint6[1];
+
+    theta = Math.atan((ax3 - x3) / y3);
+    t = matrix.identity();
+    t[4] = Math.tan(theta);
+    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
 
     sin = Math.sin(-alpha);
     cos = Math.cos(-alpha);
@@ -10524,7 +10518,7 @@
     t[0] = t[5] = cos;
     t[1] = sin;
     t[4] = -sin;
-    m = matrix.multiply(t, m); // 第7步，移动第一个点的差值
+    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
 
     t = matrix.identity();
     t[12] = dx;

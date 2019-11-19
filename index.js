@@ -5268,20 +5268,27 @@
         var root = target.root;
 
         if (root) {
-          this.__playState = 'finished'; // 停留在最后一帧
+          this.__playState = 'finished';
+          var needRefresh; // 停留在最后一帧
 
           if ({
             forwards: true,
             both: true
           }.hasOwnProperty(fill)) {
             var last = this.frames[this.frames.length - 1];
-            stringify$1(last.style, lastStyle, this.target);
-          } else {
-            restore(__record.keys, target);
-          }
+            needRefresh = stringify$1(last.style, lastStyle, this.target);
 
-          root.setRefreshLevel(level.REFLOW);
-          root.addRefreshTask(this.__task = __fin);
+            if (needRefresh) {
+              root.setRefreshLevel(getLevel(last.style));
+              root.addRefreshTask(this.__task = __fin);
+            } else {
+              frame.nextFrame(this.__task = __fin);
+            }
+          } else {
+            root.setRefreshLevel(getLevel(__record.hash));
+            restore(__record.keys, target);
+            root.addRefreshTask(this.__task = __fin);
+          }
         }
 
         return this;

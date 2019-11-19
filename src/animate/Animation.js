@@ -1005,19 +1005,27 @@ class Animation extends Event {
     let root = target.root;
     if(root) {
       this.__playState = 'finished';
+      let needRefresh;
       // 停留在最后一帧
       if({
         forwards: true,
         both: true,
       }.hasOwnProperty(fill)) {
         let last = this.frames[this.frames.length - 1];
-        stringify(last.style, lastStyle, this.target);
+        needRefresh = stringify(last.style, lastStyle, this.target);
+        if(needRefresh) {
+          root.setRefreshLevel(getLevel(last.style));
+          root.addRefreshTask(this.__task = __fin);
+        }
+        else {
+          frame.nextFrame(this.__task = __fin);
+        }
       }
       else {
+        root.setRefreshLevel(getLevel(__record.hash));
         restore(__record.keys, target);
+        root.addRefreshTask(this.__task = __fin);
       }
-      root.setRefreshLevel(level.REFLOW);
-      root.addRefreshTask(this.__task = __fin);
     }
     return this;
   }

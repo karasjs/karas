@@ -20,7 +20,7 @@
 
     render(renderMode) {
       super.render(renderMode);
-      let { rx: x, ry: y, width, height, ctx } = this;
+      let { sx: x, sy: y, width, height, ctx } = this;
       let percent = parseFloat(this.props.percent) || 1;
       let h = height - 20;
       let x1 = x + width * 0.5 - 20;
@@ -100,9 +100,21 @@
             ['x2', x],
             ['y2', y]
           ],
-          stop: [
-            ['#39F', 0],
-            ['#9CF', 1]
+          children: [
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#39F'],
+                ['offset', 0]
+              ],
+            },
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#9CF'],
+                ['offset', 1]
+              ],
+            }
           ],
         });
         this.addGeom('polygon', {
@@ -117,9 +129,21 @@
             ['x2', x],
             ['y2', y]
           ],
-          stop: [
-            ['#06F', 0],
-            ['#39F', 1]
+          children: [
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#06F'],
+                ['offset', 0]
+              ],
+            },
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#39F'],
+                ['offset', 1]
+              ],
+            }
           ],
         });
         this.addGeom('polygon', {
@@ -134,9 +158,21 @@
             ['x2', x],
             ['y2', y]
           ],
-          stop: [
-            ['#6AF', 0],
-            ['#9CF', 1]
+          children: [
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#6AF'],
+                ['offset', 0]
+              ],
+            },
+            {
+              tagName: 'stop',
+              props: [
+                ['stop-color', '#9CF'],
+                ['offset', 1]
+              ],
+            }
           ],
         });
         this.addGeom('polygon', {

@@ -46,7 +46,7 @@
       if(renderMode === karas.mode.CANVAS) {
         ctx.strokeStyle = stroke;
         ctx.lineWidth = strokeWidth;
-        ctx.setLineDash(strokeDasharray);
+        ctx.setLineDash(strokeDasharray.split(','));
         ctx.beginPath();
         lx.forEach(item => {
           ctx.moveTo(originX, item);

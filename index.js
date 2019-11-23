@@ -4450,7 +4450,7 @@
 
         st[i] = current[i];
 
-        if (!record.hash.hasOwnProperty(i)) {
+        if (record && !record.hash.hasOwnProperty(i)) {
           record.hash[i] = true;
           record.keys.push(i);
         }
@@ -4922,7 +4922,9 @@
       }
 
       _this.__fill = op.fill || 'none';
+      _this.__direction = op.direction || 'normal';
       _this.__frames = [];
+      _this.__framesR = [];
       _this.__startTime = 0;
       _this.__offsetTime = 0;
       _this.__pauseTime = 0;
@@ -4944,7 +4946,10 @@
         var _this2 = this;
 
         var target = this.target,
-            iterations = this.iterations;
+            iterations = this.iterations,
+            frames = this.frames,
+            framesR = this.framesR,
+            direction = this.direction;
         var style = util.clone(target.style); // 执行次数小于1无需播放
 
         if (iterations < 1) {
@@ -5029,7 +5034,6 @@
         } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
 
 
-        var frames = this.frames;
         var length = list.length;
         var record = this.__record = {
           keys: [],
@@ -5046,7 +5050,27 @@
           frames.push(prev);
         }
 
-        this.__isDestroyed = false; // 生成finish的任务事件
+        this.__isDestroyed = false; // 反向
+
+        if ({
+          reverse: true,
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction)) {
+          var listR = util.clone(list).reverse();
+          listR.forEach(function (item) {
+            item.offset = 1 - item.offset;
+          });
+          prev = framing(listR[0]);
+          framesR.push(prev);
+
+          for (var _i11 = 1; _i11 < length; _i11++) {
+            var _next = listR[_i11];
+            prev = calFrame(prev, _next, target);
+            framesR.push(prev);
+          }
+        } // 生成finish的任务事件
+
 
         this.__fin = function () {
           _this2.emit(Event.KARAS_ANIMATION_FRAME);
@@ -5059,7 +5083,7 @@
       value: function play() {
         var _this3 = this;
 
-        if (this.isDestroyed) {
+        if (this.isDestroyed || this.duration <= 0) {
           return;
         }
 
@@ -5075,9 +5099,11 @@
           this.__offsetTime = diff;
         } else {
           var frames = this.frames,
+              framesR = this.framesR,
               target = this.target,
               playCount = this.playCount,
               duration = this.duration,
+              direction = this.direction,
               fps = this.fps,
               iterations = this.iterations,
               fill = this.fill,
@@ -5127,11 +5153,33 @@
               frames.forEach(function (frame) {
                 frame.time = now + duration * frame.offset;
               });
+              framesR.forEach(function (frame) {
+                frame.time = now + duration * frame.offset;
+              });
+            }
+
+            var currentFrames;
+
+            if (direction === 'reverse') {
+              currentFrames = framesR;
+            } else if ({
+              alternate: true,
+              'alternate-reverse': true
+            }.hasOwnProperty(direction)) {
+              var isEven = playCount % 2 === 0;
+
+              if (direction === 'alternate') {
+                currentFrames = isEven ? frames : framesR;
+              } else {
+                currentFrames = isEven ? framesR : frames;
+              }
+            } else {
+              currentFrames = frames;
             }
 
             var countTime = playCount * duration;
-            var i = binarySearch(0, frames.length - 1, now + _this3.offsetTime - countTime, frames);
-            var current = frames[i];
+            var i = binarySearch(0, currentFrames.length - 1, now + _this3.offsetTime - countTime, frames);
+            var current = currentFrames[i];
             var needRefresh; // 最后一帧结束动画
 
             if (i === length - 1) {
@@ -5155,7 +5203,7 @@
                   }
                 }
 
-                var total = frames[i + 1].time - current.time;
+                var total = currentFrames[i + 1].time - current.time;
 
                 var _diff = now - countTime - current.time;
 
@@ -5387,9 +5435,19 @@
         return this.__fill;
       }
     }, {
+      key: "direction",
+      get: function get() {
+        return this.__direction;
+      }
+    }, {
       key: "frames",
       get: function get() {
         return this.__frames;
+      }
+    }, {
+      key: "framesR",
+      get: function get() {
+        return this.__framesR;
       }
     }, {
       key: "startTime",

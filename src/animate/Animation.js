@@ -270,7 +270,7 @@ function framing(current, record) {
         keys.push(i);
       }
       st[i] = current[i];
-      if(!record.hash.hasOwnProperty(i)) {
+      if(record && !record.hash.hasOwnProperty(i)) {
         record.hash[i] = true;
         record.keys.push(i);
       }
@@ -729,7 +729,9 @@ class Animation extends Event {
       this.__fps = 60;
     }
     this.__fill = op.fill || 'none';
+    this.__direction = op.direction || 'normal';
     this.__frames = [];
+    this.__framesR = [];
     this.__startTime = 0;
     this.__offsetTime = 0;
     this.__pauseTime = 0;
@@ -743,7 +745,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { target, iterations } = this;
+    let { target, iterations, frames, framesR, direction } = this;
     let style = util.clone(target.style);
     // 执行次数小于1无需播放
     if(iterations < 1) {
@@ -819,7 +821,6 @@ class Animation extends Event {
       }
     }
     // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
-    let frames = this.frames;
     let length = list.length;
     let record = this.__record = {
       keys: [],
@@ -835,6 +836,20 @@ class Animation extends Event {
       frames.push(prev);
     }
     this.__isDestroyed = false;
+    // 反向
+    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
+      let listR = util.clone(list).reverse();
+      listR.forEach(item => {
+        item.offset = 1 - item.offset;
+      });
+      prev = framing(listR[0]);
+      framesR.push(prev);
+      for(let i = 1; i < length; i++) {
+        let next = listR[i];
+        prev = calFrame(prev, next, target);
+        framesR.push(prev);
+      }
+    }
     // 生成finish的任务事件
     this.__fin = () => {
       this.emit(Event.KARAS_ANIMATION_FRAME);
@@ -843,7 +858,7 @@ class Animation extends Event {
   }
 
   play() {
-    if(this.isDestroyed) {
+    if(this.isDestroyed || this.duration <= 0) {
       return;
     }
     this.__cancelTask();
@@ -857,7 +872,21 @@ class Animation extends Event {
       this.__offsetTime = diff;
     }
     else {
-      let { frames, target, playCount, duration, fps, iterations, fill, delay, endDelay, __fin, __record } = this;
+      let {
+        frames,
+        framesR,
+        target,
+        playCount,
+        duration,
+        direction,
+        fps,
+        iterations,
+        fill,
+        delay,
+        endDelay,
+        __fin,
+        __record,
+      } = this;
       let length = frames.length;
       let init = true;
       let first = true;
@@ -891,10 +920,29 @@ class Animation extends Event {
           frames.forEach(frame => {
             frame.time = now + duration * frame.offset;
           });
+          framesR.forEach(frame => {
+            frame.time = now + duration * frame.offset;
+          });
+        }
+        let currentFrames;
+        if(direction === 'reverse') {
+          currentFrames = framesR;
+        }
+        else if({ alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
+          let isEven = playCount % 2 === 0;
+          if(direction === 'alternate') {
+            currentFrames = isEven ? frames : framesR;
+          }
+          else {
+            currentFrames = isEven ? framesR : frames;
+          }
+        }
+        else {
+          currentFrames = frames;
         }
         let countTime = playCount * duration;
-        let i = binarySearch(0, frames.length - 1,now + this.offsetTime - countTime, frames);
-        let current = frames[i];
+        let i = binarySearch(0, currentFrames.length - 1,now + this.offsetTime - countTime, frames);
+        let current = currentFrames[i];
         let needRefresh;
         // 最后一帧结束动画
         if(i === length - 1) {
@@ -915,7 +963,7 @@ class Animation extends Event {
               return;
             }
           }
-          let total = frames[i + 1].time - current.time;
+          let total = currentFrames[i + 1].time - current.time;
           let diff = now - countTime - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
@@ -1089,8 +1137,14 @@ class Animation extends Event {
   get fill() {
     return this.__fill;
   }
+  get direction() {
+    return this.__direction;
+  }
   get frames() {
     return this.__frames;
+  }
+  get framesR() {
+    return this.__framesR;
   }
   get startTime() {
     return this.__startTime;

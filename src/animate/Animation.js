@@ -555,10 +555,10 @@ function calFrame(prev, current, target, record) {
   return next;
 }
 
-function binarySearch(i, j, now, frames) {
+function binarySearch(i, j, time, frames) {
   if(i === j) {
     let frame = frames[i];
-    if(frame.time > now) {
+    if(frame.time > time) {
       return i - 1;
     }
     return i;
@@ -566,14 +566,14 @@ function binarySearch(i, j, now, frames) {
   else {
     let middle = i + ((j - i) >> 1);
     let frame = frames[middle];
-    if(frame.time === now) {
+    if(frame.time === time) {
       return middle;
     }
-    else if(frame.time > now) {
-      return binarySearch(i, Math.max(middle - 1, i), now, frames);
+    else if(frame.time > time) {
+      return binarySearch(i, Math.max(middle - 1, i), time, frames);
     }
     else {
-      return binarySearch(Math.min(middle + 1, j), j, now, frames);
+      return binarySearch(Math.min(middle + 1, j), j, time, frames);
     }
   }
 }
@@ -584,6 +584,8 @@ function calStyle(frame, percent) {
   if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
   }
+  percent = Math.max(percent, 0);
+  percent = Math.min(percent, 1);
   frame.transition.forEach(item => {
     let { k, v, d } = item;
     let st = style[k];
@@ -732,20 +734,25 @@ class Animation extends Event {
     this.__direction = op.direction || 'normal';
     this.__frames = [];
     this.__framesR = [];
+    this.__playbackRate = parseFloat(op.playbackRate) || 1;
+    if(this.__playbackRate < 0) {
+      this.__playbackRate = 1;
+    }
     this.__startTime = 0;
     this.__offsetTime = 0;
     this.__pauseTime = 0;
-    this.__lastTime = 0;
+    this.__lastFpsTime = 0;
     this.__pending = false;
     this.__playState = 'idle';
     this.__playCount = 0;
     this.__cb = null;
     this.__isDestroyed = true;
+    this.__diffTime = 0;
     this.__init();
   }
 
   __init() {
-    let { target, iterations, frames, framesR, direction } = this;
+    let { target, iterations, frames, framesR, direction, duration } = this;
     let style = util.clone(target.style);
     // 执行次数小于1无需播放
     if(iterations < 1) {
@@ -855,6 +862,12 @@ class Animation extends Event {
       this.emit(Event.KARAS_ANIMATION_FRAME);
       this.emit(Event.KARAS_ANIMATION_FINISH);
     };
+    frames.forEach(frame => {
+      frame.time = duration * frame.offset;
+    });
+    framesR.forEach(frame => {
+      frame.time = duration * frame.offset;
+    });
   }
 
   play() {
@@ -891,13 +904,15 @@ class Animation extends Event {
       let init = true;
       let first = true;
       this.__cb = () => {
+        let { playbackRate, offsetTime } = this;
         let now = inject.now();
         let root = target.root;
         if(init) {
-          this.__startTime = now;
+          this.__startTime = this.__lastFpsTime = this.__lastTime = now;
+          this.__lastIndex = 0;
         }
         // 还没过前置delay
-        if(now - this.offsetTime < this.__startTime + delay) {
+        if(now - offsetTime < this.startTime + delay) {
           if(init && {
             backwards: true,
             both: true,
@@ -916,14 +931,6 @@ class Animation extends Event {
           return;
         }
         init = false;
-        if(first) {
-          frames.forEach(frame => {
-            frame.time = now + duration * frame.offset;
-          });
-          framesR.forEach(frame => {
-            frame.time = now + duration * frame.offset;
-          });
-        }
         let currentFrames;
         if(direction === 'reverse') {
           currentFrames = framesR;
@@ -940,8 +947,16 @@ class Animation extends Event {
         else {
           currentFrames = frames;
         }
-        let countTime = playCount * duration;
-        let i = binarySearch(0, currentFrames.length - 1,now + this.offsetTime - countTime, frames);
+        let diff = now - this.__lastTime - offsetTime;
+        if(playbackRate !== 1) {
+          diff *= playbackRate;
+        }
+        this.__lastTime = now;
+        this.__diffTime += diff;
+        diff = this.__diffTime;
+        // 因暂停导致的停顿时间需要清零
+        this.__offsetTime = 0;
+        let i = binarySearch(0, currentFrames.length - 1, diff, frames);
         let current = currentFrames[i];
         let needRefresh;
         // 最后一帧结束动画
@@ -949,6 +964,7 @@ class Animation extends Event {
           needRefresh = stringify(current.style, this.__lastStyle, target);
           if(playCount < iterations) {
             playCount = ++this.playCount;
+            this.__diffTime = 0;
           }
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -958,18 +974,17 @@ class Animation extends Event {
             fps = 60;
           }
           if(!first && fps < 60) {
-            let time = now - this.lastTime;
+            let time = now - this.__lastFpsTime;
             if(time < 1000 / fps) {
               return;
             }
           }
           let total = currentFrames[i + 1].time - current.time;
-          let diff = now - countTime - current.time;
           let percent = diff / total;
           let style = calStyle(current, percent);
           needRefresh = stringify(style, this.__lastStyle, target);
         }
-        this.__lastTime = now;
+        this.__lastFpsTime = now;
         this.__lastStyle = current.style;
         first = false;
         // 两帧之间没有变化，不触发刷新
@@ -994,14 +1009,14 @@ class Animation extends Event {
                 restore(__record.keys, target);
               }
               // 如果有endDelay还要延迟执行
-              let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
+              let isFinished = now - offsetTime >= this.startTime + delay + playCount * duration + endDelay;
               if(isFinished) {
                 root.addRefreshTask(this.__task = __fin);
               }
               else {
                 now = inject.now();
                 let task = this.__task = () => {
-                  let isFinished = now - this.offsetTime >= this.__startTime + delay + playCount * duration + endDelay;
+                  let isFinished = now - offsetTime >= this.startTime + delay + playCount * duration + endDelay;
                   if(isFinished) {
                     root.addRefreshTask(this.__task = __fin);
                     frame.offFrame(task);
@@ -1146,11 +1161,18 @@ class Animation extends Event {
   get framesR() {
     return this.__framesR;
   }
+  get playbackRate() {
+    return this.__playbackRate;
+  }
+  set playbackRate(v) {
+    v = parseFloat(v) || 0;
+    if(v < 0) {
+      v = 1;
+    }
+    this.__playbackRate = v;
+  }
   get startTime() {
     return this.__startTime;
-  }
-  get lastTime() {
-    return this.__lastTime;
   }
   get pending() {
     return this.__pending;

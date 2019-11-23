@@ -4729,11 +4729,11 @@
     return next;
   }
 
-  function binarySearch(i, j, now, frames) {
+  function binarySearch(i, j, time, frames) {
     if (i === j) {
       var _frame = frames[i];
 
-      if (_frame.time > now) {
+      if (_frame.time > time) {
         return i - 1;
       }
 
@@ -4742,12 +4742,12 @@
       var middle = i + (j - i >> 1);
       var _frame2 = frames[middle];
 
-      if (_frame2.time === now) {
+      if (_frame2.time === time) {
         return middle;
-      } else if (_frame2.time > now) {
-        return binarySearch(i, Math.max(middle - 1, i), now, frames);
+      } else if (_frame2.time > time) {
+        return binarySearch(i, Math.max(middle - 1, i), time, frames);
       } else {
-        return binarySearch(Math.min(middle + 1, j), j, now, frames);
+        return binarySearch(Math.min(middle + 1, j), j, time, frames);
       }
     }
   }
@@ -4760,6 +4760,8 @@
       percent = timingFunction(percent);
     }
 
+    percent = Math.max(percent, 0);
+    percent = Math.min(percent, 1);
     frame.transition.forEach(function (item) {
       var k = item.k,
           v = item.v,
@@ -4925,15 +4927,22 @@
       _this.__direction = op.direction || 'normal';
       _this.__frames = [];
       _this.__framesR = [];
+      _this.__playbackRate = parseFloat(op.playbackRate) || 1;
+
+      if (_this.__playbackRate < 0) {
+        _this.__playbackRate = 1;
+      }
+
       _this.__startTime = 0;
       _this.__offsetTime = 0;
       _this.__pauseTime = 0;
-      _this.__lastTime = 0;
+      _this.__lastFpsTime = 0;
       _this.__pending = false;
       _this.__playState = 'idle';
       _this.__playCount = 0;
       _this.__cb = null;
       _this.__isDestroyed = true;
+      _this.__diffTime = 0;
 
       _this.__init();
 
@@ -4949,7 +4958,8 @@
             iterations = this.iterations,
             frames = this.frames,
             framesR = this.framesR,
-            direction = this.direction;
+            direction = this.direction,
+            duration = this.duration;
         var style = util.clone(target.style); // 执行次数小于1无需播放
 
         if (iterations < 1) {
@@ -5077,6 +5087,13 @@
 
           _this2.emit(Event.KARAS_ANIMATION_FINISH);
         };
+
+        frames.forEach(function (frame) {
+          frame.time = duration * frame.offset;
+        });
+        framesR.forEach(function (frame) {
+          frame.time = duration * frame.offset;
+        });
       }
     }, {
       key: "play",
@@ -5116,15 +5133,18 @@
           var first = true;
 
           this.__cb = function () {
+            var playbackRate = _this3.playbackRate,
+                offsetTime = _this3.offsetTime;
             var now = inject.now();
             var root = target.root;
 
             if (init) {
-              _this3.__startTime = now;
+              _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
+              _this3.__lastIndex = 0;
             } // 还没过前置delay
 
 
-            if (now - _this3.offsetTime < _this3.__startTime + delay) {
+            if (now - offsetTime < _this3.startTime + delay) {
               if (init && {
                 backwards: true,
                 both: true
@@ -5148,16 +5168,6 @@
             }
 
             init = false;
-
-            if (first) {
-              frames.forEach(function (frame) {
-                frame.time = now + duration * frame.offset;
-              });
-              framesR.forEach(function (frame) {
-                frame.time = now + duration * frame.offset;
-              });
-            }
-
             var currentFrames;
 
             if (direction === 'reverse') {
@@ -5177,8 +5187,18 @@
               currentFrames = frames;
             }
 
-            var countTime = playCount * duration;
-            var i = binarySearch(0, currentFrames.length - 1, now + _this3.offsetTime - countTime, frames);
+            var diff = now - _this3.__lastTime - offsetTime;
+
+            if (playbackRate !== 1) {
+              diff *= playbackRate;
+            }
+
+            _this3.__lastTime = now;
+            _this3.__diffTime += diff;
+            diff = _this3.__diffTime; // 因暂停导致的停顿时间需要清零
+
+            _this3.__offsetTime = 0;
+            var i = binarySearch(0, currentFrames.length - 1, diff, frames);
             var current = currentFrames[i];
             var needRefresh; // 最后一帧结束动画
 
@@ -5187,6 +5207,7 @@
 
               if (playCount < iterations) {
                 playCount = ++_this3.playCount;
+                _this3.__diffTime = 0;
               }
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
@@ -5196,7 +5217,7 @@
                 }
 
                 if (!first && fps < 60) {
-                  var time = now - _this3.lastTime;
+                  var time = now - _this3.__lastFpsTime;
 
                   if (time < 1000 / fps) {
                     return;
@@ -5204,15 +5225,12 @@
                 }
 
                 var total = currentFrames[i + 1].time - current.time;
-
-                var _diff = now - countTime - current.time;
-
-                var percent = _diff / total;
+                var percent = diff / total;
                 var style = calStyle(current, percent);
                 needRefresh = stringify$1(style, _this3.__lastStyle, target);
               }
 
-            _this3.__lastTime = now;
+            _this3.__lastFpsTime = now;
             _this3.__lastStyle = current.style;
             first = false; // 两帧之间没有变化，不触发刷新
 
@@ -5240,7 +5258,7 @@
                   } // 如果有endDelay还要延迟执行
 
 
-                  var isFinished = now - _this3.offsetTime >= _this3.__startTime + delay + playCount * duration + endDelay;
+                  var isFinished = now - offsetTime >= _this3.startTime + delay + playCount * duration + endDelay;
 
                   if (isFinished) {
                     root.addRefreshTask(_this3.__task = __fin);
@@ -5248,7 +5266,7 @@
                     now = inject.now();
 
                     var _task2 = _this3.__task = function () {
-                      var isFinished = now - _this3.offsetTime >= _this3.__startTime + delay + playCount * duration + endDelay;
+                      var isFinished = now - offsetTime >= _this3.startTime + delay + playCount * duration + endDelay;
 
                       if (isFinished) {
                         root.addRefreshTask(_this3.__task = __fin);
@@ -5450,14 +5468,23 @@
         return this.__framesR;
       }
     }, {
+      key: "playbackRate",
+      get: function get() {
+        return this.__playbackRate;
+      },
+      set: function set(v) {
+        v = parseFloat(v) || 0;
+
+        if (v < 0) {
+          v = 1;
+        }
+
+        this.__playbackRate = v;
+      }
+    }, {
       key: "startTime",
       get: function get() {
         return this.__startTime;
-      }
-    }, {
-      key: "lastTime",
-      get: function get() {
-        return this.__lastTime;
       }
     }, {
       key: "pending",

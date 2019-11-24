@@ -3441,6 +3441,8 @@
 
   _defineProperty(Event, "KARAS_REFRESH", 'karas-refresh');
 
+  _defineProperty(Event, "KARAS_BEFORE_REFRESH", 'karas-before-refresh');
+
   _defineProperty(Event, "KARAS_ANIMATION_PAUSE", 'karas-animation-pause');
 
   _defineProperty(Event, "KARAS_ANIMATION_FRAME", 'karas-animation-frame');
@@ -5101,7 +5103,7 @@
         var _this3 = this;
 
         if (this.isDestroyed || this.duration <= 0) {
-          return;
+          return this;
         }
 
         this.__cancelTask();
@@ -5141,10 +5143,19 @@
             if (init) {
               _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
               _this3.__lastIndex = 0;
-            } // 还没过前置delay
+            }
 
+            var diff = now - _this3.__lastTime - offsetTime;
 
-            if (now - offsetTime < _this3.startTime + delay) {
+            if (playbackRate !== 1) {
+              diff *= playbackRate;
+            }
+
+            _this3.__diffTime += diff;
+            diff = _this3.__diffTime;
+            _this3.__lastTime = now; // 还没过前置delay
+
+            if (diff < delay) {
               if (init && {
                 backwards: true,
                 both: true
@@ -5187,15 +5198,7 @@
               currentFrames = frames;
             }
 
-            var diff = now - _this3.__lastTime - offsetTime;
-
-            if (playbackRate !== 1) {
-              diff *= playbackRate;
-            }
-
-            _this3.__lastTime = now;
-            _this3.__diffTime += diff;
-            diff = _this3.__diffTime; // 因暂停导致的停顿时间需要清零
+            diff -= delay; // 因暂停导致的停顿时间需要清零
 
             _this3.__offsetTime = 0;
             var i = binarySearch(0, currentFrames.length - 1, diff, frames);
@@ -5258,23 +5261,28 @@
                   } // 如果有endDelay还要延迟执行
 
 
-                  var isFinished = now - offsetTime >= _this3.startTime + delay + playCount * duration + endDelay;
+                  var isFinished = diff >= duration + endDelay;
 
                   if (isFinished) {
                     root.addRefreshTask(_this3.__task = __fin);
                   } else {
-                    now = inject.now();
-
                     var _task2 = _this3.__task = function () {
-                      var isFinished = now - offsetTime >= _this3.startTime + delay + playCount * duration + endDelay;
+                      now = inject.now();
+                      var diff = now - _this3.__lastTime - offsetTime - delay;
+
+                      if (playbackRate !== 1) {
+                        diff *= playbackRate;
+                      }
+
+                      _this3.__diffTime += diff;
+                      diff = _this3.__diffTime;
+                      _this3.__lastTime = now;
+                      var isFinished = diff >= duration + endDelay;
 
                       if (isFinished) {
                         root.addRefreshTask(_this3.__task = __fin);
                         frame.offFrame(_task2);
-                        return;
                       }
-
-                      now = inject.now();
                     };
 
                     frame.onFrame(_task2);
@@ -5322,7 +5330,7 @@
             __record = this.__record;
 
         if (playState === 'finished') {
-          return;
+          return this;
         }
 
         frame.offFrame(this.cb);
@@ -5367,6 +5375,10 @@
         frame.offFrame(this.cb);
 
         this.__cancelTask();
+
+        if (this.__playState === 'idle') {
+          return this;
+        }
 
         this.__playState = 'idle';
         var target = this.target;
@@ -6949,7 +6961,7 @@
       _classCallCheck(this, Dom);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, tagName, props));
-      _this.__children = children;
+      _this.__children = children || [];
       _this.__flowChildren = []; // 非绝对定位孩子
 
       _this.__absChildren = []; // 绝对定位孩子
@@ -8219,6 +8231,13 @@
             width = _assertThisInitialize2.width,
             height = _assertThisInitialize2.height;
 
+        width = width || {
+          unit: unit.AUTO
+        };
+        height = height || {
+          unit: unit.AUTO
+        };
+
         if (width.unit === unit.AUTO) {
           width.value = 32;
           width.unit = unit.PX;
@@ -9131,7 +9150,8 @@
         this.__defs.clear();
 
         var lv = this.__refreshLevel;
-        this.__refreshLevel = level.REPAINT; // 预先计算字体相关的继承
+        this.__refreshLevel = level.REPAINT;
+        this.emit(Event.KARAS_BEFORE_REFRESH); // 预先计算字体相关的继承
 
         if (lv === level.REFLOW) {
           this.__computed();

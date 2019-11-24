@@ -872,7 +872,7 @@ class Animation extends Event {
 
   play() {
     if(this.isDestroyed || this.duration <= 0) {
-      return;
+      return this;
     }
     this.__cancelTask();
     this.__playState = 'running';
@@ -911,8 +911,15 @@ class Animation extends Event {
           this.__startTime = this.__lastFpsTime = this.__lastTime = now;
           this.__lastIndex = 0;
         }
+        let diff = now - this.__lastTime - offsetTime;
+        if(playbackRate !== 1) {
+          diff *= playbackRate;
+        }
+        this.__diffTime += diff;
+        diff = this.__diffTime;
+        this.__lastTime = now;
         // 还没过前置delay
-        if(now - offsetTime < this.startTime + delay) {
+        if(diff < delay) {
           if(init && {
             backwards: true,
             both: true,
@@ -947,13 +954,7 @@ class Animation extends Event {
         else {
           currentFrames = frames;
         }
-        let diff = now - this.__lastTime - offsetTime;
-        if(playbackRate !== 1) {
-          diff *= playbackRate;
-        }
-        this.__lastTime = now;
-        this.__diffTime += diff;
-        diff = this.__diffTime;
+        diff -= delay;
         // 因暂停导致的停顿时间需要清零
         this.__offsetTime = 0;
         let i = binarySearch(0, currentFrames.length - 1, diff, frames);
@@ -1009,20 +1010,25 @@ class Animation extends Event {
                 restore(__record.keys, target);
               }
               // 如果有endDelay还要延迟执行
-              let isFinished = now - offsetTime >= this.startTime + delay + playCount * duration + endDelay;
+              let isFinished = diff >= duration + endDelay;
               if(isFinished) {
                 root.addRefreshTask(this.__task = __fin);
               }
               else {
-                now = inject.now();
                 let task = this.__task = () => {
-                  let isFinished = now - offsetTime >= this.startTime + delay + playCount * duration + endDelay;
+                  now = inject.now();
+                  let diff = now - this.__lastTime - offsetTime - delay;
+                  if(playbackRate !== 1) {
+                    diff *= playbackRate;
+                  }
+                  this.__diffTime += diff;
+                  diff = this.__diffTime;
+                  this.__lastTime = now;
+                  let isFinished = diff >= duration + endDelay;
                   if(isFinished) {
                     root.addRefreshTask(this.__task = __fin);
                     frame.offFrame(task);
-                    return;
                   }
-                  now = inject.now();
                 };
                 frame.onFrame(task);
               }
@@ -1060,7 +1066,7 @@ class Animation extends Event {
   finish() {
     let { fill, playState, __fin, __record } = this;
     if(playState === 'finished') {
-      return;
+      return this;
     }
     frame.offFrame(this.cb);
     this.__cancelTask();
@@ -1096,6 +1102,9 @@ class Animation extends Event {
   cancel() {
     frame.offFrame(this.cb);
     this.__cancelTask();
+    if(this.__playState === 'idle') {
+      return this;
+    }
     this.__playState = 'idle';
     let { target } = this;
     let root = target.root;

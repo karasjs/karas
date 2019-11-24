@@ -205,6 +205,7 @@ class Root extends Dom {
     this.__defs.clear();
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
+    this.emit(Event.KARAS_BEFORE_REFRESH);
     // 预先计算字体相关的继承
     if(lv === level.REFLOW) {
       this.__computed();

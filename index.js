@@ -474,7 +474,8 @@
 
   function isNil(v) {
     return v === undefined || v === null;
-  }
+  } // 根元素专用
+
 
   function joinVirtualDom(vd) {
     var s = '<defs>';
@@ -495,7 +496,8 @@
     });
     s += '</g>';
     return s;
-  }
+  } // 普通元素
+
 
   function joinVd(vd) {
     if (vd.type === 'item' || vd.type === 'img') {
@@ -538,7 +540,10 @@
       });
       _s2 += '</g>';
       return "<g opacity=\"".concat(vd.opacity, "\" transform=\"").concat(joinTransform(vd.transform), "\"").concat(vd.mask ? " mask=\"".concat(vd.mask, "\"") : '', "\">").concat(_s2, "</g>");
-    }
+    } // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
+
+
+    return '<g></g>';
   }
 
   function joinTransform(transform) {
@@ -9150,8 +9155,7 @@
         this.__defs.clear();
 
         var lv = this.__refreshLevel;
-        this.__refreshLevel = level.REPAINT;
-        this.emit(Event.KARAS_BEFORE_REFRESH); // 预先计算字体相关的继承
+        this.__refreshLevel = level.REPAINT; // 预先计算字体相关的继承
 
         if (lv === level.REFLOW) {
           this.__computed();
@@ -9181,6 +9185,8 @@
           if (renderMode === mode.CANVAS) {
             _this2.__clear();
           }
+
+          _this2.emit(Event.KARAS_BEFORE_REFRESH, lv);
 
           _this2.render(renderMode);
 

@@ -39,6 +39,7 @@ function isNil(v) {
   return v === undefined || v === null;
 }
 
+// 根元素专用
 function joinVirtualDom(vd) {
   let s = '<defs>';
   vd.defs.forEach(item => {
@@ -59,6 +60,7 @@ function joinVirtualDom(vd) {
   return s;
 }
 
+// 普通元素
 function joinVd(vd) {
   if(vd.type === 'item' || vd.type === 'img') {
     let s = '';
@@ -98,6 +100,8 @@ function joinVd(vd) {
     s += '</g>';
     return `<g opacity="${vd.opacity}" transform="${joinTransform(vd.transform)}"${vd.mask ? ` mask="${vd.mask}"` : ''}">${s}</g>`;
   }
+  // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
+  return '<g></g>';
 }
 
 function joinTransform(transform) {

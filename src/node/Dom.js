@@ -23,7 +23,7 @@ const INLINE = {
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
-    this.__children = children;
+    this.__children = children || [];
     this.__flowChildren = []; // 非绝对定位孩子
     this.__absChildren = []; // 绝对定位孩子
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表

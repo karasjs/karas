@@ -18,6 +18,8 @@ class Img extends Dom {
     if(!this.src || !this.src.trim()) {
       this.__error = true;
       let { style: { width, height } } = this;
+      width = width || { unit: unit.AUTO };
+      height = height || { unit: unit.AUTO };
       if(width.unit === unit.AUTO) {
         width.value = 32;
         width.unit = unit.PX;

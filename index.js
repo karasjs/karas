@@ -3916,7 +3916,18 @@
         });
       };
 
-      img.setAttribute('crossOrigin', 'Anonymous');
+      if (url.substr(0, 5) !== 'data:') {
+        var host = /^https?:\/\/([^/:]+)/.exec(url);
+
+        if (host) {
+          host = host[1].split('.').slice(-2).join('.');
+
+          if (location.hostname.indexOf(host) === -1) {
+            img.crossOrigin = 'anonymous';
+          }
+        }
+      }
+
       img.src = url;
     },
     warn: function warn(s) {

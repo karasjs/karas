@@ -419,43 +419,6 @@ class Dom extends Xom {
     } = currentStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     let isDirectionRow = flexDirection === 'row';
-    // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
-    if(!isDirectionRow && !fixedHeight) {
-      flowChildren.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          let { currentStyle, computedStyle } = item;
-          let { display, flexDirection, width } = currentStyle;
-          // column的flex的child如果是inline，变为block
-          if(display === 'inline') {
-            currentStyle.display = computedStyle.display = 'block';
-          }
-          // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-          else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
-            width.value = w;
-            width.unit = unit.PX;
-          }
-          item.__layout({
-            x,
-            y,
-            w,
-            h,
-          });
-          y += item.outerHeight;
-        }
-        else {
-          item.__layout({
-            x,
-            y,
-            w,
-            h,
-          });
-          y += item.outerHeight;
-        }
-      });
-      this.__width = w;
-      this.__height = y - data.y;
-      return;
-    }
     // 计算伸缩基数
     let growList = [];
     let shrinkList = [];

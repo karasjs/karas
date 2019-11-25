@@ -7438,49 +7438,7 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
-        var isDirectionRow = flexDirection === 'row'; // column时height可能为auto，此时取消伸展，退化为类似block布局，但所有子元素强制block
-
-        if (!isDirectionRow && !fixedHeight) {
-          flowChildren.forEach(function (item) {
-            if (item instanceof Xom || item instanceof Component) {
-              var _currentStyle = item.currentStyle,
-                  computedStyle = item.computedStyle;
-              var display = _currentStyle.display,
-                  _flexDirection = _currentStyle.flexDirection,
-                  width = _currentStyle.width; // column的flex的child如果是inline，变为block
-
-              if (display === 'inline') {
-                _currentStyle.display = computedStyle.display = 'block';
-              } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              else if (display === 'flex' && _flexDirection === 'row' && width.unit === unit.AUTO) {
-                  width.value = w;
-                  width.unit = unit.PX;
-                }
-
-              item.__layout({
-                x: x,
-                y: y,
-                w: w,
-                h: h
-              });
-
-              y += item.outerHeight;
-            } else {
-              item.__layout({
-                x: x,
-                y: y,
-                w: w,
-                h: h
-              });
-
-              y += item.outerHeight;
-            }
-          });
-          this.__width = w;
-          this.__height = y - data.y;
-          return;
-        } // 计算伸缩基数
-
+        var isDirectionRow = flexDirection === 'row'; // 计算伸缩基数
 
         var growList = [];
         var shrinkList = [];
@@ -7492,11 +7450,11 @@
         var maxSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
-            var _currentStyle2 = item.currentStyle,
+            var _currentStyle = item.currentStyle,
                 computedStyle = item.computedStyle;
-            var flexGrow = _currentStyle2.flexGrow,
-                flexShrink = _currentStyle2.flexShrink,
-                flexBasis = _currentStyle2.flexBasis;
+            var flexGrow = _currentStyle.flexGrow,
+                flexShrink = _currentStyle.flexShrink,
+                flexBasis = _currentStyle.flexBasis;
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
@@ -7568,19 +7526,19 @@
           main = Math.max(main, minList[i]);
 
           if (item instanceof Xom || item instanceof Component) {
-            var _currentStyle3 = item.currentStyle,
+            var _currentStyle2 = item.currentStyle,
                 computedStyle = item.computedStyle;
-            var display = _currentStyle3.display,
-                _flexDirection2 = _currentStyle3.flexDirection,
-                width = _currentStyle3.width,
-                height = _currentStyle3.height;
+            var display = _currentStyle2.display,
+                _flexDirection = _currentStyle2.flexDirection,
+                width = _currentStyle2.width,
+                height = _currentStyle2.height;
 
             if (isDirectionRow) {
               // row的flex的child如果是inline，变为block
               if (display === 'inline') {
-                _currentStyle3.display = computedStyle.display = 'block';
+                _currentStyle2.display = computedStyle.display = 'block';
               } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              else if (display === 'flex' && _flexDirection2 === 'column' && fixedHeight && height.unit === unit.AUTO) {
+              else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
                   height.value = h;
                   height.unit = unit.PX;
                 }
@@ -7594,9 +7552,9 @@
             } else {
               // column的flex的child如果是inline，变为block
               if (display === 'inline') {
-                _currentStyle3.display = computedStyle.display = 'block';
+                _currentStyle2.display = computedStyle.display = 'block';
               } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              else if (display === 'flex' && _flexDirection2 === 'row' && width.unit === unit.AUTO) {
+              else if (display === 'flex' && _flexDirection === 'row' && width.unit === unit.AUTO) {
                   width.value = w;
                   width.unit = unit.PX;
                 }

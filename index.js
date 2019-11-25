@@ -3916,6 +3916,7 @@
         });
       };
 
+      img.setAttribute('crossOrigin', 'Anonymous');
       img.src = url;
     },
     warn: function warn(s) {

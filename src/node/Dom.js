@@ -985,7 +985,9 @@ class Dom extends Xom {
       // 并且布局完成后还要偏移回来
       if(onlyRight && onlyBottom) {
         // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
-        currentStyle.display = 'inline';
+        if(display === 'block') {
+          currentStyle.display = 'inline';
+        }
         item.__layout({
           x: x2,
           y: y2,
@@ -996,7 +998,9 @@ class Dom extends Xom {
         item.__offsetY(-item.height, true);
       }
       else if(onlyRight) {
-        currentStyle.display = 'inline';
+        if(display === 'block') {
+          currentStyle.display = 'inline';
+        }
         item.__layout({
           x: x2,
           y: y2,
@@ -1006,7 +1010,9 @@ class Dom extends Xom {
         item.__offsetX(-item.width, true);
       }
       else if(onlyBottom) {
-        currentStyle.display = 'inline';
+        if(display === 'block') {
+          currentStyle.display = 'inline';
+        }
         item.__layout({
           x: x2,
           y: y2,
@@ -1016,6 +1022,9 @@ class Dom extends Xom {
         item.__offsetY(-item.height, true);
       }
       else {
+        if(display === 'block') {
+          currentStyle.display = 'inline';
+        }
         item.__layout({
           x: x2,
           y: y2,
@@ -1024,7 +1033,7 @@ class Dom extends Xom {
         });
       }
       // 布局完成后改回
-      if(display === 'inline') {
+      if(display === 'inline' || display === 'block') {
         currentStyle.display = computedStyle.display = 'block';
       }
     });

@@ -411,7 +411,7 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data) {
-    let { flowChildren, style, currentStyle } = this;
+    let { flowChildren, currentStyle } = this;
     let {
       flexDirection,
       justifyContent,
@@ -980,11 +980,12 @@ class Dom extends Xom {
           unit: unit.PX,
         };
       }
-      // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
-      currentStyle.display = 'inline';
+      let display = currentStyle.display;
       // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
       // 并且布局完成后还要偏移回来
       if(onlyRight && onlyBottom) {
+        // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
+        currentStyle.display = 'inline';
         item.__layout({
           x: x2,
           y: y2,
@@ -995,6 +996,7 @@ class Dom extends Xom {
         item.__offsetY(-item.height, true);
       }
       else if(onlyRight) {
+        currentStyle.display = 'inline';
         item.__layout({
           x: x2,
           y: y2,
@@ -1004,6 +1006,7 @@ class Dom extends Xom {
         item.__offsetX(-item.width, true);
       }
       else if(onlyBottom) {
+        currentStyle.display = 'inline';
         item.__layout({
           x: x2,
           y: y2,
@@ -1020,8 +1023,10 @@ class Dom extends Xom {
           h: data.h - y2,
         });
       }
-      // 布局完成后强制为block
-      currentStyle.display = computedStyle.display = 'block';
+      // 布局完成后改回
+      if(display === 'inline') {
+        currentStyle.display = computedStyle.display = 'block';
+      }
     });
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {

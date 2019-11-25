@@ -7414,7 +7414,6 @@
       key: "__layoutFlex",
       value: function __layoutFlex(data) {
         var flowChildren = this.flowChildren,
-            style = this.style,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
             justifyContent = currentStyle.justifyContent,
@@ -8036,13 +8035,15 @@
               value: h2,
               unit: unit.PX
             };
-          } // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
+          }
 
-
-          currentStyle.display = 'inline'; // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
+          var display = currentStyle.display; // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
           // 并且布局完成后还要偏移回来
 
           if (onlyRight && onlyBottom) {
+            // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
+            currentStyle.display = 'inline';
+
             item.__layout({
               x: x2,
               y: y2,
@@ -8054,6 +8055,8 @@
 
             item.__offsetY(-item.height, true);
           } else if (onlyRight) {
+            currentStyle.display = 'inline';
+
             item.__layout({
               x: x2,
               y: y2,
@@ -8063,6 +8066,8 @@
 
             item.__offsetX(-item.width, true);
           } else if (onlyBottom) {
+            currentStyle.display = 'inline';
+
             item.__layout({
               x: x2,
               y: y2,
@@ -8078,10 +8083,12 @@
               w: data.w - x2,
               h: data.h - y2
             });
-          } // 布局完成后强制为block
+          } // 布局完成后改回
 
 
-          currentStyle.display = computedStyle.display = 'block';
+          if (display === 'inline') {
+            currentStyle.display = computedStyle.display = 'block';
+          }
         }); // 递归进行，遇到absolute/relative的设置新容器
 
         children.forEach(function (item) {

@@ -3917,12 +3917,10 @@
       };
 
       if (url.substr(0, 5) !== 'data:') {
-        var host = /^https?:\/\/([^/:]+)/.exec(url);
+        var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
 
         if (host) {
-          host = host[1].split('.').slice(-2).join('.');
-
-          if (location.hostname.indexOf(host) === -1) {
+          if (location.hostname !== host[1]) {
             img.crossOrigin = 'anonymous';
           }
         }
@@ -10704,6 +10702,7 @@
     inject: inject,
     css: css,
     frame: frame,
+    easing: easing,
     math: math
   };
 

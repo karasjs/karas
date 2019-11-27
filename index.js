@@ -5161,6 +5161,7 @@
             }
 
             var diff = now - _this3.__lastTime - offsetTime;
+            diff = Math.max(diff, 0);
 
             if (playbackRate !== 1) {
               diff *= playbackRate;
@@ -5168,7 +5169,12 @@
 
             _this3.__diffTime += diff;
             diff = _this3.__diffTime;
-            _this3.__lastTime = now; // 还没过前置delay
+            _this3.__lastTime = now; // delay仅第一次生效
+
+            if (playCount > 0) {
+              delay = 0;
+            } // 还没过前置delay
+
 
             if (diff < delay) {
               if (init && {

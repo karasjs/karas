@@ -912,12 +912,17 @@ class Animation extends Event {
           this.__lastIndex = 0;
         }
         let diff = now - this.__lastTime - offsetTime;
+        diff = Math.max(diff, 0);
         if(playbackRate !== 1) {
           diff *= playbackRate;
         }
         this.__diffTime += diff;
         diff = this.__diffTime;
         this.__lastTime = now;
+        // delay仅第一次生效
+        if(playCount > 0) {
+          delay = 0;
+        }
         // 还没过前置delay
         if(diff < delay) {
           if(init && {

@@ -892,7 +892,6 @@ class Animation extends Event {
         playCount,
         duration,
         direction,
-        fps,
         iterations,
         fill,
         delay,
@@ -976,6 +975,7 @@ class Animation extends Event {
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
         else {
           // 增加的fps功能，当<60时计算跳帧
+          let fps = this.fps;
           if(!util.isNumber(fps) || fps < 0) {
             fps = 60;
           }
@@ -1159,6 +1159,13 @@ class Animation extends Event {
   }
   get fps() {
     return this.__fps;
+  }
+  set fps(v) {
+    v = parseInt(v) || 60;
+    if(v < 0) {
+      v = 60;
+    }
+    this.__fps = v;
   }
   get iterations() {
     return this.__iterations;

@@ -5138,7 +5138,6 @@
               playCount = this.playCount,
               duration = this.duration,
               direction = this.direction,
-              fps = this.fps,
               iterations = this.iterations,
               fill = this.fill,
               delay = this.delay,
@@ -5236,6 +5235,8 @@
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
                 // 增加的fps功能，当<60时计算跳帧
+                var fps = _this3.fps;
+
                 if (!util.isNumber(fps) || fps < 0) {
                   fps = 60;
                 }
@@ -5474,6 +5475,15 @@
       key: "fps",
       get: function get() {
         return this.__fps;
+      },
+      set: function set(v) {
+        v = parseInt(v) || 60;
+
+        if (v < 0) {
+          v = 60;
+        }
+
+        this.__fps = v;
       }
     }, {
       key: "iterations",

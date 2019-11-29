@@ -267,6 +267,7 @@ class Dom extends Xom {
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data) {
     let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
+    lineGroups.splice(0);
     let {
       textAlign,
     } = computedStyle;
@@ -681,6 +682,7 @@ class Dom extends Xom {
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data) {
     let { flowChildren, computedStyle, lineGroups } = this;
+    lineGroups.splice(0);
     let {
       textAlign,
     } = computedStyle;

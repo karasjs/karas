@@ -7275,6 +7275,7 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
+        lineGroups.splice(0);
         var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout = this.__preLayout(data),
@@ -7729,6 +7730,7 @@
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
+        lineGroups.splice(0);
         var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout3 = this.__preLayout(data),

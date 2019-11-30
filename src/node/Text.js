@@ -104,7 +104,7 @@ class Text extends Node {
         maxX = Math.max(maxX, x + count);
         y += computedStyle.lineHeight;
         begin = i + 1;
-        i = begin + 1;
+        i = begin;
         count = 0;
       }
       else if(count > w) {
@@ -117,7 +117,6 @@ class Text extends Node {
         maxX = Math.max(maxX, x + count - charWidthList[i]);
         y += computedStyle.lineHeight;
         begin = i;
-        i = i + 1;
         count = 0;
       }
       else {

@@ -680,7 +680,7 @@ class Dom extends Xom {
   }
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
-  __layoutInline(data) {
+  __layoutInline(data, fake) {
     let { flowChildren, computedStyle, lineGroups } = this;
     lineGroups.splice(0);
     let {
@@ -697,7 +697,10 @@ class Dom extends Xom {
           this.absChildren.push(item);
           return;
         }
-        item.currentStyle.display = item.computedStyle.display = 'inline';
+        let { display } = item.currentStyle;
+        if(fake) {
+          item.currentStyle.display = 'inline';
+        }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -739,6 +742,9 @@ class Dom extends Xom {
           x += item.outerWidth;
           maxX = Math.max(maxX, x);
           lineGroup.add(item);
+        }
+        if(fake) {
+          item.currentStyle.display = display;
         }
       }
       // inline里的其它只有文本
@@ -833,7 +839,7 @@ class Dom extends Xom {
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { currentStyle, computedStyle } = item;
-      let { left, top, right, bottom, width, height } = currentStyle;
+      let { left, top, right, bottom, width, height, display, flexDirection } = currentStyle;
       let x2, y2, w2, h2;
       let onlyRight;
       let onlyBottom;
@@ -945,61 +951,88 @@ class Dom extends Xom {
           unit: unit.PX,
         };
       }
-      let display = currentStyle.display;
-      // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
-      // 并且布局完成后还要偏移回来
-      if(onlyRight && onlyBottom) {
-        // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
-        if(display === 'block') {
-          currentStyle.display = 'inline';
+      // 记录初始display，同时absolute不能为inline
+      if (display === 'inline') {
+        display = 'block';
+      }
+      // 没设宽高，在获取最大宽高后，display恢复重新布局一次
+      let fake;
+      if(display === 'block' && w2 === undefined) {
+        fake = true;
+      }
+      else if(display === 'flex') {
+        if(flexDirection === 'row' && w2 === undefined) {
+          fake = true;
         }
-        item.__layout({
-          x: x2,
-          y: y2,
-          w: w2,
-          h: h2,
-        });
-        item.__offsetX(-item.width, true);
-        item.__offsetY(-item.height, true);
+        else if(flexDirection === 'column' && h2 === undefined) {
+          fake = true;
+        }
+      }
+      // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
+      if(fake) {
+        currentStyle.display = 'inline';
+      }
+      // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
+      if(onlyRight && onlyBottom) {
+        w2 = x2 - x;
+        h2 - y2 - y;
       }
       else if(onlyRight) {
-        if(display === 'block') {
-          currentStyle.display = 'inline';
-        }
+        w2 = x2 - x;
+        h2 = data.h - y2;
+      }
+      else if(onlyBottom) {
+        item.__layout({
+          x: x2,
+          y: y2,
+          w: data.w - x2,
+          h: y2 - y,
+        });
+        w2 = data.w - x2;
+        h2 - y2 - y;
+      }
+      else {
+        w2 = data.w - x2;
+        h2 = data.h - y2;
+      }
+      item.__layout({
+        x: x2,
+        y: y2,
+        w: w2,
+        h: h2,
+      }, fake);
+      // 取孩子宽度最大值，display恢复重新布局
+      if(fake) {
+        let max = 0;
+        item.flowChildren.forEach(item => {
+          max = Math.max(max, item.outerWidth);
+        });
+        currentStyle.width = {
+          value: max,
+          unit: unit.PX,
+        };
+        currentStyle.height = {
+          value: item.height,
+          unit: unit.PX,
+        };
         item.__layout({
           x: x2,
           y: y2,
           w: w2,
-          h: data.h - y2,
-        });
-        item.__offsetX(-item.width, true);
-      }
-      else if(onlyBottom) {
-        if(display === 'block') {
-          currentStyle.display = 'inline';
-        }
-        item.__layout({
-          x: x2,
-          y: y2,
-          w: data.w - x2,
           h: h2,
         });
-        item.__offsetY(-item.height, true);
+        currentStyle.display = display;
       }
-      else {
-        if(display === 'block') {
-          currentStyle.display = 'inline';
-        }
-        item.__layout({
-          x: x2,
-          y: y2,
-          w: data.w - x2,
-          h: data.h - y2,
-        });
+      // right或bottom布局完成后还要偏移回来
+      if(onlyRight && onlyBottom) {
+        item.__offsetX(-item.outerWidth, true);
+        item.__offsetY(-item.outerHeight, true);
       }
-      // 布局完成后改回
-      if(display === 'inline' || display === 'block') {
-        currentStyle.display = computedStyle.display = 'block';
+      else if(onlyRight) {
+        item.__offsetX(-item.outerWidth, true);
+      }
+      else if(onlyBottom) {
+        item.__offsetY(-item.outerHeight, true);
       }
     });
     // 递归进行，遇到absolute/relative的设置新容器

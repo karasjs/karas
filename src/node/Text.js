@@ -54,6 +54,7 @@ class Text extends Node {
         if(!wait.hash.hasOwnProperty(char)) {
           wait.s += char;
         }
+        wait.hash[char] = true;
         // 先预存标识位-1，测量完后替换它
         charWidthList.push(-1);
         needMeasure = true;

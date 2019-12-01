@@ -2804,8 +2804,9 @@
           } else {
             if (!wait.hash.hasOwnProperty(_char)) {
               wait.s += _char;
-            } // 先预存标识位-1，测量完后替换它
+            }
 
+            wait.hash[_char] = true; // 先预存标识位-1，测量完后替换它
 
             charWidthList.push(-1);
             needMeasure = true;

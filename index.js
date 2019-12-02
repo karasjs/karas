@@ -3981,21 +3981,26 @@
         var self = this;
 
         function cb() {
+          var last = inject.now();
           inject.requestAnimationFrame(function () {
             if (!task.length) {
               return;
             }
 
+            var now = inject.now();
+            var delta = now - last;
+            delta = delta * 0.06;
+            last = now;
             self.__inFrame = true;
             task.forEach(function (handle) {
-              return handle();
+              return handle(delta);
             });
             self.__inFrame = false;
             var afterCb = self.__afterFrame;
 
             if (afterCb) {
               afterCb.forEach(function (item) {
-                return item();
+                return item(delta);
               });
             }
 

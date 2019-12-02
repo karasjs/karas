@@ -10,16 +10,21 @@ class Frame {
   __init(task) {
     let self = this;
     function cb() {
+      let last = inject.now();
       inject.requestAnimationFrame(function() {
         if(!task.length) {
           return;
         }
+        let now = inject.now();
+        let delta = now - last;
+        delta = delta * 0.06;
+        last = now;
         self.__inFrame = true;
-        task.forEach(handle => handle());
+        task.forEach(handle => handle(delta));
         self.__inFrame = false;
         let afterCb = self.__afterFrame;
         if(afterCb) {
-          afterCb.forEach(item => item());
+          afterCb.forEach(item => item(delta));
         }
         self.__afterFrame = [];
         if(!task.length) {

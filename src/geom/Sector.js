@@ -144,23 +144,25 @@ class Sector extends Geom {
       else {
         this.addGeom('path', [
           ['d', closure
-            ? `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`
-            : `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+            ? `M${x1},${y1} A${r} ${r} 0 ${large} 1 ${x2},${y2} z`
+            : `M${cx},${cy} L${x1},${y1} A${r} ${r} 0 ${large} 1 ${x2},${y2} z`],
           ['fill', fill]
         ]);
-        let props = [
-          ['d', `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2}`],
-          ['fill', 'transparent'],
-          ['stroke', stroke],
-          ['stroke-width', strokeWidth]
-        ];
-        if(strokeDasharray.length) {
-          props.push(['stroke-dasharray', strokeDasharray]);
+        if(strokeWidth > 0) {
+          let props = [
+            ['d', `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`],
+            ['fill', 'transparent'],
+            ['stroke', stroke],
+            ['stroke-width', strokeWidth]
+          ];
+          if(strokeDasharray.length) {
+            props.push(['stroke-dasharray', strokeDasharray]);
+          }
+          if(strokeLinecap !== 'butt') {
+            props.push(['stroke-linecap', strokeLinecap]);
+          }
+          this.addGeom('path', props);
         }
-        if(strokeLinecap !== 'butt') {
-          props.push(['stroke-linecap', strokeLinecap]);
-        }
-        this.addGeom('path', props);
       }
     }
   }

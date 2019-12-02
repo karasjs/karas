@@ -6905,11 +6905,85 @@
         if (renderMode === mode.CANVAS) ; else if (renderMode === mode.SVG) {
           this.render(renderMode);
           var vd = this.virtualDom;
-          vd.isMask = true;
+          vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
+
+          var children = util.clone(vd.children);
+          var m = this.matrixEvent;
+          children.forEach(function (child) {
+            var xi = 0;
+            var yi = 1;
+            var x, y;
+            var props = child.props;
+
+            if (child.tagName === 'rect') {
+              for (var i = 0, len = props.length; i < len; i++) {
+                var _props$i = _slicedToArray(props[i], 2),
+                    k = _props$i[0],
+                    v = _props$i[1];
+
+                if (k === 'x') {
+                  xi = i;
+                  x = v;
+                } else if (k === 'y') {
+                  yi = i;
+                  y = v;
+                }
+              }
+
+              var point = matrix.calPoint([x, y], m);
+              props[xi][1] = point[0];
+              props[yi][1] = point[1];
+            } else if (child.tagName === 'circle' || child.tagName === 'ellipse') {
+              for (var _i = 0, _len = props.length; _i < _len; _i++) {
+                var _props$_i = _slicedToArray(props[_i], 2),
+                    k = _props$_i[0],
+                    v = _props$_i[1];
+
+                if (k === 'cx') {
+                  xi = _i;
+                  x = v;
+                } else if (k === 'cy') {
+                  yi = _i;
+                  y = v;
+                }
+              }
+
+              var _point = matrix.calPoint([x, y], m);
+
+              props[xi][1] = _point[0];
+              props[yi][1] = _point[1];
+            } else if (child.tagName === 'polygon') {
+              for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
+                var _props$_i2 = _slicedToArray(props[_i2], 2),
+                    k = _props$_i2[0],
+                    v = _props$_i2[1];
+
+                if (k === 'points') {
+                  props[_i2][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                    return matrix.calPoint([$1, $2], m).join(',');
+                  });
+                  break;
+                }
+              }
+            } else if (child.tagName === 'path') {
+              for (var _i3 = 0, _len3 = props.length; _i3 < _len3; _i3++) {
+                var _props$_i3 = _slicedToArray(props[_i3], 2),
+                    k = _props$_i3[0],
+                    v = _props$_i3[1];
+
+                if (k === 'd') {
+                  props[_i3][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                    return matrix.calPoint([$1, $2], m).join(',');
+                  });
+                  break;
+                }
+              }
+            }
+          });
           var maskId = this.defs.add({
             tagName: 'mask',
-            props: [['transform', vd.transform], ['opacity', vd.opacity]],
-            children: vd.children
+            props: [],
+            children: children
           });
           this.__maskId = "url(#".concat(maskId, ")");
         }
@@ -9463,13 +9537,13 @@
           var d;
 
           if (curve === 3) {
-            d = "M".concat(x1, " ").concat(y1, " C").concat(cx1, " ").concat(cy1, " ").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2);
+            d = "M".concat(x1, ",").concat(y1, " C").concat(cx1, ",").concat(cy1, " ").concat(cx2, ",").concat(cy2, " ").concat(x2, ",").concat(y2);
           } else if (curve === 2) {
-            d = "M".concat(x1, " ").concat(y1, " Q").concat(cx2, " ").concat(cy2, " ").concat(x2, " ").concat(y2);
+            d = "M".concat(x1, ",").concat(y1, " Q").concat(cx2, ",").concat(cy2, " ").concat(x2, ",").concat(y2);
           } else if (curve === 1) {
-            d = "M".concat(x1, " ").concat(y1, " Q").concat(cx1, " ").concat(cy1, " ").concat(x2, " ").concat(y2);
+            d = "M".concat(x1, ",").concat(y1, " Q").concat(cx1, ",").concat(cy1, " ").concat(x2, ",").concat(y2);
           } else {
-            d = "M".concat(x1, " ").concat(y1, " L").concat(x2, " ").concat(y2);
+            d = "M".concat(x1, ",").concat(y1, " L").concat(x2, ",").concat(y2);
           }
 
           var props = [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
@@ -9707,29 +9781,29 @@
           var tagName;
 
           if (hasControll) {
-            var s = "M".concat(pts[0][0], " ").concat(pts[0][1]);
+            var s = "M".concat(pts[0][0], ",").concat(pts[0][1]);
 
             for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
               var _point = pts[_i2];
               var _cl2 = cls[_i2 - 1];
 
               if (!_cl2) {
-                s += "L".concat(_point[0], " ").concat(_point[1]);
+                s += "L".concat(_point[0], ",").concat(_point[1]);
               } else if (_cl2.length === 4) {
-                s += "C".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_cl2[2], " ").concat(_cl2[3], " ").concat(_point[0], " ").concat(_point[1]);
+                s += "C".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_cl2[2], ",").concat(_cl2[3], " ").concat(_point[0], ",").concat(_point[1]);
               } else {
-                s += "Q".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_point[0], " ").concat(_point[1]);
+                s += "Q".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_point[0], ",").concat(_point[1]);
               }
             }
 
             var _cl = cls[pts.length - 1];
 
             if (!_cl) {
-              s += "L".concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "L".concat(pts[0][0], ",").concat(pts[0][1]);
             } else if (_cl.length === 4) {
-              s += "C".concat(_cl[0], " ").concat(_cl[1], " ").concat(_cl[2], " ").concat(_cl[3], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "C".concat(_cl[0], ",").concat(_cl[1], " ").concat(_cl[2], ",").concat(_cl[3], " ").concat(pts[0][0], ",").concat(pts[0][1]);
             } else {
-              s += "Q".concat(_cl[0], " ").concat(_cl[1], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "Q".concat(_cl[0], ",").concat(_cl[1], " ").concat(pts[0][0], ",").concat(pts[0][1]);
             }
 
             props.push(['d', s]);
@@ -9912,29 +9986,29 @@
           var tagName;
 
           if (hasControll) {
-            var s = "M".concat(pts[0][0], " ").concat(pts[0][1]);
+            var s = "M".concat(pts[0][0], ",").concat(pts[0][1]);
 
             for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
               var _point = pts[_i2];
               var _cl3 = cls[_i2 - 1];
 
               if (!_cl3) {
-                s += "L".concat(_point[0], " ").concat(_point[1]);
+                s += "L".concat(_point[0], ",").concat(_point[1]);
               } else if (_cl3.length === 4) {
-                s += "C".concat(_cl3[0], " ").concat(_cl3[1], " ").concat(_cl3[2], " ").concat(_cl3[3], " ").concat(_point[0], " ").concat(_point[1]);
+                s += "C".concat(_cl3[0], ",").concat(_cl3[1], " ").concat(_cl3[2], ",").concat(_cl3[3], " ").concat(_point[0], ",").concat(_point[1]);
               } else {
-                s += "Q".concat(_cl3[0], " ").concat(_cl3[1], " ").concat(_point[0], " ").concat(_point[1]);
+                s += "Q".concat(_cl3[0], ",").concat(_cl3[1], " ").concat(_point[0], ",").concat(_point[1]);
               }
             }
 
             var _cl2 = cls[pts.length - 1];
 
             if (!_cl2) {
-              s += "L".concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "L".concat(pts[0][0], ",").concat(pts[0][1]);
             } else if (_cl2.length === 4) {
-              s += "C".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(_cl2[2], " ").concat(_cl2[3], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "C".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_cl2[2], ",").concat(_cl2[3], " ").concat(pts[0][0], ",").concat(pts[0][1]);
             } else {
-              s += "Q".concat(_cl2[0], " ").concat(_cl2[1], " ").concat(pts[0][0], " ").concat(pts[0][1]);
+              s += "Q".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(pts[0][0], ",").concat(pts[0][1]);
             }
 
             props.push(['d', s]);
@@ -10151,18 +10225,21 @@
 
             this.addGeom('path', props);
           } else {
-            this.addGeom('path', [['d', closure ? "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z") : "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill]]);
-            var _props = [['d', "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+            this.addGeom('path', [['d', closure ? "M".concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z") : "M".concat(cx, ",").concat(cy, " L").concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z")], ['fill', fill]]);
 
-            if (strokeDasharray.length) {
-              _props.push(['stroke-dasharray', strokeDasharray]);
+            if (strokeWidth > 0) {
+              var _props = [['d', "M".concat(x1, ",").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+              if (strokeDasharray.length) {
+                _props.push(['stroke-dasharray', strokeDasharray]);
+              }
+
+              if (strokeLinecap !== 'butt') {
+                _props.push(['stroke-linecap', strokeLinecap]);
+              }
+
+              this.addGeom('path', _props);
             }
-
-            if (strokeLinecap !== 'butt') {
-              _props.push(['stroke-linecap', strokeLinecap]);
-            }
-
-            this.addGeom('path', _props);
           }
         }
       }

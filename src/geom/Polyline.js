@@ -186,29 +186,29 @@ class Polyline extends Geom {
       ];
       let tagName;
       if(hasControll) {
-        let s = `M${pts[0][0]} ${pts[0][1]}`;
+        let s = `M${pts[0][0]},${pts[0][1]}`;
         for(let i = 1, len = pts.length; i < len; i++) {
           let point = pts[i];
           let cl = cls[i - 1];
           if(!cl) {
-            s += `L${point[0]} ${point[1]}`;
+            s += `L${point[0]},${point[1]}`;
           }
           else if(cl.length === 4) {
-            s += `C${cl[0]} ${cl[1]} ${cl[2]} ${cl[3]} ${point[0]} ${point[1]}`;
+            s += `C${cl[0]},${cl[1]} ${cl[2]},${cl[3]} ${point[0]},${point[1]}`;
           }
           else {
-            s += `Q${cl[0]} ${cl[1]} ${point[0]} ${point[1]}`;
+            s += `Q${cl[0]},${cl[1]} ${point[0]},${point[1]}`;
           }
         }
         let cl = cls[pts.length - 1];
         if(!cl) {
-          s += `L${pts[0][0]} ${pts[0][1]}`;
+          s += `L${pts[0][0]},${pts[0][1]}`;
         }
         else if(cl.length === 4) {
-          s += `C${cl[0]} ${cl[1]} ${cl[2]} ${cl[3]} ${pts[0][0]} ${pts[0][1]}`;
+          s += `C${cl[0]},${cl[1]} ${cl[2]},${cl[3]} ${pts[0][0]},${pts[0][1]}`;
         }
         else {
-          s += `Q${cl[0]} ${cl[1]} ${pts[0][0]} ${pts[0][1]}`;
+          s += `Q${cl[0]},${cl[1]} ${pts[0][0]},${pts[0][1]}`;
         }
         props.push(['d', s]);
         tagName = 'path';

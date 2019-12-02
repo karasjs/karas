@@ -4,6 +4,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import util from '../util/util';
+import matrix from '../math/matrix';
 
 const REGISTER = {};
 
@@ -204,13 +205,73 @@ class Geom extends Xom {
       this.render(renderMode);
       let vd = this.virtualDom;
       vd.isMask = true;
+      // svg的mask没有transform，需手动计算变换后的坐标应用
+      let children = util.clone(vd.children);
+      let m = this.matrixEvent;
+      children.forEach(child => {
+        let xi = 0;
+        let yi = 1;
+        let x, y;
+        let props = child.props;
+        if(child.tagName === 'rect') {
+          for(let i = 0, len = props.length; i < len; i++) {
+            let [k, v] = props[i];
+            if(k === 'x') {
+              xi = i;
+              x = v;
+            }
+            else if(k === 'y') {
+              yi = i;
+              y = v;
+            }
+          }
+          let point = matrix.calPoint([x, y], m);
+          props[xi][1] = point[0];
+          props[yi][1] = point[1];
+        }
+        else if(child.tagName === 'circle' || child.tagName === 'ellipse') {
+          for(let i = 0, len = props.length; i < len; i++) {
+            let [k, v] = props[i];
+            if(k === 'cx') {
+              xi = i;
+              x = v;
+            }
+            else if(k === 'cy') {
+              yi = i;
+              y = v;
+            }
+          }
+          let point = matrix.calPoint([x, y], m);
+          props[xi][1] = point[0];
+          props[yi][1] = point[1];
+        }
+        else if(child.tagName === 'polygon') {
+          for(let i = 0, len = props.length; i < len; i++) {
+            let [k, v] = props[i];
+            if(k === 'points') {
+              props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
+                return matrix.calPoint([$1, $2], m).join(',');
+              });
+              break;
+            }
+          }
+        }
+        else if(child.tagName === 'path') {
+          for(let i = 0, len = props.length; i < len; i++) {
+            let [k, v] = props[i];
+            if(k === 'd') {
+              props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
+                return matrix.calPoint([$1, $2], m).join(',');
+              });
+              break;
+            }
+          }
+        }
+      });
       let maskId = this.defs.add({
         tagName: 'mask',
-        props: [
-          ['transform', vd.transform],
-          ['opacity', vd.opacity]
-        ],
-        children: vd.children,
+        props: [],
+        children,
       });
       this.__maskId = `url(#${maskId})`;
     }

@@ -18,7 +18,8 @@ import parse from './util/parse';
 import inject from './util/inject';
 import css from './style/css';
 import frame from './animate/frame';
-import easing from './animate/easing'
+import easing from './animate/easing';
+import level from './animate/level';
 import math from './math/index';
 
 Geom.register('$line', Line);
@@ -91,6 +92,7 @@ let karas = {
   css,
   frame,
   easing,
+  level,
   math,
 };
 

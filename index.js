@@ -10756,6 +10756,7 @@
     css: css,
     frame: frame,
     easing: easing,
+    level: level,
     math: math
   };
 

@@ -6232,7 +6232,7 @@
         var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth;
         var iw = width + paddingLeft + paddingRight;
-        var ih = height + paddingTop + paddingBottom;
+        var ih = height + paddingTop + paddingBottom; // 先设置透明度，可以向上累积
 
         parent = this.parent;
         var opa = opacity;
@@ -6249,10 +6249,10 @@
         } // transform和transformOrigin相关
 
 
-        if (transform$1) {
-          var tfo = transform.calOrigin(transformOrigin, x2, y2, iw, ih);
-          computedStyle.transformOrigin = tfo.join(' ');
+        var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
+        computedStyle.transformOrigin = tfo.join(' '); // transform相对于自身
 
+        if (transform$1) {
           var _matrix = transform.calMatrix(transform$1, tfo, x2, y2, iw, ih); // 初始化有可能继承祖先的matrix
 
 

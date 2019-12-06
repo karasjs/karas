@@ -450,8 +450,6 @@ class Xom extends Node {
     let y4 = y3 + borderBottomWidth;
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
-    let ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
-    let oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom;
     // 先设置透明度，可以向上累积
     parent = this.parent;
     let opa = opacity;
@@ -466,9 +464,10 @@ class Xom extends Node {
       this.__virtualDom.opacity = opacity;
     }
     // transform和transformOrigin相关
+    let tfo = tf.calOrigin(transformOrigin, x, y, ow, oh);
+    computedStyle.transformOrigin = tfo.join(' ');
+    // transform相对于自身
     if(transform) {
-      let tfo = tf.calOrigin(transformOrigin, x2, y2, iw, ih);
-      computedStyle.transformOrigin = tfo.join(' ');
       let matrix = tf.calMatrix(transform, tfo, x2, y2, iw, ih);
       // 初始化有可能继承祖先的matrix
       this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;

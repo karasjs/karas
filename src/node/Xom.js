@@ -496,8 +496,6 @@ class Xom extends Node {
     if(backgroundColor !== 'transparent') {
       renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
     }
-    let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
-    let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
     // 渐变或图片叠加
     if(backgroundImage) {
       if(util.isString(backgroundImage)) {
@@ -576,6 +574,8 @@ class Xom extends Node {
           else if(h === -1) {
             h = w * height / width;
           }
+          let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
+          let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > iw || h > ih;
@@ -659,6 +659,8 @@ class Xom extends Node {
       }
     }
     else {
+      let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, 0);
+      let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, 0);
       computedStyle.backgroudSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih).join(' ');
       computedStyle.backgroundPosition = `${originX} ${originY}`;
       computedStyle.backgroundRepeat = backgroundRepeat;

@@ -6247,7 +6247,7 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
+        var tfo = transform.calOrigin(transformOrigin, x2, y2, iw, ih);
         computedStyle.transformOrigin = tfo.join(' '); // transform相对于自身
 
         if (transform$1) {
@@ -6379,7 +6379,7 @@
                   this.root.__clear();
                 }
 
-                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h);
+                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h); // repeat-x
 
                 if (needMask) {
                   ctx.globalCompositeOperation = 'destination-in';

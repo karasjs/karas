@@ -407,8 +407,6 @@ class Xom extends Node {
     let {
       display,
       marginTop,
-      marginRight,
-      marginBottom,
       marginLeft,
       paddingTop,
       paddingRight,
@@ -498,6 +496,8 @@ class Xom extends Node {
     if(backgroundColor !== 'transparent') {
       renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
     }
+    let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
+    let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
     // 渐变或图片叠加
     if(backgroundImage) {
       if(util.isString(backgroundImage)) {
@@ -576,10 +576,9 @@ class Xom extends Node {
           else if(h === -1) {
             h = w * height / width;
           }
-          let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
-          let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
           // 超出尺寸模拟mask截取
-          let needMask = originX < x2 || originY < y2 || w > iw || h > ih;
+          let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
+            || originX < x2 || originY < y2 || w > iw || h > ih;
           if(renderMode === mode.CANVAS) {
             // 超出尺寸模拟mask截取
             let cache1;
@@ -653,6 +652,11 @@ class Xom extends Node {
         let bgi = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
         renderBgc(renderMode, bgi, x2, y2, iw, ih, ctx, this);
       }
+    }
+    else {
+      computedStyle.backgroudSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih).join(' ');
+      computedStyle.backgroundPosition = `${originX} ${originY}`;
+      computedStyle.backgroundRepeat = backgroundRepeat;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor !== 'transparent') {

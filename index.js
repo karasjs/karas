@@ -6192,8 +6192,6 @@
 
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
-            marginRight = computedStyle.marginRight,
-            marginBottom = computedStyle.marginBottom,
             marginLeft = computedStyle.marginLeft,
             paddingTop = computedStyle.paddingTop,
             paddingRight = computedStyle.paddingRight,
@@ -6287,8 +6285,10 @@
 
         if (backgroundColor !== 'transparent') {
           renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
-        } // 渐变或图片叠加
+        }
 
+        var originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
+        var originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height); // 渐变或图片叠加
 
         if (backgroundImage) {
           if (util.isString(backgroundImage)) {
@@ -6363,12 +6363,10 @@
                 w = h * _width / _height;
               } else if (h === -1) {
                 h = w * _height / _width;
-              }
+              } // 超出尺寸模拟mask截取
 
-              var originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, _width);
-              var originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, _height); // 超出尺寸模拟mask截取
 
-              var needMask = originX < x2 || originY < y2 || w > iw || h > ih;
+              var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > iw || h > ih;
 
               if (renderMode === mode.CANVAS) {
                 // 超出尺寸模拟mask截取
@@ -6442,6 +6440,10 @@
 
             renderBgc(renderMode, bgi, x2, y2, iw, ih, ctx, this);
           }
+        } else {
+          computedStyle.backgroudSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih).join(' ');
+          computedStyle.backgroundPosition = "".concat(originX, " ").concat(originY);
+          computedStyle.backgroundRepeat = backgroundRepeat;
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 

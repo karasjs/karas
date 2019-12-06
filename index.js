@@ -949,7 +949,7 @@
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
       if (item.unit === unit.PX) {
-        tfo.push(item.value);
+        tfo.push(item.value + i ? y : x);
       } else if (item.unit === unit.PERCENT) {
         tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
       }
@@ -6233,8 +6233,6 @@
         var y4 = y3 + borderBottomWidth;
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom;
-        var ow = iw + marginLeft + borderLeftWidth + borderRightWidth + marginRight;
-        var oh = ih + marginTop + borderTopWidth + borderBottomWidth + marginBottom; // 先设置透明度，可以向上累积
 
         parent = this.parent;
         var opa = opacity;
@@ -6251,11 +6249,11 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
-        computedStyle.transformOrigin = tfo.join(' '); // transform相对于自身
-
         if (transform$1) {
-          var _matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh); // 初始化有可能继承祖先的matrix
+          var tfo = transform.calOrigin(transformOrigin, x2, y2, iw, ih);
+          computedStyle.transformOrigin = tfo.join(' ');
+
+          var _matrix = transform.calMatrix(transform$1, tfo, x2, y2, iw, ih); // 初始化有可能继承祖先的matrix
 
 
           this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;

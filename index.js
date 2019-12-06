@@ -235,7 +235,8 @@
     POSITION: 3,
     NUMBER: 4,
     INHERIT: 5,
-    DEG: 6
+    DEG: 6,
+    SIZE: 7
   };
 
   var Node =
@@ -482,7 +483,13 @@
     vd.defs.forEach(function (item) {
       s += joinDef(item);
     });
-    s += '</defs><g>';
+    s += '</defs><g';
+
+    if (vd.bbMask) {
+      s += " mask=\"".concat(vd.bbMask, "\"");
+    }
+
+    s += '>';
     vd.bb.forEach(function (item) {
       s += joinVd(item);
     });
@@ -518,7 +525,13 @@
       });
       return "<g>".concat(_s, "</g>");
     } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g>';
+      var _s2 = '<g';
+
+      if (vd.bbMask) {
+        _s2 += " mask=\"".concat(vd.bbMask, "\"");
+      }
+
+      _s2 += '>';
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
@@ -1436,8 +1449,10 @@
     last[1] = 1;
   }
 
+  var reg = /\b(\w+)-gradient\((.+)\)/;
+
   function parseGradient(s) {
-    var gradient = /\b(\w+)-gradient\((.+)\)/.exec(s);
+    var gradient = reg.exec(s);
 
     if (gradient) {
       var o = {
@@ -1539,6 +1554,7 @@
   }
 
   var gradient = {
+    reg: reg,
     parseGradient: parseGradient,
     getLinear: getLinear,
     getRadial: getRadial
@@ -2109,23 +2125,150 @@
     var temp = style.background; // 处理渐变背景色
 
     if (temp) {
-      // 优先gradient，没有再考虑颜色
-      var gd = gradient.parseGradient(temp);
+      // gradient/image和颜色可以并存
+      var gd = gradient.reg.exec(temp);
 
       if (gd) {
-        style.backgroundImage = gd;
+        style.backgroundImage = gd[0];
+        temp = temp.replace(gd[0], '');
+      }
+
+      var image = /url\((['"]?)(.*?)\1\)/.exec(temp);
+
+      if (image) {
+        style.backgroundImage = image[2];
+        temp = temp.replace(image[0], '');
+      }
+
+      var repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
+
+      if (repeat) {
+        style.backgroundRepeat = repeat[0].toLowerCase();
+      }
+
+      var position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
+
+      if (position) {
+        style.backgroundPosition = position[0].trim();
+      }
+
+      var bgc = /^\s*(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
+
+      if (bgc) {
+        style.backgroundColor = bgc[0];
+      }
+    } // 背景图
+
+
+    temp = style.backgroundImage;
+
+    if (temp) {
+      // 区分是渐变色还是图
+      if (gradient.reg.test(temp)) {
+        style.backgroundImage = gradient.parseGradient(temp);
+      }
+    }
+
+    temp = style.backgroundColor;
+
+    if (temp) {
+      // 先赋值默认透明，后续操作有合法值覆盖
+      style.backgroundColor = 'transparent';
+
+      var _bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
+
+      if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
+        style.backgroundColor = _bgc[0];
       } else {
-        var bgc = /#[0-9a-f]{3,6}/i.exec(temp);
+        _bgc = /rgba?\(.+\)/i.exec(temp);
 
-        if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-          style.backgroundColor = bgc[0];
+        if (_bgc) {
+          style.backgroundColor = _bgc[0];
+        }
+      }
+    } // 背景位置
+
+
+    temp = style.backgroundPosition;
+
+    if (temp) {
+      temp = temp.split(/\s+/);
+
+      if (temp.length === 1) {
+        temp[1] = '50%';
+      }
+
+      var bp = [];
+
+      for (var i = 0; i < 2; i++) {
+        var item = temp[i];
+
+        if (/%$/.test(item)) {
+          bp.push({
+            value: parseFloat(item) || 0,
+            unit: unit.PERCENT
+          });
+        } else if (/^[\d.]/.test(item)) {
+          bp.push({
+            value: parseFloat(item),
+            unit: unit.PX
+          });
         } else {
-          bgc = /rgba?\(.+\)/i.exec(temp);
+          bp.push({
+            value: item,
+            unit: unit.POSITION
+          });
+        }
+      }
 
-          if (bgc) {
-            style.backgroundColor = bgc[0];
+      style.backgroundPosition = bp;
+    }
+
+
+    temp = style.backgroundSize;
+
+    if (temp) {
+      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(contain|cover|auto)/ig);
+
+      if (match) {
+        if (match.length === 1) {
+          match[1] = match[0];
+        }
+
+        var bc = [];
+
+        for (var _i = 0; _i < 2; _i++) {
+          var _item = match[_i];
+
+          if (/%$/.test(_item)) {
+            bc.push({
+              value: parseFloat(_item) || 0,
+              unit: unit.PERCENT
+            });
+          } else if (/^[\d.]/.test(_item)) {
+            bc.push({
+              value: parseFloat(_item),
+              unit: unit.PX
+            });
+          } else if (_item === 'contain' || _item === 'cover') {
+            bc.push({
+              value: _item,
+              unit: unit.SIZE
+            });
+          } else {
+            bc.push({
+              unit: unit.AUTO
+            });
           }
         }
+
+        style.backgroundSize = bc;
+      } else {
+        style.backgroundSize = [{
+          unit: unit.AUTO
+        }, {
+          unit: unit.AUTO
+        }];
       }
     } // 处理缩写
 
@@ -2161,28 +2304,6 @@
     temp = style.margin;
 
     if (temp) {
-      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-
-      if (match) {
-        if (match.length === 1) {
-          match[3] = match[2] = match[1] = match[0];
-        } else if (match.length === 2) {
-          match[2] = match[0];
-          match[3] = match[1];
-        } else if (match.length === 3) {
-          match[3] = match[1];
-        }
-
-        style.marginTop = match[0];
-        style.marginRight = match[1];
-        style.marginBottom = match[2];
-        style.marginLeft = match[3];
-      }
-    }
-
-    temp = style.padding;
-
-    if (temp) {
       var _match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
 
       if (_match) {
@@ -2195,22 +2316,44 @@
           _match[3] = _match[1];
         }
 
-        style.paddingTop = _match[0];
-        style.paddingRight = _match[1];
-        style.paddingBottom = _match[2];
-        style.paddingLeft = _match[3];
+        style.marginTop = _match[0];
+        style.marginRight = _match[1];
+        style.marginBottom = _match[2];
+        style.marginLeft = _match[3];
+      }
+    }
+
+    temp = style.padding;
+
+    if (temp) {
+      var _match2 = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+
+      if (_match2) {
+        if (_match2.length === 1) {
+          _match2[3] = _match2[2] = _match2[1] = _match2[0];
+        } else if (_match2.length === 2) {
+          _match2[2] = _match2[0];
+          _match2[3] = _match2[1];
+        } else if (_match2.length === 3) {
+          _match2[3] = _match2[1];
+        }
+
+        style.paddingTop = _match2[0];
+        style.paddingRight = _match2[1];
+        style.paddingBottom = _match2[2];
+        style.paddingLeft = _match2[3];
       }
     }
 
     temp = style.transform;
 
     if (temp) {
-      var _match2 = temp.toString().match(/\w+\(.+?\)/g);
+      var _match3 = temp.toString().match(/\w+\(.+?\)/g);
 
-      if (_match2) {
+      if (_match3) {
         var transform = style.transform = [];
 
-        _match2.forEach(function (item) {
+        _match3.forEach(function (item) {
           var i = item.indexOf('(');
           var k = item.slice(0, i);
           var v = item.slice(i + 1, item.length - 1);
@@ -2302,44 +2445,55 @@
     temp = style.transformOrigin;
 
     if (temp) {
-      var _match3 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
+      var _match4 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
 
-      if (_match3) {
-        if (_match3.length === 1) {
-          _match3[1] = _match3[0];
+      if (_match4) {
+        if (_match4.length === 1) {
+          _match4[1] = _match4[0];
         }
 
         var tfo = [];
 
-        for (var i = 0; i < 2; i++) {
-          var item = _match3[i];
+        for (var _i2 = 0; _i2 < 2; _i2++) {
+          var _item2 = _match4[_i2];
 
-          if (/px$/.test(item)) {
+          if (/%$/.test(_item2)) {
             tfo.push({
-              value: parseFloat(item),
-              unit: unit.PX
-            });
-          } else if (/%$/.test(item)) {
-            tfo.push({
-              value: parseFloat(item),
+              value: parseFloat(_item2) || 0,
               unit: unit.PERCENT
+            });
+          } else if (/^[\d.]/.test(_item2)) {
+            tfo.push({
+              value: parseFloat(_item2),
+              unit: unit.PX
             });
           } else {
             tfo.push({
               value: {
-                0: 0,
                 top: 0,
                 left: 0,
                 center: 50,
                 right: 100,
                 bottom: 100
-              }[item],
+              }[_item2],
               unit: unit.PERCENT
             });
+
+            if (tfo[_i2].value === undefined) {
+              tfo[_i2].value = 50;
+            }
           }
         }
 
         style.transformOrigin = tfo;
+      } else {
+        style.transformOrigin = [{
+          value: 50,
+          unit: unit.PERCENT
+        }, {
+          value: 50,
+          unit: unit.PERCENT
+        }];
       }
     }
 
@@ -2420,10 +2574,10 @@
     temp = style.strokeDasharray;
 
     if (temp) {
-      var _match4 = temp.toString().match(/[\d.]+/g);
+      var _match5 = temp.toString().match(/[\d.]+/g);
 
-      if (_match4) {
-        style.strokeDasharray = _match4.join(', ');
+      if (_match5) {
+        style.strokeDasharray = _match5.join(', ');
       } else {
         style.strokeDasharray = '';
       }
@@ -3303,6 +3457,32 @@
     mergeCss: mergeCss
   };
 
+  function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
+    if (imgWidth === targetWidth && imgHeight === targetHeight) {
+      return;
+    }
+
+    var list = [['scaleX', {
+      value: targetWidth / imgWidth,
+      unit: unit.NUMBER
+    }], ['scaleY', {
+      value: targetHeight / imgHeight,
+      unit: unit.NUMBER
+    }]];
+    var tfo = transform.calOrigin([{
+      value: 0,
+      unit: unit.PERCENT
+    }, {
+      value: 0,
+      unit: unit.PERCENT
+    }], x, y, w, h);
+    return transform.calMatrix(list, tfo, x, y, w, h);
+  }
+
+  var image = {
+    matrixResize: matrixResize
+  };
+
   var Event =
   /*#__PURE__*/
   function () {
@@ -3478,6 +3658,9 @@
     fontWeight: 'inherit',
     lineHeight: 'normal',
     backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPosition: '0% 0%',
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -5609,6 +5792,50 @@
     }
   }
 
+  function renderBgc(renderMode, value, x, y, w, h, ctx, xom) {
+    if (renderMode === mode.CANVAS) {
+      ctx.beginPath();
+      ctx.fillStyle = value;
+      ctx.rect(x, y, w, h);
+      ctx.fill();
+      ctx.closePath();
+    } else if (renderMode === mode.SVG) {
+      xom.addBackground([['x', x], ['y', y], ['width', w], ['height', h], ['fill', value]]);
+    }
+  }
+
+  function calBackgroundSize(value, x, y, w, h) {
+    var res = [];
+    value.forEach(function (item, i) {
+      if (item.unit === unit.PX) {
+        res.push(item.value);
+      } else if (item.unit === unit.PERCENT) {
+        res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+      } else if (item.unit === unit.AUTO) {
+        res.push(-1);
+      } else if (item.unit === unit.SIZE) {
+        res.push(item.value === 'contain' ? -2 : -3);
+      } else if (item.unit === unit.POSITION) {
+        res.push(item.value);
+      }
+    });
+    return res;
+  }
+
+  function calBackgroundPosition(position, container, size) {
+    if (position.value === 'right' || position.value === 'bottom') {
+      return container - size;
+    } else if (position.value === 'center') {
+      return (container - size) * 0.5;
+    } else if (position.unit === unit.PX) {
+      return position.value;
+    } else if (position.unit === unit.PERCENT) {
+      return (container - size) * position.value * 0.01;
+    }
+
+    return 0;
+  }
+
   var Xom =
   /*#__PURE__*/
   function (_Node) {
@@ -5659,6 +5886,7 @@
       _this.__matrix = null;
       _this.__matrixEvent = null;
       _this.__animationList = [];
+      _this.__loadBgi = {};
       return _this;
     } // 设置了css时，解析匹配
 
@@ -5917,6 +6145,8 @@
     }, {
       key: "render",
       value: function render(renderMode) {
+        var _this2 = this;
+
         this.__renderMode = renderMode;
 
         if (renderMode === mode.SVG) {
@@ -5984,6 +6214,9 @@
             borderLeftStyle = computedStyle.borderLeftStyle,
             visibility = computedStyle.visibility;
         var backgroundImage = currentStyle.backgroundImage,
+            backgroundSize = currentStyle.backgroundSize,
+            backgroundPosition = currentStyle.backgroundPosition,
+            backgroundRepeat = currentStyle.backgroundRepeat,
             transform$1 = currentStyle.transform,
             transformOrigin = currentStyle.transformOrigin,
             opacity = currentStyle.opacity; // 使用sx和sy渲染位置，考虑了relative和translate影响
@@ -6015,10 +6248,11 @@
           ctx.globalAlpha = opa;
         } else {
           this.__virtualDom.opacity = opacity;
-        }
+        } // transform和transformOrigin相关
+
 
         var tfo = transform.calOrigin(transformOrigin, x, y, ow, oh);
-        computedStyle.transformOrigin = tfo; // transform相对于自身
+        computedStyle.transformOrigin = tfo.join(' '); // transform相对于自身
 
         if (transform$1) {
           var _matrix = transform.calMatrix(transform$1, tfo, x, y, ow, oh); // 初始化有可能继承祖先的matrix
@@ -6050,26 +6284,165 @@
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
-        } // 先渲染渐变，没有则背景色
+        } // 背景色垫底
 
 
-        var bgc;
+        if (backgroundColor !== 'transparent') {
+          renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
+        } // 渐变或图片叠加
+
 
         if (backgroundImage) {
-          bgc = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
-        } else if (backgroundColor !== 'transparent') {
-          bgc = backgroundColor;
-        }
+          if (util.isString(backgroundImage)) {
+            if (this.__loadBgi.url === backgroundImage) {
+              backgroundSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih);
+              var _this$__loadBgi = this.__loadBgi,
+                  _width = _this$__loadBgi.width,
+                  _height = _this$__loadBgi.height;
 
-        if (bgc) {
-          if (renderMode === mode.CANVAS) {
-            ctx.beginPath();
-            ctx.fillStyle = bgc;
-            ctx.rect(x2, y2, iw, ih);
-            ctx.fill();
-            ctx.closePath();
-          } else if (renderMode === mode.SVG) {
-            this.addBackground([['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', bgc]]);
+              var _backgroundSize = backgroundSize,
+                  _backgroundSize2 = _slicedToArray(_backgroundSize, 2),
+                  w = _backgroundSize2[0],
+                  h = _backgroundSize2[1]; // -1为auto，-2为contain，-3为cover
+
+
+              if (w === -1 && h === -1) {
+                w = _width;
+                h = _height;
+              } else if (w === -2) {
+                if (_width > iw && _height > ih) {
+                  w = _width / iw;
+                  h = _height / ih;
+
+                  if (w >= h) {
+                    w = iw;
+                    h = w * _height / _width;
+                  } else {
+                    h = ih;
+                    w = h * _width / _height;
+                  }
+                } else if (_width > iw) {
+                  w = iw;
+                  h = w * _height / _width;
+                } else if (_height > ih) {
+                  h = ih;
+                  w = h * _width / _height;
+                } else {
+                  w = _width;
+                  h = _height;
+                }
+              } else if (w === -3) {
+                if (iw > _width && ih > _height) {
+                  w = _width / iw;
+                  h = _height / ih;
+
+                  if (w <= h) {
+                    w = iw;
+                    h = w * _height / _width;
+                  } else {
+                    h = ih;
+                    w = h * _width / _height;
+                  }
+                } else if (iw > _width) {
+                  w = iw;
+                  h = w * _height / _width;
+                } else if (ih > _height) {
+                  h = ih;
+                  w = h * _width / _height;
+                } else {
+                  w = _width / iw;
+                  h = _height / ih;
+
+                  if (w <= h) {
+                    w = iw;
+                    h = w * _height / _width;
+                  } else {
+                    h = ih;
+                    w = h * _width / _height;
+                  }
+                }
+              } else if (w === -1) {
+                w = h * _width / _height;
+              } else if (h === -1) {
+                h = w * _height / _width;
+              }
+
+              var originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, _width);
+              var originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, _height); // 超出尺寸模拟mask截取
+
+              var needMask = originX < x2 || originY < y2 || w > iw || h > ih;
+
+              if (renderMode === mode.CANVAS) {
+                // 超出尺寸模拟mask截取
+                var cache1;
+                var cache2;
+
+                if (needMask) {
+                  cache1 = this.root.__getImageData();
+
+                  this.root.__clear();
+                }
+
+                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h);
+
+                if (needMask) {
+                  ctx.globalCompositeOperation = 'destination-in';
+                  renderBgc(renderMode, '#FFF', x2, y2, iw, ih, ctx, this);
+                  cache2 = this.root.__getImageData();
+
+                  this.root.__clear();
+
+                  ctx.globalCompositeOperation = 'source-over';
+
+                  this.root.__putImageData(util.mergeImageData(cache1, cache2));
+                }
+              } else if (renderMode === mode.SVG) {
+                var _matrix2 = image.matrixResize(_width, _height, w, h, x2, y2, iw, ih);
+
+                var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width], ['height', _height]];
+
+                if (_matrix2) {
+                  props.push(['transform', 'matrix(' + _matrix2.join(',') + ')']);
+                }
+
+                if (needMask) {
+                  var maskId = this.defs.add({
+                    tagName: 'mask',
+                    props: [],
+                    children: [{
+                      tagName: 'rect',
+                      props: [['x', x2], ['y', y2], ['width', iw], ['height', ih], ['fill', '#FFF']]
+                    }]
+                  });
+                  this.virtualDom.bbMask = "url(#".concat(maskId, ")");
+                }
+
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: props
+                });
+              }
+
+              computedStyle.backgroudSize = "".concat(w, " ").concat(h);
+              computedStyle.backgroundPosition = "".concat(originX, " ").concat(originY);
+              computedStyle.backgroundRepeat = backgroundRepeat;
+            } else {
+              this.__loadBgi.url = backgroundImage;
+              inject.measureImg(backgroundImage, function (data) {
+                if (data.success) {
+                  _this2.__loadBgi.source = data.source;
+                  _this2.__loadBgi.width = data.width;
+                  _this2.__loadBgi.height = data.height;
+
+                  _this2.root.addRefreshTask();
+                }
+              });
+            }
+          } else if (backgroundImage.k) {
+            var bgi = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
+
+            renderBgc(renderMode, bgi, x2, y2, iw, ih, ctx, this);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -6440,7 +6813,7 @@
     }, {
       key: "__computed",
       value: function __computed() {
-        var _this2 = this;
+        var _this3 = this;
 
         css.compute(this, this.isRoot()); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -6449,7 +6822,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__computed();
             } else {
-              item.__style = _this2.currentStyle;
+              item.__style = _this3.currentStyle;
               css.compute(item); // 文字首先测量所有字符宽度
 
               item.__measure();
@@ -6460,7 +6833,7 @@
     }, {
       key: "__repaint",
       value: function __repaint() {
-        var _this3 = this;
+        var _this4 = this;
 
         css.repaint(this, this.isRoot()); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -6469,7 +6842,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__repaint();
             } else {
-              item.__style = _this3.currentStyle;
+              item.__style = _this4.currentStyle;
               css.repaint(item);
             }
           });
@@ -8558,43 +8931,27 @@
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
         } else {
-          var matrix;
-
-          if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-            var list = [['scaleX', {
-              value: width / this.__imgWidth,
-              unit: unit.NUMBER
-            }], ['scaleY', {
-              value: height / this.__imgHeight,
-              unit: unit.NUMBER
-            }]];
-            var ow = this.outerWidth;
-            var oh = this.outerHeight;
-            var tfo = transform.calOrigin([{
-              value: 0,
-              unit: unit.PERCENT
-            }, {
-              value: 0,
-              unit: unit.PERCENT
-            }], x, y, ow, oh);
-            matrix = transform.calMatrix(list, tfo, x, y, ow, oh); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
-
-            if (this.matrix) {
-              this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
-              this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
-            } else {
-              this.__matrixEvent = matrix;
-            }
-
-            matrix = 'matrix(' + matrix.join(',') + ')';
-          }
-
           if (renderMode === mode.CANVAS) {
             if (this.__source) {
               ctx.drawImage(this.__source, originX, originY, width, height);
             }
           } else if (renderMode === mode.SVG) {
-            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', matrix ? this.__imgWidth : this.width], ['height', matrix ? this.__imgHeight : this.height]];
+            var matrix;
+
+            if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
+              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
+
+              if (this.matrix) {
+                this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
+                this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
+              } else {
+                this.__matrixEvent = matrix;
+              }
+
+              matrix = 'matrix(' + matrix.join(',') + ')';
+            }
+
+            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
 
             if (matrix) {
               props.push(['transform', matrix]);
@@ -8626,7 +8983,7 @@
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
-    diffBb(cns[1], ovd.bb, nvd.bb);
+    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     diffD2D(elem, ovd, nvd, true);
   }
 
@@ -8641,9 +8998,13 @@
     }
 
     if (i < ol) {
-      removeAt(elem, cns, i);
+      for (; i < ol; i++) {
+        removeAt(elem, cns, i);
+      }
     } else if (i < nl) {
-      insertAt(elem, cns, i, util.joinDef(nd[i]));
+      for (; i < nl; i++) {
+        insertAt(elem, cns, i, util.joinDef(nd[i]));
+      }
     }
   }
 
@@ -8766,7 +9127,7 @@
     }
 
     if (!root) {
-      diffBb(elem.firstChild, ovd.bb, nvd.bb);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     }
 
     var ol = ovd.children.length;
@@ -8791,7 +9152,7 @@
   }
 
   function diffD2G(elem, ovd, nvd) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     replaceWith(elem.lastChild, nvd.children);
   }
 
@@ -8818,7 +9179,7 @@
   }
 
   function diffG2D(elem, ovd, nvd) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     replaceWith(elem.lastChild, nvd.children);
   }
 
@@ -8831,7 +9192,7 @@
       }
     }
 
-    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -8853,9 +9214,18 @@
     }
   }
 
-  function diffBb(elem, obb, nbb) {
+  function diffBb(elem, obb, nbb, oMask, nMask) {
     var ol = obb.length;
     var nl = nbb.length;
+
+    if (oMask !== nMask) {
+      if (!nMask) {
+        elem.removeAttribute('mask');
+      } else {
+        elem.setAttribute('mask', nMask);
+      }
+    }
+
     var i = 0;
 
     for (; i < Math.min(ol, nl); i++) {

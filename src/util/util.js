@@ -45,7 +45,11 @@ function joinVirtualDom(vd) {
   vd.defs.forEach(item => {
     s += joinDef(item);
   });
-  s += '</defs><g>';
+  s += '</defs><g';
+  if(vd.bbMask) {
+    s += ` mask="${vd.bbMask}"`;
+  }
+  s += '>';
   vd.bb.forEach(item => {
     s += joinVd(item);
   });
@@ -80,7 +84,11 @@ function joinVd(vd) {
     return `<g>${s}</g>`;
   }
   else if(vd.type === 'dom' || vd.type === 'geom') {
-    let s = '<g>';
+    let s = '<g';
+    if(vd.bbMask) {
+      s += ` mask="${vd.bbMask}"`;
+    }
+    s += '>';
     vd.bb.forEach(item => {
       s += joinVd(item);
     });

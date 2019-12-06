@@ -4,6 +4,7 @@ import inject from '../util/inject';
 import util from '../util/util';
 import unit from '../style/unit';
 import transform from '../style/transform';
+import image from '../style/image';
 import level from '../animate/level';
 
 const CACHE = {};
@@ -207,54 +208,32 @@ class Img extends Dom {
       }
     }
     else {
-      let matrix;
-      if(this.__imgWidth !== undefined
-        && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-        let list = [
-          ['scaleX', {
-            value: width / this.__imgWidth,
-            unit: unit.NUMBER,
-          }],
-          ['scaleY', {
-            value: height / this.__imgHeight,
-            unit: unit.NUMBER,
-          }]
-        ];
-        let ow = this.outerWidth;
-        let oh = this.outerHeight;
-        let tfo = transform.calOrigin([
-          {
-            value: 0,
-            unit: unit.PERCENT,
-          },
-          {
-            value: 0,
-            unit: unit.PERCENT,
-          }
-        ], x, y, ow, oh);
-        matrix = transform.calMatrix(list, tfo, x, y, ow, oh);
-        // 缩放图片的同时要考虑原先的矩阵，以及影响事件
-        if(this.matrix) {
-          this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
-          this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
-        }
-        else {
-          this.__matrixEvent = matrix;
-        }
-        matrix = 'matrix(' + matrix.join(',') + ')';
-      }
       if(renderMode === mode.CANVAS) {
         if(this.__source) {
           ctx.drawImage(this.__source, originX, originY, width, height);
         }
       }
       else if(renderMode === mode.SVG) {
+        let matrix;
+        if(this.__imgWidth !== undefined
+          && (width !== this.__imgWidth || height !== this.__imgHeight)) {
+          matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height);
+          // 缩放图片的同时要考虑原先的矩阵，以及影响事件
+          if(this.matrix) {
+            this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
+            this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
+          }
+          else {
+            this.__matrixEvent = matrix;
+          }
+          matrix = 'matrix(' + matrix.join(',') + ')';
+        }
         let props = [
           ['xlink:href', src],
           ['x', originX],
           ['y', originY],
-          ['width', matrix ? this.__imgWidth : this.width],
-          ['height', matrix ? this.__imgHeight : this.height]
+          ['width', this.__imgWidth || 0],
+          ['height', this.__imgHeight || 0]
         ];
         if(matrix) {
           props.push(['transform', matrix]);

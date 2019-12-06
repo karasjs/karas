@@ -87,22 +87,128 @@ function normalize(style, reset) {
   let temp = style.background;
   // 处理渐变背景色
   if(temp) {
-    // 优先gradient，没有再考虑颜色
-    let gd = gradient.parseGradient(temp);
+    // gradient/image和颜色可以并存
+    let gd = gradient.reg.exec(temp);
     if(gd) {
-      style.backgroundImage = gd;
+      style.backgroundImage = gd[0];
+      temp = temp.replace(gd[0], '');
+    }
+    let image = /url\((['"]?)(.*?)\1\)/.exec(temp);
+    if(image) {
+      style.backgroundImage = image[2];
+      temp = temp.replace(image[0], '');
+    }
+    let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
+    if(repeat) {
+      style.backgroundRepeat = repeat[0].toLowerCase();
+    }
+    let position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
+    if(position) {
+      style.backgroundPosition = position[0].trim();
+    }
+    let bgc = /^\s*(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
+    if(bgc) {
+      style.backgroundColor = bgc[0];
+    }
+  }
+  // 背景图
+  temp = style.backgroundImage;
+  if(temp) {
+    // 区分是渐变色还是图
+    if(gradient.reg.test(temp)) {
+      style.backgroundImage = gradient.parseGradient(temp);
+    }
+  }
+  temp = style.backgroundColor;
+  if(temp) {
+    // 先赋值默认透明，后续操作有合法值覆盖
+    style.backgroundColor = 'transparent';
+    let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
+    if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
+      style.backgroundColor = bgc[0];
     }
     else {
-      let bgc = /#[0-9a-f]{3,6}/i.exec(temp);
-      if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
+      bgc = /rgba?\(.+\)/i.exec(temp);
+      if(bgc) {
         style.backgroundColor = bgc[0];
       }
+    }
+  }
+  // 背景位置
+  temp = style.backgroundPosition;
+  if(temp) {
+    temp = temp.split(/\s+/);
+    if(temp.length === 1) {
+      temp[1] = '50%';
+    }
+    let bp = [];
+    for(let i = 0; i < 2; i++) {
+      let item = temp[i];
+      if(/%$/.test(item)) {
+        bp.push({
+          value: parseFloat(item) || 0,
+          unit: unit.PERCENT,
+        });
+      }
+      else if(/^[\d.]/.test(item)) {
+        bp.push({
+          value: parseFloat(item),
+          unit: unit.PX,
+        });
+      }
       else {
-        bgc = /rgba?\(.+\)/i.exec(temp);
-        if(bgc) {
-          style.backgroundColor = bgc[0];
+        bp.push({
+          value: item,
+          unit: unit.POSITION,
+        });
+      }
+    }
+    style.backgroundPosition = bp;
+  }
+  if(temp) {}
+  // 背景尺寸
+  temp = style.backgroundSize;
+  if(temp) {
+    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(contain|cover|auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[1] = match[0];
+      }
+      let bc = [];
+      for(let i = 0; i < 2; i++) {
+        let item = match[i];
+        if(/%$/.test(item)) {
+          bc.push({
+            value: parseFloat(item) || 0,
+            unit: unit.PERCENT,
+          });
+        }
+        else if(/^[\d.]/.test(item)) {
+          bc.push({
+            value: parseFloat(item),
+            unit: unit.PX,
+          });
+        }
+        else if(item === 'contain' || item === 'cover') {
+          bc.push({
+            value: item,
+            unit: unit.SIZE,
+          });
+        }
+        else {
+          bc.push({
+            unit: unit.AUTO,
+          });
         }
       }
+      style.backgroundSize = bc;
+    }
+    else {
+      style.backgroundSize = [{
+        unit: unit.AUTO,
+      }, {
+        unit: unit.AUTO,
+      }];
     }
   }
   // 处理缩写
@@ -278,22 +384,21 @@ function normalize(style, reset) {
       let tfo = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/px$/.test(item)) {
+        if(/%$/.test(item)) {
+          tfo.push({
+            value: parseFloat(item) || 0,
+            unit: unit.PERCENT,
+          });
+        }
+        else if(/^[\d.]/.test(item)) {
           tfo.push({
             value: parseFloat(item),
             unit: unit.PX,
           });
         }
-        else if(/%$/.test(item)) {
-          tfo.push({
-            value: parseFloat(item),
-            unit: unit.PERCENT,
-          });
-        }
         else {
           tfo.push({
             value: {
-              0: 0,
               top: 0,
               left: 0,
               center: 50,
@@ -302,9 +407,21 @@ function normalize(style, reset) {
             }[item],
             unit: unit.PERCENT,
           });
+          if(tfo[i].value === undefined) {
+            tfo[i].value = 50;
+          }
         }
       }
       style.transformOrigin = tfo;
+    }
+    else {
+      style.transformOrigin = [{
+        value: 50,
+        unit: unit.PERCENT,
+      }, {
+        value: 50,
+        unit: unit.PERCENT,
+      }];
     }
   }
   temp = style.opacity;

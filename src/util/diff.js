@@ -3,7 +3,7 @@ import util from './util';
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
   diffDefs(cns[0], ovd.defs, nvd.defs);
-  diffBb(cns[1], ovd.bb, nvd.bb);
+  diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   diffD2D(elem, ovd, nvd, true);
 }
 
@@ -16,10 +16,14 @@ function diffDefs(elem, od, nd) {
     diffDef(cns[i], od[i], nd[i]);
   }
   if(i < ol) {
-    removeAt(elem, cns, i);
+    for(; i < ol; i++) {
+      removeAt(elem, cns, i);
+    }
   }
   else if(i < nl) {
-    insertAt(elem, cns, i, util.joinDef(nd[i]));
+    for(; i < nl; i++) {
+      insertAt(elem, cns, i, util.joinDef(nd[i]));
+    }
   }
 }
 
@@ -136,7 +140,7 @@ function diffD2D(elem, ovd, nvd, root) {
     }
   }
   if(!root) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
@@ -159,7 +163,7 @@ function diffD2D(elem, ovd, nvd, root) {
 }
 
 function diffD2G(elem, ovd, nvd) {
-  diffBb(elem.firstChild, ovd.bb, nvd.bb);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   replaceWith(elem.lastChild, nvd.children);
 }
 
@@ -184,7 +188,7 @@ function diffT2T(elem, ovd, nvd) {
 }
 
 function diffG2D(elem, ovd, nvd) {
-  diffBb(elem.firstChild, ovd.bb, nvd.bb);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   replaceWith(elem.lastChild, nvd.children);
 }
 
@@ -195,7 +199,7 @@ function diffG2G(elem, ovd, nvd) {
       elem.setAttribute('transform', transform);
     }
   }
-  diffBb(elem.firstChild, ovd.bb, nvd.bb);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -216,9 +220,17 @@ function diffG2G(elem, ovd, nvd) {
   }
 }
 
-function diffBb(elem, obb, nbb) {
+function diffBb(elem, obb, nbb, oMask, nMask) {
   let ol = obb.length;
   let nl = nbb.length;
+  if(oMask !== nMask) {
+    if(!nMask) {
+      elem.removeAttribute('mask');
+    }
+    else {
+      elem.setAttribute('mask', nMask);
+    }
+  }
   let i = 0;
   for(; i < Math.min(ol, nl); i++) {
     diffItem(elem, i, obb[i], nbb[i]);

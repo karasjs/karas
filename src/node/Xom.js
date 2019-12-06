@@ -6,9 +6,11 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import match from '../style/match';
 import css from '../style/css';
+import image from '../style/image';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
+import inject from '../util/inject';
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -44,6 +46,63 @@ function renderBorder(renderMode, points, color, ctx, xom) {
       ['fill', color],
     ]);
   }
+}
+
+function renderBgc(renderMode, value, x, y, w, h, ctx, xom) {
+  if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
+    ctx.fillStyle = value;
+    ctx.rect(x, y, w, h);
+    ctx.fill();
+    ctx.closePath();
+  }
+  else if(renderMode === mode.SVG) {
+    xom.addBackground([
+      ['x', x],
+      ['y', y],
+      ['width', w],
+      ['height', h],
+      ['fill', value]
+    ]);
+  }
+}
+
+function calBackgroundSize(value, x, y, w, h) {
+  let res = [];
+  value.forEach((item, i) => {
+    if(item.unit === unit.PX) {
+      res.push(item.value);
+    }
+    else if(item.unit === unit.PERCENT) {
+      res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+    }
+    else if(item.unit === unit.AUTO) {
+      res.push(-1);
+    }
+    else if(item.unit === unit.SIZE) {
+      res.push(item.value === 'contain' ? -2 : -3);
+    }
+    else if(item.unit === unit.POSITION) {
+      res.push(item.value);
+    }
+  });
+  return res;
+}
+
+function calBackgroundPosition(position, container, size) {
+  if(position.value === 'right' || position.value === 'bottom') {
+    return container - size;
+  }
+  else if(position.value === 'center') {
+    return (container - size) * 0.5;
+  }
+  else if(position.unit === unit.PX) {
+    return position.value;
+  }
+  else if(position.unit === unit.PERCENT) {
+    return (container - size) * position.value * 0.01;
+  }
+  return 0;
 }
 
 class Xom extends Node {
@@ -84,6 +143,7 @@ class Xom extends Node {
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animationList = [];
+    this.__loadBgi = {};
   }
 
   // 设置了css时，解析匹配
@@ -371,6 +431,9 @@ class Xom extends Node {
     } = computedStyle;
     let {
       backgroundImage,
+      backgroundSize,
+      backgroundPosition,
+      backgroundRepeat,
       transform,
       transformOrigin,
       opacity,
@@ -402,8 +465,9 @@ class Xom extends Node {
     else {
       this.__virtualDom.opacity = opacity;
     }
+    // transform和transformOrigin相关
     let tfo = tf.calOrigin(transformOrigin, x, y, ow, oh);
-    computedStyle.transformOrigin = tfo;
+    computedStyle.transformOrigin = tfo.join(' ');
     // transform相对于自身
     if(transform) {
       let matrix = tf.calMatrix(transform, tfo, x, y, ow, oh);
@@ -432,30 +496,164 @@ class Xom extends Node {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    // 先渲染渐变，没有则背景色
-    let bgc;
+    // 背景色垫底
+    if(backgroundColor !== 'transparent') {
+      renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
+    }
+    // 渐变或图片叠加
     if(backgroundImage) {
-      bgc = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
-    }
-    else if(backgroundColor !== 'transparent') {
-      bgc = backgroundColor;
-    }
-    if(bgc) {
-      if(renderMode === mode.CANVAS) {
-        ctx.beginPath();
-        ctx.fillStyle = bgc;
-        ctx.rect(x2, y2, iw, ih);
-        ctx.fill();
-        ctx.closePath();
+      if(util.isString(backgroundImage)) {
+        if(this.__loadBgi.url === backgroundImage) {
+          backgroundSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih);
+          let { width, height } = this.__loadBgi;
+          let [w, h] = backgroundSize;
+          // -1为auto，-2为contain，-3为cover
+          if(w === -1 && h === -1) {
+            w = width;
+            h = height;
+          }
+          else if(w === -2) {
+            if(width > iw && height > ih) {
+              w = width / iw;
+              h = height / ih;
+              if(w >= h) {
+                w = iw;
+                h = w * height / width;
+              }
+              else {
+                h = ih;
+                w = h * width / height;
+              }
+            }
+            else if(width > iw) {
+              w = iw;
+              h = w * height / width;
+            }
+            else if(height > ih) {
+              h = ih;
+              w = h * width / height;
+            }
+            else {
+              w = width;
+              h = height;
+            }
+          }
+          else if(w === -3) {
+            if(iw > width && ih > height) {
+              w = width / iw;
+              h = height / ih;
+              if(w <= h) {
+                w = iw;
+                h = w * height / width;
+              }
+              else {
+                h = ih;
+                w = h * width / height;
+              }
+            }
+            else if(iw > width) {
+              w = iw;
+              h = w * height / width;
+            }
+            else if(ih > height) {
+              h = ih;
+              w = h * width / height;
+            }
+            else {
+              w = width / iw;
+              h = height / ih;
+              if(w <= h) {
+                w = iw;
+                h = w * height / width;
+              }
+              else {
+                h = ih;
+                w = h * width / height;
+              }
+            }
+          }
+          else if(w === -1) {
+            w = h * width / height;
+          }
+          else if(h === -1) {
+            h = w * height / width;
+          }
+          let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
+          let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
+          // 超出尺寸模拟mask截取
+          let needMask = originX < x2 || originY < y2 || w > iw || h > ih;
+          if(renderMode === mode.CANVAS) {
+            // 超出尺寸模拟mask截取
+            let cache1;
+            let cache2;
+            if(needMask) {
+              cache1 = this.root.__getImageData();
+              this.root.__clear();
+            }
+            ctx.drawImage(this.__loadBgi.source, originX, originY, w, h);
+            if(needMask) {
+              ctx.globalCompositeOperation = 'destination-in';
+              renderBgc(renderMode, '#FFF', x2, y2, iw, ih, ctx, this);
+              cache2 = this.root.__getImageData();
+              this.root.__clear();
+              ctx.globalCompositeOperation = 'source-over';
+              this.root.__putImageData(util.mergeImageData(cache1, cache2));
+            }
+          }
+          else if(renderMode === mode.SVG) {
+            let matrix = image.matrixResize(width, height, w, h, x2, y2, iw, ih);
+            let props = [
+              ['xlink:href', backgroundImage],
+              ['x', originX],
+              ['y', originY],
+              ['width', width],
+              ['height', height]
+            ];
+            if(matrix) {
+              props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+            }
+            if(needMask) {
+              let maskId = this.defs.add({
+                tagName: 'mask',
+                props: [],
+                children: [{
+                  tagName: 'rect',
+                  props: [
+                    ['x', x2],
+                    ['y', y2],
+                    ['width', iw],
+                    ['height', ih],
+                    ['fill', '#FFF']
+                  ],
+                }],
+              });
+              this.virtualDom.bbMask = `url(#${maskId})`;
+            }
+            this.virtualDom.bb.push({
+              type: 'img',
+              tagName: 'image',
+              props,
+            });
+          }
+          computedStyle.backgroudSize = `${w} ${h}`;
+          computedStyle.backgroundPosition = `${originX} ${originY}`;
+          computedStyle.backgroundRepeat = backgroundRepeat;
+        }
+        else {
+          this.__loadBgi.url = backgroundImage;
+          inject.measureImg(backgroundImage, (data) => {
+            if(data.success) {
+              this.__loadBgi.source = data.source;
+              this.__loadBgi.width = data.width;
+              this.__loadBgi.height = data.height;
+              this.root.addRefreshTask();
+            }
+          });
+        }
       }
-      else if(renderMode === mode.SVG) {
-        this.addBackground([
-          ['x', x2],
-          ['y', y2],
-          ['width', iw],
-          ['height', ih],
-          ['fill', bgc]
-        ]);
+      else if(backgroundImage.k) {
+        let bgi = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
+        renderBgc(renderMode, bgi, x2, y2, iw, ih, ctx, this);
       }
     }
     // 边框需考虑尖角，两条相交边平分45°夹角

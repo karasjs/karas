@@ -6,4 +6,5 @@ export default {
   NUMBER: 4,
   INHERIT: 5,
   DEG: 6,
+  SIZE: 7,
 };

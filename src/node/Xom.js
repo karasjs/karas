@@ -576,6 +576,32 @@ class Xom extends Node {
           }
           let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
           let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
+          let xnl = 0;
+          let xnr = 0;
+          let ynt = 0;
+          let ynb = 0;
+          // repeat-x
+          if(['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
+            let diff = originX - x2;
+            if(diff > 0) {
+              xnl = Math.ceil(diff / w);
+            }
+            diff = x2 + iw - originX - w;
+            if(diff > 0) {
+              xnr = Math.ceil(diff / w);
+            }
+          }
+          // repeat-y
+          if(['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
+            let diff = originY - y2;
+            if(diff > 0) {
+              ynt = Math.ceil(diff / h);
+            }
+            diff = y2 + ih - originY - h;
+            if(diff > 0) {
+              ynb = Math.ceil(diff / h);
+            }
+          }
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > iw || h > ih;
@@ -588,11 +614,43 @@ class Xom extends Node {
               this.root.__clear();
             }
             ctx.drawImage(this.__loadBgi.source, originX, originY, w, h);
-            // repeat-x
-            if(['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
+            // 分4个角分别判断
+            if(xnl > 0 || ynt > 0) {
+              for(let i = 0; i <= Math.max(xnl, 1); i++) {
+                for(let j = 0; j <= Math.max(ynt, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    ctx.drawImage(this.__loadBgi.source, originX - i * w, originY - j * h, w, h);
+                  }
+                }
+              }
             }
-            // repeat-y
-            if(['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {}
+            if(xnr > 0 || ynt > 0) {
+              for(let i = 0; i <= Math.max(xnr, 1); i++) {
+                for(let j = 0; j <= Math.max(ynt, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    ctx.drawImage(this.__loadBgi.source, originX + i * w, originY - j * h, w, h);
+                  }
+                }
+              }
+            }
+            if(xnl > 0 || ynb > 0) {
+              for(let i = 0; i <= Math.max(xnl, 1); i++) {
+                for(let j = 0; j <= Math.max(ynb, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    ctx.drawImage(this.__loadBgi.source, originX - i * w, originY + j * h, w, h);
+                  }
+                }
+              }
+            }
+            if(xnr > 0 || ynb > 0) {
+              for(let i = 0; i <= Math.max(xnr, 1); i++) {
+                for(let j = 0; j <= Math.max(ynb, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    ctx.drawImage(this.__loadBgi.source, originX + i * w, originY + j * h, w, h);
+                  }
+                }
+              }
+            }
             if(needMask) {
               ctx.globalCompositeOperation = 'destination-in';
               renderBgc(renderMode, '#FFF', x2, y2, iw, ih, ctx, this);
@@ -636,6 +694,71 @@ class Xom extends Node {
               tagName: 'image',
               props,
             });
+            // 4个角repeat
+            if(xnl > 0 || ynt > 0) {
+              for(let i = 0; i <= Math.max(xnl, 1); i++) {
+                for(let j = 0; j <= Math.max(ynt, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    let clone = util.clone(props);
+                    clone[1][1] = originX - i * w;
+                    clone[2][1] = originY - j * h;
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: clone,
+                    });
+                  }
+                }
+              }
+            }
+            if(xnr > 0 || ynt > 0) {
+              for(let i = 0; i <= Math.max(xnr, 1); i++) {
+                for(let j = 0; j <= Math.max(ynt, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    let clone = util.clone(props);
+                    clone[1][1] = originX + i * w;
+                    clone[2][1] = originY - j * h;
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: clone,
+                    });
+                  }
+                }
+              }
+            }
+            if(xnl > 0 || ynb > 0) {
+              for(let i = 0; i <= Math.max(xnl, 1); i++) {
+                for(let j = 0; j <= Math.max(ynb, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    let clone = util.clone(props);
+                    clone[1][1] = originX - i * w;
+                    clone[2][1] = originY + j * h;
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: clone,
+                    });
+                  }
+                }
+              }
+            }
+            if(xnr > 0 || ynb > 0) {
+              for(let i = 0; i <= Math.max(xnr, 1); i++) {
+                for(let j = 0; j <= Math.max(ynb, 1); j++) {
+                  if(i !== 0 || j !== 0) {
+                    let clone = util.clone(props);
+                    clone[1][1] = originX + i * w;
+                    clone[2][1] = originY + j * h;
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: clone,
+                    });
+                  }
+                }
+              }
+            }
           }
           computedStyle.backgroudSize = `${w} ${h}`;
           computedStyle.backgroundPosition = `${originX} ${originY}`;

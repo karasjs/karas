@@ -6364,7 +6364,41 @@
               }
 
               var originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, _width);
-              var originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, _height); // 超出尺寸模拟mask截取
+              var originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, _height);
+              var xnl = 0;
+              var xnr = 0;
+              var ynt = 0;
+              var ynb = 0; // repeat-x
+
+              if (['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
+                var diff = originX - x2;
+
+                if (diff > 0) {
+                  xnl = Math.ceil(diff / w);
+                }
+
+                diff = x2 + iw - originX - w;
+
+                if (diff > 0) {
+                  xnr = Math.ceil(diff / w);
+                }
+              } // repeat-y
+
+
+              if (['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
+                var _diff = originY - y2;
+
+                if (_diff > 0) {
+                  ynt = Math.ceil(_diff / h);
+                }
+
+                _diff = y2 + ih - originY - h;
+
+                if (_diff > 0) {
+                  ynb = Math.ceil(_diff / h);
+                }
+              } // 超出尺寸模拟mask截取
+
 
               var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > iw || h > ih;
 
@@ -6379,7 +6413,47 @@
                   this.root.__clear();
                 }
 
-                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h); // repeat-x
+                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h); // 分4个角分别判断
+
+                if (xnl > 0 || ynt > 0) {
+                  for (var i = 0; i <= Math.max(xnl, 1); i++) {
+                    for (var j = 0; j <= Math.max(ynt, 1); j++) {
+                      if (i !== 0 || j !== 0) {
+                        ctx.drawImage(this.__loadBgi.source, originX - i * w, originY - j * h, w, h);
+                      }
+                    }
+                  }
+                }
+
+                if (xnr > 0 || ynt > 0) {
+                  for (var _i = 0; _i <= Math.max(xnr, 1); _i++) {
+                    for (var _j = 0; _j <= Math.max(ynt, 1); _j++) {
+                      if (_i !== 0 || _j !== 0) {
+                        ctx.drawImage(this.__loadBgi.source, originX + _i * w, originY - _j * h, w, h);
+                      }
+                    }
+                  }
+                }
+
+                if (xnl > 0 || ynb > 0) {
+                  for (var _i2 = 0; _i2 <= Math.max(xnl, 1); _i2++) {
+                    for (var _j2 = 0; _j2 <= Math.max(ynb, 1); _j2++) {
+                      if (_i2 !== 0 || _j2 !== 0) {
+                        ctx.drawImage(this.__loadBgi.source, originX - _i2 * w, originY + _j2 * h, w, h);
+                      }
+                    }
+                  }
+                }
+
+                if (xnr > 0 || ynb > 0) {
+                  for (var _i3 = 0; _i3 <= Math.max(xnr, 1); _i3++) {
+                    for (var _j3 = 0; _j3 <= Math.max(ynb, 1); _j3++) {
+                      if (_i3 !== 0 || _j3 !== 0) {
+                        ctx.drawImage(this.__loadBgi.source, originX + _i3 * w, originY + _j3 * h, w, h);
+                      }
+                    }
+                  }
+                }
 
                 if (needMask) {
                   ctx.globalCompositeOperation = 'destination-in';
@@ -6417,7 +6491,78 @@
                   type: 'img',
                   tagName: 'image',
                   props: props
-                });
+                }); // 4个角repeat
+
+                if (xnl > 0 || ynt > 0) {
+                  for (var _i4 = 0; _i4 <= Math.max(xnl, 1); _i4++) {
+                    for (var _j4 = 0; _j4 <= Math.max(ynt, 1); _j4++) {
+                      if (_i4 !== 0 || _j4 !== 0) {
+                        var clone = util.clone(props);
+                        clone[1][1] = originX - _i4 * w;
+                        clone[2][1] = originY - _j4 * h;
+                        this.virtualDom.bb.push({
+                          type: 'img',
+                          tagName: 'image',
+                          props: clone
+                        });
+                      }
+                    }
+                  }
+                }
+
+                if (xnr > 0 || ynt > 0) {
+                  for (var _i5 = 0; _i5 <= Math.max(xnr, 1); _i5++) {
+                    for (var _j5 = 0; _j5 <= Math.max(ynt, 1); _j5++) {
+                      if (_i5 !== 0 || _j5 !== 0) {
+                        var _clone = util.clone(props);
+
+                        _clone[1][1] = originX + _i5 * w;
+                        _clone[2][1] = originY - _j5 * h;
+                        this.virtualDom.bb.push({
+                          type: 'img',
+                          tagName: 'image',
+                          props: _clone
+                        });
+                      }
+                    }
+                  }
+                }
+
+                if (xnl > 0 || ynb > 0) {
+                  for (var _i6 = 0; _i6 <= Math.max(xnl, 1); _i6++) {
+                    for (var _j6 = 0; _j6 <= Math.max(ynb, 1); _j6++) {
+                      if (_i6 !== 0 || _j6 !== 0) {
+                        var _clone2 = util.clone(props);
+
+                        _clone2[1][1] = originX - _i6 * w;
+                        _clone2[2][1] = originY + _j6 * h;
+                        this.virtualDom.bb.push({
+                          type: 'img',
+                          tagName: 'image',
+                          props: _clone2
+                        });
+                      }
+                    }
+                  }
+                }
+
+                if (xnr > 0 || ynb > 0) {
+                  for (var _i7 = 0; _i7 <= Math.max(xnr, 1); _i7++) {
+                    for (var _j7 = 0; _j7 <= Math.max(ynb, 1); _j7++) {
+                      if (_i7 !== 0 || _j7 !== 0) {
+                        var _clone3 = util.clone(props);
+
+                        _clone3[1][1] = originX + _i7 * w;
+                        _clone3[2][1] = originY + _j7 * h;
+                        this.virtualDom.bb.push({
+                          type: 'img',
+                          tagName: 'image',
+                          props: _clone3
+                        });
+                      }
+                    }
+                  }
+                }
               }
 
               computedStyle.backgroudSize = "".concat(w, " ").concat(h);
@@ -6592,8 +6737,8 @@
             } // 再看普通流，从后往前遮挡顺序
 
 
-            for (var _i = children.length - 1; _i >= 0; _i--) {
-              var _child = children[_i];
+            for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
+              var _child = children[_i8];
 
               if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) > -1) {
                 if (_child.__emitEvent(e, force)) {
@@ -6631,8 +6776,8 @@
 
         if (!this.isGeom()) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i2 = children.length - 1; _i2 >= 0; _i2--) {
-            var _child2 = children[_i2];
+          for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
+            var _child2 = children[_i9];
 
             if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
               if (_child2.__emitEvent(e)) {
@@ -6642,8 +6787,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i3 = children.length - 1; _i3 >= 0; _i3--) {
-            var _child3 = children[_i3];
+          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
+            var _child3 = children[_i10];
 
             if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
               if (_child3.__emitEvent(e)) {

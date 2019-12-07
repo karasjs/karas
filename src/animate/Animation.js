@@ -126,6 +126,9 @@ function equalStyle(k, a, b) {
     }
     return true;
   }
+  else if(k === 'transformOrigin' || k === 'backgroundPosition' || k === 'backgroundSize') {
+    return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
+  }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
@@ -309,7 +312,6 @@ function calDiff(prev, next, k, target) {
       nExist[item[0]] = item[1];
     });
     res.v = [];
-    let computedStyle = target.computedStyle;
     let key = k;
     n.forEach(item => {
       let [k, v] = item;
@@ -335,10 +337,10 @@ function calDiff(prev, next, k, target) {
         }
         else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
           if(k === 'translateX') {
-            p.value = p.value * 100 / computedStyle.width;
+            p.value = p.value * 100 / target.width;
           }
           else if(k === 'translateY') {
-            p.value = p.value * 100 / computedStyle.height;
+            p.value = p.value * 100 / target.height;
           }
           p.unit = unit.PERCENT;
           res.v.push({
@@ -348,10 +350,10 @@ function calDiff(prev, next, k, target) {
         }
         else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
           if(k === 'translateX') {
-            p.value = p.value * 0.01 * computedStyle.width;
+            p.value = p.value * 0.01 * target.width;
           }
           else if(k === 'translateY') {
-            p.value = p.value * 0.01 * computedStyle.width;
+            p.value = p.value * 0.01 * target.width;
           }
           p.unit = unit.PX;
           res.v.push({
@@ -416,7 +418,6 @@ function calDiff(prev, next, k, target) {
   }
   else if(k === 'transformOrigin') {
     res.v = [];
-    let computedStyle = target.computedStyle;
     for(let i = 0; i < 2; i++) {
       let pi = p[i];
       let ni = n[i];
@@ -424,14 +425,28 @@ function calDiff(prev, next, k, target) {
         res.v.push(ni.value - pi.value);
       }
       else if(pi.unit === unit.PX && ni.unit === unit.PERCENT) {
-        pi.value = pi.value * 100 / computedStyle[i ? 'outerHeight' : 'outerWidth'];
-        pi.unit = unit.PERCENT;
-        res.v = ni.value - pi.value;
+        pi.value = pi.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
+        res.v.push(ni.value - pi.value);
       }
       else if(pi.unit === unit.PERCENT && ni.unit === unit.PX) {
-        pi.value = pi.value * 0.01 * computedStyle[i ? 'outerHeight' : 'outerWidth'];
-        pi.unit = unit.PX;
-        res.v = ni.value - pi.value;
+        pi.value = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
+        res.v.push(ni.value - pi.value);
+      }
+      else {
+        res.v.push(0);
+      }
+    }
+  }
+  else if(k === 'backgroundPosition' || k === 'backgroundSize') {
+    res.v = [];
+    for(let i = 0; i < 2; i++) {
+      let pi = p[i];
+      let ni = n[i];
+      if(pi.unit === ni.unit && [unit.PX, unit.PERCENT].indexOf(pi.unit) > -1) {
+        res.v.push(ni.value - pi.value);
+      }
+      else {
+        res.v.push(0);
       }
     }
   }
@@ -607,9 +622,13 @@ function calStyle(frame, percent) {
         }
       });
     }
-    else if(k === 'transformOrigin') {
-      st[0].value += v[0] * percent;
-      st[1].value += v[1] * percent;
+    else if(k === 'transformOrigin' || k === 'backgroundPosition' || k === 'backgroundSize') {
+      if(v[0] !== 0) {
+        st[0].value += v[0] * percent;
+      }
+      if(v[1] !== 0) {
+        st[1].value += v[1] * percent;
+      }
     }
     else if(GRADIENT_HASH.hasOwnProperty(k) && GRADIENT_TYPE.hasOwnProperty(st.k)) {
       for(let i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {

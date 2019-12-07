@@ -234,7 +234,7 @@ class Xom extends Node {
     this.__mp(currentStyle, computedStyle, w);
     this.__ox = this.__oy = 0;
     if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = computedStyle.outerWidth = computedStyle.outerHeight = 0;
+      computedStyle.width = computedStyle.height = 0;
       return;
     }
     if(display === 'block') {
@@ -284,8 +284,6 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
-    computedStyle.outerWidth = this.outerWidth;
-    computedStyle.outerHeight = this.outerHeight;
   }
 
   isGeom() {
@@ -376,7 +374,18 @@ class Xom extends Node {
         opacity: 1,
       };
     }
-    let { isDestroyed, ctx, currentStyle, computedStyle, width, height } = this;
+    let {
+      isDestroyed,
+      ctx,
+      currentStyle,
+      computedStyle,
+      width,
+      height,
+      innerWidth,
+      innerHeight,
+      outerWidth,
+      outerHeight,
+    } = this;
     this.__matrix = this.__matrixEvent = null;
     let parent = this.parent;
     let matrix = [1, 0, 0, 1, 0, 0];
@@ -407,6 +416,8 @@ class Xom extends Node {
     let {
       display,
       marginTop,
+      marginRight,
+      marginBottom,
       marginLeft,
       paddingTop,
       paddingRight,
@@ -446,8 +457,6 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    let iw = width + paddingLeft + paddingRight;
-    let ih = height + paddingTop + paddingBottom;
     // 先设置透明度，可以向上累积
     parent = this.parent;
     let opa = opacity;
@@ -462,11 +471,11 @@ class Xom extends Node {
       this.__virtualDom.opacity = opacity;
     }
     // transform和transformOrigin相关
-    let tfo = tf.calOrigin(transformOrigin, x2, y2, iw, ih);
+    let tfo = tf.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
     computedStyle.transformOrigin = tfo.join(' ');
     // transform相对于自身
     if(transform) {
-      let matrix = tf.calMatrix(transform, tfo, x2, y2, iw, ih);
+      let matrix = tf.calMatrix(transform, tfo, x, y, outerWidth, outerHeight);
       // 初始化有可能继承祖先的matrix
       this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
       computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
@@ -494,13 +503,13 @@ class Xom extends Node {
     }
     // 背景色垫底
     if(backgroundColor !== 'transparent') {
-      renderBgc(renderMode, backgroundColor, x2, y2, iw, ih, ctx, this);
+      renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this);
     }
     // 渐变或图片叠加
     if(backgroundImage) {
       if(util.isString(backgroundImage)) {
         if(this.__loadBgi.url === backgroundImage) {
-          backgroundSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih);
+          backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
           let { width, height } = this.__loadBgi;
           let [w, h] = backgroundSize;
           // -1为auto，-2为contain，-3为cover
@@ -509,24 +518,24 @@ class Xom extends Node {
             h = height;
           }
           else if(w === -2) {
-            if(width > iw && height > ih) {
-              w = width / iw;
-              h = height / ih;
+            if(width > innerWidth && height > innerHeight) {
+              w = width / innerWidth;
+              h = height / innerHeight;
               if(w >= h) {
-                w = iw;
+                w = innerWidth;
                 h = w * height / width;
               }
               else {
-                h = ih;
+                h = innerHeight;
                 w = h * width / height;
               }
             }
-            else if(width > iw) {
-              w = iw;
+            else if(width > innerWidth) {
+              w = innerWidth;
               h = w * height / width;
             }
-            else if(height > ih) {
-              h = ih;
+            else if(height > innerHeight) {
+              h = innerHeight;
               w = h * width / height;
             }
             else {
@@ -535,35 +544,35 @@ class Xom extends Node {
             }
           }
           else if(w === -3) {
-            if(iw > width && ih > height) {
-              w = width / iw;
-              h = height / ih;
+            if(innerWidth > width && innerHeight > height) {
+              w = width / innerWidth;
+              h = height / innerHeight;
               if(w <= h) {
-                w = iw;
+                w = innerWidth;
                 h = w * height / width;
               }
               else {
-                h = ih;
+                h = innerHeight;
                 w = h * width / height;
               }
             }
-            else if(iw > width) {
-              w = iw;
+            else if(innerWidth > width) {
+              w = innerWidth;
               h = w * height / width;
             }
-            else if(ih > height) {
-              h = ih;
+            else if(innerHeight > height) {
+              h = innerHeight;
               w = h * width / height;
             }
             else {
-              w = width / iw;
-              h = height / ih;
+              w = width / innerWidth;
+              h = height / innerHeight;
               if(w <= h) {
-                w = iw;
+                w = innerWidth;
                 h = w * height / width;
               }
               else {
-                h = ih;
+                h = innerHeight;
                 w = h * width / height;
               }
             }
@@ -574,8 +583,8 @@ class Xom extends Node {
           else if(h === -1) {
             h = w * height / width;
           }
-          let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, width);
-          let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, height);
+          let originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, width);
+          let originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, height);
           let xnl = 0;
           let xnr = 0;
           let ynt = 0;
@@ -586,7 +595,7 @@ class Xom extends Node {
             if(diff > 0) {
               xnl = Math.ceil(diff / w);
             }
-            diff = x2 + iw - originX - w;
+            diff = x2 + innerWidth - originX - w;
             if(diff > 0) {
               xnr = Math.ceil(diff / w);
             }
@@ -597,15 +606,15 @@ class Xom extends Node {
             if(diff > 0) {
               ynt = Math.ceil(diff / h);
             }
-            diff = y2 + ih - originY - h;
+            diff = y2 + innerHeight - originY - h;
             if(diff > 0) {
               ynb = Math.ceil(diff / h);
             }
           }
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
-            || originX < x2 || originY < y2 || w > iw || h > ih;
-          if(renderMode === mode.CANVAS) {
+            || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
+          if(renderMode === mode.CANVAS && this.__loadBgi.source) {
             // 超出尺寸模拟mask截取
             let cache1;
             let cache2;
@@ -653,7 +662,7 @@ class Xom extends Node {
             }
             if(needMask) {
               ctx.globalCompositeOperation = 'destination-in';
-              renderBgc(renderMode, '#FFF', x2, y2, iw, ih, ctx, this);
+              renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this);
               cache2 = this.root.__getImageData();
               this.root.__clear();
               ctx.globalCompositeOperation = 'source-over';
@@ -661,13 +670,13 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG) {
-            let matrix = image.matrixResize(width, height, w, h, x2, y2, iw, ih);
+            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight);
             let props = [
               ['xlink:href', backgroundImage],
               ['x', originX],
               ['y', originY],
-              ['width', width],
-              ['height', height]
+              ['width', width || 0],
+              ['height', height || 0]
             ];
             if(matrix) {
               props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
@@ -681,8 +690,8 @@ class Xom extends Node {
                   props: [
                     ['x', x2],
                     ['y', y2],
-                    ['width', iw],
-                    ['height', ih],
+                    ['width', innerWidth],
+                    ['height', innerHeight],
                     ['fill', '#FFF']
                   ],
                 }],
@@ -760,7 +769,7 @@ class Xom extends Node {
               }
             }
           }
-          computedStyle.backgroudSize = `${w} ${h}`;
+          computedStyle.backgroundSize = `${w} ${h}`;
           computedStyle.backgroundPosition = `${originX} ${originY}`;
           computedStyle.backgroundRepeat = backgroundRepeat;
         }
@@ -777,14 +786,14 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, x2, y2, x3, y3, iw, ih, 'backgroundImage', backgroundImage, computedStyle);
-        renderBgc(renderMode, bgi, x2, y2, iw, ih, ctx, this);
+        let bgi = this.__gradient(renderMode, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+        renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
     }
     else {
-      let originX = x2 + calBackgroundPosition(backgroundPosition[0], iw, 0);
-      let originY = y2 + calBackgroundPosition(backgroundPosition[1], ih, 0);
-      computedStyle.backgroudSize = calBackgroundSize(backgroundSize, x2, y2, iw, ih).join(' ');
+      let originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, 0);
+      let originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, 0);
+      computedStyle.backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight).join(' ');
       computedStyle.backgroundPosition = `${originX} ${originY}`;
       computedStyle.backgroundRepeat = backgroundRepeat;
     }
@@ -1132,22 +1141,36 @@ class Xom extends Node {
   get tagName() {
     return this.__tagName;
   }
+  get innerWidth() {
+    let { computedStyle: {
+      paddingRight,
+      paddingLeft,
+    } } = this;
+    return this.width
+      + paddingLeft
+      + paddingRight;
+  }
+  get innerHeight() {
+    let { computedStyle: {
+      paddingTop,
+      paddingBottom,
+    } } = this;
+    return this.height
+      + paddingTop
+      + paddingBottom;
+  }
   get outerWidth() {
     let { computedStyle: {
       borderLeftWidth,
       borderRightWidth,
       marginRight,
       marginLeft,
-      paddingRight,
-      paddingLeft,
     } } = this;
-    return this.width
+    return this.innerWidth
       + borderLeftWidth
       + borderRightWidth
       + marginLeft
-      + marginRight
-      + paddingLeft
-      + paddingRight;
+      + marginRight;
   }
   get outerHeight() {
     let { computedStyle: {
@@ -1155,16 +1178,12 @@ class Xom extends Node {
       borderBottomWidth,
       marginTop,
       marginBottom,
-      paddingTop,
-      paddingBottom,
     } } = this;
-    return this.height
+    return this.innerHeight
       + borderTopWidth
       + borderBottomWidth
       + marginTop
-      + marginBottom
-      + paddingTop
-      + paddingBottom;
+      + marginBottom;
   }
   get listener() {
     return this.__listener;

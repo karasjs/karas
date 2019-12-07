@@ -1,6 +1,7 @@
 import unit from './unit';
 import font from './font';
 import gradient from './gradient';
+import image from './image';
 import util from '../util/util';
 
 function parserOneBorder(style, direction) {
@@ -93,10 +94,10 @@ function normalize(style, reset) {
       style.backgroundImage = gd[0];
       temp = temp.replace(gd[0], '');
     }
-    let image = /url\((['"]?)(.*?)\1\)/.exec(temp);
-    if(image) {
-      style.backgroundImage = image[2];
-      temp = temp.replace(image[0], '');
+    let img = image.reg.exec(temp);
+    if(img) {
+      style.backgroundImage = img[0];
+      temp = temp.replace(img[0], '');
     }
     let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
     if(repeat) {
@@ -117,6 +118,9 @@ function normalize(style, reset) {
     // 区分是渐变色还是图
     if(gradient.reg.test(temp)) {
       style.backgroundImage = gradient.parseGradient(temp);
+    }
+    else if(image.reg.test(temp)) {
+      style.backgroundImage = image.reg.exec(temp)[2];
     }
   }
   temp = style.backgroundColor;

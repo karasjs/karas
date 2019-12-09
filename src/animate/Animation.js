@@ -337,10 +337,10 @@ function calDiff(prev, next, k, target) {
         }
         else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
           if(k === 'translateX') {
-            p.value = p.value * 100 / target.width;
+            p.value = p.value * 100 / target.outerWidth;
           }
           else if(k === 'translateY') {
-            p.value = p.value * 100 / target.height;
+            p.value = p.value * 100 / target.outerHeight;
           }
           p.unit = unit.PERCENT;
           res.v.push({
@@ -350,10 +350,10 @@ function calDiff(prev, next, k, target) {
         }
         else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
           if(k === 'translateX') {
-            p.value = p.value * 0.01 * target.width;
+            p.value = p.value * 0.01 * target.outerWidth;
           }
           else if(k === 'translateY') {
-            p.value = p.value * 0.01 * target.width;
+            p.value = p.value * 0.01 * target.outerHeight;
           }
           p.unit = unit.PX;
           res.v.push({

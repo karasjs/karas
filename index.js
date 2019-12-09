@@ -4735,9 +4735,9 @@
             });
           } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) {
             if (k === 'translateX') {
-              _p.value = _p.value * 100 / target.width;
+              _p.value = _p.value * 100 / target.outerWidth;
             } else if (k === 'translateY') {
-              _p.value = _p.value * 100 / target.height;
+              _p.value = _p.value * 100 / target.outerHeight;
             }
 
             _p.unit = unit.PERCENT;
@@ -4747,9 +4747,9 @@
             });
           } else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) {
             if (k === 'translateX') {
-              _p.value = _p.value * 0.01 * target.width;
+              _p.value = _p.value * 0.01 * target.outerWidth;
             } else if (k === 'translateY') {
-              _p.value = _p.value * 0.01 * target.width;
+              _p.value = _p.value * 0.01 * target.outerHeight;
             }
 
             _p.unit = unit.PX;

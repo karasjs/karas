@@ -169,7 +169,6 @@ function normalize(style, reset) {
     }
     style.backgroundPosition = bp;
   }
-  if(temp) {}
   // 背景尺寸
   temp = style.backgroundSize;
   if(temp) {

@@ -1,5 +1,5 @@
-import unit from "./unit";
-import transform from "./transform";
+import unit from './unit';
+import transform from './transform';
 
 function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
   if(imgWidth === targetWidth && imgHeight === targetHeight) {

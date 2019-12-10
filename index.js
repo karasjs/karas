@@ -2251,7 +2251,7 @@
       }
 
       style.backgroundPosition = bp;
-    }
+    } // 背景尺寸
 
 
     temp = style.backgroundSize;

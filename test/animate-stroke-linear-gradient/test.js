@@ -6,6 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
+      .pause(500)
       .assert.value('input', 'linear-gradient(180deg, rgb(255,0,0) 0%, rgb(0,0,255) 99%, rgb(255,255,255))/linear-gradient(90deg, rgb(255,0,0) 0%, rgb(0,0,255) 1%, rgb(255,255,255))')
       .end();
   }

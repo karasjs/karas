@@ -4520,7 +4520,9 @@
       }
 
       return true;
-    } else if (k === 'transformOrigin' || k === 'backgroundPosition' || k === 'backgroundSize') {
+    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
+      return a.value === b.value && a.unit === b.unit;
+    } else if (k === 'transformOrigin' || k === 'backgroundSize') {
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
@@ -4854,7 +4856,13 @@
           res.v.push(0);
         }
       }
-    } else if (k === 'backgroundPosition' || k === 'backgroundSize') {
+    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
+      if (p.unit === n.unit && [unit.PX, unit.PERCENT].indexOf(p.unit) > -1) {
+        res.v = n.value - p.value;
+      } else {
+        res.v = 0;
+      }
+    } else if (k === 'backgroundSize') {
       res.v = [];
 
       for (var _i6 = 0; _i6 < 2; _i6++) {
@@ -5029,7 +5037,11 @@
             hash[k].value += v * percent;
           }
         });
-      } else if (k === 'transformOrigin' || k === 'backgroundPosition' || k === 'backgroundSize') {
+      } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
+        if (v !== 0) {
+          st.value += v * percent;
+        }
+      } else if (k === 'transformOrigin' || k === 'backgroundSize') {
         if (v[0] !== 0) {
           st[0].value += v[0] * percent;
         }

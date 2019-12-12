@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.backgroundPosition;
+    input.value = t.computedStyle.backgroundPositionX + ' ' + t.computedStyle.backgroundPositionY;
   }
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.backgroundPosition;
+  input.value += '/' + t.computedStyle.backgroundPositionX + ' ' + t.computedStyle.backgroundPositionY;
 });

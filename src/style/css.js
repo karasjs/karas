@@ -43,13 +43,6 @@ function calUnit(obj, k, v) {
       unit: unit.INHERIT,
     };
   }
-  else if(/px$/.test(v)) {
-    v = parseFloat(v) || 0;
-    obj[k] = {
-      value: v,
-      unit: unit.PX,
-    };
-  }
   else if(/%$/.test(v)) {
     // border不支持百分比
     if(k.toString().indexOf('border') === 0) {
@@ -145,29 +138,49 @@ function normalize(style, reset) {
     if(temp.length === 1) {
       temp[1] = '50%';
     }
-    let bp = [];
-    for(let i = 0; i < 2; i++) {
-      let item = temp[i];
-      if(/%$/.test(item)) {
-        bp.push({
-          value: parseFloat(item) || 0,
-          unit: unit.PERCENT,
-        });
-      }
-      else if(/^[\d.]/.test(item)) {
-        bp.push({
-          value: parseFloat(item),
-          unit: unit.PX,
-        });
-      }
-      else {
-        bp.push({
-          value: item,
-          unit: unit.POSITION,
-        });
-      }
+    [style.backgroundPositionX, style.backgroundPositionY] = temp;
+  }
+  temp = style.backgroundPositionX;
+  if(temp) {
+    if(/%$/.test(temp)) {
+      style.backgroundPositionX = {
+        value: parseFloat(temp) || 0,
+        unit: unit.PERCENT,
+      };
     }
-    style.backgroundPosition = bp;
+    else if(/^[\d.]/.test(temp)) {
+      style.backgroundPositionX = {
+        value: parseFloat(temp),
+        unit: unit.PX,
+      };
+    }
+    else {
+      style.backgroundPositionX = {
+        value: temp,
+        unit: unit.POSITION,
+      };
+    }
+  }
+  temp = style.backgroundPositionY;
+  if(temp) {
+    if(/%$/.test(temp)) {
+      style.backgroundPositionY = {
+        value: parseFloat(temp) || 0,
+        unit: unit.PERCENT,
+      };
+    }
+    else if(/^[\d.]/.test(temp)) {
+      style.backgroundPositionY = {
+        value: parseFloat(temp),
+        unit: unit.PX,
+      };
+    }
+    else {
+      style.backgroundPositionY = {
+        value: temp,
+        unit: unit.POSITION,
+      };
+    }
   }
   // 背景尺寸
   temp = style.backgroundSize;

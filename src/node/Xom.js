@@ -441,7 +441,8 @@ class Xom extends Node {
     let {
       backgroundImage,
       backgroundSize,
-      backgroundPosition,
+      backgroundPositionX,
+      backgroundPositionY,
       backgroundRepeat,
       transform,
       transformOrigin,
@@ -583,8 +584,8 @@ class Xom extends Node {
           else if(h === -1) {
             h = w * height / width;
           }
-          let originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, width);
-          let originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, height);
+          let originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, width);
+          let originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, height);
           let xnl = 0;
           let xnr = 0;
           let ynt = 0;
@@ -770,7 +771,8 @@ class Xom extends Node {
             }
           }
           computedStyle.backgroundSize = `${w} ${h}`;
-          computedStyle.backgroundPosition = `${originX} ${originY}`;
+          computedStyle.backgroundPositionX = originX;
+          computedStyle.backgroundPositionY = originY;
           computedStyle.backgroundRepeat = backgroundRepeat;
         }
         else {
@@ -791,10 +793,11 @@ class Xom extends Node {
       }
     }
     else {
-      let originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, 0);
-      let originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, 0);
+      let originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
+      let originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
       computedStyle.backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight).join(' ');
-      computedStyle.backgroundPosition = `${originX} ${originY}`;
+      computedStyle.backgroundPositionX = originX;
+      computedStyle.backgroundPositionY = originY;
       computedStyle.backgroundRepeat = backgroundRepeat;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角

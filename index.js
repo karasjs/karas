@@ -2108,12 +2108,6 @@
       obj[k] = {
         unit: unit.INHERIT
       };
-    } else if (/px$/.test(v)) {
-      v = parseFloat(v) || 0;
-      obj[k] = {
-        value: v,
-        unit: unit.PX
-      };
     } else if (/%$/.test(v)) {
       // border不支持百分比
       if (k.toString().indexOf('border') === 0) {
@@ -2227,30 +2221,54 @@
         temp[1] = '50%';
       }
 
-      var bp = [];
+      var _temp = temp;
 
-      for (var i = 0; i < 2; i++) {
-        var item = temp[i];
+      var _temp2 = _slicedToArray(_temp, 2);
 
-        if (/%$/.test(item)) {
-          bp.push({
-            value: parseFloat(item) || 0,
-            unit: unit.PERCENT
-          });
-        } else if (/^[\d.]/.test(item)) {
-          bp.push({
-            value: parseFloat(item),
-            unit: unit.PX
-          });
-        } else {
-          bp.push({
-            value: item,
-            unit: unit.POSITION
-          });
-        }
+      style.backgroundPositionX = _temp2[0];
+      style.backgroundPositionY = _temp2[1];
+    }
+
+    temp = style.backgroundPositionX;
+
+    if (temp) {
+      if (/%$/.test(temp)) {
+        style.backgroundPositionX = {
+          value: parseFloat(temp) || 0,
+          unit: unit.PERCENT
+        };
+      } else if (/^[\d.]/.test(temp)) {
+        style.backgroundPositionX = {
+          value: parseFloat(temp),
+          unit: unit.PX
+        };
+      } else {
+        style.backgroundPositionX = {
+          value: temp,
+          unit: unit.POSITION
+        };
       }
+    }
 
-      style.backgroundPosition = bp;
+    temp = style.backgroundPositionY;
+
+    if (temp) {
+      if (/%$/.test(temp)) {
+        style.backgroundPositionY = {
+          value: parseFloat(temp) || 0,
+          unit: unit.PERCENT
+        };
+      } else if (/^[\d.]/.test(temp)) {
+        style.backgroundPositionY = {
+          value: parseFloat(temp),
+          unit: unit.PX
+        };
+      } else {
+        style.backgroundPositionY = {
+          value: temp,
+          unit: unit.POSITION
+        };
+      }
     } // 背景尺寸
 
 
@@ -2266,22 +2284,22 @@
 
         var bc = [];
 
-        for (var _i = 0; _i < 2; _i++) {
-          var _item = match[_i];
+        for (var i = 0; i < 2; i++) {
+          var item = match[i];
 
-          if (/%$/.test(_item)) {
+          if (/%$/.test(item)) {
             bc.push({
-              value: parseFloat(_item) || 0,
+              value: parseFloat(item) || 0,
               unit: unit.PERCENT
             });
-          } else if (/^[\d.]/.test(_item)) {
+          } else if (/^[\d.]/.test(item)) {
             bc.push({
-              value: parseFloat(_item),
+              value: parseFloat(item),
               unit: unit.PX
             });
-          } else if (_item === 'contain' || _item === 'cover') {
+          } else if (item === 'contain' || item === 'cover') {
             bc.push({
-              value: _item,
+              value: item,
               unit: unit.SIZE
             });
           } else {
@@ -2483,17 +2501,17 @@
 
         var tfo = [];
 
-        for (var _i2 = 0; _i2 < 2; _i2++) {
-          var _item2 = _match4[_i2];
+        for (var _i = 0; _i < 2; _i++) {
+          var _item = _match4[_i];
 
-          if (/%$/.test(_item2)) {
+          if (/%$/.test(_item)) {
             tfo.push({
-              value: parseFloat(_item2) || 0,
+              value: parseFloat(_item) || 0,
               unit: unit.PERCENT
             });
-          } else if (/^[\d.]/.test(_item2)) {
+          } else if (/^[\d.]/.test(_item)) {
             tfo.push({
-              value: parseFloat(_item2),
+              value: parseFloat(_item),
               unit: unit.PX
             });
           } else {
@@ -2504,12 +2522,12 @@
                 center: 50,
                 right: 100,
                 bottom: 100
-              }[_item2],
+              }[_item],
               unit: unit.PERCENT
             });
 
-            if (tfo[_i2].value === undefined) {
-              tfo[_i2].value = 50;
+            if (tfo[_i].value === undefined) {
+              tfo[_i].value = 50;
             }
           }
         }
@@ -3663,7 +3681,8 @@
     backgroundColor: 'transparent',
     backgroundSize: 'auto',
     backgroundRepeat: 'repeat',
-    backgroundPosition: '0% 0%',
+    backgroundPositionX: '0%',
+    backgroundPositionY: '0%',
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -6241,7 +6260,8 @@
             visibility = computedStyle.visibility;
         var backgroundImage = currentStyle.backgroundImage,
             backgroundSize = currentStyle.backgroundSize,
-            backgroundPosition = currentStyle.backgroundPosition,
+            backgroundPositionX = currentStyle.backgroundPositionX,
+            backgroundPositionY = currentStyle.backgroundPositionY,
             backgroundRepeat = currentStyle.backgroundRepeat,
             transform$1 = currentStyle.transform,
             transformOrigin = currentStyle.transformOrigin,
@@ -6389,8 +6409,8 @@
                 h = w * _height / _width;
               }
 
-              var originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, _width);
-              var originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, _height);
+              var originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, _width);
+              var originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, _height);
               var xnl = 0;
               var xnr = 0;
               var ynt = 0;
@@ -6592,7 +6612,8 @@
               }
 
               computedStyle.backgroundSize = "".concat(w, " ").concat(h);
-              computedStyle.backgroundPosition = "".concat(originX, " ").concat(originY);
+              computedStyle.backgroundPositionX = originX;
+              computedStyle.backgroundPositionY = originY;
               computedStyle.backgroundRepeat = backgroundRepeat;
             } else {
               this.__loadBgi.url = backgroundImage;
@@ -6612,12 +6633,13 @@
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
           }
         } else {
-          var _originX = x2 + calBackgroundPosition(backgroundPosition[0], innerWidth, 0);
+          var _originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
 
-          var _originY = y2 + calBackgroundPosition(backgroundPosition[1], innerHeight, 0);
+          var _originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
 
           computedStyle.backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight).join(' ');
-          computedStyle.backgroundPosition = "".concat(_originX, " ").concat(_originY);
+          computedStyle.backgroundPositionX = _originX;
+          computedStyle.backgroundPositionY = _originY;
           computedStyle.backgroundRepeat = backgroundRepeat;
         } // 边框需考虑尖角，两条相交边平分45°夹角
 

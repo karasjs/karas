@@ -5463,7 +5463,7 @@
             }
 
             diff -= delay;
-            var i = binarySearch(0, currentFrames.length - 1, diff, frames);
+            var i = binarySearch(0, currentFrames.length - 1, diff, currentFrames);
             var current = currentFrames[i];
             var needRefresh; // 最后一帧结束动画
 

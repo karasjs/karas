@@ -994,7 +994,7 @@ class Animation extends Event {
           currentFrames = frames;
         }
         diff -= delay;
-        let i = binarySearch(0, currentFrames.length - 1, diff, frames);
+        let i = binarySearch(0, currentFrames.length - 1, diff, currentFrames);
         let current = currentFrames[i];
         let needRefresh;
         // 最后一帧结束动画

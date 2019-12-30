@@ -5186,7 +5186,8 @@
       _this.__fill = op.fill || 'none';
       _this.__direction = op.direction || 'normal';
       _this.__frames = [];
-      _this.__framesR = [];
+      _this.__framesR = []; // 存储反向播放的数据
+
       _this.__playbackRate = parseFloat(op.playbackRate) || 1;
 
       if (_this.__playbackRate < 0) {
@@ -5461,11 +5462,10 @@
               currentFrames = frames;
             }
 
-            diff -= delay; // 因暂停导致的停顿时间需要清零
-
-            _this3.__offsetTime = 0;
+            diff -= delay;
             var i = binarySearch(0, currentFrames.length - 1, diff, frames);
             var current = currentFrames[i];
+            diff -= current.time;
             var needRefresh; // 最后一帧结束动画
 
             if (i === length - 1) {

@@ -768,7 +768,7 @@ class Animation extends Event {
     this.__fill = op.fill || 'none';
     this.__direction = op.direction || 'normal';
     this.__frames = [];
-    this.__framesR = [];
+    this.__framesR = []; // 存储反向播放的数据
     this.__playbackRate = parseFloat(op.playbackRate) || 1;
     if(this.__playbackRate < 0) {
       this.__playbackRate = 1;
@@ -994,10 +994,9 @@ class Animation extends Event {
           currentFrames = frames;
         }
         diff -= delay;
-        // 因暂停导致的停顿时间需要清零
-        this.__offsetTime = 0;
         let i = binarySearch(0, currentFrames.length - 1, diff, frames);
         let current = currentFrames[i];
+        diff -= current.time;
         let needRefresh;
         // 最后一帧结束动画
         if(i === length - 1) {

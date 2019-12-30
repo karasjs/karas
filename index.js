@@ -5465,7 +5465,6 @@
             diff -= delay;
             var i = binarySearch(0, currentFrames.length - 1, diff, frames);
             var current = currentFrames[i];
-            diff -= current.time;
             var needRefresh; // 最后一帧结束动画
 
             if (i === length - 1) {
@@ -5493,7 +5492,7 @@
                 }
 
                 var total = currentFrames[i + 1].time - current.time;
-                var percent = diff / total;
+                var percent = (diff - current.time) / total;
                 var style = calStyle(current, percent);
                 needRefresh = stringify$1(style, _this3.__lastStyle, target);
               }
@@ -5534,6 +5533,7 @@
                     var _task2 = _this3.__task = function () {
                       now = inject.now();
                       var diff = now - _this3.__lastTime - offsetTime - delay;
+                      diff = Math.max(diff, 0);
 
                       if (playbackRate !== 1) {
                         diff *= playbackRate;

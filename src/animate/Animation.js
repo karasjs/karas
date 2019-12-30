@@ -996,7 +996,6 @@ class Animation extends Event {
         diff -= delay;
         let i = binarySearch(0, currentFrames.length - 1, diff, frames);
         let current = currentFrames[i];
-        diff -= current.time;
         let needRefresh;
         // 最后一帧结束动画
         if(i === length - 1) {
@@ -1020,7 +1019,7 @@ class Animation extends Event {
             }
           }
           let total = currentFrames[i + 1].time - current.time;
-          let percent = diff / total;
+          let percent = (diff - current.time) / total;
           let style = calStyle(current, percent);
           needRefresh = stringify(style, this.__lastStyle, target);
         }
@@ -1057,6 +1056,7 @@ class Animation extends Event {
                 let task = this.__task = () => {
                   now = inject.now();
                   let diff = now - this.__lastTime - offsetTime - delay;
+                  diff = Math.max(diff, 0);
                   if(playbackRate !== 1) {
                     diff *= playbackRate;
                   }

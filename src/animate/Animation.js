@@ -1037,8 +1037,6 @@ class Animation extends Event {
               if(iterations === Infinity || playCount < iterations) {
                 return;
               }
-              // 播放结束考虑endDelay
-              this.__playState = 'finished';
               frame.offFrame(this.cb);
               // 不是停留在最后一帧还原
               if(!{
@@ -1051,6 +1049,8 @@ class Animation extends Event {
               // 如果有endDelay还要延迟执行
               let isFinished = diff >= duration + endDelay;
               if(isFinished) {
+                // 播放结束考虑endDelay
+                this.__playState = 'finished';
                 root.addRefreshTask(this.__task = __fin);
               }
               else {
@@ -1065,6 +1065,7 @@ class Animation extends Event {
                   this.__lastTime = now;
                   let isFinished = diff >= duration + endDelay;
                   if(isFinished) {
+                    this.__playState = 'finished';
                     root.addRefreshTask(this.__task = __fin);
                     frame.offFrame(task);
                   }

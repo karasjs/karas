@@ -5511,10 +5511,8 @@
                   // 没到播放次数结束时继续
                   if (iterations === Infinity || playCount < iterations) {
                     return;
-                  } // 播放结束考虑endDelay
+                  }
 
-
-                  _this3.__playState = 'finished';
                   frame.offFrame(_this3.cb); // 不是停留在最后一帧还原
 
                   if (!{
@@ -5529,6 +5527,8 @@
                   var isFinished = diff >= duration + endDelay;
 
                   if (isFinished) {
+                    // 播放结束考虑endDelay
+                    _this3.__playState = 'finished';
                     root.addRefreshTask(_this3.__task = __fin);
                   } else {
                     var _task2 = _this3.__task = function () {
@@ -5545,6 +5545,7 @@
                       var isFinished = diff >= duration + endDelay;
 
                       if (isFinished) {
+                        _this3.__playState = 'finished';
                         root.addRefreshTask(_this3.__task = __fin);
                         frame.offFrame(_task2);
                       }

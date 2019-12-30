@@ -19,7 +19,7 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
-  input.value = '0';
+  input.value += n;
   if(n++ === 0) {
     input.value += t.computedStyle.backgroundPositionX + ' ' + t.computedStyle.backgroundPositionY;
   }

@@ -449,6 +449,14 @@ function normalize(style, reset) {
       style.opacity = temp;
     }
   }
+  temp = style.zIndex;
+  if(temp && temp !== 'auto') {
+    temp = parseInt(temp);
+    if(!isNaN(temp)) {
+      temp = Math.max(temp, 0);
+      style.zIndex = temp;
+    }
+  }
   parserOneBorder(style, 'Top');
   parserOneBorder(style, 'Right');
   parserOneBorder(style, 'Bottom');
@@ -639,7 +647,8 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderLeftColor',
     'borderRightColor',
     'borderTopColor',
-    'opacity'
+    'opacity',
+    'zIndex'
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

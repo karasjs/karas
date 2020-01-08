@@ -2556,6 +2556,17 @@
       }
     }
 
+    temp = style.zIndex;
+
+    if (temp && temp !== 'auto') {
+      temp = parseInt(temp);
+
+      if (!isNaN(temp)) {
+        temp = Math.max(temp, 0);
+        style.zIndex = temp;
+      }
+    }
+
     parserOneBorder(style, 'Top');
     parserOneBorder(style, 'Right');
     parserOneBorder(style, 'Bottom');
@@ -2724,7 +2735,7 @@
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       computedStyle[k] = currentStyle[k].value || 0;
     });
-    ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'opacity'].forEach(function (k) {
+    ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'opacity', 'zIndex'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
   }
@@ -3706,7 +3717,8 @@
     textAlign: 'inherit',
     transformOrigin: 'center',
     visibility: 'visible',
-    opacity: 1
+    opacity: 1,
+    zIndex: 'auto'
   };
   var GEOM = {
     fill: 'transparent',
@@ -7656,6 +7668,10 @@
     'img': true
   };
 
+  function isRelativeOrAbsolute(node) {
+    return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
+  }
+
   var Dom =
   /*#__PURE__*/
   function (_Xom) {
@@ -8834,30 +8850,41 @@
           if (item.isMask) ; else if (item instanceof Text || item.computedStyle.position === 'static') {
             item.__renderByMask(renderMode);
           }
+        }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+
+        var zIndex = children.filter(function (item) {
+          return !item.isMask;
+        });
+        sort(zIndex, function (a, b) {
+          if (a instanceof Text) {
+            return;
+          }
+
+          if (b instanceof Text && isRelativeOrAbsolute(a)) {
+            return true;
+          }
+
+          if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
+            if (isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+              return true;
+            }
+          }
+
+          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+            return true;
+          }
         }); // 再绘制relative和absolute
 
-        children.forEach(function (item) {
-          if (item.isMask) ; else if ((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
+        zIndex.forEach(function (item) {
+          if (!(item instanceof Text) && isRelativeOrAbsolute(item)) {
             item.__renderByMask(renderMode);
           }
         });
 
         if (renderMode === mode.SVG) {
-          // 过滤掉mask
-          var _children = this.children.slice(0);
-
-          _children = _children.filter(function (item) {
-            return !item.isMask;
-          }); // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-
-          sort(_children, function (a, b) {
-            if (b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
-              return true;
-            }
-          });
           this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
             type: 'dom',
-            children: _children.map(function (item) {
+            children: zIndex.map(function (item) {
               return item.virtualDom;
             })
           });

@@ -50,6 +50,7 @@ const DOM = {
   transformOrigin: 'center',
   visibility: 'visible',
   opacity: 1,
+  zIndex: 'auto',
 };
 
 const GEOM = {

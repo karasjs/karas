@@ -20,6 +20,10 @@ const INLINE = {
   'img': true,
 };
 
+function isRelativeOrAbsolute(node) {
+  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
@@ -1068,29 +1072,37 @@ class Dom extends Xom {
         item.__renderByMask(renderMode);
       }
     });
+    // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+    let zIndex = children.filter(item => {
+      return !item.isMask;
+    });
+    sort(zIndex, (a, b) => {
+      if(a instanceof Text) {
+        return;
+      }
+      if(b instanceof Text && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+          return true;
+        }
+      }
+      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+    });
     // 再绘制relative和absolute
-    children.forEach(item => {
-      if(item.isMask) {}
-      else if((item instanceof Xom || item instanceof Component) && ['relative', 'absolute'].indexOf(item.computedStyle.position) > -1) {
+    zIndex.forEach(item => {
+      if(!(item instanceof Text) && isRelativeOrAbsolute(item)) {
         item.__renderByMask(renderMode);
       }
     });
     if(renderMode === mode.SVG) {
-      // 过滤掉mask
-      let children = this.children.slice(0);
-      children = children.filter(item => {
-        return !item.isMask;
-      });
-      // 由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-      sort(children, function(a, b) {
-        if(b.computedStyle.position === 'static' && ['relative', 'absolute'].indexOf(a.computedStyle.position) > -1) {
-          return true;
-        }
-      });
       this.__virtualDom = {
         ...super.virtualDom,
         type: 'dom',
-        children: children.map(item => item.virtualDom),
+        children: zIndex.map(item => item.virtualDom),
       };
     }
   }

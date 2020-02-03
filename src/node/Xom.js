@@ -364,6 +364,22 @@ class Xom extends Node {
     };
   }
 
+  // 处理margin:xx auto居中对齐或右对齐
+  __marginAuto(style, data) {
+    let {
+      position,
+      marginLeft,
+      marginRight,
+      width,
+    } = style;
+    if(position !== 'absolute' && width !== unit.AUTO && marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO) {
+      let ow = this.outerWidth;
+      if(ow < data.w) {
+        this.__offsetX((data.w - ow) * 0.5, true);
+      }
+    }
+  }
+
   render(renderMode) {
     this.__renderMode = renderMode;
     if(renderMode === mode.SVG) {

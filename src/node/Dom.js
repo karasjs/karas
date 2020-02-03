@@ -406,16 +406,6 @@ class Dom extends Xom {
     this.__marginAuto(currentStyle, data);
   }
 
-  // 处理margin:xx auto居中对齐
-  __marginAuto(style, data) {
-    if(style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && style.width.unit !== unit.AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5, true);
-      }
-    }
-  }
-
   // 弹性布局时的计算位置
   __layoutFlex(data) {
     let { flowChildren, currentStyle } = this;

@@ -84,20 +84,9 @@ class Geom extends Xom {
 
   __layoutBlock(data) {
     let { fixedHeight, w, h } = this.__preLayout(data);
-    let {
-      marginLeft,
-      marginRight,
-      width,
-    } = this.currentStyle;
     this.__width = w;
     this.__height = fixedHeight ? h : 0;
-    // 处理margin:xx auto居中对齐
-    if(marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-      let ow = this.outerWidth;
-      if(ow < data.w) {
-        this.__offsetX((data.w - ow) * 0.5);
-      }
-    }
+    this.__marginAuto(this.currentStyle, data);
   }
 
   __layoutFlex(data) {

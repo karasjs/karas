@@ -6208,6 +6208,23 @@
           w: w,
           h: h
         };
+      } // 处理margin:xx auto居中对齐或右对齐
+
+    }, {
+      key: "__marginAuto",
+      value: function __marginAuto(style, data) {
+        var position = style.position,
+            marginLeft = style.marginLeft,
+            marginRight = style.marginRight,
+            width = style.width;
+
+        if (position !== 'absolute' && width !== unit.AUTO && marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO) {
+          var ow = this.outerWidth;
+
+          if (ow < data.w) {
+            this.__offsetX((data.w - ow) * 0.5, true);
+          }
+        }
       }
     }, {
       key: "render",
@@ -7379,20 +7396,10 @@
             w = _this$__preLayout.w,
             h = _this$__preLayout.h;
 
-        var _this$currentStyle = this.currentStyle,
-            marginLeft = _this$currentStyle.marginLeft,
-            marginRight = _this$currentStyle.marginRight,
-            width = _this$currentStyle.width;
         this.__width = w;
-        this.__height = fixedHeight ? h : 0; // 处理margin:xx auto居中对齐
+        this.__height = fixedHeight ? h : 0;
 
-        if (marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO && width.unit !== unit.AUTO) {
-          var ow = this.outerWidth;
-
-          if (ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5);
-          }
-        }
+        this.__marginAuto(this.currentStyle, data);
       }
     }, {
       key: "__layoutFlex",
@@ -8114,18 +8121,6 @@
         }
 
         this.__marginAuto(currentStyle, data);
-      } // 处理margin:xx auto居中对齐
-
-    }, {
-      key: "__marginAuto",
-      value: function __marginAuto(style, data) {
-        if (style.marginLeft.unit === unit.AUTO && style.marginRight.unit === unit.AUTO && style.width.unit !== unit.AUTO) {
-          var ow = this.outerWidth;
-
-          if (ow < data.w) {
-            this.__offsetX((data.w - ow) * 0.5, true);
-          }
-        }
       } // 弹性布局时的计算位置
 
     }, {

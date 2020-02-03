@@ -110,9 +110,11 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();
       }
+      // 文字使用父节点style
       else {
         item.__style = style;
       }
+      // 普通流和定位流分开
       if(item instanceof Text || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);
       }
@@ -144,7 +146,7 @@ class Dom extends Xom {
         return w;
       }
       let item = flowChildren[i];
-      if(item instanceof Xom) {
+      if(item instanceof Xom || item instanceof Component) {
         w -= item.__tryLayInline(w, total);
       }
       else {

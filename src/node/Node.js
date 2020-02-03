@@ -1,5 +1,3 @@
-import unit from "../style/unit";
-
 class Node {
   constructor() {
     this.__x = 0;
@@ -13,6 +11,7 @@ class Node {
     this.__ctx = null; // canvas的context
     this.__defs = null; // svg的defs
     this.__parent = null;
+    this.__style = {};
     this.__computedStyle = {}; // 计算为绝对值的样式
     this.__baseLine = 0;
     this.__virtualDom = {};

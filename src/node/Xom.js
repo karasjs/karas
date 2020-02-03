@@ -416,8 +416,6 @@ class Xom extends Node {
     let {
       display,
       marginTop,
-      marginRight,
-      marginBottom,
       marginLeft,
       paddingTop,
       paddingRight,

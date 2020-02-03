@@ -228,17 +228,6 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance");
   }
 
-  var unit = {
-    AUTO: 0,
-    PX: 1,
-    PERCENT: 2,
-    POSITION: 3,
-    NUMBER: 4,
-    INHERIT: 5,
-    DEG: 6,
-    SIZE: 7
-  };
-
   var Node =
   /*#__PURE__*/
   function () {
@@ -259,6 +248,7 @@
       this.__defs = null; // svg的defs
 
       this.__parent = null;
+      this.__style = {};
       this.__computedStyle = {}; // 计算为绝对值的样式
 
       this.__baseLine = 0;
@@ -429,6 +419,17 @@
   var mode = {
     CANVAS: 0,
     SVG: 1
+  };
+
+  var unit = {
+    AUTO: 0,
+    PX: 1,
+    PERCENT: 2,
+    POSITION: 3,
+    NUMBER: 4,
+    INHERIT: 5,
+    DEG: 6,
+    SIZE: 7
   };
 
   var toString = {}.toString;
@@ -6262,8 +6263,6 @@
 
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
-            marginRight = computedStyle.marginRight,
-            marginBottom = computedStyle.marginBottom,
             marginLeft = computedStyle.marginLeft,
             paddingTop = computedStyle.paddingTop,
             paddingRight = computedStyle.paddingRight,
@@ -7784,9 +7783,11 @@
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
-          } else {
-            item.__style = style;
-          }
+          } // 文字使用父节点style
+          else {
+              item.__style = style;
+            } // 普通流和定位流分开
+
 
           if (item instanceof Text || item.style.position !== 'absolute') {
             _this4.__flowChildren.push(item);
@@ -7825,7 +7826,7 @@
 
           var item = flowChildren[i];
 
-          if (item instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component) {
             w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;

@@ -22,8 +22,4 @@ services:
 sudo: required
 
 addons:
-  apt:
-    sources:
-      - google-chrome
-    packages:
-      - google-chrome-stable
+  chrome: stable

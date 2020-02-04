@@ -248,6 +248,7 @@ class Root extends Dom {
         this.node.__vd = nvd;
         this.node.__defs = nd;
       }
+      // 图片加载后刷新、动画结束后刷新等需要的钩子
       let clone = this.__task.splice(0);
       clone.forEach(cb => {
         if(util.isFunction(cb)) {

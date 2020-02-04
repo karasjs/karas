@@ -882,9 +882,6 @@ class Xom extends Node {
         delete owner.ref[ref];
       }
     }
-    // if(this.animation) {
-    //   this.animation.__destroy();
-    // }
     this.animationList.forEach(item => item.__destroy());
     super.__destroy();
     this.__matrix = this.__matrixEvent = null;

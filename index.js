@@ -6774,10 +6774,7 @@
           if (owner && owner.ref[ref]) {
             delete owner.ref[ref];
           }
-        } // if(this.animation) {
-        //   this.animation.__destroy();
-        // }
-
+        }
 
         this.animationList.forEach(function (item) {
           return item.__destroy();

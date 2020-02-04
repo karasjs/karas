@@ -6266,7 +6266,7 @@
         } // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
 
-        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[1] !== 0 || matrix[1] !== 1 || matrix[1] !== 0 || matrix[1] !== 0) {
+        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[2] !== 0 || matrix[3] !== 1 || matrix[4] !== 0 || matrix[5] !== 0) {
           if (renderMode === mode.CANVAS) {
             this.__matrix = this.__matrixEvent = matrix;
           } else if (renderMode === mode.SVG) {
@@ -9936,7 +9936,8 @@
 
             _this2.node.__vd = nvd;
             _this2.node.__defs = nd;
-          }
+          } // 图片加载后刷新、动画结束后刷新等需要的钩子
+
 
           var clone = _this2.__task.splice(0);
 

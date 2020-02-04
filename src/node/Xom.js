@@ -415,10 +415,10 @@ class Xom extends Node {
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     if(matrix[0] !== 1
       || matrix[1] !== 0
-      || matrix[1] !== 0
-      || matrix[1] !== 1
-      || matrix[1] !== 0
-      || matrix[1] !== 0) {
+      || matrix[2] !== 0
+      || matrix[3] !== 1
+      || matrix[4] !== 0
+      || matrix[5] !== 0) {
       if(renderMode === mode.CANVAS) {
         this.__matrix = this.__matrixEvent = matrix;
       }

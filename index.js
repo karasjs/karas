@@ -9357,12 +9357,12 @@
     }
 
     if (ovd.opacity !== nvd.opacity) {
-      elem.setAttribute('opacity', ovd.opacity);
+      elem.setAttribute('opacity', nvd.opacity);
     }
 
     if (ovd.mask !== nvd.mask) {
       if (nvd.mask) {
-        elem.setAttribute('mask', ovd.mask);
+        elem.setAttribute('mask', nvd.mask);
       } else {
         elem.removeAttribute('mask');
       }
@@ -9432,6 +9432,10 @@
       if (elem.getAttribute('transform') !== transform) {
         elem.setAttribute('transform', transform);
       }
+    }
+
+    if (ovd.opacity !== nvd.opacity) {
+      elem.setAttribute('opacity', nvd.opacity);
     }
 
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);

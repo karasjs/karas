@@ -402,33 +402,6 @@ class Xom extends Node {
       outerWidth,
       outerHeight,
     } = this;
-    let parent = this.parent;
-    let matrix = [1, 0, 0, 1, 0, 0];
-    this.__matrix = this.__matrixEvent = matrix;
-    while(parent) {
-      if(parent.matrixEvent) {
-        matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-        break;
-      }
-      parent = parent.parent;
-    }
-    // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
-    if(matrix[0] !== 1
-      || matrix[1] !== 0
-      || matrix[2] !== 0
-      || matrix[3] !== 1
-      || matrix[4] !== 0
-      || matrix[5] !== 0) {
-      if(renderMode === mode.CANVAS) {
-        this.__matrix = this.__matrixEvent = matrix;
-      }
-      else if(renderMode === mode.SVG) {
-        this.__matrixEvent = matrix;
-      }
-    }
-    if(renderMode === mode.CANVAS) {
-      ctx.setTransform(...matrix);
-    }
     let {
       display,
       marginTop,
@@ -473,7 +446,7 @@ class Xom extends Node {
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
     // 先设置透明度，可以向上累积
-    parent = this.parent;
+    let parent = this.parent;
     let opa = opacity;
     while(parent) {
       opa *= parent.currentStyle.opacity;
@@ -488,11 +461,14 @@ class Xom extends Node {
     // transform和transformOrigin相关
     let tfo = tf.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
     computedStyle.transformOrigin = tfo.join(' ');
+    // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+    let matrix = [1, 0, 0, 1, 0, 0];
+    this.__matrix = matrix;
+    parent = this.parent;
     // transform相对于自身
     if(transform) {
-      let matrix = tf.calMatrix(transform, tfo, x, y, outerWidth, outerHeight);
-      // 初始化有可能继承祖先的matrix
-      this.__matrix = tf.mergeMatrix(this.matrix, matrix);
+      matrix = tf.calMatrix(transform, tfo, x, y, outerWidth, outerHeight);
+      this.__matrix = matrix;
       computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
       let parent = this.parent;
       while(parent) {
@@ -512,6 +488,18 @@ class Xom extends Node {
     }
     else {
       computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+      // 变换对事件影响，canvas要设置渲染
+      while(parent) {
+        if(parent.matrixEvent) {
+          matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+          break;
+        }
+        parent = parent.parent;
+      }
+      this.__matrixEvent = matrix;
+      if(renderMode === mode.CANVAS) {
+        ctx.setTransform(...matrix);
+      }
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;

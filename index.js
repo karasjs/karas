@@ -6252,32 +6252,6 @@
             innerHeight = this.innerHeight,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight;
-        var parent = this.parent;
-        var matrix = [1, 0, 0, 1, 0, 0];
-        this.__matrix = this.__matrixEvent = matrix;
-
-        while (parent) {
-          if (parent.matrixEvent) {
-            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
-            break;
-          }
-
-          parent = parent.parent;
-        } // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
-
-
-        if (matrix[0] !== 1 || matrix[1] !== 0 || matrix[2] !== 0 || matrix[3] !== 1 || matrix[4] !== 0 || matrix[5] !== 0) {
-          if (renderMode === mode.CANVAS) {
-            this.__matrix = this.__matrixEvent = matrix;
-          } else if (renderMode === mode.SVG) {
-            this.__matrixEvent = matrix;
-          }
-        }
-
-        if (renderMode === mode.CANVAS) {
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-        }
-
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
@@ -6319,7 +6293,7 @@
         var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth; // 先设置透明度，可以向上累积
 
-        parent = this.parent;
+        var parent = this.parent;
         var opa = opacity;
 
         while (parent) {
@@ -6335,34 +6309,51 @@
 
 
         var tfo = transform.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
-        computedStyle.transformOrigin = tfo.join(' '); // transform相对于自身
+        computedStyle.transformOrigin = tfo.join(' '); // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+
+        var matrix = [1, 0, 0, 1, 0, 0];
+        this.__matrix = matrix;
+        parent = this.parent; // transform相对于自身
 
         if (transform$1) {
-          var _matrix = transform.calMatrix(transform$1, tfo, x, y, outerWidth, outerHeight); // 初始化有可能继承祖先的matrix
-
-
-          this.__matrix = transform.mergeMatrix(this.matrix, _matrix);
-          computedStyle.transform = 'matrix(' + _matrix.join(', ') + ')';
+          matrix = transform.calMatrix(transform$1, tfo, x, y, outerWidth, outerHeight);
+          this.__matrix = matrix;
+          computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
           var _parent = this.parent;
 
           while (_parent) {
             if (_parent.matrixEvent) {
-              _matrix = transform.mergeMatrix(_parent.matrixEvent, _matrix);
+              matrix = transform.mergeMatrix(_parent.matrixEvent, matrix);
               break;
             }
 
             _parent = _parent.parent;
           }
 
-          this.__matrixEvent = _matrix;
+          this.__matrixEvent = matrix;
 
           if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(_matrix));
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
         } else {
-          computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+          computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)'; // 变换对事件影响，canvas要设置渲染
+
+          while (parent) {
+            if (parent.matrixEvent) {
+              matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+              break;
+            }
+
+            parent = parent.parent;
+          }
+
+          this.__matrixEvent = matrix;
+
+          if (renderMode === mode.CANVAS) {
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+          }
         }
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -6554,12 +6545,12 @@
                   this.root.__putImageData(util.mergeImageData(cache1, cache2));
                 }
               } else if (renderMode === mode.SVG) {
-                var _matrix2 = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
+                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
 
                 var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width || 0], ['height', _height || 0]];
 
-                if (_matrix2) {
-                  props.push(['transform', 'matrix(' + _matrix2.join(',') + ')']);
+                if (_matrix) {
+                  props.push(['transform', 'matrix(' + _matrix.join(',') + ')']);
                 }
 
                 if (needMask) {

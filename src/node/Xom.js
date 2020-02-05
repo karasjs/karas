@@ -402,9 +402,9 @@ class Xom extends Node {
       outerWidth,
       outerHeight,
     } = this;
-    this.__matrix = this.__matrixEvent = null;
     let parent = this.parent;
     let matrix = [1, 0, 0, 1, 0, 0];
+    this.__matrix = this.__matrixEvent = matrix;
     while(parent) {
       if(parent.matrixEvent) {
         matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
@@ -492,7 +492,7 @@ class Xom extends Node {
     if(transform) {
       let matrix = tf.calMatrix(transform, tfo, x, y, outerWidth, outerHeight);
       // 初始化有可能继承祖先的matrix
-      this.__matrix = this.matrix ? tf.mergeMatrix(this.matrix, matrix) : matrix;
+      this.__matrix = tf.mergeMatrix(this.matrix, matrix);
       computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
       let parent = this.parent;
       while(parent) {

@@ -6252,9 +6252,9 @@
             innerHeight = this.innerHeight,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight;
-        this.__matrix = this.__matrixEvent = null;
         var parent = this.parent;
         var matrix = [1, 0, 0, 1, 0, 0];
+        this.__matrix = this.__matrixEvent = matrix;
 
         while (parent) {
           if (parent.matrixEvent) {
@@ -6341,7 +6341,7 @@
           var _matrix = transform.calMatrix(transform$1, tfo, x, y, outerWidth, outerHeight); // 初始化有可能继承祖先的matrix
 
 
-          this.__matrix = this.matrix ? transform.mergeMatrix(this.matrix, _matrix) : _matrix;
+          this.__matrix = transform.mergeMatrix(this.matrix, _matrix);
           computedStyle.transform = 'matrix(' + _matrix.join(', ') + ')';
           var _parent = this.parent;
 
@@ -7560,7 +7560,7 @@
                 }
               }
 
-              var _point = m ? matrix.calPoint([x, y], m) : [x, y];
+              var _point = matrix.calPoint([x, y], m);
 
               props[xi][1] = _point[0];
               props[yi][1] = _point[1];
@@ -7572,8 +7572,7 @@
 
                 if (k === 'points') {
                   props[_i2][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    var p = [$1, $2];
-                    return (m ? matrix.calPoint(p, m) : p).join(',');
+                    return matrix.calPoint([$1, $2], m).join(',');
                   });
                   break;
                 }
@@ -7586,8 +7585,7 @@
 
                 if (k === 'd') {
                   props[_i3][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    var p = [$1, $2];
-                    return (m ? matrix.calPoint(p, m) : p).join(',');
+                    return matrix.calPoint([$1, $2], m).join(',');
                   });
                   break;
                 }

@@ -2336,7 +2336,26 @@
         style.flexGrow = parseFloat(temp);
         style.flexShrink = 1;
         style.flexBasis = 0;
-      } else if (/^[\d.]+px$/.test(temp)) ; else if (/^[\d.]+%$/.test(temp)) ; else {
+      } else if (/^[\d.]+px$/.test(temp)) {
+        style.flexGrow = 1;
+        style.flexShrink = 1;
+        style.flexBasis = temp;
+      } else if (/^[\d.]+%$/.test(temp)) {
+        style.flexGrow = 1;
+        style.flexShrink = 1;
+        style.flexBasis = temp;
+      } else if (/^[\d.]+\s+[\d.]+$/.test(temp)) {
+        var arr = temp.split(/\s+/);
+        style.flexGrow = parseFloat(arr[0]);
+        style.flexShrink = parseFloat(arr[1]);
+        style.flexBasis = 0;
+      } else if (/^[\d.]+\s+[\d.]+%$/.test(temp)) {
+        var _arr = temp.split(/\s+/);
+
+        style.flexGrow = parseFloat(_arr[0]);
+        style.flexShrink = 1;
+        style.flexBasis = _arr[1];
+      } else {
         style.flexGrow = 0;
         style.flexShrink = 1;
         style.flexBasis = 'auto';
@@ -2407,31 +2426,32 @@
           var v = item.slice(i + 1, item.length - 1);
 
           if (k === 'matrix') {
-            var arr = v.split(/\s*,\s*/);
-            arr = arr.map(function (item) {
+            var _arr2 = v.split(/\s*,\s*/);
+
+            _arr2 = _arr2.map(function (item) {
               return parseFloat(item);
             });
 
-            if (arr.length > 6) {
-              arr = arr.slice(0, 6);
+            if (_arr2.length > 6) {
+              _arr2 = _arr2.slice(0, 6);
             }
 
-            if (arr.length === 6) {
-              transform.push(['matrix', arr]);
+            if (_arr2.length === 6) {
+              transform.push(['matrix', _arr2]);
             }
           } else if (k === 'translateX') {
-            var _arr = ['translateX', v];
-            transform.push(calUnit(_arr, 1, v));
+            var _arr3 = ['translateX', v];
+            transform.push(calUnit(_arr3, 1, v));
           } else if (k === 'translateY') {
-            var _arr2 = ['translateY', v];
-            transform.push(calUnit(_arr2, 1, v));
+            var _arr4 = ['translateY', v];
+            transform.push(calUnit(_arr4, 1, v));
           } else if (k === 'translate') {
-            var _arr3 = v.split(/\s*,\s*/);
+            var _arr5 = v.split(/\s*,\s*/);
 
-            var arr1 = ['translateX', _arr3[0]];
-            var arr2 = ['translateY', _arr3[1] || _arr3[0]];
-            transform.push(calUnit(arr1, 1, _arr3[0]));
-            transform.push(calUnit(arr2, 1, _arr3[1] || _arr3[0]));
+            var arr1 = ['translateX', _arr5[0]];
+            var arr2 = ['translateY', _arr5[1] || _arr5[0]];
+            transform.push(calUnit(arr1, 1, _arr5[0]));
+            transform.push(calUnit(arr2, 1, _arr5[1] || _arr5[0]));
           } else if (k === 'scaleX') {
             transform.push(['scaleX', {
               value: parseFloat(v) || 0,
@@ -2443,10 +2463,10 @@
               unit: unit.NUMBER
             }]);
           } else if (k === 'scale') {
-            var _arr4 = v.split(/\s*,\s*/);
+            var _arr6 = v.split(/\s*,\s*/);
 
-            var x = parseFloat(_arr4[0]) || 0;
-            var y = parseFloat(_arr4[_arr4.length - 1]) || 0;
+            var x = parseFloat(_arr6[0]) || 0;
+            var y = parseFloat(_arr6[_arr6.length - 1]) || 0;
             transform.push(['scaleX', {
               value: x,
               unit: unit.NUMBER
@@ -2471,11 +2491,11 @@
               unit: unit.DEG
             }]);
           } else if (k === 'skew') {
-            var _arr5 = v.split(/\s*,\s*/);
+            var _arr7 = v.split(/\s*,\s*/);
 
-            var _x = parseFloat(_arr5[0]) || 0;
+            var _x = parseFloat(_arr7[0]) || 0;
 
-            var _y = parseFloat(_arr5[_arr5.length - 1]) || 0;
+            var _y = parseFloat(_arr7[_arr7.length - 1]) || 0;
 
             transform.push(['skewX', {
               value: _x,

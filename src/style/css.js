@@ -245,8 +245,28 @@ function normalize(style, reset) {
       style.flexShrink = 1;
       style.flexBasis = 0;
     }
-    else if(/^[\d.]+px$/.test(temp)) {}
-    else if(/^[\d.]+%$/.test(temp)) {}
+    else if(/^[\d.]+px$/.test(temp)) {
+      style.flexGrow = 1;
+      style.flexShrink = 1;
+      style.flexBasis = temp;
+    }
+    else if(/^[\d.]+%$/.test(temp)) {
+      style.flexGrow = 1;
+      style.flexShrink = 1;
+      style.flexBasis = temp;
+    }
+    else if(/^[\d.]+\s+[\d.]+$/.test(temp)) {
+      let arr = temp.split(/\s+/);
+      style.flexGrow = parseFloat(arr[0]);
+      style.flexShrink = parseFloat(arr[1]);
+      style.flexBasis = 0;
+    }
+    else if(/^[\d.]+\s+[\d.]+%$/.test(temp)) {
+      let arr = temp.split(/\s+/);
+      style.flexGrow = parseFloat(arr[0]);
+      style.flexShrink = 1;
+      style.flexBasis = arr[1];
+    }
     else {
       style.flexGrow = 0;
       style.flexShrink = 1;

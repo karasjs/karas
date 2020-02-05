@@ -230,7 +230,7 @@ class Geom extends Xom {
               y = v;
             }
           }
-          let point = matrix.calPoint([x, y], m);
+          let point = m ? matrix.calPoint([x, y], m) : [x, y];
           props[xi][1] = point[0];
           props[yi][1] = point[1];
         }
@@ -239,7 +239,8 @@ class Geom extends Xom {
             let [k, v] = props[i];
             if(k === 'points') {
               props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return matrix.calPoint([$1, $2], m).join(',');
+                let p = [$1, $2];
+                return (m ? matrix.calPoint(p, m) : p).join(',');
               });
               break;
             }
@@ -250,7 +251,8 @@ class Geom extends Xom {
             let [k, v] = props[i];
             if(k === 'd') {
               props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return matrix.calPoint([$1, $2], m).join(',');
+                let p = [$1, $2];
+                return (m ? matrix.calPoint(p, m) : p).join(',');
               });
               break;
             }

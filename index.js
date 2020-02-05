@@ -6792,10 +6792,7 @@
         var isDestroyed = this.isDestroyed,
             listener = this.listener,
             children = this.children,
-            computedStyle = this.computedStyle,
-            outerWidth = this.outerWidth,
-            outerHeight = this.outerHeight,
-            matrixEvent = this.matrixEvent;
+            computedStyle = this.computedStyle;
 
         if (isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
           return;
@@ -7563,7 +7560,7 @@
                 }
               }
 
-              var _point = matrix.calPoint([x, y], m);
+              var _point = m ? matrix.calPoint([x, y], m) : [x, y];
 
               props[xi][1] = _point[0];
               props[yi][1] = _point[1];
@@ -7575,7 +7572,8 @@
 
                 if (k === 'points') {
                   props[_i2][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
+                    var p = [$1, $2];
+                    return (m ? matrix.calPoint(p, m) : p).join(',');
                   });
                   break;
                 }
@@ -7588,7 +7586,8 @@
 
                 if (k === 'd') {
                   props[_i3][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
+                    var p = [$1, $2];
+                    return (m ? matrix.calPoint(p, m) : p).join(',');
                   });
                   break;
                 }

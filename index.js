@@ -2589,10 +2589,9 @@
       }
 
       calUnit(style, k, style[k]);
-      var v = style[k]; // 无单位视为0
+      var v = style[k]; // 无单位视为px
 
       if (v.unit === unit.NUMBER) {
-        v.value = 0;
         v.unit = unit.PX;
       }
     });

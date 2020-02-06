@@ -7,10 +7,10 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    backgroundSize: '10 20',
+    backgroundSize: '10px 20px',
   },
   {
-    backgroundSize: '100 200',
+    backgroundSize: '100px 200px',
   }
 ], {
   duration: 200,

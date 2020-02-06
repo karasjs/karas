@@ -148,42 +148,24 @@ function normalize(style, reset) {
     }
     [style.backgroundPositionX, style.backgroundPositionY] = temp;
   }
-  temp = style.backgroundPositionX;
-  if(temp) {
-    if(/%$/.test(temp) || /px$/.test(temp)) {
-      calUnit(style, 'backgroundPositionX', temp);
+  ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
+    temp = style[k];
+    if(!util.isNil(temp)) {
+      if(/%$/.test(temp) || /px$/.test(temp) || /^[\d.]+$/.test(temp)) {
+        calUnit(style, k, temp);
+        temp = style[k];
+        if(temp.unit === unit.NUMBER) {
+          temp.unit = unit.PX;
+        }
+      }
+      else {
+        style[k] = {
+          value: temp,
+          unit: unit.POSITION,
+        };
+      }
     }
-    else if(temp === '0' || temp === 0) {
-      style.backgroundPositionX = {
-        value: 0,
-        unit: unit.PX,
-      };
-    }
-    else {
-      style.backgroundPositionX = {
-        value: temp,
-        unit: unit.POSITION,
-      };
-    }
-  }
-  temp = style.backgroundPositionY;
-  if(temp) {
-    if(/%$/.test(temp) || /px$/.test(temp)) {
-      calUnit(style, 'backgroundPositionY', temp);
-    }
-    else if(temp === '0' || temp === 0) {
-      style.backgroundPositionY = {
-        value: 0,
-        unit: unit.PX,
-      };
-    }
-    else {
-      style.backgroundPositionY = {
-        value: temp,
-        unit: unit.POSITION,
-      };
-    }
-  }
+  });
   // 背景尺寸
   temp = style.backgroundSize;
   if(temp) {
@@ -444,10 +426,15 @@ function normalize(style, reset) {
         style.rotateZ = style.rotate;
         delete style.rotate;
       }
-      // 严格写法除了0都要带单位，0可以忽略不处理等于删除
+      // 没有单位视作px或deg
       let v = style[k];
       if(v.unit === unit.NUMBER || v.value === 0) {
-        delete style[k];
+        if(k.indexOf('translate') === 0) {
+          v.unit = unit.PX;
+        }
+        else {
+          v.unit = unit.DEG;
+        }
       }
     });
   }
@@ -558,7 +545,7 @@ function normalize(style, reset) {
   temp = style.strokeDasharray;
   if(temp) {
     let match = temp.toString().match(/[\d.]+/g);
-    if(match) {
+    if(match && match.length > 1) {
       style.strokeDasharray = match.join(', ');
     }
     else {

@@ -2238,42 +2238,25 @@
       style.backgroundPositionY = _temp2[1];
     }
 
-    temp = style.backgroundPositionX;
+    ['backgroundPositionX', 'backgroundPositionY'].forEach(function (k) {
+      temp = style[k];
 
-    if (temp) {
-      if (/%$/.test(temp) || /px$/.test(temp)) {
-        calUnit(style, 'backgroundPositionX', temp);
-      } else if (temp === '0' || temp === 0) {
-        style.backgroundPositionX = {
-          value: 0,
-          unit: unit.PX
-        };
-      } else {
-        style.backgroundPositionX = {
-          value: temp,
-          unit: unit.POSITION
-        };
+      if (!util.isNil(temp)) {
+        if (/%$/.test(temp) || /px$/.test(temp) || /^[\d.]+$/.test(temp)) {
+          calUnit(style, k, temp);
+          temp = style[k];
+
+          if (temp.unit === unit.NUMBER) {
+            temp.unit = unit.PX;
+          }
+        } else {
+          style[k] = {
+            value: temp,
+            unit: unit.POSITION
+          };
+        }
       }
-    }
-
-    temp = style.backgroundPositionY;
-
-    if (temp) {
-      if (/%$/.test(temp) || /px$/.test(temp)) {
-        calUnit(style, 'backgroundPositionY', temp);
-      } else if (temp === '0' || temp === 0) {
-        style.backgroundPositionY = {
-          value: 0,
-          unit: unit.PX
-        };
-      } else {
-        style.backgroundPositionY = {
-          value: temp,
-          unit: unit.POSITION
-        };
-      }
-    } // 背景尺寸
-
+    }); // 背景尺寸
 
     temp = style.backgroundSize;
 
@@ -2544,13 +2527,17 @@
           k = 'rotateZ';
           style.rotateZ = style.rotate;
           delete style.rotate;
-        } // 严格写法除了0都要带单位，0可以忽略不处理等于删除
+        } // 没有单位视作px或deg
 
 
         var v = style[k];
 
         if (v.unit === unit.NUMBER || v.value === 0) {
-          delete style[k];
+          if (k.indexOf('translate') === 0) {
+            v.unit = unit.PX;
+          } else {
+            v.unit = unit.DEG;
+          }
         }
       });
     }
@@ -2648,7 +2635,7 @@
     if (temp) {
       var _match5 = temp.toString().match(/[\d.]+/g);
 
-      if (_match5) {
+      if (_match5 && _match5.length > 1) {
         style.strokeDasharray = _match5.join(', ');
       } else {
         style.strokeDasharray = '';

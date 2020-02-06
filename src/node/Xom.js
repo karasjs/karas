@@ -487,7 +487,17 @@ class Xom extends Node {
         if(!currentStyle.hasOwnProperty(k)) {
           return;
         }
-        let m = tf.calExpandMatrix(k, currentStyle[k], tfo, outerWidth, outerHeight);
+        let v = currentStyle[k];
+        computedStyle[k] = v.value;
+        if(v.unit === unit.PERCENT) {
+          if(k === 'translateX') {
+            computedStyle[k] = v.value * outerWidth * 0.01;
+          }
+          else if(k === 'translateY') {
+            computedStyle[k] = v.value * outerHeight * 0.01;
+          }
+        }
+        let m = tf.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
         this.__matrix = matrix = tf.mergeMatrix(matrix, m);
       });
     }

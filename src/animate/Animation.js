@@ -70,6 +70,21 @@ const GRADIENT_TYPE = {
   radial: true,
 };
 
+const KEY_EXPAND = [
+  'translateX',
+  'translateY',
+  'scaleX',
+  'scaleY',
+  'rotateZ',
+  'skewX',
+  'skewY'
+];
+
+const EXPAND_HASH = {};
+KEY_EXPAND.forEach(k => {
+  EXPAND_HASH[k] = true;
+});
+
 // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 function color2array(style) {
   KEY_COLOR.forEach(k => {
@@ -95,6 +110,7 @@ function color2array(style) {
   });
 }
 
+// 对比两个样式的某个值是否相等
 function equalStyle(k, a, b) {
   if(k === 'transform') {
     if(a.length !== b.length) {
@@ -126,13 +142,12 @@ function equalStyle(k, a, b) {
     }
     return true;
   }
-  else if(k === 'backgroundPositionX' || k === 'backgroundPositionY') {
-    return a.value === b.value && a.unit === b.unit;
-  }
   else if(k === 'transformOrigin' || k === 'backgroundSize') {
-    return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
+    return a[0].value === b[0].value && a[0].unit === b[0].unit
+      && a[1].value === b[1].value && a[1].unit === b[1].unit;
   }
-  else if(LENGTH_HASH.hasOwnProperty(k)) {
+  else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
+    ||LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
   else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
@@ -448,6 +463,14 @@ function calDiff(prev, next, k, target) {
       res.v = 0;
     }
   }
+  else if(EXPAND_HASH.hasOwnProperty(k)) {
+    if(p.unit === n.unit) {
+      res.v = n.value - p.value;
+    }
+    else {
+      res.v = 0;
+    }
+  }
   else if(k === 'backgroundSize') {
     res.v = [];
     for(let i = 0; i < 2; i++) {
@@ -604,6 +627,7 @@ function binarySearch(i, j, time, frames) {
   }
 }
 
+// 根据百分比和缓动函数计算中间态样式
 function calStyle(frame, percent) {
   let style = util.clone(frame.style);
   let timingFunction = easing[frame.easing] || easing.linear;
@@ -633,7 +657,8 @@ function calStyle(frame, percent) {
         }
       });
     }
-    else if(k === 'backgroundPositionX' || k === 'backgroundPositionY') {
+    else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
+      || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
       if(v !== 0) {
         st.value += v * percent;
       }
@@ -668,9 +693,6 @@ function calStyle(frame, percent) {
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;
       st[3] += v[3] * percent;
-    }
-    else if(LENGTH_HASH.hasOwnProperty(k)) {
-      style[k].value += v * percent;
     }
     else if(repaint.GEOM.hasOwnProperty(k)) {
       let st = style[k];

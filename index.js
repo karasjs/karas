@@ -4492,7 +4492,12 @@
   var GRADIENT_TYPE = {
     linear: true,
     radial: true
-  }; // css模式rgb和init的颜色转换为rgba数组，方便加减运算
+  };
+  var KEY_EXPAND = ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ', 'skewX', 'skewY'];
+  var EXPAND_HASH = {};
+  KEY_EXPAND.forEach(function (k) {
+    EXPAND_HASH[k] = true;
+  }); // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 
   function color2array(style) {
     KEY_COLOR.forEach(function (k) {
@@ -4521,7 +4526,8 @@
         });
       }
     });
-  }
+  } // 对比两个样式的某个值是否相等
+
 
   function equalStyle(k, a, b) {
     if (k === 'transform') {
@@ -4550,11 +4556,9 @@
       }
 
       return true;
-    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
-      return a.value === b.value && a.unit === b.unit;
     } else if (k === 'transformOrigin' || k === 'backgroundSize') {
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
-    } else if (LENGTH_HASH.hasOwnProperty(k)) {
+    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
     } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
       var av = a.v;
@@ -4892,6 +4896,12 @@
       } else {
         res.v = 0;
       }
+    } else if (EXPAND_HASH.hasOwnProperty(k)) {
+      if (p.unit === n.unit) {
+        res.v = n.value - p.value;
+      } else {
+        res.v = 0;
+      }
     } else if (k === 'backgroundSize') {
       res.v = [];
 
@@ -5031,7 +5041,8 @@
         return binarySearch(Math.min(middle + 1, j), j, time, frames);
       }
     }
-  }
+  } // 根据百分比和缓动函数计算中间态样式
+
 
   function calStyle(frame, percent) {
     var style = util.clone(frame.style);
@@ -5067,7 +5078,7 @@
             hash[k].value += v * percent;
           }
         });
-      } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
+      } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
         if (v !== 0) {
           st.value += v * percent;
         }
@@ -5102,8 +5113,6 @@
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;
           st[3] += v[3] * percent;
-        } else if (LENGTH_HASH.hasOwnProperty(k)) {
-          style[k].value += v * percent;
         } else if (repaint$1.GEOM.hasOwnProperty(k)) {
           var _st = style[k];
 
@@ -6346,7 +6355,18 @@
                 return;
               }
 
-              var m = transform.calExpandMatrix(k, currentStyle[k], tfo, outerWidth, outerHeight);
+              var v = currentStyle[k];
+              computedStyle[k] = v.value;
+
+              if (v.unit === unit.PERCENT) {
+                if (k === 'translateX') {
+                  computedStyle[k] = v.value * outerWidth * 0.01;
+                } else if (k === 'translateY') {
+                  computedStyle[k] = v.value * outerHeight * 0.01;
+                }
+              }
+
+              var m = transform.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
               _this2.__matrix = matrix = transform.mergeMatrix(matrix, m);
             });
           }

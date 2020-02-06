@@ -6,7 +6,8 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .assert.value('input', '{"bb":[],"children":[{"type":"text","children":[]}],"opacity":1,"type":"dom","defs":[]}')
+      .pause(500)
+      .assert.value('input', '0/100')
       .end();
   }
 };

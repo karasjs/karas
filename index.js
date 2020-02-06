@@ -878,7 +878,8 @@
 
   function vectorProduct(x1, y1, x2, y2) {
     return x1 * y2 - x2 * y1;
-  }
+  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
+
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
     if (matrix) {
@@ -2496,7 +2497,7 @@
                 bottom: 100
               }[_item],
               unit: unit.PERCENT
-            });
+            }); // 不规范的写法变默认值50%
 
             if (tfo[_i].value === undefined) {
               tfo[_i].value = 50;
@@ -2521,8 +2522,8 @@
       ['translate', 'scale', 'skew'].forEach(function (k) {
         temp = style[k];
 
-        if (k) {
-          var _arr5 = v.split(/\s*,\s*/);
+        if (temp) {
+          var _arr5 = temp.split(/\s*,\s*/);
 
           if (_arr5.length === 1) {
             _arr5[1] = _arr5[0];
@@ -2588,15 +2589,16 @@
       }
 
       calUnit(style, k, style[k]);
-      var v = style[k];
+      var v = style[k]; // 无单位视为0
 
       if (v.unit === unit.NUMBER) {
-        v.unit === unit.PX;
+        v.value = 0;
+        v.unit = unit.PX;
       }
     });
     temp = style.fontWeight;
 
-    if (temp || temp === 0) {
+    if (temp || temp === 0 || temp === '0') {
       if (temp === 'bold') {
         style.fontWeight = 700;
       } else if (temp === 'normal') {
@@ -2610,7 +2612,7 @@
 
     temp = style.lineHeight;
 
-    if (temp || temp === 0) {
+    if (temp || temp === 0 || temp === '0') {
       if (temp === 'inherit') {
         style.lineHeight = {
           unit: unit.INHERIT
@@ -3744,10 +3746,10 @@
 
   for (var k in DOM) {
     if (DOM.hasOwnProperty(k)) {
-      var v$1 = DOM[k];
+      var v = DOM[k];
       dom.push({
         k: k,
-        v: v$1
+        v: v
       });
     }
   }

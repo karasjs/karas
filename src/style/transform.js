@@ -66,6 +66,7 @@ function vectorProduct(x1, y1, x2, y2) {
   return x1 * y2 - x2 * y1;
 }
 
+// 判断点是否在一个矩形内，比如事件发生是否在节点上
 function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
   if(matrix) {
     [x1, y1] = transformPoint(matrix, x1, y1);

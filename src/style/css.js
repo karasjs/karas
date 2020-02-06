@@ -394,6 +394,7 @@ function normalize(style, reset) {
             }[item],
             unit: unit.PERCENT,
           });
+          // 不规范的写法变默认值50%
           if(tfo[i].value === undefined) {
             tfo[i].value = 50;
           }
@@ -415,8 +416,8 @@ function normalize(style, reset) {
   if(!style.transform) {
     ['translate', 'scale', 'skew'].forEach(k => {
       temp = style[k];
-      if(k) {
-        let arr = v.split(/\s*,\s*/);
+      if(temp) {
+        let arr = temp.split(/\s*,\s*/);
         if(arr.length === 1) {
           arr[1] = arr[0];
         }
@@ -500,12 +501,14 @@ function normalize(style, reset) {
     }
     calUnit(style, k, style[k]);
     let v = style[k];
+    // 无单位视为0
     if(v.unit === unit.NUMBER) {
-      v.unit === unit.PX;
+      v.value = 0;
+      v.unit = unit.PX;
     }
   });
   temp = style.fontWeight;
-  if(temp || temp === 0) {
+  if(temp || temp === 0 || temp === '0') {
     if(temp === 'bold') {
       style.fontWeight = 700;
     }
@@ -520,7 +523,7 @@ function normalize(style, reset) {
     }
   }
   temp = style.lineHeight;
-  if(temp || temp === 0) {
+  if(temp || temp === 0 || temp === '0') {
     if(temp === 'inherit') {
       style.lineHeight = {
         unit: unit.INHERIT,

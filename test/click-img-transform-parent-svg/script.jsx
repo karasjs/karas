@@ -6,7 +6,7 @@ function cb(v) {
 
 let o = karas.render(
   <svg width="360" height="360">
-    <div style={{width:100,height:100,transform:'translate(100, 100)'}}>
+    <div style={{width:100,height:100,transform:'translate(100px, 100px)'}}>
       <img src="../image.png" onClick={()=>cb(count++)}/>
     </div>
   </svg>,

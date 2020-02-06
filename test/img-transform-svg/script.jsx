@@ -1,6 +1,6 @@
 let o = karas.render(
   <svg width="360" height="360">
-    <img src="../image.png" style={{transform:'translate(50,50)'}}/>
+    <img src="../image.png" style={{transform:'translate(50px,50px)'}}/>
   </svg>,
   '#test'
 );

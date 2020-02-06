@@ -2111,23 +2111,30 @@
       };
     } else if (/%$/.test(v)) {
       // border不支持百分比
-      if (k.toString().indexOf('border') === 0) {
-        obj[k] = {
-          value: 0,
-          unit: unit.PX
-        };
-      } else {
+      if (k.toString().indexOf('border') !== 0) {
         v = parseFloat(v) || 0;
         obj[k] = {
           value: v,
           unit: unit.PERCENT
         };
       }
-    } else {
+    } else if (/px$/.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
         unit: unit.PX
+      };
+    } else if (/deg$/.test(v)) {
+      v = parseFloat(v) || 0;
+      obj[k] = {
+        value: v,
+        unit: unit.DEG
+      };
+    } else {
+      v = parseFloat(v) || 0;
+      obj[k] = {
+        value: v,
+        unit: unit.NUMBER
       };
     }
 
@@ -2233,14 +2240,11 @@
     temp = style.backgroundPositionX;
 
     if (temp) {
-      if (/%$/.test(temp)) {
+      if (/%$/.test(temp) || /px$/.test(temp)) {
+        calUnit(style, 'backgroundPositionX', temp);
+      } else if (temp === '0' || temp === 0) {
         style.backgroundPositionX = {
-          value: parseFloat(temp) || 0,
-          unit: unit.PERCENT
-        };
-      } else if (/^[\d.]/.test(temp)) {
-        style.backgroundPositionX = {
-          value: parseFloat(temp),
+          value: 0,
           unit: unit.PX
         };
       } else {
@@ -2254,14 +2258,11 @@
     temp = style.backgroundPositionY;
 
     if (temp) {
-      if (/%$/.test(temp)) {
+      if (/%$/.test(temp) || /px$/.test(temp)) {
+        calUnit(style, 'backgroundPositionY', temp);
+      } else if (temp === '0' || temp === 0) {
         style.backgroundPositionY = {
-          value: parseFloat(temp) || 0,
-          unit: unit.PERCENT
-        };
-      } else if (/^[\d.]/.test(temp)) {
-        style.backgroundPositionY = {
-          value: parseFloat(temp),
+          value: 0,
           unit: unit.PX
         };
       } else {
@@ -2288,14 +2289,11 @@
         for (var i = 0; i < 2; i++) {
           var item = match[i];
 
-          if (/%$/.test(item)) {
+          if (/%$/.test(item) || /px$/.test(item)) {
+            calUnit(bc, i, item);
+          } else if (item === '0' || item === 0) {
             bc.push({
-              value: parseFloat(item) || 0,
-              unit: unit.PERCENT
-            });
-          } else if (/^[\d.]/.test(item)) {
-            bc.push({
-              value: parseFloat(item),
+              value: 0,
               unit: unit.PX
             });
           } else if (item === 'contain' || item === 'cover') {
@@ -2439,72 +2437,33 @@
             if (_arr2.length === 6) {
               transform.push(['matrix', _arr2]);
             }
-          } else if (k === 'translateX') {
-            var _arr3 = ['translateX', v];
-            transform.push(calUnit(_arr3, 1, v));
-          } else if (k === 'translateY') {
-            var _arr4 = ['translateY', v];
-            transform.push(calUnit(_arr4, 1, v));
-          } else if (k === 'translate') {
-            var _arr5 = v.split(/\s*,\s*/);
+          } else if (['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotate', 'rotateZ'].indexOf(k) > -1) {
+            if (k === 'rotate') {
+              k = 'rotateZ';
+            }
 
-            var arr1 = ['translateX', _arr5[0]];
-            var arr2 = ['translateY', _arr5[1] || _arr5[0]];
-            transform.push(calUnit(arr1, 1, _arr5[0]));
-            transform.push(calUnit(arr2, 1, _arr5[1] || _arr5[0]));
-          } else if (k === 'scaleX') {
-            transform.push(['scaleX', {
-              value: parseFloat(v) || 0,
-              unit: unit.NUMBER
-            }]);
-          } else if (k === 'scaleY') {
-            transform.push(['scaleY', {
-              value: parseFloat(v) || 0,
-              unit: unit.NUMBER
-            }]);
-          } else if (k === 'scale') {
-            var _arr6 = v.split(/\s*,\s*/);
+            var _arr3 = calUnit([k, v], 1, v);
 
-            var x = parseFloat(_arr6[0]) || 0;
-            var y = parseFloat(_arr6[_arr6.length - 1]) || 0;
-            transform.push(['scaleX', {
-              value: x,
-              unit: unit.NUMBER
-            }]);
-            transform.push(['scaleY', {
-              value: y,
-              unit: unit.NUMBER
-            }]);
-          } else if (k === 'rotateZ' || k === 'rotate') {
-            transform.push(['rotateZ', {
-              value: parseFloat(v) || 0,
-              unit: unit.DEG
-            }]);
-          } else if (k === 'skewX') {
-            transform.push(['skewX', {
-              value: parseFloat(v) || 0,
-              unit: unit.DEG
-            }]);
-          } else if (k === 'skewY') {
-            transform.push(['skewY', {
-              value: parseFloat(v) || 0,
-              unit: unit.DEG
-            }]);
-          } else if (k === 'skew') {
-            var _arr7 = v.split(/\s*,\s*/);
+            if (_arr3[1].value !== 0 && _arr3[1].unit !== unit.NUMBER) {
+              transform.push(_arr3);
+            }
+          } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
+            var _arr4 = v.split(/\s*,\s*/);
 
-            var _x = parseFloat(_arr7[0]) || 0;
+            if (_arr4.length === 1) {
+              _arr4[1] = _arr4[0];
+            }
 
-            var _y = parseFloat(_arr7[_arr7.length - 1]) || 0;
+            var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
+            var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
 
-            transform.push(['skewX', {
-              value: _x,
-              unit: unit.DEG
-            }]);
-            transform.push(['skewY', {
-              value: _y,
-              unit: unit.DEG
-            }]);
+            if (arr1[1].value !== 0 && arr1[1].unit !== unit.NUMBER) {
+              transform.push(arr1);
+            }
+
+            if (arr2[1].value !== 0 && arr2[1].unit !== unit.NUMBER) {
+              transform.push(arr2);
+            }
           }
         });
       }
@@ -2525,16 +2484,8 @@
         for (var _i = 0; _i < 2; _i++) {
           var _item = _match4[_i];
 
-          if (/%$/.test(_item)) {
-            tfo.push({
-              value: parseFloat(_item) || 0,
-              unit: unit.PERCENT
-            });
-          } else if (/^[\d.]/.test(_item)) {
-            tfo.push({
-              value: parseFloat(_item),
-              unit: unit.PX
-            });
+          if (/%$/.test(_item) || /px$/.test(_item)) {
+            calUnit(tfo, _i, _item);
           } else {
             tfo.push({
               value: {
@@ -2563,6 +2514,44 @@
           unit: unit.PERCENT
         }];
       }
+    } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
+
+
+    if (!style.transform) {
+      ['translate', 'scale', 'skew'].forEach(function (k) {
+        temp = style[k];
+
+        if (k) {
+          var _arr5 = v.split(/\s*,\s*/);
+
+          if (_arr5.length === 1) {
+            _arr5[1] = _arr5[0];
+          }
+
+          style["".concat(k, "X")] = _arr5[0];
+          style["".concat(k, "Y")] = _arr5[1];
+        }
+      });
+      ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+        if (!style.hasOwnProperty(k)) {
+          return;
+        }
+
+        calUnit(style, k, style[k]);
+
+        if (k === 'rotate') {
+          k = 'rotateZ';
+          style.rotateZ = style.rotate;
+          delete style.rotate;
+        } // 严格写法除了0都要带单位，0可以忽略不处理等于删除
+
+
+        var v = style[k];
+
+        if (v.unit === unit.NUMBER || v.value === 0) {
+          delete style[k];
+        }
+      });
     }
 
     temp = style.opacity;
@@ -2591,16 +2580,19 @@
     parserOneBorder(style, 'Top');
     parserOneBorder(style, 'Right');
     parserOneBorder(style, 'Bottom');
-    parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化
+    parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize', 'strokeWidth'].forEach(function (k) {
-      var v = style[k];
-
       if (!style.hasOwnProperty(k)) {
         return;
       }
 
-      calUnit(style, k, v);
+      calUnit(style, k, style[k]);
+      var v = style[k];
+
+      if (v.unit === unit.NUMBER) {
+        v.unit === unit.PX;
+      }
     });
     temp = style.fontWeight;
 
@@ -3752,10 +3744,10 @@
 
   for (var k in DOM) {
     if (DOM.hasOwnProperty(k)) {
-      var v = DOM[k];
+      var v$1 = DOM[k];
       dom.push({
         k: k,
-        v: v
+        v: v$1
       });
     }
   }

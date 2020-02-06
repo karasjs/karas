@@ -45,13 +45,7 @@ function calUnit(obj, k, v) {
   }
   else if(/%$/.test(v)) {
     // border不支持百分比
-    if(k.toString().indexOf('border') === 0) {
-      obj[k] = {
-        value: 0,
-        unit: unit.PX,
-      };
-    }
-    else {
+    if(k.toString().indexOf('border') !== 0) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
@@ -59,11 +53,25 @@ function calUnit(obj, k, v) {
       };
     }
   }
-  else {
+  else if(/px$/.test(v)) {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
       unit: unit.PX,
+    };
+  }
+  else if(/deg$/.test(v)) {
+    v = parseFloat(v) || 0;
+    obj[k] = {
+      value: v,
+      unit: unit.DEG,
+    };
+  }
+  else {
+    v = parseFloat(v) || 0;
+    obj[k] = {
+      value: v,
+      unit: unit.NUMBER,
     };
   }
   return obj;
@@ -142,15 +150,12 @@ function normalize(style, reset) {
   }
   temp = style.backgroundPositionX;
   if(temp) {
-    if(/%$/.test(temp)) {
-      style.backgroundPositionX = {
-        value: parseFloat(temp) || 0,
-        unit: unit.PERCENT,
-      };
+    if(/%$/.test(temp) || /px$/.test(temp)) {
+      calUnit(style, 'backgroundPositionX', temp);
     }
-    else if(/^[\d.]/.test(temp)) {
+    else if(temp === '0' || temp === 0) {
       style.backgroundPositionX = {
-        value: parseFloat(temp),
+        value: 0,
         unit: unit.PX,
       };
     }
@@ -163,15 +168,12 @@ function normalize(style, reset) {
   }
   temp = style.backgroundPositionY;
   if(temp) {
-    if(/%$/.test(temp)) {
-      style.backgroundPositionY = {
-        value: parseFloat(temp) || 0,
-        unit: unit.PERCENT,
-      };
+    if(/%$/.test(temp) || /px$/.test(temp)) {
+      calUnit(style, 'backgroundPositionY', temp);
     }
-    else if(/^[\d.]/.test(temp)) {
+    else if(temp === '0' || temp === 0) {
       style.backgroundPositionY = {
-        value: parseFloat(temp),
+        value: 0,
         unit: unit.PX,
       };
     }
@@ -193,15 +195,12 @@ function normalize(style, reset) {
       let bc = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item)) {
-          bc.push({
-            value: parseFloat(item) || 0,
-            unit: unit.PERCENT,
-          });
+        if(/%$/.test(item) || /px$/.test(item)) {
+          calUnit(bc, i, item);
         }
-        else if(/^[\d.]/.test(item)) {
+        else if(item === '0' || item === 0) {
           bc.push({
-            value: parseFloat(item),
+            value: 0,
             unit: unit.PX,
           });
         }
@@ -336,76 +335,37 @@ function normalize(style, reset) {
             transform.push(['matrix', arr]);
           }
         }
-        else if(k === 'translateX') {
-          let arr = ['translateX', v];
-          transform.push(calUnit(arr, 1, v));
+        else if([
+          'translateX',
+          'translateY',
+          'scaleX',
+          'scaleY',
+          'skewX',
+          'skewY',
+          'rotate',
+          'rotateZ'
+        ].indexOf(k) > -1) {
+          if(k === 'rotate') {
+            k = 'rotateZ';
+          }
+          let arr = calUnit([k, v], 1, v);
+          if(arr[1].value !== 0 && arr[1].unit !== unit.NUMBER) {
+            transform.push(arr);
+          }
         }
-        else if(k === 'translateY') {
-          let arr = ['translateY', v];
-          transform.push(calUnit(arr, 1, v));
-        }
-        else if(k === 'translate') {
+        else if(['translate', 'scale', 'skew'].indexOf(k) > -1) {
           let arr = v.split(/\s*,\s*/);
-          let arr1 = ['translateX', arr[0]];
-          let arr2 = ['translateY', arr[1] || arr[0]];
-          transform.push(calUnit(arr1, 1, arr[0]));
-          transform.push(calUnit(arr2, 1, arr[1] || arr[0]));
-        }
-        else if(k === 'scaleX') {
-          transform.push(['scaleX', {
-            value: parseFloat(v) || 0,
-            unit: unit.NUMBER,
-          }]);
-        }
-        else if(k === 'scaleY') {
-          transform.push(['scaleY', {
-            value: parseFloat(v) || 0,
-            unit: unit.NUMBER,
-          }]);
-        }
-        else if(k === 'scale') {
-          let arr = v.split(/\s*,\s*/);
-          let x = parseFloat(arr[0]) || 0;
-          let y = parseFloat(arr[arr.length - 1]) || 0;
-          transform.push(['scaleX', {
-            value: x,
-            unit: unit.NUMBER,
-          }]);
-          transform.push(['scaleY', {
-            value: y,
-            unit: unit.NUMBER,
-          }]);
-        }
-        else if(k === 'rotateZ' || k === 'rotate') {
-          transform.push(['rotateZ', {
-            value: parseFloat(v) || 0,
-            unit: unit.DEG,
-          }]);
-        }
-        else if(k === 'skewX') {
-          transform.push(['skewX', {
-            value: parseFloat(v) || 0,
-            unit: unit.DEG,
-          }]);
-        }
-        else if(k === 'skewY') {
-          transform.push(['skewY', {
-            value: parseFloat(v) || 0,
-            unit: unit.DEG,
-          }]);
-        }
-        else if(k === 'skew') {
-          let arr = v.split(/\s*,\s*/);
-          let x = parseFloat(arr[0]) || 0;
-          let y = parseFloat(arr[arr.length - 1]) || 0;
-          transform.push(['skewX', {
-            value: x,
-            unit: unit.DEG,
-          }]);
-          transform.push(['skewY', {
-            value: y,
-            unit: unit.DEG,
-          }]);
+          if(arr.length === 1) {
+            arr[1] = arr[0];
+          }
+          let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
+          let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
+          if(arr1[1].value !== 0 && arr1[1].unit !== unit.NUMBER) {
+            transform.push(arr1);
+          }
+          if(arr2[1].value !== 0 && arr2[1].unit !== unit.NUMBER) {
+            transform.push(arr2);
+          }
         }
       });
     }
@@ -420,17 +380,8 @@ function normalize(style, reset) {
       let tfo = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item)) {
-          tfo.push({
-            value: parseFloat(item) || 0,
-            unit: unit.PERCENT,
-          });
-        }
-        else if(/^[\d.]/.test(item)) {
-          tfo.push({
-            value: parseFloat(item),
-            unit: unit.PX,
-          });
+        if(/%$/.test(item) || /px$/.test(item)) {
+          calUnit(tfo, i, item);
         }
         else {
           tfo.push({
@@ -460,6 +411,45 @@ function normalize(style, reset) {
       }];
     }
   }
+  // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
+  if(!style.transform) {
+    ['translate', 'scale', 'skew'].forEach(k => {
+      temp = style[k];
+      if(k) {
+        let arr = v.split(/\s*,\s*/);
+        if(arr.length === 1) {
+          arr[1] = arr[0];
+        }
+        style[`${k}X`] = arr[0];
+        style[`${k}Y`] = arr[1];
+      }
+    });
+    [
+      'translateX',
+      'translateY',
+      'scaleX',
+      'scaleY',
+      'skewX',
+      'skewY',
+      'rotateZ',
+      'rotate'
+    ].forEach(k => {
+      if(!style.hasOwnProperty(k)) {
+        return;
+      }
+      calUnit(style, k, style[k]);
+      if(k === 'rotate') {
+        k = 'rotateZ';
+        style.rotateZ = style.rotate;
+        delete style.rotate;
+      }
+      // 严格写法除了0都要带单位，0可以忽略不处理等于删除
+      let v = style[k];
+      if(v.unit === unit.NUMBER || v.value === 0) {
+        delete style[k];
+      }
+    });
+  }
   temp = style.opacity;
   if(temp) {
     temp = parseFloat(temp);
@@ -481,7 +471,7 @@ function normalize(style, reset) {
   parserOneBorder(style, 'Right');
   parserOneBorder(style, 'Bottom');
   parserOneBorder(style, 'Left');
-  // 转化不同单位值为对象标准化
+  // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
   [
     'marginTop',
     'marginRight',
@@ -505,11 +495,14 @@ function normalize(style, reset) {
     'fontSize',
     'strokeWidth'
   ].forEach(k => {
-    let v = style[k];
     if(!style.hasOwnProperty(k)) {
       return;
     }
-    calUnit(style, k, v);
+    calUnit(style, k, style[k]);
+    let v = style[k];
+    if(v.unit === unit.NUMBER) {
+      v.unit === unit.PX;
+    }
   });
   temp = style.fontWeight;
   if(temp || temp === 0) {

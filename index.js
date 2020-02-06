@@ -2428,7 +2428,7 @@
 
             var _arr3 = calUnit([k, v], 1, v);
 
-            if (_arr3[1].value !== 0 && _arr3[1].unit !== unit.NUMBER) {
+            if (_arr3[1].value !== 0 && _arr3[1].unit !== unit.NUMBER || k.indexOf('scale') === 0) {
               transform.push(_arr3);
             }
           } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
@@ -2477,7 +2477,8 @@
                 left: 0,
                 center: 50,
                 right: 100,
-                bottom: 100
+                bottom: 100,
+                0: 0
               }[_item],
               unit: unit.PERCENT
             }); // 不规范的写法变默认值50%
@@ -6313,11 +6314,17 @@
 
         var matrix = [1, 0, 0, 1, 0, 0];
         this.__matrix = matrix;
+
+        if (isDestroyed || display === 'none') {
+          return;
+        }
+
         parent = this.parent; // transform相对于自身
 
         if (transform$1) {
           matrix = transform.calMatrix(transform$1, tfo, x, y, outerWidth, outerHeight);
           this.__matrix = matrix;
+          console.log(transform$1, matrix);
           computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
           var _parent = this.parent;
 
@@ -6331,32 +6338,46 @@
           }
 
           this.__matrixEvent = matrix;
+          console.log(matrix);
 
           if (renderMode === mode.CANVAS) {
             ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
           } else if (renderMode === mode.SVG) {
             this.addTransform(['matrix', this.matrix.join(',')]);
           }
-        } else {
-          computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)'; // 变换对事件影响，canvas要设置渲染
+        } // 没有transform则看是否有扩展的css独立变换属性
+        else {
+            var hasExpand;
+            ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+              if (!currentStyle.hasOwnProperty(k)) {
+                return;
+              }
 
-          while (parent) {
-            if (parent.matrixEvent) {
-              matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
-              break;
+              hasExpand = true;
+            }); // 没有扩展的则默认matrix
+
+            if (!hasExpand) {
+              computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)'; // 变换对事件影响，canvas要设置渲染
+
+              while (parent) {
+                if (parent.matrixEvent) {
+                  matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+                  break;
+                }
+
+                parent = parent.parent;
+              }
+
+              this.__matrixEvent = matrix;
+
+              if (renderMode === mode.CANVAS) {
+                ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+              }
             }
+          } // 隐藏不渲染
 
-            parent = parent.parent;
-          }
 
-          this.__matrixEvent = matrix;
-
-          if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-          }
-        }
-
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (visibility === 'hidden') {
           return;
         } // 背景色垫底
 

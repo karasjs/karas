@@ -464,6 +464,9 @@ class Xom extends Node {
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     let matrix = [1, 0, 0, 1, 0, 0];
     this.__matrix = matrix;
+    if(isDestroyed || display === 'none') {
+      return;
+    }
     parent = this.parent;
     // transform相对于自身
     if(transform) {
@@ -486,22 +489,43 @@ class Xom extends Node {
         this.addTransform(['matrix', this.matrix.join(',')]);
       }
     }
+    // 没有transform则看是否有扩展的css独立变换属性
     else {
-      computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
-      // 变换对事件影响，canvas要设置渲染
-      while(parent) {
-        if(parent.matrixEvent) {
-          matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-          break;
+      let hasExpand;
+      [
+        'translateX',
+        'translateY',
+        'scaleX',
+        'scaleY',
+        'skewX',
+        'skewY',
+        'rotateZ',
+        'rotate'
+      ].forEach(k => {
+        if(!currentStyle.hasOwnProperty(k)) {
+          return;
         }
-        parent = parent.parent;
-      }
-      this.__matrixEvent = matrix;
-      if(renderMode === mode.CANVAS) {
-        ctx.setTransform(...matrix);
+        hasExpand = true;
+      });
+      // 没有扩展的则默认matrix
+      if(!hasExpand) {
+        computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
+        // 变换对事件影响，canvas要设置渲染
+        while(parent) {
+          if(parent.matrixEvent) {
+            matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+            break;
+          }
+          parent = parent.parent;
+        }
+        this.__matrixEvent = matrix;
+        if(renderMode === mode.CANVAS) {
+          ctx.setTransform(...matrix);
+        }
       }
     }
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    // 隐藏不渲染
+    if(visibility === 'hidden') {
       return;
     }
     // 背景色垫底

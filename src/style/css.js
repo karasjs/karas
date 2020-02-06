@@ -331,7 +331,7 @@ function normalize(style, reset) {
             k = 'rotateZ';
           }
           let arr = calUnit([k, v], 1, v);
-          if(arr[1].value !== 0 && arr[1].unit !== unit.NUMBER) {
+          if(arr[1].value !== 0 && arr[1].unit !== unit.NUMBER || k.indexOf('scale') === 0) {
             transform.push(arr);
           }
         }
@@ -373,6 +373,7 @@ function normalize(style, reset) {
               center: 50,
               right: 100,
               bottom: 100,
+              0: 0,
             }[item],
             unit: unit.PERCENT,
           });

@@ -25,7 +25,7 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
       unit: unit.PERCENT,
     }
   ], x, y, w, h);
-  return transform.calMatrix(list, tfo, x, y, w, h);
+  return transform.calMatrix(list, tfo, w, h);
 }
 
 export default {

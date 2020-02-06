@@ -553,19 +553,11 @@
         _s2 += joinVd(item);
       });
       _s2 += '</g>';
-      return "<g opacity=\"".concat(vd.opacity, "\" transform=\"").concat(joinTransform(vd.transform), "\"").concat(vd.mask ? " mask=\"".concat(vd.mask, "\"") : '', "\">").concat(_s2, "</g>");
+      return "<g opacity=\"".concat(vd.opacity, "\"").concat(vd.transform ? " transform=\"".concat(vd.transform, "\"") : '').concat(vd.mask ? " mask=\"".concat(vd.mask, "\"") : '', ">").concat(_s2, "</g>");
     } // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
 
 
     return '<g></g>';
-  }
-
-  function joinTransform(transform) {
-    var s = '';
-    transform.forEach(function (item) {
-      s += "".concat(item[0], "(").concat(item[1], ") ");
-    });
-    return s;
   }
 
   function joinDef(def) {
@@ -750,7 +742,6 @@
     isNil: isNil,
     joinVirtualDom: joinVirtualDom,
     joinVd: joinVd,
-    joinTransform: joinTransform,
     joinDef: joinDef,
     d2r: d2r,
     rgb2int: rgb2int,
@@ -808,12 +799,44 @@
     calPoint: calPoint
   };
 
-  function calMatrix(transform, transformOrigin, x, y, ow, oh) {
+  function calSingle(t, k, v) {
+    if (k === 'translateX') {
+      t[12] = v;
+    } else if (k === 'translateY') {
+      t[13] = v;
+    } else if (k === 'scaleX') {
+      t[0] = v;
+    } else if (k === 'scaleY') {
+      t[5] = v;
+    } else if (k === 'skewX') {
+      v = util.d2r(v);
+      t[4] = Math.tan(v);
+    } else if (k === 'skewY') {
+      v = util.d2r(v);
+      t[1] = Math.tan(v);
+    } else if (k === 'rotateZ') {
+      v = util.d2r(v);
+      var sin = Math.sin(v);
+      var cos = Math.cos(v);
+      t[0] = t[5] = cos;
+      t[1] = sin;
+      t[4] = -sin;
+    } else if (k === 'matrix') {
+      t[0] = v[0];
+      t[1] = v[1];
+      t[4] = v[2];
+      t[5] = v[3];
+      t[12] = v[4];
+      t[13] = v[5];
+    }
+  }
+
+  function calMatrix(transform, transformOrigin, ow, oh) {
     var _transformOrigin = _slicedToArray(transformOrigin, 2),
         ox = _transformOrigin[0],
         oy = _transformOrigin[1];
 
-    var list = normalize(transform, ox, oy, ow, oh);
+    var list = normalize(transform, ow, oh);
     var m = matrix.identity();
     m[12] = ox;
     m[13] = oy;
@@ -823,37 +846,7 @@
           v = _item[1];
 
       var t = matrix.identity();
-
-      if (k === 'translateX') {
-        t[12] = v;
-      } else if (k === 'translateY') {
-        t[13] = v;
-      } else if (k === 'scaleX') {
-        t[0] = v;
-      } else if (k === 'scaleY') {
-        t[5] = v;
-      } else if (k === 'skewX') {
-        v = util.d2r(v);
-        t[4] = Math.tan(v);
-      } else if (k === 'skewY') {
-        v = util.d2r(v);
-        t[1] = Math.tan(v);
-      } else if (k === 'rotateZ') {
-        v = util.d2r(v);
-        var sin = Math.sin(v);
-        var cos = Math.cos(v);
-        t[0] = t[5] = cos;
-        t[1] = sin;
-        t[4] = -sin;
-      } else if (k === 'matrix') {
-        t[0] = v[0];
-        t[1] = v[1];
-        t[4] = v[2];
-        t[5] = v[3];
-        t[12] = v[4];
-        t[13] = v[5];
-      }
-
+      calSingle(t, k, v);
       m = matrix.multiply(m, t);
     });
     var t = matrix.identity();
@@ -919,30 +912,30 @@
     }
   }
 
-  function normalize(transform, ox, oy, w, h) {
+  function normalizeSingle(k, v, ow, oh) {
+    if (k === 'translateX') {
+      if (v.unit === unit.PERCENT) {
+        return v.value * ow * 0.01;
+      }
+    } else if (k === 'translateY') {
+      if (v.unit === unit.PERCENT) {
+        return v.value * oh * 0.01;
+      }
+    } else if (k === 'matrix') {
+      return v;
+    }
+
+    return v.value;
+  }
+
+  function normalize(transform, ow, oh) {
     var res = [];
     transform.forEach(function (item) {
       var _item2 = _slicedToArray(item, 2),
           k = _item2[0],
           v = _item2[1];
 
-      if (k === 'translateX') {
-        if (v.unit === unit.PERCENT) {
-          res.push([item[0], v.value * w * 0.01]);
-        } else {
-          res.push([item[0], item[1].value]);
-        }
-      } else if (k === 'translateY') {
-        if (v.unit === unit.PERCENT) {
-          res.push([item[0], v.value * h * 0.01]);
-        } else {
-          res.push([item[0], item[1].value]);
-        }
-      } else if (k === 'matrix') {
-        res.push([item[0], item[1]]);
-      } else {
-        res.push([item[0], item[1].value]);
-      }
+      res.push([k, normalizeSingle(k, v, ow, oh)]);
     });
     return res;
   }
@@ -977,11 +970,31 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
+  function calExpandMatrix(k, v, transformOrigin, ow, oh) {
+    var _transformOrigin2 = _slicedToArray(transformOrigin, 2),
+        ox = _transformOrigin2[0],
+        oy = _transformOrigin2[1];
+
+    v = normalizeSingle(k, v, ow, oh);
+    var m = matrix.identity();
+    m[12] = ox;
+    m[13] = oy;
+    var t = matrix.identity();
+    calSingle(t, k, v);
+    m = matrix.multiply(m, t);
+    t = matrix.identity();
+    t[12] = -ox;
+    t[13] = -oy;
+    m = matrix.multiply(m, t);
+    return matrix.t43(m);
+  }
+
   var transform = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
-    mergeMatrix: mergeMatrix
+    mergeMatrix: mergeMatrix,
+    calExpandMatrix: calExpandMatrix
   };
 
   function getLinearDeg(v) {
@@ -2059,7 +2072,7 @@
       value: 0,
       unit: unit.PERCENT
     }], x, y, w, h);
-    return transform.calMatrix(list, tfo, x, y, w, h);
+    return transform.calMatrix(list, tfo, w, h);
   }
 
   var image = {
@@ -2223,7 +2236,7 @@
 
     temp = style.backgroundPosition;
 
-    if (temp) {
+    if (!util.isNil(temp)) {
       temp = temp.split(/\s+/);
 
       if (temp.length === 1) {
@@ -2455,7 +2468,7 @@
 
     temp = style.transformOrigin;
 
-    if (temp) {
+    if (!util.isNil(temp)) {
       var _match4 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
 
       if (_match4) {
@@ -2502,47 +2515,50 @@
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
 
-    if (!style.transform) {
-      ['translate', 'scale', 'skew'].forEach(function (k) {
-        temp = style[k];
+    ['translate', 'scale', 'skew'].forEach(function (k) {
+      temp = style[k];
 
-        if (temp) {
-          var _arr5 = temp.split(/\s*,\s*/);
+      if (temp) {
+        var _arr5 = temp.split(/\s*,\s*/);
 
-          if (_arr5.length === 1) {
-            _arr5[1] = _arr5[0];
-          }
-
-          style["".concat(k, "X")] = _arr5[0];
-          style["".concat(k, "Y")] = _arr5[1];
-        }
-      });
-      ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
-        if (!style.hasOwnProperty(k)) {
-          return;
+        if (_arr5.length === 1) {
+          _arr5[1] = _arr5[0];
         }
 
-        calUnit(style, k, style[k]);
+        style["".concat(k, "X")] = _arr5[0];
+        style["".concat(k, "Y")] = _arr5[1];
+      }
+    });
+    ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+      if (!style.hasOwnProperty(k)) {
+        return;
+      }
 
-        if (k === 'rotate') {
-          k = 'rotateZ';
-          style.rotateZ = style.rotate;
-          delete style.rotate;
-        } // 没有单位视作px或deg
+      if (style.transform) {
+        delete style[k];
+        console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
+        return;
+      }
+
+      calUnit(style, k, style[k]);
+
+      if (k === 'rotate') {
+        k = 'rotateZ';
+        style.rotateZ = style.rotate;
+        delete style.rotate;
+      } // 没有单位视作px或deg
 
 
-        var v = style[k];
+      var v = style[k];
 
-        if (v.unit === unit.NUMBER || v.value === 0) {
-          if (k.indexOf('translate') === 0) {
-            v.unit = unit.PX;
-          } else {
-            v.unit = unit.DEG;
-          }
+      if (v.unit === unit.NUMBER || v.value === 0) {
+        if (k.indexOf('translate') === 0) {
+          v.unit = unit.PX;
+        } else if (k.indexOf('scale') !== 0) {
+          v.unit = unit.DEG;
         }
-      });
-    }
-
+      }
+    });
     temp = style.opacity;
 
     if (temp) {
@@ -6238,7 +6254,6 @@
           this.__virtualDom = {
             bb: [],
             children: [],
-            transform: [],
             opacity: 1
           };
         }
@@ -6322,59 +6337,42 @@
         parent = this.parent; // transform相对于自身
 
         if (transform$1) {
-          matrix = transform.calMatrix(transform$1, tfo, x, y, outerWidth, outerHeight);
+          matrix = transform.calMatrix(transform$1, tfo, outerWidth, outerHeight);
           this.__matrix = matrix;
-          console.log(transform$1, matrix);
-          computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
-          var _parent = this.parent;
-
-          while (_parent) {
-            if (_parent.matrixEvent) {
-              matrix = transform.mergeMatrix(_parent.matrixEvent, matrix);
-              break;
-            }
-
-            _parent = _parent.parent;
-          }
-
-          this.__matrixEvent = matrix;
-          console.log(matrix);
-
-          if (renderMode === mode.CANVAS) {
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-          } else if (renderMode === mode.SVG) {
-            this.addTransform(['matrix', this.matrix.join(',')]);
-          }
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
-            var hasExpand;
             ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
               if (!currentStyle.hasOwnProperty(k)) {
                 return;
               }
 
-              hasExpand = true;
-            }); // 没有扩展的则默认matrix
+              var m = transform.calExpandMatrix(k, currentStyle[k], tfo, outerWidth, outerHeight);
+              _this2.__matrix = matrix = transform.mergeMatrix(matrix, m);
+            });
+          }
 
-            if (!hasExpand) {
-              computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)'; // 变换对事件影响，canvas要设置渲染
+        computedStyle.transform = 'matrix(' + matrix.join(', ') + ')'; // 变换对事件影响，canvas要设置渲染
 
-              while (parent) {
-                if (parent.matrixEvent) {
-                  matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
-                  break;
-                }
+        while (parent) {
+          if (parent.matrixEvent) {
+            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+            break;
+          }
 
-                parent = parent.parent;
-              }
+          parent = parent.parent;
+        }
 
-              this.__matrixEvent = matrix;
+        this.__matrixEvent = matrix;
 
-              if (renderMode === mode.CANVAS) {
-                ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-              }
-            }
-          } // 隐藏不渲染
+        if (renderMode === mode.CANVAS) {
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+        } else if (renderMode === mode.SVG) {
+          var v = this.matrix.join(',');
+
+          if (v !== '1,0,0,1,0,0') {
+            this.virtualDom.transform = "matrix(".concat(v, ")");
+          }
+        } // 隐藏不渲染
 
 
         if (visibility === 'hidden') {
@@ -6566,12 +6564,12 @@
                   this.root.__putImageData(util.mergeImageData(cache1, cache2));
                 }
               } else if (renderMode === mode.SVG) {
-                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
+                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight).join(',');
 
                 var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width || 0], ['height', _height || 0]];
 
-                if (_matrix) {
-                  props.push(['transform', 'matrix(' + _matrix.join(',') + ')']);
+                if (_matrix && _matrix !== '1,0,0,1,0,0') {
+                  props.push(['transform', 'matrix(' + _matrix + ')']);
                 }
 
                 if (needMask) {
@@ -7041,11 +7039,6 @@
           tagName: 'rect',
           props: props
         });
-      }
-    }, {
-      key: "addTransform",
-      value: function addTransform(props) {
-        this.virtualDom.transform.push(props);
       }
     }, {
       key: "animate",
@@ -9199,13 +9192,13 @@
                 this.__matrixEvent = matrix;
               }
 
-              matrix = 'matrix(' + matrix.join(',') + ')';
+              matrix = matrix.join(',');
             }
 
             var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
 
-            if (matrix) {
-              props.push(['transform', matrix]);
+            if (matrix && matrix !== '1,0,0,1,0,0') {
+              props.push(['transform', 'matrix(' + matrix + ')']);
             }
 
             this.virtualDom.children.push({
@@ -9360,9 +9353,8 @@
   }
 
   function diffD2D(elem, ovd, nvd, root) {
-    if (!equalArr(ovd.transform, nvd.transform)) {
-      var transform = util.joinTransform(nvd.transform);
-      elem.setAttribute('transform', transform);
+    if (ovd.transform !== nvd.transform) {
+      elem.setAttribute('transform', nvd.transform);
     }
 
     if (ovd.opacity !== nvd.opacity) {
@@ -9435,12 +9427,8 @@
   }
 
   function diffG2G(elem, ovd, nvd) {
-    if (!equalArr(ovd.transform, nvd.transform)) {
-      var transform = util.joinTransform(nvd.transform);
-
-      if (elem.getAttribute('transform') !== transform) {
-        elem.setAttribute('transform', transform);
-      }
+    if (ovd.transform !== nvd.transform) {
+      elem.setAttribute('transform', nvd.transform);
     }
 
     if (ovd.opacity !== nvd.opacity) {
@@ -9582,20 +9570,6 @@
     if (cns[index]) {
       elem.removeChild(cns[index]);
     }
-  }
-
-  function equalArr(a, b) {
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      if (a[i] !== b[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   var Defs =
@@ -11397,7 +11371,7 @@
   var karas = {
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
-        throw new Error('render root muse be canvas or svg');
+        throw new Error('Render root must be "canvas" or "svg"');
       }
 
       if (dom) {

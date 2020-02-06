@@ -124,9 +124,8 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffD2D(elem, ovd, nvd, root) {
-  if(!equalArr(ovd.transform, nvd.transform)) {
-    let transform = util.joinTransform(nvd.transform);
-    elem.setAttribute('transform', transform);
+  if(ovd.transform !== nvd.transform) {
+    elem.setAttribute('transform', nvd.transform);
   }
   if(ovd.opacity !== nvd.opacity) {
     elem.setAttribute('opacity', nvd.opacity);
@@ -193,11 +192,8 @@ function diffG2D(elem, ovd, nvd) {
 }
 
 function diffG2G(elem, ovd, nvd) {
-  if(!equalArr(ovd.transform, nvd.transform)) {
-    let transform = util.joinTransform(nvd.transform);
-    if(elem.getAttribute('transform') !== transform) {
-      elem.setAttribute('transform', transform);
-    }
+  if(ovd.transform !== nvd.transform) {
+    elem.setAttribute('transform', nvd.transform);
   }
   if(ovd.opacity !== nvd.opacity) {
     elem.setAttribute('opacity', nvd.opacity);

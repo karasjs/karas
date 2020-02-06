@@ -141,7 +141,7 @@ function normalize(style, reset) {
   }
   // 背景位置
   temp = style.backgroundPosition;
-  if(temp) {
+  if(!util.isNil(temp)) {
     temp = temp.split(/\s+/);
     if(temp.length === 1) {
       temp[1] = '50%';
@@ -353,7 +353,7 @@ function normalize(style, reset) {
     }
   }
   temp = style.transformOrigin;
-  if(temp) {
+  if(!util.isNil(temp)) {
     let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
     if(match) {
       if(match.length === 1) {
@@ -396,49 +396,52 @@ function normalize(style, reset) {
     }
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
-  if(!style.transform) {
-    ['translate', 'scale', 'skew'].forEach(k => {
-      temp = style[k];
-      if(temp) {
-        let arr = temp.split(/\s*,\s*/);
-        if(arr.length === 1) {
-          arr[1] = arr[0];
-        }
-        style[`${k}X`] = arr[0];
-        style[`${k}Y`] = arr[1];
+  ['translate', 'scale', 'skew'].forEach(k => {
+    temp = style[k];
+    if(temp) {
+      let arr = temp.split(/\s*,\s*/);
+      if(arr.length === 1) {
+        arr[1] = arr[0];
       }
-    });
-    [
-      'translateX',
-      'translateY',
-      'scaleX',
-      'scaleY',
-      'skewX',
-      'skewY',
-      'rotateZ',
-      'rotate'
-    ].forEach(k => {
-      if(!style.hasOwnProperty(k)) {
-        return;
+      style[`${k}X`] = arr[0];
+      style[`${k}Y`] = arr[1];
+    }
+  });
+  [
+    'translateX',
+    'translateY',
+    'scaleX',
+    'scaleY',
+    'skewX',
+    'skewY',
+    'rotateZ',
+    'rotate'
+  ].forEach(k => {
+    if(!style.hasOwnProperty(k)) {
+      return;
+    }
+    if(style.transform) {
+      delete style[k];
+      console.error(`Can not use expand style "${k}" with "transform"`);
+      return;
+    }
+    calUnit(style, k, style[k]);
+    if(k === 'rotate') {
+      k = 'rotateZ';
+      style.rotateZ = style.rotate;
+      delete style.rotate;
+    }
+    // 没有单位视作px或deg
+    let v = style[k];
+    if(v.unit === unit.NUMBER || v.value === 0) {
+      if(k.indexOf('translate') === 0) {
+        v.unit = unit.PX;
       }
-      calUnit(style, k, style[k]);
-      if(k === 'rotate') {
-        k = 'rotateZ';
-        style.rotateZ = style.rotate;
-        delete style.rotate;
+      else if(k.indexOf('scale') !== 0) {
+        v.unit = unit.DEG;
       }
-      // 没有单位视作px或deg
-      let v = style[k];
-      if(v.unit === unit.NUMBER || v.value === 0) {
-        if(k.indexOf('translate') === 0) {
-          v.unit = unit.PX;
-        }
-        else {
-          v.unit = unit.DEG;
-        }
-      }
-    });
-  }
+    }
+  });
   temp = style.opacity;
   if(temp) {
     temp = parseFloat(temp);

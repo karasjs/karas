@@ -226,7 +226,7 @@ class Img extends Dom {
           else {
             this.__matrixEvent = matrix;
           }
-          matrix = 'matrix(' + matrix.join(',') + ')';
+          matrix = matrix.join(',');
         }
         let props = [
           ['xlink:href', src],
@@ -235,8 +235,8 @@ class Img extends Dom {
           ['width', this.__imgWidth || 0],
           ['height', this.__imgHeight || 0]
         ];
-        if(matrix) {
-          props.push(['transform', matrix]);
+        if(matrix && matrix !== '1,0,0,1,0,0') {
+          props.push(['transform', 'matrix(' + matrix + ')']);
         }
         this.virtualDom.children.push({
           type: 'img',

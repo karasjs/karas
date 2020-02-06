@@ -386,7 +386,6 @@ class Xom extends Node {
       this.__virtualDom = {
         bb: [],
         children: [],
-        transform: [],
         opacity: 1,
       };
     }
@@ -470,28 +469,11 @@ class Xom extends Node {
     parent = this.parent;
     // transform相对于自身
     if(transform) {
-      matrix = tf.calMatrix(transform, tfo, x, y, outerWidth, outerHeight);
+      matrix = tf.calMatrix(transform, tfo, outerWidth, outerHeight);
       this.__matrix = matrix;
-      computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
-      let parent = this.parent;
-      while(parent) {
-        if(parent.matrixEvent) {
-          matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-          break;
-        }
-        parent = parent.parent;
-      }
-      this.__matrixEvent = matrix;
-      if(renderMode === mode.CANVAS) {
-        ctx.setTransform(...matrix);
-      }
-      else if(renderMode === mode.SVG) {
-        this.addTransform(['matrix', this.matrix.join(',')]);
-      }
     }
     // 没有transform则看是否有扩展的css独立变换属性
     else {
-      let hasExpand;
       [
         'translateX',
         'translateY',
@@ -505,23 +487,27 @@ class Xom extends Node {
         if(!currentStyle.hasOwnProperty(k)) {
           return;
         }
-        hasExpand = true;
+        let m = tf.calExpandMatrix(k, currentStyle[k], tfo, outerWidth, outerHeight);
+        this.__matrix = matrix = tf.mergeMatrix(matrix, m);
       });
-      // 没有扩展的则默认matrix
-      if(!hasExpand) {
-        computedStyle.transform = 'matrix(1, 0, 0, 1, 0, 0)';
-        // 变换对事件影响，canvas要设置渲染
-        while(parent) {
-          if(parent.matrixEvent) {
-            matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-            break;
-          }
-          parent = parent.parent;
-        }
-        this.__matrixEvent = matrix;
-        if(renderMode === mode.CANVAS) {
-          ctx.setTransform(...matrix);
-        }
+    }
+    computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
+    // 变换对事件影响，canvas要设置渲染
+    while(parent) {
+      if(parent.matrixEvent) {
+        matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+        break;
+      }
+      parent = parent.parent;
+    }
+    this.__matrixEvent = matrix;
+    if(renderMode === mode.CANVAS) {
+      ctx.setTransform(...matrix);
+    }
+    else if(renderMode === mode.SVG) {
+      let v = this.matrix.join(',');
+      if(v !== '1,0,0,1,0,0') {
+        this.virtualDom.transform = `matrix(${v})`;
       }
     }
     // 隐藏不渲染
@@ -697,7 +683,7 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG) {
-            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight);
+            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight).join(',');
             let props = [
               ['xlink:href', backgroundImage],
               ['x', originX],
@@ -705,8 +691,8 @@ class Xom extends Node {
               ['width', width || 0],
               ['height', height || 0]
             ];
-            if(matrix) {
-              props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+            if(matrix && matrix !== '1,0,0,1,0,0') {
+              props.push(['transform', 'matrix(' + matrix + ')']);
             }
             if(needMask) {
               let maskId = this.defs.add({
@@ -1118,10 +1104,6 @@ class Xom extends Node {
       tagName: 'rect',
       props,
     });
-  }
-
-  addTransform(props) {
-    this.virtualDom.transform.push(props);
   }
 
   animate(list, option) {

@@ -106,18 +106,10 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    return `<g opacity="${vd.opacity}" transform="${joinTransform(vd.transform)}"${vd.mask ? ` mask="${vd.mask}"` : ''}">${s}</g>`;
+    return `<g opacity="${vd.opacity}"${vd.transform ? ` transform="${vd.transform}"` : ''}${vd.mask ? ` mask="${vd.mask}"` : ''}>${s}</g>`;
   }
   // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
   return '<g></g>';
-}
-
-function joinTransform(transform) {
-  let s = '';
-  transform.forEach(item => {
-    s += `${item[0]}(${item[1]}) `;
-  });
-  return s;
 }
 
 function joinDef(def) {
@@ -287,7 +279,6 @@ let util = {
   isNil,
   joinVirtualDom,
   joinVd,
-  joinTransform,
   joinDef,
   d2r,
   rgb2int,

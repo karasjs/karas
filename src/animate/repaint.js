@@ -16,6 +16,13 @@ export default {
   },
   STYLE: {
     transform: true,
+    translateX: true,
+    translateY: true,
+    skewX: true,
+    skewY: true,
+    scaleX: true,
+    scaleY: true,
+    rotateZ: true,
     color: true,
     fontStyle: true,
     strokeWidth: true,

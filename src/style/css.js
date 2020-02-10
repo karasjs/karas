@@ -417,7 +417,9 @@ function normalize(style, reset) {
     'rotateZ',
     'rotate'
   ].forEach(k => {
-    if(!style.hasOwnProperty(k)) {
+    let v = style[k];
+    if(util.isNil(v)) {
+      delete style[k];
       return;
     }
     if(style.transform) {
@@ -425,14 +427,14 @@ function normalize(style, reset) {
       console.error(`Can not use expand style "${k}" with "transform"`);
       return;
     }
-    calUnit(style, k, style[k]);
+    calUnit(style, k, v);
     if(k === 'rotate') {
       k = 'rotateZ';
       style.rotateZ = style.rotate;
       delete style.rotate;
     }
     // 没有单位视作px或deg
-    let v = style[k];
+    v = style[k];
     if(v.unit === unit.NUMBER || v.value === 0) {
       if(k.indexOf('translate') === 0) {
         v.unit = unit.PX;

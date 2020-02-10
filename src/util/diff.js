@@ -37,13 +37,13 @@ function diffDef(elem, od, nd) {
       elem.setAttribute('id', nd.uuid);
     }
     let op = {};
-    for(let j = 0, len = od.props.length; j < len; j++) {
-      let prop = od.props[j];
+    for(let i = 0, len = od.props.length; i < len; i++) {
+      let prop = od.props[i];
       let [k, v] = prop;
       op[k] = v;
     }
-    for(let j = 0, len = nd.props.length; j < len; j++) {
-      let prop = nd.props[j];
+    for(let i = 0, len = nd.props.length; i < len; i++) {
+      let prop = nd.props[i];
       let [k, v] = prop;
       // 已有不等更新，没有添加
       if(op.hasOwnProperty(k)) {
@@ -57,11 +57,9 @@ function diffDef(elem, od, nd) {
       }
     }
     // 多余的删除
-    for(let k in op) {
-      if(op.hasOwnProperty(k)) {
-        elem.removeAttribute(k);
-      }
-    }
+    Object.keys(op).forEach(i => {
+      elem.removeAttribute(i);
+    });
     let cns = elem.childNodes;
     let ol = od.children.length;
     let nl = nd.children.length;
@@ -262,13 +260,13 @@ function diffItem(elem, i, ovd, nvd, isText) {
 
 function diffItemSelf(elem, ovd, nvd) {
   let op = {};
-  for(let j = 0, len = ovd.props.length; j < len; j++) {
+  for(let i = 0, len = ovd.props.length; i < len; i++) {
     let prop = ovd.props[j];
     let [k, v] = prop;
     op[k] = v;
   }
-  for(let j = 0, len = nvd.props.length; j < len; j++) {
-    let prop = nvd.props[j];
+  for(let i = 0, len = nvd.props.length; i < len; i++) {
+    let prop = nvd.props[i];
     let [k, v] = prop;
     // 已有不等更新，没有添加
     if(op.hasOwnProperty(k)) {
@@ -282,11 +280,9 @@ function diffItemSelf(elem, ovd, nvd) {
     }
   }
   // 多余的删除
-  for(let k in op) {
-    if(op.hasOwnProperty(k)) {
-      elem.removeAttribute(k);
-    }
-  }
+  Object.keys(op).forEach(i => {
+    elem.removeAttribute(i);
+  });
 }
 
 function replaceWith(elem, vd) {

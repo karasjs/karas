@@ -51,6 +51,14 @@ const DOM = {
   visibility: 'visible',
   opacity: 1,
   zIndex: 'auto',
+  transform: null,
+  translateX: null,
+  translateY: null,
+  scaleX: null,
+  scaleY: null,
+  skewX: null,
+  skewY: null,
+  rotateZ: null,
 };
 
 const GEOM = {
@@ -62,28 +70,25 @@ const GEOM = {
 };
 
 let dom = [];
-for(let k in DOM) {
-  if(DOM.hasOwnProperty(k)) {
-    let v = DOM[k];
-    dom.push({
-      k,
-      v,
-    });
-  }
-}
+Object.keys(DOM).forEach(k => {
+  let v = DOM[k];
+  dom.push({
+    k,
+    v,
+  });
+});
 
 let geom = util.clone(dom);
-for(let k in GEOM) {
-  if(GEOM.hasOwnProperty(k)) {
-    let v = GEOM[k];
-    geom.push({
-      k,
-      v,
-    });
-  }
-}
+Object.keys(GEOM).forEach(k => {
+  let v = GEOM[k];
+  geom.push({
+    k,
+    v,
+  });
+});
 
 export default {
   dom,
   geom,
+  key: Object.assign({}, DOM, GEOM),
 };

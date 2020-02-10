@@ -143,7 +143,9 @@ class Xom extends Node {
     this.__matrix = null;
     this.__matrixEvent = null;
     this.__animationList = [];
-    this.__loadBgi = {};
+    this.__loadBgi = {
+      cb: function() {}, // 刷新回调函数，用以destroy取消用
+    };
   }
 
   // 设置了css时，解析匹配
@@ -157,11 +159,11 @@ class Xom extends Node {
     }
     // inline拥有最高优先级
     let style = match.parse(this, top, css) || {};
-    for(let i in style) {
-      if(style.hasOwnProperty(i) && !this.__style.hasOwnProperty(i)) {
+    Object.keys(style).forEach(i => {
+      if(!this.__style.hasOwnProperty(i)) {
         this.__style[i] = style[i];
       }
-    }
+    });
   }
 
   __measure() {
@@ -804,7 +806,7 @@ class Xom extends Node {
               this.__loadBgi.source = data.source;
               this.__loadBgi.width = data.width;
               this.__loadBgi.height = data.height;
-              this.root.addRefreshTask();
+              this.root.addRefreshTask(this.__loadBgi.cb);
             }
           });
         }
@@ -891,6 +893,7 @@ class Xom extends Node {
       }
     }
     this.animationList.forEach(item => item.__destroy());
+    this.root.delRefreshTask(this.__loadBgi.cb);
     super.__destroy();
     this.__matrix = this.__matrixEvent = null;
   }
@@ -1227,21 +1230,26 @@ class Xom extends Node {
   get animateStyle() {
     return this.__animateStyle;
   }
-  get currentStyle() {
-    let { style, animateStyle, animationList } = this;
-    // 有一个动画在运行则返回animateStyle，否则是style
+  get animating() {
+    let { animationList } = this;
     for(let i = 0, len = animationList.length; i < len; i++) {
       let animation = animationList[i];
       let { playState, options } = animation;
       if(playState === 'idle') {
         continue;
       }
+      // 结束但不停留在最后一帧视为无效
       else if(playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
         continue;
       }
-      return animateStyle;
+      return true;
     }
-    return style;
+    return false;
+  }
+  get currentStyle() {
+    let { style, animateStyle } = this;
+    // 有一个动画在运行则返回animateStyle，否则是style
+    return this.animating ? animateStyle : style;
   }
 }
 

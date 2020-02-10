@@ -178,21 +178,19 @@ function mergeCss(a, b) {
   if(!a) {
     return b;
   }
-  for(let i in b) {
-    if(b.hasOwnProperty(i)) {
-      let o = b[i];
-      let flag = {
-        _v: true,
-        _p: true,
-      }.hasOwnProperty(i);
-      if(!flag && typeof o === 'object' && a.hasOwnProperty(i)) {
-        a[i] = mergeCss(a[i], o);
-      }
-      else {
-        a[i] = o;
-      }
+  Object.keys(b).forEach(i => {
+    let o = b[i];
+    let flag = {
+      _v: true,
+      _p: true,
+    }.hasOwnProperty(i);
+    if(!flag && typeof o === 'object' && a.hasOwnProperty(i)) {
+      a[i] = mergeCss(a[i], o);
     }
-  }
+    else {
+      a[i] = o;
+    }
+  });
   return a;
 }
 

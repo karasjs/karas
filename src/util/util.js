@@ -215,11 +215,9 @@ function clone(obj) {
     return new Date(obj);
   }
   let n = Array.isArray(obj) ? [] : {};
-  for(let i in obj) {
-    if(obj.hasOwnProperty(i)) {
-      n[i] = clone(obj[i]);
-    }
-  }
+  Object.keys(obj).forEach(i => {
+    n[i] = clone(obj[i]);
+  });
   return n;
 }
 

@@ -261,7 +261,7 @@ function diffItem(elem, i, ovd, nvd, isText) {
 function diffItemSelf(elem, ovd, nvd) {
   let op = {};
   for(let i = 0, len = ovd.props.length; i < len; i++) {
-    let prop = ovd.props[j];
+    let prop = ovd.props[i];
     let [k, v] = prop;
     op[k] = v;
   }

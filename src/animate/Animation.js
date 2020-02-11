@@ -1018,11 +1018,11 @@ class Animation extends Event {
         // 第一帧强制不跳帧，其它未到fps不执行
         if(!first && fps < 60) {
           let time = now - this.__lastFpsTime;
-          // 保存本帧时间供下次跳帧计算
-          this.__lastFpsTime = now;
           if(time < 1000 / fps) {
             return;
           }
+          // 保存本帧时间供下次跳帧计算
+          this.__lastFpsTime = now;
         }
         first = false;
         // 根据播放次数确定正反方向
@@ -1054,6 +1054,8 @@ class Animation extends Event {
           // 判断次数结束每帧cb调用
           if(playCount < iterations) {
             playCount = ++this.playCount;
+            // 播放完一次，播放时间清零，下一次播放重计
+            this.__playTime = 0;
           }
           if(playCount === iterations) {
             frame.offFrame(this.cb);
@@ -1071,8 +1073,6 @@ class Animation extends Event {
           if(i === length - 1) {
             // 没到播放次数结束时继续
             if(iterations === Infinity || playCount < iterations) {
-              // 播放完一次，播放时间清零，下一次播放重计
-              this.__playTime = 0;
               return;
             }
             frame.offFrame(this.cb);

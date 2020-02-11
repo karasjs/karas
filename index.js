@@ -5537,13 +5537,14 @@
 
 
             if (!first && fps < 60) {
-              var time = now - _this3.__lastFpsTime; // 保存本帧时间供下次跳帧计算
-
-              _this3.__lastFpsTime = now;
+              var time = now - _this3.__lastFpsTime;
 
               if (time < 1000 / fps) {
                 return;
-              }
+              } // 保存本帧时间供下次跳帧计算
+
+
+              _this3.__lastFpsTime = now;
             }
 
             first = false; // 根据播放次数确定正反方向
@@ -5585,7 +5586,9 @@
 
               // 判断次数结束每帧cb调用
               if (playCount < iterations) {
-                playCount = ++_this3.playCount;
+                playCount = ++_this3.playCount; // 播放完一次，播放时间清零，下一次播放重计
+
+                _this3.__playTime = 0;
               }
 
               if (playCount === iterations) {
@@ -5610,8 +5613,6 @@
               if (i === length - 1) {
                 // 没到播放次数结束时继续
                 if (iterations === Infinity || playCount < iterations) {
-                  // 播放完一次，播放时间清零，下一次播放重计
-                  _this3.__playTime = 0;
                   return;
                 }
 

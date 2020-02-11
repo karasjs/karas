@@ -24,5 +24,5 @@ animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   animation.finish();
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.color + n;
+  input.value += '/' + t.computedStyle.color + '/' + n;
 });

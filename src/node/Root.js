@@ -186,7 +186,20 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode } = this;
+    let { renderMode, style } = this;
+    // 根元素特殊处理
+    style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
+      value: 0,
+      unit: unit.PX,
+    };
+    style.width = {
+      value: this.width,
+      unit: unit.PX,
+    };
+    style.height = {
+      value: this.height,
+      unit: unit.PX,
+    };
     this.__defs.clear();
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;

@@ -6,6 +6,7 @@ import reset from '../style/reset';
 import css from '../style/css';
 import match from '../style/match';
 import level from '../animate/level';
+import repaint from '../animate/repaint';
 
 class Component extends Event {
   constructor(tagName, props, children) {
@@ -134,7 +135,7 @@ class Component extends Event {
       return;
     }
     this.__hasInit = true;
-    [
+    Object.keys(repaint.GEOM).concat([
       'x',
       'y',
       'ox',
@@ -146,31 +147,23 @@ class Component extends Event {
       'outerWidth',
       'outerHeight',
       'style',
+      'animating',
+      'animationList',
+      'animateStyle',
+      'currentStyle',
       'computedStyle',
+      'animateProps',
+      'currentProps',
       'ctx',
       'defs',
       'baseLine',
       'virtualDom',
-      'currentStyle',
-      'points',
-      'controlA',
-      'controlB',
-      'controls',
-      'r',
-      'rx',
-      'ry',
-      'begin',
-      'end',
-      'x1',
-      'y1',
-      'x2',
-      'y2',
       'mask',
-      'maskId'
-    ].forEach(fn => {
+      'maskId',
+    ]).forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {
-          return this.shadowRoot[fn];
+          return sr[fn];
         },
       });
     });
@@ -270,7 +263,7 @@ class Component extends Event {
   '__calMp',
   '__calAbs',
   '__renderAsMask',
-  '__renderByMask'
+  '__renderByMask',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

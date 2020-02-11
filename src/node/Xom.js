@@ -220,29 +220,6 @@ class Xom extends Node {
   __layout(data, fake) {
     let { w } = data;
     let { isDestroyed, style, currentStyle, computedStyle } = this;
-    // 根元素特殊处理
-    if(this.isRoot) {
-      currentStyle.marginTop
-        = currentStyle.marginRight
-        = currentStyle.marginBottom
-        = currentStyle.marginLeft
-        = style.marginTop
-        = style.marginRight
-        = style.marginBottom
-        = style.marginLeft
-        = {
-        value: 0,
-        unit: unit.PX,
-      };
-      currentStyle.width = style.width = {
-        value: this.width,
-        unit: unit.PX,
-      };
-      currentStyle.height = style.height = {
-        value: this.height,
-        unit: unit.PX,
-      };
-    }
     let {
       display,
       width,

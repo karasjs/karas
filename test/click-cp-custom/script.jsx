@@ -10,7 +10,7 @@ class Component extends karas.Component {
   }
 
   render() {
-    return <div onClick={()=>{this.emit('custom')}}>123</div>;
+    return <span onClick={()=>{this.emit('custom')}}>123</span>;
   }
 }
 

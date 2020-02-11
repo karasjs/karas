@@ -3791,6 +3791,50 @@
     REFLOW: 1
   };
 
+  var repaint$1 = {
+    GEOM: {
+      x1: true,
+      y1: true,
+      x2: true,
+      y2: true,
+      controlA: true,
+      controlB: true,
+      r: true,
+      rx: true,
+      ry: true,
+      begin: true,
+      end: true,
+      points: true,
+      controls: true
+    },
+    STYLE: {
+      transform: true,
+      translateX: true,
+      translateY: true,
+      skewX: true,
+      skewY: true,
+      scaleX: true,
+      scaleY: true,
+      rotateZ: true,
+      color: true,
+      fontStyle: true,
+      strokeWidth: true,
+      fill: true,
+      backgroundColor: true,
+      backgroundImage: true,
+      backgroundPosition: true,
+      backgroundRepeat: true,
+      backgroundSize: true,
+      stroke: true,
+      borderBottomColor: true,
+      borderLeftColor: true,
+      borderRightColor: true,
+      borderTopColor: true,
+      visibility: true,
+      opacity: true
+    }
+  };
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -3953,10 +3997,10 @@
         }
 
         this.__hasInit = true;
-        ['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'computedStyle', 'ctx', 'defs', 'baseLine', 'virtualDom', 'currentStyle', 'points', 'controlA', 'controlB', 'controls', 'r', 'rx', 'ry', 'begin', 'end', 'x1', 'y1', 'x2', 'y2', 'mask', 'maskId'].forEach(function (fn) {
+        Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId']).forEach(function (fn) {
           Object.defineProperty(_this3, fn, {
             get: function get() {
-              return this.shadowRoot[fn];
+              return sr[fn];
             }
           });
         });
@@ -4460,50 +4504,6 @@
     ease: bezier(0.25, 0.1, 0.25, 1),
     easeInOut: bezier(0.42, 0, 0.58, 1),
     cubicBezier: bezier
-  };
-
-  var repaint$1 = {
-    GEOM: {
-      x1: true,
-      y1: true,
-      x2: true,
-      y2: true,
-      controlA: true,
-      controlB: true,
-      r: true,
-      rx: true,
-      ry: true,
-      begin: true,
-      end: true,
-      points: true,
-      controls: true
-    },
-    STYLE: {
-      transform: true,
-      translateX: true,
-      translateY: true,
-      skewX: true,
-      skewY: true,
-      scaleX: true,
-      scaleY: true,
-      rotateZ: true,
-      color: true,
-      fontStyle: true,
-      strokeWidth: true,
-      fill: true,
-      backgroundColor: true,
-      backgroundImage: true,
-      backgroundPosition: true,
-      backgroundRepeat: true,
-      backgroundSize: true,
-      stroke: true,
-      borderBottomColor: true,
-      borderLeftColor: true,
-      borderRightColor: true,
-      borderTopColor: true,
-      visibility: true,
-      opacity: true
-    }
   };
 
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'fill', 'stroke'];
@@ -6379,23 +6379,7 @@
         var isDestroyed = this.isDestroyed,
             style = this.style,
             currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle; // 根元素特殊处理
-
-        if (this.isRoot) {
-          currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
-            value: 0,
-            unit: unit.PX
-          };
-          currentStyle.width = style.width = {
-            value: this.width,
-            unit: unit.PX
-          };
-          currentStyle.height = style.height = {
-            value: this.height,
-            unit: unit.PX
-          };
-        }
-
+            computedStyle = this.computedStyle;
         var display = currentStyle.display,
             width = currentStyle.width;
 
@@ -10261,7 +10245,21 @@
       value: function refresh(cb) {
         var _this2 = this;
 
-        var renderMode = this.renderMode;
+        var renderMode = this.renderMode,
+            style = this.style; // 根元素特殊处理
+
+        style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
+          value: 0,
+          unit: unit.PX
+        };
+        style.width = {
+          value: this.width,
+          unit: unit.PX
+        };
+        style.height = {
+          value: this.height,
+          unit: unit.PX
+        };
 
         this.__defs.clear();
 

@@ -70,14 +70,19 @@ class Frame {
     if(!handle) {
       return;
     }
-    let self = this;
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    let cb = util.isFunction(handle) ? function cb() {
-        handle();
-        self.offFrame(cb);
-      } : handle;
+    let cb = util.isFunction(handle) ? () => {
+      handle();
+      this.offFrame(cb);
+    } : {
+      before: handle.before,
+      after: () => {
+        handle.after();
+        this.offFrame(cb);
+      },
+    };
     cb.__karasFramecb = handle;
-    self.onFrame(cb);
+    this.onFrame(cb);
   }
 
   get task() {

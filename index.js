@@ -4295,18 +4295,27 @@
     }, {
       key: "nextFrame",
       value: function nextFrame(handle) {
+        var _this = this;
+
         if (!handle) {
           return;
-        }
+        } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
-        var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
-        var cb = util.isFunction(handle) ? function cb() {
+        var cb = util.isFunction(handle) ? function () {
           handle();
-          self.offFrame(cb);
-        } : handle;
+
+          _this.offFrame(cb);
+        } : {
+          before: handle.before,
+          after: function after() {
+            handle.after();
+
+            _this.offFrame(cb);
+          }
+        };
         cb.__karasFramecb = handle;
-        self.onFrame(cb);
+        this.onFrame(cb);
       }
     }, {
       key: "task",

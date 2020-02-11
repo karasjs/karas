@@ -33,10 +33,12 @@ class Event {
       return;
     }
     let self = this;
+    // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
     function cb(...data) {
       handle.apply(self, data);
       self.off(id, cb);
     }
+    cb.__karasEventCb = handle;
     if(Array.isArray(id)) {
       for(let i = 0, len = id.length; i < len; i++) {
         self.once(id[i], handle);
@@ -57,7 +59,8 @@ class Event {
     else if(self.__eHash.hasOwnProperty(id)) {
       if(handle) {
         for(let i = 0, item = self.__eHash[id], len = item.length; i < len; i++) {
-          if(item[i] === handle) {
+          // 需考虑once包裹的引用对比
+          if(item[i] === handle || item[i].__karasEventCb === handle) {
             item.splice(i, 1);
             break;
           }

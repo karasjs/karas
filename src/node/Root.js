@@ -256,7 +256,7 @@ class Root extends Dom {
     let { task } = this;
     // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
     if(!task.length) {
-      frame.nextFrame(() => {
+      frame.nextFrame(this.__rTask = () => {
         let clone = task.splice(0);
         // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
         if(clone.length) {
@@ -292,6 +292,9 @@ class Root extends Dom {
         task.splice(i, 1);
         break;
       }
+    }
+    if(!task.length) {
+      frame.offFrame(this.__rTask);
     }
   }
 

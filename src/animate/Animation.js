@@ -810,7 +810,6 @@ class Animation extends Event {
     this.__pauseTime = 0; // 上次暂停时刻的时间
     this.__playTime = 0; // 播放时间，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
     this.__lastFpsTime = 0;
-    this.__pending = false;
     this.__playState = 'idle';
     this.__playCount = 0;
     this.__cb = null;
@@ -970,8 +969,8 @@ class Animation extends Event {
       let first = true;
       this.__cb = () => {
         let root = target.root;
-        // 防止被回收没root
-        if(!root) {
+        // 防止被回收没root，以及在帧回调中pause，此时frame中的cb还未回收
+        if(!root || this.pending) {
           return;
         }
         let now = inject.now();
@@ -1068,7 +1067,6 @@ class Animation extends Event {
           [needRefresh, lv] = calRefresh(current, style);
         }
         let task = () => {
-          this.emit(Event.KARAS_ANIMATION_FRAME);
           // 最后一帧考虑后续反向播还是停留还是结束
           if(i === length - 1) {
             // 没到播放次数结束时继续
@@ -1121,6 +1119,7 @@ class Animation extends Event {
               frame.onFrame(task);
             }
           }
+          this.emit(Event.KARAS_ANIMATION_FRAME);
         };
         if(needRefresh) {
           root.addRefreshTask(this.__task = {
@@ -1138,12 +1137,10 @@ class Animation extends Event {
     // 防止重复调用多次cb
     frame.offFrame(this.cb);
     frame.onFrame(this.cb);
-    this.__pending = false;
     return this;
   }
 
   pause() {
-    this.__pending = true;
     this.__pauseTime = inject.now();
     this.__playState = 'paused';
     frame.offFrame(this.cb);
@@ -1466,7 +1463,7 @@ class Animation extends Event {
     return this.__startTime;
   }
   get pending() {
-    return this.__pending;
+    return this.playState !== 'running';
   }
   get finished() {
     return this.playState === 'finished';

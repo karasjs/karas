@@ -3584,7 +3584,7 @@
           return;
         }
 
-        var self = this;
+        var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
         function cb() {
           for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
@@ -3594,6 +3594,8 @@
           handle.apply(self, data);
           self.off(id, cb);
         }
+
+        cb.__karasEventCb = handle;
 
         if (Array.isArray(id)) {
           for (var i = 0, len = id.length; i < len; i++) {
@@ -3617,7 +3619,8 @@
         } else if (self.__eHash.hasOwnProperty(id)) {
           if (handle) {
             for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
-              if (item[_i2] === handle) {
+              // 需考虑once包裹的引用对比
+              if (item[_i2] === handle || item[_i2].__karasEventCb === handle) {
                 item.splice(_i2, 1);
                 break;
               }
@@ -4276,7 +4279,9 @@
         var task = this.task;
 
         for (var i = 0, len = task.length; i < len; i++) {
-          if (task[i] === handle) {
+          var item = task[i]; // 需考虑nextFrame包裹的引用对比
+
+          if (item === handle || item.__karasFramecb === handle) {
             task.splice(i, 1);
             break;
           }
@@ -4289,13 +4294,14 @@
           return;
         }
 
-        var self = this;
+        var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
         function cb() {
           handle();
           self.offFrame(cb);
         }
 
+        cb.__karasFramecb = handle;
         self.onFrame(cb, unshift);
       }
     }, {
@@ -5261,7 +5267,6 @@
       _this.__playTime = 0; // 播放时间，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
 
       _this.__lastFpsTime = 0;
-      _this.__pending = false;
       _this.__playState = 'idle';
       _this.__playCount = 0;
       _this.__cb = null;
@@ -5457,9 +5462,9 @@
           var first = true;
 
           this.__cb = function () {
-            var root = target.root; // 防止被回收没root
+            var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的cb还未回收
 
-            if (!root) {
+            if (!root || _this3.pending) {
               return;
             }
 
@@ -5590,9 +5595,7 @@
               }
 
             var task = function task() {
-              _this3.emit(Event.KARAS_ANIMATION_FRAME); // 最后一帧考虑后续反向播还是停留还是结束
-
-
+              // 最后一帧考虑后续反向播还是停留还是结束
               if (i === length - 1) {
                 // 没到播放次数结束时继续
                 if (iterations === Infinity || playCount < iterations) {
@@ -5656,6 +5659,8 @@
                   frame.onFrame(_task2);
                 }
               }
+
+              _this3.emit(Event.KARAS_ANIMATION_FRAME);
             };
 
             if (needRefresh) {
@@ -5674,13 +5679,11 @@
 
         frame.offFrame(this.cb);
         frame.onFrame(this.cb);
-        this.__pending = false;
         return this;
       }
     }, {
       key: "pause",
       value: function pause() {
-        this.__pending = true;
         this.__pauseTime = inject.now();
         this.__playState = 'paused';
         frame.offFrame(this.cb);
@@ -6097,7 +6100,7 @@
     }, {
       key: "pending",
       get: function get() {
-        return this.__pending;
+        return this.playState !== 'running';
       }
     }, {
       key: "finished",
@@ -10330,7 +10333,7 @@
         var task = this.task; // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
 
         if (!task.length) {
-          frame.nextFrame(function () {
+          frame.nextFrame(this.__rTask = function () {
             var clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
             if (clone.length) {
@@ -10371,6 +10374,10 @@
             task.splice(i, 1);
             break;
           }
+        }
+
+        if (!task.length) {
+          frame.offFrame(this.__rTask);
         }
       }
     }, {

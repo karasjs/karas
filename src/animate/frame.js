@@ -1,4 +1,5 @@
 import inject from '../util/inject';
+import util from '../util/util';
 
 class Frame {
   constructor() {
@@ -17,7 +18,19 @@ class Frame {
         let delta = now - last;
         delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
-        clone.forEach(handle => handle(delta));
+        clone.forEach(item => {
+          if(util.isObject(item) && util.isFunction(item.before)) {
+            item.before(delta);
+          }
+        });
+        clone.forEach(item => {
+          if(util.isObject(item) && util.isFunction(item.after)) {
+            item.after(delta);
+          }
+          else if(util.isFunction(item)) {
+            item(delta);
+          }
+        });
         if(!task.length) {
           return;
         }
@@ -27,7 +40,7 @@ class Frame {
     cb();
   }
 
-  onFrame(handle, unshift) {
+  onFrame(handle) {
     if(!handle) {
       return;
     }
@@ -35,12 +48,7 @@ class Frame {
     if(!task.length) {
       this.__init(task);
     }
-    if(unshift) {
-      task.unshift(handle);
-    }
-    else {
-      task.push(handle);
-    }
+    task.push(handle);
   }
 
   offFrame(handle) {
@@ -58,18 +66,18 @@ class Frame {
     }
   }
 
-  nextFrame(handle, unshift) {
+  nextFrame(handle) {
     if(!handle) {
       return;
     }
     let self = this;
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    function cb() {
-      handle();
-      self.offFrame(cb);
-    }
+    let cb = util.isFunction(handle) ? function cb() {
+        handle();
+        self.offFrame(cb);
+      } : handle;
     cb.__karasFramecb = handle;
-    self.onFrame(cb, unshift);
+    self.onFrame(cb);
   }
 
   get task() {

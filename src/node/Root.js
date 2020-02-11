@@ -256,16 +256,21 @@ class Root extends Dom {
     let { task } = this;
     // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
     if(!task.length) {
-      frame.nextFrame(this.__rTask = () => {
-        let clone = task.splice(0);
-        // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
-        if(clone.length) {
-          clone.forEach(item => {
-            if(util.isObject(item) && util.isFunction(item.before)) {
-              item.before();
-            }
-          });
-          this.refresh();
+      let clone;
+      frame.nextFrame(this.__rTask = {
+        before: () => {
+          clone = task.splice(0);
+          // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
+          if(clone.length) {
+            clone.forEach(item => {
+              if(util.isObject(item) && util.isFunction(item.before)) {
+                item.before();
+              }
+            });
+            this.refresh();
+          }
+        },
+        after: () => {
           clone.forEach(item => {
             if(util.isObject(item) && util.isFunction(item.after)) {
               item.after();
@@ -275,7 +280,7 @@ class Root extends Dom {
             }
           });
         }
-      }, true);
+      });
     }
     if(task.indexOf(cb) === -1) {
       task.push(cb);

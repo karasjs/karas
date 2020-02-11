@@ -4236,8 +4236,17 @@
             delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
 
             last = now;
-            clone.forEach(function (handle) {
-              return handle(delta);
+            clone.forEach(function (item) {
+              if (util.isObject(item) && util.isFunction(item.before)) {
+                item.before(delta);
+              }
+            });
+            clone.forEach(function (item) {
+              if (util.isObject(item) && util.isFunction(item.after)) {
+                item.after(delta);
+              } else if (util.isFunction(item)) {
+                item(delta);
+              }
             });
 
             if (!task.length) {
@@ -4252,7 +4261,7 @@
       }
     }, {
       key: "onFrame",
-      value: function onFrame(handle, unshift) {
+      value: function onFrame(handle) {
         if (!handle) {
           return;
         }
@@ -4263,11 +4272,7 @@
           this.__init(task);
         }
 
-        if (unshift) {
-          task.unshift(handle);
-        } else {
-          task.push(handle);
-        }
+        task.push(handle);
       }
     }, {
       key: "offFrame",
@@ -4289,20 +4294,19 @@
       }
     }, {
       key: "nextFrame",
-      value: function nextFrame(handle, unshift) {
+      value: function nextFrame(handle) {
         if (!handle) {
           return;
         }
 
         var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
-        function cb() {
+        var cb = util.isFunction(handle) ? function cb() {
           handle();
           self.offFrame(cb);
-        }
-
+        } : handle;
         cb.__karasFramecb = handle;
-        self.onFrame(cb, unshift);
+        self.onFrame(cb);
       }
     }, {
       key: "task",
@@ -10333,18 +10337,22 @@
         var task = this.task; // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
 
         if (!task.length) {
-          frame.nextFrame(this.__rTask = function () {
-            var clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
+          var clone;
+          frame.nextFrame(this.__rTask = {
+            before: function before() {
+              clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
-            if (clone.length) {
-              clone.forEach(function (item) {
-                if (util.isObject(item) && util.isFunction(item.before)) {
-                  item.before();
-                }
-              });
+              if (clone.length) {
+                clone.forEach(function (item) {
+                  if (util.isObject(item) && util.isFunction(item.before)) {
+                    item.before();
+                  }
+                });
 
-              _this3.refresh();
-
+                _this3.refresh();
+              }
+            },
+            after: function after() {
               clone.forEach(function (item) {
                 if (util.isObject(item) && util.isFunction(item.after)) {
                   item.after();
@@ -10353,7 +10361,7 @@
                 }
               });
             }
-          }, true);
+          });
         }
 
         if (task.indexOf(cb) === -1) {

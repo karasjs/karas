@@ -2693,16 +2693,16 @@
   } // 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
 
 
-  function compute(xom, isRoot) {
-    var animateStyle = xom.animateStyle;
-    var currentStyle = xom.__currentStyle = animateStyle;
+  function compute(node, isRoot) {
+    var animateStyle = node.animateStyle;
+    var currentStyle = node.__currentStyle = animateStyle;
     var lineHeight = currentStyle.lineHeight,
         textAlign = currentStyle.textAlign;
-    var computedStyle = xom.__computedStyle = util.clone(currentStyle);
-    var parent = xom.parent;
+    var computedStyle = node.__computedStyle = util.clone(currentStyle);
+    var parent = node.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-    calLineHeight(xom, lineHeight, computedStyle);
+    calLineHeight(node, lineHeight, computedStyle);
 
     if (textAlign === 'inherit') {
       computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
@@ -2710,11 +2710,11 @@
   } // REPAINT等级下，刷新前首先执行，仅计算继承
 
 
-  function repaint(xom, isRoot) {
-    var animateStyle = xom.animateStyle,
-        computedStyle = xom.computedStyle;
-    var currentStyle = xom.__currentStyle = animateStyle;
-    var parent = xom.parent;
+  function repaint(node, isRoot) {
+    var animateStyle = node.animateStyle,
+        computedStyle = node.computedStyle;
+    var currentStyle = node.__currentStyle = animateStyle;
+    var parent = node.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
   }
@@ -3274,6 +3274,11 @@
       }
     }, {
       key: "currentStyle",
+      get: function get() {
+        return this.style;
+      }
+    }, {
+      key: "animateStyle",
       get: function get() {
         return this.style;
       }

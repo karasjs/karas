@@ -232,6 +232,9 @@ class Text extends Node {
   get currentStyle() {
     return this.style;
   }
+  get animateStyle() {
+    return this.style;
+  }
   get renderMode() {
     return this.__renderMode;
   }

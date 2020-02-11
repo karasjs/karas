@@ -592,25 +592,25 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
 }
 
 // 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
-function compute(xom, isRoot) {
-  let { animateStyle } = xom;
-  let currentStyle = xom.__currentStyle = animateStyle;
+function compute(node, isRoot) {
+  let { animateStyle } = node;
+  let currentStyle = node.__currentStyle = animateStyle;
   let { lineHeight, textAlign } = currentStyle;
-  let computedStyle = xom.__computedStyle = util.clone(currentStyle);
-  let parent = xom.parent;
+  let computedStyle = node.__computedStyle = util.clone(currentStyle);
+  let parent = node.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-  calLineHeight(xom, lineHeight, computedStyle);
+  calLineHeight(node, lineHeight, computedStyle);
   if(textAlign === 'inherit') {
     computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
   }
 }
 
 // REPAINT等级下，刷新前首先执行，仅计算继承
-function repaint(xom, isRoot) {
-  let { animateStyle, computedStyle } = xom;
-  let currentStyle = xom.__currentStyle = animateStyle;
-  let parent = xom.parent;
+function repaint(node, isRoot) {
+  let { animateStyle, computedStyle } = node;
+  let currentStyle = node.__currentStyle = animateStyle;
+  let parent = node.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
 }

@@ -38,11 +38,9 @@ class Component extends Event {
       this.state = {};
     }
     else {
-      for(let i in n) {
-        if(n.hasOwnProperty(i)) {
-          this.state[i] = n[i];
-        }
-      }
+      Object.keys(n).forEach(i => {
+        this.state[i] = n[i];
+      });
     }
     // 构造函数中调用还未render
     let o = this.shadowRoot;
@@ -51,10 +49,15 @@ class Component extends Event {
     }
     let root = this.root;
     if(root) {
-      root.setRefreshLevel(level.REFLOW);
       this.__traverse(o.ctx, o.defs, this.root.renderMode);
       this.__init();
-      root.addRefreshTask(cb);
+      this.__task = {
+        before: function() {
+          root.setRefreshLevel(level.REFLOW);
+        },
+        after: cb,
+      };
+      root.addRefreshTask(this.__task);
     }
   }
 
@@ -81,7 +84,7 @@ class Component extends Event {
     sr.__ctx = ctx;
     sr.__defs = defs;
     sr.__host = this;
-    if(!sr.isGeom()) {
+    if(!sr.isGeom) {
       sr.__traverse(ctx, defs, renderMode);
     }
   }
@@ -104,11 +107,9 @@ class Component extends Event {
     }
     else {
       let style = this.props.style || {};
-      for(let i in style) {
-        if(style.hasOwnProperty(i)) {
-          sr.style[i] = style[i];
-        }
-      }
+      Object.keys(style).forEach(i => {
+        sr.style[i] = style[i];
+      });
       sr.__init();
     }
     if(!(sr instanceof Text)) {
@@ -179,6 +180,7 @@ class Component extends Event {
   }
 
   __destroy() {
+    this.root.delRefreshTask(this.__task);
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }

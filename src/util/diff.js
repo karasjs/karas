@@ -121,21 +121,37 @@ function diffChild(elem, ovd, nvd) {
   }
 }
 
-function diffD2D(elem, ovd, nvd, root) {
-  if(ovd.transform !== nvd.transform) {
-    elem.setAttribute('transform', nvd.transform);
+function diffX2X(elem, ovd, nvd) {
+  let { transform, opacity, mask } = nvd;
+  if(ovd.transform !== transform) {
+    if(transform) {
+      elem.setAttribute('transform', transform);
+    }
+    else {
+      elem.removeAttribute('transform');
+    }
   }
-  if(ovd.opacity !== nvd.opacity) {
-    elem.setAttribute('opacity', nvd.opacity);
-  }
-  if(ovd.mask !== nvd.mask) {
-    if(nvd.mask) {
-      elem.setAttribute('mask', nvd.mask);
+  if(ovd.opacity !== opacity) {
+    if(opacity !== 1) {
+      elem.setAttribute('opacity', opacity);
     }
     else {
       elem.removeAttribute('mask');
     }
   }
+  // geom不会有mask，对比一直相等
+  if(ovd.mask !== mask) {
+    if(mask) {
+      elem.setAttribute('mask', mask);
+    }
+    else {
+      elem.removeAttribute('mask');
+    }
+  }
+}
+
+function diffD2D(elem, ovd, nvd, root) {
+  diffX2X(elem, ovd, nvd);
   if(!root) {
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   }
@@ -190,12 +206,7 @@ function diffG2D(elem, ovd, nvd) {
 }
 
 function diffG2G(elem, ovd, nvd) {
-  if(ovd.transform !== nvd.transform) {
-    elem.setAttribute('transform', nvd.transform);
-  }
-  if(ovd.opacity !== nvd.opacity) {
-    elem.setAttribute('opacity', nvd.opacity);
-  }
+  diffX2X(elem, ovd, nvd);
   diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   let ol = ovd.children.length;
   let nl = nvd.children.length;

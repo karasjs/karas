@@ -2,31 +2,22 @@ import inject from '../util/inject';
 
 class Frame {
   constructor() {
-    this.__inFrame = false;
     this.__task = [];
-    this.__afterFrame = [];
   }
 
   __init(task) {
-    let self = this;
     function cb() {
       let last = inject.now();
       inject.requestAnimationFrame(function() {
         if(!task.length) {
           return;
         }
+        let clone = task.slice();
         let now = inject.now();
         let delta = now - last;
-        delta = delta * 0.06;
+        delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
-        self.__inFrame = true;
-        task.forEach(handle => handle(delta));
-        self.__inFrame = false;
-        let afterCb = self.__afterFrame;
-        if(afterCb) {
-          afterCb.forEach(item => item(delta));
-        }
-        self.__afterFrame = [];
+        clone.forEach(handle => handle(delta));
         if(!task.length) {
           return;
         }
@@ -36,15 +27,26 @@ class Frame {
     cb();
   }
 
-  onFrame(handle) {
+  onFrame(handle, unshift) {
+    if(!handle) {
+      return;
+    }
     let { task } = this;
     if(!task.length) {
       this.__init(task);
     }
-    this.task.push(handle);
+    if(unshift) {
+      task.unshift(handle);
+    }
+    else {
+      task.push(handle);
+    }
   }
 
   offFrame(handle) {
+    if(!handle) {
+      return;
+    }
     let { task } = this;
     for(let i = 0, len = task.length; i < len; i++) {
       if(task[i] === handle) {
@@ -54,19 +56,16 @@ class Frame {
     }
   }
 
-  nextFrame(handle) {
+  nextFrame(handle, unshift) {
+    if(!handle) {
+      return;
+    }
     let self = this;
     function cb() {
       handle();
       self.offFrame(cb);
     }
-    if(self.__inFrame) {
-      self.__afterFrame = self.__afterFrame || [];
-      self.__afterFrame.push(cb);
-    }
-    else {
-      self.onFrame(cb);
-    }
+    self.onFrame(cb, unshift);
   }
 
   get task() {

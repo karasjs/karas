@@ -60,13 +60,11 @@ let karas = {
     return new cp(props, children);
   },
   parse(json, dom) {
-    let data = {
-      animate: [],
-    };
+    let animateList = [];
     json = util.clone(json);
-    let vd = parse(this, json, data);
+    let vd = parse(this, json, animateList);
     this.render(vd, dom);
-    data.animate.forEach(item => {
+    animateList.forEach(item => {
       let { target, animate } = item;
       if(Array.isArray(animate)) {
         animate.forEach(animate => {

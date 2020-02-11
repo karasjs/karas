@@ -66,7 +66,7 @@ class Circle extends Geom {
   }
 
   get r() {
-    return this.__r;
+    return this.getProps('r');
   }
 }
 

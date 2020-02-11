@@ -5,6 +5,9 @@ class Event {
     this.__eHash = {};
   }
   on(id, handle) {
+    if(!handle) {
+      return;
+    }
     let self = this;
     if(Array.isArray(id)) {
       for(let i = 0, len = id.length; i < len; i++) {

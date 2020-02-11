@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import util from "../util/util";
 
 const OFFSET = Math.PI * 0.5;
 
@@ -168,19 +169,19 @@ class Sector extends Geom {
   }
 
   get begin() {
-    return this.__begin;
+    return this.getProps('begin');
   }
   get end() {
-    return this.__end;
+    return this.getProps('end');
   }
   get r() {
-    return this.__r;
+    return this.getProps('r');
   }
   get edge() {
-    return this.__edge;
+    return this.getProps('edge');
   }
   get closure() {
-    return this.__closure;
+    return this.getProps('closure');
   }
 }
 

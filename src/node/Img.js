@@ -34,7 +34,7 @@ class Img extends Dom {
 
   __layout(data) {
     super.__layout(data);
-    let { isDestroyed, src, currentStyle } = this;
+    let { isDestroyed, src, style, currentStyle } = this;
     let { display, width, height } = currentStyle;
     if(isDestroyed || display === 'none') {
       return;
@@ -56,24 +56,24 @@ class Img extends Dom {
       let lv = level.REFLOW;
       // 宽高都为auto，使用加载测量的数据
       if(width.unit === unit.AUTO && height.unit === unit.AUTO) {
-        currentStyle.width = {
+        style.width = {
           value: cache.width,
           unit: unit.PX,
         };
-        currentStyle.height = {
+        style.height = {
           value: cache.height,
           unit: unit.PX,
         };
       }
       // 否则有一方定义则按比例调整另一方适应
       else if(width.unit === unit.AUTO) {
-        currentStyle.width = {
+        style.width = {
           value: h * cache.width / cache.height,
           unit: unit.PX,
         };
       }
       else if(height.unit === unit.AUTO) {
-        currentStyle.height = {
+        style.height = {
           value: w * cache.height / cache.width,
           unit: unit.PX,
         };
@@ -83,8 +83,12 @@ class Img extends Dom {
       }
       let root = this.root;
       if(root) {
-        root.setRefreshLevel(lv);
-        root.addRefreshTask();
+        this.__task = {
+          before: function() {
+            root.setRefreshLevel(lv);
+          },
+        };
+        root.addRefreshTask(this.__task);
       }
     };
     if(cache.state === LOADED) {
@@ -121,6 +125,11 @@ class Img extends Dom {
       tagName,
       props,
     });
+  }
+
+  __destroy() {
+    this.root.delRefreshTask(this.__task);
+    super.__destroy();
   }
 
   render(renderMode) {

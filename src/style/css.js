@@ -142,7 +142,7 @@ function normalize(style, reset) {
   // 背景位置
   temp = style.backgroundPosition;
   if(!util.isNil(temp)) {
-    temp = temp.split(/\s+/);
+    temp = temp.toString().split(/\s+/);
     if(temp.length === 1) {
       temp[1] = '50%';
     }
@@ -308,7 +308,7 @@ function normalize(style, reset) {
         let k = item.slice(0, i);
         let v = item.slice(i + 1, item.length - 1);
         if(k === 'matrix') {
-          let arr = v.split(/\s*,\s*/);
+          let arr = v.toString().split(/\s*,\s*/);
           arr = arr.map(item => parseFloat(item));
           if(arr.length > 6) {
             arr = arr.slice(0, 6);
@@ -336,7 +336,7 @@ function normalize(style, reset) {
           }
         }
         else if(['translate', 'scale', 'skew'].indexOf(k) > -1) {
-          let arr = v.split(/\s*,\s*/);
+          let arr = v.toString().split(/\s*,\s*/);
           if(arr.length === 1) {
             arr[1] = arr[0];
           }
@@ -398,8 +398,8 @@ function normalize(style, reset) {
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew'].forEach(k => {
     temp = style[k];
-    if(temp) {
-      let arr = temp.split(/\s*,\s*/);
+    if(!util.isNil(temp)) {
+      let arr = temp.toString().split(/\s*,\s*/);
       if(arr.length === 1) {
         arr[1] = arr[0];
       }
@@ -591,8 +591,10 @@ function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) 
   }
 }
 
+// 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
 function compute(xom, isRoot) {
-  let { currentStyle } = xom;
+  let { animateStyle } = xom;
+  let currentStyle = xom.__currentStyle = animateStyle;
   let { lineHeight, textAlign } = currentStyle;
   let computedStyle = xom.__computedStyle = util.clone(currentStyle);
   let parent = xom.parent;
@@ -604,8 +606,10 @@ function compute(xom, isRoot) {
   }
 }
 
+// REPAINT等级下，刷新前首先执行，仅计算继承
 function repaint(xom, isRoot) {
-  let { currentStyle, computedStyle } = xom;
+  let { animateStyle, computedStyle } = xom;
+  let currentStyle = xom.__currentStyle = animateStyle;
   let parent = xom.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);

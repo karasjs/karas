@@ -1,6 +1,6 @@
 import util from './util';
 
-function parse(karas, json, data) {
+function parse(karas, json, animateList) {
   if(util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
     return json;
   }
@@ -10,14 +10,14 @@ function parse(karas, json, data) {
     animation = {
       animate,
     };
-    data.animate.push(animation);
+    animateList.push(animation);
   }
   let vd;
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);
   }
   else {
-    vd = karas.createVd(tagName, props, children.map(item => parse(karas, item, data)));
+    vd = karas.createVd(tagName, props, children.map(item => parse(karas, item, animateList)));
   }
   if(animation) {
     animation.target = vd;

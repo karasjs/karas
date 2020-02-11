@@ -117,22 +117,22 @@ class Line extends Geom {
   }
 
   get x1() {
-    return this.__x1;
+    return this.getProps('x1');
   }
   get y1() {
-    return this.__y1;
+    return this.getProps('y1');
   }
   get x2() {
-    return this.__x2;
+    return this.getProps('x2');
   }
   get y2() {
-    return this.__y2;
+    return this.getProps('y2');
   }
   get controlA() {
-    return this.__controlA;
+    return this.getProps('controlA');
   }
   get controlB() {
-    return this.__controlB;
+    return this.getProps('controlB');
   }
 }
 

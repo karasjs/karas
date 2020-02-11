@@ -236,13 +236,13 @@ class Polyline extends Geom {
   }
 
   get points() {
-    return this.__points;
+    return this.getProps('points');
   }
   get controls() {
-    return this.__controls;
+    return this.getProps('controls');
   }
   get origin() {
-    return this.__origin;
+    return this.getProps('origin');
   }
 }
 

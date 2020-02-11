@@ -186,22 +186,7 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode, currentStyle } = this;
-    // 根元素特殊处理
-    currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = {
-      value: 0,
-      unit: unit.PX,
-    };
-    currentStyle.width = {
-      value: this.width,
-      unit: unit.PX,
-    };
-    currentStyle.height = {
-      value: this.height,
-      unit: unit.PX,
-    };
-    delete currentStyle.transform;
-    currentStyle.opacity = 1;
+    let { renderMode } = this;
     this.__defs.clear();
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
@@ -210,7 +195,7 @@ class Root extends Dom {
       this.__computed();
     }
     inject.measureText(() => {
-      // 没发生REFLOW只需要computed即可
+      // 第一次默认REFLOW以及动画设计变更需要布局
       if(lv === level.REFLOW) {
         // 布局分为两步，普通流和绝对流，互相递归
         this.__layout({
@@ -219,6 +204,7 @@ class Root extends Dom {
           w: this.width,
           h: this.height,
         });
+        // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
         this.__layoutAbs(this, {
           x: 0,
           y: 0,
@@ -226,6 +212,7 @@ class Root extends Dom {
           h: this.height,
         });
       }
+      // 没发生REFLOW只需要computed即可
       else {
         this.__repaint();
       }
@@ -249,7 +236,7 @@ class Root extends Dom {
         this.node.__defs = nd;
       }
       // 图片加载后刷新、动画结束后刷新等需要的钩子
-      let clone = this.__task.splice(0);
+      let clone = this.task.splice(0);
       clone.forEach(cb => {
         if(util.isFunction(cb)) {
           cb();
@@ -263,16 +250,36 @@ class Root extends Dom {
   }
 
   addRefreshTask(cb) {
+    if(!cb) {
+      return;
+    }
     let { task } = this;
-    // 第一个添加延迟侦听
+    // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
     if(!task.length) {
       frame.nextFrame(() => {
-        if(task.length) {
+        let clone = task.splice(0);
+        // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
+        if(clone.length) {
+          clone.forEach(item => {
+            if(util.isObject(item) && util.isFunction(item.before)) {
+              item.before();
+            }
+          });
           this.refresh();
+          clone.forEach(item => {
+            if(util.isObject(item) && util.isFunction(item.after)) {
+              item.after();
+            }
+            else if(util.isFunction(item)) {
+              item();
+            }
+          });
         }
-      });
+      }, true);
     }
-    task.push(cb);
+    if(task.indexOf(cb) === -1) {
+      task.push(cb);
+    }
   }
 
   delRefreshTask(cb) {

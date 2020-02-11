@@ -90,5 +90,4 @@ Object.keys(GEOM).forEach(k => {
 export default {
   dom,
   geom,
-  key: Object.assign({}, DOM, GEOM),
 };

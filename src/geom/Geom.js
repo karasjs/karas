@@ -12,6 +12,8 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMask = !util.isNil(this.props.mask) || this.props.mask === true;
+    this.__animateProps = []; // 同animateStyle
+    this.__currentProps = this.props;
   }
 
   __init() {
@@ -172,7 +174,8 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
-    let { isDestroyed, computedStyle: { display } } = this;
+    let { isDestroyed, animateProps, computedStyle: { display } } = this;
+    this.__currentProps = animateProps;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,
@@ -189,8 +192,7 @@ class Geom extends Xom {
   }
 
   __renderAsMask(renderMode) {
-    if(renderMode === mode.CANVAS) {}
-    else if(renderMode === mode.SVG) {
+    if(renderMode === mode.SVG) {
       this.render(renderMode);
       let vd = this.virtualDom;
       vd.isMask = true;
@@ -275,6 +277,14 @@ class Geom extends Xom {
     });
   }
 
+  getProps(k) {
+    let v = this.currentProps[k];
+    if(!util.isNil(v)) {
+      return v;
+    }
+    return this['__' + k];
+  }
+
   get tagName() {
     return this.__tagName;
   }
@@ -286,6 +296,19 @@ class Geom extends Xom {
   }
   get maskId() {
     return this.__maskId;
+  }
+  get animateProps() {
+    let { props, animationList } = this;
+    let clone = util.clone(props);
+    animationList.forEach(item => {
+      if(item.animating) {
+        Object.assign(clone, item.props);
+      }
+    });
+    return clone;
+  }
+  get currentProps() {
+    return this.__currentProps;
   }
 
   static getRegister(name) {

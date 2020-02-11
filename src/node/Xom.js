@@ -120,7 +120,8 @@ class Xom extends Node {
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
-    this.__animateStyle = {}; // 动画过程中的样式
+    this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
+    this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
     this.__listener = {};
     this.__props.forEach(item => {
       let k = item[0];
@@ -150,7 +151,7 @@ class Xom extends Node {
 
   // 设置了css时，解析匹配
   __traverseCss(top, css) {
-    if(!this.isGeom()) {
+    if(!this.isGeom) {
       this.children.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
           item.__traverseCss(top, css);
@@ -219,6 +220,21 @@ class Xom extends Node {
   __layout(data, fake) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
+    // 根元素特殊处理
+    if(this.isRoot) {
+      currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = {
+        value: 0,
+        unit: unit.PX,
+      };
+      currentStyle.width = {
+        value: this.width,
+        unit: unit.PX,
+      };
+      currentStyle.height = {
+        value: this.height,
+        unit: unit.PX,
+      };
+    }
     let {
       display,
       width,
@@ -286,14 +302,6 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
-  }
-
-  isGeom() {
-    return this.tagName.charAt(0) === '$';
-  }
-
-  isRoot() {
-    return !this.parent;
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -486,10 +494,10 @@ class Xom extends Node {
         'rotateZ',
         'rotate'
       ].forEach(k => {
-        if(!currentStyle.hasOwnProperty(k)) {
+        let v = currentStyle[k];
+        if(util.isNil(v)) {
           return;
         }
-        let v = currentStyle[k];
         computedStyle[k] = v.value;
         if(v.unit === unit.PERCENT) {
           if(k === 'translateX') {
@@ -912,7 +920,7 @@ class Xom extends Node {
     let childWillResponse;
     // touchmove之类强制的直接通知即可
     if(force) {
-      if(!this.isGeom()) {
+      if(!this.isGeom) {
         // 先响应absolute/relative高优先级，从后往前遮挡顺序
         for(let i = children.length - 1; i >= 0; i--) {
           let child = children[i];
@@ -952,7 +960,7 @@ class Xom extends Node {
       }
       return true;
     }
-    if(!this.isGeom()) {
+    if(!this.isGeom) {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
       for(let i = children.length - 1; i >= 0; i--) {
         let child = children[i];
@@ -1126,9 +1134,9 @@ class Xom extends Node {
   }
 
   __computed() {
-    css.compute(this, this.isRoot());
+    css.compute(this, this.isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom()) {
+    if(!this.isGeom) {
       this.children.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
           item.__computed();
@@ -1144,9 +1152,9 @@ class Xom extends Node {
   }
 
   __repaint() {
-    css.repaint(this, this.isRoot());
+    css.repaint(this, this.isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom()) {
+    if(!this.isGeom) {
       this.children.forEach(item => {
         if(item instanceof Xom || item instanceof Component) {
           item.__repaint();
@@ -1161,6 +1169,12 @@ class Xom extends Node {
 
   get tagName() {
     return this.__tagName;
+  }
+  get isRoot() {
+    return !this.parent;
+  }
+  get isGeom() {
+    return this.tagName.charAt(0) === '$';
   }
   get innerWidth() {
     let { computedStyle: {
@@ -1227,29 +1241,28 @@ class Xom extends Node {
   get animationList() {
     return this.__animationList;
   }
-  get animateStyle() {
-    return this.__animateStyle;
-  }
   get animating() {
     let { animationList } = this;
     for(let i = 0, len = animationList.length; i < len; i++) {
-      let animation = animationList[i];
-      let { playState, options } = animation;
-      if(playState === 'idle') {
-        continue;
+      let item = animationList[i];
+      if(item.animating) {
+        return true;
       }
-      // 结束但不停留在最后一帧视为无效
-      else if(playState === 'finished' && ['forwards', 'both'].indexOf(options.fill) === -1) {
-        continue;
-      }
-      return true;
     }
     return false;
   }
+  get animateStyle() {
+    let { style, animationList } = this;
+    let clone = util.clone(style);
+    animationList.forEach(item => {
+      if(item.animating) {
+        Object.assign(clone, item.style);
+      }
+    });
+    return clone;
+  }
   get currentStyle() {
-    let { style, animateStyle } = this;
-    // 有一个动画在运行则返回animateStyle，否则是style
-    return this.animating ? animateStyle : style;
+    return this.__currentStyle;
   }
 }
 

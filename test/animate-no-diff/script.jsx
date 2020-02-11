@@ -56,6 +56,5 @@ o2.on(karas.Event.KARAS_REFRESH, () => {
   nf2++;
 });
 animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  console.log(n, nf, n2, nf2);
   input.value = (n === nf - 1) + '/' + (n === n2) + '/' + (n2 === nf2 - 1);
 });

@@ -3880,9 +3880,7 @@
         if (util.isNil(n)) {
           this.state = {};
         } else {
-          Object.keys(n).forEach(function (i) {
-            _this2.state[i] = n[i];
-          });
+          Object.assign(this.state, n);
         } // 构造函数中调用还未render
 
 
@@ -3895,12 +3893,14 @@
         var root = this.root;
 
         if (root) {
-          this.__traverse(o.ctx, o.defs, this.root.renderMode);
-
-          this.__init();
-
           this.__task = {
             before: function before() {
+              _this2.__traverse(o.ctx, o.defs, root.renderMode);
+
+              _this2.__traverseCss();
+
+              _this2.__init();
+
               root.setRefreshLevel(level.REFLOW);
             },
             after: cb
@@ -3965,9 +3965,7 @@
           css.normalize(sr.style, reset.dom);
         } else {
           var style = this.props.style || {};
-          Object.keys(style).forEach(function (i) {
-            sr.style[i] = style[i];
-          });
+          Object.assign(sr.style, style);
 
           sr.__init();
         }
@@ -4000,7 +3998,7 @@
         Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId']).forEach(function (fn) {
           Object.defineProperty(_this3, fn, {
             get: function get() {
-              return sr[fn];
+              return this.shadowRoot[fn];
             }
           });
         });
@@ -6377,7 +6375,6 @@
       value: function __layout(data, fake) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
-            style = this.style,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var display = currentStyle.display,
@@ -10271,7 +10268,7 @@
         }
 
         inject.measureText(function () {
-          // 第一次默认REFLOW以及动画设计变更需要布局
+          // 第一次默认REFLOW以及动画设计变更等需要布局
           if (lv === level.REFLOW) {
             // 布局分为两步，普通流和定位流，互相递归
             _this2.__layout({

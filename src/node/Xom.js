@@ -219,7 +219,7 @@ class Xom extends Node {
   // absolute且无尺寸时，fake标明先假布局一次计算尺寸
   __layout(data, fake) {
     let { w } = data;
-    let { isDestroyed, style, currentStyle, computedStyle } = this;
+    let { isDestroyed, currentStyle, computedStyle } = this;
     let {
       display,
       width,

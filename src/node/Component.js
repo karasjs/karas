@@ -39,9 +39,7 @@ class Component extends Event {
       this.state = {};
     }
     else {
-      Object.keys(n).forEach(i => {
-        this.state[i] = n[i];
-      });
+      Object.assign(this.state, n);
     }
     // 构造函数中调用还未render
     let o = this.shadowRoot;
@@ -50,10 +48,11 @@ class Component extends Event {
     }
     let root = this.root;
     if(root) {
-      this.__traverse(o.ctx, o.defs, this.root.renderMode);
-      this.__init();
       this.__task = {
-        before: function() {
+        before: () => {
+          this.__traverse(o.ctx, o.defs, root.renderMode);
+          this.__traverseCss();
+          this.__init();
           root.setRefreshLevel(level.REFLOW);
         },
         after: cb,
@@ -108,9 +107,7 @@ class Component extends Event {
     }
     else {
       let style = this.props.style || {};
-      Object.keys(style).forEach(i => {
-        sr.style[i] = style[i];
-      });
+      Object.assign(sr.style, style);
       sr.__init();
     }
     if(!(sr instanceof Text)) {
@@ -163,7 +160,7 @@ class Component extends Event {
     ]).forEach(fn => {
       Object.defineProperty(this, fn, {
         get() {
-          return sr[fn];
+          return this.shadowRoot[fn];
         },
       });
     });

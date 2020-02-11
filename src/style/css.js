@@ -729,7 +729,7 @@ function calNormalLineHeight(computedStyle) {
 function calRelativePercent(n, parent, k) {
   n *= 0.01;
   while(parent) {
-    let style = parent.style[k];
+    let style = parent.currentStyle[k];
     if(style.unit === unit.AUTO) {
       if(k === 'width') {
         parent = parent.parent;

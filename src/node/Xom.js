@@ -219,18 +219,26 @@ class Xom extends Node {
   // absolute且无尺寸时，fake标明先假布局一次计算尺寸
   __layout(data, fake) {
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle } = this;
+    let { isDestroyed, style, currentStyle, computedStyle } = this;
     // 根元素特殊处理
     if(this.isRoot) {
-      currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = {
+      currentStyle.marginTop
+        = currentStyle.marginRight
+        = currentStyle.marginBottom
+        = currentStyle.marginLeft
+        = style.marginTop
+        = style.marginRight
+        = style.marginBottom
+        = style.marginLeft
+        = {
         value: 0,
         unit: unit.PX,
       };
-      currentStyle.width = {
+      currentStyle.width = style.width = {
         value: this.width,
         unit: unit.PX,
       };
-      currentStyle.height = {
+      currentStyle.height = style.height = {
         value: this.height,
         unit: unit.PX,
       };

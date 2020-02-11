@@ -2828,7 +2828,7 @@
     n *= 0.01;
 
     while (parent) {
-      var style = parent.style[k];
+      var style = parent.currentStyle[k];
 
       if (style.unit === unit.AUTO) {
         if (k === 'width') {
@@ -6377,19 +6377,20 @@
       value: function __layout(data, fake) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
+            style = this.style,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle; // 根元素特殊处理
 
         if (this.isRoot) {
-          currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = {
+          currentStyle.marginTop = currentStyle.marginRight = currentStyle.marginBottom = currentStyle.marginLeft = style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
             value: 0,
             unit: unit.PX
           };
-          currentStyle.width = {
+          currentStyle.width = style.width = {
             value: this.width,
             unit: unit.PX
           };
-          currentStyle.height = {
+          currentStyle.height = style.height = {
             value: this.height,
             unit: unit.PX
           };

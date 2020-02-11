@@ -46,12 +46,12 @@ let n = 0;
 animation2.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 1) {
     let a = parseFloat(t.computedStyle.transform.split(',')[4]);
-    let b = parseFloat(t2.computedStyle.transform.split(',')[4]); console.log(a, b);
+    let b = parseFloat(t2.computedStyle.transform.split(',')[4]);
     input.value = a > b;
   }
 });
 animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   let a = t.computedStyle.transform.split(',')[4];
-  let b = t2.computedStyle.transform.split(',')[4]; console.log(a, b);
+  let b = t2.computedStyle.transform.split(',')[4];
   input.value += '/' + (a === b);
 });

@@ -825,7 +825,9 @@ class Animation extends Event {
       return;
     }
     target.__animateStyle.push(this.__style = {});
-    target.__animateProps.push(this.__props = {});
+    if(target.isGeom) {
+      target.__animateProps.push(this.__props = {});
+    }
     // 过滤时间非法的，过滤后续offset<=前面的
     let list = this.list;
     let offset = -1;
@@ -1213,38 +1215,42 @@ class Animation extends Event {
     return this;
   }
 
-  // gotoAndPlay(v, isFrame) {
-  //   this.__playState = 'running';
-  //   this.__goto(v, isFrame);
-  //   return this.play();
-  // }
-  //
-  // gotoAndStop(v, isFrame) {
-  //   this.__playState = 'paused';
-  //   return this.__goto(v, isFrame);
-  // }
-  //
-  // __goto(v, isFrame) {
-  //   let {
-  //     spf,
-  //     delay,
-  //     endDelay,
-  //     iterations,
-  //     fill,
-  //     duration,
-  //     target,
-  //     root,
-  //     frames,
-  //     framesR,
-  //     direction,
-  //     lastStyle,
-  //     __fin,
-  //     __record,
-  //   } = this;
-  //   if(isFrame) {
-  //     v = (v - 1) / spf;
-  //   }
-  //   v = Math.max(0, v);
+  gotoAndPlay(v, isFrame, excludeDelay) {
+    this.__playState = 'running';
+    this.__goto(v, isFrame, excludeDelay);
+    return this.play();
+  }
+
+  gotoAndStop(v, isFrame, excludeDelay) {
+    this.__playState = 'paused';
+    return this.__goto(v, isFrame, excludeDelay);
+  }
+
+  __goto(v, isFrame, excludeDelay) {
+    if(this.isDestroyed || this.duration <= 0) {
+      return this;
+    }
+    this.__cancelTask();
+    frame.offFrame(this.cb);
+    let {
+      spf,
+      delay,
+      endDelay,
+      iterations,
+      fill,
+      duration,
+      target,
+      root,
+      frames,
+      framesR,
+      direction,
+    } = this;
+    if(isNaN(v) || v < 0) {
+      throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
+    }
+    if(isFrame) {
+      v = (v - 1) / spf;
+    }
   //   this.__offsetTime = 0;
   //   this.__pauseTime = 0;
   //   this.__lastFpsTime = 0;
@@ -1357,7 +1363,7 @@ class Animation extends Event {
   //       root.refresh();
   //     }
   //   }
-  // }
+  }
 
   __stayBegin() {
     return {

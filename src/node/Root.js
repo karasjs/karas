@@ -197,7 +197,7 @@ class Root extends Dom {
     inject.measureText(() => {
       // 第一次默认REFLOW以及动画设计变更需要布局
       if(lv === level.REFLOW) {
-        // 布局分为两步，普通流和绝对流，互相递归
+        // 布局分为两步，普通流和定位流，互相递归
         this.__layout({
           x: 0,
           y: 0,

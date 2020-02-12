@@ -4307,8 +4307,7 @@
             var delta = now - last;
             delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
 
-            last = now; // console.log(clone.map(item => item.id));
-
+            last = now;
             clone.forEach(function (item) {
               if (util.isObject(item) && util.isFunction(item.before)) {
                 item.before(delta);
@@ -5389,8 +5388,16 @@
 
         if (list.length < 1) {
           return;
-        } // 首尾时间偏移强制为[0, 1]
+        }
 
+        if (list.length === 1) {
+          list.push(list[0]);
+        } // 强制clone防止同引用
+
+
+        list.forEach(function (item, i) {
+          list[i] = util.clone(item);
+        }); // 首尾时间偏移强制为[0, 1]
 
         var first = list[0];
         first.offset = 0;
@@ -5698,6 +5705,7 @@
                   if (_this3.__stayEnd()) {
                     restore = __fin;
                   } else {
+                    // 还原本来样式判断是否有变化刷新
                     var origin = getOriginStyleByFrame(current, target);
 
                     var _calRefresh7 = calRefresh(current, origin);
@@ -5721,7 +5729,7 @@
                     if (needRefresh) {
                       root.addRefreshTask(_this3.__task = restore);
                     } else {
-                      frame.nextFrame(_this3.__task = restore);
+                      __fin();
                     }
                   } else {
                     var _task2 = _this3.__task = function () {
@@ -5736,7 +5744,7 @@
                         if (needRefresh) {
                           root.addRefreshTask(_this3.__task = restore);
                         } else {
-                          frame.nextFrame(_this3.__task = restore);
+                          __fin();
                         }
 
                         frame.offFrame(_task2);
@@ -6722,6 +6730,8 @@
 
         if (backgroundImage) {
           if (util.isString(backgroundImage)) {
+            console.log(this.__loadBgi.url === backgroundImage);
+
             if (this.__loadBgi.url === backgroundImage) {
               backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
               var _this$__loadBgi = this.__loadBgi,
@@ -6833,8 +6843,10 @@
 
 
               var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
+              console.log(this.__loadBgi.source);
+              var source = this.__loadBgi.source;
 
-              if (renderMode === mode.CANVAS && this.__loadBgi.source) {
+              if (renderMode === mode.CANVAS && source) {
                 // 超出尺寸模拟mask截取
                 var cache1;
                 var cache2;
@@ -6845,13 +6857,13 @@
                   this.root.__clear();
                 }
 
-                ctx.drawImage(this.__loadBgi.source, originX, originY, w, h); // 分4个角分别判断
+                ctx.drawImage(source, originX, originY, w, h); // 分4个角分别判断
 
                 if (xnl > 0 || ynt > 0) {
                   for (var i = 0; i <= Math.max(xnl, 1); i++) {
                     for (var j = 0; j <= Math.max(ynt, 1); j++) {
                       if (i !== 0 || j !== 0) {
-                        ctx.drawImage(this.__loadBgi.source, originX - i * w, originY - j * h, w, h);
+                        ctx.drawImage(source, originX - i * w, originY - j * h, w, h);
                       }
                     }
                   }
@@ -6861,7 +6873,7 @@
                   for (var _i = 0; _i <= Math.max(xnr, 1); _i++) {
                     for (var _j = 0; _j <= Math.max(ynt, 1); _j++) {
                       if (_i !== 0 || _j !== 0) {
-                        ctx.drawImage(this.__loadBgi.source, originX + _i * w, originY - _j * h, w, h);
+                        ctx.drawImage(source, originX + _i * w, originY - _j * h, w, h);
                       }
                     }
                   }
@@ -6871,7 +6883,7 @@
                   for (var _i2 = 0; _i2 <= Math.max(xnl, 1); _i2++) {
                     for (var _j2 = 0; _j2 <= Math.max(ynb, 1); _j2++) {
                       if (_i2 !== 0 || _j2 !== 0) {
-                        ctx.drawImage(this.__loadBgi.source, originX - _i2 * w, originY + _j2 * h, w, h);
+                        ctx.drawImage(source, originX - _i2 * w, originY + _j2 * h, w, h);
                       }
                     }
                   }
@@ -6881,7 +6893,7 @@
                   for (var _i3 = 0; _i3 <= Math.max(xnr, 1); _i3++) {
                     for (var _j3 = 0; _j3 <= Math.max(ynb, 1); _j3++) {
                       if (_i3 !== 0 || _j3 !== 0) {
-                        ctx.drawImage(this.__loadBgi.source, originX + _i3 * w, originY + _j3 * h, w, h);
+                        ctx.drawImage(source, originX + _i3 * w, originY + _j3 * h, w, h);
                       }
                     }
                   }
@@ -7004,6 +7016,8 @@
             } else {
               this.__loadBgi.url = backgroundImage;
               inject.measureImg(backgroundImage, function (data) {
+                console.log(data);
+
                 if (data.success) {
                   _this3.__loadBgi.source = data.source;
                   _this3.__loadBgi.width = data.width;

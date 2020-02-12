@@ -874,6 +874,13 @@ class Animation extends Event {
     if(list.length < 1) {
       return;
     }
+    if(list.length === 1) {
+      list.push(list[0]);
+    }
+    // 强制clone防止同引用
+    list.forEach((item, i) => {
+      list[i] = util.clone(item);
+    });
     // 首尾时间偏移强制为[0, 1]
     let first = list[0];
     first.offset = 0;
@@ -1116,6 +1123,7 @@ class Animation extends Event {
               restore = __fin;
             }
             else {
+              // 还原本来样式判断是否有变化刷新
               let origin = getOriginStyleByFrame(current, target);
               [needRefresh, lv] = calRefresh(current, origin);
               restore = needRefresh ? {
@@ -1131,7 +1139,7 @@ class Animation extends Event {
                 root.addRefreshTask(this.__task = restore);
               }
               else {
-                frame.nextFrame(this.__task = restore);
+                __fin();
               }
             }
             else {
@@ -1145,7 +1153,7 @@ class Animation extends Event {
                     root.addRefreshTask(this.__task = restore);
                   }
                   else {
-                    frame.nextFrame(this.__task = restore);
+                    __fin();
                   }
                   frame.offFrame(task);
                 }

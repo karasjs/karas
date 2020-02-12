@@ -526,6 +526,7 @@ class Xom extends Node {
     // 渐变或图片叠加
     if(backgroundImage) {
       if(util.isString(backgroundImage)) {
+        console.log(this.__loadBgi.url === backgroundImage);
         if(this.__loadBgi.url === backgroundImage) {
           backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
           let { width, height } = this.__loadBgi;
@@ -632,7 +633,9 @@ class Xom extends Node {
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-          if(renderMode === mode.CANVAS && this.__loadBgi.source) {
+          console.log(this.__loadBgi.source);
+          let source = this.__loadBgi.source;
+          if(renderMode === mode.CANVAS && source) {
             // 超出尺寸模拟mask截取
             let cache1;
             let cache2;
@@ -640,13 +643,13 @@ class Xom extends Node {
               cache1 = this.root.__getImageData();
               this.root.__clear();
             }
-            ctx.drawImage(this.__loadBgi.source, originX, originY, w, h);
+            ctx.drawImage(source, originX, originY, w, h);
             // 分4个角分别判断
             if(xnl > 0 || ynt > 0) {
               for(let i = 0; i <= Math.max(xnl, 1); i++) {
                 for(let j = 0; j <= Math.max(ynt, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    ctx.drawImage(this.__loadBgi.source, originX - i * w, originY - j * h, w, h);
+                    ctx.drawImage(source, originX - i * w, originY - j * h, w, h);
                   }
                 }
               }
@@ -655,7 +658,7 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnr, 1); i++) {
                 for(let j = 0; j <= Math.max(ynt, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    ctx.drawImage(this.__loadBgi.source, originX + i * w, originY - j * h, w, h);
+                    ctx.drawImage(source, originX + i * w, originY - j * h, w, h);
                   }
                 }
               }
@@ -664,7 +667,7 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnl, 1); i++) {
                 for(let j = 0; j <= Math.max(ynb, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    ctx.drawImage(this.__loadBgi.source, originX - i * w, originY + j * h, w, h);
+                    ctx.drawImage(source, originX - i * w, originY + j * h, w, h);
                   }
                 }
               }
@@ -673,7 +676,7 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnr, 1); i++) {
                 for(let j = 0; j <= Math.max(ynb, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    ctx.drawImage(this.__loadBgi.source, originX + i * w, originY + j * h, w, h);
+                    ctx.drawImage(source, originX + i * w, originY + j * h, w, h);
                   }
                 }
               }
@@ -794,7 +797,8 @@ class Xom extends Node {
         }
         else {
           this.__loadBgi.url = backgroundImage;
-          inject.measureImg(backgroundImage, (data) => {
+          inject.measureImg(backgroundImage, data => {
+            console.log(data);
             if(data.success) {
               this.__loadBgi.source = data.source;
               this.__loadBgi.width = data.width;

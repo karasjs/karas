@@ -1,32 +1,36 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <span ref="t">123</span>
+    <span ref="t" style={{background:'#F00'}}>123</span>
   </canvas>,
   '#test'
 );
 let t = o.ref.t;
 let animation = t.animate([
   {
-    fontSize: 16,
+    width: 100,
   },
   {
-    fontSize: 60,
+    width: 200,
   }
 ], {
   duration: 200,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-animation.pause();
-animation.play(function() {
-  input.value += 'play';
-});
 let n = 0;
+let last = 0;
+let correct = true;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
-  if(n++ === 0) {
-    input.value += '/a';
+  let current = t.computedStyle.width;
+  if(current > last) {}
+  else {
+    correct = false;
   }
+  last = current;
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.fontSize + ',' + t.computedStyle.lineHeight;
+  let current = t.computedStyle.width;
+  if(current === last && current === 200) {
+    input.value = 'true';
+  }
 });

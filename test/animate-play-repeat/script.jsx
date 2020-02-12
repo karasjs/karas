@@ -7,26 +7,25 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    fontSize: 16,
+    width: 100,
   },
   {
-    fontSize: 60,
+    width: 200,
   }
 ], {
   duration: 200,
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-animation.pause();
 animation.play(function() {
   input.value += 'play';
 });
 let n = 0;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
-    input.value += '/a';
+    input.value += t.computedStyle.width;
   }
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.fontSize + ',' + t.computedStyle.lineHeight;
+  input.value += '/' + t.computedStyle.width;
 });

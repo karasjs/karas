@@ -6730,8 +6730,6 @@
 
         if (backgroundImage) {
           if (util.isString(backgroundImage)) {
-            console.log(this.__loadBgi.url === backgroundImage);
-
             if (this.__loadBgi.url === backgroundImage) {
               backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
               var _this$__loadBgi = this.__loadBgi,
@@ -6805,8 +6803,10 @@
                 h = w * _height / _width;
               }
 
-              var originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, _width);
-              var originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, _height);
+              var bgX = calBackgroundPosition(backgroundPositionX, innerWidth, _width);
+              var bgY = calBackgroundPosition(backgroundPositionY, innerHeight, _height);
+              var originX = x2 + bgX;
+              var originY = y2 + bgY;
               var xnl = 0;
               var xnr = 0;
               var ynt = 0;
@@ -6843,7 +6843,6 @@
 
 
               var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-              console.log(this.__loadBgi.source);
               var source = this.__loadBgi.source;
 
               if (renderMode === mode.CANVAS && source) {
@@ -7010,14 +7009,12 @@
               }
 
               computedStyle.backgroundSize = "".concat(w, " ").concat(h);
-              computedStyle.backgroundPositionX = originX;
-              computedStyle.backgroundPositionY = originY;
+              computedStyle.backgroundPositionX = bgX;
+              computedStyle.backgroundPositionY = bgY;
               computedStyle.backgroundRepeat = backgroundRepeat;
             } else {
               this.__loadBgi.url = backgroundImage;
               inject.measureImg(backgroundImage, function (data) {
-                console.log(data);
-
                 if (data.success) {
                   _this3.__loadBgi.source = data.source;
                   _this3.__loadBgi.width = data.width;

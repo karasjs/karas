@@ -526,7 +526,6 @@ class Xom extends Node {
     // 渐变或图片叠加
     if(backgroundImage) {
       if(util.isString(backgroundImage)) {
-        console.log(this.__loadBgi.url === backgroundImage);
         if(this.__loadBgi.url === backgroundImage) {
           backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
           let { width, height } = this.__loadBgi;
@@ -602,8 +601,10 @@ class Xom extends Node {
           else if(h === -1) {
             h = w * height / width;
           }
-          let originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, width);
-          let originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, height);
+          let bgX = calBackgroundPosition(backgroundPositionX, innerWidth, width);
+          let bgY = calBackgroundPosition(backgroundPositionY, innerHeight, height);
+          let originX = x2 + bgX;
+          let originY = y2 + bgY;
           let xnl = 0;
           let xnr = 0;
           let ynt = 0;
@@ -633,7 +634,6 @@ class Xom extends Node {
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-          console.log(this.__loadBgi.source);
           let source = this.__loadBgi.source;
           if(renderMode === mode.CANVAS && source) {
             // 超出尺寸模拟mask截取
@@ -791,14 +791,13 @@ class Xom extends Node {
             }
           }
           computedStyle.backgroundSize = `${w} ${h}`;
-          computedStyle.backgroundPositionX = originX;
-          computedStyle.backgroundPositionY = originY;
+          computedStyle.backgroundPositionX = bgX;
+          computedStyle.backgroundPositionY = bgY;
           computedStyle.backgroundRepeat = backgroundRepeat;
         }
         else {
           this.__loadBgi.url = backgroundImage;
           inject.measureImg(backgroundImage, data => {
-            console.log(data);
             if(data.success) {
               this.__loadBgi.source = data.source;
               this.__loadBgi.width = data.width;

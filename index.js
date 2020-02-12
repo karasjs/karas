@@ -4127,6 +4127,7 @@
     };
   });
 
+  var spf = 1000 / 60;
   var inject = {
     measureText: function measureText(cb) {
       var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
@@ -4231,14 +4232,40 @@
 
       return requestAnimationFrame;
     }(function (cb) {
+      var res;
+
       if (typeof requestAnimationFrame !== 'undefined') {
         inject.requestAnimationFrame = requestAnimationFrame.bind(window);
-        requestAnimationFrame(cb);
+        res = requestAnimationFrame(cb);
       } else {
-        setTimeout(cb, 16.7);
+        res = setTimeout(cb, spf);
 
         inject.requestAnimationFrame = function (cb) {
-          setTimeout(cb, 16.7);
+          return setTimeout(cb, spf);
+        };
+      }
+
+      return res;
+    }),
+    cancelAnimationFrame: function (_cancelAnimationFrame) {
+      function cancelAnimationFrame(_x2) {
+        return _cancelAnimationFrame.apply(this, arguments);
+      }
+
+      cancelAnimationFrame.toString = function () {
+        return _cancelAnimationFrame.toString();
+      };
+
+      return cancelAnimationFrame;
+    }(function (id) {
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
+        cancelAnimationFrame(id);
+      } else {
+        clearTimeout(id);
+
+        inject.clearTimeout = function (cb) {
+          clearTimeout(id);
         };
       }
     }),
@@ -4265,9 +4292,12 @@
     _createClass(Frame, [{
       key: "__init",
       value: function __init(task) {
+        var self = this;
+        inject.cancelAnimationFrame(self.id);
+
         function cb() {
           var last = inject.now();
-          inject.requestAnimationFrame(function () {
+          self.id = inject.requestAnimationFrame(function () {
             if (!task.length) {
               return;
             }
@@ -4277,7 +4307,8 @@
             var delta = now - last;
             delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
 
-            last = now;
+            last = now; // console.log(clone.map(item => item.id));
+
             clone.forEach(function (item) {
               if (util.isObject(item) && util.isFunction(item.before)) {
                 item.before(delta);
@@ -5196,6 +5227,18 @@
     return style;
   }
 
+  function gotoOverload(isFrame, excludeDelay, cb) {
+    if (util.isFunction(isFrame)) {
+      cb = isFrame;
+      isFrame = excludeDelay = false;
+    } else if (util.isFunction(excludeDelay)) {
+      cb = excludeDelay;
+      excludeDelay = false;
+    }
+
+    return [isFrame, excludeDelay, cb];
+  }
+
   var uuid = 0;
 
   var Animation =
@@ -5277,10 +5320,12 @@
 
       _this.__playTime = 0; // 播放时间，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
 
-      _this.__lastFpsTime = 0;
+      _this.__lastFpsTime = 0; // fps<60时跳帧使用，帧回调依旧运行，多次时间累加超过fps时才执行
+
+      _this.__deltaTime = 0; // gotoAndPlay使用，增加运行时间从而偏移帧数
+
       _this.__playState = 'idle';
       _this.__playCount = 0;
-      _this.__cb = null;
       _this.__isDestroyed = false;
 
       _this.__init();
@@ -5422,15 +5467,21 @@
     }, {
       key: "__calDiffTime",
       value: function __calDiffTime(now) {
-        var playbackRate = this.playbackRate,
-            offsetTime = this.offsetTime; // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
+        var playbackRate = this.playbackRate; // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
 
-        var diff = now - this.__lastTime - offsetTime;
+        var diff = now - this.__lastTime - this.__offsetTime;
         diff = Math.max(diff, 0);
 
         if (playbackRate !== 1 && playbackRate > 0) {
           diff *= playbackRate;
+        } // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
+
+
+        if (this.__deltaTime > 0) {
+          diff = this.__deltaTime;
         }
+
+        this.__deltaTime = 0; // 将此次增加的时间量加到播放时间上
 
         diff = this.__playTime += diff;
         this.__lastTime = now; // 每次清空偏移量防止下帧累加
@@ -5440,257 +5491,287 @@
       }
     }, {
       key: "play",
-      value: function play() {
+      value: function play(cb) {
         var _this3 = this;
 
         if (this.isDestroyed || this.duration <= 0 || this.__playState === 'running') {
           return this;
         }
 
-        this.__cancelTask();
+        this.__cancelTask(); // 每次play调用标识第一次运行，需响应参数cb
 
-        this.__playState = 'running'; // 从头播放还是暂停继续
 
-        if (this.pending) {
-          var diff = inject.now() - this.pauseTime; // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
+        this.__firstPlay = true; // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
+
+        if (this.pending && this.__callback) {
+          var diff = inject.now() - this.__pauseTime; // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
+
 
           diff = Math.max(diff, 0);
           this.__offsetTime = diff;
-        } else {
-          var frames = this.frames,
-              framesR = this.framesR,
-              style = this.style,
-              target = this.target,
-              playCount = this.playCount,
-              duration = this.duration,
-              direction = this.direction,
-              iterations = this.iterations,
-              delay = this.delay,
-              endDelay = this.endDelay,
-              __fin = this.__fin; // 每次调用play都会从头开始，init标识第一次cb运行初始化，first是第一次运行强制不跳帧
+        } // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
+        else {
+            var frames = this.frames,
+                framesR = this.framesR,
+                style = this.style,
+                target = this.target,
+                playCount = this.playCount,
+                duration = this.duration,
+                direction = this.direction,
+                iterations = this.iterations,
+                delay = this.delay,
+                endDelay = this.endDelay,
+                __fin = this.__fin; // 每次调用play都会从头开始，标识第一次callback运行初始化
 
-          var init = true;
-          var first = true;
+            var init = true; // 是第一次运行强制不跳帧，由于设计delay和运行时独立跳帧逻辑，因此不能和firstPlay合并
 
-          this.__cb = function () {
-            var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的cb还未回收
+            var first = true;
 
-            if (!root || _this3.pending) {
-              return;
-            }
+            var callback = this.__callback = function (cb) {
+              var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的callback还未回收
 
-            var now = inject.now();
-
-            if (init) {
-              _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
-              _this3.__lastIndex = _this3.__playTime = 0;
-            } // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
-
-
-            var diff = _this3.__calDiffTime(now); // delay仅第一次生效
-
-
-            if (playCount > 0) {
-              delay = 0;
-            }
-
-            var needRefresh, lv; // 还没过前置delay
-
-            if (diff < delay) {
-              if (init && _this3.__stayBegin()) {
-                var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
-
-                var _calRefresh = calRefresh(_current, getOriginStyleByFrame(_current, target));
-
-                var _calRefresh2 = _slicedToArray(_calRefresh, 2);
-
-                needRefresh = _calRefresh2[0];
-                lv = _calRefresh2[1];
-
-                if (needRefresh) {
-                  var _task = _this3.__task = {
-                    before: genBeforeRefresh(_current, _this3, root, lv),
-                    after: function after() {
-                      _this3.emit(Event.KARAS_ANIMATION_FRAME);
-                    }
-                  };
-
-                  root.addRefreshTask(_task);
-                } else {
-                  frame.nextFrame(_this3.__task = function () {
-                    _this3.emit(Event.KARAS_ANIMATION_FRAME);
-                  });
-                }
-              }
-
-              init = false;
-              return;
-            }
-
-            init = false; // 增加的fps功能，当<60时计算跳帧
-
-            var fps = _this3.fps;
-
-            if (!util.isNumber(fps) || fps <= 0) {
-              fps = 60;
-            } // 第一帧强制不跳帧，其它未到fps不执行
-
-
-            if (!first && fps < 60) {
-              var time = now - _this3.__lastFpsTime;
-
-              if (time < 1000 / fps) {
+              if (!root || _this3.pending) {
                 return;
-              } // 保存本帧时间供下次跳帧计算
-
-
-              _this3.__lastFpsTime = now;
-            }
-
-            first = false; // 根据播放次数确定正反方向
-
-            var currentFrames;
-
-            if (direction === 'reverse') {
-              currentFrames = framesR;
-            } else if ({
-              alternate: true,
-              'alternate-reverse': true
-            }.hasOwnProperty(direction)) {
-              var isEven = playCount % 2 === 0;
-
-              if (direction === 'alternate') {
-                currentFrames = isEven ? frames : framesR;
-              } else {
-                currentFrames = isEven ? framesR : frames;
               }
-            } else {
-              currentFrames = frames;
-            } // 减去delay，计算在哪一帧
 
+              var now = inject.now();
 
-            diff -= delay;
-            var length = currentFrames.length;
-            var i = binarySearch(0, length - 1, diff, currentFrames);
-            var current = currentFrames[i]; // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件
-
-            if (i === length - 1) {
-              current = current.style;
-
-              var _calRefresh3 = calRefresh(current, style);
-
-              var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
-
-              needRefresh = _calRefresh4[0];
-              lv = _calRefresh4[1];
-
-              // 判断次数结束每帧cb调用
-              if (playCount < iterations) {
-                playCount = ++_this3.playCount; // 播放完一次，播放时间清零，下一次播放重计
-
+              if (init) {
+                _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
                 _this3.__playTime = 0;
+              } // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
+
+
+              var diff = _this3.__calDiffTime(now); // delay仅第一次生效
+
+
+              if (playCount > 0) {
+                delay = 0;
               }
 
-              if (playCount === iterations) {
-                frame.offFrame(_this3.cb);
-              }
-            } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-            else {
-                var total = currentFrames[i + 1].time - current.time;
-                var percent = (diff - current.time) / total;
-                current = calStyle(current, percent);
+              var needRefresh, lv; // 还没过前置delay
 
-                var _calRefresh5 = calRefresh(current, style);
+              if (diff < delay) {
+                if (init && _this3.__stayBegin()) {
+                  var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
-                var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
+                  var _calRefresh = calRefresh(_current, getOriginStyleByFrame(_current, target));
 
-                needRefresh = _calRefresh6[0];
-                lv = _calRefresh6[1];
-              }
+                  var _calRefresh2 = _slicedToArray(_calRefresh, 2);
 
-            var task = function task() {
-              // 最后一帧考虑后续反向播还是停留还是结束
-              if (i === length - 1) {
-                // 没到播放次数结束时继续
-                if (iterations === Infinity || playCount < iterations) {
-                  return;
-                }
-
-                frame.offFrame(_this3.cb); // 不是停留在最后一帧还原
-
-                var restore;
-
-                if (_this3.__stayEnd()) {
-                  restore = __fin;
-                } else {
-                  var origin = getOriginStyleByFrame(current, target);
-
-                  var _calRefresh7 = calRefresh(current, origin);
-
-                  var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
-
-                  needRefresh = _calRefresh8[0];
-                  lv = _calRefresh8[1];
-                  restore = needRefresh ? {
-                    before: genBeforeRefresh({}, _this3, root, lv),
-                    after: __fin
-                  } : __fin;
-                } // 如果有endDelay还要延迟执行
-
-
-                var isFinished = diff >= duration + endDelay;
-
-                if (isFinished) {
-                  _this3.__playState = 'finished';
+                  needRefresh = _calRefresh2[0];
+                  lv = _calRefresh2[1];
 
                   if (needRefresh) {
-                    root.addRefreshTask(_this3.__task = restore);
+                    var _task = _this3.__task = {
+                      before: genBeforeRefresh(_current, _this3, root, lv),
+                      after: function after(delta) {
+                        if (util.isFunction(cb)) {
+                          cb(delta);
+                        }
+
+                        _this3.__firstPlay = false;
+
+                        _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                      }
+                    };
+
+                    root.addRefreshTask(_task);
                   } else {
-                    frame.nextFrame(_this3.__task = restore);
-                  }
-                } else {
-                  var _task2 = _this3.__task = function () {
-                    // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
-                    var diff = _this3.__calDiffTime(inject.now());
-
-                    var isFinished = diff >= duration + delay + endDelay;
-
-                    if (isFinished) {
-                      _this3.__playState = 'finished';
-
-                      if (needRefresh) {
-                        root.addRefreshTask(_this3.__task = restore);
-                      } else {
-                        frame.nextFrame(_this3.__task = restore);
+                    frame.nextFrame(_this3.__task = function (delta) {
+                      if (util.isFunction(cb)) {
+                        cb(delta);
                       }
 
-                      frame.offFrame(_task2);
-                    }
-                  };
+                      _this3.__firstPlay = false;
 
-                  frame.onFrame(_task2);
+                      _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                    });
+                  }
                 }
+
+                init = false;
+                return;
               }
 
-              _this3.emit(Event.KARAS_ANIMATION_FRAME);
+              init = false; // 增加的fps功能，当<60时计算跳帧
+
+              var fps = _this3.fps;
+
+              if (!util.isNumber(fps) || fps <= 0) {
+                fps = 60;
+              } // 第一帧强制不跳帧，其它未到fps时间限制不执行
+
+
+              if (!first && fps < 60) {
+                var time = now - _this3.__lastFpsTime;
+
+                if (time < 1000 / fps) {
+                  return;
+                } // 保存本帧时间供下次跳帧计算
+
+
+                _this3.__lastFpsTime = now;
+              }
+
+              first = false; // 根据播放次数确定正反方向
+
+              var currentFrames;
+
+              if (direction === 'reverse') {
+                currentFrames = framesR;
+              } else if ({
+                alternate: true,
+                'alternate-reverse': true
+              }.hasOwnProperty(direction)) {
+                var isEven = playCount % 2 === 0;
+
+                if (direction === 'alternate') {
+                  currentFrames = isEven ? frames : framesR;
+                } else {
+                  currentFrames = isEven ? framesR : frames;
+                }
+              } else {
+                currentFrames = frames;
+              } // 减去delay，计算在哪一帧
+
+
+              diff -= delay;
+              var length = currentFrames.length;
+              var i = binarySearch(0, length - 1, diff, currentFrames);
+              var current = currentFrames[i]; // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件
+
+              if (i === length - 1) {
+                current = current.style;
+
+                var _calRefresh3 = calRefresh(current, style);
+
+                var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
+
+                needRefresh = _calRefresh4[0];
+                lv = _calRefresh4[1];
+
+                // 判断次数结束每帧callback调用
+                if (playCount < iterations) {
+                  playCount = ++_this3.playCount; // 播放完一次，播放时间清零，下一次播放重计
+
+                  _this3.__playTime = 0;
+                }
+
+                if (playCount === iterations) {
+                  frame.offFrame(callback);
+                }
+              } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
+              else {
+                  var total = currentFrames[i + 1].time - current.time;
+                  var percent = (diff - current.time) / total;
+                  current = calStyle(current, percent);
+
+                  var _calRefresh5 = calRefresh(current, style);
+
+                  var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
+
+                  needRefresh = _calRefresh6[0];
+                  lv = _calRefresh6[1];
+                }
+
+              var task = function task(delta) {
+                // 最后一帧考虑后续反向播还是停留还是结束
+                if (i === length - 1) {
+                  // 没到播放次数结束时继续
+                  if (iterations === Infinity || playCount < iterations) {
+                    if (_this3.__firstPlay && util.isFunction(cb)) {
+                      cb(delta);
+                    }
+
+                    _this3.__firstPlay = false;
+
+                    _this3.emit(Event.KARAS_ANIMATION_FRAME);
+
+                    return;
+                  }
+
+                  frame.offFrame(callback); // 不是停留在最后一帧还原
+
+                  var restore;
+
+                  if (_this3.__stayEnd()) {
+                    restore = __fin;
+                  } else {
+                    var origin = getOriginStyleByFrame(current, target);
+
+                    var _calRefresh7 = calRefresh(current, origin);
+
+                    var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
+
+                    needRefresh = _calRefresh8[0];
+                    lv = _calRefresh8[1];
+                    restore = needRefresh ? {
+                      before: genBeforeRefresh({}, _this3, root, lv),
+                      after: __fin
+                    } : __fin;
+                  } // 如果有endDelay还要延迟执行
+
+
+                  var isFinished = diff >= duration + endDelay;
+
+                  if (isFinished) {
+                    _this3.__playState = 'finished';
+
+                    if (needRefresh) {
+                      root.addRefreshTask(_this3.__task = restore);
+                    } else {
+                      frame.nextFrame(_this3.__task = restore);
+                    }
+                  } else {
+                    var _task2 = _this3.__task = function () {
+                      // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
+                      var diff = _this3.__calDiffTime(inject.now());
+
+                      var isFinished = diff >= duration + delay + endDelay;
+
+                      if (isFinished) {
+                        _this3.__playState = 'finished';
+
+                        if (needRefresh) {
+                          root.addRefreshTask(_this3.__task = restore);
+                        } else {
+                          frame.nextFrame(_this3.__task = restore);
+                        }
+
+                        frame.offFrame(_task2);
+                      }
+                    };
+
+                    frame.onFrame(_task2);
+                  }
+                }
+
+                if (_this3.__firstPlay && util.isFunction(cb)) {
+                  cb(delta);
+                }
+
+                _this3.__firstPlay = false;
+
+                _this3.emit(Event.KARAS_ANIMATION_FRAME);
+              };
+
+              if (needRefresh) {
+                root.addRefreshTask(_this3.__task = {
+                  before: genBeforeRefresh(current, _this3, root, lv),
+                  after: task
+                });
+              } else {
+                frame.nextFrame(_this3.__task = task);
+              }
             };
+          }
 
-            if (needRefresh) {
-              root.addRefreshTask(_this3.__task = {
-                before: genBeforeRefresh(current, _this3, root, lv),
-                after: task
-              });
-            } else {
-              frame.nextFrame(_this3.__task = task);
-            }
-          };
-        } // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
+        this.__playState = 'running'; // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
+        this.__callback(cb);
 
-        this.cb(); // 防止重复调用多次cb
-
-        frame.offFrame(this.cb);
-        frame.onFrame(this.cb);
+        frame.onFrame(this.__callback);
         return this;
       }
     }, {
@@ -5698,7 +5779,6 @@
       value: function pause() {
         this.__pauseTime = inject.now();
         this.__playState = 'paused';
-        frame.offFrame(this.cb);
 
         this.__cancelTask();
 
@@ -5707,20 +5787,19 @@
       }
     }, {
       key: "finish",
-      value: function finish() {
+      value: function finish(cb) {
         var playState = this.playState,
             style = this.style,
             __fin = this.__fin;
 
         this.__cancelTask();
 
-        frame.offFrame(this.cb);
-
         if (playState === 'finished') {
           return this;
         }
 
         this.__playState = 'finished';
+        this.__callback = null;
         var target = this.target,
             frames = this.frames;
         var root = target.root;
@@ -5752,10 +5831,22 @@
           if (needRefresh) {
             root.addRefreshTask(this.__task = {
               before: genBeforeRefresh(current, this, root, lv),
-              after: __fin
+              after: function after() {
+                if (util.isFunction(cb)) {
+                  cb();
+                }
+
+                __fin();
+              }
             });
           } else {
-            frame.nextFrame(this.__task = __fin);
+            frame.nextFrame(this.__task = function () {
+              if (util.isFunction(cb)) {
+                cb();
+              }
+
+              __fin();
+            });
           }
         }
 
@@ -5763,18 +5854,17 @@
       }
     }, {
       key: "cancel",
-      value: function cancel() {
+      value: function cancel(cb) {
         var _this4 = this;
 
         this.__cancelTask();
-
-        frame.offFrame(this.cb);
 
         if (this.__playState === 'idle') {
           return this;
         }
 
         this.__playState = 'idle';
+        this.__callback = null;
         var target = this.target,
             style = this.style;
         var root = target.root;
@@ -5788,6 +5878,10 @@
               lv = _calRefresh14[1];
 
           var task = this.__task = function () {
+            if (util.isFunction(cb)) {
+              cb();
+            }
+
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
           };
 
@@ -5805,160 +5899,91 @@
       }
     }, {
       key: "gotoAndPlay",
-      value: function gotoAndPlay(v, isFrame, excludeDelay) {
-        this.__playState = 'running';
+      value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration;
 
+        if (isDestroyed || duration <= 0) {
+          return this;
+        }
+
+        var _gotoOverload = gotoOverload(isFrame, excludeDelay, cb);
+
+        var _gotoOverload2 = _slicedToArray(_gotoOverload, 3);
+
+        isFrame = _gotoOverload2[0];
+        excludeDelay = _gotoOverload2[1];
+        cb = _gotoOverload2[2];
+
+        // 计算出时间点直接累加播放
         this.__goto(v, isFrame, excludeDelay);
 
-        return this.play();
+        return this.play(cb);
       }
     }, {
       key: "gotoAndStop",
-      value: function gotoAndStop(v, isFrame, excludeDelay) {
-        this.__playState = 'paused';
-        return this.__goto(v, isFrame, excludeDelay);
+      value: function gotoAndStop(v, isFrame, excludeDelay, cb) {
+        var _this5 = this;
+
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration;
+
+        if (isDestroyed || duration <= 0) {
+          return this;
+        }
+
+        var _gotoOverload3 = gotoOverload(isFrame, excludeDelay, cb);
+
+        var _gotoOverload4 = _slicedToArray(_gotoOverload3, 3);
+
+        isFrame = _gotoOverload4[0];
+        excludeDelay = _gotoOverload4[1];
+        cb = _gotoOverload4[2];
+
+        this.__goto(v, isFrame, excludeDelay); // 先play一帧，回调里模拟暂停
+
+
+        return this.play(function () {
+          _this5.__pauseTime = inject.now();
+          _this5.__playState = 'paused';
+
+          _this5.__cancelTask();
+
+          if (util.isFunction(cb)) {
+            cb();
+          }
+        });
       }
     }, {
       key: "__goto",
       value: function __goto(v, isFrame, excludeDelay) {
-        if (this.isDestroyed || this.duration <= 0) {
-          return this;
-        }
+        var duration = this.duration,
+            iterations = this.iterations,
+            delay = this.delay;
+        this.__playState = 'paused';
 
         this.__cancelTask();
-
-        frame.offFrame(this.cb);
-        var spf = this.spf,
-            delay = this.delay,
-            endDelay = this.endDelay,
-            iterations = this.iterations,
-            fill = this.fill,
-            duration = this.duration,
-            target = this.target,
-            root = this.root,
-            frames = this.frames,
-            framesR = this.framesR,
-            direction = this.direction;
 
         if (isNaN(v) || v < 0) {
           throw new Error('Param of gotoAnd(Play/Stop) is illegal: ' + v);
         }
 
         if (isFrame) {
-          v = (v - 1) / spf;
-        } //   this.__offsetTime = 0;
-        //   this.__pauseTime = 0;
-        //   this.__lastFpsTime = 0;
-        //   let needRefresh;
-        //   // 没超过前置delay
-        //   if(v < delay) {
-        //     this.playCount = 0;
-        //     // 在delay中直接设置偏移时间量即可
-        //     this.__playTime = v;
-        //     // 前置模式立刻刷新到第一帧
-        //     if(this.__stayBegin()) {
-        //       let current = frames[0].style;
-        //       needRefresh = calRefresh(current, lastStyle, target);
-        //       if(needRefresh) {
-        //         root.setRefreshLevel(getLevel(current));
-        //         root.refresh();
-        //       }
-        //     }
-        //     // 否则对比的是原有样式即空
-        //     else {
-        //       needRefresh = calRefresh({}, lastStyle, target);
-        //       if(needRefresh) {
-        //         root.setRefreshLevel(getLevel(lastStyle));
-        //         root.refresh();
-        //       }
-        //     }
-        //     return this;
-        //   }
-        //   // 去除前置时间和重复时间，定位到当前次数的时间
-        //   v -= delay;
-        //   let n = iterations;
-        //   while(n > 1 && v > duration) {
-        //     n--;
-        //     v -= this.duration;
-        //     this.playCount++;
-        //   }
-        //   // 根据播放次数确定正反方向
-        //   let currentFrames;
-        //   if(direction === 'reverse') {
-        //     currentFrames = framesR;
-        //   }
-        //   else if({ alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-        //     let isEven = this.playCount % 2 === 0;
-        //     if(direction === 'alternate') {
-        //       currentFrames = isEven ? frames : framesR;
-        //     }
-        //     else {
-        //       currentFrames = isEven ? framesR : frames;
-        //     }
-        //   }
-        //   else {
-        //     currentFrames = frames;
-        //   }
-        //   let length = currentFrames.length;
-        //   // 超过总时长且不停在最后一帧类似cancel
-        //   if(v > (duration + endDelay) && !this.__stayEnd()) {
-        //     if(this.__playState !== 'idle') {
-        //       this.__playState = 'idle';
-        //       needRefresh = calRefresh(lastStyle, {}, target);
-        //       if(needRefresh) {
-        //         root.setRefreshLevel(getLevel(lastStyle));
-        //         root.refresh();
-        //       }
-        //     }
-        //     return this;
-        //   }
-        //   // 超过总时长
-        //   if(v > duration) {
-        //     // 停留在最后一帧
-        //     if(this.__stayEnd()) {
-        //       let last = currentFrames[length - 1].style;
-        //       needRefresh = calRefresh(lastStyle, last, target);
-        //       if(needRefresh) {
-        //         root.setRefreshLevel(getLevel(last));
-        //         root.refresh();
-        //       }
-        //     }
-        //     else {
-        //       needRefresh = calRefresh(lastStyle, {}, target);
-        //       if(needRefresh) {
-        //         root.setRefreshLevel(getLevel(lastStyle));
-        //         root.refresh();
-        //       }
-        //     }
-        //     return this;
-        //   }
-        //   // 正常计算
-        //   let i = binarySearch(0, length - 1, 0, currentFrames);
-        //   let current = currentFrames[i];
-        //   // 最后一帧结束动画
-        //   if(i === length - 1) {
-        //     needRefresh = calRefresh(current.style, lastStyle, target);
-        //     this.__playTime = v;
-        //     if(needRefresh) {
-        //       root.setRefreshLevel(getLevel(current.style));
-        //       root.refresh();
-        //     }
-        //   }
-        //   // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-        //   else {
-        //     let total = currentFrames[i + 1].time - current.time;
-        //     let percent = (v - current.time) / total;
-        //     let style = calStyle(current, percent);
-        //     needRefresh = calRefresh(style, this.__lastStyle, target);
-        //   }
-        //   if(root) {
-        //     this.emit(Event.KARAS_ANIMATION_FRAME);
-        //     if(needRefresh) {
-        //       root.setRefreshLevel(getLevel(current.style));
-        //       root.refresh();
-        //     }
-        //   }
+          v = (v - 1) / this.spf;
+        }
 
+        if (excludeDelay) {
+          v += delay;
+        } // 超过时间长度需要累加次数
+
+
+        while (v > duration && this.playCount < iterations - 1) {
+          this.__playCount++;
+          v -= duration;
+        } // 在时间范围内设置好时间，复用play直接跳到播放点
+
+
+        this.__deltaTime = v; // this.__pauseTime = inject.now();
       }
     }, {
       key: "__stayBegin",
@@ -5980,24 +6005,23 @@
       key: "__cancelTask",
       value: function __cancelTask() {
         var target = this.target,
-            __task = this.__task;
+            __task = this.__task; // 有可能使用了刷新，也有可能纯frame事件，都清除
 
-        if (__task) {
-          // 有可能使用了刷新，也有可能纯frame事件，都清除
-          if (target.root) {
-            target.root.delRefreshTask(__task);
-          }
-
-          frame.offFrame(__task);
+        if (target.root) {
+          target.root.delRefreshTask(__task);
         }
+
+        frame.offFrame(__task);
+        frame.offFrame(this.__callback);
       }
     }, {
       key: "__destroy",
       value: function __destroy() {
-        frame.offFrame(this.cb);
+        frame.offFrame(this.__callback);
 
         this.__cancelTask();
 
+        this.__callback = null;
         this.__playState = 'idle';
         this.__isDestroyed = true;
       }
@@ -6120,16 +6144,6 @@
         return this.playState === 'finished';
       }
     }, {
-      key: "offsetTime",
-      get: function get() {
-        return this.__offsetTime;
-      }
-    }, {
-      key: "pauseTime",
-      get: function get() {
-        return this.__pauseTime;
-      }
-    }, {
       key: "playState",
       get: function get() {
         return this.__playState;
@@ -6141,11 +6155,6 @@
       },
       set: function set(v) {
         this.__playCount = v;
-      }
-    }, {
-      key: "cb",
-      get: function get() {
-        return this.__cb;
       }
     }, {
       key: "isDestroyed",
@@ -10345,25 +10354,25 @@
         if (!task.length) {
           var clone;
           frame.nextFrame(this.__rTask = {
-            before: function before() {
+            before: function before(delta) {
               clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
                 clone.forEach(function (item) {
                   if (util.isObject(item) && util.isFunction(item.before)) {
-                    item.before();
+                    item.before(delta);
                   }
                 });
 
                 _this3.refresh();
               }
             },
-            after: function after() {
+            after: function after(delta) {
               clone.forEach(function (item) {
                 if (util.isObject(item) && util.isFunction(item.after)) {
-                  item.after();
+                  item.after(delta);
                 } else if (util.isFunction(item)) {
-                  item();
+                  item(delta);
                 }
               });
             }

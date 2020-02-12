@@ -7,9 +7,11 @@ class Frame {
   }
 
   __init(task) {
+    let self = this;
+    inject.cancelAnimationFrame(self.id);
     function cb() {
       let last = inject.now();
-      inject.requestAnimationFrame(function() {
+      self.id = inject.requestAnimationFrame(function() {
         if(!task.length) {
           return;
         }

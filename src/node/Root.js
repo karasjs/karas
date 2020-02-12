@@ -271,28 +271,28 @@ class Root extends Dom {
     if(!task.length) {
       let clone;
       frame.nextFrame(this.__rTask = {
-        before: () => {
+        before: delta => {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             clone.forEach(item => {
               if(util.isObject(item) && util.isFunction(item.before)) {
-                item.before();
+                item.before(delta);
               }
             });
             this.refresh();
           }
         },
-        after: () => {
+        after: delta => {
           clone.forEach(item => {
             if(util.isObject(item) && util.isFunction(item.after)) {
-              item.after();
+              item.after(delta);
             }
             else if(util.isFunction(item)) {
-              item();
+              item(delta);
             }
           });
-        }
+        },
       });
     }
     if(task.indexOf(cb) === -1) {

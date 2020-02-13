@@ -3692,6 +3692,8 @@
 
   _defineProperty(Event, "KARAS_ANIMATION_PAUSE", 'karas-animation-pause');
 
+  _defineProperty(Event, "KARAS_ANIMATION_PLAY", 'karas-animation-play');
+
   _defineProperty(Event, "KARAS_ANIMATION_FRAME", 'karas-animation-frame');
 
   _defineProperty(Event, "KARAS_ANIMATION_FINISH", 'karas-animation-finish');
@@ -5501,7 +5503,19 @@
       value: function play(cb) {
         var _this3 = this;
 
-        if (this.isDestroyed || this.duration <= 0 || this.__playState === 'running') {
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState;
+
+        if (isDestroyed || duration <= 0) {
+          return this;
+        }
+
+        if (playState === 'running') {
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
           return this;
         }
 
@@ -5523,7 +5537,6 @@
                 style = this.style,
                 target = this.target,
                 playCount = this.playCount,
-                duration = this.duration,
                 direction = this.direction,
                 iterations = this.iterations,
                 delay = this.delay,
@@ -5577,7 +5590,15 @@
                           cb(delta);
                         }
 
-                        _this3.__firstPlay = false;
+                        if (_this3.__firstPlay) {
+                          if (util.isFunction(cb)) {
+                            cb(delta);
+                          }
+
+                          _this3.emit(Event.KARAS_ANIMATION_PLAY);
+
+                          _this3.__firstPlay = false;
+                        }
 
                         _this3.emit(Event.KARAS_ANIMATION_FRAME);
                       }
@@ -5586,11 +5607,15 @@
                     root.addRefreshTask(_task);
                   } else {
                     frame.nextFrame(_this3.__task = function (delta) {
-                      if (util.isFunction(cb)) {
-                        cb(delta);
-                      }
+                      if (_this3.__firstPlay) {
+                        if (util.isFunction(cb)) {
+                          cb(delta);
+                        }
 
-                      _this3.__firstPlay = false;
+                        _this3.emit(Event.KARAS_ANIMATION_PLAY);
+
+                        _this3.__firstPlay = false;
+                      }
 
                       _this3.emit(Event.KARAS_ANIMATION_FRAME);
                     });
@@ -5687,11 +5712,15 @@
                 if (i === length - 1) {
                   // 没到播放次数结束时继续
                   if (iterations === Infinity || playCount < iterations) {
-                    if (_this3.__firstPlay && util.isFunction(cb)) {
-                      cb(delta);
-                    }
+                    if (_this3.__firstPlay) {
+                      if (util.isFunction(cb)) {
+                        cb(delta);
+                      }
 
-                    _this3.__firstPlay = false;
+                      _this3.emit(Event.KARAS_ANIMATION_PLAY);
+
+                      _this3.__firstPlay = false;
+                    }
 
                     _this3.emit(Event.KARAS_ANIMATION_FRAME);
 
@@ -5755,11 +5784,15 @@
                   }
                 }
 
-                if (_this3.__firstPlay && util.isFunction(cb)) {
-                  cb(delta);
-                }
+                if (_this3.__firstPlay) {
+                  if (util.isFunction(cb)) {
+                    cb(delta);
+                  }
 
-                _this3.__firstPlay = false;
+                  _this3.emit(Event.KARAS_ANIMATION_PLAY);
+
+                  _this3.__firstPlay = false;
+                }
 
                 _this3.emit(Event.KARAS_ANIMATION_FRAME);
               };
@@ -5785,6 +5818,14 @@
     }, {
       key: "pause",
       value: function pause() {
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState;
+
+        if (isDestroyed || duration <= 0 | playState === 'paused') {
+          return this;
+        }
+
         this.__pauseTime = inject.now();
         this.__playState = 'paused';
 
@@ -5796,15 +5837,25 @@
     }, {
       key: "finish",
       value: function finish(cb) {
-        var playState = this.playState,
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState,
             style = this.style,
             __fin = this.__fin;
 
-        this.__cancelTask();
-
-        if (playState === 'finished') {
+        if (isDestroyed || duration <= 0) {
           return this;
         }
+
+        if (playState === 'finished') {
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
+          return this;
+        }
+
+        this.__cancelTask();
 
         this.__playState = 'finished';
         this.__callback = null;
@@ -5848,13 +5899,11 @@
               }
             });
           } else {
-            frame.nextFrame(this.__task = function () {
-              if (util.isFunction(cb)) {
-                cb();
-              }
+            if (util.isFunction(cb)) {
+              cb();
+            }
 
-              __fin();
-            });
+            __fin();
           }
         }
 
@@ -5865,11 +5914,23 @@
       value: function cancel(cb) {
         var _this4 = this;
 
-        this.__cancelTask();
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState;
 
-        if (this.__playState === 'idle') {
+        if (isDestroyed || duration <= 0) {
           return this;
         }
+
+        if (playState === 'idle') {
+          if (util.isFunction(cb)) {
+            cb();
+          }
+
+          return this;
+        }
+
+        this.__cancelTask();
 
         this.__playState = 'idle';
         this.__callback = null;
@@ -5885,7 +5946,7 @@
               needRefresh = _calRefresh14[0],
               lv = _calRefresh14[1];
 
-          var task = this.__task = function () {
+          var task = function task() {
             if (util.isFunction(cb)) {
               cb();
             }
@@ -5899,7 +5960,7 @@
               after: task
             });
           } else {
-            frame.nextFrame(this.__task = task);
+            task();
           }
         }
 

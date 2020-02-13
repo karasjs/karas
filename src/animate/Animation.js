@@ -963,7 +963,14 @@ class Animation extends Event {
   }
 
   play(cb) {
-    if(this.isDestroyed || this.duration <= 0 || this.__playState === 'running') {
+    let { isDestroyed, duration, playState } = this;
+    if(isDestroyed || duration <= 0) {
+      return this;
+    }
+    if(playState === 'running') {
+      if(util.isFunction(cb)) {
+        cb();
+      }
       return this;
     }
     this.__cancelTask();
@@ -984,7 +991,6 @@ class Animation extends Event {
         style,
         target,
         playCount,
-        duration,
         direction,
         iterations,
         delay,
@@ -1026,7 +1032,13 @@ class Animation extends Event {
                   if(util.isFunction(cb)) {
                     cb(delta);
                   }
-                  this.__firstPlay = false;
+                  if(this.__firstPlay) {
+                    if(util.isFunction(cb)) {
+                      cb(delta);
+                    }
+                    this.emit(Event.KARAS_ANIMATION_PLAY);
+                    this.__firstPlay = false;
+                  }
                   this.emit(Event.KARAS_ANIMATION_FRAME);
                 },
               };
@@ -1034,10 +1046,13 @@ class Animation extends Event {
             }
             else {
               frame.nextFrame(this.__task = delta => {
-                if(util.isFunction(cb)) {
-                  cb(delta);
+                if(this.__firstPlay) {
+                  if(util.isFunction(cb)) {
+                    cb(delta);
+                  }
+                  this.emit(Event.KARAS_ANIMATION_PLAY);
+                  this.__firstPlay = false;
                 }
-                this.__firstPlay = false;
                 this.emit(Event.KARAS_ANIMATION_FRAME);
               });
             }
@@ -1109,10 +1124,13 @@ class Animation extends Event {
           if(i === length - 1) {
             // 没到播放次数结束时继续
             if(iterations === Infinity || playCount < iterations) {
-              if(this.__firstPlay && util.isFunction(cb)) {
-                cb(delta);
+              if(this.__firstPlay) {
+                if(util.isFunction(cb)) {
+                  cb(delta);
+                }
+                this.emit(Event.KARAS_ANIMATION_PLAY);
+                this.__firstPlay = false;
               }
-              this.__firstPlay = false;
               this.emit(Event.KARAS_ANIMATION_FRAME);
               return;
             }
@@ -1161,10 +1179,13 @@ class Animation extends Event {
               frame.onFrame(task);
             }
           }
-          if(this.__firstPlay && util.isFunction(cb)) {
-            cb(delta);
+          if(this.__firstPlay) {
+            if(util.isFunction(cb)) {
+              cb(delta);
+            }
+            this.emit(Event.KARAS_ANIMATION_PLAY);
+            this.__firstPlay = false;
           }
-          this.__firstPlay = false;
           this.emit(Event.KARAS_ANIMATION_FRAME);
         };
         if(needRefresh) {
@@ -1186,6 +1207,10 @@ class Animation extends Event {
   }
 
   pause() {
+    let { isDestroyed, duration, playState } = this;
+    if(isDestroyed || duration <= 0 | playState === 'paused') {
+      return this;
+    }
     this.__pauseTime = inject.now();
     this.__playState = 'paused';
     this.__cancelTask();
@@ -1194,11 +1219,17 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let { playState, style, __fin } = this;
-    this.__cancelTask();
-    if(playState === 'finished') {
+    let { isDestroyed, duration, playState, style, __fin } = this;
+    if(isDestroyed || duration <= 0) {
       return this;
     }
+    if(playState === 'finished') {
+      if(util.isFunction(cb)) {
+        cb();
+      }
+      return this;
+    }
+    this.__cancelTask();
     this.__playState = 'finished';
     this.__callback = null;
     let { target, frames } = this;
@@ -1227,22 +1258,27 @@ class Animation extends Event {
         });
       }
       else {
-        frame.nextFrame(this.__task = () => {
-          if(util.isFunction(cb)) {
-            cb();
-          }
-          __fin();
-        });
+        if(util.isFunction(cb)) {
+          cb();
+        }
+        __fin();
       }
     }
     return this;
   }
 
   cancel(cb) {
-    this.__cancelTask();
-    if(this.__playState === 'idle') {
+    let { isDestroyed, duration, playState } = this;
+    if(isDestroyed || duration <= 0) {
       return this;
     }
+    if(playState === 'idle') {
+      if(util.isFunction(cb)) {
+        cb();
+      }
+      return this;
+    }
+    this.__cancelTask();
     this.__playState = 'idle';
     this.__callback = null;
     let { target, style } = this;
@@ -1250,7 +1286,7 @@ class Animation extends Event {
     if(root) {
       let origin = getOriginStyleByFrame(style, target);
       let [needRefresh, lv] = calRefresh(style, origin);
-      let task = this.__task = () => {
+      let task = () => {
         if(util.isFunction(cb)) {
           cb();
         }
@@ -1263,7 +1299,7 @@ class Animation extends Event {
         });
       }
       else {
-        frame.nextFrame(this.__task = task);
+        task();
       }
     }
     return this;

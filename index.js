@@ -5087,7 +5087,7 @@
     } else if (k === 'opacity') {
       res.v = n - p;
     } else {
-      res.v = p;
+      res.v = n;
     }
 
     return res;

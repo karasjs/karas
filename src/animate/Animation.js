@@ -610,7 +610,7 @@ function calDiff(prev, next, k, target) {
     res.v = n - p;
   }
   else {
-    res.v = p;
+    res.v = n;
   }
   return res;
 }

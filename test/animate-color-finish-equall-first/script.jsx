@@ -24,4 +24,3 @@ animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
   input.value += '/' + ++n + ',' + t.computedStyle.color;
 });
 animation.finish();
-input.value = o.__refreshLevel;

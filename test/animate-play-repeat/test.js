@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(500)
-      .assert.value('input', '100/200')
+      .assert.value('input', 'play/100/200')
       .end();
   }
 };

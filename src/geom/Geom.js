@@ -140,17 +140,17 @@ class Geom extends Xom {
       strokeWidth = 0;
     }
     computedStyle.strokeWidth = strokeWidth;
-    if(stroke.k === 'linear' || stroke.k === 'radial') {
+    if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
       stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
     }
     else {
-      computedStyle.stroke = stroke;
+      computedStyle.stroke = stroke = stroke || '#000';
     }
-    if(fill.k === 'linear' || fill.k === 'radial') {
+    if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
       fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
     }
     else {
-      computedStyle.fill = fill;
+      computedStyle.fill = fill = fill || 'transparent';
     }
     computedStyle.strokeWidth = strokeWidth;
     computedStyle.strokeDasharray = strokeDasharray;

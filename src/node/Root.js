@@ -9,6 +9,8 @@ import Event from '../util/Event';
 import frame from '../animate/frame';
 import level from '../animate/level';
 
+const { PX } = unit;
+
 function getDom(dom) {
   if(util.isString(dom) && dom) {
     let o = document.querySelector(dom);
@@ -190,15 +192,15 @@ class Root extends Dom {
     // 根元素特殊处理
     style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
       value: 0,
-      unit: unit.PX,
+      unit: PX,
     };
     style.width = {
       value: this.width,
-      unit: unit.PX,
+      unit: PX,
     };
     style.height = {
       value: this.height,
-      unit: unit.PX,
+      unit: PX,
     };
     this.__defs.clear();
     let lv = this.__refreshLevel;

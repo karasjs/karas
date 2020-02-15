@@ -1,4 +1,5 @@
 import css from '../style/css';
+import reset from '../style/reset';
 import unit from '../style/unit';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -8,6 +9,8 @@ import easing from './easing';
 import level from './level';
 import repaint from './repaint';
 
+const { AUTO, PX, PERCENT } = unit;
+
 const KEY_COLOR = [
   'backgroundColor',
   'borderBottomColor',
@@ -15,8 +18,6 @@ const KEY_COLOR = [
   'borderRightColor',
   'borderTopColor',
   'color',
-  'fill',
-  'stroke'
 ];
 
 const KEY_LENGTH = [
@@ -41,13 +42,13 @@ const KEY_LENGTH = [
   'paddingLeft',
   'paddingRight',
   'paddingTop',
-  'strokeWidth'
+  'strokeWidth',
 ];
 
 const KEY_GRADIENT = [
   'backgroundImage',
   'fill',
-  'stroke'
+  'stroke',
 ];
 
 const COLOR_HASH = {};
@@ -85,6 +86,30 @@ KEY_EXPAND.forEach(k => {
   EXPAND_HASH[k] = true;
 });
 
+function equalArr(a, b) {
+  if(a.length !== b.length) {
+    return false;
+  }
+  for(let i = 0, len = a.length; i < len; i++) {
+    let ai = a[i];
+    let bi = b[i];
+    let isArrayA = Array.isArray(ai);
+    let isArrayB = Array.isArray(bi);
+    if(isArrayA && isArrayB) {
+      if(!equalArr(ai, bi)) {
+        return false;
+      }
+    }
+    else if(isArrayA || isArrayB) {
+      return false;
+    }
+    if(ai !== bi) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // css模式rgb和init的颜色转换为rgba数组，方便加减运算
 function color2array(style) {
   KEY_COLOR.forEach(k => {
@@ -108,6 +133,39 @@ function color2array(style) {
       });
     }
   });
+}
+
+function unify(list, target) {
+  let hash = {};
+  let keys = [];
+  // 获取所有关键帧的属性
+  list.forEach(item => {
+    let style = item.style;
+    Object.keys(style).forEach(k => {
+      let v = style[k];
+      // 空的过滤掉
+      if(!util.isNil(v) && !hash.hasOwnProperty(k)) {
+        hash[k] = true;
+        keys.push(k);
+      }
+    });
+  });
+  // 添补没有声明完全的关键帧属性为节点默认值
+  list.forEach(item => {
+    let style = item.style;
+    keys.forEach(k => {
+      if(!style.hasOwnProperty(k)) {
+        if(repaint.GEOM.hasOwnProperty(k)) {
+          style[k] = target.props[k];
+        }
+        else {
+          style[k] = target.style[k];
+        }
+      }
+    });
+    color2array(style);
+  });
+  return keys;
 }
 
 // 对比两个样式的某个值是否相等
@@ -209,37 +267,18 @@ function calRefresh(frameStyle, lastStyle) {
   let res = false;
   let lv = level.REPAINT;
   for(let i in frameStyle) {
-    if(frameStyle.hasOwnProperty(i)) {
-      if(lastStyle.hasOwnProperty(i)) {
-        if(!equalStyle(i, frameStyle[i], lastStyle[i])) {
-          res = true;
-          // 不相等且刷新等级是重新布局时可以提前跳出
-          if(lv === level.REPAINT) {
-            if(isStyleReflow(i)) {
-              lv = level.REFLOW;
-              break;
-            }
-          }
-          else {
-            break;
-          }
-        }
-      }
-      // 不同的属性判断是否重新布局提前跳出
-      else {
-        res = true;
+    if(!equalStyle(i, frameStyle[i], lastStyle[i])) {
+      res = true;
+      // 不相等且刷新等级是重新布局时可以提前跳出
+      if(lv === level.REPAINT) {
         if(isStyleReflow(i)) {
           lv = level.REFLOW;
           break;
         }
       }
-    }
-  }
-  // 防止last有style没有
-  for(let i in lastStyle) {
-    if(lastStyle.hasOwnProperty(i) && !frameStyle.hasOwnProperty(i)) {
-      res = true;
-      break;
+      else {
+        break;
+      }
     }
   }
   return [res, lv];
@@ -303,7 +342,7 @@ function getOriginStyleByFrame(frameStyle, target) {
   let res = {};
   let style = target.style;
   Object.keys(frameStyle).forEach(i => {
-    let v = style[v];
+    let v = style[i];
     if(!util.isNil(v)) {
       res[i] = v;
     }
@@ -311,35 +350,38 @@ function getOriginStyleByFrame(frameStyle, target) {
   return res;
 }
 
-// 将变化的样式格式化，提取出offset属性并转化为时间
-function framing(current, duration) {
-  let keys = [];
-  let style = {};
-  Object.keys(current).forEach(i => {
-    if(i === 'offset' || i === 'easing') {
-      return;
-    }
-    let v = current[i];
-    // 空的过滤掉
-    if(!util.isNil(v)) {
-      keys.push(i);
-      style[i] = v;
-    }
-  });
+/**
+ * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
+ * @param style 关键帧样式
+ * @param resetStyle 所有帧合集的默认样式
+ * @param duration 动画时间长度
+ * @returns {{style: *, time: number, easing: *, transition: []}}
+ */
+function framing(style, resetStyle, duration) {
+  let { offset, easing } = style;
+  // 这两个特殊值提出来存储不干扰style
+  delete style.offset;
+  delete style.easing;
+  css.normalize(style, resetStyle);
   return {
     style,
-    time: current.offset * duration,
-    easing: current.easing,
-    keys,
+    time: offset * duration,
+    easing,
     transition: [],
   };
 }
 
-// 计算两帧之间的差，必须都含有某个属性，单位不同的以后面为准
+/**
+ * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
+ * 没有变化返回空
+ * auto等无法比较的不参与计算，但会返回仅有k没有v，来标识无过度效果
+ * @param prev 上一帧样式
+ * @param next 下一帧样式
+ * @param k 比较的样式名
+ * @param target dom对象
+ * @returns {{k: *, v: *}}
+ */
 function calDiff(prev, next, k, target) {
-  if(!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
-    return;
-  }
   let res = {
     k,
   };
@@ -382,14 +424,14 @@ function calDiff(prev, next, k, target) {
             v: v.value - p.value,
           });
         }
-        else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+        else if(p.unit === PX && n.unit === PERCENT) {
           let v = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
           res.v.push({
             k,
             v: n.value - v,
           });
         }
-        else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+        else if(p.unit === PERCENT && n.unit === PX) {
           let v = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
           res.v.push({
             k,
@@ -410,7 +452,7 @@ function calDiff(prev, next, k, target) {
           v: t,
         });
       }
-      // 老的不存在的项默认为0
+      // 不存在的项默认为0
       else {
         prev[key].push([k, {
           value: 0,
@@ -459,11 +501,11 @@ function calDiff(prev, next, k, target) {
       if(pi.unit === ni.unit) {
         res.v.push(ni.value - pi.value);
       }
-      else if(pi.unit === unit.PX && ni.unit === unit.PERCENT) {
+      else if(pi.unit === PX && ni.unit === PERCENT) {
         let v = pi.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
         res.v.push(ni.value - v);
       }
-      else if(pi.unit === unit.PERCENT && ni.unit === unit.PX) {
+      else if(pi.unit === PERCENT && ni.unit === PX) {
         let v = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
         res.v.push(ni.value - v);
       }
@@ -471,29 +513,32 @@ function calDiff(prev, next, k, target) {
         res.v.push(0);
       }
     }
+    if(equalArr(res.v, [0, 0])) {
+      return;
+    }
   }
   else if(k === 'backgroundPositionX' || k === 'backgroundPositionY') {
-    if(p.unit === n.unit && [unit.PX, unit.PERCENT].indexOf(p.unit) > -1) {
+    if(p.unit === n.unit && [PX, PERCENT].indexOf(p.unit) > -1) {
       res.v = n.value - p.value;
     }
     else {
-      res.v = 0;
+      return;
     }
   }
   else if(EXPAND_HASH.hasOwnProperty(k)) {
     if(p.unit === n.unit) {
       res.v = n.value - p.value;
     }
-    else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+    else if(p.unit === PX && n.unit === PERCENT) {
       let v = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
       res.v = n.value - v;
     }
-    else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+    else if(p.unit === PERCENT && n.unit === PX) {
       let v = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
       res.v = n.value - v;
     }
     else {
-      res.v = 0;
+      return;
     }
   }
   else if(k === 'backgroundSize') {
@@ -501,48 +546,76 @@ function calDiff(prev, next, k, target) {
     for(let i = 0; i < 2; i++) {
       let pi = p[i];
       let ni = n[i];
-      if(pi.unit === ni.unit && [unit.PX, unit.PERCENT].indexOf(pi.unit) > -1) {
+      if(pi.unit === ni.unit && [PX, PERCENT].indexOf(pi.unit) > -1) {
         res.v.push(ni.value - pi.value);
       }
       else {
         res.v.push(0);
       }
     }
-  }
-  else if(GRADIENT_HASH.hasOwnProperty(k)
-    && { 'linear': true, 'radial': true }.hasOwnProperty(p.k)
-    && p.k === n.k
-    && p.v.length
-    && p.v.length) {
-    let pv = p.v;
-    let nv = n.v;
-    res.v = [];
-    for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
-      let a = pv[i];
-      let b = nv[i];
-      let t = [];
-      t.push([
-        b[0][0] - a[0][0],
-        b[0][1] - a[0][1],
-        b[0][2] - a[0][2],
-        b[0][3] - a[0][3]
-      ]);
-      if(a[1] && b[1] && a[1].unit === b[1].unit) {
-        t.push(b[1].value - a[1].value);
-      }
-      // 单位不同不做运算
-      else {
-        continue;
-      }
-      res.v.push(t);
+    if(equalArr(res.v, [0, 0])) {
+      return;
     }
-    if(p.k === 'linear' && p.d !== undefined && n.d !== undefined) {
-      res.d = n.d - p.d;
+  }
+  else if(GRADIENT_HASH.hasOwnProperty(k)) {
+    // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
+    if(p.k !== n.k) {
+      return res;
+    }
+    // 渐变
+    if(p.k === 'linear' || p.k === 'radial') {
+      let pv = p.v;
+      let nv = n.v;
+      if(equalArr(pv, nv)) {
+        return;
+      }
+      res.v = [];
+      let { innerWidth } = target;
+      for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
+        let a = pv[i];
+        let b = nv[i];
+        let t = [];
+        t.push([
+          b[0][0] - a[0][0],
+          b[0][1] - a[0][1],
+          b[0][2] - a[0][2],
+          b[0][3] - a[0][3]
+        ]);
+        if(a[1] && b[1]) {
+          if(a[1].unit === b[1].unit) {
+            t.push(b[1].value - a[1].value);
+          }
+          else if(a[1].unit === PX && b[1].unit === PERCENT) {
+            t.push(b[1].value - a[1].value * 100 / innerWidth);
+          }
+          else if(a[1].unit === PERCENT && b[1].unit === PX) {
+            t.push(b[1].value - a[1].value * 0.01 / innerWidth);
+          }
+        }
+        res.v.push(t);
+      }
+      // 线性渐变有角度差值变化
+      if(p.k === 'linear') {
+        res.d = n.d - p.d;
+      }
+      // TODO: 径向渐变非数字角度
+      else {}
+    }
+    // 纯色
+    else {
+      if(equalArr(n, p)) {
+        return;
+      }
+      res.v = [
+        n[0] - p[0],
+        n[1] - p[1],
+        n[2] - p[2],
+        n[3] - p[3]
+      ];
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
-    // fill和stroke可能纯色和渐变不一致
-    if(p.k !== n.k) {
+    if(equalArr(n, p)) {
       return;
     }
     res.v = [
@@ -554,39 +627,47 @@ function calDiff(prev, next, k, target) {
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     // auto不做动画
-    if(p.unit === unit.AUTO || n.unit === unit.AUTO) {
-      return;
+    if(p.unit === AUTO || n.unit === AUTO) {
+      return res;
     }
     let parentComputedStyle = (target.parent || target).computedStyle;
+    let diff = 0;
     if(p.unit === n.unit) {
-      res.v = n.value - p.value;
+      diff = n.value - p.value;
     }
-    else if(p.unit === unit.PX && n.unit === unit.PERCENT) {
+    else if(p.unit === PX && n.unit === PERCENT) {
       let v = p.value * 100 / parentComputedStyle[k];
-      res.v = n.value - v;
+      diff = n.value - v;
     }
-    else if(p.unit === unit.PERCENT && n.unit === unit.PX) {
+    else if(p.unit === PERCENT && n.unit === PX) {
       let v = p.value * 0.01 * parentComputedStyle[k];
-      res.v = n.value - v;
+      diff = n.value - v;
     }
+    // lineHeight奇怪的单位变化
     else {
-      return;
+      return res;
+    }
+    if(diff !== 0) {
+      res.v = diff;
     }
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(k === 'points' || k === 'controls') {
+      if(equalArr(p, n)) {
+        return;
+      }
       res.v = [];
       for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
         let pv = p[i];
         let nv = n[i];
         if(util.isNil(pv) || util.isNil(nv)) {
-          res.v.push(pv);
+          res.v.push(nv);
         }
         else {
           let v = [];
           for(let j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
             if(util.isNil(pv[j]) || util.isNil(nv[j])) {
-              v.push(pv[j]);
+              v.push(nv[j]);
             }
             else {
               v.push(nv[j] - pv[j]);
@@ -597,6 +678,9 @@ function calDiff(prev, next, k, target) {
       }
     }
     else if(k === 'controlA' || k === 'controlB') {
+      if(equalArr(p, n)) {
+        return;
+      }
       res.v = [
         n[0] - p[0],
         n[1] - p[1]
@@ -606,18 +690,24 @@ function calDiff(prev, next, k, target) {
       res.v = n - p;
     }
   }
-  else if(k === 'opacity') {
+  else if(k === 'opacity' || k === 'zIndex') {
+    if(n === p) {
+      return;
+    }
     res.v = n - p;
   }
   else {
+    if(n === p) {
+      return;
+    }
     res.v = n;
   }
   return res;
 }
 
-function calFrame(prev, current, target, duration) {
-  let next = framing(current, duration);
-  next.keys.forEach(k => {
+// 计算两帧之间不相同的变化，存入transition，相同的忽略
+function calFrame(prev, next, keys, target) {
+  keys.forEach(k => {
     let ts = calDiff(prev.style, next.style, k, target);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
@@ -839,8 +929,8 @@ class Animation extends Event {
     if(target.isGeom) {
       target.__animateProps.push(this.__props = {});
     }
-    // 过滤时间非法的，过滤后续offset<=前面的
     let list = this.list;
+    // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
@@ -858,22 +948,13 @@ class Animation extends Event {
           i--;
           len--;
         }
-        // 正常的标准化样式
-        else {
-          offset = current.offset;
-          css.normalize(current);
-          color2array(current);
-        }
-      }
-      else {
-        css.normalize(current);
-        color2array(current);
       }
     }
     // 必须有1帧及以上描述
     if(list.length < 1) {
       return;
     }
+    // 只有1帧复制出来变成2帧方便运行
     if(list.length === 1) {
       list.push(list[0]);
     }
@@ -909,30 +990,41 @@ class Animation extends Event {
         i = j;
       }
     }
-    // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
-    let length = list.length;
-    let prev;
-    // 第一帧要特殊处理
-    prev = framing(first, duration);
-    frames.push(prev);
+    // 换算每一关键帧样式标准化
+    list.forEach(item => {
+      let resetStyle = [];
+      Object.keys(item).forEach(k => {
+        if(k === 'offset' || k === 'easing') {
+          return;
+        }
+        resetStyle.push({
+          k,
+          v: reset.XOM[k],
+        });
+      });
+      frames.push(framing(item, resetStyle, duration));
+    });
+    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+    let keys = unify(frames, target);
+    // 计算两帧之间增量变化，存入transition属性
+    let length = frames.length;
+    let prev = frames[0];
     for(let i = 1; i < length; i++) {
-      let next = list[i];
-      prev = calFrame(prev, next, target, duration);
-      frames.push(prev);
+      let next = frames[i];
+      prev = calFrame(prev, next, keys, target);
     }
+    console.log(JSON.stringify(frames));
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let listR = util.clone(list).reverse();
+      let listR = list.reverse();
       listR.forEach(item => {
         item.offset = 1 - item.offset;
-        framesR.push(framing(item, duration));
+        framesR.push(framing(item, resetStyle, duration));
       });
-      prev = framing(listR[0], duration);
-      framesR.push(prev);
+      prev = framesR[0];
       for(let i = 1; i < length; i++) {
         let next = listR[i];
-        prev = calFrame(prev, next, target, duration);
-        framesR.push(prev);
+        prev = calFrame(prev, next, keys, target);
       }
     }
     // 生成finish的任务事件

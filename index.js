@@ -795,6 +795,9 @@
     calPoint: calPoint
   };
 
+  var PX = unit.PX,
+      PERCENT = unit.PERCENT;
+
   function calSingle(t, k, v) {
     if (k === 'translateX') {
       t[12] = v;
@@ -910,11 +913,11 @@
 
   function normalizeSingle(k, v, ow, oh) {
     if (k === 'translateX') {
-      if (v.unit === unit.PERCENT) {
+      if (v.unit === PERCENT) {
         return v.value * ow * 0.01;
       }
     } else if (k === 'translateY') {
-      if (v.unit === unit.PERCENT) {
+      if (v.unit === PERCENT) {
         return v.value * oh * 0.01;
       }
     } else if (k === 'matrix') {
@@ -939,9 +942,9 @@
   function calOrigin(transformOrigin, x, y, w, h) {
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
-      if (item.unit === unit.PX) {
+      if (item.unit === PX) {
         tfo.push(item.value + i ? y : x);
-      } else if (item.unit === unit.PERCENT) {
+      } else if (item.unit === PERCENT) {
         tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
       }
     });
@@ -993,6 +996,9 @@
     calExpandMatrix: calExpandMatrix
   };
 
+  var PX$1 = unit.PX,
+      PERCENT$1 = unit.PERCENT;
+
   function getLinearDeg(v) {
     var deg = 180;
 
@@ -1033,7 +1039,7 @@
         var c = item[0];
         var p = item[1];
 
-        if (p.unit === unit.PERCENT) {
+        if (p.unit === PERCENT$1) {
           list.push([c, p.value * 0.01]);
         } else {
           list.push([c, p.value / length]);
@@ -1478,13 +1484,13 @@
           if (/%$/.test(arr[1])) {
             arr[1] = {
               value: parseFloat(arr[1]),
-              unit: unit.PERCENT,
+              unit: PERCENT$1,
               str: arr[1]
             };
           } else {
             arr[1] = {
               value: parseFloat(arr[1]),
-              unit: unit.PX,
+              unit: PX$1,
               str: arr[1]
             };
           }
@@ -2049,6 +2055,9 @@
     }
   };
 
+  var PERCENT$2 = unit.PERCENT,
+      NUMBER = unit.NUMBER;
+
   function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
     if (imgWidth === targetWidth && imgHeight === targetHeight) {
       return;
@@ -2056,17 +2065,17 @@
 
     var list = [['scaleX', {
       value: targetWidth / imgWidth,
-      unit: unit.NUMBER
+      unit: NUMBER
     }], ['scaleY', {
       value: targetHeight / imgHeight,
-      unit: unit.NUMBER
+      unit: NUMBER
     }]];
     var tfo = transform.calOrigin([{
       value: 0,
-      unit: unit.PERCENT
+      unit: PERCENT$2
     }, {
       value: 0,
-      unit: unit.PERCENT
+      unit: PERCENT$2
     }], x, y, w, h);
     return transform.calMatrix(list, tfo, w, h);
   }
@@ -2076,10 +2085,19 @@
     reg: /url\((['"]?)(.*?)\1\)/
   };
 
+  var AUTO = unit.AUTO,
+      PX$2 = unit.PX,
+      PERCENT$3 = unit.PERCENT,
+      POSITION = unit.POSITION,
+      NUMBER$1 = unit.NUMBER,
+      INHERIT = unit.INHERIT,
+      DEG = unit.DEG,
+      SIZE = unit.SIZE;
+
   function parserOneBorder(style, direction) {
     var key = "border".concat(direction);
 
-    if (!style[key]) {
+    if (!style.hasOwnProperty(key)) {
       return;
     }
 
@@ -2109,15 +2127,23 @@
       }
     }
   }
+  /**
+   * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
+   * @param obj 待计算的样式对象
+   * @param k 对象的key
+   * @param v 对象的value
+   * @returns 格式化好的样式对象本身
+   */
+
 
   function calUnit(obj, k, v) {
     if (v === 'auto') {
       obj[k] = {
-        unit: unit.AUTO
+        unit: AUTO
       };
     } else if (v === 'inherit') {
       obj[k] = {
-        unit: unit.INHERIT
+        unit: INHERIT
       };
     } else if (/%$/.test(v)) {
       // border不支持百分比
@@ -2125,43 +2151,50 @@
         v = parseFloat(v) || 0;
         obj[k] = {
           value: v,
-          unit: unit.PERCENT
+          unit: PERCENT$3
         };
       }
     } else if (/px$/.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
-        unit: unit.PX
+        unit: PX$2
       };
     } else if (/deg$/.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
-        unit: unit.DEG
+        unit: DEG
       };
     } else {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
-        unit: unit.NUMBER
+        unit: NUMBER$1
       };
     }
 
     return obj;
   }
+  /**
+   * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
+   * @param style 手写的style样式
+   * @param reset 默认样式
+   * @returns 标准化的样式
+   */
+
 
   function normalize$1(style, reset) {
-    // 默认reset
-    if (reset) {
-      reset.forEach(function (item) {
-        if (!style.hasOwnProperty(item.k)) {
-          style[item.k] = item.v;
-        }
-      });
-    }
+    // 默认reset，根据传入不同，当style为空时覆盖
+    reset.forEach(function (item) {
+      var k = item.k,
+          v = item.v;
 
-    var temp = style.background; // 处理渐变背景色
+      if (util.isNil(style[k])) {
+        style[k] = v;
+      }
+    });
+    var temp = style.background; // 处理渐变背景缩写
 
     if (temp) {
       // gradient/image和颜色可以并存
@@ -2255,13 +2288,18 @@
           calUnit(style, k, temp);
           temp = style[k];
 
-          if (temp.unit === unit.NUMBER) {
-            temp.unit = unit.PX;
+          if (temp.unit === NUMBER$1) {
+            temp.unit = PX$2;
           }
-        } else {
+        } else if (temp === 'contain' || temp === 'cover') {
           style[k] = {
             value: temp,
-            unit: unit.POSITION
+            unit: POSITION
+          };
+        } else {
+          style[k] = {
+            value: 0,
+            unit: PX$2
           };
         }
       }
@@ -2287,27 +2325,21 @@
           } else if (item === '0' || item === 0) {
             bc.push({
               value: 0,
-              unit: unit.PX
+              unit: PX$2
             });
           } else if (item === 'contain' || item === 'cover') {
             bc.push({
               value: item,
-              unit: unit.SIZE
+              unit: SIZE
             });
           } else {
             bc.push({
-              unit: unit.AUTO
+              unit: AUTO
             });
           }
         }
 
         style.backgroundSize = bc;
-      } else {
-        style.backgroundSize = [{
-          unit: unit.AUTO
-        }, {
-          unit: unit.AUTO
-        }];
       }
     } // 处理缩写
 
@@ -2356,7 +2388,13 @@
     temp = style.border;
 
     if (temp) {
-      style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = temp;
+      ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
+        k = 'border' + k;
+
+        if (!util.isNil(style[k])) {
+          style[k] = temp;
+        }
+      });
     }
 
     temp = style.margin;
@@ -2374,10 +2412,13 @@
           _match[3] = _match[1];
         }
 
-        style.marginTop = _match[0];
-        style.marginRight = _match[1];
-        style.marginBottom = _match[2];
-        style.marginLeft = _match[3];
+        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
+          k = 'margin' + k;
+
+          if (!util.isNil(style[k])) {
+            style[k] = temp[i];
+          }
+        });
       }
     }
 
@@ -2396,10 +2437,13 @@
           _match2[3] = _match2[1];
         }
 
-        style.paddingTop = _match2[0];
-        style.paddingRight = _match2[1];
-        style.paddingBottom = _match2[2];
-        style.paddingLeft = _match2[3];
+        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
+          k = 'padding' + k;
+
+          if (!util.isNil(style[k])) {
+            style[k] = temp[i];
+          }
+        });
       }
     }
 
@@ -2437,10 +2481,18 @@
 
             var _arr3 = calUnit([k, v], 1, v);
 
-            if (_arr3[1].value !== 0 && _arr3[1].unit !== unit.NUMBER || k.indexOf('scale') === 0) {
+            if (k.indexOf('scale') === 0) {
+              if (_arr3[1].value !== 1 && _arr3[1].unit === NUMBER$1) {
+                transform.push(_arr3);
+              }
+            } else if (_arr3[1].value !== 0 && _arr3[1].unit !== NUMBER$1) {
               transform.push(_arr3);
             }
-          } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
+          } else if ({
+            translate: true,
+            scale: true,
+            skew: true
+          }.hasOwnProperty(k)) {
             var _arr4 = v.toString().split(/\s*,\s*/);
 
             if (_arr4.length === 1) {
@@ -2450,11 +2502,11 @@
             var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
             var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
 
-            if (arr1[1].value !== 0 && arr1[1].unit !== unit.NUMBER) {
+            if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER$1) {
               transform.push(arr1);
             }
 
-            if (arr2[1].value !== 0 && arr2[1].unit !== unit.NUMBER) {
+            if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER$1) {
               transform.push(arr2);
             }
           }
@@ -2489,7 +2541,7 @@
                 bottom: 100,
                 0: 0
               }[_item],
-              unit: unit.PERCENT
+              unit: PERCENT$3
             }); // 不规范的写法变默认值50%
 
             if (tfo[_i].value === undefined) {
@@ -2499,14 +2551,6 @@
         }
 
         style.transformOrigin = tfo;
-      } else {
-        style.transformOrigin = [{
-          value: 50,
-          unit: unit.PERCENT
-        }, {
-          value: 50,
-          unit: unit.PERCENT
-        }];
       }
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
@@ -2529,14 +2573,11 @@
       var v = style[k];
 
       if (util.isNil(v)) {
-        delete style[k];
         return;
       }
 
       if (style.transform) {
-        delete style[k];
         console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
-        return;
       }
 
       calUnit(style, k, v);
@@ -2550,11 +2591,13 @@
 
       v = style[k];
 
-      if (v.unit === unit.NUMBER || v.value === 0) {
-        if (k.indexOf('translate') === 0) {
-          v.unit = unit.PX;
-        } else if (k.indexOf('scale') !== 0) {
-          v.unit = unit.DEG;
+      if (k.indexOf('scale') > -1) {
+        v.unit = NUMBER$1;
+      } else if (v.unit === NUMBER$1 || v.value === 0) {
+        if (k.indexOf('translate') > -1) {
+          v.unit = PX$2;
+        } else {
+          v.unit = DEG;
         }
       }
     });
@@ -2567,18 +2610,15 @@
         temp = Math.max(temp, 0);
         temp = Math.min(temp, 1);
         style.opacity = temp;
+      } else {
+        style.opacity = 1;
       }
     }
 
     temp = style.zIndex;
 
-    if (temp && temp !== 'auto') {
-      temp = parseInt(temp);
-
-      if (!isNaN(temp)) {
-        temp = Math.max(temp, 0);
-        style.zIndex = temp;
-      }
+    if (temp) {
+      style.zIndex = parseInt(temp) || 0;
     }
 
     parserOneBorder(style, 'Top');
@@ -2587,15 +2627,17 @@
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize', 'strokeWidth'].forEach(function (k) {
-      if (!style.hasOwnProperty(k)) {
+      var v = style[k];
+
+      if (util.isNil(v)) {
         return;
       }
 
-      calUnit(style, k, style[k]);
-      var v = style[k]; // 无单位视为px
+      calUnit(style, k, v);
+      v = style[k]; // 无单位视为px
 
-      if (v.unit === unit.NUMBER) {
-        v.unit = unit.PX;
+      if (v.unit === NUMBER$1) {
+        v.unit = PX$2;
       }
     });
     temp = style.fontWeight;
@@ -2617,30 +2659,30 @@
     if (temp || temp === 0 || temp === '0') {
       if (temp === 'inherit') {
         style.lineHeight = {
-          unit: unit.INHERIT
+          unit: INHERIT
         };
       }
 
       if (temp === 'normal') {
         style.lineHeight = {
-          unit: unit.AUTO
+          unit: AUTO
         };
       } else if (/px$/.test(temp)) {
         style.lineHeight = {
           value: parseFloat(temp),
-          unit: unit.PX
+          unit: PX$2
         };
       } else {
         var n = parseFloat(temp) || 'normal'; // 非法数字
 
         if (n === 'normal') {
           style.lineHeight = {
-            unit: unit.AUTO
+            unit: AUTO
           };
         } else {
           style.lineHeight = {
             value: n,
-            unit: unit.NUMBER
+            unit: NUMBER$1
           };
         }
       }
@@ -2681,11 +2723,11 @@
   }
 
   function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-    if (fontSize.unit === unit.INHERIT) {
+    if (fontSize.unit === INHERIT) {
       computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
-    } else if (fontSize.unit === unit.PX) {
+    } else if (fontSize.unit === PX$2) {
       computedStyle.fontSize = fontSize.value;
-    } else if (fontSize.unit === unit.PERCENT) {
+    } else if (fontSize.unit === PERCENT$3) {
       computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
     } else {
       computedStyle.fontSize = 16;
@@ -2777,19 +2819,19 @@
   function calLineHeight(xom, lineHeight, computedStyle) {
     if (util.isNumber(lineHeight)) ;
 
-    if (lineHeight.unit === unit.INHERIT) {
+    if (lineHeight.unit === INHERIT) {
       var parent = xom.parent;
 
       if (parent) {
         var pl = parent.style.lineHeight; // 一直继承向上查找直到root
 
-        if (pl.unit === unit.INHERIT) {
+        if (pl.unit === INHERIT) {
           parent = parent.parent;
 
           while (parent) {
             pl = parent.style.lineHeight;
 
-            if (pl.unit !== unit.INHERIT) {
+            if (pl.unit !== INHERIT) {
               break;
             }
           }
@@ -2797,22 +2839,22 @@
 
         var parentComputedStyle = parent.computedStyle;
 
-        if (pl.unit === unit.PX) {
+        if (pl.unit === PX$2) {
           computedStyle.lineHeight = parentComputedStyle.lineHeight;
-        } else if (pl.unit === unit.NUMBER) {
+        } else if (pl.unit === NUMBER$1) {
           computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
         } else {
           computedStyle.lineHeight = calNormalLineHeight(computedStyle);
         }
       } else {
         // root的继承强制为normal
-        lineHeight.unit = unit.AUTO;
+        lineHeight.unit = AUTO;
         computedStyle.lineHeight = calLineHeight(computedStyle);
       }
     } // 防止为0
-    else if (lineHeight.unit === unit.PX) {
+    else if (lineHeight.unit === PX$2) {
         computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
-      } else if (lineHeight.unit === unit.NUMBER) {
+      } else if (lineHeight.unit === NUMBER$1) {
         computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
       } // normal
       else {
@@ -2830,15 +2872,15 @@
     while (parent) {
       var style = parent.currentStyle[k];
 
-      if (style.unit === unit.AUTO) {
+      if (style.unit === AUTO) {
         if (k === 'width') {
           parent = parent.parent;
         } else {
           break;
         }
-      } else if (style.unit === unit.PX) {
+      } else if (style.unit === PX$2) {
         return n * style.value;
-      } else if (style.unit === unit.PERCENT) {
+      } else if (style.unit === PERCENT$3) {
         n *= style.value * 0.01;
         parent = parent.parent;
       }
@@ -2848,11 +2890,11 @@
   }
 
   function calRelative(computedStyle, k, v, parent, isWidth) {
-    if (util.isNumber(v)) ; else if (v.unit === unit.AUTO) {
+    if (util.isNumber(v)) ; else if (v.unit === AUTO) {
       v = 0;
-    } else if (v.unit === unit.PX) {
+    } else if (v.unit === PX$2) {
       v = v.value;
-    } else if (v.unit === unit.PERCENT) {
+    } else if (v.unit === PERCENT$3) {
       if (isWidth) {
         v = calRelativePercent(v.value, parent, 'width');
       } else {
@@ -2864,11 +2906,11 @@
   }
 
   function calAbsolute(computedStyle, k, v, size) {
-    if (util.isNumber(v)) ; else if (v.unit === unit.AUTO) {
+    if (util.isNumber(v)) ; else if (v.unit === AUTO) {
       v = 0;
-    } else if (v.unit === unit.PX) {
+    } else if (v.unit === PX$2) {
       v = v.value;
-    } else if (v.unit === unit.PERCENT) {
+    } else if (v.unit === PERCENT$3) {
       v = v.value * size * 0.01;
     }
 
@@ -3724,8 +3766,8 @@
     backgroundColor: 'transparent',
     backgroundSize: 'auto',
     backgroundRepeat: 'repeat',
-    backgroundPositionX: '0%',
-    backgroundPositionY: '0%',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
     borderTopWidth: 0,
     borderRightWidth: 0,
     borderBottomWidth: 0,
@@ -3750,15 +3792,15 @@
     transformOrigin: 'center',
     visibility: 'visible',
     opacity: 1,
-    zIndex: 'auto',
+    zIndex: 0,
     transform: null,
-    translateX: null,
-    translateY: null,
-    scaleX: null,
-    scaleY: null,
-    skewX: null,
-    skewY: null,
-    rotateZ: null
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateZ: 0
   };
   var GEOM = {
     fill: 'transparent',
@@ -3784,6 +3826,9 @@
     });
   });
   var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    XOM: Object.assign(DOM, GEOM),
     dom: dom,
     geom: geom
   };
@@ -4536,7 +4581,10 @@
     cubicBezier: bezier
   };
 
-  var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color', 'fill', 'stroke'];
+  var AUTO$1 = unit.AUTO,
+      PX$3 = unit.PX,
+      PERCENT$4 = unit.PERCENT;
+  var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
   var COLOR_HASH = {};
@@ -4559,7 +4607,35 @@
   var EXPAND_HASH = {};
   KEY_EXPAND.forEach(function (k) {
     EXPAND_HASH[k] = true;
-  }); // css模式rgb和init的颜色转换为rgba数组，方便加减运算
+  });
+
+  function equalArr(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      }
+
+      if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  } // css模式rgb和init的颜色转换为rgba数组，方便加减运算
+
 
   function color2array(style) {
     KEY_COLOR.forEach(function (k) {
@@ -4588,6 +4664,38 @@
         });
       }
     });
+  }
+
+  function unify(list, target) {
+    var hash = {};
+    var keys = []; // 获取所有关键帧的属性
+
+    list.forEach(function (item) {
+      var style = item.style;
+      Object.keys(style).forEach(function (k) {
+        var v = style[k]; // 空的过滤掉
+
+        if (!util.isNil(v) && !hash.hasOwnProperty(k)) {
+          hash[k] = true;
+          keys.push(k);
+        }
+      });
+    }); // 添补没有声明完全的关键帧属性为节点默认值
+
+    list.forEach(function (item) {
+      var style = item.style;
+      keys.forEach(function (k) {
+        if (!style.hasOwnProperty(k)) {
+          if (repaint$1.GEOM.hasOwnProperty(k)) {
+            style[k] = target.props[k];
+          } else {
+            style[k] = target.style[k];
+          }
+        }
+      });
+      color2array(style);
+    });
+    return keys;
   } // 对比两个样式的某个值是否相等
 
 
@@ -4691,37 +4799,17 @@
     var lv = level.REPAINT;
 
     for (var i in frameStyle) {
-      if (frameStyle.hasOwnProperty(i)) {
-        if (lastStyle.hasOwnProperty(i)) {
-          if (!equalStyle(i, frameStyle[i], lastStyle[i])) {
-            res = true; // 不相等且刷新等级是重新布局时可以提前跳出
+      if (!equalStyle(i, frameStyle[i], lastStyle[i])) {
+        res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
-            if (lv === level.REPAINT) {
-              if (isStyleReflow(i)) {
-                lv = level.REFLOW;
-                break;
-              }
-            } else {
-              break;
-            }
+        if (lv === level.REPAINT) {
+          if (isStyleReflow(i)) {
+            lv = level.REFLOW;
+            break;
           }
-        } // 不同的属性判断是否重新布局提前跳出
-        else {
-            res = true;
-
-            if (isStyleReflow(i)) {
-              lv = level.REFLOW;
-              break;
-            }
-          }
-      }
-    } // 防止last有style没有
-
-
-    for (var _i3 in lastStyle) {
-      if (lastStyle.hasOwnProperty(_i3) && !frameStyle.hasOwnProperty(_i3)) {
-        res = true;
-        break;
+        } else {
+          break;
+        }
       }
     }
 
@@ -4786,46 +4874,50 @@
     var res = {};
     var style = target.style;
     Object.keys(frameStyle).forEach(function (i) {
-      var v = style[v];
+      var v = style[i];
 
       if (!util.isNil(v)) {
         res[i] = v;
       }
     });
     return res;
-  } // 将变化的样式格式化，提取出offset属性并转化为时间
+  }
+  /**
+   * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
+   * @param style 关键帧样式
+   * @param resetStyle 所有帧合集的默认样式
+   * @param duration 动画时间长度
+   * @returns {{style: *, time: number, easing: *, transition: []}}
+   */
 
 
-  function framing(current, duration) {
-    var keys = [];
-    var style = {};
-    Object.keys(current).forEach(function (i) {
-      if (i === 'offset' || i === 'easing') {
-        return;
-      }
+  function framing(style, resetStyle, duration) {
+    var offset = style.offset,
+        easing = style.easing; // 这两个特殊值提出来存储不干扰style
 
-      var v = current[i]; // 空的过滤掉
-
-      if (!util.isNil(v)) {
-        keys.push(i);
-        style[i] = v;
-      }
-    });
+    delete style.offset;
+    delete style.easing;
+    css.normalize(style, resetStyle);
     return {
       style: style,
-      time: current.offset * duration,
-      easing: current.easing,
-      keys: keys,
+      time: offset * duration,
+      easing: easing,
       transition: []
     };
-  } // 计算两帧之间的差，必须都含有某个属性，单位不同的以后面为准
+  }
+  /**
+   * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
+   * 没有变化返回空
+   * auto等无法比较的不参与计算，但会返回仅有k没有v，来标识无过度效果
+   * @param prev 上一帧样式
+   * @param next 下一帧样式
+   * @param k 比较的样式名
+   * @param target dom对象
+   * @returns {{k: *, v: *}}
+   */
 
 
   function calDiff(prev, next, k, target) {
-    if (!prev.hasOwnProperty(k) || !next.hasOwnProperty(k)) {
-      return;
-    }
-
     var res = {
       k: k
     };
@@ -4874,14 +4966,14 @@
               k: k,
               v: v.value - _p.value
             });
-          } else if (_p.unit === unit.PX && _n.unit === unit.PERCENT) {
+          } else if (_p.unit === PX$3 && _n.unit === PERCENT$4) {
             var _v = _p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
             res.v.push({
               k: k,
               v: _n.value - _v
             });
-          } else if (_p.unit === unit.PERCENT && _n.unit === unit.PX) {
+          } else if (_p.unit === PERCENT$4 && _n.unit === PX$3) {
             var _v2 = _p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
             res.v.push({
@@ -4895,15 +4987,15 @@
             prev[key].push([k, id]);
             var _t = [];
 
-            for (var _i4 = 0; _i4 < 6; _i4++) {
-              _t[_i4] = v[_i4] - id[_i4];
+            for (var _i3 = 0; _i3 < 6; _i3++) {
+              _t[_i3] = v[_i3] - id[_i3];
             }
 
             res.v.push({
               k: k,
               v: _t
             });
-          } // 老的不存在的项默认为0
+          } // 不存在的项默认为0
           else {
               prev[key].push([k, {
                 value: 0,
@@ -4956,10 +5048,10 @@
 
         if (pi.unit === ni.unit) {
           res.v.push(ni.value - pi.value);
-        } else if (pi.unit === unit.PX && ni.unit === unit.PERCENT) {
+        } else if (pi.unit === PX$3 && ni.unit === PERCENT$4) {
           var v = pi.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
           res.v.push(ni.value - v);
-        } else if (pi.unit === unit.PERCENT && ni.unit === unit.PX) {
+        } else if (pi.unit === PERCENT$4 && ni.unit === PX$3) {
           var _v3 = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
 
           res.v.push(ni.value - _v3);
@@ -4967,110 +5059,149 @@
           res.v.push(0);
         }
       }
+
+      if (equalArr(res.v, [0, 0])) {
+        return;
+      }
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
-      if (p.unit === n.unit && [unit.PX, unit.PERCENT].indexOf(p.unit) > -1) {
+      if (p.unit === n.unit && [PX$3, PERCENT$4].indexOf(p.unit) > -1) {
         res.v = n.value - p.value;
       } else {
-        res.v = 0;
+        return;
       }
     } else if (EXPAND_HASH.hasOwnProperty(k)) {
       if (p.unit === n.unit) {
         res.v = n.value - p.value;
-      } else if (p.unit === unit.PX && n.unit === unit.PERCENT) {
+      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
         var _v4 = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
         res.v = n.value - _v4;
-      } else if (p.unit === unit.PERCENT && n.unit === unit.PX) {
+      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
         var _v5 = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
         res.v = n.value - _v5;
       } else {
-        res.v = 0;
+        return;
       }
     } else if (k === 'backgroundSize') {
       res.v = [];
 
-      for (var _i5 = 0; _i5 < 2; _i5++) {
-        var _pi = p[_i5];
-        var _ni = n[_i5];
+      for (var _i4 = 0; _i4 < 2; _i4++) {
+        var _pi = p[_i4];
+        var _ni = n[_i4];
 
-        if (_pi.unit === _ni.unit && [unit.PX, unit.PERCENT].indexOf(_pi.unit) > -1) {
+        if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else {
           res.v.push(0);
         }
       }
-    } else if (GRADIENT_HASH.hasOwnProperty(k) && {
-      'linear': true,
-      'radial': true
-    }.hasOwnProperty(p.k) && p.k === n.k && p.v.length && p.v.length) {
-      var pv = p.v;
-      var nv = n.v;
-      res.v = [];
 
-      for (var _i6 = 0, len = Math.min(pv.length, nv.length); _i6 < len; _i6++) {
-        var a = pv[_i6];
-        var b = nv[_i6];
-        var t = [];
-        t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
+      if (equalArr(res.v, [0, 0])) {
+        return;
+      }
+    } else if (GRADIENT_HASH.hasOwnProperty(k)) {
+      // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
+      if (p.k !== n.k) {
+        return res;
+      } // 渐变
 
-        if (a[1] && b[1] && a[1].unit === b[1].unit) {
-          t.push(b[1].value - a[1].value);
-        } // 单位不同不做运算
-        else {
-            continue;
+
+      if (p.k === 'linear' || p.k === 'radial') {
+        var pv = p.v;
+        var nv = n.v;
+
+        if (equalArr(pv, nv)) {
+          return;
+        }
+
+        res.v = [];
+        var innerWidth = target.innerWidth;
+
+        for (var _i5 = 0, len = Math.min(pv.length, nv.length); _i5 < len; _i5++) {
+          var a = pv[_i5];
+          var b = nv[_i5];
+          var t = [];
+          t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
+
+          if (a[1] && b[1]) {
+            if (a[1].unit === b[1].unit) {
+              t.push(b[1].value - a[1].value);
+            } else if (a[1].unit === PX$3 && b[1].unit === PERCENT$4) {
+              t.push(b[1].value - a[1].value * 100 / innerWidth);
+            } else if (a[1].unit === PERCENT$4 && b[1].unit === PX$3) {
+              t.push(b[1].value - a[1].value * 0.01 / innerWidth);
+            }
           }
 
-        res.v.push(t);
-      }
+          res.v.push(t);
+        } // 线性渐变有角度差值变化
 
-      if (p.k === 'linear' && p.d !== undefined && n.d !== undefined) {
-        res.d = n.d - p.d;
-      }
+
+        if (p.k === 'linear') {
+          res.d = n.d - p.d;
+        }
+      } // 纯色
+      else {
+          if (equalArr(n, p)) {
+            return;
+          }
+
+          res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+        }
     } else if (COLOR_HASH.hasOwnProperty(k)) {
-      // fill和stroke可能纯色和渐变不一致
-      if (p.k !== n.k) {
+      if (equalArr(n, p)) {
         return;
       }
 
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       // auto不做动画
-      if (p.unit === unit.AUTO || n.unit === unit.AUTO) {
-        return;
+      if (p.unit === AUTO$1 || n.unit === AUTO$1) {
+        return res;
       }
 
       var parentComputedStyle = (target.parent || target).computedStyle;
+      var diff = 0;
 
       if (p.unit === n.unit) {
-        res.v = n.value - p.value;
-      } else if (p.unit === unit.PX && n.unit === unit.PERCENT) {
+        diff = n.value - p.value;
+      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
         var _v6 = p.value * 100 / parentComputedStyle[k];
 
-        res.v = n.value - _v6;
-      } else if (p.unit === unit.PERCENT && n.unit === unit.PX) {
+        diff = n.value - _v6;
+      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
         var _v7 = p.value * 0.01 * parentComputedStyle[k];
 
-        res.v = n.value - _v7;
-      } else {
-        return;
+        diff = n.value - _v7;
+      } // lineHeight奇怪的单位变化
+      else {
+          return res;
+        }
+
+      if (diff !== 0) {
+        res.v = diff;
       }
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
       if (k === 'points' || k === 'controls') {
+        if (equalArr(p, n)) {
+          return;
+        }
+
         res.v = [];
 
-        for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
-          var _pv = p[_i7];
-          var _nv = n[_i7];
+        for (var _i6 = 0, _len3 = Math.min(p.length, n.length); _i6 < _len3; _i6++) {
+          var _pv = p[_i6];
+          var _nv = n[_i6];
 
           if (util.isNil(_pv) || util.isNil(_nv)) {
-            res.v.push(_pv);
+            res.v.push(_nv);
           } else {
             var _v8 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
               if (util.isNil(_pv[j]) || util.isNil(_nv[j])) {
-                _v8.push(_pv[j]);
+                _v8.push(_nv[j]);
               } else {
                 _v8.push(_nv[j] - _pv[j]);
               }
@@ -5080,22 +5211,34 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
+        if (equalArr(p, n)) {
+          return;
+        }
+
         res.v = [n[0] - p[0], n[1] - p[1]];
       } else {
         res.v = n - p;
       }
-    } else if (k === 'opacity') {
+    } else if (k === 'opacity' || k === 'zIndex') {
+      if (n === p) {
+        return;
+      }
+
       res.v = n - p;
     } else {
+      if (n === p) {
+        return;
+      }
+
       res.v = n;
     }
 
     return res;
-  }
+  } // 计算两帧之间不相同的变化，存入transition，相同的忽略
 
-  function calFrame(prev, current, target, duration) {
-    var next = framing(current, duration);
-    next.keys.forEach(function (k) {
+
+  function calFrame(prev, next, keys, target) {
+    keys.forEach(function (k) {
       var ts = calDiff(prev.style, next.style, k, target); // 可以形成过渡的才会产生结果返回
 
       if (ts) {
@@ -5202,14 +5345,14 @@
           var _st = style[k];
 
           if (k === 'points' || k === 'controls') {
-            for (var _i8 = 0, _len4 = Math.min(_st.length, v.length); _i8 < _len4; _i8++) {
-              if (util.isNil(_st[_i8]) || !_st[_i8].length) {
+            for (var _i7 = 0, _len4 = Math.min(_st.length, v.length); _i7 < _len4; _i7++) {
+              if (util.isNil(_st[_i7]) || !_st[_i7].length) {
                 continue;
               }
 
-              for (var j = 0, len2 = Math.min(_st[_i8].length, v[_i8].length); j < len2; j++) {
-                if (!util.isNil(_st[_i8][j]) && !util.isNil(v[_i8][j])) {
-                  _st[_i8][j] += v[_i8][j] * percent;
+              for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
+                if (!util.isNil(_st[_i7][j]) && !util.isNil(v[_i7][j])) {
+                  _st[_i7][j] += v[_i7][j] * percent;
                 }
               }
             }
@@ -5354,10 +5497,10 @@
 
         if (target.isGeom) {
           target.__animateProps.push(this.__props = {});
-        } // 过滤时间非法的，过滤后续offset<=前面的
+        }
 
+        var list = this.list; // 过滤时间非法的，过滤后续offset<=前面的
 
-        var list = this.list;
         var offset = -1;
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -5375,22 +5518,15 @@
                 list.splice(i, 1);
                 i--;
                 len--;
-              } // 正常的标准化样式
-              else {
-                  offset = current.offset;
-                  css.normalize(current);
-                  color2array(current);
-                }
-          } else {
-            css.normalize(current);
-            color2array(current);
+              }
           }
         } // 必须有1帧及以上描述
 
 
         if (list.length < 1) {
           return;
-        }
+        } // 只有1帧复制出来变成2帧方便运行
+
 
         if (list.length === 1) {
           list.push(list[0]);
@@ -5406,12 +5542,12 @@
         var last = list[list.length - 1];
         last.offset = 1; // 计算没有设置offset的时间
 
-        for (var _i9 = 1, _len5 = list.length; _i9 < _len5; _i9++) {
-          var start = list[_i9]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i8 = 1, _len5 = list.length; _i8 < _len5; _i8++) {
+          var start = list[_i8]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.offset) {
             var end = void 0;
-            var j = _i9 + 1;
+            var j = _i8 + 1;
 
             for (; j < _len5; j++) {
               end = list[j];
@@ -5421,50 +5557,62 @@
               }
             }
 
-            var num = j - _i9 + 1;
-            start = list[_i9 - 1];
+            var num = j - _i8 + 1;
+            start = list[_i8 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i9; k < j; k++) {
+            for (var k = _i8; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i9);
+              item.offset = start.offset + per * (k + 1 - _i8);
             }
 
-            _i9 = j;
+            _i8 = j;
           }
-        } // 换算出60fps中每一帧，为防止空间过大，不存储每一帧的数据，只存储关键帧和增量
+        } // 换算每一关键帧样式标准化
 
 
-        var length = list.length;
-        var prev; // 第一帧要特殊处理
+        list.forEach(function (item) {
+          var resetStyle = [];
+          Object.keys(item).forEach(function (k) {
+            if (k === 'offset' || k === 'easing') {
+              return;
+            }
 
-        prev = framing(first, duration);
-        frames.push(prev);
+            resetStyle.push({
+              k: k,
+              v: reset.XOM[k]
+            });
+          });
+          frames.push(framing(item, resetStyle, duration));
+        }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
-        for (var _i10 = 1; _i10 < length; _i10++) {
-          var next = list[_i10];
-          prev = calFrame(prev, next, target, duration);
-          frames.push(prev);
-        } // 反向存储帧的倒排结果
+        var keys = unify(frames, target); // 计算两帧之间增量变化，存入transition属性
 
+        var length = frames.length;
+        var prev = frames[0];
+
+        for (var _i9 = 1; _i9 < length; _i9++) {
+          var next = frames[_i9];
+          prev = calFrame(prev, next, keys, target);
+        }
+
+        console.log(JSON.stringify(frames)); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var listR = util.clone(list).reverse();
+          var listR = list.reverse();
           listR.forEach(function (item) {
             item.offset = 1 - item.offset;
-            framesR.push(framing(item, duration));
+            framesR.push(framing(item, resetStyle, duration));
           });
-          prev = framing(listR[0], duration);
-          framesR.push(prev);
+          prev = framesR[0];
 
-          for (var _i11 = 1; _i11 < length; _i11++) {
-            var _next = listR[_i11];
-            prev = calFrame(prev, _next, target, duration);
-            framesR.push(prev);
+          for (var _i10 = 1; _i10 < length; _i10++) {
+            var _next = listR[_i10];
+            prev = calFrame(prev, _next, keys, target);
           }
         } // 生成finish的任务事件
 
@@ -6247,6 +6395,12 @@
     return Animation;
   }(Event);
 
+  var AUTO$2 = unit.AUTO,
+      PX$4 = unit.PX,
+      PERCENT$5 = unit.PERCENT,
+      POSITION$1 = unit.POSITION,
+      SIZE$1 = unit.SIZE;
+
   function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
       points.forEach(function (point) {
@@ -6289,15 +6443,15 @@
   function calBackgroundSize(value, x, y, w, h) {
     var res = [];
     value.forEach(function (item, i) {
-      if (item.unit === unit.PX) {
+      if (item.unit === PX$4) {
         res.push(item.value);
-      } else if (item.unit === unit.PERCENT) {
+      } else if (item.unit === PERCENT$5) {
         res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
-      } else if (item.unit === unit.AUTO) {
+      } else if (item.unit === AUTO$2) {
         res.push(-1);
-      } else if (item.unit === unit.SIZE) {
+      } else if (item.unit === SIZE$1) {
         res.push(item.value === 'contain' ? -2 : -3);
-      } else if (item.unit === unit.POSITION) {
+      } else if (item.unit === POSITION$1) {
         res.push(item.value);
       }
     });
@@ -6309,9 +6463,9 @@
       return container - size;
     } else if (position.value === 'center') {
       return (container - size) * 0.5;
-    } else if (position.unit === unit.PX) {
+    } else if (position.unit === PX$4) {
       return position.value;
-    } else if (position.unit === unit.PERCENT) {
+    } else if (position.unit === PERCENT$5) {
       return (container - size) * position.value * 0.01;
     }
 
@@ -6440,9 +6594,9 @@
     }, {
       key: "__mpWidth",
       value: function __mpWidth(mp, w) {
-        if (mp.unit === unit.PX) {
+        if (mp.unit === PX$4) {
           return mp.value;
-        } else if (mp.unit === unit.PERCENT) {
+        } else if (mp.unit === PERCENT$5) {
           return mp.value * w * 0.01;
         }
 
@@ -6459,13 +6613,13 @@
         var display = currentStyle.display,
             width = currentStyle.width;
 
-        if (width.unit !== unit.AUTO) {
+        if (width.unit !== AUTO$2) {
           switch (width.unit) {
-            case unit.PX:
+            case PX$4:
               w = width.value;
               break;
 
-            case unit.PERCENT:
+            case PERCENT$5:
               w *= width.value * 0.01;
               break;
           }
@@ -6496,14 +6650,14 @@
               left = currentStyle.left;
           var parent = this.parent;
 
-          if (top.unit !== unit.AUTO) {
+          if (top.unit !== AUTO$2) {
             var n = css.calRelative(currentStyle, 'top', top, parent);
 
             this.__offsetY(n);
 
             computedStyle.top = n;
             computedStyle.bottom = 'auto';
-          } else if (bottom.unit !== unit.AUTO) {
+          } else if (bottom.unit !== AUTO$2) {
             var _n = css.calRelative(currentStyle, 'bottom', bottom, parent);
 
             this.__offsetY(-_n);
@@ -6514,14 +6668,14 @@
             computedStyle.top = computedStyle.bottom = 'auto';
           }
 
-          if (left.unit !== unit.AUTO) {
+          if (left.unit !== AUTO$2) {
             var _n2 = css.calRelative(currentStyle, 'left', left, parent, true);
 
             this.__offsetX(_n2);
 
             computedStyle.left = _n2;
             computedStyle.right = 'auto';
-          } else if (right.unit !== unit.AUTO) {
+          } else if (right.unit !== AUTO$2) {
             var _n3 = css.calRelative(currentStyle, 'right', right, parent, true);
 
             this.__offsetX(-_n3);
@@ -6567,29 +6721,29 @@
         var fixedWidth;
         var fixedHeight;
 
-        if (width.unit !== unit.AUTO) {
+        if (width.unit !== AUTO$2) {
           fixedWidth = true;
 
           switch (width.unit) {
-            case unit.PX:
+            case PX$4:
               w = width.value;
               break;
 
-            case unit.PERCENT:
+            case PERCENT$5:
               w *= width.value * 0.01;
               break;
           }
         }
 
-        if (height.unit !== unit.AUTO) {
+        if (height.unit !== AUTO$2) {
           fixedHeight = true;
 
           switch (height.unit) {
-            case unit.PX:
+            case PX$4:
               h = height.value;
               break;
 
-            case unit.PERCENT:
+            case PERCENT$5:
               h *= height.value * 0.01;
               break;
           }
@@ -6601,11 +6755,11 @@
         y += borderTopWidth + marginTop + paddingTop;
         data.y = y;
 
-        if (width.unit === unit.AUTO) {
+        if (width.unit === AUTO$2) {
           w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
         }
 
-        if (height.unit === unit.AUTO) {
+        if (height.unit === AUTO$2) {
           h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
         }
 
@@ -6627,7 +6781,7 @@
             marginRight = style.marginRight,
             width = style.width;
 
-        if (position !== 'absolute' && width !== unit.AUTO && marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO) {
+        if (position !== 'absolute' && width !== AUTO$2 && marginLeft.unit === AUTO$2 && marginRight.unit === AUTO$2) {
           var ow = this.outerWidth;
 
           if (ow < data.w) {
@@ -6738,11 +6892,20 @@
 
               if (util.isNil(v)) {
                 return;
+              } // scale为1和其它为0避免计算浪费
+
+
+              if (v === 1 && k.indexOf('scale') > -1) {
+                return;
+              }
+
+              if (v === 0) {
+                return;
               }
 
               computedStyle[k] = v.value;
 
-              if (v.unit === unit.PERCENT) {
+              if (v.unit === PERCENT$5) {
                 if (k === 'translateX') {
                   computedStyle[k] = v.value * outerWidth * 0.01;
                 } else if (k === 'translateY') {
@@ -7714,6 +7877,9 @@
     return LineGroup;
   }();
 
+  var AUTO$3 = unit.AUTO,
+      PX$5 = unit.PX,
+      PERCENT$6 = unit.PERCENT;
   var REGISTER = {};
 
   var Geom =
@@ -7765,9 +7931,9 @@
         // 无children，直接以style的width为宽度，不定义则为0
         var width = this.currentStyle.width;
 
-        if (width.unit === unit.PX) {
+        if (width.unit === PX$5) {
           return w - width.value;
-        } else if (width.unit === unit.PERCENT) {
+        } else if (width.unit === PERCENT$6) {
           return w - total * width.value * 0.01;
         }
 
@@ -7790,7 +7956,7 @@
             borderLeftWidth = computedStyle.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
-        if (main.unit !== unit.AUTO) {
+        if (main.unit !== AUTO$3) {
           b = max += main.value;
         } // border也得计算在内
 
@@ -7878,9 +8044,9 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom;
 
-        if (strokeWidth.unit === unit.PX) {
+        if (strokeWidth.unit === PX$5) {
           strokeWidth = strokeWidth.value;
-        } else if (strokeWidth.unit === unit.PERCENT) {
+        } else if (strokeWidth.unit === PERCENT$6) {
           strokeWidth = strokeWidth.value * width * 0.01;
         } else {
           strokeWidth = 0;
@@ -8120,6 +8286,9 @@
     return Geom;
   }(Xom);
 
+  var AUTO$4 = unit.AUTO,
+      PX$6 = unit.PX,
+      PERCENT$7 = unit.PERCENT;
   var TAG_NAME = {
     'div': true,
     'span': true,
@@ -8275,9 +8444,9 @@
         var flowChildren = this.flowChildren,
             width = this.currentStyle.width;
 
-        if (width.unit === unit.PX) {
+        if (width.unit === PX$6) {
           return w - width.value;
-        } else if (width.unit === unit.PERCENT) {
+        } else if (width.unit === PERCENT$7) {
           return w - total * width.value * 0.01;
         }
 
@@ -8347,7 +8516,7 @@
             borderLeftWidth = computedStyle.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
-        if (main.unit === unit.PX) {
+        if (main.unit === PX$6) {
           b = max = main.value; // 递归时children的长度会影响flex元素的最小宽度
 
           if (isRecursion) {
@@ -8412,11 +8581,11 @@
       value: function __calMp(v, w) {
         var n = 0;
 
-        if (v.unit === unit.PX) {
+        if (v.unit === PX$6) {
           n += v.value;
-        } else if (v.unit === unit.PERCENT) {
+        } else if (v.unit === PERCENT$7) {
           v.value *= w * 0.01;
-          v.unit = unit.PX;
+          v.unit = PX$6;
           n += v.value;
         }
 
@@ -8624,14 +8793,14 @@
                 max = _item$__calAutoBasis2.max; // 根据basis不同，计算方式不同
 
 
-            if (flexBasis.unit === unit.AUTO) {
+            if (flexBasis.unit === AUTO$4) {
               basisList.push(max);
               basisSum += max;
-            } else if (flexBasis.unit === unit.PX) {
+            } else if (flexBasis.unit === PX$6) {
               computedStyle.flexBasis = b = flexBasis.value;
               basisList.push(b);
               basisSum += b;
-            } else if (flexBasis.unit === unit.PERCENT) {
+            } else if (flexBasis.unit === PERCENT$7) {
               b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value * 0.01;
               basisList.push(b);
               basisSum += b;
@@ -8696,9 +8865,9 @@
               if (display === 'inline') {
                 _currentStyle2.display = computedStyle.display = 'block';
               } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
+              else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === AUTO$4) {
                   height.value = h;
-                  height.unit = unit.PX;
+                  height.unit = PX$6;
                 }
 
               item.__layout({
@@ -8712,9 +8881,9 @@
               if (display === 'inline') {
                 _currentStyle2.display = computedStyle.display = 'block';
               } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              else if (display === 'flex' && _flexDirection === 'row' && width.unit === unit.AUTO) {
+              else if (display === 'flex' && _flexDirection === 'row' && width.unit === AUTO$4) {
                   width.value = w;
-                  width.unit = unit.PX;
+                  width.unit = PX$6;
                 }
 
               item.__layout({
@@ -8832,11 +9001,11 @@
                 paddingLeft = computedStyle.paddingLeft;
 
             if (isDirectionRow) {
-              if (currentStyle.height.unit === unit.AUTO) {
+              if (currentStyle.height.unit === AUTO$4) {
                 item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               }
             } else {
-              if (currentStyle.width.unit === unit.AUTO) {
+              if (currentStyle.width.unit === AUTO$4) {
                 item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               }
             }
@@ -9073,28 +9242,28 @@
           var fixedBottom;
           var fixedLeft;
 
-          if (left !== undefined && left.unit !== unit.AUTO) {
+          if (left !== undefined && left.unit !== AUTO$4) {
             fixedLeft = true;
             computedStyle.left = css.calAbsolute(currentStyle, 'left', left, iw);
           } else {
             computedStyle.left = 'auto';
           }
 
-          if (right !== undefined && right.unit !== unit.AUTO) {
+          if (right !== undefined && right.unit !== AUTO$4) {
             fixedRight = true;
             computedStyle.right = css.calAbsolute(currentStyle, 'right', right, iw);
           } else {
             computedStyle.right = 'auto';
           }
 
-          if (top !== undefined && top.unit !== unit.AUTO) {
+          if (top !== undefined && top.unit !== AUTO$4) {
             fixedTop = true;
             computedStyle.top = css.calAbsolute(currentStyle, 'top', top, ih);
           } else {
             computedStyle.top = 'auto';
           }
 
-          if (bottom !== undefined && bottom.unit !== unit.AUTO) {
+          if (bottom !== undefined && bottom.unit !== AUTO$4) {
             fixedBottom = true;
             computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, ih);
           } else {
@@ -9105,11 +9274,11 @@
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle.left;
             w2 = x + iw - computedStyle.right - x2;
-          } else if (fixedLeft && width.unit !== unit.AUTO) {
+          } else if (fixedLeft && width.unit !== AUTO$4) {
             x2 = x + computedStyle.left;
-            w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
-          } else if (fixedRight && width.unit !== unit.AUTO) {
-            w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+            w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
+          } else if (fixedRight && width.unit !== AUTO$4) {
+            w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
             x2 = x + iw - computedStyle.right - w2;
           } else if (fixedLeft) {
             x2 = x + computedStyle.left;
@@ -9119,8 +9288,8 @@
           } else {
             x2 = x + paddingLeft;
 
-            if (width.unit !== unit.AUTO) {
-              w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+            if (width.unit !== AUTO$4) {
+              w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
             }
           } // top/bottom/height优先级同上
 
@@ -9128,11 +9297,11 @@
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle.top;
             h2 = y + ih - computedStyle.bottom - y2;
-          } else if (fixedTop && height.unit !== unit.AUTO) {
+          } else if (fixedTop && height.unit !== AUTO$4) {
             y2 = y + computedStyle.top;
-            h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
-          } else if (fixedBottom && height.unit !== unit.AUTO) {
-            h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+            h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
+          } else if (fixedBottom && height.unit !== AUTO$4) {
+            h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
             y2 = y + ih - computedStyle.bottom - h2;
           } else if (fixedTop) {
             y2 = y + computedStyle.top;
@@ -9157,22 +9326,22 @@
                 y2 = y;
               }
 
-              if (height.unit !== unit.AUTO) {
-                h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+              if (height.unit !== AUTO$4) {
+                h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
               }
             }
 
           if (w2 !== undefined) {
             currentStyle.width = {
               value: w2,
-              unit: unit.PX
+              unit: PX$6
             };
           }
 
           if (h2 !== undefined) {
             currentStyle.height = {
               value: h2,
-              unit: unit.PX
+              unit: PX$6
             };
           } // 记录初始display，同时absolute不能为inline
 
@@ -9234,11 +9403,11 @@
             });
             currentStyle.width = {
               value: max,
-              unit: unit.PX
+              unit: PX$6
             };
             currentStyle.height = {
               value: item.height,
-              unit: unit.PX
+              unit: PX$6
             };
 
             item.__layout({
@@ -9402,6 +9571,8 @@
     return Dom;
   }(Xom);
 
+  var AUTO$5 = unit.AUTO,
+      PX$7 = unit.PX;
   var CACHE = {};
   var INIT = 0;
   var LOADING = 1;
@@ -9428,20 +9599,20 @@
             height = _assertThisInitialize2.height;
 
         width = width || {
-          unit: unit.AUTO
+          unit: AUTO$5
         };
         height = height || {
-          unit: unit.AUTO
+          unit: AUTO$5
         };
 
-        if (width.unit === unit.AUTO) {
+        if (width.unit === AUTO$5) {
           width.value = 32;
-          width.unit = unit.PX;
+          width.unit = PX$7;
         }
 
-        if (height.unit === unit.AUTO) {
+        if (height.unit === AUTO$5) {
           height.value = 32;
-          height.unit = unit.PX;
+          height.unit = PX$7;
         }
       }
 
@@ -9485,25 +9656,25 @@
           _this2.__imgHeight = cache.height;
           var lv = level.REFLOW; // 宽高都为auto，使用加载测量的数据
 
-          if (width.unit === unit.AUTO && height.unit === unit.AUTO) {
+          if (width.unit === AUTO$5 && height.unit === AUTO$5) {
             style.width = {
               value: cache.width,
-              unit: unit.PX
+              unit: PX$7
             };
             style.height = {
               value: cache.height,
-              unit: unit.PX
+              unit: PX$7
             };
           } // 否则有一方定义则按比例调整另一方适应
-          else if (width.unit === unit.AUTO) {
+          else if (width.unit === AUTO$5) {
               style.width = {
                 value: h * cache.width / cache.height,
-                unit: unit.PX
+                unit: PX$7
               };
-            } else if (height.unit === unit.AUTO) {
+            } else if (height.unit === AUTO$5) {
               style.height = {
                 value: w * cache.height / cache.width,
-                unit: unit.PX
+                unit: PX$7
               };
             } else {
               lv = level.REPAINT;
@@ -10085,6 +10256,8 @@
     return Defs;
   }();
 
+  var PX$8 = unit.PX;
+
   function getDom(dom) {
     if (util.isString(dom) && dom) {
       var o = document.querySelector(dom);
@@ -10329,15 +10502,15 @@
 
         style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
           value: 0,
-          unit: unit.PX
+          unit: PX$8
         };
         style.width = {
           value: this.width,
-          unit: unit.PX
+          unit: PX$8
         };
         style.height = {
           value: this.height,
-          unit: unit.PX
+          unit: PX$8
         };
 
         this.__defs.clear();

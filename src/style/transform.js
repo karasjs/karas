@@ -2,6 +2,8 @@ import unit from '../style/unit';
 import util from '../util/util';
 import matrix from '../math/matrix';
 
+const { PX, PERCENT } = unit;
+
 function calSingle(t, k, v) {
   if(k === 'translateX') {
     t[12] = v;
@@ -91,12 +93,12 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
 
 function normalizeSingle(k, v, ow, oh) {
   if(k === 'translateX') {
-    if(v.unit === unit.PERCENT) {
+    if(v.unit === PERCENT) {
       return v.value * ow * 0.01;
     }
   }
   else if(k === 'translateY') {
-    if(v.unit === unit.PERCENT) {
+    if(v.unit === PERCENT) {
       return v.value * oh * 0.01;
     }
   }
@@ -118,10 +120,10 @@ function normalize(transform, ow, oh) {
 function calOrigin(transformOrigin, x, y, w, h) {
   let tfo = [];
   transformOrigin.forEach((item, i) => {
-    if(item.unit === unit.PX) {
+    if(item.unit === PX) {
       tfo.push(item.value + i ? y : x);
     }
-    else if(item.unit === unit.PERCENT) {
+    else if(item.unit === PERCENT) {
       tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
     }
   });

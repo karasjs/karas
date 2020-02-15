@@ -7,6 +7,8 @@ import transform from '../style/transform';
 import image from '../style/image';
 import level from '../animate/level';
 
+const { AUTO, PX } = unit;
+
 const CACHE = {};
 const INIT = 0;
 const LOADING = 1;
@@ -19,15 +21,15 @@ class Img extends Dom {
     if(!this.src || !this.src.trim()) {
       this.__error = true;
       let { style: { width, height } } = this;
-      width = width || { unit: unit.AUTO };
-      height = height || { unit: unit.AUTO };
-      if(width.unit === unit.AUTO) {
+      width = width || { unit: AUTO };
+      height = height || { unit: AUTO };
+      if(width.unit === AUTO) {
         width.value = 32;
-        width.unit = unit.PX;
+        width.unit = PX;
       }
-      if(height.unit === unit.AUTO) {
+      if(height.unit === AUTO) {
         height.value = 32;
-        height.unit = unit.PX;
+        height.unit = PX;
       }
     }
   }
@@ -55,27 +57,27 @@ class Img extends Dom {
       this.__imgHeight = cache.height;
       let lv = level.REFLOW;
       // 宽高都为auto，使用加载测量的数据
-      if(width.unit === unit.AUTO && height.unit === unit.AUTO) {
+      if(width.unit === AUTO && height.unit === AUTO) {
         style.width = {
           value: cache.width,
-          unit: unit.PX,
+          unit: PX,
         };
         style.height = {
           value: cache.height,
-          unit: unit.PX,
+          unit: PX,
         };
       }
       // 否则有一方定义则按比例调整另一方适应
-      else if(width.unit === unit.AUTO) {
+      else if(width.unit === AUTO) {
         style.width = {
           value: h * cache.width / cache.height,
-          unit: unit.PX,
+          unit: PX,
         };
       }
-      else if(height.unit === unit.AUTO) {
+      else if(height.unit === AUTO) {
         style.height = {
           value: w * cache.height / cache.width,
-          unit: unit.PX,
+          unit: PX,
         };
       }
       else {

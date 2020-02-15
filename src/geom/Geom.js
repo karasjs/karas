@@ -6,6 +6,8 @@ import mode from '../util/mode';
 import util from '../util/util';
 import matrix from '../math/matrix';
 
+const { AUTO, PX, PERCENT } = unit;
+
 const REGISTER = {};
 
 class Geom extends Xom {
@@ -39,10 +41,10 @@ class Geom extends Xom {
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
     let { currentStyle: { width } } = this;
-    if(width.unit === unit.PX) {
+    if(width.unit === PX) {
       return w - width.value;
     }
-    else if(width.unit === unit.PERCENT) {
+    else if(width.unit === PERCENT) {
       return w - total * width.value * 0.01;
     }
     return w;
@@ -65,7 +67,7 @@ class Geom extends Xom {
       borderLeftWidth,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
-    if(main.unit !== unit.AUTO) {
+    if(main.unit !== AUTO) {
       b = max += main.value;
     }
     // border也得计算在内
@@ -130,10 +132,10 @@ class Geom extends Xom {
     let cy = originY + height * 0.5;
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
-    if(strokeWidth.unit === unit.PX) {
+    if(strokeWidth.unit === PX) {
       strokeWidth = strokeWidth.value;
     }
-    else if(strokeWidth.unit === unit.PERCENT) {
+    else if(strokeWidth.unit === PERCENT) {
       strokeWidth = strokeWidth.value * width * 0.01;
     }
     else {

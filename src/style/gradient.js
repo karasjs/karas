@@ -1,6 +1,8 @@
 import util from '../util/util';
 import unit from './unit';
 
+const { PX, PERCENT } = unit;
+
 function getLinearDeg(v) {
   let deg = 180;
   if(v === 'to top') {
@@ -46,7 +48,7 @@ function getColorStop(v, length) {
     if(item.length > 1) {
       let c = item[0];
       let p = item[1];
-      if(p.unit === unit.PERCENT) {
+      if(p.unit === PERCENT) {
         list.push([c, p.value * 0.01]);
       }
       else {
@@ -421,14 +423,14 @@ function parseGradient(s) {
         if(/%$/.test(arr[1])) {
           arr[1] = {
             value: parseFloat(arr[1]),
-            unit: unit.PERCENT,
+            unit: PERCENT,
             str: arr[1],
           };
         }
         else {
           arr[1] = {
             value: parseFloat(arr[1]),
-            unit: unit.PX,
+            unit: PX,
             str: arr[1],
           };
         }

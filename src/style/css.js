@@ -4,9 +4,11 @@ import gradient from './gradient';
 import image from './image';
 import util from '../util/util';
 
+const { AUTO, PX, PERCENT, POSITION, NUMBER, INHERIT, DEG, SIZE } = unit;
+
 function parserOneBorder(style, direction) {
   let key = `border${direction}`;
-  if(!style[key]) {
+  if(!style.hasOwnProperty(key)) {
     return;
   }
   let w = /\b[\d.]+px\b/i.exec(style[key]);
@@ -32,15 +34,22 @@ function parserOneBorder(style, direction) {
   }
 }
 
+/**
+ * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
+ * @param obj 待计算的样式对象
+ * @param k 对象的key
+ * @param v 对象的value
+ * @returns 格式化好的样式对象本身
+ */
 function calUnit(obj, k, v) {
   if(v === 'auto') {
     obj[k] = {
-      unit: unit.AUTO,
+      unit: AUTO,
     };
   }
   else if(v === 'inherit') {
     obj[k] = {
-      unit: unit.INHERIT,
+      unit: INHERIT,
     };
   }
   else if(/%$/.test(v)) {
@@ -49,7 +58,7 @@ function calUnit(obj, k, v) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
-        unit: unit.PERCENT,
+        unit: PERCENT,
       };
     }
   }
@@ -57,37 +66,42 @@ function calUnit(obj, k, v) {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
-      unit: unit.PX,
+      unit: PX,
     };
   }
   else if(/deg$/.test(v)) {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
-      unit: unit.DEG,
+      unit: DEG,
     };
   }
   else {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
-      unit: unit.NUMBER,
+      unit: NUMBER,
     };
   }
   return obj;
 }
 
+/**
+ * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
+ * @param style 手写的style样式
+ * @param reset 默认样式
+ * @returns 标准化的样式
+ */
 function normalize(style, reset) {
-  // 默认reset
-  if(reset) {
-    reset.forEach(item => {
-      if(!style.hasOwnProperty(item.k)) {
-        style[item.k] = item.v;
-      }
-    });
-  }
+  // 默认reset，根据传入不同，当style为空时覆盖
+  reset.forEach(item => {
+    let { k, v } = item;
+    if(util.isNil(style[k])) {
+      style[k] = v;
+    }
+  });
   let temp = style.background;
-  // 处理渐变背景色
+  // 处理渐变背景缩写
   if(temp) {
     // gradient/image和颜色可以并存
     let gd = gradient.reg.exec(temp);
@@ -154,14 +168,20 @@ function normalize(style, reset) {
       if(/%$/.test(temp) || /px$/.test(temp) || /^[\d.]+$/.test(temp)) {
         calUnit(style, k, temp);
         temp = style[k];
-        if(temp.unit === unit.NUMBER) {
-          temp.unit = unit.PX;
+        if(temp.unit === NUMBER) {
+          temp.unit = PX;
         }
+      }
+      else if(temp === 'contain' || temp === 'cover') {
+        style[k] = {
+          value: temp,
+          unit: POSITION,
+        };
       }
       else {
         style[k] = {
-          value: temp,
-          unit: unit.POSITION,
+          value: 0,
+          unit: PX,
         };
       }
     }
@@ -183,29 +203,22 @@ function normalize(style, reset) {
         else if(item === '0' || item === 0) {
           bc.push({
             value: 0,
-            unit: unit.PX,
+            unit: PX,
           });
         }
         else if(item === 'contain' || item === 'cover') {
           bc.push({
             value: item,
-            unit: unit.SIZE,
+            unit: SIZE,
           });
         }
         else {
           bc.push({
-            unit: unit.AUTO,
+            unit: AUTO,
           });
         }
       }
       style.backgroundSize = bc;
-    }
-    else {
-      style.backgroundSize = [{
-        unit: unit.AUTO,
-      }, {
-        unit: unit.AUTO,
-      }];
     }
   }
   // 处理缩写
@@ -256,7 +269,12 @@ function normalize(style, reset) {
   }
   temp = style.border;
   if(temp) {
-    style.borderTop = style.borderRight = style.borderBottom = style.borderLeft = temp;
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k;
+      if(!util.isNil(style[k])) {
+        style[k] = temp;
+      }
+    });
   }
   temp = style.margin;
   if(temp) {
@@ -272,10 +290,12 @@ function normalize(style, reset) {
       else if(match.length === 3) {
         match[3] = match[1];
       }
-      style.marginTop = match[0];
-      style.marginRight = match[1];
-      style.marginBottom = match[2];
-      style.marginLeft = match[3];
+      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
+        k = 'margin' + k;
+        if(!util.isNil(style[k])) {
+          style[k] = temp[i];
+        }
+      });
     }
   }
   temp = style.padding;
@@ -292,10 +312,12 @@ function normalize(style, reset) {
       else if(match.length === 3) {
         match[3] = match[1];
       }
-      style.paddingTop = match[0];
-      style.paddingRight = match[1];
-      style.paddingBottom = match[2];
-      style.paddingLeft = match[3];
+      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
+        k = 'padding' + k;
+        if(!util.isNil(style[k])) {
+          style[k] = temp[i];
+        }
+      });
     }
   }
   temp = style.transform;
@@ -331,21 +353,26 @@ function normalize(style, reset) {
             k = 'rotateZ';
           }
           let arr = calUnit([k, v], 1, v);
-          if(arr[1].value !== 0 && arr[1].unit !== unit.NUMBER || k.indexOf('scale') === 0) {
+          if(k.indexOf('scale') === 0) {
+            if(arr[1].value !== 1 && arr[1].unit === NUMBER) {
+              transform.push(arr);
+            }
+          }
+          else if(arr[1].value !== 0 && arr[1].unit !== NUMBER) {
             transform.push(arr);
           }
         }
-        else if(['translate', 'scale', 'skew'].indexOf(k) > -1) {
+        else if({translate: true, scale: true, skew: true}.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
           if(arr.length === 1) {
             arr[1] = arr[0];
           }
           let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
           let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
-          if(arr1[1].value !== 0 && arr1[1].unit !== unit.NUMBER) {
+          if(arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
             transform.push(arr1);
           }
-          if(arr2[1].value !== 0 && arr2[1].unit !== unit.NUMBER) {
+          if(arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
             transform.push(arr2);
           }
         }
@@ -375,7 +402,7 @@ function normalize(style, reset) {
               bottom: 100,
               0: 0,
             }[item],
-            unit: unit.PERCENT,
+            unit: PERCENT,
           });
           // 不规范的写法变默认值50%
           if(tfo[i].value === undefined) {
@@ -384,15 +411,6 @@ function normalize(style, reset) {
         }
       }
       style.transformOrigin = tfo;
-    }
-    else {
-      style.transformOrigin = [{
-        value: 50,
-        unit: unit.PERCENT,
-      }, {
-        value: 50,
-        unit: unit.PERCENT,
-      }];
     }
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
@@ -419,13 +437,10 @@ function normalize(style, reset) {
   ].forEach(k => {
     let v = style[k];
     if(util.isNil(v)) {
-      delete style[k];
       return;
     }
     if(style.transform) {
-      delete style[k];
       console.error(`Can not use expand style "${k}" with "transform"`);
-      return;
     }
     calUnit(style, k, v);
     if(k === 'rotate') {
@@ -435,12 +450,15 @@ function normalize(style, reset) {
     }
     // 没有单位视作px或deg
     v = style[k];
-    if(v.unit === unit.NUMBER || v.value === 0) {
-      if(k.indexOf('translate') === 0) {
-        v.unit = unit.PX;
+    if(k.indexOf('scale') > -1) {
+      v.unit = NUMBER;
+    }
+    else if(v.unit === NUMBER || v.value === 0) {
+      if(k.indexOf('translate') > -1) {
+        v.unit = PX;
       }
-      else if(k.indexOf('scale') !== 0) {
-        v.unit = unit.DEG;
+      else {
+        v.unit = DEG;
       }
     }
   });
@@ -452,14 +470,13 @@ function normalize(style, reset) {
       temp = Math.min(temp, 1);
       style.opacity = temp;
     }
+    else {
+      style.opacity = 1;
+    }
   }
   temp = style.zIndex;
-  if(temp && temp !== 'auto') {
-    temp = parseInt(temp);
-    if(!isNaN(temp)) {
-      temp = Math.max(temp, 0);
-      style.zIndex = temp;
-    }
+  if(temp) {
+    style.zIndex = parseInt(temp) || 0;
   }
   parserOneBorder(style, 'Top');
   parserOneBorder(style, 'Right');
@@ -489,14 +506,15 @@ function normalize(style, reset) {
     'fontSize',
     'strokeWidth'
   ].forEach(k => {
-    if(!style.hasOwnProperty(k)) {
+    let v = style[k];
+    if(util.isNil(v)) {
       return;
     }
-    calUnit(style, k, style[k]);
-    let v = style[k];
+    calUnit(style, k, v);
+    v = style[k];
     // 无单位视为px
-    if(v.unit === unit.NUMBER) {
-      v.unit = unit.PX;
+    if(v.unit === NUMBER) {
+      v.unit = PX;
     }
   });
   temp = style.fontWeight;
@@ -518,18 +536,18 @@ function normalize(style, reset) {
   if(temp || temp === 0 || temp === '0') {
     if(temp === 'inherit') {
       style.lineHeight = {
-        unit: unit.INHERIT,
+        unit: INHERIT,
       };
     }
     if(temp === 'normal') {
       style.lineHeight = {
-        unit: unit.AUTO,
+        unit: AUTO,
       };
     }
     else if(/px$/.test(temp)) {
       style.lineHeight = {
         value: parseFloat(temp),
-        unit: unit.PX,
+        unit: PX,
       };
     }
     else {
@@ -537,13 +555,13 @@ function normalize(style, reset) {
       // 非法数字
       if(n === 'normal') {
         style.lineHeight = {
-          unit: unit.AUTO,
+          unit: AUTO,
         };
       }
       else {
         style.lineHeight = {
           value: n,
-          unit: unit.NUMBER,
+          unit: NUMBER,
         };
       }
     }
@@ -577,13 +595,13 @@ function normalize(style, reset) {
 }
 
 function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-  if(fontSize.unit === unit.INHERIT) {
+  if(fontSize.unit === INHERIT) {
     computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
   }
-  else if(fontSize.unit === unit.PX) {
+  else if(fontSize.unit === PX) {
     computedStyle.fontSize = fontSize.value;
   }
-  else if(fontSize.unit === unit.PERCENT) {
+  else if(fontSize.unit === PERCENT) {
     computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
   }
   else {
@@ -678,25 +696,25 @@ function getBaseLine(style) {
 
 function calLineHeight(xom, lineHeight, computedStyle) {
   if(util.isNumber(lineHeight)) {}
-  if(lineHeight.unit === unit.INHERIT) {
+  if(lineHeight.unit === INHERIT) {
     let parent = xom.parent;
     if(parent) {
       let pl = parent.style.lineHeight;
       // 一直继承向上查找直到root
-      if(pl.unit === unit.INHERIT) {
+      if(pl.unit === INHERIT) {
         parent = parent.parent;
         while(parent) {
           pl = parent.style.lineHeight;
-          if(pl.unit !== unit.INHERIT) {
+          if(pl.unit !== INHERIT) {
             break;
           }
         }
       }
       let parentComputedStyle = parent.computedStyle;
-      if(pl.unit === unit.PX) {
+      if(pl.unit === PX) {
         computedStyle.lineHeight = parentComputedStyle.lineHeight;
       }
-      else if(pl.unit === unit.NUMBER) {
+      else if(pl.unit === NUMBER) {
         computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
       }
       else {
@@ -705,15 +723,15 @@ function calLineHeight(xom, lineHeight, computedStyle) {
     }
     else {
       // root的继承强制为normal
-      lineHeight.unit = unit.AUTO;
+      lineHeight.unit = AUTO;
       computedStyle.lineHeight = calLineHeight(computedStyle);
     }
   }
   // 防止为0
-  else if(lineHeight.unit === unit.PX) {
+  else if(lineHeight.unit === PX) {
     computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
   }
-  else if(lineHeight.unit === unit.NUMBER) {
+  else if(lineHeight.unit === NUMBER) {
     computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
   }
   // normal
@@ -730,7 +748,7 @@ function calRelativePercent(n, parent, k) {
   n *= 0.01;
   while(parent) {
     let style = parent.currentStyle[k];
-    if(style.unit === unit.AUTO) {
+    if(style.unit === AUTO) {
       if(k === 'width') {
         parent = parent.parent;
       }
@@ -738,10 +756,10 @@ function calRelativePercent(n, parent, k) {
         break;
       }
     }
-    else if(style.unit === unit.PX) {
+    else if(style.unit === PX) {
       return n * style.value;
     }
-    else if(style.unit === unit.PERCENT) {
+    else if(style.unit === PERCENT) {
       n *= style.value * 0.01;
       parent = parent.parent;
     }
@@ -751,13 +769,13 @@ function calRelativePercent(n, parent, k) {
 
 function calRelative(computedStyle, k, v, parent, isWidth) {
   if(util.isNumber(v)) {}
-  else if(v.unit === unit.AUTO) {
+  else if(v.unit === AUTO) {
     v = 0;
   }
-  else if(v.unit === unit.PX) {
+  else if(v.unit === PX) {
     v = v.value;
   }
-  else if(v.unit === unit.PERCENT) {
+  else if(v.unit === PERCENT) {
     if(isWidth) {
       v = calRelativePercent(v.value, parent, 'width');
     }
@@ -770,13 +788,13 @@ function calRelative(computedStyle, k, v, parent, isWidth) {
 
 function calAbsolute(computedStyle, k, v, size) {
   if(util.isNumber(v)) {}
-  else if(v.unit === unit.AUTO) {
+  else if(v.unit === AUTO) {
     v = 0;
   }
-  else if(v.unit === unit.PX) {
+  else if(v.unit === PX) {
     v = v.value;
   }
-  else if(v.unit === unit.PERCENT) {
+  else if(v.unit === PERCENT) {
     v = v.value * size * 0.01;
   }
   return computedStyle[k] = v;

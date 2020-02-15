@@ -24,8 +24,8 @@ const DOM = {
   backgroundColor: 'transparent',
   backgroundSize: 'auto',
   backgroundRepeat: 'repeat',
-  backgroundPositionX: '0%',
-  backgroundPositionY: '0%',
+  backgroundPositionX: 0,
+  backgroundPositionY: 0,
   borderTopWidth: 0,
   borderRightWidth: 0,
   borderBottomWidth: 0,
@@ -50,15 +50,15 @@ const DOM = {
   transformOrigin: 'center',
   visibility: 'visible',
   opacity: 1,
-  zIndex: 'auto',
+  zIndex: 0,
   transform: null,
-  translateX: null,
-  translateY: null,
-  scaleX: null,
-  scaleY: null,
-  skewX: null,
-  skewY: null,
-  rotateZ: null,
+  translateX: 0,
+  translateY: 0,
+  scaleX: 1,
+  scaleY: 1,
+  skewX: 0,
+  skewY: 0,
+  rotateZ: 0,
 };
 
 const GEOM = {
@@ -88,6 +88,9 @@ Object.keys(GEOM).forEach(k => {
 });
 
 export default {
+  DOM,
+  GEOM,
+  XOM: Object.assign(DOM, GEOM),
   dom,
   geom,
 };

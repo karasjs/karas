@@ -1,6 +1,8 @@
 import unit from './unit';
 import transform from './transform';
 
+const { PERCENT, NUMBER } = unit;
+
 function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
   if(imgWidth === targetWidth && imgHeight === targetHeight) {
     return;
@@ -8,21 +10,21 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
   let list = [
     ['scaleX', {
       value: targetWidth / imgWidth,
-      unit: unit.NUMBER,
+      unit: NUMBER,
     }],
     ['scaleY', {
       value: targetHeight / imgHeight,
-      unit: unit.NUMBER,
+      unit: NUMBER,
     }]
   ];
   let tfo = transform.calOrigin([
     {
       value: 0,
-      unit: unit.PERCENT,
+      unit: PERCENT,
     },
     {
       value: 0,
-      unit: unit.PERCENT,
+      unit: PERCENT,
     }
   ], x, y, w, h);
   return transform.calMatrix(list, tfo, w, h);

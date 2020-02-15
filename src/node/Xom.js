@@ -12,6 +12,8 @@ import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
+const { AUTO, PX, PERCENT, POSITION, SIZE } = unit;
+
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
     points.forEach(point => {
@@ -70,19 +72,19 @@ function renderBgc(renderMode, value, x, y, w, h, ctx, xom) {
 function calBackgroundSize(value, x, y, w, h) {
   let res = [];
   value.forEach((item, i) => {
-    if(item.unit === unit.PX) {
+    if(item.unit === PX) {
       res.push(item.value);
     }
-    else if(item.unit === unit.PERCENT) {
+    else if(item.unit === PERCENT) {
       res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
     }
-    else if(item.unit === unit.AUTO) {
+    else if(item.unit === AUTO) {
       res.push(-1);
     }
-    else if(item.unit === unit.SIZE) {
+    else if(item.unit === SIZE) {
       res.push(item.value === 'contain' ? -2 : -3);
     }
-    else if(item.unit === unit.POSITION) {
+    else if(item.unit === POSITION) {
       res.push(item.value);
     }
   });
@@ -96,10 +98,10 @@ function calBackgroundPosition(position, container, size) {
   else if(position.value === 'center') {
     return (container - size) * 0.5;
   }
-  else if(position.unit === unit.PX) {
+  else if(position.unit === PX) {
     return position.value;
   }
-  else if(position.unit === unit.PERCENT) {
+  else if(position.unit === PERCENT) {
     return (container - size) * position.value * 0.01;
   }
   return 0;
@@ -207,10 +209,10 @@ class Xom extends Node {
   }
 
   __mpWidth(mp, w) {
-    if(mp.unit === unit.PX) {
+    if(mp.unit === PX) {
       return mp.value;
     }
-    else if(mp.unit === unit.PERCENT) {
+    else if(mp.unit === PERCENT) {
       return mp.value * w * 0.01;
     }
     return 0;
@@ -224,12 +226,12 @@ class Xom extends Node {
       display,
       width,
     } = currentStyle;
-    if(width.unit !== unit.AUTO) {
+    if(width.unit !== AUTO) {
       switch(width.unit) {
-        case unit.PX:
+        case PX:
           w = width.value;
           break;
-        case unit.PERCENT:
+        case PERCENT:
           w *= width.value * 0.01;
           break;
       }
@@ -253,13 +255,13 @@ class Xom extends Node {
     if(currentStyle.position === 'relative' && this.parent) {
       let { top, right, bottom, left } = currentStyle;
       let { parent } = this;
-      if(top.unit !== unit.AUTO) {
+      if(top.unit !== AUTO) {
         let n = css.calRelative(currentStyle, 'top', top, parent);
         this.__offsetY(n);
         computedStyle.top = n;
         computedStyle.bottom = 'auto';
       }
-      else if(bottom.unit !== unit.AUTO) {
+      else if(bottom.unit !== AUTO) {
         let n = css.calRelative(currentStyle, 'bottom', bottom, parent);
         this.__offsetY(-n);
         computedStyle.bottom = n;
@@ -268,13 +270,13 @@ class Xom extends Node {
       else {
         computedStyle.top = computedStyle.bottom = 'auto';
       }
-      if(left.unit !== unit.AUTO) {
+      if(left.unit !== AUTO) {
         let n = css.calRelative(currentStyle, 'left', left, parent, true);
         this.__offsetX(n);
         computedStyle.left = n;
         computedStyle.right = 'auto';
       }
-      else if(right.unit !== unit.AUTO) {
+      else if(right.unit !== AUTO) {
         let n = css.calRelative(currentStyle, 'right', right, parent, true);
         this.__offsetX(-n);
         computedStyle.right = n;
@@ -316,24 +318,24 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(width.unit !== unit.AUTO) {
+    if(width.unit !== AUTO) {
       fixedWidth = true;
       switch(width.unit) {
-        case unit.PX:
+        case PX:
           w = width.value;
           break;
-        case unit.PERCENT:
+        case PERCENT:
           w *= width.value * 0.01;
           break;
       }
     }
-    if(height.unit !== unit.AUTO) {
+    if(height.unit !== AUTO) {
       fixedHeight = true;
       switch(height.unit) {
-        case unit.PX:
+        case PX:
           h = height.value;
           break;
-        case unit.PERCENT:
+        case PERCENT:
           h *= height.value * 0.01;
           break;
       }
@@ -343,10 +345,10 @@ class Xom extends Node {
     data.x = x;
     y += borderTopWidth + marginTop + paddingTop;
     data.y = y;
-    if(width.unit === unit.AUTO) {
+    if(width.unit === AUTO) {
       w -= borderLeftWidth + borderRightWidth + marginLeft + marginRight + paddingLeft + paddingRight;
     }
-    if(height.unit === unit.AUTO) {
+    if(height.unit === AUTO) {
       h -= borderTopWidth + borderBottomWidth + marginTop + marginBottom + paddingTop + paddingBottom;
     }
     return {
@@ -367,7 +369,7 @@ class Xom extends Node {
       marginRight,
       width,
     } = style;
-    if(position !== 'absolute' && width !== unit.AUTO && marginLeft.unit === unit.AUTO && marginRight.unit === unit.AUTO) {
+    if(position !== 'absolute' && width !== AUTO && marginLeft.unit === AUTO && marginRight.unit === AUTO) {
       let ow = this.outerWidth;
       if(ow < data.w) {
         this.__offsetX((data.w - ow) * 0.5, true);
@@ -483,8 +485,15 @@ class Xom extends Node {
         if(util.isNil(v)) {
           return;
         }
+        // scale为1和其它为0避免计算浪费
+        if(v === 1 && k.indexOf('scale') > -1) {
+          return
+        }
+        if(v === 0) {
+          return;
+        }
         computedStyle[k] = v.value;
-        if(v.unit === unit.PERCENT) {
+        if(v.unit === PERCENT) {
           if(k === 'translateX') {
             computedStyle[k] = v.value * outerWidth * 0.01;
           }

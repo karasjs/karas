@@ -10,6 +10,8 @@ import mode from '../util/mode';
 import sort from '../util/sort';
 import Component from './Component';
 
+const { AUTO, PX, PERCENT } = unit;
+
 const TAG_NAME = {
   'div': true,
   'span': true,
@@ -134,10 +136,10 @@ class Dom extends Xom {
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
   __tryLayInline(w, total) {
     let { flowChildren, currentStyle: { width } } = this;
-    if(width.unit === unit.PX) {
+    if(width.unit === PX) {
       return w - width.value;
     }
-    else if(width.unit === unit.PERCENT) {
+    else if(width.unit === PERCENT) {
       return w - total * width.value * 0.01;
     }
     for(let i = 0; i < flowChildren.length; i++) {
@@ -200,7 +202,7 @@ class Dom extends Xom {
       borderLeftWidth,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
-    if(main.unit === unit.PX) {
+    if(main.unit === PX) {
       b = max = main.value;
       // 递归时children的长度会影响flex元素的最小宽度
       if(isRecursion) {
@@ -259,12 +261,12 @@ class Dom extends Xom {
   // 换算margin/padding为px单位
   __calMp(v, w) {
     let n = 0;
-    if(v.unit === unit.PX) {
+    if(v.unit === PX) {
       n += v.value;
     }
-    else if(v.unit === unit.PERCENT) {
+    else if(v.unit === PERCENT) {
       v.value *= w * 0.01;
-      v.unit = unit.PX;
+      v.unit = PX;
       n += v.value;
     }
     return n;
@@ -435,16 +437,16 @@ class Dom extends Xom {
         shrinkSum += flexShrink;
         let { b, min, max } = item.__calAutoBasis(isDirectionRow, w, h);
         // 根据basis不同，计算方式不同
-        if(flexBasis.unit === unit.AUTO) {
+        if(flexBasis.unit === AUTO) {
           basisList.push(max);
           basisSum += max;
         }
-        else if(flexBasis.unit === unit.PX) {
+        else if(flexBasis.unit === PX) {
           computedStyle.flexBasis = b = flexBasis.value;
           basisList.push(b);
           basisSum += b;
         }
-        else if(flexBasis.unit === unit.PERCENT) {
+        else if(flexBasis.unit === PERCENT) {
           b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value * 0.01;
           basisList.push(b);
           basisSum += b;
@@ -508,9 +510,9 @@ class Dom extends Xom {
             currentStyle.display = computedStyle.display = 'block';
           }
           // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-          else if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === unit.AUTO) {
+          else if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === AUTO) {
             height.value = h;
-            height.unit = unit.PX;
+            height.unit = PX;
           }
           item.__layout({
             x,
@@ -525,9 +527,9 @@ class Dom extends Xom {
             currentStyle.display = computedStyle.display = 'block';
           }
           // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-          else if(display === 'flex' && flexDirection === 'row' && width.unit === unit.AUTO) {
+          else if(display === 'flex' && flexDirection === 'row' && width.unit === AUTO) {
             width.value = w;
-            width.unit = unit.PX;
+            width.unit = PX;
           }
           item.__layout({
             x,
@@ -643,12 +645,12 @@ class Dom extends Xom {
           paddingLeft,
         } = computedStyle;
         if(isDirectionRow) {
-          if(currentStyle.height.unit === unit.AUTO) {
+          if(currentStyle.height.unit === AUTO) {
             item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
           }
         }
         else {
-          if(currentStyle.width.unit === unit.AUTO) {
+          if(currentStyle.width.unit === AUTO) {
             item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
           }
         }
@@ -843,28 +845,28 @@ class Dom extends Xom {
       let fixedRight;
       let fixedBottom;
       let fixedLeft;
-      if(left !== undefined && left.unit !== unit.AUTO) {
+      if(left !== undefined && left.unit !== AUTO) {
         fixedLeft = true;
         computedStyle.left = css.calAbsolute(currentStyle, 'left', left, iw);
       }
       else {
         computedStyle.left = 'auto';
       }
-      if(right !== undefined && right.unit !== unit.AUTO) {
+      if(right !== undefined && right.unit !== AUTO) {
         fixedRight = true;
         computedStyle.right = css.calAbsolute(currentStyle, 'right', right, iw);
       }
       else {
         computedStyle.right = 'auto';
       }
-      if(top !== undefined && top.unit !== unit.AUTO) {
+      if(top !== undefined && top.unit !== AUTO) {
         fixedTop = true;
         computedStyle.top = css.calAbsolute(currentStyle, 'top', top, ih);
       }
       else {
         computedStyle.top = 'auto';
       }
-      if(bottom !== undefined && bottom.unit !== unit.AUTO) {
+      if(bottom !== undefined && bottom.unit !== AUTO) {
         fixedBottom = true;
         computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, ih);
       }
@@ -876,12 +878,12 @@ class Dom extends Xom {
         x2 = x + computedStyle.left;
         w2 = x + iw - computedStyle.right - x2;
       }
-      else if(fixedLeft && width.unit !== unit.AUTO) {
+      else if(fixedLeft && width.unit !== AUTO) {
         x2 = x + computedStyle.left;
-        w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+        w2 = width.unit === PX ? width.value : iw * width.value * 0.01;
       }
-      else if(fixedRight && width.unit !== unit.AUTO) {
-        w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+      else if(fixedRight && width.unit !== AUTO) {
+        w2 = width.unit === PX ? width.value : iw * width.value * 0.01;
         x2 = x + iw - computedStyle.right - w2;
       }
       else if(fixedLeft) {
@@ -893,8 +895,8 @@ class Dom extends Xom {
       }
       else {
         x2 = x + paddingLeft;
-        if(width.unit !== unit.AUTO) {
-          w2 = width.unit === unit.PX ? width.value : iw * width.value * 0.01;
+        if(width.unit !== AUTO) {
+          w2 = width.unit === PX ? width.value : iw * width.value * 0.01;
         }
       }
       // top/bottom/height优先级同上
@@ -902,12 +904,12 @@ class Dom extends Xom {
         y2 = y + computedStyle.top;
         h2 = y + ih - computedStyle.bottom - y2;
       }
-      else if(fixedTop && height.unit !== unit.AUTO) {
+      else if(fixedTop && height.unit !== AUTO) {
         y2 = y + computedStyle.top;
-        h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+        h2 = height.unit === PX ? height.value : ih * height.value * 0.01;
       }
-      else if(fixedBottom && height.unit !== unit.AUTO) {
-        h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+      else if(fixedBottom && height.unit !== AUTO) {
+        h2 = height.unit === PX ? height.value : ih * height.value * 0.01;
         y2 = y + ih - computedStyle.bottom - h2;
       }
       else if(fixedTop) {
@@ -931,20 +933,20 @@ class Dom extends Xom {
         if(!prev) {
           y2 = y;
         }
-        if(height.unit !== unit.AUTO) {
-          h2 = height.unit === unit.PX ? height.value : ih * height.value * 0.01;
+        if(height.unit !== AUTO) {
+          h2 = height.unit === PX ? height.value : ih * height.value * 0.01;
         }
       }
       if(w2 !== undefined) {
         currentStyle.width = {
           value: w2,
-          unit: unit.PX,
+          unit: PX,
         };
       }
       if(h2 !== undefined) {
         currentStyle.height = {
           value: h2,
-          unit: unit.PX,
+          unit: PX,
         };
       }
       // 记录初始display，同时absolute不能为inline
@@ -1005,11 +1007,11 @@ class Dom extends Xom {
         });
         currentStyle.width = {
           value: max,
-          unit: unit.PX,
+          unit: PX,
         };
         currentStyle.height = {
           value: item.height,
-          unit: unit.PX,
+          unit: PX,
         };
         item.__layout({
           x: x2,

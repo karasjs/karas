@@ -4,36 +4,44 @@ import gradient from './gradient';
 import image from './image';
 import util from '../util/util';
 
-const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, SIZE, RGBA, STRING } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 
 const DEFAULT_FONT_SIZE = 16;
 
 function parserOneBorder(style, direction) {
   let k = `border${direction}`;
   let v = style[k];
-  if(util.isNil(v)) {
-    return;
+  if(util.isNil(style[k + 'Width'])) {
+    let w = /\b[\d.]+px\b/i.exec(v);
+    // width后面会统一格式化处理
+    style[k + 'Width'] = w ? w[0] : 0;
   }
-  let w = /\b[\d.]+px\b/i.exec(style[k]);
-  if(w) {
-    style[k + 'Width'] = w[0];
+  if(util.isNil(style[k + 'Style'])) {
+    let s = /\b(solid|dashed|dotted)\b/i.exec(v);
+    style[k + 'Style'] = s ? s[1] : 'solid';
   }
-  let s = /\b(solid|dashed|dotted)\b/i.exec(style[k]);
-  if(s) {
-    style[k + 'Style'] = s[1];
-  }
-  let c = /#[0-9a-f]{3,6}/i.exec(style[k]);
-  if(c && [4, 7].indexOf(c[0].length) > -1) {
-    style[k + 'Color'] = c[0];
-  }
-  else if(/\btransparent\b/i.test(style[k])) {
-    style[k + 'Color'] = 'transparent';
-  }
-  else {
-    c = /rgba?\(.+\)/i.exec(style[k]);
-    if(c) {
-      style[k + 'Color'] = c[0];
+  if(util.isNil(style[k + 'Color'])) {
+    let c = /#[0-9a-f]{3,6}/i.exec(v);
+    if(c && [4, 7].indexOf(c[0].length) > -1) {
+      style[k + 'Color'] = util.rgb2int(c[0]);
+    } else if(/\btransparent\b/i.test(v)) {
+      style[k + 'Color'] = util.rgb2int('transparent');
+    } else {
+      c = /rgba?\(.+\)/i.exec(v);
+      style[k + 'Color'] = util.rgb2int(c ? c[0] : 'transparent');
     }
+  }
+}
+
+function parseFlex(style, grow, shrink, basis) {
+  if(util.isNil(style.flexGrow)) {
+    style.flexGrow = grow;
+  }
+  if(util.isNil(style.flexShrink)) {
+    style.flexGrow = shrink;
+  }
+  if(util.isNil(style.flexBasis)) {
+    style.flexGrow = basis;
   }
 }
 
@@ -96,6 +104,170 @@ function calUnit(obj, k, v) {
  * @returns 标准化的样式
  */
 function normalize(style, reset) {
+  // 缩写提前处理，因为reset里没有reset
+  let temp = style.border;
+  if(temp) {
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k;
+      if(util.isNil(style[k])) {
+        style[k] = temp;
+      }
+    });
+    parserOneBorder(style, 'Top');
+    parserOneBorder(style, 'Right');
+    parserOneBorder(style, 'Bottom');
+    parserOneBorder(style, 'Left');
+  }
+  temp = style.borderWidth;
+  if(temp) {
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k + 'Width';
+      if(util.isNil(style[k])) {
+        // width后面会统一格式化处理
+        style[k] = temp;
+      }
+    });
+  }
+  temp = style.borderColor;
+  if(temp) {
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k + 'Color';
+      if(util.isNil(style[k])) {
+        style[k] = util.rgb2int(temp);
+      }
+    });
+  }
+  temp = style.borderStyle;
+  if(temp) {
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      k = 'border' + k + 'Style';
+      if(util.isNil(style[k])) {
+        style[k] = temp;
+      }
+    });
+  }
+  temp = style.background;
+  // 处理渐变背景缩写
+  if(temp) {
+    // gradient/image和颜色可以并存
+    if(util.isNil(style.backgroundImage)) {
+      let gd = gradient.reg.exec(temp);
+      if(gd) {
+        style.backgroundImage = gd[0];
+        temp = temp.replace(gd[0], '');
+      }
+    }
+    if(util.isNil(style.backgroundImage)) {
+      let img = image.reg.exec(temp);
+      if(img) {
+        style.backgroundImage = img[0];
+        temp = temp.replace(img[0], '');
+      }
+    }
+    if(util.isNil(style.backgroundRepeat)) {
+      let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
+      if(repeat && util.isNil(style.backgroundRepeat)) {
+        style.backgroundRepeat = repeat[0].toLowerCase().trim();
+      }
+    }
+    if(util.isNil(style.backgroundPosition)) {
+      let position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
+      if(position && util.isNil(style.backgroundPosition)) {
+        style.backgroundPosition = position[0].trim();
+      }
+    }
+    if(util.isNil(style.backgroundColor)) {
+      let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
+      if(bgc) {
+        style.backgroundColor = bgc[0];
+      }
+    }
+  }
+  // 背景位置
+  temp = style.backgroundPosition;
+  if(!util.isNil(temp)) {
+    temp = temp.toString().split(/\s+/);
+    if(temp.length === 1) {
+      temp[1] = '50%';
+    }
+    [style.backgroundPositionX, style.backgroundPositionY] = temp;
+  }
+  // flex
+  temp = style.flex;
+  if(temp) {
+    if(temp === 'none') {
+      parseFlex(0, 0, 'auto');
+    }
+    else if(temp === 'auto') {
+      parseFlex(1, 1, 'auto');
+    }
+    else if(/^[\d.]+$/.test(temp)) {
+      parseFlex(Math.max(0, parseFloat(temp)), 1, 0);
+    }
+    else if(/^[\d.]+px$/.test(temp)) {
+      parseFlex(1, 1, 0);
+    }
+    else if(/^[\d.]+%$/.test(temp)) {
+      parseFlex(1, 1, temp);
+    }
+    else if(/^[\d.]+\s+[\d.]+$/.test(temp)) {
+      let arr = temp.split(/\s+/);
+      parseFlex(arr[0], arr[1], 0);
+    }
+    else if(/^[\d.]+\s+[\d.]+%$/.test(temp)) {
+      let arr = temp.split(/\s+/);
+      parseFlex(arr[0], 1, arr[1]);
+    }
+    else {
+      parseFlex(0, 1, 'auto');
+    }
+  }
+  // margin
+  temp = style.margin;
+  if(temp) {
+    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[3] = match[2] = match[1] = match[0];
+      }
+      else if(match.length === 2) {
+        match[2] = match[0];
+        match[3] = match[1];
+      }
+      else if(match.length === 3) {
+        match[3] = match[1];
+      }
+      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
+        k = 'margin' + k;
+        if(util.isNil(style[k])) {
+          style[k] = temp[i];
+        }
+      });
+    }
+  }
+  // padding
+  temp = style.padding;
+  if(temp) {
+    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[3] = match[2] = match[1] = match[0];
+      }
+      else if(match.length === 2) {
+        match[2] = match[0];
+        match[3] = match[1];
+      }
+      else if(match.length === 3) {
+        match[3] = match[1];
+      }
+      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
+        k = 'padding' + k;
+        if(util.isNil(style[k])) {
+          style[k] = temp[i];
+        }
+      });
+    }
+  }
   // 默认reset，根据传入不同，当style为空时覆盖
   reset.forEach(item => {
     let { k, v } = item;
@@ -103,33 +275,6 @@ function normalize(style, reset) {
       style[k] = v;
     }
   });
-  let temp = style.background;
-  // 处理渐变背景缩写
-  if(temp) {
-    // gradient/image和颜色可以并存
-    let gd = gradient.reg.exec(temp);
-    if(gd) {
-      style.backgroundImage = gd[0];
-      temp = temp.replace(gd[0], '');
-    }
-    let img = image.reg.exec(temp);
-    if(img) {
-      style.backgroundImage = img[0];
-      temp = temp.replace(img[0], '');
-    }
-    let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
-    if(repeat) {
-      style.backgroundRepeat = repeat[0].toLowerCase();
-    }
-    let position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
-    if(position) {
-      style.backgroundPosition = position[0].trim();
-    }
-    let bgc = /^\s*(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
-    if(bgc) {
-      style.backgroundColor = bgc[0];
-    }
-  }
   // 背景图
   temp = style.backgroundImage;
   if(temp) {
@@ -144,26 +289,14 @@ function normalize(style, reset) {
   temp = style.backgroundColor;
   if(temp) {
     // 先赋值默认透明，后续操作有合法值覆盖
-    style.backgroundColor = 'transparent';
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = bgc[0];
+      style.backgroundColor = util.rgb2int(bgc[0]);
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      if(bgc) {
-        style.backgroundColor = bgc[0];
-      }
+      style.backgroundColor = util.rgb2int(bgc ? bgc[0] : 'transparent');
     }
-  }
-  // 背景位置
-  temp = style.backgroundPosition;
-  if(!util.isNil(temp)) {
-    temp = temp.toString().split(/\s+/);
-    if(temp.length === 1) {
-      temp[1] = '50%';
-    }
-    [style.backgroundPositionX, style.backgroundPositionY] = temp;
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
     temp = style[k];
@@ -206,7 +339,7 @@ function normalize(style, reset) {
         else if(item === 'contain' || item === 'cover') {
           bc.push({
             value: item,
-            unit: SIZE,
+            unit: STRING,
           });
         }
         else {
@@ -216,109 +349,6 @@ function normalize(style, reset) {
         }
       }
       style.backgroundSize = bc;
-    }
-  }
-  // 处理缩写
-  temp = style.flex;
-  if(temp) {
-    if(temp === 'none') {
-      style.flexGrow = 0;
-      style.flexShrink = 0;
-      style.flexBasis = 'auto';
-    }
-    else if(temp === 'auto') {
-      style.flexGrow = 1;
-      style.flexShrink = 1;
-      style.flexBasis = 'auto';
-    }
-    else if(/^[\d.]+$/.test(temp)) {
-      style.flexGrow = parseFloat(temp);
-      style.flexShrink = 1;
-      style.flexBasis = 0;
-    }
-    else if(/^[\d.]+px$/.test(temp)) {
-      style.flexGrow = 1;
-      style.flexShrink = 1;
-      style.flexBasis = temp;
-    }
-    else if(/^[\d.]+%$/.test(temp)) {
-      style.flexGrow = 1;
-      style.flexShrink = 1;
-      style.flexBasis = temp;
-    }
-    else if(/^[\d.]+\s+[\d.]+$/.test(temp)) {
-      let arr = temp.split(/\s+/);
-      style.flexGrow = parseFloat(arr[0]);
-      style.flexShrink = parseFloat(arr[1]);
-      style.flexBasis = 0;
-    }
-    else if(/^[\d.]+\s+[\d.]+%$/.test(temp)) {
-      let arr = temp.split(/\s+/);
-      style.flexGrow = parseFloat(arr[0]);
-      style.flexShrink = 1;
-      style.flexBasis = arr[1];
-    }
-    else {
-      style.flexGrow = 0;
-      style.flexShrink = 1;
-      style.flexBasis = 'auto';
-    }
-  }
-  temp = style.border;
-  if(temp) {
-    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-      k = 'border' + k;
-      if(util.isNil(style[k])) {
-        style[k] = temp;
-      }
-    });
-  }
-  parserOneBorder(style, 'Top');
-  parserOneBorder(style, 'Right');
-  parserOneBorder(style, 'Bottom');
-  parserOneBorder(style, 'Left');
-  temp = style.margin;
-  if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-    if(match) {
-      if(match.length === 1) {
-        match[3] = match[2] = match[1] = match[0];
-      }
-      else if(match.length === 2) {
-        match[2] = match[0];
-        match[3] = match[1];
-      }
-      else if(match.length === 3) {
-        match[3] = match[1];
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
-        k = 'margin' + k;
-        if(util.isNil(style[k])) {
-          style[k] = temp[i];
-        }
-      });
-    }
-  }
-  temp = style.padding;
-  if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-    if(match) {
-      if(match.length === 1) {
-        match[3] = match[2] = match[1] = match[0];
-      }
-      else if(match.length === 2) {
-        match[2] = match[0];
-        match[3] = match[1];
-      }
-      else if(match.length === 3) {
-        match[3] = match[1];
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
-        k = 'padding' + k;
-        if(util.isNil(style[k])) {
-          style[k] = temp[i];
-        }
-      });
     }
   }
   temp = style.transform;
@@ -406,7 +436,7 @@ function normalize(style, reset) {
             unit: PERCENT,
           });
           // 不规范的写法变默认值50%
-          if(tfo[i].value === undefined) {
+          if(util.isNil(tfo[i].value)) {
             tfo[i].value = 50;
           }
         }
@@ -748,26 +778,35 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   else {
     computedStyle.color = util.int2rgba(color.value);
   }
-  // 处理可提前计算的属性，如border百分比
+  // 处理可提前计算的属性，如border
   [
     'borderTopWidth',
     'borderRightWidth',
     'borderBottomWidth',
-    'borderLeftWidth'
+    'borderLeftWidth',
   ].forEach(k => {
-    computedStyle[k] = currentStyle[k].value || 0;
+    computedStyle[k] = currentStyle[k].value;
   });
   [
     'visibility',
-    'backgroundColor',
-    'borderBottomColor',
-    'borderLeftColor',
-    'borderRightColor',
-    'borderTopColor',
     'opacity',
-    'zIndex'
+    'zIndex',
+    'borderTopStyle',
+    'borderRightStyle',
+    'borderBottomStyle',
+    'borderLeftStyle',
+    'backgroundRepeat',
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
+  });
+  [
+    'backgroundColor',
+    'borderTopColor',
+    'borderRightColor',
+    'borderBottomColor',
+    'borderLeftColor',
+  ].forEach(k => {
+    computedStyle[k] = util.int2rgba(currentStyle[k]);
   });
 }
 

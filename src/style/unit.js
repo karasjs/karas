@@ -5,7 +5,6 @@ export default {
   NUMBER: 3,
   INHERIT: 4,
   DEG: 5,
-  SIZE: 6,
+  STRING: 6,
   RGBA: 7,
-  STRING: 8,
 };

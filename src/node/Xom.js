@@ -12,9 +12,10 @@ import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
-const { AUTO, PX, PERCENT, SIZE } = unit;
+const { AUTO, PX, PERCENT, STRING } = unit;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
+  color = util.int2rgba(color);
   if(renderMode === mode.CANVAS) {
     points.forEach(point => {
       ctx.beginPath();
@@ -81,7 +82,7 @@ function calBackgroundSize(value, x, y, w, h) {
     else if(item.unit === AUTO) {
       res.push(-1);
     }
-    else if(item.unit === SIZE) {
+    else if(item.unit === STRING) {
       res.push(item.value === 'contain' ? -2 : -3);
     }
   });
@@ -417,16 +418,16 @@ class Xom extends Node {
       borderLeftColor,
       borderLeftStyle,
       visibility,
+      backgroundRepeat,
+      opacity,
     } = computedStyle;
     let {
       backgroundImage,
       backgroundSize,
       backgroundPositionX,
       backgroundPositionY,
-      backgroundRepeat,
       transform,
       transformOrigin,
-      opacity,
     } = currentStyle;
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
@@ -442,7 +443,7 @@ class Xom extends Node {
     let parent = this.parent;
     let opa = opacity;
     while(parent) {
-      opa *= parent.currentStyle.opacity;
+      opa *= parent.computedStyle.opacity;
       parent = parent.parent;
     }
     if(renderMode === mode.CANVAS) {
@@ -526,7 +527,7 @@ class Xom extends Node {
       return;
     }
     // 背景色垫底
-    if(backgroundColor !== 'transparent') {
+    if(!/,0\)$/.test(backgroundColor)) {
       renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this);
     }
     // 渐变或图片叠加
@@ -799,7 +800,6 @@ class Xom extends Node {
           computedStyle.backgroundSize = `${w} ${h}`;
           computedStyle.backgroundPositionX = bgX;
           computedStyle.backgroundPositionY = bgY;
-          computedStyle.backgroundRepeat = backgroundRepeat;
         }
         else {
           this.__loadBgi.url = backgroundImage;

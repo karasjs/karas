@@ -33,7 +33,7 @@ class Polygon extends Geom {
       return;
     }
     let { width, height, ctx, points, controls } = this;
-    if(points.length < 3) {
+    if(points.length < 2) {
       return;
     }
     for(let i = 0, len = points.length; i < len; i++) {

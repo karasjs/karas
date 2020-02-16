@@ -4880,7 +4880,7 @@
               value: util.rgb2int(computedStyle[k]),
               unit: RGBA$1
             };
-          } else if (k === 'fontSize') {
+          } else if (LENGTH_HASH.hasOwnProperty(k)) {
             style[k] = {
               value: computedStyle[k],
               unit: PX$3
@@ -5409,8 +5409,7 @@
       if (p.unit === AUTO$1 || n.unit === AUTO$1) {
         res.n = n;
         return res;
-      } // TODO: inherit，不能使用computedStyle
-
+      }
 
       var parentComputedStyle = (target.parent || target).computedStyle;
       var diff = 0;
@@ -11475,7 +11474,7 @@
             points = this.points,
             controls = this.controls;
 
-        if (points.length < 3) {
+        if (points.length < 2) {
           return;
         }
 

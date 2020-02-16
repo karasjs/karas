@@ -161,7 +161,7 @@ function inherit(frames, keys, target) {
             unit: RGBA,
           };
         }
-        else if(k === 'fontSize') {
+        else if(LENGTH_HASH.hasOwnProperty(k)) {
           style[k] = {
             value: computedStyle[k],
             unit: PX,
@@ -639,7 +639,7 @@ function calDiff(prev, next, k, target) {
         }
         res.d = v;
       }
-      // TODO: 径向渐变非数字角度
+      // TODO: 径向渐变的半径和圆心
       else {}
     }
     // 纯色
@@ -675,7 +675,6 @@ function calDiff(prev, next, k, target) {
       res.n = n;
       return res;
     }
-    // TODO: inherit，不能使用computedStyle
     let parentComputedStyle = (target.parent || target).computedStyle;
     let diff = 0;
     if(p.unit === n.unit) {

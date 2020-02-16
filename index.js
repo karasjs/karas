@@ -2120,9 +2120,13 @@
     var k = "border".concat(direction);
     var v = style[k];
 
-    if (util.isNil(style[k + 'Width'])) {
-      var w = /\b[\d.]+px\b/i.exec(v); // width后面会统一格式化处理
+    if (util.isNil(v)) {
+      return;
+    } // 后面会统一格式化处理
 
+
+    if (util.isNil(style[k + 'Width'])) {
+      var w = /\b[\d.]+px\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
@@ -2135,12 +2139,12 @@
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
-        style[k + 'Color'] = util.rgb2int(c[0]);
+        style[k + 'Color'] = c[0];
       } else if (/\btransparent\b/i.test(v)) {
-        style[k + 'Color'] = util.rgb2int('transparent');
+        style[k + 'Color'] = 'transparent';
       } else {
         c = /rgba?\(.+\)/i.exec(v);
-        style[k + 'Color'] = util.rgb2int(c ? c[0] : 'transparent');
+        style[k + 'Color'] = c ? c[0] : 'transparent';
       }
     }
   }
@@ -2227,12 +2231,11 @@
           style[k] = temp;
         }
       });
-      parserOneBorder(style, 'Top');
-      parserOneBorder(style, 'Right');
-      parserOneBorder(style, 'Bottom');
-      parserOneBorder(style, 'Left');
     }
 
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
+      parserOneBorder(style, k);
+    });
     temp = style.borderWidth;
 
     if (temp) {
@@ -2504,8 +2507,17 @@
 
         style.backgroundSize = bc;
       }
-    }
+    } // border-color
 
+
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
+      k = 'border' + k + 'Color';
+      var v = style[k];
+
+      if (!util.isNil(v)) {
+        style[k] = util.rgb2int(v);
+      }
+    });
     temp = style.transform;
 
     if (temp) {

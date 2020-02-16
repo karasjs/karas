@@ -2439,7 +2439,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = 'margin' + k;
 
-          if (!util.isNil(style[k])) {
+          if (util.isNil(style[k])) {
             style[k] = temp[i];
           }
         });
@@ -2464,7 +2464,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = 'padding' + k;
 
-          if (!util.isNil(style[k])) {
+          if (util.isNil(style[k])) {
             style[k] = temp[i];
           }
         });

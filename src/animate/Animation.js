@@ -117,9 +117,6 @@ function color2array(style) {
       return;
     }
     let v = style[k];
-    if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
-      return;
-    }
     style[k] = util.rgb2int(v);
   });
   KEY_GRADIENT.forEach(k => {
@@ -131,6 +128,9 @@ function color2array(style) {
       v.v.forEach(item => {
         item[0] = util.rgb2int(item[0]);
       });
+    }
+    else {
+      style[k] = util.rgb2int(v);
     }
   });
 }
@@ -311,25 +311,32 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
       if(repaint.GEOM.hasOwnProperty(i)) {
         props[i] = v;
       }
-      else if(GRADIENT_HASH.hasOwnProperty(i) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
-        style[i] = {
-          k: v.k,
-          v: v.v.map(item => {
-            let arr = [];
-            let c = item[0];
-            if(c[3] === 1) {
-              arr.push(`rgb(${c[0]},${c[1]},${c[2]})`);
-            }
-            else {
-              arr.push(`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`);
-            }
-            if(item[1]) {
-              arr.push(util.clone(item[1]));
-            }
-            return arr;
-          }),
-          d: v.d,
-        };
+      else if(GRADIENT_HASH.hasOwnProperty(i)) {
+        if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
+          style[i] = {
+            k: v.k,
+            v: v.v.map(item => {
+              let arr = [];
+              let c = item[0];
+              if(c[3] === 1) {
+                arr.push(`rgb(${c[0]},${c[1]},${c[2]})`);
+              } else {
+                arr.push(`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`);
+              }
+              if(item[1]) {
+                arr.push(util.clone(item[1]));
+              }
+              return arr;
+            }),
+            d: v.d,
+          };
+        }
+        else if(v[3] === 1) {
+          style[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
+        }
+        else {
+          style[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+        }
       }
       else if(COLOR_HASH.hasOwnProperty(i)) {
         if(v[3] === 1) {
@@ -849,20 +856,29 @@ function calStyle(frame, percent) {
         st[1].value += v[1] * percent;
       }
     }
-    else if(GRADIENT_HASH.hasOwnProperty(k) && GRADIENT_TYPE.hasOwnProperty(st.k)) {
-      for(let i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
-        let a = st.v[i];
-        let b = v[i];
-        a[0][0] += b[0][0] * percent;
-        a[0][1] += b[0][1] * percent;
-        a[0][2] += b[0][2] * percent;
-        a[0][3] += b[0][3] * percent;
-        if(a[1] && b[1]) {
-          a[1].value += b[1] * percent;
+    else if(GRADIENT_HASH.hasOwnProperty(k)) {
+      if(GRADIENT_TYPE.hasOwnProperty(st.k)) {
+        for(let i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
+          let a = st.v[i];
+          let b = v[i];
+          a[0][0] += b[0][0] * percent;
+          a[0][1] += b[0][1] * percent;
+          a[0][2] += b[0][2] * percent;
+          a[0][3] += b[0][3] * percent;
+          if(a[1] && b[1]) {
+            a[1].value += b[1] * percent;
+          }
+        }
+        if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
+          st.d += d * percent;
         }
       }
-      if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
-        st.d += d * percent;
+      // fill纯色
+      else {
+        st[0] += v[0] * percent;
+        st[1] += v[1] * percent;
+        st[2] += v[2] * percent;
+        st[3] += v[3] * percent;
       }
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
@@ -1076,6 +1092,7 @@ class Animation extends Event {
       let next = frames[i];
       prev = calFrame(prev, next, keys, target);
     }
+    console.log(frames);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = util.clone(frames).reverse();

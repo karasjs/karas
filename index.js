@@ -4638,11 +4638,6 @@
       }
 
       var v = style[k];
-
-      if (GRADIENT_TYPE.hasOwnProperty(v.k)) {
-        return;
-      }
-
       style[k] = util.rgb2int(v);
     });
     KEY_GRADIENT.forEach(function (k) {
@@ -4656,6 +4651,8 @@
         v.v.forEach(function (item) {
           item[0] = util.rgb2int(item[0]);
         });
+      } else {
+        style[k] = util.rgb2int(v);
       }
     });
   }
@@ -4839,27 +4836,33 @@
 
         if (repaint$1.GEOM.hasOwnProperty(i)) {
           props[i] = v;
-        } else if (GRADIENT_HASH.hasOwnProperty(i) && GRADIENT_TYPE.hasOwnProperty(v.k)) {
-          style[i] = {
-            k: v.k,
-            v: v.v.map(function (item) {
-              var arr = [];
-              var c = item[0];
+        } else if (GRADIENT_HASH.hasOwnProperty(i)) {
+          if (GRADIENT_TYPE.hasOwnProperty(v.k)) {
+            style[i] = {
+              k: v.k,
+              v: v.v.map(function (item) {
+                var arr = [];
+                var c = item[0];
 
-              if (c[3] === 1) {
-                arr.push("rgb(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ")"));
-              } else {
-                arr.push("rgba(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ",").concat(c[3], ")"));
-              }
+                if (c[3] === 1) {
+                  arr.push("rgb(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ")"));
+                } else {
+                  arr.push("rgba(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ",").concat(c[3], ")"));
+                }
 
-              if (item[1]) {
-                arr.push(util.clone(item[1]));
-              }
+                if (item[1]) {
+                  arr.push(util.clone(item[1]));
+                }
 
-              return arr;
-            }),
-            d: v.d
-          };
+                return arr;
+              }),
+              d: v.d
+            };
+          } else if (v[3] === 1) {
+            style[i] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
+          } else {
+            style[i] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+          }
         } else if (COLOR_HASH.hasOwnProperty(i)) {
           if (v[3] === 1) {
             style[i] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
@@ -5396,23 +5399,31 @@
         if (v[1] !== 0) {
           st[1].value += v[1] * percent;
         }
-      } else if (GRADIENT_HASH.hasOwnProperty(k) && GRADIENT_TYPE.hasOwnProperty(st.k)) {
-        for (var i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
-          var a = st.v[i];
-          var b = v[i];
-          a[0][0] += b[0][0] * percent;
-          a[0][1] += b[0][1] * percent;
-          a[0][2] += b[0][2] * percent;
-          a[0][3] += b[0][3] * percent;
+      } else if (GRADIENT_HASH.hasOwnProperty(k)) {
+        if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
+          for (var i = 0, len = Math.min(st.v.length, v.length); i < len; i++) {
+            var a = st.v[i];
+            var b = v[i];
+            a[0][0] += b[0][0] * percent;
+            a[0][1] += b[0][1] * percent;
+            a[0][2] += b[0][2] * percent;
+            a[0][3] += b[0][3] * percent;
 
-          if (a[1] && b[1]) {
-            a[1].value += b[1] * percent;
+            if (a[1] && b[1]) {
+              a[1].value += b[1] * percent;
+            }
           }
-        }
 
-        if (st.k === 'linear' && st.d !== undefined && d !== undefined) {
-          st.d += d * percent;
-        }
+          if (st.k === 'linear' && st.d !== undefined && d !== undefined) {
+            st.d += d * percent;
+          }
+        } // fill纯色
+        else {
+            st[0] += v[0] * percent;
+            st[1] += v[1] * percent;
+            st[2] += v[2] * percent;
+            st[3] += v[3] * percent;
+          }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
           st[0] += v[0] * percent;
@@ -5670,8 +5681,9 @@
         for (var _i9 = 1; _i9 < length; _i9++) {
           var next = frames[_i9];
           prev = calFrame(prev, next, keys, target);
-        } // 反向存储帧的倒排结果
+        }
 
+        console.log(frames); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,

@@ -2340,24 +2340,24 @@
 
     if (temp) {
       if (temp === 'none') {
-        parseFlex(0, 0, 'auto');
+        parseFlex(style, 0, 0, 'auto');
       } else if (temp === 'auto') {
-        parseFlex(1, 1, 'auto');
+        parseFlex(style, 1, 1, 'auto');
       } else if (/^[\d.]+$/.test(temp)) {
-        parseFlex(Math.max(0, parseFloat(temp)), 1, 0);
+        parseFlex(style, Math.max(0, parseFloat(temp)), 1, 0);
       } else if (/^[\d.]+px$/.test(temp)) {
-        parseFlex(1, 1, 0);
+        parseFlex(style, 1, 1, 0);
       } else if (/^[\d.]+%$/.test(temp)) {
-        parseFlex(1, 1, temp);
+        parseFlex(style, 1, 1, temp);
       } else if (/^[\d.]+\s+[\d.]+$/.test(temp)) {
         var arr = temp.split(/\s+/);
-        parseFlex(arr[0], arr[1], 0);
+        parseFlex(style, arr[0], arr[1], 0);
       } else if (/^[\d.]+\s+[\d.]+%$/.test(temp)) {
         var _arr = temp.split(/\s+/);
 
-        parseFlex(_arr[0], 1, _arr[1]);
+        parseFlex(style, _arr[0], 1, _arr[1]);
       } else {
-        parseFlex(0, 1, 'auto');
+        parseFlex(style, 0, 1, 'auto');
       }
     } // margin
 
@@ -2381,7 +2381,7 @@
           k = 'margin' + k;
 
           if (util.isNil(style[k])) {
-            style[k] = temp[i];
+            style[k] = match[i];
           }
         });
       }
@@ -2407,7 +2407,7 @@
           k = 'padding' + k;
 
           if (util.isNil(style[k])) {
-            style[k] = temp[i];
+            style[k] = _match[i];
           }
         });
       }

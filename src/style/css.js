@@ -196,30 +196,30 @@ function normalize(style, reset) {
   temp = style.flex;
   if(temp) {
     if(temp === 'none') {
-      parseFlex(0, 0, 'auto');
+      parseFlex(style, 0, 0, 'auto');
     }
     else if(temp === 'auto') {
-      parseFlex(1, 1, 'auto');
+      parseFlex(style, 1, 1, 'auto');
     }
     else if(/^[\d.]+$/.test(temp)) {
-      parseFlex(Math.max(0, parseFloat(temp)), 1, 0);
+      parseFlex(style, Math.max(0, parseFloat(temp)), 1, 0);
     }
     else if(/^[\d.]+px$/.test(temp)) {
-      parseFlex(1, 1, 0);
+      parseFlex(style, 1, 1, 0);
     }
     else if(/^[\d.]+%$/.test(temp)) {
-      parseFlex(1, 1, temp);
+      parseFlex(style, 1, 1, temp);
     }
     else if(/^[\d.]+\s+[\d.]+$/.test(temp)) {
       let arr = temp.split(/\s+/);
-      parseFlex(arr[0], arr[1], 0);
+      parseFlex(style, arr[0], arr[1], 0);
     }
     else if(/^[\d.]+\s+[\d.]+%$/.test(temp)) {
       let arr = temp.split(/\s+/);
-      parseFlex(arr[0], 1, arr[1]);
+      parseFlex(style, arr[0], 1, arr[1]);
     }
     else {
-      parseFlex(0, 1, 'auto');
+      parseFlex(style, 0, 1, 'auto');
     }
   }
   // margin
@@ -240,7 +240,7 @@ function normalize(style, reset) {
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'margin' + k;
         if(util.isNil(style[k])) {
-          style[k] = temp[i];
+          style[k] = match[i];
         }
       });
     }
@@ -263,7 +263,7 @@ function normalize(style, reset) {
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'padding' + k;
         if(util.isNil(style[k])) {
-          style[k] = temp[i];
+          style[k] = match[i];
         }
       });
     }

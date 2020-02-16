@@ -34,6 +34,7 @@ class Polygon extends Geom {
     }
     let { width, height, ctx, points, controls } = this;
     if(points.length < 2) {
+      console.error('Polygon must have at lease 2 points: ' + points[0]);
       return;
     }
     for(let i = 0, len = points.length; i < len; i++) {

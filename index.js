@@ -2119,35 +2119,36 @@
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
-    var key = "border".concat(direction);
+    var k = "border".concat(direction);
+    var v = style[k];
 
-    if (!style.hasOwnProperty(key)) {
+    if (util.isNil(v)) {
       return;
     }
 
-    var w = /\b[\d.]+px\b/i.exec(style[key]);
+    var w = /\b[\d.]+px\b/i.exec(style[k]);
 
     if (w) {
-      style[key + 'Width'] = w[0];
+      style[k + 'Width'] = w[0];
     }
 
-    var s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
+    var s = /\b(solid|dashed|dotted)\b/i.exec(style[k]);
 
     if (s) {
-      style[key + 'Style'] = s[1];
+      style[k + 'Style'] = s[1];
     }
 
-    var c = /#[0-9a-f]{3,6}/i.exec(style[key]);
+    var c = /#[0-9a-f]{3,6}/i.exec(style[k]);
 
     if (c && [4, 7].indexOf(c[0].length) > -1) {
-      style[key + 'Color'] = c[0];
-    } else if (/\btransparent\b/i.test(style[key])) {
-      style[key + 'Color'] = 'transparent';
+      style[k + 'Color'] = c[0];
+    } else if (/\btransparent\b/i.test(style[k])) {
+      style[k + 'Color'] = 'transparent';
     } else {
-      c = /rgba?\(.+\)/i.exec(style[key]);
+      c = /rgba?\(.+\)/i.exec(style[k]);
 
       if (c) {
-        style[key + 'Color'] = c[0];
+        style[k + 'Color'] = c[0];
       }
     }
   }
@@ -2410,12 +2411,16 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k;
 
-        if (!util.isNil(style[k])) {
+        if (util.isNil(style[k])) {
           style[k] = temp;
         }
       });
     }
 
+    parserOneBorder(style, 'Top');
+    parserOneBorder(style, 'Right');
+    parserOneBorder(style, 'Bottom');
+    parserOneBorder(style, 'Left');
     temp = style.margin;
 
     if (temp) {
@@ -2638,12 +2643,8 @@
 
     if (temp) {
       style.zIndex = parseInt(temp) || 0;
-    }
+    } // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
-    parserOneBorder(style, 'Top');
-    parserOneBorder(style, 'Right');
-    parserOneBorder(style, 'Bottom');
-    parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
@@ -4765,11 +4766,11 @@
     return true;
   }
 
-  function unify(list, target) {
+  function unify(frames, target) {
     var hash = {};
     var keys = []; // 获取所有关键帧的属性
 
-    list.forEach(function (item) {
+    frames.forEach(function (item) {
       var style = item.style;
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
@@ -4781,46 +4782,56 @@
       });
     }); // 添补没有声明完全的关键帧属性为节点默认值
 
-    var computedStyle = target.computedStyle;
-    list.forEach(function (item) {
+    frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         if (!style.hasOwnProperty(k)) {
           if (repaint$1.GEOM.hasOwnProperty(k)) {
             style[k] = target.props[k];
           } else {
-            var v = target.style[k];
-
-            if (v.unit === INHERIT$1) {
-              if (k === 'color') {
-                style[k] = {
-                  value: util.rgb2int(computedStyle[k]),
-                  unit: RGBA$1
-                };
-              } else if (k === 'fontSize') {
-                style[k] = {
-                  value: parseFloat(computedStyle[k]),
-                  unit: PX$3
-                };
-              } else if (k === 'fontWeight') {
-                style[k] = {
-                  value: parseFloat(computedStyle[k]),
-                  unit: NUMBER$2
-                };
-              } else if (k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
-                style[k] = {
-                  value: computedStyle[k],
-                  unit: STRING$1
-                };
-              }
-            } else {
-              style[k] = v;
-            }
+            style[k] = target.style[k];
           }
         }
       });
     });
     return keys;
+  } // 每次播放时处理继承值
+
+
+  function inherit(frames, keys, target) {
+    var clone = util.clone(frames);
+    var computedStyle = target.computedStyle;
+    clone.forEach(function (item) {
+      var style = item.style;
+      keys.forEach(function (k) {
+        var v = style[k];
+
+        if (v.unit === INHERIT$1) {
+          if (k === 'color') {
+            style[k] = {
+              value: util.rgb2int(computedStyle[k]),
+              unit: RGBA$1
+            };
+          } else if (k === 'fontSize') {
+            style[k] = {
+              value: computedStyle[k],
+              unit: PX$3
+            };
+          } else if (k === 'fontWeight') {
+            style[k] = {
+              value: computedStyle[k],
+              unit: NUMBER$2
+            };
+          } else if (k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
+            style[k] = {
+              value: computedStyle[k],
+              unit: STRING$1
+            };
+          }
+        }
+      });
+    });
+    return clone;
   } // 对比两个样式的某个值是否相等
 
 
@@ -5803,17 +5814,9 @@
           frames.push(framing(item, resetStyle, duration));
         }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
-        var keys = this.__keys = unify(frames, target);
-        this.__originStyle = getOriginStyleByKeys(keys, target); // 计算两帧之间增量变化，存入transition属性
+        var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较
 
-        var length = frames.length;
-        var prev = frames[0];
-
-        for (var _i9 = 1; _i9 < length; _i9++) {
-          var next = frames[_i9];
-          prev = calFrame(prev, next, keys, target);
-        } // 反向存储帧的倒排结果
-
+        this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -5825,13 +5828,6 @@
             item.time = duration - item.time;
             item.transition = [];
           });
-          prev = framesR[0];
-
-          for (var _i10 = 1; _i10 < length; _i10++) {
-            var _next = framesR[_i10];
-            prev = calFrame(prev, _next, keys, target);
-          }
-
           this.__framesR = framesR;
         } // 生成finish的任务事件
 
@@ -5928,7 +5924,27 @@
               if (init) {
                 _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
                 _this3.__playTime = 0;
-                _this3.__style = style = originStyle;
+                _this3.__style = style = originStyle; // 由于继承属性的存在，每次从头播放时先处理继承样式为computedStyle的样式
+
+                frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+
+                var _length = frames.length;
+                var prev = frames[0];
+
+                for (var _i9 = 1; _i9 < _length; _i9++) {
+                  var next = frames[_i9];
+                  prev = calFrame(prev, next, keys, target);
+                }
+
+                if (framesR.length) {
+                  framesR = inherit(framesR, keys, target);
+                  prev = framesR[0];
+
+                  for (var _i10 = 1; _i10 < _length; _i10++) {
+                    var _next = framesR[_i10];
+                    prev = calFrame(prev, _next, keys, target);
+                  }
+                }
               } // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
 
 

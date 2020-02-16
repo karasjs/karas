@@ -110,11 +110,11 @@ function equalArr(a, b) {
   return true;
 }
 
-function unify(list, target) {
+function unify(frames, target) {
   let hash = {};
   let keys = [];
   // 获取所有关键帧的属性
-  list.forEach(item => {
+  frames.forEach(item => {
     let style = item.style;
     Object.keys(style).forEach(k => {
       let v = style[k];
@@ -126,8 +126,7 @@ function unify(list, target) {
     });
   });
   // 添补没有声明完全的关键帧属性为节点默认值
-  let computedStyle = target.computedStyle;
-  list.forEach(item => {
+  frames.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
       if(!style.hasOwnProperty(k)) {
@@ -135,41 +134,51 @@ function unify(list, target) {
           style[k] = target.props[k];
         }
         else {
-          let v = target.style[k];
-          if(v.unit === INHERIT) {
-            if(k === 'color') {
-              style[k] = {
-                value: util.rgb2int(computedStyle[k]),
-                unit: RGBA,
-              };
-            }
-            else if(k === 'fontSize') {
-              style[k] = {
-                value: parseFloat(computedStyle[k]),
-                unit: PX,
-              };
-            }
-            else if(k === 'fontWeight') {
-              style[k] = {
-                value: parseFloat(computedStyle[k]),
-                unit: NUMBER,
-              };
-            }
-            else if(k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
-              style[k] = {
-                value: computedStyle[k],
-                unit: STRING,
-              };
-            }
-          }
-          else {
-            style[k] = v;
-          }
+          style[k] = target.style[k];
         }
       }
     });
   });
   return keys;
+}
+
+// 每次播放时处理继承值
+function inherit(frames, keys, target) {
+  let clone = util.clone(frames);
+  let computedStyle = target.computedStyle;
+  clone.forEach(item => {
+    let style = item.style;
+    keys.forEach(k => {
+      let v = style[k];
+      if(v.unit === INHERIT) {
+        if(k === 'color') {
+          style[k] = {
+            value: util.rgb2int(computedStyle[k]),
+            unit: RGBA,
+          };
+        }
+        else if(k === 'fontSize') {
+          style[k] = {
+            value: computedStyle[k],
+            unit: PX,
+          };
+        }
+        else if(k === 'fontWeight') {
+          style[k] = {
+            value: computedStyle[k],
+            unit: NUMBER,
+          };
+        }
+        else if(k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
+          style[k] = {
+            value: computedStyle[k],
+            unit: STRING,
+          };
+        }
+      }
+    });
+  });
+  return clone;
 }
 
 // 对比两个样式的某个值是否相等
@@ -1081,14 +1090,8 @@ class Animation extends Event {
     });
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);
+    // 保存静态默认样式供第一帧和最后一帧计算比较
     this.__originStyle = getOriginStyleByKeys(keys, target);
-    // 计算两帧之间增量变化，存入transition属性
-    let length = frames.length;
-    let prev = frames[0];
-    for(let i = 1; i < length; i++) {
-      let next = frames[i];
-      prev = calFrame(prev, next, keys, target);
-    }
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = util.clone(frames).reverse();
@@ -1096,11 +1099,6 @@ class Animation extends Event {
         item.time = duration - item.time;
         item.transition = [];
       });
-      prev = framesR[0];
-      for(let i = 1; i < length; i++) {
-        let next = framesR[i];
-        prev = calFrame(prev, next, keys, target);
-      }
       this.__framesR = framesR;
     }
     // 生成finish的任务事件
@@ -1182,6 +1180,23 @@ class Animation extends Event {
           this.__startTime = this.__lastFpsTime = this.__lastTime = now;
           this.__playTime = 0;
           this.__style = style = originStyle;
+          // 由于继承属性的存在，每次从头播放时先处理继承样式为computedStyle的样式
+          frames = inherit(frames, keys, target);
+          // 再计算两帧之间的变化，存入transition属性
+          let length = frames.length;
+          let prev = frames[0];
+          for(let i = 1; i < length; i++) {
+            let next = frames[i];
+            prev = calFrame(prev, next, keys, target);
+          }
+          if(framesR.length) {
+            framesR = inherit(framesR, keys, target);
+            prev = framesR[0];
+            for(let i = 1; i < length; i++) {
+              let next = framesR[i];
+              prev = calFrame(prev, next, keys, target);
+            }
+          }
         }
         // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
         let diff = this.__calDiffTime(now);

@@ -9,29 +9,30 @@ const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, SIZE, RGBA, STRING } = unit;
 const DEFAULT_FONT_SIZE = 16;
 
 function parserOneBorder(style, direction) {
-  let key = `border${direction}`;
-  if(!style.hasOwnProperty(key)) {
+  let k = `border${direction}`;
+  let v = style[k];
+  if(util.isNil(v)) {
     return;
   }
-  let w = /\b[\d.]+px\b/i.exec(style[key]);
+  let w = /\b[\d.]+px\b/i.exec(style[k]);
   if(w) {
-    style[key + 'Width'] = w[0];
+    style[k + 'Width'] = w[0];
   }
-  let s = /\b(solid|dashed|dotted)\b/i.exec(style[key]);
+  let s = /\b(solid|dashed|dotted)\b/i.exec(style[k]);
   if(s) {
-    style[key + 'Style'] = s[1];
+    style[k + 'Style'] = s[1];
   }
-  let c = /#[0-9a-f]{3,6}/i.exec(style[key]);
+  let c = /#[0-9a-f]{3,6}/i.exec(style[k]);
   if(c && [4, 7].indexOf(c[0].length) > -1) {
-    style[key + 'Color'] = c[0];
+    style[k + 'Color'] = c[0];
   }
-  else if(/\btransparent\b/i.test(style[key])) {
-    style[key + 'Color'] = 'transparent';
+  else if(/\btransparent\b/i.test(style[k])) {
+    style[k + 'Color'] = 'transparent';
   }
   else {
-    c = /rgba?\(.+\)/i.exec(style[key]);
+    c = /rgba?\(.+\)/i.exec(style[k]);
     if(c) {
-      style[key + 'Color'] = c[0];
+      style[k + 'Color'] = c[0];
     }
   }
 }
@@ -267,11 +268,15 @@ function normalize(style, reset) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k;
-      if(!util.isNil(style[k])) {
+      if(util.isNil(style[k])) {
         style[k] = temp;
       }
     });
   }
+  parserOneBorder(style, 'Top');
+  parserOneBorder(style, 'Right');
+  parserOneBorder(style, 'Bottom');
+  parserOneBorder(style, 'Left');
   temp = style.margin;
   if(temp) {
     let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
@@ -288,7 +293,7 @@ function normalize(style, reset) {
       }
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'margin' + k;
-        if(!util.isNil(style[k])) {
+        if(util.isNil(style[k])) {
           style[k] = temp[i];
         }
       });
@@ -310,7 +315,7 @@ function normalize(style, reset) {
       }
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'padding' + k;
-        if(!util.isNil(style[k])) {
+        if(util.isNil(style[k])) {
           style[k] = temp[i];
         }
       });
@@ -474,10 +479,6 @@ function normalize(style, reset) {
   if(temp) {
     style.zIndex = parseInt(temp) || 0;
   }
-  parserOneBorder(style, 'Top');
-  parserOneBorder(style, 'Right');
-  parserOneBorder(style, 'Bottom');
-  parserOneBorder(style, 'Left');
   // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
   [
     'marginTop',

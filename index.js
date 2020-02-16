@@ -425,11 +425,12 @@
     AUTO: 0,
     PX: 1,
     PERCENT: 2,
-    POSITION: 3,
-    NUMBER: 4,
-    INHERIT: 5,
-    DEG: 6,
-    SIZE: 7
+    NUMBER: 3,
+    INHERIT: 4,
+    DEG: 5,
+    SIZE: 6,
+    RGBA: 7,
+    STRING: 8
   };
 
   var toString = {}.toString;
@@ -594,6 +595,10 @@
   }
 
   function rgb2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
     var res = [];
 
     if (color.charAt(0) === '#') {
@@ -607,11 +612,13 @@
         res.push(parseInt(color.slice(0, 2), 16));
         res.push(parseInt(color.slice(2, 4), 16));
         res.push(parseInt(color.slice(4), 16));
+      } else {
+        res[0] = res[1] = res[2] = 0;
       }
 
       res[3] = 1;
     } else if (color === 'transparent') {
-      return [0, 0, 0, 0];
+      res = [0, 0, 0, 0];
     } else {
       var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
 
@@ -623,10 +630,24 @@
         } else {
           res[3] = 1;
         }
+      } else {
+        res = [0, 0, 0, 0];
       }
     }
 
     return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        return "rgba(".concat(color.join(','), ")");
+      } else if (color.length === 3) {
+        return "rgba(".concat(color.join(','), ",1)");
+      }
+    }
+
+    return color;
   }
 
   function arr2hash(arr) {
@@ -741,6 +762,7 @@
     joinDef: joinDef,
     d2r: d2r,
     rgb2int: rgb2int,
+    int2rgba: int2rgba,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
@@ -2091,7 +2113,10 @@
       NUMBER$1 = unit.NUMBER,
       INHERIT = unit.INHERIT,
       DEG = unit.DEG,
-      SIZE = unit.SIZE;
+      SIZE = unit.SIZE,
+      RGBA = unit.RGBA,
+      STRING = unit.STRING;
+  var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
     var key = "border".concat(direction);
@@ -2620,7 +2645,7 @@
     parserOneBorder(style, 'Bottom');
     parserOneBorder(style, 'Left'); // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'fontSize', 'strokeWidth'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
       if (util.isNil(v)) {
@@ -2634,17 +2659,122 @@
         v.unit = PX$2;
       }
     });
+    temp = style.color;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        style.color = {
+          unit: INHERIT
+        };
+      } else {
+        style.color = {
+          value: util.rgb2int(temp),
+          unit: RGBA
+        };
+      }
+    }
+
+    temp = style.fontSize;
+
+    if (temp || temp === 0 || temp === '0') {
+      if (temp === 'inherit') {
+        style.fontSize = {
+          unit: INHERIT
+        };
+      } else if (/%$/.test(temp)) {
+        var v = Math.max(0, parseFloat(temp));
+
+        if (v) {
+          style.fontSize = {
+            value: v,
+            unit: PERCENT$3
+          };
+        } else {
+          style.fontSize = {
+            value: DEFAULT_FONT_SIZE,
+            unit: PX$2
+          };
+        }
+      } else {
+        style.fontSize = {
+          value: Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE,
+          unit: PX$2
+        };
+      }
+    }
+
     temp = style.fontWeight;
 
     if (temp || temp === 0 || temp === '0') {
       if (temp === 'bold') {
-        style.fontWeight = 700;
+        style.fontWeight = {
+          value: 700,
+          unit: NUMBER$1
+        };
       } else if (temp === 'normal') {
-        style.fontWeight = 400;
+        style.fontWeight = {
+          value: 400,
+          unit: NUMBER$1
+        };
       } else if (temp === 'lighter') {
-        style.fontWeight = 200;
+        style.fontWeight = {
+          value: 200,
+          unit: NUMBER$1
+        };
       } else if (temp !== 'inherit') {
-        style.fontWeight = parseInt(temp) || 400;
+        style.fontWeight = {
+          unit: INHERIT
+        };
+      } else {
+        style.fontWeight = {
+          value: Math.max(0, parseInt(temp)) || 400,
+          unit: NUMBER$1
+        };
+      }
+    }
+
+    temp = style.fontStyle;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        style.fontStyle = {
+          unit: INHERIT
+        };
+      } else {
+        style.fontStyle = {
+          value: temp,
+          unit: STRING
+        };
+      }
+    }
+
+    temp = style.fontFamily;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        style.fontFamily = {
+          unit: INHERIT
+        };
+      } else {
+        style.fontFamily = {
+          value: temp,
+          unit: STRING
+        };
+      }
+    }
+
+    temp = style.textAlign;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        style.textAlign = {
+          unit: INHERIT
+        };
+      } else {
+        style.textAlign = {
+          value: temp,
+          unit: STRING
+        };
       }
     }
 
@@ -2655,9 +2785,7 @@
         style.lineHeight = {
           unit: INHERIT
         };
-      }
-
-      if (temp === 'normal') {
+      } else if (temp === 'normal') {
         style.lineHeight = {
           unit: AUTO
         };
@@ -2667,7 +2795,7 @@
           unit: PX$2
         };
       } else {
-        var n = parseFloat(temp) || 'normal'; // 非法数字
+        var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
 
         if (n === 'normal') {
           style.lineHeight = {
@@ -2705,7 +2833,8 @@
 
     if (temp && temp.indexOf('-gradient(') > 0) {
       style.stroke = gradient.parseGradient(temp);
-    } // 删除缩写避免干扰动画计算
+    } // font除size相关
+    // 删除缩写避免干扰动画计算
 
 
     delete style.background;
@@ -2714,18 +2843,6 @@
     delete style.margin;
     delete style.padding;
     return style;
-  }
-
-  function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-    if (fontSize.unit === INHERIT) {
-      computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
-    } else if (fontSize.unit === PX$2) {
-      computedStyle.fontSize = fontSize.value;
-    } else if (fontSize.unit === PERCENT$3) {
-      computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
-    } else {
-      computedStyle.fontSize = 16;
-    }
   } // 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
 
 
@@ -2740,8 +2857,10 @@
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
     calLineHeight(node, lineHeight, computedStyle);
 
-    if (textAlign === 'inherit') {
+    if (textAlign.unit === INHERIT) {
       computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
+    } else {
+      computedStyle.textAlign = isRoot ? 'left' : textAlign.value;
     }
   } // REPAINT等级下，刷新前首先执行，仅计算继承
 
@@ -2762,30 +2881,30 @@
         fontFamily = currentStyle.fontFamily,
         color = currentStyle.color; // 处理继承的属性
 
-    if (fontStyle === 'inherit') {
+    if (fontStyle.unit === INHERIT) {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
     } else {
-      computedStyle.fontStyle = fontStyle;
+      computedStyle.fontStyle = fontStyle.value;
     }
 
-    if (fontWeight === 'inherit') {
+    if (fontWeight.unit === INHERIT) {
       computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
     } else {
-      computedStyle.fontWeight = fontWeight;
+      computedStyle.fontWeight = fontWeight.value;
     }
 
     computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
 
-    if (fontFamily === 'inherit') {
+    if (fontFamily.unit === INHERIT) {
       computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
     } else {
-      computedStyle.fontFamily = fontFamily;
+      computedStyle.fontFamily = fontFamily.value;
     }
 
-    if (color === 'inherit') {
-      computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
+    if (color.unit === INHERIT) {
+      computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
     } else {
-      computedStyle.color = color;
+      computedStyle.color = util.int2rgba(color.value);
     } // 处理可提前计算的属性，如border百分比
 
 
@@ -2795,6 +2914,18 @@
     ['visibility', 'backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'opacity', 'zIndex'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
+  }
+
+  function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
+    if (fontSize.unit === INHERIT) {
+      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
+    } else if (fontSize.unit === PX$2) {
+      computedStyle.fontSize = fontSize.value;
+    } else if (fontSize.unit === PERCENT$3) {
+      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
+    } else {
+      computedStyle.fontSize = DEFAULT_FONT_SIZE;
+    }
   }
 
   function setFontStyle(style) {
@@ -3752,7 +3883,7 @@
     paddingBottom: 0,
     paddingLeft: 0,
     fontSize: 'inherit',
-    fontFamily: 'arial',
+    fontFamily: 'inherit',
     color: 'inherit',
     fontStyle: 'inherit',
     fontWeight: 'inherit',
@@ -4577,7 +4708,11 @@
 
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
-      PERCENT$4 = unit.PERCENT;
+      PERCENT$4 = unit.PERCENT,
+      INHERIT$1 = unit.INHERIT,
+      RGBA$1 = unit.RGBA,
+      STRING$1 = unit.STRING,
+      NUMBER$2 = unit.NUMBER;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
@@ -4628,33 +4763,6 @@
     }
 
     return true;
-  } // css模式rgb和init的颜色转换为rgba数组，方便加减运算
-
-
-  function color2array(style) {
-    KEY_COLOR.forEach(function (k) {
-      if (!style.hasOwnProperty(k)) {
-        return;
-      }
-
-      var v = style[k];
-      style[k] = util.rgb2int(v);
-    });
-    KEY_GRADIENT.forEach(function (k) {
-      if (!style.hasOwnProperty(k)) {
-        return;
-      }
-
-      var v = style[k];
-
-      if (GRADIENT_TYPE.hasOwnProperty(v.k)) {
-        v.v.forEach(function (item) {
-          item[0] = util.rgb2int(item[0]);
-        });
-      } else {
-        style[k] = util.rgb2int(v);
-      }
-    });
   }
 
   function unify(list, target) {
@@ -4673,6 +4781,7 @@
       });
     }); // 添补没有声明完全的关键帧属性为节点默认值
 
+    var computedStyle = target.computedStyle;
     list.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
@@ -4680,11 +4789,36 @@
           if (repaint$1.GEOM.hasOwnProperty(k)) {
             style[k] = target.props[k];
           } else {
-            style[k] = target.style[k];
+            var v = target.style[k];
+
+            if (v.unit === INHERIT$1) {
+              if (k === 'color') {
+                style[k] = {
+                  value: util.rgb2int(computedStyle[k]),
+                  unit: RGBA$1
+                };
+              } else if (k === 'fontSize') {
+                style[k] = {
+                  value: parseFloat(computedStyle[k]),
+                  unit: PX$3
+                };
+              } else if (k === 'fontWeight') {
+                style[k] = {
+                  value: parseFloat(computedStyle[k]),
+                  unit: NUMBER$2
+                };
+              } else if (k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
+                style[k] = {
+                  value: computedStyle[k],
+                  unit: STRING$1
+                };
+              }
+            } else {
+              style[k] = v;
+            }
           }
         }
       });
-      color2array(style);
     });
     return keys;
   } // 对比两个样式的某个值是否相等
@@ -4858,16 +4992,8 @@
               }),
               d: v.d
             };
-          } else if (v[3] === 1) {
-            style[i] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
           } else {
-            style[i] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
-          }
-        } else if (COLOR_HASH.hasOwnProperty(i)) {
-          if (v[3] === 1) {
-            style[i] = "rgb(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ")");
-          } else {
-            style[i] = "rgba(".concat(v[0], ",").concat(v[1], ",").concat(v[2], ",").concat(v[3], ")");
+            style[i] = v;
           }
         } // geom属性先同普通样式直接赋值，渲染时各自动态获取
         else {
@@ -5215,6 +5341,9 @@
             res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
           }
     } else if (COLOR_HASH.hasOwnProperty(k)) {
+      n = n.value;
+      p = p.value;
+
       if (equalArr(n, p)) {
         return;
       }
@@ -5419,6 +5548,7 @@
           }
         } // fill纯色
         else {
+            st = st.value;
             st[0] += v[0] * percent;
             st[1] += v[1] * percent;
             st[2] += v[2] * percent;
@@ -5426,6 +5556,7 @@
           }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
+          st = st.value;
           st[0] += v[0] * percent;
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;
@@ -5681,9 +5812,8 @@
         for (var _i9 = 1; _i9 < length; _i9++) {
           var next = frames[_i9];
           prev = calFrame(prev, next, keys, target);
-        }
+        } // 反向存储帧的倒排结果
 
-        console.log(frames); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -6498,7 +6628,6 @@
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
-      POSITION = unit.POSITION,
       SIZE$1 = unit.SIZE;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
@@ -6551,8 +6680,6 @@
         res.push(-1);
       } else if (item.unit === SIZE$1) {
         res.push(item.value === 'contain' ? -2 : -3);
-      } else if (item.unit === POSITION) {
-        res.push(item.value);
       }
     });
     return res;

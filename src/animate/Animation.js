@@ -9,7 +9,7 @@ import easing from './easing';
 import level from './level';
 import repaint from './repaint';
 
-const { AUTO, PX, PERCENT } = unit;
+const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 
 const KEY_COLOR = [
   'backgroundColor',
@@ -110,31 +110,6 @@ function equalArr(a, b) {
   return true;
 }
 
-// css模式rgb和init的颜色转换为rgba数组，方便加减运算
-function color2array(style) {
-  KEY_COLOR.forEach(k => {
-    if(!style.hasOwnProperty(k)) {
-      return;
-    }
-    let v = style[k];
-    style[k] = util.rgb2int(v);
-  });
-  KEY_GRADIENT.forEach(k => {
-    if(!style.hasOwnProperty(k)) {
-      return;
-    }
-    let v = style[k];
-    if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
-      v.v.forEach(item => {
-        item[0] = util.rgb2int(item[0]);
-      });
-    }
-    else {
-      style[k] = util.rgb2int(v);
-    }
-  });
-}
-
 function unify(list, target) {
   let hash = {};
   let keys = [];
@@ -151,6 +126,7 @@ function unify(list, target) {
     });
   });
   // 添补没有声明完全的关键帧属性为节点默认值
+  let computedStyle = target.computedStyle;
   list.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
@@ -159,11 +135,39 @@ function unify(list, target) {
           style[k] = target.props[k];
         }
         else {
-          style[k] = target.style[k];
+          let v = target.style[k];
+          if(v.unit === INHERIT) {
+            if(k === 'color') {
+              style[k] = {
+                value: util.rgb2int(computedStyle[k]),
+                unit: RGBA,
+              };
+            }
+            else if(k === 'fontSize') {
+              style[k] = {
+                value: parseFloat(computedStyle[k]),
+                unit: PX,
+              };
+            }
+            else if(k === 'fontWeight') {
+              style[k] = {
+                value: parseFloat(computedStyle[k]),
+                unit: NUMBER,
+              };
+            }
+            else if(k === 'fontStyle' || k === 'fontFamily' || k === 'textAlign') {
+              style[k] = {
+                value: computedStyle[k],
+                unit: STRING,
+              };
+            }
+          }
+          else {
+            style[k] = v;
+          }
         }
       }
     });
-    color2array(style);
   });
   return keys;
 }
@@ -331,19 +335,8 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
             d: v.d,
           };
         }
-        else if(v[3] === 1) {
-          style[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
-        }
         else {
-          style[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
-        }
-      }
-      else if(COLOR_HASH.hasOwnProperty(i)) {
-        if(v[3] === 1) {
-          style[i] = `rgb(${v[0]},${v[1]},${v[2]})`;
-        }
-        else {
-          style[i] = `rgba(${v[0]},${v[1]},${v[2]},${v[3]})`;
+          style[i] = v;
         }
       }
       // geom属性先同普通样式直接赋值，渲染时各自动态获取
@@ -674,6 +667,8 @@ function calDiff(prev, next, k, target) {
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
+    n = n.value;
+    p = p.value;
     if(equalArr(n, p)) {
       return;
     }
@@ -875,6 +870,7 @@ function calStyle(frame, percent) {
       }
       // fill纯色
       else {
+        st = st.value;
         st[0] += v[0] * percent;
         st[1] += v[1] * percent;
         st[2] += v[2] * percent;
@@ -883,6 +879,7 @@ function calStyle(frame, percent) {
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {
+      st = st.value;
       st[0] += v[0] * percent;
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;
@@ -1092,7 +1089,6 @@ class Animation extends Event {
       let next = frames[i];
       prev = calFrame(prev, next, keys, target);
     }
-    console.log(frames);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = util.clone(frames).reverse();

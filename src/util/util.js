@@ -145,6 +145,9 @@ function d2r(n) {
 }
 
 function rgb2int(color) {
+  if(Array.isArray(color)) {
+    return color;
+  }
   let res = [];
   if(color.charAt(0) === '#') {
     color = color.slice(1);
@@ -158,10 +161,13 @@ function rgb2int(color) {
       res.push(parseInt(color.slice(2, 4), 16));
       res.push(parseInt(color.slice(4), 16));
     }
+    else {
+      res[0] = res[1] = res[2] = 0;
+    }
     res[3] = 1;
   }
   else if(color === 'transparent') {
-    return [0, 0, 0, 0];
+    res = [0, 0, 0, 0];
   }
   else {
     let c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
@@ -174,8 +180,23 @@ function rgb2int(color) {
         res[3] = 1;
       }
     }
+    else {
+      res = [0, 0, 0, 0];
+    }
   }
   return res;
+}
+
+function int2rgba(color) {
+  if(Array.isArray(color)) {
+    if(color.length === 4) {
+      return `rgba(${color.join(',')})`;
+    }
+    else if(color.length === 3) {
+      return `rgba(${color.join(',')},1)`;
+    }
+  }
+  return color;
 }
 
 function arr2hash(arr) {
@@ -280,6 +301,7 @@ let util = {
   joinDef,
   d2r,
   rgb2int,
+  int2rgba,
   arr2hash,
   hash2arr,
   clone,

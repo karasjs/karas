@@ -16,7 +16,7 @@ const DOM = {
   paddingBottom: 0,
   paddingLeft: 0,
   fontSize: 'inherit',
-  fontFamily: 'arial',
+  fontFamily: 'inherit',
   color: 'inherit',
   fontStyle: 'inherit',
   fontWeight: 'inherit',

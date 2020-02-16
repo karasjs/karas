@@ -4,7 +4,9 @@ import gradient from './gradient';
 import image from './image';
 import util from '../util/util';
 
-const { AUTO, PX, PERCENT, POSITION, NUMBER, INHERIT, DEG, SIZE } = unit;
+const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, SIZE, RGBA, STRING } = unit;
+
+const DEFAULT_FONT_SIZE = 16;
 
 function parserOneBorder(style, direction) {
   let key = `border${direction}`;
@@ -497,8 +499,7 @@ function normalize(style, reset) {
     'width',
     'height',
     'flexBasis',
-    'fontSize',
-    'strokeWidth'
+    'strokeWidth',
   ].forEach(k => {
     let v = style[k];
     if(util.isNil(v)) {
@@ -511,19 +512,121 @@ function normalize(style, reset) {
       v.unit = PX;
     }
   });
+  temp = style.color;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.color = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.color = {
+        value: util.rgb2int(temp),
+        unit: RGBA,
+      };
+    }
+  }
+  temp = style.fontSize;
+  if(temp || temp === 0 || temp === '0') {
+    if(temp === 'inherit') {
+      style.fontSize = {
+        unit: INHERIT,
+      };
+    }
+    else if(/%$/.test(temp)) {
+      let v = Math.max(0, parseFloat(temp));
+      if(v) {
+        style.fontSize = {
+          value: v,
+          unit: PERCENT,
+        };
+      }
+      else {
+        style.fontSize = {
+          value: DEFAULT_FONT_SIZE,
+          unit: PX,
+        };
+      }
+    }
+    else {
+      style.fontSize = {
+        value: Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE,
+        unit: PX,
+      };
+    }
+  }
   temp = style.fontWeight;
   if(temp || temp === 0 || temp === '0') {
     if(temp === 'bold') {
-      style.fontWeight = 700;
+      style.fontWeight = {
+        value: 700,
+        unit: NUMBER,
+      };
     }
     else if(temp === 'normal') {
-      style.fontWeight = 400;
+      style.fontWeight = {
+        value: 400,
+        unit: NUMBER,
+      };
     }
     else if(temp === 'lighter') {
-      style.fontWeight = 200;
+      style.fontWeight = {
+        value: 200,
+        unit: NUMBER,
+      };
     }
     else if(temp !== 'inherit') {
-      style.fontWeight = parseInt(temp) || 400;
+      style.fontWeight = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.fontWeight = {
+        value: Math.max(0, parseInt(temp)) || 400,
+        unit: NUMBER,
+      };
+    }
+  }
+  temp = style.fontStyle;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.fontStyle = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.fontStyle = {
+        value: temp,
+        unit: STRING,
+      };
+    }
+  }
+  temp = style.fontFamily;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.fontFamily = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.fontFamily = {
+        value: temp,
+        unit: STRING,
+      };
+    }
+  }
+  temp = style.textAlign;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.textAlign = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.textAlign = {
+        value: temp,
+        unit: STRING,
+      };
     }
   }
   temp = style.lineHeight;
@@ -533,7 +636,7 @@ function normalize(style, reset) {
         unit: INHERIT,
       };
     }
-    if(temp === 'normal') {
+    else if(temp === 'normal') {
       style.lineHeight = {
         unit: AUTO,
       };
@@ -545,7 +648,7 @@ function normalize(style, reset) {
       };
     }
     else {
-      let n = parseFloat(temp) || 'normal';
+      let n = Math.max(0, parseFloat(temp)) || 'normal';
       // 非法数字
       if(n === 'normal') {
         style.lineHeight = {
@@ -579,6 +682,7 @@ function normalize(style, reset) {
   if(temp && temp.indexOf('-gradient(') > 0) {
     style.stroke = gradient.parseGradient(temp);
   }
+  // font除size相关
   // 删除缩写避免干扰动画计算
   delete style.background;
   delete style.flex;
@@ -586,21 +690,6 @@ function normalize(style, reset) {
   delete style.margin;
   delete style.padding;
   return style;
-}
-
-function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-  if(fontSize.unit === INHERIT) {
-    computedStyle.fontSize = isRoot ? 16 : parentComputedStyle.fontSize;
-  }
-  else if(fontSize.unit === PX) {
-    computedStyle.fontSize = fontSize.value;
-  }
-  else if(fontSize.unit === PERCENT) {
-    computedStyle.fontSize = isRoot ? 16 * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
-  }
-  else {
-    computedStyle.fontSize = 16;
-  }
 }
 
 // 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
@@ -613,8 +702,11 @@ function compute(node, isRoot) {
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
   calLineHeight(node, lineHeight, computedStyle);
-  if(textAlign === 'inherit') {
+  if(textAlign.unit === INHERIT) {
     computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
+  }
+  else {
+    computedStyle.textAlign = isRoot ? 'left' : textAlign.value;
   }
 }
 
@@ -630,30 +722,30 @@ function repaint(node, isRoot) {
 function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   let { fontStyle, fontWeight, fontSize, fontFamily, color } = currentStyle;
   // 处理继承的属性
-  if(fontStyle === 'inherit') {
+  if(fontStyle.unit === INHERIT) {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
   else {
-    computedStyle.fontStyle = fontStyle;
+    computedStyle.fontStyle = fontStyle.value;
   }
-  if(fontWeight === 'inherit') {
+  if(fontWeight.unit === INHERIT) {
     computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
   }
   else {
-    computedStyle.fontWeight = fontWeight;
+    computedStyle.fontWeight = fontWeight.value;
   }
   computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
-  if(fontFamily === 'inherit') {
+  if(fontFamily.unit === INHERIT) {
     computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
   }
   else {
-    computedStyle.fontFamily = fontFamily;
+    computedStyle.fontFamily = fontFamily.value;
   }
-  if(color === 'inherit') {
-    computedStyle.color = isRoot ? '#000' : parentComputedStyle.color;
+  if(color.unit === INHERIT) {
+    computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
   }
   else {
-    computedStyle.color = color;
+    computedStyle.color = util.int2rgba(color.value);
   }
   // 处理可提前计算的属性，如border百分比
   [
@@ -676,6 +768,21 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
+}
+
+function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
+  if(fontSize.unit === INHERIT) {
+    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
+  }
+  else if(fontSize.unit === PX) {
+    computedStyle.fontSize = fontSize.value;
+  }
+  else if(fontSize.unit === PERCENT) {
+    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
+  }
+  else {
+    computedStyle.fontSize = DEFAULT_FONT_SIZE;
+  }
 }
 
 function setFontStyle(style) {

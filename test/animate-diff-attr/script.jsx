@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.color + '/' + t.computedStyle.fontSize;
+    input.value = t.computedStyle.color + ',' + t.computedStyle.fontSize;
   }
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + t.computedStyle.color + '/' + t.computedStyle.fontSize;
+  input.value += '/' + t.computedStyle.color + ',' + t.computedStyle.fontSize;
 });

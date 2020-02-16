@@ -294,7 +294,7 @@ class Root extends Dom {
               item(delta);
             }
           });
-        },
+        }
       });
     }
     if(task.indexOf(cb) === -1) {

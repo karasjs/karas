@@ -12,7 +12,7 @@ import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
-const { AUTO, PX, PERCENT, POSITION, SIZE } = unit;
+const { AUTO, PX, PERCENT, SIZE } = unit;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -83,9 +83,6 @@ function calBackgroundSize(value, x, y, w, h) {
     }
     else if(item.unit === SIZE) {
       res.push(item.value === 'contain' ? -2 : -3);
-    }
-    else if(item.unit === POSITION) {
-      res.push(item.value);
     }
   });
   return res;

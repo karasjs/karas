@@ -172,12 +172,6 @@ function normalize(style, reset) {
           temp.unit = PX;
         }
       }
-      else if(temp === 'contain' || temp === 'cover') {
-        style[k] = {
-          value: temp,
-          unit: POSITION,
-        };
-      }
       else {
         style[k] = {
           value: 0,

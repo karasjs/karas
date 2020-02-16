@@ -2088,7 +2088,6 @@
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$3 = unit.PERCENT,
-      POSITION = unit.POSITION,
       NUMBER$1 = unit.NUMBER,
       INHERIT = unit.INHERIT,
       DEG = unit.DEG,
@@ -2291,11 +2290,6 @@
           if (temp.unit === NUMBER$1) {
             temp.unit = PX$2;
           }
-        } else if (temp === 'contain' || temp === 'cover') {
-          style[k] = {
-            value: temp,
-            unit: POSITION
-          };
         } else {
           style[k] = {
             value: 0,
@@ -4794,20 +4788,33 @@
   } // 反向将颜色数组转换为css模式，同时计算target的animateStyle改变，计算刷新等级
 
 
-  function calRefresh(frameStyle, lastStyle) {
+  function calRefresh(frameStyle, lastStyle, keys) {
     var res = false;
     var lv = level.REPAINT;
 
-    for (var i in frameStyle) {
-      if (!equalStyle(i, frameStyle[i], lastStyle[i])) {
-        res = true; // 不相等且刷新等级是重新布局时可以提前跳出
+    for (var i = 0, len = keys.length; i < len; i++) {
+      var k = keys[i];
+      var n = frameStyle[k];
+      var p = lastStyle[k];
 
-        if (lv === level.REPAINT) {
-          if (isStyleReflow(i)) {
-            lv = level.REFLOW;
+      if (!util.isNil(n) && !util.isNil(p)) {
+        if (!equalStyle(k, n, p)) {
+          res = true; // 不相等且刷新等级是重新布局时可以提前跳出
+
+          if (lv === level.REPAINT) {
+            if (isStyleReflow(k)) {
+              lv = level.REFLOW;
+              break;
+            }
+          } else {
             break;
           }
-        } else {
+        }
+      } else if (!util.isNil(n) || !util.isNil(p)) {
+        res = true;
+
+        if (isStyleReflow(k)) {
+          lv = level.REFLOW;
           break;
         }
       }
@@ -4867,18 +4874,14 @@
       animation.__style = style;
       animation.__props = props;
     };
-  } // 根据第一帧帧的样式，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
+  } // 根据动画涉及的样式keys，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
 
 
-  function getOriginStyleByFrame(frameStyle, target) {
+  function getOriginStyleByKeys(keys, target) {
     var res = {};
     var style = target.style;
-    Object.keys(frameStyle).forEach(function (i) {
-      var v = style[i];
-
-      if (!util.isNil(v)) {
-        res[i] = v;
-      }
+    keys.forEach(function (i) {
+      res[i] = style[i];
     });
     return res;
   }
@@ -5055,8 +5058,6 @@
           var _v3 = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
 
           res.v.push(ni.value - _v3);
-        } else {
-          res.v.push(0);
         }
       }
 
@@ -5065,23 +5066,63 @@
       }
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
       if (p.unit === n.unit && [PX$3, PERCENT$4].indexOf(p.unit) > -1) {
-        res.v = n.value - p.value;
-      } else {
-        return;
+        var _v4 = n.value - p.value;
+
+        if (_v4 === 0) {
+          return;
+        }
+
+        res.v = _v4;
+      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
+        var _v5 = p.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+
+        _v5 = n.value - _v5;
+
+        if (_v5 === 0) {
+          return;
+        }
+
+        res.v = _v5;
+      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
+        var _v6 = p.value * 0.01 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+
+        _v6 = n.value - _v6;
+
+        if (_v6 === 0) {
+          return;
+        }
+
+        res.v = _v6;
       }
     } else if (EXPAND_HASH.hasOwnProperty(k)) {
       if (p.unit === n.unit) {
-        res.v = n.value - p.value;
+        var _v7 = n.value - p.value;
+
+        if (_v7 === 0) {
+          return;
+        }
+
+        res.v = _v7;
       } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v4 = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+        var _v8 = p.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
-        res.v = n.value - _v4;
+        _v8 = n.value - _v8;
+
+        if (_v8 === 0) {
+          return;
+        }
+
+        res.v = _v8;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v5 = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+        var _v9 = p.value * 0.01 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
-        res.v = n.value - _v5;
-      } else {
-        return;
+        _v9 = n.value - _v9;
+
+        if (_v9 === 0) {
+          return;
+        }
+
+        res.v = _v9;
       }
     } else if (k === 'backgroundSize') {
       res.v = [];
@@ -5092,8 +5133,17 @@
 
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
+        } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
+          var _v10 = _pi.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+
+          res.v.push(_ni.value - _v10);
+        } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
+          var _v11 = _pi.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
+
+          res.v.push(_ni.value - _v11);
         } else {
-          res.v.push(0);
+          res.n = n;
+          return res;
         }
       }
 
@@ -5103,52 +5153,64 @@
     } else if (GRADIENT_HASH.hasOwnProperty(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       if (p.k !== n.k) {
-        return res;
+        res.n = n;
       } // 渐变
+      else if (p.k === 'linear' || p.k === 'radial') {
+          var pv = p.v;
+          var nv = n.v;
 
-
-      if (p.k === 'linear' || p.k === 'radial') {
-        var pv = p.v;
-        var nv = n.v;
-
-        if (equalArr(pv, nv)) {
-          return;
-        }
-
-        res.v = [];
-        var innerWidth = target.innerWidth;
-
-        for (var _i5 = 0, len = Math.min(pv.length, nv.length); _i5 < len; _i5++) {
-          var a = pv[_i5];
-          var b = nv[_i5];
-          var t = [];
-          t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
-
-          if (a[1] && b[1]) {
-            if (a[1].unit === b[1].unit) {
-              t.push(b[1].value - a[1].value);
-            } else if (a[1].unit === PX$3 && b[1].unit === PERCENT$4) {
-              t.push(b[1].value - a[1].value * 100 / innerWidth);
-            } else if (a[1].unit === PERCENT$4 && b[1].unit === PX$3) {
-              t.push(b[1].value - a[1].value * 0.01 / innerWidth);
-            }
-          }
-
-          res.v.push(t);
-        } // 线性渐变有角度差值变化
-
-
-        if (p.k === 'linear') {
-          res.d = n.d - p.d;
-        }
-      } // 纯色
-      else {
-          if (equalArr(n, p)) {
+          if (equalArr(pv, nv)) {
             return;
           }
 
-          res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
-        }
+          res.v = [];
+          var innerWidth = target.innerWidth;
+          var eq;
+
+          for (var _i5 = 0, len = Math.min(pv.length, nv.length); _i5 < len; _i5++) {
+            var a = pv[_i5];
+            var b = nv[_i5];
+            var t = [];
+            t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
+            eq = equalArr(t, [0, 0, 0, 0]);
+
+            if (a[1] && b[1]) {
+              if (a[1].unit === b[1].unit) {
+                t.push(b[1].value - a[1].value);
+              } else if (a[1].unit === PX$3 && b[1].unit === PERCENT$4) {
+                t.push(b[1].value - a[1].value * 100 / innerWidth);
+              } else if (a[1].unit === PERCENT$4 && b[1].unit === PX$3) {
+                t.push(b[1].value - a[1].value * 0.01 / innerWidth);
+              }
+
+              if (eq) {
+                eq = t[4] === 0;
+              }
+            } else if (a[1] || b[1]) {
+              eq = false;
+            }
+
+            res.v.push(t);
+          } // 线性渐变有角度差值变化
+
+
+          if (p.k === 'linear') {
+            var _v12 = n.d - p.d;
+
+            if (eq && _v12 === 0) {
+              return;
+            }
+
+            res.d = _v12;
+          }
+        } // 纯色
+        else {
+            if (equalArr(n, p)) {
+              return;
+            }
+
+            res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+          }
     } else if (COLOR_HASH.hasOwnProperty(k)) {
       if (equalArr(n, p)) {
         return;
@@ -5157,9 +5219,15 @@
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       // auto不做动画
-      if (p.unit === AUTO$1 || n.unit === AUTO$1) {
-        return res;
+      if (p.unit === AUTO$1 && n.unit === AUTO$1) {
+        return;
       }
+
+      if (p.unit === AUTO$1 || n.unit === AUTO$1) {
+        res.n = n;
+        return res;
+      } // TODO: inherit，不能使用computedStyle
+
 
       var parentComputedStyle = (target.parent || target).computedStyle;
       var diff = 0;
@@ -5167,21 +5235,23 @@
       if (p.unit === n.unit) {
         diff = n.value - p.value;
       } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v6 = p.value * 100 / parentComputedStyle[k];
+        var _v13 = p.value * 100 / parentComputedStyle[k];
 
-        diff = n.value - _v6;
+        diff = n.value - _v13;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v7 = p.value * 0.01 * parentComputedStyle[k];
+        var _v14 = p.value * 0.01 * parentComputedStyle[k];
 
-        diff = n.value - _v7;
+        diff = n.value - _v14;
       } // lineHeight奇怪的单位变化
       else {
           return res;
         }
 
-      if (diff !== 0) {
-        res.v = diff;
+      if (diff === 0) {
+        return;
       }
+
+      res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
       if (k === 'points' || k === 'controls') {
         if (equalArr(p, n)) {
@@ -5197,17 +5267,17 @@
           if (util.isNil(_pv) || util.isNil(_nv)) {
             res.v.push(_nv);
           } else {
-            var _v8 = [];
+            var _v15 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
               if (util.isNil(_pv[j]) || util.isNil(_nv[j])) {
-                _v8.push(_nv[j]);
+                _v15.push(_nv[j]);
               } else {
-                _v8.push(_nv[j] - _pv[j]);
+                _v15.push(_nv[j] - _pv[j]);
               }
             }
 
-            res.v.push(_v8);
+            res.v.push(_v15);
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
@@ -5217,6 +5287,10 @@
 
         res.v = [n[0] - p[0], n[1] - p[1]];
       } else {
+        if (n === p) {
+          return;
+        }
+
         res.v = n - p;
       }
     } else if (k === 'opacity' || k === 'zIndex') {
@@ -5225,13 +5299,14 @@
       }
 
       res.v = n - p;
-    } else {
-      if (n === p) {
-        return;
-      }
+    } // display等不能有增量过程的
+    else {
+        if (n === p) {
+          return;
+        }
 
-      res.v = n;
-    }
+        res.n = n;
+      }
 
     return res;
   } // 计算两帧之间不相同的变化，存入transition，相同的忽略
@@ -5285,10 +5360,13 @@
     frame.transition.forEach(function (item) {
       var k = item.k,
           v = item.v,
+          n = item.n,
           d = item.d;
       var st = style[k];
 
-      if (k === 'transform') {
+      if (n) {
+        style[k] = n;
+      } else if (k === 'transform') {
         var transform = style.transform;
         var hash = {};
         transform.forEach(function (item) {
@@ -5362,10 +5440,8 @@
           } else {
             style[k] += v * percent;
           }
-        } else if (k === 'opacity') {
+        } else if (k === 'opacity' || k === 'zIndex') {
           style[k] += v * percent;
-        } else {
-          style[k] = v;
         }
     });
     return style;
@@ -5586,7 +5662,8 @@
           frames.push(framing(item, resetStyle, duration));
         }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
-        var keys = unify(frames, target); // 计算两帧之间增量变化，存入transition属性
+        var keys = this.__keys = unify(frames, target);
+        this.__originStyle = getOriginStyleByKeys(keys, target); // 计算两帧之间增量变化，存入transition属性
 
         var length = frames.length;
         var prev = frames[0];
@@ -5594,9 +5671,8 @@
         for (var _i9 = 1; _i9 < length; _i9++) {
           var next = frames[_i9];
           prev = calFrame(prev, next, keys, target);
-        }
+        } // 反向存储帧的倒排结果
 
-        console.log(JSON.stringify(frames)); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -5689,6 +5765,8 @@
                 iterations = this.iterations,
                 delay = this.delay,
                 endDelay = this.endDelay,
+                originStyle = this.originStyle,
+                keys = this.keys,
                 __fin = this.__fin; // 每次调用play都会从头开始，标识第一次callback运行初始化
 
             var init = true; // 是第一次运行强制不跳帧，由于设计delay和运行时独立跳帧逻辑，因此不能和firstPlay合并
@@ -5707,6 +5785,7 @@
               if (init) {
                 _this3.__startTime = _this3.__lastFpsTime = _this3.__lastTime = now;
                 _this3.__playTime = 0;
+                _this3.__style = style = originStyle;
               } // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
 
 
@@ -5723,7 +5802,7 @@
                 if (init && _this3.__stayBegin()) {
                   var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
-                  var _calRefresh = calRefresh(_current, getOriginStyleByFrame(_current, target));
+                  var _calRefresh = calRefresh(_current, style, keys);
 
                   var _calRefresh2 = _slicedToArray(_calRefresh, 2);
 
@@ -5824,7 +5903,7 @@
               if (i === length - 1) {
                 current = current.style;
 
-                var _calRefresh3 = calRefresh(current, style);
+                var _calRefresh3 = calRefresh(current, style, keys);
 
                 var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
 
@@ -5847,7 +5926,7 @@
                   var percent = (diff - current.time) / total;
                   current = calStyle(current, percent);
 
-                  var _calRefresh5 = calRefresh(current, style);
+                  var _calRefresh5 = calRefresh(current, style, keys);
 
                   var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
 
@@ -5883,9 +5962,7 @@
                     restore = __fin;
                   } else {
                     // 还原本来样式判断是否有变化刷新
-                    var origin = getOriginStyleByFrame(current, target);
-
-                    var _calRefresh7 = calRefresh(current, origin);
+                    var _calRefresh7 = calRefresh(current, originStyle, keys);
 
                     var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
 
@@ -6008,7 +6085,9 @@
         this.__playState = 'finished';
         this.__callback = null;
         var target = this.target,
-            frames = this.frames;
+            frames = this.frames,
+            originStyle = this.originStyle,
+            keys = this.keys;
         var root = target.root;
 
         if (root) {
@@ -6017,16 +6096,14 @@
           if (this.__stayEnd()) {
             current = frames[frames.length - 1].style;
 
-            var _calRefresh9 = calRefresh(current, style);
+            var _calRefresh9 = calRefresh(current, style, keys);
 
             var _calRefresh10 = _slicedToArray(_calRefresh9, 2);
 
             needRefresh = _calRefresh10[0];
             lv = _calRefresh10[1];
           } else {
-            var origin = getOriginStyleByFrame(style, target);
-
-            var _calRefresh11 = calRefresh(style, origin);
+            var _calRefresh11 = calRefresh(style, originStyle, keys);
 
             var _calRefresh12 = _slicedToArray(_calRefresh11, 2);
 
@@ -6083,13 +6160,13 @@
         this.__playState = 'idle';
         this.__callback = null;
         var target = this.target,
-            style = this.style;
+            style = this.style,
+            originStyle = this.originStyle,
+            keys = this.keys;
         var root = target.root;
 
         if (root) {
-          var origin = getOriginStyleByFrame(style, target);
-
-          var _calRefresh13 = calRefresh(style, origin),
+          var _calRefresh13 = calRefresh(style, originStyle, keys),
               _calRefresh14 = _slicedToArray(_calRefresh13, 2),
               needRefresh = _calRefresh14[0],
               lv = _calRefresh14[1];
@@ -6253,9 +6330,19 @@
         return this.__target;
       }
     }, {
+      key: "keys",
+      get: function get() {
+        return this.__keys;
+      }
+    }, {
       key: "style",
       get: function get() {
         return this.__style;
+      }
+    }, {
+      key: "originStyle",
+      get: function get() {
+        return this.__originStyle;
       }
     }, {
       key: "props",
@@ -6398,7 +6485,7 @@
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
-      POSITION$1 = unit.POSITION,
+      POSITION = unit.POSITION,
       SIZE$1 = unit.SIZE;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
@@ -6451,7 +6538,7 @@
         res.push(-1);
       } else if (item.unit === SIZE$1) {
         res.push(item.value === 'contain' ? -2 : -3);
-      } else if (item.unit === POSITION$1) {
+      } else if (item.unit === POSITION) {
         res.push(item.value);
       }
     });

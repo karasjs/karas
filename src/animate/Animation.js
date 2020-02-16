@@ -263,20 +263,32 @@ function isStyleReflow(k) {
 }
 
 // 反向将颜色数组转换为css模式，同时计算target的animateStyle改变，计算刷新等级
-function calRefresh(frameStyle, lastStyle) {
+function calRefresh(frameStyle, lastStyle, keys) {
   let res = false;
   let lv = level.REPAINT;
-  for(let i in frameStyle) {
-    if(!equalStyle(i, frameStyle[i], lastStyle[i])) {
-      res = true;
-      // 不相等且刷新等级是重新布局时可以提前跳出
-      if(lv === level.REPAINT) {
-        if(isStyleReflow(i)) {
-          lv = level.REFLOW;
+  for(let i = 0, len = keys.length; i < len; i++) {
+    let k = keys[i];
+    let n = frameStyle[k];
+    let p = lastStyle[k];
+    if(!util.isNil(n) && !util.isNil(p)) {
+      if(!equalStyle(k, n, p)) {
+        res = true;
+        // 不相等且刷新等级是重新布局时可以提前跳出
+        if(lv === level.REPAINT) {
+          if(isStyleReflow(k)) {
+            lv = level.REFLOW;
+            break;
+          }
+        }
+        else {
           break;
         }
       }
-      else {
+    }
+    else if(!util.isNil(n) || !util.isNil(p)) {
+      res = true;
+      if(isStyleReflow(k)) {
+        lv = level.REFLOW;
         break;
       }
     }
@@ -337,15 +349,12 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
   };
 }
 
-// 根据第一帧帧的样式，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
-function getOriginStyleByFrame(frameStyle, target) {
+// 根据动画涉及的样式keys，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
+function getOriginStyleByKeys(keys, target) {
   let res = {};
   let style = target.style;
-  Object.keys(frameStyle).forEach(i => {
-    let v = style[i];
-    if(!util.isNil(v)) {
-      res[i] = v;
-    }
+  keys.forEach(i => {
+    res[i] = style[i];
   });
   return res;
 }
@@ -509,9 +518,6 @@ function calDiff(prev, next, k, target) {
         let v = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
         res.v.push(ni.value - v);
       }
-      else {
-        res.v.push(0);
-      }
     }
     if(equalArr(res.v, [0, 0])) {
       return;
@@ -519,26 +525,51 @@ function calDiff(prev, next, k, target) {
   }
   else if(k === 'backgroundPositionX' || k === 'backgroundPositionY') {
     if(p.unit === n.unit && [PX, PERCENT].indexOf(p.unit) > -1) {
-      res.v = n.value - p.value;
+      let v = n.value - p.value;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
     }
-    else {
-      return;
+    else if(p.unit === PX && n.unit === PERCENT) {
+      let v = p.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+      v = n.value - v;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
+    }
+    else if(p.unit === PERCENT && n.unit === PX) {
+      let v = p.value * 0.01 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+      v = n.value - v;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
     }
   }
   else if(EXPAND_HASH.hasOwnProperty(k)) {
     if(p.unit === n.unit) {
-      res.v = n.value - p.value;
+      let v = n.value - p.value;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
     }
     else if(p.unit === PX && n.unit === PERCENT) {
-      let v = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
-      res.v = n.value - v;
+      let v = p.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+      v = n.value - v;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
-      res.v = n.value - v;
-    }
-    else {
-      return;
+      let v = p.value * 0.01 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];v = n.value - v;
+      if(v === 0) {
+        return;
+      }
+      res.v = v;
     }
   }
   else if(k === 'backgroundSize') {
@@ -549,8 +580,17 @@ function calDiff(prev, next, k, target) {
       if(pi.unit === ni.unit && [PX, PERCENT].indexOf(pi.unit) > -1) {
         res.v.push(ni.value - pi.value);
       }
+      else if(pi.unit === PX && ni.unit === PERCENT) {
+        let v = pi.value * 100 / target[i ? 'innerWidth' : 'innerHeight'];
+        res.v.push(ni.value - v);
+      }
+      else if(pi.unit === PERCENT && ni.unit === PX) {
+        let v = pi.value * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
+        res.v.push(ni.value - v);
+      }
       else {
-        res.v.push(0);
+        res.n = n;
+        return res;
       }
     }
     if(equalArr(res.v, [0, 0])) {
@@ -560,10 +600,10 @@ function calDiff(prev, next, k, target) {
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     if(p.k !== n.k) {
-      return res;
+      res.n = n;
     }
     // 渐变
-    if(p.k === 'linear' || p.k === 'radial') {
+    else if(p.k === 'linear' || p.k === 'radial') {
       let pv = p.v;
       let nv = n.v;
       if(equalArr(pv, nv)) {
@@ -571,6 +611,7 @@ function calDiff(prev, next, k, target) {
       }
       res.v = [];
       let { innerWidth } = target;
+      let eq;
       for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
         let a = pv[i];
         let b = nv[i];
@@ -579,8 +620,9 @@ function calDiff(prev, next, k, target) {
           b[0][0] - a[0][0],
           b[0][1] - a[0][1],
           b[0][2] - a[0][2],
-          b[0][3] - a[0][3]
+          b[0][3] - a[0][3],
         ]);
+        eq = equalArr(t, [0, 0, 0, 0]);
         if(a[1] && b[1]) {
           if(a[1].unit === b[1].unit) {
             t.push(b[1].value - a[1].value);
@@ -591,12 +633,22 @@ function calDiff(prev, next, k, target) {
           else if(a[1].unit === PERCENT && b[1].unit === PX) {
             t.push(b[1].value - a[1].value * 0.01 / innerWidth);
           }
+          if(eq) {
+            eq = t[4] === 0;
+          }
+        }
+        else if(a[1] || b[1]) {
+          eq = false;
         }
         res.v.push(t);
       }
       // 线性渐变有角度差值变化
       if(p.k === 'linear') {
-        res.d = n.d - p.d;
+        let v = n.d - p.d;
+        if(eq && v === 0) {
+          return;
+        }
+        res.d = v;
       }
       // TODO: 径向渐变非数字角度
       else {}
@@ -627,9 +679,14 @@ function calDiff(prev, next, k, target) {
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     // auto不做动画
+    if(p.unit === AUTO && n.unit === AUTO) {
+      return;
+    }
     if(p.unit === AUTO || n.unit === AUTO) {
+      res.n = n;
       return res;
     }
+    // TODO: inherit，不能使用computedStyle
     let parentComputedStyle = (target.parent || target).computedStyle;
     let diff = 0;
     if(p.unit === n.unit) {
@@ -647,9 +704,10 @@ function calDiff(prev, next, k, target) {
     else {
       return res;
     }
-    if(diff !== 0) {
-      res.v = diff;
+    if(diff === 0) {
+      return;
     }
+    res.v = diff;
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(k === 'points' || k === 'controls') {
@@ -687,6 +745,9 @@ function calDiff(prev, next, k, target) {
       ];
     }
     else {
+      if(n === p) {
+        return;
+      }
       res.v = n - p;
     }
   }
@@ -696,11 +757,12 @@ function calDiff(prev, next, k, target) {
     }
     res.v = n - p;
   }
+  // display等不能有增量过程的
   else {
     if(n === p) {
       return;
     }
-    res.v = n;
+    res.n = n;
   }
   return res;
 }
@@ -750,9 +812,12 @@ function calStyle(frame, percent) {
   percent = Math.max(percent, 0);
   percent = Math.min(percent, 1);
   frame.transition.forEach(item => {
-    let { k, v, d } = item;
+    let { k, v, n, d } = item;
     let st = style[k];
-    if(k === 'transform') {
+    if(n) {
+      style[k] = n;
+    }
+    else if(k === 'transform') {
       let transform = style.transform;
       let hash = {};
       transform.forEach(item => {
@@ -829,11 +894,8 @@ function calStyle(frame, percent) {
         style[k] += v * percent;
       }
     }
-    else if(k === 'opacity') {
+    else if(k === 'opacity' || k === 'zIndex') {
       style[k] += v * percent;
-    }
-    else {
-      style[k] = v;
     }
   });
   return style;
@@ -1005,7 +1067,8 @@ class Animation extends Event {
       frames.push(framing(item, resetStyle, duration));
     });
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-    let keys = unify(frames, target);
+    let keys = this.__keys = unify(frames, target);
+    this.__originStyle = getOriginStyleByKeys(keys, target);
     // 计算两帧之间增量变化，存入transition属性
     let length = frames.length;
     let prev = frames[0];
@@ -1013,7 +1076,6 @@ class Animation extends Event {
       let next = frames[i];
       prev = calFrame(prev, next, keys, target);
     }
-    console.log(JSON.stringify(frames));
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let listR = list.reverse();
@@ -1087,6 +1149,8 @@ class Animation extends Event {
         iterations,
         delay,
         endDelay,
+        originStyle,
+        keys,
         __fin,
       } = this;
       // 每次调用play都会从头开始，标识第一次callback运行初始化
@@ -1103,6 +1167,7 @@ class Animation extends Event {
         if(init) {
           this.__startTime = this.__lastFpsTime = this.__lastTime = now;
           this.__playTime = 0;
+          this.__style = style = originStyle;
         }
         // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
         let diff = this.__calDiffTime(now);
@@ -1116,7 +1181,7 @@ class Animation extends Event {
           if(init && this.__stayBegin()) {
             let current = frames[0].style;
             // 对比第一帧，以及和第一帧同key的当前样式
-            [needRefresh, lv] = calRefresh(current, getOriginStyleByFrame(current, target));
+            [needRefresh, lv] = calRefresh(current, style, keys);
             if(needRefresh) {
               let task = this.__task = {
                 before: genBeforeRefresh(current, this, root, lv),
@@ -1193,7 +1258,7 @@ class Animation extends Event {
         // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件
         if(i === length - 1) {
           current = current.style;
-          [needRefresh, lv] = calRefresh(current, style);
+          [needRefresh, lv] = calRefresh(current, style, keys);
           // 判断次数结束每帧callback调用
           if(playCount < iterations) {
             playCount = ++this.playCount;
@@ -1209,7 +1274,7 @@ class Animation extends Event {
           let total = currentFrames[i + 1].time - current.time;
           let percent = (diff - current.time) / total;
           current = calStyle(current, percent);
-          [needRefresh, lv] = calRefresh(current, style);
+          [needRefresh, lv] = calRefresh(current, style, keys);
         }
         let task = delta => {
           // 最后一帧考虑后续反向播还是停留还是结束
@@ -1234,8 +1299,7 @@ class Animation extends Event {
             }
             else {
               // 还原本来样式判断是否有变化刷新
-              let origin = getOriginStyleByFrame(current, target);
-              [needRefresh, lv] = calRefresh(current, origin);
+              [needRefresh, lv] = calRefresh(current, originStyle, keys);
               restore = needRefresh ? {
                 before: genBeforeRefresh({}, this, root, lv),
                 after: __fin,
@@ -1324,18 +1388,17 @@ class Animation extends Event {
     this.__cancelTask();
     this.__playState = 'finished';
     this.__callback = null;
-    let { target, frames } = this;
+    let { target, frames, originStyle, keys } = this;
     let root = target.root;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
       if(this.__stayEnd()) {
         current = frames[frames.length - 1].style;
-        [needRefresh, lv] = calRefresh(current, style);
+        [needRefresh, lv] = calRefresh(current, style, keys);
       }
       else {
-        let origin = getOriginStyleByFrame(style, target);
-        [needRefresh, lv] = calRefresh(style, origin);
+        [needRefresh, lv] = calRefresh(style, originStyle, keys);
         current = {};
       }
       if(needRefresh) {
@@ -1373,11 +1436,10 @@ class Animation extends Event {
     this.__cancelTask();
     this.__playState = 'idle';
     this.__callback = null;
-    let { target, style } = this;
+    let { target, style, originStyle, keys } = this;
     let root = target.root;
     if(root) {
-      let origin = getOriginStyleByFrame(style, target);
-      let [needRefresh, lv] = calRefresh(style, origin);
+      let [needRefresh, lv] = calRefresh(style, originStyle, keys);
       let task = () => {
         if(util.isFunction(cb)) {
           cb();
@@ -1487,8 +1549,14 @@ class Animation extends Event {
   get target() {
     return this.__target;
   }
+  get keys() {
+    return this.__keys;
+  }
   get style() {
     return this.__style;
+  }
+  get originStyle() {
+    return this.__originStyle;
   }
   get props() {
     return this.__props;

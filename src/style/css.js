@@ -106,7 +106,7 @@ function calUnit(obj, k, v) {
  * @param reset 默认样式
  * @returns 标准化的样式
  */
-function normalize(style, reset) {
+function normalize(style, reset = []) {
   // 缩写提前处理，因为reset里没有reset
   let temp = style.border;
   if(temp) {
@@ -270,6 +270,21 @@ function normalize(style, reset) {
       });
     }
   }
+  [
+    'translateX',
+    'translateY',
+    'scaleX',
+    'scaleY',
+    'skewX',
+    'skewY',
+    'rotateZ',
+    'rotate'
+  ].forEach(k => {
+    let v = style[k];
+    if(!util.isNil(v) && style.transform) {
+      console.error(`Can not use expand style "${k}" with "transform"`);
+    }
+  });
   // 默认reset，根据传入不同，当style为空时覆盖
   reset.forEach(item => {
     let { k, v } = item;
@@ -297,7 +312,7 @@ function normalize(style, reset) {
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      style.backgroundColor = util.rgb2int(bgc ? bgc[0] : 'transparent');
+      style.backgroundColor = util.rgb2int(bgc ? bgc[0] : [0,0,0,0]);
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
@@ -480,9 +495,6 @@ function normalize(style, reset) {
     if(util.isNil(v)) {
       return;
     }
-    if(style.transform) {
-      console.error(`Can not use expand style "${k}" with "transform"`);
-    }
     calUnit(style, k, v);
     if(k === 'rotate') {
       k = 'rotateZ';
@@ -616,7 +628,7 @@ function normalize(style, reset) {
         unit: NUMBER,
       };
     }
-    else if(temp !== 'inherit') {
+    else if(temp === 'inherit') {
       style.fontWeight = {
         unit: INHERIT,
       };

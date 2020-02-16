@@ -827,25 +827,25 @@ class Xom extends Node {
       computedStyle.backgroundRepeat = backgroundRepeat;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
-    if(borderTopWidth > 0 && borderTopColor !== 'transparent') {
+    if(borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
       let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
       renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
-    if(borderRightWidth > 0 && borderRightColor !== 'transparent') {
+    if(borderRightWidth > 0 && !/,0\)$/.test(borderRightColor)) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
       let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
       renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
-    if(borderBottomWidth > 0 && borderBottomColor !== 'transparent') {
+    if(borderBottomWidth > 0 && !/,0\)$/.test(borderBottomColor)) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
       let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
       renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
-    if(borderLeftWidth > 0 && borderLeftColor !== 'transparent') {
+    if(borderLeftWidth > 0 && !/,0\)$/.test(borderLeftColor)) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
       let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);

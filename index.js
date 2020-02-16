@@ -2221,7 +2221,8 @@
    */
 
 
-  function normalize$1(style, reset) {
+  function normalize$1(style) {
+    var reset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
     // 缩写提前处理，因为reset里没有reset
     var temp = style.border;
 
@@ -2416,8 +2417,15 @@
           }
         });
       }
-    } // 默认reset，根据传入不同，当style为空时覆盖
+    }
 
+    ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+      var v = style[k];
+
+      if (!util.isNil(v) && style.transform) {
+        console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
+      }
+    }); // 默认reset，根据传入不同，当style为空时覆盖
 
     reset.forEach(function (item) {
       var k = item.k,
@@ -2449,7 +2457,7 @@
         style.backgroundColor = util.rgb2int(_bgc[0]);
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
-        style.backgroundColor = util.rgb2int(_bgc ? _bgc[0] : 'transparent');
+        style.backgroundColor = util.rgb2int(_bgc ? _bgc[0] : [0, 0, 0, 0]);
       }
     }
 
@@ -2649,10 +2657,6 @@
         return;
       }
 
-      if (style.transform) {
-        console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
-      }
-
       calUnit(style, k, v);
 
       if (k === 'rotate') {
@@ -2771,7 +2775,7 @@
           value: 200,
           unit: NUMBER$1
         };
-      } else if (temp !== 'inherit') {
+      } else if (temp === 'inherit') {
         style.fontWeight = {
           unit: INHERIT
         };
@@ -3380,7 +3384,7 @@
         if (isVirtual) {
           this.__lineBoxes = [];
         } else {
-          var textAlign = currentStyle.textAlign;
+          var textAlign = computedStyle.textAlign;
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxes.forEach(function (lineBox) {
@@ -7545,14 +7549,14 @@
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
-        if (borderTopWidth > 0 && borderTopColor !== 'transparent') {
+        if (borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
           var deg2 = Math.atan(borderTopWidth / borderRightWidth);
           var points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
           renderBorder(renderMode, points, borderTopColor, ctx, this);
         }
 
-        if (borderRightWidth > 0 && borderRightColor !== 'transparent') {
+        if (borderRightWidth > 0 && !/,0\)$/.test(borderRightColor)) {
           var _deg = Math.atan(borderRightWidth / borderTopWidth);
 
           var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
@@ -7562,7 +7566,7 @@
           renderBorder(renderMode, _points, borderRightColor, ctx, this);
         }
 
-        if (borderBottomWidth > 0 && borderBottomColor !== 'transparent') {
+        if (borderBottomWidth > 0 && !/,0\)$/.test(borderBottomColor)) {
           var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
 
           var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
@@ -7572,7 +7576,7 @@
           renderBorder(renderMode, _points2, borderBottomColor, ctx, this);
         }
 
-        if (borderLeftWidth > 0 && borderLeftColor !== 'transparent') {
+        if (borderLeftWidth > 0 && !/,0\)$/.test(borderLeftColor)) {
           var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
 
           var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
@@ -10081,7 +10085,7 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'transparent']]);
+            this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'rgba(0,0,0,0)']]);
 
             this.__addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill]]);
 
@@ -11790,7 +11794,7 @@
             this.addGeom('path', [['d', closure ? "M".concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z") : "M".concat(cx, ",").concat(cy, " L").concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z")], ['fill', fill]]);
 
             if (strokeWidth > 0) {
-              var _props = [['d', "M".concat(x1, ",").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2)], ['fill', 'transparent'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+              var _props = [['d', "M".concat(x1, ",").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2)], ['fill', 'rgba(0,0,0,0)'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
               if (strokeDasharray.length) {
                 _props.push(['stroke-dasharray', strokeDasharray]);

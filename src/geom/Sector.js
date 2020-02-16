@@ -152,7 +152,7 @@ class Sector extends Geom {
         if(strokeWidth > 0) {
           let props = [
             ['d', `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`],
-            ['fill', 'transparent'],
+            ['fill', 'rgba(0,0,0,0)'],
             ['stroke', stroke],
             ['stroke-width', strokeWidth]
           ];

@@ -199,7 +199,7 @@ class Img extends Dom {
           ['height', height],
           ['stroke', stroke],
           ['stroke-width', strokeWidth],
-          ['fill', 'transparent']
+          ['fill', 'rgba(0,0,0,0)']
         ]);
         this.__addGeom('circle', [
           ['cx', cx],

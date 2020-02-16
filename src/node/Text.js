@@ -141,7 +141,7 @@ class Text extends Node {
       this.__lineBoxes = [];
     }
     else {
-      let { textAlign } = currentStyle;
+      let { textAlign } = computedStyle;
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxes.forEach(lineBox => {
           let diff = this.__width - lineBox.width;

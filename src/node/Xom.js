@@ -1035,7 +1035,7 @@ class Xom extends Node {
       computedStyle[ks] += d;
     }
     v.forEach(item => {
-      computedStyle[ks] += ', ' + item[0];
+      computedStyle[ks] += ', ' + util.int2rgba(item[0]);
       if(item[1]) {
         computedStyle[ks] += ' ' + item[1].str;
       }

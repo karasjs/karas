@@ -150,6 +150,10 @@ function inherit(frames, keys, target) {
     let style = item.style;
     keys.forEach(k => {
       let v = style[k];
+      // geom的属性可能在帧中没有
+      if(util.isNil(v)) {
+        return;
+      }
       if(v.unit === INHERIT) {
         if(k === 'color') {
           style[k] = {
@@ -324,31 +328,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
       if(repaint.GEOM.hasOwnProperty(i)) {
         props[i] = v;
       }
-      else if(GRADIENT_HASH.hasOwnProperty(i)) {
-        if(GRADIENT_TYPE.hasOwnProperty(v.k)) {
-          style[i] = {
-            k: v.k,
-            v: v.v.map(item => {
-              let arr = [];
-              let c = item[0];
-              if(c[3] === 1) {
-                arr.push(`rgb(${c[0]},${c[1]},${c[2]})`);
-              } else {
-                arr.push(`rgba(${c[0]},${c[1]},${c[2]},${c[3]})`);
-              }
-              if(item[1]) {
-                arr.push(util.clone(item[1]));
-              }
-              return arr;
-            }),
-            d: v.d,
-          };
-        }
-        else {
-          style[i] = v;
-        }
-      }
-      // geom属性先同普通样式直接赋值，渲染时各自动态获取
+      // 样式
       else {
         style[i] = v;
       }
@@ -719,7 +699,10 @@ function calDiff(prev, next, k, target) {
     res.v = diff;
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(k === 'points' || k === 'controls') {
+    if(util.isNil(n)) {
+      res.n = null;
+    }
+    else if(k === 'points' || k === 'controls') {
       if(equalArr(p, n)) {
         return;
       }
@@ -823,7 +806,7 @@ function calStyle(frame, percent) {
   frame.transition.forEach(item => {
     let { k, v, n, d } = item;
     let st = style[k];
-    if(n) {
+    if(item.hasOwnProperty('n')) {
       style[k] = n;
     }
     else if(k === 'transform') {

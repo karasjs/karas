@@ -716,12 +716,22 @@ function normalize(style, reset) {
   }
   // fill和stroke为渐变时特殊处理
   temp = style.fill;
-  if(temp && temp.indexOf('-gradient(') > 0) {
-    style.fill = gradient.parseGradient(temp);
+  if(temp) {
+    if(temp.indexOf('-gradient(') > 0) {
+      style.fill = gradient.parseGradient(temp);
+    }
+    else {
+      style.fill = util.rgb2int(temp);
+    }
   }
   temp = style.stroke;
-  if(temp && temp.indexOf('-gradient(') > 0) {
-    style.stroke = gradient.parseGradient(temp);
+  if(temp) {
+    if(temp.indexOf('-gradient(') > 0) {
+      style.stroke = gradient.parseGradient(temp);
+    }
+    else {
+      style.stroke = util.rgb2int(temp);
+    }
   }
   // font除size相关
   // 删除缩写避免干扰动画计算

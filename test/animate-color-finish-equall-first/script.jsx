@@ -18,9 +18,9 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 o.on(karas.Event.KARAS_REFRESH, () => {
-  input.value += '/' + ++n + ',' + t.computedStyle.color;
+  input.value += 'a/' + ++n + ',' + t.computedStyle.color;
 });
 animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value += '/' + ++n + ',' + t.computedStyle.color;
+  input.value += 'b/' + ++n + ',' + t.computedStyle.color;
 });
 animation.finish();

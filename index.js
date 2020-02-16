@@ -1057,7 +1057,7 @@
       var item = v[i]; // 考虑是否声明了位置
 
       if (item.length > 1) {
-        var c = item[0];
+        var c = util.int2rgba(item[0]);
         var p = item[1];
 
         if (p.unit === PERCENT$1) {
@@ -1066,60 +1066,61 @@
           list.push([c, p.value / length]);
         }
       } else {
-        list.push(item[0]);
+        list.push([util.int2rgba(item[0])]);
       }
     } // 首尾不声明默认为[0, 1]
 
 
-    if (list.length > 1) {
-      if (!Array.isArray(list[0])) {
-        list[0] = [list[0], 0];
-      }
+    if (list[0].length === 1) {
+      list[0].push(0);
+    }
 
-      if (!Array.isArray(list[list.length - 1])) {
-        list[list.length - 1] = [list[list.length - 1], 1];
+    if (list.length > 1) {
+      var _i = list.length - 1;
+
+      if (list[_i].length === 1) {
+        list[_i].push(1);
       }
-    } else if (!Array.isArray(list[0])) {
-      list[0] = [list[0], 0];
-    } // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
+    } // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
 
 
     var start = list[0][1];
 
-    for (var _i = 1, _len2 = list.length; _i < _len2 - 1; _i++) {
-      var _item = list[_i];
+    for (var _i2 = 1, _len2 = list.length; _i2 < _len2 - 1; _i2++) {
+      var _item = list[_i2];
 
-      if (Array.isArray(_item)) {
+      if (_item.length > 1) {
         start = _item[1];
       } else {
-        var j = _i + 1;
+        var j = _i2 + 1;
         var end = list[list.length - 1][1];
 
         for (; j < _len2 - 1; j++) {
           var _item2 = list[j];
 
-          if (Array.isArray(_item2)) {
+          if (_item2.length > 1) {
             end = _item2[1];
             break;
           }
         }
 
-        var num = j - _i + 1;
+        var num = j - _i2 + 1;
         var per = (end - start) / num;
 
-        for (var k = _i; k < j; k++) {
+        for (var k = _i2; k < j; k++) {
           var _item3 = list[k];
-          list[k] = [_item3, start + per * (k + 1 - _i)];
+
+          _item3.push(start + per * (k + 1 - _i2));
         }
 
-        _i = j;
+        _i2 = j;
       }
     } // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
 
 
-    for (var _i2 = 1, _len3 = list.length; _i2 < _len3; _i2++) {
-      var _item4 = list[_i2];
-      var prev = list[_i2 - 1];
+    for (var _i3 = 1, _len3 = list.length; _i3 < _len3; _i3++) {
+      var _item4 = list[_i3];
+      var prev = list[_i3 - 1];
 
       if (_item4[1] < prev[1]) {
         _item4[1] = prev[1];
@@ -1127,20 +1128,20 @@
     } // 0之前的和1之后的要过滤掉
 
 
-    for (var _i3 = 0, _len4 = list.length; _i3 < _len4 - 1; _i3++) {
-      var _item5 = list[_i3];
+    for (var _i4 = 0, _len4 = list.length; _i4 < _len4 - 1; _i4++) {
+      var _item5 = list[_i4];
 
       if (_item5[1] > 1) {
-        list.splice(_i3 + 1);
+        list.splice(_i4 + 1);
         break;
       }
     }
 
-    for (var _i4 = list.length - 1; _i4 > 0; _i4--) {
-      var _item6 = list[_i4];
+    for (var _i5 = list.length - 1; _i5 > 0; _i5--) {
+      var _item6 = list[_i5];
 
       if (_item6[1] < 0) {
-        list.splice(0, _i4);
+        list.splice(0, _i5);
         break;
       }
     } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
@@ -1155,8 +1156,8 @@
       var allBefore = true;
       var allAfter = true;
 
-      for (var _i5 = len - 1; _i5 >= 0; _i5--) {
-        var _item7 = list[_i5];
+      for (var _i6 = len - 1; _i6 >= 0; _i6--) {
+        var _item7 = list[_i6];
         var _p = _item7[1];
 
         if (_p > 0) {
@@ -1500,6 +1501,7 @@
       var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
         var arr = item.split(/\s+/);
+        arr[0] = util.rgb2int(arr[0]);
 
         if (arr[1]) {
           if (/%$/.test(arr[1])) {
@@ -2873,14 +2875,22 @@
 
     temp = style.fill;
 
-    if (temp && temp.indexOf('-gradient(') > 0) {
-      style.fill = gradient.parseGradient(temp);
+    if (temp) {
+      if (temp.indexOf('-gradient(') > 0) {
+        style.fill = gradient.parseGradient(temp);
+      } else {
+        style.fill = util.rgb2int(temp);
+      }
     }
 
     temp = style.stroke;
 
-    if (temp && temp.indexOf('-gradient(') > 0) {
-      style.stroke = gradient.parseGradient(temp);
+    if (temp) {
+      if (temp.indexOf('-gradient(') > 0) {
+        style.stroke = gradient.parseGradient(temp);
+      } else {
+        style.stroke = util.rgb2int(temp);
+      }
     } // font除size相关
     // 删除缩写避免干扰动画计算
 
@@ -4854,7 +4864,11 @@
     clone.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
-        var v = style[k];
+        var v = style[k]; // geom的属性可能在帧中没有
+
+        if (util.isNil(v)) {
+          return;
+        }
 
         if (v.unit === INHERIT$1) {
           if (k === 'color') {
@@ -5031,32 +5045,7 @@
 
         if (repaint$1.GEOM.hasOwnProperty(i)) {
           props[i] = v;
-        } else if (GRADIENT_HASH.hasOwnProperty(i)) {
-          if (GRADIENT_TYPE.hasOwnProperty(v.k)) {
-            style[i] = {
-              k: v.k,
-              v: v.v.map(function (item) {
-                var arr = [];
-                var c = item[0];
-
-                if (c[3] === 1) {
-                  arr.push("rgb(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ")"));
-                } else {
-                  arr.push("rgba(".concat(c[0], ",").concat(c[1], ",").concat(c[2], ",").concat(c[3], ")"));
-                }
-
-                if (item[1]) {
-                  arr.push(util.clone(item[1]));
-                }
-
-                return arr;
-              }),
-              d: v.d
-            };
-          } else {
-            style[i] = v;
-          }
-        } // geom属性先同普通样式直接赋值，渲染时各自动态获取
+        } // 样式
         else {
             style[i] = v;
           }
@@ -5443,7 +5432,9 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (k === 'points' || k === 'controls') {
+      if (util.isNil(n)) {
+        res.n = null;
+      } else if (k === 'points' || k === 'controls') {
         if (equalArr(p, n)) {
           return;
         }
@@ -5554,7 +5545,7 @@
           d = item.d;
       var st = style[k];
 
-      if (n) {
+      if (item.hasOwnProperty('n')) {
         style[k] = n;
       } else if (k === 'transform') {
         var transform = style.transform;
@@ -7827,7 +7818,7 @@
         }
 
         v.forEach(function (item) {
-          computedStyle[ks] += ', ' + item[0];
+          computedStyle[ks] += ', ' + util.int2rgba(item[0]);
 
           if (item[1]) {
             computedStyle[ks] += ' ' + item[1].str;
@@ -8346,13 +8337,13 @@
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
           stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
         } else {
-          computedStyle.stroke = stroke = stroke || '#000';
+          computedStyle.stroke = stroke = util.int2rgba(stroke);
         }
 
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
           fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
         } else {
-          computedStyle.fill = fill = fill || 'transparent';
+          computedStyle.fill = fill = util.int2rgba(fill);
         }
 
         computedStyle.strokeWidth = strokeWidth;

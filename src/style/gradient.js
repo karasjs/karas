@@ -46,7 +46,7 @@ function getColorStop(v, length) {
     let item = v[i];
     // 考虑是否声明了位置
     if(item.length > 1) {
-      let c = item[0];
+      let c = util.int2rgba(item[0]);
       let p = item[1];
       if(p.unit === PERCENT) {
         list.push([c, p.value * 0.01]);
@@ -56,26 +56,24 @@ function getColorStop(v, length) {
       }
     }
     else {
-      list.push(item[0]);
+      list.push([util.int2rgba(item[0])]);
     }
   }
   // 首尾不声明默认为[0, 1]
+  if(list[0].length === 1) {
+    list[0].push(0);
+  }
   if(list.length > 1) {
-    if(!Array.isArray(list[0])) {
-      list[0] = [list[0], 0];
-    }
-    if(!Array.isArray(list[list.length - 1])) {
-      list[list.length - 1] = [list[list.length - 1], 1];
+    let i = list.length - 1;
+    if(list[i].length === 1) {
+      list[i].push(1);
     }
   }
-  else if(!Array.isArray(list[0])) {
-    list[0] = [list[0], 0];
-  }
-  // 不是数组形式的是未声明的，需区间计算，找到连续的未声明的，前后的区间平分
+  // 找到未声明位置的，需区间计算，找到连续的未声明的，前后的区间平分
   let start = list[0][1];
   for(let i = 1, len = list.length; i < len - 1; i++) {
     let item = list[i];
-    if(Array.isArray(item)) {
+    if(item.length > 1) {
       start = item[1];
     }
     else {
@@ -83,7 +81,7 @@ function getColorStop(v, length) {
       let end = list[list.length - 1][1];
       for(; j < len - 1; j++) {
         let item = list[j];
-        if(Array.isArray(item)) {
+        if(item.length > 1) {
           end = item[1];
           break;
         }
@@ -92,7 +90,7 @@ function getColorStop(v, length) {
       let per = (end - start) / num;
       for(let k = i; k < j; k++) {
         let item = list[k];
-        list[k] = [item, start + per * (k + 1 - i)];
+        item.push(start + per * (k + 1 - i));
       }
       i = j;
     }
@@ -419,6 +417,7 @@ function parseGradient(s) {
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
       let arr = item.split(/\s+/);
+      arr[0] = util.rgb2int(arr[0]);
       if(arr[1]) {
         if(/%$/.test(arr[1])) {
           arr[1] = {

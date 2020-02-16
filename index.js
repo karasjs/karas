@@ -2151,11 +2151,11 @@
     }
 
     if (util.isNil(style.flexShrink)) {
-      style.flexGrow = shrink;
+      style.flexShrink = shrink;
     }
 
     if (util.isNil(style.flexBasis)) {
-      style.flexGrow = basis;
+      style.flexBasis = basis;
     }
   }
   /**
@@ -2947,7 +2947,7 @@
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       computedStyle[k] = currentStyle[k].value;
     });
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
+    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {

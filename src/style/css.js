@@ -38,10 +38,10 @@ function parseFlex(style, grow, shrink, basis) {
     style.flexGrow = grow;
   }
   if(util.isNil(style.flexShrink)) {
-    style.flexGrow = shrink;
+    style.flexShrink = shrink;
   }
   if(util.isNil(style.flexBasis)) {
-    style.flexGrow = basis;
+    style.flexBasis = basis;
   }
 }
 
@@ -796,6 +796,8 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundRepeat',
+    'flexGrow',
+    'flexShrink',
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

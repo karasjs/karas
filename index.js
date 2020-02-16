@@ -5561,7 +5561,6 @@
         var target = this.target,
             iterations = this.iterations,
             frames = this.frames,
-            framesR = this.framesR,
             direction = this.direction,
             duration = this.duration; // 执行次数小于1无需播放
 
@@ -5679,17 +5678,19 @@
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var listR = list.reverse();
-          listR.forEach(function (item) {
-            item.offset = 1 - item.offset;
-            framesR.push(framing(item, resetStyle, duration));
+          var framesR = util.clone(frames).reverse();
+          framesR.forEach(function (item) {
+            item.time = duration - item.time;
+            item.transition = [];
           });
           prev = framesR[0];
 
           for (var _i10 = 1; _i10 < length; _i10++) {
-            var _next = listR[_i10];
+            var _next = framesR[_i10];
             prev = calFrame(prev, _next, keys, target);
           }
+
+          this.__framesR = framesR;
         } // 生成finish的任务事件
 
 

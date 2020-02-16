@@ -982,7 +982,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { target, iterations, frames, framesR, direction, duration } = this;
+    let { target, iterations, frames, direction, duration } = this;
     // 执行次数小于1无需播放
     if(iterations < 1) {
       return;
@@ -1078,16 +1078,17 @@ class Animation extends Event {
     }
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let listR = list.reverse();
-      listR.forEach(item => {
-        item.offset = 1 - item.offset;
-        framesR.push(framing(item, resetStyle, duration));
+      let framesR = util.clone(frames).reverse();
+      framesR.forEach(item => {
+        item.time = duration - item.time;
+        item.transition = [];
       });
       prev = framesR[0];
       for(let i = 1; i < length; i++) {
-        let next = listR[i];
+        let next = framesR[i];
         prev = calFrame(prev, next, keys, target);
       }
+      this.__framesR = framesR;
     }
     // 生成finish的任务事件
     this.__fin = () => {

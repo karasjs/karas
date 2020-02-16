@@ -5390,9 +5390,6 @@
             res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
           }
     } else if (COLOR_HASH.hasOwnProperty(k)) {
-      n = n.value;
-      p = p.value;
-
       if (equalArr(n, p)) {
         return;
       }
@@ -5597,7 +5594,6 @@
           }
         } // fill纯色
         else {
-            st = st.value;
             st[0] += v[0] * percent;
             st[1] += v[1] * percent;
             st[2] += v[2] * percent;
@@ -5605,7 +5601,6 @@
           }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
-          st = st.value;
           st[0] += v[0] * percent;
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;

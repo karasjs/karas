@@ -423,17 +423,17 @@ function calDiff(prev, next, k, target) {
           });
         }
         else if(p.unit === PX && n.unit === PERCENT) {
-          let v = p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+          let v = n.value * 100 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
           res.v.push({
             k,
-            v: n.value - v,
+            v: v - p.value,
           });
         }
         else if(p.unit === PERCENT && n.unit === PX) {
-          let v = p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+          let v = n.value * 0.01 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
           res.v.push({
             k,
-            v: n.value - v,
+            v: v - p.value,
           });
         }
       }
@@ -500,12 +500,12 @@ function calDiff(prev, next, k, target) {
         res.v.push(ni.value - pi.value);
       }
       else if(pi.unit === PX && ni.unit === PERCENT) {
-        let v = pi.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
-        res.v.push(ni.value - v);
+        let v = ni.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
+        res.v.push(v - pi.value);
       }
       else if(pi.unit === PERCENT && ni.unit === PX) {
-        let v = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
-        res.v.push(ni.value - v);
+        let v = ni.value * 100 * target[i ? 'outerHeight' : 'outerWidth'];
+        res.v.push(v - pi.value);
       }
     }
     if(equalArr(res.v, [0, 0])) {
@@ -521,16 +521,16 @@ function calDiff(prev, next, k, target) {
       res.v = v;
     }
     else if(p.unit === PX && n.unit === PERCENT) {
-      let v = p.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
-      v = n.value - v;
+      let v = n.value * 0.01 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+      v = v - p.value;
       if(v === 0) {
         return;
       }
       res.v = v;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = p.value * 0.01 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
-      v = n.value - v;
+      let v = n.value * 100 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+      v = v - p.value;
       if(v === 0) {
         return;
       }
@@ -546,15 +546,16 @@ function calDiff(prev, next, k, target) {
       res.v = v;
     }
     else if(p.unit === PX && n.unit === PERCENT) {
-      let v = p.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
-      v = n.value - v;
+      let v = n.value * 0.01 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+      v = v - p.value;
       if(v === 0) {
         return;
       }
       res.v = v;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = p.value * 0.01 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];v = n.value - v;
+      let v = n.value * 100 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+      v = v - p.value;
       if(v === 0) {
         return;
       }
@@ -570,12 +571,12 @@ function calDiff(prev, next, k, target) {
         res.v.push(ni.value - pi.value);
       }
       else if(pi.unit === PX && ni.unit === PERCENT) {
-        let v = pi.value * 100 / target[i ? 'innerWidth' : 'innerHeight'];
-        res.v.push(ni.value - v);
+        let v = ni.value * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
+        res.v.push(v - pi.value);
       }
       else if(pi.unit === PERCENT && ni.unit === PX) {
-        let v = pi.value * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
-        res.v.push(ni.value - v);
+        let v = ni.value * 100 * target[i ? 'innerWidth' : 'innerHeight'];
+        res.v.push(v - pi.value);
       }
       else {
         res.n = n;
@@ -1515,7 +1516,6 @@ class Animation extends Event {
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
     this.__deltaTime = v;
-    // this.__pauseTime = inject.now();
   }
 
   __stayBegin() {

@@ -5153,18 +5153,18 @@
               v: v.value - _p.value
             });
           } else if (_p.unit === PX$3 && _n.unit === PERCENT$4) {
-            var _v = _p.value * 100 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+            var _v = _n.value * 100 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
             res.v.push({
               k: k,
-              v: _n.value - _v
+              v: _v - _p.value
             });
           } else if (_p.unit === PERCENT$4 && _n.unit === PX$3) {
-            var _v2 = _p.value * 0.01 / target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
+            var _v2 = _n.value * 0.01 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
 
             res.v.push({
               k: k,
-              v: _n.value - _v2
+              v: _v2 - _p.value
             });
           }
         } // matrix老的不存在的项默认为单位矩阵
@@ -5235,12 +5235,12 @@
         if (pi.unit === ni.unit) {
           res.v.push(ni.value - pi.value);
         } else if (pi.unit === PX$3 && ni.unit === PERCENT$4) {
-          var v = pi.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
-          res.v.push(ni.value - v);
+          var v = ni.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
+          res.v.push(v - pi.value);
         } else if (pi.unit === PERCENT$4 && ni.unit === PX$3) {
-          var _v3 = pi.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
+          var _v3 = ni.value * 100 * target[i ? 'outerHeight' : 'outerWidth'];
 
-          res.v.push(ni.value - _v3);
+          res.v.push(_v3 - pi.value);
         }
       }
 
@@ -5257,9 +5257,9 @@
 
         res.v = _v4;
       } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v5 = p.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+        var _v5 = n.value * 0.01 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
 
-        _v5 = n.value - _v5;
+        _v5 = _v5 - p.value;
 
         if (_v5 === 0) {
           return;
@@ -5267,9 +5267,9 @@
 
         res.v = _v5;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v6 = p.value * 0.01 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+        var _v6 = n.value * 100 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
 
-        _v6 = n.value - _v6;
+        _v6 = _v6 - p.value;
 
         if (_v6 === 0) {
           return;
@@ -5287,9 +5287,9 @@
 
         res.v = _v7;
       } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v8 = p.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+        var _v8 = n.value * 0.01 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
-        _v8 = n.value - _v8;
+        _v8 = _v8 - p.value;
 
         if (_v8 === 0) {
           return;
@@ -5297,9 +5297,9 @@
 
         res.v = _v8;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v9 = p.value * 0.01 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+        var _v9 = n.value * 100 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
-        _v9 = n.value - _v9;
+        _v9 = _v9 - p.value;
 
         if (_v9 === 0) {
           return;
@@ -5317,13 +5317,13 @@
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
-          var _v10 = _pi.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+          var _v10 = _ni.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
 
-          res.v.push(_ni.value - _v10);
+          res.v.push(_v10 - _pi.value);
         } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v11 = _pi.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
+          var _v11 = _ni.value * 100 * target[_i4 ? 'innerWidth' : 'innerHeight'];
 
-          res.v.push(_ni.value - _v11);
+          res.v.push(_v11 - _pi.value);
         } else {
           res.n = n;
           return res;
@@ -6475,7 +6475,7 @@
         } // 在时间范围内设置好时间，复用play直接跳到播放点
 
 
-        this.__deltaTime = v; // this.__pauseTime = inject.now();
+        this.__deltaTime = v;
       }
     }, {
       key: "__stayBegin",

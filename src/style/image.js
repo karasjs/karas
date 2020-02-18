@@ -32,5 +32,4 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
 
 export default {
   matrixResize,
-  reg: /url\((['"]?)(.*?)\1\)/,
 };

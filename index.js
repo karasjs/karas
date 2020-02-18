@@ -1017,6 +1017,12 @@
     calExpandMatrix: calExpandMatrix
   };
 
+  var reg = {
+    position: /\b((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    gradient: /\b(\w+)-gradient\((.+)\)/i,
+    img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
+  };
+
   var PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT;
 
@@ -1488,10 +1494,8 @@
     last[1] = 1;
   }
 
-  var reg = /\b(\w+)-gradient\((.+)\)/;
-
   function parseGradient(s) {
-    var gradient = reg.exec(s);
+    var gradient = reg.gradient.exec(s);
 
     if (gradient) {
       var o = {
@@ -1594,7 +1598,6 @@
   }
 
   var gradient = {
-    reg: reg,
     parseGradient: parseGradient,
     getLinear: getLinear,
     getRadial: getRadial
@@ -2078,40 +2081,10 @@
     }
   };
 
-  var PERCENT$2 = unit.PERCENT,
-      NUMBER = unit.NUMBER;
-
-  function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
-    if (imgWidth === targetWidth && imgHeight === targetHeight) {
-      return;
-    }
-
-    var list = [['scaleX', {
-      value: targetWidth / imgWidth,
-      unit: NUMBER
-    }], ['scaleY', {
-      value: targetHeight / imgHeight,
-      unit: NUMBER
-    }]];
-    var tfo = transform.calOrigin([{
-      value: 0,
-      unit: PERCENT$2
-    }, {
-      value: 0,
-      unit: PERCENT$2
-    }], x, y, w, h);
-    return transform.calMatrix(list, tfo, w, h);
-  }
-
-  var image = {
-    matrixResize: matrixResize,
-    reg: /url\((['"]?)(.*?)\1\)/
-  };
-
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
-      PERCENT$3 = unit.PERCENT,
-      NUMBER$1 = unit.NUMBER,
+      PERCENT$2 = unit.PERCENT,
+      NUMBER = unit.NUMBER,
       INHERIT = unit.INHERIT,
       DEG = unit.DEG,
       RGBA = unit.RGBA,
@@ -2188,7 +2161,7 @@
         v = parseFloat(v) || 0;
         obj[k] = {
           value: v,
-          unit: PERCENT$3
+          unit: PERCENT$2
         };
       }
     } else if (/px$/.test(v)) {
@@ -2207,7 +2180,7 @@
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
-        unit: NUMBER$1
+        unit: NUMBER
       };
     }
 
@@ -2281,7 +2254,7 @@
     if (temp) {
       // gradient/image和颜色可以并存
       if (util.isNil(style.backgroundImage)) {
-        var gd = gradient.reg.exec(temp);
+        var gd = reg.gradient.exec(temp);
 
         if (gd) {
           style.backgroundImage = gd[0];
@@ -2290,7 +2263,7 @@
       }
 
       if (util.isNil(style.backgroundImage)) {
-        var img = image.reg.exec(temp);
+        var img = reg.img.exec(temp);
 
         if (img) {
           style.backgroundImage = img[0];
@@ -2307,7 +2280,7 @@
       }
 
       if (util.isNil(style.backgroundPosition)) {
-        var position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
+        var position = reg.position.exec(temp);
 
         if (position && util.isNil(style.backgroundPosition)) {
           style.backgroundPosition = position[0].trim();
@@ -2440,10 +2413,10 @@
 
     if (temp) {
       // 区分是渐变色还是图
-      if (gradient.reg.test(temp)) {
+      if (reg.gradient.test(temp)) {
         style.backgroundImage = gradient.parseGradient(temp);
-      } else if (image.reg.test(temp)) {
-        style.backgroundImage = image.reg.exec(temp)[2];
+      } else if (reg.image.test(temp)) {
+        style.backgroundImage = reg.image.exec(temp)[2];
       }
     }
 
@@ -2465,11 +2438,11 @@
       temp = style[k];
 
       if (!util.isNil(temp)) {
-        if (/%$/.test(temp) || /px$/.test(temp) || /^[\d.]+$/.test(temp)) {
+        if (/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(style, k, temp);
           temp = style[k];
 
-          if (temp.unit === NUMBER$1) {
+          if (temp.unit === NUMBER) {
             temp.unit = PX$2;
           }
         } else {
@@ -2484,7 +2457,7 @@
     temp = style.backgroundSize;
 
     if (temp) {
-      var _match2 = temp.toString().match(/(-?[\d.]+(px|%)?)|(contain|cover|auto)/ig);
+      var _match2 = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
 
       if (_match2) {
         if (_match2.length === 1) {
@@ -2563,10 +2536,10 @@
             var _arr3 = calUnit([k, v], 1, v);
 
             if (k.indexOf('scale') === 0) {
-              if (_arr3[1].value !== 1 && _arr3[1].unit === NUMBER$1) {
+              if (_arr3[1].value !== 1 && _arr3[1].unit === NUMBER) {
                 transform.push(_arr3);
               }
-            } else if (_arr3[1].value !== 0 && _arr3[1].unit !== NUMBER$1) {
+            } else if (_arr3[1].value !== 0 && _arr3[1].unit !== NUMBER) {
               transform.push(_arr3);
             }
           } else if ({
@@ -2583,11 +2556,11 @@
             var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
             var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
 
-            if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER$1) {
+            if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
               transform.push(arr1);
             }
 
-            if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER$1) {
+            if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
               transform.push(arr2);
             }
           }
@@ -2598,7 +2571,7 @@
     temp = style.transformOrigin;
 
     if (!util.isNil(temp)) {
-      var _match4 = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
+      var _match4 = temp.toString().match(reg.position);
 
       if (_match4) {
         if (_match4.length === 1) {
@@ -2622,7 +2595,7 @@
                 bottom: 100,
                 0: 0
               }[_item],
-              unit: PERCENT$3
+              unit: PERCENT$2
             }); // 不规范的写法变默认值50%
 
             if (util.isNil(tfo[_i].value)) {
@@ -2669,8 +2642,8 @@
       v = style[k];
 
       if (k.indexOf('scale') > -1) {
-        v.unit = NUMBER$1;
-      } else if (v.unit === NUMBER$1 || v.value === 0) {
+        v.unit = NUMBER;
+      } else if (v.unit === NUMBER || v.value === 0) {
         if (k.indexOf('translate') > -1) {
           v.unit = PX$2;
         } else {
@@ -2709,7 +2682,7 @@
       calUnit(style, k, v);
       v = style[k]; // 无单位视为px
 
-      if (v.unit === NUMBER$1) {
+      if (v.unit === NUMBER) {
         v.unit = PX$2;
       }
     });
@@ -2741,7 +2714,7 @@
         if (v) {
           style.fontSize = {
             value: v,
-            unit: PERCENT$3
+            unit: PERCENT$2
           };
         } else {
           style.fontSize = {
@@ -2763,17 +2736,17 @@
       if (temp === 'bold') {
         style.fontWeight = {
           value: 700,
-          unit: NUMBER$1
+          unit: NUMBER
         };
       } else if (temp === 'normal') {
         style.fontWeight = {
           value: 400,
-          unit: NUMBER$1
+          unit: NUMBER
         };
       } else if (temp === 'lighter') {
         style.fontWeight = {
           value: 200,
-          unit: NUMBER$1
+          unit: NUMBER
         };
       } else if (temp === 'inherit') {
         style.fontWeight = {
@@ -2782,7 +2755,7 @@
       } else {
         style.fontWeight = {
           value: Math.max(0, parseInt(temp)) || 400,
-          unit: NUMBER$1
+          unit: NUMBER
         };
       }
     }
@@ -2858,7 +2831,7 @@
         } else {
           style.lineHeight = {
             value: n,
-            unit: NUMBER$1
+            unit: NUMBER
           };
         }
       }
@@ -2986,7 +2959,7 @@
       computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
     } else if (fontSize.unit === PX$2) {
       computedStyle.fontSize = fontSize.value;
-    } else if (fontSize.unit === PERCENT$3) {
+    } else if (fontSize.unit === PERCENT$2) {
       computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
     } else {
       computedStyle.fontSize = DEFAULT_FONT_SIZE;
@@ -3031,7 +3004,7 @@
 
         if (pl.unit === PX$2) {
           computedStyle.lineHeight = parentComputedStyle.lineHeight;
-        } else if (pl.unit === NUMBER$1) {
+        } else if (pl.unit === NUMBER) {
           computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
         } else {
           computedStyle.lineHeight = calNormalLineHeight(computedStyle);
@@ -3044,7 +3017,7 @@
     } // 防止为0
     else if (lineHeight.unit === PX$2) {
         computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
-      } else if (lineHeight.unit === NUMBER$1) {
+      } else if (lineHeight.unit === NUMBER) {
         computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
       } // normal
       else {
@@ -3070,7 +3043,7 @@
         }
       } else if (style.unit === PX$2) {
         return n * style.value;
-      } else if (style.unit === PERCENT$3) {
+      } else if (style.unit === PERCENT$2) {
         n *= style.value * 0.01;
         parent = parent.parent;
       }
@@ -3084,7 +3057,7 @@
       v = 0;
     } else if (v.unit === PX$2) {
       v = v.value;
-    } else if (v.unit === PERCENT$3) {
+    } else if (v.unit === PERCENT$2) {
       if (isWidth) {
         v = calRelativePercent(v.value, parent, 'width');
       } else {
@@ -3100,7 +3073,7 @@
       v = 0;
     } else if (v.unit === PX$2) {
       v = v.value;
-    } else if (v.unit === PERCENT$3) {
+    } else if (v.unit === PERCENT$2) {
       v = v.value * size * 0.01;
     }
 
@@ -3768,6 +3741,35 @@
     parse: parse,
     splitClass: splitClass,
     mergeCss: mergeCss
+  };
+
+  var PERCENT$3 = unit.PERCENT,
+      NUMBER$1 = unit.NUMBER;
+
+  function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
+    if (imgWidth === targetWidth && imgHeight === targetHeight) {
+      return;
+    }
+
+    var list = [['scaleX', {
+      value: targetWidth / imgWidth,
+      unit: NUMBER$1
+    }], ['scaleY', {
+      value: targetHeight / imgHeight,
+      unit: NUMBER$1
+    }]];
+    var tfo = transform.calOrigin([{
+      value: 0,
+      unit: PERCENT$3
+    }, {
+      value: 0,
+      unit: PERCENT$3
+    }], x, y, w, h);
+    return transform.calMatrix(list, tfo, w, h);
+  }
+
+  var image = {
+    matrixResize: matrixResize
   };
 
   var Event =

@@ -1,7 +1,7 @@
 import unit from './unit';
 import font from './font';
 import gradient from './gradient';
-import image from './image';
+import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
@@ -153,14 +153,14 @@ function normalize(style, reset = []) {
   if(temp) {
     // gradient/image和颜色可以并存
     if(util.isNil(style.backgroundImage)) {
-      let gd = gradient.reg.exec(temp);
+      let gd = reg.gradient.exec(temp);
       if(gd) {
         style.backgroundImage = gd[0];
         temp = temp.replace(gd[0], '');
       }
     }
     if(util.isNil(style.backgroundImage)) {
-      let img = image.reg.exec(temp);
+      let img = reg.img.exec(temp);
       if(img) {
         style.backgroundImage = img[0];
         temp = temp.replace(img[0], '');
@@ -173,7 +173,7 @@ function normalize(style, reset = []) {
       }
     }
     if(util.isNil(style.backgroundPosition)) {
-      let position = /\s+(((-?[\d.]+(px|%)?)|(left|top|right|bottom|center))\s*){1,2}/ig.exec(temp);
+      let position = reg.position.exec(temp);
       if(position && util.isNil(style.backgroundPosition)) {
         style.backgroundPosition = position[0].trim();
       }
@@ -296,11 +296,11 @@ function normalize(style, reset = []) {
   temp = style.backgroundImage;
   if(temp) {
     // 区分是渐变色还是图
-    if(gradient.reg.test(temp)) {
+    if(reg.gradient.test(temp)) {
       style.backgroundImage = gradient.parseGradient(temp);
     }
-    else if(image.reg.test(temp)) {
-      style.backgroundImage = image.reg.exec(temp)[2];
+    else if(reg.image.test(temp)) {
+      style.backgroundImage = reg.image.exec(temp)[2];
     }
   }
   temp = style.backgroundColor;
@@ -318,7 +318,7 @@ function normalize(style, reset = []) {
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
     temp = style[k];
     if(!util.isNil(temp)) {
-      if(/%$/.test(temp) || /px$/.test(temp) || /^[\d.]+$/.test(temp)) {
+      if(/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
         calUnit(style, k, temp);
         temp = style[k];
         if(temp.unit === NUMBER) {
@@ -336,7 +336,7 @@ function normalize(style, reset = []) {
   // 背景尺寸
   temp = style.backgroundSize;
   if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(contain|cover|auto)/ig);
+    let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];
@@ -437,7 +437,7 @@ function normalize(style, reset = []) {
   }
   temp = style.transformOrigin;
   if(!util.isNil(temp)) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(left|top|right|bottom|center)/ig);
+    let match = temp.toString().match(reg.position);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];

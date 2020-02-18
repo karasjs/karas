@@ -1,5 +1,6 @@
 import util from '../util/util';
 import unit from './unit';
+import reg from './reg';
 
 const { PX, PERCENT } = unit;
 
@@ -405,10 +406,8 @@ function getCsLimit(first, last, length) {
   last[1] = 1;
 }
 
-let reg = /\b(\w+)-gradient\((.+)\)/;
-
 function parseGradient(s) {
-  let gradient = reg.exec(s);
+  let gradient = reg.gradient.exec(s);
   if(gradient) {
     let o = {
       k: gradient[1],
@@ -495,7 +494,6 @@ function getRadial(v, d, cx, cy, x1, y1, x2, y2) {
 }
 
 export default {
-  reg,
   parseGradient,
   getLinear,
   getRadial,

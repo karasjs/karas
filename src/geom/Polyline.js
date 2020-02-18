@@ -200,16 +200,6 @@ class Polyline extends Geom {
             s += `Q${cl[0]},${cl[1]} ${point[0]},${point[1]}`;
           }
         }
-        let cl = cls[pts.length - 1];
-        if(!cl) {
-          s += `L${pts[0][0]},${pts[0][1]}`;
-        }
-        else if(cl.length === 4) {
-          s += `C${cl[0]},${cl[1]} ${cl[2]},${cl[3]} ${pts[0][0]},${pts[0][1]}`;
-        }
-        else {
-          s += `Q${cl[0]},${cl[1]} ${pts[0][0]},${pts[0][1]}`;
-        }
         props.push(['d', s]);
         tagName = 'path';
       }

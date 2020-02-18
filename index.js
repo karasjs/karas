@@ -6243,9 +6243,9 @@
       value: function pause() {
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
-            playState = this.playState;
+            pending = this.pending;
 
-        if (isDestroyed || duration <= 0 | playState === 'paused') {
+        if (isDestroyed || duration <= 0 || pending) {
           return this;
         }
 
@@ -11350,25 +11350,15 @@
 
             for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
               var _point = pts[_i2];
-              var _cl2 = cls[_i2 - 1];
+              var _cl = cls[_i2 - 1];
 
-              if (!_cl2) {
+              if (!_cl) {
                 s += "L".concat(_point[0], ",").concat(_point[1]);
-              } else if (_cl2.length === 4) {
-                s += "C".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_cl2[2], ",").concat(_cl2[3], " ").concat(_point[0], ",").concat(_point[1]);
+              } else if (_cl.length === 4) {
+                s += "C".concat(_cl[0], ",").concat(_cl[1], " ").concat(_cl[2], ",").concat(_cl[3], " ").concat(_point[0], ",").concat(_point[1]);
               } else {
-                s += "Q".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_point[0], ",").concat(_point[1]);
+                s += "Q".concat(_cl[0], ",").concat(_cl[1], " ").concat(_point[0], ",").concat(_point[1]);
               }
-            }
-
-            var _cl = cls[pts.length - 1];
-
-            if (!_cl) {
-              s += "L".concat(pts[0][0], ",").concat(pts[0][1]);
-            } else if (_cl.length === 4) {
-              s += "C".concat(_cl[0], ",").concat(_cl[1], " ").concat(_cl[2], ",").concat(_cl[3], " ").concat(pts[0][0], ",").concat(pts[0][1]);
-            } else {
-              s += "Q".concat(_cl[0], ",").concat(_cl[1], " ").concat(pts[0][0], ",").concat(pts[0][1]);
             }
 
             props.push(['d', s]);

@@ -39,6 +39,7 @@ class Line extends Geom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeDasharrayStr,
       strokeLinecap,
     } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -66,7 +67,7 @@ class Line extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.lineCap = strokeLinecap;
-      ctx.setLineDash(strokeDasharray.split(','));
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       if(curve === 3) {
@@ -107,7 +108,7 @@ class Line extends Geom {
         ['stroke-width', strokeWidth]
       ];
       if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharray]);
+        props.push(['stroke-dasharray', strokeDasharrayStr]);
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);

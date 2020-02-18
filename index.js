@@ -2415,8 +2415,8 @@
       // 区分是渐变色还是图
       if (reg.gradient.test(temp)) {
         style.backgroundImage = gradient.parseGradient(temp);
-      } else if (reg.image.test(temp)) {
-        style.backgroundImage = reg.image.exec(temp)[2];
+      } else if (reg.img.test(temp)) {
+        style.backgroundImage = reg.img.exec(temp)[2];
       }
     }
 
@@ -2839,13 +2839,21 @@
 
     temp = style.strokeDasharray;
 
-    if (temp) {
+    if (!util.isNil(temp)) {
       var _match5 = temp.toString().match(/[\d.]+/g);
 
       if (_match5 && _match5.length > 1) {
-        style.strokeDasharray = _match5.join(', ');
+        _match5 = _match5.map(function (item) {
+          return parseFloat(item);
+        });
+
+        if (_match5.length % 2 === 1) {
+          _match5.push(_match5[_match5.length - 1]);
+        }
+
+        style.strokeDasharray = _match5;
       } else {
-        style.strokeDasharray = '';
+        style.strokeDasharray = [];
       }
     } // fill和stroke为渐变时特殊处理
 
@@ -7420,7 +7428,11 @@
                   this.root.__putImageData(util.mergeImageData(cache1, cache2));
                 }
               } else if (renderMode === mode.SVG) {
-                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight).join(',');
+                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
+
+                if (_matrix) {
+                  _matrix = _matrix.join(',');
+                }
 
                 var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width || 0], ['height', _height || 0]];
 
@@ -8352,7 +8364,7 @@
         }
 
         computedStyle.strokeWidth = strokeWidth;
-        computedStyle.strokeDasharray = strokeDasharray;
+        computedStyle.strokeDasharray = strokeDasharray.join(', ');
         computedStyle.strokeLinecap = strokeLinecap;
         return {
           x: x,
@@ -8365,6 +8377,7 @@
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
+          strokeDasharrayStr: computedStyle.strokeDasharray,
           strokeLinecap: strokeLinecap,
           fill: fill,
           visibility: visibility
@@ -11042,6 +11055,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -11081,7 +11095,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
 
@@ -11116,7 +11130,7 @@
           var props = [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {
@@ -11208,6 +11222,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -11321,7 +11336,7 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -11383,7 +11398,7 @@
           }
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {
@@ -11454,6 +11469,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -11505,7 +11521,7 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -11586,7 +11602,7 @@
           props = props.concat([['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]);
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {
@@ -11699,6 +11715,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -11741,7 +11758,7 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
@@ -11774,7 +11791,7 @@
             var props = [['d', closure ? "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z") : "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
             if (strokeDasharray.length) {
-              props.push(['stroke-dasharray', strokeDasharray]);
+              props.push(['stroke-dasharray', strokeDasharrayStr]);
             }
 
             if (strokeLinecap !== 'butt') {
@@ -11789,7 +11806,7 @@
               var _props = [['d', "M".concat(x1, ",").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2)], ['fill', 'rgba(0,0,0,0)'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
               if (strokeDasharray.length) {
-                _props.push(['stroke-dasharray', strokeDasharray]);
+                _props.push(['stroke-dasharray', strokeDasharrayStr]);
               }
 
               if (strokeLinecap !== 'butt') {
@@ -11879,6 +11896,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -11900,7 +11918,7 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
           if (rx === 0 && ry === 0) {
@@ -11942,7 +11960,7 @@
           }
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {
@@ -12005,6 +12023,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -12022,7 +12041,7 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, 2 * Math.PI);
           ctx.fill();
@@ -12036,7 +12055,7 @@
           var props = [['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {
@@ -12104,6 +12123,7 @@
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
+            strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -12123,7 +12143,7 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray.split(','));
+          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
           if (ctx.ellipse) {
@@ -12149,7 +12169,7 @@
           var props = [['cx', cx], ['cy', cy], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharray]);
+            props.push(['stroke-dasharray', strokeDasharrayStr]);
           }
 
           if (strokeLinecap !== 'butt') {

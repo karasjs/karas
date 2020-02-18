@@ -698,7 +698,10 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG) {
-            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight).join(',');
+            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight);
+            if(matrix) {
+              matrix = matrix.join(',');
+            }
             let props = [
               ['xlink:href', backgroundImage],
               ['x', originX],

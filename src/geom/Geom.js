@@ -155,7 +155,7 @@ class Geom extends Xom {
       computedStyle.fill = fill = util.int2rgba(fill);
     }
     computedStyle.strokeWidth = strokeWidth;
-    computedStyle.strokeDasharray = strokeDasharray;
+    computedStyle.strokeDasharray = strokeDasharray.join(', ');
     computedStyle.strokeLinecap = strokeLinecap;
     return {
       x,
@@ -168,6 +168,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeDasharrayStr: computedStyle.strokeDasharray,
       strokeLinecap,
       fill,
       visibility,

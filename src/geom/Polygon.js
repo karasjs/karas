@@ -27,6 +27,7 @@ class Polygon extends Geom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeDasharrayStr,
       strokeLinecap,
     } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -74,7 +75,7 @@ class Polygon extends Geom {
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
       ctx.lineCap = strokeLinecap;
-      ctx.setLineDash(strokeDasharray.split(','));
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(pts[0][0], pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {
@@ -152,7 +153,7 @@ class Polygon extends Geom {
         ['stroke-width', strokeWidth]
       ]);
       if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharray]);
+        props.push(['stroke-dasharray', strokeDasharrayStr]);
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);

@@ -32,6 +32,7 @@ class Ellipse extends Geom {
       stroke,
       strokeWidth,
       strokeDasharray,
+      strokeDasharrayStr,
       strokeLinecap,
     } = super.render(renderMode);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -45,7 +46,7 @@ class Ellipse extends Geom {
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
       ctx.lineCap = strokeLinecap;
-      ctx.setLineDash(strokeDasharray.split(','));
+      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       if(ctx.ellipse) {
         ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
@@ -76,7 +77,7 @@ class Ellipse extends Geom {
         ['stroke-width', strokeWidth]
       ];
       if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharray]);
+        props.push(['stroke-dasharray', strokeDasharrayStr]);
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);

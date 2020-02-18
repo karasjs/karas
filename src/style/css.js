@@ -299,8 +299,8 @@ function normalize(style, reset = []) {
     if(reg.gradient.test(temp)) {
       style.backgroundImage = gradient.parseGradient(temp);
     }
-    else if(reg.image.test(temp)) {
-      style.backgroundImage = reg.image.exec(temp)[2];
+    else if(reg.img.test(temp)) {
+      style.backgroundImage = reg.img.exec(temp)[2];
     }
   }
   temp = style.backgroundColor;
@@ -717,13 +717,17 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.strokeDasharray;
-  if(temp) {
+  if(!util.isNil(temp)) {
     let match = temp.toString().match(/[\d.]+/g);
     if(match && match.length > 1) {
-      style.strokeDasharray = match.join(', ');
+      match = match.map(item => parseFloat(item));
+      if(match.length % 2 === 1) {
+        match.push(match[match.length - 1]);
+      }
+      style.strokeDasharray = match;
     }
     else {
-      style.strokeDasharray = '';
+      style.strokeDasharray = [];
     }
   }
   // fill和stroke为渐变时特殊处理

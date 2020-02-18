@@ -1371,8 +1371,8 @@ class Animation extends Event {
   }
 
   pause() {
-    let { isDestroyed, duration, playState } = this;
-    if(isDestroyed || duration <= 0 | playState === 'paused') {
+    let { isDestroyed, duration, pending } = this;
+    if(isDestroyed || duration <= 0 || pending) {
       return this;
     }
     this.__pauseTime = inject.now();

@@ -1,6 +1,6 @@
 {
   "name": "karas",
-  "version": "0.18.6",
+  "version": "0.18.7",
   "description": "A flexible JavaScript framework for graphics programming on Canvas/Svg.",
   "maintainers": [
     {

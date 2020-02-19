@@ -11359,7 +11359,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['fill', 'none'], ['stroke', stroke]];
+          var props = [['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
           var tagName;
 
           if (hasControll) {

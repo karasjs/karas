@@ -183,7 +183,8 @@ class Polyline extends Geom {
     else if(renderMode === mode.SVG) {
       let props = [
         ['fill', 'none'],
-        ['stroke', stroke]
+        ['stroke', stroke],
+        ['stroke-width', strokeWidth]
       ];
       let tagName;
       if(hasControll) {

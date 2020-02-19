@@ -1258,9 +1258,12 @@ class Animation extends Event {
         else {
           currentFrames = frames;
         }
+        let length = currentFrames.length;
+        if(!length) {
+          return;
+        }
         // 减去delay，计算在哪一帧
         diff -= delay;
-        let length = currentFrames.length;
         let i = binarySearch(0, length - 1, diff, currentFrames);
         let current = currentFrames[i];
         // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件

@@ -6100,11 +6100,16 @@
                 }
               } else {
                 currentFrames = frames;
+              }
+
+              var length = currentFrames.length;
+
+              if (!length) {
+                return;
               } // 减去delay，计算在哪一帧
 
 
               diff -= delay;
-              var length = currentFrames.length;
               var i = binarySearch(0, length - 1, diff, currentFrames);
               var current = currentFrames[i]; // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件
 

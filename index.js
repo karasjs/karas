@@ -2842,7 +2842,7 @@
     if (!util.isNil(temp)) {
       var _match5 = temp.toString().match(/[\d.]+/g);
 
-      if (_match5 && _match5.length > 1) {
+      if (_match5) {
         _match5 = _match5.map(function (item) {
           return parseFloat(item);
         });

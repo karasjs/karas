@@ -719,7 +719,7 @@ function normalize(style, reset = []) {
   temp = style.strokeDasharray;
   if(!util.isNil(temp)) {
     let match = temp.toString().match(/[\d.]+/g);
-    if(match && match.length > 1) {
+    if(match) {
       match = match.map(item => parseFloat(item));
       if(match.length % 2 === 1) {
         match.push(match[match.length - 1]);

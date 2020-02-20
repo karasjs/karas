@@ -66,6 +66,9 @@ class Frame {
         break;
       }
     }
+    if(!task.length) {
+      inject.cancelAnimationFrame(this.id);
+    }
   }
 
   nextFrame(handle) {

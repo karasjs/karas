@@ -1114,7 +1114,7 @@ class Animation extends Event {
     }
     if(playState === 'running') {
       if(util.isFunction(cb)) {
-        cb();
+        cb(0);
       }
       return this;
     }
@@ -1194,17 +1194,14 @@ class Animation extends Event {
               let task = this.__task = {
                 before: genBeforeRefresh(current, this, root, lv),
                 after: delta => {
-                  if(util.isFunction(cb)) {
-                    cb(delta);
-                  }
                   if(this.__firstPlay) {
+                    this.__firstPlay = false;
                     if(util.isFunction(cb)) {
                       cb(delta);
                     }
                     this.emit(Event.KARAS_ANIMATION_PLAY);
-                    this.__firstPlay = false;
                   }
-                  this.emit(Event.KARAS_ANIMATION_FRAME);
+                  this.emit(Event.KARAS_ANIMATION_FRAME, delta);
                 },
               };
               root.addRefreshTask(task);
@@ -1218,7 +1215,7 @@ class Animation extends Event {
                   this.emit(Event.KARAS_ANIMATION_PLAY);
                   this.__firstPlay = false;
                 }
-                this.emit(Event.KARAS_ANIMATION_FRAME);
+                this.emit(Event.KARAS_ANIMATION_FRAME, delta);
               });
             }
           }
@@ -1299,7 +1296,7 @@ class Animation extends Event {
                 this.emit(Event.KARAS_ANIMATION_PLAY);
                 this.__firstPlay = false;
               }
-              this.emit(Event.KARAS_ANIMATION_FRAME);
+              this.emit(Event.KARAS_ANIMATION_FRAME, delta);
               return;
             }
             frame.offFrame(callback);
@@ -1347,13 +1344,13 @@ class Animation extends Event {
             }
           }
           if(this.__firstPlay) {
+            this.__firstPlay = false;
             if(util.isFunction(cb)) {
               cb(delta);
             }
             this.emit(Event.KARAS_ANIMATION_PLAY);
-            this.__firstPlay = false;
           }
-          this.emit(Event.KARAS_ANIMATION_FRAME);
+          this.emit(Event.KARAS_ANIMATION_FRAME, delta);
         };
         if(needRefresh) {
           root.addRefreshTask(this.__task = {
@@ -1489,12 +1486,12 @@ class Animation extends Event {
     [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
     this.__goto(v, isFrame, excludeDelay);
     // 先play一帧，回调里模拟暂停
-    return this.play(() => {
+    return this.play(delta => {
       this.__pauseTime = inject.now();
       this.__playState = 'paused';
       this.__cancelTask();
       if(util.isFunction(cb)) {
-        cb();
+        cb(delta);
       }
     });
   }

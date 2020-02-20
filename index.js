@@ -4610,6 +4610,10 @@
             break;
           }
         }
+
+        if (!task.length) {
+          inject.cancelAnimationFrame(this.id);
+        }
       }
     }, {
       key: "nextFrame",
@@ -5925,7 +5929,7 @@
 
         if (playState === 'running') {
           if (util.isFunction(cb)) {
-            cb();
+            cb(0);
           }
 
           return this;
@@ -6021,21 +6025,17 @@
                     var _task = _this3.__task = {
                       before: genBeforeRefresh(_current, _this3, root, lv),
                       after: function after(delta) {
-                        if (util.isFunction(cb)) {
-                          cb(delta);
-                        }
-
                         if (_this3.__firstPlay) {
+                          _this3.__firstPlay = false;
+
                           if (util.isFunction(cb)) {
                             cb(delta);
                           }
 
                           _this3.emit(Event.KARAS_ANIMATION_PLAY);
-
-                          _this3.__firstPlay = false;
                         }
 
-                        _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                        _this3.emit(Event.KARAS_ANIMATION_FRAME, delta);
                       }
                     };
 
@@ -6052,7 +6052,7 @@
                         _this3.__firstPlay = false;
                       }
 
-                      _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                      _this3.emit(Event.KARAS_ANIMATION_FRAME, delta);
                     });
                   }
                 }
@@ -6162,7 +6162,7 @@
                       _this3.__firstPlay = false;
                     }
 
-                    _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                    _this3.emit(Event.KARAS_ANIMATION_FRAME, delta);
 
                     return;
                   }
@@ -6223,16 +6223,16 @@
                 }
 
                 if (_this3.__firstPlay) {
+                  _this3.__firstPlay = false;
+
                   if (util.isFunction(cb)) {
                     cb(delta);
                   }
 
                   _this3.emit(Event.KARAS_ANIMATION_PLAY);
-
-                  _this3.__firstPlay = false;
                 }
 
-                _this3.emit(Event.KARAS_ANIMATION_FRAME);
+                _this3.emit(Event.KARAS_ANIMATION_FRAME, delta);
               };
 
               if (needRefresh) {
@@ -6450,14 +6450,14 @@
         this.__goto(v, isFrame, excludeDelay); // 先play一帧，回调里模拟暂停
 
 
-        return this.play(function () {
+        return this.play(function (delta) {
           _this5.__pauseTime = inject.now();
           _this5.__playState = 'paused';
 
           _this5.__cancelTask();
 
           if (util.isFunction(cb)) {
-            cb();
+            cb(delta);
           }
         });
       }
@@ -10873,16 +10873,7 @@
 
             _this2.node.__vd = nvd;
             _this2.node.__defs = nd;
-          } // 图片加载后刷新、动画结束后刷新等需要的钩子
-
-
-          var clone = _this2.task.splice(0);
-
-          clone.forEach(function (cb) {
-            if (util.isFunction(cb)) {
-              cb();
-            }
-          });
+          }
 
           if (util.isFunction(cb)) {
             cb();

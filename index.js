@@ -10674,11 +10674,11 @@
         var _node$getBoundingClie = node.getBoundingClientRect(),
             x = _node$getBoundingClie.x,
             y = _node$getBoundingClie.y,
-            top = _node$getBoundingClie.top,
-            right = _node$getBoundingClie.right;
+            left = _node$getBoundingClie.left,
+            top = _node$getBoundingClie.top;
 
-        x = x || top || 0;
-        y = y || right || 0;
+        x = x || left || 0;
+        y = y || top || 0;
 
         var _ref = e.touches ? e.touches[0] || {} : e,
             clientX = _ref.clientX,
@@ -10686,8 +10686,7 @@
 
         x = clientX - x;
         y = clientY - y;
-
-        this.__emitEvent({
+        var data = {
           event: e,
           stopPropagation: function stopPropagation() {
             this.__stopPropagation = true;
@@ -10704,7 +10703,11 @@
           x: x,
           y: y,
           __hasEmitted: false
-        }, force);
+        };
+
+        this.__emitEvent(data, force);
+
+        return data;
       }
     }, {
       key: "appendTo",

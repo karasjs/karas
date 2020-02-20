@@ -91,13 +91,13 @@ class Root extends Dom {
       return;
     }
     let { node } = this;
-    let { x, y, top, right } = node.getBoundingClientRect();
-    x = x || top || 0;
-    y = y || right || 0;
+    let { x, y, left, top } = node.getBoundingClientRect();
+    x = x || left || 0;
+    y = y || top || 0;
     let { clientX, clientY } = e.touches ? (e.touches[0] || {}) : e;
     x = clientX - x;
     y = clientY - y;
-    this.__emitEvent({
+    let data = {
       event: e,
       stopPropagation() {
         this.__stopPropagation = true;
@@ -114,7 +114,9 @@ class Root extends Dom {
       x,
       y,
       __hasEmitted: false,
-    }, force);
+    };
+    this.__emitEvent(data, force);
+    return data;
   }
 
   appendTo(dom) {

@@ -1049,6 +1049,9 @@ class Dom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
+    if(renderMode === mode.SVG) {
+      this.virtualDom.type = 'dom';
+    }
     let { isDestroyed, computedStyle: { display, visibility }, flowChildren, children } = this;
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
@@ -1094,8 +1097,7 @@ class Dom extends Xom {
     });
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
-        ...super.virtualDom,
-        type: 'dom',
+        ...this.virtualDom,
         children: zIndex.map(item => item.virtualDom),
       };
     }

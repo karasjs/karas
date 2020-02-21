@@ -177,18 +177,15 @@ class Geom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
+    if(renderMode === mode.SVG) {
+      this.virtualDom.type = 'geom';
+    }
     let { isDestroyed, animateProps, computedStyle: { display } } = this;
     this.__currentProps = animateProps;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,
         display,
-      };
-    }
-    if(renderMode === mode.SVG) {
-      this.__virtualDom = {
-        ...super.virtualDom,
-        type: 'geom',
       };
     }
     return this.__preRender(renderMode);

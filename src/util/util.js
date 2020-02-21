@@ -106,7 +106,8 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    return `<g opacity="${vd.opacity}"${vd.transform ? ` transform="${vd.transform}"` : ''}${vd.mask ? ` mask="${vd.mask}"` : ''}>${s}</g>`;
+    let { opacity, transform, mask } = vd;
+    return `<g${opacity !== 1 ? ` opacity="${opacity}"` : ''}${transform ? ` transform="${transform}"` : ''}${mask ? ` mask="${mask}"` : ''}>${s}</g>`;
   }
   // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
   return '<g></g>';

@@ -553,7 +553,10 @@
         _s2 += joinVd(item);
       });
       _s2 += '</g>';
-      return "<g opacity=\"".concat(vd.opacity, "\"").concat(vd.transform ? " transform=\"".concat(vd.transform, "\"") : '').concat(vd.mask ? " mask=\"".concat(vd.mask, "\"") : '', ">").concat(_s2, "</g>");
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          mask = vd.mask;
+      return "<g".concat(opacity !== 1 ? " opacity=\"".concat(opacity, "\"") : '').concat(transform ? " transform=\"".concat(transform, "\"") : '').concat(mask ? " mask=\"".concat(mask, "\"") : '', ">").concat(_s2, "</g>");
     } // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
 
 
@@ -8393,6 +8396,10 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
 
+        if (renderMode === mode.SVG) {
+          this.virtualDom.type = 'geom';
+        }
+
         var isDestroyed = this.isDestroyed,
             animateProps = this.animateProps,
             display = this.computedStyle.display;
@@ -8403,12 +8410,6 @@
             isDestroyed: isDestroyed,
             display: display
           };
-        }
-
-        if (renderMode === mode.SVG) {
-          this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Geom.prototype), "virtualDom", this), {
-            type: 'geom'
-          });
         }
 
         return this.__preRender(renderMode);
@@ -9752,6 +9753,10 @@
       value: function render(renderMode) {
         _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
 
+        if (renderMode === mode.SVG) {
+          this.virtualDom.type = 'dom';
+        }
+
         var isDestroyed = this.isDestroyed,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
@@ -9806,8 +9811,7 @@
         });
 
         if (renderMode === mode.SVG) {
-          this.__virtualDom = _objectSpread2({}, _get(_getPrototypeOf(Dom.prototype), "virtualDom", this), {
-            type: 'dom',
+          this.__virtualDom = _objectSpread2({}, this.virtualDom, {
             children: zIndex.map(function (item) {
               return item.virtualDom;
             })
@@ -10309,7 +10313,7 @@
       if (opacity !== 1) {
         elem.setAttribute('opacity', opacity);
       } else {
-        elem.removeAttribute('mask');
+        elem.removeAttribute('opacity');
       }
     } // geom不会有mask，对比一直相等
 

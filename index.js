@@ -2957,7 +2957,7 @@
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
       computedStyle[k] = currentStyle[k].value;
     });
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
+    ['position', 'display', 'visibility', 'flexDirection', 'justifyContent', 'alignItems', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -6913,7 +6913,8 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var display = currentStyle.display,
-            width = currentStyle.width;
+            width = currentStyle.width,
+            position = currentStyle.position;
 
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
@@ -6942,10 +6943,10 @@
           this.__layoutFlex(data, fake);
         } else if (display === 'inline') {
           this.__layoutInline(data, fake);
-        } // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+        } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
 
 
-        if (currentStyle.position === 'relative' && this.parent) {
+        if (position === 'relative') {
           var top = currentStyle.top,
               right = currentStyle.right,
               bottom = currentStyle.bottom,
@@ -6987,6 +6988,8 @@
           } else {
             computedStyle.left = computedStyle.right = 'auto';
           }
+        } else if (currentStyle.position !== 'absolute') {
+          computedStyle.top = computedStyle.bottom = computedStyle.left = computedStyle.right = 'auto';
         } // 计算结果存入computedStyle
 
 

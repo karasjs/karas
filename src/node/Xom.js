@@ -223,6 +223,7 @@ class Xom extends Node {
     let {
       display,
       width,
+      position,
     } = currentStyle;
     if(width.unit !== AUTO) {
       switch(width.unit) {
@@ -249,8 +250,8 @@ class Xom extends Node {
     else if(display === 'inline') {
       this.__layoutInline(data, fake);
     }
-    // 除root节点外relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
-    if(currentStyle.position === 'relative' && this.parent) {
+    // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
+    if(position === 'relative') {
       let { top, right, bottom, left } = currentStyle;
       let { parent } = this;
       if(top.unit !== AUTO) {
@@ -283,6 +284,9 @@ class Xom extends Node {
       else {
         computedStyle.left = computedStyle.right = 'auto';
       }
+    }
+    else if(currentStyle.position !== 'absolute') {
+      computedStyle.top = computedStyle.bottom = computedStyle.left = computedStyle.right = 'auto';
     }
     // 计算结果存入computedStyle
     computedStyle.width = this.width;

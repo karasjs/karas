@@ -9502,17 +9502,16 @@
     }, {
       key: "__layoutAbs",
       value: function __layoutAbs(container, data) {
-        var x = container.x,
-            y = container.y,
+        var x = container.sx,
+            y = container.sy,
             width = container.width,
             height = container.height,
-            currentStyle = container.currentStyle,
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
             absChildren = this.absChildren;
-        var display = currentStyle.display;
-        var borderTopWidth = computedStyle.borderTopWidth,
+        var display = computedStyle.display,
+            borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
@@ -9779,7 +9778,7 @@
         }); // 先绘制static
 
         flowChildren.forEach(function (item) {
-          if (item.isMask) ; else if (item instanceof Text || item.computedStyle.position === 'static') {
+          if (!item.isMask && (item instanceof Text || item.computedStyle.position === 'static')) {
             item.__renderByMask(renderMode);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
@@ -9808,7 +9807,7 @@
         }); // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          if (!(item instanceof Text) && isRelativeOrAbsolute(item)) {
+          if (!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute(item)) {
             item.__renderByMask(renderMode);
           }
         });

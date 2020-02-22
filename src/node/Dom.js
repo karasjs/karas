@@ -812,12 +812,10 @@ class Dom extends Xom {
 
   // 只针对绝对定位children布局
   __layoutAbs(container, data) {
-    let { x, y, width, height, currentStyle, computedStyle } = container;
+    let { sx: x, sy: y, width, height, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       display,
-    } = currentStyle;
-    let {
       borderTopWidth,
       borderLeftWidth,
       marginTop,
@@ -1064,8 +1062,9 @@ class Dom extends Xom {
     });
     // 先绘制static
     flowChildren.forEach(item => {
-      if(item.isMask) {}
-      else if(item instanceof Text || item.computedStyle.position === 'static') {
+      if(!item.isMask
+        && (item instanceof Text
+        || item.computedStyle.position === 'static')) {
         item.__renderByMask(renderMode);
       }
     });
@@ -1091,7 +1090,7 @@ class Dom extends Xom {
     });
     // 再绘制relative和absolute
     zIndex.forEach(item => {
-      if(!(item instanceof Text) && isRelativeOrAbsolute(item)) {
+      if(!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute(item)) {
         item.__renderByMask(renderMode);
       }
     });

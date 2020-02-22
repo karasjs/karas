@@ -824,7 +824,12 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     computedStyle[k] = currentStyle[k].value;
   });
   [
+    'position',
+    'display',
     'visibility',
+    'flexDirection',
+    'justifyContent',
+    'alignItems',
     'opacity',
     'zIndex',
     'borderTopStyle',

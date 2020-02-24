@@ -278,7 +278,7 @@
       key: "__destroy",
       value: function __destroy() {
         this.__isDestroyed = true;
-        this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = null;
+        this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
       }
     }, {
       key: "x",
@@ -2547,13 +2547,7 @@
 
             var _arr3 = calUnit([k, v], 1, v);
 
-            if (k.indexOf('scale') === 0) {
-              if (_arr3[1].value !== 1 && _arr3[1].unit === NUMBER) {
-                transform.push(_arr3);
-              }
-            } else if (_arr3[1].value !== 0 && _arr3[1].unit !== NUMBER) {
-              transform.push(_arr3);
-            }
+            transform.push(_arr3);
           } else if ({
             translate: true,
             scale: true,
@@ -2567,24 +2561,8 @@
 
             var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
             var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
-
-            if (k === 'scale') {
-              if (arr1[1].value !== 1) {
-                transform.push(arr1);
-              }
-
-              if (arr2[1].value !== 1) {
-                transform.push(arr2);
-              }
-            } else {
-              if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
-                transform.push(arr1);
-              }
-
-              if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
-                transform.push(arr2);
-              }
-            }
+            transform.push(arr1);
+            transform.push(arr2);
           }
         });
       }
@@ -9842,11 +9820,12 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);
-
         this.children.forEach(function (child) {
           child.__destroy();
         });
+
+        _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);
+
         this.children.splice(0);
         this.flowChildren.splice(0);
         this.absChildren.splice(0);

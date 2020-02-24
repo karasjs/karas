@@ -409,14 +409,7 @@ function normalize(style, reset = []) {
             k = 'rotateZ';
           }
           let arr = calUnit([k, v], 1, v);
-          if(k.indexOf('scale') === 0) {
-            if(arr[1].value !== 1 && arr[1].unit === NUMBER) {
-              transform.push(arr);
-            }
-          }
-          else if(arr[1].value !== 0 && arr[1].unit !== NUMBER) {
-            transform.push(arr);
-          }
+          transform.push(arr);
         }
         else if({translate: true, scale: true, skew: true}.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
@@ -425,22 +418,8 @@ function normalize(style, reset = []) {
           }
           let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
           let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
-          if(k === 'scale') {
-            if(arr1[1].value !== 1) {
-              transform.push(arr1);
-            }
-            if(arr2[1].value !== 1) {
-              transform.push(arr2);
-            }
-          }
-          else {
-            if(arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
-              transform.push(arr1);
-            }
-            if(arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
-              transform.push(arr2);
-            }
-          }
+          transform.push(arr1);
+          transform.push(arr2);
         }
       });
     }

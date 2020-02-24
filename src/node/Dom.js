@@ -1103,10 +1103,10 @@ class Dom extends Xom {
   }
 
   __destroy() {
-    super.__destroy();
     this.children.forEach(child => {
       child.__destroy();
     });
+    super.__destroy();
     this.children.splice(0);
     this.flowChildren.splice(0);
     this.absChildren.splice(0);

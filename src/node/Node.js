@@ -38,7 +38,7 @@ class Node {
 
   __destroy() {
     this.__isDestroyed = true;
-    this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = null;
+    this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
   }
 
   get x() {

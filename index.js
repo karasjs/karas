@@ -2189,6 +2189,20 @@
 
     return obj;
   }
+
+  function compatibleTransform(k, v) {
+    if (k.indexOf('scale') > -1) {
+      v.unit = NUMBER;
+    } else if (k.indexOf('translate') > -1) {
+      if (v.unit === NUMBER) {
+        v.unit = PX$2;
+      }
+    } else {
+      if (v.unit === NUMBER) {
+        v.unit = DEG;
+      }
+    }
+  }
   /**
    * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
    * @param style 手写的style样式
@@ -2547,6 +2561,7 @@
 
             var _arr3 = calUnit([k, v], 1, v);
 
+            compatibleTransform(k, _arr3[1]);
             transform.push(_arr3);
           } else if ({
             translate: true,
@@ -2561,6 +2576,8 @@
 
             var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
             var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
+            compatibleTransform(k, arr1[1]);
+            compatibleTransform(k, arr2[1]);
             transform.push(arr1);
             transform.push(arr2);
           }
@@ -2636,20 +2653,11 @@
         k = 'rotateZ';
         style.rotateZ = style.rotate;
         delete style.rotate;
-      } // 没有单位视作px或deg
+      } // 没有单位或默认值处理单位
 
 
       v = style[k];
-
-      if (k.indexOf('scale') > -1) {
-        v.unit = NUMBER;
-      } else if (v.unit === NUMBER || v.value === 0) {
-        if (k.indexOf('translate') > -1) {
-          v.unit = PX$2;
-        } else {
-          v.unit = DEG;
-        }
-      }
+      compatibleTransform(k, v);
     });
     temp = style.opacity;
 

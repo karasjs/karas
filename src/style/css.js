@@ -100,6 +100,22 @@ function calUnit(obj, k, v) {
   return obj;
 }
 
+function compatibleTransform(k, v) {
+  if(k.indexOf('scale') > -1) {
+    v.unit = NUMBER;
+  }
+  else if(k.indexOf('translate') > -1) {
+    if(v.unit === NUMBER) {
+      v.unit = PX;
+    }
+  }
+  else {
+    if(v.unit === NUMBER) {
+      v.unit = DEG;
+    }
+  }
+}
+
 /**
  * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
  * @param style 手写的style样式
@@ -409,6 +425,7 @@ function normalize(style, reset = []) {
             k = 'rotateZ';
           }
           let arr = calUnit([k, v], 1, v);
+          compatibleTransform(k, arr[1]);
           transform.push(arr);
         }
         else if({translate: true, scale: true, skew: true}.hasOwnProperty(k)) {
@@ -418,6 +435,8 @@ function normalize(style, reset = []) {
           }
           let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
           let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
+          compatibleTransform(k, arr1[1]);
+          compatibleTransform(k, arr2[1]);
           transform.push(arr1);
           transform.push(arr2);
         }
@@ -490,19 +509,9 @@ function normalize(style, reset = []) {
       style.rotateZ = style.rotate;
       delete style.rotate;
     }
-    // 没有单位视作px或deg
+    // 没有单位或默认值处理单位
     v = style[k];
-    if(k.indexOf('scale') > -1) {
-      v.unit = NUMBER;
-    }
-    else if(v.unit === NUMBER || v.value === 0) {
-      if(k.indexOf('translate') > -1) {
-        v.unit = PX;
-      }
-      else {
-        v.unit = DEG;
-      }
-    }
+    compatibleTransform(k, v);
   });
   temp = style.opacity;
   if(temp) {

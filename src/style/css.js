@@ -951,12 +951,11 @@ function calRelativePercent(n, parent, k) {
   return n;
 }
 
-function calRelative(computedStyle, k, v, parent, isWidth) {
-  if(util.isNumber(v)) {}
-  else if(v.unit === AUTO) {
+function calRelative(currentStyle, k, v, parent, isWidth) {
+  if(v.unit === AUTO) {
     v = 0;
   }
-  else if(v.unit === PX) {
+  else if([PX, NUMBER, DEG, RGBA, STRING].indexOf(v.unit) > -1) {
     v = v.value;
   }
   else if(v.unit === PERCENT) {
@@ -967,21 +966,20 @@ function calRelative(computedStyle, k, v, parent, isWidth) {
       v = calRelativePercent(v.value, parent, 'height');
     }
   }
-  return computedStyle[k] = v;
+  return currentStyle[k] = v;
 }
 
-function calAbsolute(computedStyle, k, v, size) {
-  if(util.isNumber(v)) {}
-  else if(v.unit === AUTO) {
+function calAbsolute(currentStyle, k, v, size) {
+  if(v.unit === AUTO) {
     v = 0;
   }
-  else if(v.unit === PX) {
+  else if([PX, NUMBER, DEG, RGBA, STRING].indexOf(v.unit) > -1) {
     v = v.value;
   }
   else if(v.unit === PERCENT) {
     v = v.value * size * 0.01;
   }
-  return computedStyle[k] = v;
+  return currentStyle[k] = v;
 }
 
 export default {

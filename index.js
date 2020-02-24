@@ -3063,10 +3063,10 @@
     return n;
   }
 
-  function calRelative(computedStyle, k, v, parent, isWidth) {
-    if (util.isNumber(v)) ; else if (v.unit === AUTO) {
+  function calRelative(currentStyle, k, v, parent, isWidth) {
+    if (v.unit === AUTO) {
       v = 0;
-    } else if (v.unit === PX$2) {
+    } else if ([PX$2, NUMBER, DEG, RGBA, STRING].indexOf(v.unit) > -1) {
       v = v.value;
     } else if (v.unit === PERCENT$2) {
       if (isWidth) {
@@ -3076,19 +3076,19 @@
       }
     }
 
-    return computedStyle[k] = v;
+    return currentStyle[k] = v;
   }
 
-  function calAbsolute(computedStyle, k, v, size) {
-    if (util.isNumber(v)) ; else if (v.unit === AUTO) {
+  function calAbsolute(currentStyle, k, v, size) {
+    if (v.unit === AUTO) {
       v = 0;
-    } else if (v.unit === PX$2) {
+    } else if ([PX$2, NUMBER, DEG, RGBA, STRING].indexOf(v.unit) > -1) {
       v = v.value;
     } else if (v.unit === PERCENT$2) {
       v = v.value * size * 0.01;
     }
 
-    return computedStyle[k] = v;
+    return currentStyle[k] = v;
   }
 
   var css = {

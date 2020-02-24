@@ -395,16 +395,16 @@ function normalize(style, reset = []) {
             transform.push(['matrix', arr]);
           }
         }
-        else if([
-          'translateX',
-          'translateY',
-          'scaleX',
-          'scaleY',
-          'skewX',
-          'skewY',
-          'rotate',
-          'rotateZ'
-        ].indexOf(k) > -1) {
+        else if({
+          'translateX': true,
+          'translateY': true,
+          'scaleX': true,
+          'scaleY': true,
+          'skewX': true,
+          'skewY': true,
+          'rotate': true,
+          'rotateZ': true,
+        }.hasOwnProperty(k)) {
           if(k === 'rotate') {
             k = 'rotateZ';
           }
@@ -425,11 +425,21 @@ function normalize(style, reset = []) {
           }
           let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
           let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
-          if(arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
-            transform.push(arr1);
+          if(k === 'scale') {
+            if(arr1[1].value !== 1) {
+              transform.push(arr1);
+            }
+            if(arr2[1].value !== 1) {
+              transform.push(arr2);
+            }
           }
-          if(arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
-            transform.push(arr2);
+          else {
+            if(arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
+              transform.push(arr1);
+            }
+            if(arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
+              transform.push(arr2);
+            }
           }
         }
       });

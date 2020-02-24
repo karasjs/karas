@@ -2531,7 +2531,16 @@
             if (_arr2.length === 6) {
               transform.push(['matrix', _arr2]);
             }
-          } else if (['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotate', 'rotateZ'].indexOf(k) > -1) {
+          } else if ({
+            'translateX': true,
+            'translateY': true,
+            'scaleX': true,
+            'scaleY': true,
+            'skewX': true,
+            'skewY': true,
+            'rotate': true,
+            'rotateZ': true
+          }.hasOwnProperty(k)) {
             if (k === 'rotate') {
               k = 'rotateZ';
             }
@@ -2559,12 +2568,22 @@
             var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
             var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
 
-            if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
-              transform.push(arr1);
-            }
+            if (k === 'scale') {
+              if (arr1[1].value !== 1) {
+                transform.push(arr1);
+              }
 
-            if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
-              transform.push(arr2);
+              if (arr2[1].value !== 1) {
+                transform.push(arr2);
+              }
+            } else {
+              if (arr1[1].value !== 0 && arr1[1].unit !== NUMBER) {
+                transform.push(arr1);
+              }
+
+              if (arr2[1].value !== 0 && arr2[1].unit !== NUMBER) {
+                transform.push(arr2);
+              }
             }
           }
         });

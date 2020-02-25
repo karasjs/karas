@@ -9,6 +9,8 @@ import Event from '../util/Event';
 import frame from '../animate/frame';
 import level from '../animate/level';
 
+const { isNil, isObject, isFunction } = util;
+
 const { PX } = unit;
 
 function getDom(dom) {
@@ -56,14 +58,14 @@ class Root extends Dom {
 
   __initProps() {
     let w = this.props.width;
-    if(!util.isNil(w)) {
+    if(!isNil(w)) {
       let value = parseInt(w) || 0;
       if(value > 0) {
         this.__width = value;
       }
     }
     let h = this.props.height;
-    if(!util.isNil(h)) {
+    if(!isNil(h)) {
       let value = parseInt(h) || 0;
       if(value > 0) {
         this.__height = value;
@@ -94,9 +96,9 @@ class Root extends Dom {
     let { x, y, left, top } = node.getBoundingClientRect();
     x = x || left || 0;
     y = y || top || 0;
-    let { clientX, clientY } = e.touches ? (e.touches[0] || {}) : e;
-    x = clientX - x;
-    y = clientY - y;
+    let { pageX, pageY } = e.touches ? (e.touches[0] || {}) : e;
+    x = pageX - x;
+    y = pageY - y;
     let data = {
       event: e,
       stopPropagation() {
@@ -141,7 +143,7 @@ class Root extends Dom {
         this.__node = dom.querySelector(this.tagName);
       }
     }
-    this.__uuid = util.isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
+    this.__uuid = isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
     this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
@@ -252,7 +254,7 @@ class Root extends Dom {
         this.node.__vd = nvd;
         this.node.__defs = nd;
       }
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb();
       }
       this.emit(Event.KARAS_REFRESH);
@@ -273,7 +275,7 @@ class Root extends Dom {
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             clone.forEach(item => {
-              if(util.isObject(item) && util.isFunction(item.before)) {
+              if(isObject(item) && isFunction(item.before)) {
                 item.before(delta);
               }
             });
@@ -282,10 +284,10 @@ class Root extends Dom {
         },
         after: delta => {
           clone.forEach(item => {
-            if(util.isObject(item) && util.isFunction(item.after)) {
+            if(isObject(item) && isFunction(item.after)) {
               item.after(delta);
             }
-            else if(util.isFunction(item)) {
+            else if(isFunction(item)) {
               item(delta);
             }
           });

@@ -141,10 +141,6 @@ function joinItem(item) {
   return s;
 }
 
-function d2r(n) {
-  return n * Math.PI / 180;
-}
-
 function rgb2int(color) {
   if(Array.isArray(color)) {
     return color;
@@ -300,7 +296,6 @@ let util = {
   joinVirtualDom,
   joinVd,
   joinDef,
-  d2r,
   rgb2int,
   int2rgba,
   arr2hash,

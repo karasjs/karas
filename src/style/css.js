@@ -5,25 +5,26 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
+const { isNil, rgb2int, int2rgba } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
 function parserOneBorder(style, direction) {
   let k = `border${direction}`;
   let v = style[k];
-  if(util.isNil(v)) {
+  if(isNil(v)) {
     return;
   }
   // 后面会统一格式化处理
-  if(util.isNil(style[k + 'Width'])) {
+  if(isNil(style[k + 'Width'])) {
     let w = /\b[\d.]+px\b/i.exec(v);
     style[k + 'Width'] = w ? w[0] : 0;
   }
-  if(util.isNil(style[k + 'Style'])) {
+  if(isNil(style[k + 'Style'])) {
     let s = /\b(solid|dashed|dotted)\b/i.exec(v);
     style[k + 'Style'] = s ? s[1] : 'solid';
   }
-  if(util.isNil(style[k + 'Color'])) {
+  if(isNil(style[k + 'Color'])) {
     let c = /#[0-9a-f]{3,6}/i.exec(v);
     if(c && [4, 7].indexOf(c[0].length) > -1) {
       style[k + 'Color'] = c[0];
@@ -37,13 +38,13 @@ function parserOneBorder(style, direction) {
 }
 
 function parseFlex(style, grow, shrink, basis) {
-  if(util.isNil(style.flexGrow)) {
+  if(isNil(style.flexGrow)) {
     style.flexGrow = grow;
   }
-  if(util.isNil(style.flexShrink)) {
+  if(isNil(style.flexShrink)) {
     style.flexShrink = shrink;
   }
-  if(util.isNil(style.flexBasis)) {
+  if(isNil(style.flexBasis)) {
     style.flexBasis = basis;
   }
 }
@@ -128,7 +129,7 @@ function normalize(style, reset = []) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k;
-      if(util.isNil(style[k])) {
+      if(isNil(style[k])) {
         style[k] = temp;
       }
     });
@@ -140,7 +141,7 @@ function normalize(style, reset = []) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k + 'Width';
-      if(util.isNil(style[k])) {
+      if(isNil(style[k])) {
         // width后面会统一格式化处理
         style[k] = temp;
       }
@@ -150,8 +151,8 @@ function normalize(style, reset = []) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k + 'Color';
-      if(util.isNil(style[k])) {
-        style[k] = util.rgb2int(temp);
+      if(isNil(style[k])) {
+        style[k] = rgb2int(temp);
       }
     });
   }
@@ -159,7 +160,7 @@ function normalize(style, reset = []) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k + 'Style';
-      if(util.isNil(style[k])) {
+      if(isNil(style[k])) {
         style[k] = temp;
       }
     });
@@ -168,33 +169,33 @@ function normalize(style, reset = []) {
   // 处理渐变背景缩写
   if(temp) {
     // gradient/image和颜色可以并存
-    if(util.isNil(style.backgroundImage)) {
+    if(isNil(style.backgroundImage)) {
       let gd = reg.gradient.exec(temp);
       if(gd) {
         style.backgroundImage = gd[0];
         temp = temp.replace(gd[0], '');
       }
     }
-    if(util.isNil(style.backgroundImage)) {
+    if(isNil(style.backgroundImage)) {
       let img = reg.img.exec(temp);
       if(img) {
         style.backgroundImage = img[0];
         temp = temp.replace(img[0], '');
       }
     }
-    if(util.isNil(style.backgroundRepeat)) {
+    if(isNil(style.backgroundRepeat)) {
       let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
-      if(repeat && util.isNil(style.backgroundRepeat)) {
+      if(repeat && isNil(style.backgroundRepeat)) {
         style.backgroundRepeat = repeat[0].toLowerCase().trim();
       }
     }
-    if(util.isNil(style.backgroundPosition)) {
+    if(isNil(style.backgroundPosition)) {
       let position = reg.position.exec(temp);
-      if(position && util.isNil(style.backgroundPosition)) {
+      if(position && isNil(style.backgroundPosition)) {
         style.backgroundPosition = position[0].trim();
       }
     }
-    if(util.isNil(style.backgroundColor)) {
+    if(isNil(style.backgroundColor)) {
       let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
       if(bgc) {
         style.backgroundColor = bgc[0];
@@ -203,7 +204,7 @@ function normalize(style, reset = []) {
   }
   // 背景位置
   temp = style.backgroundPosition;
-  if(!util.isNil(temp)) {
+  if(!isNil(temp)) {
     temp = temp.toString().split(/\s+/);
     if(temp.length === 1) {
       temp[1] = '50%';
@@ -257,7 +258,7 @@ function normalize(style, reset = []) {
       }
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'margin' + k;
-        if(util.isNil(style[k])) {
+        if(isNil(style[k])) {
           style[k] = match[i];
         }
       });
@@ -280,7 +281,7 @@ function normalize(style, reset = []) {
       }
       ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
         k = 'padding' + k;
-        if(util.isNil(style[k])) {
+        if(isNil(style[k])) {
           style[k] = match[i];
         }
       });
@@ -297,14 +298,14 @@ function normalize(style, reset = []) {
     'rotate'
   ].forEach(k => {
     let v = style[k];
-    if(!util.isNil(v) && style.transform) {
+    if(!isNil(v) && style.transform) {
       console.error(`Can not use expand style "${k}" with "transform"`);
     }
   });
   // 默认reset，根据传入不同，当style为空时覆盖
   reset.forEach(item => {
     let { k, v } = item;
-    if(util.isNil(style[k])) {
+    if(isNil(style[k])) {
       style[k] = v;
     }
   });
@@ -324,16 +325,16 @@ function normalize(style, reset = []) {
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = util.rgb2int(bgc[0]);
+      style.backgroundColor = rgb2int(bgc[0]);
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      style.backgroundColor = util.rgb2int(bgc ? bgc[0] : [0,0,0,0]);
+      style.backgroundColor = rgb2int(bgc ? bgc[0] : [0,0,0,0]);
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
     temp = style[k];
-    if(!util.isNil(temp)) {
+    if(!isNil(temp)) {
       if(/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
         calUnit(style, k, temp);
         temp = style[k];
@@ -388,8 +389,8 @@ function normalize(style, reset = []) {
   ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
     k = 'border' + k + 'Color';
     let v = style[k];
-    if(!util.isNil(v)) {
-      style[k] = util.rgb2int(v);
+    if(!isNil(v)) {
+      style[k] = rgb2int(v);
     }
   });
   temp = style.transform;
@@ -444,7 +445,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.transformOrigin;
-  if(!util.isNil(temp)) {
+  if(!isNil(temp)) {
     let match = temp.toString().match(reg.position);
     if(match) {
       if(match.length === 1) {
@@ -469,7 +470,7 @@ function normalize(style, reset = []) {
             unit: PERCENT,
           });
           // 不规范的写法变默认值50%
-          if(util.isNil(tfo[i].value)) {
+          if(isNil(tfo[i].value)) {
             tfo[i].value = 50;
           }
         }
@@ -480,7 +481,7 @@ function normalize(style, reset = []) {
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
   ['translate', 'scale', 'skew'].forEach(k => {
     temp = style[k];
-    if(!util.isNil(temp)) {
+    if(!isNil(temp)) {
       let arr = temp.toString().split(/\s*,\s*/);
       if(arr.length === 1) {
         arr[1] = arr[0];
@@ -500,7 +501,7 @@ function normalize(style, reset = []) {
     'rotate'
   ].forEach(k => {
     let v = style[k];
-    if(util.isNil(v)) {
+    if(isNil(v)) {
       return;
     }
     calUnit(style, k, v);
@@ -553,7 +554,7 @@ function normalize(style, reset = []) {
     'strokeWidth',
   ].forEach(k => {
     let v = style[k];
-    if(util.isNil(v)) {
+    if(isNil(v)) {
       return;
     }
     calUnit(style, k, v);
@@ -572,7 +573,7 @@ function normalize(style, reset = []) {
     }
     else {
       style.color = {
-        value: util.rgb2int(temp),
+        value: rgb2int(temp),
         unit: RGBA,
       };
     }
@@ -715,7 +716,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.strokeDasharray;
-  if(!util.isNil(temp)) {
+  if(!isNil(temp)) {
     let match = temp.toString().match(/[\d.]+/g);
     if(match) {
       match = match.map(item => parseFloat(item));
@@ -735,7 +736,7 @@ function normalize(style, reset = []) {
       style.fill = gradient.parseGradient(temp);
     }
     else {
-      style.fill = util.rgb2int(temp);
+      style.fill = rgb2int(temp);
     }
   }
   temp = style.stroke;
@@ -744,7 +745,7 @@ function normalize(style, reset = []) {
       style.stroke = gradient.parseGradient(temp);
     }
     else {
-      style.stroke = util.rgb2int(temp);
+      style.stroke = rgb2int(temp);
     }
   }
   // font除size相关
@@ -810,7 +811,7 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
   }
   else {
-    computedStyle.color = util.int2rgba(color.value);
+    computedStyle.color = int2rgba(color.value);
   }
   // 处理可提前计算的属性，如border
   [
@@ -847,7 +848,7 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderBottomColor',
     'borderLeftColor',
   ].forEach(k => {
-    computedStyle[k] = util.int2rgba(currentStyle[k]);
+    computedStyle[k] = int2rgba(currentStyle[k]);
   });
 }
 

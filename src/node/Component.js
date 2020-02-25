@@ -8,6 +8,8 @@ import match from '../style/match';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
+const { isNil } = util;
+
 class Component extends Event {
   constructor(tagName, props, children) {
     super();
@@ -35,7 +37,7 @@ class Component extends Event {
   }
 
   setState(n, cb) {
-    if(util.isNil(n)) {
+    if(isNil(n)) {
       this.state = {};
     }
     else {
@@ -70,7 +72,7 @@ class Component extends Event {
     // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
     if(!(sr instanceof Node)) {
       let s = '';
-      if(!util.isNil(sr)) {
+      if(!isNil(sr)) {
         s = util.encodeHtml(sr.toString());
       }
       sr = new Text(s);

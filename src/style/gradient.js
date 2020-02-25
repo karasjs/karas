@@ -1,8 +1,11 @@
 import util from '../util/util';
 import unit from './unit';
 import reg from './reg';
+import math from '../math/index';
 
+const { rgb2int, int2rgba } = util;
 const { PX, PERCENT } = unit;
+const { d2r } = math;
 
 function getLinearDeg(v) {
   let deg = 180;
@@ -47,7 +50,7 @@ function getColorStop(v, length) {
     let item = v[i];
     // 考虑是否声明了位置
     if(item.length > 1) {
-      let c = util.int2rgba(item[0]);
+      let c = int2rgba(item[0]);
       let p = item[1];
       if(p.unit === PERCENT) {
         list.push([c, p.value * 0.01]);
@@ -57,7 +60,7 @@ function getColorStop(v, length) {
       }
     }
     else {
-      list.push([util.int2rgba(item[0])]);
+      list.push([int2rgba(item[0])]);
     }
   }
   // 首尾不声明默认为[0, 1]
@@ -161,16 +164,16 @@ function getColorStop(v, length) {
       else {
         if(first[1] < 0) {
           let next = list[1];
-          let c1 = util.rgb2int(first[0]);
-          let c2 = util.rgb2int(next[0]);
+          let c1 = rgb2int(first[0]);
+          let c2 = rgb2int(next[0]);
           let c = getCsStartLimit(c1, first[1], c2, next[1], length);
           first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
           first[1] = 0;
         }
         if(last[1] > 1) {
           let prev = list[len - 2];
-          let c1 = util.rgb2int(prev[0]);
-          let c2 = util.rgb2int(last[0]);
+          let c1 = rgb2int(prev[0]);
+          let c2 = rgb2int(last[0]);
           let c = getCsEndLimit(c1, prev[1], c2, last[1], length);
           last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
           last[1] = 1;
@@ -197,28 +200,28 @@ function calLinearCoords(deg, length, cx, cy) {
   let x1;
   let y1;
   if(deg >= 270) {
-    let r = util.d2r(360 - deg);
+    let r = d2r(360 - deg);
     x0 = cx + Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy - Math.cos(r) * length;
   }
   else if(deg >= 180) {
-    let r = util.d2r(deg - 180);
+    let r = d2r(deg - 180);
     x0 = cx + Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx - Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else if(deg >= 90) {
-    let r = util.d2r(180 - deg);
+    let r = d2r(180 - deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy - Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
     y1 = cy + Math.cos(r) * length;
   }
   else {
-    let r = util.d2r(deg);
+    let r = d2r(deg);
     x0 = cx - Math.sin(r) * length;
     y0 = cy + Math.cos(r) * length;
     x1 = cx + Math.sin(r) * length;
@@ -384,8 +387,8 @@ function getCsEndLimit(c1, p1, c2, p2, length) {
 }
 
 function getCsLimit(first, last, length) {
-  let c1 = util.rgb2int(first[0]);
-  let c2 = util.rgb2int(last[0]);
+  let c1 = rgb2int(first[0]);
+  let c2 = rgb2int(last[0]);
   let [ r1, g1, b1, a1 = 1 ] = c1;
   let [ r2, g2, b2, a2 = 1 ] = c2;
   let l1 = Math.abs(first[1]) * length;
@@ -416,7 +419,7 @@ function parseGradient(s) {
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
       let arr = item.split(/\s+/);
-      arr[0] = util.rgb2int(arr[0]);
+      arr[0] = rgb2int(arr[0]);
       if(arr[1]) {
         if(/%$/.test(arr[1])) {
           arr[1] = {
@@ -457,7 +460,7 @@ function parseGradient(s) {
 }
 
 function getLinear(v, d, cx, cy, w, h) {
-  let theta = util.d2r(d);
+  let theta = d2r(d);
   let length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
   let [x1, y1, x2, y2] = calLinearCoords(d, length * 0.5, cx, cy);
   let stop = getColorStop(v, length);

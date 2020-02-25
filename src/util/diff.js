@@ -1,5 +1,7 @@
 import util from './util';
 
+const { joinVd, joinDef } = util;
+
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
   diffDefs(cns[0], ovd.defs, nvd.defs);
@@ -22,14 +24,14 @@ function diffDefs(elem, od, nd) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(elem, cns, i, util.joinDef(nd[i]));
+      insertAt(elem, cns, i, joinDef(nd[i]));
     }
   }
 }
 
 function diffDef(elem, od, nd) {
   if(od.tagName !== nd.tagName) {
-    elem.insertAdjacentHTML('afterend', util.joinDef(nd));
+    elem.insertAdjacentHTML('afterend', joinDef(nd));
     elem.parentNode.removeChild(elem);
   }
   else {
@@ -74,7 +76,7 @@ function diffDef(elem, od, nd) {
     }
     else if(i < nl) {
       for(; i < nl; i++) {
-        insertAt(elem, cns, i, util.joinStop(nd.stop[i]));
+        insertAt(elem, cns, i, joinVd(nd.stop[i]));
       }
     }
   }
@@ -170,7 +172,7 @@ function diffD2D(elem, ovd, nvd, root) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
+      insertAt(lastChild, cns, i, joinVd(nvd.children[i]));
     }
   }
 }
@@ -195,7 +197,7 @@ function diffT2T(elem, ovd, nvd) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(elem, cns, i, util.joinVd(nvd.children[i]));
+      insertAt(elem, cns, i, joinVd(nvd.children[i]));
     }
   }
 }
@@ -223,7 +225,7 @@ function diffG2G(elem, ovd, nvd) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
+      insertAt(lastChild, cns, i, joinVd(nvd.children[i]));
     }
   }
 }
@@ -251,7 +253,7 @@ function diffBb(elem, obb, nbb, oMask, nMask) {
   }
   else if(i < nl) {
     for(; i < nl; i++) {
-      insertAt(elem, cns, i, util.joinVd(nbb[i]));
+      insertAt(elem, cns, i, joinVd(nbb[i]));
     }
   }
 }
@@ -301,11 +303,11 @@ function replaceWith(elem, vd) {
   if(Array.isArray(vd)) {
     res = '';
     vd.forEach(item => {
-      res += util.joinVd(item);
+      res += joinVd(item);
     });
   }
   else {
-    res = util.joinVd(vd);
+    res = joinVd(vd);
   }
   elem.insertAdjacentHTML('afterend', res);
   elem.parentNode.removeChild(elem);

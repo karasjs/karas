@@ -1,8 +1,8 @@
 import unit from '../style/unit';
-import util from '../util/util';
-import matrix from '../math/matrix';
+import math from '../math/index';
 
 const { PX, PERCENT } = unit;
+const { d2r, matrix } = math;
 
 function calSingle(t, k, v) {
   if(k === 'translateX') {
@@ -18,15 +18,15 @@ function calSingle(t, k, v) {
     t[5] = v;
   }
   else if(k === 'skewX') {
-    v = util.d2r(v);
+    v = d2r(v);
     t[4] = Math.tan(v);
   }
   else if(k === 'skewY') {
-    v = util.d2r(v);
+    v = d2r(v);
     t[1] = Math.tan(v);
   }
   else if(k === 'rotateZ') {
-    v = util.d2r(v);
+    v = d2r(v);
     let sin = Math.sin(v);
     let cos = Math.cos(v);
     t[0] = t[5] = cos;

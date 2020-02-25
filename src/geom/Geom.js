@@ -7,13 +7,14 @@ import util from '../util/util';
 import matrix from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
+const { clone, int2rgba, isNil } = util;
 
 const REGISTER = {};
 
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
-    this.__isMask = !util.isNil(this.props.mask) || this.props.mask === true;
+    this.__isMask = !isNil(this.props.mask) || this.props.mask === true;
     this.__animateProps = []; // 同animateStyle
     this.__currentProps = this.props;
   }
@@ -146,13 +147,13 @@ class Geom extends Xom {
       stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
     }
     else {
-      computedStyle.stroke = stroke = util.int2rgba(stroke);
+      computedStyle.stroke = stroke = int2rgba(stroke);
     }
     if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
       fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
     }
     else {
-      computedStyle.fill = fill = util.int2rgba(fill);
+      computedStyle.fill = fill = int2rgba(fill);
     }
     computedStyle.strokeWidth = strokeWidth;
     computedStyle.strokeDasharray = strokeDasharray.join(', ');
@@ -197,7 +198,7 @@ class Geom extends Xom {
       let vd = this.virtualDom;
       vd.isMask = true;
       // svg的mask没有transform，需手动计算变换后的坐标应用
-      let children = util.clone(vd.children);
+      let children = clone(vd.children);
       let m = this.matrixEvent;
       children.forEach(child => {
         let xi = 0;
@@ -279,7 +280,7 @@ class Geom extends Xom {
 
   getProps(k) {
     let v = this.currentProps[k];
-    if(!util.isNil(v)) {
+    if(!isNil(v)) {
       return v;
     }
     return this['__' + k];
@@ -299,13 +300,13 @@ class Geom extends Xom {
   }
   get animateProps() {
     let { props, animationList } = this;
-    let clone = util.clone(props);
+    let copy = clone(props);
     animationList.forEach(item => {
       if(item.animating) {
-        Object.assign(clone, item.props);
+        Object.assign(copy, item.props);
       }
     });
-    return clone;
+    return copy;
   }
   get currentProps() {
     return this.__currentProps;

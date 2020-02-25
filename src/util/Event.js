@@ -1,5 +1,7 @@
 import util from './util';
 
+const { isFunction } = util;
+
 class Event {
   constructor() {
     this.__eHash = {};
@@ -29,7 +31,7 @@ class Event {
     return self;
   }
   once(id, handle) {
-    if(!util.isFunction(handle)) {
+    if(!isFunction(handle)) {
       return;
     }
     let self = this;
@@ -87,7 +89,7 @@ class Event {
           list = list.slice();
           for(let i = 0, len = list.length; i < len; i++) {
             let cb = list[i];
-            if(util.isFunction(cb)) {
+            if(isFunction(cb)) {
               cb.apply(self, data);
             }
           }

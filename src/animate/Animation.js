@@ -10,6 +10,7 @@ import level from './level';
 import repaint from './repaint';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
+const { isNil, isFunction, isNumber, clone } = util;
 
 const KEY_COLOR = [
   'backgroundColor',
@@ -119,7 +120,7 @@ function unify(frames, target) {
     Object.keys(style).forEach(k => {
       let v = style[k];
       // 空的过滤掉
-      if(!util.isNil(v) && !hash.hasOwnProperty(k)) {
+      if(!isNil(v) && !hash.hasOwnProperty(k)) {
         hash[k] = true;
         keys.push(k);
       }
@@ -144,14 +145,14 @@ function unify(frames, target) {
 
 // 每次播放时处理继承值
 function inherit(frames, keys, target) {
-  let clone = util.clone(frames);
+  let copy = clone(frames);
   let computedStyle = target.computedStyle;
-  clone.forEach(item => {
+  copy.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
       let v = style[k];
       // geom的属性可能在帧中没有
-      if(util.isNil(v)) {
+      if(isNil(v)) {
         return;
       }
       if(v.unit === INHERIT) {
@@ -182,7 +183,7 @@ function inherit(frames, keys, target) {
       }
     });
   });
-  return clone;
+  return copy;
 }
 
 // 对比两个样式的某个值是否相等
@@ -287,7 +288,7 @@ function calRefresh(frameStyle, lastStyle, keys) {
     let k = keys[i];
     let n = frameStyle[k];
     let p = lastStyle[k];
-    if(!util.isNil(n) && !util.isNil(p)) {
+    if(!isNil(n) && !isNil(p)) {
       if(!equalStyle(k, n, p)) {
         res = true;
         // 不相等且刷新等级是重新布局时可以提前跳出
@@ -302,7 +303,7 @@ function calRefresh(frameStyle, lastStyle, keys) {
         }
       }
     }
-    else if(!util.isNil(n) || !util.isNil(p)) {
+    else if(!isNil(n) || !isNil(p)) {
       res = true;
       if(isStyleReflow(k)) {
         lv = level.REFLOW;
@@ -321,7 +322,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     let props = {};
     Object.keys(frameStyle).forEach(i => {
       let v = frameStyle[i];
-      if(util.isNil(v)) {
+      if(isNil(v)) {
         return;
       }
       // geom的属性变化
@@ -699,7 +700,7 @@ function calDiff(prev, next, k, target) {
     res.v = diff;
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(util.isNil(n)) {
+    if(isNil(n)) {
       res.n = null;
     }
     else if(k === 'points' || k === 'controls') {
@@ -710,13 +711,13 @@ function calDiff(prev, next, k, target) {
       for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
         let pv = p[i];
         let nv = n[i];
-        if(util.isNil(pv) || util.isNil(nv)) {
+        if(isNil(pv) || isNil(nv)) {
           res.v.push(nv);
         }
         else {
           let v = [];
           for(let j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
-            if(util.isNil(pv[j]) || util.isNil(nv[j])) {
+            if(isNil(pv[j]) || isNil(nv[j])) {
               v.push(nv[j]);
             }
             else {
@@ -796,7 +797,7 @@ function binarySearch(i, j, time, frames) {
 
 // 根据百分比和缓动函数计算中间态样式
 function calStyle(frame, percent) {
-  let style = util.clone(frame.style);
+  let style = clone(frame.style);
   let timingFunction = easing[frame.easing] || easing.linear;
   if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
@@ -877,11 +878,11 @@ function calStyle(frame, percent) {
       let st = style[k];
       if(k === 'points' || k === 'controls') {
         for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-          if(util.isNil(st[i]) || !st[i].length) {
+          if(isNil(st[i]) || !st[i].length) {
             continue;
           }
           for(let j = 0, len2 = Math.min(st[i].length, v[i].length); j < len2; j++) {
-            if(!util.isNil(st[i][j]) && !util.isNil(v[i][j])) {
+            if(!isNil(st[i][j]) && !isNil(v[i][j])) {
               st[i][j] += v[i][j] * percent;
             }
           }
@@ -903,11 +904,11 @@ function calStyle(frame, percent) {
 }
 
 function gotoOverload(isFrame, excludeDelay, cb) {
-  if(util.isFunction(isFrame)) {
+  if(isFunction(isFrame)) {
     cb = isFrame;
     isFrame = excludeDelay = false;
   }
-  else if(util.isFunction(excludeDelay)) {
+  else if(isFunction(excludeDelay)) {
     cb = excludeDelay;
     excludeDelay = false;
   }
@@ -921,7 +922,7 @@ class Animation extends Event {
     super();
     this.__id = uuid++;
     this.__target = target;
-    this.__list = util.clone(list || []);
+    this.__list = clone(list || []);
     // 动画过程另外一种形式，object描述k-v形式
     if(!Array.isArray(this.__list)) {
       let nl = [];
@@ -939,7 +940,7 @@ class Animation extends Event {
       });
       this.__list = nl;
     }
-    if(util.isNumber(options)) {
+    if(isNumber(options)) {
       this.__options = {
         duration: options,
       };
@@ -1023,7 +1024,7 @@ class Animation extends Event {
     }
     // 强制clone防止同引用
     list.forEach((item, i) => {
-      list[i] = util.clone(item);
+      list[i] = clone(item);
     });
     // 首尾时间偏移强制为[0, 1]
     let first = list[0];
@@ -1073,7 +1074,7 @@ class Animation extends Event {
     this.__originStyle = getOriginStyleByKeys(keys, target);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let framesR = util.clone(frames).reverse();
+      let framesR = clone(frames).reverse();
       framesR.forEach(item => {
         item.time = duration - item.time;
         item.transition = [];
@@ -1113,7 +1114,7 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'running') {
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb(0);
       }
       return this;
@@ -1196,7 +1197,7 @@ class Animation extends Event {
                 after: delta => {
                   if(this.__firstPlay) {
                     this.__firstPlay = false;
-                    if(util.isFunction(cb)) {
+                    if(isFunction(cb)) {
                       cb(delta);
                     }
                     this.emit(Event.KARAS_ANIMATION_PLAY);
@@ -1209,7 +1210,7 @@ class Animation extends Event {
             else {
               frame.nextFrame(this.__task = delta => {
                 if(this.__firstPlay) {
-                  if(util.isFunction(cb)) {
+                  if(isFunction(cb)) {
                     cb(delta);
                   }
                   this.emit(Event.KARAS_ANIMATION_PLAY);
@@ -1225,7 +1226,7 @@ class Animation extends Event {
         init = false;
         // 增加的fps功能，当<60时计算跳帧
         let fps = this.fps;
-        if(!util.isNumber(fps) || fps <= 0) {
+        if(!isNumber(fps) || fps <= 0) {
           fps = 60;
         }
         // 第一帧强制不跳帧，其它未到fps时间限制不执行
@@ -1290,7 +1291,7 @@ class Animation extends Event {
             // 没到播放次数结束时继续
             if(iterations === Infinity || playCount < iterations) {
               if(this.__firstPlay) {
-                if(util.isFunction(cb)) {
+                if(isFunction(cb)) {
                   cb(delta);
                 }
                 this.emit(Event.KARAS_ANIMATION_PLAY);
@@ -1345,7 +1346,7 @@ class Animation extends Event {
           }
           if(this.__firstPlay) {
             this.__firstPlay = false;
-            if(util.isFunction(cb)) {
+            if(isFunction(cb)) {
               cb(delta);
             }
             this.emit(Event.KARAS_ANIMATION_PLAY);
@@ -1388,7 +1389,7 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'finished') {
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb();
       }
       return this;
@@ -1413,7 +1414,7 @@ class Animation extends Event {
         root.addRefreshTask(this.__task = {
           before: genBeforeRefresh(current, this, root, lv),
           after: () => {
-            if(util.isFunction(cb)) {
+            if(isFunction(cb)) {
               cb();
             }
             __fin();
@@ -1421,7 +1422,7 @@ class Animation extends Event {
         });
       }
       else {
-        if(util.isFunction(cb)) {
+        if(isFunction(cb)) {
           cb();
         }
         __fin();
@@ -1436,7 +1437,7 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'idle') {
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb();
       }
       return this;
@@ -1449,7 +1450,7 @@ class Animation extends Event {
     if(root) {
       let [needRefresh, lv] = calRefresh(style, originStyle, keys);
       let task = () => {
-        if(util.isFunction(cb)) {
+        if(isFunction(cb)) {
           cb();
         }
         this.emit(Event.KARAS_ANIMATION_CANCEL);
@@ -1490,7 +1491,7 @@ class Animation extends Event {
       this.__pauseTime = inject.now();
       this.__playState = 'paused';
       this.__cancelTask();
-      if(util.isFunction(cb)) {
+      if(isFunction(cb)) {
         cb(delta);
       }
     });

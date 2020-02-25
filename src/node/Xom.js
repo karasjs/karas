@@ -474,28 +474,26 @@ class Xom extends Node {
     }
     // 没有transform则看是否有扩展的css独立变换属性
     else {
+      let temp = [];
       [
         'translateX',
         'translateY',
-        'scaleX',
-        'scaleY',
+        'rotateZ',
+        'rotate',
         'skewX',
         'skewY',
-        'rotateZ',
-        'rotate'
+        'scaleX',
+        'scaleY',
       ].forEach(k => {
         let v = currentStyle[k];
         if(util.isNil(v)) {
           return;
         }
+        computedStyle[k] = v.value;
         // scale为1和其它为0避免计算浪费
-        if(v === 1 && k.indexOf('scale') > -1) {
+        if(v.value === 1 && k.indexOf('scale') > -1 || v.value === 0) {
           return
         }
-        if(v === 0) {
-          return;
-        }
-        computedStyle[k] = v.value;
         if(v.unit === PERCENT) {
           if(k === 'translateX') {
             computedStyle[k] = v.value * outerWidth * 0.01;
@@ -504,9 +502,12 @@ class Xom extends Node {
             computedStyle[k] = v.value * outerHeight * 0.01;
           }
         }
-        let m = tf.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
-        this.__matrix = matrix = tf.mergeMatrix(matrix, m);
+        temp.push([k, v]);
       });
+      if(temp.length) {
+        matrix = tf.calMatrix(temp, tfo, outerWidth, outerHeight);
+        this.__matrix = matrix;
+      }
     }
     computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
     // 变换对事件影响，canvas要设置渲染

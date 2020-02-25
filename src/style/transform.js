@@ -152,26 +152,9 @@ function mergeMatrix(a, b) {
   ];
 }
 
-function calExpandMatrix(k, v, transformOrigin, ow, oh) {
-  let [ox, oy] = transformOrigin;
-  v = normalizeSingle(k, v, ow, oh);
-  let m = matrix.identity();
-  m[12] = ox;
-  m[13] = oy;
-  let t = matrix.identity();
-  calSingle(t, k, v);
-  m = matrix.multiply(m, t);
-  t = matrix.identity();
-  t[12] = -ox;
-  t[13] = -oy;
-  m = matrix.multiply(m, t);
-  return matrix.t43(m);
-}
-
 export default {
   calMatrix,
   calOrigin,
   pointInQuadrilateral,
   mergeMatrix,
-  calExpandMatrix,
 };

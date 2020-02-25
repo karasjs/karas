@@ -765,31 +765,11 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
-  function calExpandMatrix(k, v, transformOrigin, ow, oh) {
-    var _transformOrigin2 = _slicedToArray(transformOrigin, 2),
-        ox = _transformOrigin2[0],
-        oy = _transformOrigin2[1];
-
-    v = normalizeSingle(k, v, ow, oh);
-    var m = matrix$1.identity();
-    m[12] = ox;
-    m[13] = oy;
-    var t = matrix$1.identity();
-    calSingle(t, k, v);
-    m = matrix$1.multiply(m, t);
-    t = matrix$1.identity();
-    t[12] = -ox;
-    t[13] = -oy;
-    m = matrix$1.multiply(m, t);
-    return matrix$1.t43(m);
-  }
-
   var transform$1 = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
-    mergeMatrix: mergeMatrix,
-    calExpandMatrix: calExpandMatrix
+    mergeMatrix: mergeMatrix
   };
 
   var toString = {}.toString;
@@ -7323,23 +7303,19 @@
           this.__matrix = matrix;
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
-            ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
+            var temp = [];
+            ['translateX', 'translateY', 'rotateZ', 'rotate', 'skewX', 'skewY', 'scaleX', 'scaleY'].forEach(function (k) {
               var v = currentStyle[k];
 
               if (util.isNil(v)) {
                 return;
-              } // scale为1和其它为0避免计算浪费
-
-
-              if (v === 1 && k.indexOf('scale') > -1) {
-                return;
               }
 
-              if (v === 0) {
+              computedStyle[k] = v.value; // scale为1和其它为0避免计算浪费
+
+              if (v.value === 1 && k.indexOf('scale') > -1 || v.value === 0) {
                 return;
               }
-
-              computedStyle[k] = v.value;
 
               if (v.unit === PERCENT$5) {
                 if (k === 'translateX') {
@@ -7349,9 +7325,13 @@
                 }
               }
 
-              var m = transform$1.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
-              _this3.__matrix = matrix = transform$1.mergeMatrix(matrix, m);
+              temp.push([k, v]);
             });
+
+            if (temp.length) {
+              matrix = transform$1.calMatrix(temp, tfo, outerWidth, outerHeight);
+              this.__matrix = matrix;
+            }
           }
 
         computedStyle.transform = 'matrix(' + matrix.join(', ') + ')'; // 变换对事件影响，canvas要设置渲染

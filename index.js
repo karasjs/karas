@@ -432,6 +432,366 @@
     RGBA: 7
   };
 
+  // 生成4*4单位矩阵
+  function identity() {
+    var m = [];
+
+    for (var i = 0; i < 16; i++) {
+      m.push(i % 5 === 0 ? 1 : 0);
+    }
+
+    return m;
+  } // 矩阵a*b
+
+
+  function multiply(a, b) {
+    var res = [];
+
+    for (var i = 0; i < 4; i++) {
+      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
+
+      for (var j = 0; j < 4; j++) {
+        var k = j * 4;
+        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
+        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
+        res[i + k] = n;
+      }
+    }
+
+    return res;
+  }
+
+  function t43(m) {
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
+  }
+
+  function calPoint(point, m) {
+    var _point = _slicedToArray(point, 2),
+        x = _point[0],
+        y = _point[1];
+
+    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  }
+
+  var matrix = {
+    identity: identity,
+    multiply: multiply,
+    t43: t43,
+    calPoint: calPoint
+  };
+
+  function calDeg(x1, y1, x2, y2) {
+    return Math.atan((y2 - y1) / (x2 - x1));
+  }
+
+  function rotate(theta) {
+    var sin = Math.sin(theta);
+    var cos = Math.cos(theta);
+    var t = matrix.identity();
+    t[0] = t[5] = cos;
+    t[1] = sin;
+    t[4] = -sin;
+    return t;
+  }
+
+  function transform(source, target) {
+    var _source = _slicedToArray(source, 6),
+        sx1 = _source[0],
+        sy1 = _source[1],
+        sx2 = _source[2],
+        sy2 = _source[3],
+        sx3 = _source[4],
+        sy3 = _source[5];
+
+    var _target = _slicedToArray(target, 6),
+        tx1 = _target[0],
+        ty1 = _target[1],
+        tx2 = _target[2],
+        ty2 = _target[3],
+        tx3 = _target[4],
+        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
+
+
+    var dx = tx1 - sx1;
+    var dy = tx2 - sx2;
+    tx1 -= dx;
+    ty1 -= dy;
+    tx2 -= dx;
+    ty2 -= dy;
+    tx3 -= dx;
+    ty3 -= dy;
+    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+
+    var theta = calDeg(sx1, sy1, sx2, sy2);
+    var t = rotate(-theta);
+    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
+
+    var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
+    var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
+    var scale = lt / ls;
+    t = matrix.identity();
+    t[0] = t[5] = scale;
+    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
+
+    theta = calDeg(tx1, ty1, tx2, ty2);
+    t = rotate(-theta); // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
+
+    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
+        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
+        ax2 = _matrix$calPoint2[0],
+        ay2 = _matrix$calPoint2[1];
+
+    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
+        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
+        ax3 = _matrix$calPoint4[0],
+        ay3 = _matrix$calPoint4[1];
+
+    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
+    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
+
+    scale = ay3 / by3;
+    t = matrix.identity();
+    t[5] = scale;
+    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
+
+    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
+        x3 = _matrix$calPoint6[0],
+        y3 = _matrix$calPoint6[1];
+
+    theta = Math.atan((ax3 - x3) / y3);
+    t = matrix.identity();
+    t[4] = Math.tan(theta);
+    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
+
+    t = rotate(-alpha);
+    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
+
+    t = matrix.identity();
+    t[12] = dx;
+    t[13] = dy;
+    m = matrix.multiply(t, m);
+    return matrix.t43(m);
+  }
+
+  var tar = {
+    transform: transform
+  };
+
+  var math = {
+    matrix: matrix,
+    tar: tar,
+    d2r: function d2r(n) {
+      return n * Math.PI / 180;
+    },
+    r2d: function r2d(n) {
+      return n * 180 / Math.PI;
+    }
+  };
+
+  var PX = unit.PX,
+      PERCENT = unit.PERCENT;
+  var d2r = math.d2r,
+      matrix$1 = math.matrix;
+
+  function calSingle(t, k, v) {
+    if (k === 'translateX') {
+      t[12] = v;
+    } else if (k === 'translateY') {
+      t[13] = v;
+    } else if (k === 'scaleX') {
+      t[0] = v;
+    } else if (k === 'scaleY') {
+      t[5] = v;
+    } else if (k === 'skewX') {
+      v = d2r(v);
+      t[4] = Math.tan(v);
+    } else if (k === 'skewY') {
+      v = d2r(v);
+      t[1] = Math.tan(v);
+    } else if (k === 'rotateZ') {
+      v = d2r(v);
+      var sin = Math.sin(v);
+      var cos = Math.cos(v);
+      t[0] = t[5] = cos;
+      t[1] = sin;
+      t[4] = -sin;
+    } else if (k === 'matrix') {
+      t[0] = v[0];
+      t[1] = v[1];
+      t[4] = v[2];
+      t[5] = v[3];
+      t[12] = v[4];
+      t[13] = v[5];
+    }
+  }
+
+  function calMatrix(transform, transformOrigin, ow, oh) {
+    var _transformOrigin = _slicedToArray(transformOrigin, 2),
+        ox = _transformOrigin[0],
+        oy = _transformOrigin[1];
+
+    var list = normalize(transform, ow, oh);
+    var m = matrix$1.identity();
+    m[12] = ox;
+    m[13] = oy;
+    list.forEach(function (item) {
+      var _item = _slicedToArray(item, 2),
+          k = _item[0],
+          v = _item[1];
+
+      var t = matrix$1.identity();
+      calSingle(t, k, v);
+      m = matrix$1.multiply(m, t);
+    });
+    var t = matrix$1.identity();
+    t[12] = -ox;
+    t[13] = -oy;
+    m = matrix$1.multiply(m, t);
+    return matrix$1.t43(m);
+  }
+
+  function transformPoint(matrix, x, y) {
+    var _matrix = _slicedToArray(matrix, 6),
+        a = _matrix[0],
+        b = _matrix[1],
+        c = _matrix[2],
+        d = _matrix[3],
+        e = _matrix[4],
+        f = _matrix[5];
+
+    return [a * x + c * y + e, b * x + d * y + f];
+  } // 向量积
+
+
+  function vectorProduct(x1, y1, x2, y2) {
+    return x1 * y2 - x2 * y1;
+  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
+
+
+  function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
+    if (matrix) {
+      var _transformPoint = transformPoint(matrix, x1, y1);
+
+      var _transformPoint2 = _slicedToArray(_transformPoint, 2);
+
+      x1 = _transformPoint2[0];
+      y1 = _transformPoint2[1];
+
+      var _transformPoint3 = transformPoint(matrix, x2, y2);
+
+      var _transformPoint4 = _slicedToArray(_transformPoint3, 2);
+
+      x2 = _transformPoint4[0];
+      y2 = _transformPoint4[1];
+
+      var _transformPoint5 = transformPoint(matrix, x3, y3);
+
+      var _transformPoint6 = _slicedToArray(_transformPoint5, 2);
+
+      x3 = _transformPoint6[0];
+      y3 = _transformPoint6[1];
+
+      var _transformPoint7 = transformPoint(matrix, x4, y4);
+
+      var _transformPoint8 = _slicedToArray(_transformPoint7, 2);
+
+      x4 = _transformPoint8[0];
+      y4 = _transformPoint8[1];
+
+      if (vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) > 0 && vectorProduct(x4 - x2, y4 - y2, x - x2, y - y2) > 0 && vectorProduct(x3 - x4, y3 - y4, x - x4, y - y4) > 0 && vectorProduct(x1 - x3, y1 - y3, x - x3, y - y3) > 0) {
+        return true;
+      }
+    } else {
+      return x >= x1 && y >= y1 && x <= x4 && y <= y4;
+    }
+  }
+
+  function normalizeSingle(k, v, ow, oh) {
+    if (k === 'translateX') {
+      if (v.unit === PERCENT) {
+        return v.value * ow * 0.01;
+      }
+    } else if (k === 'translateY') {
+      if (v.unit === PERCENT) {
+        return v.value * oh * 0.01;
+      }
+    } else if (k === 'matrix') {
+      return v;
+    }
+
+    return v.value;
+  }
+
+  function normalize(transform, ow, oh) {
+    var res = [];
+    transform.forEach(function (item) {
+      var _item2 = _slicedToArray(item, 2),
+          k = _item2[0],
+          v = _item2[1];
+
+      res.push([k, normalizeSingle(k, v, ow, oh)]);
+    });
+    return res;
+  }
+
+  function calOrigin(transformOrigin, x, y, w, h) {
+    var tfo = [];
+    transformOrigin.forEach(function (item, i) {
+      if (item.unit === PX) {
+        tfo.push(item.value + i ? y : x);
+      } else if (item.unit === PERCENT) {
+        tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+      }
+    });
+    return tfo;
+  }
+
+  function convert(m3) {
+    var m = matrix$1.identity();
+    m[0] = m3[0];
+    m[1] = m3[1];
+    m[4] = m3[2];
+    m[5] = m3[3];
+    m[12] = m3[4];
+    m[13] = m3[5];
+    return m;
+  }
+
+  function mergeMatrix(a, b) {
+    var m1 = convert(a);
+    var m2 = convert(b);
+    var m = matrix$1.multiply(m1, m2);
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
+  }
+
+  function calExpandMatrix(k, v, transformOrigin, ow, oh) {
+    var _transformOrigin2 = _slicedToArray(transformOrigin, 2),
+        ox = _transformOrigin2[0],
+        oy = _transformOrigin2[1];
+
+    v = normalizeSingle(k, v, ow, oh);
+    var m = matrix$1.identity();
+    m[12] = ox;
+    m[13] = oy;
+    var t = matrix$1.identity();
+    calSingle(t, k, v);
+    m = matrix$1.multiply(m, t);
+    t = matrix$1.identity();
+    t[12] = -ox;
+    t[13] = -oy;
+    m = matrix$1.multiply(m, t);
+    return matrix$1.t43(m);
+  }
+
+  var transform$1 = {
+    calMatrix: calMatrix,
+    calOrigin: calOrigin,
+    pointInQuadrilateral: pointInQuadrilateral,
+    mergeMatrix: mergeMatrix,
+    calExpandMatrix: calExpandMatrix
+  };
+
   var toString = {}.toString;
 
   function isType(type) {
@@ -590,10 +950,6 @@
     });
     s += "></".concat(item.tagName, ">");
     return s;
-  }
-
-  function d2r(n) {
-    return n * Math.PI / 180;
   }
 
   function rgb2int(color) {
@@ -762,7 +1118,6 @@
     joinVirtualDom: joinVirtualDom,
     joinVd: joinVd,
     joinDef: joinDef,
-    d2r: d2r,
     rgb2int: rgb2int,
     int2rgba: int2rgba,
     arr2hash: arr2hash,
@@ -771,263 +1126,17 @@
     mergeImageData: mergeImageData
   };
 
-  // 生成4*4单位矩阵
-  function identity() {
-    var m = [];
-
-    for (var i = 0; i < 16; i++) {
-      m.push(i % 5 === 0 ? 1 : 0);
-    }
-
-    return m;
-  } // 矩阵a*b
-
-
-  function multiply(a, b) {
-    var res = [];
-
-    for (var i = 0; i < 4; i++) {
-      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
-
-      for (var j = 0; j < 4; j++) {
-        var k = j * 4;
-        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-        res[i + k] = n;
-      }
-    }
-
-    return res;
-  }
-
-  function t43(m) {
-    return [m[0], m[1], m[4], m[5], m[12], m[13]];
-  }
-
-  function calPoint(point, m) {
-    var _point = _slicedToArray(point, 2),
-        x = _point[0],
-        y = _point[1];
-
-    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
-  }
-
-  var matrix = {
-    identity: identity,
-    multiply: multiply,
-    t43: t43,
-    calPoint: calPoint
-  };
-
-  var PX = unit.PX,
-      PERCENT = unit.PERCENT;
-
-  function calSingle(t, k, v) {
-    if (k === 'translateX') {
-      t[12] = v;
-    } else if (k === 'translateY') {
-      t[13] = v;
-    } else if (k === 'scaleX') {
-      t[0] = v;
-    } else if (k === 'scaleY') {
-      t[5] = v;
-    } else if (k === 'skewX') {
-      v = util.d2r(v);
-      t[4] = Math.tan(v);
-    } else if (k === 'skewY') {
-      v = util.d2r(v);
-      t[1] = Math.tan(v);
-    } else if (k === 'rotateZ') {
-      v = util.d2r(v);
-      var sin = Math.sin(v);
-      var cos = Math.cos(v);
-      t[0] = t[5] = cos;
-      t[1] = sin;
-      t[4] = -sin;
-    } else if (k === 'matrix') {
-      t[0] = v[0];
-      t[1] = v[1];
-      t[4] = v[2];
-      t[5] = v[3];
-      t[12] = v[4];
-      t[13] = v[5];
-    }
-  }
-
-  function calMatrix(transform, transformOrigin, ow, oh) {
-    var _transformOrigin = _slicedToArray(transformOrigin, 2),
-        ox = _transformOrigin[0],
-        oy = _transformOrigin[1];
-
-    var list = normalize(transform, ow, oh);
-    var m = matrix.identity();
-    m[12] = ox;
-    m[13] = oy;
-    list.forEach(function (item) {
-      var _item = _slicedToArray(item, 2),
-          k = _item[0],
-          v = _item[1];
-
-      var t = matrix.identity();
-      calSingle(t, k, v);
-      m = matrix.multiply(m, t);
-    });
-    var t = matrix.identity();
-    t[12] = -ox;
-    t[13] = -oy;
-    m = matrix.multiply(m, t);
-    return matrix.t43(m);
-  }
-
-  function transformPoint(matrix, x, y) {
-    var _matrix = _slicedToArray(matrix, 6),
-        a = _matrix[0],
-        b = _matrix[1],
-        c = _matrix[2],
-        d = _matrix[3],
-        e = _matrix[4],
-        f = _matrix[5];
-
-    return [a * x + c * y + e, b * x + d * y + f];
-  } // 向量积
-
-
-  function vectorProduct(x1, y1, x2, y2) {
-    return x1 * y2 - x2 * y1;
-  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
-
-
-  function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
-    if (matrix) {
-      var _transformPoint = transformPoint(matrix, x1, y1);
-
-      var _transformPoint2 = _slicedToArray(_transformPoint, 2);
-
-      x1 = _transformPoint2[0];
-      y1 = _transformPoint2[1];
-
-      var _transformPoint3 = transformPoint(matrix, x2, y2);
-
-      var _transformPoint4 = _slicedToArray(_transformPoint3, 2);
-
-      x2 = _transformPoint4[0];
-      y2 = _transformPoint4[1];
-
-      var _transformPoint5 = transformPoint(matrix, x3, y3);
-
-      var _transformPoint6 = _slicedToArray(_transformPoint5, 2);
-
-      x3 = _transformPoint6[0];
-      y3 = _transformPoint6[1];
-
-      var _transformPoint7 = transformPoint(matrix, x4, y4);
-
-      var _transformPoint8 = _slicedToArray(_transformPoint7, 2);
-
-      x4 = _transformPoint8[0];
-      y4 = _transformPoint8[1];
-
-      if (vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) > 0 && vectorProduct(x4 - x2, y4 - y2, x - x2, y - y2) > 0 && vectorProduct(x3 - x4, y3 - y4, x - x4, y - y4) > 0 && vectorProduct(x1 - x3, y1 - y3, x - x3, y - y3) > 0) {
-        return true;
-      }
-    } else {
-      return x >= x1 && y >= y1 && x <= x4 && y <= y4;
-    }
-  }
-
-  function normalizeSingle(k, v, ow, oh) {
-    if (k === 'translateX') {
-      if (v.unit === PERCENT) {
-        return v.value * ow * 0.01;
-      }
-    } else if (k === 'translateY') {
-      if (v.unit === PERCENT) {
-        return v.value * oh * 0.01;
-      }
-    } else if (k === 'matrix') {
-      return v;
-    }
-
-    return v.value;
-  }
-
-  function normalize(transform, ow, oh) {
-    var res = [];
-    transform.forEach(function (item) {
-      var _item2 = _slicedToArray(item, 2),
-          k = _item2[0],
-          v = _item2[1];
-
-      res.push([k, normalizeSingle(k, v, ow, oh)]);
-    });
-    return res;
-  }
-
-  function calOrigin(transformOrigin, x, y, w, h) {
-    var tfo = [];
-    transformOrigin.forEach(function (item, i) {
-      if (item.unit === PX) {
-        tfo.push(item.value + i ? y : x);
-      } else if (item.unit === PERCENT) {
-        tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
-      }
-    });
-    return tfo;
-  }
-
-  function convert(m3) {
-    var m = matrix.identity();
-    m[0] = m3[0];
-    m[1] = m3[1];
-    m[4] = m3[2];
-    m[5] = m3[3];
-    m[12] = m3[4];
-    m[13] = m3[5];
-    return m;
-  }
-
-  function mergeMatrix(a, b) {
-    var m1 = convert(a);
-    var m2 = convert(b);
-    var m = matrix.multiply(m1, m2);
-    return [m[0], m[1], m[4], m[5], m[12], m[13]];
-  }
-
-  function calExpandMatrix(k, v, transformOrigin, ow, oh) {
-    var _transformOrigin2 = _slicedToArray(transformOrigin, 2),
-        ox = _transformOrigin2[0],
-        oy = _transformOrigin2[1];
-
-    v = normalizeSingle(k, v, ow, oh);
-    var m = matrix.identity();
-    m[12] = ox;
-    m[13] = oy;
-    var t = matrix.identity();
-    calSingle(t, k, v);
-    m = matrix.multiply(m, t);
-    t = matrix.identity();
-    t[12] = -ox;
-    t[13] = -oy;
-    m = matrix.multiply(m, t);
-    return matrix.t43(m);
-  }
-
-  var transform = {
-    calMatrix: calMatrix,
-    calOrigin: calOrigin,
-    pointInQuadrilateral: pointInQuadrilateral,
-    mergeMatrix: mergeMatrix,
-    calExpandMatrix: calExpandMatrix
-  };
-
   var reg = {
     position: /\b((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
 
+  var rgb2int$1 = util.rgb2int,
+      int2rgba$1 = util.int2rgba;
   var PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT;
+  var d2r$1 = math.d2r;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -1066,7 +1175,7 @@
       var item = v[i]; // 考虑是否声明了位置
 
       if (item.length > 1) {
-        var c = util.int2rgba(item[0]);
+        var c = int2rgba$1(item[0]);
         var p = item[1];
 
         if (p.unit === PERCENT$1) {
@@ -1075,7 +1184,7 @@
           list.push([c, p.value / length]);
         }
       } else {
-        list.push([util.int2rgba(item[0])]);
+        list.push([int2rgba$1(item[0])]);
       }
     } // 首尾不声明默认为[0, 1]
 
@@ -1197,8 +1306,8 @@
           else {
               if (first[1] < 0) {
                 var next = list[1];
-                var c1 = util.rgb2int(first[0]);
-                var c2 = util.rgb2int(next[0]);
+                var c1 = rgb2int$1(first[0]);
+                var c2 = rgb2int$1(next[0]);
 
                 var _c = getCsStartLimit(c1, first[1], c2, next[1], length);
 
@@ -1209,9 +1318,9 @@
               if (last[1] > 1) {
                 var _prev = list[len - 2];
 
-                var _c2 = util.rgb2int(_prev[0]);
+                var _c2 = rgb2int$1(_prev[0]);
 
-                var _c3 = util.rgb2int(last[0]);
+                var _c3 = rgb2int$1(last[0]);
 
                 var _c4 = getCsEndLimit(_c2, _prev[1], _c3, last[1], length);
 
@@ -1241,27 +1350,27 @@
     var y1;
 
     if (deg >= 270) {
-      var r = util.d2r(360 - deg);
+      var r = d2r$1(360 - deg);
       x0 = cx + Math.sin(r) * length;
       y0 = cy + Math.cos(r) * length;
       x1 = cx - Math.sin(r) * length;
       y1 = cy - Math.cos(r) * length;
     } else if (deg >= 180) {
-      var _r = util.d2r(deg - 180);
+      var _r = d2r$1(deg - 180);
 
       x0 = cx + Math.sin(_r) * length;
       y0 = cy - Math.cos(_r) * length;
       x1 = cx - Math.sin(_r) * length;
       y1 = cy + Math.cos(_r) * length;
     } else if (deg >= 90) {
-      var _r2 = util.d2r(180 - deg);
+      var _r2 = d2r$1(180 - deg);
 
       x0 = cx - Math.sin(_r2) * length;
       y0 = cy - Math.cos(_r2) * length;
       x1 = cx + Math.sin(_r2) * length;
       y1 = cy + Math.cos(_r2) * length;
     } else {
-      var _r3 = util.d2r(deg);
+      var _r3 = d2r$1(deg);
 
       x0 = cx - Math.sin(_r3) * length;
       y0 = cy + Math.cos(_r3) * length;
@@ -1462,8 +1571,8 @@
   }
 
   function getCsLimit(first, last, length) {
-    var c1 = util.rgb2int(first[0]);
-    var c2 = util.rgb2int(last[0]);
+    var c1 = rgb2int$1(first[0]);
+    var c2 = rgb2int$1(last[0]);
 
     var _c9 = _slicedToArray(c1, 4),
         r1 = _c9[0],
@@ -1508,7 +1617,7 @@
       var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
         var arr = item.split(/\s+/);
-        arr[0] = util.rgb2int(arr[0]);
+        arr[0] = rgb2int$1(arr[0]);
 
         if (arr[1]) {
           if (/%$/.test(arr[1])) {
@@ -1550,7 +1659,7 @@
   }
 
   function getLinear(v, d, cx, cy, w, h) {
-    var theta = util.d2r(d);
+    var theta = d2r$1(d);
     var length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
 
     var _calLinearCoords = calLinearCoords(d, length * 0.5, cx, cy),
@@ -2092,28 +2201,31 @@
       DEG = unit.DEG,
       RGBA = unit.RGBA,
       STRING = unit.STRING;
+  var isNil$1 = util.isNil,
+      rgb2int$2 = util.rgb2int,
+      int2rgba$2 = util.int2rgba;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
     var k = "border".concat(direction);
     var v = style[k];
 
-    if (util.isNil(v)) {
+    if (isNil$1(v)) {
       return;
     } // 后面会统一格式化处理
 
 
-    if (util.isNil(style[k + 'Width'])) {
+    if (isNil$1(style[k + 'Width'])) {
       var w = /\b[\d.]+px\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
-    if (util.isNil(style[k + 'Style'])) {
+    if (isNil$1(style[k + 'Style'])) {
       var s = /\b(solid|dashed|dotted)\b/i.exec(v);
       style[k + 'Style'] = s ? s[1] : 'solid';
     }
 
-    if (util.isNil(style[k + 'Color'])) {
+    if (isNil$1(style[k + 'Color'])) {
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
@@ -2128,15 +2240,15 @@
   }
 
   function parseFlex(style, grow, shrink, basis) {
-    if (util.isNil(style.flexGrow)) {
+    if (isNil$1(style.flexGrow)) {
       style.flexGrow = grow;
     }
 
-    if (util.isNil(style.flexShrink)) {
+    if (isNil$1(style.flexShrink)) {
       style.flexShrink = shrink;
     }
 
-    if (util.isNil(style.flexBasis)) {
+    if (isNil$1(style.flexBasis)) {
       style.flexBasis = basis;
     }
   }
@@ -2220,7 +2332,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k;
 
-        if (util.isNil(style[k])) {
+        if (isNil$1(style[k])) {
           style[k] = temp;
         }
       });
@@ -2235,7 +2347,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Width';
 
-        if (util.isNil(style[k])) {
+        if (isNil$1(style[k])) {
           // width后面会统一格式化处理
           style[k] = temp;
         }
@@ -2248,8 +2360,8 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Color';
 
-        if (util.isNil(style[k])) {
-          style[k] = util.rgb2int(temp);
+        if (isNil$1(style[k])) {
+          style[k] = rgb2int$2(temp);
         }
       });
     }
@@ -2260,7 +2372,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Style';
 
-        if (util.isNil(style[k])) {
+        if (isNil$1(style[k])) {
           style[k] = temp;
         }
       });
@@ -2270,7 +2382,7 @@
 
     if (temp) {
       // gradient/image和颜色可以并存
-      if (util.isNil(style.backgroundImage)) {
+      if (isNil$1(style.backgroundImage)) {
         var gd = reg.gradient.exec(temp);
 
         if (gd) {
@@ -2279,7 +2391,7 @@
         }
       }
 
-      if (util.isNil(style.backgroundImage)) {
+      if (isNil$1(style.backgroundImage)) {
         var img = reg.img.exec(temp);
 
         if (img) {
@@ -2288,23 +2400,23 @@
         }
       }
 
-      if (util.isNil(style.backgroundRepeat)) {
+      if (isNil$1(style.backgroundRepeat)) {
         var repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
 
-        if (repeat && util.isNil(style.backgroundRepeat)) {
+        if (repeat && isNil$1(style.backgroundRepeat)) {
           style.backgroundRepeat = repeat[0].toLowerCase().trim();
         }
       }
 
-      if (util.isNil(style.backgroundPosition)) {
+      if (isNil$1(style.backgroundPosition)) {
         var position = reg.position.exec(temp);
 
-        if (position && util.isNil(style.backgroundPosition)) {
+        if (position && isNil$1(style.backgroundPosition)) {
           style.backgroundPosition = position[0].trim();
         }
       }
 
-      if (util.isNil(style.backgroundColor)) {
+      if (isNil$1(style.backgroundColor)) {
         var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
 
         if (bgc) {
@@ -2316,7 +2428,7 @@
 
     temp = style.backgroundPosition;
 
-    if (!util.isNil(temp)) {
+    if (!isNil$1(temp)) {
       temp = temp.toString().split(/\s+/);
 
       if (temp.length === 1) {
@@ -2376,7 +2488,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = 'margin' + k;
 
-          if (util.isNil(style[k])) {
+          if (isNil$1(style[k])) {
             style[k] = match[i];
           }
         });
@@ -2402,7 +2514,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = 'padding' + k;
 
-          if (util.isNil(style[k])) {
+          if (isNil$1(style[k])) {
             style[k] = _match[i];
           }
         });
@@ -2412,7 +2524,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (!util.isNil(v) && style.transform) {
+      if (!isNil$1(v) && style.transform) {
         console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
@@ -2421,7 +2533,7 @@
       var k = item.k,
           v = item.v;
 
-      if (util.isNil(style[k])) {
+      if (isNil$1(style[k])) {
         style[k] = v;
       }
     }); // 背景图
@@ -2444,17 +2556,17 @@
       var _bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
 
       if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
-        style.backgroundColor = util.rgb2int(_bgc[0]);
+        style.backgroundColor = rgb2int$2(_bgc[0]);
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
-        style.backgroundColor = util.rgb2int(_bgc ? _bgc[0] : [0, 0, 0, 0]);
+        style.backgroundColor = rgb2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]);
       }
     }
 
     ['backgroundPositionX', 'backgroundPositionY'].forEach(function (k) {
       temp = style[k];
 
-      if (!util.isNil(temp)) {
+      if (!isNil$1(temp)) {
         if (/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(style, k, temp);
           temp = style[k];
@@ -2514,8 +2626,8 @@
       k = 'border' + k + 'Color';
       var v = style[k];
 
-      if (!util.isNil(v)) {
-        style[k] = util.rgb2int(v);
+      if (!isNil$1(v)) {
+        style[k] = rgb2int$2(v);
       }
     });
     temp = style.transform;
@@ -2587,7 +2699,7 @@
 
     temp = style.transformOrigin;
 
-    if (!util.isNil(temp)) {
+    if (!isNil$1(temp)) {
       var _match4 = temp.toString().match(reg.position);
 
       if (_match4) {
@@ -2615,7 +2727,7 @@
               unit: PERCENT$2
             }); // 不规范的写法变默认值50%
 
-            if (util.isNil(tfo[_i].value)) {
+            if (isNil$1(tfo[_i].value)) {
               tfo[_i].value = 50;
             }
           }
@@ -2629,7 +2741,7 @@
     ['translate', 'scale', 'skew'].forEach(function (k) {
       temp = style[k];
 
-      if (!util.isNil(temp)) {
+      if (!isNil$1(temp)) {
         var _arr5 = temp.toString().split(/\s*,\s*/);
 
         if (_arr5.length === 1) {
@@ -2643,7 +2755,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (util.isNil(v)) {
+      if (isNil$1(v)) {
         return;
       }
 
@@ -2683,7 +2795,7 @@
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
-      if (util.isNil(v)) {
+      if (isNil$1(v)) {
         return;
       }
 
@@ -2703,7 +2815,7 @@
         };
       } else {
         style.color = {
-          value: util.rgb2int(temp),
+          value: rgb2int$2(temp),
           unit: RGBA
         };
       }
@@ -2847,7 +2959,7 @@
 
     temp = style.strokeDasharray;
 
-    if (!util.isNil(temp)) {
+    if (!isNil$1(temp)) {
       var _match5 = temp.toString().match(/[\d.]+/g);
 
       if (_match5) {
@@ -2872,7 +2984,7 @@
       if (temp.indexOf('-gradient(') > 0) {
         style.fill = gradient.parseGradient(temp);
       } else {
-        style.fill = util.rgb2int(temp);
+        style.fill = rgb2int$2(temp);
       }
     }
 
@@ -2882,7 +2994,7 @@
       if (temp.indexOf('-gradient(') > 0) {
         style.stroke = gradient.parseGradient(temp);
       } else {
-        style.stroke = util.rgb2int(temp);
+        style.stroke = rgb2int$2(temp);
       }
     } // font除size相关
     // 删除缩写避免干扰动画计算
@@ -2955,7 +3067,7 @@
     if (color.unit === INHERIT) {
       computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
     } else {
-      computedStyle.color = util.int2rgba(color.value);
+      computedStyle.color = int2rgba$2(color.value);
     } // 处理可提前计算的属性，如border
 
 
@@ -2966,7 +3078,7 @@
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-      computedStyle[k] = util.int2rgba(currentStyle[k]);
+      computedStyle[k] = int2rgba$2(currentStyle[k]);
     });
   }
 
@@ -3774,19 +3886,21 @@
       value: targetHeight / imgHeight,
       unit: NUMBER$1
     }]];
-    var tfo = transform.calOrigin([{
+    var tfo = transform$1.calOrigin([{
       value: 0,
       unit: PERCENT$3
     }, {
       value: 0,
       unit: PERCENT$3
     }], x, y, w, h);
-    return transform.calMatrix(list, tfo, w, h);
+    return transform$1.calMatrix(list, tfo, w, h);
   }
 
   var image = {
     matrixResize: matrixResize
   };
+
+  var isFunction = util.isFunction;
 
   var Event =
   /*#__PURE__*/
@@ -3830,7 +3944,7 @@
     }, {
       key: "once",
       value: function once(id, handle) {
-        if (!util.isFunction(handle)) {
+        if (!isFunction(handle)) {
           return;
         }
 
@@ -3906,7 +4020,7 @@
               for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
                 var cb = list[_i3];
 
-                if (util.isFunction(cb)) {
+                if (isFunction(cb)) {
                   cb.apply(self, data);
                 }
               }
@@ -4090,6 +4204,8 @@
     }
   };
 
+  var isNil$2 = util.isNil;
+
   var Component =
   /*#__PURE__*/
   function (_Event) {
@@ -4132,7 +4248,7 @@
       value: function setState(n, cb) {
         var _this2 = this;
 
-        if (util.isNil(n)) {
+        if (isNil$2(n)) {
           this.state = {};
         } else {
           Object.assign(this.state, n);
@@ -4176,7 +4292,7 @@
         if (!(sr instanceof Node)) {
           var s = '';
 
-          if (!util.isNil(sr)) {
+          if (!isNil$2(sr)) {
             s = util.encodeHtml(sr.toString());
           }
 
@@ -4535,6 +4651,9 @@
     }
   };
 
+  var isFunction$1 = util.isFunction,
+      isObject = util.isObject;
+
   var Frame =
   /*#__PURE__*/
   function () {
@@ -4564,14 +4683,14 @@
 
             last = now;
             clone.forEach(function (item) {
-              if (util.isObject(item) && util.isFunction(item.before)) {
+              if (isObject(item) && isFunction$1(item.before)) {
                 item.before(delta);
               }
             });
             clone.forEach(function (item) {
-              if (util.isObject(item) && util.isFunction(item.after)) {
+              if (isObject(item) && isFunction$1(item.after)) {
                 item.after(delta);
-              } else if (util.isFunction(item)) {
+              } else if (isFunction$1(item)) {
                 item(delta);
               }
             });
@@ -4633,7 +4752,7 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = util.isFunction(handle) ? function () {
+        var cb = isFunction$1(handle) ? function () {
           handle();
 
           _this.offFrame(cb);
@@ -4800,6 +4919,10 @@
       RGBA$1 = unit.RGBA,
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
+  var isNil$3 = util.isNil,
+      isFunction$2 = util.isFunction,
+      isNumber$1 = util.isNumber,
+      clone$1 = util.clone;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
@@ -4861,7 +4984,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!util.isNil(v) && !hash.hasOwnProperty(k)) {
+        if (!isNil$3(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
           keys.push(k);
         }
@@ -4885,14 +5008,14 @@
 
 
   function inherit(frames, keys, target) {
-    var clone = util.clone(frames);
+    var copy = clone$1(frames);
     var computedStyle = target.computedStyle;
-    clone.forEach(function (item) {
+    copy.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (util.isNil(v)) {
+        if (isNil$3(v)) {
           return;
         }
 
@@ -4921,7 +5044,7 @@
         }
       });
     });
-    return clone;
+    return copy;
   } // 对比两个样式的某个值是否相等
 
 
@@ -5029,7 +5152,7 @@
       var n = frameStyle[k];
       var p = lastStyle[k];
 
-      if (!util.isNil(n) && !util.isNil(p)) {
+      if (!isNil$3(n) && !isNil$3(p)) {
         if (!equalStyle(k, n, p)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
@@ -5042,7 +5165,7 @@
             break;
           }
         }
-      } else if (!util.isNil(n) || !util.isNil(p)) {
+      } else if (!isNil$3(n) || !isNil$3(p)) {
         res = true;
 
         if (isStyleReflow(k)) {
@@ -5064,7 +5187,7 @@
       Object.keys(frameStyle).forEach(function (i) {
         var v = frameStyle[i];
 
-        if (util.isNil(v)) {
+        if (isNil$3(v)) {
           return;
         } // geom的属性变化
 
@@ -5457,7 +5580,7 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (util.isNil(n)) {
+      if (isNil$3(n)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
         if (equalArr(p, n)) {
@@ -5470,13 +5593,13 @@
           var _pv = p[_i6];
           var _nv = n[_i6];
 
-          if (util.isNil(_pv) || util.isNil(_nv)) {
+          if (isNil$3(_pv) || isNil$3(_nv)) {
             res.v.push(_nv);
           } else {
             var _v15 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
-              if (util.isNil(_pv[j]) || util.isNil(_nv[j])) {
+              if (isNil$3(_pv[j]) || isNil$3(_nv[j])) {
                 _v15.push(_nv[j]);
               } else {
                 _v15.push(_nv[j] - _pv[j]);
@@ -5554,7 +5677,7 @@
 
 
   function calStyle(frame, percent) {
-    var style = util.clone(frame.style);
+    var style = clone$1(frame.style);
     var timingFunction = easing[frame.easing] || easing.linear;
 
     if (timingFunction !== easing.linear) {
@@ -5638,12 +5761,12 @@
 
           if (k === 'points' || k === 'controls') {
             for (var _i7 = 0, _len4 = Math.min(_st.length, v.length); _i7 < _len4; _i7++) {
-              if (util.isNil(_st[_i7]) || !_st[_i7].length) {
+              if (isNil$3(_st[_i7]) || !_st[_i7].length) {
                 continue;
               }
 
               for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
-                if (!util.isNil(_st[_i7][j]) && !util.isNil(v[_i7][j])) {
+                if (!isNil$3(_st[_i7][j]) && !isNil$3(v[_i7][j])) {
                   _st[_i7][j] += v[_i7][j] * percent;
                 }
               }
@@ -5662,10 +5785,10 @@
   }
 
   function gotoOverload(isFrame, excludeDelay, cb) {
-    if (util.isFunction(isFrame)) {
+    if (isFunction$2(isFrame)) {
       cb = isFrame;
       isFrame = excludeDelay = false;
-    } else if (util.isFunction(excludeDelay)) {
+    } else if (isFunction$2(excludeDelay)) {
       cb = excludeDelay;
       excludeDelay = false;
     }
@@ -5688,7 +5811,7 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = util.clone(list || []); // 动画过程另外一种形式，object描述k-v形式
+      _this.__list = clone$1(list || []); // 动画过程另外一种形式，object描述k-v形式
 
       if (!Array.isArray(_this.__list)) {
         var nl = [];
@@ -5708,7 +5831,7 @@
         _this.__list = nl;
       }
 
-      if (util.isNumber(options)) {
+      if (isNumber$1(options)) {
         _this.__options = {
           duration: options
         };
@@ -5823,7 +5946,7 @@
 
 
         list.forEach(function (item, i) {
-          list[i] = util.clone(item);
+          list[i] = clone$1(item);
         }); // 首尾时间偏移强制为[0, 1]
 
         var first = list[0];
@@ -5884,7 +6007,7 @@
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var framesR = util.clone(frames).reverse();
+          var framesR = clone$1(frames).reverse();
           framesR.forEach(function (item) {
             item.time = duration - item.time;
             item.transition = [];
@@ -5936,7 +6059,7 @@
         }
 
         if (playState === 'running') {
-          if (util.isFunction(cb)) {
+          if (isFunction$2(cb)) {
             cb(0);
           }
 
@@ -6036,7 +6159,7 @@
                         if (_this3.__firstPlay) {
                           _this3.__firstPlay = false;
 
-                          if (util.isFunction(cb)) {
+                          if (isFunction$2(cb)) {
                             cb(delta);
                           }
 
@@ -6051,7 +6174,7 @@
                   } else {
                     frame.nextFrame(_this3.__task = function (delta) {
                       if (_this3.__firstPlay) {
-                        if (util.isFunction(cb)) {
+                        if (isFunction$2(cb)) {
                           cb(delta);
                         }
 
@@ -6073,7 +6196,7 @@
 
               var fps = _this3.fps;
 
-              if (!util.isNumber(fps) || fps <= 0) {
+              if (!isNumber$1(fps) || fps <= 0) {
                 fps = 60;
               } // 第一帧强制不跳帧，其它未到fps时间限制不执行
 
@@ -6161,7 +6284,7 @@
                   // 没到播放次数结束时继续
                   if (iterations === Infinity || playCount < iterations) {
                     if (_this3.__firstPlay) {
-                      if (util.isFunction(cb)) {
+                      if (isFunction$2(cb)) {
                         cb(delta);
                       }
 
@@ -6233,7 +6356,7 @@
                 if (_this3.__firstPlay) {
                   _this3.__firstPlay = false;
 
-                  if (util.isFunction(cb)) {
+                  if (isFunction$2(cb)) {
                     cb(delta);
                   }
 
@@ -6294,7 +6417,7 @@
         }
 
         if (playState === 'finished') {
-          if (util.isFunction(cb)) {
+          if (isFunction$2(cb)) {
             cb();
           }
 
@@ -6337,7 +6460,7 @@
             root.addRefreshTask(this.__task = {
               before: genBeforeRefresh(current, this, root, lv),
               after: function after() {
-                if (util.isFunction(cb)) {
+                if (isFunction$2(cb)) {
                   cb();
                 }
 
@@ -6345,7 +6468,7 @@
               }
             });
           } else {
-            if (util.isFunction(cb)) {
+            if (isFunction$2(cb)) {
               cb();
             }
 
@@ -6369,7 +6492,7 @@
         }
 
         if (playState === 'idle') {
-          if (util.isFunction(cb)) {
+          if (isFunction$2(cb)) {
             cb();
           }
 
@@ -6393,7 +6516,7 @@
               lv = _calRefresh14[1];
 
           var task = function task() {
-            if (util.isFunction(cb)) {
+            if (isFunction$2(cb)) {
               cb();
             }
 
@@ -6464,7 +6587,7 @@
 
           _this5.__cancelTask();
 
-          if (util.isFunction(cb)) {
+          if (isFunction$2(cb)) {
             cb(delta);
           }
         });
@@ -6707,9 +6830,12 @@
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
+  var clone$2 = util.clone,
+      int2rgba$3 = util.int2rgba,
+      mergeImageData$1 = util.mergeImageData;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
-    color = util.int2rgba(color);
+    color = int2rgba$3(color);
 
     if (renderMode === mode.CANVAS) {
       points.forEach(function (point) {
@@ -7151,7 +7277,7 @@
             backgroundSize = currentStyle.backgroundSize,
             backgroundPositionX = currentStyle.backgroundPositionX,
             backgroundPositionY = currentStyle.backgroundPositionY,
-            transform$1 = currentStyle.transform,
+            transform = currentStyle.transform,
             transformOrigin = currentStyle.transformOrigin; // 使用sx和sy渲染位置，考虑了relative和translate影响
 
         var x = this.sx,
@@ -7180,7 +7306,7 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
+        var tfo = transform$1.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
         computedStyle.transformOrigin = tfo.join(' '); // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
         var matrix = [1, 0, 0, 1, 0, 0];
@@ -7192,8 +7318,8 @@
 
         parent = this.parent; // transform相对于自身
 
-        if (transform$1) {
-          matrix = transform.calMatrix(transform$1, tfo, outerWidth, outerHeight);
+        if (transform) {
+          matrix = transform$1.calMatrix(transform, tfo, outerWidth, outerHeight);
           this.__matrix = matrix;
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -7223,8 +7349,8 @@
                 }
               }
 
-              var m = transform.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
-              _this3.__matrix = matrix = transform.mergeMatrix(matrix, m);
+              var m = transform$1.calExpandMatrix(k, v, tfo, outerWidth, outerHeight);
+              _this3.__matrix = matrix = transform$1.mergeMatrix(matrix, m);
             });
           }
 
@@ -7232,7 +7358,7 @@
 
         while (parent) {
           if (parent.matrixEvent) {
-            matrix = transform.mergeMatrix(parent.matrixEvent, matrix);
+            matrix = transform$1.mergeMatrix(parent.matrixEvent, matrix);
             break;
           }
 
@@ -7441,7 +7567,7 @@
 
                   ctx.globalCompositeOperation = 'source-over';
 
-                  this.root.__putImageData(util.mergeImageData(cache1, cache2));
+                  this.root.__putImageData(mergeImageData$1(cache1, cache2));
                 }
               } else if (renderMode === mode.SVG) {
                 var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
@@ -7478,13 +7604,13 @@
                   for (var _i4 = 0; _i4 <= Math.max(xnl, 1); _i4++) {
                     for (var _j4 = 0; _j4 <= Math.max(ynt, 1); _j4++) {
                       if (_i4 !== 0 || _j4 !== 0) {
-                        var clone = util.clone(props);
-                        clone[1][1] = originX - _i4 * w;
-                        clone[2][1] = originY - _j4 * h;
+                        var copy = clone$2(props);
+                        copy[1][1] = originX - _i4 * w;
+                        copy[2][1] = originY - _j4 * h;
                         this.virtualDom.bb.push({
                           type: 'img',
                           tagName: 'image',
-                          props: clone
+                          props: copy
                         });
                       }
                     }
@@ -7495,14 +7621,14 @@
                   for (var _i5 = 0; _i5 <= Math.max(xnr, 1); _i5++) {
                     for (var _j5 = 0; _j5 <= Math.max(ynt, 1); _j5++) {
                       if (_i5 !== 0 || _j5 !== 0) {
-                        var _clone = util.clone(props);
+                        var _copy = clone$2(props);
 
-                        _clone[1][1] = originX + _i5 * w;
-                        _clone[2][1] = originY - _j5 * h;
+                        _copy[1][1] = originX + _i5 * w;
+                        _copy[2][1] = originY - _j5 * h;
                         this.virtualDom.bb.push({
                           type: 'img',
                           tagName: 'image',
-                          props: _clone
+                          props: _copy
                         });
                       }
                     }
@@ -7513,14 +7639,14 @@
                   for (var _i6 = 0; _i6 <= Math.max(xnl, 1); _i6++) {
                     for (var _j6 = 0; _j6 <= Math.max(ynb, 1); _j6++) {
                       if (_i6 !== 0 || _j6 !== 0) {
-                        var _clone2 = util.clone(props);
+                        var _copy2 = clone$2(props);
 
-                        _clone2[1][1] = originX - _i6 * w;
-                        _clone2[2][1] = originY + _j6 * h;
+                        _copy2[1][1] = originX - _i6 * w;
+                        _copy2[2][1] = originY + _j6 * h;
                         this.virtualDom.bb.push({
                           type: 'img',
                           tagName: 'image',
-                          props: _clone2
+                          props: _copy2
                         });
                       }
                     }
@@ -7531,14 +7657,14 @@
                   for (var _i7 = 0; _i7 <= Math.max(xnr, 1); _i7++) {
                     for (var _j7 = 0; _j7 <= Math.max(ynb, 1); _j7++) {
                       if (_i7 !== 0 || _j7 !== 0) {
-                        var _clone3 = util.clone(props);
+                        var _copy3 = clone$2(props);
 
-                        _clone3[1][1] = originX + _i7 * w;
-                        _clone3[2][1] = originY + _j7 * h;
+                        _copy3[1][1] = originX + _i7 * w;
+                        _copy3[2][1] = originY + _j7 * h;
                         this.virtualDom.bb.push({
                           type: 'img',
                           tagName: 'image',
-                          props: _clone3
+                          props: _copy3
                         });
                       }
                     }
@@ -7646,7 +7772,7 @@
           this.ctx.globalCompositeOperation = 'source-over';
 
           if (hasMask) {
-            this.root.__putImageData(util.mergeImageData(cache1, cache2));
+            this.root.__putImageData(mergeImageData$1(cache1, cache2));
           }
         } else if (renderMode === mode.SVG) {
           this.render(renderMode);
@@ -7814,7 +7940,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = transform.pointInQuadrilateral(x - sx, y - sy, 0, 0, outerWidth, 0, 0, outerHeight, outerWidth, outerHeight, matrixEvent);
+        var inThis = transform$1.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx, sy + outerHeight, sx + outerWidth, sy + outerHeight, matrixEvent);
 
         if (inThis) {
           if (!e.target) {
@@ -7851,7 +7977,7 @@
         }
 
         v.forEach(function (item) {
-          computedStyle[ks] += ', ' + util.int2rgba(item[0]);
+          computedStyle[ks] += ', ' + int2rgba$3(item[0]);
 
           if (item[1]) {
             computedStyle[ks] += ' ' + item[1].str;
@@ -8075,13 +8201,13 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var clone = util.clone(style);
+        var copy = clone$2(style);
         animationList.forEach(function (item) {
           if (item.animating) {
-            Object.assign(clone, item.style);
+            Object.assign(copy, item.style);
           }
         });
-        return clone;
+        return copy;
       }
     }, {
       key: "currentStyle",
@@ -8193,6 +8319,9 @@
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
+  var clone$3 = util.clone,
+      int2rgba$4 = util.int2rgba,
+      isNil$4 = util.isNil;
   var REGISTER = {};
 
   var Geom =
@@ -8206,7 +8335,7 @@
       _classCallCheck(this, Geom);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
-      _this.__isMask = !util.isNil(_this.props.mask) || _this.props.mask === true;
+      _this.__isMask = !isNil$4(_this.props.mask) || _this.props.mask === true;
       _this.__animateProps = []; // 同animateStyle
 
       _this.__currentProps = _this.props;
@@ -8370,13 +8499,13 @@
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
           stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
         } else {
-          computedStyle.stroke = stroke = util.int2rgba(stroke);
+          computedStyle.stroke = stroke = int2rgba$4(stroke);
         }
 
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
           fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
         } else {
-          computedStyle.fill = fill = util.int2rgba(fill);
+          computedStyle.fill = fill = int2rgba$4(fill);
         }
 
         computedStyle.strokeWidth = strokeWidth;
@@ -8430,7 +8559,7 @@
           var vd = this.virtualDom;
           vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
 
-          var children = util.clone(vd.children);
+          var children = clone$3(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -8526,7 +8655,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!util.isNil(v)) {
+        if (!isNil$4(v)) {
           return v;
         }
 
@@ -8557,13 +8686,13 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var clone = util.clone(props);
+        var copy = clone$3(props);
         animationList.forEach(function (item) {
           if (item.animating) {
-            Object.assign(clone, item.props);
+            Object.assign(copy, item.props);
           }
         });
-        return clone;
+        return copy;
       }
     }, {
       key: "currentProps",
@@ -10141,8 +10270,8 @@
               matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
 
               if (this.matrix) {
-                this.__matrix = matrix = transform.mergeMatrix(this.__matrix, matrix);
-                this.__matrixEvent = transform.mergeMatrix(this.__matrixEvent, matrix);
+                this.__matrix = matrix = transform$1.mergeMatrix(this.__matrix, matrix);
+                this.__matrixEvent = transform$1.mergeMatrix(this.__matrixEvent, matrix);
               } else {
                 this.__matrixEvent = matrix;
               }
@@ -10179,6 +10308,9 @@
     return Img;
   }(Dom);
 
+  var joinVd$1 = util.joinVd,
+      joinDef$1 = util.joinDef;
+
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
@@ -10202,14 +10334,14 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(elem, cns, i, util.joinDef(nd[i]));
+        insertAt(elem, cns, i, joinDef$1(nd[i]));
       }
     }
   }
 
   function diffDef(elem, od, nd) {
     if (od.tagName !== nd.tagName) {
-      elem.insertAdjacentHTML('afterend', util.joinDef(nd));
+      elem.insertAdjacentHTML('afterend', joinDef$1(nd));
       elem.parentNode.removeChild(elem);
     } else {
       if (od.uuid !== nd.uuid) {
@@ -10266,7 +10398,7 @@
         }
       } else if (i < nl) {
         for (; i < nl; i++) {
-          insertAt(elem, cns, i, util.joinStop(nd.stop[i]));
+          insertAt(elem, cns, i, joinVd$1(nd.stop[i]));
         }
       }
     }
@@ -10358,7 +10490,7 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
+        insertAt(lastChild, cns, i, joinVd$1(nvd.children[i]));
       }
     }
   }
@@ -10385,7 +10517,7 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(elem, cns, i, util.joinVd(nvd.children[i]));
+        insertAt(elem, cns, i, joinVd$1(nvd.children[i]));
       }
     }
   }
@@ -10414,7 +10546,7 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(lastChild, cns, i, util.joinVd(nvd.children[i]));
+        insertAt(lastChild, cns, i, joinVd$1(nvd.children[i]));
       }
     }
   }
@@ -10445,7 +10577,7 @@
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
-        insertAt(elem, cns, i, util.joinVd(nbb[i]));
+        insertAt(elem, cns, i, joinVd$1(nbb[i]));
       }
     }
   }
@@ -10508,10 +10640,10 @@
     if (Array.isArray(vd)) {
       res = '';
       vd.forEach(function (item) {
-        res += util.joinVd(item);
+        res += joinVd$1(item);
       });
     } else {
-      res = util.joinVd(vd);
+      res = joinVd$1(vd);
     }
 
     elem.insertAdjacentHTML('afterend', res);
@@ -10571,6 +10703,9 @@
     return Defs;
   }();
 
+  var isNil$5 = util.isNil,
+      isObject$1 = util.isObject,
+      isFunction$3 = util.isFunction;
   var PX$8 = unit.PX;
 
   function getDom(dom) {
@@ -10638,7 +10773,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!util.isNil(w)) {
+        if (!isNil$5(w)) {
           var value = parseInt(w) || 0;
 
           if (value > 0) {
@@ -10648,7 +10783,7 @@
 
         var h = this.props.height;
 
-        if (!util.isNil(h)) {
+        if (!isNil$5(h)) {
           var _value = parseInt(h) || 0;
 
           if (_value > 0) {
@@ -10693,11 +10828,11 @@
         y = y || top || 0;
 
         var _ref = e.touches ? e.touches[0] || {} : e,
-            clientX = _ref.clientX,
-            clientY = _ref.clientY;
+            pageX = _ref.pageX,
+            pageY = _ref.pageY;
 
-        x = clientX - x;
-        y = clientY - y;
+        x = pageX - x;
+        y = pageY - y;
         var data = {
           event: e,
           stopPropagation: function stopPropagation() {
@@ -10750,7 +10885,7 @@
             }
           }
 
-        this.__uuid = util.isNil(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -10887,7 +11022,7 @@
             _this2.node.__defs = nd;
           }
 
-          if (util.isFunction(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
 
@@ -10913,7 +11048,7 @@
 
               if (clone.length) {
                 clone.forEach(function (item) {
-                  if (util.isObject(item) && util.isFunction(item.before)) {
+                  if (isObject$1(item) && isFunction$3(item.before)) {
                     item.before(delta);
                   }
                 });
@@ -10923,9 +11058,9 @@
             },
             after: function after(delta) {
               clone.forEach(function (item) {
-                if (util.isObject(item) && util.isFunction(item.after)) {
+                if (isObject$1(item) && isFunction$3(item.after)) {
                   item.after(delta);
-                } else if (util.isFunction(item)) {
+                } else if (isFunction$3(item)) {
                   item(delta);
                 }
               });
@@ -12241,109 +12376,6 @@
 
     return vd;
   }
-
-  function calDeg(x1, y1, x2, y2) {
-    return Math.atan((y2 - y1) / (x2 - x1));
-  }
-
-  function rotate(theta) {
-    var sin = Math.sin(theta);
-    var cos = Math.cos(theta);
-    var t = matrix.identity();
-    t[0] = t[5] = cos;
-    t[1] = sin;
-    t[4] = -sin;
-    return t;
-  }
-
-  function transform$1(source, target) {
-    var _source = _slicedToArray(source, 6),
-        sx1 = _source[0],
-        sy1 = _source[1],
-        sx2 = _source[2],
-        sy2 = _source[3],
-        sx3 = _source[4],
-        sy3 = _source[5];
-
-    var _target = _slicedToArray(target, 6),
-        tx1 = _target[0],
-        ty1 = _target[1],
-        tx2 = _target[2],
-        ty2 = _target[3],
-        tx3 = _target[4],
-        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
-
-
-    var dx = tx1 - sx1;
-    var dy = tx2 - sx2;
-    tx1 -= dx;
-    ty1 -= dy;
-    tx2 -= dx;
-    ty2 -= dy;
-    tx3 -= dx;
-    ty3 -= dy;
-    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
-
-    var theta = calDeg(sx1, sy1, sx2, sy2);
-    var t = rotate(-theta);
-    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
-
-    var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
-    var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
-    var scale = lt / ls;
-    t = matrix.identity();
-    t[0] = t[5] = scale;
-    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
-
-    theta = calDeg(tx1, ty1, tx2, ty2);
-    t = rotate(-theta); // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
-
-    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
-        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
-        ax2 = _matrix$calPoint2[0],
-        ay2 = _matrix$calPoint2[1];
-
-    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
-        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
-        ax3 = _matrix$calPoint4[0],
-        ay3 = _matrix$calPoint4[1];
-
-    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
-    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
-
-    scale = ay3 / by3;
-    t = matrix.identity();
-    t[5] = scale;
-    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
-
-    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
-        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
-        x3 = _matrix$calPoint6[0],
-        y3 = _matrix$calPoint6[1];
-
-    theta = Math.atan((ax3 - x3) / y3);
-    t = matrix.identity();
-    t[4] = Math.tan(theta);
-    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
-
-    t = rotate(-alpha);
-    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
-
-    t = matrix.identity();
-    t[12] = dx;
-    t[13] = dy;
-    m = matrix.multiply(t, m);
-    return matrix.t43(m);
-  }
-
-  var tar = {
-    transform: transform$1
-  };
-
-  var math = {
-    matrix: matrix,
-    tar: tar
-  };
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

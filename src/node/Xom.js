@@ -13,9 +13,10 @@ import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
+const { clone, int2rgba, mergeImageData } = util;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
-  color = util.int2rgba(color);
+  color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
     points.forEach(point => {
       ctx.beginPath();
@@ -698,7 +699,7 @@ class Xom extends Node {
               cache2 = this.root.__getImageData();
               this.root.__clear();
               ctx.globalCompositeOperation = 'source-over';
-              this.root.__putImageData(util.mergeImageData(cache1, cache2));
+              this.root.__putImageData(mergeImageData(cache1, cache2));
             }
           }
           else if(renderMode === mode.SVG) {
@@ -743,13 +744,13 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnl, 1); i++) {
                 for(let j = 0; j <= Math.max(ynt, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    let clone = util.clone(props);
-                    clone[1][1] = originX - i * w;
-                    clone[2][1] = originY - j * h;
+                    let copy = clone(props);
+                    copy[1][1] = originX - i * w;
+                    copy[2][1] = originY - j * h;
                     this.virtualDom.bb.push({
                       type: 'img',
                       tagName: 'image',
-                      props: clone,
+                      props: copy,
                     });
                   }
                 }
@@ -759,13 +760,13 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnr, 1); i++) {
                 for(let j = 0; j <= Math.max(ynt, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    let clone = util.clone(props);
-                    clone[1][1] = originX + i * w;
-                    clone[2][1] = originY - j * h;
+                    let copy = clone(props);
+                    copy[1][1] = originX + i * w;
+                    copy[2][1] = originY - j * h;
                     this.virtualDom.bb.push({
                       type: 'img',
                       tagName: 'image',
-                      props: clone,
+                      props: copy,
                     });
                   }
                 }
@@ -775,13 +776,13 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnl, 1); i++) {
                 for(let j = 0; j <= Math.max(ynb, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    let clone = util.clone(props);
-                    clone[1][1] = originX - i * w;
-                    clone[2][1] = originY + j * h;
+                    let copy = clone(props);
+                    copy[1][1] = originX - i * w;
+                    copy[2][1] = originY + j * h;
                     this.virtualDom.bb.push({
                       type: 'img',
                       tagName: 'image',
-                      props: clone,
+                      props: copy,
                     });
                   }
                 }
@@ -791,13 +792,13 @@ class Xom extends Node {
               for(let i = 0; i <= Math.max(xnr, 1); i++) {
                 for(let j = 0; j <= Math.max(ynb, 1); j++) {
                   if(i !== 0 || j !== 0) {
-                    let clone = util.clone(props);
-                    clone[1][1] = originX + i * w;
-                    clone[2][1] = originY + j * h;
+                    let copy = clone(props);
+                    copy[1][1] = originX + i * w;
+                    copy[2][1] = originY + j * h;
                     this.virtualDom.bb.push({
                       type: 'img',
                       tagName: 'image',
-                      props: clone,
+                      props: copy,
                     });
                   }
                 }
@@ -882,7 +883,7 @@ class Xom extends Node {
       }
       this.ctx.globalCompositeOperation = 'source-over';
       if(hasMask) {
-        this.root.__putImageData(util.mergeImageData(cache1, cache2));
+        this.root.__putImageData(mergeImageData(cache1, cache2));
       }
     }
     else if(renderMode === mode.SVG) {
@@ -1007,11 +1008,11 @@ class Xom extends Node {
       return;
     }
     let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
-    let inThis = tf.pointInQuadrilateral(x - sx, y - sy,
-      0, 0,
-      outerWidth,0,
-      0, outerHeight,
-      outerWidth, outerHeight,
+    let inThis = tf.pointInQuadrilateral(x, y,
+      sx, sy,
+      sx + outerWidth,sy,
+      sx, sy + outerHeight,
+      sx + outerWidth, sy + outerHeight,
       matrixEvent);
     if(inThis) {
       if(!e.target) {
@@ -1042,7 +1043,7 @@ class Xom extends Node {
       computedStyle[ks] += d;
     }
     v.forEach(item => {
-      computedStyle[ks] += ', ' + util.int2rgba(item[0]);
+      computedStyle[ks] += ', ' + int2rgba(item[0]);
       if(item[1]) {
         computedStyle[ks] += ' ' + item[1].str;
       }
@@ -1254,13 +1255,13 @@ class Xom extends Node {
   }
   get animateStyle() {
     let { style, animationList } = this;
-    let clone = util.clone(style);
+    let copy = clone(style);
     animationList.forEach(item => {
       if(item.animating) {
-        Object.assign(clone, item.style);
+        Object.assign(copy, item.style);
       }
     });
-    return clone;
+    return copy;
   }
   get currentStyle() {
     return this.__currentStyle;

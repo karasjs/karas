@@ -798,7 +798,14 @@ function binarySearch(i, j, time, frames) {
 // 根据百分比和缓动函数计算中间态样式
 function calStyle(frame, percent) {
   let style = clone(frame.style);
-  let timingFunction = easing[frame.easing] || easing.linear;
+  let timingFunction;
+  if(/^\s*cubic-bezier\s*\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)\s*$/.test(frame.easing)) {
+    let v = frame.easing.match(/[\d.]+/g);
+    timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+  }
+  else {
+    timingFunction = easing[frame.easing] || easing.linear
+  }
   if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
   }

@@ -5658,7 +5658,14 @@
 
   function calStyle(frame, percent) {
     var style = clone$1(frame.style);
-    var timingFunction = easing[frame.easing] || easing.linear;
+    var timingFunction;
+
+    if (/^\s*cubic-bezier\s*\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)\s*$/.test(frame.easing)) {
+      var v = frame.easing.match(/[\d.]+/g);
+      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+    } else {
+      timingFunction = easing[frame.easing] || easing.linear;
+    }
 
     if (timingFunction !== easing.linear) {
       percent = timingFunction(percent);

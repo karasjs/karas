@@ -5671,8 +5671,6 @@
       percent = timingFunction(percent);
     }
 
-    percent = Math.max(percent, 0);
-    percent = Math.min(percent, 1);
     frame.transition.forEach(function (item) {
       var k = item.k,
           v = item.v,

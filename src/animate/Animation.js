@@ -809,8 +809,6 @@ function calStyle(frame, percent) {
   if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
   }
-  percent = Math.max(percent, 0);
-  percent = Math.min(percent, 1);
   frame.transition.forEach(item => {
     let { k, v, n, d } = item;
     let st = style[k];

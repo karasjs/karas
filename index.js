@@ -5828,7 +5828,7 @@
       _this.__delay = Math.max(0, parseFloat(op.delay) || 0);
       _this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
 
-      if (op.iterations === 'Infinity' || op.iterations === 'infinity' || op.iterations === Infinity) {
+      if (op.iterations === Infinity || util.isString(op.iterations) && op.iterations.toLowerCase() === 'infinity') {
         _this.__iterations = Infinity;
       } else {
         _this.__iterations = parseInt(op.iterations);

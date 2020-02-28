@@ -804,7 +804,7 @@ function calStyle(frame, percent) {
     timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
   }
   else {
-    timingFunction = easing[frame.easing] || easing.linear
+    timingFunction = easing[frame.easing] || easing.linear;
   }
   if(timingFunction !== easing.linear) {
     percent = timingFunction(percent);
@@ -955,7 +955,7 @@ class Animation extends Event {
     this.__duration = parseFloat(op.duration) || 0;
     this.__delay = Math.max(0, parseFloat(op.delay) || 0);
     this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
-    if(op.iterations === 'Infinity' || op.iterations === 'infinity' || op.iterations === Infinity) {
+    if(op.iterations === Infinity || util.isString(op.iterations) && op.iterations.toLowerCase() === 'infinity') {
       this.__iterations = Infinity;
     }
     else {

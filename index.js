@@ -897,10 +897,7 @@
           transform = vd.transform,
           mask = vd.mask;
       return "<g".concat(opacity !== 1 ? " opacity=\"".concat(opacity, "\"") : '').concat(transform ? " transform=\"".concat(transform, "\"") : '').concat(mask ? " mask=\"".concat(mask, "\"") : '', ">").concat(_s2, "</g>");
-    } // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
-
-
-    return '<g></g>';
+    }
   }
 
   function joinDef(def) {
@@ -10481,8 +10478,15 @@
   }
 
   function diffD2G(elem, ovd, nvd) {
+    diffX2X(elem, ovd, nvd);
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
-    replaceWith(elem.lastChild, nvd.children);
+    var lastChild = elem.lastChild;
+    var cns = lastChild.childNodes;
+    replaceWith(cns[0], nvd.children);
+
+    for (var i = 1, len = cns.length; i < len; i++) {
+      removeAt(lastChild, cns, i);
+    }
   }
 
   function diffT2T(elem, ovd, nvd) {
@@ -10508,8 +10512,7 @@
   }
 
   function diffG2D(elem, ovd, nvd) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
-    replaceWith(elem.lastChild, nvd.children);
+    diffD2G(elem, ovd, nvd);
   }
 
   function diffG2G(elem, ovd, nvd) {

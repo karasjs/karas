@@ -178,8 +178,14 @@ function diffD2D(elem, ovd, nvd, root) {
 }
 
 function diffD2G(elem, ovd, nvd) {
+  diffX2X(elem, ovd, nvd);
   diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
-  replaceWith(elem.lastChild, nvd.children);
+  let lastChild = elem.lastChild;
+  let cns = lastChild.childNodes;
+  replaceWith(cns[0], nvd.children);
+  for(let i = 1, len = cns.length; i < len; i++) {
+    removeAt(lastChild, cns, i);
+  }
 }
 
 function diffT2T(elem, ovd, nvd) {
@@ -203,8 +209,7 @@ function diffT2T(elem, ovd, nvd) {
 }
 
 function diffG2D(elem, ovd, nvd) {
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
-  replaceWith(elem.lastChild, nvd.children);
+  diffD2G(elem, ovd, nvd);
 }
 
 function diffG2G(elem, ovd, nvd) {
@@ -326,18 +331,6 @@ function removeAt(elem, cns, index) {
   if(cns[index]) {
     elem.removeChild(cns[index]);
   }
-}
-
-function equalArr(a, b) {
-  if(a.length !== b.length) {
-    return false;
-  }
-  for(let i = 0, len = a.length; i < len; i++) {
-    if(a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
 }
 
 export default diff;

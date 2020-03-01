@@ -109,8 +109,6 @@ function joinVd(vd) {
     let { opacity, transform, mask } = vd;
     return `<g${opacity !== 1 ? ` opacity="${opacity}"` : ''}${transform ? ` transform="${transform}"` : ''}${mask ? ` mask="${mask}"` : ''}>${s}</g>`;
   }
-  // display:none或visibility:hidden会没有type，产生一个空节点供diff运行
-  return '<g></g>';
 }
 
 function joinDef(def) {

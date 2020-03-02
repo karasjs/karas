@@ -124,7 +124,7 @@ function compatibleTransform(k, v) {
  * @returns 标准化的样式
  */
 function normalize(style, reset = []) {
-  // 缩写提前处理，因为reset里没有reset
+  // 缩写提前处理，因为reset里没有缩写
   let temp = style.border;
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {

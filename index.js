@@ -2302,7 +2302,7 @@
 
   function normalize$1(style) {
     var reset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-    // 缩写提前处理，因为reset里没有reset
+    // 缩写提前处理，因为reset里没有缩写
     var temp = style.border;
 
     if (temp) {

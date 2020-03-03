@@ -11204,7 +11204,16 @@
             x2 = this.x2,
             y2 = this.y2,
             controlA = this.controlA,
-            controlB = this.controlB;
+            controlB = this.controlB,
+            computedStyle = this.computedStyle;
+        Object.assign(computedStyle, {
+          x1: x1,
+          y1: y1,
+          x2: x2,
+          y2: y2,
+          controlA: controlA,
+          controlB: controlB
+        });
         x1 = originX + x1 * width;
         y1 = originY + y1 * height;
         x2 = originX + x2 * width;
@@ -11368,7 +11377,11 @@
             ctx = this.ctx,
             points = this.points,
             controls = this.controls,
-            origin = this.origin;
+            origin = this.origin,
+            computedStyle = this.computedStyle;
+        computedStyle.points = points;
+        computedStyle.controls = controls;
+        computedStyle.origin = origin;
 
         if (points.length < 2) {
           return;
@@ -11614,7 +11627,10 @@
             height = this.height,
             ctx = this.ctx,
             points = this.points,
-            controls = this.controls;
+            controls = this.controls,
+            computedStyle = this.computedStyle;
+        computedStyle.points = points;
+        computedStyle.controls = controls;
 
         if (points.length < 2) {
           console.error('Polygon must have at lease 2 points: ' + points[0]);
@@ -11863,7 +11879,15 @@
             end = this.end,
             r = this.r,
             edge = this.edge,
-            closure = this.closure;
+            closure = this.closure,
+            computedStyle = this.computedStyle;
+        Object.assign(computedStyle, {
+          begin: begin,
+          end: end,
+          r: r,
+          edge: edge,
+          closure: closure
+        });
 
         if (begin === end) {
           return;
@@ -12041,7 +12065,10 @@
             height = this.height,
             ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry;
+            ry = this.ry,
+            computedStyle = this.computedStyle;
+        computedStyle.rx = rx;
+        computedStyle.ry = ry;
         rx = Math.min(rx, 0.5);
         ry = Math.min(ry, 0.5);
         rx *= width;
@@ -12129,7 +12156,7 @@
 
       _classCallCheck(this, Circle);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, tagName, props)); // 半径0~1，默认1
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, tagName, props)); // 半径[0, ∞)，默认1
 
       _this.__r = 1;
 
@@ -12167,7 +12194,9 @@
         var width = this.width,
             height = this.height,
             ctx = this.ctx,
-            r = this.r;
+            r = this.r,
+            computedStyle = this.computedStyle;
+        computedStyle.r = r;
         r *= Math.min(width, height) * 0.5;
 
         if (renderMode === mode.CANVAS) {
@@ -12219,7 +12248,7 @@
 
       _classCallCheck(this, Ellipse);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径0~1，默认1
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径[0, ∞)，默认1
 
       _this.__rx = 1;
 
@@ -12268,7 +12297,10 @@
             height = this.height,
             ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry;
+            ry = this.ry,
+            computedStyle = this.computedStyle;
+        computedStyle.rx = rx;
+        computedStyle.ry = ry;
         rx *= width * 0.5;
         ry *= height * 0.5;
 

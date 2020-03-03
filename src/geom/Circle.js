@@ -4,7 +4,7 @@ import mode from '../util/mode';
 class Circle extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
-    // 半径0~1，默认1
+    // 半径[0, ∞)，默认1
     this.__r = 1;
     if(this.props.r) {
       this.__r = parseFloat(this.props.r);
@@ -31,7 +31,8 @@ class Circle extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, r } = this;
+    let { width, height, ctx, r, computedStyle } = this;
+    computedStyle.r = r;
     r *= Math.min(width, height) * 0.5;
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;

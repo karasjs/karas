@@ -39,7 +39,10 @@ class Polyline extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, points, controls, origin } = this;
+    let { width, height, ctx, points, controls, origin, computedStyle } = this;
+    computedStyle.points = points;
+    computedStyle.controls = controls;
+    computedStyle.origin = origin;
     if(points.length < 2) {
       return;
     }

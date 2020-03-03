@@ -33,7 +33,9 @@ class Polygon extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, points, controls } = this;
+    let { width, height, ctx, points, controls, computedStyle } = this;
+    computedStyle.points = points;
+    computedStyle.controls = controls;
     if(points.length < 2) {
       console.error('Polygon must have at lease 2 points: ' + points[0]);
       return;

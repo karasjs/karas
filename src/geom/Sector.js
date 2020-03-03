@@ -87,7 +87,14 @@ class Sector extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, begin, end, r, edge, closure } = this;
+    let { width, height, ctx, begin, end, r, edge, closure, computedStyle } = this;
+    Object.assign(computedStyle, {
+      begin,
+      end,
+      r,
+      edge,
+      closure,
+    });
     if(begin === end) {
       return;
     }

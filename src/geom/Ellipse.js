@@ -4,7 +4,7 @@ import mode from '../util/mode';
 class Ellipse extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
-    // 半径0~1，默认1
+    // 半径[0, ∞)，默认1
     this.__rx = 1;
     if(this.props.rx) {
       this.__rx = parseFloat(this.props.rx);
@@ -38,7 +38,9 @@ class Ellipse extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, rx, ry } = this;
+    let { width, height, ctx, rx, ry, computedStyle } = this;
+    computedStyle.rx = rx;
+    computedStyle.ry = ry;
     rx *= width * 0.5;
     ry *= height * 0.5;
     if(renderMode === mode.CANVAS) {

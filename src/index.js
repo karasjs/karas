@@ -18,6 +18,7 @@ import parse from './util/parse';
 import inject from './util/inject';
 import css from './style/css';
 import unit from './style/unit';
+import reset from './style/reset';
 import frame from './animate/frame';
 import easing from './animate/easing';
 import level from './animate/level';
@@ -90,6 +91,7 @@ let karas = {
   inject,
   css,
   unit,
+  reset,
   frame,
   easing,
   level,

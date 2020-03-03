@@ -12471,6 +12471,7 @@
     inject: inject,
     css: css,
     unit: unit,
+    reset: reset,
     frame: frame,
     easing: easing,
     level: level,

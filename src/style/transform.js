@@ -121,7 +121,7 @@ function calOrigin(transformOrigin, x, y, w, h) {
   let tfo = [];
   transformOrigin.forEach((item, i) => {
     if(item.unit === PX) {
-      tfo.push(item.value + i ? y : x);
+      tfo.push(item.value + (i ? y : x));
     }
     else if(item.unit === PERCENT) {
       tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);

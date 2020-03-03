@@ -739,7 +739,7 @@
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
       if (item.unit === PX) {
-        tfo.push(item.value + i ? y : x);
+        tfo.push(item.value + (i ? y : x));
       } else if (item.unit === PERCENT) {
         tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
       }

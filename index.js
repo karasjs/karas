@@ -12470,6 +12470,7 @@
     util: util,
     inject: inject,
     css: css,
+    unit: unit,
     frame: frame,
     easing: easing,
     level: level,

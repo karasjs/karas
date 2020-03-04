@@ -16,6 +16,7 @@ import sort from './util/sort';
 import util from './util/util';
 import parse from './util/parse';
 import inject from './util/inject';
+import abbr from './util/abbr';
 import css from './style/css';
 import unit from './style/unit';
 import reset from './style/reset';
@@ -92,6 +93,7 @@ let karas = {
   css,
   unit,
   reset,
+  abbr,
   frame,
   easing,
   level,

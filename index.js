@@ -12360,6 +12360,32 @@
     return Ellipse;
   }(Geom);
 
+  var fullCssProperty = {
+    skewX: 'kx',
+    skewY: 'ky'
+  };
+  var abbrCssProperty = {
+    kx: 'skewX',
+    ky: 'skewY'
+  };
+  reset.dom.concat(reset.geom).forEach(function (item) {
+    var k = item.k;
+
+    if (fullCssProperty.hasOwnProperty(k)) {
+      return;
+    }
+
+    var v = k.charAt(0) + k.replace(/[a-z]/g, '').toLowerCase();
+    fullCssProperty[k] = v;
+    abbrCssProperty[v] = k;
+  });
+  var abbr = {
+    fullCssProperty: fullCssProperty,
+    abbrCssProperty: abbrCssProperty
+  };
+
+  var abbrCssProperty$1 = abbr.abbrCssProperty;
+
   function parse$1(karas, json, animateList) {
     if (util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
       return json;
@@ -12371,9 +12397,33 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
+    var style = props.style;
+
+    if (style) {
+      Object.keys(style).forEach(function (k) {
+        if (style.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
+          var ak = abbrCssProperty$1[k];
+          style[ak] = style[k];
+        }
+      });
+    }
+
     var animation;
 
     if (animate) {
+      var value = animate.value;
+
+      if (Array.isArray(value)) {
+        value.forEach(function (item) {
+          Object.keys(item).forEach(function (k) {
+            if (item.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
+              var ak = abbrCssProperty$1[k];
+              item[ak] = item[k];
+            }
+          });
+        });
+      }
+
       animation = {
         animate: animate
       };
@@ -12472,6 +12522,7 @@
     css: css,
     unit: unit,
     reset: reset,
+    abbr: abbr,
     frame: frame,
     easing: easing,
     level: level,

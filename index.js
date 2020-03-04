@@ -11491,7 +11491,7 @@
             var point = pts[_i];
             var cl = cls[_i - 1];
 
-            if (!cl) {
+            if (!cl || !cl.length) {
               ctx.lineTo(point[0], point[1]);
             } else if (cl.length === 4) {
               ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
@@ -11516,7 +11516,7 @@
               var _point = pts[_i2];
               var _cl = cls[_i2 - 1];
 
-              if (!_cl) {
+              if (!_cl || !_cl.length) {
                 s += "L".concat(_point[0], ",").concat(_point[1]);
               } else if (_cl.length === 4) {
                 s += "C".concat(_cl[0], ",").concat(_cl[1], " ").concat(_cl[2], ",").concat(_cl[3], " ").concat(_point[0], ",").concat(_point[1]);
@@ -11679,7 +11679,7 @@
             var point = pts[_i];
             var _cl = cls[_i - 1];
 
-            if (!_cl) {
+            if (!_cl || !_cl.length) {
               ctx.lineTo(point[0], point[1]);
             } else if (_cl.length === 4) {
               ctx.bezierCurveTo(_cl[0], _cl[1], _cl[2], _cl[3], point[0], point[1]);
@@ -11690,7 +11690,7 @@
 
           var cl = cls[pts.length - 1];
 
-          if (!cl) {
+          if (!cl || !cl.length) {
             ctx.lineTo(pts[0][0], pts[0][1]);
           } else if (cl.length === 4) {
             ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], pts[0][0], pts[0][1]);
@@ -11716,7 +11716,7 @@
               var _point = pts[_i2];
               var _cl3 = cls[_i2 - 1];
 
-              if (!_cl3) {
+              if (!_cl3 || !_cl3.length) {
                 s += "L".concat(_point[0], ",").concat(_point[1]);
               } else if (_cl3.length === 4) {
                 s += "C".concat(_cl3[0], ",").concat(_cl3[1], " ").concat(_cl3[2], ",").concat(_cl3[3], " ").concat(_point[0], ",").concat(_point[1]);
@@ -11727,7 +11727,7 @@
 
             var _cl2 = cls[pts.length - 1];
 
-            if (!_cl2) {
+            if (!_cl2 || !_cl2.length) {
               s += "L".concat(pts[0][0], ",").concat(pts[0][1]);
             } else if (_cl2.length === 4) {
               s += "C".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_cl2[2], ",").concat(_cl2[3], " ").concat(pts[0][0], ",").concat(pts[0][1]);

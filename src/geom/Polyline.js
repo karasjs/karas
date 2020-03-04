@@ -168,7 +168,7 @@ class Polyline extends Geom {
       for(let i = 1, len = pts.length; i < len; i++) {
         let point = pts[i];
         let cl = cls[i - 1];
-        if(!cl) {
+        if(!cl || !cl.length) {
           ctx.lineTo(point[0], point[1]);
         }
         else if(cl.length === 4) {
@@ -195,7 +195,7 @@ class Polyline extends Geom {
         for(let i = 1, len = pts.length; i < len; i++) {
           let point = pts[i];
           let cl = cls[i - 1];
-          if(!cl) {
+          if(!cl || !cl.length) {
             s += `L${point[0]},${point[1]}`;
           }
           else if(cl.length === 4) {

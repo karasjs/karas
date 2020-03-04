@@ -11211,8 +11211,8 @@
           y1: y1,
           x2: x2,
           y2: y2,
-          controlA: controlA,
-          controlB: controlB
+          controlA: controlA.join(', '),
+          controlB: controlB.join(', ')
         });
         x1 = originX + x1 * width;
         y1 = originY + y1 * height;
@@ -11379,8 +11379,8 @@
             controls = this.controls,
             origin = this.origin,
             computedStyle = this.computedStyle;
-        computedStyle.points = points;
-        computedStyle.controls = controls;
+        computedStyle.points = points.join(', ');
+        computedStyle.controls = controls.join(', ');
         computedStyle.origin = origin;
 
         if (points.length < 2) {
@@ -11629,8 +11629,8 @@
             points = this.points,
             controls = this.controls,
             computedStyle = this.computedStyle;
-        computedStyle.points = points;
-        computedStyle.controls = controls;
+        computedStyle.points = points.join(', ');
+        computedStyle.controls = controls.join(', ');
 
         if (points.length < 2) {
           console.error('Polygon must have at lease 2 points: ' + points[0]);

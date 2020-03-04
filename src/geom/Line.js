@@ -51,8 +51,8 @@ class Line extends Geom {
       y1,
       x2,
       y2,
-      controlA,
-      controlB,
+      controlA: controlA.join(', '),
+      controlB: controlB.join(', '),
     });
     x1 = originX + x1 * width;
     y1 = originY + y1 * height;

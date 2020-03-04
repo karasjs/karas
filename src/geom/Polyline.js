@@ -40,8 +40,8 @@ class Polyline extends Geom {
       return;
     }
     let { width, height, ctx, points, controls, origin, computedStyle } = this;
-    computedStyle.points = points;
-    computedStyle.controls = controls;
+    computedStyle.points = points.join(', ');
+    computedStyle.controls = controls.join(', ');
     computedStyle.origin = origin;
     if(points.length < 2) {
       return;

@@ -100,7 +100,7 @@ let karas = {
   math,
 };
 
-if(typeof window != 'undefined') {
+if(typeof window !== 'undefined') {
   window.karas = karas;
 }
 

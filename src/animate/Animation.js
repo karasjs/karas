@@ -1474,23 +1474,29 @@ class Animation extends Event {
   }
 
   gotoAndPlay(v, isFrame, excludeDelay, cb) {
-    let { isDestroyed, duration } = this;
+    let { isDestroyed, duration, delay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
     [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, isFrame, excludeDelay);
+    if(v > duration + delay) {
+      return this.finish(cb);
+    }
     return this.play(cb);
   }
 
   gotoAndStop(v, isFrame, excludeDelay, cb) {
-    let { isDestroyed, duration } = this;
+    let { isDestroyed, duration, delay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
     [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
-    this.__goto(v, isFrame, excludeDelay);
+    v = this.__goto(v, isFrame, excludeDelay);
+    if(v > duration + delay) {
+      return this.finish(cb);
+    }
     // 先play一帧，回调里模拟暂停
     return this.play(delta => {
       this.__pauseTime = inject.now();
@@ -1522,6 +1528,7 @@ class Animation extends Event {
     }
     // 在时间范围内设置好时间，复用play直接跳到播放点
     this.__deltaTime = v;
+    return v;
   }
 
   __stayBegin() {

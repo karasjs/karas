@@ -6521,7 +6521,8 @@
       key: "gotoAndPlay",
       value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
         var isDestroyed = this.isDestroyed,
-            duration = this.duration;
+            duration = this.duration,
+            delay = this.delay;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6538,6 +6539,10 @@
         // 计算出时间点直接累加播放
         this.__goto(v, isFrame, excludeDelay);
 
+        if (v > duration + delay) {
+          return this.finish(cb);
+        }
+
         return this.play(cb);
       }
     }, {
@@ -6546,7 +6551,8 @@
         var _this5 = this;
 
         var isDestroyed = this.isDestroyed,
-            duration = this.duration;
+            duration = this.duration,
+            delay = this.delay;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6559,8 +6565,11 @@
         isFrame = _gotoOverload4[0];
         excludeDelay = _gotoOverload4[1];
         cb = _gotoOverload4[2];
+        v = this.__goto(v, isFrame, excludeDelay);
 
-        this.__goto(v, isFrame, excludeDelay); // 先play一帧，回调里模拟暂停
+        if (v > duration + delay) {
+          return this.finish(cb);
+        } // 先play一帧，回调里模拟暂停
 
 
         return this.play(function (delta) {
@@ -6604,6 +6613,7 @@
 
 
         this.__deltaTime = v;
+        return v;
       }
     }, {
       key: "__stayBegin",

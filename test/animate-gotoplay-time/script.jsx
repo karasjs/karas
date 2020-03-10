@@ -18,7 +18,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.gotoAndPlay(300);
+animation.gotoAndPlay(200);
 animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   if(n++ === 0) {
     input.value = t.computedStyle.height;

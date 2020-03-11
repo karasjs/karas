@@ -183,7 +183,7 @@ function diffD2G(elem, ovd, nvd) {
   let lastChild = elem.lastChild;
   let cns = lastChild.childNodes;
   replaceWith(cns[0], nvd.children);
-  for(let i = 1, len = cns.length; i < len; i++) {
+  for(let i = nvd.children.length, len = cns.length; i < len; i++) {
     removeAt(lastChild, cns, i);
   }
 }

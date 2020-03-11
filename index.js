@@ -10494,7 +10494,7 @@
     var cns = lastChild.childNodes;
     replaceWith(cns[0], nvd.children);
 
-    for (var i = 1, len = cns.length; i < len; i++) {
+    for (var i = nvd.children.length, len = cns.length; i < len; i++) {
       removeAt(lastChild, cns, i);
     }
   }

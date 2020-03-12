@@ -6003,6 +6003,8 @@
 
 
         this.__fin = function () {
+          _this2.__playCount = 0;
+
           _this2.emit(Event.KARAS_ANIMATION_FINISH);
         };
       }
@@ -6239,15 +6241,11 @@
 
                 needRefresh = _calRefresh4[0];
                 lv = _calRefresh4[1];
+                playCount = ++_this3.playCount; // 播放完一次，播放时间清零，下一次播放重计
 
-                // 判断次数结束每帧callback调用
-                if (playCount < iterations) {
-                  playCount = ++_this3.playCount; // 播放完一次，播放时间清零，下一次播放重计
+                _this3.__playTime = 0;
 
-                  _this3.__playTime = 0;
-                }
-
-                if (playCount === iterations) {
+                if (playCount >= iterations) {
                   frame.offFrame(callback);
                 }
               } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -6320,7 +6318,7 @@
                       // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
                       var diff = _this3.__calDiffTime(inject.now());
 
-                      var isFinished = diff >= duration + delay + endDelay;
+                      var isFinished = diff >= endDelay;
 
                       if (isFinished) {
                         _this3.__playState = 'finished';
@@ -6336,6 +6334,8 @@
                     };
 
                     frame.onFrame(_task2);
+
+                    _task2();
                   }
                 }
 
@@ -6397,6 +6397,7 @@
             playState = this.playState,
             style = this.style,
             __fin = this.__fin;
+        this.__playCount = 0;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6502,6 +6503,8 @@
               lv = _calRefresh14[1];
 
           var task = function task() {
+            _this4.__playCount = 0;
+
             if (isFunction$2(cb)) {
               cb();
             }

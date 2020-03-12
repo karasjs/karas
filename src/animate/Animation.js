@@ -1089,6 +1089,7 @@ class Animation extends Event {
     }
     // 生成finish的任务事件
     this.__fin = () => {
+      this.__playCount = 0;
       this.emit(Event.KARAS_ANIMATION_FINISH);
     };
   }
@@ -1274,13 +1275,10 @@ class Animation extends Event {
         if(i === length - 1) {
           current = current.style;
           [needRefresh, lv] = calRefresh(current, style, keys);
-          // 判断次数结束每帧callback调用
-          if(playCount < iterations) {
-            playCount = ++this.playCount;
-            // 播放完一次，播放时间清零，下一次播放重计
-            this.__playTime = 0;
-          }
-          if(playCount === iterations) {
+          playCount = ++this.playCount;
+          // 播放完一次，播放时间清零，下一次播放重计
+          this.__playTime = 0;
+          if(playCount >= iterations) {
             frame.offFrame(callback);
           }
         }
@@ -1335,7 +1333,7 @@ class Animation extends Event {
               let task = this.__task = () => {
                 // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
                 let diff = this.__calDiffTime(inject.now());
-                let isFinished = diff >= duration + delay + endDelay;
+                let isFinished = diff >= endDelay;
                 if(isFinished) {
                   this.__playState = 'finished';
                   if(needRefresh) {
@@ -1348,6 +1346,7 @@ class Animation extends Event {
                 }
               };
               frame.onFrame(task);
+              task();
             }
           }
           if(this.__firstPlay) {
@@ -1391,6 +1390,7 @@ class Animation extends Event {
 
   finish(cb) {
     let { isDestroyed, duration, playState, style, __fin } = this;
+    this.__playCount = 0;
     if(isDestroyed || duration <= 0) {
       return this;
     }
@@ -1456,6 +1456,7 @@ class Animation extends Event {
     if(root) {
       let [needRefresh, lv] = calRefresh(style, originStyle, keys);
       let task = () => {
+        this.__playCount = 0;
         if(isFunction(cb)) {
           cb();
         }

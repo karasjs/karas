@@ -328,6 +328,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
       // geom的属性变化
       if(repaint.GEOM.hasOwnProperty(i)) {
         props[i] = v;
+        style[i] = v;
       }
       // 样式
       else {
@@ -1139,7 +1140,6 @@ class Animation extends Event {
       let {
         frames,
         framesR,
-        style,
         target,
         playCount,
         direction,
@@ -1160,6 +1160,7 @@ class Animation extends Event {
         if(!root || this.pending) {
           return;
         }
+        let { style } = this;
         let now = inject.now();
         if(init) {
           this.__startTime = this.__lastFpsTime = this.__lastTime = now;

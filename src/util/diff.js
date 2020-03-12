@@ -18,8 +18,8 @@ function diffDefs(elem, od, nd) {
     diffDef(cns[i], od[i], nd[i]);
   }
   if(i < ol) {
-    for(; i < ol; i++) {
-      removeAt(elem, cns, i);
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(elem, cns, j);
     }
   }
   else if(i < nl) {
@@ -70,8 +70,8 @@ function diffDef(elem, od, nd) {
       diffItem(elem, i, od.children[i], nd.children[i]);
     }
     if(i < ol) {
-      for(; i < ol; i++) {
-        removeAt(elem, cns, i);
+      for(let j = ol - 1; j >= i; j--) {
+        removeAt(elem, cns, j);
       }
     }
     else if(i < nl) {
@@ -87,30 +87,30 @@ function diffChild(elem, ovd, nvd) {
     if(nvd.type === 'dom') {
       diffD2D(elem, ovd, nvd);
     }
-    else if(nvd.type === 'text' || nvd.type === 'img') {
-      replaceWith(elem, nvd);
-    }
     else if(nvd.type === 'geom') {
       diffD2G(elem, ovd, nvd);
     }
-  }
-  else if(ovd.type === 'text') {
-    if(nvd.type === 'dom' || nvd.type === 'geom' || nvd.type === 'img') {
+    else {
       replaceWith(elem, nvd);
     }
-    else if(nvd.type === 'text') {
+  }
+  else if(ovd.type === 'text') {
+    if(nvd.type === 'text') {
       diffT2T(elem, ovd, nvd);
+    }
+    else {
+      replaceWith(elem, nvd);
     }
   }
   else if(ovd.type === 'geom') {
     if(nvd.type === 'dom') {
       diffG2D(elem, ovd, nvd);
     }
-    else if(nvd.type === 'text' || nvd.type === 'img') {
-      replaceWith(elem, nvd);
-    }
     else if(nvd.type === 'geom') {
       diffG2G(elem, ovd, nvd);
+    }
+    else {
+      replaceWith(elem, nvd);
     }
   }
   else if(ovd.type === 'img') {
@@ -166,8 +166,8 @@ function diffD2D(elem, ovd, nvd, root) {
     diffChild(cns[i], ovd.children[i], nvd.children[i]);
   }
   if(i < ol) {
-    for(; i < ol; i++) {
-      removeAt(lastChild, cns, i);
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(lastChild, cns, j);
     }
   }
   else if(i < nl) {
@@ -180,11 +180,23 @@ function diffD2D(elem, ovd, nvd, root) {
 function diffD2G(elem, ovd, nvd) {
   diffX2X(elem, ovd, nvd);
   diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  let ol = ovd.children.length;
+  let nl = nvd.children.length;
+  let i = 0;
   let lastChild = elem.lastChild;
   let cns = lastChild.childNodes;
-  replaceWith(cns[0], nvd.children);
-  for(let i = nvd.children.length, len = cns.length; i < len; i++) {
-    removeAt(lastChild, cns, i);
+  for(; i < Math.min(ol, nl); i++) {
+    replaceWith(cns[i], nvd.children[i]);
+  }
+  if(i < ol) {
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(lastChild, cns, j);
+    }
+  }
+  else if(i < nl) {
+    for(; i < nl; i++) {
+      insertAt(lastChild, cns, i, joinVd(nvd.children[i]));
+    }
   }
 }
 
@@ -197,8 +209,8 @@ function diffT2T(elem, ovd, nvd) {
   }
   let cns = elem.childNodes;
   if(i < ol) {
-    for(; i < ol; i++) {
-      removeAt(elem, cns, i);
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(elem, cns, j);
     }
   }
   else if(i < nl) {
@@ -224,8 +236,8 @@ function diffG2G(elem, ovd, nvd) {
     diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
   }
   if(i < ol) {
-    for(; i < ol; i++) {
-      removeAt(lastChild, cns, i);
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(lastChild, cns, j);
     }
   }
   else if(i < nl) {
@@ -252,8 +264,8 @@ function diffBb(elem, obb, nbb, oMask, nMask) {
   }
   let cns = elem.childNodes;
   if(i < ol) {
-    for(; i < ol; i++) {
-      removeAt(elem, cns, i);
+    for(let j = ol - 1; j >= i; j--) {
+      removeAt(elem, cns, j);
     }
   }
   else if(i < nl) {

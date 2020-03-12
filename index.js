@@ -10325,8 +10325,8 @@
     }
 
     if (i < ol) {
-      for (; i < ol; i++) {
-        removeAt(elem, cns, i);
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(elem, cns, j);
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
@@ -10389,8 +10389,8 @@
       }
 
       if (i < ol) {
-        for (; i < ol; i++) {
-          removeAt(elem, cns, i);
+        for (var j = ol - 1; j >= i; j--) {
+          removeAt(elem, cns, j);
         }
       } else if (i < nl) {
         for (; i < nl; i++) {
@@ -10404,24 +10404,24 @@
     if (ovd.type === 'dom') {
       if (nvd.type === 'dom') {
         diffD2D(elem, ovd, nvd);
-      } else if (nvd.type === 'text' || nvd.type === 'img') {
-        replaceWith(elem, nvd);
       } else if (nvd.type === 'geom') {
         diffD2G(elem, ovd, nvd);
+      } else {
+        replaceWith(elem, nvd);
       }
     } else if (ovd.type === 'text') {
-      if (nvd.type === 'dom' || nvd.type === 'geom' || nvd.type === 'img') {
-        replaceWith(elem, nvd);
-      } else if (nvd.type === 'text') {
+      if (nvd.type === 'text') {
         diffT2T(elem, ovd, nvd);
+      } else {
+        replaceWith(elem, nvd);
       }
     } else if (ovd.type === 'geom') {
       if (nvd.type === 'dom') {
         diffG2D(elem, ovd, nvd);
-      } else if (nvd.type === 'text' || nvd.type === 'img') {
-        replaceWith(elem, nvd);
       } else if (nvd.type === 'geom') {
         diffG2G(elem, ovd, nvd);
+      } else {
+        replaceWith(elem, nvd);
       }
     } else if (ovd.type === 'img') {
       if (nvd.type === 'img') {
@@ -10481,8 +10481,8 @@
     }
 
     if (i < ol) {
-      for (; i < ol; i++) {
-        removeAt(lastChild, cns, i);
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(lastChild, cns, j);
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
@@ -10494,12 +10494,24 @@
   function diffD2G(elem, ovd, nvd) {
     diffX2X(elem, ovd, nvd);
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    var ol = ovd.children.length;
+    var nl = nvd.children.length;
+    var i = 0;
     var lastChild = elem.lastChild;
     var cns = lastChild.childNodes;
-    replaceWith(cns[0], nvd.children);
 
-    for (var i = nvd.children.length, len = cns.length; i < len; i++) {
-      removeAt(lastChild, cns, i);
+    for (; i < Math.min(ol, nl); i++) {
+      replaceWith(cns[i], nvd.children[i]);
+    }
+
+    if (i < ol) {
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(lastChild, cns, j);
+      }
+    } else if (i < nl) {
+      for (; i < nl; i++) {
+        insertAt(lastChild, cns, i, joinVd$1(nvd.children[i]));
+      }
     }
   }
 
@@ -10515,8 +10527,8 @@
     var cns = elem.childNodes;
 
     if (i < ol) {
-      for (; i < ol; i++) {
-        removeAt(elem, cns, i);
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(elem, cns, j);
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
@@ -10543,8 +10555,8 @@
     }
 
     if (i < ol) {
-      for (; i < ol; i++) {
-        removeAt(lastChild, cns, i);
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(lastChild, cns, j);
       }
     } else if (i < nl) {
       for (; i < nl; i++) {
@@ -10574,8 +10586,8 @@
     var cns = elem.childNodes;
 
     if (i < ol) {
-      for (; i < ol; i++) {
-        removeAt(elem, cns, i);
+      for (var j = ol - 1; j >= i; j--) {
+        removeAt(elem, cns, j);
       }
     } else if (i < nl) {
       for (; i < nl; i++) {

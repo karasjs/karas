@@ -65,16 +65,16 @@
   var input = document.getElementById('btn');
   function exec(s) {
     let json = JSON.parse(s);
-    karas.parse({
-      tagName: 'canvas',
-      props: {
-        width: 360,
-        height: 360,
-      },
-      children: Array.isArray(json) ? json : [
-        json,
-      ],
-    }, '#example');
+    // karas.parse({
+    //   tagName: 'canvas',
+    //   props: {
+    //     width: 360,
+    //     height: 360,
+    //   },
+    //   children: Array.isArray(json) ? json : [
+    //     json,
+    //   ],
+    // }, '#example');
     karas.parse({
       tagName: 'svg',
       props: {

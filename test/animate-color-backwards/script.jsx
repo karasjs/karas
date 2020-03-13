@@ -19,9 +19,11 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.KARAS_ANIMATION_FRAME, (delta, isDelay) => {
   n++;
-  input.value += n;
+  if(!isDelay) {
+    input.value += n;
+  }
   if(n === 1) {
     input.value += t.computedStyle.color;
   }

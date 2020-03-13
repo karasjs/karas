@@ -1130,7 +1130,7 @@ class Animation extends Event {
     this.__cancelTask();
     // 每次play调用标识第一次运行，需响应参数cb
     this.__firstPlay = true;
-    let frameCb = (delta, cb) => {
+    let frameCb = (delta, cb, isDelay) => {
       if(this.__firstPlay) {
         this.__firstPlay = false;
         this.emit(Event.KARAS_ANIMATION_PLAY);
@@ -1138,7 +1138,7 @@ class Animation extends Event {
       if(isFunction(cb)) {
         cb(delta);
       }
-      this.emit(Event.KARAS_ANIMATION_FRAME, delta);
+      this.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
     };
     // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
     if(this.pending && this.__callback) {
@@ -1214,19 +1214,17 @@ class Animation extends Event {
                 before: genBeforeRefresh(current, this, root, lv),
                 after: delta => {
                   init = false;
-                  frameCb(delta, cb);
+                  frameCb(delta, cb, true);
                 },
               };
               root.addRefreshTask(task);
               return;
             }
-            else {
-              init = false;
-            }
           }
           // 非stayBegin以及非init时依旧执行帧回调
           frame.nextFrame(this.__task = delta => {
-            frameCb(delta, cb);
+            init = false;
+            frameCb(delta, cb, true);
           });
           return;
         }
@@ -1327,7 +1325,7 @@ class Animation extends Event {
                   root.addRefreshTask(this.__task = restore);
                   frame.offFrame(task);
                 }
-                frameCb(delta);
+                frameCb(delta, null, true);
               };
               frame.onFrame(task);
             }

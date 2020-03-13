@@ -6060,7 +6060,7 @@
 
         this.__firstPlay = true;
 
-        var frameCb = function frameCb(delta, cb) {
+        var frameCb = function frameCb(delta, cb, isDelay) {
           if (_this3.__firstPlay) {
             _this3.__firstPlay = false;
 
@@ -6071,7 +6071,7 @@
             cb(delta);
           }
 
-          _this3.emit(Event.KARAS_ANIMATION_FRAME, delta);
+          _this3.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
         }; // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
 
 
@@ -6161,20 +6161,19 @@
                       before: genBeforeRefresh(_current, _this3, root, lv),
                       after: function after(delta) {
                         init = false;
-                        frameCb(delta, cb);
+                        frameCb(delta, cb, true);
                       }
                     };
 
                     root.addRefreshTask(_task);
                     return;
-                  } else {
-                    init = false;
                   }
                 } // 非stayBegin以及非init时依旧执行帧回调
 
 
                 frame.nextFrame(_this3.__task = function (delta) {
-                  frameCb(delta, cb);
+                  init = false;
+                  frameCb(delta, cb, true);
                 });
                 return;
               }
@@ -6309,7 +6308,7 @@
                         frame.offFrame(_task2);
                       }
 
-                      frameCb(delta);
+                      frameCb(delta, null, true);
                     };
 
                     frame.onFrame(_task2);

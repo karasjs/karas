@@ -1129,6 +1129,16 @@ class Animation extends Event {
     this.__cancelTask();
     // 每次play调用标识第一次运行，需响应参数cb
     this.__firstPlay = true;
+    let frameCb = (delta, cb) => {
+      if(this.__firstPlay) {
+        this.__firstPlay = false;
+        this.emit(Event.KARAS_ANIMATION_PLAY);
+      }
+      if(isFunction(cb)) {
+        cb(delta);
+      }
+      this.emit(Event.KARAS_ANIMATION_FRAME, delta);
+    };
     // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
     if(this.pending && this.__callback) {
       let diff = inject.now() - this.__pauseTime;
@@ -1151,11 +1161,32 @@ class Animation extends Event {
         keys,
         __fin,
       } = this;
-      // 每次调用play都会从头开始，标识第一次callback运行初始化
+      // 每次正常调用play都会从头开始，标识第一次callback运行初始化
       let init = true;
-      // 是第一次运行强制不跳帧，由于设计delay和运行时独立跳帧逻辑，因此不能和firstPlay合并
+      // 是第一次运行强制不跳帧，由于设计delay和运行时独立跳帧逻辑，因此不能和init合并
       let first = true;
-      let callback = this.__callback = cb => {
+      this.__startTime = this.__lastFpsTime = this.__lastTime = inject.now();
+      this.__playTime = 0;
+      this.__style = originStyle;
+      // 由于继承属性的存在，每次从头播放时先处理继承样式为computedStyle的样式
+      frames = inherit(frames, keys, target);
+      // 再计算两帧之间的变化，存入transition属性
+      let length = frames.length;
+      let prev = frames[0];
+      for(let i = 1; i < length; i++) {
+        let next = frames[i];
+        prev = calFrame(prev, next, keys, target);
+      }
+      if(framesR.length) {
+        framesR = inherit(framesR, keys, target);
+        prev = framesR[0];
+        for(let i = 1; i < length; i++) {
+          let next = framesR[i];
+          prev = calFrame(prev, next, keys, target);
+        }
+      }
+      // 每帧回调运行，计算下一帧如何渲染
+      let callback = this.__callback = (delta, cb) => {
         let root = target.root;
         // 防止被回收没root，以及在帧回调中pause，此时frame中的callback还未回收
         if(!root || this.pending) {
@@ -1163,28 +1194,6 @@ class Animation extends Event {
         }
         let { style } = this;
         let now = inject.now();
-        if(init) {
-          this.__startTime = this.__lastFpsTime = this.__lastTime = now;
-          this.__playTime = 0;
-          this.__style = style = originStyle;
-          // 由于继承属性的存在，每次从头播放时先处理继承样式为computedStyle的样式
-          frames = inherit(frames, keys, target);
-          // 再计算两帧之间的变化，存入transition属性
-          let length = frames.length;
-          let prev = frames[0];
-          for(let i = 1; i < length; i++) {
-            let next = frames[i];
-            prev = calFrame(prev, next, keys, target);
-          }
-          if(framesR.length) {
-            framesR = inherit(framesR, keys, target);
-            prev = framesR[0];
-            for(let i = 1; i < length; i++) {
-              let next = framesR[i];
-              prev = calFrame(prev, next, keys, target);
-            }
-          }
-        }
         // 计算本帧和上帧时间差，累加到playTime上以便定位当前应该处于哪个时刻
         let diff = this.__calDiffTime(now);
         // delay仅第一次生效
@@ -1202,35 +1211,23 @@ class Animation extends Event {
               let task = this.__task = {
                 before: genBeforeRefresh(current, this, root, lv),
                 after: delta => {
-                  if(this.__firstPlay) {
-                    this.__firstPlay = false;
-                    if(isFunction(cb)) {
-                      cb(delta);
-                    }
-                    this.emit(Event.KARAS_ANIMATION_PLAY);
-                  }
-                  this.emit(Event.KARAS_ANIMATION_FRAME, delta);
+                  init = false;
+                  frameCb(delta, cb);
                 },
               };
               root.addRefreshTask(task);
+              return;
             }
             else {
-              frame.nextFrame(this.__task = delta => {
-                if(this.__firstPlay) {
-                  if(isFunction(cb)) {
-                    cb(delta);
-                  }
-                  this.emit(Event.KARAS_ANIMATION_PLAY);
-                  this.__firstPlay = false;
-                }
-                this.emit(Event.KARAS_ANIMATION_FRAME, delta);
-              });
+              init = false;
             }
           }
-          init = false;
+          // 非stayBegin以及非init时依旧执行帧回调
+          frame.nextFrame(this.__task = delta => {
+            frameCb(delta, cb);
+          });
           return;
         }
-        init = false;
         // 增加的fps功能，当<60时计算跳帧
         let fps = this.fps;
         if(!isNumber(fps) || fps <= 0) {
@@ -1294,14 +1291,7 @@ class Animation extends Event {
           if(i === length - 1) {
             // 没到播放次数结束时继续
             if(iterations === Infinity || playCount < iterations) {
-              if(this.__firstPlay) {
-                if(isFunction(cb)) {
-                  cb(delta);
-                }
-                this.emit(Event.KARAS_ANIMATION_PLAY);
-                this.__firstPlay = false;
-              }
-              this.emit(Event.KARAS_ANIMATION_FRAME, delta);
+              frameCb(delta, cb);
               return;
             }
             frame.offFrame(callback);
@@ -1322,41 +1312,24 @@ class Animation extends Event {
             let isFinished = diff >= duration + endDelay;
             if(isFinished) {
               this.__playState = 'finished';
-              if(needRefresh) {
-                root.addRefreshTask(this.__task = restore);
-              }
-              else {
-                __fin();
-              }
+              root.addRefreshTask(this.__task = restore);
             }
             else {
-              let task = this.__task = () => {
+              let task = this.__task = delta => {
                 // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
                 let diff = this.__calDiffTime(inject.now());
                 let isFinished = diff >= endDelay;
                 if(isFinished) {
                   this.__playState = 'finished';
-                  if(needRefresh) {
-                    root.addRefreshTask(this.__task = restore);
-                  }
-                  else {
-                    __fin();
-                  }
+                  root.addRefreshTask(this.__task = restore);
                   frame.offFrame(task);
                 }
+                frameCb(delta);
               };
               frame.onFrame(task);
-              task();
             }
           }
-          if(this.__firstPlay) {
-            this.__firstPlay = false;
-            if(isFunction(cb)) {
-              cb(delta);
-            }
-            this.emit(Event.KARAS_ANIMATION_PLAY);
-          }
-          this.emit(Event.KARAS_ANIMATION_FRAME, delta);
+          frameCb(delta, cb);
         };
         if(needRefresh) {
           root.addRefreshTask(this.__task = {
@@ -1371,7 +1344,7 @@ class Animation extends Event {
     }
     this.__playState = 'running';
     // 先执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-    this.__callback(cb);
+    this.__callback(null, cb);
     frame.onFrame(this.__callback);
     return this;
   }

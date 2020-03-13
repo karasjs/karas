@@ -5865,7 +5865,7 @@
 
       _this.__lastFpsTime = 0; // fps<60时跳帧使用，帧回调依旧运行，多次时间累加超过fps时才执行
 
-      _this.__deltaTime = 0; // gotoAndPlay使用，增加运行时间从而偏移帧数
+      _this.__deltaTime = -1; // gotoAndPlay使用，增加运行时间从而偏移帧数，-1不偏移
 
       _this.__playState = 'idle';
       _this.__playCount = 0;
@@ -6008,6 +6008,20 @@
 
           _this2.emit(Event.KARAS_ANIMATION_FINISH);
         };
+
+        this.__frameCb = function (delta, cb, isDelay) {
+          if (_this2.__firstPlay) {
+            _this2.__firstPlay = false;
+
+            _this2.emit(Event.KARAS_ANIMATION_PLAY);
+          }
+
+          if (isFunction$2(cb)) {
+            cb(delta);
+          }
+
+          _this2.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
+        };
       }
     }, {
       key: "__calDiffTime",
@@ -6022,11 +6036,11 @@
         } // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
 
 
-        if (this.__deltaTime > 0) {
+        if (this.__deltaTime >= 0) {
           diff = this.__deltaTime;
         }
 
-        this.__deltaTime = 0; // 将此次增加的时间量加到播放时间上
+        this.__deltaTime = -1; // 将此次增加的时间量加到播放时间上
 
         diff = this.__playTime += diff;
         this.__lastTime = now; // 每次清空偏移量防止下帧累加
@@ -6041,7 +6055,8 @@
 
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
-            playState = this.playState;
+            playState = this.playState,
+            __frameCb = this.__frameCb;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6059,21 +6074,7 @@
 
 
         this.__firstPlay = true;
-
-        var frameCb = function frameCb(delta, cb, isDelay) {
-          if (_this3.__firstPlay) {
-            _this3.__firstPlay = false;
-
-            _this3.emit(Event.KARAS_ANIMATION_PLAY);
-          }
-
-          if (isFunction$2(cb)) {
-            cb(delta);
-          }
-
-          _this3.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
-        }; // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
-
+        var frameCb = __frameCb; // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
 
         if (this.pending && this.__callback) {
           var diff = inject.now() - this.__pauseTime; // 在没有performance时，防止乱改系统时间导致偏移向前，但不能防止改时间导致的偏移向后
@@ -6501,7 +6502,8 @@
       value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
-            delay = this.delay;
+            delay = this.delay,
+            endDelay = this.endDelay;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6518,7 +6520,7 @@
         // 计算出时间点直接累加播放
         this.__goto(v, isFrame, excludeDelay);
 
-        if (v > duration + delay) {
+        if (v > duration + delay + endDelay) {
           return this.finish(cb);
         }
 
@@ -6532,7 +6534,13 @@
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             delay = this.delay,
-            endDelay = this.endDelay;
+            endDelay = this.endDelay,
+            keys = this.keys,
+            frames = this.frames,
+            style = this.style,
+            __frameCb = this.__frameCb,
+            target = this.target,
+            originStyle = this.originStyle;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6549,6 +6557,44 @@
 
         if (v > duration + delay + endDelay) {
           return this.finish(cb);
+        } // 临时特殊处理，跳到endDelay时间段时异步刷新 #36
+
+
+        if (v > duration + delay) {
+          var current = this.__stayEnd() ? frames[frames.length - 1].style : originStyle;
+
+          var _calRefresh15 = calRefresh(current, style, keys),
+              _calRefresh16 = _slicedToArray(_calRefresh15, 2),
+              needRefresh = _calRefresh16[0],
+              lv = _calRefresh16[1];
+
+          if (needRefresh) {
+            var root = target.root;
+            var task = this.__task = {
+              before: genBeforeRefresh(current, this, root, lv),
+              after: function after(delta) {
+                _this5.__pauseTime = inject.now();
+                _this5.__playState = 'paused';
+
+                _this5.__cancelTask();
+
+                __frameCb(delta, cb, true);
+              }
+            };
+            root.addRefreshTask(task);
+            return this;
+          } else {
+            frame.nextFrame(function (delta) {
+              _this5.__pauseTime = inject.now();
+              _this5.__playState = 'paused';
+
+              _this5.__cancelTask();
+
+              __frameCb(delta, cb, true);
+            });
+          }
+
+          return this;
         } // 先play一帧，回调里模拟暂停
 
 

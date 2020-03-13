@@ -982,7 +982,7 @@ class Animation extends Event {
     this.__pauseTime = 0; // 上次暂停时刻的时间
     this.__playTime = 0; // 播放时间，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
     this.__lastFpsTime = 0; // fps<60时跳帧使用，帧回调依旧运行，多次时间累加超过fps时才执行
-    this.__deltaTime = 0; // gotoAndPlay使用，增加运行时间从而偏移帧数
+    this.__deltaTime = -1; // gotoAndPlay使用，增加运行时间从而偏移帧数，-1不偏移
     this.__playState = 'idle';
     this.__playCount = 0;
     this.__isDestroyed = false;
@@ -1093,6 +1093,16 @@ class Animation extends Event {
       this.__style = this.__originStyle;
       this.emit(Event.KARAS_ANIMATION_FINISH);
     };
+    this.__frameCb = (delta, cb, isDelay) => {
+      if(this.__firstPlay) {
+        this.__firstPlay = false;
+        this.emit(Event.KARAS_ANIMATION_PLAY);
+      }
+      if(isFunction(cb)) {
+        cb(delta);
+      }
+      this.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
+    };
   }
 
   __calDiffTime(now) {
@@ -1104,10 +1114,10 @@ class Animation extends Event {
       diff *= playbackRate;
     }
     // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
-    if(this.__deltaTime > 0) {
+    if(this.__deltaTime >= 0) {
       diff = this.__deltaTime;
     }
-    this.__deltaTime = 0;
+    this.__deltaTime = -1;
     // 将此次增加的时间量加到播放时间上
     diff = this.__playTime += diff;
     this.__lastTime = now;
@@ -1117,7 +1127,7 @@ class Animation extends Event {
   }
 
   play(cb) {
-    let { isDestroyed, duration, playState } = this;
+    let { isDestroyed, duration, playState, __frameCb } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
@@ -1130,16 +1140,7 @@ class Animation extends Event {
     this.__cancelTask();
     // 每次play调用标识第一次运行，需响应参数cb
     this.__firstPlay = true;
-    let frameCb = (delta, cb, isDelay) => {
-      if(this.__firstPlay) {
-        this.__firstPlay = false;
-        this.emit(Event.KARAS_ANIMATION_PLAY);
-      }
-      if(isFunction(cb)) {
-        cb(delta);
-      }
-      this.emit(Event.KARAS_ANIMATION_FRAME, delta, isDelay);
-    };
+    let frameCb = __frameCb;
     // 从头播放还是暂停继续，第一次时虽然pending是true但还无__callback
     if(this.pending && this.__callback) {
       let diff = inject.now() - this.__pauseTime;
@@ -1455,21 +1456,21 @@ class Animation extends Event {
   }
 
   gotoAndPlay(v, isFrame, excludeDelay, cb) {
-    let { isDestroyed, duration, delay } = this;
+    let { isDestroyed, duration, delay, endDelay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
     [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, isFrame, excludeDelay);
-    if(v > duration + delay) {
+    if(v > duration + delay + endDelay) {
       return this.finish(cb);
     }
     return this.play(cb);
   }
 
   gotoAndStop(v, isFrame, excludeDelay, cb) {
-    let { isDestroyed, duration, delay, endDelay } = this;
+    let { isDestroyed, duration, delay, endDelay, keys, frames, style, __frameCb, target, originStyle } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
@@ -1477,6 +1478,34 @@ class Animation extends Event {
     v = this.__goto(v, isFrame, excludeDelay);
     if(v > duration + delay + endDelay) {
       return this.finish(cb);
+    }
+    // 临时特殊处理，跳到endDelay时间段时异步刷新 #36
+    if(v > duration + delay) {
+      let current = this.__stayEnd() ? frames[frames.length - 1].style : originStyle;
+      let [needRefresh, lv] = calRefresh(current, style, keys);
+      if(needRefresh) {
+        let root = target.root;
+        let task = this.__task = {
+          before: genBeforeRefresh(current, this, root, lv),
+          after: delta => {
+            this.__pauseTime = inject.now();
+            this.__playState = 'paused';
+            this.__cancelTask();
+            __frameCb(delta, cb, true);
+          },
+        };
+        root.addRefreshTask(task);
+        return this;
+      }
+      else {
+        frame.nextFrame(delta => {
+          this.__pauseTime = inject.now();
+          this.__playState = 'paused';
+          this.__cancelTask();
+          __frameCb(delta, cb, true);
+        });
+      }
+      return this;
     }
     // 先play一帧，回调里模拟暂停
     return this.play(delta => {

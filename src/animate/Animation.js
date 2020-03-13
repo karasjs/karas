@@ -1274,11 +1274,16 @@ class Animation extends Event {
         if(i === length - 1) {
           current = current.style;
           [needRefresh, lv] = calRefresh(current, style, keys);
-          playCount = ++this.playCount;
-          // 播放完一次，播放时间清零，下一次播放重计
-          this.__playTime = 0;
+          // 判断次数结束每帧callback调用
+          if(playCount < iterations) {
+            playCount = ++this.playCount;
+          }
           if(playCount >= iterations) {
             frame.offFrame(callback);
+          }
+          else {
+            // 播放完一次，播放时间清零，下一次播放重计
+            this.__playTime = 0;
           }
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -1320,7 +1325,7 @@ class Animation extends Event {
               let task = this.__task = delta => {
                 // 这里只需要算结束后的累计时间，要考虑暂停，加到playTime上
                 let diff = this.__calDiffTime(inject.now());
-                let isFinished = diff >= endDelay;
+                let isFinished = diff >= duration + delay + endDelay;
                 if(isFinished) {
                   this.__playState = 'finished';
                   root.addRefreshTask(this.__task = restore);

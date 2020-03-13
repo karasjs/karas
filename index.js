@@ -5986,7 +5986,7 @@
 
         var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较
 
-        this.__style = this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
+        this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -6004,7 +6004,6 @@
 
         this.__fin = function () {
           _this2.__playCount = 0;
-          _this2.__style = _this2.__originStyle;
 
           _this2.emit(Event.KARAS_ANIMATION_FINISH);
         };
@@ -6485,7 +6484,7 @@
               cb();
             }
 
-            _this4.__style = _this4.__originStyle;
+            _this4.__style = {};
 
             _this4.emit(Event.KARAS_ANIMATION_CANCEL);
           };

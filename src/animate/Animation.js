@@ -1077,7 +1077,7 @@ class Animation extends Event {
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);
     // 保存静态默认样式供第一帧和最后一帧计算比较
-    this.__style = this.__originStyle = getOriginStyleByKeys(keys, target);
+    this.__originStyle = getOriginStyleByKeys(keys, target);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = clone(frames).reverse();
@@ -1090,7 +1090,6 @@ class Animation extends Event {
     // 生成finish的任务事件
     this.__fin = () => {
       this.__playCount = 0;
-      this.__style = this.__originStyle;
       this.emit(Event.KARAS_ANIMATION_FINISH);
     };
     this.__frameCb = (delta, cb, isDelay) => {
@@ -1444,7 +1443,7 @@ class Animation extends Event {
         if(isFunction(cb)) {
           cb();
         }
-        this.__style = this.__originStyle;
+        this.__style = {};
         this.emit(Event.KARAS_ANIMATION_CANCEL);
       };
       if(needRefresh) {

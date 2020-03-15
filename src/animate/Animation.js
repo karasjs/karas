@@ -1099,7 +1099,7 @@ class Animation extends Event {
       this.__nextTime = 0;
       this.__playCount = this.iterations;
       this.__playState = 'finished';
-      this.emit(Event.KARAS_ANIMATION_FINISH);
+      this.emit(Event.FINISH);
       if(isFunction(cb)) {
         cb();
       }
@@ -1109,12 +1109,12 @@ class Animation extends Event {
       this.__currentTime = this.__nextTime;
       if(this.__firstPlay) {
         this.__firstPlay = false;
-        this.emit(Event.KARAS_ANIMATION_PLAY);
+        this.emit(Event.PLAY);
       }
       if(isFunction(cb)) {
         cb(diff, isDelay);
       }
-      this.emit(Event.KARAS_ANIMATION_FRAME, diff, isDelay);
+      this.emit(Event.FRAME, diff, isDelay);
     };
   }
 
@@ -1300,7 +1300,7 @@ class Animation extends Event {
             // 超过则触发结束事件，刷新重绘之前已经做完
             else {
               __frameCb(diff, cb);
-              __fin();
+              __fin(cb);
             }
           }
           // 非最后一帧的每帧回调
@@ -1337,7 +1337,7 @@ class Animation extends Event {
     }
     this.__playState = 'paused';
     this.__cancelTask();
-    this.emit(Event.KARAS_ANIMATION_PAUSE);
+    this.emit(Event.PAUSE);
     return this;
   }
 
@@ -1405,7 +1405,7 @@ class Animation extends Event {
         this.__startTime = null;
         this.__style = {};
         this.__enterFrame = null;
-        this.emit(Event.KARAS_ANIMATION_CANCEL);
+        this.emit(Event.CANCEL);
         if(isFunction(cb)) {
           cb();
         }

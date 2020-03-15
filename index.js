@@ -6014,7 +6014,7 @@
           _this2.__playCount = _this2.iterations;
           _this2.__playState = 'finished';
 
-          _this2.emit(Event.KARAS_ANIMATION_FINISH);
+          _this2.emit(Event.FINISH);
 
           if (isFunction$2(cb)) {
             cb();
@@ -6028,14 +6028,14 @@
           if (_this2.__firstPlay) {
             _this2.__firstPlay = false;
 
-            _this2.emit(Event.KARAS_ANIMATION_PLAY);
+            _this2.emit(Event.PLAY);
           }
 
           if (isFunction$2(cb)) {
             cb(diff, isDelay);
           }
 
-          _this2.emit(Event.KARAS_ANIMATION_FRAME, diff, isDelay);
+          _this2.emit(Event.FRAME, diff, isDelay);
         };
       }
     }, {
@@ -6281,7 +6281,7 @@
                 else {
                     __frameCb(diff, cb);
 
-                    __fin();
+                    __fin(cb);
                   }
               } // 非最后一帧的每帧回调
               else {
@@ -6327,7 +6327,7 @@
 
         this.__cancelTask();
 
-        this.emit(Event.KARAS_ANIMATION_PAUSE);
+        this.emit(Event.PAUSE);
         return this;
       }
     }, {
@@ -6442,7 +6442,7 @@
             _this4.__style = {};
             _this4.__enterFrame = null;
 
-            _this4.emit(Event.KARAS_ANIMATION_CANCEL);
+            _this4.emit(Event.CANCEL);
 
             if (isFunction$2(cb)) {
               cb();
@@ -10984,7 +10984,7 @@
             _this2.__clear();
           }
 
-          _this2.emit(Event.KARAS_BEFORE_REFRESH, lv);
+          _this2.emit(Event.BEFORE_REFRESH, lv);
 
           _this2.render(renderMode);
 
@@ -11008,7 +11008,7 @@
             cb();
           }
 
-          _this2.emit(Event.KARAS_REFRESH);
+          _this2.emit(Event.REFRESH);
         });
       }
     }, {

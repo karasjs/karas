@@ -238,7 +238,7 @@ class Root extends Dom {
       if(renderMode === mode.CANVAS) {
         this.__clear();
       }
-      this.emit(Event.KARAS_BEFORE_REFRESH, lv);
+      this.emit(Event.BEFORE_REFRESH, lv);
       this.render(renderMode);
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
@@ -257,7 +257,7 @@ class Root extends Dom {
       if(isFunction(cb)) {
         cb();
       }
-      this.emit(Event.KARAS_REFRESH);
+      this.emit(Event.REFRESH);
     });
   }
 

@@ -43,14 +43,14 @@ let animation2 = t2.animate([
 
 let input = document.querySelector('input');
 let n = 0;
-animation2.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation2.on(karas.Event.FRAME, () => {
   if(n++ === 1) {
     let a = parseFloat(t.computedStyle.transform.split(',')[4]);
     let b = parseFloat(t2.computedStyle.transform.split(',')[4]);
     input.value = a > b;
   }
 });
-animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation2.on(karas.Event.FINISH, () => {
   let a = t.computedStyle.transform.split(',')[4];
   let b = t2.computedStyle.transform.split(',')[4];
   input.value += '/' + (a === b);

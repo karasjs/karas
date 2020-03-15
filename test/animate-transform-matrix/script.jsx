@@ -19,11 +19,11 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
     input.value += '/' + t.computedStyle.transform;
   }
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   input.value += '/' + t.computedStyle.transform;
 });

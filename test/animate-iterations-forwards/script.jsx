@@ -19,11 +19,11 @@ let animation = t.animate([
 });
 let n = 0;
 let input = document.querySelector('input');
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
     input.value = t.computedStyle.color;
   }
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   input.value += '/' + t.computedStyle.color;
 });

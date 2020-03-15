@@ -17,7 +17,7 @@ let animation = t.animate([
 });
 let n = 0;
 let input = document.querySelector('input');
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   n++;
   animation.fps = 1;
   input.value = n > 2 ? 'false' : 'true';

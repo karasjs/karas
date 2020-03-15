@@ -30,7 +30,7 @@ let o = karas.render(
   '#test'
 );
 
-o.on(karas.Event.KARAS_REFRESH, function() {
+o.on(karas.Event.REFRESH, function() {
   n++;
   document.querySelector('input').value = n;
 });

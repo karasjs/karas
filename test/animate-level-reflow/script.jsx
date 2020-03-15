@@ -21,7 +21,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-o.on(karas.Event.KARAS_BEFORE_REFRESH, function(lv) {
+o.on(karas.Event.BEFORE_REFRESH, function(lv) {
   if(n++ === 0) {
     input.value = lv;
   }

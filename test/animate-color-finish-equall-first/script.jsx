@@ -17,10 +17,10 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-o.on(karas.Event.KARAS_REFRESH, () => {
+o.on(karas.Event.REFRESH, () => {
   input.value += 'a/' + ++n + ',' + t.computedStyle.color;
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   input.value += 'b/' + ++n + ',' + t.computedStyle.color;
 });
 animation.finish();

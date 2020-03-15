@@ -17,7 +17,7 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   if(t.computedStyle.fontSize > 20) {
     input.value = 'true';
   }

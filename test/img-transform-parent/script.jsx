@@ -6,7 +6,7 @@ let o = karas.render(
   </canvas>,
   '#test'
 );
-o.on(karas.Event.KARAS_REFRESH, function() {
+o.on(karas.Event.REFRESH, function() {
   let canvas = document.querySelector('canvas');
   let input = document.querySelector('#base64');
   input.value = canvas.toDataURL();

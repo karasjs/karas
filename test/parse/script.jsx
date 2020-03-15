@@ -26,7 +26,7 @@ let o = karas.parse({
     }
   ],
 }, '#test');
-o.children[0].animationList[0].on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+o.children[0].animationList[0].on(karas.Event.FINISH, () => {
   let canvas = document.querySelector('canvas');
   let input = document.querySelector('input');
   input.value = canvas.toDataURL();

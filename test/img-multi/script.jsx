@@ -5,7 +5,7 @@ let o = karas.render(
   </canvas>,
   '#test'
 );
-o.on(karas.Event.KARAS_REFRESH, function() {
+o.on(karas.Event.REFRESH, function() {
   let canvas = document.querySelector('canvas');
   let input = document.querySelector('#base64');
   input.value = canvas.toDataURL();
@@ -18,7 +18,7 @@ let o2 = karas.render(
   </svg>,
   '#test2'
 );
-o2.on(karas.Event.KARAS_REFRESH, function() {
+o2.on(karas.Event.REFRESH, function() {
   let input = document.querySelector('#base642');
   input.value = JSON.stringify(o2.virtualDom);
 });

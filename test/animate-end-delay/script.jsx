@@ -18,6 +18,6 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 input.value = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   input.value = 1;
 });

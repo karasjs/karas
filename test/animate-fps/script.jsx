@@ -17,10 +17,10 @@ let animation = t.animate([
   fps: 10,
 });
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   n++;
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
   input.value = t.computedStyle.color + '/' + n;
 });

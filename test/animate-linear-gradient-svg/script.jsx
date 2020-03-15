@@ -16,7 +16,7 @@ let animation = t.animate([
   duration: 200,
   fill: 'forwards',
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
   input.value = JSON.stringify(o.virtualDom);
 });

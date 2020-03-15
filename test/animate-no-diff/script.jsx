@@ -43,18 +43,18 @@ let n = 0;
 let nf = 0;
 let n2 = 0;
 let nf2 = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   n++;
 });
-o.on(karas.Event.KARAS_REFRESH, () => {
+o.on(karas.Event.REFRESH, () => {
   nf++;
 });
-animation2.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation2.on(karas.Event.FRAME, () => {
   n2++;
 });
-o2.on(karas.Event.KARAS_REFRESH, () => {
+o2.on(karas.Event.REFRESH, () => {
   nf2++;
 });
-animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
-  input.value = (n === nf - 1) + '/' + (Math.abs(n - n2) <= 1) + '/' + (n2 > nf2);
+animation2.on(karas.Event.FINISH, () => {
+  input.value = (n === nf) + '/' + (n === n2) + '/' + (n2 > nf2);
 });

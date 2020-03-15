@@ -15,6 +15,6 @@ let o = karas.render(
 );
 
 let n = 0;
-o.on(karas.Event.KARAS_REFRESH, function() {
+o.on(karas.Event.REFRESH, function() {
   document.querySelector('input').value = n++;
 });

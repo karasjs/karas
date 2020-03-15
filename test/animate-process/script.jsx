@@ -20,7 +20,7 @@ let input = document.querySelector('input');
 let n = 0;
 let last = 0;
 let correct = true;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   let current = t.computedStyle.width;
   if(current > last) {}
   else {
@@ -28,7 +28,7 @@ animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
   }
   last = current;
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   let current = t.computedStyle.width;
   if(current === last && current === 200) {
     input.value = 'true';

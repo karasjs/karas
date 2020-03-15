@@ -16,7 +16,7 @@ let animation = t.animate([
   duration: 200,
 });
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   animation.pause();
   n++;
   let input = document.querySelector('input');
@@ -27,7 +27,7 @@ animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
     input.value = 1;
   }
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
   input.value = 2;
 });

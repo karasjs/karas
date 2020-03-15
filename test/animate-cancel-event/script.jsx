@@ -17,7 +17,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_CANCEL, function() {
+animation.on(karas.Event.CANCEL, function() {
   input.value += 'cancel0';
 });
 animation.cancel(function() {
@@ -26,11 +26,11 @@ animation.cancel(function() {
 animation.cancel(function() {
   input.value += 'cancel2';
 });
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
     input.value = t.computedStyle.color;
   }
 });
-animation.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation.on(karas.Event.FINISH, () => {
   input.value += '/' + t.computedStyle.color;
 });

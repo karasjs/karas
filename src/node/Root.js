@@ -238,7 +238,7 @@ class Root extends Dom {
       if(renderMode === mode.CANVAS) {
         this.__clear();
       }
-      this.emit(Event.KARAS_BEFORE_REFRESH, lv);
+      this.emit(Event.BEFORE_REFRESH, lv);
       this.render(renderMode);
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
@@ -257,7 +257,7 @@ class Root extends Dom {
       if(isFunction(cb)) {
         cb();
       }
-      this.emit(Event.KARAS_REFRESH);
+      this.emit(Event.REFRESH);
     });
   }
 
@@ -270,25 +270,25 @@ class Root extends Dom {
     if(!task.length) {
       let clone;
       frame.nextFrame(this.__rTask = {
-        before: delta => {
+        before: diff => {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             clone.forEach(item => {
               if(isObject(item) && isFunction(item.before)) {
-                item.before(delta);
+                item.before(diff);
               }
             });
             this.refresh();
           }
         },
-        after: delta => {
+        after: diff => {
           clone.forEach(item => {
             if(isObject(item) && isFunction(item.after)) {
-              item.after(delta);
+              item.after(diff);
             }
             else if(isFunction(item)) {
-              item(delta);
+              item(diff);
             }
           });
         }
@@ -312,6 +312,26 @@ class Root extends Dom {
     }
     if(!task.length) {
       frame.offFrame(this.__rTask);
+    }
+  }
+
+  refreshTask() {
+    let clone = this.task.splice(0);
+    if(clone.length) {
+      clone.forEach(item => {
+        if(isObject(item) && isFunction(item.before)) {
+          item.before(0);
+        }
+      });
+      this.refresh();
+      clone.forEach(item => {
+        if(isObject(item) && isFunction(item.after)) {
+          item.after(0);
+        }
+        else if(isFunction(item)) {
+          item(0);
+        }
+      });
     }
   }
 

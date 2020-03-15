@@ -19,7 +19,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation.on(karas.Event.KARAS_ANIMATION_FRAME, (delta, isDelay) => {
+animation.on(karas.Event.FRAME, (delta, isDelay) => {
   n++;
   if(!isDelay) {
     input.value += n;

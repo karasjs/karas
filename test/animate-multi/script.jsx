@@ -37,11 +37,11 @@ let animation2 = t2.animate([
 });
 let input = document.querySelector('input');
 let n = 0;
-animation2.on(karas.Event.KARAS_ANIMATION_FRAME, () => {
+animation2.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
     input.value = t.computedStyle.width + ',' + t2.computedStyle.height;
   }
 });
-animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation2.on(karas.Event.FINISH, () => {
   input.value += '/' + t.computedStyle.width + ',' + t2.computedStyle.height;
 });

@@ -6,33 +6,35 @@ const { isFunction, isObject } = util;
 class Frame {
   constructor() {
     this.__task = [];
+    this.__now = null;
   }
 
   __init(task) {
     let self = this;
     inject.cancelAnimationFrame(self.id);
+    let last = self.__now = inject.now();
     function cb() {
-      let last = inject.now();
       self.id = inject.requestAnimationFrame(function() {
         if(!task.length) {
           return;
         }
         let clone = task.slice();
-        let now = inject.now();
-        let delta = now - last;
-        delta = delta * 0.06; // 比例是除以1/60s，等同于*0.06
+        let now = self.__now = inject.now();
+        let diff = now - last;
+        diff = Math.max(diff, 0);
+        // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         clone.forEach(item => {
           if(isObject(item) && isFunction(item.before)) {
-            item.before(delta);
+            item.before(diff);
           }
         });
         clone.forEach(item => {
           if(isObject(item) && isFunction(item.after)) {
-            item.after(delta);
+            item.after(diff);
           }
           else if(isFunction(item)) {
-            item(delta);
+            item(diff);
           }
         });
         if(!task.length) {
@@ -70,6 +72,7 @@ class Frame {
     }
     if(!task.length) {
       inject.cancelAnimationFrame(this.id);
+      this.__now = null;
     }
   }
 
@@ -78,13 +81,13 @@ class Frame {
       return;
     }
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    let cb = isFunction(handle) ? () => {
-      handle();
+    let cb = isFunction(handle) ? diff => {
+      handle(diff);
       this.offFrame(cb);
     } : {
       before: handle.before,
-      after: () => {
-        handle.after();
+      after: diff => {
+        handle.after(diff);
         this.offFrame(cb);
       },
     };

@@ -26,6 +26,6 @@ let animation2 = t.animate([
   duration: 400,
 });
 let input = document.querySelector('input');
-animation2.on(karas.Event.KARAS_ANIMATION_FINISH, () => {
+animation2.on(karas.Event.FINISH, () => {
   input.value = t.computedStyle.width + ',' + t.computedStyle.backgroundColor;
 });

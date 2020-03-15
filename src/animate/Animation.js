@@ -996,6 +996,7 @@ class Animation extends Event {
     if(iterations < 1) {
       return;
     }
+    // 占位，对象渲染时据此merge动画样式
     target.__animateStyle.push(this.__style = {});
     if(target.isGeom) {
       target.__animateProps.push(this.__props = {});
@@ -1078,7 +1079,7 @@ class Animation extends Event {
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);
     // 保存静态默认样式供第一帧和最后一帧计算比较
-    this.__originStyle = getOriginStyleByKeys(keys, target);
+    let originStyle = this.__originStyle = getOriginStyleByKeys(keys, target);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = clone(frames).reverse();
@@ -1090,11 +1091,9 @@ class Animation extends Event {
     }
     // 生成finish的任务事件
     this.__fin = (cb) => {
-      // if(reset) {
-        this.__cancelTask();
-        this.__enterFrame = null;
-        this.__style = {};
-      // }
+      this.__cancelTask();
+      this.__task = this.__enterFrame = null;
+      this.__style = originStyle;
       this.__currentTime = this.delay + duration + this.endDelay;
       this.__nextTime = 0;
       this.__playCount = this.iterations;
@@ -1168,10 +1167,10 @@ class Animation extends Event {
         keys,
         __fin,
       } = this;
-      // 每次正常调用play都会从头开始，标识第一次callback运行初始化
+      // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       let stayEnd = this.__stayEnd();
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      this.__style = {};
+      this.__style = originStyle;
       frames = inherit(frames, keys, target);
       // 再计算两帧之间的变化，存入transition属性
       let length = frames.length;
@@ -1260,8 +1259,8 @@ class Animation extends Event {
         let inEndDelay;
         if(isLastFrame) {
           inEndDelay = nextTime < duration + endDelay;
-          // 停留和尚未到endDelay，对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-          if(stayEnd || inEndDelay) {
+          // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          if(stayEnd) {
             current = current.style;
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
@@ -1354,6 +1353,7 @@ class Animation extends Event {
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     this.__cancelTask();
+    this.__playState = 'finished';
     let { target: { root }, style, frames, originStyle, keys, __fin } = this;
     if(root) {
       let needRefresh, lv, current;
@@ -1364,7 +1364,7 @@ class Animation extends Event {
       }
       else {
         [needRefresh, lv] = calRefresh(originStyle, style, keys);
-        current = originStyle;
+        current = {};
       }
       if(needRefresh) {
         root.addRefreshTask(this.__task = {
@@ -1395,15 +1395,15 @@ class Animation extends Event {
       return this;
     }
     this.__cancelTask();
+    this.__playState = 'idle';
     let { target: { root }, style, originStyle, keys } = this;
     if(root) {
       let [needRefresh, lv] = calRefresh(style, originStyle, keys);
       let task = (cb) => {
         this.__playCount = 0;
         this.__currentTime = this.__nextTime = 0;
-        this.__playState = 'idle';
-        this.__startTime = null;
-        this.__style = {};
+        this.__startTime = this.__task = this.__enterFrame = null;
+        this.__style = originStyle;
         this.__enterFrame = null;
         this.emit(Event.CANCEL);
         if(isFunction(cb)) {
@@ -1452,7 +1452,6 @@ class Animation extends Event {
     }
     // 先play一帧，回调里模拟暂停
     return this.play(diff => {
-      // this.__pauseTime = inject.now();
       this.__playState = 'paused';
       this.__cancelTask();
       if(isFunction(cb)) {
@@ -1499,10 +1498,10 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    let { target, __task } = this;
+    let { target: { root }, __task } = this;
     // 有可能使用了刷新，也有可能纯frame事件，都清除
-    if(target.root) {
-      target.root.delRefreshTask(__task);
+    if(root) {
+      root.delRefreshTask(__task);
     }
     frame.offFrame(__task);
     frame.offFrame(this.__enterFrame);

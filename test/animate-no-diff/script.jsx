@@ -56,5 +56,5 @@ o2.on(karas.Event.REFRESH, () => {
   nf2++;
 });
 animation2.on(karas.Event.FINISH, () => {
-  input.value = (n === nf - 1) + '/' + (Math.abs(n - n2) <= 1) + '/' + (n2 > nf2);
+  input.value = (n === nf) + '/' + (n === n2) + '/' + (n2 > nf2);
 });

@@ -5889,7 +5889,8 @@
 
         if (iterations < 1) {
           return;
-        }
+        } // 占位
+
 
         target.__animateStyle.push(this.__style = {});
 
@@ -5986,7 +5987,7 @@
 
         var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较
 
-        this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
+        var originStyle = this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -6003,12 +6004,10 @@
 
 
         this.__fin = function (cb) {
-          // if(reset) {
           _this2.__cancelTask();
 
-          _this2.__enterFrame = null;
-          _this2.__style = {}; // }
-
+          _this2.__task = _this2.__enterFrame = null;
+          _this2.__style = originStyle;
           _this2.__currentTime = _this2.delay + duration + _this2.endDelay;
           _this2.__nextTime = 0;
           _this2.__playCount = _this2.iterations;
@@ -6101,12 +6100,12 @@
               endDelay = this.endDelay,
               originStyle = this.originStyle,
               keys = this.keys,
-              __fin = this.__fin; // 每次正常调用play都会从头开始，标识第一次callback运行初始化
+              __fin = this.__fin; // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
 
           var stayEnd = this.__stayEnd();
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          this.__style = {};
+          this.__style = originStyle;
           frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
 
           var length = frames.length;
@@ -6219,9 +6218,9 @@
             var inEndDelay;
 
             if (isLastFrame) {
-              inEndDelay = nextTime < duration + endDelay; // 停留和尚未到endDelay，对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+              inEndDelay = nextTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
-              if (stayEnd || inEndDelay) {
+              if (stayEnd) {
                 current = current.style;
 
                 var _calRefresh3 = calRefresh(current, style, keys);
@@ -6303,8 +6302,9 @@
               });
             }
           };
-        } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
+        }
 
+        this.__enterFrame.id = 'enterFrame'; // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
         frame.onFrame(this.__enterFrame);
 
@@ -6351,6 +6351,8 @@
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
 
+        this.__playState = 'finished';
+
         this.__cancelTask();
 
         var root = this.target.root,
@@ -6379,7 +6381,7 @@
 
             needRefresh = _calRefresh12[0];
             lv = _calRefresh12[1];
-            current = originStyle;
+            current = {};
           }
 
           if (needRefresh) {
@@ -6421,6 +6423,8 @@
           return this;
         }
 
+        this.__playState = 'idle';
+
         this.__cancelTask();
 
         var root = this.target.root,
@@ -6437,9 +6441,8 @@
           var task = function task(cb) {
             _this4.__playCount = 0;
             _this4.__currentTime = _this4.__nextTime = 0;
-            _this4.__playState = 'idle';
-            _this4.__startTime = null;
-            _this4.__style = {};
+            _this4.__startTime = _this4.__task = _this4.__enterFrame = null;
+            _this4.__style = originStyle;
             _this4.__enterFrame = null;
 
             _this4.emit(Event.CANCEL);
@@ -6529,7 +6532,6 @@
 
 
         return this.play(function (diff) {
-          // this.__pauseTime = inject.now();
           _this5.__playState = 'paused';
 
           _this5.__cancelTask();
@@ -6590,11 +6592,11 @@
     }, {
       key: "__cancelTask",
       value: function __cancelTask() {
-        var target = this.target,
+        var root = this.target.root,
             __task = this.__task; // 有可能使用了刷新，也有可能纯frame事件，都清除
 
-        if (target.root) {
-          target.root.delRefreshTask(__task);
+        if (root) {
+          root.delRefreshTask(__task);
         }
 
         frame.offFrame(__task);

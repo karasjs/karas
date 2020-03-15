@@ -5889,7 +5889,7 @@
 
         if (iterations < 1) {
           return;
-        } // 占位
+        } // 占位，对象渲染时据此merge动画样式
 
 
         target.__animateStyle.push(this.__style = {});
@@ -6302,9 +6302,8 @@
               });
             }
           };
-        }
+        } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
-        this.__enterFrame.id = 'enterFrame'; // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
         frame.onFrame(this.__enterFrame);
 
@@ -6351,10 +6350,9 @@
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
 
-        this.__playState = 'finished';
-
         this.__cancelTask();
 
+        this.__playState = 'finished';
         var root = this.target.root,
             style = this.style,
             frames = this.frames,
@@ -6423,10 +6421,9 @@
           return this;
         }
 
-        this.__playState = 'idle';
-
         this.__cancelTask();
 
+        this.__playState = 'idle';
         var root = this.target.root,
             style = this.style,
             originStyle = this.originStyle,

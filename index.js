@@ -6120,7 +6120,8 @@
               var _next = framesR[_i9];
               prev = calFrame(prev, _next, keys, target);
             }
-          }
+          } // 每帧执行的回调
+
 
           var enterFrame = this.__enterFrame = function (diff, cb) {
             var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
@@ -6218,15 +6219,17 @@
               inEndDelay = nextTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
               if (stayEnd) {
-                current = current.style;
+                current = current.style; // 之前已经进入过endDelay可以省略对比计算
 
-                var _calRefresh3 = calRefresh(current, style, keys);
+                if (_this3.__currentTime < duration) {
+                  var _calRefresh3 = calRefresh(current, style, keys);
 
-                var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
+                  var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
 
-                needRefresh = _calRefresh4[0];
-                lv = _calRefresh4[1];
-              } // 不停留或超过endDelay则计算还原，有endDelay进入上面分支后会再次进入这里
+                  needRefresh = _calRefresh4[0];
+                  lv = _calRefresh4[1];
+                }
+              } // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
               else {
                   current = {};
 

@@ -1185,6 +1185,7 @@ class Animation extends Event {
           prev = calFrame(prev, next, keys, target);
         }
       }
+      // 每帧执行的回调
       let enterFrame = this.__enterFrame = (diff, cb) => {
         let root = target.root;
         // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
@@ -1261,9 +1262,12 @@ class Animation extends Event {
           // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
           if(stayEnd) {
             current = current.style;
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            // 之前已经进入过endDelay可以省略对比计算
+            if(this.__currentTime < duration) {
+              [needRefresh, lv] = calRefresh(current, style, keys);
+            }
           }
-          // 不停留或超过endDelay则计算还原，有endDelay进入上面分支后会再次进入这里
+          // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
           else {
             current = {};
             [needRefresh, lv] = calRefresh(originStyle, style, keys);

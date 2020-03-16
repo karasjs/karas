@@ -965,7 +965,7 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
       v = calRelativePercent(v.value, parent, 'height');
     }
   }
-  return currentStyle[k] = v;
+  return v;
 }
 
 function calAbsolute(currentStyle, k, v, size) {
@@ -978,7 +978,7 @@ function calAbsolute(currentStyle, k, v, size) {
   else if(v.unit === PERCENT) {
     v = v.value * size * 0.01;
   }
-  return currentStyle[k] = v;
+  return v;
 }
 
 export default {

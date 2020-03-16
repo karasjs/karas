@@ -316,7 +316,7 @@ class Root extends Dom {
   }
 
   refreshTask() {
-    let clone = this.task.splice(0);
+    let clone = this.task.slice(0);
     if(clone.length) {
       clone.forEach(item => {
         if(isObject(item) && isFunction(item.before)) {

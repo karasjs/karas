@@ -3173,7 +3173,7 @@
       }
     }
 
-    return currentStyle[k] = v;
+    return v;
   }
 
   function calAbsolute(currentStyle, k, v, size) {
@@ -3185,7 +3185,7 @@
       v = v.value * size * 0.01;
     }
 
-    return currentStyle[k] = v;
+    return v;
   }
 
   var css = {
@@ -5162,9 +5162,10 @@
   } // 将当前frame的style赋值给动画style，xom绘制时获取
 
 
-  function genBeforeRefresh(frameStyle, animation, root, lv) {
+  function genBeforeRefresh(frameStyle, animation, root, lv, time) {
     return function () {
       root.setRefreshLevel(lv);
+      animation.__currentTime = time;
       var style = {};
       var props = {};
       Object.keys(frameStyle).forEach(function (i) {
@@ -5987,7 +5988,7 @@
 
         var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较
 
-        var originStyle = this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
+        this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
 
         if ({
           reverse: true,
@@ -6007,7 +6008,6 @@
           _this2.__cancelTask();
 
           _this2.__task = _this2.__enterFrame = null;
-          _this2.__style = originStyle;
           _this2.__currentTime = _this2.delay + duration + _this2.endDelay;
           _this2.__nextTime = 0;
           _this2.__playCount = _this2.iterations;
@@ -6018,12 +6018,10 @@
           if (isFunction$2(cb)) {
             cb();
           }
-        }; // 每帧执行通知事件，并且将当前时间点更正为上一帧运算的值
+        }; // 每帧执行通知事件
 
 
         this.__frameCb = function (diff, cb, isDelay) {
-          _this2.__currentTime = _this2.__nextTime;
-
           if (_this2.__firstPlay) {
             _this2.__firstPlay = false;
 
@@ -6044,19 +6042,16 @@
             __deltaTime = this.__deltaTime; // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
 
         if (__deltaTime >= 0) {
-          // this.__currentTime = __deltaTime;
           this.__nextTime = __deltaTime;
           this.__deltaTime = -1;
         } // 正常状态播放时间累加，并且考虑播放速度加成
         else {
             if (playbackRate !== 1 && playbackRate > 0) {
               diff *= playbackRate;
-            } // this.__currentTime += diff;
-
+            }
 
             this.__nextTime += diff;
-          } // return this.__currentTime;
-
+          }
 
         return this.__nextTime;
       }
@@ -6099,7 +6094,7 @@
           var stayEnd = this.__stayEnd();
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          this.__style = originStyle;
+          this.__style = {};
           frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
 
           var length = frames.length;
@@ -6157,7 +6152,7 @@
               if (_this3.__stayBegin()) {
                 var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
-                var _calRefresh = calRefresh(_current, style, keys);
+                var _calRefresh = calRefresh(_current, originStyle, keys);
 
                 var _calRefresh2 = _slicedToArray(_calRefresh, 2);
 
@@ -6166,7 +6161,7 @@
 
                 if (needRefresh) {
                   var _task = _this3.__task = {
-                    before: genBeforeRefresh(_current, _this3, root, lv),
+                    before: genBeforeRefresh(_current, _this3, root, lv, nextTime),
                     after: function after() {
                       __frameCb(diff, cb, true);
                     }
@@ -6178,8 +6173,13 @@
               } // 即便不刷新，依旧执行帧回调
 
 
-              frame.nextFrame(_this3.__task = function () {
-                __frameCb(diff, cb, true);
+              frame.nextFrame(_this3.__task = {
+                before: function before() {
+                  _this3.__currentTime = nextTime;
+                },
+                after: function after() {
+                  __frameCb(diff, cb, true);
+                }
               });
               return;
             } // 根据播放次数确定正反方向
@@ -6226,9 +6226,9 @@
                 lv = _calRefresh4[1];
               } // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
               else {
-                  current = {};
+                  current = {}; // TODO: 和finish()保持一致，当最后帧和origin相同时，尽量不要needRefresh
 
-                  var _calRefresh5 = calRefresh(originStyle, style, keys);
+                  var _calRefresh5 = calRefresh(current, style, keys);
 
                   var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
 
@@ -6286,24 +6286,28 @@
 
             if (needRefresh) {
               root.addRefreshTask(_this3.__task = {
-                before: genBeforeRefresh(current, _this3, root, lv),
+                before: genBeforeRefresh(current, _this3, root, lv, nextTime),
                 after: function after() {
                   task(diff, cb);
                 }
               });
             } else {
-              frame.nextFrame(_this3.__task = function () {
-                task(diff, cb);
+              frame.nextFrame(_this3.__task = {
+                before: function before() {
+                  _this3.__currentTime = nextTime;
+                },
+                after: function after() {
+                  task(diff, cb);
+                }
               });
             }
           };
         } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
 
-        frame.onFrame(this.__enterFrame);
-
         this.__enterFrame(this.__nextTime - this.currentTime, cb, true);
 
+        frame.onFrame(this.__enterFrame);
         return this;
       }
     }, {
@@ -6352,8 +6356,8 @@
         var root = this.target.root,
             style = this.style,
             frames = this.frames,
-            originStyle = this.originStyle,
             keys = this.keys,
+            originStyle = this.originStyle,
             __fin = this.__fin;
 
         if (root) {
@@ -6369,18 +6373,19 @@
             needRefresh = _calRefresh10[0];
             lv = _calRefresh10[1];
           } else {
-            var _calRefresh11 = calRefresh(originStyle, style, keys);
+            current = {};
+
+            var _calRefresh11 = calRefresh(current, style, keys);
 
             var _calRefresh12 = _slicedToArray(_calRefresh11, 2);
 
             needRefresh = _calRefresh12[0];
             lv = _calRefresh12[1];
-            current = {};
           }
 
           if (needRefresh) {
             root.addRefreshTask(this.__task = {
-              before: genBeforeRefresh(current, this, root, lv),
+              before: genBeforeRefresh(current, this, root, lv, duration + this.delay + this.endDelay),
               after: function after(diff) {
                 __frameCb(diff);
 
@@ -6418,11 +6423,10 @@
         this.__playState = 'idle';
         var root = this.target.root,
             style = this.style,
-            originStyle = this.originStyle,
             keys = this.keys;
 
         if (root) {
-          var _calRefresh13 = calRefresh(style, originStyle, keys),
+          var _calRefresh13 = calRefresh({}, style, keys),
               _calRefresh14 = _slicedToArray(_calRefresh13, 2),
               needRefresh = _calRefresh14[0],
               lv = _calRefresh14[1];
@@ -6431,7 +6435,7 @@
             _this4.__playCount = 0;
             _this4.__currentTime = _this4.__nextTime = 0;
             _this4.__startTime = _this4.__task = _this4.__enterFrame = null;
-            _this4.__style = originStyle;
+            _this4.__style = {};
             _this4.__enterFrame = null;
 
             _this4.emit(Event.CANCEL);
@@ -6443,7 +6447,7 @@
 
           if (needRefresh) {
             root.addRefreshTask(this.__task = {
-              before: genBeforeRefresh({}, this, root, lv),
+              before: genBeforeRefresh({}, this, root, lv, duration + this.delay + this.endDelay),
               after: function after(diff) {
                 __frameCb(diff);
 
@@ -6494,13 +6498,7 @@
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             delay = this.delay,
-            endDelay = this.endDelay,
-            keys = this.keys,
-            frames = this.frames,
-            style = this.style,
-            __frameCb = this.__frameCb,
-            target = this.target,
-            originStyle = this.originStyle;
+            endDelay = this.endDelay;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6621,11 +6619,6 @@
       key: "style",
       get: function get() {
         return this.__style;
-      }
-    }, {
-      key: "originStyle",
-      get: function get() {
-        return this.__originStyle;
       }
     }, {
       key: "props",
@@ -11068,7 +11061,7 @@
     }, {
       key: "refreshTask",
       value: function refreshTask() {
-        var clone = this.task.splice(0);
+        var clone = this.task.slice(0);
 
         if (clone.length) {
           clone.forEach(function (item) {

@@ -317,9 +317,10 @@ function calRefresh(frameStyle, lastStyle, keys) {
 }
 
 // 将当前frame的style赋值给动画style，xom绘制时获取
-function genBeforeRefresh(frameStyle, animation, root, lv) {
+function genBeforeRefresh(frameStyle, animation, root, lv, time) {
   return function() {
     root.setRefreshLevel(lv);
+    animation.__currentTime = time;
     let style = {};
     let props = {};
     Object.keys(frameStyle).forEach(i => {
@@ -1079,7 +1080,7 @@ class Animation extends Event {
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);
     // 保存静态默认样式供第一帧和最后一帧计算比较
-    let originStyle = this.__originStyle = getOriginStyleByKeys(keys, target);
+    this.__originStyle = getOriginStyleByKeys(keys, target);
     // 反向存储帧的倒排结果
     if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
       let framesR = clone(frames).reverse();
@@ -1093,7 +1094,6 @@ class Animation extends Event {
     this.__fin = (cb) => {
       this.__cancelTask();
       this.__task = this.__enterFrame = null;
-      this.__style = originStyle;
       this.__currentTime = this.delay + duration + this.endDelay;
       this.__nextTime = 0;
       this.__playCount = this.iterations;
@@ -1103,9 +1103,8 @@ class Animation extends Event {
         cb();
       }
     };
-    // 每帧执行通知事件，并且将当前时间点更正为上一帧运算的值
+    // 每帧执行通知事件
     this.__frameCb = (diff, cb, isDelay) => {
-      this.__currentTime = this.__nextTime;
       if(this.__firstPlay) {
         this.__firstPlay = false;
         this.emit(Event.PLAY);
@@ -1121,7 +1120,6 @@ class Animation extends Event {
     let { playbackRate, __deltaTime } = this;
     // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
     if(__deltaTime >= 0) {
-      // this.__currentTime = __deltaTime;
       this.__nextTime = __deltaTime;
       this.__deltaTime = -1;
     }
@@ -1130,10 +1128,8 @@ class Animation extends Event {
       if(playbackRate !== 1 && playbackRate > 0) {
         diff *= playbackRate;
       }
-      // this.__currentTime += diff;
       this.__nextTime += diff;
     }
-    // return this.__currentTime;
     return this.__nextTime;
   }
 
@@ -1166,7 +1162,7 @@ class Animation extends Event {
       // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       let stayEnd = this.__stayEnd();
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      this.__style = originStyle;
+      this.__style = {};
       frames = inherit(frames, keys, target);
       // 再计算两帧之间的变化，存入transition属性
       let length = frames.length;
@@ -1212,10 +1208,10 @@ class Animation extends Event {
           if(this.__stayBegin()) {
             let current = frames[0].style;
             // 对比第一帧，以及和第一帧同key的当前样式
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            [needRefresh, lv] = calRefresh(current, originStyle, keys);
             if(needRefresh) {
               let task = this.__task = {
-                before: genBeforeRefresh(current, this, root, lv),
+                before: genBeforeRefresh(current, this, root, lv, nextTime),
                 after: () => {
                   __frameCb(diff, cb, true);
                 },
@@ -1225,8 +1221,13 @@ class Animation extends Event {
             }
           }
           // 即便不刷新，依旧执行帧回调
-          frame.nextFrame(this.__task = () => {
-            __frameCb(diff, cb, true);
+          frame.nextFrame(this.__task = {
+            before: () => {
+              this.__currentTime = nextTime;
+            },
+            after: () => {
+              __frameCb(diff, cb, true);
+            },
           });
           return;
         }
@@ -1264,7 +1265,8 @@ class Animation extends Event {
           // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
           else {
             current = {};
-            [needRefresh, lv] = calRefresh(originStyle, style, keys);
+            // TODO: 和finish()保持一致，当最后帧和origin相同时，尽量不要needRefresh
+            [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
           if(!inEndDelay && playCount >= iterations - 1) {
@@ -1307,22 +1309,27 @@ class Animation extends Event {
         // 下一帧执行本次计算的时间和样式刷新
         if(needRefresh) {
           root.addRefreshTask(this.__task = {
-            before: genBeforeRefresh(current, this, root, lv),
+            before: genBeforeRefresh(current, this, root, lv, nextTime),
             after: () => {
               task(diff, cb);
             },
           });
         }
         else {
-          frame.nextFrame(this.__task = () => {
-            task(diff, cb);
+          frame.nextFrame(this.__task = {
+            before: () => {
+              this.__currentTime = nextTime;
+            },
+            after: () => {
+              task(diff, cb);
+            },
           });
         }
       };
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-    frame.onFrame(this.__enterFrame);
     this.__enterFrame(this.__nextTime - this.currentTime, cb, true);
+    frame.onFrame(this.__enterFrame);
     return this;
   }
 
@@ -1351,7 +1358,7 @@ class Animation extends Event {
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     this.__cancelTask();
     this.__playState = 'finished';
-    let { target: { root }, style, frames, originStyle, keys, __fin } = this;
+    let { target: { root }, style, frames, keys, originStyle, __fin } = this;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
@@ -1360,12 +1367,12 @@ class Animation extends Event {
         [needRefresh, lv] = calRefresh(current, style, keys);
       }
       else {
-        [needRefresh, lv] = calRefresh(originStyle, style, keys);
         current = {};
+        [needRefresh, lv] = calRefresh(current, style, keys);
       }
       if(needRefresh) {
         root.addRefreshTask(this.__task = {
-          before: genBeforeRefresh(current, this, root, lv),
+          before: genBeforeRefresh(current, this, root, lv, duration + this.delay + this.endDelay),
           after: diff => {
             __frameCb(diff);
             __fin(cb);
@@ -1390,14 +1397,14 @@ class Animation extends Event {
     }
     this.__cancelTask();
     this.__playState = 'idle';
-    let { target: { root }, style, originStyle, keys } = this;
+    let { target: { root }, style, keys } = this;
     if(root) {
-      let [needRefresh, lv] = calRefresh(style, originStyle, keys);
+      let [needRefresh, lv] = calRefresh({}, style, keys);
       let task = (cb) => {
         this.__playCount = 0;
         this.__currentTime = this.__nextTime = 0;
         this.__startTime = this.__task = this.__enterFrame = null;
-        this.__style = originStyle;
+        this.__style = {};
         this.__enterFrame = null;
         this.emit(Event.CANCEL);
         if(isFunction(cb)) {
@@ -1406,7 +1413,7 @@ class Animation extends Event {
       };
       if(needRefresh) {
         root.addRefreshTask(this.__task = {
-          before: genBeforeRefresh({}, this, root, lv),
+          before: genBeforeRefresh({}, this, root, lv, duration + this.delay + this.endDelay),
           after: diff => {
             __frameCb(diff);
             task(cb);
@@ -1435,7 +1442,7 @@ class Animation extends Event {
   }
 
   gotoAndStop(v, isFrame, excludeDelay, cb) {
-    let { isDestroyed, duration, delay, endDelay, keys, frames, style, __frameCb, target, originStyle } = this;
+    let { isDestroyed, duration, delay, endDelay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
@@ -1521,9 +1528,6 @@ class Animation extends Event {
   }
   get style() {
     return this.__style;
-  }
-  get originStyle() {
-    return this.__originStyle;
   }
   get props() {
     return this.__props;

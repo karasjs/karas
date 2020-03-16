@@ -1155,7 +1155,6 @@ class Animation extends Event {
         iterations,
         delay,
         endDelay,
-        originStyle,
         keys,
         __fin,
       } = this;
@@ -1208,11 +1207,11 @@ class Animation extends Event {
           if(this.__stayBegin()) {
             let current = frames[0].style;
             // 对比第一帧，以及和第一帧同key的当前样式
-            [needRefresh, lv] = calRefresh(current, originStyle, keys);
+            [needRefresh, lv] = calRefresh(current, style, keys);
             if(needRefresh) {
               let task = this.__task = {
                 before: genBeforeRefresh(current, this, root, lv, nextTime),
-                after: () => {
+                after() {
                   __frameCb(diff, cb, true);
                 },
               };
@@ -1225,7 +1224,7 @@ class Animation extends Event {
             before: () => {
               this.__currentTime = nextTime;
             },
-            after: () => {
+            after() {
               __frameCb(diff, cb, true);
             },
           });
@@ -1265,7 +1264,6 @@ class Animation extends Event {
           // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
           else {
             current = {};
-            // TODO: 和finish()保持一致，当最后帧和origin相同时，尽量不要needRefresh
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
@@ -1310,7 +1308,7 @@ class Animation extends Event {
         if(needRefresh) {
           root.addRefreshTask(this.__task = {
             before: genBeforeRefresh(current, this, root, lv, nextTime),
-            after: () => {
+            after() {
               task(diff, cb);
             },
           });
@@ -1320,7 +1318,7 @@ class Animation extends Event {
             before: () => {
               this.__currentTime = nextTime;
             },
-            after: () => {
+            after() {
               task(diff, cb);
             },
           });
@@ -1358,7 +1356,7 @@ class Animation extends Event {
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     this.__cancelTask();
     this.__playState = 'finished';
-    let { target: { root }, style, frames, keys, originStyle, __fin } = this;
+    let { target: { root }, style, frames, keys, __fin } = this;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
@@ -1373,7 +1371,7 @@ class Animation extends Event {
       if(needRefresh) {
         root.addRefreshTask(this.__task = {
           before: genBeforeRefresh(current, this, root, lv, duration + this.delay + this.endDelay),
-          after: diff => {
+          after(diff) {
             __frameCb(diff);
             __fin(cb);
           },
@@ -1414,7 +1412,7 @@ class Animation extends Event {
       if(needRefresh) {
         root.addRefreshTask(this.__task = {
           before: genBeforeRefresh({}, this, root, lv, duration + this.delay + this.endDelay),
-          after: diff => {
+          after(diff) {
             __frameCb(diff);
             task(cb);
           },
@@ -1528,9 +1526,6 @@ class Animation extends Event {
   }
   get style() {
     return this.__style;
-  }
-  get originStyle() {
-    return this.__originStyle;
   }
   get props() {
     return this.__props;

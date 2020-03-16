@@ -6087,7 +6087,6 @@
               iterations = this.iterations,
               delay = this.delay,
               endDelay = this.endDelay,
-              originStyle = this.originStyle,
               keys = this.keys,
               __fin = this.__fin; // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
 
@@ -6152,7 +6151,7 @@
               if (_this3.__stayBegin()) {
                 var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
-                var _calRefresh = calRefresh(_current, originStyle, keys);
+                var _calRefresh = calRefresh(_current, style, keys);
 
                 var _calRefresh2 = _slicedToArray(_calRefresh, 2);
 
@@ -6226,7 +6225,7 @@
                 lv = _calRefresh4[1];
               } // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
               else {
-                  current = {}; // TODO: 和finish()保持一致，当最后帧和origin相同时，尽量不要needRefresh
+                  current = {};
 
                   var _calRefresh5 = calRefresh(current, style, keys);
 
@@ -6357,7 +6356,6 @@
             style = this.style,
             frames = this.frames,
             keys = this.keys,
-            originStyle = this.originStyle,
             __fin = this.__fin;
 
         if (root) {
@@ -6619,11 +6617,6 @@
       key: "style",
       get: function get() {
         return this.__style;
-      }
-    }, {
-      key: "originStyle",
-      get: function get() {
-        return this.__originStyle;
       }
     }, {
       key: "props",

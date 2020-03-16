@@ -1149,8 +1149,6 @@ class Animation extends Event {
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件
     this.__firstPlay = true;
-    // 首次强制不跳帧
-    let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
       let {
@@ -1185,8 +1183,8 @@ class Animation extends Event {
           prev = calFrame(prev, next, keys, target);
         }
       }
-      // 每帧执行的回调
-      let enterFrame = this.__enterFrame = (diff, cb) => {
+      // 每帧执行的回调，firstEnter只有初次同步计算下帧时有，第一帧强制不跳帧
+      let enterFrame = this.__enterFrame = (diff, cb, firstEnter) => {
         let root = target.root;
         // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
         if(!root || this.pending || !frames.length) {
@@ -1204,7 +1202,6 @@ class Animation extends Event {
           }
           this.__fpsTime = 0;
         }
-        firstEnter = false;
         // delay仅第一次生效
         if(playCount > 0) {
           delay = 0;
@@ -1328,7 +1325,7 @@ class Animation extends Event {
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
     frame.onFrame(this.__enterFrame);
-    this.__enterFrame(this.__nextTime - this.currentTime, cb);
+    this.__enterFrame(this.__nextTime - this.currentTime, cb, true);
     return this;
   }
 

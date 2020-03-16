@@ -6082,9 +6082,7 @@
 
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件
 
-        this.__firstPlay = true; // 首次强制不跳帧
-
-        var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
+        this.__firstPlay = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
           var frames = this.frames,
@@ -6120,10 +6118,10 @@
               var _next = framesR[_i9];
               prev = calFrame(prev, _next, keys, target);
             }
-          } // 每帧执行的回调
+          } // 每帧执行的回调，firstEnter只有初次同步计算下帧时有，第一帧强制不跳帧
 
 
-          var enterFrame = this.__enterFrame = function (diff, cb) {
+          var enterFrame = this.__enterFrame = function (diff, cb, firstEnter) {
             var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
 
             if (!root || _this3.pending || !frames.length) {
@@ -6146,9 +6144,8 @@
               }
 
               _this3.__fpsTime = 0;
-            }
+            } // delay仅第一次生效
 
-            firstEnter = false; // delay仅第一次生效
 
             if (playCount > 0) {
               delay = 0;
@@ -6307,7 +6304,7 @@
 
         frame.onFrame(this.__enterFrame);
 
-        this.__enterFrame(this.__nextTime - this.currentTime, cb);
+        this.__enterFrame(this.__nextTime - this.currentTime, cb, true);
 
         return this;
       }

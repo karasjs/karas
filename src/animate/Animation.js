@@ -1259,10 +1259,7 @@ class Animation extends Event {
           // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
           if(stayEnd) {
             current = current.style;
-            // 之前已经进入过endDelay可以省略对比计算
-            if(this.__currentTime < duration) {
-              [needRefresh, lv] = calRefresh(current, style, keys);
-            }
+            [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 不停留或超过endDelay则计算还原，有endDelay进入上面isLastFrame分支后会再次进入这里
           else {

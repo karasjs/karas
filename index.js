@@ -6075,12 +6075,6 @@
         }
 
         if (playState === 'running') {
-          if (isFunction$2(cb)) {
-            var currentTime = this.currentTime,
-                delay = this.delay;
-            cb(0, currentTime < delay);
-          }
-
           return this;
         }
 
@@ -6088,7 +6082,9 @@
 
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件
 
-        this.__firstPlay = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
+        this.__firstPlay = true; // 首次强制不跳帧
+
+        var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
           var frames = this.frames,
@@ -6096,7 +6092,7 @@
               target = this.target,
               direction = this.direction,
               iterations = this.iterations,
-              _delay = this.delay,
+              delay = this.delay,
               endDelay = this.endDelay,
               originStyle = this.originStyle,
               keys = this.keys,
@@ -6139,9 +6135,9 @@
 
             var nextTime = _this3.__calDiffTime(diff);
 
-            _this3.__startTime = frame.__now || inject.now(); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置
+            _this3.__startTime = frame.__now || inject.now(); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
-            if (fps < 60) {
+            if (!firstEnter && fps < 60) {
               diff = _this3.__fpsTime += diff;
 
               if (diff < 1000 / fps) {
@@ -6149,16 +6145,17 @@
               }
 
               _this3.__fpsTime = 0;
-            } // delay仅第一次生效
+            }
 
+            firstEnter = false; // delay仅第一次生效
 
             if (playCount > 0) {
-              _delay = 0;
+              delay = 0;
             }
 
             var needRefresh, lv; // 还没过前置delay
 
-            if (nextTime < _delay) {
+            if (nextTime < delay) {
               if (_this3.__stayBegin()) {
                 var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
@@ -6210,7 +6207,7 @@
             } // 减去delay，计算在哪一帧
 
 
-            nextTime -= _delay;
+            nextTime -= delay;
             var i = binarySearch(0, length - 1, nextTime, currentFrames);
             var current = currentFrames[i]; // 最后一帧结束动画，两帧之间没有变化，不触发刷新仅触发frame事件
 
@@ -6316,9 +6313,14 @@
       value: function pause() {
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
-            pending = this.pending;
+            pending = this.pending,
+            playState = this.playState;
 
         if (isDestroyed || duration <= 0 || pending) {
+          return this;
+        }
+
+        if (playState === 'paused') {
           return this;
         }
 
@@ -6342,10 +6344,6 @@
         }
 
         if (playState === 'finished') {
-          if (isFunction$2(cb)) {
-            cb();
-          }
-
           return this;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
@@ -6414,10 +6412,6 @@
         }
 
         if (playState === 'idle') {
-          if (isFunction$2(cb)) {
-            cb();
-          }
-
           return this;
         }
 

@@ -1143,16 +1143,14 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'running') {
-      if(isFunction(cb)) {
-        let { currentTime, delay } = this;
-        cb(0, currentTime < delay);
-      }
       return this;
     }
     this.__cancelTask();
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件
     this.__firstPlay = true;
+    // 首次强制不跳帧
+    let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
       let {
@@ -1197,14 +1195,15 @@ class Animation extends Event {
         // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
         let nextTime = this.__calDiffTime(diff);
         this.__startTime = frame.__now || inject.now();
-        // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置
-        if(fps < 60) {
+        // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
+        if(!firstEnter && fps < 60) {
           diff = this.__fpsTime += diff;
           if(diff < 1000 / fps) {
             return;
           }
           this.__fpsTime = 0;
         }
+        firstEnter = false;
         // delay仅第一次生效
         if(playCount > 0) {
           delay = 0;
@@ -1330,8 +1329,11 @@ class Animation extends Event {
   }
 
   pause() {
-    let { isDestroyed, duration, pending } = this;
+    let { isDestroyed, duration, pending, playState } = this;
     if(isDestroyed || duration <= 0 || pending) {
+      return this;
+    }
+    if(playState === 'paused') {
       return this;
     }
     this.__playState = 'paused';
@@ -1346,9 +1348,6 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'finished') {
-      if(isFunction(cb)) {
-        cb();
-      }
       return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
@@ -1389,9 +1388,6 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'idle') {
-      if(isFunction(cb)) {
-        cb();
-      }
       return this;
     }
     this.__cancelTask();

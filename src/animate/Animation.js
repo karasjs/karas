@@ -1529,6 +1529,9 @@ class Animation extends Event {
   get style() {
     return this.__style;
   }
+  get originStyle() {
+    return this.__originStyle;
+  }
   get props() {
     return this.__props;
   }

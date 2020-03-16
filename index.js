@@ -6621,6 +6621,11 @@
         return this.__style;
       }
     }, {
+      key: "originStyle",
+      get: function get() {
+        return this.__originStyle;
+      }
+    }, {
       key: "props",
       get: function get() {
         return this.__props;

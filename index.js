@@ -12319,11 +12319,15 @@
 
   var fullCssProperty = {
     skewX: 'kx',
-    skewY: 'ky'
+    skewY: 'ky',
+    transform: 'tf',
+    fontSize: 'fz'
   };
   var abbrCssProperty = {
     kx: 'skewX',
-    ky: 'skewY'
+    ky: 'skewY',
+    tf: 'transform',
+    fz: 'fontSize'
   };
   reset.dom.concat(reset.geom).forEach(function (item) {
     var k = item.k;
@@ -12361,30 +12365,9 @@
         if (style.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
           var ak = abbrCssProperty$1[k];
           style[ak] = style[k];
+          delete style[k];
         }
       });
-    }
-
-    var animation;
-
-    if (animate) {
-      var value = animate.value;
-
-      if (Array.isArray(value)) {
-        value.forEach(function (item) {
-          Object.keys(item).forEach(function (k) {
-            if (item.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
-              var ak = abbrCssProperty$1[k];
-              item[ak] = item[k];
-            }
-          });
-        });
-      }
-
-      animation = {
-        animate: animate
-      };
-      animateList.push(animation);
     }
 
     var vd;
@@ -12397,8 +12380,29 @@
       }));
     }
 
-    if (animation) {
-      animation.target = vd;
+    var animationRecord;
+
+    if (Array.isArray(animate) && animate.length) {
+      animate.forEach(function (item) {
+        var value = item.value;
+
+        if (Array.isArray(value)) {
+          value.forEach(function (item) {
+            Object.keys(item).forEach(function (k) {
+              if (item.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
+                var ak = abbrCssProperty$1[k];
+                item[ak] = item[k];
+                delete item[k];
+              }
+            });
+          });
+        }
+      });
+      animationRecord = {
+        animate: animate,
+        target: vd
+      };
+      animateList.push(animationRecord);
     }
 
     return vd;

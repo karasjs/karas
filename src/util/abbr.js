@@ -3,11 +3,15 @@ import reset from '../style/reset';
 let fullCssProperty = {
   skewX: 'kx',
   skewY: 'ky',
+  transform: 'tf',
+  fontSize: 'fz',
 };
 
 let abbrCssProperty = {
   kx: 'skewX',
   ky: 'skewY',
+  tf: 'transform',
+  fz: 'fontSize',
 };
 
 reset.dom.concat(reset.geom).forEach(item => {

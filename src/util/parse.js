@@ -14,26 +14,9 @@ function parse(karas, json, animateList) {
       if(style.hasOwnProperty(k) && abbrCssProperty.hasOwnProperty(k)) {
         let ak = abbrCssProperty[k];
         style[ak] = style[k];
+        delete style[k];
       }
     });
-  }
-  let animation;
-  if(animate) {
-    let value = animate.value;
-    if(Array.isArray(value)) {
-      value.forEach(item => {
-        Object.keys(item).forEach(k => {
-          if(item.hasOwnProperty(k) && abbrCssProperty.hasOwnProperty(k)) {
-            let ak = abbrCssProperty[k];
-            item[ak] = item[k];
-          }
-        });
-      });
-    }
-    animation = {
-      animate,
-    };
-    animateList.push(animation);
   }
   let vd;
   if(tagName.charAt(0) === '$') {
@@ -42,8 +25,27 @@ function parse(karas, json, animateList) {
   else {
     vd = karas.createVd(tagName, props, children.map(item => parse(karas, item, animateList)));
   }
-  if(animation) {
-    animation.target = vd;
+  let animationRecord;
+  if(Array.isArray(animate) && animate.length) {
+    animate.forEach(item => {
+      let value = item.value;
+      if(Array.isArray(value)) {
+        value.forEach(item => {
+          Object.keys(item).forEach(k => {
+            if(item.hasOwnProperty(k) && abbrCssProperty.hasOwnProperty(k)) {
+              let ak = abbrCssProperty[k];
+              item[ak] = item[k];
+              delete item[k];
+            }
+          });
+        });
+      }
+    });
+    animationRecord = {
+      animate,
+      target: vd,
+    };
+    animateList.push(animationRecord);
   }
   return vd;
 }

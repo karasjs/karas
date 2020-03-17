@@ -22,9 +22,9 @@
     "yurine": "~0.3.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.4.3",
+    "@babel/core": "^7.8.7",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
-    "@babel/preset-env": "^7.4.3",
+    "@babel/preset-env": "^7.8.7",
     "chromedriver": "^80.0.0",
     "expect.js": "^0.3.1",
     "gulp": "^4.0.0",
@@ -32,10 +32,10 @@
     "gulp-util": "^3.0.8",
     "mocha": "^6.2.2",
     "nightwatch": "^1.1.0",
-    "rollup": "^1.21.2",
-    "rollup-plugin-babel": "^4.3.3",
-    "rollup-plugin-sourcemaps": "^0.4.2",
-    "rollup-plugin-uglify": "^6.0.3",
+    "rollup": "^1.32.1",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-sourcemaps": "^0.5.0",
+    "rollup-plugin-uglify": "^6.0.4",
     "selenium-server": "^3.141.59",
     "through2": "^3.0.0"
   },

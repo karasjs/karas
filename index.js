@@ -2,9 +2,11 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = global || self, global.karas = factory());
-}(this, function () { 'use strict';
+}(this, (function () { 'use strict';
 
   function _typeof(obj) {
+    "@babel/helpers - typeof";
+
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
       _typeof = function (obj) {
         return typeof obj;
@@ -74,13 +76,13 @@
       var source = arguments[i] != null ? arguments[i] : {};
 
       if (i % 2) {
-        ownKeys(source, true).forEach(function (key) {
+        ownKeys(Object(source), true).forEach(function (key) {
           _defineProperty(target, key, source[key]);
         });
       } else if (Object.getOwnPropertyDescriptors) {
         Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
       } else {
-        ownKeys(source).forEach(function (key) {
+        ownKeys(Object(source)).forEach(function (key) {
           Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
         });
       }
@@ -228,9 +230,7 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance");
   }
 
-  var Node =
-  /*#__PURE__*/
-  function () {
+  var Node = /*#__PURE__*/function () {
     function Node() {
       _classCallCheck(this, Node);
 
@@ -3199,9 +3199,7 @@
     calAbsolute: calAbsolute
   };
 
-  var LineBox =
-  /*#__PURE__*/
-  function () {
+  var LineBox = /*#__PURE__*/function () {
     function LineBox(parent, x, y, w, content) {
       _classCallCheck(this, LineBox);
 
@@ -3288,9 +3286,7 @@
     return LineBox;
   }();
 
-  var Text =
-  /*#__PURE__*/
-  function (_Node) {
+  var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
 
     function Text(content) {
@@ -3882,9 +3878,7 @@
 
   var isFunction = util.isFunction;
 
-  var Event =
-  /*#__PURE__*/
-  function () {
+  var Event = /*#__PURE__*/function () {
     function Event() {
       _classCallCheck(this, Event);
 
@@ -4186,9 +4180,7 @@
 
   var isNil$2 = util.isNil;
 
-  var Component =
-  /*#__PURE__*/
-  function (_Event) {
+  var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
     function Component(tagName, props, children) {
@@ -4634,9 +4626,7 @@
   var isFunction$1 = util.isFunction,
       isObject = util.isObject;
 
-  var Frame =
-  /*#__PURE__*/
-  function () {
+  var Frame = /*#__PURE__*/function () {
     function Frame() {
       _classCallCheck(this, Frame);
 
@@ -5788,9 +5778,7 @@
 
   var uuid = 0;
 
-  var Animation =
-  /*#__PURE__*/
-  function (_Event) {
+  var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
 
     function Animation(target, list, options) {
@@ -6851,9 +6839,7 @@
     return 0;
   }
 
-  var Xom =
-  /*#__PURE__*/
-  function (_Node) {
+  var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
 
     function Xom(tagName, props) {
@@ -8165,9 +8151,7 @@
     return Xom;
   }(Node);
 
-  var LineGroup =
-  /*#__PURE__*/
-  function () {
+  var LineGroup = /*#__PURE__*/function () {
     function LineGroup(x, y) {
       _classCallCheck(this, LineGroup);
 
@@ -8270,9 +8254,7 @@
       isNil$4 = util.isNil;
   var REGISTER = {};
 
-  var Geom =
-  /*#__PURE__*/
-  function (_Xom) {
+  var Geom = /*#__PURE__*/function (_Xom) {
     _inherits(Geom, _Xom);
 
     function Geom(tagName, props) {
@@ -8534,15 +8516,15 @@
             } else if (child.tagName === 'circle' || child.tagName === 'ellipse') {
               for (var _i = 0, _len = props.length; _i < _len; _i++) {
                 var _props$_i = _slicedToArray(props[_i], 2),
-                    k = _props$_i[0],
-                    v = _props$_i[1];
+                    _k = _props$_i[0],
+                    _v = _props$_i[1];
 
-                if (k === 'cx') {
+                if (_k === 'cx') {
                   xi = _i;
-                  x = v;
-                } else if (k === 'cy') {
+                  x = _v;
+                } else if (_k === 'cy') {
                   yi = _i;
-                  y = v;
+                  y = _v;
                 }
               }
 
@@ -8553,11 +8535,11 @@
             } else if (child.tagName === 'polygon') {
               for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
                 var _props$_i2 = _slicedToArray(props[_i2], 2),
-                    k = _props$_i2[0],
-                    v = _props$_i2[1];
+                    _k2 = _props$_i2[0],
+                    _v2 = _props$_i2[1];
 
-                if (k === 'points') {
-                  props[_i2][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                if (_k2 === 'points') {
+                  props[_i2][1] = _v2.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
                     return matrix.calPoint([$1, $2], m).join(',');
                   });
                   break;
@@ -8566,11 +8548,11 @@
             } else if (child.tagName === 'path') {
               for (var _i3 = 0, _len3 = props.length; _i3 < _len3; _i3++) {
                 var _props$_i3 = _slicedToArray(props[_i3], 2),
-                    k = _props$_i3[0],
-                    v = _props$_i3[1];
+                    _k3 = _props$_i3[0],
+                    _v3 = _props$_i3[1];
 
-                if (k === 'd') {
-                  props[_i3][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                if (_k3 === 'd') {
+                  props[_i3][1] = _v3.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
                     return matrix.calPoint([$1, $2], m).join(',');
                   });
                   break;
@@ -8690,9 +8672,7 @@
     return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
   }
 
-  var Dom =
-  /*#__PURE__*/
-  function (_Xom) {
+  var Dom = /*#__PURE__*/function (_Xom) {
     _inherits(Dom, _Xom);
 
     function Dom(tagName, props, children) {
@@ -9968,9 +9948,7 @@
   var LOADING = 1;
   var LOADED = 2;
 
-  var Img =
-  /*#__PURE__*/
-  function (_Dom) {
+  var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
     function Img(tagName, props) {
@@ -10310,18 +10288,18 @@
         var _prop2 = nd.props[_i2];
 
         var _prop3 = _slicedToArray(_prop2, 2),
-            k = _prop3[0],
-            v = _prop3[1]; // 已有不等更新，没有添加
+            _k = _prop3[0],
+            _v = _prop3[1]; // 已有不等更新，没有添加
 
 
-        if (op.hasOwnProperty(k)) {
-          if (op[k] !== v) {
-            elem.setAttribute(k, v);
+        if (op.hasOwnProperty(_k)) {
+          if (op[_k] !== _v) {
+            elem.setAttribute(_k, _v);
           }
 
-          delete op[k];
+          delete op[_k];
         } else {
-          elem.setAttribute(k, v);
+          elem.setAttribute(_k, _v);
         }
       } // 多余的删除
 
@@ -10577,18 +10555,18 @@
       var _prop5 = nvd.props[_i3];
 
       var _prop6 = _slicedToArray(_prop5, 2),
-          k = _prop6[0],
-          v = _prop6[1]; // 已有不等更新，没有添加
+          _k2 = _prop6[0],
+          _v2 = _prop6[1]; // 已有不等更新，没有添加
 
 
-      if (op.hasOwnProperty(k)) {
-        if (op[k] !== v) {
-          elem.setAttribute(k, v);
+      if (op.hasOwnProperty(_k2)) {
+        if (op[_k2] !== _v2) {
+          elem.setAttribute(_k2, _v2);
         }
 
-        delete op[k];
+        delete op[_k2];
       } else {
-        elem.setAttribute(k, v);
+        elem.setAttribute(_k2, _v2);
       }
     } // 多余的删除
 
@@ -10628,9 +10606,7 @@
     }
   }
 
-  var Defs =
-  /*#__PURE__*/
-  function () {
+  var Defs = /*#__PURE__*/function () {
     function Defs(uuid) {
       _classCallCheck(this, Defs);
 
@@ -10710,9 +10686,7 @@
 
   var uuid$1 = 0;
 
-  var Root =
-  /*#__PURE__*/
-  function (_Dom) {
+  var Root = /*#__PURE__*/function (_Dom) {
     _inherits(Root, _Dom);
 
     function Root(tagName, props, children) {
@@ -11130,9 +11104,7 @@
     return Root;
   }(Dom);
 
-  var Line =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
     function Line(tagName, props) {
@@ -11315,9 +11287,7 @@
     return Line;
   }(Geom);
 
-  var Polyline =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
     function Polyline(tagName, props) {
@@ -11572,9 +11542,7 @@
     return Polyline;
   }(Geom);
 
-  var Polygon =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Polygon = /*#__PURE__*/function (_Geom) {
     _inherits(Polygon, _Geom);
 
     function Polygon(tagName, props) {
@@ -11790,9 +11758,7 @@
     }
   }
 
-  var Sector =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Sector = /*#__PURE__*/function (_Geom) {
     _inherits(Sector, _Geom);
 
     function Sector(tagName, props) {
@@ -12003,9 +11969,7 @@
     return Sector;
   }(Geom);
 
-  var Rect =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Rect = /*#__PURE__*/function (_Geom) {
     _inherits(Rect, _Geom);
 
     function Rect(tagName, props) {
@@ -12143,9 +12107,7 @@
     return Rect;
   }(Geom);
 
-  var Circle =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Circle = /*#__PURE__*/function (_Geom) {
     _inherits(Circle, _Geom);
 
     function Circle(tagName, props) {
@@ -12235,9 +12197,7 @@
     return Circle;
   }(Geom);
 
-  var Ellipse =
-  /*#__PURE__*/
-  function (_Geom) {
+  var Ellipse = /*#__PURE__*/function (_Geom) {
     _inherits(Ellipse, _Geom);
 
     function Ellipse(tagName, props) {
@@ -12532,5 +12492,5 @@
 
   return karas;
 
-}));
+})));
 //# sourceMappingURL=index.js.map

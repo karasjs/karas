@@ -12347,6 +12347,18 @@
 
   var abbrCssProperty$1 = abbr.abbrCssProperty;
 
+  function abbr2full(style) {
+    if (style) {
+      Object.keys(style).forEach(function (k) {
+        if (style.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
+          var ak = abbrCssProperty$1[k];
+          style[ak] = style[k];
+          delete style[k];
+        }
+      });
+    }
+  }
+
   function parse$1(karas, json, animateList) {
     if (util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
       return json;
@@ -12358,18 +12370,7 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
-    var style = props.style;
-
-    if (style) {
-      Object.keys(style).forEach(function (k) {
-        if (style.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
-          var ak = abbrCssProperty$1[k];
-          style[ak] = style[k];
-          delete style[k];
-        }
-      });
-    }
-
+    abbr2full(props.style);
     var vd;
 
     if (tagName.charAt(0) === '$') {
@@ -12382,26 +12383,42 @@
 
     var animationRecord;
 
-    if (Array.isArray(animate) && animate.length) {
-      animate.forEach(function (item) {
-        var value = item.value;
+    if (animate) {
+      if (Array.isArray(animate)) {
+        var has;
+        animate.forEach(function (item) {
+          var value = item.value;
 
-        if (Array.isArray(value)) {
-          value.forEach(function (item) {
-            Object.keys(item).forEach(function (k) {
-              if (item.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
-                var ak = abbrCssProperty$1[k];
-                item[ak] = item[k];
-                delete item[k];
-              }
+          if (Array.isArray(value) && value.length) {
+            has = true;
+            value.forEach(function (item) {
+              abbr2full(item);
             });
-          });
+          }
+        });
+
+        if (has) {
+          animationRecord = {
+            animate: animate,
+            target: vd
+          };
         }
-      });
-      animationRecord = {
-        animate: animate,
-        target: vd
-      };
+      } else {
+        var value = animate.value;
+
+        if (Array.isArray(value) && value.length) {
+          value.forEach(function (item) {
+            abbr2full(item);
+          });
+          animationRecord = {
+            animate: animate,
+            target: vd
+          };
+        }
+      }
+    }
+
+    if (animationRecord) {
       animateList.push(animationRecord);
     }
 

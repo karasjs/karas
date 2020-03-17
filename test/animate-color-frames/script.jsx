@@ -21,5 +21,5 @@ animation.on(karas.Event.FRAME, () => {
 });
 animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
-  input.value = n > 9 && n < 16;
+  input.value = n > 9 && n < 17;
 });

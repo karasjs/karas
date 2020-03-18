@@ -3055,7 +3055,13 @@
       computedStyle[k] = currentStyle[k].value;
     });
     ['position', 'display', 'visibility', 'flexDirection', 'justifyContent', 'alignItems', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
-      computedStyle[k] = currentStyle[k];
+      var v = currentStyle[k];
+
+      if (k === 'display' && v === 'inline' && currentStyle.position === 'absolute') {
+        v = 'block';
+      }
+
+      computedStyle[k] = v;
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
       computedStyle[k] = int2rgba$2(currentStyle[k]);
@@ -3311,7 +3317,9 @@
             content = this.content,
             computedStyle = this.computedStyle,
             charWidthList = this.charWidthList,
-            renderMode = this.renderMode;
+            renderMode = this.renderMode; // 每次都要清空重新计算，计算会有缓存
+
+        charWidthList.splice(0);
 
         if (renderMode === mode.CANVAS) {
           ctx.font = css.setFontStyle(computedStyle);
@@ -8721,6 +8729,23 @@
               i--;
             }
           }
+        } // 限制inline不能包含block/flex，注意absolute影响inline为block
+
+
+        var style = this.style;
+
+        if (style.display === 'inline' && style.position !== 'absolute') {
+          var pStyle = this.parent.style;
+
+          if (pStyle.display !== 'flex') {
+            for (var _i = list.length - 1; _i >= 0; _i--) {
+              var _item = list[_i];
+
+              if ((_item instanceof Xom || _item instanceof Component) && _item.style.display !== 'inline') {
+                throw new Error('inline can not contain block/flex');
+              }
+            }
+          }
         }
 
         var prev = null;
@@ -8902,11 +8927,11 @@
             b = Math.max(b, b2);
             min = Math.max(min, min2);
             max = Math.max(max, max2);
-          } // 文本
+          } // 文本水平
           else if (isDirectionRow) {
               min = Math.max(item.charWidth, min);
               max = Math.max(item.textWidth, max);
-            } // Geom
+            } // 文本垂直
             else {
                 item.__layout({
                   x: 0,
@@ -8961,7 +8986,7 @@
 
     }, {
       key: "__layoutBlock",
-      value: function __layoutBlock(data) {
+      value: function __layoutBlock(data, fake) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -9117,7 +9142,7 @@
 
     }, {
       key: "__layoutFlex",
-      value: function __layoutFlex(data) {
+      value: function __layoutFlex(data, fake) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
@@ -9313,23 +9338,23 @@
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i = 0; _i < len; _i++) {
-              var _child = flowChildren[_i];
+            for (var _i2 = 0; _i2 < len; _i2++) {
+              var _child = flowChildren[_i2];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i2 = 1; _i2 < len; _i2++) {
-              var _child2 = flowChildren[_i2];
-              isDirectionRow ? _child2.__offsetX(between * _i2, true) : _child2.__offsetY(between * _i2, true);
+            for (var _i3 = 1; _i3 < len; _i3++) {
+              var _child2 = flowChildren[_i3];
+              isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
             }
           } else if (justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i3 = 0; _i3 < len; _i3++) {
-              var _child3 = flowChildren[_i3];
-              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1), true) : _child3.__offsetY(around * (_i3 + 1), true);
+            for (var _i4 = 0; _i4 < len; _i4++) {
+              var _child3 = flowChildren[_i4];
+              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
             }
           }
         } // 子元素侧轴伸展
@@ -12323,16 +12348,12 @@
     transform: 'tf',
     fontSize: 'fz'
   };
-  var abbrCssProperty = {
-    kx: 'skewX',
-    ky: 'skewY',
-    tf: 'transform',
-    fz: 'fontSize'
-  };
+  var abbrCssProperty = {};
   reset.dom.concat(reset.geom).forEach(function (item) {
     var k = item.k;
 
     if (fullCssProperty.hasOwnProperty(k)) {
+      abbrCssProperty[fullCssProperty[k]] = k;
       return;
     }
 

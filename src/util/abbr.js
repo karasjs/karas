@@ -7,16 +7,12 @@ let fullCssProperty = {
   fontSize: 'fz',
 };
 
-let abbrCssProperty = {
-  kx: 'skewX',
-  ky: 'skewY',
-  tf: 'transform',
-  fz: 'fontSize',
-};
+let abbrCssProperty = {};
 
 reset.dom.concat(reset.geom).forEach(item => {
   let k = item.k;
   if(fullCssProperty.hasOwnProperty(k)) {
+    abbrCssProperty[fullCssProperty[k]] = k;
     return;
   }
   let v = k.charAt(0) + k.replace(/[a-z]/g, '').toLowerCase();

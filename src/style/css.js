@@ -839,7 +839,11 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'flexGrow',
     'flexShrink',
   ].forEach(k => {
-    computedStyle[k] = currentStyle[k];
+    let v = currentStyle[k];
+    if(k === 'display' && v === 'inline' && currentStyle.position === 'absolute') {
+      v = 'block';
+    }
+    computedStyle[k] = v;
   });
   [
     'backgroundColor',

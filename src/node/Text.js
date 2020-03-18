@@ -22,6 +22,8 @@ class Text extends Node {
   // 预先计算每个字的宽度
   __measure() {
     let { ctx, content, computedStyle, charWidthList, renderMode } = this;
+    // 每次都要清空重新计算，计算会有缓存
+    charWidthList.splice(0);
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
     }

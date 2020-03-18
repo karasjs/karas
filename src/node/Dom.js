@@ -58,6 +58,19 @@ class Dom extends Xom {
         }
       }
     }
+    // 限制inline不能包含block/flex，注意absolute影响inline为block
+    let { style } = this;
+    if(style.display === 'inline' && style.position !== 'absolute') {
+      let pStyle = this.parent.style;
+      if(pStyle.display !== 'flex') {
+        for(let i = list.length - 1; i >= 0; i--) {
+          let item = list[i];
+          if((item instanceof Xom || item instanceof Component) && item.style.display !== 'inline') {
+            throw new Error('inline can not contain block/flex');
+          }
+        }
+      }
+    }
     let prev = null;
     list.forEach(item => {
       item.__ctx = ctx;
@@ -217,12 +230,12 @@ class Dom extends Xom {
         min = Math.max(min, min2);
         max = Math.max(max, max2);
       }
-      // 文本
+      // 文本水平
       else if(isDirectionRow) {
         min = Math.max(item.charWidth, min);
         max = Math.max(item.textWidth, max);
       }
-      // Geom
+      // 文本垂直
       else {
         item.__layout({
           x: 0,
@@ -273,7 +286,7 @@ class Dom extends Xom {
   }
 
   // 本身block布局时计算好所有子元素的基本位置
-  __layoutBlock(data) {
+  __layoutBlock(data, fake) {
     let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
     lineGroups.splice(0);
     let {
@@ -409,7 +422,7 @@ class Dom extends Xom {
   }
 
   // 弹性布局时的计算位置
-  __layoutFlex(data) {
+  __layoutFlex(data, fake) {
     let { flowChildren, currentStyle } = this;
     let {
       flexDirection,

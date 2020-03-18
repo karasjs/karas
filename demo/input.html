@@ -12,49 +12,47 @@
 </head>
 <body>
 <div>
-<textarea id="ta" autocomplete="off">{
-  "tagName": "$rect",
-  "props": {
-    "style": {
-      "position": "absolute",
-      "left": 0,
-      "top": 0,
-      "width": 100,
-      "height": 100,
-      "strokeWidth": 0,
-      "fill": "#F00"
-    }
-  },
-  "animate": [{
-    "value": [
-      {
-        "transform": "translateX(0)",
-        "easing": "easeIn"
+<textarea id="ta" autocomplete="off">
+  {
+      "tagName": "span",
+      "props": {
+        "style": {
+          "p": "absolute",
+          "l": 55,
+          "t": 6,
+          "h": 26,
+          "fz": 19,
+          "ff": "PingFang SC",
+          "fw": 5,
+          "bc": "#000",
+          "c": "rgba(255,255,255,1)"
+        }
       },
-      {
-        "transform": "translateX(200px)"
-      }
-    ],
-    "options": {
-      "duration": 5000,
-      "fill": "forwards"
+      "children": [
+        "抽大奖"
+      ],
+      "animate": [
+        {
+          "value": [
+            {
+              "l": 50,
+              "t": 1,
+              "easing": "cubic-bezier(0.8233,0.0133,1,1)"
+            },
+            {
+              "l": 0,
+              "t": 1
+            }
+          ],
+          "options": {
+            "duration": 6000,
+            "fill": "forwards",
+  "fps":1
+          }
+        }
+      ]
     }
-  }, {
-    "value": [
-      {
-        "top": 0,
-        "easing": "easeOut"
-      },
-      {
-        "top": 100
-      }
-    ],
-    "options": {
-      "duration": 5000,
-      "fill": "forwards"
-    }
-  }]
-}</textarea>
+</textarea>
 <input id="btn" type="button" value="ok"/>
 </div>
 <div id="example"></div>
@@ -75,16 +73,16 @@
         json,
       ],
     }, '#example');
-    karas.parse({
-      tagName: 'svg',
-      props: {
-        width: 360,
-        height: 360,
-      },
-      children: Array.isArray(json) ? json : [
-        json,
-      ],
-    }, '#example2');
+    // karas.parse({
+    //   tagName: 'svg',
+    //   props: {
+    //     width: 110,
+    //     height: 80,
+    //   },
+    //   children: Array.isArray(json) ? json : [
+    //     json,
+    //   ],
+    // }, '#example2');
   }
   input.onclick = function() {
     exec(ta.value);

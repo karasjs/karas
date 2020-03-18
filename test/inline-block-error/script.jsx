@@ -1,6 +1,6 @@
 window.onerror = function(e) {
   let input = document.querySelector('#base64');
-  input.value = e;
+  input.value = 'error';
 };
 
 karas.render(

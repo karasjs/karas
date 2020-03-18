@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .assert.value('input', 'Uncaught Error: inline can not contain block/flex')
+      .assert.value('input', 'error')
       .end();
   }
 };

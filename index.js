@@ -10757,7 +10757,9 @@
             x = _node$getBoundingClie.x,
             y = _node$getBoundingClie.y,
             left = _node$getBoundingClie.left,
-            top = _node$getBoundingClie.top;
+            top = _node$getBoundingClie.top,
+            width = _node$getBoundingClie.width,
+            height = _node$getBoundingClie.height;
 
         x = x || left || 0;
         y = y || top || 0;
@@ -10768,6 +10770,17 @@
 
         x = pageX - x;
         y = pageY - y;
+        var sx = width / this.width;
+        var sy = height / this.height; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
+
+        if (sx !== 1) {
+          x /= sx;
+        }
+
+        if (sy !== 1) {
+          y /= sy;
+        }
+
         var data = {
           event: e,
           stopPropagation: function stopPropagation() {

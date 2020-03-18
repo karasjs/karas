@@ -49,6 +49,31 @@ function parseFlex(style, grow, shrink, basis) {
   }
 }
 
+function parseMarginPadding(style, key) {
+  let temp = style[key];
+  if(temp) {
+    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+    if(match) {
+      if(match.length === 1) {
+        match[3] = match[2] = match[1] = match[0];
+      }
+      else if(match.length === 2) {
+        match[2] = match[0];
+        match[3] = match[1];
+      }
+      else if(match.length === 3) {
+        match[3] = match[1];
+      }
+      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
+        k = key + k;
+        if(isNil(style[k])) {
+          style[k] = match[i];
+        }
+      });
+    }
+  }
+}
+
 /**
  * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
  * @param obj 待计算的样式对象
@@ -242,51 +267,8 @@ function normalize(style, reset = []) {
     }
   }
   // margin
-  temp = style.margin;
-  if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-    if(match) {
-      if(match.length === 1) {
-        match[3] = match[2] = match[1] = match[0];
-      }
-      else if(match.length === 2) {
-        match[2] = match[0];
-        match[3] = match[1];
-      }
-      else if(match.length === 3) {
-        match[3] = match[1];
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
-        k = 'margin' + k;
-        if(isNil(style[k])) {
-          style[k] = match[i];
-        }
-      });
-    }
-  }
-  // padding
-  temp = style.padding;
-  if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-    if(match) {
-      if(match.length === 1) {
-        match[3] = match[2] = match[1] = match[0];
-      }
-      else if(match.length === 2) {
-        match[2] = match[0];
-        match[3] = match[1];
-      }
-      else if(match.length === 3) {
-        match[3] = match[1];
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
-        k = 'padding' + k;
-        if(isNil(style[k])) {
-          style[k] = match[i];
-        }
-      });
-    }
-  }
+  parseMarginPadding(style, 'margin');
+  parseMarginPadding(style, 'padding');
   [
     'translateX',
     'translateY',
@@ -397,7 +379,7 @@ function normalize(style, reset = []) {
   if(temp) {
     let match = temp.toString().match(/\w+\(.+?\)/g);
     if(match) {
-      let transform = style.transform = [];
+      let transform = [];
       match.forEach(item => {
         let i = item.indexOf('(');
         let k = item.slice(0, i);
@@ -442,6 +424,7 @@ function normalize(style, reset = []) {
           transform.push(arr2);
         }
       });
+      style.transform = transform;
     }
   }
   temp = style.transformOrigin;
@@ -839,11 +822,7 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'flexGrow',
     'flexShrink',
   ].forEach(k => {
-    let v = currentStyle[k];
-    if(k === 'display' && v === 'inline' && currentStyle.position === 'absolute') {
-      v = 'block';
-    }
-    computedStyle[k] = v;
+    computedStyle[k] = currentStyle[k];
   });
   [
     'backgroundColor',

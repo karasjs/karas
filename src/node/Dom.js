@@ -23,7 +23,7 @@ const INLINE = {
 };
 
 function isRelativeOrAbsolute(node) {
-  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1
+  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
 class Dom extends Xom {
@@ -55,19 +55,6 @@ class Dom extends Xom {
         }
         else {
           i--;
-        }
-      }
-    }
-    // 限制inline不能包含block/flex，注意absolute影响inline为block
-    let { style } = this;
-    if(style.display === 'inline' && style.position !== 'absolute') {
-      let pStyle = this.parent.style;
-      if(pStyle.display !== 'flex') {
-        for(let i = list.length - 1; i >= 0; i--) {
-          let item = list[i];
-          if((item instanceof Xom || item instanceof Component) && item.style.display !== 'inline') {
-            throw new Error('inline can not contain block/flex');
-          }
         }
       }
     }
@@ -109,7 +96,7 @@ class Dom extends Xom {
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
   __init() {
-    let style = this.__style;
+    let { style, parent } = this;
     // 仅支持flex/block/inline/none
     if(!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
       if(INLINE.hasOwnProperty(this.tagName)) {
@@ -119,8 +106,13 @@ class Dom extends Xom {
         style.display = 'block';
       }
     }
+    // absolute和flex孩子强制block
+    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
+      style.display = 'block';
+    }
     // 标准化处理，默认值、简写属性
     css.normalize(style, reset.dom);
+    let isInline = style.display === 'inline';
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
         item.__init();
@@ -130,8 +122,12 @@ class Dom extends Xom {
         item.__style = style;
       }
       // 普通流和定位流分开
-      if(item instanceof Text || item.style.position !== 'absolute') {
+      let isText = item instanceof Text;
+      if(isText || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);
+        if(isInline && !isText && item.style.display !== 'inline') {
+          throw new Error('inline can not contain block/flex');
+        }
       }
       else {
         this.__absChildren.push(item);
@@ -984,7 +980,7 @@ class Dom extends Xom {
       // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
       if(onlyRight && onlyBottom) {
         w2 = x2 - x;
-        h2 - y2 - y;
+        h2 = y2 - y;
       }
       else if(onlyRight) {
         w2 = x2 - x;
@@ -998,7 +994,7 @@ class Dom extends Xom {
           h: y2 - y,
         });
         w2 = data.w - x2;
-        h2 - y2 - y;
+        h2 = y2 - y;
       }
       else {
         w2 = data.w - x2;

@@ -2232,6 +2232,33 @@
       style.flexBasis = basis;
     }
   }
+
+  function parseMarginPadding(style, key) {
+    var temp = style[key];
+
+    if (temp) {
+      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
+
+      if (match) {
+        if (match.length === 1) {
+          match[3] = match[2] = match[1] = match[0];
+        } else if (match.length === 2) {
+          match[2] = match[0];
+          match[3] = match[1];
+        } else if (match.length === 3) {
+          match[3] = match[1];
+        }
+
+        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
+          k = key + k;
+
+          if (isNil$1(style[k])) {
+            style[k] = match[i];
+          }
+        });
+      }
+    }
+  }
   /**
    * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
    * @param obj 待计算的样式对象
@@ -2450,57 +2477,8 @@
     } // margin
 
 
-    temp = style.margin;
-
-    if (temp) {
-      var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-
-      if (match) {
-        if (match.length === 1) {
-          match[3] = match[2] = match[1] = match[0];
-        } else if (match.length === 2) {
-          match[2] = match[0];
-          match[3] = match[1];
-        } else if (match.length === 3) {
-          match[3] = match[1];
-        }
-
-        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
-          k = 'margin' + k;
-
-          if (isNil$1(style[k])) {
-            style[k] = match[i];
-          }
-        });
-      }
-    } // padding
-
-
-    temp = style.padding;
-
-    if (temp) {
-      var _match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-
-      if (_match) {
-        if (_match.length === 1) {
-          _match[3] = _match[2] = _match[1] = _match[0];
-        } else if (_match.length === 2) {
-          _match[2] = _match[0];
-          _match[3] = _match[1];
-        } else if (_match.length === 3) {
-          _match[3] = _match[1];
-        }
-
-        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
-          k = 'padding' + k;
-
-          if (isNil$1(style[k])) {
-            style[k] = _match[i];
-          }
-        });
-      }
-    }
-
+    parseMarginPadding(style, 'margin');
+    parseMarginPadding(style, 'padding');
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
@@ -2566,17 +2544,17 @@
     temp = style.backgroundSize;
 
     if (temp) {
-      var _match2 = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
+      var match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
 
-      if (_match2) {
-        if (_match2.length === 1) {
-          _match2[1] = _match2[0];
+      if (match) {
+        if (match.length === 1) {
+          match[1] = match[0];
         }
 
         var bc = [];
 
         for (var i = 0; i < 2; i++) {
-          var item = _match2[i];
+          var item = match[i];
 
           if (/%$/.test(item) || /px$/.test(item)) {
             calUnit(bc, i, item);
@@ -2613,12 +2591,12 @@
     temp = style.transform;
 
     if (temp) {
-      var _match3 = temp.toString().match(/\w+\(.+?\)/g);
+      var _match = temp.toString().match(/\w+\(.+?\)/g);
 
-      if (_match3) {
-        var transform = style.transform = [];
+      if (_match) {
+        var transform = [];
 
-        _match3.forEach(function (item) {
+        _match.forEach(function (item) {
           var i = item.indexOf('(');
           var k = item.slice(0, i);
           var v = item.slice(i + 1, item.length - 1);
@@ -2674,23 +2652,25 @@
             transform.push(arr2);
           }
         });
+
+        style.transform = transform;
       }
     }
 
     temp = style.transformOrigin;
 
     if (!isNil$1(temp)) {
-      var _match4 = temp.toString().match(reg.position);
+      var _match2 = temp.toString().match(reg.position);
 
-      if (_match4) {
-        if (_match4.length === 1) {
-          _match4[1] = _match4[0];
+      if (_match2) {
+        if (_match2.length === 1) {
+          _match2[1] = _match2[0];
         }
 
         var tfo = [];
 
         for (var _i = 0; _i < 2; _i++) {
-          var _item = _match4[_i];
+          var _item = _match2[_i];
 
           if (/%$/.test(_item) || /px$/.test(_item)) {
             calUnit(tfo, _i, _item);
@@ -2940,18 +2920,18 @@
     temp = style.strokeDasharray;
 
     if (!isNil$1(temp)) {
-      var _match5 = temp.toString().match(/[\d.]+/g);
+      var _match3 = temp.toString().match(/[\d.]+/g);
 
-      if (_match5) {
-        _match5 = _match5.map(function (item) {
+      if (_match3) {
+        _match3 = _match3.map(function (item) {
           return parseFloat(item);
         });
 
-        if (_match5.length % 2 === 1) {
-          _match5.push(_match5[_match5.length - 1]);
+        if (_match3.length % 2 === 1) {
+          _match3.push(_match3[_match3.length - 1]);
         }
 
-        style.strokeDasharray = _match5;
+        style.strokeDasharray = _match3;
       } else {
         style.strokeDasharray = [];
       }
@@ -3055,13 +3035,7 @@
       computedStyle[k] = currentStyle[k].value;
     });
     ['position', 'display', 'visibility', 'flexDirection', 'justifyContent', 'alignItems', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
-      var v = currentStyle[k];
-
-      if (k === 'display' && v === 'inline' && currentStyle.position === 'absolute') {
-        v = 'block';
-      }
-
-      computedStyle[k] = v;
+      computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
       computedStyle[k] = int2rgba$2(currentStyle[k]);
@@ -8729,23 +8703,6 @@
               i--;
             }
           }
-        } // 限制inline不能包含block/flex，注意absolute影响inline为block
-
-
-        var style = this.style;
-
-        if (style.display === 'inline' && style.position !== 'absolute') {
-          var pStyle = this.parent.style;
-
-          if (pStyle.display !== 'flex') {
-            for (var _i = list.length - 1; _i >= 0; _i--) {
-              var _item = list[_i];
-
-              if ((_item instanceof Xom || _item instanceof Component) && _item.style.display !== 'inline') {
-                throw new Error('inline can not contain block/flex');
-              }
-            }
-          }
         }
 
         var prev = null;
@@ -8792,7 +8749,8 @@
       value: function __init() {
         var _this4 = this;
 
-        var style = this.__style; // 仅支持flex/block/inline/none
+        var style = this.style,
+            parent = this.parent; // 仅支持flex/block/inline/none
 
         if (!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
           if (INLINE.hasOwnProperty(this.tagName)) {
@@ -8800,10 +8758,16 @@
           } else {
             style.display = 'block';
           }
+        } // absolute和flex孩子强制block
+
+
+        if (parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
+          style.display = 'block';
         } // 标准化处理，默认值、简写属性
 
 
         css.normalize(style, reset.dom);
+        var isInline = style.display === 'inline';
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
             item.__init();
@@ -8813,8 +8777,14 @@
             } // 普通流和定位流分开
 
 
-          if (item instanceof Text || item.style.position !== 'absolute') {
+          var isText = item instanceof Text;
+
+          if (isText || item.style.position !== 'absolute') {
             _this4.__flowChildren.push(item);
+
+            if (isInline && !isText && item.style.display !== 'inline') {
+              throw new Error('inline can not contain block/flex');
+            }
           } else {
             _this4.__absChildren.push(item);
           }
@@ -9338,23 +9308,23 @@
           } else if (justifyContent === 'center') {
             var center = diff * 0.5;
 
-            for (var _i2 = 0; _i2 < len; _i2++) {
-              var _child = flowChildren[_i2];
+            for (var _i = 0; _i < len; _i++) {
+              var _child = flowChildren[_i];
               isDirectionRow ? _child.__offsetX(center, true) : _child.__offsetY(center, true);
             }
           } else if (justifyContent === 'space-between') {
             var between = diff / (len - 1);
 
-            for (var _i3 = 1; _i3 < len; _i3++) {
-              var _child2 = flowChildren[_i3];
-              isDirectionRow ? _child2.__offsetX(between * _i3, true) : _child2.__offsetY(between * _i3, true);
+            for (var _i2 = 1; _i2 < len; _i2++) {
+              var _child2 = flowChildren[_i2];
+              isDirectionRow ? _child2.__offsetX(between * _i2, true) : _child2.__offsetY(between * _i2, true);
             }
           } else if (justifyContent === 'space-around') {
             var around = diff / (len + 1);
 
-            for (var _i4 = 0; _i4 < len; _i4++) {
-              var _child3 = flowChildren[_i4];
-              isDirectionRow ? _child3.__offsetX(around * (_i4 + 1), true) : _child3.__offsetY(around * (_i4 + 1), true);
+            for (var _i3 = 0; _i3 < len; _i3++) {
+              var _child3 = flowChildren[_i3];
+              isDirectionRow ? _child3.__offsetX(around * (_i3 + 1), true) : _child3.__offsetY(around * (_i3 + 1), true);
             }
           }
         } // 子元素侧轴伸展
@@ -9762,6 +9732,7 @@
 
           if (onlyRight && onlyBottom) {
             w2 = x2 - x;
+            h2 = y2 - y;
           } else if (onlyRight) {
             w2 = x2 - x;
             h2 = data.h - y2;
@@ -9774,6 +9745,7 @@
             });
 
             w2 = data.w - x2;
+            h2 = y2 - y;
           } else {
             w2 = data.w - x2;
             h2 = data.h - y2;

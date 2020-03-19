@@ -5,9 +5,24 @@ let fullCssProperty = {
   skewY: 'ky',
   transform: 'tf',
   fontSize: 'fz',
+  offset: 'os',
+  easing: 'e',
 };
 
 let abbrCssProperty = {};
+
+let fullAnimateOption = {
+  duration: 'dt',
+  delay: 'd',
+  endDelay: 'ed',
+  iterations: 'i',
+  direction: 'dc',
+  fill: 'f',
+  fps: 'fp',
+  playbackRate: 'p',
+};
+
+let abbrAnimateOption = {};
 
 reset.dom.concat(reset.geom).forEach(item => {
   let k = item.k;
@@ -20,7 +35,13 @@ reset.dom.concat(reset.geom).forEach(item => {
   abbrCssProperty[v] = k;
 });
 
+Object.keys(fullAnimateOption).forEach(k => {
+  abbrAnimateOption[fullAnimateOption[k]] = k;
+});
+
 export default {
   fullCssProperty,
   abbrCssProperty,
+  fullAnimateOption,
+  abbrAnimateOption,
 };

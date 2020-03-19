@@ -5637,7 +5637,7 @@
     var style = clone$1(frame.style);
     var timingFunction;
 
-    if (/^\s*cubic-bezier\s*\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)\s*$/.test(frame.easing)) {
+    if (/^\s*\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)\s*$/.test(frame.easing)) {
       var v = frame.easing.match(/[\d.]+/g);
       timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
     } else {
@@ -12331,9 +12331,22 @@
     skewX: 'kx',
     skewY: 'ky',
     transform: 'tf',
-    fontSize: 'fz'
+    fontSize: 'fz',
+    offset: 'os',
+    easing: 'e'
   };
   var abbrCssProperty = {};
+  var fullAnimateOption = {
+    duration: 'dt',
+    delay: 'd',
+    endDelay: 'ed',
+    iterations: 'i',
+    direction: 'dc',
+    fill: 'f',
+    fps: 'fp',
+    playbackRate: 'p'
+  };
+  var abbrAnimateOption = {};
   reset.dom.concat(reset.geom).forEach(function (item) {
     var k = item.k;
 
@@ -12346,9 +12359,14 @@
     fullCssProperty[k] = v;
     abbrCssProperty[v] = k;
   });
+  Object.keys(fullAnimateOption).forEach(function (k) {
+    abbrAnimateOption[fullAnimateOption[k]] = k;
+  });
   var abbr = {
     fullCssProperty: fullCssProperty,
-    abbrCssProperty: abbrCssProperty
+    abbrCssProperty: abbrCssProperty,
+    fullAnimateOption: fullAnimateOption,
+    abbrAnimateOption: abbrAnimateOption
   };
 
   var abbrCssProperty$1 = abbr.abbrCssProperty;

@@ -803,7 +803,7 @@ function binarySearch(i, j, time, frames) {
 function calStyle(frame, percent) {
   let style = clone(frame.style);
   let timingFunction;
-  if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*\)\s*$/.test(frame.easing)) {
+  if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/.test(frame.easing)) {
     let v = frame.easing.match(/[\d.]+/g);
     timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
   }

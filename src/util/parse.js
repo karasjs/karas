@@ -1,15 +1,15 @@
 import util from './util';
 import abbr from './abbr';
 
-let abbrCssProperty = abbr.abbrCssProperty;
+let { abbrCssProperty, abbrAnimateOption } = abbr;
 
-function abbr2full(style) {
-  if(style) {
-    Object.keys(style).forEach(k => {
-      if(style.hasOwnProperty(k) && abbrCssProperty.hasOwnProperty(k)) {
-        let ak = abbrCssProperty[k];
-        style[ak] = style[k];
-        delete style[k];
+function abbr2full(target, hash) {
+  if(target) {
+    Object.keys(target).forEach(k => {
+      if(target.hasOwnProperty(k) && hash.hasOwnProperty(k)) {
+        let ak = hash[k];
+        target[ak] = target[k];
+        delete target[k];
       }
     });
   }
@@ -20,7 +20,7 @@ function parse(karas, json, animateList) {
     return json;
   }
   let { tagName, props = {}, children = [], animate } = json;
-  abbr2full(props.style);
+  abbr2full(props.style, abbrCssProperty);
   let vd;
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);
@@ -33,12 +33,15 @@ function parse(karas, json, animateList) {
     if(Array.isArray(animate)) {
       let has;
       animate.forEach(item => {
-        let value = item.value;
+        let { value, options } = item;
         if(Array.isArray(value) && value.length) {
           has = true;
           value.forEach(item => {
-            abbr2full(item);
+            abbr2full(item, abbrCssProperty);
           });
+        }
+        if(options) {
+          abbr2full(options, abbrAnimateOption);
         }
       });
       if(has) {
@@ -49,15 +52,18 @@ function parse(karas, json, animateList) {
       }
     }
     else {
-      let value = animate.value;
+      let { value, options } = animate;
       if(Array.isArray(value) && value.length) {
         value.forEach(item => {
-          abbr2full(item);
+          abbr2full(item, abbrCssProperty);
         });
         animationRecord = {
           animate,
           target: vd,
         };
+      }
+      if(options) {
+        abbr2full(options, abbrAnimateOption);
       }
     }
   }

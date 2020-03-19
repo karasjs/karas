@@ -12335,7 +12335,10 @@
     offset: 'os',
     easing: 'e'
   };
-  var abbrCssProperty = {};
+  var abbrCssProperty = {
+    os: 'offset',
+    e: 'easing'
+  };
   var fullAnimateOption = {
     duration: 'dt',
     delay: 'd',
@@ -12369,15 +12372,16 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var abbrCssProperty$1 = abbr.abbrCssProperty;
+  var abbrCssProperty$1 = abbr.abbrCssProperty,
+      abbrAnimateOption$1 = abbr.abbrAnimateOption;
 
-  function abbr2full(style) {
-    if (style) {
-      Object.keys(style).forEach(function (k) {
-        if (style.hasOwnProperty(k) && abbrCssProperty$1.hasOwnProperty(k)) {
-          var ak = abbrCssProperty$1[k];
-          style[ak] = style[k];
-          delete style[k];
+  function abbr2full(target, hash) {
+    if (target) {
+      Object.keys(target).forEach(function (k) {
+        if (target.hasOwnProperty(k) && hash.hasOwnProperty(k)) {
+          var ak = hash[k];
+          target[ak] = target[k];
+          delete target[k];
         }
       });
     }
@@ -12394,7 +12398,7 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
-    abbr2full(props.style);
+    abbr2full(props.style, abbrCssProperty$1);
     var vd;
 
     if (tagName.charAt(0) === '$') {
@@ -12411,13 +12415,18 @@
       if (Array.isArray(animate)) {
         var has;
         animate.forEach(function (item) {
-          var value = item.value;
+          var value = item.value,
+              options = item.options;
 
           if (Array.isArray(value) && value.length) {
             has = true;
             value.forEach(function (item) {
-              abbr2full(item);
+              abbr2full(item, abbrCssProperty$1);
             });
+          }
+
+          if (options) {
+            abbr2full(options, abbrAnimateOption$1);
           }
         });
 
@@ -12428,16 +12437,21 @@
           };
         }
       } else {
-        var value = animate.value;
+        var value = animate.value,
+            options = animate.options;
 
         if (Array.isArray(value) && value.length) {
           value.forEach(function (item) {
-            abbr2full(item);
+            abbr2full(item, abbrCssProperty$1);
           });
           animationRecord = {
             animate: animate,
             target: vd
           };
+        }
+
+        if (options) {
+          abbr2full(options, abbrAnimateOption$1);
         }
       }
     }

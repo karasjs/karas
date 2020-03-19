@@ -9,7 +9,10 @@ let fullCssProperty = {
   easing: 'e',
 };
 
-let abbrCssProperty = {};
+let abbrCssProperty = {
+  os: 'offset',
+  e: 'easing',
+};
 
 let fullAnimateOption = {
   duration: 'dt',

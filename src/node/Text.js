@@ -84,7 +84,7 @@ class Text extends Node {
   }
 
   __layout(data, isVirtual) {
-    let { x, y, w, h } = data;
+    let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
     let maxX = x;
@@ -138,11 +138,8 @@ class Text extends Node {
     }
     this.__width = maxX - x;
     this.__height = y - data.y;
-    // flex前置计算无需真正布局
-    if(isVirtual) {
-      this.__lineBoxes = [];
-    }
-    else {
+    // flex/abs前置计算无需真正布局
+    if(!isVirtual) {
       let { textAlign } = computedStyle;
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxes.forEach(lineBox => {
@@ -173,6 +170,31 @@ class Text extends Node {
     }
   }
 
+  __renderByMask(renderMode) {
+    this.render(renderMode);
+  }
+
+  __tryLayInline(w) {
+    return w - this.textWidth;
+  }
+
+  __calMaxAndMinWidth() {
+    let n = 0;
+    this.charWidthList.forEach(item => {
+      n = Math.max(n, item);
+    });
+    return { max: this.textWidth, min: n };
+  }
+
+  __calAbsWidth(x, y, w) {
+    this.__layout({
+      x,
+      y,
+      w,
+    }, true);
+    return this.width;
+  }
+
   render(renderMode) {
     const { isDestroyed, ctx, computedStyle } = this;
     if(isDestroyed || computedStyle.display === 'none') {
@@ -191,22 +213,6 @@ class Text extends Node {
         children: this.lineBoxes.map(lineBox => lineBox.virtualDom),
       };
     }
-  }
-
-  __renderByMask(renderMode) {
-    this.render(renderMode);
-  }
-
-  __tryLayInline(w) {
-    return w - this.textWidth;
-  }
-
-  __calMaxAndMinWidth() {
-    let n = 0;
-    this.charWidthList.forEach(item => {
-      n = Math.max(n, item);
-    });
-    return { max: this.textWidth, min: n };
   }
 
   get content() {

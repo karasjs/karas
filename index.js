@@ -3370,8 +3370,7 @@
 
         var x = data.x,
             y = data.y,
-            w = data.w,
-            h = data.h;
+            w = data.w;
         this.__x = x;
         this.__y = y;
         var maxX = x;
@@ -3438,11 +3437,9 @@
         }
 
         this.__width = maxX - x;
-        this.__height = y - data.y; // flex前置计算无需真正布局
+        this.__height = y - data.y; // flex/abs前置计算无需真正布局
 
-        if (isVirtual) {
-          this.__lineBoxes = [];
-        } else {
+        if (!isVirtual) {
           var textAlign = computedStyle.textAlign;
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
@@ -3479,6 +3476,39 @@
         }
       }
     }, {
+      key: "__renderByMask",
+      value: function __renderByMask(renderMode) {
+        this.render(renderMode);
+      }
+    }, {
+      key: "__tryLayInline",
+      value: function __tryLayInline(w) {
+        return w - this.textWidth;
+      }
+    }, {
+      key: "__calMaxAndMinWidth",
+      value: function __calMaxAndMinWidth() {
+        var n = 0;
+        this.charWidthList.forEach(function (item) {
+          n = Math.max(n, item);
+        });
+        return {
+          max: this.textWidth,
+          min: n
+        };
+      }
+    }, {
+      key: "__calAbsWidth",
+      value: function __calAbsWidth(x, y, w) {
+        this.__layout({
+          x: x,
+          y: y,
+          w: w
+        }, true);
+
+        return this.width;
+      }
+    }, {
       key: "render",
       value: function render(renderMode) {
         var isDestroyed = this.isDestroyed,
@@ -3506,28 +3536,6 @@
             })
           };
         }
-      }
-    }, {
-      key: "__renderByMask",
-      value: function __renderByMask(renderMode) {
-        this.render(renderMode);
-      }
-    }, {
-      key: "__tryLayInline",
-      value: function __tryLayInline(w) {
-        return w - this.textWidth;
-      }
-    }, {
-      key: "__calMaxAndMinWidth",
-      value: function __calMaxAndMinWidth() {
-        var n = 0;
-        this.charWidthList.forEach(function (item) {
-          n = Math.max(n, item);
-        });
-        return {
-          max: this.textWidth,
-          min: n
-        };
       }
     }, {
       key: "content",
@@ -6952,7 +6960,7 @@
 
     }, {
       key: "__layout",
-      value: function __layout(data, fake) {
+      value: function __layout(data, isVirtual) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -6983,11 +6991,11 @@
         }
 
         if (display === 'block') {
-          this.__layoutBlock(data, fake);
+          this.__layoutBlock(data, isVirtual);
         } else if (display === 'flex') {
-          this.__layoutFlex(data, fake);
+          this.__layoutFlex(data, isVirtual);
         } else if (display === 'inline') {
-          this.__layoutInline(data, fake);
+          this.__layoutInline(data, isVirtual);
         } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
 
 
@@ -8956,7 +8964,7 @@
 
     }, {
       key: "__layoutBlock",
-      value: function __layoutBlock(data, fake) {
+      value: function __layoutBlock(data, isVirtual) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -8965,12 +8973,30 @@
         var textAlign = computedStyle.textAlign;
 
         var _this$__preLayout = this.__preLayout(data),
+            fixedWidth = _this$__preLayout.fixedWidth,
             fixedHeight = _this$__preLayout.fixedHeight,
             x = _this$__preLayout.x,
             y = _this$__preLayout.y,
             w = _this$__preLayout.w,
-            h = _this$__preLayout.h; // 递归布局，将inline的节点组成lineGroup一行
+            h = _this$__preLayout.h;
 
+        if (fixedWidth && isVirtual === 1) {
+          this.__width = w;
+          return;
+        }
+
+        if (fixedHeight && isVirtual === 2) {
+          this.__height = h;
+          return;
+        }
+
+        if (fixedWidth && fixedHeight && isVirtual === 3) {
+          this.__width = w;
+          this.__height = h;
+          return;
+        }
+
+        var maxX = x; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -8985,12 +9011,13 @@
                   y: y,
                   w: w,
                   h: h
-                });
+                }, isVirtual);
 
                 x += item.outerWidth;
+                maxX = Math.max(maxX, x);
               } else {
                 // 非开头先尝试是否放得下
-                var fw = item.__tryLayInline(w - x, w); // 放得下继续
+                var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
 
 
                 if (fw >= 0) {
@@ -8999,7 +9026,7 @@
                     y: y,
                     w: w,
                     h: h
-                  });
+                  }, isVirtual);
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
                     lineGroups.push(lineGroup);
@@ -9012,12 +9039,13 @@
                       y: y,
                       w: w,
                       h: h
-                    });
+                    }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
                   }
 
                 x += item.outerWidth;
+                maxX = Math.max(maxX, x);
                 lineGroup.add(item);
               }
             } else {
@@ -9034,8 +9062,9 @@
                 y: y,
                 w: w,
                 h: h
-              });
+              }, isVirtual);
 
+              maxX = Math.max(maxX, data.x + item.width);
               x = data.x;
               y += item.outerHeight;
             }
@@ -9050,12 +9079,13 @@
                   y: y,
                   w: w,
                   h: h
-                });
+                }, isVirtual);
 
                 x += item.width;
+                maxX = Math.max(maxX, x);
               } else {
                 // 非开头先尝试是否放得下
-                var _fw = item.__tryLayInline(w - x, w); // 放得下继续
+                var _fw = item.__tryLayInline(w - x + data.x); // 放得下继续
 
 
                 if (_fw >= 0) {
@@ -9064,7 +9094,7 @@
                     y: y,
                     w: w,
                     h: h
-                  });
+                  }, isVirtual);
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
                     lineGroups.push(lineGroup);
@@ -9077,27 +9107,32 @@
                       y: y,
                       w: w,
                       h: h
-                    });
+                    }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
                   }
 
                 x += item.width;
+                maxX = Math.max(maxX, x);
                 lineGroup.add(item);
               }
             }
         }); // 结束后处理可能遗留的最后的lineGroup
 
         if (lineGroup.size) {
-          lineGroups.push(lineGroup);
-          lineGroup.verticalAlign();
+          lineGroups.push(lineGroup); // flex/abs的虚拟前置布局，无需真正计算
+
+          if (!isVirtual) {
+            lineGroup.verticalAlign();
+          }
+
           y += lineGroup.height;
         }
 
-        this.__width = w;
+        this.__width = fixedWidth || !isVirtual ? w : maxX - data.x;
         this.__height = fixedHeight ? h : y - data.y; // text-align
 
-        if (['center', 'right'].indexOf(textAlign) > -1) {
+        if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
             var diff = w - lineGroup.width;
 
@@ -9107,12 +9142,14 @@
           });
         }
 
-        this.__marginAuto(currentStyle, data);
+        if (!isVirtual) {
+          this.__marginAuto(currentStyle, data);
+        }
       } // 弹性布局时的计算位置
 
     }, {
       key: "__layoutFlex",
-      value: function __layoutFlex(data, fake) {
+      value: function __layoutFlex(data, isVirtual) {
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
@@ -9127,6 +9164,23 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
+        if (fixedWidth && isVirtual === 1) {
+          this.__width = w;
+          return;
+        }
+
+        if (fixedHeight && isVirtual === 2) {
+          this.__height = h;
+          return;
+        }
+
+        if (fixedWidth && fixedHeight && isVirtual === 3) {
+          this.__width = w;
+          this.__height = h;
+          return;
+        }
+
+        var maxX = x;
         var isDirectionRow = flexDirection === 'row'; // 计算伸缩基数
 
         var growList = [];
@@ -9139,6 +9193,21 @@
         var maxSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
+            var _item$__calAutoBasis2 = item.__calAutoBasis(isDirectionRow, w, h),
+                b = _item$__calAutoBasis2.b,
+                min = _item$__calAutoBasis2.min,
+                max = _item$__calAutoBasis2.max;
+
+            if (isVirtual) {
+              if (isDirectionRow) {
+                maxX += max;
+              } else {
+                maxX = Math.max(maxX, max);
+              }
+
+              return;
+            }
+
             var _currentStyle = item.currentStyle,
                 computedStyle = item.computedStyle;
             var flexGrow = _currentStyle.flexGrow,
@@ -9147,13 +9216,7 @@
             growList.push(flexGrow);
             shrinkList.push(flexShrink);
             growSum += flexGrow;
-            shrinkSum += flexShrink;
-
-            var _item$__calAutoBasis2 = item.__calAutoBasis(isDirectionRow, w, h),
-                b = _item$__calAutoBasis2.b,
-                min = _item$__calAutoBasis2.min,
-                max = _item$__calAutoBasis2.max; // 根据basis不同，计算方式不同
-
+            shrinkSum += flexShrink; // 根据basis不同，计算方式不同
 
             if (flexBasis.unit === AUTO$4) {
               basisList.push(max);
@@ -9171,6 +9234,16 @@
             maxSum += max;
             minList.push(min);
           } else {
+            if (isVirtual) {
+              if (isDirectionRow) {
+                maxX += item.textWidth;
+              } else {
+                maxX = Math.max(maxX, item.textWidth);
+              }
+
+              return;
+            }
+
             growList.push(0);
             shrinkList.push(1);
             shrinkSum += 1;
@@ -9195,6 +9268,12 @@
             }
           }
         });
+
+        if (isVirtual) {
+          this.__width = Math.min(maxX, w);
+          return;
+        }
+
         var maxCross = 0; // 判断是否超出，决定使用grow还是shrink
 
         var isOverflow = maxSum > (isDirectionRow ? w : h);
@@ -9223,21 +9302,18 @@
                 height = _currentStyle2.height;
 
             if (isDirectionRow) {
-              // row的flex的child如果是inline，变为block
-              if (display === 'inline') {
-                _currentStyle2.display = computedStyle.display = 'block';
-              } // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              else if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === AUTO$4) {
-                  height.value = h;
-                  height.unit = PX$6;
-                }
+              // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
+              if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === AUTO$4) {
+                height.value = h;
+                height.unit = PX$6;
+              }
 
               item.__layout({
                 x: x,
                 y: y,
                 w: main,
                 h: h
-              });
+              }, isVirtual);
             } else {
               // column的flex的child如果是inline，变为block
               if (display === 'inline') {
@@ -9253,7 +9329,7 @@
                 y: y,
                 w: w,
                 h: main
-              });
+              }, isVirtual);
             } // 重设因伸缩而导致的主轴长度
 
 
@@ -9344,50 +9420,52 @@
         } // 侧轴对齐
 
 
-        if (alignItems === 'stretch') {
-          // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
-          flowChildren.forEach(function (item) {
-            var computedStyle = item.computedStyle,
-                currentStyle = item.currentStyle;
-            var borderTopWidth = computedStyle.borderTopWidth,
-                borderRightWidth = computedStyle.borderRightWidth,
-                borderBottomWidth = computedStyle.borderBottomWidth,
-                borderLeftWidth = computedStyle.borderLeftWidth,
-                marginTop = computedStyle.marginTop,
-                marginRight = computedStyle.marginRight,
-                marginBottom = computedStyle.marginBottom,
-                marginLeft = computedStyle.marginLeft,
-                paddingTop = computedStyle.paddingTop,
-                paddingRight = computedStyle.paddingRight,
-                paddingBottom = computedStyle.paddingBottom,
-                paddingLeft = computedStyle.paddingLeft;
+        if (!isVirtual) {
+          if (alignItems === 'stretch') {
+            // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
+            flowChildren.forEach(function (item) {
+              var computedStyle = item.computedStyle,
+                  currentStyle = item.currentStyle;
+              var borderTopWidth = computedStyle.borderTopWidth,
+                  borderRightWidth = computedStyle.borderRightWidth,
+                  borderBottomWidth = computedStyle.borderBottomWidth,
+                  borderLeftWidth = computedStyle.borderLeftWidth,
+                  marginTop = computedStyle.marginTop,
+                  marginRight = computedStyle.marginRight,
+                  marginBottom = computedStyle.marginBottom,
+                  marginLeft = computedStyle.marginLeft,
+                  paddingTop = computedStyle.paddingTop,
+                  paddingRight = computedStyle.paddingRight,
+                  paddingBottom = computedStyle.paddingBottom,
+                  paddingLeft = computedStyle.paddingLeft;
 
-            if (isDirectionRow) {
-              if (currentStyle.height.unit === AUTO$4) {
-                item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+              if (isDirectionRow) {
+                if (currentStyle.height.unit === AUTO$4) {
+                  item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                }
+              } else {
+                if (currentStyle.width.unit === AUTO$4) {
+                  item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                }
               }
-            } else {
-              if (currentStyle.width.unit === AUTO$4) {
-                item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+            });
+          } else if (alignItems === 'center') {
+            flowChildren.forEach(function (item) {
+              var diff = maxCross - item.outerHeight;
+
+              if (diff > 0) {
+                item.__offsetY(diff * 0.5, true);
               }
-            }
-          });
-        } else if (alignItems === 'center') {
-          flowChildren.forEach(function (item) {
-            var diff = maxCross - item.outerHeight;
+            });
+          } else if (alignItems === 'flex-end') {
+            flowChildren.forEach(function (item) {
+              var diff = maxCross - item.outerHeight;
 
-            if (diff > 0) {
-              item.__offsetY(diff * 0.5, true);
-            }
-          });
-        } else if (alignItems === 'flex-end') {
-          flowChildren.forEach(function (item) {
-            var diff = maxCross - item.outerHeight;
-
-            if (diff > 0) {
-              item.__offsetY(diff, true);
-            }
-          });
+              if (diff > 0) {
+                item.__offsetY(diff, true);
+              }
+            });
+          }
         }
 
         this.__width = w;
@@ -9398,7 +9476,7 @@
 
     }, {
       key: "__layoutInline",
-      value: function __layoutInline(data, fake) {
+      value: function __layoutInline(data, isVirtual) {
         var _this5 = this;
 
         var flowChildren = this.flowChildren,
@@ -9415,25 +9493,28 @@
             w = _this$__preLayout3.w,
             h = _this$__preLayout3.h;
 
+        if (fixedWidth && isVirtual === 1) {
+          this.__width = w;
+          return;
+        }
+
+        if (fixedHeight && isVirtual === 2) {
+          this.__height = h;
+          return;
+        }
+
+        if (fixedWidth && fixedHeight && isVirtual === 3) {
+          this.__width = w;
+          this.__height = h;
+          return;
+        }
+
         var maxX = x; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
-            // 绝对定位跳过
-            if (item.currentStyle.position === 'absolute') {
-              _this5.absChildren.push(item);
-
-              return;
-            }
-
-            var display = item.currentStyle.display;
-
-            if (fake) {
-              item.currentStyle.display = 'inline';
-            } // inline开头，不用考虑是否放得下直接放
-
-
+            // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
               lineGroup.add(item);
 
@@ -9442,13 +9523,13 @@
                 y: y,
                 w: w,
                 h: h
-              });
+              }, isVirtual);
 
               x += item.outerWidth;
               maxX = Math.max(maxX, x);
             } else {
               // 非开头先尝试是否放得下
-              var fw = item.__tryLayInline(w - x, w); // 放得下继续
+              var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
 
 
               if (fw >= 0) {
@@ -9457,7 +9538,7 @@
                   y: y,
                   w: w,
                   h: h
-                });
+                }, isVirtual);
               } // 放不下处理之前的lineGroup，并重新开头
               else {
                   lineGroups.push(lineGroup);
@@ -9470,7 +9551,7 @@
                     y: y,
                     w: w,
                     h: h
-                  });
+                  }, isVirtual);
 
                   lineGroup = new LineGroup(x, y);
                 }
@@ -9478,10 +9559,6 @@
               x += item.outerWidth;
               maxX = Math.max(maxX, x);
               lineGroup.add(item);
-            }
-
-            if (fake) {
-              item.currentStyle.display = display;
             }
           } // inline里的其它只有文本
           else {
@@ -9493,13 +9570,13 @@
                   y: y,
                   w: w,
                   h: h
-                });
+                }, isVirtual);
 
                 x += item.width;
                 maxX = Math.max(maxX, x);
               } else {
                 // 非开头先尝试是否放得下
-                var _fw2 = item.__tryLayInline(w - x, w); // 放得下继续
+                var _fw2 = item.__tryLayInline(w - x + data.x); // 放得下继续
 
 
                 if (_fw2 >= 0) {
@@ -9508,7 +9585,7 @@
                     y: y,
                     w: w,
                     h: h
-                  });
+                  }, isVirtual);
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
                     lineGroups.push(lineGroup);
@@ -9521,7 +9598,7 @@
                       y: y,
                       w: w,
                       h: h
-                    });
+                    }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
                   }
@@ -9534,8 +9611,12 @@
         }); // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
 
         if (lineGroup.size) {
-          lineGroups.push(lineGroup);
-          lineGroup.verticalAlign();
+          lineGroups.push(lineGroup); // flex/abs的虚拟前置布局，无需真正计算
+
+          if (!isVirtual) {
+            lineGroup.verticalAlign();
+          }
+
           y += lineGroup.height;
         } // 元素的width不能超过父元素w
 
@@ -9543,7 +9624,7 @@
         this.__width = fixedWidth ? w : maxX - data.x;
         this.__height = fixedHeight ? h : y - data.y; // text-align
 
-        if (['center', 'right'].indexOf(textAlign) > -1) {
+        if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
             var diff = _this5.__width - lineGroup.width;
 
@@ -9559,8 +9640,8 @@
       value: function __layoutAbs(container, data) {
         var x = container.sx,
             y = container.sy,
-            width = container.width,
-            height = container.height,
+            innerWidth = container.innerWidth,
+            innerHeight = container.innerHeight,
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
@@ -9569,20 +9650,14 @@
             borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             marginTop = computedStyle.marginTop,
-            marginLeft = computedStyle.marginLeft,
-            paddingTop = computedStyle.paddingTop,
-            paddingRight = computedStyle.paddingRight,
-            paddingBottom = computedStyle.paddingBottom,
-            paddingLeft = computedStyle.paddingLeft;
+            marginLeft = computedStyle.marginLeft;
 
         if (isDestroyed || display === 'none') {
           return;
         }
 
         x += marginLeft + borderLeftWidth;
-        y += marginTop + borderTopWidth;
-        var iw = width + paddingLeft + paddingRight;
-        var ih = height + paddingTop + paddingBottom; // 对absolute的元素进行相对容器布局
+        y += marginTop + borderTopWidth; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
           var currentStyle = item.currentStyle,
@@ -9601,73 +9676,73 @@
           var fixedTop;
           var fixedRight;
           var fixedBottom;
-          var fixedLeft;
+          var fixedLeft; // 判断何种方式的定位，比如左+宽度，左+右之类
 
-          if (left !== undefined && left.unit !== AUTO$4) {
+          if (left.unit !== AUTO$4) {
             fixedLeft = true;
-            computedStyle.left = css.calAbsolute(currentStyle, 'left', left, iw);
+            computedStyle.left = css.calAbsolute(currentStyle, 'left', left, innerWidth);
           } else {
             computedStyle.left = 'auto';
           }
 
-          if (right !== undefined && right.unit !== AUTO$4) {
+          if (right.unit !== AUTO$4) {
             fixedRight = true;
-            computedStyle.right = css.calAbsolute(currentStyle, 'right', right, iw);
+            computedStyle.right = css.calAbsolute(currentStyle, 'right', right, innerWidth);
           } else {
             computedStyle.right = 'auto';
           }
 
-          if (top !== undefined && top.unit !== AUTO$4) {
+          if (top.unit !== AUTO$4) {
             fixedTop = true;
-            computedStyle.top = css.calAbsolute(currentStyle, 'top', top, ih);
+            computedStyle.top = css.calAbsolute(currentStyle, 'top', top, innerHeight);
           } else {
             computedStyle.top = 'auto';
           }
 
-          if (bottom !== undefined && bottom.unit !== AUTO$4) {
+          if (bottom.unit !== AUTO$4) {
             fixedBottom = true;
-            computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, ih);
+            computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, innerHeight);
           } else {
             computedStyle.bottom = 'auto';
-          } // width优先级高于right高于left，即最高left+right，其次left+width，再次right+width，然后仅申明单个，最次全部auto
+          } // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
 
 
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle.left;
-            w2 = x + iw - computedStyle.right - x2;
+            w2 = x + innerWidth - computedStyle.right - x2;
           } else if (fixedLeft && width.unit !== AUTO$4) {
             x2 = x + computedStyle.left;
-            w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
+            w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
           } else if (fixedRight && width.unit !== AUTO$4) {
-            w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
-            x2 = x + iw - computedStyle.right - w2;
+            w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
+            x2 = x + innerWidth - computedStyle.right - w2;
           } else if (fixedLeft) {
             x2 = x + computedStyle.left;
           } else if (fixedRight) {
-            x2 = x + iw - computedStyle.right;
+            x2 = x + innerWidth - computedStyle.right;
             onlyRight = true;
           } else {
-            x2 = x + paddingLeft;
+            x2 = x;
 
             if (width.unit !== AUTO$4) {
-              w2 = width.unit === PX$6 ? width.value : iw * width.value * 0.01;
+              w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
             }
           } // top/bottom/height优先级同上
 
 
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle.top;
-            h2 = y + ih - computedStyle.bottom - y2;
+            h2 = y + innerHeight - computedStyle.bottom - y2;
           } else if (fixedTop && height.unit !== AUTO$4) {
             y2 = y + computedStyle.top;
-            h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
+            h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
           } else if (fixedBottom && height.unit !== AUTO$4) {
-            h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
-            y2 = y + ih - computedStyle.bottom - h2;
+            h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
+            y2 = y + innerHeight - computedStyle.bottom - h2;
           } else if (fixedTop) {
             y2 = y + computedStyle.top;
           } else if (fixedBottom) {
-            y2 = y + ih - computedStyle.bottom;
+            y2 = y + innerHeight - computedStyle.bottom;
             onlyBottom = true;
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
@@ -9688,109 +9763,79 @@
               }
 
               if (height.unit !== AUTO$4) {
-                h2 = height.unit === PX$6 ? height.value : ih * height.value * 0.01;
+                h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
               }
-            }
+            } // 直接或间接声明宽高的，等于已知样式
+
 
           if (w2 !== undefined) {
             currentStyle.width = {
               value: w2,
-              unit: PX$6
+              unit: PX$6,
+              virtual: true // 特殊标识
+
             };
           }
 
           if (h2 !== undefined) {
             currentStyle.height = {
               value: h2,
-              unit: PX$6
+              unit: PX$6,
+              virtual: true
             };
-          } // 记录初始display，同时absolute不能为inline
+          } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
 
-          if (display === 'inline') {
-            display = 'block';
-          } // 没设宽高，在获取最大宽高后，display恢复重新布局一次
-
-
-          var fake;
+          var needCalWidth;
+          var needCalHeight;
 
           if (display === 'block' && w2 === undefined) {
-            fake = true;
+            needCalWidth = true;
           } else if (display === 'flex') {
-            if (flexDirection === 'row' && w2 === undefined) {
-              fake = true;
-            } else if (flexDirection === 'column' && h2 === undefined) {
-              fake = true;
+            if (w2 === undefined) {
+              needCalWidth = true;
             }
-          } // 绝对定位模拟类似inline布局，因为宽高可能未定义，由普通流children布局后决定
+
+            if (flexDirection === 'column' && h2 === undefined) {
+              needCalHeight = true;
+            }
+          } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
 
-          if (fake) {
-            currentStyle.display = 'inline';
-          } // onlyRight或onlyBottom时做的布局其实是以那个点位为left/top布局，外围尺寸限制要特殊计算
+          var wl = onlyRight ? x2 - x : innerWidth - x2; // onlyBottom相同，正常情况是左上到右下的尺寸限制
 
+          var hl = onlyBottom ? y2 - y : innerHeight - y2; // 未直接或间接定义尺寸，取孩子宽度最大值
 
-          if (onlyRight && onlyBottom) {
-            w2 = x2 - x;
-            h2 = y2 - y;
-          } else if (onlyRight) {
-            w2 = x2 - x;
-            h2 = data.h - y2;
-          } else if (onlyBottom) {
+          if (needCalWidth || needCalHeight) {
+
             item.__layout({
               x: x2,
               y: y2,
-              w: data.w - x2,
-              h: y2 - y
-            });
+              w: wl,
+              h: hl
+            }, (needCalWidth ? 1 : 0) + (needCalHeight ? 2 : 0));
+          }
 
-            w2 = data.w - x2;
-            h2 = y2 - y;
-          } else {
-            w2 = data.w - x2;
-            h2 = data.h - y2;
+          if (needCalWidth) {
+            wl = item.outerWidth;
+          }
+
+          if (needCalHeight) {
+            hl = item.outerHeight;
           }
 
           item.__layout({
             x: x2,
             y: y2,
-            w: w2,
-            h: h2
-          }, fake); // 取孩子宽度最大值，display恢复重新布局
+            w: wl,
+            h: hl
+          });
 
-
-          if (fake) {
-            var max = 0;
-            item.flowChildren.forEach(function (item) {
-              max = Math.max(max, item.outerWidth);
-            });
-            currentStyle.width = {
-              value: max,
-              unit: PX$6
-            };
-            currentStyle.height = {
-              value: item.height,
-              unit: PX$6
-            };
-
-            item.__layout({
-              x: x2,
-              y: y2,
-              w: w2,
-              h: h2
-            });
-
-            currentStyle.display = display;
-          } // right或bottom布局完成后还要偏移回来
-
-
-          if (onlyRight && onlyBottom) {
+          if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
+          }
 
-            item.__offsetY(-item.outerHeight, true);
-          } else if (onlyRight) {
-            item.__offsetX(-item.outerWidth, true);
-          } else if (onlyBottom) {
+          if (onlyBottom) {
             item.__offsetY(-item.outerHeight, true);
           }
         }); // 递归进行，遇到absolute/relative的设置新容器

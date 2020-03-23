@@ -218,7 +218,7 @@ class Xom extends Node {
   }
 
   // absolute且无尺寸时，fake标明先假布局一次计算尺寸
-  __layout(data, fake) {
+  __layout(data, isVirtual) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
@@ -243,13 +243,13 @@ class Xom extends Node {
       return;
     }
     if(display === 'block') {
-      this.__layoutBlock(data, fake);
+      this.__layoutBlock(data, isVirtual);
     }
     else if(display === 'flex') {
-      this.__layoutFlex(data, fake);
+      this.__layoutFlex(data, isVirtual);
     }
     else if(display === 'inline') {
-      this.__layoutInline(data, fake);
+      this.__layoutInline(data, isVirtual);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(position === 'relative') {

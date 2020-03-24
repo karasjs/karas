@@ -25,6 +25,7 @@ module.exports = (function(settings) {
         'acceptSslCerts': true,
         chromeOptions: {
           w3c: false,
+          args: ['disable-web-security'],
         },
       }
     },

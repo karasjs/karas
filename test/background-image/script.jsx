@@ -6,6 +6,7 @@ let o = karas.render(
 );
 
 o.on('refresh', () => {
+  let canvas = document.querySelector('canvas');
   let input = document.querySelector('#base64');
-  input.value = 'refresh';
+  input.value = canvas.toDataURL();
 });

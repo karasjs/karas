@@ -2679,7 +2679,7 @@
         for (var _i = 0; _i < 2; _i++) {
           var _item = _match2[_i];
 
-          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(temp)) {
+          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
             calUnit(tfo, _i, _item);
 
             if (tfo[_i].unit === NUMBER) {
@@ -9005,7 +9005,11 @@
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
                     lineGroups.push(lineGroup);
-                    lineGroup.verticalAlign();
+
+                    if (!isVirtual) {
+                      lineGroup.verticalAlign();
+                    }
+
                     x = data.x;
                     y += lineGroup.height;
 
@@ -9279,7 +9283,7 @@
                 y: y,
                 w: main,
                 h: h
-              }, isVirtual);
+              });
             } else {
               // column的flex的child如果是inline，变为block
               if (display === 'inline') {
@@ -9295,7 +9299,7 @@
                 y: y,
                 w: w,
                 h: main
-              }, isVirtual);
+              });
             } // 重设因伸缩而导致的主轴长度
 
 
@@ -9544,7 +9548,11 @@
                 } // 放不下处理之前的lineGroup，并重新开头
                 else {
                     lineGroups.push(lineGroup);
-                    lineGroup.verticalAlign();
+
+                    if (!isVirtual) {
+                      lineGroup.verticalAlign();
+                    }
+
                     x = data.x;
                     y += lineGroup.height;
 

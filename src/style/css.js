@@ -443,7 +443,7 @@ function normalize(style, reset = []) {
       let tfo = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(temp)) {
+        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
           calUnit(tfo, i, item);
           if(tfo[i].unit === NUMBER) {
             tfo[i].unit = PX;

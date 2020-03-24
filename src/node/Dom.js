@@ -327,7 +327,9 @@ class Dom extends Xom {
             // 放不下处理之前的lineGroup，并重新开头
             else {
               lineGroups.push(lineGroup);
-              lineGroup.verticalAlign();
+              if(!isVirtual) {
+                lineGroup.verticalAlign();
+              }
               x = data.x;
               y += lineGroup.height;
               item.__layout({
@@ -569,7 +571,7 @@ class Dom extends Xom {
             y,
             w: main,
             h,
-          }, isVirtual);
+          });
         }
         else {
           // column的flex的child如果是inline，变为block
@@ -586,7 +588,7 @@ class Dom extends Xom {
             y,
             w,
             h: main,
-          }, isVirtual);
+          });
         }
         // 重设因伸缩而导致的主轴长度
         if(isOverflow && shrink || !isOverflow && grow) {
@@ -817,7 +819,9 @@ class Dom extends Xom {
           // 放不下处理之前的lineGroup，并重新开头
           else {
             lineGroups.push(lineGroup);
-            lineGroup.verticalAlign();
+            if(!isVirtual) {
+              lineGroup.verticalAlign();
+            }
             x = data.x;
             y += lineGroup.height;
             item.__layout({

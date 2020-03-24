@@ -1,7 +1,7 @@
 import util from './util';
 import abbr from './abbr';
 
-let { abbrCssProperty, abbrAnimateOption } = abbr;
+let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
 
 function abbr2full(target, hash) {
   if(target) {
@@ -33,6 +33,7 @@ function parse(karas, json, animateList) {
     if(Array.isArray(animate)) {
       let has;
       animate.forEach(item => {
+        abbr2full(item, abbrAnimate);
         let { value, options } = item;
         if(Array.isArray(value) && value.length) {
           has = true;
@@ -52,6 +53,7 @@ function parse(karas, json, animateList) {
       }
     }
     else {
+      abbr2full(animate, abbrAnimate);
       let { value, options } = animate;
       if(Array.isArray(value) && value.length) {
         value.forEach(item => {

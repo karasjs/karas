@@ -14,6 +14,13 @@ let abbrCssProperty = {
   e: 'easing',
 };
 
+let fullAnimate = {
+  value: 'v',
+  options: 'o',
+};
+
+let abbrAnimate = {};
+
 let fullAnimateOption = {
   duration: 'dt',
   delay: 'd',
@@ -38,6 +45,10 @@ reset.dom.concat(reset.geom).forEach(item => {
   abbrCssProperty[v] = k;
 });
 
+Object.keys(fullAnimate).forEach(k => {
+  abbrAnimate[fullAnimate[k]] = k;
+});
+
 Object.keys(fullAnimateOption).forEach(k => {
   abbrAnimateOption[fullAnimateOption[k]] = k;
 });
@@ -45,6 +56,8 @@ Object.keys(fullAnimateOption).forEach(k => {
 export default {
   fullCssProperty,
   abbrCssProperty,
+  fullAnimate,
+  abbrAnimate,
   fullAnimateOption,
   abbrAnimateOption,
 };

@@ -12340,6 +12340,11 @@
     os: 'offset',
     e: 'easing'
   };
+  var fullAnimate = {
+    value: 'v',
+    options: 'o'
+  };
+  var abbrAnimate = {};
   var fullAnimateOption = {
     duration: 'dt',
     delay: 'd',
@@ -12363,18 +12368,24 @@
     fullCssProperty[k] = v;
     abbrCssProperty[v] = k;
   });
+  Object.keys(fullAnimate).forEach(function (k) {
+    abbrAnimate[fullAnimate[k]] = k;
+  });
   Object.keys(fullAnimateOption).forEach(function (k) {
     abbrAnimateOption[fullAnimateOption[k]] = k;
   });
   var abbr = {
     fullCssProperty: fullCssProperty,
     abbrCssProperty: abbrCssProperty,
+    fullAnimate: fullAnimate,
+    abbrAnimate: abbrAnimate,
     fullAnimateOption: fullAnimateOption,
     abbrAnimateOption: abbrAnimateOption
   };
 
   var abbrCssProperty$1 = abbr.abbrCssProperty,
-      abbrAnimateOption$1 = abbr.abbrAnimateOption;
+      abbrAnimateOption$1 = abbr.abbrAnimateOption,
+      abbrAnimate$1 = abbr.abbrAnimate;
 
   function abbr2full(target, hash) {
     if (target) {
@@ -12416,6 +12427,7 @@
       if (Array.isArray(animate)) {
         var has;
         animate.forEach(function (item) {
+          abbr2full(item, abbrAnimate$1);
           var value = item.value,
               options = item.options;
 
@@ -12438,6 +12450,7 @@
           };
         }
       } else {
+        abbr2full(animate, abbrAnimate$1);
         var value = animate.value,
             options = animate.options;
 

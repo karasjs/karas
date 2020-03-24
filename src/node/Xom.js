@@ -730,7 +730,9 @@ class Xom extends Node {
               ['width', width || 0],
               ['height', height || 0]
             ];
+            let needResize;
             if(matrix && matrix !== '1,0,0,1,0,0') {
+              needResize = true;
               props.push(['transform', 'matrix(' + matrix + ')']);
             }
             if(needMask) {
@@ -761,10 +763,12 @@ class Xom extends Node {
               for(let i = 0; i < xnl; i++) {
                 let copy = clone(props);
                 let point = [originX - (i + 1) * w, originY];
-                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                if(matrix && matrix !== '1,0,0,1,0,0') {
-                  matrix = matrix.join(',');
-                  copy[5][1] = 'matrix(' + matrix + ')';
+                if(needResize) {
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
+                  }
                 }
                 copy[1][1] = point[0];
                 copy[2][1] = point[1];
@@ -779,10 +783,12 @@ class Xom extends Node {
               for(let i = 0; i < xnr; i++) {
                 let copy = clone(props);
                 let point = [originX + (i + 1) * w, originY];
-                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                if(matrix && matrix !== '1,0,0,1,0,0') {
-                  matrix = matrix.join(',');
-                  copy[5][1] = 'matrix(' + matrix + ')';
+                if(needResize) {
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
+                  }
                 }
                 copy[1][1] = point[0];
                 copy[2][1] = point[1];
@@ -797,10 +803,12 @@ class Xom extends Node {
               for(let i = 0; i < ynt; i++) {
                 let copy = clone(props);
                 let point = [originX, originY - (i + 1) * h];
-                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                if(matrix && matrix !== '1,0,0,1,0,0') {
-                  matrix = matrix.join(',');
-                  copy[5][1] = 'matrix(' + matrix + ')';
+                if(needResize) {
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
+                  }
                 }
                 copy[1][1] = point[0];
                 copy[2][1] = point[1];
@@ -815,10 +823,12 @@ class Xom extends Node {
               for(let i = 0; i < ynb; i++) {
                 let copy = clone(props);
                 let point = [originX, originY + (i + 1) * h];
-                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                if(matrix && matrix !== '1,0,0,1,0,0') {
-                  matrix = matrix.join(',');
-                  copy[5][1] = 'matrix(' + matrix + ')';
+                if(needResize) {
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
+                  }
                 }
                 copy[1][1] = point[0];
                 copy[2][1] = point[1];
@@ -835,10 +845,12 @@ class Xom extends Node {
                 for(let j = 0; j < ynt; j++) {
                   let copy = clone(props);
                   let point = [originX - (i + 1) * w, originY - (j + 1) * h];
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(needResize) {
+                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                    if(matrix && matrix !== '1,0,0,1,0,0') {
+                      matrix = matrix.join(',');
+                      copy[5][1] = 'matrix(' + matrix + ')';
+                    }
                   }
                   copy[1][1] = point[0];
                   copy[2][1] = point[1];
@@ -855,10 +867,12 @@ class Xom extends Node {
                 for(let j = 0; j < ynt; j++) {
                   let copy = clone(props);
                   let point = [originX + (i + 1) * w, originY - (j + 1) * h];
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(needResize) {
+                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                    if(matrix && matrix !== '1,0,0,1,0,0') {
+                      matrix = matrix.join(',');
+                      copy[5][1] = 'matrix(' + matrix + ')';
+                    }
                   }
                   copy[1][1] = point[0];
                   copy[2][1] = point[1];
@@ -875,10 +889,12 @@ class Xom extends Node {
                 for(let j = 0; j < ynb; j++) {
                   let copy = clone(props);
                   let point = [originX - (i + 1) * w, originY + (j + 1) * h];
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(needResize) {
+                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                    if(matrix && matrix !== '1,0,0,1,0,0') {
+                      matrix = matrix.join(',');
+                      copy[5][1] = 'matrix(' + matrix + ')';
+                    }
                   }
                   copy[1][1] = point[0];
                   copy[2][1] = point[1];
@@ -895,10 +911,12 @@ class Xom extends Node {
                 for(let j = 0; j < ynb; j++) {
                   let copy = clone(props);
                   let point = [originX + (i + 1) * w, originY + (j + 1) * h];
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(needResize) {
+                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                    if(matrix && matrix !== '1,0,0,1,0,0') {
+                      matrix = matrix.join(',');
+                      copy[5][1] = 'matrix(' + matrix + ')';
+                    }
                   }
                   copy[1][1] = point[0];
                   copy[2][1] = point[1];

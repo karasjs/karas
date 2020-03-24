@@ -7526,8 +7526,10 @@
                 }
 
                 var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width || 0], ['height', _height || 0]];
+                var needResize;
 
                 if (_matrix && _matrix !== '1,0,0,1,0,0') {
+                  needResize = true;
                   props.push(['transform', 'matrix(' + _matrix + ')']);
                 }
 
@@ -7555,11 +7557,13 @@
                     var copy = clone$2(props);
                     var point = [originX - (_i8 + 1) * w, originY];
 
-                    var _matrix2 = image.matrixResize(_width, _height, w, h, point[0], point[1], innerWidth, innerHeight);
+                    if (needResize) {
+                      var _matrix2 = image.matrixResize(_width, _height, w, h, point[0], point[1], innerWidth, innerHeight);
 
-                    if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
-                      _matrix2 = _matrix2.join(',');
-                      copy[5][1] = 'matrix(' + _matrix2 + ')';
+                      if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
+                        _matrix2 = _matrix2.join(',');
+                        copy[5][1] = 'matrix(' + _matrix2 + ')';
+                      }
                     }
 
                     copy[1][1] = point[0];
@@ -7578,11 +7582,13 @@
 
                     var _point = [originX + (_i9 + 1) * w, originY];
 
-                    var _matrix3 = image.matrixResize(_width, _height, w, h, _point[0], _point[1], innerWidth, innerHeight);
+                    if (needResize) {
+                      var _matrix3 = image.matrixResize(_width, _height, w, h, _point[0], _point[1], innerWidth, innerHeight);
 
-                    if (_matrix3 && _matrix3 !== '1,0,0,1,0,0') {
-                      _matrix3 = _matrix3.join(',');
-                      _copy[5][1] = 'matrix(' + _matrix3 + ')';
+                      if (_matrix3 && _matrix3 !== '1,0,0,1,0,0') {
+                        _matrix3 = _matrix3.join(',');
+                        _copy[5][1] = 'matrix(' + _matrix3 + ')';
+                      }
                     }
 
                     _copy[1][1] = _point[0];
@@ -7601,11 +7607,13 @@
 
                     var _point2 = [originX, originY - (_i10 + 1) * h];
 
-                    var _matrix4 = image.matrixResize(_width, _height, w, h, _point2[0], _point2[1], innerWidth, innerHeight);
+                    if (needResize) {
+                      var _matrix4 = image.matrixResize(_width, _height, w, h, _point2[0], _point2[1], innerWidth, innerHeight);
 
-                    if (_matrix4 && _matrix4 !== '1,0,0,1,0,0') {
-                      _matrix4 = _matrix4.join(',');
-                      _copy2[5][1] = 'matrix(' + _matrix4 + ')';
+                      if (_matrix4 && _matrix4 !== '1,0,0,1,0,0') {
+                        _matrix4 = _matrix4.join(',');
+                        _copy2[5][1] = 'matrix(' + _matrix4 + ')';
+                      }
                     }
 
                     _copy2[1][1] = _point2[0];
@@ -7624,11 +7632,13 @@
 
                     var _point3 = [originX, originY + (_i11 + 1) * h];
 
-                    var _matrix5 = image.matrixResize(_width, _height, w, h, _point3[0], _point3[1], innerWidth, innerHeight);
+                    if (needResize) {
+                      var _matrix5 = image.matrixResize(_width, _height, w, h, _point3[0], _point3[1], innerWidth, innerHeight);
 
-                    if (_matrix5 && _matrix5 !== '1,0,0,1,0,0') {
-                      _matrix5 = _matrix5.join(',');
-                      _copy3[5][1] = 'matrix(' + _matrix5 + ')';
+                      if (_matrix5 && _matrix5 !== '1,0,0,1,0,0') {
+                        _matrix5 = _matrix5.join(',');
+                        _copy3[5][1] = 'matrix(' + _matrix5 + ')';
+                      }
                     }
 
                     _copy3[1][1] = _point3[0];
@@ -7649,11 +7659,13 @@
 
                       var _point4 = [originX - (_i12 + 1) * w, originY - (_j4 + 1) * h];
 
-                      var _matrix6 = image.matrixResize(_width, _height, w, h, _point4[0], _point4[1], innerWidth, innerHeight);
+                      if (needResize) {
+                        var _matrix6 = image.matrixResize(_width, _height, w, h, _point4[0], _point4[1], innerWidth, innerHeight);
 
-                      if (_matrix6 && _matrix6 !== '1,0,0,1,0,0') {
-                        _matrix6 = _matrix6.join(',');
-                        _copy4[5][1] = 'matrix(' + _matrix6 + ')';
+                        if (_matrix6 && _matrix6 !== '1,0,0,1,0,0') {
+                          _matrix6 = _matrix6.join(',');
+                          _copy4[5][1] = 'matrix(' + _matrix6 + ')';
+                        }
                       }
 
                       _copy4[1][1] = _point4[0];
@@ -7674,11 +7686,13 @@
 
                       var _point5 = [originX + (_i13 + 1) * w, originY - (_j5 + 1) * h];
 
-                      var _matrix7 = image.matrixResize(_width, _height, w, h, _point5[0], _point5[1], innerWidth, innerHeight);
+                      if (needResize) {
+                        var _matrix7 = image.matrixResize(_width, _height, w, h, _point5[0], _point5[1], innerWidth, innerHeight);
 
-                      if (_matrix7 && _matrix7 !== '1,0,0,1,0,0') {
-                        _matrix7 = _matrix7.join(',');
-                        _copy5[5][1] = 'matrix(' + _matrix7 + ')';
+                        if (_matrix7 && _matrix7 !== '1,0,0,1,0,0') {
+                          _matrix7 = _matrix7.join(',');
+                          _copy5[5][1] = 'matrix(' + _matrix7 + ')';
+                        }
                       }
 
                       _copy5[1][1] = _point5[0];
@@ -7699,11 +7713,13 @@
 
                       var _point6 = [originX - (_i14 + 1) * w, originY + (_j6 + 1) * h];
 
-                      var _matrix8 = image.matrixResize(_width, _height, w, h, _point6[0], _point6[1], innerWidth, innerHeight);
+                      if (needResize) {
+                        var _matrix8 = image.matrixResize(_width, _height, w, h, _point6[0], _point6[1], innerWidth, innerHeight);
 
-                      if (_matrix8 && _matrix8 !== '1,0,0,1,0,0') {
-                        _matrix8 = _matrix8.join(',');
-                        _copy6[5][1] = 'matrix(' + _matrix8 + ')';
+                        if (_matrix8 && _matrix8 !== '1,0,0,1,0,0') {
+                          _matrix8 = _matrix8.join(',');
+                          _copy6[5][1] = 'matrix(' + _matrix8 + ')';
+                        }
                       }
 
                       _copy6[1][1] = _point6[0];
@@ -7724,11 +7740,13 @@
 
                       var _point7 = [originX + (_i15 + 1) * w, originY + (_j7 + 1) * h];
 
-                      var _matrix9 = image.matrixResize(_width, _height, w, h, _point7[0], _point7[1], innerWidth, innerHeight);
+                      if (needResize) {
+                        var _matrix9 = image.matrixResize(_width, _height, w, h, _point7[0], _point7[1], innerWidth, innerHeight);
 
-                      if (_matrix9 && _matrix9 !== '1,0,0,1,0,0') {
-                        _matrix9 = _matrix9.join(',');
-                        _copy7[5][1] = 'matrix(' + _matrix9 + ')';
+                        if (_matrix9 && _matrix9 !== '1,0,0,1,0,0') {
+                          _matrix9 = _matrix9.join(',');
+                          _copy7[5][1] = 'matrix(' + _matrix9 + ')';
+                        }
                       }
 
                       _copy7[1][1] = _point7[0];

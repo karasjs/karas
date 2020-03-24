@@ -215,9 +215,9 @@ function normalize(style, reset = []) {
       }
     }
     if(isNil(style.backgroundPosition)) {
-      let position = reg.position.exec(temp);
+      let position = temp.match(reg.position);
       if(position && isNil(style.backgroundPosition)) {
-        style.backgroundPosition = position[0].trim();
+        style.backgroundPosition = position.join(' ');
       }
     }
     if(isNil(style.backgroundColor)) {
@@ -326,8 +326,15 @@ function normalize(style, reset = []) {
       }
       else {
         style[k] = {
-          value: 0,
-          unit: PX,
+          value: {
+            top: 0,
+            left: 0,
+            center: 50,
+            right: 100,
+            bottom: 100,
+            0: 0,
+          }[temp],
+          unit: PERCENT,
         };
       }
     }
@@ -429,7 +436,7 @@ function normalize(style, reset = []) {
   }
   temp = style.transformOrigin;
   if(!isNil(temp)) {
-    let match = temp.toString().match(reg.position);
+    let match = temp.toString().match(reg.tfo);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];

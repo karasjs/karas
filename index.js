@@ -1104,7 +1104,8 @@
   };
 
   var reg = {
-    position: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    position: /((-?[\d.]+(px|%))|(left|top|right|bottom|center)){1,2}/ig,
+    tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
@@ -2416,10 +2417,10 @@
       }
 
       if (isNil$1(style.backgroundPosition)) {
-        var position = reg.position.exec(temp);
+        var position = temp.match(reg.position);
 
         if (position && isNil$1(style.backgroundPosition)) {
-          style.backgroundPosition = position[0].trim();
+          style.backgroundPosition = position.join(' ');
         }
       }
 
@@ -2534,8 +2535,15 @@
           }
         } else {
           style[k] = {
-            value: 0,
-            unit: PX$2
+            value: {
+              top: 0,
+              left: 0,
+              center: 50,
+              right: 100,
+              bottom: 100,
+              0: 0
+            }[temp],
+            unit: PERCENT$2
           };
         }
       }
@@ -2660,7 +2668,7 @@
     temp = style.transformOrigin;
 
     if (!isNil$1(temp)) {
-      var _match2 = temp.toString().match(reg.position);
+      var _match2 = temp.toString().match(reg.tfo);
 
       if (_match2) {
         if (_match2.length === 1) {

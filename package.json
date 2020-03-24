@@ -11,7 +11,7 @@
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "dev": "rollup -c rollup.config.js --watch",
-    "test": "mocha test/event.js -R spec && gulp build-test && nightwatch --filter test.js --skipgroup animate-background-position,animate-background-size"
+    "test": "mocha test/event.js -R spec && gulp build-test && nightwatch --filter test.js --group background-image"
   },
   "repository": {
     "type": "git",

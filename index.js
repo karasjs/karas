@@ -8980,19 +8980,8 @@
             w = _this$__preLayout.w,
             h = _this$__preLayout.h;
 
-        if (fixedWidth && isVirtual === 1) {
+        if (fixedWidth && isVirtual) {
           this.__width = w;
-          return;
-        }
-
-        if (fixedHeight && isVirtual === 2) {
-          this.__height = h;
-          return;
-        }
-
-        if (fixedWidth && fixedHeight && isVirtual === 3) {
-          this.__width = w;
-          this.__height = h;
           return;
         }
 
@@ -9049,7 +9038,7 @@
                 lineGroup.add(item);
               }
             } else {
-              // block先处理之前可能的lineGroup
+              // block/flex先处理之前可能的lineGroup
               if (lineGroup.size) {
                 lineGroups.push(lineGroup);
                 lineGroup.verticalAlign();
@@ -9164,23 +9153,12 @@
             w = _this$__preLayout2.w,
             h = _this$__preLayout2.h;
 
-        if (fixedWidth && isVirtual === 1) {
+        if (fixedWidth && isVirtual) {
           this.__width = w;
           return;
         }
 
-        if (fixedHeight && isVirtual === 2) {
-          this.__height = h;
-          return;
-        }
-
-        if (fixedWidth && fixedHeight && isVirtual === 3) {
-          this.__width = w;
-          this.__height = h;
-          return;
-        }
-
-        var maxX = x;
+        var maxX = 0;
         var isDirectionRow = flexDirection === 'row'; // 计算伸缩基数
 
         var growList = [];
@@ -9193,7 +9171,8 @@
         var maxSum = 0;
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
-            var _item$__calAutoBasis2 = item.__calAutoBasis(isDirectionRow, w, h),
+            // abs虚拟布局计算时纵向也是看横向宽度
+            var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
                 min = _item$__calAutoBasis2.min,
                 max = _item$__calAutoBasis2.max;
@@ -9233,40 +9212,41 @@
 
             maxSum += max;
             minList.push(min);
-          } else {
-            if (isVirtual) {
-              if (isDirectionRow) {
-                maxX += item.textWidth;
-              } else {
-                maxX = Math.max(maxX, item.textWidth);
+          } // 文本
+          else {
+              if (isVirtual) {
+                if (isDirectionRow) {
+                  maxX += item.textWidth;
+                } else {
+                  maxX = Math.max(maxX, item.textWidth);
+                }
+
+                return;
               }
 
-              return;
+              growList.push(0);
+              shrinkList.push(1);
+              shrinkSum += 1;
+
+              if (isDirectionRow) {
+                basisList.push(item.textWidth);
+                basisSum += item.textWidth;
+                maxSum += item.textWidth;
+                minList.push(item.charWidth);
+              } else {
+                item.__layout({
+                  x: 0,
+                  y: 0,
+                  w: w,
+                  h: h
+                }, true);
+
+                basisList.push(item.height);
+                basisSum += item.height;
+                maxSum += item.height;
+                minList.push(item.height);
+              }
             }
-
-            growList.push(0);
-            shrinkList.push(1);
-            shrinkSum += 1;
-
-            if (isDirectionRow) {
-              basisList.push(item.textWidth);
-              basisSum += item.textWidth;
-              maxSum += item.textWidth;
-              minList.push(item.charWidth);
-            } else {
-              item.__layout({
-                x: 0,
-                y: 0,
-                w: w,
-                h: h
-              }, true);
-
-              basisList.push(item.height);
-              basisSum += item.height;
-              maxSum += item.height;
-              minList.push(item.height);
-            }
-          }
         });
 
         if (isVirtual) {
@@ -9493,19 +9473,8 @@
             w = _this$__preLayout3.w,
             h = _this$__preLayout3.h;
 
-        if (fixedWidth && isVirtual === 1) {
+        if (fixedWidth && isVirtual) {
           this.__width = w;
-          return;
-        }
-
-        if (fixedHeight && isVirtual === 2) {
-          this.__height = h;
-          return;
-        }
-
-        if (fixedWidth && fixedHeight && isVirtual === 3) {
-          this.__width = w;
-          this.__height = h;
           return;
         }
 
@@ -9788,17 +9757,14 @@
 
 
           var needCalWidth;
-          var needCalHeight;
 
           if (display === 'block' && w2 === undefined) {
             needCalWidth = true;
           } else if (display === 'flex') {
             if (w2 === undefined) {
               needCalWidth = true;
-            }
-
-            if (flexDirection === 'column' && h2 === undefined) {
-              needCalHeight = true;
+            } else if (flexDirection === 'column' && h2 === undefined) {
+              needCalWidth = true;
             }
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
@@ -9807,22 +9773,17 @@
 
           var hl = onlyBottom ? y2 - y : innerHeight - y2; // 未直接或间接定义尺寸，取孩子宽度最大值
 
-          if (needCalWidth || needCalHeight) {
-
+          if (needCalWidth) {
             item.__layout({
               x: x2,
               y: y2,
               w: wl,
               h: hl
-            }, (needCalWidth ? 1 : 0) + (needCalHeight ? 2 : 0));
+            }, true);
           }
 
           if (needCalWidth) {
             wl = item.outerWidth;
-          }
-
-          if (needCalHeight) {
-            hl = item.outerHeight;
           }
 
           item.__layout({

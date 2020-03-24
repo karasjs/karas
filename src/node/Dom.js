@@ -289,17 +289,8 @@ class Dom extends Xom {
       textAlign,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
-    if(fixedWidth && isVirtual === 1) {
+    if(fixedWidth && isVirtual) {
       this.__width = w;
-      return;
-    }
-    if(fixedHeight && isVirtual === 2) {
-      this.__height = h;
-      return;
-    }
-    if(fixedWidth && fixedHeight && isVirtual === 3) {
-      this.__width = w;
-      this.__height = h;
       return;
     }
     let maxX = x;
@@ -352,7 +343,7 @@ class Dom extends Xom {
           }
         }
         else {
-          // block先处理之前可能的lineGroup
+          // block/flex先处理之前可能的lineGroup
           if(lineGroup.size) {
             lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
@@ -450,20 +441,11 @@ class Dom extends Xom {
       alignItems,
     } = currentStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
-    if(fixedWidth && isVirtual === 1) {
+    if(fixedWidth && isVirtual) {
       this.__width = w;
       return;
     }
-    if(fixedHeight && isVirtual === 2) {
-      this.__height = h;
-      return;
-    }
-    if(fixedWidth && fixedHeight && isVirtual === 3) {
-      this.__width = w;
-      this.__height = h;
-      return;
-    }
-    let maxX = x;
+    let maxX = 0;
     let isDirectionRow = flexDirection === 'row';
     // 计算伸缩基数
     let growList = [];
@@ -476,7 +458,8 @@ class Dom extends Xom {
     let maxSum = 0;
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
-        let { b, min, max } = item.__calAutoBasis(isDirectionRow, w, h);
+        // abs虚拟布局计算时纵向也是看横向宽度
+        let { b, min, max } = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h);
         if(isVirtual) {
           if(isDirectionRow) {
             maxX += max;
@@ -510,6 +493,7 @@ class Dom extends Xom {
         maxSum += max;
         minList.push(min);
       }
+      // 文本
       else {
         if(isVirtual) {
           if(isDirectionRow) {
@@ -752,17 +736,8 @@ class Dom extends Xom {
       textAlign,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
-    if(fixedWidth && isVirtual === 1) {
+    if(fixedWidth && isVirtual) {
       this.__width = w;
-      return;
-    }
-    if(fixedHeight && isVirtual === 2) {
-      this.__height = h;
-      return;
-    }
-    if(fixedWidth && fixedHeight && isVirtual === 3) {
-      this.__width = w;
-      this.__height = h;
       return;
     }
     let maxX = x;
@@ -1027,8 +1002,8 @@ class Dom extends Xom {
         if(w2 === undefined) {
           needCalWidth = true;
         }
-        if(flexDirection === 'column' && h2 === undefined) {
-          needCalHeight = true;
+        else if(flexDirection === 'column' && h2 === undefined) {
+          needCalWidth = true;
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
@@ -1036,20 +1011,16 @@ class Dom extends Xom {
       // onlyBottom相同，正常情况是左上到右下的尺寸限制
       let hl = onlyBottom ? y2 - y : innerHeight - y2;
       // 未直接或间接定义尺寸，取孩子宽度最大值
-      if(needCalWidth || needCalHeight) {
-        let level = 0;
+      if(needCalWidth) {
         item.__layout({
           x: x2,
           y: y2,
           w: wl,
           h: hl,
-        }, (needCalWidth ? 1 : 0) + (needCalHeight ? 2 : 0));
+        }, true);
       }
       if(needCalWidth) {
         wl = item.outerWidth;
-      }
-      if(needCalHeight) {
-        hl = item.outerHeight;
       }
       item.__layout({
         x: x2,

@@ -7396,7 +7396,8 @@
               var bgX = calBackgroundPosition(backgroundPositionX, innerWidth, _width);
               var bgY = calBackgroundPosition(backgroundPositionY, innerHeight, _height);
               var originX = x2 + bgX;
-              var originY = y2 + bgY;
+              var originY = y2 + bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+
               var xnl = 0;
               var xnr = 0;
               var ynt = 0;
@@ -7444,46 +7445,64 @@
                   cache1 = this.root.__getImageData();
 
                   this.root.__clear();
+                } // 先画不考虑repeat的中心声明的
+
+
+                ctx.drawImage(source, originX, originY, w, h); // 分同行列和4个角分别判断，先看同行同列
+
+                if (xnl > 0) {
+                  for (var i = 0; i < xnl; i++) {
+                    ctx.drawImage(source, originX - (i + 1) * w, originY, w, h);
+                  }
                 }
 
-                ctx.drawImage(source, originX, originY, w, h); // 分4个角分别判断
+                if (xnr > 0) {
+                  for (var _i = 0; _i < xnr; _i++) {
+                    ctx.drawImage(source, originX + (_i + 1) * w, originY, w, h);
+                  }
+                }
 
-                if (xnl > 0 || ynt > 0) {
-                  for (var i = 0; i <= Math.max(xnl, 1); i++) {
-                    for (var j = 0; j <= Math.max(ynt, 1); j++) {
-                      if (i !== 0 || j !== 0) {
-                        ctx.drawImage(source, originX - i * w, originY - j * h, w, h);
-                      }
+                if (ynt > 0) {
+                  for (var _i2 = 0; _i2 < ynt; _i2++) {
+                    ctx.drawImage(source, originX, originY - (_i2 + 1) * h, w, h);
+                  }
+                }
+
+                if (ynb > 0) {
+                  for (var _i3 = 0; _i3 < ynb; _i3++) {
+                    ctx.drawImage(source, originX, originY + (_i3 + 1) * h, w, h);
+                  }
+                } // 原点和同行列十字画完，看4个角的情况
+
+
+                if (xnl > 0 && ynt > 0) {
+                  for (var _i4 = 0; _i4 < xnl; _i4++) {
+                    for (var j = 0; j < ynt; j++) {
+                      ctx.drawImage(source, originX - (_i4 + 1) * w, originY - (j + 1) * h, w, h);
                     }
                   }
                 }
 
-                if (xnr > 0 || ynt > 0) {
-                  for (var _i = 0; _i <= Math.max(xnr, 1); _i++) {
-                    for (var _j = 0; _j <= Math.max(ynt, 1); _j++) {
-                      if (_i !== 0 || _j !== 0) {
-                        ctx.drawImage(source, originX + _i * w, originY - _j * h, w, h);
-                      }
+                if (xnr > 0 && ynt > 0) {
+                  for (var _i5 = 0; _i5 < xnr; _i5++) {
+                    for (var _j = 0; _j < ynt; _j++) {
+                      ctx.drawImage(source, originX + (_i5 + 1) * w, originY - (_j + 1) * h, w, h);
                     }
                   }
                 }
 
-                if (xnl > 0 || ynb > 0) {
-                  for (var _i2 = 0; _i2 <= Math.max(xnl, 1); _i2++) {
-                    for (var _j2 = 0; _j2 <= Math.max(ynb, 1); _j2++) {
-                      if (_i2 !== 0 || _j2 !== 0) {
-                        ctx.drawImage(source, originX - _i2 * w, originY + _j2 * h, w, h);
-                      }
+                if (xnl > 0 && ynb > 0) {
+                  for (var _i6 = 0; _i6 < xnl; _i6++) {
+                    for (var _j2 = 0; _j2 < ynb; _j2++) {
+                      ctx.drawImage(source, originX - (_i6 + 1) * w, originY + (_j2 + 1) * h, w, h);
                     }
                   }
                 }
 
-                if (xnr > 0 || ynb > 0) {
-                  for (var _i3 = 0; _i3 <= Math.max(xnr, 1); _i3++) {
-                    for (var _j3 = 0; _j3 <= Math.max(ynb, 1); _j3++) {
-                      if (_i3 !== 0 || _j3 !== 0) {
-                        ctx.drawImage(source, originX + _i3 * w, originY + _j3 * h, w, h);
-                      }
+                if (xnr > 0 && ynb > 0) {
+                  for (var _i7 = 0; _i7 < xnr; _i7++) {
+                    for (var _j3 = 0; _j3 < ynb; _j3++) {
+                      ctx.drawImage(source, originX + (_i7 + 1) * w, originY + (_j3 + 1) * h, w, h);
                     }
                   }
                 }
@@ -7522,81 +7541,203 @@
                     }]
                   });
                   this.virtualDom.bbMask = "url(#".concat(maskId, ")");
-                }
+                } // 先画不考虑repeat的中心声明的
+
 
                 this.virtualDom.bb.push({
                   type: 'img',
                   tagName: 'image',
                   props: props
-                }); // 4个角repeat
+                }); // 分同行列和4个角分别判断，先看同行同列
 
-                if (xnl > 0 || ynt > 0) {
-                  for (var _i4 = 0; _i4 <= Math.max(xnl, 1); _i4++) {
-                    for (var _j4 = 0; _j4 <= Math.max(ynt, 1); _j4++) {
-                      if (_i4 !== 0 || _j4 !== 0) {
-                        var copy = clone$2(props);
-                        copy[1][1] = originX - _i4 * w;
-                        copy[2][1] = originY - _j4 * h;
-                        this.virtualDom.bb.push({
-                          type: 'img',
-                          tagName: 'image',
-                          props: copy
-                        });
+                if (xnl > 0) {
+                  for (var _i8 = 0; _i8 < xnl; _i8++) {
+                    var copy = clone$2(props);
+                    var point = [originX - (_i8 + 1) * w, originY];
+
+                    var _matrix2 = image.matrixResize(_width, _height, w, h, point[0], point[1], innerWidth, innerHeight);
+
+                    if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
+                      _matrix2 = _matrix2.join(',');
+                      copy[5][1] = 'matrix(' + _matrix2 + ')';
+                    }
+
+                    copy[1][1] = point[0];
+                    copy[2][1] = point[1];
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: copy
+                    });
+                  }
+                }
+
+                if (xnr > 0) {
+                  for (var _i9 = 0; _i9 < xnr; _i9++) {
+                    var _copy = clone$2(props);
+
+                    var _point = [originX + (_i9 + 1) * w, originY];
+
+                    var _matrix3 = image.matrixResize(_width, _height, w, h, _point[0], _point[1], innerWidth, innerHeight);
+
+                    if (_matrix3 && _matrix3 !== '1,0,0,1,0,0') {
+                      _matrix3 = _matrix3.join(',');
+                      _copy[5][1] = 'matrix(' + _matrix3 + ')';
+                    }
+
+                    _copy[1][1] = _point[0];
+                    _copy[2][1] = _point[1];
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: _copy
+                    });
+                  }
+                }
+
+                if (ynt > 0) {
+                  for (var _i10 = 0; _i10 < ynt; _i10++) {
+                    var _copy2 = clone$2(props);
+
+                    var _point2 = [originX, originY - (_i10 + 1) * h];
+
+                    var _matrix4 = image.matrixResize(_width, _height, w, h, _point2[0], _point2[1], innerWidth, innerHeight);
+
+                    if (_matrix4 && _matrix4 !== '1,0,0,1,0,0') {
+                      _matrix4 = _matrix4.join(',');
+                      _copy2[5][1] = 'matrix(' + _matrix4 + ')';
+                    }
+
+                    _copy2[1][1] = _point2[0];
+                    _copy2[2][1] = _point2[1];
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: _copy2
+                    });
+                  }
+                }
+
+                if (ynb > 0) {
+                  for (var _i11 = 0; _i11 < ynb; _i11++) {
+                    var _copy3 = clone$2(props);
+
+                    var _point3 = [originX, originY + (_i11 + 1) * h];
+
+                    var _matrix5 = image.matrixResize(_width, _height, w, h, _point3[0], _point3[1], innerWidth, innerHeight);
+
+                    if (_matrix5 && _matrix5 !== '1,0,0,1,0,0') {
+                      _matrix5 = _matrix5.join(',');
+                      _copy3[5][1] = 'matrix(' + _matrix5 + ')';
+                    }
+
+                    _copy3[1][1] = _point3[0];
+                    _copy3[2][1] = _point3[1];
+                    this.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: _copy3
+                    });
+                  }
+                } // 4个角repeat
+
+
+                if (xnl > 0 && ynt > 0) {
+                  for (var _i12 = 0; _i12 < xnl; _i12++) {
+                    for (var _j4 = 0; _j4 < ynt; _j4++) {
+                      var _copy4 = clone$2(props);
+
+                      var _point4 = [originX - (_i12 + 1) * w, originY - (_j4 + 1) * h];
+
+                      var _matrix6 = image.matrixResize(_width, _height, w, h, _point4[0], _point4[1], innerWidth, innerHeight);
+
+                      if (_matrix6 && _matrix6 !== '1,0,0,1,0,0') {
+                        _matrix6 = _matrix6.join(',');
+                        _copy4[5][1] = 'matrix(' + _matrix6 + ')';
                       }
+
+                      _copy4[1][1] = _point4[0];
+                      _copy4[2][1] = _point4[1];
+                      this.virtualDom.bb.push({
+                        type: 'img',
+                        tagName: 'image',
+                        props: _copy4
+                      });
                     }
                   }
                 }
 
-                if (xnr > 0 || ynt > 0) {
-                  for (var _i5 = 0; _i5 <= Math.max(xnr, 1); _i5++) {
-                    for (var _j5 = 0; _j5 <= Math.max(ynt, 1); _j5++) {
-                      if (_i5 !== 0 || _j5 !== 0) {
-                        var _copy = clone$2(props);
+                if (xnr > 0 && ynt > 0) {
+                  for (var _i13 = 0; _i13 < xnr; _i13++) {
+                    for (var _j5 = 0; _j5 < ynt; _j5++) {
+                      var _copy5 = clone$2(props);
 
-                        _copy[1][1] = originX + _i5 * w;
-                        _copy[2][1] = originY - _j5 * h;
-                        this.virtualDom.bb.push({
-                          type: 'img',
-                          tagName: 'image',
-                          props: _copy
-                        });
+                      var _point5 = [originX + (_i13 + 1) * w, originY - (_j5 + 1) * h];
+
+                      var _matrix7 = image.matrixResize(_width, _height, w, h, _point5[0], _point5[1], innerWidth, innerHeight);
+
+                      if (_matrix7 && _matrix7 !== '1,0,0,1,0,0') {
+                        _matrix7 = _matrix7.join(',');
+                        _copy5[5][1] = 'matrix(' + _matrix7 + ')';
                       }
+
+                      _copy5[1][1] = _point5[0];
+                      _copy5[2][1] = _point5[1];
+                      this.virtualDom.bb.push({
+                        type: 'img',
+                        tagName: 'image',
+                        props: _copy5
+                      });
                     }
                   }
                 }
 
-                if (xnl > 0 || ynb > 0) {
-                  for (var _i6 = 0; _i6 <= Math.max(xnl, 1); _i6++) {
-                    for (var _j6 = 0; _j6 <= Math.max(ynb, 1); _j6++) {
-                      if (_i6 !== 0 || _j6 !== 0) {
-                        var _copy2 = clone$2(props);
+                if (xnl > 0 && ynb > 0) {
+                  for (var _i14 = 0; _i14 < xnl; _i14++) {
+                    for (var _j6 = 0; _j6 < ynb; _j6++) {
+                      var _copy6 = clone$2(props);
 
-                        _copy2[1][1] = originX - _i6 * w;
-                        _copy2[2][1] = originY + _j6 * h;
-                        this.virtualDom.bb.push({
-                          type: 'img',
-                          tagName: 'image',
-                          props: _copy2
-                        });
+                      var _point6 = [originX - (_i14 + 1) * w, originY + (_j6 + 1) * h];
+
+                      var _matrix8 = image.matrixResize(_width, _height, w, h, _point6[0], _point6[1], innerWidth, innerHeight);
+
+                      if (_matrix8 && _matrix8 !== '1,0,0,1,0,0') {
+                        _matrix8 = _matrix8.join(',');
+                        _copy6[5][1] = 'matrix(' + _matrix8 + ')';
                       }
+
+                      _copy6[1][1] = _point6[0];
+                      _copy6[2][1] = _point6[1];
+                      this.virtualDom.bb.push({
+                        type: 'img',
+                        tagName: 'image',
+                        props: _copy6
+                      });
                     }
                   }
                 }
 
-                if (xnr > 0 || ynb > 0) {
-                  for (var _i7 = 0; _i7 <= Math.max(xnr, 1); _i7++) {
-                    for (var _j7 = 0; _j7 <= Math.max(ynb, 1); _j7++) {
-                      if (_i7 !== 0 || _j7 !== 0) {
-                        var _copy3 = clone$2(props);
+                if (xnr > 0 && ynb > 0) {
+                  for (var _i15 = 0; _i15 < xnr; _i15++) {
+                    for (var _j7 = 0; _j7 < ynb; _j7++) {
+                      var _copy7 = clone$2(props);
 
-                        _copy3[1][1] = originX + _i7 * w;
-                        _copy3[2][1] = originY + _j7 * h;
-                        this.virtualDom.bb.push({
-                          type: 'img',
-                          tagName: 'image',
-                          props: _copy3
-                        });
+                      var _point7 = [originX + (_i15 + 1) * w, originY + (_j7 + 1) * h];
+
+                      var _matrix9 = image.matrixResize(_width, _height, w, h, _point7[0], _point7[1], innerWidth, innerHeight);
+
+                      if (_matrix9 && _matrix9 !== '1,0,0,1,0,0') {
+                        _matrix9 = _matrix9.join(',');
+                        _copy7[5][1] = 'matrix(' + _matrix9 + ')';
                       }
+
+                      _copy7[1][1] = _point7[0];
+                      _copy7[2][1] = _point7[1];
+                      this.virtualDom.bb.push({
+                        type: 'img',
+                        tagName: 'image',
+                        props: _copy7
+                      });
                     }
                   }
                 }
@@ -7770,8 +7911,8 @@
             } // 再看普通流，从后往前遮挡顺序
 
 
-            for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
-              var _child = children[_i8];
+            for (var _i16 = children.length - 1; _i16 >= 0; _i16--) {
+              var _child = children[_i16];
 
               if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) > -1) {
                 if (_child.__emitEvent(e, force)) {
@@ -7809,8 +7950,8 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
-            var _child2 = children[_i9];
+          for (var _i17 = children.length - 1; _i17 >= 0; _i17--) {
+            var _child2 = children[_i17];
 
             if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
               if (_child2.__emitEvent(e)) {
@@ -7820,8 +7961,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-            var _child3 = children[_i10];
+          for (var _i18 = children.length - 1; _i18 >= 0; _i18--) {
+            var _child3 = children[_i18];
 
             if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
               if (_child3.__emitEvent(e)) {

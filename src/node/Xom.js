@@ -618,6 +618,7 @@ class Xom extends Node {
           let bgY = calBackgroundPosition(backgroundPositionY, innerHeight, height);
           let originX = x2 + bgX;
           let originY = y2 + bgY;
+          // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
           let xnl = 0;
           let xnr = 0;
           let ynt = 0;
@@ -656,41 +657,55 @@ class Xom extends Node {
               cache1 = this.root.__getImageData();
               this.root.__clear();
             }
+            // 先画不考虑repeat的中心声明的
             ctx.drawImage(source, originX, originY, w, h);
-            // 分4个角分别判断
-            if(xnl > 0 || ynt > 0) {
-              for(let i = 0; i <= Math.max(xnl, 1); i++) {
-                for(let j = 0; j <= Math.max(ynt, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    ctx.drawImage(source, originX - i * w, originY - j * h, w, h);
-                  }
+            // 分同行列和4个角分别判断，先看同行同列
+            if(xnl > 0) {
+              for(let i = 0; i < xnl; i++) {
+                ctx.drawImage(source, originX - (i + 1) * w, originY, w, h);
+              }
+            }
+            if(xnr > 0) {
+              for(let i = 0; i < xnr; i++) {
+                ctx.drawImage(source, originX + (i + 1) * w, originY, w, h);
+              }
+            }
+            if(ynt > 0) {
+              for(let i = 0; i < ynt; i++) {
+                ctx.drawImage(source, originX, originY - (i + 1) * h, w, h);
+              }
+            }
+            if(ynb > 0) {
+              for(let i = 0; i < ynb; i++) {
+                ctx.drawImage(source, originX, originY + (i + 1) * h, w, h);
+              }
+            }
+            // 原点和同行列十字画完，看4个角的情况
+            if(xnl > 0 && ynt > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  ctx.drawImage(source, originX - (i + 1) * w, originY - (j + 1) * h, w, h);
                 }
               }
             }
-            if(xnr > 0 || ynt > 0) {
-              for(let i = 0; i <= Math.max(xnr, 1); i++) {
-                for(let j = 0; j <= Math.max(ynt, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    ctx.drawImage(source, originX + i * w, originY - j * h, w, h);
-                  }
+            if(xnr > 0 && ynt > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  ctx.drawImage(source, originX + (i + 1) * w, originY - (j + 1) * h, w, h);
                 }
               }
             }
-            if(xnl > 0 || ynb > 0) {
-              for(let i = 0; i <= Math.max(xnl, 1); i++) {
-                for(let j = 0; j <= Math.max(ynb, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    ctx.drawImage(source, originX - i * w, originY + j * h, w, h);
-                  }
+            if(xnl > 0 && ynb > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  ctx.drawImage(source, originX - (i + 1) * w, originY + (j + 1) * h, w, h);
                 }
               }
             }
-            if(xnr > 0 || ynb > 0) {
-              for(let i = 0; i <= Math.max(xnr, 1); i++) {
-                for(let j = 0; j <= Math.max(ynb, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    ctx.drawImage(source, originX + i * w, originY + j * h, w, h);
-                  }
+            if(xnr > 0 && ynb > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  ctx.drawImage(source, originX + (i + 1) * w, originY + (j + 1) * h, w, h);
                 }
               }
             }
@@ -735,73 +750,163 @@ class Xom extends Node {
               });
               this.virtualDom.bbMask = `url(#${maskId})`;
             }
+            // 先画不考虑repeat的中心声明的
             this.virtualDom.bb.push({
               type: 'img',
               tagName: 'image',
               props,
             });
+            // 分同行列和4个角分别判断，先看同行同列
+            if(xnl > 0) {
+              for(let i = 0; i < xnl; i++) {
+                let copy = clone(props);
+                let point = [originX - (i + 1) * w, originY];
+                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                if(matrix && matrix !== '1,0,0,1,0,0') {
+                  matrix = matrix.join(',');
+                  copy[5][1] = 'matrix(' + matrix + ')';
+                }
+                copy[1][1] = point[0];
+                copy[2][1] = point[1];
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: copy,
+                });
+              }
+            }
+            if(xnr > 0) {
+              for(let i = 0; i < xnr; i++) {
+                let copy = clone(props);
+                let point = [originX + (i + 1) * w, originY];
+                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                if(matrix && matrix !== '1,0,0,1,0,0') {
+                  matrix = matrix.join(',');
+                  copy[5][1] = 'matrix(' + matrix + ')';
+                }
+                copy[1][1] = point[0];
+                copy[2][1] = point[1];
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: copy,
+                });
+              }
+            }
+            if(ynt > 0) {
+              for(let i = 0; i < ynt; i++) {
+                let copy = clone(props);
+                let point = [originX, originY - (i + 1) * h];
+                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                if(matrix && matrix !== '1,0,0,1,0,0') {
+                  matrix = matrix.join(',');
+                  copy[5][1] = 'matrix(' + matrix + ')';
+                }
+                copy[1][1] = point[0];
+                copy[2][1] = point[1];
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: copy,
+                });
+              }
+            }
+            if(ynb > 0) {
+              for(let i = 0; i < ynb; i++) {
+                let copy = clone(props);
+                let point = [originX, originY + (i + 1) * h];
+                let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                if(matrix && matrix !== '1,0,0,1,0,0') {
+                  matrix = matrix.join(',');
+                  copy[5][1] = 'matrix(' + matrix + ')';
+                }
+                copy[1][1] = point[0];
+                copy[2][1] = point[1];
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: copy,
+                });
+              }
+            }
             // 4个角repeat
-            if(xnl > 0 || ynt > 0) {
-              for(let i = 0; i <= Math.max(xnl, 1); i++) {
-                for(let j = 0; j <= Math.max(ynt, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    let copy = clone(props);
-                    copy[1][1] = originX - i * w;
-                    copy[2][1] = originY - j * h;
-                    this.virtualDom.bb.push({
-                      type: 'img',
-                      tagName: 'image',
-                      props: copy,
-                    });
+            if(xnl > 0 && ynt > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  let copy = clone(props);
+                  let point = [originX - (i + 1) * w, originY - (j + 1) * h];
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
                   }
+                  copy[1][1] = point[0];
+                  copy[2][1] = point[1];
+                  this.virtualDom.bb.push({
+                    type: 'img',
+                    tagName: 'image',
+                    props: copy,
+                  });
                 }
               }
             }
-            if(xnr > 0 || ynt > 0) {
-              for(let i = 0; i <= Math.max(xnr, 1); i++) {
-                for(let j = 0; j <= Math.max(ynt, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    let copy = clone(props);
-                    copy[1][1] = originX + i * w;
-                    copy[2][1] = originY - j * h;
-                    this.virtualDom.bb.push({
-                      type: 'img',
-                      tagName: 'image',
-                      props: copy,
-                    });
+            if(xnr > 0 && ynt > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  let copy = clone(props);
+                  let point = [originX + (i + 1) * w, originY - (j + 1) * h];
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
                   }
+                  copy[1][1] = point[0];
+                  copy[2][1] = point[1];
+                  this.virtualDom.bb.push({
+                    type: 'img',
+                    tagName: 'image',
+                    props: copy,
+                  });
                 }
               }
             }
-            if(xnl > 0 || ynb > 0) {
-              for(let i = 0; i <= Math.max(xnl, 1); i++) {
-                for(let j = 0; j <= Math.max(ynb, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    let copy = clone(props);
-                    copy[1][1] = originX - i * w;
-                    copy[2][1] = originY + j * h;
-                    this.virtualDom.bb.push({
-                      type: 'img',
-                      tagName: 'image',
-                      props: copy,
-                    });
+            if(xnl > 0 && ynb > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  let copy = clone(props);
+                  let point = [originX - (i + 1) * w, originY + (j + 1) * h];
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
                   }
+                  copy[1][1] = point[0];
+                  copy[2][1] = point[1];
+                  this.virtualDom.bb.push({
+                    type: 'img',
+                    tagName: 'image',
+                    props: copy,
+                  });
                 }
               }
             }
-            if(xnr > 0 || ynb > 0) {
-              for(let i = 0; i <= Math.max(xnr, 1); i++) {
-                for(let j = 0; j <= Math.max(ynb, 1); j++) {
-                  if(i !== 0 || j !== 0) {
-                    let copy = clone(props);
-                    copy[1][1] = originX + i * w;
-                    copy[2][1] = originY + j * h;
-                    this.virtualDom.bb.push({
-                      type: 'img',
-                      tagName: 'image',
-                      props: copy,
-                    });
+            if(xnr > 0 && ynb > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  let copy = clone(props);
+                  let point = [originX + (i + 1) * w, originY + (j + 1) * h];
+                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
                   }
+                  copy[1][1] = point[0];
+                  copy[2][1] = point[1];
+                  this.virtualDom.bb.push({
+                    type: 'img',
+                    tagName: 'image',
+                    props: copy,
+                  });
                 }
               }
             }

@@ -9650,7 +9650,8 @@
             borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             marginTop = computedStyle.marginTop,
-            marginLeft = computedStyle.marginLeft;
+            marginLeft = computedStyle.marginLeft,
+            paddingLeft = computedStyle.paddingLeft;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -9722,7 +9723,7 @@
             x2 = x + innerWidth - computedStyle.right;
             onlyRight = true;
           } else {
-            x2 = x;
+            x2 = x + paddingLeft;
 
             if (width.unit !== AUTO$4) {
               w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;

@@ -891,6 +891,7 @@ class Dom extends Xom {
       borderLeftWidth,
       marginTop,
       marginLeft,
+      paddingLeft,
     } = computedStyle;
     if(isDestroyed || display === 'none') {
       return;
@@ -958,7 +959,7 @@ class Dom extends Xom {
         onlyRight = true;
       }
       else {
-        x2 = x;
+        x2 = x + paddingLeft;
         if(width.unit !== AUTO) {
           w2 = width.unit === PX ? width.value : innerWidth * width.value * 0.01;
         }

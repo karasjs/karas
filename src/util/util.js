@@ -32,7 +32,7 @@ function encodeHtml(s, prop) {
   if(prop) {
     return s.replace(/"/g, '&quot;');
   }
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
 }
 
 function isNil(v) {

@@ -11,6 +11,7 @@ import sort from '../util/sort';
 import Component from './Component';
 
 const { AUTO, PX, PERCENT } = unit;
+const { calAbsolute } = css;
 
 const TAG_NAME = {
   'div': true,
@@ -887,28 +888,28 @@ class Dom extends Xom {
       // 判断何种方式的定位，比如左+宽度，左+右之类
       if(left.unit !== AUTO) {
         fixedLeft = true;
-        computedStyle.left = css.calAbsolute(currentStyle, 'left', left, innerWidth);
+        computedStyle.left = calAbsolute(currentStyle, 'left', left, innerWidth);
       }
       else {
         computedStyle.left = 'auto';
       }
       if(right.unit !== AUTO) {
         fixedRight = true;
-        computedStyle.right = css.calAbsolute(currentStyle, 'right', right, innerWidth);
+        computedStyle.right = calAbsolute(currentStyle, 'right', right, innerWidth);
       }
       else {
         computedStyle.right = 'auto';
       }
       if(top.unit !== AUTO) {
         fixedTop = true;
-        computedStyle.top = css.calAbsolute(currentStyle, 'top', top, innerHeight);
+        computedStyle.top = calAbsolute(currentStyle, 'top', top, innerHeight);
       }
       else {
         computedStyle.top = 'auto';
       }
       if(bottom.unit !== AUTO) {
         fixedBottom = true;
-        computedStyle.bottom = css.calAbsolute(currentStyle, 'bottom', bottom, innerHeight);
+        computedStyle.bottom = calAbsolute(currentStyle, 'bottom', bottom, innerHeight);
       }
       else {
         computedStyle.bottom = 'auto';

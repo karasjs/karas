@@ -14,6 +14,7 @@ import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, mergeImageData } = util;
+const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
@@ -187,24 +188,17 @@ class Xom extends Node {
 
   // 获取margin/padding的实际值
   __mp(currentStyle, computedStyle, w) {
-    let {
-      marginTop,
-      marginRight,
-      marginBottom,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
-    } = currentStyle;
-    computedStyle.marginLeft = this.__mpWidth(marginLeft, w);
-    computedStyle.marginTop = this.__mpWidth(marginTop, w);
-    computedStyle.marginRight = this.__mpWidth(marginRight, w);
-    computedStyle.marginBottom = this.__mpWidth(marginBottom, w);
-    computedStyle.paddingLeft = this.__mpWidth(paddingLeft, w);
-    computedStyle.paddingTop = this.__mpWidth(paddingTop, w);
-    computedStyle.paddingRight = this.__mpWidth(paddingRight, w);
-    computedStyle.paddingBottom = this.__mpWidth(paddingBottom, w);
+    [
+      'Top',
+      'Right',
+      'Bottom',
+      'Left',
+    ].forEach(k => {
+      let a = 'margin' + k;
+      let b = 'padding' + k;
+      computedStyle[a] = this.__mpWidth(currentStyle[a], w);
+      computedStyle[b] = this.__mpWidth(currentStyle[b], w);
+    });
   }
 
   __mpWidth(mp, w) {
@@ -256,13 +250,13 @@ class Xom extends Node {
       let { top, right, bottom, left } = currentStyle;
       let { parent } = this;
       if(top.unit !== AUTO) {
-        let n = css.calRelative(currentStyle, 'top', top, parent);
+        let n = calRelative(currentStyle, 'top', top, parent);
         this.__offsetY(n);
         computedStyle.top = n;
         computedStyle.bottom = 'auto';
       }
       else if(bottom.unit !== AUTO) {
-        let n = css.calRelative(currentStyle, 'bottom', bottom, parent);
+        let n = calRelative(currentStyle, 'bottom', bottom, parent);
         this.__offsetY(-n);
         computedStyle.bottom = n;
         computedStyle.top = 'auto';
@@ -271,13 +265,13 @@ class Xom extends Node {
         computedStyle.top = computedStyle.bottom = 'auto';
       }
       if(left.unit !== AUTO) {
-        let n = css.calRelative(currentStyle, 'left', left, parent, true);
+        let n = calRelative(currentStyle, 'left', left, parent, true);
         this.__offsetX(n);
         computedStyle.left = n;
         computedStyle.right = 'auto';
       }
       else if(right.unit !== AUTO) {
-        let n = css.calRelative(currentStyle, 'right', right, parent, true);
+        let n = calRelative(currentStyle, 'right', right, parent, true);
         this.__offsetX(-n);
         computedStyle.right = n;
         computedStyle.left = 'auto';
@@ -645,6 +639,57 @@ class Xom extends Node {
               ynb = Math.ceil(diff / h);
             }
           }
+          // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+          let repeat = [];
+          if(xnl > 0) {
+            for(let i = 0; i < xnl; i++) {
+              repeat.push([originX - (i + 1) * w, originY]);
+            }
+          }
+          if(xnr > 0) {
+            for(let i = 0; i < xnr; i++) {
+              repeat.push([originX + (i + 1) * w, originY]);
+            }
+          }
+          if(ynt > 0) {
+            for(let i = 0; i < ynt; i++) {
+              repeat.push([originX, originY - (i + 1) * h]);
+            }
+          }
+          if(ynb > 0) {
+            for(let i = 0; i < ynb; i++) {
+              repeat.push([originX, originY + (i + 1) * h]);
+            }
+          }
+          // 原点和同行列十字画完，看4个角的情况
+          if(xnl > 0 && ynt > 0) {
+            for(let i = 0; i < xnl; i++) {
+              for(let j = 0; j < ynt; j++) {
+                repeat.push([originX - (i + 1) * w, originY - (j + 1) * h]);
+              }
+            }
+          }
+          if(xnr > 0 && ynt > 0) {
+            for(let i = 0; i < xnr; i++) {
+              for(let j = 0; j < ynt; j++) {
+                repeat.push([originX + (i + 1) * w, originY - (j + 1) * h]);
+              }
+            }
+          }
+          if(xnl > 0 && ynb > 0) {
+            for(let i = 0; i < xnl; i++) {
+              for(let j = 0; j < ynb; j++) {
+                repeat.push([originX - (i + 1) * w, originY + (j + 1) * h]);
+              }
+            }
+          }
+          if(xnr > 0 && ynb > 0) {
+            for(let i = 0; i < xnr; i++) {
+              for(let j = 0; j < ynb; j++) {
+                repeat.push([originX + (i + 1) * w, originY + (j + 1) * h]);
+              }
+            }
+          }
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
@@ -659,56 +704,10 @@ class Xom extends Node {
             }
             // 先画不考虑repeat的中心声明的
             ctx.drawImage(source, originX, originY, w, h);
-            // 分同行列和4个角分别判断，先看同行同列
-            if(xnl > 0) {
-              for(let i = 0; i < xnl; i++) {
-                ctx.drawImage(source, originX - (i + 1) * w, originY, w, h);
-              }
-            }
-            if(xnr > 0) {
-              for(let i = 0; i < xnr; i++) {
-                ctx.drawImage(source, originX + (i + 1) * w, originY, w, h);
-              }
-            }
-            if(ynt > 0) {
-              for(let i = 0; i < ynt; i++) {
-                ctx.drawImage(source, originX, originY - (i + 1) * h, w, h);
-              }
-            }
-            if(ynb > 0) {
-              for(let i = 0; i < ynb; i++) {
-                ctx.drawImage(source, originX, originY + (i + 1) * h, w, h);
-              }
-            }
-            // 原点和同行列十字画完，看4个角的情况
-            if(xnl > 0 && ynt > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  ctx.drawImage(source, originX - (i + 1) * w, originY - (j + 1) * h, w, h);
-                }
-              }
-            }
-            if(xnr > 0 && ynt > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  ctx.drawImage(source, originX + (i + 1) * w, originY - (j + 1) * h, w, h);
-                }
-              }
-            }
-            if(xnl > 0 && ynb > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  ctx.drawImage(source, originX - (i + 1) * w, originY + (j + 1) * h, w, h);
-                }
-              }
-            }
-            if(xnr > 0 && ynb > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  ctx.drawImage(source, originX + (i + 1) * w, originY + (j + 1) * h, w, h);
-                }
-              }
-            }
+            // 再画重复的十字和4角象限
+            repeat.forEach(item => {
+              ctx.drawImage(source, item[0], item[1], w, h);
+            });
             if(needMask) {
               ctx.globalCompositeOperation = 'destination-in';
               renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this);
@@ -758,176 +757,24 @@ class Xom extends Node {
               tagName: 'image',
               props,
             });
-            // 分同行列和4个角分别判断，先看同行同列
-            if(xnl > 0) {
-              for(let i = 0; i < xnl; i++) {
-                let copy = clone(props);
-                let point = [originX - (i + 1) * w, originY];
-                if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
-                  }
-                }
-                copy[1][1] = point[0];
-                copy[2][1] = point[1];
-                this.virtualDom.bb.push({
-                  type: 'img',
-                  tagName: 'image',
-                  props: copy,
-                });
-              }
-            }
-            if(xnr > 0) {
-              for(let i = 0; i < xnr; i++) {
-                let copy = clone(props);
-                let point = [originX + (i + 1) * w, originY];
-                if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
-                  }
-                }
-                copy[1][1] = point[0];
-                copy[2][1] = point[1];
-                this.virtualDom.bb.push({
-                  type: 'img',
-                  tagName: 'image',
-                  props: copy,
-                });
-              }
-            }
-            if(ynt > 0) {
-              for(let i = 0; i < ynt; i++) {
-                let copy = clone(props);
-                let point = [originX, originY - (i + 1) * h];
-                if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
-                  }
-                }
-                copy[1][1] = point[0];
-                copy[2][1] = point[1];
-                this.virtualDom.bb.push({
-                  type: 'img',
-                  tagName: 'image',
-                  props: copy,
-                });
-              }
-            }
-            if(ynb > 0) {
-              for(let i = 0; i < ynb; i++) {
-                let copy = clone(props);
-                let point = [originX, originY + (i + 1) * h];
-                if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
-                  }
-                }
-                copy[1][1] = point[0];
-                copy[2][1] = point[1];
-                this.virtualDom.bb.push({
-                  type: 'img',
-                  tagName: 'image',
-                  props: copy,
-                });
-              }
-            }
-            // 4个角repeat
-            if(xnl > 0 && ynt > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  let copy = clone(props);
-                  let point = [originX - (i + 1) * w, originY - (j + 1) * h];
-                  if(needResize) {
-                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                    if(matrix && matrix !== '1,0,0,1,0,0') {
-                      matrix = matrix.join(',');
-                      copy[5][1] = 'matrix(' + matrix + ')';
-                    }
-                  }
-                  copy[1][1] = point[0];
-                  copy[2][1] = point[1];
-                  this.virtualDom.bb.push({
-                    type: 'img',
-                    tagName: 'image',
-                    props: copy,
-                  });
+            // 再画重复的十字和4角象限
+            repeat.forEach(item => {
+              let copy = clone(props);
+              if(needResize) {
+                let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
+                if(matrix && matrix !== '1,0,0,1,0,0') {
+                  matrix = matrix.join(',');
+                  copy[5][1] = 'matrix(' + matrix + ')';
                 }
               }
-            }
-            if(xnr > 0 && ynt > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynt; j++) {
-                  let copy = clone(props);
-                  let point = [originX + (i + 1) * w, originY - (j + 1) * h];
-                  if(needResize) {
-                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                    if(matrix && matrix !== '1,0,0,1,0,0') {
-                      matrix = matrix.join(',');
-                      copy[5][1] = 'matrix(' + matrix + ')';
-                    }
-                  }
-                  copy[1][1] = point[0];
-                  copy[2][1] = point[1];
-                  this.virtualDom.bb.push({
-                    type: 'img',
-                    tagName: 'image',
-                    props: copy,
-                  });
-                }
-              }
-            }
-            if(xnl > 0 && ynb > 0) {
-              for(let i = 0; i < xnl; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  let copy = clone(props);
-                  let point = [originX - (i + 1) * w, originY + (j + 1) * h];
-                  if(needResize) {
-                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                    if(matrix && matrix !== '1,0,0,1,0,0') {
-                      matrix = matrix.join(',');
-                      copy[5][1] = 'matrix(' + matrix + ')';
-                    }
-                  }
-                  copy[1][1] = point[0];
-                  copy[2][1] = point[1];
-                  this.virtualDom.bb.push({
-                    type: 'img',
-                    tagName: 'image',
-                    props: copy,
-                  });
-                }
-              }
-            }
-            if(xnr > 0 && ynb > 0) {
-              for(let i = 0; i < xnr; i++) {
-                for(let j = 0; j < ynb; j++) {
-                  let copy = clone(props);
-                  let point = [originX + (i + 1) * w, originY + (j + 1) * h];
-                  if(needResize) {
-                    let matrix = image.matrixResize(width, height, w, h, point[0], point[1], innerWidth, innerHeight);
-                    if(matrix && matrix !== '1,0,0,1,0,0') {
-                      matrix = matrix.join(',');
-                      copy[5][1] = 'matrix(' + matrix + ')';
-                    }
-                  }
-                  copy[1][1] = point[0];
-                  copy[2][1] = point[1];
-                  this.virtualDom.bb.push({
-                    type: 'img',
-                    tagName: 'image',
-                    props: copy,
-                  });
-                }
-              }
-            }
+              copy[1][1] = item[0];
+              copy[2][1] = item[1];
+              this.virtualDom.bb.push({
+                type: 'img',
+                tagName: 'image',
+                props: copy,
+              });
+            });
           }
           computedStyle.backgroundSize = `${w} ${h}`;
           computedStyle.backgroundPositionX = bgX;
@@ -1260,7 +1107,7 @@ class Xom extends Node {
   }
 
   __computed() {
-    css.compute(this, this.isRoot);
+    compute(this, this.isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
     if(!this.isGeom) {
       this.children.forEach(item => {
@@ -1269,7 +1116,7 @@ class Xom extends Node {
         }
         else {
           item.__style = this.currentStyle;
-          css.compute(item);
+          compute(item);
           // 文字首先测量所有字符宽度
           item.__measure();
         }
@@ -1278,7 +1125,7 @@ class Xom extends Node {
   }
 
   __repaint() {
-    css.repaint(this, this.isRoot);
+    repaint(this, this.isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
     if(!this.isGeom) {
       this.children.forEach(item => {
@@ -1287,7 +1134,7 @@ class Xom extends Node {
         }
         else {
           item.__style = this.currentStyle;
-          css.repaint(item);
+          repaint(item);
         }
       });
     }

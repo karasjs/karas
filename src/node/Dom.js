@@ -999,7 +999,6 @@ class Dom extends Xom {
       }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
       let needCalWidth;
-      let needCalHeight;
       if(display === 'block' && w2 === undefined) {
         needCalWidth = true;
       }
@@ -1012,9 +1011,9 @@ class Dom extends Xom {
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
-      let wl = onlyRight ? x2 - x : innerWidth - x2;
+      let wl = onlyRight ? x2 - x : innerWidth + x - x2;
       // onlyBottom相同，正常情况是左上到右下的尺寸限制
-      let hl = onlyBottom ? y2 - y : innerHeight - y2;
+      let hl = onlyBottom ? y2 - y : innerHeight + y - y2;
       // 未直接或间接定义尺寸，取孩子宽度最大值
       if(needCalWidth) {
         item.__layout({
@@ -1023,8 +1022,6 @@ class Dom extends Xom {
           w: wl,
           h: hl,
         }, true);
-      }
-      if(needCalWidth) {
         wl = item.outerWidth;
       }
       item.__layout({

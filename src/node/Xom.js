@@ -485,8 +485,9 @@ class Xom extends Node {
         }
         computedStyle[k] = v.value;
         // scale为1和其它为0避免计算浪费
-        if(v.value === 1 && k.indexOf('scale') > -1 || v.value === 0) {
-          return
+        let isScale = k.indexOf('scale') > -1;
+        if(v.value === 1 && isScale || !isScale && v.value === 0) {
+          return;
         }
         if(v.unit === PERCENT) {
           if(k === 'translateX') {

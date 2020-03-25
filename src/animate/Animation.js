@@ -11,6 +11,7 @@ import repaint from './repaint';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 const { isNil, isFunction, isNumber, clone } = util;
+const { linear } = easing;
 
 const KEY_COLOR = [
   'backgroundColor',
@@ -358,13 +359,17 @@ function getOriginStyleByKeys(keys, target) {
  * @param style 关键帧样式
  * @param resetStyle 所有帧合集的默认样式
  * @param duration 动画时间长度
+ * @param timingFunction options的easing曲线控制
  * @returns {{style: *, time: number, easing: *, transition: []}}
  */
-function framing(style, resetStyle, duration) {
+function framing(style, resetStyle, duration, timingFunction) {
   let { offset, easing } = style;
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
+  if(timingFunction !== linear) {
+    offset = timingFunction(offset);
+  }
   css.normalize(style, resetStyle);
   return {
     style,
@@ -799,18 +804,23 @@ function binarySearch(i, j, time, frames) {
   }
 }
 
-// 根据百分比和缓动函数计算中间态样式
-function calStyle(frame, percent) {
-  let style = clone(frame.style);
+function getEasing(ea) {
   let timingFunction;
-  if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/.test(frame.easing)) {
-    let v = frame.easing.match(/[\d.]+/g);
+  if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
+    let v = ea.match(/[\d.]+/g);
     timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
   }
   else {
-    timingFunction = easing[frame.easing] || easing.linear;
+    timingFunction = easing[frame.easing] || linear;
   }
-  if(timingFunction !== easing.linear) {
+  return timingFunction;
+}
+
+// 根据百分比和缓动函数计算中间态样式
+function calStyle(frame, percent) {
+  let style = clone(frame.style);
+  let timingFunction = getEasing(frame.easing);
+  if(timingFunction !== linear) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
@@ -988,10 +998,10 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__playCount = 0;
     this.__isDestroyed = false;
-    this.__init();
+    this.__init(op.easing);
   }
 
-  __init() {
+  __init(ea) {
     let { target, iterations, frames, direction, duration } = this;
     // 执行次数小于1无需播放
     if(iterations < 1) {
@@ -1063,6 +1073,8 @@ class Animation extends Event {
         i = j;
       }
     }
+    // 总的曲线控制
+    let timingFunction = getEasing(ea);
     // 换算每一关键帧样式标准化
     list.forEach(item => {
       let resetStyle = [];
@@ -1075,7 +1087,7 @@ class Animation extends Event {
           v: reset.XOM[k],
         });
       });
-      frames.push(framing(item, resetStyle, duration));
+      frames.push(framing(item, resetStyle, duration, timingFunction));
     });
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);

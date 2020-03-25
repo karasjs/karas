@@ -4895,6 +4895,7 @@
       isFunction$2 = util.isFunction,
       isNumber$1 = util.isNumber,
       clone$1 = util.clone;
+  var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
@@ -5193,16 +5194,22 @@
    * @param style 关键帧样式
    * @param resetStyle 所有帧合集的默认样式
    * @param duration 动画时间长度
+   * @param timingFunction options的easing曲线控制
    * @returns {{style: *, time: number, easing: *, transition: []}}
    */
 
 
-  function framing(style, resetStyle, duration) {
+  function framing(style, resetStyle, duration, timingFunction) {
     var offset = style.offset,
         easing = style.easing; // 这两个特殊值提出来存储不干扰style
 
     delete style.offset;
     delete style.easing;
+
+    if (timingFunction !== linear) {
+      offset = timingFunction(offset);
+    }
+
     css.normalize(style, resetStyle);
     return {
       style: style,
@@ -5648,21 +5655,27 @@
         return binarySearch(Math.min(middle + 1, j), j, time, frames);
       }
     }
+  }
+
+  function getEasing(ea) {
+    var timingFunction;
+
+    if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
+      var v = ea.match(/[\d.]+/g);
+      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+    } else {
+      timingFunction = easing[frame.easing] || linear;
+    }
+
+    return timingFunction;
   } // 根据百分比和缓动函数计算中间态样式
 
 
   function calStyle(frame, percent) {
     var style = clone$1(frame.style);
-    var timingFunction;
+    var timingFunction = getEasing(frame.easing);
 
-    if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/.test(frame.easing)) {
-      var v = frame.easing.match(/[\d.]+/g);
-      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
-    } else {
-      timingFunction = easing[frame.easing] || easing.linear;
-    }
-
-    if (timingFunction !== easing.linear) {
+    if (timingFunction !== linear) {
       percent = timingFunction(percent);
     }
 
@@ -5860,14 +5873,14 @@
       _this.__playCount = 0;
       _this.__isDestroyed = false;
 
-      _this.__init();
+      _this.__init(op.easing);
 
       return _this;
     }
 
     _createClass(Animation, [{
       key: "__init",
-      value: function __init() {
+      value: function __init(ea) {
         var _this2 = this;
 
         var target = this.target,
@@ -5956,8 +5969,10 @@
 
             _i8 = j;
           }
-        } // 换算每一关键帧样式标准化
+        } // 总的曲线控制
 
+
+        var timingFunction = getEasing(ea); // 换算每一关键帧样式标准化
 
         list.forEach(function (item) {
           var resetStyle = [];
@@ -5971,7 +5986,7 @@
               v: reset.XOM[k]
             });
           });
-          frames.push(framing(item, resetStyle, duration));
+          frames.push(framing(item, resetStyle, duration, timingFunction));
         }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
         var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较

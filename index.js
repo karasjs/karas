@@ -5664,7 +5664,7 @@
       var v = ea.match(/[\d.]+/g);
       timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
     } else {
-      timingFunction = easing[frame.easing] || linear;
+      timingFunction = easing[ea] || linear;
     }
 
     return timingFunction;

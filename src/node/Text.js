@@ -87,7 +87,6 @@ class Text extends Node {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
-    let maxX = x;
     let { isDestroyed, content, currentStyle, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || currentStyle.display === 'none') {
       return;
@@ -99,12 +98,13 @@ class Text extends Node {
     let i = 0;
     let count = 0;
     let length = content.length;
+    let maxW = 0;
     while(i < length) {
       count += charWidthList[i];
       if(count === w) {
         let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
-        maxX = Math.max(maxX, x + count);
+        maxW = Math.max(maxW, count);
         y += computedStyle.lineHeight;
         begin = i + 1;
         i = begin;
@@ -117,7 +117,7 @@ class Text extends Node {
         }
         let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
         lineBoxes.push(lineBox);
-        maxX = Math.max(maxX, x + count - charWidthList[i]);
+        maxW = Math.max(maxW, count - charWidthList[i]);
         y += computedStyle.lineHeight;
         begin = i;
         count = 0;
@@ -126,6 +126,7 @@ class Text extends Node {
         i++;
       }
     }
+    // 最后一行，只有一行未满时也进这里
     if(begin < length && begin < i) {
       count = 0;
       for(i = begin ;i < length; i++) {
@@ -133,10 +134,10 @@ class Text extends Node {
       }
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
-      maxX = Math.max(maxX, x + count);
+      maxW = Math.max(maxW, count);
       y += computedStyle.lineHeight;
     }
-    this.__width = maxX - x;
+    this.__width = maxW;
     this.__height = y - data.y;
     // flex/abs前置计算无需真正布局
     if(!isVirtual) {

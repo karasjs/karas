@@ -3383,7 +3383,6 @@
             w = data.w;
         this.__x = x;
         this.__y = y;
-        var maxX = x;
         var isDestroyed = this.isDestroyed,
             content = this.content,
             currentStyle = this.currentStyle,
@@ -3402,6 +3401,7 @@
         var i = 0;
         var count = 0;
         var length = content.length;
+        var maxW = 0;
 
         while (i < length) {
           count += charWidthList[i];
@@ -3409,7 +3409,7 @@
           if (count === w) {
             var lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
             lineBoxes.push(lineBox);
-            maxX = Math.max(maxX, x + count);
+            maxW = Math.max(maxW, count);
             y += computedStyle.lineHeight;
             begin = i + 1;
             i = begin;
@@ -3423,14 +3423,15 @@
             var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
 
             lineBoxes.push(_lineBox);
-            maxX = Math.max(maxX, x + count - charWidthList[i]);
+            maxW = Math.max(maxW, count - charWidthList[i]);
             y += computedStyle.lineHeight;
             begin = i;
             count = 0;
           } else {
             i++;
           }
-        }
+        } // 最后一行，只有一行未满时也进这里
+
 
         if (begin < length && begin < i) {
           count = 0;
@@ -3442,11 +3443,11 @@
           var _lineBox2 = new LineBox(this, x, y, count, content.slice(begin, length));
 
           lineBoxes.push(_lineBox2);
-          maxX = Math.max(maxX, x + count);
+          maxW = Math.max(maxW, count);
           y += computedStyle.lineHeight;
         }
 
-        this.__width = maxX - x;
+        this.__width = maxW;
         this.__height = y - data.y; // flex/abs前置计算无需真正布局
 
         if (!isVirtual) {
@@ -8986,9 +8987,11 @@
         if (fixedWidth && isVirtual) {
           this.__width = w;
           return;
-        }
+        } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
-        var maxX = x; // 递归布局，将inline的节点组成lineGroup一行
+
+        var maxW = 0;
+        var cw = 0; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -9006,7 +9009,10 @@
                 }, isVirtual);
 
                 x += item.outerWidth;
-                maxX = Math.max(maxX, x);
+
+                if (isVirtual) {
+                  cw += item.outerWidth;
+                }
               } else {
                 // 非开头先尝试是否放得下
                 var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
@@ -9038,11 +9044,19 @@
                     }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
+
+                    if (isVirtual) {
+                      maxW = Math.max(maxW, cw);
+                      cw = 0;
+                    }
                   }
 
                 x += item.outerWidth;
-                maxX = Math.max(maxX, x);
                 lineGroup.add(item);
+
+                if (isVirtual) {
+                  cw += item.outerWidth;
+                }
               }
             } else {
               // block/flex先处理之前可能的lineGroup
@@ -9051,6 +9065,11 @@
                 lineGroup.verticalAlign();
                 y += lineGroup.height;
                 lineGroup = new LineGroup(data.x, y);
+
+                if (isVirtual) {
+                  maxW = Math.max(maxW, cw);
+                  cw = 0;
+                }
               }
 
               item.__layout({
@@ -9060,9 +9079,12 @@
                 h: h
               }, isVirtual);
 
-              maxX = Math.max(maxX, data.x + item.width);
               x = data.x;
               y += item.outerHeight;
+
+              if (isVirtual) {
+                cw += item.outerWidth;
+              }
             }
           } // 文字和inline类似
           else {
@@ -9078,7 +9100,10 @@
                 }, isVirtual);
 
                 x += item.width;
-                maxX = Math.max(maxX, x);
+
+                if (isVirtual) {
+                  cw += item.width;
+                }
               } else {
                 // 非开头先尝试是否放得下
                 var _fw = item.__tryLayInline(w - x + data.x); // 放得下继续
@@ -9106,11 +9131,19 @@
                     }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
+
+                    if (isVirtual) {
+                      maxW = Math.max(maxW, cw);
+                      cw = 0;
+                    }
                   }
 
                 x += item.width;
-                maxX = Math.max(maxX, x);
                 lineGroup.add(item);
+
+                if (isVirtual) {
+                  cw += item.width;
+                }
               }
             }
         }); // 结束后处理可能遗留的最后的lineGroup
@@ -9120,12 +9153,14 @@
 
           if (!isVirtual) {
             lineGroup.verticalAlign();
+          } else {
+            maxW = Math.max(maxW, cw);
           }
 
           y += lineGroup.height;
         }
 
-        this.__width = fixedWidth || !isVirtual ? w : maxX - data.x;
+        this.__width = fixedWidth || !isVirtual ? w : maxW;
         this.__height = fixedHeight ? h : y - data.y; // text-align
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
@@ -9483,9 +9518,11 @@
         if (fixedWidth && isVirtual) {
           this.__width = w;
           return;
-        }
+        } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
-        var maxX = x; // 递归布局，将inline的节点组成lineGroup一行
+
+        var maxW = 0;
+        var cw = 0; // 递归布局，将inline的节点组成lineGroup一行
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
@@ -9502,7 +9539,7 @@
               }, isVirtual);
 
               x += item.outerWidth;
-              maxX = Math.max(maxX, x);
+              cw += item.outerWidth;
             } else {
               // 非开头先尝试是否放得下
               var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
@@ -9530,11 +9567,13 @@
                   }, isVirtual);
 
                   lineGroup = new LineGroup(x, y);
+                  maxW = Math.max(maxW, cw);
+                  cw = 0;
                 }
 
               x += item.outerWidth;
-              maxX = Math.max(maxX, x);
               lineGroup.add(item);
+              cw += item.outerWidth;
             }
           } // inline里的其它只有文本
           else {
@@ -9549,7 +9588,7 @@
                 }, isVirtual);
 
                 x += item.width;
-                maxX = Math.max(maxX, x);
+                cw += item.width;
               } else {
                 // 非开头先尝试是否放得下
                 var _fw2 = item.__tryLayInline(w - x + data.x); // 放得下继续
@@ -9581,11 +9620,13 @@
                     }, isVirtual);
 
                     lineGroup = new LineGroup(x, y);
+                    maxW = Math.max(maxW, cw);
+                    cw = 0;
                   }
 
                 x += item.width;
-                maxX = Math.max(maxX, x);
                 lineGroup.add(item);
+                cw += item.width;
               }
             }
         }); // 结束后处理可能遗留的最后的lineGroup，children为空时可能size为空
@@ -9598,10 +9639,11 @@
           }
 
           y += lineGroup.height;
+          maxW = Math.max(maxW, cw);
         } // 元素的width不能超过父元素w
 
 
-        this.__width = fixedWidth ? w : maxX - data.x;
+        this.__width = fixedWidth ? w : maxW;
         this.__height = fixedHeight ? h : y - data.y; // text-align
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {

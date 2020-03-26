@@ -294,7 +294,9 @@ class Dom extends Xom {
       this.__width = w;
       return;
     }
-    let maxX = x;
+    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+    let maxW = 0;
+    let cw = 0;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
@@ -310,7 +312,9 @@ class Dom extends Xom {
               h,
             }, isVirtual);
             x += item.outerWidth;
-            maxX = Math.max(maxX, x);
+            if(isVirtual) {
+              cw += item.outerWidth;
+            }
           }
           else {
             // 非开头先尝试是否放得下
@@ -339,10 +343,16 @@ class Dom extends Xom {
                 h,
               }, isVirtual);
               lineGroup = new LineGroup(x, y);
+              if(isVirtual) {
+                maxW = Math.max(maxW, cw);
+                cw = 0;
+              }
             }
             x += item.outerWidth;
-            maxX = Math.max(maxX, x);
             lineGroup.add(item);
+            if(isVirtual) {
+              cw += item.outerWidth;
+            }
           }
         }
         else {
@@ -352,6 +362,10 @@ class Dom extends Xom {
             lineGroup.verticalAlign();
             y += lineGroup.height;
             lineGroup = new LineGroup(data.x, y);
+            if(isVirtual) {
+              maxW = Math.max(maxW, cw);
+              cw = 0;
+            }
           }
           item.__layout({
             x: data.x,
@@ -359,9 +373,11 @@ class Dom extends Xom {
             w,
             h,
           }, isVirtual);
-          maxX = Math.max(maxX, data.x + item.width);
           x = data.x;
           y += item.outerHeight;
+          if(isVirtual) {
+            cw += item.outerWidth;
+          }
         }
       }
       // 文字和inline类似
@@ -376,7 +392,9 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x += item.width;
-          maxX = Math.max(maxX, x);
+          if(isVirtual) {
+            cw += item.width;
+          }
         }
         else {
           // 非开头先尝试是否放得下
@@ -403,10 +421,16 @@ class Dom extends Xom {
               h,
             }, isVirtual);
             lineGroup = new LineGroup(x, y);
+            if(isVirtual) {
+              maxW = Math.max(maxW, cw);
+              cw = 0;
+            }
           }
           x += item.width;
-          maxX = Math.max(maxX, x);
           lineGroup.add(item);
+          if(isVirtual) {
+            cw += item.width;
+          }
         }
       }
     });
@@ -417,9 +441,12 @@ class Dom extends Xom {
       if(!isVirtual) {
         lineGroup.verticalAlign();
       }
+      else {
+        maxW = Math.max(maxW, cw);
+      }
       y += lineGroup.height;
     }
-    this.__width = fixedWidth || !isVirtual ? w : maxX - data.x;
+    this.__width = fixedWidth || !isVirtual ? w : maxW;
     this.__height = fixedHeight ? h : y - data.y;
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
@@ -743,7 +770,9 @@ class Dom extends Xom {
       this.__width = w;
       return;
     }
-    let maxX = x;
+    // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
+    let maxW = 0;
+    let cw = 0;
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
@@ -758,7 +787,7 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x += item.outerWidth;
-          maxX = Math.max(maxX, x);
+          cw += item.outerWidth;
         }
         else {
           // 非开头先尝试是否放得下
@@ -785,10 +814,12 @@ class Dom extends Xom {
               h,
             }, isVirtual);
             lineGroup = new LineGroup(x, y);
+            maxW = Math.max(maxW, cw);
+            cw = 0;
           }
           x += item.outerWidth;
-          maxX = Math.max(maxX, x);
           lineGroup.add(item);
+          cw += item.outerWidth;
         }
       }
       // inline里的其它只有文本
@@ -802,7 +833,7 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x += item.width;
-          maxX = Math.max(maxX, x);
+          cw += item.width;
         }
         else {
           // 非开头先尝试是否放得下
@@ -831,10 +862,12 @@ class Dom extends Xom {
               h,
             }, isVirtual);
             lineGroup = new LineGroup(x, y);
+            maxW = Math.max(maxW, cw);
+            cw = 0;
           }
           x += item.width;
-          maxX = Math.max(maxX, x);
           lineGroup.add(item);
+          cw += item.width;
         }
       }
     });
@@ -846,9 +879,10 @@ class Dom extends Xom {
         lineGroup.verticalAlign();
       }
       y += lineGroup.height;
+      maxW = Math.max(maxW, cw);
     }
     // 元素的width不能超过父元素w
-    this.__width = fixedWidth ? w : maxX - data.x;
+    this.__width = fixedWidth ? w : maxW;
     this.__height = fixedHeight ? h : y - data.y;
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {

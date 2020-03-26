@@ -9011,7 +9011,8 @@
                 x += item.outerWidth;
 
                 if (isVirtual) {
-                  cw += item.outerWidth;
+                  maxW = Math.max(maxW, cw);
+                  cw = item.outerWidth;
                 }
               } else {
                 // 非开头先尝试是否放得下
@@ -9083,7 +9084,8 @@
               y += item.outerHeight;
 
               if (isVirtual) {
-                cw += item.outerWidth;
+                maxW = Math.max(maxW, item.outerWidth);
+                cw = 0;
               }
             }
           } // 文字和inline类似
@@ -9102,7 +9104,8 @@
                 x += item.width;
 
                 if (isVirtual) {
-                  cw += item.width;
+                  maxW = Math.max(maxW, cw);
+                  cw = item.width;
                 }
               } else {
                 // 非开头先尝试是否放得下
@@ -9539,7 +9542,8 @@
               }, isVirtual);
 
               x += item.outerWidth;
-              cw += item.outerWidth;
+              maxW = Math.max(maxW, cw);
+              cw = item.outerWidth;
             } else {
               // 非开头先尝试是否放得下
               var fw = item.__tryLayInline(w - x + data.x, w); // 放得下继续
@@ -9588,7 +9592,8 @@
                 }, isVirtual);
 
                 x += item.width;
-                cw += item.width;
+                maxW = Math.max(maxW, cw);
+                cw = item.width;
               } else {
                 // 非开头先尝试是否放得下
                 var _fw2 = item.__tryLayInline(w - x + data.x); // 放得下继续

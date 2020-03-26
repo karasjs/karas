@@ -313,7 +313,8 @@ class Dom extends Xom {
             }, isVirtual);
             x += item.outerWidth;
             if(isVirtual) {
-              cw += item.outerWidth;
+              maxW = Math.max(maxW, cw);
+              cw = item.outerWidth;
             }
           }
           else {
@@ -376,7 +377,8 @@ class Dom extends Xom {
           x = data.x;
           y += item.outerHeight;
           if(isVirtual) {
-            cw += item.outerWidth;
+            maxW = Math.max(maxW, item.outerWidth);
+            cw = 0;
           }
         }
       }
@@ -393,7 +395,8 @@ class Dom extends Xom {
           }, isVirtual);
           x += item.width;
           if(isVirtual) {
-            cw += item.width;
+            maxW = Math.max(maxW, cw);
+            cw = item.width;
           }
         }
         else {
@@ -787,7 +790,8 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x += item.outerWidth;
-          cw += item.outerWidth;
+          maxW = Math.max(maxW, cw);
+          cw = item.outerWidth;
         }
         else {
           // 非开头先尝试是否放得下
@@ -833,7 +837,8 @@ class Dom extends Xom {
             h,
           }, isVirtual);
           x += item.width;
-          cw += item.width;
+          maxW = Math.max(maxW, cw);
+          cw = item.width;
         }
         else {
           // 非开头先尝试是否放得下

@@ -1,7 +1,7 @@
 // 生成4*4单位矩阵
 function identity() {
   const m = [];
-  for (let i = 0; i < 16; i++) {
+  for(let i = 0; i < 16; i++) {
     m.push(i % 5 === 0 ? 1 : 0);
   }
   return m;

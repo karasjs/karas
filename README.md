@@ -9,6 +9,9 @@ A flexible JavaScript framework for graphics programming on Canvas/Svg.
 npm install karas
 ```
 
+## Framework
+[![logo](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)
+
 ## 文档
 https://github.com/karasjs/karas/wiki/%E6%96%87%E6%A1%A3
 

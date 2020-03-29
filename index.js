@@ -8344,14 +8344,21 @@
       }
     }, {
       key: "__layoutBlock",
-      value: function __layoutBlock(data) {
+      value: function __layoutBlock(data, isVirtual) {
         var _this$__preLayout = this.__preLayout(data),
+            fixedWidth = _this$__preLayout.fixedWidth,
             fixedHeight = _this$__preLayout.fixedHeight,
             w = _this$__preLayout.w,
             h = _this$__preLayout.h;
 
-        this.__width = w;
         this.__height = fixedHeight ? h : 0;
+
+        if (isVirtual) {
+          this.__width = fixedWidth ? w : 0;
+          return;
+        }
+
+        this.__width = w;
 
         this.__marginAuto(this.currentStyle, data);
       }

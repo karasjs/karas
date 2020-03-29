@@ -143,7 +143,6 @@ window._data = [
 </script>
 <script type="text/jsx">
   let data = window._data;
-  console.log(data);
   // 这里需生成坐标轴，关于算法不细说，假设用karas-scale库（基于Wilkinson’s Algorithm）硬编码获得了适当的刻度值
   let axis = [346, 345.5, 345, 344.5, 344];
   // $polyline的每个点坐标需换算成[0,1]区间，x轴即顺序百分比，y轴是344~346的差值百分比
@@ -206,14 +205,14 @@ window._data = [
   render();
   function start(e) {
     let polyline = e.target;
-    // 使用rx代替x，x表示布局坐标，rx包含了relative偏移量
-    let { rx, width, height } = polyline;
+    // 使用sx代替x，x表示布局坐标，sx包含了relative偏移量
+    let { sx, width, height } = polyline;
     let per = width / length;
-    let i = Math.floor((e.x - rx) / per);
+    let i = Math.floor((e.x - sx) / per);
     let point = points[i];
     // origin设置为左下角BOTTOM_LEFT，所以y坐标要被1减
     let top = (1 - point[1]) * height;
-    let left = e.x - rx;
+    let left = e.x - sx;
     render(true, left, top);
   }
   function end() {

@@ -87,10 +87,14 @@ class Geom extends Xom {
     return { b, min, max };
   }
 
-  __layoutBlock(data) {
-    let { fixedHeight, w, h } = this.__preLayout(data);
-    this.__width = w;
+  __layoutBlock(data, isVirtual) {
+    let { fixedWidth, fixedHeight, w, h } = this.__preLayout(data);
     this.__height = fixedHeight ? h : 0;
+    if(isVirtual) {
+      this.__width = fixedWidth ? w : 0;
+      return;
+    }
+    this.__width = w;
     this.__marginAuto(this.currentStyle, data);
   }
 

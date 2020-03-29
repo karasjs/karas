@@ -1114,25 +1114,7 @@ class Dom extends Xom {
       }
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndex = children.filter(item => {
-      return !item.isMask;
-    });
-    sort(zIndex, (a, b) => {
-      if(a instanceof Text) {
-        return;
-      }
-      if(b instanceof Text && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
-          return true;
-        }
-      }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-    });
+    let zIndex = this.zIndexChildren;
     // 再绘制relative和absolute
     zIndex.forEach(item => {
       if(!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute(item)) {

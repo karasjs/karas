@@ -1,4 +1,5 @@
 import Node from './Node';
+import Text from './Text';
 import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
@@ -11,6 +12,7 @@ import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
+import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, mergeImageData } = util;
@@ -105,6 +107,10 @@ function calBackgroundPosition(position, container, size) {
     return (container - size) * position.value * 0.01;
   }
   return 0;
+}
+
+function isRelativeOrAbsolute(node) {
+  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
 class Xom extends Node {
@@ -895,9 +901,10 @@ class Xom extends Node {
     // touchmove之类强制的直接通知即可
     if(force) {
       if(!this.isGeom) {
-        // 先响应absolute/relative高优先级，从后往前遮挡顺序
-        for(let i = children.length - 1; i >= 0; i--) {
-          let child = children[i];
+        // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
+        let zIndex = this.zIndexChildren;
+        for(let i = zIndex.length - 1; i >= 0; i--) {
+          let child = zIndex[i];
           if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
@@ -907,7 +914,7 @@ class Xom extends Node {
         // 再看普通流，从后往前遮挡顺序
         for(let i = children.length - 1; i >= 0; i--) {
           let child = children[i];
-          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
             }
@@ -1237,6 +1244,28 @@ class Xom extends Node {
   }
   get currentStyle() {
     return this.__currentStyle;
+  }
+  get zIndexChildren() {
+    let zIndex = this.children.filter(item => {
+      return !item.isMask;
+    });
+    sort(zIndex, (a, b) => {
+      if(a instanceof Text) {
+        return;
+      }
+      if(b instanceof Text && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+          return true;
+        }
+      }
+      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+    });
+    return zIndex;
   }
 }
 

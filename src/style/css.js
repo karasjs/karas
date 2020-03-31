@@ -27,23 +27,14 @@ function parserOneBorder(style, direction) {
   if(isNil(style[k + 'Color'])) {
     let c = /#[0-9a-f]{3,6}/i.exec(v);
     if(c && [4, 7].indexOf(c[0].length) > -1) {
-      style[k + 'Color'] = {
-        value: rgb2int(c[0]),
-        unit: RGBA,
-      };
+      style[k + 'Color'] = c[0];
     }
     else if(/\btransparent\b/i.test(v)) {
-      style[k + 'Color'] = {
-        value: [0, 0, 0, 0],
-        unit: RGBA,
-      };
+      style[k + 'Color'] = 'transparent';
     }
     else {
       c = /rgba?\(.+\)/i.exec(v);
-      style[k + 'Color'] = {
-        value: c ? c[0] : [0, 0, 0, 0],
-        unit: RGBA,
-      };
+      style[k + 'Color'] = c ? c[0] : 'transparent';
     }
   }
 }
@@ -395,7 +386,10 @@ function normalize(style, reset = []) {
     k = 'border' + k + 'Color';
     let v = style[k];
     if(!isNil(v)) {
-      style[k] = rgb2int(v);
+      style[k] = {
+        value: rgb2int(v),
+        unit: RGBA,
+      };
     }
   });
   temp = style.transform;

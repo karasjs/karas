@@ -166,6 +166,13 @@ class Component extends Event {
         },
       });
     });
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.parent.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
+    }
   }
 
   render() {

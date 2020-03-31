@@ -283,7 +283,7 @@ function diffItem(elem, i, ovd, nvd, isText) {
   else {
     diffItemSelf(cns[i], ovd, nvd);
     if(isText && ovd.content !== nvd.content) {
-      cns[i].textContent = nvd.content;
+      cns[i].innerHTML = nvd.content;
     }
   }
 }

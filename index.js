@@ -1559,21 +1559,12 @@
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
-        style[k + 'Color'] = {
-          value: rgb2int$2(c[0]),
-          unit: RGBA
-        };
+        style[k + 'Color'] = c[0];
       } else if (/\btransparent\b/i.test(v)) {
-        style[k + 'Color'] = {
-          value: [0, 0, 0, 0],
-          unit: RGBA
-        };
+        style[k + 'Color'] = 'transparent';
       } else {
         c = /rgba?\(.+\)/i.exec(v);
-        style[k + 'Color'] = {
-          value: c ? c[0] : [0, 0, 0, 0],
-          unit: RGBA
-        };
+        style[k + 'Color'] = c ? c[0] : 'transparent';
       }
     }
   }
@@ -1956,7 +1947,10 @@
       var v = style[k];
 
       if (!isNil$1(v)) {
-        style[k] = rgb2int$2(v);
+        style[k] = {
+          value: rgb2int$2(v),
+          unit: RGBA
+        };
       }
     });
     temp = style.transform;
@@ -4359,6 +4353,15 @@
             }
           });
         });
+        var ref = this.props.ref;
+
+        if (ref) {
+          var owner = this.parent.host || this.root;
+
+          if (owner) {
+            owner.ref[ref] = this;
+          }
+        }
       }
     }, {
       key: "render",
@@ -10634,7 +10637,7 @@
       diffItemSelf(cns[i], ovd, nvd);
 
       if (isText && ovd.content !== nvd.content) {
-        cns[i].textContent = nvd.content;
+        cns[i].innerHTML = nvd.content;
       }
     }
   }

@@ -1269,7 +1269,7 @@ class Animation extends Event {
         if(isLastFrame) {
           inEndDelay = nextTime < duration + endDelay;
           // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-          if(stayEnd) {
+          if(stayEnd || playCount < iterations - 1) {
             current = current.style;
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
@@ -1281,6 +1281,10 @@ class Animation extends Event {
           // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
           if(!inEndDelay && playCount >= iterations - 1) {
             frame.offFrame(enterFrame);
+          }
+          if(!inEndDelay) {
+            this.__nextTime = 0;
+            this.__playCount++;
           }
         }
         // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -1296,8 +1300,6 @@ class Animation extends Event {
           if(isLastFrame) {
             // 没到播放次数结束时从头继续，endDelay仅作用最后一次播放这里无效
             if(iterations === Infinity || playCount < iterations - 1) {
-              this.__nextTime = 0;
-              this.__playCount++;
               __frameCb(diff, cb);
               return;
             }
@@ -1307,6 +1309,8 @@ class Animation extends Event {
             }
             // 超过则触发结束事件，刷新重绘之前已经做完
             else {
+              this.__nextTime = 0;
+              this.__playCount = iterations;
               __frameCb(diff, cb);
               __fin(cb);
             }

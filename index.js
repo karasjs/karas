@@ -6218,7 +6218,7 @@
             if (isLastFrame) {
               inEndDelay = nextTime < duration + endDelay; // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
 
-              if (stayEnd) {
+              if (stayEnd || playCount < iterations - 1) {
                 current = current.style;
 
                 var _calRefresh3 = calRefresh(current, style, keys);
@@ -6243,6 +6243,11 @@
               if (!inEndDelay && playCount >= iterations - 1) {
                 frame.offFrame(enterFrame);
               }
+
+              if (!inEndDelay) {
+                _this3.__nextTime = 0;
+                _this3.__playCount++;
+              }
             } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
             else {
                 var total = currentFrames[i + 1].time - current.time;
@@ -6263,9 +6268,6 @@
               if (isLastFrame) {
                 // 没到播放次数结束时从头继续，endDelay仅作用最后一次播放这里无效
                 if (iterations === Infinity || playCount < iterations - 1) {
-                  _this3.__nextTime = 0;
-                  _this3.__playCount++;
-
                   __frameCb(diff, cb);
 
                   return;
@@ -6276,6 +6278,9 @@
                   __frameCb(diff, cb, true);
                 } // 超过则触发结束事件，刷新重绘之前已经做完
                 else {
+                    _this3.__nextTime = 0;
+                    _this3.__playCount = iterations;
+
                     __frameCb(diff, cb);
 
                     __fin(cb);

@@ -27,12 +27,23 @@ function parserOneBorder(style, direction) {
   if(isNil(style[k + 'Color'])) {
     let c = /#[0-9a-f]{3,6}/i.exec(v);
     if(c && [4, 7].indexOf(c[0].length) > -1) {
-      style[k + 'Color'] = c[0];
-    } else if(/\btransparent\b/i.test(v)) {
-      style[k + 'Color'] = 'transparent';
-    } else {
+      style[k + 'Color'] = {
+        value: rgb2int(c[0]),
+        unit: RGBA,
+      };
+    }
+    else if(/\btransparent\b/i.test(v)) {
+      style[k + 'Color'] = {
+        value: [0, 0, 0, 0],
+        unit: RGBA,
+      };
+    }
+    else {
       c = /rgba?\(.+\)/i.exec(v);
-      style[k + 'Color'] = c ? c[0] : 'transparent';
+      style[k + 'Color'] = {
+        value: c ? c[0] : [0, 0, 0, 0],
+        unit: RGBA,
+      };
     }
   }
 }
@@ -307,11 +318,17 @@ function normalize(style, reset = []) {
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = rgb2int(bgc[0]);
+      style.backgroundColor = {
+        value: rgb2int(bgc[0]),
+        unit: RGBA,
+      };
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      style.backgroundColor = rgb2int(bgc ? bgc[0] : [0,0,0,0]);
+      style.backgroundColor = {
+        value: rgb2int(bgc ? bgc[0] : [0, 0, 0, 0]),
+        unit: RGBA,
+      };
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
@@ -417,7 +434,7 @@ function normalize(style, reset = []) {
           compatibleTransform(k, arr[1]);
           transform.push(arr);
         }
-        else if({translate: true, scale: true, skew: true}.hasOwnProperty(k)) {
+        else if({ translate: true, scale: true, skew: true }.hasOwnProperty(k)) {
           let arr = v.toString().split(/\s*,\s*/);
           if(arr.length === 1) {
             arr[1] = arr[0];
@@ -839,7 +856,7 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderBottomColor',
     'borderLeftColor',
   ].forEach(k => {
-    computedStyle[k] = int2rgba(currentStyle[k]);
+    computedStyle[k] = int2rgba(currentStyle[k].value);
   });
 }
 
@@ -869,8 +886,9 @@ function getBaseLine(style) {
 }
 
 function calLineHeight(xom, lineHeight, computedStyle) {
-  if(util.isNumber(lineHeight)) {}
-  if(lineHeight.unit === INHERIT) {
+  if(util.isNumber(lineHeight)) {
+  }
+  else if(lineHeight.unit === INHERIT) {
     let parent = xom.parent;
     if(parent) {
       let pl = parent.style.lineHeight;

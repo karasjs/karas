@@ -1559,12 +1559,21 @@
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
-        style[k + 'Color'] = c[0];
+        style[k + 'Color'] = {
+          value: rgb2int$2(c[0]),
+          unit: RGBA
+        };
       } else if (/\btransparent\b/i.test(v)) {
-        style[k + 'Color'] = 'transparent';
+        style[k + 'Color'] = {
+          value: [0, 0, 0, 0],
+          unit: RGBA
+        };
       } else {
         c = /rgba?\(.+\)/i.exec(v);
-        style[k + 'Color'] = c ? c[0] : 'transparent';
+        style[k + 'Color'] = {
+          value: c ? c[0] : [0, 0, 0, 0],
+          unit: RGBA
+        };
       }
     }
   }
@@ -1864,10 +1873,16 @@
       var _bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
 
       if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
-        style.backgroundColor = rgb2int$2(_bgc[0]);
+        style.backgroundColor = {
+          value: rgb2int$2(_bgc[0]),
+          unit: RGBA
+        };
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
-        style.backgroundColor = rgb2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]);
+        style.backgroundColor = {
+          value: rgb2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]),
+          unit: RGBA
+        };
       }
     }
 
@@ -2397,7 +2412,7 @@
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-      computedStyle[k] = int2rgba$2(currentStyle[k]);
+      computedStyle[k] = int2rgba$2(currentStyle[k].value);
     });
   }
 
@@ -2427,9 +2442,7 @@
   }
 
   function calLineHeight(xom, lineHeight, computedStyle) {
-    if (util.isNumber(lineHeight)) ;
-
-    if (lineHeight.unit === INHERIT) {
+    if (util.isNumber(lineHeight)) ; else if (lineHeight.unit === INHERIT) {
       var parent = xom.parent;
 
       if (parent) {
@@ -5523,6 +5536,9 @@
             res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
           }
     } else if (COLOR_HASH.hasOwnProperty(k)) {
+      n = n.value;
+      p = p.value;
+
       if (equalArr(n, p)) {
         return;
       }
@@ -5746,6 +5762,7 @@
           }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
       else if (COLOR_HASH.hasOwnProperty(k)) {
+          st = st.value;
           st[0] += v[0] * percent;
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;

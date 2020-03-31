@@ -667,6 +667,8 @@ function calDiff(prev, next, k, target) {
     }
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
+    n = n.value;
+    p = p.value;
     if(equalArr(n, p)) {
       return;
     }
@@ -888,6 +890,7 @@ function calStyle(frame, percent) {
     }
     // color可能超限[0,255]，但浏览器已经做了限制，无需关心
     else if(COLOR_HASH.hasOwnProperty(k)) {
+      st = st.value;
       st[0] += v[0] * percent;
       st[1] += v[1] * percent;
       st[2] += v[2] * percent;

@@ -40,14 +40,6 @@ function renderBorder(renderMode, points, color, ctx, xom) {
         s += `L ${point[i]} ${point[i + 1]} `;
       }
     });
-    let item = {
-      type: 'item',
-      tagName: 'path',
-      props: [
-        ['d', s],
-        ['fill', color],
-      ],
-    };
     xom.addBorder([
       ['d', s],
       ['fill', color],

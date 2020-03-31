@@ -22,7 +22,7 @@
         return false;
       }
       // 判断是否点在圆内才响应
-      let { x, y, width, height, ctx } = this;
+      let { x, y, width, height } = this;
       let cx = x + width * 0.5;
       let cy = y + height * 0.5;
       let r = Math.min(width, height) * 0.5;

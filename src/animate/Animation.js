@@ -669,7 +669,7 @@ function calDiff(prev, next, k, target) {
   else if(COLOR_HASH.hasOwnProperty(k)) {
     n = n.value;
     p = p.value;
-    if(equalArr(n, p)) {
+    if(equalArr(n, p) || n[3] === 0 && p[3] === 0) {
       return;
     }
     res.v = [

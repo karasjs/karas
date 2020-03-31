@@ -5539,7 +5539,7 @@
       n = n.value;
       p = p.value;
 
-      if (equalArr(n, p)) {
+      if (equalArr(n, p) || n[3] === 0 && p[3] === 0) {
         return;
       }
 

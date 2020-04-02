@@ -89,14 +89,14 @@ class Root extends Dom {
     if(e.type === 'touchmove' && !this.__touchstartTarget) {
       return;
     }
-    if(e.touches && e.touches.length > 1) {
+    if(e.touches && (e.touches.length > 1 || !e.touches.length)) {
       return;
     }
     let { node } = this;
     let { x, y, left, top, width, height } = node.getBoundingClientRect();
     x = x || left || 0;
     y = y || top || 0;
-    let { pageX, pageY } = e.touches ? (e.touches[0] || {}) : e;
+    let { pageX, pageY } = e.touches ? e.touches[0] : e;
     x = pageX - x;
     y = pageY - y;
     let sx = width / this.width;

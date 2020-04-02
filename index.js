@@ -10854,7 +10854,7 @@
           return;
         }
 
-        if (e.touches && e.touches.length > 1) {
+        if (e.touches && (e.touches.length > 1 || !e.touches.length)) {
           return;
         }
 
@@ -10871,7 +10871,7 @@
         x = x || left || 0;
         y = y || top || 0;
 
-        var _ref = e.touches ? e.touches[0] || {} : e,
+        var _ref = e.touches ? e.touches[0] : e,
             pageX = _ref.pageX,
             pageY = _ref.pageY;
 

@@ -11,57 +11,68 @@
   </style>
 </head>
 <body>
-<div class="pre">直接输入json，生成动画，这是动态加载的更加直观的演示。</div>
+<div class="pre">在动态下发的基础上，如何创建可变图形和动画？
+这里提供了一种类似注入/插槽的功能，可以让设计师设计可变的部分，让程序员根据情况替换它。
+试着修改下方的数字1（播放速度倍数），体验下播放速度的变化。</div>
 <div>
 <textarea id="ta" autocomplete="off">{
-  "tagName": "$rect",
-  "props": {
-    "style": {
-      "position": "absolute",
-      "left": 0,
-      "top": 0,
-      "width": 100,
-      "height": 100,
-      "strokeWidth": 0,
-      "fill": "#F00"
-    }
-  },
-  "animate": [{
-    "value": [
-      {
-        "transform": "translateX(0)",
-        "easing": "easeIn"
-      },
-      {
-        "transform": "translateX(200px)"
-      }
-    ],
-    "options": {
-      "duration": 5000,
-      "fill": "forwards"
-    }
-  }, {
-    "value": [
-      {
-        "top": 0,
-        "easing": "easeOut"
-      },
-      {
-        "top": 100
-      }
-    ],
-    "options": {
-      "duration": 5000,
-      "fill": "forwards"
-    }
-  }]
+  "playbackRate": 1
 }</textarea>
-<input id="btn" type="button" value="ok"/>
+  <input id="btn" type="button" value="ok"/>
 </div>
 <div id="example"></div>
 <div id="example2"></div>
 <script src="../index.js"></script>
 <script>
+  var data = {
+    "tagName": "$rect",
+    "props": {
+      "style": {
+        "position": "absolute",
+        "left": 0,
+        "top": 0,
+        "width": 100,
+        "height": 100,
+        "strokeWidth": 0,
+        "fill": "#F00"
+      }
+    },
+    "animate": [{
+      "value": [
+        {
+          "transform": "translateX(0)",
+          "easing": "easeIn"
+        },
+        {
+          "transform": "translateX(200px)"
+        }
+      ],
+      "options": {
+        "duration": 5000,
+        "fill": "forwards",
+        "var-playbackRate": {
+          "id": "playbackRate"
+        }
+      }
+    }, {
+      "value": [
+        {
+          "top": 0,
+          "easing": "easeOut"
+        },
+        {
+          "top": 100
+        }
+      ],
+      "options": {
+        "duration": 5000,
+        "fill": "forwards",
+        "var-playbackRate": {
+          "id": "playbackRate"
+        }
+      }
+    }]
+  };
   var ta = document.getElementById('ta');
   var input = document.getElementById('btn');
   function exec(s) {
@@ -72,20 +83,20 @@
         width: 360,
         height: 360,
       },
-      children: Array.isArray(json) ? json : [
-        json,
+      children: [
+        data,
       ],
-    }, '#example');
+    }, '#example', json);
     karas.parse({
       tagName: 'svg',
       props: {
         width: 360,
         height: 360,
       },
-      children: Array.isArray(json) ? json : [
-        json,
+      children: [
+        data,
       ],
-    }, '#example2');
+    }, '#example2', json);
   }
   input.onclick = function() {
     exec(ta.value);

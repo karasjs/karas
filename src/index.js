@@ -62,10 +62,11 @@ let karas = {
   createCp(cp, props, children) {
     return new cp(props, children);
   },
-  parse(json, dom) {
+  parse(json, dom, vars) {
+    // 暂存所有动画声明，等root的生成后开始执行
     let animateList = [];
     json = util.clone(json);
-    let vd = parse(this, json, animateList);
+    let vd = parse(this, json, animateList, vars);
     this.render(vd, dom);
     animateList.forEach(item => {
       let { target, animate } = item;

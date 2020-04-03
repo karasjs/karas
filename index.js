@@ -12526,10 +12526,34 @@
       Object.keys(target).forEach(function (k) {
         if (k.indexOf('var-') === 0) {
           var v = target[k];
-          var k2 = k.slice(4);
+          var k2 = k.slice(4); // 有id且变量里面传入了替换的值
 
           if (v.id && vars.hasOwnProperty(v.id)) {
-            target[k2] = vars[v.id];
+            v = vars[v.id];
+
+            if (util.isNil(v)) {
+              return;
+            } // 如果有.则特殊处理子属性
+
+
+            if (k2.indexOf('.') > -1) {
+              var list = k2.split('.');
+              var len = list.length;
+
+              for (var i = 0; i < len - 1; i++) {
+                k2 = list[i]; // 避免异常
+
+                if (target[k2]) {
+                  target = target[k2];
+                } else {
+                  console.error('Parse vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                }
+              }
+
+              k2 = list[len - 1];
+            }
+
+            target[k2] = v;
           }
         }
       });

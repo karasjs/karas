@@ -31,7 +31,8 @@ function diffDefs(elem, od, nd) {
 
 function diffDef(elem, od, nd) {
   if(od.tagName !== nd.tagName) {
-    elem.insertAdjacentHTML('afterend', joinDef(nd));
+    insertAdjacentHTML(elem, 'beforebegin', joinDef(nd));
+    // elem.insertAdjacentHTML('beforebegin', joinDef(nd));
     elem.parentNode.removeChild(elem);
   }
   else {
@@ -326,22 +327,44 @@ function replaceWith(elem, vd) {
   else {
     res = joinVd(vd);
   }
-  elem.insertAdjacentHTML('afterend', res);
+  insertAdjacentHTML(elem, 'beforebegin', res);
+  // elem.insertAdjacentHTML('beforebegin', res);
   elem.parentNode.removeChild(elem);
 }
 
 function insertAt(elem, cns, index, html) {
   if(index >= cns.length) {
-    elem.insertAdjacentHTML('beforeend', html);
+    insertAdjacentHTML(elem, 'beforeend', html);
+    // elem.insertAdjacentHTML('beforeend', html);
   }
   else {
-    cns[index].insertAdjacentHTML('beforebegin', html);
+    insertAdjacentHTML(cns[index], 'beforebegin', html);
+    // cns[index].insertAdjacentHTML('beforebegin', html);
   }
 }
 
 function removeAt(elem, cns, index) {
   if(cns[index]) {
     elem.removeChild(cns[index]);
+  }
+}
+
+let svg;
+function insertAdjacentHTML(elem, where, content) {
+  if(elem.insertAdjacentHTML) {
+    elem.insertAdjacentHTML(where, content);
+  }
+  else {
+    switch(where) {
+      case 'beforeend':
+        elem.innerHTML += content;
+        break;
+      case 'beforebegin':
+        svg = svg || document.createElement('svg');
+        svg.innerHTML = content;
+        elem.parentNode.insertBefore(svg.childNodes[0], elem);
+        break;
+    }
   }
 }
 

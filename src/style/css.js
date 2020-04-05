@@ -123,7 +123,7 @@ function calUnit(obj, k, v) {
     };
   }
   // border相关不能为负值
-  if(k.indexOf('border') === 0) {
+  if(k.toString().indexOf('border') === 0) {
     obj[k].value = Math.max(obj[k].value, 0);
   }
   return obj;

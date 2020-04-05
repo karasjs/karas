@@ -95,14 +95,11 @@ function calUnit(obj, k, v) {
     };
   }
   else if(/%$/.test(v)) {
-    // border不支持百分比
-    if(k.toString().indexOf('border') !== 0) {
-      v = parseFloat(v) || 0;
-      obj[k] = {
-        value: v,
-        unit: PERCENT,
-      };
-    }
+    v = parseFloat(v) || 0;
+    obj[k] = {
+      value: v,
+      unit: PERCENT,
+    };
   }
   else if(/px$/.test(v)) {
     v = parseFloat(v) || 0;
@@ -124,6 +121,10 @@ function calUnit(obj, k, v) {
       value: v,
       unit: NUMBER,
     };
+  }
+  // border相关不能为负值
+  if(k.indexOf('border') === 0) {
+    obj[k].value = Math.max(obj[k].value, 0);
   }
   return obj;
 }
@@ -187,6 +188,15 @@ function normalize(style, reset = []) {
   if(temp) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k + 'Style';
+      if(isNil(style[k])) {
+        style[k] = temp;
+      }
+    });
+  }
+  temp = style.borderRadius;
+  if(temp) {
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+      k = 'border' + k + 'Radius';
       if(isNil(style[k])) {
         style[k] = temp;
       }
@@ -546,6 +556,10 @@ function normalize(style, reset = []) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
+    'borderTopLeftRadius',
+    'borderTopRightRadius',
+    'borderBottomRightRadius',
+    'borderBottomLeftRadius',
     'top',
     'right',
     'bottom',
@@ -815,14 +829,15 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   else {
     computedStyle.color = int2rgba(color.value);
   }
-  // 处理可提前计算的属性，如border
+  // 处理可提前计算的属性，如border-width
   [
     'borderTopWidth',
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
   ].forEach(k => {
-    computedStyle[k] = currentStyle[k].value;
+    // border-width不支持百分比
+    computedStyle[k] = currentStyle[k].unit === PX ? currentStyle[k].value : 0;
   });
   [
     'position',

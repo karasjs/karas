@@ -13,6 +13,7 @@ import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 import sort from '../util/sort';
+import math from '../math/index';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, mergeImageData } = util;
@@ -47,22 +48,79 @@ function renderBorder(renderMode, points, color, ctx, xom) {
   }
 }
 
-function renderBgc(renderMode, value, x, y, w, h, ctx, xom) {
+function renderBgc(renderMode, value, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
+  let needBezier = btlr || btrr || bbrr || bblr;
+  let list;
+  if(needBezier) {
+    list = [];
+    list.push([x + btlr, y]);
+    list.push([x + w - btrr, y]);
+    list.push([x + w - btrr * (1 - math.h), y, x + w, y + btrr *  (1 - math.h), x + w, y + btrr]);
+    list.push([x + w, y + h - bbrr]);
+    list.push([x + w, y + h - bbrr * (1 - math.h), x + w - bbrr * (1 - math.h), y + h, x + w - bbrr, y + h]);
+    list.push([x + bblr, y + h]);
+    list.push([x + bblr * (1 - math.h), y + h, x, y + h - bblr * (1 - math.h), x, y + h - bblr]);
+    list.push([x, y + btlr]);
+    list.push([x, y + btlr * (1 - math.h), x + btlr * (1 - math.h), y, x + btlr, y]);
+  }
   if(renderMode === mode.CANVAS) {
     ctx.beginPath();
     ctx.fillStyle = value;
-    ctx.rect(x, y, w, h);
+    if(list) {
+      ctx.moveTo(list[0][0], list[0][1]);
+      for(let i = 1, len = list.length; i < len; i += 2) {
+        let a = list[i];
+        let b = list[i+1];
+        ctx.lineTo(a[0], a[1]);
+        ctx.bezierCurveTo(b[0], b[1], b[2], b[3], b[4], b[5]);
+      }
+    }
+    else {
+      ctx.rect(x, y, w, h);
+    }
     ctx.fill();
     ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
-    xom.addBackground([
-      ['x', x],
-      ['y', y],
-      ['width', w],
-      ['height', h],
-      ['fill', value]
-    ]);
+    if(list) {
+      let s = `M${list[0][1]},${list[0][1]}`;
+      for(let i = 1, len = list.length; i < len; i += 2) {
+        let a = list[i];
+        let b = list[i+1];
+        s += `L${a[0]},${a[1]}`;
+        s += `C${b[0]},${b[1]},${b[2]},${b[3]},${b[4]},${b[5]}`;
+      }
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', s],
+          ['fill', value]
+        ],
+      });
+    }
+    else {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'rect',
+        props: [
+          ['x', x],
+          ['y', y],
+          ['width', w],
+          ['height', h],
+          ['fill', value]
+        ],
+      });
+    }
+  }
+}
+
+function calBorderRadius(w, h, k, currentStyle, computedStyle) {
+  let s = currentStyle[k];
+  // 暂时只支持px，限制最大为窄边一半
+  if(s.unit === PX) {
+    let min = Math.min(w * 0.5, h * 0.5);
+    computedStyle[k] = Math.min(min, s.value);
   }
 }
 
@@ -284,6 +342,10 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    // 圆角边计算
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+      calBorderRadius(this.width, this.height, `border${k}Radius`, currentStyle, computedStyle);
+    });
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -414,6 +476,10 @@ class Xom extends Node {
       borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
+      borderTopLeftRadius,
+      borderTopRightRadius,
+      borderBottomRightRadius,
+      borderBottomLeftRadius,
       visibility,
       backgroundRepeat,
       opacity,
@@ -527,7 +593,8 @@ class Xom extends Node {
     }
     // 背景色垫底
     if(!/,0\)$/.test(backgroundColor)) {
-      renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this);
+      renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
+        borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
     // 渐变或图片叠加
     if(backgroundImage) {
@@ -1088,14 +1155,6 @@ class Xom extends Node {
     this.virtualDom.bb.push({
       type: 'item',
       tagName: 'path',
-      props,
-    });
-  }
-
-  addBackground(props) {
-    this.virtualDom.bb.push({
-      type: 'item',
-      tagName: 'rect',
       props,
     });
   }

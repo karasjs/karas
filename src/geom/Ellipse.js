@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import math from '../math/index';
 
 class Ellipse extends Geom {
   constructor(tagName, props) {
@@ -54,8 +55,8 @@ class Ellipse extends Geom {
         ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
       }
       else {
-        let ox = rx * .5522848;
-        let oy = ry * .5522848;
+        let ox = rx * math.h;
+        let oy = ry * math.h;
         ctx.moveTo(cx - rx, cy);
         ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
         ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

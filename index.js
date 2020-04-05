@@ -937,7 +937,9 @@
     },
     r2d: function r2d(n) {
       return n * 180 / Math.PI;
-    }
+    },
+    h: 4 * (Math.sqrt(2) - 1) / 3 // 贝塞尔曲线模拟1/4圆
+
   };
 
   var rgb2int$1 = util.rgb2int,
@@ -1628,14 +1630,11 @@
         unit: INHERIT
       };
     } else if (/%$/.test(v)) {
-      // border不支持百分比
-      if (k.toString().indexOf('border') !== 0) {
-        v = parseFloat(v) || 0;
-        obj[k] = {
-          value: v,
-          unit: PERCENT$1
-        };
-      }
+      v = parseFloat(v) || 0;
+      obj[k] = {
+        value: v,
+        unit: PERCENT$1
+      };
     } else if (/px$/.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
@@ -1654,6 +1653,11 @@
         value: v,
         unit: NUMBER
       };
+    } // border相关不能为负值
+
+
+    if (k.indexOf('border') === 0) {
+      obj[k].value = Math.max(obj[k].value, 0);
     }
 
     return obj;
@@ -1728,6 +1732,18 @@
     if (temp) {
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Style';
+
+        if (isNil$1(style[k])) {
+          style[k] = temp;
+        }
+      });
+    }
+
+    temp = style.borderRadius;
+
+    if (temp) {
+      ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
+        k = 'border' + k + 'Radius';
 
         if (isNil$1(style[k])) {
           style[k] = temp;
@@ -2120,7 +2136,7 @@
     } // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
       if (isNil$1(v)) {
@@ -2396,11 +2412,12 @@
       computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
     } else {
       computedStyle.color = int2rgba$2(color.value);
-    } // 处理可提前计算的属性，如border
+    } // 处理可提前计算的属性，如border-width
 
 
     ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
-      computedStyle[k] = currentStyle[k].value;
+      // border-width不支持百分比
+      computedStyle[k] = currentStyle[k].unit === PX$1 ? currentStyle[k].value : 0;
     });
     ['position', 'display', 'visibility', 'flexDirection', 'justifyContent', 'alignItems', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
@@ -4084,6 +4101,10 @@
     borderRightStyle: 'solid',
     borderBottomStyle: 'solid',
     borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
     width: 'auto',
     height: 'auto',
     flexGrow: 0,
@@ -4914,7 +4935,7 @@
       clone$1 = util.clone;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
-  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
+  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
@@ -6841,15 +6862,74 @@
     }
   }
 
-  function renderBgc(renderMode, value, x, y, w, h, ctx, xom) {
+  function renderBgc(renderMode, value, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
+    var needBezier = btlr || btrr || bbrr || bblr;
+    var list;
+
+    if (needBezier) {
+      list = [];
+      list.push([x + btlr, y]);
+      list.push([x + w - btrr, y]);
+      list.push([x + w - btrr * (1 - math.h), y, x + w, y + btrr * (1 - math.h), x + w, y + btrr]);
+      list.push([x + w, y + h - bbrr]);
+      list.push([x + w, y + h - bbrr * (1 - math.h), x + w - bbrr * (1 - math.h), y + h, x + w - bbrr, y + h]);
+      list.push([x + bblr, y + h]);
+      list.push([x + bblr * (1 - math.h), y + h, x, y + h - bblr * (1 - math.h), x, y + h - bblr]);
+      list.push([x, y + btlr]);
+      list.push([x, y + btlr * (1 - math.h), x + btlr * (1 - math.h), y, x + btlr, y]);
+    }
+
     if (renderMode === mode.CANVAS) {
       ctx.beginPath();
       ctx.fillStyle = value;
-      ctx.rect(x, y, w, h);
+
+      if (list) {
+        ctx.moveTo(list[0][0], list[0][1]);
+
+        for (var i = 1, len = list.length; i < len; i += 2) {
+          var a = list[i];
+          var b = list[i + 1];
+          ctx.lineTo(a[0], a[1]);
+          ctx.bezierCurveTo(b[0], b[1], b[2], b[3], b[4], b[5]);
+        }
+      } else {
+        ctx.rect(x, y, w, h);
+      }
+
       ctx.fill();
       ctx.closePath();
     } else if (renderMode === mode.SVG) {
-      xom.addBackground([['x', x], ['y', y], ['width', w], ['height', h], ['fill', value]]);
+      if (list) {
+        var s = "M".concat(list[0][1], ",").concat(list[0][1]);
+
+        for (var _i = 1, _len = list.length; _i < _len; _i += 2) {
+          var _a = list[_i];
+          var _b = list[_i + 1];
+          s += "L".concat(_a[0], ",").concat(_a[1]);
+          s += "C".concat(_b[0], ",").concat(_b[1], ",").concat(_b[2], ",").concat(_b[3], ",").concat(_b[4], ",").concat(_b[5]);
+        }
+
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [['d', s], ['fill', value]]
+        });
+      } else {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'rect',
+          props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', value]]
+        });
+      }
+    }
+  }
+
+  function calBorderRadius(w, h, k, currentStyle, computedStyle) {
+    var s = currentStyle[k]; // 暂时只支持px，限制最大为窄边一半
+
+    if (s.unit === PX$4) {
+      var min = Math.min(w * 0.5, h * 0.5);
+      computedStyle[k] = Math.min(min, s.value);
     }
   }
 
@@ -7011,6 +7091,8 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual) {
+        var _this4 = this;
+
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -7097,7 +7179,11 @@
 
 
         computedStyle.width = this.width;
-        computedStyle.height = this.height;
+        computedStyle.height = this.height; // 圆角边计算
+
+        ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
+          calBorderRadius(_this4.width, _this4.height, "border".concat(k, "Radius"), currentStyle, computedStyle);
+        });
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -7200,7 +7286,7 @@
     }, {
       key: "render",
       value: function render(renderMode) {
-        var _this4 = this;
+        var _this5 = this;
 
         this.__renderMode = renderMode;
 
@@ -7242,6 +7328,10 @@
             borderLeftWidth = computedStyle.borderLeftWidth,
             borderLeftColor = computedStyle.borderLeftColor,
             borderLeftStyle = computedStyle.borderLeftStyle,
+            borderTopLeftRadius = computedStyle.borderTopLeftRadius,
+            borderTopRightRadius = computedStyle.borderTopRightRadius,
+            borderBottomRightRadius = computedStyle.borderBottomRightRadius,
+            borderBottomLeftRadius = computedStyle.borderBottomLeftRadius,
             visibility = computedStyle.visibility,
             backgroundRepeat = computedStyle.backgroundRepeat,
             opacity = computedStyle.opacity;
@@ -7358,7 +7448,7 @@
 
 
         if (!/,0\)$/.test(backgroundColor)) {
-          renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this);
+          renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         } // 渐变或图片叠加
 
 
@@ -7486,52 +7576,52 @@
               }
 
               if (xnr > 0) {
-                for (var _i = 0; _i < xnr; _i++) {
-                  repeat.push([originX + (_i + 1) * w, originY]);
+                for (var _i2 = 0; _i2 < xnr; _i2++) {
+                  repeat.push([originX + (_i2 + 1) * w, originY]);
                 }
               }
 
               if (ynt > 0) {
-                for (var _i2 = 0; _i2 < ynt; _i2++) {
-                  repeat.push([originX, originY - (_i2 + 1) * h]);
+                for (var _i3 = 0; _i3 < ynt; _i3++) {
+                  repeat.push([originX, originY - (_i3 + 1) * h]);
                 }
               }
 
               if (ynb > 0) {
-                for (var _i3 = 0; _i3 < ynb; _i3++) {
-                  repeat.push([originX, originY + (_i3 + 1) * h]);
+                for (var _i4 = 0; _i4 < ynb; _i4++) {
+                  repeat.push([originX, originY + (_i4 + 1) * h]);
                 }
               } // 原点和同行列十字画完，看4个角的情况
 
 
               if (xnl > 0 && ynt > 0) {
-                for (var _i4 = 0; _i4 < xnl; _i4++) {
+                for (var _i5 = 0; _i5 < xnl; _i5++) {
                   for (var j = 0; j < ynt; j++) {
-                    repeat.push([originX - (_i4 + 1) * w, originY - (j + 1) * h]);
+                    repeat.push([originX - (_i5 + 1) * w, originY - (j + 1) * h]);
                   }
                 }
               }
 
               if (xnr > 0 && ynt > 0) {
-                for (var _i5 = 0; _i5 < xnr; _i5++) {
+                for (var _i6 = 0; _i6 < xnr; _i6++) {
                   for (var _j = 0; _j < ynt; _j++) {
-                    repeat.push([originX + (_i5 + 1) * w, originY - (_j + 1) * h]);
+                    repeat.push([originX + (_i6 + 1) * w, originY - (_j + 1) * h]);
                   }
                 }
               }
 
               if (xnl > 0 && ynb > 0) {
-                for (var _i6 = 0; _i6 < xnl; _i6++) {
+                for (var _i7 = 0; _i7 < xnl; _i7++) {
                   for (var _j2 = 0; _j2 < ynb; _j2++) {
-                    repeat.push([originX - (_i6 + 1) * w, originY + (_j2 + 1) * h]);
+                    repeat.push([originX - (_i7 + 1) * w, originY + (_j2 + 1) * h]);
                   }
                 }
               }
 
               if (xnr > 0 && ynb > 0) {
-                for (var _i7 = 0; _i7 < xnr; _i7++) {
+                for (var _i8 = 0; _i8 < xnr; _i8++) {
                   for (var _j3 = 0; _j3 < ynb; _j3++) {
-                    repeat.push([originX + (_i7 + 1) * w, originY + (_j3 + 1) * h]);
+                    repeat.push([originX + (_i8 + 1) * w, originY + (_j3 + 1) * h]);
                   }
                 }
               } // 超出尺寸模拟mask截取
@@ -7618,7 +7708,7 @@
                   copy[1][1] = item[0];
                   copy[2][1] = item[1];
 
-                  _this4.virtualDom.bb.push({
+                  _this5.virtualDom.bb.push({
                     type: 'img',
                     tagName: 'image',
                     props: copy
@@ -7633,11 +7723,11 @@
               this.__loadBgi.url = backgroundImage;
               inject.measureImg(backgroundImage, function (data) {
                 if (data.success) {
-                  _this4.__loadBgi.source = data.source;
-                  _this4.__loadBgi.width = data.width;
-                  _this4.__loadBgi.height = data.height;
+                  _this5.__loadBgi.source = data.source;
+                  _this5.__loadBgi.width = data.width;
+                  _this5.__loadBgi.height = data.height;
 
-                  _this4.root.addRefreshTask(_this4.__loadBgi.cb);
+                  _this5.root.addRefreshTask(_this5.__loadBgi.cb);
                 }
               });
             }
@@ -7796,8 +7886,8 @@
             } // 再看普通流，从后往前遮挡顺序
 
 
-            for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
-              var _child = children[_i8];
+            for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
+              var _child = children[_i9];
 
               if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) === -1) {
                 if (_child.__emitEvent(e, force)) {
@@ -7835,8 +7925,8 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
-            var _child2 = children[_i9];
+          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
+            var _child2 = children[_i10];
 
             if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
               if (_child2.__emitEvent(e)) {
@@ -7846,8 +7936,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-            var _child3 = children[_i10];
+          for (var _i11 = children.length - 1; _i11 >= 0; _i11--) {
+            var _child3 = children[_i11];
 
             if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
               if (_child3.__emitEvent(e)) {
@@ -7998,15 +8088,6 @@
         });
       }
     }, {
-      key: "addBackground",
-      value: function addBackground(props) {
-        this.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'rect',
-          props: props
-        });
-      }
-    }, {
       key: "animate",
       value: function animate(list, option) {
         var animation = new Animation(this, list, option);
@@ -8016,7 +8097,7 @@
     }, {
       key: "__computed",
       value: function __computed() {
-        var _this5 = this;
+        var _this6 = this;
 
         compute$1(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -8025,7 +8106,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__computed();
             } else {
-              item.__style = _this5.currentStyle;
+              item.__style = _this6.currentStyle;
               compute$1(item); // 文字首先测量所有字符宽度
 
               item.__measure();
@@ -8036,7 +8117,7 @@
     }, {
       key: "__repaint",
       value: function __repaint() {
-        var _this6 = this;
+        var _this7 = this;
 
         repaint$2(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -8045,7 +8126,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__repaint();
             } else {
-              item.__style = _this6.currentStyle;
+              item.__style = _this7.currentStyle;
               repaint$2(item);
             }
           });
@@ -12189,8 +12270,8 @@
             ctx.lineTo(originX, originY + height);
             ctx.lineTo(originX, originY);
           } else {
-            var ox = rx * .5522848;
-            var oy = ry * .5522848;
+            var ox = rx * math.h;
+            var oy = ry * math.h;
             ctx.moveTo(originX + rx, originY);
             ctx.lineTo(originX + width - rx, originY);
             ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
@@ -12411,8 +12492,8 @@
           if (ctx.ellipse) {
             ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
           } else {
-            var ox = rx * .5522848;
-            var oy = ry * .5522848;
+            var ox = rx * math.h;
+            var oy = ry * math.h;
             ctx.moveTo(cx - rx, cy);
             ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
             ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

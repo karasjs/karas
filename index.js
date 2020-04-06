@@ -4209,6 +4209,39 @@
 
   var isNil$2 = util.isNil;
 
+  function diff(ovd, nvd, isRoot) {
+    if (ovd !== nvd) {
+      // 相同继承，不同取消，过滤text
+      if (ovd.tagName === nvd.tagName && nvd.tagName) {
+        console.log(ovd, nvd, nvd.tagName);
+
+        ovd.__animationList.forEach(function (item) {
+          item.__target = nvd;
+        });
+
+        nvd.__animationList = ovd.__animationList;
+        ovd.__animationList = []; // 递归进行
+
+        var oc = ovd.children;
+        var nc = nvd.children;
+
+        if (oc && nc) {
+          var ol = oc.length;
+          var nl = nc.length;
+
+          for (var i = 0, len = Math.min(ol, nl); i < len; i++) {
+            diff(oc[i], nc[i]);
+          }
+        }
+      } // 根进行一次清理即可
+
+
+      if (isRoot) {
+        ovd.__destroy();
+      }
+    }
+  }
+
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
@@ -4267,11 +4300,11 @@
         if (root) {
           this.__task = {
             before: function before() {
-              _this2.__traverse(o.ctx, o.defs, root.renderMode);
+              var ovd = _this2.__traverse(o.ctx, o.defs, root.renderMode);
 
               _this2.__traverseCss();
 
-              _this2.__init();
+              _this2.__init(ovd);
 
               root.setRefreshLevel(level.REFLOW);
             },
@@ -4283,6 +4316,7 @@
     }, {
       key: "__traverse",
       value: function __traverse(ctx, defs, renderMode) {
+        var ovd = this.__shadowRoot;
         var sr = this.__shadowRoot = this.render(renderMode); // 可能返回的还是一个Component，递归处理
 
         while (sr instanceof Component) {
@@ -4313,6 +4347,8 @@
         if (!sr.isGeom) {
           sr.__traverse(ctx, defs, renderMode);
         }
+
+        return ovd;
       }
     }, {
       key: "__traverseCss",
@@ -4328,7 +4364,7 @@
 
     }, {
       key: "__init",
-      value: function __init() {
+      value: function __init(ovd) {
         var _this3 = this;
 
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
@@ -4362,11 +4398,12 @@
         } // 防止重复
 
 
-        if (this.__hasInit) {
+        if (ovd) {
+          // setState后会生成新的sr，继承动画考虑
+          diff(ovd, sr, true);
           return;
         }
 
-        this.__hasInit = true;
         Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId']).forEach(function (fn) {
           Object.defineProperty(_this3, fn, {
             get: function get() {
@@ -6161,7 +6198,7 @@
 
 
           var enterFrame = this.__enterFrame = function (diff, cb, firstEnter) {
-            var root = target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
+            var root = _this3.target.root; // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
 
             if (!root || _this3.pending || !frames.length) {
               return;
@@ -10420,7 +10457,7 @@
   var joinVd$1 = util.joinVd,
       joinDef$1 = util.joinDef;
 
-  function diff(elem, ovd, nvd) {
+  function diff$1(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
     diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
@@ -11171,7 +11208,7 @@
             nvd = util.clone(nvd);
 
             if (_this2.node.__root) {
-              diff(_this2.node, _this2.node.__vd, nvd);
+              diff$1(_this2.node, _this2.node.__vd, nvd);
             } else {
               _this2.node.innerHTML = util.joinVirtualDom(nvd);
             }

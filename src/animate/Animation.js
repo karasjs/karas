@@ -1199,7 +1199,7 @@ class Animation extends Event {
       }
       // 每帧执行的回调，firstEnter只有初次同步计算下帧时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = (diff, cb, firstEnter) => {
-        let root = target.root;
+        let root = this.target.root;
         // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
         if(!root || this.pending || !frames.length) {
           return;

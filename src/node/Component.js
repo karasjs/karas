@@ -10,6 +10,34 @@ import repaint from '../animate/repaint';
 
 const { isNil } = util;
 
+function diff(ovd, nvd, isRoot) {
+  if(ovd !== nvd) {
+    // 相同继承，不同取消，过滤text
+    if(ovd.tagName === nvd.tagName && nvd.tagName) {
+      console.log(ovd, nvd, nvd.tagName);
+      ovd.__animationList.forEach(item => {
+        item.__target = nvd;
+      });
+      nvd.__animationList = ovd.__animationList;
+      ovd.__animationList = [];
+      // 递归进行
+      let oc = ovd.children;
+      let nc = nvd.children;
+      if(oc && nc) {
+        let ol = oc.length;
+        let nl = nc.length;
+        for(let i = 0, len = Math.min(ol, nl); i < len; i++) {
+          diff(oc[i], nc[i]);
+        }
+      }
+    }
+    // 根进行一次清理即可
+    if(isRoot) {
+      ovd.__destroy();
+    }
+  }
+}
+
 class Component extends Event {
   constructor(tagName, props, children) {
     super();
@@ -52,9 +80,9 @@ class Component extends Event {
     if(root) {
       this.__task = {
         before: () => {
-          this.__traverse(o.ctx, o.defs, root.renderMode);
+          let ovd = this.__traverse(o.ctx, o.defs, root.renderMode);
           this.__traverseCss();
-          this.__init();
+          this.__init(ovd);
           root.setRefreshLevel(level.REFLOW);
         },
         after: cb,
@@ -64,6 +92,7 @@ class Component extends Event {
   }
 
   __traverse(ctx, defs, renderMode) {
+    let ovd = this.__shadowRoot;
     let sr = this.__shadowRoot = this.render(renderMode);
     // 可能返回的还是一个Component，递归处理
     while(sr instanceof Component) {
@@ -89,6 +118,7 @@ class Component extends Event {
     if(!sr.isGeom) {
       sr.__traverse(ctx, defs, renderMode);
     }
+    return ovd;
   }
 
   __traverseCss() {
@@ -101,7 +131,7 @@ class Component extends Event {
   }
 
   // 组件传入的样式需覆盖shadowRoot的
-  __init() {
+  __init(ovd) {
     let sr = this.shadowRoot;
     // 返回text节点特殊处理，赋予基本样式
     if(sr instanceof Text) {
@@ -130,10 +160,11 @@ class Component extends Event {
       });
     }
     // 防止重复
-    if(this.__hasInit) {
+    if(ovd) {
+      // setState后会生成新的sr，继承动画考虑
+      diff(ovd, sr, true);
       return;
     }
-    this.__hasInit = true;
     Object.keys(repaint.GEOM).concat([
       'x',
       'y',

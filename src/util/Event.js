@@ -119,6 +119,8 @@ class Event {
   static FRAME = 'frame';
   static FINISH = 'finish';
   static CANCEL = 'cancel';
+  static BEGIN = 'begin';
+  static END = 'end';
 }
 
 export default Event;

@@ -10,11 +10,10 @@ import repaint from '../animate/repaint';
 
 const { isNil } = util;
 
-function diff(ovd, nvd, isRoot) {
+function diff(ovd, nvd) {
   if(ovd !== nvd) {
     // 相同继承，不同取消，过滤text
     if(ovd.tagName === nvd.tagName && nvd.tagName) {
-      console.log(ovd, nvd, nvd.tagName);
       ovd.__animationList.forEach(item => {
         item.__target = nvd;
       });
@@ -30,10 +29,6 @@ function diff(ovd, nvd, isRoot) {
           diff(oc[i], nc[i]);
         }
       }
-    }
-    // 根进行一次清理即可
-    if(isRoot) {
-      ovd.__destroy();
     }
   }
 }
@@ -162,7 +157,8 @@ class Component extends Event {
     // 防止重复
     if(ovd) {
       // setState后会生成新的sr，继承动画考虑
-      diff(ovd, sr, true);
+      diff(ovd, sr);
+      ovd.__destroy();
       return;
     }
     Object.keys(repaint.GEOM).concat([

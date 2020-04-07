@@ -4063,6 +4063,10 @@
 
   _defineProperty(Event, "CANCEL", 'cancel');
 
+  _defineProperty(Event, "BEGIN", 'begin');
+
+  _defineProperty(Event, "END", 'end');
+
   var DOM = {
     position: 'static',
     display: 'block',
@@ -4209,12 +4213,10 @@
 
   var isNil$2 = util.isNil;
 
-  function diff(ovd, nvd, isRoot) {
+  function diff(ovd, nvd) {
     if (ovd !== nvd) {
       // 相同继承，不同取消，过滤text
       if (ovd.tagName === nvd.tagName && nvd.tagName) {
-        console.log(ovd, nvd, nvd.tagName);
-
         ovd.__animationList.forEach(function (item) {
           item.__target = nvd;
         });
@@ -4233,11 +4235,6 @@
             diff(oc[i], nc[i]);
           }
         }
-      } // 根进行一次清理即可
-
-
-      if (isRoot) {
-        ovd.__destroy();
       }
     }
   }
@@ -4400,7 +4397,10 @@
 
         if (ovd) {
           // setState后会生成新的sr，继承动画考虑
-          diff(ovd, sr, true);
+          diff(ovd, sr);
+
+          ovd.__destroy();
+
           return;
         }
 
@@ -6348,18 +6348,24 @@
                 if (iterations === Infinity || playCount < iterations - 1) {
                   __frameCb(diff, cb);
 
+                  _this3.emit(Event.END, playCount);
+
                   return;
                 } // 没超过endDelay仅触发帧事件
 
 
                 if (inEndDelay) {
                   __frameCb(diff, cb, true);
+
+                  _this3.emit(Event.END, playCount);
                 } // 超过则触发结束事件，刷新重绘之前已经做完
                 else {
                     _this3.__nextTime = 0;
                     _this3.__playCount = iterations;
 
                     __frameCb(diff, cb);
+
+                    _this3.emit(Event.END, playCount);
 
                     __fin(cb);
                   }

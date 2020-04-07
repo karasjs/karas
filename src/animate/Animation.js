@@ -1308,17 +1308,20 @@ class Animation extends Event {
             // 没到播放次数结束时从头继续，endDelay仅作用最后一次播放这里无效
             if(iterations === Infinity || playCount < iterations - 1) {
               __frameCb(diff, cb);
+              this.emit(Event.END, playCount);
               return;
             }
             // 没超过endDelay仅触发帧事件
             if(inEndDelay) {
               __frameCb(diff, cb, true);
+              this.emit(Event.END, playCount);
             }
             // 超过则触发结束事件，刷新重绘之前已经做完
             else {
               this.__nextTime = 0;
               this.__playCount = iterations;
               __frameCb(diff, cb);
+              this.emit(Event.END, playCount);
               __fin(cb);
             }
           }

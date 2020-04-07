@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>plane</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">试着用WASD控制飞机上下左右移动。</div>
+<div>
+</div>
+<!--<div id="example"></div>-->
+<div id="example2"></div>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script type="text/jsx">
+  var plane = [
+    [
+      0.5060701366900136,
+      0
+    ],
+    [
+      0.5786456921629792,
+      0.16239996516193134
+    ],
+    [
+      0.5786456921629782,
+      0.32954322961755356
+    ],
+    [
+      1.0000000000000018,
+      0.6398758175618933
+    ],
+    [
+      0.9868372199022116,
+      0.726979410839643
+    ],
+    [
+      0.7223007677091682,
+      0.5881461726458509
+    ],
+    [
+      0.5786456921629782,
+      0.5998740945937285
+    ],
+    [
+      0.5229241648200907,
+      0.8460155545330109
+    ],
+    [
+      0.6725747095619684,
+      0.9160661153568178
+    ],
+    [
+      0.6725747095619684,
+      0.960052614894148
+    ],
+    [
+      0.5229241648200907,
+      0.9294513421050529
+    ],
+    [
+      0.501985725489051,
+      1.0000000000000089
+    ],
+    [
+      0.47126130406110794,
+      0.929451342105053
+    ],
+    [
+      0.3219669382339696,
+      0.9600526148941478
+    ],
+    [
+      0.31029394139086564,
+      0.9160661153568179
+    ],
+    [
+      0.47126130406110794,
+      0.8460155545330108
+    ],
+    [
+      0.43162043620527013,
+      0.5998740945937285
+    ],
+    [
+      0.271623165078726,
+      0.588146172645851
+    ],
+    [
+      0.015135176078673734,
+      0.7269794108396429
+    ],
+    [
+      0.000001158381695627167,
+      0.6398758175618932
+    ],
+    [
+      0.43162043620527085,
+      0.32954322961755356
+    ],
+    [
+      0.43162043620526896,
+      0.16239996516193134
+    ]
+  ];
+  class Plane extends karas.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        left: 150,
+        top: 300,
+      };
+      var self = this;
+      document.body.addEventListener('keydown', function(e) {
+        var left = self.state.left;
+        var top = self.state.top;
+        switch(e.keyCode) {
+          case 87:
+            self.setState({
+              top: Math.max(top - 10, 0),
+            });
+          break;
+          case 65:
+            self.setState({
+              left: Math.max(left - 10, 0),
+            });
+          break;
+          case 83:
+            self.setState({
+              top: Math.min(top + 10, 310),
+            });
+          break;
+          case 68:
+            self.setState({
+              left: Math.min(left + 10, 310),
+            });
+          break;
+        }
+      });
+    }
+
+    render() {
+      return <div style={{
+        position: 'absolute',
+        left: this.state.left,
+        top: this.state.top,
+        width: 50,
+        height: 50,
+      }}>
+        <$polygon style={{
+          width: '100%',
+          height: '100%',
+          fill: '#999',
+        }} points={plane}/>
+      </div>;
+    }
+  }
+
+  var root = karas.render(
+    <svg width="360" height="360">
+      <Plane/>
+      {
+        [1, 2, 3].map(function() {
+          return <$rect style={{
+            position: 'absolute',
+            left: 174,
+            top: 300,
+            width: 3,
+            height: 10,
+            strokeWidth: 0,
+            fill: '#F60',
+            opacity: 0,
+          }}/>;
+        })
+      }
+    </svg>,
+    '#example2'
+  );
+  var bullets = root.children.slice(1);
+  bullets.forEach(function(item, i) {
+    let a = item.animate([
+      {
+        translateY: 0,
+        opacity: 0,
+      },
+      {
+        translateY: -30,
+        opacity: 0.5,
+        offset: 0.1,
+      },
+      {
+        translateY: -360,
+      }
+    ], {
+      duration: 1500,
+      delay: i * 500,
+      iterations: Infinity,
+    });
+    a.on('end', function() {
+      item.props.style.left = root.children[0].computedStyle.left + 24;
+      item.props.style.top = root.children[0].computedStyle.top;
+      root.setRefreshLevel(1);
+    });
+  });
+</script>
+<script>
+  var jsx = document.querySelector('script[type="text/jsx"]');
+  var source = jsx.textContent || jsx.text;
+  var code = yurine.parse(source);
+  var script = document.createElement('script');
+  script.async = true;
+  script.text = code;
+  var head = document.head || document.getElementsByTagName('head')[0];
+  head.appendChild(script);
+</script>
+</body>
+</html>

@@ -47,7 +47,7 @@ class Img extends Dom {
       state: INIT,
       task: [],
     };
-    let cb = cache => {
+    let cb = (cache, loaded) => {
       if(cache.success) {
         this.__source = cache.source;
       }
@@ -84,10 +84,21 @@ class Img extends Dom {
       else {
         lv = level.REPAINT;
       }
-      return lv;
+      if(loaded) {
+        return;
+      }
+      let root = this.root;
+      if(root) {
+        this.__task = {
+          before: function() {
+            root.setRefreshLevel(lv);
+          },
+        };
+        root.addRefreshTask(this.__task);
+      }
     };
     if(cache.state === LOADED) {
-      cb(cache);
+      cb(cache, true);
     }
     else if(cache.state === LOADING) {
       cache.task.push(cb);
@@ -108,19 +119,7 @@ class Img extends Dom {
         }
         cache.state = LOADED;
         let list = cache.task.splice(0);
-        let lv = level.REPAINT;
-        list.forEach(cb => {
-          lv = Math.max(lv, cb(cache));
-        });
-        let root = this.root;
-        if(root) {
-          this.__task = {
-            before() {
-              root.setRefreshLevel(lv);
-            },
-          };
-          root.addRefreshTask(this.__task);
-        }
+        list.forEach(cb => cb(cache));
       });
     }
   }

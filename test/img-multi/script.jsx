@@ -18,7 +18,7 @@ let o2 = karas.render(
   </svg>,
   '#test2'
 );
-o2.on(karas.Event.REFRESH, function() {
+setTimeout(function() {
   let input = document.querySelector('#base642');
   input.value = JSON.stringify(o2.virtualDom);
-});
+}, 200);

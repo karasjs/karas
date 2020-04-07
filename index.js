@@ -10250,7 +10250,7 @@
           task: []
         };
 
-        var cb = function cb(cache) {
+        var cb = function cb(cache, loaded) {
           if (cache.success) {
             _this2.__source = cache.source;
           } else {
@@ -10285,11 +10285,24 @@
               lv = level.REPAINT;
             }
 
-          return lv;
+          if (loaded) {
+            return;
+          }
+
+          var root = _this2.root;
+
+          if (root) {
+            _this2.__task = {
+              before: function before() {
+                root.setRefreshLevel(lv);
+              }
+            };
+            root.addRefreshTask(_this2.__task);
+          }
         };
 
         if (cache.state === LOADED) {
-          cb(cache);
+          cb(cache, true);
         } else if (cache.state === LOADING) {
           cache.task.push(cb);
         } else if (cache.state === INIT) {
@@ -10309,20 +10322,9 @@
 
             cache.state = LOADED;
             var list = cache.task.splice(0);
-            var lv = level.REPAINT;
             list.forEach(function (cb) {
-              lv = Math.max(lv, cb(cache));
+              return cb(cache);
             });
-            var root = _this2.root;
-
-            if (root) {
-              _this2.__task = {
-                before: function before() {
-                  root.setRefreshLevel(lv);
-                }
-              };
-              root.addRefreshTask(_this2.__task);
-            }
           });
         }
       }

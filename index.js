@@ -12675,7 +12675,7 @@
           var k2 = k.slice(4); // 有id且变量里面传入了替换的值
 
           if (v.id && vars.hasOwnProperty(v.id)) {
-            v = vars[v.id];
+            var value = vars[v.id];
 
             if (util.isNil(v)) {
               return;
@@ -12697,9 +12697,14 @@
               }
 
               k2 = list[len - 1];
+            } // 支持函数模式和值模式
+
+
+            if (util.isFunction(value)) {
+              value = value(v);
             }
 
-            target[k2] = v;
+            target[k2] = value;
           }
         }
       });

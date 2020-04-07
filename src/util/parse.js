@@ -39,7 +39,7 @@ function replaceVars(target, vars) {
         let k2 = k.slice(4);
         // 有id且变量里面传入了替换的值
         if(v.id && vars.hasOwnProperty(v.id)) {
-          v = vars[v.id];
+          let value = vars[v.id];
           if(util.isNil(v)) {
             return;
           }
@@ -59,7 +59,11 @@ function replaceVars(target, vars) {
             }
             k2 = list[len - 1];
           }
-          target[k2] = v;
+          // 支持函数模式和值模式
+          if(util.isFunction(value)) {
+            value = value(v);
+          }
+          target[k2] = value;
         }
       }
     });

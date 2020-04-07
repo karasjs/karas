@@ -78,6 +78,7 @@ function joinVd(vd) {
   }
   else if(vd.type === 'text') {
     let s = ``;
+    // text有许多lineBox
     vd.children.forEach(item => {
       s += joinVd(item);
     });
@@ -92,13 +93,7 @@ function joinVd(vd) {
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
-    s += '</g><g';
-    if(vd.props) {
-      vd.props.forEach(item => {
-        s += ` ${item[0]}="${item[1]}"`;
-      });
-    }
-    s += '>';
+    s += '</g><g>';
     vd.children.forEach(item => {
       if(item.isMask) {
         return;

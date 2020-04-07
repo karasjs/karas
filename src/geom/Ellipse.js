@@ -55,8 +55,8 @@ class Ellipse extends Geom {
         ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
       }
       else {
-        let ox = rx * math.h;
-        let oy = ry * math.h;
+        let ox = rx * math.H;
+        let oy = ry * math.H;
         ctx.moveTo(cx - rx, cy);
         ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
         ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

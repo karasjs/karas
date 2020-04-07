@@ -5,6 +5,7 @@ import util from '../util/util';
 import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
+import border from '../style/border';
 import level from '../animate/level';
 
 const { AUTO, PX } = unit;
@@ -83,15 +84,7 @@ class Img extends Dom {
       else {
         lv = level.REPAINT;
       }
-      let root = this.root;
-      if(root) {
-        this.__task = {
-          before: function() {
-            root.setRefreshLevel(lv);
-          },
-        };
-        root.addRefreshTask(this.__task);
-      }
+      return lv;
     };
     if(cache.state === LOADED) {
       cb(cache);
@@ -114,8 +107,20 @@ class Img extends Dom {
           cache.height = 32;
         }
         cache.state = LOADED;
-        cache.task.forEach(cb => cb(cache));
-        cache.task.splice(0);
+        let list = cache.task.splice(0);
+        let lv = level.REPAINT;
+        list.forEach(cb => {
+          lv = Math.max(lv, cb(cache));
+        });
+        let root = this.root;
+        if(root) {
+          this.__task = {
+            before() {
+              root.setRefreshLevel(lv);
+            },
+          };
+          root.addRefreshTask(this.__task);
+        }
       });
     }
   }
@@ -144,6 +149,10 @@ class Img extends Dom {
       marginLeft,
       paddingTop,
       paddingLeft,
+      borderTopLeftRadius,
+      borderTopRightRadius,
+      borderBottomRightRadius,
+      borderBottomLeftRadius,
     } } = this;
     if(isDestroyed || display === 'none') {
       return;
@@ -218,9 +227,23 @@ class Img extends Dom {
         ]);
       }
     }
-    else {
+    else if(this.__source) {
+      // 圆角需要生成一个mask
+      let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       if(renderMode === mode.CANVAS) {
-        if(this.__source) {
+        // 有border-radius需模拟遮罩裁剪
+        if(list) {
+          let cache1 = this.root.__getImageData();
+          this.root.__clear();
+          ctx.drawImage(this.__source, originX, originY, width, height);
+          ctx.globalCompositeOperation = 'destination-in';
+          border.genRdRect(renderMode, ctx, '#FFF', x, y, width, height, list);
+          let cache2 = this.root.__getImageData();
+          this.root.__clear();
+          ctx.globalCompositeOperation = 'source-over';
+          this.root.__putImageData(util.mergeImageData(cache1, cache2));
+        }
+        else {
           ctx.drawImage(this.__source, originX, originY, width, height);
         }
       }
@@ -246,6 +269,16 @@ class Img extends Dom {
           ['width', this.__imgWidth || 0],
           ['height', this.__imgHeight || 0]
         ];
+        if(list) {
+          let maskId = this.defs.add({
+            tagName: 'mask',
+            props: [],
+            children: [
+              border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list),
+            ],
+          });
+          props.push(['mask', `url(#${maskId})`]);
+        }
         if(matrix && matrix !== '1,0,0,1,0,0') {
           props.push(['transform', 'matrix(' + matrix + ')']);
         }

@@ -533,7 +533,8 @@
 
       return "<".concat(vd.tagName).concat(s, "/>");
     } else if (vd.type === 'text') {
-      var _s = "";
+      var _s = ""; // text有许多lineBox
+
       vd.children.forEach(function (item) {
         _s += joinVd(item);
       });
@@ -549,15 +550,7 @@
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
-      _s2 += '</g><g';
-
-      if (vd.props) {
-        vd.props.forEach(function (item) {
-          _s2 += " ".concat(item[0], "=\"").concat(item[1], "\"");
-        });
-      }
-
-      _s2 += '>';
+      _s2 += '</g><g>';
       vd.children.forEach(function (item) {
         if (item.isMask) {
           return;
@@ -938,7 +931,7 @@
     r2d: function r2d(n) {
       return n * 180 / Math.PI;
     },
-    h: 4 * (Math.sqrt(2) - 1) / 3 // 贝塞尔曲线模拟1/4圆
+    H: 4 * (Math.sqrt(2) - 1) / 3 // 贝塞尔曲线模拟1/4圆
 
   };
 
@@ -3174,6 +3167,8 @@
    * 总长total，start边长bs，end边长be，内容长w，
    * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
    */
+  var H = math.H;
+
   function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
     var n = 1;
     var ps = 1;
@@ -3572,9 +3567,62 @@
     return points;
   }
 
+  function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
+    var need = btlr || btrr || bbrr || bblr;
+
+    if (need) {
+      var list = [];
+      list.push([x + btlr, y]);
+      list.push([x + w - btrr, y]);
+      list.push([x + w - btrr * (1 - H), y, x + w, y + btrr * (1 - H), x + w, y + btrr]);
+      list.push([x + w, y + h - bbrr]);
+      list.push([x + w, y + h - bbrr * (1 - H), x + w - bbrr * (1 - H), y + h, x + w - bbrr, y + h]);
+      list.push([x + bblr, y + h]);
+      list.push([x + bblr * (1 - H), y + h, x, y + h - bblr * (1 - H), x, y + h - bblr]);
+      list.push([x, y + btlr]);
+      list.push([x, y + btlr * (1 - H), x + btlr * (1 - H), y, x + btlr, y]);
+      return list;
+    }
+  }
+
+  function genRdRect(renderMode, ctx, color, x, y, w, h, list) {
+    if (renderMode === mode.CANVAS) {
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.moveTo(list[0][0], list[0][1]);
+
+      for (var i = 1, len = list.length; i < len; i += 2) {
+        var a = list[i];
+        var b = list[i + 1];
+        ctx.lineTo(a[0], a[1]);
+        ctx.bezierCurveTo(b[0], b[1], b[2], b[3], b[4], b[5]);
+      }
+
+      ctx.fill();
+      ctx.closePath();
+    } else {
+      var s = "M".concat(list[0][1], ",").concat(list[0][1]);
+
+      for (var _i = 1, _len = list.length; _i < _len; _i += 2) {
+        var _a = list[_i];
+        var _b = list[_i + 1];
+        s += "L".concat(_a[0], ",").concat(_a[1]);
+        s += "C".concat(_b[0], ",").concat(_b[1], ",").concat(_b[2], ",").concat(_b[3], ",").concat(_b[4], ",").concat(_b[5]);
+      }
+
+      return {
+        type: 'item',
+        tagName: 'path',
+        props: [['d', s], ['fill', color]]
+      };
+    }
+  }
+
   var border = {
     calDashed: calDashed,
-    calPoints: calPoints
+    calPoints: calPoints,
+    calRadius: calRadius,
+    genRdRect: genRdRect
   };
 
   function quickSort(arr, begin, end, compare) {
@@ -6905,65 +6953,26 @@
     }
   }
 
-  function renderBgc(renderMode, value, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
-    var needBezier = btlr || btrr || bbrr || bblr;
-    var list;
-
-    if (needBezier) {
-      list = [];
-      list.push([x + btlr, y]);
-      list.push([x + w - btrr, y]);
-      list.push([x + w - btrr * (1 - math.h), y, x + w, y + btrr * (1 - math.h), x + w, y + btrr]);
-      list.push([x + w, y + h - bbrr]);
-      list.push([x + w, y + h - bbrr * (1 - math.h), x + w - bbrr * (1 - math.h), y + h, x + w - bbrr, y + h]);
-      list.push([x + bblr, y + h]);
-      list.push([x + bblr * (1 - math.h), y + h, x, y + h - bblr * (1 - math.h), x, y + h - bblr]);
-      list.push([x, y + btlr]);
-      list.push([x, y + btlr * (1 - math.h), x + btlr * (1 - math.h), y, x + btlr, y]);
-    }
+  function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
+    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
+    var res = list ? border.genRdRect(renderMode, ctx, color, x, y, w, h, list) : null;
 
     if (renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      ctx.fillStyle = value;
-
-      if (list) {
-        ctx.moveTo(list[0][0], list[0][1]);
-
-        for (var i = 1, len = list.length; i < len; i += 2) {
-          var a = list[i];
-          var b = list[i + 1];
-          ctx.lineTo(a[0], a[1]);
-          ctx.bezierCurveTo(b[0], b[1], b[2], b[3], b[4], b[5]);
-        }
-      } else {
+      // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间，canvas上面已经绘制
+      if (!list) {
+        ctx.beginPath();
+        ctx.fillStyle = color;
         ctx.rect(x, y, w, h);
+        ctx.fill();
+        ctx.closePath();
       }
-
-      ctx.fill();
-      ctx.closePath();
     } else if (renderMode === mode.SVG) {
-      if (list) {
-        var s = "M".concat(list[0][1], ",").concat(list[0][1]);
-
-        for (var _i = 1, _len = list.length; _i < _len; _i += 2) {
-          var _a = list[_i];
-          var _b = list[_i + 1];
-          s += "L".concat(_a[0], ",").concat(_a[1]);
-          s += "C".concat(_b[0], ",").concat(_b[1], ",").concat(_b[2], ",").concat(_b[3], ",").concat(_b[4], ",").concat(_b[5]);
-        }
-
-        xom.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'path',
-          props: [['d', s], ['fill', value]]
-        });
-      } else {
-        xom.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'rect',
-          props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', value]]
-        });
-      }
+      // 没有圆角矩形res为空走入普通矩形
+      xom.virtualDom.bb.push(res || {
+        type: 'item',
+        tagName: 'rect',
+        props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', color]]
+      });
     }
   }
 
@@ -7619,52 +7628,52 @@
               }
 
               if (xnr > 0) {
-                for (var _i2 = 0; _i2 < xnr; _i2++) {
-                  repeat.push([originX + (_i2 + 1) * w, originY]);
+                for (var _i = 0; _i < xnr; _i++) {
+                  repeat.push([originX + (_i + 1) * w, originY]);
                 }
               }
 
               if (ynt > 0) {
-                for (var _i3 = 0; _i3 < ynt; _i3++) {
-                  repeat.push([originX, originY - (_i3 + 1) * h]);
+                for (var _i2 = 0; _i2 < ynt; _i2++) {
+                  repeat.push([originX, originY - (_i2 + 1) * h]);
                 }
               }
 
               if (ynb > 0) {
-                for (var _i4 = 0; _i4 < ynb; _i4++) {
-                  repeat.push([originX, originY + (_i4 + 1) * h]);
+                for (var _i3 = 0; _i3 < ynb; _i3++) {
+                  repeat.push([originX, originY + (_i3 + 1) * h]);
                 }
               } // 原点和同行列十字画完，看4个角的情况
 
 
               if (xnl > 0 && ynt > 0) {
-                for (var _i5 = 0; _i5 < xnl; _i5++) {
+                for (var _i4 = 0; _i4 < xnl; _i4++) {
                   for (var j = 0; j < ynt; j++) {
-                    repeat.push([originX - (_i5 + 1) * w, originY - (j + 1) * h]);
+                    repeat.push([originX - (_i4 + 1) * w, originY - (j + 1) * h]);
                   }
                 }
               }
 
               if (xnr > 0 && ynt > 0) {
-                for (var _i6 = 0; _i6 < xnr; _i6++) {
+                for (var _i5 = 0; _i5 < xnr; _i5++) {
                   for (var _j = 0; _j < ynt; _j++) {
-                    repeat.push([originX + (_i6 + 1) * w, originY - (_j + 1) * h]);
+                    repeat.push([originX + (_i5 + 1) * w, originY - (_j + 1) * h]);
                   }
                 }
               }
 
               if (xnl > 0 && ynb > 0) {
-                for (var _i7 = 0; _i7 < xnl; _i7++) {
+                for (var _i6 = 0; _i6 < xnl; _i6++) {
                   for (var _j2 = 0; _j2 < ynb; _j2++) {
-                    repeat.push([originX - (_i7 + 1) * w, originY + (_j2 + 1) * h]);
+                    repeat.push([originX - (_i6 + 1) * w, originY + (_j2 + 1) * h]);
                   }
                 }
               }
 
               if (xnr > 0 && ynb > 0) {
-                for (var _i8 = 0; _i8 < xnr; _i8++) {
+                for (var _i7 = 0; _i7 < xnr; _i7++) {
                   for (var _j3 = 0; _j3 < ynb; _j3++) {
-                    repeat.push([originX + (_i8 + 1) * w, originY + (_j3 + 1) * h]);
+                    repeat.push([originX + (_i7 + 1) * w, originY + (_j3 + 1) * h]);
                   }
                 }
               } // 超出尺寸模拟mask截取
@@ -7929,8 +7938,8 @@
             } // 再看普通流，从后往前遮挡顺序
 
 
-            for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
-              var _child = children[_i9];
+            for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
+              var _child = children[_i8];
 
               if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) === -1) {
                 if (_child.__emitEvent(e, force)) {
@@ -7968,8 +7977,8 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-            var _child2 = children[_i10];
+          for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
+            var _child2 = children[_i9];
 
             if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
               if (_child2.__emitEvent(e)) {
@@ -7979,8 +7988,8 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i11 = children.length - 1; _i11 >= 0; _i11--) {
-            var _child3 = children[_i11];
+          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
+            var _child3 = children[_i10];
 
             if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
               if (_child3.__emitEvent(e)) {
@@ -10276,16 +10285,7 @@
               lv = level.REPAINT;
             }
 
-          var root = _this2.root;
-
-          if (root) {
-            _this2.__task = {
-              before: function before() {
-                root.setRefreshLevel(lv);
-              }
-            };
-            root.addRefreshTask(_this2.__task);
-          }
+          return lv;
         };
 
         if (cache.state === LOADED) {
@@ -10308,10 +10308,21 @@
             }
 
             cache.state = LOADED;
-            cache.task.forEach(function (cb) {
-              return cb(cache);
+            var list = cache.task.splice(0);
+            var lv = level.REPAINT;
+            list.forEach(function (cb) {
+              lv = Math.max(lv, cb(cache));
             });
-            cache.task.splice(0);
+            var root = _this2.root;
+
+            if (root) {
+              _this2.__task = {
+                before: function before() {
+                  root.setRefreshLevel(lv);
+                }
+              };
+              root.addRefreshTask(_this2.__task);
+            }
           });
         }
       }
@@ -10351,7 +10362,11 @@
             marginTop = _this$computedStyle.marginTop,
             marginLeft = _this$computedStyle.marginLeft,
             paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft;
+            paddingLeft = _this$computedStyle.paddingLeft,
+            borderTopLeftRadius = _this$computedStyle.borderTopLeftRadius,
+            borderTopRightRadius = _this$computedStyle.borderTopRightRadius,
+            borderBottomRightRadius = _this$computedStyle.borderBottomRightRadius,
+            borderBottomLeftRadius = _this$computedStyle.borderBottomLeftRadius;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -10410,9 +10425,29 @@
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
-        } else {
+        } else if (this.__source) {
+          // 圆角需要生成一个mask
+          var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+
           if (renderMode === mode.CANVAS) {
-            if (this.__source) {
+            // 有border-radius需模拟遮罩裁剪
+            if (list) {
+              var cache1 = this.root.__getImageData();
+
+              this.root.__clear();
+
+              ctx.drawImage(this.__source, originX, originY, width, height);
+              ctx.globalCompositeOperation = 'destination-in';
+              border.genRdRect(renderMode, ctx, '#FFF', x, y, width, height, list);
+
+              var cache2 = this.root.__getImageData();
+
+              this.root.__clear();
+
+              ctx.globalCompositeOperation = 'source-over';
+
+              this.root.__putImageData(util.mergeImageData(cache1, cache2));
+            } else {
               ctx.drawImage(this.__source, originX, originY, width, height);
             }
           } else if (renderMode === mode.SVG) {
@@ -10432,6 +10467,15 @@
             }
 
             var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
+
+            if (list) {
+              var maskId = this.defs.add({
+                tagName: 'mask',
+                props: [],
+                children: [border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list)]
+              });
+              props.push(['mask', "url(#".concat(maskId, ")")]);
+            }
 
             if (matrix && matrix !== '1,0,0,1,0,0') {
               props.push(['transform', 'matrix(' + matrix + ')']);
@@ -12313,8 +12357,8 @@
             ctx.lineTo(originX, originY + height);
             ctx.lineTo(originX, originY);
           } else {
-            var ox = rx * math.h;
-            var oy = ry * math.h;
+            var ox = rx * math.H;
+            var oy = ry * math.H;
             ctx.moveTo(originX + rx, originY);
             ctx.lineTo(originX + width - rx, originY);
             ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
@@ -12535,8 +12579,8 @@
           if (ctx.ellipse) {
             ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
           } else {
-            var ox = rx * math.h;
-            var oy = ry * math.h;
+            var ox = rx * math.H;
+            var oy = ry * math.H;
             ctx.moveTo(cx - rx, cy);
             ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
             ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

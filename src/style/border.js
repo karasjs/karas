@@ -2,6 +2,11 @@
  * 总长total，start边长bs，end边长be，内容长w，
  * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
  */
+import math from '../math/index';
+import mode from '../util/mode';
+
+const { H } = math;
+
 function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
   let n = 1;
   let ps = 1;
@@ -416,7 +421,59 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
   return points;
 }
 
+function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
+  let need = btlr || btrr || bbrr || bblr;
+  if(need) {
+    let list = [];
+    list.push([x + btlr, y]);
+    list.push([x + w - btrr, y]);
+    list.push([x + w - btrr * (1 - H), y, x + w, y + btrr *  (1 - H), x + w, y + btrr]);
+    list.push([x + w, y + h - bbrr]);
+    list.push([x + w, y + h - bbrr * (1 - H), x + w - bbrr * (1 - H), y + h, x + w - bbrr, y + h]);
+    list.push([x + bblr, y + h]);
+    list.push([x + bblr * (1 - H), y + h, x, y + h - bblr * (1 - H), x, y + h - bblr]);
+    list.push([x, y + btlr]);
+    list.push([x, y + btlr * (1 - H), x + btlr * (1 - H), y, x + btlr, y]);
+    return list;
+  }
+}
+
+function genRdRect(renderMode, ctx, color, x, y, w, h, list) {
+  if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.moveTo(list[0][0], list[0][1]);
+    for(let i = 1, len = list.length; i < len; i += 2) {
+      let a = list[i];
+      let b = list[i+1];
+      ctx.lineTo(a[0], a[1]);
+      ctx.bezierCurveTo(b[0], b[1], b[2], b[3], b[4], b[5]);
+    }
+    ctx.fill();
+    ctx.closePath();
+  }
+  else {
+    let s = `M${list[0][1]},${list[0][1]}`;
+    for(let i = 1, len = list.length; i < len; i += 2) {
+      let a = list[i];
+      let b = list[i+1];
+      s += `L${a[0]},${a[1]}`;
+      s += `C${b[0]},${b[1]},${b[2]},${b[3]},${b[4]},${b[5]}`;
+    }
+    return {
+      type: 'item',
+      tagName: 'path',
+      props: [
+        ['d', s],
+        ['fill', color]
+      ],
+    };
+  }
+}
+
 export default {
   calDashed,
   calPoints,
+  calRadius,
+  genRdRect,
 };

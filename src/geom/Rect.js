@@ -61,8 +61,8 @@ class Rect extends Geom {
         ctx.lineTo(originX, originY);
       }
       else {
-        let ox = rx * math.h;
-        let oy = ry * math.h;
+        let ox = rx * math.H;
+        let oy = ry * math.H;
         ctx.moveTo(originX + rx, originY);
         ctx.lineTo(originX + width - rx, originY);
         ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);

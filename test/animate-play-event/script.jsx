@@ -18,13 +18,13 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.PLAY, function() {
-  input.value += 'play0';
+  input.value += '/play0';
 });
 animation.play(function() {
-  input.value += 'play1';
+  input.value += '/play1';
 });
 animation.play(function() {
-  input.value += 'play2';
+  input.value += '/play2';
 });
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {

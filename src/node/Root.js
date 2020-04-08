@@ -342,11 +342,25 @@ class Root extends Dom {
         }
       });
     }
+    return clone.length;
   }
 
   setRefreshLevel(lv) {
     if(lv > this.__refreshLevel) {
       this.__refreshLevel = lv;
+    }
+  }
+
+  refreshAnimate() {
+    // 每个root拥有一个刷新hook，多个root塞到frame的__raTask里
+    let r = this.__raTask = this.__raTask || (() => {
+      // 有之前注册的异步刷新则借助其执行，没有则单独刷一次
+      if(!this.refreshTask()) {
+        this.refresh();
+      }
+    });
+    if(frame.__raTask.indexOf(r) === -1) {
+      frame.__raTask.push(r);
     }
   }
 

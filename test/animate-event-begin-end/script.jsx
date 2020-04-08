@@ -1,31 +1,29 @@
 let o = karas.render(
   <canvas width="360" height="360">
-    <span ref="t">123</span>
+    <$rect ref="t" style={{width:100,height:100}}/>
   </canvas>,
   '#test'
 );
 let t = o.ref.t;
 let animation = t.animate([
   {
-    width: 100,
+    translateX: 0,
   },
   {
-    width: 200,
+    translateX: 100,
   }
 ], {
   duration: 200,
   fill: 'forwards',
+  iterations: 2,
 });
 let input = document.querySelector('input');
-animation.play(function() {
-  input.value += '/play';
+animation.on('begin', () => {
+  input.value += '/begin';
 });
-let n = 0;
-animation.on(karas.Event.FRAME, () => {
-  if(n++ === 0) {
-    input.value += '/' + t.computedStyle.width;
-  }
+animation.on('end', () => {
+  input.value += '/end';
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.width;
+  input.value += '/fin';
 });

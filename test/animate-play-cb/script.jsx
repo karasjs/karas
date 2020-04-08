@@ -19,7 +19,7 @@ let animation = t.animate([
 let input = document.querySelector('input');
 animation.pause();
 animation.play(function() {
-  input.value += 'play';
+  input.value += '/play';
 });
 let n = 0;
 animation.on(karas.Event.FRAME, () => {

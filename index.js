@@ -6245,10 +6245,6 @@
         }
 
         if (playState === 'running') {
-          if (isFunction$2(cb)) {
-            cb();
-          }
-
           return this;
         }
 

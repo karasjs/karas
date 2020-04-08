@@ -1160,9 +1160,6 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'running') {
-      if(isFunction(cb)) {
-        cb();
-      }
       return this;
     }
     this.__playCb = cb;

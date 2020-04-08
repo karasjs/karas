@@ -6034,8 +6034,6 @@
       _this.__nextTime = 0; // 下一帧刷新时间点，即currentTime下一帧被此赋值
 
       _this.__fpsTime = 0;
-      _this.__deltaTime = -1; // gotoAndPlay使用，增加运行时间从而偏移帧数，-1不偏移
-
       _this.__playState = 'idle';
       _this.__playCount = 0;
       _this.__isDestroyed = false;
@@ -6182,6 +6180,7 @@
           _this2.__nextTime = 0;
           _this2.__playCount = iterations;
           _this2.__playState = 'finished';
+          _this2.__style = {};
 
           _this2.emit(Event.FINISH);
 
@@ -6192,40 +6191,37 @@
 
 
         this.__frameCb = function (diff, cb, isDelay) {
-          frame.nextFrame(function () {
-            _this2.emit(Event.FRAME, diff, isDelay);
+          _this2.emit(Event.FRAME, diff, isDelay);
 
-            if (_this2.__firstPlay) {
-              _this2.__firstPlay = false;
+          if (_this2.__firstPlay) {
+            _this2.__firstPlay = false;
 
-              _this2.emit(Event.PLAY);
+            _this2.emit(Event.PLAY);
 
-              if (isFunction$2(cb)) {
-                cb(diff, isDelay);
-              }
+            if (isFunction$2(cb)) {
+              cb(diff, isDelay);
             }
+          }
+        }; // 同步执行，用在finish()这种主动调用
+
+
+        this.__frameCbA = function (diff, cb, isDelay) {
+          frame.nextFrame(function () {
+            _this2.__frameCb(diff, cb, isDelay);
           });
         };
       }
     }, {
       key: "__calDiffTime",
       value: function __calDiffTime(diff) {
-        var playbackRate = this.playbackRate,
-            __deltaTime = this.__deltaTime;
-        this.__currentTime = this.__nextTime; // gotoAndPlay时手动累加的附加时间，以达到直接跳到后面某帧
+        var playbackRate = this.playbackRate;
+        this.__currentTime = this.__nextTime; // 播放时间累加，并且考虑播放速度加成
 
-        if (__deltaTime >= 0) {
-          this.__nextTime = __deltaTime;
-          this.__deltaTime = -1;
-        } // 正常状态播放时间累加，并且考虑播放速度加成
-        else {
-            if (playbackRate !== 1 && playbackRate > 0) {
-              diff *= playbackRate;
-            }
+        if (playbackRate !== 1 && playbackRate > 0) {
+          diff *= playbackRate;
+        }
 
-            this.__nextTime += diff;
-          }
-
+        this.__nextTime += diff;
         return this.__currentTime;
       }
     }, {
@@ -6236,7 +6232,7 @@
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             playState = this.playState,
-            __frameCb = this.__frameCb;
+            __frameCbA = this.__frameCbA;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -6300,10 +6296,7 @@
                 fps = _this3.fps,
                 playCount = _this3.playCount; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
-            var currentTime = _this3.__calDiffTime(diff); // if(this.__startTime) {
-            //   this.__startTime = frame.__now || inject.now();
-            // }
-            // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
+            var currentTime = _this3.__calDiffTime(diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
 
             if (!firstEnter && fps < 60) {
@@ -6336,28 +6329,12 @@
                 lv = _calRefresh2[1];
 
                 if (needRefresh) {
-                  genBeforeRefresh(_current, _this3, root, lv); // __frameCb(diff, cb, true);
-                  // let task = this.__task = {
-                  //   before: genBeforeRefresh(current, this, root, lv, nextTime),
-                  //   after() {
-                  //     __frameCb(diff, cb, true);
-                  //   },
-                  // };
-                  // root.addRefreshTask(task);
-                  // return;
+                  genBeforeRefresh(_current, _this3, root, lv);
                 }
               } // 即便不刷新，依旧执行帧回调
 
 
-              __frameCb(diff, cb, true); // frame.nextFrame(this.__task = {
-              //   before: () => {
-              //     this.__currentTime = nextTime;
-              //   },
-              //   after() {
-              //     __frameCb(diff, cb, true);
-              //   },
-              // });
-
+              __frameCbA(diff, cb, true);
 
               return;
             } // 根据播放次数确定正反方向
@@ -6459,7 +6436,7 @@
               genBeforeRefresh(current, _this3, root, lv);
             }
 
-            __frameCb(diff, cb);
+            __frameCbA(diff, cb);
 
             if (currentTime === 0) {
               frame.nextFrame(function () {
@@ -6476,63 +6453,13 @@
                   __fin();
                 }
               });
-            } // 在下一帧刷新后再同步执行task判断接下来做什么，主要是最后一帧特殊处理
-            // let task = (diff, cb) => {
-            //   // 最后一帧考虑后续反向播还是停留还是结束
-            //   if(isLastFrame) {
-            //     // 没到播放次数结束时从头继续，endDelay仅作用最后一次播放这里无效
-            //     if(iterations === Infinity || playCount < iterations - 1) {
-            //       __frameCb(diff, cb);
-            //       this.emit(Event.END, playCount);
-            //       return;
-            //     }
-            //     // 没超过endDelay仅触发帧事件
-            //     if(inEndDelay) {
-            //       __frameCb(diff, cb, true);
-            //       this.emit(Event.END, playCount);
-            //     }
-            //     // 超过则触发结束事件，刷新重绘之前已经做完
-            //     else {
-            //       this.__nextTime = 0;
-            //       this.__playCount = iterations;
-            //       __frameCb(diff, cb);
-            //       this.emit(Event.END, playCount);
-            //       __fin(cb);
-            //     }
-            //   }
-            //   // 非最后一帧的每帧回调
-            //   else {
-            //     __frameCb(diff, cb);
-            //   }
-            // };
-            // // 下一帧执行本次计算的时间和样式刷新
-            // if(needRefresh) {
-            //   root.addRefreshTask(this.__task = {
-            //     before: genBeforeRefresh(current, this, root, lv, nextTime),
-            //     after() {
-            //       task(diff, cb);
-            //     },
-            //   });
-            // }
-            // else {
-            //   frame.nextFrame(this.__task = {
-            //     before: () => {
-            //       this.__currentTime = nextTime;
-            //     },
-            //     after() {
-            //       task(diff, cb);
-            //     },
-            //   });
-            // }
-
+            }
           };
         } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-        // this.__enterFrame(this.__nextTime - this.currentTime, cb, true);
 
 
         frame.onFrameA(this.__enterFrame);
-        this.__startTime = frame.__now; // this.target.root.addRefreshTaskIfNeeded(function() {});
-
+        this.__startTime = frame.__now;
         return this;
       }
     }, {
@@ -6606,12 +6533,14 @@
 
           if (needRefresh) {
             root.addRefreshTask(this.__task = {
-              before: genBeforeRefresh(current, this, root, lv),
-              after: function after(diff) {
+              before: function before() {
+                genBeforeRefresh(current, this, root, lv); // 多个时保证渲染和设置优先同步执行，再统一执行所有后置回调
+
                 this.__playState = 'finished';
                 this.__playCount = iterations;
                 this.__currentTime = delay + duration + endDelay;
-
+              },
+              after: function after(diff) {
                 __frameCb(diff);
 
                 __fin(cb);
@@ -6651,10 +6580,15 @@
               needRefresh = _calRefresh14[0],
               lv = _calRefresh14[1];
 
-          var task = function task(cb) {
+          var clear = function clear() {
             _this4.__playState = 'idle';
             _this4.__playCount = _this4.__currentTime = _this4.__nextTime = 0;
-            _this4.__startTime = _this4.__task = _this4.__enterFrame = null;
+          };
+
+          var task = function task() {
+            _this4.__cancelTask();
+
+            _this4.__task = _this4.__enterFrame = null;
             _this4.__style = {};
 
             _this4.emit(Event.CANCEL);
@@ -6666,16 +6600,20 @@
 
           if (needRefresh) {
             root.addRefreshTask(this.__task = {
-              before: genBeforeRefresh({}, this, root, lv),
+              before: function before() {
+                genBeforeRefresh({}, this, root, lv);
+                clear();
+              },
               after: function after(diff) {
                 __frameCb(diff);
 
-                task(cb);
+                task();
               }
             });
           } // 无刷新同步进行
           else {
-              task(cb);
+              clear();
+              task();
             }
         }
 
@@ -6777,7 +6715,7 @@
         } // 在时间范围内设置好时间，复用play直接跳到播放点
 
 
-        this.__deltaTime = v;
+        this.__nextTime = v;
         return v;
       }
     }, {
@@ -6804,8 +6742,7 @@
 
         if (root) {
           root.delRefreshTask(__task);
-        } // frame.offFrame(__task);
-
+        }
 
         frame.offFrameA(this.__enterFrame);
       }
@@ -6951,7 +6888,7 @@
         v = parseInt(v) || 0;
 
         if (v >= 0) {
-          this.__currentTime = this.__deltaTime = v;
+          this.__currentTime = this.__nextTime = v;
         }
       }
     }, {

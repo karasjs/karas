@@ -6249,10 +6249,9 @@
           return this;
         }
 
-        this.__playCb = cb;
-
         this.__cancelTask();
 
+        this.__playCb = cb;
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
         this.__firstPlay = true;
@@ -6763,6 +6762,7 @@
         }
 
         frame.offFrameA(this.__enterFrame);
+        this.__playCb = null;
       }
     }, {
       key: "__destroy",
@@ -6770,8 +6770,9 @@
         this.__cancelTask();
 
         this.__enterFrame = null;
-        this.__playState = 'idle';
         this.__startTime = null;
+        this.__playCb = null;
+        this.__playState = 'idle';
         this.__currentTime = this.__playCount = 0;
         this.__isDestroyed = true;
       }

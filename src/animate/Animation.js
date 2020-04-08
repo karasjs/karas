@@ -322,9 +322,12 @@ function calRefresh(frameStyle, lastStyle, keys) {
 }
 
 // 将当前frame的style赋值给动画style，xom绘制时获取
-function genBeforeRefresh(frameStyle, animation, root, lv) {
+function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
   root.setRefreshLevel(lv);
-  root.refreshAnimate();
+  // finish()主动调用时
+  if(!sync) {
+    root.refreshAnimate();
+  }
   let style = {};
   let props = {};
   Object.keys(frameStyle).forEach(i => {
@@ -1120,21 +1123,22 @@ class Animation extends Event {
         cb();
       }
     };
-    // 每帧执行通知事件，这其实是在刷新后的同步进行的
-    this.__frameCb = (diff, cb, isDelay) => {
+    // 同步执行，用在finish()这种主动调用
+    this.__frameCb = (diff, isDelay) => {
       this.emit(Event.FRAME, diff, isDelay);
       if(this.__firstPlay) {
         this.__firstPlay = false;
         this.emit(Event.PLAY);
-        if(isFunction(cb)) {
-          cb(diff, isDelay);
-        }
+      }
+      if(isFunction(this.__playCb)) {
+        this.__playCb(diff, isDelay);
+        this.__playCb = null;
       }
     };
-    // 同步执行，用在finish()这种主动调用
-    this.__frameCbA = (diff, cb, isDelay) => {
+    // 每帧执行通知事件，这其实是在刷新后的同步进行的
+    this.__frameCbA = (diff, isDelay) => {
       frame.nextFrame(() => {
-        this.__frameCb(diff, cb, isDelay);
+        this.__frameCb(diff, isDelay);
       });
     };
   }
@@ -1156,8 +1160,12 @@ class Animation extends Event {
       return this;
     }
     if(playState === 'running') {
+      if(isFunction(cb)) {
+        cb();
+      }
       return this;
     }
+    this.__playCb = cb;
     this.__cancelTask();
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
@@ -1222,7 +1230,8 @@ class Animation extends Event {
         let needRefresh, lv;
         // 还没过前置delay
         if(currentTime < delay) {
-          if(this.__stayBegin()) {
+          let stayBegin = this.__stayBegin();
+          if(stayBegin) {
             let current = frames[0].style;
             // 对比第一帧，以及和第一帧同key的当前样式
             [needRefresh, lv] = calRefresh(current, style, keys);
@@ -1231,7 +1240,12 @@ class Animation extends Event {
             }
           }
           // 即便不刷新，依旧执行帧回调
-          __frameCbA(diff, cb, true);
+          __frameCbA(diff, true);
+          if(currentTime === 0) {
+            frame.nextFrame(() => {
+              this.emit(Event.BEGIN, playCount);
+            });
+          }
           return;
         }
         // 根据播放次数确定正反方向
@@ -1309,7 +1323,7 @@ class Animation extends Event {
         if(needRefresh) {
           genBeforeRefresh(current, this, root, lv);
         }
-        __frameCbA(diff, cb);
+        __frameCbA(diff);
         if(currentTime === 0) {
           frame.nextFrame(() => {
             this.emit(Event.BEGIN, playCount);
@@ -1344,20 +1358,21 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let { isDestroyed, duration, playState, __frameCb } = this;
+    let self = this;
+    let { isDestroyed, duration, playState, __frameCb } = self;
     if(isDestroyed || duration <= 0) {
-      return this;
+      return self;
     }
     if(playState === 'finished') {
-      return this;
+      return self;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    this.__cancelTask();
-    let { root, style, frames, keys, delay, endDelay, iterations, __fin } = this;
+    self.__cancelTask();
+    let { root, style, frames, keys, delay, endDelay, iterations, __fin } = self;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
-      if(this.__stayEnd()) {
+      if(self.__stayEnd()) {
         current = frames[frames.length - 1].style;
         [needRefresh, lv] = calRefresh(current, style, keys);
       }
@@ -1366,13 +1381,13 @@ class Animation extends Event {
         [needRefresh, lv] = calRefresh(current, style, keys);
       }
       if(needRefresh) {
-        root.addRefreshTask(this.__task = {
+        root.addRefreshTask(self.__task = {
           before() {
-            genBeforeRefresh(current, this, root, lv);
+            genBeforeRefresh(current, self, root, lv, true);
             // 多个时保证渲染和设置优先同步执行，再统一执行所有后置回调
-            this.__playState = 'finished';
-            this.__playCount = iterations;
-            this.__currentTime = delay + duration + endDelay;
+            self.__playState = 'finished';
+            self.__playCount = iterations;
+            self.__currentTime = delay + duration + endDelay;
           },
           after(diff) {
             __frameCb(diff);
@@ -1385,7 +1400,7 @@ class Animation extends Event {
         __fin(cb);
       }
     }
-    return this;
+    return self;
   }
 
   cancel(cb) {

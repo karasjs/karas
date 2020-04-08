@@ -5318,9 +5318,13 @@
   } // 将当前frame的style赋值给动画style，xom绘制时获取
 
 
-  function genBeforeRefresh(frameStyle, animation, root, lv) {
-    root.setRefreshLevel(lv);
-    root.refreshAnimate();
+  function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
+    root.setRefreshLevel(lv); // finish()主动调用时
+
+    if (!sync) {
+      root.refreshAnimate();
+    }
+
     var style = {};
     var props = {};
     Object.keys(frameStyle).forEach(function (i) {
@@ -6187,27 +6191,29 @@
           if (isFunction$2(cb)) {
             cb();
           }
-        }; // 每帧执行通知事件，这其实是在刷新后的同步进行的
+        }; // 同步执行，用在finish()这种主动调用
 
 
-        this.__frameCb = function (diff, cb, isDelay) {
+        this.__frameCb = function (diff, isDelay) {
           _this2.emit(Event.FRAME, diff, isDelay);
 
           if (_this2.__firstPlay) {
             _this2.__firstPlay = false;
 
             _this2.emit(Event.PLAY);
-
-            if (isFunction$2(cb)) {
-              cb(diff, isDelay);
-            }
           }
-        }; // 同步执行，用在finish()这种主动调用
+
+          if (isFunction$2(_this2.__playCb)) {
+            _this2.__playCb(diff, isDelay);
+
+            _this2.__playCb = null;
+          }
+        }; // 每帧执行通知事件，这其实是在刷新后的同步进行的
 
 
-        this.__frameCbA = function (diff, cb, isDelay) {
+        this.__frameCbA = function (diff, isDelay) {
           frame.nextFrame(function () {
-            _this2.__frameCb(diff, cb, isDelay);
+            _this2.__frameCb(diff, isDelay);
           });
         };
       }
@@ -6239,8 +6245,14 @@
         }
 
         if (playState === 'running') {
+          if (isFunction$2(cb)) {
+            cb();
+          }
+
           return this;
         }
+
+        this.__playCb = cb;
 
         this.__cancelTask();
 
@@ -6318,7 +6330,9 @@
             var needRefresh, lv; // 还没过前置delay
 
             if (currentTime < delay) {
-              if (_this3.__stayBegin()) {
+              var stayBegin = _this3.__stayBegin();
+
+              if (stayBegin) {
                 var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
                 var _calRefresh = calRefresh(_current, style, keys);
@@ -6334,7 +6348,13 @@
               } // 即便不刷新，依旧执行帧回调
 
 
-              __frameCbA(diff, cb, true);
+              __frameCbA(diff, true);
+
+              if (currentTime === 0) {
+                frame.nextFrame(function () {
+                  _this3.emit(Event.BEGIN, playCount);
+                });
+              }
 
               return;
             } // 根据播放次数确定正反方向
@@ -6436,7 +6456,7 @@
               genBeforeRefresh(current, _this3, root, lv);
             }
 
-            __frameCbA(diff, cb);
+            __frameCbA(diff);
 
             if (currentTime === 0) {
               frame.nextFrame(function () {
@@ -6483,35 +6503,36 @@
     }, {
       key: "finish",
       value: function finish(cb) {
-        var isDestroyed = this.isDestroyed,
-            duration = this.duration,
-            playState = this.playState,
-            __frameCb = this.__frameCb;
+        var self = this;
+        var isDestroyed = self.isDestroyed,
+            duration = self.duration,
+            playState = self.playState,
+            __frameCb = self.__frameCb;
 
         if (isDestroyed || duration <= 0) {
-          return this;
+          return self;
         }
 
         if (playState === 'finished') {
-          return this;
+          return self;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
 
-        this.__cancelTask();
+        self.__cancelTask();
 
-        var root = this.root,
-            style = this.style,
-            frames = this.frames,
-            keys = this.keys,
-            delay = this.delay,
-            endDelay = this.endDelay,
-            iterations = this.iterations,
-            __fin = this.__fin;
+        var root = self.root,
+            style = self.style,
+            frames = self.frames,
+            keys = self.keys,
+            delay = self.delay,
+            endDelay = self.endDelay,
+            iterations = self.iterations,
+            __fin = self.__fin;
 
         if (root) {
           var needRefresh, lv, current; // 停留在最后一帧
 
-          if (this.__stayEnd()) {
+          if (self.__stayEnd()) {
             current = frames[frames.length - 1].style;
 
             var _calRefresh9 = calRefresh(current, style, keys);
@@ -6532,13 +6553,13 @@
           }
 
           if (needRefresh) {
-            root.addRefreshTask(this.__task = {
+            root.addRefreshTask(self.__task = {
               before: function before() {
-                genBeforeRefresh(current, this, root, lv); // 多个时保证渲染和设置优先同步执行，再统一执行所有后置回调
+                genBeforeRefresh(current, self, root, lv, true); // 多个时保证渲染和设置优先同步执行，再统一执行所有后置回调
 
-                this.__playState = 'finished';
-                this.__playCount = iterations;
-                this.__currentTime = delay + duration + endDelay;
+                self.__playState = 'finished';
+                self.__playCount = iterations;
+                self.__currentTime = delay + duration + endDelay;
               },
               after: function after(diff) {
                 __frameCb(diff);
@@ -6552,7 +6573,7 @@
             }
         }
 
-        return this;
+        return self;
       }
     }, {
       key: "cancel",

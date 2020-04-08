@@ -308,12 +308,6 @@ class Root extends Dom {
     }
   }
 
-  // addRefreshTaskIfNeeded(cb) {
-  //   if(!this.task.length) {
-  //     this.addRefreshTask(cb);
-  //   }
-  // }
-
   delRefreshTask(cb) {
     if(!cb) {
       return;
@@ -358,6 +352,7 @@ class Root extends Dom {
   }
 
   refreshAnimate() {
+    // 每个root拥有一个刷新hook，多个root塞到frame的__raTask里
     let r = this.__raTask = this.__raTask || (() => {
       // 有之前注册的异步刷新则借助其执行，没有则单独刷一次
       if(!this.refreshTask()) {

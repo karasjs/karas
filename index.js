@@ -5319,9 +5319,10 @@
 
 
   function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
-    root.setRefreshLevel(lv); // finish()主动调用时
+    root.setRefreshLevel(lv); // finish()主动调用时不执行
 
     if (!sync) {
+      // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
       root.refreshAnimate();
     }
 
@@ -11358,12 +11359,7 @@
         if (task.indexOf(cb) === -1) {
           task.push(cb);
         }
-      } // addRefreshTaskIfNeeded(cb) {
-      //   if(!this.task.length) {
-      //     this.addRefreshTask(cb);
-      //   }
-      // }
-
+      }
     }, {
       key: "delRefreshTask",
       value: function delRefreshTask(cb) {
@@ -11419,6 +11415,7 @@
       value: function refreshAnimate() {
         var _this4 = this;
 
+        // 每个root拥有一个刷新hook，多个root塞到frame的__raTask里
         var r = this.__raTask = this.__raTask || function () {
           // 有之前注册的异步刷新则借助其执行，没有则单独刷一次
           if (!_this4.refreshTask()) {

@@ -324,8 +324,9 @@ function calRefresh(frameStyle, lastStyle, keys) {
 // 将当前frame的style赋值给动画style，xom绘制时获取
 function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
   root.setRefreshLevel(lv);
-  // finish()主动调用时
+  // finish()主动调用时不执行
   if(!sync) {
+    // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
     root.refreshAnimate();
   }
   let style = {};

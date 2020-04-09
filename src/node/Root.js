@@ -289,6 +289,15 @@ class Root extends Dom {
               }
             });
             this.refresh();
+            // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
+            let r = this.__hookTask;
+            if(r) {
+              let hookTask = frame.__hookTask;
+              let i = hookTask.indexOf(r);
+              if(i > -1) {
+                hookTask.splice(i, 1);
+              }
+            }
           }
         },
         after: diff => {
@@ -324,43 +333,19 @@ class Root extends Dom {
     }
   }
 
-  refreshTask() {
-    let clone = this.task.slice(0);
-    if(clone.length) {
-      clone.forEach(item => {
-        if(isObject(item) && isFunction(item.before)) {
-          item.before(0);
-        }
-      });
-      this.refresh();
-      clone.forEach(item => {
-        if(isObject(item) && isFunction(item.after)) {
-          item.after(0);
-        }
-        else if(isFunction(item)) {
-          item(0);
-        }
-      });
-    }
-    return clone.length;
-  }
-
   setRefreshLevel(lv) {
     if(lv > this.__refreshLevel) {
       this.__refreshLevel = lv;
     }
   }
 
-  refreshAnimate() {
-    // 每个root拥有一个刷新hook，多个root塞到frame的__raTask里
-    let r = this.__raTask = this.__raTask || (() => {
-      // 有之前注册的异步刷新则借助其执行，没有则单独刷一次
-      if(!this.refreshTask()) {
-        this.refresh();
-      }
+  __frameHook() {
+    // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+    let r = this.__hookTask = this.__hookTask || (() => {
+      this.refresh();
     });
-    if(frame.__raTask.indexOf(r) === -1) {
-      frame.__raTask.push(r);
+    if(frame.__hookTask.indexOf(r) === -1) {
+      frame.__hookTask.push(r);
     }
   }
 

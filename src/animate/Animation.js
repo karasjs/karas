@@ -1131,13 +1131,7 @@ class Animation extends Event {
     };
     // 生成finish的任务事件
     this.__fin = (cb) => {
-      // this.__cancelTask();
-      // this.__task = this.__enterFrame = null;
-      // this.__currentTime = this.delay + duration + this.endDelay;
-      // this.__nextTime = 0;
-      // this.__playCount = iterations;
-      // this.__playState = 'finished';
-      // this.__style = {};
+      this.__begin = this.__end = this.__isDelay = this.__finish = null;
       this.emit(Event.FINISH);
       if(isFunction(cb)) {
         cb();
@@ -1216,6 +1210,7 @@ class Animation extends Event {
           prev = calFrame(prev, next, keys, target);
         }
       }
+      // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {
           let { root, style, fps, playCount } = this;
@@ -1249,7 +1244,10 @@ class Animation extends Event {
                 genBeforeRefresh(current, this, root, lv);
               }
             }
-            // 即便不刷新，依旧执行帧回调
+            // 即便不刷新，依旧执行begin和帧回调
+            if(currentTime === 0) {
+              this.__begin = true;
+            }
             this.__isDelay = true;
             return;
           }
@@ -1272,6 +1270,9 @@ class Animation extends Event {
           }
           // 减去delay，计算在哪一帧
           currentTime -= delay;
+          if(currentTime === 0) {
+            this.__begin = true;
+          }
           let i = binarySearch(0, length - 1, currentTime, currentFrames);
           let current = currentFrames[i];
           // 最后一帧结束动画
@@ -1354,141 +1355,6 @@ class Animation extends Event {
           }
         },
       };
-      // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
-      // let enterFrame2 = this.__enterFrame2 = diff => {
-      //   let root = this.root;
-      //   // 防止被回收没root，以及在帧回调中pause，此时frame中的enterFrame还未回收
-      //   if(!root || this.pending || !frames.length) {
-      //     return;
-      //   }
-      //   let { style, fps, playCount } = this;
-      //   // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-      //   let currentTime = this.__calDiffTime(diff);
-      //   // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-      //   if(!firstEnter && fps < 60) {
-      //     diff = this.__fpsTime += diff;
-      //     if(diff < 1000 / fps) {
-      //       return;
-      //     }
-      //     this.__fpsTime = 0;
-      //   }
-      //   firstEnter = false;
-      //   // delay仅第一次生效
-      //   if(playCount > 0) {
-      //     delay = 0;
-      //   }
-      //   let needRefresh, lv;
-      //   // 还没过前置delay
-      //   if(currentTime < delay) {
-      //     let stayBegin = this.__stayBegin();
-      //     if(stayBegin) {
-      //       let current = frames[0].style;
-      //       // 对比第一帧，以及和第一帧同key的当前样式
-      //       [needRefresh, lv] = calRefresh(current, style, keys);
-      //       if(needRefresh) {
-      //         genBeforeRefresh(current, this, root, lv);
-      //       }
-      //     }
-      //     // 即便不刷新，依旧执行帧回调
-      //     __frameCbA(diff, true);
-      //     if(currentTime === 0) {
-      //       frame.nextFrame(() => {
-      //         this.emit(Event.BEGIN, playCount);
-      //       });
-      //     }
-      //     return;
-      //   }
-      //   // 根据播放次数确定正反方向
-      //   let currentFrames;
-      //   if(direction === 'reverse') {
-      //     currentFrames = framesR;
-      //   }
-      //   else if({ alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      //     let isEven = playCount % 2 === 0;
-      //     if(direction === 'alternate') {
-      //       currentFrames = isEven ? frames : framesR;
-      //     }
-      //     else {
-      //       currentFrames = isEven ? framesR : frames;
-      //     }
-      //   }
-      //   else {
-      //     currentFrames = frames;
-      //   }
-      //   // 减去delay，计算在哪一帧
-      //   currentTime -= delay;
-      //   let i = binarySearch(0, length - 1, currentTime, currentFrames);
-      //   let current = currentFrames[i];
-      //   // 最后一帧结束动画
-      //   let isLastFrame = i === length - 1;
-      //   let isLastCount = playCount >= iterations - 1;
-      //   let inEndDelay;
-      //   /** 这里要考虑全几种场景：
-      //    * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
-      //    * 2. 单次播放无endDelay且fill停留
-      //    * 3. 单次播放有endDelay且fill不停留
-      //    * 4. 单次播放有endDelay且fill停留
-      //    * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
-      //    * 6. 多次播放无endDelay且fill停留
-      //    * 7. 多次播放有endDelay且fill不停留
-      //    * 8. 多次播放有endDelay且fill停留
-      //    */
-      //   if(isLastFrame) {
-      //     // endDelay实际最后一次播放时生效，这里仅计算时间对比
-      //     inEndDelay = currentTime < duration + endDelay;
-      //     // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-      //     // 多次播放时到达最后一帧也会显示
-      //     if(stayEnd || !isLastCount) {
-      //       current = current.style;
-      //       [needRefresh, lv] = calRefresh(current, style, keys);
-      //     }
-      //     // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-      //     else {
-      //       current = {};
-      //       [needRefresh, lv] = calRefresh(current, style, keys);
-      //     }
-      //     // 非尾每轮次放完增加次数和计算下轮准备
-      //     if(!isLastCount) {
-      //       this.__nextTime = 0;
-      //       playCount = ++this.__playCount;
-      //     }
-      //     // 尾次考虑endDelay
-      //     else if(!inEndDelay) {
-      //       this.__nextTime = 0;
-      //       playCount = ++this.__playCount;
-      //       // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-      //       if(playCount >= iterations) {
-      //         frame.__offFrameA(enterFrame);
-      //       }
-      //     }
-      //   }
-      //   // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-      //   else {
-      //     let total = currentFrames[i + 1].time - current.time;
-      //     let percent = (currentTime - current.time) / total;
-      //     current = calStyle(current, percent);
-      //     [needRefresh, lv] = calRefresh(current, style, keys);
-      //   }
-      //   // 两帧之间没有变化，不触发刷新仅触发frame事件
-      //   if(needRefresh) {
-      //     genBeforeRefresh(current, this, root, lv);
-      //   }
-      //   __frameCbA(diff);
-      //   if(currentTime === 0) {
-      //     frame.nextFrame(() => {
-      //       this.emit(Event.BEGIN, playCount);
-      //     });
-      //   }
-      //   // 每次循环完触发end事件，最后一次循环触发finish
-      //   if(isLastFrame && (!inEndDelay || isLastCount)) {
-      //     frame.nextFrame(() => {
-      //       this.emit(Event.END, playCount);
-      //       if(playCount >= iterations) {
-      //         __fin();
-      //       }
-      //     });
-      //   }
-      // };
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
     frame.__onFrameA(this.__enterFrame);
@@ -1541,19 +1407,6 @@ class Animation extends Event {
             __fin(cb);
           },
         });
-        // root.addRefreshTask(self.__task = {
-        //   before() {
-        //     genBeforeRefresh(current, self, root, lv, true);
-        //     // 多个时保证渲染和设置优先同步执行，再统一执行所有后置回调
-        //     self.__playState = 'finished';
-        //     self.__playCount = iterations;
-        //     self.__currentTime = delay + duration + endDelay;
-        //   },
-        //   after(diff) {
-        //     __frameCb(diff);
-        //     __fin(cb);
-        //   },
-        // });
       }
       // 无刷新同步进行
       else {
@@ -1573,13 +1426,9 @@ class Animation extends Event {
     let { root, style, keys, __frameCb, __clean } = this;
     if(root) {
       let [needRefresh, lv] = calRefresh({}, style, keys);
-      // let clear = () => {
-      //   this.__playState = 'idle';
-      //   this.__playCount = this.__currentTime = this.__nextTime = 0;
-      // };
       let task = () => {
         this.__cancelTask();
-        // this.__style = {};
+        this.__begin = this.__end = this.__isDelay = this.__finish = null;
         this.emit(Event.CANCEL);
         if(isFunction(cb)) {
           cb();
@@ -1596,16 +1445,6 @@ class Animation extends Event {
             task();
           },
         });
-        // root.addRefreshTask(this.__task = {
-        //   before() {
-        //     genBeforeRefresh({}, this, root, lv);
-        //     clear();
-        //   },
-        //   after(diff) {
-        //     __frameCb(diff);
-        //     task();
-        //   },
-        // });
       }
       // 无刷新同步进行
       else {
@@ -1694,11 +1533,8 @@ class Animation extends Event {
   }
 
   __destroy() {
-    this.__cancelTask();
+    this.__clean();
     this.__startTime = null;
-    this.__playCb = null;
-    this.__playState = 'idle';
-    this.__currentTime = this.__playCount = 0;
     this.__isDestroyed = true;
   }
 

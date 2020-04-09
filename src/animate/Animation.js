@@ -1131,7 +1131,7 @@ class Animation extends Event {
     };
     // 生成finish的任务事件
     this.__fin = (cb) => {
-      this.__begin = this.__end = this.__isDelay = this.__finish = null;
+      this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
       this.emit(Event.FINISH);
       if(isFunction(cb)) {
         cb();
@@ -1223,6 +1223,7 @@ class Animation extends Event {
           if(!firstEnter && fps < 60) {
             diff = this.__fpsTime += diff;
             if(diff < 1000 / fps) {
+              this.__inFps = true;
               return;
             }
             this.__fpsTime = 0;
@@ -1339,6 +1340,10 @@ class Animation extends Event {
           }
         },
         after: diff => {
+          if(this.__inFps) {
+            this.__inFps = false;
+            return;
+          }
           __frameCb(diff, this.__isDelay);
           this.__isDelay = false;
           if(this.__begin) {
@@ -1428,7 +1433,7 @@ class Animation extends Event {
       let [needRefresh, lv] = calRefresh({}, style, keys);
       let task = () => {
         this.__cancelTask();
-        this.__begin = this.__end = this.__isDelay = this.__finish = null;
+        this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
         this.emit(Event.CANCEL);
         if(isFunction(cb)) {
           cb();
@@ -1528,7 +1533,6 @@ class Animation extends Event {
 
   __cancelTask() {
     frame.__offFrameA(this.__enterFrame);
-    this.__enterFrame = null;
     this.__playCb = null;
   }
 

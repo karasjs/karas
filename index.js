@@ -6229,7 +6229,7 @@
 
 
         this.__fin = function (cb) {
-          _this2.__begin = _this2.__end = _this2.__isDelay = _this2.__finish = null;
+          _this2.__begin = _this2.__end = _this2.__isDelay = _this2.__finish = _this2.__inFps = _this2.__enterFrame = null;
 
           _this2.emit(Event.FINISH);
 
@@ -6350,6 +6350,7 @@
                 diff = _this3.__fpsTime += diff;
 
                 if (diff < 1000 / fps) {
+                  _this3.__inFps = true;
                   return;
                 }
 
@@ -6505,6 +6506,11 @@
               }
             },
             after: function after(diff) {
+              if (_this3.__inFps) {
+                _this3.__inFps = false;
+                return;
+              }
+
               __frameCb(diff, _this3.__isDelay);
 
               _this3.__isDelay = false;
@@ -6659,7 +6665,7 @@
           var task = function task() {
             _this5.__cancelTask();
 
-            _this5.__begin = _this5.__end = _this5.__isDelay = _this5.__finish = null;
+            _this5.__begin = _this5.__end = _this5.__isDelay = _this5.__finish = _this5.__inFps = _this5.__enterFrame = null;
 
             _this5.emit(Event.CANCEL);
 
@@ -6811,7 +6817,6 @@
       value: function __cancelTask() {
         frame.__offFrameA(this.__enterFrame);
 
-        this.__enterFrame = null;
         this.__playCb = null;
       }
     }, {

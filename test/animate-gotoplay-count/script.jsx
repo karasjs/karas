@@ -27,6 +27,9 @@ animation.on(karas.Event.FRAME, () => {
   else if(n === 1) {
     input.value += '/' + t.computedStyle.height;
   }
+  else if(n === 2) {
+    input.value += '/' + (t.computedStyle.height > 100);
+  }
   n++;
 });
 animation.on(karas.Event.FINISH, () => {

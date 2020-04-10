@@ -12870,7 +12870,9 @@
 
     replaceVars(style, vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
 
-    replaceVars(props, vars);
+    replaceVars(props, vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
+
+    replaceVars(json, vars);
     var vd;
 
     if (tagName.charAt(0) === '$') {

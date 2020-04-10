@@ -1193,7 +1193,6 @@ class Animation extends Event {
       // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       let stayEnd = this.__stayEnd();
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      this.__style = {};
       frames = inherit(frames, keys, target);
       // 再计算两帧之间的变化，存入transition属性
       let length = frames.length;

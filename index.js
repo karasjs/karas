@@ -6309,7 +6309,6 @@
           var stayEnd = this.__stayEnd();
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          this.__style = {};
           frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
 
           var length = frames.length;

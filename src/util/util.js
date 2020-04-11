@@ -139,7 +139,10 @@ function rgb2int(color) {
     return color;
   }
   let res = [];
-  if(color.charAt(0) === '#') {
+  if(!color || color === 'transparent') {
+    res = [0, 0, 0, 0];
+  }
+  else if(color.charAt(0) === '#') {
     color = color.slice(1);
     if(color.length === 3) {
       res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
@@ -155,9 +158,6 @@ function rgb2int(color) {
       res[0] = res[1] = res[2] = 0;
     }
     res[3] = 1;
-  }
-  else if(color === 'transparent') {
-    res = [0, 0, 0, 0];
   }
   else {
     let c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
@@ -186,7 +186,7 @@ function int2rgba(color) {
       return `rgba(${color.join(',')},1)`;
     }
   }
-  return color;
+  return color || 'rgba(0,0,0,0)';
 }
 
 function arr2hash(arr) {

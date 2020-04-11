@@ -53,7 +53,7 @@ let karas = {
       }
       return new Dom(tagName, props, children);
     }
-    throw new Error('can not use marker: ' + tagName);
+    throw new Error('Can not use marker: ' + tagName);
   },
   createGm(tagName, props) {
     let klass = Geom.getRegister(tagName);

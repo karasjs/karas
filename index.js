@@ -602,7 +602,9 @@
 
     var res = [];
 
-    if (color.charAt(0) === '#') {
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
       color = color.slice(1);
 
       if (color.length === 3) {
@@ -618,8 +620,6 @@
       }
 
       res[3] = 1;
-    } else if (color === 'transparent') {
-      res = [0, 0, 0, 0];
     } else {
       var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
 
@@ -648,7 +648,7 @@
       }
     }
 
-    return color;
+    return color || 'rgba(0,0,0,0)';
   }
 
   function arr2hash(arr) {
@@ -12976,7 +12976,7 @@
         return new Dom(tagName, props, children);
       }
 
-      throw new Error('can not use marker: ' + tagName);
+      throw new Error('Can not use marker: ' + tagName);
     },
     createGm: function createGm(tagName, props) {
       var klass = Geom.getRegister(tagName);

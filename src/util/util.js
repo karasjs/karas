@@ -273,6 +273,30 @@ function mergeImageData(bottom, top) {
   return bottom;
 }
 
+function equalArr(a, b) {
+  if(a.length !== b.length) {
+    return false;
+  }
+  for(let i = 0, len = a.length; i < len; i++) {
+    let ai = a[i];
+    let bi = b[i];
+    let isArrayA = Array.isArray(ai);
+    let isArrayB = Array.isArray(bi);
+    if(isArrayA && isArrayB) {
+      if(!equalArr(ai, bi)) {
+        return false;
+      }
+    }
+    else if(isArrayA || isArrayB) {
+      return false;
+    }
+    if(ai !== bi) {
+      return false;
+    }
+  }
+  return true;
+}
+
 let util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -295,6 +319,7 @@ let util = {
   hash2arr,
   clone,
   mergeImageData,
+  equalArr,
 };
 
 export default util;

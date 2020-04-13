@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import math from '../math/index';
+import geom from '../math/geom';
 
 class Rect extends Geom {
   constructor(tagName, props) {
@@ -61,8 +61,8 @@ class Rect extends Geom {
         ctx.lineTo(originX, originY);
       }
       else {
-        let ox = rx * math.H;
-        let oy = ry * math.H;
+        let ox = rx * geom.H;
+        let oy = ry * geom.H;
         ctx.moveTo(originX + rx, originY);
         ctx.lineTo(originX + width - rx, originY);
         ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);

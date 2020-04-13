@@ -745,6 +745,33 @@
     return bottom;
   }
 
+  function equalArr(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      }
+
+      if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   var util = {
     isObject: isType('Object'),
     isString: isType('String'),
@@ -766,7 +793,8 @@
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
-    mergeImageData: mergeImageData
+    mergeImageData: mergeImageData,
+    equalArr: equalArr
   };
 
   var reg = {
@@ -776,155 +804,98 @@
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
 
-  // 生成4*4单位矩阵
-  function identity() {
-    var m = [];
+  // 向量积
+  function vectorProduct(x1, y1, x2, y2) {
+    return x1 * y2 - x2 * y1;
+  }
 
-    for (var i = 0; i < 16; i++) {
-      m.push(i % 5 === 0 ? 1 : 0);
+  function pointInLine(x, y, x1, y1, x2, y2) {
+    if (x === x1 && y === y1 || x === x2 && y === y2) {
+      return true;
+    } // 以x1,y1为圆心，确保y=kx+b中b为0
+
+
+    if (x1 !== 0 || y1 !== 0) {
+      x -= x1;
+      y -= y1;
+      x2 -= x1;
+      y2 -= y2;
+    } // 求斜率
+
+
+    var k = y2 / x2; // 已知x代入获取y，和参数y对比确保在直线上
+
+    var y0 = k * x;
+
+    if (y !== y0) {
+      return false;
+    } // 在直线上后，判断是否在线段x1,y1/x2,y2内
+
+
+    if (x2 >= 0) {
+      if (y2 >= 0) {
+        return x >= 0 && y >= 0 && x <= x2 && y <= y2;
+      } else {
+        return x >= 0 && y < 0 && x <= x2 && y > y2;
+      }
+    } else {
+      if (y2 >= 0) {
+        return x < 0 && y >= 0 && x > x2 && y <= y2;
+      } else {
+        return x < 0 && y < 0 && x > x2 && y > y2;
+      }
+    }
+  }
+
+  function pointInPolygon(x, y, vertexes) {
+    // 先取最大最小值得一个外围矩形，在外边可快速判断false
+    var _vertexes$ = _slicedToArray(vertexes[0], 2),
+        xmax = _vertexes$[0],
+        ymax = _vertexes$[1];
+
+    var _vertexes$2 = _slicedToArray(vertexes[0], 2),
+        xmin = _vertexes$2[0],
+        ymin = _vertexes$2[1];
+
+    var len = vertexes.length;
+
+    for (var i = 1; i < len; i++) {
+      var _vertexes$i = _slicedToArray(vertexes[i], 2),
+          _x = _vertexes$i[0],
+          _y = _vertexes$i[1];
+
+      xmax = Math.max(xmax, _x);
+      ymax = Math.max(ymax, _y);
+      xmin = Math.min(xmin, _x);
+      ymin = Math.min(ymin, _y);
     }
 
-    return m;
-  } // 矩阵a*b
+    if (x < xmin || y < ymin || x > xmax || y > ymax) {
+      return false;
+    } // 所有向量积均为非负数说明在多边形内或边上，不碰撞
 
 
-  function multiply(a, b) {
-    var res = [];
+    for (var _i = 0, _len = vertexes.length; _i < _len; _i++) {
+      var _vertexes$_i = _slicedToArray(vertexes[_i], 2),
+          x1 = _vertexes$_i[0],
+          y1 = _vertexes$_i[1];
 
-    for (var i = 0; i < 4; i++) {
-      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
+      var _vertexes = _slicedToArray(vertexes[(_i + 1) % _len], 2),
+          x2 = _vertexes[0],
+          y2 = _vertexes[1];
 
-      for (var j = 0; j < 4; j++) {
-        var k = j * 4;
-        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-        res[i + k] = n;
+      if (vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
+        return false;
       }
     }
 
-    return res;
+    return true;
   }
 
-  function t43(m) {
-    return [m[0], m[1], m[4], m[5], m[12], m[13]];
-  }
-
-  function calPoint(point, m) {
-    var _point = _slicedToArray(point, 2),
-        x = _point[0],
-        y = _point[1];
-
-    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
-  }
-
-  var matrix = {
-    identity: identity,
-    multiply: multiply,
-    t43: t43,
-    calPoint: calPoint
-  };
-
-  function calDeg(x1, y1, x2, y2) {
-    return Math.atan((y2 - y1) / (x2 - x1));
-  }
-
-  function rotate(theta) {
-    var sin = Math.sin(theta);
-    var cos = Math.cos(theta);
-    var t = matrix.identity();
-    t[0] = t[5] = cos;
-    t[1] = sin;
-    t[4] = -sin;
-    return t;
-  }
-
-  function transform(source, target) {
-    var _source = _slicedToArray(source, 6),
-        sx1 = _source[0],
-        sy1 = _source[1],
-        sx2 = _source[2],
-        sy2 = _source[3],
-        sx3 = _source[4],
-        sy3 = _source[5];
-
-    var _target = _slicedToArray(target, 6),
-        tx1 = _target[0],
-        ty1 = _target[1],
-        tx2 = _target[2],
-        ty2 = _target[3],
-        tx3 = _target[4],
-        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
-
-
-    var dx = tx1 - sx1;
-    var dy = tx2 - sx2;
-    tx1 -= dx;
-    ty1 -= dy;
-    tx2 -= dx;
-    ty2 -= dy;
-    tx3 -= dx;
-    ty3 -= dy;
-    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
-
-    var theta = calDeg(sx1, sy1, sx2, sy2);
-    var t = rotate(-theta);
-    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
-
-    var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
-    var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
-    var scale = lt / ls;
-    t = matrix.identity();
-    t[0] = t[5] = scale;
-    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
-
-    theta = calDeg(tx1, ty1, tx2, ty2);
-    t = rotate(-theta); // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
-
-    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
-        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
-        ax2 = _matrix$calPoint2[0],
-        ay2 = _matrix$calPoint2[1];
-
-    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
-        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
-        ax3 = _matrix$calPoint4[0],
-        ay3 = _matrix$calPoint4[1];
-
-    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
-    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
-
-    scale = ay3 / by3;
-    t = matrix.identity();
-    t[5] = scale;
-    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
-
-    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
-        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
-        x3 = _matrix$calPoint6[0],
-        y3 = _matrix$calPoint6[1];
-
-    theta = Math.atan((ax3 - x3) / y3);
-    t = matrix.identity();
-    t[4] = Math.tan(theta);
-    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
-
-    t = rotate(-alpha);
-    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
-
-    t = matrix.identity();
-    t[12] = dx;
-    t[13] = dy;
-    m = matrix.multiply(t, m);
-    return matrix.t43(m);
-  }
-
-  var tar = {
-    transform: transform
-  };
-
-  var math = {
-    matrix: matrix,
-    tar: tar,
+  var geom = {
+    vectorProduct: vectorProduct,
+    pointInLine: pointInLine,
+    pointInPolygon: pointInPolygon,
     d2r: function d2r(n) {
       return n * Math.PI / 180;
     },
@@ -939,7 +910,7 @@
       int2rgba$1 = util.int2rgba;
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
-  var d2r = math.d2r;
+  var d2r = geom.d2r;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -2980,10 +2951,163 @@
     data: {}
   });
 
+  // 生成4*4单位矩阵
+  function identity() {
+    var m = [];
+
+    for (var i = 0; i < 16; i++) {
+      m.push(i % 5 === 0 ? 1 : 0);
+    }
+
+    return m;
+  } // 矩阵a*b
+
+
+  function multiply(a, b) {
+    var res = [];
+
+    for (var i = 0; i < 4; i++) {
+      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
+
+      for (var j = 0; j < 4; j++) {
+        var k = j * 4;
+        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
+        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
+        res[i + k] = n;
+      }
+    }
+
+    return res;
+  }
+
+  function t43(m) {
+    return [m[0], m[1], m[4], m[5], m[12], m[13]];
+  }
+
+  function calPoint(point, m) {
+    var _point = _slicedToArray(point, 2),
+        x = _point[0],
+        y = _point[1];
+
+    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+  }
+
+  var matrix = {
+    identity: identity,
+    multiply: multiply,
+    t43: t43,
+    calPoint: calPoint
+  };
+
+  function calDeg(x1, y1, x2, y2) {
+    return Math.atan((y2 - y1) / (x2 - x1));
+  }
+
+  function rotate(theta) {
+    var sin = Math.sin(theta);
+    var cos = Math.cos(theta);
+    var t = matrix.identity();
+    t[0] = t[5] = cos;
+    t[1] = sin;
+    t[4] = -sin;
+    return t;
+  }
+
+  function transform(source, target) {
+    var _source = _slicedToArray(source, 6),
+        sx1 = _source[0],
+        sy1 = _source[1],
+        sx2 = _source[2],
+        sy2 = _source[3],
+        sx3 = _source[4],
+        sy3 = _source[5];
+
+    var _target = _slicedToArray(target, 6),
+        tx1 = _target[0],
+        ty1 = _target[1],
+        tx2 = _target[2],
+        ty2 = _target[3],
+        tx3 = _target[4],
+        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
+
+
+    var dx = tx1 - sx1;
+    var dy = tx2 - sx2;
+    tx1 -= dx;
+    ty1 -= dy;
+    tx2 -= dx;
+    ty2 -= dy;
+    tx3 -= dx;
+    ty3 -= dy;
+    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+
+    var theta = calDeg(sx1, sy1, sx2, sy2);
+    var t = rotate(-theta);
+    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
+
+    var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
+    var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
+    var scale = lt / ls;
+    t = matrix.identity();
+    t[0] = t[5] = scale;
+    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
+
+    theta = calDeg(tx1, ty1, tx2, ty2);
+    t = rotate(-theta); // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
+
+    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
+        _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
+        ax2 = _matrix$calPoint2[0],
+        ay2 = _matrix$calPoint2[1];
+
+    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
+        _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
+        ax3 = _matrix$calPoint4[0],
+        ay3 = _matrix$calPoint4[1];
+
+    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
+    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
+
+    scale = ay3 / by3;
+    t = matrix.identity();
+    t[5] = scale;
+    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
+
+    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+        _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
+        x3 = _matrix$calPoint6[0],
+        y3 = _matrix$calPoint6[1];
+
+    theta = Math.atan((ax3 - x3) / y3);
+    t = matrix.identity();
+    t[4] = Math.tan(theta);
+    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
+
+    t = rotate(-alpha);
+    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
+
+    t = matrix.identity();
+    t[12] = dx;
+    t[13] = dy;
+    m = matrix.multiply(t, m);
+    return matrix.t43(m);
+  }
+
+  var tar = {
+    transform: transform
+  };
+
+  var math = {
+    matrix: matrix,
+    tar: tar,
+    geom: geom
+  };
+
   var PX$2 = unit.PX,
       PERCENT$2 = unit.PERCENT;
-  var d2r$1 = math.d2r,
-      matrix$1 = math.matrix;
+  var matrix$1 = math.matrix,
+      geom$1 = math.geom;
+  var d2r$1 = geom$1.d2r;
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
@@ -3055,13 +3179,8 @@
   } // 向量积
 
 
-  function vectorProduct(x1, y1, x2, y2) {
-    return x1 * y2 - x2 * y1;
-  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
-
-
-  function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
-    if (matrix) {
+  function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
+    if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
       var _transformPoint = transformPoint(matrix, x1, y1);
 
       var _transformPoint2 = _slicedToArray(_transformPoint, 2);
@@ -3076,23 +3195,20 @@
       x2 = _transformPoint4[0];
       y2 = _transformPoint4[1];
 
-      var _transformPoint5 = transformPoint(matrix, x3, y3);
+      var _transformPoint5 = transformPoint(matrix, x4, y4);
 
       var _transformPoint6 = _slicedToArray(_transformPoint5, 2);
 
-      x3 = _transformPoint6[0];
-      y3 = _transformPoint6[1];
+      x4 = _transformPoint6[0];
+      y4 = _transformPoint6[1];
 
-      var _transformPoint7 = transformPoint(matrix, x4, y4);
+      var _transformPoint7 = transformPoint(matrix, x3, y3);
 
       var _transformPoint8 = _slicedToArray(_transformPoint7, 2);
 
-      x4 = _transformPoint8[0];
-      y4 = _transformPoint8[1];
-
-      if (vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) > 0 && vectorProduct(x4 - x2, y4 - y2, x - x2, y - y2) > 0 && vectorProduct(x3 - x4, y3 - y4, x - x4, y - y4) > 0 && vectorProduct(x1 - x3, y1 - y3, x - x3, y - y3) > 0) {
-        return true;
-      }
+      x3 = _transformPoint8[0];
+      y3 = _transformPoint8[1];
+      return geom$1.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -3167,7 +3283,7 @@
    * 总长total，start边长bs，end边长be，内容长w，
    * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
    */
-  var H = math.H;
+  var H = geom.H;
 
   function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
     var n = 1;
@@ -4194,10 +4310,10 @@
       v: v
     });
   });
-  var geom = util.clone(dom);
+  var geom$2 = util.clone(dom);
   Object.keys(GEOM).forEach(function (k) {
     var v = GEOM[k];
-    geom.push({
+    geom$2.push({
       k: k,
       v: v
     });
@@ -4207,7 +4323,7 @@
     GEOM: GEOM,
     XOM: Object.assign(DOM, GEOM),
     dom: dom,
-    geom: geom
+    geom: geom$2
   };
 
   var level = {
@@ -5089,7 +5205,8 @@
   var isNil$3 = util.isNil,
       isFunction$2 = util.isFunction,
       isNumber$1 = util.isNumber,
-      clone$1 = util.clone;
+      clone$1 = util.clone,
+      equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
   var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
@@ -5115,33 +5232,6 @@
   KEY_EXPAND.forEach(function (k) {
     EXPAND_HASH[k] = true;
   });
-
-  function equalArr(a, b) {
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      }
-
-      if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 
   function unify(frames, target) {
     var hash = {};
@@ -5569,7 +5659,7 @@
         }
       }
 
-      if (equalArr(res.v, [0, 0])) {
+      if (equalArr$1(res.v, [0, 0])) {
         return;
       }
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY') {
@@ -5655,7 +5745,7 @@
         }
       }
 
-      if (equalArr(res.v, [0, 0])) {
+      if (equalArr$1(res.v, [0, 0])) {
         return;
       }
     } else if (GRADIENT_HASH.hasOwnProperty(k)) {
@@ -5667,7 +5757,7 @@
           var pv = p.v;
           var nv = n.v;
 
-          if (equalArr(pv, nv)) {
+          if (equalArr$1(pv, nv)) {
             return;
           }
 
@@ -5680,7 +5770,7 @@
             var b = nv[_i5];
             var t = [];
             t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
-            eq = equalArr(t, [0, 0, 0, 0]);
+            eq = equalArr$1(t, [0, 0, 0, 0]);
 
             if (a[1] && b[1]) {
               if (a[1].unit === b[1].unit) {
@@ -5713,7 +5803,7 @@
           }
         } // 纯色
         else {
-            if (equalArr(n, p)) {
+            if (equalArr$1(n, p)) {
               return;
             }
 
@@ -5723,7 +5813,7 @@
       n = n.value;
       p = p.value;
 
-      if (equalArr(n, p) || n[3] === 0 && p[3] === 0) {
+      if (equalArr$1(n, p) || n[3] === 0 && p[3] === 0) {
         return;
       }
 
@@ -5766,7 +5856,7 @@
       if (isNil$3(n)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
-        if (equalArr(p, n)) {
+        if (equalArr$1(p, n)) {
           return;
         }
 
@@ -5793,7 +5883,7 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
-        if (equalArr(p, n)) {
+        if (equalArr$1(p, n)) {
           return;
         }
 
@@ -7011,7 +7101,8 @@
       STRING$2 = unit.STRING;
   var clone$2 = util.clone,
       int2rgba$3 = util.int2rgba,
-      mergeImageData$1 = util.mergeImageData;
+      mergeImageData$1 = util.mergeImageData,
+      equalArr$2 = util.equalArr;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
       repaint$2 = css.repaint;
@@ -7578,10 +7669,8 @@
         if (renderMode === mode.CANVAS) {
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
         } else if (renderMode === mode.SVG) {
-          var v = this.matrix.join(',');
-
-          if (v !== '1,0,0,1,0,0') {
-            this.virtualDom.transform = "matrix(".concat(v, ")");
+          if (!equalArr$2(this.matrix, [1, 0, 0, 1, 0, 0])) {
+            this.virtualDom.transform = "matrix(".concat(this.matrix.join(','), ")");
           }
         } // 隐藏不渲染
 
@@ -8130,7 +8219,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = transform$1.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx, sy + outerHeight, sx + outerWidth, sy + outerHeight, matrixEvent);
+        var inThis = transform$1.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
 
         if (inThis) {
           if (!e.target) {
@@ -12456,8 +12545,8 @@
             ctx.lineTo(originX, originY + height);
             ctx.lineTo(originX, originY);
           } else {
-            var ox = rx * math.H;
-            var oy = ry * math.H;
+            var ox = rx * geom.H;
+            var oy = ry * geom.H;
             ctx.moveTo(originX + rx, originY);
             ctx.lineTo(originX + width - rx, originY);
             ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
@@ -12678,8 +12767,8 @@
           if (ctx.ellipse) {
             ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
           } else {
-            var ox = rx * math.H;
-            var oy = ry * math.H;
+            var ox = rx * geom.H;
+            var oy = ry * geom.H;
             ctx.moveTo(cx - rx, cy);
             ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
             ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

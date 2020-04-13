@@ -15,7 +15,7 @@ import inject from '../util/inject';
 import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
-const { clone, int2rgba, mergeImageData } = util;
+const { clone, int2rgba, mergeImageData, equalArr } = util;
 const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -543,9 +543,8 @@ class Xom extends Node {
       ctx.setTransform(...matrix);
     }
     else if(renderMode === mode.SVG) {
-      let v = this.matrix.join(',');
-      if(v !== '1,0,0,1,0,0') {
-        this.virtualDom.transform = `matrix(${v})`;
+      if(!equalArr(this.matrix, [1, 0, 0, 1, 0, 0])) {
+        this.virtualDom.transform = `matrix(${this.matrix.join(',')})`;
       }
     }
     // 隐藏不渲染
@@ -1009,9 +1008,9 @@ class Xom extends Node {
     let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
     let inThis = tf.pointInQuadrilateral(x, y,
       sx, sy,
-      sx + outerWidth,sy,
-      sx, sy + outerHeight,
+      sx + outerWidth, sy,
       sx + outerWidth, sy + outerHeight,
+      sx, sy + outerHeight,
       matrixEvent);
     if(inThis) {
       if(!e.target) {

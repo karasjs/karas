@@ -2,10 +2,10 @@
  * 总长total，start边长bs，end边长be，内容长w，
  * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
  */
-import math from '../math/index';
+import geom from '../math/geom';
 import mode from '../util/mode';
 
-const { H } = math;
+const { H } = geom;
 
 function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
   let n = 1;

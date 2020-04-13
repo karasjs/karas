@@ -1,8 +1,10 @@
 import unit from '../style/unit';
 import math from '../math/index';
+import util from '../util/util';
 
 const { PX, PERCENT } = unit;
-const { d2r, matrix } = math;
+const { matrix, geom } = math;
+const { d2r } = geom;
 
 function calSingle(t, k, v) {
   if(k === 'translateX') {
@@ -73,18 +75,18 @@ function vectorProduct(x1, y1, x2, y2) {
 }
 
 // 判断点是否在一个矩形内，比如事件发生是否在节点上
-function pointInQuadrilateral(x, y, x1, y1, x2, y2, x3, y3, x4, y4, matrix) {
-  if(matrix) {
+function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
+  if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
     [x1, y1] = transformPoint(matrix, x1, y1);
     [x2, y2] = transformPoint(matrix, x2, y2);
-    [x3, y3] = transformPoint(matrix, x3, y3);
     [x4, y4] = transformPoint(matrix, x4, y4);
-    if(vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) > 0
-      && vectorProduct(x4 - x2, y4 - y2, x - x2, y - y2) > 0
-      && vectorProduct(x3 - x4, y3 - y4, x - x4, y - y4) > 0
-      && vectorProduct(x1 - x3, y1 - y3, x - x3, y - y3) > 0) {
-      return true;
-    }
+    [x3, y3] = transformPoint(matrix, x3, y3);
+    return geom.pointInPolygon(x, y, [
+      [x1, y1],
+      [x2, y2],
+      [x4, y4],
+      [x3, y3]
+    ]);
   }
   else {
     return x >= x1 && y >= y1 && x <= x4 && y <= y4;

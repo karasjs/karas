@@ -1,11 +1,11 @@
 import util from '../util/util';
 import unit from './unit';
 import reg from './reg';
-import math from '../math/index';
+import geom from '../math/geom';
 
 const { rgb2int, int2rgba } = util;
 const { PX, PERCENT } = unit;
-const { d2r } = math;
+const { d2r } = geom;
 
 function getLinearDeg(v) {
   let deg = 180;

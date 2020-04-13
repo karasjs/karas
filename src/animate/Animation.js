@@ -2,7 +2,6 @@ import css from '../style/css';
 import reset from '../style/reset';
 import unit from '../style/unit';
 import util from '../util/util';
-import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from './frame';
 import easing from './easing';
@@ -10,7 +9,7 @@ import level from './level';
 import repaint from './repaint';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
-const { isNil, isFunction, isNumber, clone } = util;
+const { isNil, isFunction, isNumber, clone, equalArr } = util;
 const { linear } = easing;
 
 const KEY_COLOR = [
@@ -91,30 +90,6 @@ const EXPAND_HASH = {};
 KEY_EXPAND.forEach(k => {
   EXPAND_HASH[k] = true;
 });
-
-function equalArr(a, b) {
-  if(a.length !== b.length) {
-    return false;
-  }
-  for(let i = 0, len = a.length; i < len; i++) {
-    let ai = a[i];
-    let bi = b[i];
-    let isArrayA = Array.isArray(ai);
-    let isArrayB = Array.isArray(bi);
-    if(isArrayA && isArrayB) {
-      if(!equalArr(ai, bi)) {
-        return false;
-      }
-    }
-    else if(isArrayA || isArrayB) {
-      return false;
-    }
-    if(ai !== bi) {
-      return false;
-    }
-  }
-  return true;
-}
 
 function unify(frames, target) {
   let hash = {};

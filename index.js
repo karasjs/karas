@@ -10493,8 +10493,8 @@
             cache.success = res.success;
 
             if (res.success) {
-              cache.width = res.width;
-              cache.height = res.height;
+              cache.width = res.width || 32;
+              cache.height = res.height || 32;
               cache.source = res.source;
             } else {
               cache.width = 32;
@@ -10506,6 +10506,9 @@
             list.forEach(function (cb) {
               return cb(cache);
             });
+          }, {
+            width: width,
+            height: height
           });
         }
       }

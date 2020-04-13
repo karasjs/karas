@@ -109,8 +109,8 @@ class Img extends Dom {
       inject.measureImg(src, res => {
         cache.success = res.success;
         if(res.success) {
-          cache.width = res.width;
-          cache.height = res.height;
+          cache.width = res.width || 32;
+          cache.height = res.height || 32;
           cache.source = res.source;
         }
         else {
@@ -120,6 +120,9 @@ class Img extends Dom {
         cache.state = LOADED;
         let list = cache.task.splice(0);
         list.forEach(cb => cb(cache));
+      }, {
+        width,
+        height,
       });
     }
   }

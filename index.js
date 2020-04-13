@@ -4840,16 +4840,20 @@
 
       return cancelAnimationFrame;
     }(function (id) {
+      var res;
+
       if (typeof cancelAnimationFrame !== 'undefined') {
         inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
-        cancelAnimationFrame(id);
+        res = cancelAnimationFrame(id);
       } else {
-        clearTimeout(id);
+        res = clearTimeout(id);
 
-        inject.clearTimeout = function (cb) {
-          clearTimeout(id);
+        inject.cancelAnimationFrame = function (id) {
+          return clearTimeout(id);
         };
       }
+
+      return res;
     }),
     now: function now() {
       if (typeof performance !== 'undefined') {

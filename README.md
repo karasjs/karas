@@ -21,7 +21,7 @@ https://github.com/karasjs/karas/wiki/API
 ## Demo
 * demo目录下是一个web端的演示教程示例，可直接本地预览
 * 依赖的`csx`翻译工具来自于`yurine`：https://github.com/karasjs/yurine [![NPM version](https://img.shields.io/npm/v/yurine.svg)](https://npmjs.org/package/yurine)
-* 依赖的`cssx`翻译工具来自于`selenite`：https://github.com/karasjs/selenite [![NPM version](https://img.shields.io/npm/v/selenite.svg)](https://npmjs.org/package/selenite)
+* 可选依赖的`cssx`翻译工具来自于`selenite`：https://github.com/karasjs/selenite [![NPM version](https://img.shields.io/npm/v/selenite.svg)](https://npmjs.org/package/selenite)
 * 在线预览：http://army8735.me/karasjs/karas/demo/
 
 # License

@@ -3,7 +3,7 @@ import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
 
-const { rgb2int, int2rgba } = util;
+const { rgba2int, int2rgba } = util;
 const { PX, PERCENT } = unit;
 const { d2r } = geom;
 
@@ -164,16 +164,16 @@ function getColorStop(v, length) {
       else {
         if(first[1] < 0) {
           let next = list[1];
-          let c1 = rgb2int(first[0]);
-          let c2 = rgb2int(next[0]);
+          let c1 = rgba2int(first[0]);
+          let c2 = rgba2int(next[0]);
           let c = getCsStartLimit(c1, first[1], c2, next[1], length);
           first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
           first[1] = 0;
         }
         if(last[1] > 1) {
           let prev = list[len - 2];
-          let c1 = rgb2int(prev[0]);
-          let c2 = rgb2int(last[0]);
+          let c1 = rgba2int(prev[0]);
+          let c2 = rgba2int(last[0]);
           let c = getCsEndLimit(c1, prev[1], c2, last[1], length);
           last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
           last[1] = 1;
@@ -387,8 +387,8 @@ function getCsEndLimit(c1, p1, c2, p2, length) {
 }
 
 function getCsLimit(first, last, length) {
-  let c1 = rgb2int(first[0]);
-  let c2 = rgb2int(last[0]);
+  let c1 = rgba2int(first[0]);
+  let c2 = rgba2int(last[0]);
   let [ r1, g1, b1, a1 = 1 ] = c1;
   let [ r2, g2, b2, a2 = 1 ] = c2;
   let l1 = Math.abs(first[1]) * length;
@@ -419,7 +419,7 @@ function parseGradient(s) {
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
       let arr = item.split(/\s+/);
-      arr[0] = rgb2int(arr[0]);
+      arr[0] = rgba2int(arr[0]);
       if(arr[1]) {
         if(/%$/.test(arr[1])) {
           arr[1] = {

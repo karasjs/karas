@@ -5,7 +5,7 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
-const { isNil, rgb2int, int2rgba } = util;
+const { isNil, rgba2int, int2rgba } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -180,7 +180,7 @@ function normalize(style, reset = []) {
     ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
       k = 'border' + k + 'Color';
       if(isNil(style[k])) {
-        style[k] = rgb2int(temp);
+        style[k] = rgba2int(temp);
       }
     });
   }
@@ -320,14 +320,14 @@ function normalize(style, reset = []) {
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
       style.backgroundColor = {
-        value: rgb2int(bgc[0]),
+        value: rgba2int(bgc[0]),
         unit: RGBA,
       };
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
       style.backgroundColor = {
-        value: rgb2int(bgc ? bgc[0] : [0, 0, 0, 0]),
+        value: rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]),
         unit: RGBA,
       };
     }
@@ -397,7 +397,7 @@ function normalize(style, reset = []) {
     let v = style[k];
     if(!isNil(v)) {
       style[k] = {
-        value: rgb2int(v),
+        value: rgba2int(v),
         unit: RGBA,
       };
     }
@@ -589,7 +589,7 @@ function normalize(style, reset = []) {
     }
     else {
       style.color = {
-        value: rgb2int(temp),
+        value: rgba2int(temp),
         unit: RGBA,
       };
     }
@@ -752,7 +752,7 @@ function normalize(style, reset = []) {
       style.fill = gradient.parseGradient(temp);
     }
     else {
-      style.fill = rgb2int(temp);
+      style.fill = rgba2int(temp);
     }
   }
   temp = style.stroke;
@@ -761,7 +761,7 @@ function normalize(style, reset = []) {
       style.stroke = gradient.parseGradient(temp);
     }
     else {
-      style.stroke = rgb2int(temp);
+      style.stroke = rgba2int(temp);
     }
   }
   // font除size相关

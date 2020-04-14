@@ -7,7 +7,6 @@ import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
-import sort from '../util/sort';
 import Component from './Component';
 
 const { AUTO, PX, PERCENT } = unit;

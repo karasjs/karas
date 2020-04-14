@@ -111,13 +111,18 @@ class Text extends Node {
         count = 0;
       }
       else if(count > w) {
+        let width;
         // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
         if(i === begin) {
           i = begin + 1;
+          width = count;
         }
-        let lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
+        else {
+          width = count - charWidthList[i];
+        }
+        let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
         lineBoxes.push(lineBox);
-        maxW = Math.max(maxW, count - charWidthList[i]);
+        maxW = Math.max(maxW, width);
         y += computedStyle.lineHeight;
         begin = i;
         count = 0;

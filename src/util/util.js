@@ -134,7 +134,7 @@ function joinItem(item) {
   return s;
 }
 
-function rgb2int(color) {
+function rgba2int(color) {
   if(Array.isArray(color)) {
     return color;
   }
@@ -313,7 +313,7 @@ let util = {
   joinVirtualDom,
   joinVd,
   joinDef,
-  rgb2int,
+  rgba2int,
   int2rgba,
   arr2hash,
   hash2arr,

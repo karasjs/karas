@@ -138,7 +138,7 @@ function inherit(frames, keys, target) {
       if(v.unit === INHERIT) {
         if(k === 'color') {
           style[k] = {
-            value: util.rgb2int(computedStyle[k]),
+            value: util.rgba2int(computedStyle[k]),
             unit: RGBA,
           };
         }

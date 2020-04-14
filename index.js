@@ -595,7 +595,7 @@
     return s;
   }
 
-  function rgb2int(color) {
+  function rgba2int(color) {
     if (Array.isArray(color)) {
       return color;
     }
@@ -788,7 +788,7 @@
     joinVirtualDom: joinVirtualDom,
     joinVd: joinVd,
     joinDef: joinDef,
-    rgb2int: rgb2int,
+    rgba2int: rgba2int,
     int2rgba: int2rgba,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
@@ -906,7 +906,7 @@
 
   };
 
-  var rgb2int$1 = util.rgb2int,
+  var rgba2int$1 = util.rgba2int,
       int2rgba$1 = util.int2rgba;
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
@@ -1080,8 +1080,8 @@
           else {
               if (first[1] < 0) {
                 var next = list[1];
-                var c1 = rgb2int$1(first[0]);
-                var c2 = rgb2int$1(next[0]);
+                var c1 = rgba2int$1(first[0]);
+                var c2 = rgba2int$1(next[0]);
 
                 var _c = getCsStartLimit(c1, first[1], c2, next[1], length);
 
@@ -1092,9 +1092,9 @@
               if (last[1] > 1) {
                 var _prev = list[len - 2];
 
-                var _c2 = rgb2int$1(_prev[0]);
+                var _c2 = rgba2int$1(_prev[0]);
 
-                var _c3 = rgb2int$1(last[0]);
+                var _c3 = rgba2int$1(last[0]);
 
                 var _c4 = getCsEndLimit(_c2, _prev[1], _c3, last[1], length);
 
@@ -1345,8 +1345,8 @@
   }
 
   function getCsLimit(first, last, length) {
-    var c1 = rgb2int$1(first[0]);
-    var c2 = rgb2int$1(last[0]);
+    var c1 = rgba2int$1(first[0]);
+    var c2 = rgba2int$1(last[0]);
 
     var _c9 = _slicedToArray(c1, 4),
         r1 = _c9[0],
@@ -1391,7 +1391,7 @@
       var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
         var arr = item.split(/\s+/);
-        arr[0] = rgb2int$1(arr[0]);
+        arr[0] = rgba2int$1(arr[0]);
 
         if (arr[1]) {
           if (/%$/.test(arr[1])) {
@@ -1498,7 +1498,7 @@
       RGBA = unit.RGBA,
       STRING = unit.STRING;
   var isNil$1 = util.isNil,
-      rgb2int$2 = util.rgb2int,
+      rgba2int$2 = util.rgba2int,
       int2rgba$2 = util.int2rgba;
   var DEFAULT_FONT_SIZE = 16;
 
@@ -1686,7 +1686,7 @@
         k = 'border' + k + 'Color';
 
         if (isNil$1(style[k])) {
-          style[k] = rgb2int$2(temp);
+          style[k] = rgba2int$2(temp);
         }
       });
     }
@@ -1845,13 +1845,13 @@
 
       if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
         style.backgroundColor = {
-          value: rgb2int$2(_bgc[0]),
+          value: rgba2int$2(_bgc[0]),
           unit: RGBA
         };
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
         style.backgroundColor = {
-          value: rgb2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]),
+          value: rgba2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]),
           unit: RGBA
         };
       }
@@ -1928,7 +1928,7 @@
 
       if (!isNil$1(v)) {
         style[k] = {
-          value: rgb2int$2(v),
+          value: rgba2int$2(v),
           unit: RGBA
         };
       }
@@ -2123,7 +2123,7 @@
         };
       } else {
         style.color = {
-          value: rgb2int$2(temp),
+          value: rgba2int$2(temp),
           unit: RGBA
         };
       }
@@ -2292,7 +2292,7 @@
       if (temp.indexOf('-gradient(') > 0) {
         style.fill = gradient.parseGradient(temp);
       } else {
-        style.fill = rgb2int$2(temp);
+        style.fill = rgba2int$2(temp);
       }
     }
 
@@ -2302,7 +2302,7 @@
       if (temp.indexOf('-gradient(') > 0) {
         style.stroke = gradient.parseGradient(temp);
       } else {
-        style.stroke = rgb2int$2(temp);
+        style.stroke = rgba2int$2(temp);
       }
     } // font除size相关
     // 删除缩写避免干扰动画计算
@@ -2757,15 +2757,19 @@
             i = begin;
             count = 0;
           } else if (count > w) {
-            // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+            var width = void 0; // 宽度不足时无法跳出循环，至少也要塞个字符形成一行
+
             if (i === begin) {
               i = begin + 1;
+              width = count;
+            } else {
+              width = count - charWidthList[i];
             }
 
-            var _lineBox = new LineBox(this, x, y, count - charWidthList[i], content.slice(begin, i));
+            var _lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
 
             lineBoxes.push(_lineBox);
-            maxW = Math.max(maxW, count - charWidthList[i]);
+            maxW = Math.max(maxW, width);
             y += computedStyle.lineHeight;
             begin = i;
             count = 0;
@@ -5284,7 +5288,7 @@
         if (v.unit === INHERIT$1) {
           if (k === 'color') {
             style[k] = {
-              value: util.rgb2int(computedStyle[k]),
+              value: util.rgba2int(computedStyle[k]),
               unit: RGBA$1
             };
           } else if (LENGTH_HASH.hasOwnProperty(k)) {

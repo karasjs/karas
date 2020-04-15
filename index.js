@@ -4761,7 +4761,8 @@
       for (var i = 0, len = cns.length; i < len; i++) {
         var node = cns[i];
         var key = keys[i];
-        var _char2 = chars[i];
+        var _char2 = chars[i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
+
         var css = window.getComputedStyle(node, null);
         CHAR_WIDTH_CACHE[key][_char2] = parseFloat(css.width);
       }

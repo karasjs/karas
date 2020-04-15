@@ -55,7 +55,7 @@ function pointInPolygon(x, y, vertexes) {
   if(x < xmin || y < ymin || x > xmax || y > ymax) {
     return false;
   }
-  // 所有向量积均为非负数说明在多边形内或边上，不碰撞
+  // 所有向量积均为非负数说明在多边形内或边上
   for(let i = 0, len = vertexes.length; i < len; i++) {
     let [x1, y1] = vertexes[i];
     let [x2, y2] = vertexes[(i + 1) % len];

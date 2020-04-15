@@ -1091,6 +1091,7 @@ class Dom extends Xom {
 
   render(renderMode) {
     super.render(renderMode);
+    // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }

@@ -872,7 +872,7 @@
 
     if (x < xmin || y < ymin || x > xmax || y > ymax) {
       return false;
-    } // 所有向量积均为非负数说明在多边形内或边上，不碰撞
+    } // 所有向量积均为非负数说明在多边形内或边上
 
 
     for (var _i = 0, _len = vertexes.length; _i < _len; _i++) {
@@ -10260,7 +10260,8 @@
     }, {
       key: "render",
       value: function render(renderMode) {
-        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode);
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode); // 不显示的为了diff也要根据type生成
+
 
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'dom';
@@ -11477,7 +11478,7 @@
           return;
         }
 
-        var task = this.task; // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
+        var task = this.task; // 第一个添加延迟侦听，后续放队列等待一并执行
 
         if (!task.length) {
           var clone;

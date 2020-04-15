@@ -275,7 +275,7 @@ class Root extends Dom {
       return;
     }
     let { task } = this;
-    // 第一个添加延迟侦听，并且队列放在头部确保刷新先于动画回调执行
+    // 第一个添加延迟侦听，后续放队列等待一并执行
     if(!task.length) {
       let clone;
       frame.nextFrame(this.__rTask = {

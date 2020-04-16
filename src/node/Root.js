@@ -59,14 +59,14 @@ class Root extends Dom {
   __initProps() {
     let w = this.props.width;
     if(!isNil(w)) {
-      let value = parseInt(w) || 0;
+      let value = parseFloat(w) || 0;
       if(value > 0) {
         this.__width = value;
       }
     }
     let h = this.props.height;
     if(!isNil(h)) {
-      let value = parseInt(h) || 0;
+      let value = parseFloat(h) || 0;
       if(value > 0) {
         this.__height = value;
       }
@@ -158,11 +158,11 @@ class Root extends Dom {
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
       if(!this.width) {
-        this.__width = parseInt(css.getPropertyValue('width'));
+        this.__width = parseFloat(css.getPropertyValue('width')) || 0;
         dom.setAttribute('width', this.width);
       }
       if(!this.height) {
-        this.__height = parseInt(css.getPropertyValue('height'));
+        this.__height = parseFloat(css.getPropertyValue('height')) || 0;
         dom.setAttribute('height', this.height);
       }
     }

@@ -17,6 +17,5 @@ node_modules/
 reports/
 .idea/
 .travis.yml
-index.min.js*
 selenium-debug.log
 src/

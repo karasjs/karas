@@ -349,14 +349,6 @@ class Root extends Dom {
     }
   }
 
-  __getImageData() {
-    return this.ctx.getImageData(0, 0, this.width, this.height);
-  }
-
-  __putImageData(data) {
-    this.ctx.putImageData(data, 0, 0);
-  }
-
   __clear() {
     // 可能会调整宽高，所以每次清除用最大值
     this.__mw = Math.max(this.__mw, this.width);

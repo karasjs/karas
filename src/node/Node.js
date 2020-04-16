@@ -41,6 +41,10 @@ class Node {
     this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
   }
 
+  __setCtx(ctx) {
+    this.__ctx = ctx;
+  }
+
   get x() {
     return this.__x;
   }

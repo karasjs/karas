@@ -235,15 +235,14 @@ class Img extends Dom {
       if(renderMode === mode.CANVAS) {
         // 有border-radius需模拟遮罩裁剪
         if(list) {
-          let cache1 = this.root.__getImageData();
-          this.root.__clear();
-          ctx.drawImage(this.__source, originX, originY, width, height);
-          ctx.globalCompositeOperation = 'destination-in';
-          border.genRdRect(renderMode, ctx, '#FFF', x, y, width, height, list);
-          let cache2 = this.root.__getImageData();
-          this.root.__clear();
-          ctx.globalCompositeOperation = 'source-over';
-          this.root.__putImageData(util.mergeImageData(cache1, cache2));
+          let { width, height } = this.root;
+          let c = inject.getCacheCanvas(width, height);
+          c.ctx.drawImage(this.__source, 0, 0, width, height);
+          c.ctx.globalCompositeOperation = 'destination-in';
+          border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
+          ctx.drawImage(c.canvas, 0, 0);
+          c.ctx.globalCompositeOperation = 'source-over';
+          c.ctx.clearRect(0, 0, width, height);
         }
         else {
           ctx.drawImage(this.__source, originX, originY, width, height);

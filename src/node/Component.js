@@ -297,10 +297,11 @@ class Component extends Event {
   '__calAbs',
   '__renderAsMask',
   '__renderByMask',
+  '__setCtx',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;
-    if(sr[fn]) {
+    if(sr && sr[fn]) {
       return sr[fn].apply(sr, arguments);
     }
   };

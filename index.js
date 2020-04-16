@@ -281,6 +281,11 @@
         this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
       }
     }, {
+      key: "__setCtx",
+      value: function __setCtx(ctx) {
+        this.__ctx = ctx;
+      }
+    }, {
       key: "x",
       get: function get() {
         return this.__x;
@@ -701,50 +706,6 @@
     return n;
   }
 
-  function mergeImageData(bottom, top) {
-    var bd = bottom.data;
-    var td = top.data;
-
-    for (var i = 0, len = bd.length; i < len; i += 4) {
-      var rb = bd[i];
-      var gb = bd[i + 1];
-      var bb = bd[i + 2];
-      var ab = bd[i + 3];
-      var rt = td[i];
-      var gt = td[i + 1];
-      var bt = td[i + 2];
-      var at = td[i + 3];
-
-      if (at === 0) ; else if (ab === 0 || at === 255) {
-        bd[i] = rt;
-        bd[i + 1] = gt;
-        bd[i + 2] = bt;
-        bd[i + 3] = at;
-      } else {
-        var alpha1 = ab / 255;
-        var alpha2 = at / 255;
-        var alpha3 = 1 - alpha1;
-        var r = rb * alpha1 + rt * alpha2 * alpha3;
-        var g = gb * alpha1 + gt * alpha2 * alpha3;
-        var b = bb * alpha1 + bt * alpha2 * alpha3;
-        var a = 1 - (1 - alpha1) * (1 - alpha2);
-
-        if (a !== 0 && a !== 1) {
-          r = r / a;
-          g = g / a;
-          b = b / a;
-        }
-
-        bd[i] = r;
-        bd[i + 1] = g;
-        bd[i + 2] = b;
-        bd[i + 3] = a;
-      }
-    }
-
-    return bottom;
-  }
-
   function equalArr(a, b) {
     if (a.length !== b.length) {
       return false;
@@ -793,7 +754,6 @@
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
-    mergeImageData: mergeImageData,
     equalArr: equalArr
   };
 
@@ -4703,17 +4663,44 @@
     return Component;
   }(Event);
 
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__setCtx'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
-      if (sr[fn]) {
+      if (sr && sr[fn]) {
         return sr[fn].apply(sr, arguments);
       }
     };
   });
 
-  var spf = 1000 / 60;
+  var SPF = 1000 / 60;
+  var canvas = {
+    cache: null,
+    mask: null
+  };
+
+  function cacheCanvas(key, width, height) {
+    var o;
+
+    if (!canvas[key]) {
+      o = canvas[key] = document.createElement('canvas');
+      o.style.position = 'absolute';
+      o.style.left = '9999px';
+      o.style.top = '-9999px';
+      document.body.append(o);
+    }
+
+    o = canvas[key];
+    o.setAttribute('width', width);
+    o.setAttribute('height', height);
+    o.style.width = width + 'px';
+    o.style.height = height + 'px';
+    return {
+      canvas: o,
+      ctx: o.getContext('2d')
+    };
+  }
+
   var inject = {
     measureText: function measureText(cb) {
       var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
@@ -4825,10 +4812,10 @@
         inject.requestAnimationFrame = requestAnimationFrame.bind(window);
         res = requestAnimationFrame(cb);
       } else {
-        res = setTimeout(cb, spf);
+        res = setTimeout(cb, SPF);
 
         inject.requestAnimationFrame = function (cb) {
-          return setTimeout(cb, spf);
+          return setTimeout(cb, SPF);
         };
       }
 
@@ -4868,6 +4855,12 @@
 
       inject.now = Date.now.bind(Date);
       return Date.now();
+    },
+    getCacheCanvas: function getCacheCanvas(width, height) {
+      return cacheCanvas('cache', width, height);
+    },
+    getMaskCanvas: function getMaskCanvas(width, height) {
+      return cacheCanvas('mask', width, height);
     }
   };
 
@@ -7110,7 +7103,6 @@
       STRING$2 = unit.STRING;
   var clone$2 = util.clone,
       int2rgba$3 = util.int2rgba,
-      mergeImageData$1 = util.mergeImageData,
       equalArr$2 = util.equalArr;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
@@ -7873,33 +7865,32 @@
               var source = this.__loadBgi.source;
 
               if (renderMode === mode.CANVAS && source) {
-                // 超出尺寸模拟mask截取
-                var cache1;
-                var cache2;
+                var c;
+                var currentCtx; // 在离屏canvas上绘制
 
                 if (needMask) {
-                  cache1 = this.root.__getImageData();
-
-                  this.root.__clear();
+                  var _this$root = this.root,
+                      _width2 = _this$root.width,
+                      _height2 = _this$root.height;
+                  c = inject.getCacheCanvas(_width2, _height2);
+                  currentCtx = c.ctx;
+                } else {
+                  currentCtx = ctx;
                 } // 先画不考虑repeat的中心声明的
 
 
-                ctx.drawImage(source, originX, originY, w, h); // 再画重复的十字和4角象限
+                currentCtx.drawImage(source, originX, originY, w, h); // 再画重复的十字和4角象限
 
                 repeat.forEach(function (item) {
-                  ctx.drawImage(source, item[0], item[1], w, h);
-                });
+                  currentCtx.drawImage(source, item[0], item[1], w, h);
+                }); // mask特殊处理画回来
 
                 if (needMask) {
-                  ctx.globalCompositeOperation = 'destination-in';
-                  renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this);
-                  cache2 = this.root.__getImageData();
-
-                  this.root.__clear();
-
-                  ctx.globalCompositeOperation = 'source-over';
-
-                  this.root.__putImageData(mergeImageData$1(cache1, cache2));
+                  currentCtx.globalCompositeOperation = 'destination-in';
+                  renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                  ctx.drawImage(c.canvas, 0, 0);
+                  currentCtx.globalCompositeOperation = 'source-over';
+                  currentCtx.clearRect(0, 0, _width, _height);
                 }
               } else if (renderMode === mode.SVG) {
                 var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
@@ -8035,50 +8026,64 @@
             ctx = this.ctx;
         var hasMask = prev && prev.isMask;
 
+        if (!hasMask) {
+          this.render(renderMode);
+          return;
+        }
+
         if (renderMode === mode.CANVAS) {
-          // 先保存之前的图像
-          var cache1;
-          var cache2;
+          // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
+          var width = root.width,
+              height = root.height;
+          var c = inject.getCacheCanvas(width, height);
 
-          if (hasMask) {
-            cache1 = root.__getImageData();
+          this.__setCtx(c.ctx);
 
-            root.__clear();
-          } // 然后反向先绘制需要遮罩的图层
+          this.render(renderMode);
 
-
-          this.render(renderMode); // 再用mask反遮罩
-
-          if (hasMask) {
-            var list = [];
-
-            while (prev && prev.isMask) {
-              list.unshift(prev);
-              prev = prev.prev;
-            } // 只有1个遮罩高性能处理直接绘制
+          this.__setCtx(ctx); // 收集之前的mask列表
 
 
-            if (list.length === 1) {
-              ctx.globalCompositeOperation = 'destination-in';
-              prev.render(renderMode);
+          var list = [];
+
+          while (prev && prev.isMask) {
+            list.unshift(prev);
+            prev = prev.prev;
+          } // 当mask只有1个时，无需生成m，直接在c上即可
+
+
+          if (list.length === 1) {
+            prev = list[0];
+            c.ctx.globalCompositeOperation = 'destination-in';
+
+            prev.__setCtx(c.ctx);
+
+            prev.render(renderMode);
+
+            prev.__setCtx(ctx);
+
+            ctx.drawImage(c.canvas, 0, 0);
+          } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+          else {
+              var m = inject.getMaskCanvas(width, height);
+              list.forEach(function (item) {
+                item.__setCtx(m.ctx);
+
+                item.render(renderMode);
+
+                item.__setCtx(ctx);
+              });
+              c.ctx.globalCompositeOperation = 'destination-in';
+              c.ctx.drawImage(m.canvas, 0, 0);
+              ctx.drawImage(c.canvas, 0, 0);
             }
 
-            cache2 = root.__getImageData();
-
-            root.__clear();
-          }
-
-          ctx.globalCompositeOperation = 'source-over';
-
-          if (hasMask) {
-            root.__putImageData(mergeImageData$1(cache1, cache2));
-          }
+          c.ctx.globalCompositeOperation = 'source-over';
+          c.ctx.clearRect(0, 0, width, height);
         } else if (renderMode === mode.SVG) {
           this.render(renderMode); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
-          if (hasMask) {
-            this.virtualDom.mask = prev.maskId;
-          }
+          this.virtualDom.mask = prev.maskId;
         }
       }
     }, {
@@ -8384,6 +8389,17 @@
               item.__style = _this7.currentStyle;
               repaint$2(item);
             }
+          });
+        }
+      }
+    }, {
+      key: "__setCtx",
+      value: function __setCtx(ctx) {
+        this.__ctx = ctx;
+
+        if (!this.isGeom) {
+          this.children.forEach(function (item) {
+            item.__setCtx(ctx);
           });
         }
       }
@@ -10654,21 +10670,16 @@
           if (renderMode === mode.CANVAS) {
             // 有border-radius需模拟遮罩裁剪
             if (list) {
-              var cache1 = this.root.__getImageData();
-
-              this.root.__clear();
-
-              ctx.drawImage(this.__source, originX, originY, width, height);
-              ctx.globalCompositeOperation = 'destination-in';
-              border.genRdRect(renderMode, ctx, '#FFF', x, y, width, height, list);
-
-              var cache2 = this.root.__getImageData();
-
-              this.root.__clear();
-
-              ctx.globalCompositeOperation = 'source-over';
-
-              this.root.__putImageData(util.mergeImageData(cache1, cache2));
+              var _this$root = this.root,
+                  _width = _this$root.width,
+                  _height = _this$root.height;
+              var c = inject.getCacheCanvas(_width, _height);
+              c.ctx.drawImage(this.__source, 0, 0, _width, _height);
+              c.ctx.globalCompositeOperation = 'destination-in';
+              border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
+              ctx.drawImage(c.canvas, 0, 0);
+              c.ctx.globalCompositeOperation = 'source-over';
+              c.ctx.clearRect(0, 0, _width, _height);
             } else {
               ctx.drawImage(this.__source, originX, originY, width, height);
             }
@@ -11591,16 +11602,6 @@
         if (frame.__hookTask.indexOf(r) === -1) {
           frame.__hookTask.push(r);
         }
-      }
-    }, {
-      key: "__getImageData",
-      value: function __getImageData() {
-        return this.ctx.getImageData(0, 0, this.width, this.height);
-      }
-    }, {
-      key: "__putImageData",
-      value: function __putImageData(data) {
-        this.ctx.putImageData(data, 0, 0);
       }
     }, {
       key: "__clear",

@@ -859,32 +859,49 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode) {
-    let prev = this.prev;
+    let { prev, root, ctx } = this;
     let hasMask = prev && prev.isMask;
     if(renderMode === mode.CANVAS) {
       // 先保存之前的图像
       let cache1;
       let cache2;
       if(hasMask) {
-        cache1 = this.root.__getImageData();
-        this.root.__clear();
+        cache1 = root.__getImageData();
+        root.__clear();
       }
       // 然后反向先绘制需要遮罩的图层
       this.render(renderMode);
       // 再用mask反遮罩
       if(hasMask) {
-        this.ctx.globalCompositeOperation = 'destination-in';
-        prev.render(renderMode);
-        cache2 = this.root.__getImageData();
-        this.root.__clear();
+        let list = [];
+        while(prev && prev.isMask) {
+          list.unshift(prev);
+          prev = prev.prev;
+        }
+        // 只有1个遮罩高性能处理直接绘制
+        if(list.length === 1) {
+          ctx.globalCompositeOperation = 'destination-in';
+          prev.render(renderMode);
+        }
+        // 多个遮罩特殊处理
+        else {
+          // let source = root.__getImageData();
+          // root.__clear();
+          // list.forEach(item => item.render(renderMode));
+          // ctx.globalCompositeOperation = 'source-in';
+          // root.__putImageData(source);
+        }
+        cache2 = root.__getImageData();
+        root.__clear();
       }
-      this.ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = 'source-over';
       if(hasMask) {
-        this.root.__putImageData(mergeImageData(cache1, cache2));
+        root.__putImageData(mergeImageData(cache1, cache2));
       }
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode);
+      // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
         this.virtualDom.mask = prev.maskId;
       }

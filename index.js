@@ -8030,7 +8030,9 @@
     }, {
       key: "__renderByMask",
       value: function __renderByMask(renderMode) {
-        var prev = this.prev;
+        var prev = this.prev,
+            root = this.root,
+            ctx = this.ctx;
         var hasMask = prev && prev.isMask;
 
         if (renderMode === mode.CANVAS) {
@@ -8039,29 +8041,40 @@
           var cache2;
 
           if (hasMask) {
-            cache1 = this.root.__getImageData();
+            cache1 = root.__getImageData();
 
-            this.root.__clear();
+            root.__clear();
           } // 然后反向先绘制需要遮罩的图层
 
 
           this.render(renderMode); // 再用mask反遮罩
 
           if (hasMask) {
-            this.ctx.globalCompositeOperation = 'destination-in';
-            prev.render(renderMode);
-            cache2 = this.root.__getImageData();
+            var list = [];
 
-            this.root.__clear();
+            while (prev && prev.isMask) {
+              list.unshift(prev);
+              prev = prev.prev;
+            } // 只有1个遮罩高性能处理直接绘制
+
+
+            if (list.length === 1) {
+              ctx.globalCompositeOperation = 'destination-in';
+              prev.render(renderMode);
+            }
+
+            cache2 = root.__getImageData();
+
+            root.__clear();
           }
 
-          this.ctx.globalCompositeOperation = 'source-over';
+          ctx.globalCompositeOperation = 'source-over';
 
           if (hasMask) {
-            this.root.__putImageData(mergeImageData$1(cache1, cache2));
+            root.__putImageData(mergeImageData$1(cache1, cache2));
           }
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode);
+          this.render(renderMode); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
           if (hasMask) {
             this.virtualDom.mask = prev.maskId;
@@ -8637,7 +8650,7 @@
       _classCallCheck(this, Geom);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
-      _this.__isMask = !isNil$4(_this.props.mask) || _this.props.mask === true;
+      _this.__isMask = !!_this.props.mask;
       _this.__animateProps = []; // 同animateStyle
 
       _this.__currentProps = _this.props;
@@ -8863,6 +8876,7 @@
     }, {
       key: "__renderAsMask",
       value: function __renderAsMask(renderMode) {
+        // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
           this.render(renderMode);
           var vd = this.virtualDom;
@@ -8940,8 +8954,20 @@
                 }
               }
             }
-          });
-          var maskId = this.defs.add({
+          }); // 连续多个mask需要合并
+
+          var prev = this.prev,
+              defs = this.defs;
+
+          if (prev && prev.isMask) {
+            var last = defs.value;
+            last = last[last.length - 1];
+            last.children = last.children.concat(children);
+            this.__maskId = prev.maskId;
+            return;
+          }
+
+          var maskId = defs.add({
             tagName: 'mask',
             props: [],
             children: children

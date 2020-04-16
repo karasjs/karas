@@ -15,7 +15,7 @@ import inject from '../util/inject';
 import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
-const { clone, int2rgba, mergeImageData, equalArr } = util;
+const { clone, int2rgba, equalArr } = util;
 const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -721,26 +721,31 @@ class Xom extends Node {
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
           let source = this.__loadBgi.source;
           if(renderMode === mode.CANVAS && source) {
-            // 超出尺寸模拟mask截取
-            let cache1;
-            let cache2;
+            let c;
+            let currentCtx;
+            // 在离屏canvas上绘制
             if(needMask) {
-              cache1 = this.root.__getImageData();
-              this.root.__clear();
+              let { width, height } = this.root;
+              c = inject.getCacheCanvas(width, height);
+              currentCtx = c.ctx;
+            }
+            else {
+              currentCtx = ctx;
             }
             // 先画不考虑repeat的中心声明的
-            ctx.drawImage(source, originX, originY, w, h);
+            currentCtx.drawImage(source, originX, originY, w, h);
             // 再画重复的十字和4角象限
             repeat.forEach(item => {
-              ctx.drawImage(source, item[0], item[1], w, h);
+              currentCtx.drawImage(source, item[0], item[1], w, h);
             });
+            // mask特殊处理画回来
             if(needMask) {
-              ctx.globalCompositeOperation = 'destination-in';
-              renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this);
-              cache2 = this.root.__getImageData();
-              this.root.__clear();
-              ctx.globalCompositeOperation = 'source-over';
-              this.root.__putImageData(mergeImageData(cache1, cache2));
+              currentCtx.globalCompositeOperation = 'destination-in';
+              renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+              ctx.drawImage(c.canvas, 0, 0);
+              currentCtx.globalCompositeOperation = 'source-over';
+              currentCtx.clearRect(0, 0, width, height);
             }
           }
           else if(renderMode === mode.SVG) {
@@ -859,35 +864,53 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode) {
-    let prev = this.prev;
+    let { prev, root, ctx } = this;
     let hasMask = prev && prev.isMask;
-    if(renderMode === mode.CANVAS) {
-      // 先保存之前的图像
-      let cache1;
-      let cache2;
-      if(hasMask) {
-        cache1 = this.root.__getImageData();
-        this.root.__clear();
-      }
-      // 然后反向先绘制需要遮罩的图层
+    if(!hasMask) {
       this.render(renderMode);
-      // 再用mask反遮罩
-      if(hasMask) {
-        this.ctx.globalCompositeOperation = 'destination-in';
+      return;
+    }
+    if(renderMode === mode.CANVAS) {
+      // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
+      let { width, height } = root;
+      let c = inject.getCacheCanvas(width, height);
+      this.__setCtx(c.ctx);
+      this.render(renderMode);
+      this.__setCtx(ctx);
+      // 收集之前的mask列表
+      let list = [];
+      while(prev && prev.isMask) {
+        list.unshift(prev);
+        prev = prev.prev;
+      }
+      // 当mask只有1个时，无需生成m，直接在c上即可
+      if(list.length === 1) {
+        prev = list[0];
+        c.ctx.globalCompositeOperation = 'destination-in';
+        prev.__setCtx(c.ctx);
         prev.render(renderMode);
-        cache2 = this.root.__getImageData();
-        this.root.__clear();
+        prev.__setCtx(ctx);
+        ctx.drawImage(c.canvas, 0, 0);
       }
-      this.ctx.globalCompositeOperation = 'source-over';
-      if(hasMask) {
-        this.root.__putImageData(mergeImageData(cache1, cache2));
+      // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+      else {
+        let m = inject.getMaskCanvas(width, height);
+        list.forEach(item => {
+          item.__setCtx(m.ctx);
+          item.render(renderMode);
+          item.__setCtx(ctx);
+        });
+        c.ctx.globalCompositeOperation = 'destination-in';
+        c.ctx.drawImage(m.canvas, 0, 0);
+        ctx.drawImage(c.canvas, 0, 0);
       }
+      c.ctx.globalCompositeOperation = 'source-over';
+      c.ctx.clearRect(0, 0, width, height);
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode);
-      if(hasMask) {
-        this.virtualDom.mask = prev.maskId;
-      }
+      // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+      this.virtualDom.mask = prev.maskId;
     }
   }
 
@@ -1155,6 +1178,15 @@ class Xom extends Node {
           item.__style = this.currentStyle;
           repaint(item);
         }
+      });
+    }
+  }
+
+  __setCtx(ctx) {
+    this.__ctx = ctx;
+    if(!this.isGeom) {
+      this.children.forEach(item => {
+        item.__setCtx(ctx);
       });
     }
   }

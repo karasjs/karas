@@ -232,47 +232,6 @@ function clone(obj) {
   return n;
 }
 
-function mergeImageData(bottom, top) {
-  let bd = bottom.data;
-  let td = top.data;
-  for(let i = 0, len = bd.length; i < len; i += 4) {
-    let rb = bd[i];
-    let gb = bd[i + 1];
-    let bb = bd[i + 2];
-    let ab = bd[i + 3];
-    let rt = td[i];
-    let gt = td[i + 1];
-    let bt = td[i + 2];
-    let at = td[i + 3];
-    if(at === 0) {}
-    else if(ab === 0 || at === 255) {
-      bd[i] = rt;
-      bd[i + 1] = gt;
-      bd[i + 2] = bt;
-      bd[i + 3] = at;
-    }
-    else {
-      let alpha1 = ab / 255;
-      let alpha2 = at / 255;
-      let alpha3 = 1 - alpha1;
-      let r = rb * alpha1 + rt * alpha2 * alpha3;
-      let g = gb * alpha1 + gt * alpha2 * alpha3;
-      let b = bb * alpha1 + bt * alpha2 * alpha3;
-      let a = 1 - (1 - alpha1) * (1 - alpha2);
-      if(a !== 0 && a !== 1) {
-        r = r / a;
-        g = g / a;
-        b = b / a;
-      }
-      bd[i] = r;
-      bd[i + 1] = g;
-      bd[i + 2] = b;
-      bd[i + 3] = a;
-    }
-  }
-  return bottom;
-}
-
 function equalArr(a, b) {
   if(a.length !== b.length) {
     return false;
@@ -318,7 +277,6 @@ let util = {
   arr2hash,
   hash2arr,
   clone,
-  mergeImageData,
   equalArr,
 };
 

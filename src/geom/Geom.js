@@ -14,7 +14,7 @@ const REGISTER = {};
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
-    this.__isMask = !isNil(this.props.mask) || this.props.mask === true;
+    this.__isMask = !!this.props.mask;
     this.__animateProps = []; // 同animateStyle
     this.__currentProps = this.props;
   }
@@ -197,6 +197,7 @@ class Geom extends Xom {
   }
 
   __renderAsMask(renderMode) {
+    // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
       this.render(renderMode);
       let vd = this.virtualDom;
@@ -264,7 +265,16 @@ class Geom extends Xom {
           }
         }
       });
-      let maskId = this.defs.add({
+      // 连续多个mask需要合并
+      let { prev, defs } = this;
+      if(prev && prev.isMask) {
+        let last = defs.value;
+        last = last[last.length - 1];
+        last.children = last.children.concat(children);
+        this.__maskId = prev.maskId;
+        return;
+      }
+      let maskId = defs.add({
         tagName: 'mask',
         props: [],
         children,

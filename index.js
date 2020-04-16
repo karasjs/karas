@@ -11202,7 +11202,7 @@
         var w = this.props.width;
 
         if (!isNil$5(w)) {
-          var value = parseInt(w) || 0;
+          var value = parseFloat(w) || 0;
 
           if (value > 0) {
             this.__width = value;
@@ -11212,7 +11212,7 @@
         var h = this.props.height;
 
         if (!isNil$5(h)) {
-          var _value = parseInt(h) || 0;
+          var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
             this.__height = _value;
@@ -11333,12 +11333,12 @@
           var css = window.getComputedStyle(dom, null);
 
           if (!this.width) {
-            this.__width = parseInt(css.getPropertyValue('width'));
+            this.__width = parseFloat(css.getPropertyValue('width')) || 0;
             dom.setAttribute('width', this.width);
           }
 
           if (!this.height) {
-            this.__height = parseInt(css.getPropertyValue('height'));
+            this.__height = parseFloat(css.getPropertyValue('height')) || 0;
             dom.setAttribute('height', this.height);
           }
         } // 只有canvas有ctx，svg用真实dom

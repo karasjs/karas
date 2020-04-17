@@ -13120,7 +13120,13 @@
     // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
     child.tagName = child.tagName || libraryItem.tagName;
     child.props = clone$4(libraryItem.props);
-    child.children = libraryItem.children;
+    child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
+
+    Object.keys(libraryItem).forEach(function (k) {
+      if (k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
+        child[k] = libraryItem[k];
+      }
+    });
     linkInit(child);
   }
 

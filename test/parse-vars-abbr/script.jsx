@@ -29,7 +29,9 @@ let o = karas.parse({
     }
   ],
 }, '#test', {
-  aaa: 200
+  vars: {
+    aaa: 200,
+  },
 });
 let t = o.children[0];
 t.animationList[0].on(karas.Event.FINISH, () => {

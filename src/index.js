@@ -72,12 +72,12 @@ let karas = {
       }
     }
     // 暂存所有动画声明，等root的生成后开始执行
-    let animateList = [];
-    let vd = parse(this, json, animateList, options);
+    let animateRecords = [];
+    let vd = parse(this, json, animateRecords, options);
     // 传入根节点渲染
     if(dom) {
       this.render(vd, dom);
-      animateList.forEach(item => {
+      animateRecords.forEach(item => {
         let { target, animate } = item;
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
@@ -89,7 +89,7 @@ let karas = {
         }
       });
     }
-    else if(animateList.length) {
+    else if(animateRecords.length) {
       // TODO: 传给后面创建的root
     }
     return vd;

@@ -75,7 +75,7 @@ function replaceVars(target, vars) {
   }
 }
 
-function parseJson(karas, json, animateList, vars) {
+function parseJson(karas, json, animateRecords, vars) {
   if(isPrimitive(json)) {
     return json;
   }
@@ -93,7 +93,7 @@ function parseJson(karas, json, animateList, vars) {
     vd = karas.createGm(tagName, props);
   }
   else {
-    vd = karas.createVd(tagName, props, children.map(item => parseJson(karas, item, animateList, vars)));
+    vd = karas.createVd(tagName, props, children.map(item => parseJson(karas, item, animateRecords, vars)));
   }
   let animationRecord;
   if(animate) {
@@ -143,7 +143,7 @@ function parseJson(karas, json, animateList, vars) {
   }
   // 产生实际动画运行才存入列表供root调用执行
   if(animationRecord) {
-    animateList.push(animationRecord);
+    animateRecords.push(animationRecord);
   }
   return vd;
 }
@@ -205,7 +205,7 @@ function linkInit(child) {
   }
 }
 
-function parse(karas, json, animateList, options) {
+function parse(karas, json, animateRecords, options) {
   let { library, children } = json;
   if(Array.isArray(library)) {
     let hash = {};
@@ -234,7 +234,7 @@ function parse(karas, json, animateList, options) {
     }
   }
   linkInit(json);
-  return parseJson(karas, json, animateList, options && options.vars);
+  return parseJson(karas, json, animateRecords, options && options.vars);
 }
 
 export default parse;

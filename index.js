@@ -12994,7 +12994,7 @@
     }
   }
 
-  function parseJson(karas, json, animateList, vars) {
+  function parseJson(karas, json, animateRecords, vars) {
     if (isPrimitive(json)) {
       return json;
     }
@@ -13019,7 +13019,7 @@
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parseJson(karas, item, animateList, vars);
+        return parseJson(karas, item, animateRecords, vars);
       }));
     }
 
@@ -13078,7 +13078,7 @@
 
 
     if (animationRecord) {
-      animateList.push(animationRecord);
+      animateRecords.push(animationRecord);
     }
 
     return vd;
@@ -13146,7 +13146,7 @@
     }
   }
 
-  function parse$1(karas, json, animateList, options) {
+  function parse$1(karas, json, animateRecords, options) {
     var library = json.library,
         children = json.children;
 
@@ -13179,7 +13179,7 @@
     }
 
     linkInit(json);
-    return parseJson(karas, json, animateList, options && options.vars);
+    return parseJson(karas, json, animateRecords, options && options.vars);
   }
 
   Geom.register('$line', Line);
@@ -13233,14 +13233,14 @@
       } // 暂存所有动画声明，等root的生成后开始执行
 
 
-      var animateList = [];
+      var animateRecords = [];
 
-      var vd = parse$1(this, json, animateList, options); // 传入根节点渲染
+      var vd = parse$1(this, json, animateRecords, options); // 传入根节点渲染
 
 
       if (dom) {
         this.render(vd, dom);
-        animateList.forEach(function (item) {
+        animateRecords.forEach(function (item) {
           var target = item.target,
               animate = item.animate;
 

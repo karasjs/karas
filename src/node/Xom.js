@@ -127,7 +127,7 @@ function isRelativeOrAbsolute(node) {
 class Xom extends Node {
   constructor(tagName, props) {
     super();
-    props = props || [];
+    props = clone(props || []);
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
@@ -307,6 +307,12 @@ class Xom extends Node {
     ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
       calBorderRadius(this.width, this.height, `border${k}Radius`, currentStyle, computedStyle);
     });
+    // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+    let ar = this.__animateRecords;
+    if(ar) {
+      this.root.__animateController.add(ar);
+      delete this.__animateRecords;
+    }
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -1142,9 +1148,15 @@ class Xom extends Node {
     });
   }
 
-  animate(list, option) {
+  animate(list, option, isUnderControl) {
+    if(this.isDestroyed) {
+      return;
+    }
     let animation = new Animation(this, list, option);
     this.animationList.push(animation);
+    if(isUnderControl && this.root) {
+      this.root.animateController.add(animation);
+    }
     return animation.play();
   }
 

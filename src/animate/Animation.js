@@ -1514,6 +1514,10 @@ class Animation extends Event {
     this.__clean();
     this.__startTime = null;
     this.__isDestroyed = true;
+    let ac = this.root.animateController;
+    if(ac) {
+      ac.remove(this);
+    }
   }
 
   get id() {

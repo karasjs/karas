@@ -1459,7 +1459,8 @@
       STRING = unit.STRING;
   var isNil$1 = util.isNil,
       rgba2int$2 = util.rgba2int,
-      int2rgba$2 = util.int2rgba;
+      int2rgba$2 = util.int2rgba,
+      clone$1 = util.clone;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
@@ -2282,7 +2283,7 @@
     var currentStyle = node.__currentStyle = animateStyle;
     var lineHeight = currentStyle.lineHeight,
         textAlign = currentStyle.textAlign;
-    var computedStyle = node.__computedStyle = util.clone(currentStyle);
+    var computedStyle = node.__computedStyle = clone$1(currentStyle);
     var parent = node.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
@@ -5207,7 +5208,7 @@
   var isNil$3 = util.isNil,
       isFunction$2 = util.isFunction,
       isNumber$1 = util.isNumber,
-      clone$1 = util.clone,
+      clone$2 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
@@ -5268,7 +5269,7 @@
 
 
   function inherit(frames, keys, target) {
-    var copy = clone$1(frames);
+    var copy = clone$2(frames);
     var computedStyle = target.computedStyle;
     copy.forEach(function (item) {
       var style = item.style;
@@ -5965,7 +5966,7 @@
 
 
   function calStyle(frame, percent) {
-    var style = clone$1(frame.style);
+    var style = clone$2(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction !== linear) {
@@ -6096,7 +6097,7 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = clone$1(list || []); // 动画过程另外一种形式，object描述k-v形式
+      _this.__list = clone$2(list || []); // 动画过程另外一种形式，object描述k-v形式
 
       if (!Array.isArray(_this.__list)) {
         var nl = [];
@@ -6227,7 +6228,7 @@
 
 
         list.forEach(function (item, i) {
-          list[i] = clone$1(item);
+          list[i] = clone$2(item);
         }); // 首尾时间偏移强制为[0, 1]
 
         var first = list[0];
@@ -6290,7 +6291,7 @@
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var framesR = clone$1(frames).reverse();
+          var framesR = clone$2(frames).reverse();
           framesR.forEach(function (item) {
             item.time = duration - item.time;
             item.transition = [];
@@ -6917,6 +6918,11 @@
 
         this.__startTime = null;
         this.__isDestroyed = true;
+        var ac = this.root.animateController;
+
+        if (ac) {
+          ac.remove(this);
+        }
       }
     }, {
       key: "id",
@@ -7101,7 +7107,7 @@
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
-  var clone$2 = util.clone,
+  var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
       equalArr$2 = util.equalArr;
   var calRelative$1 = css.calRelative,
@@ -7212,7 +7218,7 @@
       _classCallCheck(this, Xom);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Xom).call(this));
-      props = props || []; // 构建工具中都是arr，手写可能出现hash情况
+      props = clone$3(props || []); // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
@@ -7419,7 +7425,15 @@
 
         ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
           calBorderRadius(_this4.width, _this4.height, "border".concat(k, "Radius"), currentStyle, computedStyle);
-        });
+        }); // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+
+        var ar = this.__animateRecords;
+
+        if (ar) {
+          this.root.__animateController.add(ar);
+
+          delete this.__animateRecords;
+        }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -7927,7 +7941,7 @@
                 }); // 再画重复的十字和4角象限
 
                 repeat.forEach(function (item) {
-                  var copy = clone$2(props);
+                  var copy = clone$3(props);
 
                   if (needResize) {
                     var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -8349,9 +8363,18 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, option) {
+      value: function animate(list, option, isUnderControl) {
+        if (this.isDestroyed) {
+          return;
+        }
+
         var animation = new Animation(this, list, option);
         this.animationList.push(animation);
+
+        if (isUnderControl && this.root) {
+          this.root.animateController.add(animation);
+        }
+
         return animation.play();
       }
     }, {
@@ -8509,7 +8532,7 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = clone$2(style);
+        var copy = clone$3(style);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.style);
@@ -8652,7 +8675,7 @@
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
-  var clone$3 = util.clone,
+  var clone$4 = util.clone,
       int2rgba$4 = util.int2rgba,
       isNil$4 = util.isNil;
   var REGISTER = {};
@@ -8898,7 +8921,7 @@
           var vd = this.virtualDom;
           vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
 
-          var children = clone$3(vd.children);
+          var children = clone$4(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -9037,7 +9060,7 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = clone$3(props);
+        var copy = clone$4(props);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.props);
@@ -11634,6 +11657,11 @@
       get: function get() {
         return this.__ref;
       }
+    }, {
+      key: "animateController",
+      get: function get() {
+        return this.__animateController;
+      }
     }]);
 
     return Root;
@@ -12912,7 +12940,7 @@
       isFunction$4 = util.isFunction,
       isString = util.isString,
       isNumber$2 = util.isNumber,
-      clone$4 = util.clone;
+      clone$5 = util.clone;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
@@ -13119,7 +13147,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
     child.tagName = child.tagName || libraryItem.tagName;
-    child.props = clone$4(libraryItem.props);
+    child.props = clone$5(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {
@@ -13179,8 +13207,127 @@
     }
 
     linkInit(json);
-    return parseJson(karas, json, animateRecords, options && options.vars);
+    return parseJson(karas, json, animateRecords, options.vars);
   }
+
+  var Controller = /*#__PURE__*/function () {
+    function Controller(records) {
+      _classCallCheck(this, Controller);
+
+      this.__records = records;
+      this.__list = [];
+    }
+
+    _createClass(Controller, [{
+      key: "add",
+      value: function add(v) {
+        if (Array.isArray(v)) {
+          this.__list = this.list.concat(v);
+        } else {
+          this.list.push(v);
+        }
+      }
+    }, {
+      key: "remove",
+      value: function remove(v) {
+        var i = this.list.indexOf(v);
+
+        if (i > -1) {
+          this.list.splice(i, 1);
+        }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        this.__records = [];
+        this.__list = [];
+      }
+    }, {
+      key: "__action",
+      value: function __action(k, args) {
+        this.list.forEach(function (item) {
+          item.target.animationList.forEach(function (animate) {
+            animate[k].apply(animate, args);
+          });
+        });
+      }
+    }, {
+      key: "play",
+      value: function play() {
+        this.__action('play'); // json中的动画每次播放时通过animate()方法传入isUnderControl，使其进入list被控制
+
+
+        var records = this.records;
+
+        if (records.length) {
+          // 清除防止重复调用，并且新的json还会进入整体逻辑
+          records.splice(0).forEach(function (item) {
+            var target = item.target,
+                animate = item.animate;
+
+            if (Array.isArray(animate)) {
+              animate.forEach(function (animate) {
+                target.animate(animate.value, animate.options, true);
+              });
+            } else {
+              target.animate(animate.value, animate.options, true);
+            }
+          });
+        }
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        this.__action('pause');
+      }
+    }, {
+      key: "cancel",
+      value: function cancel() {
+        this.__action('cancel');
+      }
+    }, {
+      key: "finish",
+      value: function finish() {
+        this.__action('finish');
+      }
+    }, {
+      key: "gotoAndStop",
+      value: function gotoAndStop(v, isFrame, excludeDelay, cb) {
+        var once = true;
+
+        this.__action('gotoAndStop', [v, isFrame, excludeDelay, function (diff) {
+          if (once) {
+            once = false;
+            cb(diff);
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndPlay",
+      value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
+        var once = true;
+
+        this.__action('gotoAndPlay', [v, isFrame, excludeDelay, function (diff) {
+          if (once) {
+            once = false;
+            cb(diff);
+          }
+        }]);
+      }
+    }, {
+      key: "records",
+      get: function get() {
+        return this.__records;
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }]);
+
+    return Controller;
+  }();
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
@@ -13223,7 +13370,9 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse(json, dom, options) {
+    parse: function parse(json, dom) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
       if (dom) {
         if (util.isString(dom) || window.HTMLElement && dom instanceof window.HTMLElement) ; else {
@@ -13235,24 +13384,30 @@
 
       var animateRecords = [];
 
-      var vd = parse$1(this, json, animateRecords, options); // 传入根节点渲染
+      var vd = parse$1(this, json, animateRecords, options); // 初始化animateController，再传入根节点渲染
 
 
       if (dom) {
-        this.render(vd, dom);
-        animateRecords.forEach(function (item) {
-          var target = item.target,
-              animate = item.animate;
+        var ac = vd.__animateController = new Controller(animateRecords); // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
-          if (Array.isArray(animate)) {
-            animate.forEach(function (animate) {
-              target.animate(animate.value, animate.options);
-            });
-          } else {
-            target.animate(animate.value, animate.options);
-          }
-        });
-      }
+        this.render(vd, dom); // 总控偏移、时间、速度等
+
+        var _options = options,
+            delay = _options.delay,
+            endDelay = _options.endDelay,
+            duration = _options.duration,
+            playbackRate = _options.playbackRate,
+            iterations = _options.iterations;
+        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画
+
+
+        if (options.autoPlay !== false) {
+          ac.play();
+        }
+      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
+      else if (animateRecords.length) {
+          vd.__animateRecords = animateRecords;
+        }
 
       return vd;
     },

@@ -234,7 +234,7 @@ function parse(karas, json, animateRecords, options) {
     }
   }
   linkInit(json);
-  return parseJson(karas, json, animateRecords, options && options.vars);
+  return parseJson(karas, json, animateRecords, options.vars);
 }
 
 export default parse;

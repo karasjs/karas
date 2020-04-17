@@ -5,7 +5,7 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
-const { isNil, rgba2int, int2rgba } = util;
+const { isNil, rgba2int, int2rgba, clone } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -779,7 +779,7 @@ function compute(node, isRoot) {
   let { animateStyle } = node;
   let currentStyle = node.__currentStyle = animateStyle;
   let { lineHeight, textAlign } = currentStyle;
-  let computedStyle = node.__computedStyle = util.clone(currentStyle);
+  let computedStyle = node.__computedStyle = clone(currentStyle);
   let parent = node.parent;
   let parentComputedStyle = parent && parent.computedStyle;
   preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);

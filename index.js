@@ -12907,14 +12907,25 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
+  var isNil$6 = util.isNil,
+      isBoolean = util.isBoolean,
+      isFunction$4 = util.isFunction,
+      isString = util.isString,
+      isNumber$2 = util.isNumber,
+      clone$4 = util.clone;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
+
+  function isPrimitive(v) {
+    return isNil$6(v) || isBoolean(v) || isString(v) || isNumber$2(v);
+  }
   /**
    * 还原缩写到全称，涉及样式和动画属性
    * @param target 还原的对象
    * @param hash 缩写映射
    */
+
 
   function abbr2full(target, hash) {
     // 也许节点没写样式
@@ -12949,7 +12960,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (util.isNil(v)) {
+            if (isNil$6(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -12964,7 +12975,7 @@
                 if (target[k2]) {
                   target = target[k2];
                 } else {
-                  console.error('Parse vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  console.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                 }
               }
 
@@ -12972,7 +12983,7 @@
             } // 支持函数模式和值模式
 
 
-            if (util.isFunction(value)) {
+            if (isFunction$4(value)) {
               value = value(v);
             }
 
@@ -12983,8 +12994,8 @@
     }
   }
 
-  function parse$1(karas, json, animateList, vars) {
-    if (util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
+  function parseJson(karas, json, animateList, vars) {
+    if (isPrimitive(json)) {
       return json;
     }
 
@@ -13008,7 +13019,7 @@
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parse$1(karas, item, animateList, vars);
+        return parseJson(karas, item, animateList, vars);
       }));
     }
 
@@ -13073,6 +13084,98 @@
     return vd;
   }
 
+  function linkLibrary(item, hash) {
+    var id = item.id,
+        children = item.children;
+
+    if (Array.isArray(children)) {
+      children.forEach(function (child) {
+        // 排除原始类型文本
+        if (!isPrimitive(child)) {
+          var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
+
+          if (!libraryId) {
+            return;
+          }
+
+          if (!hash.hasOwnProperty(libraryId)) {
+            linkLibrary(child, hash);
+          }
+
+          var libraryItem = hash[libraryId]; // 规定图层child只有tagName、init和动画，属性和子图层来自库
+
+          if (libraryItem) {
+            linkChild(child, libraryItem);
+          } else {
+            throw new Error('Library item miss ID: ' + libraryId);
+          }
+        }
+      });
+    }
+
+    hash[id] = item;
+  }
+
+  function linkChild(child, libraryItem) {
+    // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
+    child.tagName = child.tagName || libraryItem.tagName;
+    child.props = clone$4(libraryItem.props);
+    child.children = libraryItem.children;
+    linkInit(child);
+  }
+
+  function linkInit(child) {
+    // 规定图层实例化的属性和样式在init上，优先使用init，然后才取原型链的props
+    var init = child.init;
+
+    if (init) {
+      var props = child.props = child.props || {};
+      var style = props.style;
+      Object.assign(props, init); // style特殊处理，防止被上面覆盖丢失原始值
+
+      if (style) {
+        Object.assign(style, init.style);
+        props.style = style;
+      }
+    }
+  }
+
+  function parse$1(karas, json, animateList, options) {
+    var library = json.library,
+        children = json.children;
+
+    if (Array.isArray(library)) {
+      var hash = {}; // 强制要求library的文件是排好顺序的，即元件和被引用类型在前面，引用的在后面，另外没有循环引用
+
+      library.forEach(function (item) {
+        linkLibrary(item, hash);
+      });
+
+      if (Array.isArray(children)) {
+        children.forEach(function (child) {
+          if (!isPrimitive(child)) {
+            var libraryId = child.libraryId; // 没有引用的
+
+            if (!libraryId) {
+              return;
+            }
+
+            var libraryItem = hash[libraryId]; // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
+
+            if (libraryItem) {
+              linkChild(child, libraryItem);
+            } else {
+              throw new Error('Library miss ID: ' + libraryId);
+            }
+          }
+        });
+      }
+    }
+
+    linkInit(json);
+    return parseJson(karas, json, animateList, options && options.vars);
+  }
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -13114,26 +13217,37 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse(json, dom, vars) {
-      // 暂存所有动画声明，等root的生成后开始执行
-      var animateList = [];
-      json = util.clone(json);
-
-      var vd = parse$1(this, json, animateList, vars);
-
-      this.render(vd, dom);
-      animateList.forEach(function (item) {
-        var target = item.target,
-            animate = item.animate;
-
-        if (Array.isArray(animate)) {
-          animate.forEach(function (animate) {
-            target.animate(animate.value, animate.options);
-          });
-        } else {
-          target.animate(animate.value, animate.options);
+    parse: function parse(json, dom, options) {
+      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+      if (dom) {
+        if (util.isString(dom) || window.HTMLElement && dom instanceof window.HTMLElement) ; else {
+          options = dom;
+          dom = null;
         }
-      });
+      } // 暂存所有动画声明，等root的生成后开始执行
+
+
+      var animateList = [];
+
+      var vd = parse$1(this, json, animateList, options); // 传入根节点渲染
+
+
+      if (dom) {
+        this.render(vd, dom);
+        animateList.forEach(function (item) {
+          var target = item.target,
+              animate = item.animate;
+
+          if (Array.isArray(animate)) {
+            animate.forEach(function (animate) {
+              target.animate(animate.value, animate.options);
+            });
+          } else {
+            target.animate(animate.value, animate.options);
+          }
+        });
+      }
+
       return vd;
     },
     Root: Root,

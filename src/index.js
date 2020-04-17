@@ -62,23 +62,36 @@ let karas = {
   createCp(cp, props, children) {
     return new cp(props, children);
   },
-  parse(json, dom, vars) {
+  parse(json, dom, options) {
+    // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+    if(dom) {
+      if(util.isString(dom) || window.HTMLElement && (dom instanceof window.HTMLElement)) {}
+      else {
+        options = dom;
+        dom = null;
+      }
+    }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateList = [];
-    json = util.clone(json);
-    let vd = parse(this, json, animateList, vars);
-    this.render(vd, dom);
-    animateList.forEach(item => {
-      let { target, animate } = item;
-      if(Array.isArray(animate)) {
-        animate.forEach(animate => {
+    let vd = parse(this, json, animateList, options);
+    // 传入根节点渲染
+    if(dom) {
+      this.render(vd, dom);
+      animateList.forEach(item => {
+        let { target, animate } = item;
+        if(Array.isArray(animate)) {
+          animate.forEach(animate => {
+            target.animate(animate.value, animate.options);
+          });
+        }
+        else {
           target.animate(animate.value, animate.options);
-        });
-      }
-      else {
-        target.animate(animate.value, animate.options);
-      }
-    });
+        }
+      });
+    }
+    else if(animateList.length) {
+      // TODO: 传给后面创建的root
+    }
     return vd;
   },
   Root,

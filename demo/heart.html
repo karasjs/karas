@@ -14,14 +14,16 @@
 <div class="pre">试着修改下方的fill颜色和数量num，体验下变化。fill可以是个颜色数值，还可以是函数返回。</div>
 <div>
 <textarea id="ta" autocomplete="off">{
-  "fill": function() {
-    var r = Math.floor(Math.random() * 255);
-    var b = Math.floor(Math.random() * 255);
-    var b = Math.floor(Math.random() * 255);
-    var a = Math.random().toFixed(2);
-    return `rgba(${r}, ${b}, ${b}, ${a})`;
-  },
-  "num": 1
+  "vars": {
+    "fill": function() {
+      var r = Math.floor(Math.random() * 255);
+      var b = Math.floor(Math.random() * 255);
+      var b = Math.floor(Math.random() * 255);
+      var a = Math.random().toFixed(2);
+      return `rgba(${r}, ${b}, ${b}, ${a})`;
+    },
+    "num": 1
+  }
 }</textarea>
   <input id="btn" type="button" value="ok"/>
 </div>

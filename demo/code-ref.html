@@ -3,49 +3,39 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>mask</title>
+  <title>inner-ref</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">可以为一个geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。
-mask可以叠加多个，同时作用于下一个相邻非mask节点。
-注意由于canvas和svg的细节不同，只能统一使用fill填充色做遮罩，不能使用stroke。另外canvas只认透明度，svg除此之外还根据灰度识别遮罩透明。</div>
+<div class="pre">IDE导出的JSON数据，可以被编程CSX时使用。这是打通设计师和程序员的桥梁基础。
+因为它们都会生成js中间代码，所以底层调用功能是完全一样的。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
+  let data = {
+    tagName: 'div',
+    props: {
+      style: {
+        color: '#F00'
+      }
+    },
+    children: [123]
+  };
   karas.render(
     <canvas width="360" height="360">
-      <div>looooooooooooooong</div>
-      <$polygon
-        mask="true"
-        points={[
-          [0, 0],
-          [1, 1],
-          [0, 1]
-        ]}
-        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
-      <div
-        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
+      {
+        karas.parse(data)
+      }
     </canvas>,
-    '#example'
-  );
+    '#example');
   karas.render(
     <svg width="360" height="360">
-      <div>looooooooooooooong</div>
-      <$polygon
-        mask="true"
-        points={[
-          [0, 0],
-          [1, 1],
-          [0, 1]
-        ]}
-        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
-      <div
-        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
+      {
+        karas.parse(data)
+      }
     </svg>,
-    '#example2'
-  );
+    '#example2');
 </script>
 <script src="sea.js"></script>
 <script src="homunculus.js"></script>

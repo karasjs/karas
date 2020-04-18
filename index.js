@@ -6072,6 +6072,15 @@
     return style;
   }
 
+  function gotoOverload(options, cb) {
+    if (isFunction$2(options)) {
+      cb = options;
+      options = {};
+    }
+
+    return [options, cb];
+  }
+
   var uuid = 0;
 
   var Animation = /*#__PURE__*/function (_Event) {
@@ -6787,9 +6796,16 @@
 
         if (isDestroyed || duration <= 0) {
           return this;
-        } // 计算出时间点直接累加播放
+        }
 
+        var _gotoOverload = gotoOverload(options, cb);
 
+        var _gotoOverload2 = _slicedToArray(_gotoOverload, 2);
+
+        options = _gotoOverload2[0];
+        cb = _gotoOverload2[1];
+
+        // 计算出时间点直接累加播放
         this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > duration + delay + endDelay) {
@@ -6812,6 +6828,12 @@
           return this;
         }
 
+        var _gotoOverload3 = gotoOverload(options, cb);
+
+        var _gotoOverload4 = _slicedToArray(_gotoOverload3, 2);
+
+        options = _gotoOverload4[0];
+        cb = _gotoOverload4[1];
         v = this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > duration + delay + endDelay) {

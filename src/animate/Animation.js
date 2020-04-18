@@ -907,6 +907,14 @@ function calStyle(frame, percent) {
   return style;
 }
 
+function gotoOverload(options, cb) {
+  if(isFunction(options)) {
+    cb = options;
+    options = {};
+  }
+  return [options, cb];
+}
+
 let uuid = 0;
 
 class Animation extends Event {
@@ -1427,6 +1435,7 @@ class Animation extends Event {
     if(isDestroyed || duration <= 0) {
       return this;
     }
+    [options, cb] = gotoOverload(options, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > duration + delay + endDelay) {
@@ -1440,6 +1449,7 @@ class Animation extends Event {
     if(isDestroyed || duration <= 0) {
       return this;
     }
+    [options, cb] = gotoOverload(options, cb);
     v = this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > duration + delay + endDelay) {
       return this.finish(cb);

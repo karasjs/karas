@@ -13045,7 +13045,8 @@
   }
 
   function parseJson(karas, json, animateRecords, vars) {
-    if (isPrimitive(json)) {
+    // 除了原始类型，parse嵌套时内部的parse已经生成vd了，外部无需重复parse，直接作为children使用
+    if (isPrimitive(json) || json instanceof Node) {
       return json;
     }
 
@@ -13197,6 +13198,10 @@
   }
 
   function parse$1(karas, json, animateRecords, options) {
+    if (Array.isArray(json)) {
+      throw new Error('Parse can not be an Array');
+    }
+
     var library = json.library,
         children = json.children;
 
@@ -13455,7 +13460,7 @@
   var karas = {
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
-        throw new Error('Render root must be canvas/svg');
+        throw new Error('Render must be canvas/svg');
       }
 
       if (dom) {

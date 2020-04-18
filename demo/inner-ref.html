@@ -3,49 +3,59 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>mask</title>
+  <title>inner-ref</title>
   <link href="style.css" media="all" rel="stylesheet"/>
 </head>
 <body>
-<div class="pre">可以为一个geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。
-mask可以叠加多个，同时作用于下一个相邻非mask节点。
-注意由于canvas和svg的细节不同，只能统一使用fill填充色做遮罩，不能使用stroke。另外canvas只认透明度，svg除此之外还根据灰度识别遮罩透明。</div>
+<div class="pre">这是专门为IDE设计的内部引用数据格式，json的根级可以有library数组，存储引用数据。
+这些数据是自递归的，即library中还可以引用library，只是注意被引用的顺序要放在前面，同时不能循环引用。
+实例化时init作为高优先级覆盖props，可以看做props是init的数据原型链。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
-  karas.render(
-    <canvas width="360" height="360">
-      <div>looooooooooooooong</div>
-      <$polygon
-        mask="true"
-        points={[
-          [0, 0],
-          [1, 1],
-          [0, 1]
-        ]}
-        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
-      <div
-        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
-    </canvas>,
-    '#example'
-  );
-  karas.render(
-    <svg width="360" height="360">
-      <div>looooooooooooooong</div>
-      <$polygon
-        mask="true"
-        points={[
-          [0, 0],
-          [1, 1],
-          [0, 1]
-        ]}
-        style={{position:'absolute',left:0,top:0,width:100,height:100,strokeWidth:0,fill:'#EEE'}}/>
-      <div
-        style={{position:'absolute',left:5,top:10,width:100,height:100,background:'#F00'}}>123</div>
-    </svg>,
-    '#example2'
-  );
+  let library = [{
+    id: 'a',
+    tagName: 'div',
+    props: {
+      style: {
+        color: '#F00'
+      }
+    },
+    children: [123]
+  }];
+  karas.parse({
+    library,
+    tagName: 'canvas',
+    props: {
+      width: 360,
+      height: 360,
+    },
+    children: [{
+      libraryId: 'a',
+      init: {
+        style: {
+          background: '#00F'
+        }
+      }
+    }],
+  }, '#example');
+  karas.parse({
+    library,
+    tagName: 'svg',
+    props: {
+      width: 360,
+      height: 360,
+    },
+    children: [{
+      libraryId: 'a',
+      init: {
+        style: {
+          background: '#00F'
+        }
+      }
+    }],
+  }, '#example2');
 </script>
 <script src="sea.js"></script>
 <script src="homunculus.js"></script>

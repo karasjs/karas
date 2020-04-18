@@ -27,8 +27,8 @@
     <span>基本的render方法接收2个参数：图表程序和渲染dom对象。</span>
   </li>
   <li>
-    <a href="csx.html" title="csx">csx</a>
-    <span>csx取名借鉴自jsx，Canvas-Svg-Xml，根据根节点的不同，自动切换为canvas或svg类型，两者功能完全等价。</span>
+    <a href="csx.html" title="csx">CSX</a>
+    <span>CSX取名借鉴自JSX，Canvas-Svg-Xml，根据根节点的不同，自动切换为canvas或svg类型，两者功能完全等价。</span>
   </li>
   <li>
     <a href="dpr.html" title="dpr">高清方案</a>
@@ -36,7 +36,7 @@
   </li>
   <li>
     <a href="tag.html" title="tag">dom标签</a>
-    <span>目前只有2种标签：div和span，分别对应block和inline元素。</span>
+    <span>常见2种标签：div和span，分别对应block和inline元素。手动指定display也限于这两种。</span>
   </li>
   <li>
     <a href="flex.html" title="flex">弹性布局</a>
@@ -108,7 +108,7 @@
   </li>
   <li>
     <a href="component-css.html" title="component-css">component-css</a>
-    <span>component中也可以为shadowRoot元素传入cssx，同时作为host的组件传入的cssx同样会覆盖shadowRoot的。</span>
+    <span>Component中也可以为shadowRoot元素传入CSSX，同时作为host的组件传入的CSSX同样会覆盖shadowRoot的。</span>
   </li>
   <li>
     <a href="img.html" title="img">位图</a>
@@ -120,7 +120,7 @@
   </li>
   <li>
     <a href="mask.html" title="mask">遮罩</a>
-    <span>可以为一个geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。</span>
+    <span>可以为一个Geom图形设置mask属性，这样它就作为下一个相邻节点的遮罩层出现。</span>
   </li>
   <li>
     <a href="dynamic.html" title="dynamic">动态加载</a>
@@ -128,7 +128,11 @@
   </li>
   <li>
     <a href="input.html" title="input">动态输入</a>
-    <span>直接输入json，生成动画，这是动态加载的更加直观的演示。</span>
+    <span>直接输入JSON，生成动画，这是动态加载的更加直观的演示。</span>
+  </li>
+  <li>
+    <a href="controller.html" title="controller">动画控制器</a>
+    <span>parse这个API是专门用作简单动画模式，可以看做是lottie模式，会在Root下生成animateController总控制器对象。</span>
   </li>
   <li>
     <a href="vars.html" title="vars">插槽替换</a>
@@ -136,7 +140,19 @@
   </li>
   <li>
     <a href="heart.html" title="heart">高级插槽替换</a>
-    <span>仅仅替换变量指太多单一，也可传入函数。</span>
+    <span>仅仅替换变量太多单一，也可传入函数。</span>
+  </li>
+  <li>
+    <a href="inner-ref.html" title="inner-ref">内部引用</a>
+    <span>这是专门为ide设计的内部引用数据格式，JSON的根级可以有library数组，存储引用数据。</span>
+  </li>
+  <li>
+    <a href="outer-ref.html" title="outer-ref">外部引用</a>
+    <span>parse是可以递归嵌套的，为了防止某些意外情况做的兼容处理。比如无法修改根节点的情况。</span>
+  </li>
+  <li>
+    <a href="code-ref.html" title="code-ref">混合代码</a>
+    <span>IDE导出的JSON数据，可以被编程CSX时使用。这是打通设计师和程序员的桥梁基础。</span>
   </li>
   <li>
     <a href="tar.html" title="tar">三角形仿射变换</a>

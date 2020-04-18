@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
-  <title>dynamic</title>
+  <title>controller</title>
   <link href="style.css" media="all" rel="stylesheet"/>
   <style>
     #example, #example2, canvas, svg {
@@ -13,11 +13,11 @@
   </style>
 </head>
 <body>
-<div class="pre">在一些展示或动画场景，希望能够通过配置的方式实现，这样能够灵活控制内容。动态加载能力实现了这一需求。</div>
+<div class="pre">parse这个API是专门用作简单动画模式，可以看做是lottie模式，会在Root下生成animateController总控制器对象。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
-<script type="text/jsx">
+<script>
   let data = [
     {
       tagName: 'div',
@@ -107,6 +107,7 @@
         {
           tagName: '$circle',
           props: {
+            ref: 'c',
             style: {
               position: 'absolute',
               left: '5%',
@@ -121,6 +122,7 @@
         {
           tagName: '$polygon',
           props: {
+            ref: 'p',
             points: [
               [ 0.4673, 0.76 ],
               [ 0.4673, 0.64 ],
@@ -206,7 +208,9 @@
       ],
     },
   ];
-  karas.parse({
+</script>
+<script type="text/jsx">
+  let o = karas.parse({
     tagName: 'canvas',
     props: {
       width: 100,
@@ -214,7 +218,7 @@
     },
     children: data,
   }, '#example');
-  karas.parse({
+  let o2 = karas.parse({
     tagName: 'svg',
     props: {
       width: 100,
@@ -222,6 +226,8 @@
     },
     children: data,
   }, '#example2');
+  o.animateController.playbackRate = 2;
+  o2.animateController.iterasions = 1;
 </script>
 <script src="sea.js"></script>
 <script src="homunculus.js"></script>

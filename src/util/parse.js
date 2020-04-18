@@ -1,5 +1,6 @@
 import util from './util';
 import abbr from './abbr';
+import Node from '../node/Node';
 
 let { isNil, isBoolean, isFunction, isString, isNumber, clone } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
@@ -76,7 +77,8 @@ function replaceVars(target, vars) {
 }
 
 function parseJson(karas, json, animateRecords, vars) {
-  if(isPrimitive(json)) {
+  // 除了原始类型，parse嵌套时内部的parse已经生成vd了，外部无需重复parse，直接作为children使用
+  if(isPrimitive(json) || json instanceof Node) {
     return json;
   }
   let { tagName, props = {}, children = [], animate } = json;
@@ -206,6 +208,9 @@ function linkInit(child) {
 }
 
 function parse(karas, json, animateRecords, options) {
+  if(Array.isArray(json)) {
+    throw new Error('Parse can not be an Array');
+  }
   let { library, children } = json;
   if(Array.isArray(library)) {
     let hash = {};

@@ -37,7 +37,7 @@ Geom.register('$ellipse', Ellipse);
 let karas = {
   render(root, dom) {
     if(!(root instanceof Root)) {
-      throw new Error('Render root must be canvas/svg');
+      throw new Error('Render must be canvas/svg');
     }
     if(dom) {
       root.appendTo(dom);

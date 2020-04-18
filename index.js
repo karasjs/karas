@@ -6072,18 +6072,6 @@
     return style;
   }
 
-  function gotoOverload(isFrame, excludeDelay, cb) {
-    if (isFunction$2(isFrame)) {
-      cb = isFrame;
-      isFrame = excludeDelay = false;
-    } else if (isFunction$2(excludeDelay)) {
-      cb = excludeDelay;
-      excludeDelay = false;
-    }
-
-    return [isFrame, excludeDelay, cb];
-  }
-
   var uuid = 0;
 
   var Animation = /*#__PURE__*/function (_Event) {
@@ -6392,7 +6380,6 @@
               framesR = this.framesR,
               target = this.target,
               direction = this.direction,
-              iterations = this.iterations,
               delay = this.delay,
               endDelay = this.endDelay,
               keys = this.keys,
@@ -6428,7 +6415,8 @@
               var root = _this3.root,
                   style = _this3.style,
                   fps = _this3.fps,
-                  playCount = _this3.playCount;
+                  playCount = _this3.playCount,
+                  iterations = _this3.iterations;
 
               if (!root) {
                 return;
@@ -6791,7 +6779,7 @@
       }
     }, {
       key: "gotoAndPlay",
-      value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
+      value: function gotoAndPlay(v, options, cb) {
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             delay = this.delay,
@@ -6799,18 +6787,10 @@
 
         if (isDestroyed || duration <= 0) {
           return this;
-        }
+        } // 计算出时间点直接累加播放
 
-        var _gotoOverload = gotoOverload(isFrame, excludeDelay, cb);
 
-        var _gotoOverload2 = _slicedToArray(_gotoOverload, 3);
-
-        isFrame = _gotoOverload2[0];
-        excludeDelay = _gotoOverload2[1];
-        cb = _gotoOverload2[2];
-
-        // 计算出时间点直接累加播放
-        this.__goto(v, isFrame, excludeDelay);
+        this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > duration + delay + endDelay) {
           return this.finish(cb);
@@ -6820,7 +6800,7 @@
       }
     }, {
       key: "gotoAndStop",
-      value: function gotoAndStop(v, isFrame, excludeDelay, cb) {
+      value: function gotoAndStop(v, options, cb) {
         var _this6 = this;
 
         var isDestroyed = this.isDestroyed,
@@ -6832,14 +6812,7 @@
           return this;
         }
 
-        var _gotoOverload3 = gotoOverload(isFrame, excludeDelay, cb);
-
-        var _gotoOverload4 = _slicedToArray(_gotoOverload3, 3);
-
-        isFrame = _gotoOverload4[0];
-        excludeDelay = _gotoOverload4[1];
-        cb = _gotoOverload4[2];
-        v = this.__goto(v, isFrame, excludeDelay);
+        v = this.__goto(v, options.isFrame, options.excludeDelay);
 
         if (v > duration + delay + endDelay) {
           return this.finish(cb);
@@ -6889,6 +6862,24 @@
         return v;
       }
     }, {
+      key: "addControl",
+      value: function addControl() {
+        var ac = this.root.animateController;
+
+        if (ac) {
+          ac.add(this);
+        }
+      }
+    }, {
+      key: "removeControl",
+      value: function removeControl() {
+        var ac = this.root.animateController;
+
+        if (ac) {
+          ac.remove(this);
+        }
+      }
+    }, {
       key: "__stayBegin",
       value: function __stayBegin() {
         return {
@@ -6918,11 +6909,7 @@
 
         this.__startTime = null;
         this.__isDestroyed = true;
-        var ac = this.root.animateController;
-
-        if (ac) {
-          ac.remove(this);
-        }
+        this.removeControl();
       }
     }, {
       key: "id",
@@ -7002,6 +6989,15 @@
       key: "iterations",
       get: function get() {
         return this.__iterations;
+      },
+      set: function set(v) {
+        v = parseInt(v);
+
+        if (isNaN(v)) {
+          v = 1;
+        }
+
+        this.__iterations = v;
       }
     }, {
       key: "fill",
@@ -7041,10 +7037,6 @@
       key: "startTime",
       get: function get() {
         return this.__startTime;
-      },
-      set: function set(v) {
-        v = parseInt(v) || 0;
-        this.__startTime = v;
       }
     }, {
       key: "currentTime",
@@ -7212,13 +7204,14 @@
   var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
 
-    function Xom(tagName, props) {
+    function Xom(tagName) {
       var _this;
+
+      var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
       _classCallCheck(this, Xom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Xom).call(this));
-      props = clone$3(props || []); // 构建工具中都是arr，手写可能出现hash情况
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Xom).call(this)); // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
@@ -7228,8 +7221,9 @@
         _this.__props = util.hash2arr(props);
       }
 
-      _this.__tagName = tagName;
-      _this.__style = _this.props.style || {}; // style被解析后的k-v形式
+      _this.__tagName = tagName; // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
+
+      _this.__style = clone$3(_this.props.style) || {}; // style被解析后的k-v形式
 
       _this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
 
@@ -7430,9 +7424,8 @@
         var ar = this.__animateRecords;
 
         if (ar) {
-          this.root.__animateController.add(ar);
-
-          delete this.__animateRecords;
+          var ac = this.root.__animateController;
+          ac.__list = ac.__list.concat(ar);
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -8363,7 +8356,7 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, option, isUnderControl) {
+      value: function animate(list, option, underControl) {
         if (this.isDestroyed) {
           return;
         }
@@ -8371,7 +8364,7 @@
         var animation = new Animation(this, list, option);
         this.animationList.push(animation);
 
-        if (isUnderControl && this.root) {
+        if (underControl && this.root) {
           this.root.animateController.add(animation);
         }
 
@@ -13210,6 +13203,15 @@
     return parseJson(karas, json, animateRecords, options.vars);
   }
 
+  var isNil$7 = util.isNil;
+
+  function replaceGlobal(target, globalValue, key, vars) {
+    // 优先vars，其次总控，没有就是自己声明
+    if (!isNil$7(globalValue) && (!target['var-' + key] || isNil$7(vars[key]))) {
+      target[key] = globalValue;
+    }
+  }
+
   var Controller = /*#__PURE__*/function () {
     function Controller(records) {
       _classCallCheck(this, Controller);
@@ -13219,11 +13221,31 @@
     }
 
     _createClass(Controller, [{
+      key: "__op",
+      value: function __op(options) {
+        var playbackRate = options.playbackRate,
+            iterations = options.iterations,
+            vars = options.vars; // 没定义总控不必循环设置
+
+        if (isNil$7(playbackRate) && isNil$7(iterations)) {
+          return;
+        }
+
+        this.__playbackRate = playbackRate;
+        this.__iterations = iterations;
+        this.records.forEach(function (record) {
+          record.animate.forEach(function (item) {
+            var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
+
+            replaceGlobal(options, playbackRate, 'playbackRate', vars);
+            replaceGlobal(options, iterations, 'iterations', vars);
+          });
+        });
+      }
+    }, {
       key: "add",
       value: function add(v) {
-        if (Array.isArray(v)) {
-          this.__list = this.list.concat(v);
-        } else {
+        if (this.__list.indexOf(v) === -1) {
           this.list.push(v);
         }
       }
@@ -13292,10 +13314,10 @@
       }
     }, {
       key: "gotoAndStop",
-      value: function gotoAndStop(v, isFrame, excludeDelay, cb) {
+      value: function gotoAndStop(v, options, cb) {
         var once = true;
 
-        this.__action('gotoAndStop', [v, isFrame, excludeDelay, function (diff) {
+        this.__action('gotoAndStop', [v, options, function (diff) {
           if (once) {
             once = false;
             cb(diff);
@@ -13304,10 +13326,10 @@
       }
     }, {
       key: "gotoAndPlay",
-      value: function gotoAndPlay(v, isFrame, excludeDelay, cb) {
+      value: function gotoAndPlay(v, options, cb) {
         var once = true;
 
-        this.__action('gotoAndPlay', [v, isFrame, excludeDelay, function (diff) {
+        this.__action('gotoAndPlay', [v, options, function (diff) {
           if (once) {
             once = false;
             cb(diff);
@@ -13323,6 +13345,40 @@
       key: "list",
       get: function get() {
         return this.__list;
+      }
+    }, {
+      key: "playbackRate",
+      get: function get() {
+        return this.__playbackRate;
+      },
+      set: function set(v) {
+        v = parseFloat(v) || 0;
+
+        if (v < 0) {
+          v = 1;
+        }
+
+        this.__playbackRate = v;
+        this.list.forEach(function (item) {
+          item.playbackRate = v;
+        });
+      }
+    }, {
+      key: "iterations",
+      get: function get() {
+        return this.__iterations;
+      },
+      set: function set(v) {
+        v = parseInt(v);
+
+        if (isNaN(v)) {
+          v = 1;
+        }
+
+        this.__iterations = v;
+        this.list.forEach(function (item) {
+          item.iterations = v;
+        });
       }
     }]);
 
@@ -13390,15 +13446,9 @@
       if (dom) {
         var ac = vd.__animateController = new Controller(animateRecords); // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
-        this.render(vd, dom); // 总控偏移、时间、速度等
+        this.render(vd, dom); // 总控次数、速度
 
-        var _options = options,
-            delay = _options.delay,
-            endDelay = _options.endDelay,
-            duration = _options.duration,
-            playbackRate = _options.playbackRate,
-            iterations = _options.iterations;
-        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画
+        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画
 
 
         if (options.autoPlay !== false) {

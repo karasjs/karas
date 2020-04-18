@@ -81,11 +81,8 @@ let karas = {
       let ac = vd.__animateController = new Controller(animateRecords);
       // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
       this.render(vd, dom);
-      // 总控偏移、时间、速度等
-      let { delay, endDelay, duration, playbackRate, iterations } = options;
-      if(delay) {
-        // TODO:
-      }
+      // 总控次数、速度
+      ac.__op(options);
       // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画
       if(options.autoPlay !== false) {
         ac.play();

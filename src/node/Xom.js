@@ -125,9 +125,8 @@ function isRelativeOrAbsolute(node) {
 }
 
 class Xom extends Node {
-  constructor(tagName, props) {
+  constructor(tagName, props = []) {
     super();
-    props = clone(props || []);
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
@@ -138,7 +137,8 @@ class Xom extends Node {
       this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
-    this.__style = this.props.style || {}; // style被解析后的k-v形式
+    // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
+    this.__style = clone(this.props.style) || {}; // style被解析后的k-v形式
     this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
     this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
     this.__listener = {};
@@ -310,8 +310,8 @@ class Xom extends Node {
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
-      this.root.__animateController.add(ar);
-      delete this.__animateRecords;
+      let ac = this.root.__animateController;
+      ac.__list = ac.__list.concat(ar);
     }
   }
 
@@ -1148,13 +1148,13 @@ class Xom extends Node {
     });
   }
 
-  animate(list, option, isUnderControl) {
+  animate(list, option, underControl) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, option);
     this.animationList.push(animation);
-    if(isUnderControl && this.root) {
+    if(underControl && this.root) {
       this.root.animateController.add(animation);
     }
     return animation.play();

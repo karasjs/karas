@@ -1,14 +1,42 @@
+import util from '../util/util';
+
+const { isNil } = util;
+
+function replaceGlobal(target, globalValue, key, vars) {
+  // 优先vars，其次总控，没有就是自己声明
+  if(!isNil(globalValue)
+    && (!target['var-' + key]
+      || isNil(vars[key]))) {
+    target[key] = globalValue;
+  }
+}
+
 class Controller {
   constructor(records) {
     this.__records = records;
     this.__list = [];
   }
 
-  add(v) {
-    if(Array.isArray(v)) {
-      this.__list = this.list.concat(v);
+  __op(options) {
+    let { playbackRate, iterations, vars } = options;
+    // 没定义总控不必循环设置
+    if(isNil(playbackRate) && isNil(iterations)) {
+      return;
     }
-    else {
+    this.__playbackRate = playbackRate;
+    this.__iterations = iterations;
+    this.records.forEach(record => {
+      record.animate.forEach(item => {
+        let { options } = item;
+        // 用总控替换动画属性中的值，注意vars优先级
+        replaceGlobal(options, playbackRate, 'playbackRate', vars);
+        replaceGlobal(options, iterations, 'iterations', vars);
+      });
+    });
+  }
+
+  add(v) {
+    if(this.__list.indexOf(v) === -1) {
       this.list.push(v);
     }
   }
@@ -65,9 +93,9 @@ class Controller {
     this.__action('finish');
   }
 
-  gotoAndStop(v, isFrame, excludeDelay, cb) {
+  gotoAndStop(v, options, cb) {
     let once = true;
-    this.__action('gotoAndStop', [v, isFrame, excludeDelay, function(diff) {
+    this.__action('gotoAndStop', [v, options, function(diff) {
       if(once) {
         once = false;
         cb(diff);
@@ -75,9 +103,9 @@ class Controller {
     }]);
   }
 
-  gotoAndPlay(v, isFrame, excludeDelay, cb) {
+  gotoAndPlay(v, options, cb) {
     let once = true;
-    this.__action('gotoAndPlay', [v, isFrame, excludeDelay, function(diff) {
+    this.__action('gotoAndPlay', [v, options, function(diff) {
       if(once) {
         once = false;
         cb(diff);
@@ -91,6 +119,36 @@ class Controller {
 
   get list() {
     return this.__list;
+  }
+
+  get playbackRate() {
+    return this.__playbackRate;
+  }
+
+  set playbackRate(v) {
+    v = parseFloat(v) || 0;
+    if(v < 0) {
+      v = 1;
+    }
+    this.__playbackRate = v;
+    this.list.forEach(item => {
+      item.playbackRate = v;
+    });
+  }
+
+  get iterations() {
+    return this.__iterations;
+  }
+
+  set iterations(v) {
+    v = parseInt(v);
+    if(isNaN(v)) {
+      v = 1;
+    }
+    this.__iterations = v;
+    this.list.forEach(item => {
+      item.iterations = v;
+    });
   }
 }
 

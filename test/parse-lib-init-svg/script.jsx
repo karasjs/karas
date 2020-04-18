@@ -1,35 +1,32 @@
 let o = karas.parse({
   tagName: 'svg',
-  props: {},
+  props: {
+    width: 360,
+    height: 360,
+  },
   children: [
     karas.parse({
-      tagName: 'svg',
-      props: {},
-      children: [
-        karas.parse({
-          library: [{
-            id: 'a',
-            tagName: 'span',
-            props: {
-              style: {
-                color: '#F00',
-                fontWeight: 700,
-              },
-            },
-            children: [123],
-          }],
-          tagName: 'div',
-          children: [{
-            libraryId: 'a',
-            init: {
-              style: {
-                color: '#00F',
-                fontSize: 30,
-              },
-            },
-          }],
-        })
-      ],
+      library: [{
+        id: 'a',
+        tagName: 'span',
+        props: {
+          style: {
+            color: '#F00',
+            fontWeight: 700,
+          },
+        },
+        children: [123],
+      }],
+      tagName: 'div',
+      children: [{
+        libraryId: 'a',
+        init: {
+          style: {
+            color: '#00F',
+            fontSize: 30,
+          },
+        },
+      }],
     })
   ],
 }, '#test');

@@ -85,19 +85,21 @@ class Controller {
         let { target, animate } = item;
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
-            target.animate(animate.value, animate.options, true);
+            let o = target.animate(animate.value, animate.options);
+            this.add(o);
           });
         }
         else {
-          target.animate(animate.value, animate.options, true);
+          let o = target.animate(animate.value, animate.options);
+          this.add(o);
         }
       });
     }
   }
 
   play() {
-    this.__action('play');
     this.init();
+    this.__action('play');
   }
 
   pause() {

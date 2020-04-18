@@ -13323,6 +13323,8 @@
     }, {
       key: "init",
       value: function init() {
+        var _this = this;
+
         // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
         var records = this.records;
 
@@ -13334,10 +13336,14 @@
 
             if (Array.isArray(animate)) {
               animate.forEach(function (animate) {
-                target.animate(animate.value, animate.options, true);
+                var o = target.animate(animate.value, animate.options);
+
+                _this.add(o);
               });
             } else {
-              target.animate(animate.value, animate.options, true);
+              var o = target.animate(animate.value, animate.options);
+
+              _this.add(o);
             }
           });
         }
@@ -13345,9 +13351,9 @@
     }, {
       key: "play",
       value: function play() {
-        this.__action('play');
-
         this.init();
+
+        this.__action('play');
       }
     }, {
       key: "pause",

@@ -1,7 +1,12 @@
 import util from './util';
 import abbr from './abbr';
 
+let { isNil, isBoolean, isFunction, isString, isNumber, clone } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
+
+function isPrimitive(v) {
+  return isNil(v) || isBoolean(v) || isString(v) || isNumber(v);
+}
 
 /**
  * 还原缩写到全称，涉及样式和动画属性
@@ -40,7 +45,7 @@ function replaceVars(target, vars) {
         // 有id且变量里面传入了替换的值
         if(v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
-          if(util.isNil(v)) {
+          if(isNil(v)) {
             return;
           }
           // 如果有.则特殊处理子属性
@@ -54,13 +59,13 @@ function replaceVars(target, vars) {
                 target = target[k2];
               }
               else {
-                console.error('Parse vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                console.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
               }
             }
             k2 = list[len - 1];
           }
           // 支持函数模式和值模式
-          if(util.isFunction(value)) {
+          if(isFunction(value)) {
             value = value(v);
           }
           target[k2] = value;
@@ -70,8 +75,8 @@ function replaceVars(target, vars) {
   }
 }
 
-function parse(karas, json, animateList, vars) {
-  if(util.isBoolean(json) || util.isNil(json) || util.isString(json) || util.isNumber(json)) {
+function parseJson(karas, json, animateRecords, vars) {
+  if(isPrimitive(json)) {
     return json;
   }
   let { tagName, props = {}, children = [], animate } = json;
@@ -88,7 +93,7 @@ function parse(karas, json, animateList, vars) {
     vd = karas.createGm(tagName, props);
   }
   else {
-    vd = karas.createVd(tagName, props, children.map(item => parse(karas, item, animateList, vars)));
+    vd = karas.createVd(tagName, props, children.map(item => parseJson(karas, item, animateRecords, vars)));
   }
   let animationRecord;
   if(animate) {
@@ -138,9 +143,98 @@ function parse(karas, json, animateList, vars) {
   }
   // 产生实际动画运行才存入列表供root调用执行
   if(animationRecord) {
-    animateList.push(animationRecord);
+    animateRecords.push(animationRecord);
   }
   return vd;
+}
+
+function linkLibrary(item, hash) {
+  let { id, children } = item;
+  if(Array.isArray(children)) {
+    children.forEach(child => {
+      // 排除原始类型文本
+      if(!isPrimitive(child)) {
+        let { libraryId } = child;
+        // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
+        if(!libraryId) {
+          return;
+        }
+        if(!hash.hasOwnProperty(libraryId)) {
+          linkLibrary(child, hash);
+        }
+        let libraryItem = hash[libraryId];
+        // 规定图层child只有tagName、init和动画，属性和子图层来自库
+        if(libraryItem) {
+          linkChild(child, libraryItem);
+        }
+        else {
+          throw new Error('Library item miss ID: ' + libraryId);
+        }
+      }
+    });
+  }
+  hash[id] = item;
+}
+
+function linkChild(child, libraryItem) {
+  // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
+  child.tagName = child.tagName || libraryItem.tagName;
+  child.props = clone(libraryItem.props);
+  child.children = libraryItem.children;
+  // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
+  Object.keys(libraryItem).forEach(k => {
+    if(k.indexOf('var-') === 0 && !child.hasOwnProperty(k)) {
+      child[k] = libraryItem[k];
+    }
+  });
+  linkInit(child);
+}
+
+function linkInit(child) {
+  // 规定图层实例化的属性和样式在init上，优先使用init，然后才取原型链的props
+  let { init } = child;
+  if(init) {
+    let props = child.props = child.props || {};
+    let style = props.style;
+    Object.assign(props, init);
+    // style特殊处理，防止被上面覆盖丢失原始值
+    if(style) {
+      Object.assign(style, init.style);
+      props.style = style;
+    }
+  }
+}
+
+function parse(karas, json, animateRecords, options) {
+  let { library, children } = json;
+  if(Array.isArray(library)) {
+    let hash = {};
+    // 强制要求library的文件是排好顺序的，即元件和被引用类型在前面，引用的在后面，另外没有循环引用
+    library.forEach(item => {
+      linkLibrary(item, hash);
+    });
+    if(Array.isArray(children)) {
+      children.forEach(child => {
+        if(!isPrimitive(child)) {
+          let { libraryId } = child;
+          // 没有引用的
+          if(!libraryId) {
+            return;
+          }
+          let libraryItem = hash[libraryId];
+          // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
+          if(libraryItem) {
+            linkChild(child, libraryItem);
+          }
+          else {
+            throw new Error('Library miss ID: ' + libraryId);
+          }
+        }
+      });
+    }
+  }
+  linkInit(json);
+  return parseJson(karas, json, animateRecords, options.vars);
 }
 
 export default parse;

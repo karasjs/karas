@@ -125,9 +125,8 @@ function isRelativeOrAbsolute(node) {
 }
 
 class Xom extends Node {
-  constructor(tagName, props) {
+  constructor(tagName, props = []) {
     super();
-    props = props || [];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
@@ -138,7 +137,8 @@ class Xom extends Node {
       this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
-    this.__style = this.props.style || {}; // style被解析后的k-v形式
+    // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
+    this.__style = clone(this.props.style) || {}; // style被解析后的k-v形式
     this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
     this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
     this.__listener = {};
@@ -307,6 +307,22 @@ class Xom extends Node {
     ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
       calBorderRadius(this.width, this.height, `border${k}Radius`, currentStyle, computedStyle);
     });
+    // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+    let ar = this.__animateRecords;
+    if(ar) {
+      let ac = this.root.__animateController;
+      // 有controller时说明根节点是parse生成，动画播放模式
+      if(ac) {
+        ac.__list = ac.__list.concat(ar);
+      }
+      // 没有说明根节点是代码模式，自动播放，target等同于当前this节点
+      else {
+        ar.forEach(item => {
+          let { value, options } = item.animate;
+          this.animate(value, options);
+        });
+      }
+    }
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -1143,6 +1159,9 @@ class Xom extends Node {
   }
 
   animate(list, option) {
+    if(this.isDestroyed) {
+      return;
+    }
     let animation = new Animation(this, list, option);
     this.animationList.push(animation);
     return animation.play();

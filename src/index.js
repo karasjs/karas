@@ -23,6 +23,7 @@ import reset from './style/reset';
 import frame from './animate/frame';
 import easing from './animate/easing';
 import level from './animate/level';
+import Controller from './animate/Controller';
 import math from './math/index';
 
 Geom.register('$line', Line);
@@ -36,7 +37,7 @@ Geom.register('$ellipse', Ellipse);
 let karas = {
   render(root, dom) {
     if(!(root instanceof Root)) {
-      throw new Error('Render root must be "canvas" or "svg"');
+      throw new Error('Render root must be canvas/svg');
     }
     if(dom) {
       root.appendTo(dom);
@@ -53,7 +54,7 @@ let karas = {
       }
       return new Dom(tagName, props, children);
     }
-    throw new Error('Can not use marker: ' + tagName);
+    throw new Error(`Can not use <${tagName}>`);
   },
   createGm(tagName, props) {
     let klass = Geom.getRegister(tagName);
@@ -62,23 +63,45 @@ let karas = {
   createCp(cp, props, children) {
     return new cp(props, children);
   },
-  parse(json, dom, vars) {
-    // 暂存所有动画声明，等root的生成后开始执行
-    let animateList = [];
-    json = util.clone(json);
-    let vd = parse(this, json, animateList, vars);
-    this.render(vd, dom);
-    animateList.forEach(item => {
-      let { target, animate } = item;
-      if(Array.isArray(animate)) {
-        animate.forEach(animate => {
-          target.animate(animate.value, animate.options);
-        });
-      }
+  parse(json, dom, options = {}) {
+    // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+    if(dom) {
+      if(util.isString(dom)
+        || window.HTMLElement && (dom instanceof window.HTMLElement)) {}
       else {
-        target.animate(animate.value, animate.options);
+        options = dom;
+        dom = null;
       }
-    });
+    }
+    // 暂存所有动画声明，等root的生成后开始执行
+    let animateRecords = [];
+    let vd = parse(this, json, animateRecords, options);
+    let { tagName } = json;
+    // 有dom时parse作为根方法渲染
+    if(dom) {
+      if(['canvas', 'svg'].indexOf(tagName) === -1) {
+        throw new Error('Parse root must be canvas/svg');
+      }
+      // parse模式会生成controller，动画总控制器
+      let ac = vd.__animateController = new Controller(animateRecords);
+      // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+      this.render(vd, dom);
+      // 总控次数、速度
+      ac.__op(options);
+      // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+      if(options.autoPlay !== false) {
+        ac.play();
+      }
+    }
+    // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
+    else {
+      if(['canvas', 'svg'].indexOf(tagName) > -1) {
+        throw new Error(`Need a dom on parse(${tagName}, dom)`);
+      }
+      if(animateRecords.length) {
+        vd.__animateRecords = animateRecords;
+      }
+    }
     return vd;
   },
   Root,

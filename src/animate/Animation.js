@@ -632,7 +632,8 @@ function calDiff(prev, next, k, target) {
         res.d = v;
       }
       // TODO: 径向渐变的半径和圆心
-      else {}
+      else {
+      }
     }
     // 纯色
     else {
@@ -906,16 +907,12 @@ function calStyle(frame, percent) {
   return style;
 }
 
-function gotoOverload(isFrame, excludeDelay, cb) {
-  if(isFunction(isFrame)) {
-    cb = isFrame;
-    isFrame = excludeDelay = false;
+function gotoOverload(options, cb) {
+  if(isFunction(options)) {
+    cb = options;
+    options = {};
   }
-  else if(isFunction(excludeDelay)) {
-    cb = excludeDelay;
-    excludeDelay = false;
-  }
-  return [isFrame, excludeDelay, cb];
+  return [options || {}, cb];
 }
 
 let uuid = 0;
@@ -1158,7 +1155,6 @@ class Animation extends Event {
         framesR,
         target,
         direction,
-        iterations,
         delay,
         endDelay,
         keys,
@@ -1187,7 +1183,7 @@ class Animation extends Event {
       // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {
-          let { root, style, fps, playCount } = this;
+          let { root, style, fps, playCount, iterations } = this;
           if(!root) {
             return;
           }
@@ -1434,27 +1430,27 @@ class Animation extends Event {
     return this;
   }
 
-  gotoAndPlay(v, isFrame, excludeDelay, cb) {
+  gotoAndPlay(v, options, cb) {
     let { isDestroyed, duration, delay, endDelay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
-    [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
+    [options, cb] = gotoOverload(options, cb);
     // 计算出时间点直接累加播放
-    this.__goto(v, isFrame, excludeDelay);
+    this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > duration + delay + endDelay) {
       return this.finish(cb);
     }
     return this.play(cb);
   }
 
-  gotoAndStop(v, isFrame, excludeDelay, cb) {
+  gotoAndStop(v, options, cb) {
     let { isDestroyed, duration, delay, endDelay } = this;
     if(isDestroyed || duration <= 0) {
       return this;
     }
-    [isFrame, excludeDelay, cb] = gotoOverload(isFrame, excludeDelay, cb);
-    v = this.__goto(v, isFrame, excludeDelay);
+    [options, cb] = gotoOverload(options, cb);
+    v = this.__goto(v, options.isFrame, options.excludeDelay);
     if(v > duration + delay + endDelay) {
       return this.finish(cb);
     }
@@ -1491,6 +1487,20 @@ class Animation extends Event {
     return v;
   }
 
+  addControl() {
+    let ac = this.root.animateController;
+    if(ac) {
+      ac.add(this);
+    }
+  }
+
+  removeControl() {
+    let ac = this.root.animateController;
+    if(ac) {
+      ac.remove(this);
+    }
+  }
+
   __stayBegin() {
     return {
       backwards: true,
@@ -1514,44 +1524,57 @@ class Animation extends Event {
     this.__clean();
     this.__startTime = null;
     this.__isDestroyed = true;
+    this.removeControl();
   }
 
   get id() {
     return this.__id;
   }
+
   get target() {
     return this.__target;
   }
+
   get root() {
     return this.target.root;
   }
+
   get keys() {
     return this.__keys;
   }
+
   get style() {
     return this.__style;
   }
+
   get props() {
     return this.__props;
   }
+
   get list() {
     return this.__list;
   }
+
   get options() {
     return this.__options;
   }
+
   get duration() {
     return this.__duration;
   }
+
   get delay() {
     return this.__delay;
   }
+
   get endDelay() {
     return this.__endDelay;
   }
+
   get fps() {
     return this.__fps;
   }
+
   set fps(v) {
     v = parseInt(v) || 60;
     if(v <= 0) {
@@ -1559,27 +1582,43 @@ class Animation extends Event {
     }
     this.__fps = v;
   }
+
   get spf() {
     return 1 / this.fps;
   }
+
   get iterations() {
     return this.__iterations;
   }
+
+  set iterations(v) {
+    v = parseInt(v);
+    if(isNaN(v)) {
+      v = 1;
+    }
+    this.__iterations = v;
+  }
+
   get fill() {
     return this.__fill;
   }
+
   get direction() {
     return this.__direction;
   }
+
   get frames() {
     return this.__frames;
   }
+
   get framesR() {
     return this.__framesR;
   }
+
   get playbackRate() {
     return this.__playbackRate;
   }
+
   set playbackRate(v) {
     v = parseFloat(v) || 0;
     if(v < 0) {
@@ -1587,40 +1626,46 @@ class Animation extends Event {
     }
     this.__playbackRate = v;
   }
+
   get startTime() {
     return this.__startTime;
   }
-  set startTime(v) {
-    v = parseInt(v) || 0;
-    this.__startTime = v;
-  }
+
   get currentTime() {
     return this.__currentTime;
   }
+
   set currentTime(v) {
     v = parseInt(v) || 0;
     if(v >= 0) {
       this.__currentTime = this.__nextTime = v;
     }
   }
+
   get pending() {
     return this.playState !== 'running';
   }
+
   get finished() {
     return this.playState === 'finished';
   }
+
   get playState() {
     return this.__playState;
   }
+
   get playCount() {
     return this.__playCount;
   }
+
   set playCount(v) {
     this.__playCount = v;
   }
+
   get isDestroyed() {
     return this.__isDestroyed;
   }
+
   get animating() {
     let { playState, options } = this;
     if(playState === 'idle') {

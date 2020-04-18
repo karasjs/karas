@@ -370,6 +370,9 @@ class Root extends Dom {
   get ref() {
     return this.__ref;
   }
+  get animateController() {
+    return this.__animateController;
+  }
 }
 
 export default Root;

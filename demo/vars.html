@@ -13,13 +13,15 @@
 <body>
 <div class="pre">在动态下发的基础上，如何创建可变图形和动画？
 这里提供了一种类似注入/插槽的功能，可以让设计师设计可变的部分，让程序员根据情况替换它。
-试着修改下方的1（播放速度倍数）和100（动画结束y坐标），体验下变化。</div>
+试着修改下方的1（播放速度倍数）和100（动画结束y坐标），体验下变化。vars键名先忽略。</div>
 <div>
 <textarea id="ta" autocomplete="off">{
-  "playbackRate": 1,
-  "top": 100
+  "vars": {
+    "playbackRate": 1,
+    "top": 100
+  }
 }</textarea>
-  <input id="btn" type="button" value="ok"/>
+<input id="btn" type="button" value="ok"/>
 </div>
 <div id="example"></div>
 <div id="example2"></div>

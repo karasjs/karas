@@ -29,8 +29,10 @@ let o = karas.parse({
     }
   ],
 }, '#test', {
-  aaa: function() {
-    return 200;
+  vars: {
+    aaa: function() {
+      return 200;
+    },
   },
 });
 let t = o.children[0];

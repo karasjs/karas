@@ -912,7 +912,7 @@ function gotoOverload(options, cb) {
     cb = options;
     options = {};
   }
-  return [options, cb];
+  return [options || {}, cb];
 }
 
 let uuid = 0;

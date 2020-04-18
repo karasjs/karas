@@ -6078,7 +6078,7 @@
       options = {};
     }
 
-    return [options, cb];
+    return [options || {}, cb];
   }
 
   var uuid = 0;

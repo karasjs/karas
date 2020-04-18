@@ -7446,8 +7446,20 @@
         var ar = this.__animateRecords;
 
         if (ar) {
-          var ac = this.root.__animateController;
-          ac.__list = ac.__list.concat(ar);
+          var ac = this.root.__animateController; // 有controller时说明根节点是parse生成，动画播放模式
+
+          if (ac) {
+            ac.__list = ac.__list.concat(ar);
+          } // 没有说明根节点是代码模式，自动播放，target等同于当前this节点
+          else {
+              ar.forEach(function (item) {
+                var _item$animate = item.animate,
+                    value = _item$animate.value,
+                    options = _item$animate.options;
+
+                _this4.animate(value, options);
+              });
+            }
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -8378,18 +8390,13 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, option, underControl) {
+      value: function animate(list, option) {
         if (this.isDestroyed) {
           return;
         }
 
         var animation = new Animation(this, list, option);
         this.animationList.push(animation);
-
-        if (underControl && this.root) {
-          this.root.animateController.add(animation);
-        }
-
         return animation.play();
       }
     }, {
@@ -13229,8 +13236,18 @@
 
   function replaceGlobal(target, globalValue, key, vars) {
     // 优先vars，其次总控，没有就是自己声明
-    if (!isNil$7(globalValue) && (!target['var-' + key] || isNil$7(vars[key]))) {
-      target[key] = globalValue;
+    if (!isNil$7(globalValue)) {
+      var decl = target['var-' + key];
+
+      if (!decl) {
+        target[key] = globalValue;
+      } else {
+        var id = decl.id;
+
+        if (!id || !vars[id]) {
+          target[key] = globalValue;
+        }
+      }
     }
   }
 
@@ -13256,12 +13273,20 @@
         this.__playbackRate = playbackRate;
         this.__iterations = iterations;
         this.records.forEach(function (record) {
-          record.animate.forEach(function (item) {
-            var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
+          var animate = record.animate;
 
-            replaceGlobal(options, playbackRate, 'playbackRate', vars);
-            replaceGlobal(options, iterations, 'iterations', vars);
-          });
+          if (Array.isArray(animate)) {
+            animate.forEach(function (item) {
+              var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
+
+              replaceGlobal(options, playbackRate, 'playbackRate', vars);
+              replaceGlobal(options, iterations, 'iterations', vars);
+            });
+          } else {
+            var _options = animate.options;
+            replaceGlobal(_options, playbackRate, 'playbackRate', vars);
+            replaceGlobal(_options, iterations, 'iterations', vars);
+          }
         });
       }
     }, {
@@ -13296,11 +13321,9 @@
         });
       }
     }, {
-      key: "play",
-      value: function play() {
-        this.__action('play'); // json中的动画每次播放时通过animate()方法传入isUnderControl，使其进入list被控制
-
-
+      key: "init",
+      value: function init() {
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
         var records = this.records;
 
         if (records.length) {
@@ -13320,6 +13343,13 @@
         }
       }
     }, {
+      key: "play",
+      value: function play() {
+        this.__action('play');
+
+        this.init();
+      }
+    }, {
       key: "pause",
       value: function pause() {
         this.__action('pause');
@@ -13337,6 +13367,7 @@
     }, {
       key: "gotoAndStop",
       value: function gotoAndStop(v, options, cb) {
+        this.init();
         var once = true;
 
         this.__action('gotoAndStop', [v, options, function (diff) {
@@ -13349,6 +13380,7 @@
     }, {
       key: "gotoAndPlay",
       value: function gotoAndPlay(v, options, cb) {
+        this.init();
         var once = true;
 
         this.__action('gotoAndPlay', [v, options, function (diff) {
@@ -13417,7 +13449,7 @@
   var karas = {
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
-        throw new Error('Render root must be "canvas" or "svg"');
+        throw new Error('Render root must be canvas/svg');
       }
 
       if (dom) {
@@ -13439,7 +13471,7 @@
         return new Dom(tagName, props, children);
       }
 
-      throw new Error('Can not use marker: ' + tagName);
+      throw new Error("Can not use <".concat(tagName, ">"));
     },
     createGm: function createGm(tagName, props) {
       var klass = Geom.getRegister(tagName);
@@ -13462,23 +13494,35 @@
 
       var animateRecords = [];
 
-      var vd = parse$1(this, json, animateRecords, options); // 初始化animateController，再传入根节点渲染
+      var vd = parse$1(this, json, animateRecords, options);
 
+      var tagName = json.tagName; // 有dom时parse作为根方法渲染
 
       if (dom) {
+        if (['canvas', 'svg'].indexOf(tagName) === -1) {
+          throw new Error('Parse root must be canvas/svg');
+        } // parse模式会生成controller，动画总控制器
+
+
         var ac = vd.__animateController = new Controller(animateRecords); // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
         this.render(vd, dom); // 总控次数、速度
 
-        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画
+        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
 
         if (options.autoPlay !== false) {
           ac.play();
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
-      else if (animateRecords.length) {
-          vd.__animateRecords = animateRecords;
+      else {
+          if (['canvas', 'svg'].indexOf(tagName) > -1) {
+            throw new Error("Need a dom on parse(".concat(tagName, ", dom)"));
+          }
+
+          if (animateRecords.length) {
+            vd.__animateRecords = animateRecords;
+          }
         }
 
       return vd;

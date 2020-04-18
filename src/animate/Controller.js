@@ -4,10 +4,17 @@ const { isNil } = util;
 
 function replaceGlobal(target, globalValue, key, vars) {
   // 优先vars，其次总控，没有就是自己声明
-  if(!isNil(globalValue)
-    && (!target['var-' + key]
-      || isNil(vars[key]))) {
-    target[key] = globalValue;
+  if(!isNil(globalValue)) {
+    let decl = target['var-' + key];
+    if(!decl) {
+      target[key] = globalValue;
+    }
+    else {
+      let id = decl.id;
+      if(!id || !vars[id]) {
+        target[key] = globalValue;
+      }
+    }
   }
 }
 
@@ -26,12 +33,20 @@ class Controller {
     this.__playbackRate = playbackRate;
     this.__iterations = iterations;
     this.records.forEach(record => {
-      record.animate.forEach(item => {
-        let { options } = item;
-        // 用总控替换动画属性中的值，注意vars优先级
+      let { animate } = record;
+      if(Array.isArray(animate)) {
+        animate.forEach(item => {
+          let { options } = item;
+          // 用总控替换动画属性中的值，注意vars优先级
+          replaceGlobal(options, playbackRate, 'playbackRate', vars);
+          replaceGlobal(options, iterations, 'iterations', vars);
+        });
+      }
+      else {
+        let { options } = animate;
         replaceGlobal(options, playbackRate, 'playbackRate', vars);
         replaceGlobal(options, iterations, 'iterations', vars);
-      });
+      }
     });
   }
 
@@ -61,9 +76,8 @@ class Controller {
     });
   }
 
-  play() {
-    this.__action('play');
-    // json中的动画每次播放时通过animate()方法传入isUnderControl，使其进入list被控制
+  init() {
+    // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
     let records = this.records;
     if(records.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
@@ -81,6 +95,11 @@ class Controller {
     }
   }
 
+  play() {
+    this.__action('play');
+    this.init();
+  }
+
   pause() {
     this.__action('pause');
   }
@@ -94,6 +113,7 @@ class Controller {
   }
 
   gotoAndStop(v, options, cb) {
+    this.init();
     let once = true;
     this.__action('gotoAndStop', [v, options, function(diff) {
       if(once) {
@@ -104,6 +124,7 @@ class Controller {
   }
 
   gotoAndPlay(v, options, cb) {
+    this.init();
     let once = true;
     this.__action('gotoAndPlay', [v, options, function(diff) {
       if(once) {

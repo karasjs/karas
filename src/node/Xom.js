@@ -311,7 +311,17 @@ class Xom extends Node {
     let ar = this.__animateRecords;
     if(ar) {
       let ac = this.root.__animateController;
-      ac.__list = ac.__list.concat(ar);
+      // 有controller时说明根节点是parse生成，动画播放模式
+      if(ac) {
+        ac.__list = ac.__list.concat(ar);
+      }
+      // 没有说明根节点是代码模式，自动播放，target等同于当前this节点
+      else {
+        ar.forEach(item => {
+          let { value, options } = item.animate;
+          this.animate(value, options);
+        });
+      }
     }
   }
 
@@ -1148,15 +1158,12 @@ class Xom extends Node {
     });
   }
 
-  animate(list, option, underControl) {
+  animate(list, option) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, option);
     this.animationList.push(animation);
-    if(underControl && this.root) {
-      this.root.animateController.add(animation);
-    }
     return animation.play();
   }
 

@@ -13,7 +13,9 @@
   </style>
 </head>
 <body>
-<div class="pre">parse这个API是专门用作简单动画模式，可以看做是lottie模式，会在Root下生成animateController总控制器对象。</div>
+<div class="pre">Root下有个animateController对象，作为总动画控制器，控制所有想被总控的动画。
+parse模式下的animate声明都会进入总控，代码模式animate()的第3个参数可选进入总控。
+Root被parse()出时，动画是默认播放的，第3个参数可以声明autoPlay为false取消；代码模式则相反，默认不播放，需显示调用play()。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
@@ -227,7 +229,7 @@
     children: data,
   }, '#example2');
   o.animateController.playbackRate = 2;
-  o2.animateController.iterasions = 1;
+  o2.animateController.iterations = 1;
 </script>
 <script src="sea.js"></script>
 <script src="homunculus.js"></script>

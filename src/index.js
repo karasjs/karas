@@ -37,7 +37,7 @@ Geom.register('$ellipse', Ellipse);
 let karas = {
   render(root, dom) {
     if(!(root instanceof Root)) {
-      throw new Error('Render must be canvas/svg');
+      throw new Error('Render dom must be canvas/svg');
     }
     if(dom) {
       root.appendTo(dom);
@@ -66,9 +66,7 @@ let karas = {
   parse(json, dom, options = {}) {
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(dom) {
-      if(util.isString(dom)
-        || window.HTMLElement && (dom instanceof window.HTMLElement)) {}
-      else {
+      if(!util.isString(dom) && !(dom instanceof window.Element)) {
         options = dom;
         dom = null;
       }
@@ -80,7 +78,7 @@ let karas = {
     // 有dom时parse作为根方法渲染
     if(dom) {
       if(['canvas', 'svg'].indexOf(tagName) === -1) {
-        throw new Error('Parse root must be canvas/svg');
+        throw new Error('Parse dom must be canvas/svg');
       }
       // parse模式会生成controller，动画总控制器
       let ac = vd.__animateController = new Controller(animateRecords);
@@ -95,9 +93,6 @@ let karas = {
     }
     // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
     else {
-      if(['canvas', 'svg'].indexOf(tagName) > -1) {
-        throw new Error(`Need a dom on parse(${tagName}, dom)`);
-      }
       if(animateRecords.length) {
         vd.__animateRecords = animateRecords;
       }

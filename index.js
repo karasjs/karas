@@ -458,8 +458,6 @@
     };
   }
 
-  var isNumber = isType('Number');
-
   function _joinSourceArray(arr) {
     var res = '';
 
@@ -477,7 +475,7 @@
   }
 
   function stringify(s) {
-    if (isNil(s)) {
+    if (isNil$1(s)) {
       return '';
     }
 
@@ -492,7 +490,7 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
   }
 
-  function isNil(v) {
+  function isNil$1(v) {
     return v === undefined || v === null;
   } // 根元素专用
 
@@ -690,8 +688,8 @@
     return arr;
   }
 
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
+  function clone$1(obj) {
+    if (isNil$1(obj) || _typeof(obj) !== 'object') {
       return obj;
     }
 
@@ -701,7 +699,7 @@
 
     var n = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
+      n[i] = clone$1(obj[i]);
     });
     return n;
   }
@@ -737,15 +735,18 @@
     isObject: isType('Object'),
     isString: isType('String'),
     isFunction: isType('Function'),
-    isNumber: isNumber,
+    isNumber: isType('Number'),
     isBoolean: isType('Boolean'),
     isDate: isType('Date'),
+    isNil: isNil$1,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
     stringify: stringify,
     joinSourceArray: function joinSourceArray(arr) {
       return _joinSourceArray(arr);
     },
     encodeHtml: encodeHtml,
-    isNil: isNil,
     joinVirtualDom: joinVirtualDom,
     joinVd: joinVd,
     joinDef: joinDef,
@@ -753,7 +754,7 @@
     int2rgba: int2rgba,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone,
+    clone: clone$1,
     equalArr: equalArr
   };
 
@@ -1457,32 +1458,32 @@
       DEG = unit.DEG,
       RGBA = unit.RGBA,
       STRING = unit.STRING;
-  var isNil$1 = util.isNil,
+  var isNil$2 = util.isNil,
       rgba2int$2 = util.rgba2int,
       int2rgba$2 = util.int2rgba,
-      clone$1 = util.clone;
+      clone$2 = util.clone;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
     var k = "border".concat(direction);
     var v = style[k];
 
-    if (isNil$1(v)) {
+    if (isNil$2(v)) {
       return;
     } // 后面会统一格式化处理
 
 
-    if (isNil$1(style[k + 'Width'])) {
+    if (isNil$2(style[k + 'Width'])) {
       var w = /\b[\d.]+px\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
-    if (isNil$1(style[k + 'Style'])) {
+    if (isNil$2(style[k + 'Style'])) {
       var s = /\b(solid|dashed|dotted)\b/i.exec(v);
       style[k + 'Style'] = s ? s[1] : 'solid';
     }
 
-    if (isNil$1(style[k + 'Color'])) {
+    if (isNil$2(style[k + 'Color'])) {
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
@@ -1497,15 +1498,15 @@
   }
 
   function parseFlex(style, grow, shrink, basis) {
-    if (isNil$1(style.flexGrow)) {
+    if (isNil$2(style.flexGrow)) {
       style.flexGrow = grow;
     }
 
-    if (isNil$1(style.flexShrink)) {
+    if (isNil$2(style.flexShrink)) {
       style.flexShrink = shrink;
     }
 
-    if (isNil$1(style.flexBasis)) {
+    if (isNil$2(style.flexBasis)) {
       style.flexBasis = basis;
     }
   }
@@ -1529,7 +1530,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = key + k;
 
-          if (isNil$1(style[k])) {
+          if (isNil$2(style[k])) {
             style[k] = match[i];
           }
         });
@@ -1618,7 +1619,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k;
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1633,7 +1634,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Width';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           // width后面会统一格式化处理
           style[k] = temp;
         }
@@ -1646,7 +1647,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Color';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = rgba2int$2(temp);
         }
       });
@@ -1658,7 +1659,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Style';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1670,7 +1671,7 @@
       ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
         k = 'border' + k + 'Radius';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1680,7 +1681,7 @@
 
     if (temp) {
       // gradient/image和颜色可以并存
-      if (isNil$1(style.backgroundImage)) {
+      if (isNil$2(style.backgroundImage)) {
         var gd = reg.gradient.exec(temp);
 
         if (gd) {
@@ -1689,7 +1690,7 @@
         }
       }
 
-      if (isNil$1(style.backgroundImage)) {
+      if (isNil$2(style.backgroundImage)) {
         var img = reg.img.exec(temp);
 
         if (img) {
@@ -1698,23 +1699,23 @@
         }
       }
 
-      if (isNil$1(style.backgroundRepeat)) {
+      if (isNil$2(style.backgroundRepeat)) {
         var repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
 
-        if (repeat && isNil$1(style.backgroundRepeat)) {
+        if (repeat && isNil$2(style.backgroundRepeat)) {
           style.backgroundRepeat = repeat[0].toLowerCase().trim();
         }
       }
 
-      if (isNil$1(style.backgroundPosition)) {
+      if (isNil$2(style.backgroundPosition)) {
         var position = temp.match(reg.position);
 
-        if (position && isNil$1(style.backgroundPosition)) {
+        if (position && isNil$2(style.backgroundPosition)) {
           style.backgroundPosition = position.join(' ');
         }
       }
 
-      if (isNil$1(style.backgroundColor)) {
+      if (isNil$2(style.backgroundColor)) {
         var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
 
         if (bgc) {
@@ -1726,7 +1727,7 @@
 
     temp = style.backgroundPosition;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       temp = temp.toString().split(/\s+/);
 
       if (temp.length === 1) {
@@ -1773,7 +1774,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (!isNil$1(v) && style.transform) {
+      if (!isNil$2(v) && style.transform) {
         console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
@@ -1782,7 +1783,7 @@
       var k = item.k,
           v = item.v;
 
-      if (isNil$1(style[k])) {
+      if (isNil$2(style[k])) {
         style[k] = v;
       }
     }); // 背景图
@@ -1821,7 +1822,7 @@
     ['backgroundPositionX', 'backgroundPositionY'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$1(temp)) {
+      if (!isNil$2(temp)) {
         if (/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(style, k, temp);
           temp = style[k];
@@ -1887,7 +1888,7 @@
       k = 'border' + k + 'Color';
       var v = style[k];
 
-      if (!isNil$1(v)) {
+      if (!isNil$2(v)) {
         style[k] = {
           value: rgba2int$2(v),
           unit: RGBA
@@ -1965,7 +1966,7 @@
 
     temp = style.transformOrigin;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       var _match2 = temp.toString().match(reg.tfo);
 
       if (_match2) {
@@ -1996,7 +1997,7 @@
               unit: PERCENT$1
             }); // 不规范的写法变默认值50%
 
-            if (isNil$1(tfo[_i].value)) {
+            if (isNil$2(tfo[_i].value)) {
               tfo[_i].value = 50;
             }
           }
@@ -2010,7 +2011,7 @@
     ['translate', 'scale', 'skew'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$1(temp)) {
+      if (!isNil$2(temp)) {
         var _arr5 = temp.toString().split(/\s*,\s*/);
 
         if (_arr5.length === 1) {
@@ -2024,7 +2025,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (isNil$1(v)) {
+      if (isNil$2(v)) {
         return;
       }
 
@@ -2064,7 +2065,7 @@
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
-      if (isNil$1(v)) {
+      if (isNil$2(v)) {
         return;
       }
 
@@ -2228,7 +2229,7 @@
 
     temp = style.strokeDasharray;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       var _match3 = temp.toString().match(/[\d.]+/g);
 
       if (_match3) {
@@ -2283,7 +2284,7 @@
     var currentStyle = node.__currentStyle = animateStyle;
     var lineHeight = currentStyle.lineHeight,
         textAlign = currentStyle.textAlign;
-    var computedStyle = node.__computedStyle = clone$1(currentStyle);
+    var computedStyle = node.__computedStyle = clone$2(currentStyle);
     var parent = node.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
@@ -4030,7 +4031,7 @@
     matrixResize: matrixResize
   };
 
-  var isFunction = util.isFunction;
+  var isFunction$1 = util.isFunction;
 
   var Event = /*#__PURE__*/function () {
     function Event() {
@@ -4072,7 +4073,7 @@
     }, {
       key: "once",
       value: function once(id, handle) {
-        if (!isFunction(handle)) {
+        if (!isFunction$1(handle)) {
           return;
         }
 
@@ -4148,7 +4149,7 @@
               for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
                 var cb = list[_i3];
 
-                if (isFunction(cb)) {
+                if (isFunction$1(cb)) {
                   cb.apply(self, data);
                 }
               }
@@ -4340,7 +4341,7 @@
     }
   };
 
-  var isNil$2 = util.isNil;
+  var isNil$3 = util.isNil;
 
   function diff(ovd, nvd) {
     if (ovd !== nvd) {
@@ -4408,7 +4409,7 @@
       value: function setState(n, cb) {
         var _this2 = this;
 
-        if (isNil$2(n)) {
+        if (isNil$3(n)) {
           this.state = {};
         } else {
           Object.assign(this.state, n);
@@ -4453,7 +4454,7 @@
         if (!(sr instanceof Node)) {
           var s = '';
 
-          if (!isNil$2(sr)) {
+          if (!isNil$3(sr)) {
             s = util.encodeHtml(sr.toString());
           }
 
@@ -4865,21 +4866,21 @@
     }
   };
 
-  var isFunction$1 = util.isFunction,
+  var isFunction$2 = util.isFunction,
       isObject = util.isObject;
 
   function traversal(list, diff, step) {
     if (step === 'before') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.before)) {
+        if (isObject(item) && isFunction$2(item.before)) {
           item.before(diff);
         }
       });
     } else if (step === 'after') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.after)) {
+        if (isObject(item) && isFunction$2(item.after)) {
           item.after(diff);
-        } else if (isFunction$1(item)) {
+        } else if (isFunction$2(item)) {
           item(diff);
         }
       });
@@ -5010,7 +5011,7 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = isFunction$1(handle) ? function (diff) {
+        var cb = isFunction$2(handle) ? function (diff) {
           handle(diff);
 
           if (animate) {
@@ -5205,10 +5206,10 @@
       RGBA$1 = unit.RGBA,
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
-  var isNil$3 = util.isNil,
-      isFunction$2 = util.isFunction,
-      isNumber$1 = util.isNumber,
-      clone$2 = util.clone,
+  var isNil$4 = util.isNil,
+      isFunction$3 = util.isFunction,
+      isNumber = util.isNumber,
+      clone$3 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
@@ -5245,7 +5246,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!isNil$3(v) && !hash.hasOwnProperty(k)) {
+        if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
           keys.push(k);
         }
@@ -5269,14 +5270,14 @@
 
 
   function inherit(frames, keys, target) {
-    var copy = clone$2(frames);
+    var copy = clone$3(frames);
     var computedStyle = target.computedStyle;
     copy.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (isNil$3(v)) {
+        if (isNil$4(v)) {
           return;
         }
 
@@ -5413,7 +5414,7 @@
       var n = frameStyle[k];
       var p = lastStyle[k]; // 前后均非空对比
 
-      if (!isNil$3(n) && !isNil$3(p)) {
+      if (!isNil$4(n) && !isNil$4(p)) {
         if (!equalStyle(k, n, p)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
@@ -5427,7 +5428,7 @@
           }
         }
       } // 有一个为空时即不等
-      else if (!isNil$3(n) || !isNil$3(p)) {
+      else if (!isNil$4(n) || !isNil$4(p)) {
           res = true;
 
           if (isStyleReflow(k)) {
@@ -5454,7 +5455,7 @@
     Object.keys(frameStyle).forEach(function (i) {
       var v = frameStyle[i];
 
-      if (isNil$3(v)) {
+      if (isNil$4(v)) {
         return;
       } // geom的属性变化
 
@@ -5856,7 +5857,7 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (isNil$3(n)) {
+      if (isNil$4(n)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
         if (equalArr$1(p, n)) {
@@ -5869,13 +5870,13 @@
           var _pv = p[_i6];
           var _nv = n[_i6];
 
-          if (isNil$3(_pv) || isNil$3(_nv)) {
+          if (isNil$4(_pv) || isNil$4(_nv)) {
             res.v.push(_nv);
           } else {
             var _v15 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
-              if (isNil$3(_pv[j]) || isNil$3(_nv[j])) {
+              if (isNil$4(_pv[j]) || isNil$4(_nv[j])) {
                 _v15.push(_nv[j]);
               } else {
                 _v15.push(_nv[j] - _pv[j]);
@@ -5966,7 +5967,7 @@
 
 
   function calStyle(frame, percent) {
-    var style = clone$2(frame.style);
+    var style = clone$3(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction !== linear) {
@@ -6049,12 +6050,12 @@
 
           if (k === 'points' || k === 'controls') {
             for (var _i7 = 0, _len4 = Math.min(_st.length, v.length); _i7 < _len4; _i7++) {
-              if (isNil$3(_st[_i7]) || !_st[_i7].length) {
+              if (isNil$4(_st[_i7]) || !_st[_i7].length) {
                 continue;
               }
 
               for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
-                if (!isNil$3(_st[_i7][j]) && !isNil$3(v[_i7][j])) {
+                if (!isNil$4(_st[_i7][j]) && !isNil$4(v[_i7][j])) {
                   _st[_i7][j] += v[_i7][j] * percent;
                 }
               }
@@ -6073,7 +6074,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$2(options)) {
+    if (isFunction$3(options)) {
       cb = options;
       options = {};
     }
@@ -6094,7 +6095,7 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = clone$2(list || []); // 动画过程另外一种形式，object描述k-v形式
+      _this.__list = clone$3(list || []); // 动画过程另外一种形式，object描述k-v形式
 
       if (!Array.isArray(_this.__list)) {
         var nl = [];
@@ -6114,7 +6115,7 @@
         _this.__list = nl;
       }
 
-      if (isNumber$1(options)) {
+      if (isNumber(options)) {
         _this.__options = {
           duration: options
         };
@@ -6225,7 +6226,7 @@
 
 
         list.forEach(function (item, i) {
-          list[i] = clone$2(item);
+          list[i] = clone$3(item);
         }); // 首尾时间偏移强制为[0, 1]
 
         var first = list[0];
@@ -6288,7 +6289,7 @@
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var framesR = clone$2(frames).reverse();
+          var framesR = clone$3(frames).reverse();
           framesR.forEach(function (item) {
             item.time = duration - item.time;
             item.transition = [];
@@ -6323,7 +6324,7 @@
 
           _this2.emit(Event.FINISH);
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
         }; // 同步执行，用在finish()这种主动调用
@@ -6338,7 +6339,7 @@
             _this2.emit(Event.PLAY);
           }
 
-          if (isFunction$2(_this2.__playCb)) {
+          if (isFunction$3(_this2.__playCb)) {
             _this2.__playCb(diff, isDelay);
 
             _this2.__playCb = null;
@@ -6758,7 +6759,7 @@
 
             _this5.emit(Event.CANCEL);
 
-            if (isFunction$2(cb)) {
+            if (isFunction$3(cb)) {
               cb();
             }
           };
@@ -6846,7 +6847,7 @@
 
           _this6.__cancelTask();
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb(diff);
           }
         });
@@ -7121,7 +7122,7 @@
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
-  var clone$3 = util.clone,
+  var clone$4 = util.clone,
       int2rgba$3 = util.int2rgba,
       equalArr$2 = util.equalArr;
   var calRelative$1 = css.calRelative,
@@ -7245,7 +7246,7 @@
 
       _this.__tagName = tagName; // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
 
-      _this.__style = clone$3(_this.props.style) || {}; // style被解析后的k-v形式
+      _this.__style = clone$4(_this.props.style) || {}; // style被解析后的k-v形式
 
       _this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
 
@@ -7968,7 +7969,7 @@
                 }); // 再画重复的十字和4角象限
 
                 repeat.forEach(function (item) {
-                  var copy = clone$3(props);
+                  var copy = clone$4(props);
 
                   if (needResize) {
                     var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -8554,7 +8555,7 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = clone$3(style);
+        var copy = clone$4(style);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.style);
@@ -8697,9 +8698,9 @@
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
-  var clone$4 = util.clone,
+  var clone$5 = util.clone,
       int2rgba$4 = util.int2rgba,
-      isNil$4 = util.isNil;
+      isNil$5 = util.isNil;
   var REGISTER = {};
 
   var Geom = /*#__PURE__*/function (_Xom) {
@@ -8943,7 +8944,7 @@
           var vd = this.virtualDom;
           vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
 
-          var children = clone$4(vd.children);
+          var children = clone$5(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -9051,7 +9052,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!isNil$4(v)) {
+        if (!isNil$5(v)) {
           return v;
         }
 
@@ -9082,7 +9083,7 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = clone$4(props);
+        var copy = clone$5(props);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.props);
@@ -9217,6 +9218,10 @@
             _this3.__traverseChildren(item, list, ctx, defs, renderMode);
           });
         } else if (children instanceof Dom || children instanceof Component) {
+          if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
+            throw new Error('Can not nest canvas/svg');
+          }
+
           list.push(children);
 
           children.__traverse(ctx, defs, renderMode);
@@ -11215,9 +11220,9 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
+  var isNil$6 = util.isNil,
       isObject$1 = util.isObject,
-      isFunction$3 = util.isFunction;
+      isFunction$4 = util.isFunction;
   var PX$8 = unit.PX;
 
   function getDom(dom) {
@@ -11283,7 +11288,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$5(w)) {
+        if (!isNil$6(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -11293,7 +11298,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$5(h)) {
+        if (!isNil$6(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -11408,7 +11413,7 @@
             }
           }
 
-        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -11545,7 +11550,7 @@
             _this2.node.__defs = nd;
           }
 
-          if (isFunction$3(cb)) {
+          if (isFunction$4(cb)) {
             cb();
           }
 
@@ -11571,7 +11576,7 @@
 
               if (clone.length) {
                 clone.forEach(function (item) {
-                  if (isObject$1(item) && isFunction$3(item.before)) {
+                  if (isObject$1(item) && isFunction$4(item.before)) {
                     item.before(diff);
                   }
                 });
@@ -11593,9 +11598,9 @@
             },
             after: function after(diff) {
               clone.forEach(function (item) {
-                if (isObject$1(item) && isFunction$3(item.after)) {
+                if (isObject$1(item) && isFunction$4(item.after)) {
                   item.after(diff);
-                } else if (isFunction$3(item)) {
+                } else if (isFunction$4(item)) {
                   item(diff);
                 }
               });
@@ -12957,25 +12962,15 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isNil$6 = util.isNil,
-      isBoolean = util.isBoolean,
-      isFunction$4 = util.isFunction,
-      isString = util.isString,
-      isNumber$2 = util.isNumber,
-      clone$5 = util.clone;
+  var isPrimitive = util.isPrimitive;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
-
-  function isPrimitive(v) {
-    return isNil$6(v) || isBoolean(v) || isString(v) || isNumber$2(v);
-  }
   /**
    * 还原缩写到全称，涉及样式和动画属性
    * @param target 还原的对象
    * @param hash 缩写映射
    */
-
 
   function abbr2full(target, hash) {
     // 也许节点没写样式
@@ -13010,7 +13005,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$6(v)) {
+            if (isNil(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -13033,7 +13028,7 @@
             } // 支持函数模式和值模式
 
 
-            if (isFunction$4(value)) {
+            if (isFunction(value)) {
               value = value(v);
             }
 
@@ -13170,7 +13165,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
     child.tagName = child.tagName || libraryItem.tagName;
-    child.props = clone$5(libraryItem.props);
+    child.props = clone(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {
@@ -13198,6 +13193,10 @@
   }
 
   function parse$1(karas, json, animateRecords, options) {
+    if (isPrimitive(json)) {
+      return json;
+    }
+
     if (Array.isArray(json)) {
       throw new Error('Parse can not be an Array');
     }
@@ -13460,7 +13459,7 @@
   var karas = {
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
-        throw new Error('Render must be canvas/svg');
+        throw new Error('Render dom must be canvas/svg');
       }
 
       if (dom) {
@@ -13496,7 +13495,7 @@
 
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
       if (dom) {
-        if (util.isString(dom) || window.HTMLElement && dom instanceof window.HTMLElement) ; else {
+        if (!util.isString(dom) && !(dom instanceof window.Element)) {
           options = dom;
           dom = null;
         }
@@ -13511,7 +13510,7 @@
 
       if (dom) {
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
-          throw new Error('Parse root must be canvas/svg');
+          throw new Error('Parse dom must be canvas/svg');
         } // parse模式会生成controller，动画总控制器
 
 
@@ -13527,10 +13526,6 @@
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {
-          if (['canvas', 'svg'].indexOf(tagName) > -1) {
-            throw new Error("Need a dom on parse(".concat(tagName, ", dom)"));
-          }
-
           if (animateRecords.length) {
             vd.__animateRecords = animateRecords;
           }

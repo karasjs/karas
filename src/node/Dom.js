@@ -79,6 +79,9 @@ class Dom extends Xom {
       });
     }
     else if(children instanceof Dom || children instanceof Component) {
+      if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg');
+      }
       list.push(children);
       children.__traverse(ctx, defs, renderMode);
     }

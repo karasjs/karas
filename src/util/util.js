@@ -5,8 +5,6 @@ function isType(type) {
   }
 }
 
-let isNumber = isType('Number');
-
 function joinSourceArray(arr) {
   let res = '';
   for(let i = 0, len = arr.length; i < len; i++) {
@@ -260,15 +258,18 @@ let util = {
   isObject: isType('Object'),
   isString: isType('String'),
   isFunction: isType('Function'),
-  isNumber,
+  isNumber: isType('Number'),
   isBoolean: isType('Boolean'),
   isDate: isType('Date'),
+  isNil,
+  isPrimitive: function(v) {
+    return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+  },
   stringify,
   joinSourceArray(arr) {
     return joinSourceArray(arr);
   },
   encodeHtml,
-  isNil,
   joinVirtualDom,
   joinVd,
   joinDef,

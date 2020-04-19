@@ -2,12 +2,8 @@ import util from './util';
 import abbr from './abbr';
 import Node from '../node/Node';
 
-let { isNil, isBoolean, isFunction, isString, isNumber, clone } = util;
+let { isPrimitive } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
-
-function isPrimitive(v) {
-  return isNil(v) || isBoolean(v) || isString(v) || isNumber(v);
-}
 
 /**
  * 还原缩写到全称，涉及样式和动画属性
@@ -208,6 +204,9 @@ function linkInit(child) {
 }
 
 function parse(karas, json, animateRecords, options) {
+  if(isPrimitive(json)) {
+    return json;
+  }
   if(Array.isArray(json)) {
     throw new Error('Parse can not be an Array');
   }

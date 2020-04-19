@@ -65,11 +65,9 @@ let karas = {
   },
   parse(json, dom, options = {}) {
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-    if(dom) {
-      if(!util.isString(dom) && !(dom instanceof window.Element)) {
-        options = dom;
-        dom = null;
-      }
+    if(dom && !util.isString(dom) && !(dom instanceof window.Element)) {
+      options = dom;
+      dom = null;
     }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];

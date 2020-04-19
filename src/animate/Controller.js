@@ -142,22 +142,30 @@ class Controller {
     return this.__list;
   }
 
-  set playbackRate(v) {
+  __set(key, value) {
     this.list.forEach(item => {
-      item.playbackRate = v;
+      item[key] = value;
     });
+  }
+
+  set playbackRate(v) {
+    this.__set('playbackRate', v);
   }
 
   set iterations(v) {
-    this.list.forEach(item => {
-      item.iterations = v;
-    });
+    this.__set('iterations', v);
   }
 
   set playCount(v) {
-    this.list.forEach(item => {
-      item.iterations = v;
-    });
+    this.__set('playCount', v);
+  }
+
+  set fps(v) {
+    this.__set('fps', v);
+  }
+
+  set currentTime(v) {
+    this.__set('currentTime', v);
   }
 }
 

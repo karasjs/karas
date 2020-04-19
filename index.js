@@ -11377,6 +11377,13 @@
         }]);
       }
     }, {
+      key: "__set",
+      value: function __set(key, value) {
+        this.list.forEach(function (item) {
+          item[key] = value;
+        });
+      }
+    }, {
       key: "records",
       get: function get() {
         return this.__records;
@@ -11389,23 +11396,27 @@
     }, {
       key: "playbackRate",
       set: function set(v) {
-        this.list.forEach(function (item) {
-          item.playbackRate = v;
-        });
+        this.__set('playbackRate', v);
       }
     }, {
       key: "iterations",
       set: function set(v) {
-        this.list.forEach(function (item) {
-          item.iterations = v;
-        });
+        this.__set('iterations', v);
       }
     }, {
       key: "playCount",
       set: function set(v) {
-        this.list.forEach(function (item) {
-          item.iterations = v;
-        });
+        this.__set('playCount', v);
+      }
+    }, {
+      key: "fps",
+      set: function set(v) {
+        this.__set('fps', v);
+      }
+    }, {
+      key: "currentTime",
+      set: function set(v) {
+        this.__set('currentTime', v);
       }
     }]);
 
@@ -13477,11 +13488,9 @@
       var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-      if (dom) {
-        if (!util.isString(dom) && !(dom instanceof window.Element)) {
-          options = dom;
-          dom = null;
-        }
+      if (dom && !util.isString(dom) && !(dom instanceof window.Element)) {
+        options = dom;
+        dom = null;
       } // 暂存所有动画声明，等root的生成后开始执行
 
 

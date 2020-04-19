@@ -688,7 +688,7 @@
     return arr;
   }
 
-  function clone$1(obj) {
+  function clone(obj) {
     if (isNil$1(obj) || _typeof(obj) !== 'object') {
       return obj;
     }
@@ -699,7 +699,7 @@
 
     var n = Array.isArray(obj) ? [] : {};
     Object.keys(obj).forEach(function (i) {
-      n[i] = clone$1(obj[i]);
+      n[i] = clone(obj[i]);
     });
     return n;
   }
@@ -754,7 +754,7 @@
     int2rgba: int2rgba,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
-    clone: clone$1,
+    clone: clone,
     equalArr: equalArr
   };
 
@@ -1461,7 +1461,7 @@
   var isNil$2 = util.isNil,
       rgba2int$2 = util.rgba2int,
       int2rgba$2 = util.int2rgba,
-      clone$2 = util.clone;
+      clone$1 = util.clone;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
@@ -2284,7 +2284,7 @@
     var currentStyle = node.__currentStyle = animateStyle;
     var lineHeight = currentStyle.lineHeight,
         textAlign = currentStyle.textAlign;
-    var computedStyle = node.__computedStyle = clone$2(currentStyle);
+    var computedStyle = node.__computedStyle = clone$1(currentStyle);
     var parent = node.parent;
     var parentComputedStyle = parent && parent.computedStyle;
     preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
@@ -5209,7 +5209,7 @@
   var isNil$4 = util.isNil,
       isFunction$3 = util.isFunction,
       isNumber = util.isNumber,
-      clone$3 = util.clone,
+      clone$2 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
@@ -5270,7 +5270,7 @@
 
 
   function inherit(frames, keys, target) {
-    var copy = clone$3(frames);
+    var copy = clone$2(frames);
     var computedStyle = target.computedStyle;
     copy.forEach(function (item) {
       var style = item.style;
@@ -5967,7 +5967,7 @@
 
 
   function calStyle(frame, percent) {
-    var style = clone$3(frame.style);
+    var style = clone$2(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction !== linear) {
@@ -6095,7 +6095,7 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = clone$3(list || []); // 动画过程另外一种形式，object描述k-v形式
+      _this.__list = clone$2(list || []); // 动画过程另外一种形式，object描述k-v形式
 
       if (!Array.isArray(_this.__list)) {
         var nl = [];
@@ -6226,7 +6226,7 @@
 
 
         list.forEach(function (item, i) {
-          list[i] = clone$3(item);
+          list[i] = clone$2(item);
         }); // 首尾时间偏移强制为[0, 1]
 
         var first = list[0];
@@ -6289,7 +6289,7 @@
           alternate: true,
           'alternate-reverse': true
         }.hasOwnProperty(direction)) {
-          var framesR = clone$3(frames).reverse();
+          var framesR = clone$2(frames).reverse();
           framesR.forEach(function (item) {
             item.time = duration - item.time;
             item.transition = [];
@@ -7122,7 +7122,7 @@
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
-  var clone$4 = util.clone,
+  var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
       equalArr$2 = util.equalArr;
   var calRelative$1 = css.calRelative,
@@ -7246,7 +7246,7 @@
 
       _this.__tagName = tagName; // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
 
-      _this.__style = clone$4(_this.props.style) || {}; // style被解析后的k-v形式
+      _this.__style = clone$3(_this.props.style) || {}; // style被解析后的k-v形式
 
       _this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
 
@@ -7969,7 +7969,7 @@
                 }); // 再画重复的十字和4角象限
 
                 repeat.forEach(function (item) {
-                  var copy = clone$4(props);
+                  var copy = clone$3(props);
 
                   if (needResize) {
                     var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -8555,7 +8555,7 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = clone$4(style);
+        var copy = clone$3(style);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.style);
@@ -8698,7 +8698,7 @@
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
-  var clone$5 = util.clone,
+  var clone$4 = util.clone,
       int2rgba$4 = util.int2rgba,
       isNil$5 = util.isNil;
   var REGISTER = {};
@@ -8944,7 +8944,7 @@
           var vd = this.virtualDom;
           vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
 
-          var children = clone$5(vd.children);
+          var children = clone$4(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -9083,7 +9083,7 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = clone$5(props);
+        var copy = clone$4(props);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.props);
@@ -12962,7 +12962,8 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isPrimitive = util.isPrimitive;
+  var isPrimitive = util.isPrimitive,
+      clone$5 = util.clone;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
@@ -13165,7 +13166,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
     child.tagName = child.tagName || libraryItem.tagName;
-    child.props = clone(libraryItem.props);
+    child.props = clone$5(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {

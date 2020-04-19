@@ -2,7 +2,7 @@ import util from './util';
 import abbr from './abbr';
 import Node from '../node/Node';
 
-let { isPrimitive, clone } = util;
+let { isNil, isFunction, isPrimitive, clone } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
 
 /**

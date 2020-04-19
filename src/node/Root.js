@@ -8,6 +8,7 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from '../animate/frame';
 import level from '../animate/level';
+import Controller from '../animate/Controller';
 
 const { isNil, isObject, isFunction } = util;
 
@@ -53,6 +54,7 @@ class Root extends Dom {
     this.__mh = 0;
     this.__task = [];
     this.__ref = {};
+    this.__animateController = new Controller();
     Event.mix(this);
   }
 

@@ -1593,7 +1593,7 @@ class Animation extends Event {
 
   set iterations(v) {
     v = parseInt(v);
-    if(isNaN(v)) {
+    if(isNaN(v) || v < 0) {
       v = 1;
     }
     this.__iterations = v;
@@ -1659,7 +1659,7 @@ class Animation extends Event {
   }
 
   set playCount(v) {
-    this.__playCount = v;
+    this.__playCount = parseInt(v) || 0;
   }
 
   get isDestroyed() {

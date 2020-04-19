@@ -80,8 +80,9 @@ let karas = {
       if(['canvas', 'svg'].indexOf(tagName) === -1) {
         throw new Error('Parse dom must be canvas/svg');
       }
-      // parse模式会生成controller，动画总控制器
-      let ac = vd.__animateController = new Controller(animateRecords);
+      // parse直接（非递归）的动画记录
+      let ac = vd.animateController;
+      ac.__records = animateRecords;
       // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
       this.render(vd, dom);
       // 总控次数、速度

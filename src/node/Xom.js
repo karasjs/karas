@@ -310,18 +310,9 @@ class Xom extends Node {
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
-      let ac = this.root.__animateController;
-      // 有controller时说明根节点是parse生成，动画播放模式
-      if(ac) {
-        ac.__list = ac.__list.concat(ar);
-      }
-      // 没有说明根节点是代码模式，自动播放，target等同于当前this节点
-      else {
-        ar.forEach(item => {
-          let { value, options } = item.animate;
-          this.animate(value, options);
-        });
-      }
+      this.__animateRecords = null;
+      let ac = this.root.animateController;
+      ac.__records = ac.records.concat(ar);
     }
   }
 
@@ -1158,12 +1149,15 @@ class Xom extends Node {
     });
   }
 
-  animate(list, option) {
+  animate(list, option, underControl) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, option);
     this.animationList.push(animation);
+    if(underControl) {
+      this.root.animateController.add(animation);
+    }
     return animation.play();
   }
 

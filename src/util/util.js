@@ -262,7 +262,7 @@ let util = {
   isBoolean: isType('Boolean'),
   isDate: isType('Date'),
   isNil,
-  isPrimitive: function(v) {
+  isPrimitive(v) {
     return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
   },
   stringify,

@@ -19,8 +19,8 @@ function replaceGlobal(target, globalValue, key, vars) {
 }
 
 class Controller {
-  constructor(records) {
-    this.__records = records;
+  constructor() {
+    this.__records = [];
     this.__list = [];
   }
 
@@ -30,8 +30,6 @@ class Controller {
     if(isNil(playbackRate) && isNil(iterations)) {
       return;
     }
-    this.__playbackRate = playbackRate;
-    this.__iterations = iterations;
     this.records.forEach(record => {
       let { animate } = record;
       if(Array.isArray(animate)) {
@@ -144,31 +142,19 @@ class Controller {
     return this.__list;
   }
 
-  get playbackRate() {
-    return this.__playbackRate;
-  }
-
   set playbackRate(v) {
-    v = parseFloat(v) || 0;
-    if(v < 0) {
-      v = 1;
-    }
-    this.__playbackRate = v;
     this.list.forEach(item => {
       item.playbackRate = v;
     });
   }
 
-  get iterations() {
-    return this.__iterations;
+  set iterations(v) {
+    this.list.forEach(item => {
+      item.iterations = v;
+    });
   }
 
-  set iterations(v) {
-    v = parseInt(v);
-    if(isNaN(v)) {
-      v = 1;
-    }
-    this.__iterations = v;
+  set playCount(v) {
     this.list.forEach(item => {
       item.iterations = v;
     });

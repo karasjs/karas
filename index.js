@@ -7016,7 +7016,7 @@
       set: function set(v) {
         v = parseInt(v);
 
-        if (isNaN(v)) {
+        if (isNaN(v) || v < 0) {
           v = 1;
         }
 
@@ -7094,7 +7094,7 @@
         return this.__playCount;
       },
       set: function set(v) {
-        this.__playCount = v;
+        this.__playCount = parseInt(v) || 0;
       }
     }, {
       key: "isDestroyed",
@@ -7447,20 +7447,9 @@
         var ar = this.__animateRecords;
 
         if (ar) {
-          var ac = this.root.__animateController; // 有controller时说明根节点是parse生成，动画播放模式
-
-          if (ac) {
-            ac.__list = ac.__list.concat(ar);
-          } // 没有说明根节点是代码模式，自动播放，target等同于当前this节点
-          else {
-              ar.forEach(function (item) {
-                var _item$animate = item.animate,
-                    value = _item$animate.value,
-                    options = _item$animate.options;
-
-                _this4.animate(value, options);
-              });
-            }
+          this.__animateRecords = null;
+          var ac = this.root.animateController;
+          ac.__records = ac.records.concat(ar);
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -8391,13 +8380,18 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, option) {
+      value: function animate(list, option, underControl) {
         if (this.isDestroyed) {
           return;
         }
 
         var animation = new Animation(this, list, option);
         this.animationList.push(animation);
+
+        if (underControl) {
+          this.root.animateController.add(animation);
+        }
+
         return animation.play();
       }
     }, {
@@ -11220,7 +11214,205 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
+  var isNil$5 = util.isNil;
+
+  function replaceGlobal(target, globalValue, key, vars) {
+    // 优先vars，其次总控，没有就是自己声明
+    if (!isNil$5(globalValue)) {
+      var decl = target['var-' + key];
+
+      if (!decl) {
+        target[key] = globalValue;
+      } else {
+        var id = decl.id;
+
+        if (!id || !vars[id]) {
+          target[key] = globalValue;
+        }
+      }
+    }
+  }
+
+  var Controller = /*#__PURE__*/function () {
+    function Controller() {
+      _classCallCheck(this, Controller);
+
+      this.__records = [];
+      this.__list = [];
+    }
+
+    _createClass(Controller, [{
+      key: "__op",
+      value: function __op(options) {
+        var playbackRate = options.playbackRate,
+            iterations = options.iterations,
+            vars = options.vars; // 没定义总控不必循环设置
+
+        if (isNil$5(playbackRate) && isNil$5(iterations)) {
+          return;
+        }
+
+        this.records.forEach(function (record) {
+          var animate = record.animate;
+
+          if (Array.isArray(animate)) {
+            animate.forEach(function (item) {
+              var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
+
+              replaceGlobal(options, playbackRate, 'playbackRate', vars);
+              replaceGlobal(options, iterations, 'iterations', vars);
+            });
+          } else {
+            var _options = animate.options;
+            replaceGlobal(_options, playbackRate, 'playbackRate', vars);
+            replaceGlobal(_options, iterations, 'iterations', vars);
+          }
+        });
+      }
+    }, {
+      key: "add",
+      value: function add(v) {
+        if (this.__list.indexOf(v) === -1) {
+          this.list.push(v);
+        }
+      }
+    }, {
+      key: "remove",
+      value: function remove(v) {
+        var i = this.list.indexOf(v);
+
+        if (i > -1) {
+          this.list.splice(i, 1);
+        }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        this.__records = [];
+        this.__list = [];
+      }
+    }, {
+      key: "__action",
+      value: function __action(k, args) {
+        this.list.forEach(function (item) {
+          item.target.animationList.forEach(function (animate) {
+            animate[k].apply(animate, args);
+          });
+        });
+      }
+    }, {
+      key: "init",
+      value: function init() {
+        var _this = this;
+
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
+        var records = this.records;
+
+        if (records.length) {
+          // 清除防止重复调用，并且新的json还会进入整体逻辑
+          records.splice(0).forEach(function (item) {
+            var target = item.target,
+                animate = item.animate;
+
+            if (Array.isArray(animate)) {
+              animate.forEach(function (animate) {
+                var o = target.animate(animate.value, animate.options);
+
+                _this.add(o);
+              });
+            } else {
+              var o = target.animate(animate.value, animate.options);
+
+              _this.add(o);
+            }
+          });
+        }
+      }
+    }, {
+      key: "play",
+      value: function play() {
+        this.init();
+
+        this.__action('play');
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        this.__action('pause');
+      }
+    }, {
+      key: "cancel",
+      value: function cancel() {
+        this.__action('cancel');
+      }
+    }, {
+      key: "finish",
+      value: function finish() {
+        this.__action('finish');
+      }
+    }, {
+      key: "gotoAndStop",
+      value: function gotoAndStop(v, options, cb) {
+        this.init();
+        var once = true;
+
+        this.__action('gotoAndStop', [v, options, function (diff) {
+          if (once) {
+            once = false;
+            cb(diff);
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndPlay",
+      value: function gotoAndPlay(v, options, cb) {
+        this.init();
+        var once = true;
+
+        this.__action('gotoAndPlay', [v, options, function (diff) {
+          if (once) {
+            once = false;
+            cb(diff);
+          }
+        }]);
+      }
+    }, {
+      key: "records",
+      get: function get() {
+        return this.__records;
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
+      key: "playbackRate",
+      set: function set(v) {
+        this.list.forEach(function (item) {
+          item.playbackRate = v;
+        });
+      }
+    }, {
+      key: "iterations",
+      set: function set(v) {
+        this.list.forEach(function (item) {
+          item.iterations = v;
+        });
+      }
+    }, {
+      key: "playCount",
+      set: function set(v) {
+        this.list.forEach(function (item) {
+          item.iterations = v;
+        });
+      }
+    }]);
+
+    return Controller;
+  }();
+
+  var isNil$6 = util.isNil,
       isObject$1 = util.isObject,
       isFunction$3 = util.isFunction;
   var PX$8 = unit.PX;
@@ -11279,6 +11471,7 @@
       _this.__mh = 0;
       _this.__task = [];
       _this.__ref = {};
+      _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
       return _this;
     }
@@ -11288,7 +11481,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$5(w)) {
+        if (!isNil$6(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -11298,7 +11491,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$5(h)) {
+        if (!isNil$6(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -11413,7 +11606,7 @@
             }
           }
 
-        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -12962,7 +13155,7 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isNil$6 = util.isNil,
+  var isNil$7 = util.isNil,
       isFunction$4 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$5 = util.clone;
@@ -13008,7 +13201,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$6(v)) {
+            if (isNil$7(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -13239,219 +13432,6 @@
     return parseJson(karas, json, animateRecords, options.vars);
   }
 
-  var isNil$7 = util.isNil;
-
-  function replaceGlobal(target, globalValue, key, vars) {
-    // 优先vars，其次总控，没有就是自己声明
-    if (!isNil$7(globalValue)) {
-      var decl = target['var-' + key];
-
-      if (!decl) {
-        target[key] = globalValue;
-      } else {
-        var id = decl.id;
-
-        if (!id || !vars[id]) {
-          target[key] = globalValue;
-        }
-      }
-    }
-  }
-
-  var Controller = /*#__PURE__*/function () {
-    function Controller(records) {
-      _classCallCheck(this, Controller);
-
-      this.__records = records;
-      this.__list = [];
-    }
-
-    _createClass(Controller, [{
-      key: "__op",
-      value: function __op(options) {
-        var playbackRate = options.playbackRate,
-            iterations = options.iterations,
-            vars = options.vars; // 没定义总控不必循环设置
-
-        if (isNil$7(playbackRate) && isNil$7(iterations)) {
-          return;
-        }
-
-        this.__playbackRate = playbackRate;
-        this.__iterations = iterations;
-        this.records.forEach(function (record) {
-          var animate = record.animate;
-
-          if (Array.isArray(animate)) {
-            animate.forEach(function (item) {
-              var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
-
-              replaceGlobal(options, playbackRate, 'playbackRate', vars);
-              replaceGlobal(options, iterations, 'iterations', vars);
-            });
-          } else {
-            var _options = animate.options;
-            replaceGlobal(_options, playbackRate, 'playbackRate', vars);
-            replaceGlobal(_options, iterations, 'iterations', vars);
-          }
-        });
-      }
-    }, {
-      key: "add",
-      value: function add(v) {
-        if (this.__list.indexOf(v) === -1) {
-          this.list.push(v);
-        }
-      }
-    }, {
-      key: "remove",
-      value: function remove(v) {
-        var i = this.list.indexOf(v);
-
-        if (i > -1) {
-          this.list.splice(i, 1);
-        }
-      }
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        this.__records = [];
-        this.__list = [];
-      }
-    }, {
-      key: "__action",
-      value: function __action(k, args) {
-        this.list.forEach(function (item) {
-          item.target.animationList.forEach(function (animate) {
-            animate[k].apply(animate, args);
-          });
-        });
-      }
-    }, {
-      key: "init",
-      value: function init() {
-        var _this = this;
-
-        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        var records = this.records;
-
-        if (records.length) {
-          // 清除防止重复调用，并且新的json还会进入整体逻辑
-          records.splice(0).forEach(function (item) {
-            var target = item.target,
-                animate = item.animate;
-
-            if (Array.isArray(animate)) {
-              animate.forEach(function (animate) {
-                var o = target.animate(animate.value, animate.options);
-
-                _this.add(o);
-              });
-            } else {
-              var o = target.animate(animate.value, animate.options);
-
-              _this.add(o);
-            }
-          });
-        }
-      }
-    }, {
-      key: "play",
-      value: function play() {
-        this.init();
-
-        this.__action('play');
-      }
-    }, {
-      key: "pause",
-      value: function pause() {
-        this.__action('pause');
-      }
-    }, {
-      key: "cancel",
-      value: function cancel() {
-        this.__action('cancel');
-      }
-    }, {
-      key: "finish",
-      value: function finish() {
-        this.__action('finish');
-      }
-    }, {
-      key: "gotoAndStop",
-      value: function gotoAndStop(v, options, cb) {
-        this.init();
-        var once = true;
-
-        this.__action('gotoAndStop', [v, options, function (diff) {
-          if (once) {
-            once = false;
-            cb(diff);
-          }
-        }]);
-      }
-    }, {
-      key: "gotoAndPlay",
-      value: function gotoAndPlay(v, options, cb) {
-        this.init();
-        var once = true;
-
-        this.__action('gotoAndPlay', [v, options, function (diff) {
-          if (once) {
-            once = false;
-            cb(diff);
-          }
-        }]);
-      }
-    }, {
-      key: "records",
-      get: function get() {
-        return this.__records;
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
-      }
-    }, {
-      key: "playbackRate",
-      get: function get() {
-        return this.__playbackRate;
-      },
-      set: function set(v) {
-        v = parseFloat(v) || 0;
-
-        if (v < 0) {
-          v = 1;
-        }
-
-        this.__playbackRate = v;
-        this.list.forEach(function (item) {
-          item.playbackRate = v;
-        });
-      }
-    }, {
-      key: "iterations",
-      get: function get() {
-        return this.__iterations;
-      },
-      set: function set(v) {
-        v = parseInt(v);
-
-        if (isNaN(v)) {
-          v = 1;
-        }
-
-        this.__iterations = v;
-        this.list.forEach(function (item) {
-          item.iterations = v;
-        });
-      }
-    }]);
-
-    return Controller;
-  }();
-
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -13514,10 +13494,11 @@
       if (dom) {
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
-        } // parse模式会生成controller，动画总控制器
+        } // parse直接（非递归）的动画记录
 
 
-        var ac = vd.__animateController = new Controller(animateRecords); // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+        var ac = vd.animateController;
+        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
         this.render(vd, dom); // 总控次数、速度
 

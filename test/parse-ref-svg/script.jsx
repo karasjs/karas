@@ -28,6 +28,7 @@ let o = karas.render(
   </svg>,
   '#test'
 );
+o.animateController.play();
 let input = document.querySelector('input');
 let a = o.ref.a;
 a.animationList[0].on('finish', function() {

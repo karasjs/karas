@@ -13194,7 +13194,7 @@
   }
 
   function parse$1(karas, json, animateRecords, options) {
-    if (isPrimitive(json)) {
+    if (isPrimitive(json) || json instanceof Node) {
       return json;
     }
 

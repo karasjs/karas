@@ -240,9 +240,12 @@ class Img extends Dom {
           c.ctx.drawImage(this.__source, 0, 0, width, height);
           c.ctx.globalCompositeOperation = 'destination-in';
           border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
+          c.draw(c.ctx);
           ctx.drawImage(c.canvas, 0, 0);
+          c.draw(ctx);
           c.ctx.globalCompositeOperation = 'source-over';
           c.ctx.clearRect(0, 0, width, height);
+          c.draw(c.ctx);
         }
         else {
           ctx.drawImage(this.__source, originX, originY, width, height);

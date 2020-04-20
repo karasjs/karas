@@ -4699,7 +4699,9 @@
     o.style.height = height + 'px';
     return {
       canvas: o,
-      ctx: o.getContext('2d')
+      ctx: o.getContext('2d'),
+      draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
+      }
     };
   }
 
@@ -4863,6 +4865,23 @@
     },
     getMaskCanvas: function getMaskCanvas(width, height) {
       return cacheCanvas('mask', width, height);
+    },
+    isDom: function isDom(o) {
+      if (o) {
+        if (util.isString(o)) {
+          return true;
+        }
+
+        if (typeof window !== 'undefined' && window.Element && o instanceof window.Element) {
+          return true;
+        }
+
+        if (util.isFunction(o.getElementsByTagName)) {
+          return true;
+        }
+      }
+
+      return false;
     }
   };
 
@@ -8089,11 +8108,14 @@
 
             prev.__setCtx(c.ctx);
 
-            prev.render(renderMode);
+            prev.render(renderMode); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+
+            c.draw(c.ctx);
 
             prev.__setCtx(ctx);
 
             ctx.drawImage(c.canvas, 0, 0);
+            c.draw(ctx);
           } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
           else {
               var m = inject.getMaskCanvas(width, height);
@@ -8104,13 +8126,22 @@
 
                 item.__setCtx(ctx);
               });
+              m.draw(m.ctx);
               c.ctx.globalCompositeOperation = 'destination-in';
               c.ctx.drawImage(m.canvas, 0, 0);
+              c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
-            }
+              c.draw(ctx); // 清除
+
+              m.ctx.globalCompositeOperation = 'source-over';
+              m.ctx.clearRect(0, 0, width, height);
+              m.draw(m.ctx);
+            } // 清除
+
 
           c.ctx.globalCompositeOperation = 'source-over';
           c.ctx.clearRect(0, 0, width, height);
+          c.draw(ctx);
         } else if (renderMode === mode.SVG) {
           this.render(renderMode); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
@@ -8435,7 +8466,7 @@
     }, {
       key: "__setCtx",
       value: function __setCtx(ctx) {
-        this.__ctx = ctx;
+        _get(_getPrototypeOf(Xom.prototype), "__setCtx", this).call(this, ctx);
 
         if (!this.isGeom) {
           this.children.forEach(function (item) {
@@ -10721,9 +10752,12 @@
               c.ctx.drawImage(this.__source, 0, 0, _width, _height);
               c.ctx.globalCompositeOperation = 'destination-in';
               border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
+              c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
+              c.draw(ctx);
               c.ctx.globalCompositeOperation = 'source-over';
               c.ctx.clearRect(0, 0, _width, _height);
+              c.draw(c.ctx);
             } else {
               ctx.drawImage(this.__source, originX, originY, width, height);
             }
@@ -12838,11 +12872,7 @@
           ctx.beginPath();
 
           if (rx === 0 && ry === 0) {
-            ctx.moveTo(originX, originY);
-            ctx.lineTo(originX + width, originY);
-            ctx.lineTo(originX + width, originY + height);
-            ctx.lineTo(originX, originY + height);
-            ctx.lineTo(originX, originY);
+            ctx.rect(originX, originY, width, height);
           } else {
             var ox = rx * geom.H;
             var oy = ry * geom.H;
@@ -13488,7 +13518,7 @@
       var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-      if (dom && !util.isString(dom) && !(dom instanceof window.Element)) {
+      if (!inject.isDom(dom)) {
         options = dom;
         dom = null;
       } // 暂存所有动画声明，等root的生成后开始执行
@@ -13496,11 +13526,12 @@
 
       var animateRecords = [];
 
-      var vd = parse$1(this, json, animateRecords, options);
+      var vd = parse$1(this, json, animateRecords, options); // 有dom时parse作为根方法渲染
 
-      var tagName = json.tagName; // 有dom时parse作为根方法渲染
 
       if (dom) {
+        var tagName = json.tagName;
+
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
         } // parse直接（非递归）的动画记录

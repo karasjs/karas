@@ -54,11 +54,7 @@ class Rect extends Geom {
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       if(rx === 0 && ry === 0) {
-        ctx.moveTo(originX, originY);
-        ctx.lineTo(originX + width, originY);
-        ctx.lineTo(originX + width, originY + height);
-        ctx.lineTo(originX, originY + height);
-        ctx.lineTo(originX, originY);
+        ctx.rect(originX, originY, width, height);
       }
       else {
         let ox = rx * geom.H;

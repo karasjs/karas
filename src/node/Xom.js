@@ -896,8 +896,11 @@ class Xom extends Node {
         c.ctx.globalCompositeOperation = 'destination-in';
         prev.__setCtx(c.ctx);
         prev.render(renderMode);
+        // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+        c.draw(c.ctx);
         prev.__setCtx(ctx);
         ctx.drawImage(c.canvas, 0, 0);
+        c.draw(ctx);
       }
       // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
       else {
@@ -907,12 +910,21 @@ class Xom extends Node {
           item.render(renderMode);
           item.__setCtx(ctx);
         });
+        m.draw(m.ctx);
         c.ctx.globalCompositeOperation = 'destination-in';
         c.ctx.drawImage(m.canvas, 0, 0);
+        c.draw(c.ctx);
         ctx.drawImage(c.canvas, 0, 0);
+        c.draw(ctx);
+        // 清除
+        m.ctx.globalCompositeOperation = 'source-over';
+        m.ctx.clearRect(0, 0, width, height);
+        m.draw(m.ctx);
       }
+      // 清除
       c.ctx.globalCompositeOperation = 'source-over';
       c.ctx.clearRect(0, 0, width, height);
+      c.draw(ctx);
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode);
@@ -1196,7 +1208,7 @@ class Xom extends Node {
   }
 
   __setCtx(ctx) {
-    this.__ctx = ctx;
+    super.__setCtx(ctx);
     if(!this.isGeom) {
       this.children.forEach(item => {
         item.__setCtx(ctx);

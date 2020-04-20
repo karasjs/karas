@@ -65,16 +65,16 @@ let karas = {
   },
   parse(json, dom, options = {}) {
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-    if(dom && !util.isString(dom) && !(dom instanceof window.Element)) {
+    if(!inject.isDom(dom)) {
       options = dom;
       dom = null;
     }
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];
     let vd = parse(this, json, animateRecords, options);
-    let { tagName } = json;
     // 有dom时parse作为根方法渲染
     if(dom) {
+      let { tagName } = json;
       if(['canvas', 'svg'].indexOf(tagName) === -1) {
         throw new Error('Parse dom must be canvas/svg');
       }

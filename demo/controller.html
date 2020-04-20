@@ -14,8 +14,8 @@
 </head>
 <body>
 <div class="pre">Root下有个animateController对象，作为总动画控制器，控制所有想被总控的动画。
-parse模式下的animate声明都会进入总控，代码模式animate()的第3个参数可选进入总控。
-Root被parse()出时，动画是默认播放的，第3个参数可以声明autoPlay为false取消；代码模式则相反，默认不播放，需显示调用play()。</div>
+parse()模式下的animate声明都会进入总控，render()模式下animate()的第3个参数可选进入总控。
+Root被parse()出时，动画是默认播放的，第3个参数options中可以声明autoPlay为false取消；render()则相反，默认不播放，需显示调用play()。</div>
 <div id="example"></div>
 <div id="example2"></div>
 <pre><code class="brush:csx"></code></pre>
@@ -219,7 +219,9 @@ Root被parse()出时，动画是默认播放的，第3个参数可以声明autoP
       height: 100,
     },
     children: data,
-  }, '#example');
+  }, '#example', {
+    // autoPlay
+  });
   let o2 = karas.parse({
     tagName: 'svg',
     props: {
@@ -227,8 +229,11 @@ Root被parse()出时，动画是默认播放的，第3个参数可以声明autoP
       height: 100,
     },
     children: data,
-  }, '#example2');
+  }, '#example2', {
+    // autoPlay
+  });
   o.animateController.playbackRate = 2;
+  // 可以控制o.animateController.pause();
   o2.animateController.iterations = 1;
 </script>
 <script src="sea.js"></script>

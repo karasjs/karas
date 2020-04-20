@@ -8141,7 +8141,7 @@
 
           c.ctx.globalCompositeOperation = 'source-over';
           c.ctx.clearRect(0, 0, width, height);
-          c.draw(ctx);
+          c.draw(c.ctx);
         } else if (renderMode === mode.SVG) {
           this.render(renderMode); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 

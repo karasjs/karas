@@ -924,7 +924,7 @@ class Xom extends Node {
       // 清除
       c.ctx.globalCompositeOperation = 'source-over';
       c.ctx.clearRect(0, 0, width, height);
-      c.draw(ctx);
+      c.draw(c.ctx);
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode);

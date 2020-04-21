@@ -13385,7 +13385,7 @@
             linkLibrary(child, hash);
           }
 
-          var libraryItem = hash[libraryId]; // 规定图层child只有tagName、init和动画，属性和子图层来自库
+          var libraryItem = hash[libraryId]; // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
 
           if (libraryItem) {
             linkChild(child, libraryItem);

@@ -10765,13 +10765,10 @@
             var matrix;
 
             if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵，以及影响事件
+              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵
 
               if (this.matrix) {
                 this.__matrix = matrix = transform$1.mergeMatrix(this.__matrix, matrix);
-                this.__matrixEvent = transform$1.mergeMatrix(this.__matrixEvent, matrix);
-              } else {
-                this.__matrixEvent = matrix;
               }
 
               matrix = matrix.join(',');

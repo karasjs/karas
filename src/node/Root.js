@@ -362,21 +362,6 @@ class Root extends Dom {
     this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
   }
 
-  __destroy() {
-    super.__destroy();
-    let ac = this.animateController;
-    ac.records.splice(0);
-    ac.list.splice(0);
-    let r = this.__hookTask;
-    if(r) {
-      let i = frame.__hookTask.indexOf(r);
-      if(i > -1) {
-        frame.__hookTask.splice(i, 1);
-      }
-    }
-    delete this.__node;
-  }
-
   get node() {
     return this.__node;
   }

@@ -11907,26 +11907,6 @@
         this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
     }, {
-      key: "__destroy",
-      value: function __destroy() {
-        _get(_getPrototypeOf(Root.prototype), "__destroy", this).call(this);
-
-        var ac = this.animateController;
-        ac.records.splice(0);
-        ac.list.splice(0);
-        var r = this.__hookTask;
-
-        if (r) {
-          var i = frame.__hookTask.indexOf(r);
-
-          if (i > -1) {
-            frame.__hookTask.splice(i, 1);
-          }
-        }
-
-        delete this.__node;
-      }
-    }, {
       key: "node",
       get: function get() {
         return this.__node;

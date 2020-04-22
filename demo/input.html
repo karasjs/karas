@@ -73,7 +73,7 @@
         height: 360,
       },
       children: Array.isArray(json) ? json : [
-        json,
+        karas.parse(json),
       ],
     }, '#example');
     karas.parse({
@@ -83,7 +83,7 @@
         height: 360,
       },
       children: Array.isArray(json) ? json : [
-        json,
+        karas.parse(json),
       ],
     }, '#example2');
   }

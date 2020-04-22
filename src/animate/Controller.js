@@ -118,7 +118,7 @@ class Controller {
     this.__action('gotoAndStop', [v, options, function(diff) {
       if(once) {
         once = false;
-        cb(diff);
+        cb && cb(diff);
       }
     }]);
   }
@@ -129,7 +129,7 @@ class Controller {
     this.__action('gotoAndPlay', [v, options, function(diff) {
       if(once) {
         once = false;
-        cb(diff);
+        cb && cb(diff);
       }
     }]);
   }

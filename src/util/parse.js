@@ -161,7 +161,7 @@ function linkLibrary(item, hash) {
           linkLibrary(child, hash);
         }
         let libraryItem = hash[libraryId];
-        // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
+        // 规定图层child只有init和动画，属性和子图层来自库
         if(libraryItem) {
           linkChild(child, libraryItem);
         }
@@ -175,8 +175,8 @@ function linkLibrary(item, hash) {
 }
 
 function linkChild(child, libraryItem) {
-  // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
-  child.tagName = child.tagName || libraryItem.tagName;
+  // 规定图层child只有init和动画，属性和子图层来自库
+  child.tagName = libraryItem.tagName;
   child.props = clone(libraryItem.props);
   child.children = libraryItem.children;
   // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况

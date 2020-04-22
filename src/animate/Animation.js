@@ -982,7 +982,7 @@ class Animation extends Event {
   }
 
   __init(ea) {
-    let { target, iterations, frames, direction, duration } = this;
+    let { target, iterations, frames, direction, duration, list } = this;
     // 执行次数小于1无需播放
     if(iterations < 1) {
       return;
@@ -992,7 +992,7 @@ class Animation extends Event {
     if(target.isGeom) {
       target.__animateProps.push(this.__props = {});
     }
-    let list = this.list;
+    list = list.filter(item => item && util.isObject(item));
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
     for(let i = 0, len = list.length; i < len; i++) {
@@ -1135,8 +1135,8 @@ class Animation extends Event {
   }
 
   play(cb) {
-    let { isDestroyed, duration, playState, __frameCb } = this;
-    if(isDestroyed || duration <= 0) {
+    let { isDestroyed, duration, playState, __frameCb, frames } = this;
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
       return this;
     }
     if(playState === 'running') {
@@ -1350,8 +1350,8 @@ class Animation extends Event {
 
   finish(cb) {
     let self = this;
-    let { isDestroyed, duration, playState } = self;
-    if(isDestroyed || duration <= 0) {
+    let { isDestroyed, duration, playState, frames } = self;
+    if(isDestroyed || duration <= 0 || frames.length < 1) {
       return self;
     }
     if(playState === 'finished') {
@@ -1359,7 +1359,7 @@ class Animation extends Event {
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     self.__cancelTask();
-    let { root, style, frames, keys, __frameCb, __clean, __fin } = self;
+    let { root, style, keys, __frameCb, __clean, __fin } = self;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
@@ -1393,8 +1393,8 @@ class Animation extends Event {
   }
 
   cancel(cb) {
-    let { isDestroyed, duration, playState } = this;
-    if(isDestroyed || duration <= 0 || playState === 'idle') {
+    let { isDestroyed, duration, playState, frames } = this;
+    if(isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
       return this;
     }
     this.__cancelTask();
@@ -1521,7 +1521,7 @@ class Animation extends Event {
   }
 
   __destroy() {
-    this.__clean();
+    this.__clean && this.__clean();
     this.__startTime = null;
     this.__isDestroyed = true;
     this.removeControl();

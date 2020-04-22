@@ -90,7 +90,7 @@ class Img extends Dom {
       let root = this.root;
       if(root) {
         this.__task = {
-          before: function() {
+          before() {
             root.setRefreshLevel(lv);
           },
         };

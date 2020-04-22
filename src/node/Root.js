@@ -190,10 +190,9 @@ class Root extends Dom {
     this.__traverseCss(this, this.props.css);
     this.__init();
     this.refresh();
+    // 第一次节点没有__root，渲染一次就有了才能diff
     if(this.node.__root) {
       this.node.__root.__destroy();
-      delete this.node.__root.__node;
-      delete this.node.__root.__vd;
     }
     else {
       initEvent(this.node);
@@ -203,7 +202,10 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { renderMode, style } = this;
+    let { isDestroyed, renderMode, style } = this;
+    if(isDestroyed) {
+      return;
+    }
     // 根元素特殊处理
     style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
       value: 0,
@@ -358,6 +360,21 @@ class Root extends Dom {
     // 清除前得恢复默认matrix，防止每次布局改变了属性
     this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+  }
+
+  __destroy() {
+    super.__destroy();
+    let ac = this.animateController;
+    ac.records.splice(0);
+    ac.list.splice(0);
+    let r = this.__hookTask;
+    if(r) {
+      let i = frame.__hookTask.indexOf(r);
+      if(i > -1) {
+        frame.__hookTask.splice(i, 1);
+      }
+    }
+    delete this.__node;
   }
 
   get node() {

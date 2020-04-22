@@ -6197,7 +6197,8 @@
             iterations = this.iterations,
             frames = this.frames,
             direction = this.direction,
-            duration = this.duration; // 执行次数小于1无需播放
+            duration = this.duration,
+            list = this.list; // 执行次数小于1无需播放
 
         if (iterations < 1) {
           return;
@@ -6210,7 +6211,9 @@
           target.__animateProps.push(this.__props = {});
         }
 
-        var list = this.list; // 过滤时间非法的，过滤后续offset<=前面的
+        list = list.filter(function (item) {
+          return item && util.isObject(item);
+        }); // 过滤时间非法的，过滤后续offset<=前面的
 
         var offset = -1;
 
@@ -6386,9 +6389,10 @@
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             playState = this.playState,
-            __frameCb = this.__frameCb;
+            __frameCb = this.__frameCb,
+            frames = this.frames;
 
-        if (isDestroyed || duration <= 0) {
+        if (isDestroyed || duration <= 0 || frames.length < 1) {
           return this;
         }
 
@@ -6405,7 +6409,7 @@
         var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
-          var frames = this.frames,
+          var _frames = this.frames,
               framesR = this.framesR,
               target = this.target,
               direction = this.direction,
@@ -6418,13 +6422,13 @@
           var stayEnd = this.__stayEnd();
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+          _frames = inherit(_frames, keys, target); // 再计算两帧之间的变化，存入transition属性
 
-          var length = frames.length;
-          var prev = frames[0];
+          var length = _frames.length;
+          var prev = _frames[0];
 
           for (var i = 1; i < length; i++) {
-            var next = frames[i];
+            var next = _frames[i];
             prev = calFrame(prev, next, keys, target);
           }
 
@@ -6478,7 +6482,7 @@
                 var stayBegin = _this3.__stayBegin();
 
                 if (stayBegin) {
-                  var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
+                  var _current = _frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
                   var _calRefresh = calRefresh(_current, style, keys);
 
@@ -6513,12 +6517,12 @@
                 var isEven = playCount % 2 === 0;
 
                 if (direction === 'alternate') {
-                  currentFrames = isEven ? frames : framesR;
+                  currentFrames = isEven ? _frames : framesR;
                 } else {
-                  currentFrames = isEven ? framesR : frames;
+                  currentFrames = isEven ? framesR : _frames;
                 }
               } else {
-                currentFrames = frames;
+                currentFrames = _frames;
               } // 减去delay，计算在哪一帧
 
 
@@ -6677,9 +6681,10 @@
         var self = this;
         var isDestroyed = self.isDestroyed,
             duration = self.duration,
-            playState = self.playState;
+            playState = self.playState,
+            frames = self.frames;
 
-        if (isDestroyed || duration <= 0) {
+        if (isDestroyed || duration <= 0 || frames.length < 1) {
           return self;
         }
 
@@ -6692,7 +6697,6 @@
 
         var root = self.root,
             style = self.style,
-            frames = self.frames,
             keys = self.keys,
             __frameCb = self.__frameCb,
             __clean = self.__clean,
@@ -6751,9 +6755,10 @@
 
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
-            playState = this.playState;
+            playState = this.playState,
+            frames = this.frames;
 
-        if (isDestroyed || duration <= 0 || playState === 'idle') {
+        if (isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
           return this;
         }
 
@@ -6947,8 +6952,7 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        this.__clean();
-
+        this.__clean && this.__clean();
         this.__startTime = null;
         this.__isDestroyed = true;
         this.removeControl();
@@ -11694,13 +11698,10 @@
 
         this.__init();
 
-        this.refresh();
+        this.refresh(); // 第一次节点没有__root，渲染一次就有了才能diff
 
         if (this.node.__root) {
           this.node.__root.__destroy();
-
-          delete this.node.__root.__node;
-          delete this.node.__root.__vd;
         } else {
           initEvent(this.node);
           this.node.__uuid = this.__uuid;
@@ -11713,8 +11714,14 @@
       value: function refresh(cb) {
         var _this2 = this;
 
-        var renderMode = this.renderMode,
-            style = this.style; // 根元素特殊处理
+        var isDestroyed = this.isDestroyed,
+            renderMode = this.renderMode,
+            style = this.style;
+
+        if (isDestroyed) {
+          return;
+        } // 根元素特殊处理
+
 
         style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
           value: 0,
@@ -11898,6 +11905,26 @@
         this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        _get(_getPrototypeOf(Root.prototype), "__destroy", this).call(this);
+
+        var ac = this.animateController;
+        ac.records.splice(0);
+        ac.list.splice(0);
+        var r = this.__hookTask;
+
+        if (r) {
+          var i = frame.__hookTask.indexOf(r);
+
+          if (i > -1) {
+            frame.__hookTask.splice(i, 1);
+          }
+        }
+
+        delete this.__node;
       }
     }, {
       key: "node",

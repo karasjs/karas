@@ -78,6 +78,9 @@ function parseJson(karas, json, animateRecords, vars) {
     return json;
   }
   let { tagName, props = {}, children = [], animate } = json;
+  if(!tagName) {
+    throw new Error('Dom must have a tagName');
+  }
   let style = props.style;
   abbr2full(style, abbrCssProperty);
   // 先替换style的

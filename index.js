@@ -13292,6 +13292,11 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         animate = json.animate;
+
+    if (!tagName) {
+      throw new Error('Dom must have a tagName');
+    }
+
     var style = props.style;
     abbr2full(style, abbrCssProperty$1); // 先替换style的
 

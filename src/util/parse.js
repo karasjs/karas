@@ -157,7 +157,7 @@ function linkLibrary(item, hash) {
       if(!isPrimitive(child)) {
         let { libraryId } = child;
         // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
-        if(!libraryId) {
+        if(isNil(libraryId)) {
           return;
         }
         if(!hash.hasOwnProperty(libraryId)) {
@@ -225,7 +225,7 @@ function parse(karas, json, animateRecords, options) {
         if(!isPrimitive(child)) {
           let { libraryId } = child;
           // 没有引用的
-          if(!libraryId) {
+          if(isNil(libraryId)) {
             return;
           }
           let libraryItem = hash[libraryId];

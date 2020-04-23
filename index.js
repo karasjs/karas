@@ -5763,7 +5763,7 @@
 
           res.v.push(_v11 - _pi.value);
         } else {
-          res.n = n;
+          res.n = p;
           return res;
         }
       }
@@ -5774,7 +5774,7 @@
     } else if (GRADIENT_HASH.hasOwnProperty(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       if (p.k !== n.k) {
-        res.n = n;
+        res.n = p;
       } // 渐变
       else if (p.k === 'linear' || p.k === 'radial') {
           var pv = p.v;
@@ -5848,7 +5848,7 @@
       }
 
       if (p.unit === AUTO$1 || n.unit === AUTO$1) {
-        res.n = n;
+        res.n = p;
         return res;
       }
 
@@ -5876,7 +5876,7 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (isNil$3(n)) {
+      if (isNil$3(p)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
         if (equalArr$1(p, n)) {
@@ -5930,7 +5930,7 @@
           return;
         }
 
-        res.n = n;
+        res.n = p;
       }
 
     return res;
@@ -5998,7 +5998,7 @@
           v = item.v,
           n = item.n,
           d = item.d;
-      var st = style[k];
+      var st = style[k]; // 没有中间态的如display
 
       if (item.hasOwnProperty('n')) {
         style[k] = n;

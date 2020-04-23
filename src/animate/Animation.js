@@ -570,7 +570,7 @@ function calDiff(prev, next, k, target) {
         res.v.push(v - pi.value);
       }
       else {
-        res.n = n;
+        res.n = p;
         return res;
       }
     }
@@ -581,7 +581,7 @@ function calDiff(prev, next, k, target) {
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     if(p.k !== n.k) {
-      res.n = n;
+      res.n = p;
     }
     // 渐变
     else if(p.k === 'linear' || p.k === 'radial') {
@@ -667,7 +667,7 @@ function calDiff(prev, next, k, target) {
       return;
     }
     if(p.unit === AUTO || n.unit === AUTO) {
-      res.n = n;
+      res.n = p;
       return res;
     }
     let parentComputedStyle = (target.parent || target).computedStyle;
@@ -693,7 +693,7 @@ function calDiff(prev, next, k, target) {
     res.v = diff;
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(isNil(n)) {
+    if(isNil(p)) {
       res.n = null;
     }
     else if(k === 'points' || k === 'controls') {
@@ -748,7 +748,7 @@ function calDiff(prev, next, k, target) {
     if(n === p) {
       return;
     }
-    res.n = n;
+    res.n = p;
   }
   return res;
 }
@@ -810,6 +810,7 @@ function calStyle(frame, percent) {
   frame.transition.forEach(item => {
     let { k, v, n, d } = item;
     let st = style[k];
+    // 没有中间态的如display
     if(item.hasOwnProperty('n')) {
       style[k] = n;
     }

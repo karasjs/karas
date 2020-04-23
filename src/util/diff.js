@@ -77,7 +77,7 @@ function diffDef(elem, od, nd) {
     }
     else if(i < nl) {
       for(; i < nl; i++) {
-        insertAt(elem, cns, i, joinVd(nd.stop[i]));
+        insertAt(elem, cns, i, joinVd(nd.children[i]));
       }
     }
   }

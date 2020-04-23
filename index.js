@@ -10907,7 +10907,7 @@
         }
       } else if (i < nl) {
         for (; i < nl; i++) {
-          insertAt(elem, cns, i, joinVd$1(nd.stop[i]));
+          insertAt(elem, cns, i, joinVd$1(nd.children[i]));
         }
       }
     }
@@ -12430,7 +12430,7 @@
         computedStyle.controls = controls.join('; ');
 
         if (points.length < 2) {
-          console.error('Polygon must have at lease 2 points: ' + points[0]);
+          console.error('Polygon must have at lease 2 points: ' + points);
           return;
         }
 

@@ -5879,6 +5879,10 @@
       if (isNil$3(p)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
+        if (isNil$3(n) || isNil$3(p)) {
+          return p;
+        }
+
         if (equalArr$1(p, n)) {
           return;
         }
@@ -5906,6 +5910,10 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
+        if (isNil$3(n) || isNil$3(p)) {
+          return p;
+        }
+
         if (equalArr$1(p, n)) {
           return;
         }

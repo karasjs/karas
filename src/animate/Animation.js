@@ -697,6 +697,9 @@ function calDiff(prev, next, k, target) {
       res.n = null;
     }
     else if(k === 'points' || k === 'controls') {
+      if(isNil(n) || isNil(p)) {
+        return p;
+      }
       if(equalArr(p, n)) {
         return;
       }
@@ -722,6 +725,9 @@ function calDiff(prev, next, k, target) {
       }
     }
     else if(k === 'controlA' || k === 'controlB') {
+      if(isNil(n) || isNil(p)) {
+        return p;
+      }
       if(equalArr(p, n)) {
         return;
       }

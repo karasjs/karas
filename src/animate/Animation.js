@@ -1567,7 +1567,7 @@ class Animation extends Event {
   }
 
   set duration(v) {
-    this.__duration = Math.max(0, parseInt(v) || 0);
+    this.__duration = Math.max(0, parseFloat(v) || 0);
   }
 
   get delay() {
@@ -1575,7 +1575,7 @@ class Animation extends Event {
   }
 
   set delay(v) {
-    this.__delay = Math.max(0, parseInt(v) || 0);
+    this.__delay = Math.max(0, parseFloat(v) || 0);
   }
 
   get endDelay() {
@@ -1583,7 +1583,7 @@ class Animation extends Event {
   }
 
   set endDelay(v) {
-    this.__endDelay = Math.max(0, parseInt(v) || 0);
+    this.__endDelay = Math.max(0, parseFloat(v) || 0);
   }
 
   get fps() {
@@ -1664,7 +1664,7 @@ class Animation extends Event {
   }
 
   set currentTime(v) {
-    v = parseInt(v) || 0;
+    v = parseFloat(v) || 0;
     if(v >= 0) {
       this.__currentTime = this.__nextTime = v;
     }

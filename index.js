@@ -7005,7 +7005,7 @@
         return this.__duration;
       },
       set: function set(v) {
-        this.__duration = Math.max(0, parseInt(v) || 0);
+        this.__duration = Math.max(0, parseFloat(v) || 0);
       }
     }, {
       key: "delay",
@@ -7013,7 +7013,7 @@
         return this.__delay;
       },
       set: function set(v) {
-        this.__delay = Math.max(0, parseInt(v) || 0);
+        this.__delay = Math.max(0, parseFloat(v) || 0);
       }
     }, {
       key: "endDelay",
@@ -7021,7 +7021,7 @@
         return this.__endDelay;
       },
       set: function set(v) {
-        this.__endDelay = Math.max(0, parseInt(v) || 0);
+        this.__endDelay = Math.max(0, parseFloat(v) || 0);
       }
     }, {
       key: "fps",
@@ -7111,7 +7111,7 @@
         return this.__currentTime;
       },
       set: function set(v) {
-        v = parseInt(v) || 0;
+        v = parseFloat(v) || 0;
 
         if (v >= 0) {
           this.__currentTime = this.__nextTime = v;
@@ -13225,7 +13225,8 @@
     direction: 'dc',
     fill: 'f',
     fps: 'fp',
-    playbackRate: 'p'
+    playbackRate: 'p',
+    spfLimit: 'sl'
   };
   var abbrAnimateOption = {};
   reset.dom.concat(reset.geom).forEach(function (item) {

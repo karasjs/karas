@@ -30,6 +30,7 @@ let fullAnimateOption = {
   fill: 'f',
   fps: 'fp',
   playbackRate: 'p',
+  spfLimit: 'sl',
 };
 
 let abbrAnimateOption = {};

@@ -6368,7 +6368,11 @@
         this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
-          diff = Math.min(diff, 1000 / fps);
+          if (spfLimit === true) {
+            diff = Math.min(diff, 1000 / fps);
+          } else if (spfLimit > 0) {
+            diff = Math.min(diff, spfLimit);
+          }
         } // 播放时间累加，并且考虑播放速度加成
 
 
@@ -7159,7 +7163,11 @@
         return this.__spfLimit;
       },
       set: function set(v) {
-        this.__spfLimit = !!v;
+        if (util.isNumber(v)) {
+          v = Math.max(v, parseInt(v) || 0);
+        } else {
+          this.__spfLimit = !!v;
+        }
       }
     }]);
 

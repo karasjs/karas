@@ -31,4 +31,3 @@ animation.gotoAndStop(10);
 animation2.gotoAndStop(10, () => {
   input.value += t.computedStyle.left + ',' + t.computedStyle.top;
 });
-o.refreshTask();

@@ -956,7 +956,7 @@ class Animation extends Event {
     let op = this.__options = options || {};
     this.duration = op.duration;
     this.delay = op.delay;
-    this.endDelay = op.delay;
+    this.endDelay = op.endDelay;
     this.iterations = op.iterations;
     this.fps = op.fps;
     this.fill = op.fill;

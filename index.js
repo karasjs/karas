@@ -6152,7 +6152,7 @@
       var op = _this.__options = options || {};
       _this.duration = op.duration;
       _this.delay = op.delay;
-      _this.endDelay = op.delay;
+      _this.endDelay = op.endDelay;
       _this.iterations = op.iterations;
       _this.fps = op.fps;
       _this.fill = op.fill;

@@ -954,36 +954,23 @@ class Animation extends Event {
       options = this.__options;
     }
     let op = this.__options = options || {};
-    this.__duration = parseFloat(op.duration) || 0;
-    this.__delay = Math.max(0, parseFloat(op.delay) || 0);
-    this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
-    if(op.iterations === Infinity || util.isString(op.iterations) && op.iterations.toLowerCase() === 'infinity') {
-      this.__iterations = Infinity;
-    }
-    else {
-      this.__iterations = parseInt(op.iterations);
-      if(isNaN(this.__iterations)) {
-        this.__iterations = 1;
-      }
-    }
-    this.__fps = parseInt(op.fps) || 60;
-    if(this.__fps < 0) {
-      this.__fps = 60;
-    }
-    this.__fill = op.fill || 'none';
-    this.__direction = op.direction || 'normal';
-    this.__frames = [];
+    this.duration = op.duration;
+    this.delay = op.delay;
+    this.endDelay = op.delay;
+    this.iterations = op.iterations;
+    this.fps = op.fps;
+    this.fill = op.fill;
+    this.direction = op.direction;
+    this.playbackRate = op.playbackRate;
+    this.playCount = 0;
+    this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
+    this.__frames = []; // 每帧数据
     this.__framesR = []; // 存储反向播放的数据
-    this.__playbackRate = parseFloat(op.playbackRate) || 1;
-    if(this.__playbackRate < 0) {
-      this.__playbackRate = 1;
-    }
     this.__startTime = null;
-    this.__currentTime = 0; // 当前播放时间点，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
+    this.currentTime = 0; // 当前播放时间点，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
     this.__nextTime = 0; // 下一帧刷新时间点，即currentTime下一帧被此赋值
     this.__fpsTime = 0;
     this.__playState = 'idle';
-    this.__playCount = 0;
     this.__isDestroyed = false;
     this.__init(op.easing);
   }
@@ -1131,8 +1118,12 @@ class Animation extends Event {
   }
 
   __calDiffTime(diff) {
-    let { playbackRate } = this;
+    let { playbackRate, spfLimit, fps } = this;
     this.__currentTime = this.__nextTime;
+    // 定帧限制每帧时间间隔最大为spf
+    if(spfLimit) {
+      diff = Math.min(diff, 1000 / fps);
+    }
     // 播放时间累加，并且考虑播放速度加成
     if(playbackRate !== 1 && playbackRate > 0) {
       diff *= playbackRate;
@@ -1570,12 +1561,24 @@ class Animation extends Event {
     return this.__duration;
   }
 
+  set duration(v) {
+    this.__duration = Math.max(0, parseInt(v) || 0);
+  }
+
   get delay() {
     return this.__delay;
   }
 
+  set delay(v) {
+    this.__delay = Math.max(0, parseInt(v) || 0);
+  }
+
   get endDelay() {
     return this.__endDelay;
+  }
+
+  set endDelay(v) {
+    this.__endDelay = Math.max(0, parseInt(v) || 0);
   }
 
   get fps() {
@@ -1599,9 +1602,14 @@ class Animation extends Event {
   }
 
   set iterations(v) {
-    v = parseInt(v);
-    if(isNaN(v) || v < 0) {
-      v = 1;
+    if(v === Infinity || util.isString(v) && v.toLowerCase() === 'infinity') {
+      v = Infinity;
+    }
+    else {
+      v = parseInt(v);
+      if(isNaN(v) || v < 0) {
+        v = 1;
+      }
     }
     this.__iterations = v;
   }
@@ -1610,8 +1618,16 @@ class Animation extends Event {
     return this.__fill;
   }
 
+  set fill(v) {
+    this.__fill = v || 'none';
+  }
+
   get direction() {
     return this.__direction;
+  }
+
+  set direction(v) {
+    this.__direction = v || 'normal';
   }
 
   get frames() {
@@ -1627,8 +1643,8 @@ class Animation extends Event {
   }
 
   set playbackRate(v) {
-    v = parseFloat(v) || 0;
-    if(v < 0) {
+    v = parseFloat(v) || 1;
+    if(v <= 0) {
       v = 1;
     }
     this.__playbackRate = v;
@@ -1666,7 +1682,7 @@ class Animation extends Event {
   }
 
   set playCount(v) {
-    this.__playCount = parseInt(v) || 0;
+    this.__playCount = Math.max(0, parseInt(v) || 0);
   }
 
   get isDestroyed() {
@@ -1679,6 +1695,14 @@ class Animation extends Event {
       return false;
     }
     return playState !== 'finished' || ['forwards', 'both'].indexOf(options.fill) > -1;
+  }
+
+  get spfLimit() {
+    return this.__spfLimit;
+  }
+
+  set spfLimit(v) {
+    this.__spfLimit = !!v;
   }
 }
 

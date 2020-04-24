@@ -2,8 +2,22 @@ import util from '../util/util';
 
 const { isNil } = util;
 
-function replaceGlobal(target, globalValue, key, vars) {
-  // 优先vars，其次总控，没有就是自己声明
+const LIST = [
+  'playbackRate',
+  'iterations',
+  'fps',
+  'spfLimit',
+  'delay',
+  'endDelay',
+  'duration',
+  'direction',
+  'fill',
+  'playCount',
+  'currentTime',
+];
+
+function replaceOption(target, globalValue, key, vars) {
+  // 优先vars，其次总控，都没有忽略即自己原本声明
   if(!isNil(globalValue)) {
     let decl = target['var-' + key];
     if(!decl) {
@@ -18,6 +32,14 @@ function replaceGlobal(target, globalValue, key, vars) {
   }
 }
 
+function replaceGlobal(global, options) {
+  LIST.forEach(k => {
+    if(global.hasOwnProperty(k)) {
+      replaceOption(options, global[k], k, global.vars);
+    }
+  });
+}
+
 class Controller {
   constructor() {
     this.__records = [];
@@ -25,25 +47,16 @@ class Controller {
   }
 
   __op(options) {
-    let { playbackRate, iterations, vars } = options;
-    // 没定义总控不必循环设置
-    if(isNil(playbackRate) && isNil(iterations)) {
-      return;
-    }
     this.records.forEach(record => {
       let { animate } = record;
       if(Array.isArray(animate)) {
         animate.forEach(item => {
-          let { options } = item;
           // 用总控替换动画属性中的值，注意vars优先级
-          replaceGlobal(options, playbackRate, 'playbackRate', vars);
-          replaceGlobal(options, iterations, 'iterations', vars);
+          replaceGlobal(options, item.options);
         });
       }
       else {
-        let { options } = animate;
-        replaceGlobal(options, playbackRate, 'playbackRate', vars);
-        replaceGlobal(options, iterations, 'iterations', vars);
+        replaceGlobal(options, animate.options);
       }
     });
   }
@@ -166,6 +179,10 @@ class Controller {
 
   set currentTime(v) {
     this.__set('currentTime', v);
+  }
+
+  set spfLimit(v) {
+    this.__set('spfLimit', v);
   }
 }
 

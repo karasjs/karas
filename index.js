@@ -6150,45 +6150,28 @@
       }
 
       var op = _this.__options = options || {};
-      _this.__duration = parseFloat(op.duration) || 0;
-      _this.__delay = Math.max(0, parseFloat(op.delay) || 0);
-      _this.__endDelay = Math.max(parseFloat(op.endDelay) || 0, 0);
+      _this.duration = op.duration;
+      _this.delay = op.delay;
+      _this.endDelay = op.delay;
+      _this.iterations = op.iterations;
+      _this.fps = op.fps;
+      _this.fill = op.fill;
+      _this.direction = op.direction;
+      _this.playbackRate = op.playbackRate;
+      _this.playCount = 0;
+      _this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
 
-      if (op.iterations === Infinity || util.isString(op.iterations) && op.iterations.toLowerCase() === 'infinity') {
-        _this.__iterations = Infinity;
-      } else {
-        _this.__iterations = parseInt(op.iterations);
+      _this.__frames = []; // 每帧数据
 
-        if (isNaN(_this.__iterations)) {
-          _this.__iterations = 1;
-        }
-      }
-
-      _this.__fps = parseInt(op.fps) || 60;
-
-      if (_this.__fps < 0) {
-        _this.__fps = 60;
-      }
-
-      _this.__fill = op.fill || 'none';
-      _this.__direction = op.direction || 'normal';
-      _this.__frames = [];
       _this.__framesR = []; // 存储反向播放的数据
 
-      _this.__playbackRate = parseFloat(op.playbackRate) || 1;
-
-      if (_this.__playbackRate < 0) {
-        _this.__playbackRate = 1;
-      }
-
       _this.__startTime = null;
-      _this.__currentTime = 0; // 当前播放时间点，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
+      _this.currentTime = 0; // 当前播放时间点，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
 
       _this.__nextTime = 0; // 下一帧刷新时间点，即currentTime下一帧被此赋值
 
       _this.__fpsTime = 0;
       _this.__playState = 'idle';
-      _this.__playCount = 0;
       _this.__isDestroyed = false;
 
       _this.__init(op.easing);
@@ -6379,8 +6362,15 @@
     }, {
       key: "__calDiffTime",
       value: function __calDiffTime(diff) {
-        var playbackRate = this.playbackRate;
-        this.__currentTime = this.__nextTime; // 播放时间累加，并且考虑播放速度加成
+        var playbackRate = this.playbackRate,
+            spfLimit = this.spfLimit,
+            fps = this.fps;
+        this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
+
+        if (spfLimit) {
+          diff = Math.min(diff, 1000 / fps);
+        } // 播放时间累加，并且考虑播放速度加成
+
 
         if (playbackRate !== 1 && playbackRate > 0) {
           diff *= playbackRate;
@@ -7009,16 +6999,25 @@
       key: "duration",
       get: function get() {
         return this.__duration;
+      },
+      set: function set(v) {
+        this.__duration = Math.max(0, parseInt(v) || 0);
       }
     }, {
       key: "delay",
       get: function get() {
         return this.__delay;
+      },
+      set: function set(v) {
+        this.__delay = Math.max(0, parseInt(v) || 0);
       }
     }, {
       key: "endDelay",
       get: function get() {
         return this.__endDelay;
+      },
+      set: function set(v) {
+        this.__endDelay = Math.max(0, parseInt(v) || 0);
       }
     }, {
       key: "fps",
@@ -7045,10 +7044,14 @@
         return this.__iterations;
       },
       set: function set(v) {
-        v = parseInt(v);
+        if (v === Infinity || util.isString(v) && v.toLowerCase() === 'infinity') {
+          v = Infinity;
+        } else {
+          v = parseInt(v);
 
-        if (isNaN(v) || v < 0) {
-          v = 1;
+          if (isNaN(v) || v < 0) {
+            v = 1;
+          }
         }
 
         this.__iterations = v;
@@ -7057,11 +7060,17 @@
       key: "fill",
       get: function get() {
         return this.__fill;
+      },
+      set: function set(v) {
+        this.__fill = v || 'none';
       }
     }, {
       key: "direction",
       get: function get() {
         return this.__direction;
+      },
+      set: function set(v) {
+        this.__direction = v || 'normal';
       }
     }, {
       key: "frames",
@@ -7079,9 +7088,9 @@
         return this.__playbackRate;
       },
       set: function set(v) {
-        v = parseFloat(v) || 0;
+        v = parseFloat(v) || 1;
 
-        if (v < 0) {
+        if (v <= 0) {
           v = 1;
         }
 
@@ -7125,7 +7134,7 @@
         return this.__playCount;
       },
       set: function set(v) {
-        this.__playCount = parseInt(v) || 0;
+        this.__playCount = Math.max(0, parseInt(v) || 0);
       }
     }, {
       key: "isDestroyed",
@@ -7143,6 +7152,14 @@
         }
 
         return playState !== 'finished' || ['forwards', 'both'].indexOf(options.fill) > -1;
+      }
+    }, {
+      key: "spfLimit",
+      get: function get() {
+        return this.__spfLimit;
+      },
+      set: function set(v) {
+        this.__spfLimit = !!v;
       }
     }]);
 
@@ -11258,9 +11275,10 @@
   }();
 
   var isNil$5 = util.isNil;
+  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime'];
 
-  function replaceGlobal(target, globalValue, key, vars) {
-    // 优先vars，其次总控，没有就是自己声明
+  function replaceOption(target, globalValue, key, vars) {
+    // 优先vars，其次总控，都没有忽略即自己原本声明
     if (!isNil$5(globalValue)) {
       var decl = target['var-' + key];
 
@@ -11276,6 +11294,14 @@
     }
   }
 
+  function replaceGlobal(global, options) {
+    LIST.forEach(function (k) {
+      if (global.hasOwnProperty(k)) {
+        replaceOption(options, global[k], k, global.vars);
+      }
+    });
+  }
+
   var Controller = /*#__PURE__*/function () {
     function Controller() {
       _classCallCheck(this, Controller);
@@ -11287,28 +11313,16 @@
     _createClass(Controller, [{
       key: "__op",
       value: function __op(options) {
-        var playbackRate = options.playbackRate,
-            iterations = options.iterations,
-            vars = options.vars; // 没定义总控不必循环设置
-
-        if (isNil$5(playbackRate) && isNil$5(iterations)) {
-          return;
-        }
-
         this.records.forEach(function (record) {
           var animate = record.animate;
 
           if (Array.isArray(animate)) {
             animate.forEach(function (item) {
-              var options = item.options; // 用总控替换动画属性中的值，注意vars优先级
-
-              replaceGlobal(options, playbackRate, 'playbackRate', vars);
-              replaceGlobal(options, iterations, 'iterations', vars);
+              // 用总控替换动画属性中的值，注意vars优先级
+              replaceGlobal(options, item.options);
             });
           } else {
-            var _options = animate.options;
-            replaceGlobal(_options, playbackRate, 'playbackRate', vars);
-            replaceGlobal(_options, iterations, 'iterations', vars);
+            replaceGlobal(options, animate.options);
           }
         });
       }
@@ -11460,6 +11474,11 @@
       key: "currentTime",
       set: function set(v) {
         this.__set('currentTime', v);
+      }
+    }, {
+      key: "spfLimit",
+      set: function set(v) {
+        this.__set('spfLimit', v);
       }
     }]);
 

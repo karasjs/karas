@@ -11488,6 +11488,26 @@
       set: function set(v) {
         this.__set('spfLimit', v);
       }
+    }, {
+      key: "delay",
+      set: function set(v) {
+        this.__set('delay', v);
+      }
+    }, {
+      key: "endDelay",
+      set: function set(v) {
+        this.__set('endDelay', v);
+      }
+    }, {
+      key: "duration",
+      set: function set(v) {
+        this.__set('duration', v);
+      }
+    }, {
+      key: "fill",
+      set: function set(v) {
+        this.__set('fill', v);
+      }
     }]);
 
     return Controller;

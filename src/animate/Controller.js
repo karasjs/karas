@@ -184,6 +184,22 @@ class Controller {
   set spfLimit(v) {
     this.__set('spfLimit', v);
   }
+
+  set delay(v) {
+    this.__set('delay', v);
+  }
+
+  set endDelay(v) {
+    this.__set('endDelay', v);
+  }
+
+  set duration(v) {
+    this.__set('duration', v);
+  }
+
+  set fill(v) {
+    this.__set('fill', v);
+  }
 }
 
 export default Controller;

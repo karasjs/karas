@@ -1,6 +1,7 @@
 import css from '../style/css';
 import reset from '../style/reset';
 import unit from '../style/unit';
+import tf from '../style/transform';
 import util from '../util/util';
 import Event from '../util/Event';
 import frame from './frame';
@@ -123,7 +124,7 @@ function unify(frames, target) {
   return keys;
 }
 
-// 每次播放时处理继承值
+// 每次播放时处理继承值，以及转换transform为单matrix矩阵
 function inherit(frames, keys, target) {
   let copy = clone(frames);
   let computedStyle = target.computedStyle;
@@ -135,7 +136,13 @@ function inherit(frames, keys, target) {
       if(isNil(v)) {
         return;
       }
-      if(v.unit === INHERIT) {
+      if(k === 'transform') {
+        let ow = target.outerWidth;
+        let oh = target.outerHeight;
+        let m = tf.calMatrix(v, [0, 0], ow, oh);
+        style[k] = [['matrix', m]];
+      }
+      else if(v.unit === INHERIT) {
         if(k === 'color') {
           style[k] = {
             value: util.rgba2int(computedStyle[k]),
@@ -169,34 +176,7 @@ function inherit(frames, keys, target) {
 // 对比两个样式的某个值是否相等
 function equalStyle(k, a, b) {
   if(k === 'transform') {
-    if(a.length !== b.length) {
-      return false;
-    }
-    for(let i = 0, len = a.length; i < len; i++) {
-      let k1 = a[i][0];
-      let k2 = b[i][0];
-      if(k1 !== k2) {
-        return false;
-      }
-      else {
-        let v1 = a[i][1];
-        let v2 = b[i][1];
-        if(k1 === 'matrix') {
-          if(v1[0] !== v2[0]
-            || v1[1] !== v2[1]
-            || v1[2] !== v2[2]
-            || v1[3] !== v2[3]
-            || v1[4] !== v2[4]
-            || v1[5] !== v2[5]) {
-            return false;
-          }
-        }
-        else if(v1.value !== v2.value || v1.unit !== v2.unit) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return equalArr(a[0][1], b[0][1]);
   }
   else if(k === 'transformOrigin' || k === 'backgroundSize') {
     return a[0].value === b[0].value && a[0].unit === b[0].unit
@@ -377,110 +357,21 @@ function calDiff(prev, next, k, target) {
   let p = prev[k];
   let n = next[k];
   if(k === 'transform') {
-    if(!prev[k] || !next[k]) {
+    // transform特殊被初始化转成matrix矩阵，直接计算差值
+    let pm = p[0][1];
+    let nm = n[0][1];
+    if(equalArr(pm, nm)) {
       return;
     }
-    // transform每项以[k,v]存在，新老可能每项不会都存在，顺序也未必一致，不存在的认为是0
-    let pExist = {};
-    p.forEach(item => {
-      pExist[item[0]] = item[1];
-    });
-    let nExist = {};
-    n.forEach(item => {
-      nExist[item[0]] = item[1];
-    });
-    res.v = [];
-    let key = k;
-    n.forEach(item => {
-      let [k, v] = item;
-      // 都存在的计算差值
-      if(pExist.hasOwnProperty(k)) {
-        let p = pExist[k];
-        let n = nExist[k];
-        if(k === 'matrix') {
-          let t = [];
-          for(let i = 0; i < 6; i++) {
-            t[i] = n[i] - p[i];
-          }
-          res.v.push({
-            k,
-            v: t,
-          });
-        }
-        else if(p.unit === n.unit) {
-          res.v.push({
-            k,
-            v: v.value - p.value,
-          });
-        }
-        else if(p.unit === PX && n.unit === PERCENT) {
-          let v = n.value * 100 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
-          res.v.push({
-            k,
-            v: v - p.value,
-          });
-        }
-        else if(p.unit === PERCENT && n.unit === PX) {
-          let v = n.value * 0.01 * target[k === 'translateX' ? 'outerWidth' : 'outerHeight'];
-          res.v.push({
-            k,
-            v: v - p.value,
-          });
-        }
-      }
-      // matrix老的不存在的项默认为单位矩阵
-      else if(k === 'matrix') {
-        let id = [1, 0, 0, 1, 0, 0];
-        prev[key].push([k, id]);
-        let t = [];
-        for(let i = 0; i < 6; i++) {
-          t[i] = v[i] - id[i];
-        }
-        res.v.push({
-          k,
-          v: t,
-        });
-      }
-      // 不存在的项默认为0
-      else {
-        prev[key].push([k, {
-          value: 0,
-          unit: v.unit,
-        }]);
-        res.v.push({
-          k,
-          v: v.value,
-        });
-      }
-    });
-    p.forEach(item => {
-      let [k, v] = item;
-      // 新的不存在的项默认为0或单位矩阵
-      if(!nExist.hasOwnProperty(k)) {
-        if(k === 'matrix') {
-          let id = [1, 0, 0, 1, 0, 0];
-          next[key].push([k, id]);
-          let t = [];
-          for(let i = 0; i < 6; i++) {
-            t[i] = id[i] - v[i];
-          }
-          res.v.push({
-            k,
-            v: t,
-          });
-        }
-        else {
-          next[key].push([k, {
-            value: 0,
-            unit: v.unit,
-          }]);
-          res.v.push({
-            k,
-            v: -v.value,
-          });
-        }
-      }
-    });
+    res.v = [
+      nm[0] - pm[0],
+      nm[1] - pm[1],
+      nm[2] - pm[2],
+      nm[3] - pm[3],
+      nm[4] - pm[4],
+      nm[5] - pm[5],
+    ];
+    return res;
   }
   else if(k === 'transformOrigin') {
     res.v = [];
@@ -820,23 +711,11 @@ function calStyle(frame, percent) {
     if(item.hasOwnProperty('n')) {
       style[k] = n;
     }
+    // transform特殊处理，只有1个matrix
     else if(k === 'transform') {
-      let transform = style.transform;
-      let hash = {};
-      transform.forEach(item => {
-        hash[item[0]] = item[1];
-      });
-      v.forEach(item => {
-        let { k, v } = item;
-        if(k === 'matrix') {
-          for(let i = 0; i < 6; i++) {
-            hash[k][i] += v[i] * percent;
-          }
-        }
-        else {
-          hash[k].value += v * percent;
-        }
-      });
+      for(let i = 0; i < 6; i++) {
+        st[0][1][i] += v[i] * percent;
+      }
     }
     else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
       || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {

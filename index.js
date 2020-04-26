@@ -13261,14 +13261,14 @@
     }
   }
 
-  function parseNew(karas, json, animateRecords, options, hash) {
+  function parse$1(karas, json, animateRecords, vars, hash) {
     if (isPrimitive(json) || json instanceof Node) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parseNew(karas, item, animateRecords, options);
+        return parse$1(karas, item, animateRecords, vars);
       });
     }
 
@@ -13283,26 +13283,25 @@
       }); // 删除以免二次解析
 
       json.library = null;
-    } // ide中库文件的child一定有libraryId
+      json.libraryId = null;
+    } // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
+    else if (!isNil$7(libraryId)) {
+        var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
+        if (libraryItem) {
+          linkChild(json, libraryItem); // 删除以免二次解析
 
-    if (!isNil$7(libraryId)) {
-      var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
-
-      if (libraryItem) {
-        linkChild(json, libraryItem); // 删除以免二次解析
-
-        json.libraryId = null;
-      } else {
-        throw new Error('Library miss ID: ' + libraryId);
+          json.libraryId = null;
+        } else {
+          throw new Error('Library miss ID: ' + libraryId);
+        }
       }
-    }
 
     var tagName = json.tagName,
-        _json$props2 = json.props,
-        props = _json$props2 === void 0 ? {} : _json$props2,
-        _json$children2 = json.children,
-        children = _json$children2 === void 0 ? [] : _json$children2,
+        _json$props = json.props,
+        props = _json$props === void 0 ? {} : _json$props,
+        _json$children = json.children,
+        children = _json$children === void 0 ? [] : _json$children,
         _json$animate = json.animate,
         animate = _json$animate === void 0 ? [] : _json$animate;
 
@@ -13314,18 +13313,18 @@
     var style = props.style;
     abbr2full(style, abbrCssProperty$1); // 先替换style的
 
-    replaceVars(style, options.vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
+    replaceVars(style, vars); // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
 
-    replaceVars(props, options.vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
+    replaceVars(props, vars); // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
 
-    replaceVars(json, options.vars);
+    replaceVars(json, vars);
     var vd;
 
     if (tagName.charAt(0) === '$') {
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parseNew(karas, item, animateRecords, options, hash);
+        return parse$1(karas, item, animateRecords, vars, hash);
       }));
     }
 
@@ -13343,13 +13342,13 @@
             has = true;
             value.forEach(function (item) {
               abbr2full(item, abbrCssProperty$1);
-              replaceVars(item, options.vars);
+              replaceVars(item, vars);
             });
           }
 
           if (options) {
             abbr2full(options, abbrAnimateOption$1);
-            replaceVars(options, options.vars);
+            replaceVars(options, vars);
           }
         });
 
@@ -13362,12 +13361,12 @@
       } else {
         abbr2full(animate, abbrAnimate$1);
         var value = animate.value,
-            _options = animate.options;
+            options = animate.options;
 
         if (Array.isArray(value) && value.length) {
           value.forEach(function (item) {
             abbr2full(item, abbrCssProperty$1);
-            replaceVars(item, _options.vars);
+            replaceVars(item, vars);
           });
           animationRecord = {
             animate: animate,
@@ -13375,9 +13374,9 @@
           };
         }
 
-        if (_options) {
-          abbr2full(_options, abbrAnimateOption$1);
-          replaceVars(_options, _options.vars);
+        if (options) {
+          abbr2full(options, abbrAnimateOption$1);
+          replaceVars(options, vars);
         }
       }
     } // 产生实际动画运行才存入列表供root调用执行
@@ -13443,7 +13442,7 @@
 
       var animateRecords = [];
 
-      var vd = parseNew(this, json, animateRecords, options); // 有dom时parse作为根方法渲染
+      var vd = parse$1(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

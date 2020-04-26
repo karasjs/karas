@@ -73,83 +73,6 @@ function replaceVars(target, vars) {
   }
 }
 
-function parseJson(karas, json, animateRecords, vars) {
-  // 除了原始类型，parse嵌套时内部的parse已经生成vd了，外部无需重复parse，直接作为children使用
-  if(isPrimitive(json) || json instanceof Node) {
-    return json;
-  }
-  let { tagName, props = {}, children = [], animate } = json;
-  if(!tagName) {
-    throw new Error('Dom must have a tagName');
-  }
-  let style = props.style;
-  abbr2full(style, abbrCssProperty);
-  // 先替换style的
-  replaceVars(style, vars);
-  // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
-  replaceVars(props, vars);
-  // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
-  replaceVars(json, vars);
-  let vd;
-  if(tagName.charAt(0) === '$') {
-    vd = karas.createGm(tagName, props);
-  }
-  else {
-    vd = karas.createVd(tagName, props, children.map(item => parseJson(karas, item, animateRecords, vars)));
-  }
-  let animationRecord;
-  if(animate) {
-    if(Array.isArray(animate)) {
-      let has;
-      animate.forEach(item => {
-        abbr2full(item, abbrAnimate);
-        let { value, options } = item;
-        // 忽略空动画
-        if(Array.isArray(value) && value.length) {
-          has = true;
-          value.forEach(item => {
-            abbr2full(item, abbrCssProperty);
-            replaceVars(item, vars);
-          });
-        }
-        if(options) {
-          abbr2full(options, abbrAnimateOption);
-          replaceVars(options, vars);
-        }
-      });
-      if(has) {
-        animationRecord = {
-          animate,
-          target: vd,
-        };
-      }
-    }
-    else {
-      abbr2full(animate, abbrAnimate);
-      let { value, options } = animate;
-      if(Array.isArray(value) && value.length) {
-        value.forEach(item => {
-          abbr2full(item, abbrCssProperty);
-          replaceVars(item, vars);
-        });
-        animationRecord = {
-          animate,
-          target: vd,
-        };
-      }
-      if(options) {
-        abbr2full(options, abbrAnimateOption);
-        replaceVars(options, vars);
-      }
-    }
-  }
-  // 产生实际动画运行才存入列表供root调用执行
-  if(animationRecord) {
-    animateRecords.push(animationRecord);
-  }
-  return vd;
-}
-
 function linkLibrary(item, hash) {
   let { id, children } = item;
   if(Array.isArray(children)) {
@@ -207,51 +130,13 @@ function linkInit(child) {
   }
 }
 
-function parse(karas, json, animateRecords, options) {
-  if(isPrimitive(json) || json instanceof Node) {
-    return json;
-  }
-  if(Array.isArray(json)) {
-    throw new Error('Parse can not be an Array');
-  }
-  let { library, children } = json;
-  if(Array.isArray(library)) {
-    let hash = {};
-    // 强制要求library的文件是排好顺序的，即元件和被引用类型在前面，引用的在后面，另外没有循环引用
-    library.forEach(item => {
-      linkLibrary(item, hash);
-    });
-    if(Array.isArray(children)) {
-      children.forEach(child => {
-        if(!isPrimitive(child)) {
-          let { libraryId } = child;
-          // 没有引用的
-          if(isNil(libraryId)) {
-            return;
-          }
-          let libraryItem = hash[libraryId];
-          // 规定图层child只有tagName（可选）、init和动画，属性和子图层来自库
-          if(libraryItem) {
-            linkChild(child, libraryItem);
-          }
-          else {
-            throw new Error('Library miss ID: ' + libraryId);
-          }
-        }
-      });
-    }
-  }
-  linkInit(json);
-  return parseJson(karas, json, animateRecords, options.vars);
-}
-
-function parseNew(karas, json, animateRecords, options, hash) {
+function parse(karas, json, animateRecords, vars, hash) {
   if(isPrimitive(json) || json instanceof Node) {
     return json;
   }
   if(Array.isArray(json)) {
     return json.map(item => {
-      return parseNew(karas, item, animateRecords, options);
+      return parse(karas, item, animateRecords, vars);
     });
   }
   let { library, libraryId } = json;
@@ -264,9 +149,10 @@ function parseNew(karas, json, animateRecords, options, hash) {
     });
     // 删除以免二次解析
     json.library = null;
+    json.libraryId = null;
   }
-  // ide中库文件的child一定有libraryId
-  if(!isNil(libraryId)) {
+  // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
+  else if(!isNil(libraryId)) {
     let libraryItem = hash[libraryId];
     // 规定图层child只有init和动画，tagName和属性和子图层来自库
     if(libraryItem) {
@@ -286,18 +172,18 @@ function parseNew(karas, json, animateRecords, options, hash) {
   let style = props.style;
   abbr2full(style, abbrCssProperty);
   // 先替换style的
-  replaceVars(style, options.vars);
+  replaceVars(style, vars);
   // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
-  replaceVars(props, options.vars);
+  replaceVars(props, vars);
   // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
-  replaceVars(json, options.vars);
+  replaceVars(json, vars);
   let vd;
   if(tagName.charAt(0) === '$') {
     vd = karas.createGm(tagName, props);
   }
   else {
     vd = karas.createVd(tagName, props, children.map(item => {
-      return parseNew(karas, item, animateRecords, options, hash);
+      return parse(karas, item, animateRecords, vars, hash);
     }));
   }
   let animationRecord;
@@ -312,12 +198,12 @@ function parseNew(karas, json, animateRecords, options, hash) {
           has = true;
           value.forEach(item => {
             abbr2full(item, abbrCssProperty);
-            replaceVars(item, options.vars);
+            replaceVars(item, vars);
           });
         }
         if(options) {
           abbr2full(options, abbrAnimateOption);
-          replaceVars(options, options.vars);
+          replaceVars(options, vars);
         }
       });
       if(has) {
@@ -333,7 +219,7 @@ function parseNew(karas, json, animateRecords, options, hash) {
       if(Array.isArray(value) && value.length) {
         value.forEach(item => {
           abbr2full(item, abbrCssProperty);
-          replaceVars(item, options.vars);
+          replaceVars(item, vars);
         });
         animationRecord = {
           animate,
@@ -342,7 +228,7 @@ function parseNew(karas, json, animateRecords, options, hash) {
       }
       if(options) {
         abbr2full(options, abbrAnimateOption);
-        replaceVars(options, options.vars);
+        replaceVars(options, vars);
       }
     }
   }
@@ -353,4 +239,4 @@ function parseNew(karas, json, animateRecords, options, hash) {
   return vd;
 }
 
-export default parseNew;
+export default parse;

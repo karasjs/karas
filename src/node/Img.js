@@ -89,6 +89,7 @@ class Img extends Dom {
       }
       let root = this.root;
       if(root) {
+        root.delRefreshTask(this.__task);
         this.__task = {
           before() {
             root.setRefreshLevel(lv);

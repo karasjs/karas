@@ -7651,12 +7651,13 @@
 
 
         if (backgroundImage) {
+          var loadBgi = this.__loadBgi;
+
           if (util.isString(backgroundImage)) {
-            if (this.__loadBgi.url === backgroundImage) {
+            if (loadBgi.url === backgroundImage) {
               backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
-              var _this$__loadBgi = this.__loadBgi,
-                  _width = _this$__loadBgi.width,
-                  _height = _this$__loadBgi.height;
+              var _width = loadBgi.width,
+                  _height = loadBgi.height;
 
               var _backgroundSize = backgroundSize,
                   _backgroundSize2 = _slicedToArray(_backgroundSize, 2),
@@ -7826,7 +7827,7 @@
 
 
               var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-              var source = this.__loadBgi.source;
+              var source = loadBgi.source;
 
               if (renderMode === mode.CANVAS && source) {
                 var c;
@@ -7917,14 +7918,16 @@
               computedStyle.backgroundPositionX = bgX;
               computedStyle.backgroundPositionY = bgY;
             } else {
-              this.__loadBgi.url = backgroundImage;
+              loadBgi.url = backgroundImage;
               inject.measureImg(backgroundImage, function (data) {
                 if (data.success) {
-                  _this5.__loadBgi.source = data.source;
-                  _this5.__loadBgi.width = data.width;
-                  _this5.__loadBgi.height = data.height;
+                  loadBgi.source = data.source;
+                  loadBgi.width = data.width;
+                  loadBgi.height = data.height;
 
-                  _this5.root.addRefreshTask(_this5.__loadBgi.cb);
+                  _this5.root.delRefreshTask(loadBgi.cb);
+
+                  _this5.root.addRefreshTask(loadBgi.cb);
                 }
               });
             }
@@ -10525,6 +10528,7 @@
           var root = _this2.root;
 
           if (root) {
+            root.delRefreshTask(_this2.__task);
             _this2.__task = {
               before: function before() {
                 root.setRefreshLevel(lv);

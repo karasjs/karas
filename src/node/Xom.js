@@ -568,10 +568,11 @@ class Xom extends Node {
     }
     // 渐变或图片叠加
     if(backgroundImage) {
+      let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
-        if(this.__loadBgi.url === backgroundImage) {
+        if(loadBgi.url === backgroundImage) {
           backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
-          let { width, height } = this.__loadBgi;
+          let { width, height } = loadBgi;
           let [w, h] = backgroundSize;
           // -1为auto，-2为contain，-3为cover
           if(w === -1 && h === -1) {
@@ -729,7 +730,7 @@ class Xom extends Node {
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-          let source = this.__loadBgi.source;
+          let source = loadBgi.source;
           if(renderMode === mode.CANVAS && source) {
             let c;
             let currentCtx;
@@ -822,13 +823,14 @@ class Xom extends Node {
           computedStyle.backgroundPositionY = bgY;
         }
         else {
-          this.__loadBgi.url = backgroundImage;
+          loadBgi.url = backgroundImage;
           inject.measureImg(backgroundImage, data => {
             if(data.success) {
-              this.__loadBgi.source = data.source;
-              this.__loadBgi.width = data.width;
-              this.__loadBgi.height = data.height;
-              this.root.addRefreshTask(this.__loadBgi.cb);
+              loadBgi.source = data.source;
+              loadBgi.width = data.width;
+              loadBgi.height = data.height;
+              this.root.delRefreshTask(loadBgi.cb);
+              this.root.addRefreshTask(loadBgi.cb);
             }
           });
         }

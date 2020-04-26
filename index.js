@@ -4347,12 +4347,10 @@
     if (ovd !== nvd) {
       // 相同继承，不同取消，过滤text
       if (ovd.tagName === nvd.tagName && nvd.tagName) {
-        ovd.__animationList.forEach(function (item) {
+        ovd.animationList.forEach(function (item) {
           item.__target = nvd;
         });
-
-        nvd.__animationList = ovd.__animationList;
-        ovd.__animationList = []; // 递归进行
+        nvd.__animationList = ovd.animationList.splice(0); // 递归进行
 
         var oc = ovd.children;
         var nc = nvd.children;
@@ -4362,7 +4360,18 @@
           var nl = nc.length;
 
           for (var i = 0, len = Math.min(ol, nl); i < len; i++) {
-            diff(oc[i], nc[i]);
+            ovd = oc[i];
+            nvd = nc[i];
+
+            if (ovd instanceof Component) {
+              ovd = ovd.shadowRoot;
+            }
+
+            if (nvd instanceof Component) {
+              nvd = nvd.shadowRoot;
+            }
+
+            diff(ovd, nvd);
           }
         }
       }
@@ -4425,6 +4434,7 @@
         var root = this.root;
 
         if (root) {
+          root.delRefreshTask(this.__task);
           this.__task = {
             before: function before() {
               var ovd = _this2.__traverse(o.ctx, o.defs, root.renderMode);

@@ -14,11 +14,10 @@ function diff(ovd, nvd) {
   if(ovd !== nvd) {
     // 相同继承，不同取消，过滤text
     if(ovd.tagName === nvd.tagName && nvd.tagName) {
-      ovd.__animationList.forEach(item => {
+      ovd.animationList.forEach(item => {
         item.__target = nvd;
       });
-      nvd.__animationList = ovd.__animationList;
-      ovd.__animationList = [];
+      nvd.__animationList = ovd.animationList.splice(0);
       // 递归进行
       let oc = ovd.children;
       let nc = nvd.children;
@@ -26,7 +25,15 @@ function diff(ovd, nvd) {
         let ol = oc.length;
         let nl = nc.length;
         for(let i = 0, len = Math.min(ol, nl); i < len; i++) {
-          diff(oc[i], nc[i]);
+          ovd = oc[i];
+          nvd = nc[i];
+          if(ovd instanceof Component) {
+            ovd = ovd.shadowRoot;
+          }
+          if(nvd instanceof Component) {
+            nvd = nvd.shadowRoot;
+          }
+          diff(ovd, nvd);
         }
       }
     }
@@ -73,6 +80,7 @@ class Component extends Event {
     }
     let root = this.root;
     if(root) {
+      root.delRefreshTask(this.__task);
       this.__task = {
         before: () => {
           let ovd = this.__traverse(o.ctx, o.defs, root.renderMode);

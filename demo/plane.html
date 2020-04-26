@@ -195,13 +195,14 @@
         translateY: -360,
       }
     ], {
-      duration: 1500,
-      delay: i * 500,
+      duration: 1200,
+      delay: i * 400,
       iterations: Infinity,
     });
     a.on('end', function() {
-      item.props.style.left = root.children[0].computedStyle.left + 24;
-      item.props.style.top = root.children[0].computedStyle.top;
+      let plane = root.children[0];
+      item.style.left.value = plane.state.left + 24;
+      item.style.top.value = plane.state.top;
       root.setRefreshLevel(1);
     });
   });

@@ -6055,9 +6055,7 @@
       value: function __init() {
         var _this2 = this;
 
-        var target = this.target,
-            iterations = this.iterations,
-            frames = this.frames,
+        var iterations = this.iterations,
             direction = this.direction,
             duration = this.duration,
             list = this.list; // 执行次数小于1无需播放
@@ -6435,7 +6433,7 @@
 
 
                 if (!isLastCount) {
-                  _this3.__nextTime = 0;
+                  _this3.__nextTime = currentTime - duration;
                   playCount = ++_this3.__playCount;
                 } // 尾次考虑endDelay
                 else if (!inEndDelay) {
@@ -6542,11 +6540,7 @@
             playState = self.playState,
             list = self.list;
 
-        if (isDestroyed || duration <= 0 || list.length < 1) {
-          return self;
-        }
-
-        if (playState === 'finished' || playState === 'idle') {
+        if (isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
           return self;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 

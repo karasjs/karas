@@ -850,7 +850,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { target, iterations, frames, direction, duration, list } = this;
+    let { iterations, direction, duration, list } = this;
     // 执行次数小于1无需播放
     if(iterations < 1 || list.length < 1) {
       return;
@@ -1139,7 +1139,7 @@ class Animation extends Event {
             }
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {
-              this.__nextTime = 0;
+              this.__nextTime = currentTime - duration;
               playCount = ++this.__playCount;
             }
             // 尾次考虑endDelay

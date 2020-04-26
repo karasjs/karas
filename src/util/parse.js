@@ -20,13 +20,14 @@ function abbr2full(target, hash) {
         if(hash.hasOwnProperty(k2)) {
           let fk = hash[k2];
           target['var-' + fk] = target[k];
-          delete target[k];
+          // delete target[k];
         }
       }
       // 普通样式缩写还原
       else if(hash.hasOwnProperty(k)) {
         let fk = hash[k];
         target[fk] = target[k];
+        // 删除以免二次解析
         delete target[k];
       }
     });
@@ -188,7 +189,7 @@ function linkChild(child, libraryItem) {
       child[k] = libraryItem[k];
     }
   });
-  linkInit(child);
+  // linkInit(child);
 }
 
 function linkInit(child) {
@@ -244,4 +245,112 @@ function parse(karas, json, animateRecords, options) {
   return parseJson(karas, json, animateRecords, options.vars);
 }
 
-export default parse;
+function parseNew(karas, json, animateRecords, options, hash) {
+  if(isPrimitive(json) || json instanceof Node) {
+    return json;
+  }
+  if(Array.isArray(json)) {
+    return json.map(item => {
+      return parseNew(karas, item, animateRecords, options);
+    });
+  }
+  let { library, libraryId } = json;
+  // 有library说明是个mc节点，不会有init/animate和children链接，是个正常节点
+  if(Array.isArray(library)) {
+    hash = {};
+    // 强制要求library的文件是排好顺序的，即元件和被引用类型在前面，引用的在后面，另外没有循环引用
+    library.forEach(item => {
+      linkLibrary(item, hash);
+    });
+    // 删除以免二次解析
+    json.library = null;
+  }
+  // ide中库文件的child一定有libraryId
+  if(!isNil(libraryId)) {
+    let libraryItem = hash[libraryId];
+    // 规定图层child只有init和动画，tagName和属性和子图层来自库
+    if(libraryItem) {
+      linkChild(json, libraryItem);
+      // 删除以免二次解析
+      json.libraryId = null;
+    }
+    else {
+      throw new Error('Library miss ID: ' + libraryId);
+    }
+  }
+  let { tagName, props = {}, children = [], animate = [] } = json;
+  if(!tagName) {
+    throw new Error('Dom must have a tagName');
+  }
+  linkInit(json);
+  let style = props.style;
+  abbr2full(style, abbrCssProperty);
+  // 先替换style的
+  replaceVars(style, options.vars);
+  // 再替换静态属性，style也作为属性的一种，目前尚未被设计为被替换
+  replaceVars(props, options.vars);
+  // 替换children里的内容，如文字，无法直接替换tagName/props/children/animate本身，因为下方用的还是原引用
+  replaceVars(json, options.vars);
+  let vd;
+  if(tagName.charAt(0) === '$') {
+    vd = karas.createGm(tagName, props);
+  }
+  else {
+    vd = karas.createVd(tagName, props, children.map(item => {
+      return parseNew(karas, item, animateRecords, options, hash);
+    }));
+  }
+  let animationRecord;
+  if(animate) {
+    if(Array.isArray(animate)) {
+      let has;
+      animate.forEach(item => {
+        abbr2full(item, abbrAnimate);
+        let { value, options } = item;
+        // 忽略空动画
+        if(Array.isArray(value) && value.length) {
+          has = true;
+          value.forEach(item => {
+            abbr2full(item, abbrCssProperty);
+            replaceVars(item, options.vars);
+          });
+        }
+        if(options) {
+          abbr2full(options, abbrAnimateOption);
+          replaceVars(options, options.vars);
+        }
+      });
+      if(has) {
+        animationRecord = {
+          animate,
+          target: vd,
+        };
+      }
+    }
+    else {
+      abbr2full(animate, abbrAnimate);
+      let { value, options } = animate;
+      if(Array.isArray(value) && value.length) {
+        value.forEach(item => {
+          abbr2full(item, abbrCssProperty);
+          replaceVars(item, options.vars);
+        });
+        animationRecord = {
+          animate,
+          target: vd,
+        };
+      }
+      if(options) {
+        abbr2full(options, abbrAnimateOption);
+        replaceVars(options, options.vars);
+      }
+    }
+  }
+  // 产生实际动画运行才存入列表供root调用执行
+  if(animationRecord) {
+    animateRecords.push(animationRecord);
+  }
+  return vd;
+}
+
+export default parseNew;

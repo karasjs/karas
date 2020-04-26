@@ -1,0 +1,35 @@
+let json = {
+  library: [{
+    id: 'a',
+    tagName: 'span',
+    props: {
+      style: {
+        color: '#999',
+        'var-color': {
+          id: 'red',
+        },
+      },
+    },
+    children: [123],
+  }],
+  tagName: 'div',
+  props: {},
+  children: [{
+    libraryId: 'a',
+  }],
+};
+
+let o = karas.parse({
+  tagName: 'svg',
+  props: {},
+  children: [
+    json,
+    json,
+  ],
+}, '#test', {
+  vars: {
+    red: '#F00',
+  },
+});
+var input = document.querySelector('#base64');
+input.value = JSON.stringify(o.virtualDom);

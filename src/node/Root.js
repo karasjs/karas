@@ -91,24 +91,25 @@ class Root extends Dom {
     if(e.type === 'touchmove' && !this.__touchstartTarget) {
       return;
     }
-    if(e.touches && (e.touches.length > 1 || !e.touches.length)) {
-      return;
-    }
-    let { node } = this;
-    let { x, y, left, top, width, height } = node.getBoundingClientRect();
-    x = x || left || 0;
-    y = y || top || 0;
-    let { pageX, pageY } = e.touches ? e.touches[0] : e;
-    x = pageX - x;
-    y = pageY - y;
-    let sx = width / this.width;
-    let sy = height / this.height;
-    // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
-    if(sx !== 1) {
-      x /= sx;
-    }
-    if(sy !== 1) {
-      y /= sy;
+    let x, y;
+    // 触摸结束取消特殊没有touches
+    if(['touchend', 'touchcancel'].indexOf(e.type) === -1) {
+      let { node } = this;
+      let { x: x2, y: y2, left, top, width, height } = node.getBoundingClientRect();
+      x = x2 || left || 0;
+      y = y2 || top || 0;
+      let { pageX, pageY } = e.touches ? e.touches[0] : e;
+      x = pageX - x;
+      y = pageY - y;
+      let sx = width / this.width;
+      let sy = height / this.height;
+      // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
+      if(sx !== 1) {
+        x /= sx;
+      }
+      if(sy !== 1) {
+        y /= sy;
+      }
     }
     let data = {
       event: e,

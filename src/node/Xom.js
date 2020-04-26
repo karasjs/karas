@@ -40,10 +40,14 @@ function renderBorder(renderMode, points, color, ctx, xom) {
         s += `L ${point[i]} ${point[i + 1]} `;
       }
     });
-    xom.addBorder([
-      ['d', s],
-      ['fill', color],
-    ]);
+    xom.virtualDom.bb.push({
+      type: 'item',
+      tagName: 'path',
+      props: [
+        ['d', s],
+        ['fill', color],
+      ],
+    });
   }
 }
 
@@ -959,25 +963,29 @@ class Xom extends Node {
       cb = listener[type];
     }
     let childWillResponse;
+    let zIndex = this.zIndexChildren;
     // touchmove之类强制的直接通知即可
     if(force) {
       if(!this.isGeom) {
         // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
-        let zIndex = this.zIndexChildren;
         for(let i = zIndex.length - 1; i >= 0; i--) {
           let child = zIndex[i];
-          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+          if((child instanceof Xom || child instanceof Component)
+            && isRelativeOrAbsolute(child)) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
             }
           }
         }
         // 再看普通流，从后往前遮挡顺序
-        for(let i = children.length - 1; i >= 0; i--) {
-          let child = children[i];
-          if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
-            if(child.__emitEvent(e, force)) {
-              childWillResponse = true;
+        if(!childWillResponse) {
+          for(let i = children.length - 1; i >= 0; i--) {
+            let child = children[i];
+            if((child instanceof Xom || child instanceof Component)
+              && !isRelativeOrAbsolute(child)) {
+              if(child.__emitEvent(e, force)) {
+                childWillResponse = true;
+              }
             }
           }
         }
@@ -989,7 +997,7 @@ class Xom extends Node {
       if(e.__stopPropagation) {
         return;
       }
-      if(type === 'touchmove' || type === 'touchend' || type === 'touchcancel') {
+      if(['touchmove', 'touchend', 'touchcancel'].indexOf(type) > -1) {
         e.target = this.root.__touchstartTarget;
       }
       if(cb) {
@@ -1004,20 +1012,24 @@ class Xom extends Node {
     }
     if(!this.isGeom) {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
-      for(let i = children.length - 1; i >= 0; i--) {
-        let child = children[i];
-        if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+      for(let i = zIndex.length - 1; i >= 0; i--) {
+        let child = zIndex[i];
+        if((child instanceof Xom || child instanceof Component)
+          && isRelativeOrAbsolute(child)) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
         }
       }
       // 再看普通流，从后往前遮挡顺序
-      for(let i = children.length - 1; i >= 0; i--) {
-        let child = children[i];
-        if((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) === -1) {
-          if(child.__emitEvent(e)) {
-            childWillResponse = true;
+      if(!childWillResponse) {
+        for(let i = children.length - 1; i >= 0; i--) {
+          let child = children[i];
+          if((child instanceof Xom || child instanceof Component)
+            && !isRelativeOrAbsolute(child)) {
+            if(child.__emitEvent(e)) {
+              childWillResponse = true;
+            }
           }
         }
       }
@@ -1151,14 +1163,6 @@ class Xom extends Node {
       });
       return `url(#${uuid})`;
     }
-  }
-
-  addBorder(props) {
-    this.virtualDom.bb.push({
-      type: 'item',
-      tagName: 'path',
-      props,
-    });
   }
 
   animate(list, option, underControl) {
@@ -1314,7 +1318,10 @@ class Xom extends Node {
     return this.__currentStyle;
   }
   get zIndexChildren() {
-    let zIndex = this.children.filter(item => {
+    if(this.isGeom) {
+      return [];
+    }
+    let zIndex = (this.children || []).filter(item => {
       return !item.isMask;
     });
     sort(zIndex, (a, b) => {

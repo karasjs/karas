@@ -233,7 +233,7 @@ class Component extends Event {
   animate(list, option) {
     let sr = this.shadowRoot;
     if(!(sr instanceof Text)) {
-      sr.animate(list, option);
+      return sr.animate(list, option);
     }
   }
 

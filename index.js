@@ -4593,7 +4593,7 @@
         var sr = this.shadowRoot;
 
         if (!(sr instanceof Text)) {
-          sr.animate(list, option);
+          return sr.animate(list, option);
         }
       }
     }, {
@@ -7074,7 +7074,11 @@
           s += "L ".concat(point[i], " ").concat(point[i + 1], " ");
         }
       });
-      xom.addBorder([['d', s], ['fill', color]]);
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [['d', s], ['fill', color]]
+      });
     }
   }
 
@@ -8091,17 +8095,16 @@
           cb = listener[type];
         }
 
-        var childWillResponse; // touchmove之类强制的直接通知即可
+        var childWillResponse;
+        var zIndex = this.zIndexChildren; // touchmove之类强制的直接通知即可
 
         if (force) {
           if (!this.isGeom) {
             // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
-            var zIndex = this.zIndexChildren;
-
             for (var i = zIndex.length - 1; i >= 0; i--) {
               var child = zIndex[i];
 
-              if ((child instanceof Xom || child instanceof Component) && ['absolute', 'relative'].indexOf(child.computedStyle.position) > -1) {
+              if ((child instanceof Xom || child instanceof Component) && isRelativeOrAbsolute(child)) {
                 if (child.__emitEvent(e, force)) {
                   childWillResponse = true;
                 }
@@ -8109,12 +8112,14 @@
             } // 再看普通流，从后往前遮挡顺序
 
 
-            for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
-              var _child = children[_i8];
+            if (!childWillResponse) {
+              for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
+                var _child = children[_i8];
 
-              if ((_child instanceof Xom || _child instanceof Component) && ['absolute', 'relative'].indexOf(_child.computedStyle.position) === -1) {
-                if (_child.__emitEvent(e, force)) {
-                  childWillResponse = true;
+                if ((_child instanceof Xom || _child instanceof Component) && !isRelativeOrAbsolute(_child)) {
+                  if (_child.__emitEvent(e, force)) {
+                    childWillResponse = true;
+                  }
                 }
               }
             }
@@ -8129,7 +8134,7 @@
             return;
           }
 
-          if (type === 'touchmove' || type === 'touchend' || type === 'touchcancel') {
+          if (['touchmove', 'touchend', 'touchcancel'].indexOf(type) > -1) {
             e.target = this.root.__touchstartTarget;
           }
 
@@ -8148,10 +8153,10 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
-            var _child2 = children[_i9];
+          for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
+            var _child2 = zIndex[_i9];
 
-            if ((_child2 instanceof Xom || _child2 instanceof Component) && ['absolute', 'relative'].indexOf(_child2.computedStyle.position) > -1) {
+            if ((_child2 instanceof Xom || _child2 instanceof Component) && isRelativeOrAbsolute(_child2)) {
               if (_child2.__emitEvent(e)) {
                 childWillResponse = true;
               }
@@ -8159,12 +8164,14 @@
           } // 再看普通流，从后往前遮挡顺序
 
 
-          for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-            var _child3 = children[_i10];
+          if (!childWillResponse) {
+            for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
+              var _child3 = children[_i10];
 
-            if ((_child3 instanceof Xom || _child3 instanceof Component) && ['absolute', 'relative'].indexOf(_child3.computedStyle.position) === -1) {
-              if (_child3.__emitEvent(e)) {
-                childWillResponse = true;
+              if ((_child3 instanceof Xom || _child3 instanceof Component) && !isRelativeOrAbsolute(_child3)) {
+                if (_child3.__emitEvent(e)) {
+                  childWillResponse = true;
+                }
               }
             }
           }
@@ -8300,15 +8307,6 @@
           });
           return "url(#".concat(uuid, ")");
         }
-      }
-    }, {
-      key: "addBorder",
-      value: function addBorder(props) {
-        this.virtualDom.bb.push({
-          type: 'item',
-          tagName: 'path',
-          props: props
-        });
       }
     }, {
       key: "animate",
@@ -8497,7 +8495,11 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
-        var zIndex = this.children.filter(function (item) {
+        if (this.isGeom) {
+          return [];
+        }
+
+        var zIndex = (this.children || []).filter(function (item) {
           return !item.isMask;
         });
         sort(zIndex, function (a, b) {
@@ -11485,38 +11487,38 @@
           return;
         }
 
-        if (e.touches && (e.touches.length > 1 || !e.touches.length)) {
-          return;
-        }
+        var x, y; // 触摸结束取消特殊没有touches
 
-        var node = this.node;
+        if (['touchend', 'touchcancel'].indexOf(e.type) === -1) {
+          var node = this.node;
 
-        var _node$getBoundingClie = node.getBoundingClientRect(),
-            x = _node$getBoundingClie.x,
-            y = _node$getBoundingClie.y,
-            left = _node$getBoundingClie.left,
-            top = _node$getBoundingClie.top,
-            width = _node$getBoundingClie.width,
-            height = _node$getBoundingClie.height;
+          var _node$getBoundingClie = node.getBoundingClientRect(),
+              x2 = _node$getBoundingClie.x,
+              y2 = _node$getBoundingClie.y,
+              left = _node$getBoundingClie.left,
+              top = _node$getBoundingClie.top,
+              width = _node$getBoundingClie.width,
+              height = _node$getBoundingClie.height;
 
-        x = x || left || 0;
-        y = y || top || 0;
+          x = x2 || left || 0;
+          y = y2 || top || 0;
 
-        var _ref = e.touches ? e.touches[0] : e,
-            pageX = _ref.pageX,
-            pageY = _ref.pageY;
+          var _ref = e.touches ? e.touches[0] : e,
+              pageX = _ref.pageX,
+              pageY = _ref.pageY;
 
-        x = pageX - x;
-        y = pageY - y;
-        var sx = width / this.width;
-        var sy = height / this.height; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
+          x = pageX - x;
+          y = pageY - y;
+          var sx = width / this.width;
+          var sy = height / this.height; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
 
-        if (sx !== 1) {
-          x /= sx;
-        }
+          if (sx !== 1) {
+            x /= sx;
+          }
 
-        if (sy !== 1) {
-          y /= sy;
+          if (sy !== 1) {
+            y /= sy;
+          }
         }
 
         var data = {

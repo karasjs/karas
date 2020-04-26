@@ -14,6 +14,7 @@ const LIST = [
   'fill',
   'playCount',
   'currentTime',
+  'easing',
 ];
 
 function replaceOption(target, globalValue, key, vars) {
@@ -199,6 +200,10 @@ class Controller {
 
   set fill(v) {
     this.__set('fill', v);
+  }
+
+  set easing(v) {
+    this.__set('easing', v);
   }
 }
 

@@ -237,6 +237,13 @@ class Component extends Event {
     }
   }
 
+  removeAnimate(o) {
+    let sr = this.shadowRoot;
+    if(!(sr instanceof Text)) {
+      return sr.removeAnimate(o);
+    }
+  }
+
   __computed() {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {

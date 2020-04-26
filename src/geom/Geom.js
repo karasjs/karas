@@ -15,7 +15,6 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMask = !!this.props.mask;
-    this.__animateProps = []; // 同animateStyle
     this.__currentProps = this.props;
   }
 

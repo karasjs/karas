@@ -143,7 +143,6 @@ class Xom extends Node {
     this.__tagName = tagName;
     // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
     this.__style = clone(this.props.style) || {}; // style被解析后的k-v形式
-    this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
     this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
     this.__listener = {};
     this.__props.forEach(item => {
@@ -1175,6 +1174,17 @@ class Xom extends Node {
       this.root.animateController.add(animation);
     }
     return animation.play();
+  }
+
+  removeAnimate(o) {
+    if(o instanceof Animation) {
+      let i = this.animationList.indexOf(o);
+      if(i > -1) {
+        o.cancel();
+        o.__destroy();
+        this.animationList.splice(i, 1);
+      }
+    }
   }
 
   __computed() {

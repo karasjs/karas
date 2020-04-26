@@ -4597,6 +4597,15 @@
         }
       }
     }, {
+      key: "removeAnimate",
+      value: function removeAnimate(o) {
+        var sr = this.shadowRoot;
+
+        if (!(sr instanceof Text)) {
+          return sr.removeAnimate(o);
+        }
+      }
+    }, {
       key: "__computed",
       value: function __computed() {
         var sr = this.shadowRoot;
@@ -5228,6 +5237,7 @@
   var isNil$3 = util.isNil,
       isFunction$2 = util.isFunction,
       isNumber = util.isNumber,
+      isObject$1 = util.isObject,
       clone$2 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
@@ -5270,16 +5280,16 @@
           keys.push(k);
         }
       });
-    }); // 添补没有声明完全的关键帧属性为节点默认值
+    }); // 添补没有声明完全的关键帧属性为节点当前值
 
     frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         if (!style.hasOwnProperty(k)) {
           if (repaint$1.GEOM.hasOwnProperty(k)) {
-            style[k] = target.props[k];
+            style[k] = target.currentProps[k];
           } else {
-            style[k] = target.style[k];
+            style[k] = target.currentStyle[k];
           }
         }
       });
@@ -5470,28 +5480,17 @@
     });
     animation.__style = style;
     animation.__props = props;
-  } // 根据动画涉及的样式keys，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
-
-
-  function getOriginStyleByKeys(keys, target) {
-    var res = {};
-    var style = target.style;
-    keys.forEach(function (i) {
-      res[i] = style[i];
-    });
-    return res;
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
    * @param style 关键帧样式
-   * @param resetStyle 所有帧合集的默认样式
    * @param duration 动画时间长度
    * @param timingFunction options的easing曲线控制
    * @returns {{style: *, time: number, easing: *, transition: []}}
    */
 
 
-  function framing(style, resetStyle, duration, timingFunction) {
+  function framing(style, duration, timingFunction) {
     var offset = style.offset,
         easing = style.easing; // 这两个特殊值提出来存储不干扰style
 
@@ -5502,7 +5501,7 @@
       offset = timingFunction(offset);
     }
 
-    css.normalize(style, resetStyle);
+    css.normalize(style);
     return {
       style: style,
       time: offset * duration,
@@ -5986,25 +5985,31 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
       _this.__id = uuid++;
       _this.__target = target;
-      _this.__list = clone$2(list || []); // 动画过程另外一种形式，object描述k-v形式
+      list = clone$2(list || []);
 
-      if (!Array.isArray(_this.__list)) {
-        var nl = [];
-        var l = _this.__list;
-        Object.keys(l).forEach(function (k) {
-          var v = l[k];
-
-          if (Array.isArray(v)) {
-            for (var i = 0, len = v.length; i < len; i++) {
-              var o = nl[i] = nl[i] || {
-                offset: i / (len - 1)
-              };
-              o[k] = v[i];
-            }
-          }
+      if (Array.isArray(list)) {
+        _this.__list = list.filter(function (item) {
+          return item && isObject$1(item);
         });
-        _this.__list = nl;
-      }
+      } // 动画过程另外一种形式，object描述k-v形式
+      else if (list && isObject$1(list)) {
+          var nl = [];
+          Object.keys(list).forEach(function (k) {
+            var v = list[k];
+
+            if (Array.isArray(v)) {
+              for (var i = 0, len = v.length; i < len; i++) {
+                var o = nl[i] = nl[i] || {
+                  offset: i / (len - 1)
+                };
+                o[k] = v[i];
+              }
+            }
+          });
+          _this.__list = nl;
+        } else {
+          _this.__list = [];
+        }
 
       if (isNumber(options)) {
         _this.__options = {
@@ -6022,6 +6027,7 @@
       _this.fill = op.fill;
       _this.direction = op.direction;
       _this.playbackRate = op.playbackRate;
+      _this.easing = op.easing;
       _this.playCount = 0;
       _this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
 
@@ -6037,15 +6043,16 @@
       _this.__fpsTime = 0;
       _this.__playState = 'idle';
       _this.__isDestroyed = false;
+      _this.__style = {};
 
-      _this.__init(op.easing);
+      _this.__init();
 
       return _this;
     }
 
     _createClass(Animation, [{
       key: "__init",
-      value: function __init(ea) {
+      value: function __init() {
         var _this2 = this;
 
         var target = this.target,
@@ -6055,20 +6062,10 @@
             duration = this.duration,
             list = this.list; // 执行次数小于1无需播放
 
-        if (iterations < 1) {
+        if (iterations < 1 || list.length < 1) {
           return;
-        } // 占位，对象渲染时据此merge动画样式
+        } // 过滤时间非法的，过滤后续offset<=前面的
 
-
-        target.__animateStyle.push(this.__style = {});
-
-        if (target.isGeom) {
-          target.__animateProps.push(this.__props = {});
-        }
-
-        list = list.filter(function (item) {
-          return item && util.isObject(item);
-        }); // 过滤时间非法的，过滤后续offset<=前面的
 
         var offset = -1;
 
@@ -6089,11 +6086,6 @@
                 len--;
               }
           }
-        } // 必须有1帧及以上描述
-
-
-        if (list.length < 1) {
-          return;
         } // 只有1帧复制出来变成2帧方便运行
 
 
@@ -6137,41 +6129,6 @@
 
             _i7 = j;
           }
-        } // 总的曲线控制
-
-
-        var timingFunction = getEasing(ea); // 换算每一关键帧样式标准化
-
-        list.forEach(function (item) {
-          var resetStyle = [];
-          Object.keys(item).forEach(function (k) {
-            if (k === 'offset' || k === 'easing') {
-              return;
-            }
-
-            resetStyle.push({
-              k: k,
-              v: reset.XOM[k]
-            });
-          });
-          frames.push(framing(item, resetStyle, duration, timingFunction));
-        }); // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-
-        var keys = this.__keys = unify(frames, target); // 保存静态默认样式供第一帧和最后一帧计算比较
-
-        this.__originStyle = getOriginStyleByKeys(keys, target); // 反向存储帧的倒排结果
-
-        if ({
-          reverse: true,
-          alternate: true,
-          'alternate-reverse': true
-        }.hasOwnProperty(direction)) {
-          var framesR = clone$2(frames).reverse();
-          framesR.forEach(function (item) {
-            item.time = duration - item.time;
-            item.transition = [];
-          });
-          this.__framesR = framesR;
         } // finish/cancel共有的before处理
 
 
@@ -6224,6 +6181,38 @@
         };
       }
     }, {
+      key: "__format",
+      value: function __format() {
+        var list = this.list,
+            easing = this.easing,
+            duration = this.duration,
+            direction = this.direction,
+            target = this.target; // 总的曲线控制
+
+        var timingFunction = getEasing(easing);
+        var frames = []; // 换算每一关键帧样式标准化
+
+        list.forEach(function (item) {
+          frames.push(framing(item, duration, timingFunction));
+        });
+        this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+
+        this.__keys = unify(frames, target); // 反向存储帧的倒排结果
+
+        if ({
+          reverse: true,
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction)) {
+          var framesR = clone$2(frames).reverse();
+          framesR.forEach(function (item) {
+            item.time = duration - item.time;
+            item.transition = [];
+          });
+          this.__framesR = framesR;
+        }
+      }
+    }, {
       key: "__calDiffTime",
       value: function __calDiffTime(diff) {
         var playbackRate = this.playbackRate,
@@ -6256,9 +6245,9 @@
             duration = this.duration,
             playState = this.playState,
             __frameCb = this.__frameCb,
-            frames = this.frames;
+            list = this.list;
 
-        if (isDestroyed || duration <= 0 || frames.length < 1) {
+        if (isDestroyed || duration <= 0 || list.length < 1) {
           return this;
         }
 
@@ -6275,7 +6264,10 @@
         var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
-          var _frames = this.frames,
+          // 每次从头播放时，格式化帧数据以便播放计算
+          this.__format();
+
+          var frames = this.frames,
               framesR = this.framesR,
               target = this.target,
               direction = this.direction,
@@ -6288,13 +6280,13 @@
           var stayEnd = this.__stayEnd();
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          _frames = inherit(_frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+          frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
 
-          var length = _frames.length;
-          var prev = _frames[0];
+          var length = frames.length;
+          var prev = frames[0];
 
           for (var i = 1; i < length; i++) {
-            var next = _frames[i];
+            var next = frames[i];
             prev = calFrame(prev, next, keys, target);
           }
 
@@ -6348,7 +6340,7 @@
                 var stayBegin = _this3.__stayBegin();
 
                 if (stayBegin) {
-                  var _current = _frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
+                  var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
                   var _calRefresh = calRefresh(_current, style, keys);
 
@@ -6383,12 +6375,12 @@
                 var isEven = playCount % 2 === 0;
 
                 if (direction === 'alternate') {
-                  currentFrames = isEven ? _frames : framesR;
+                  currentFrames = isEven ? frames : framesR;
                 } else {
-                  currentFrames = isEven ? framesR : _frames;
+                  currentFrames = isEven ? framesR : frames;
                 }
               } else {
-                currentFrames = _frames;
+                currentFrames = frames;
               } // 减去delay，计算在哪一帧
 
 
@@ -6548,13 +6540,13 @@
         var isDestroyed = self.isDestroyed,
             duration = self.duration,
             playState = self.playState,
-            frames = self.frames;
+            list = self.list;
 
-        if (isDestroyed || duration <= 0 || frames.length < 1) {
+        if (isDestroyed || duration <= 0 || list.length < 1) {
           return self;
         }
 
-        if (playState === 'finished') {
+        if (playState === 'finished' || playState === 'idle') {
           return self;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
@@ -6564,6 +6556,7 @@
         var root = self.root,
             style = self.style,
             keys = self.keys,
+            frames = self.frames,
             __frameCb = self.__frameCb,
             __clean = self.__clean,
             __fin = self.__fin;
@@ -6622,9 +6615,9 @@
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             playState = this.playState,
-            frames = this.frames;
+            list = this.list;
 
-        if (isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
+        if (isDestroyed || duration <= 0 || playState === 'idle' || list.length < 1) {
           return this;
         }
 
@@ -6965,6 +6958,14 @@
         this.__playbackRate = v;
       }
     }, {
+      key: "easing",
+      get: function get() {
+        return this.__easing;
+      },
+      set: function set(v) {
+        this.__easing = v;
+      }
+    }, {
       key: "startTime",
       get: function get() {
         return this.__startTime;
@@ -7171,8 +7172,6 @@
       _this.__tagName = tagName; // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
 
       _this.__style = clone$3(_this.props.style) || {}; // style被解析后的k-v形式
-
-      _this.__animateStyle = []; // 动画过程中的样式集合，每个动画单独存入一份进入数组避免干扰，但会存在同key后者覆盖前者
 
       _this.__currentStyle = _this.__style; // 动画过程中绘制一开始会merge动画样式
 
@@ -8325,6 +8324,21 @@
         return animation.play();
       }
     }, {
+      key: "removeAnimate",
+      value: function removeAnimate(o) {
+        if (o instanceof Animation) {
+          var i = this.animationList.indexOf(o);
+
+          if (i > -1) {
+            o.cancel();
+
+            o.__destroy();
+
+            this.animationList.splice(i, 1);
+          }
+        }
+      }
+    }, {
       key: "__computed",
       value: function __computed() {
         var _this6 = this;
@@ -8641,8 +8655,6 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
       _this.__isMask = !!_this.props.mask;
-      _this.__animateProps = []; // 同animateStyle
-
       _this.__currentProps = _this.props;
       return _this;
     }
@@ -11149,7 +11161,7 @@
   }();
 
   var isNil$5 = util.isNil;
-  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime'];
+  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
 
   function replaceOption(target, globalValue, key, vars) {
     // 优先vars，其次总控，都没有忽略即自己原本声明
@@ -11374,13 +11386,18 @@
       set: function set(v) {
         this.__set('fill', v);
       }
+    }, {
+      key: "easing",
+      set: function set(v) {
+        this.__set('easing', v);
+      }
     }]);
 
     return Controller;
   }();
 
   var isNil$6 = util.isNil,
-      isObject$1 = util.isObject,
+      isObject$2 = util.isObject,
       isFunction$3 = util.isFunction;
   var PX$8 = unit.PX;
 
@@ -11739,7 +11756,7 @@
 
               if (clone.length) {
                 clone.forEach(function (item) {
-                  if (isObject$1(item) && isFunction$3(item.before)) {
+                  if (isObject$2(item) && isFunction$3(item.before)) {
                     item.before(diff);
                   }
                 });
@@ -11761,7 +11778,7 @@
             },
             after: function after(diff) {
               clone.forEach(function (item) {
-                if (isObject$1(item) && isFunction$3(item.after)) {
+                if (isObject$2(item) && isFunction$3(item.after)) {
                   item.after(diff);
                 } else if (isFunction$3(item)) {
                   item(diff);

@@ -1,5 +1,4 @@
 import css from '../style/css';
-import reset from '../style/reset';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import util from '../util/util';
@@ -10,7 +9,7 @@ import level from './level';
 import repaint from './repaint';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
-const { isNil, isFunction, isNumber, clone, equalArr } = util;
+const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
 
 const KEY_COLOR = [
@@ -107,16 +106,16 @@ function unify(frames, target) {
       }
     });
   });
-  // 添补没有声明完全的关键帧属性为节点默认值
+  // 添补没有声明完全的关键帧属性为节点当前值
   frames.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
       if(!style.hasOwnProperty(k)) {
         if(repaint.GEOM.hasOwnProperty(k)) {
-          style[k] = target.props[k];
+          style[k] = target.currentProps[k];
         }
         else {
-          style[k] = target.style[k];
+          style[k] = target.currentStyle[k];
         }
       }
     });
@@ -305,25 +304,14 @@ function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
   animation.__props = props;
 }
 
-// 根据动画涉及的样式keys，从当前样式取得同key的样式和帧对比，确认刷新等级；反过来最后一帧同
-function getOriginStyleByKeys(keys, target) {
-  let res = {};
-  let style = target.style;
-  keys.forEach(i => {
-    res[i] = style[i];
-  });
-  return res;
-}
-
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
  * @param style 关键帧样式
- * @param resetStyle 所有帧合集的默认样式
  * @param duration 动画时间长度
  * @param timingFunction options的easing曲线控制
  * @returns {{style: *, time: number, easing: *, transition: []}}
  */
-function framing(style, resetStyle, duration, timingFunction) {
+function framing(style, duration, timingFunction) {
   let { offset, easing } = style;
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
@@ -331,7 +319,7 @@ function framing(style, resetStyle, duration, timingFunction) {
   if(timingFunction !== linear) {
     offset = timingFunction(offset);
   }
-  css.normalize(style, resetStyle);
+  css.normalize(style);
   return {
     style,
     time: offset * duration,
@@ -808,13 +796,15 @@ class Animation extends Event {
     super();
     this.__id = uuid++;
     this.__target = target;
-    this.__list = clone(list || []);
+    list = clone(list || []);
+    if(Array.isArray(list)) {
+      this.__list = list.filter(item => item && isObject(item));
+    }
     // 动画过程另外一种形式，object描述k-v形式
-    if(!Array.isArray(this.__list)) {
+    else if(list && isObject(list)) {
       let nl = [];
-      let l = this.__list;
-      Object.keys(l).forEach(k => {
-        let v = l[k];
+      Object.keys(list).forEach(k => {
+        let v = list[k];
         if(Array.isArray(v)) {
           for(let i = 0, len = v.length; i < len; i++) {
             let o = nl[i] = nl[i] || {
@@ -825,6 +815,9 @@ class Animation extends Event {
         }
       });
       this.__list = nl;
+    }
+    else {
+      this.__list = [];
     }
     if(isNumber(options)) {
       this.__options = {
@@ -841,6 +834,7 @@ class Animation extends Event {
     this.fill = op.fill;
     this.direction = op.direction;
     this.playbackRate = op.playbackRate;
+    this.easing = op.easing;
     this.playCount = 0;
     this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
     this.__frames = []; // 每帧数据
@@ -851,21 +845,16 @@ class Animation extends Event {
     this.__fpsTime = 0;
     this.__playState = 'idle';
     this.__isDestroyed = false;
-    this.__init(op.easing);
+    this.__style = {};
+    this.__init();
   }
 
-  __init(ea) {
+  __init() {
     let { target, iterations, frames, direction, duration, list } = this;
     // 执行次数小于1无需播放
-    if(iterations < 1) {
+    if(iterations < 1 || list.length < 1) {
       return;
     }
-    // 占位，对象渲染时据此merge动画样式
-    target.__animateStyle.push(this.__style = {});
-    if(target.isGeom) {
-      target.__animateProps.push(this.__props = {});
-    }
-    list = list.filter(item => item && util.isObject(item));
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
     for(let i = 0, len = list.length; i < len; i++) {
@@ -885,10 +874,6 @@ class Animation extends Event {
           len--;
         }
       }
-    }
-    // 必须有1帧及以上描述
-    if(list.length < 1) {
-      return;
     }
     // 只有1帧复制出来变成2帧方便运行
     if(list.length === 1) {
@@ -925,35 +910,6 @@ class Animation extends Event {
         }
         i = j;
       }
-    }
-    // 总的曲线控制
-    let timingFunction = getEasing(ea);
-    // 换算每一关键帧样式标准化
-    list.forEach(item => {
-      let resetStyle = [];
-      Object.keys(item).forEach(k => {
-        if(k === 'offset' || k === 'easing') {
-          return;
-        }
-        resetStyle.push({
-          k,
-          v: reset.XOM[k],
-        });
-      });
-      frames.push(framing(item, resetStyle, duration, timingFunction));
-    });
-    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-    let keys = this.__keys = unify(frames, target);
-    // 保存静态默认样式供第一帧和最后一帧计算比较
-    this.__originStyle = getOriginStyleByKeys(keys, target);
-    // 反向存储帧的倒排结果
-    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let framesR = clone(frames).reverse();
-      framesR.forEach(item => {
-        item.time = duration - item.time;
-        item.transition = [];
-      });
-      this.__framesR = framesR;
     }
     // finish/cancel共有的before处理
     this.__clean = (isFinish) => {
@@ -996,6 +952,29 @@ class Animation extends Event {
     };
   }
 
+  __format() {
+    let { list, easing, duration, direction, target } = this;
+    // 总的曲线控制
+    let timingFunction = getEasing(easing);
+    let frames = [];
+    // 换算每一关键帧样式标准化
+    list.forEach(item => {
+      frames.push(framing(item, duration, timingFunction));
+    });
+    this.__frames = frames;
+    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+    this.__keys = unify(frames, target);
+    // 反向存储帧的倒排结果
+    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
+      let framesR = clone(frames).reverse();
+      framesR.forEach(item => {
+        item.time = duration - item.time;
+        item.transition = [];
+      });
+      this.__framesR = framesR;
+    }
+  }
+
   __calDiffTime(diff) {
     let { playbackRate, spfLimit, fps } = this;
     this.__currentTime = this.__nextTime;
@@ -1017,8 +996,8 @@ class Animation extends Event {
   }
 
   play(cb) {
-    let { isDestroyed, duration, playState, __frameCb, frames } = this;
-    if(isDestroyed || duration <= 0 || frames.length < 1) {
+    let { isDestroyed, duration, playState, __frameCb, list } = this;
+    if(isDestroyed || duration <= 0 || list.length < 1) {
       return this;
     }
     if(playState === 'running') {
@@ -1032,6 +1011,8 @@ class Animation extends Event {
     let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
+      // 每次从头播放时，格式化帧数据以便播放计算
+      this.__format();
       let {
         frames,
         framesR,
@@ -1232,16 +1213,13 @@ class Animation extends Event {
 
   finish(cb) {
     let self = this;
-    let { isDestroyed, duration, playState, frames } = self;
-    if(isDestroyed || duration <= 0 || frames.length < 1) {
-      return self;
-    }
-    if(playState === 'finished') {
+    let { isDestroyed, duration, playState, list } = self;
+    if(isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
       return self;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     self.__cancelTask();
-    let { root, style, keys, __frameCb, __clean, __fin } = self;
+    let { root, style, keys, frames, __frameCb, __clean, __fin } = self;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
@@ -1275,8 +1253,8 @@ class Animation extends Event {
   }
 
   cancel(cb) {
-    let { isDestroyed, duration, playState, frames } = this;
-    if(isDestroyed || duration <= 0 || playState === 'idle' || frames.length < 1) {
+    let { isDestroyed, duration, playState, list } = this;
+    if(isDestroyed || duration <= 0 || playState === 'idle' || list.length < 1) {
       return this;
     }
     this.__cancelTask();
@@ -1532,6 +1510,14 @@ class Animation extends Event {
       v = 1;
     }
     this.__playbackRate = v;
+  }
+
+  get easing() {
+    return this.__easing;
+  }
+
+  set easing(v) {
+    this.__easing = v;
   }
 
   get startTime() {

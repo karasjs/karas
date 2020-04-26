@@ -1,6 +1,6 @@
 class Component extends karas.Component {
   constructor(...data) {
-    super('cp', ...data);
+    super(...data);
   }
   render() {
     return <Component2/>;

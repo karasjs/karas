@@ -5,7 +5,7 @@ function r() {
 
 class Component extends karas.Component {
   constructor(...data) {
-    super('cp', ...data);
+    super(...data);
     this.state = {
       text: 123,
     };

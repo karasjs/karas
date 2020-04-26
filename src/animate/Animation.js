@@ -1141,6 +1141,7 @@ class Animation extends Event {
             if(!isLastCount) {
               this.__nextTime = currentTime - duration;
               playCount = ++this.__playCount;
+              this.__nextBegin = true;
             }
             // 尾次考虑endDelay
             else if(!inEndDelay) {
@@ -1190,6 +1191,10 @@ class Animation extends Event {
           if(this.__finish) {
             this.__finish = false;
             __fin();
+          }
+          if(this.__nextBegin) {
+            this.__nextBegin = false;
+            this.__begin = true;
           }
         },
       };

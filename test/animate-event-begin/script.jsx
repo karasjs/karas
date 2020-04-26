@@ -18,6 +18,12 @@ let animation = t.animate([
   iterations: 2,
 });
 let input = document.querySelector('input');
+let n = 0;
 animation.on('begin', () => {
-  input.value += '/' + t.computedStyle.translateX;
+  if(n++ === 0) {
+    input.value = t.currentStyle.translateX.value;
+  }
+  else {
+    input.value += '/' + (t.currentStyle.translateX.value < 100);
+  }
 });

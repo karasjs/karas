@@ -22,9 +22,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on('frame', () => {
   if(n++ === 0) {
-    input.value += '/' + t.computedStyle.translateX;
+    input.value += '/' + t.currentStyle.translateX.value;
   }
 });
 animation.on('begin', () => {
-  input.value += '/' + t.computedStyle.translateX;
+  input.value += '/' + (t.currentStyle.translateX.value < 100);
 });

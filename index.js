@@ -6435,6 +6435,7 @@
                 if (!isLastCount) {
                   _this3.__nextTime = currentTime - duration;
                   playCount = ++_this3.__playCount;
+                  _this3.__nextBegin = true;
                 } // 尾次考虑endDelay
                 else if (!inEndDelay) {
                     _this3.__nextTime = 0;
@@ -6500,6 +6501,11 @@
                 _this3.__finish = false;
 
                 __fin();
+              }
+
+              if (_this3.__nextBegin) {
+                _this3.__nextBegin = false;
+                _this3.__begin = true;
               }
             }
           };

@@ -11510,11 +11510,9 @@
               v = _item[1]; // 忽略事件
 
 
-          if (/^on[a-zA-Z]/.test(k)) {
-            continue;
+          if (!/^on[a-zA-Z]/.test(k)) {
+            res += renderProp(k, v);
           }
-
-          res += renderProp(k, v);
         }
 
         res += "></".concat(this.tagName, ">");

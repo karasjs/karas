@@ -82,10 +82,9 @@ class Root extends Dom {
       let item = this.__props[i];
       let [k, v] = item;
       // 忽略事件
-      if(/^on[a-zA-Z]/.test(k)) {
-        continue;
+      if(!/^on[a-zA-Z]/.test(k)) {
+        res += renderProp(k, v);
       }
-      res += renderProp(k, v);
     }
     res += `></${this.tagName}>`;
     return res;

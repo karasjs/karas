@@ -11504,7 +11504,17 @@
 
         for (var i = 0, len = this.__props.length; i < len; i++) {
           var item = this.__props[i];
-          res += renderProp(item[0], item[1]);
+
+          var _item = _slicedToArray(item, 2),
+              k = _item[0],
+              v = _item[1]; // 忽略事件
+
+
+          if (/^on[a-zA-Z]/.test(k)) {
+            continue;
+          }
+
+          res += renderProp(k, v);
         }
 
         res += "></".concat(this.tagName, ">");

@@ -80,7 +80,12 @@ class Root extends Dom {
     // 拼接处理属性
     for(let i = 0, len = this.__props.length; i < len; i++) {
       let item = this.__props[i];
-      res += renderProp(item[0], item[1]);
+      let [k, v] = item;
+      // 忽略事件
+      if(/^on[a-zA-Z]/.test(k)) {
+        continue;
+      }
+      res += renderProp(k, v);
     }
     res += `></${this.tagName}>`;
     return res;

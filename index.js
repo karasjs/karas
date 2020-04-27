@@ -5879,7 +5879,7 @@
   } // 根据百分比和缓动函数计算中间态样式
 
 
-  function calStyle(frame, percent) {
+  function calIntermediateStyle(frame, percent) {
     var style = clone$2(frame.style);
     var timingFunction = getEasing(frame.easing);
 
@@ -6459,7 +6459,7 @@
               else {
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
-                  current = calStyle(current, percent);
+                  current = calIntermediateStyle(current, percent);
 
                   var _calRefresh7 = calRefresh(current, style, keys);
 

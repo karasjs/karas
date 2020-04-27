@@ -686,7 +686,7 @@ function getEasing(ea) {
 }
 
 // 根据百分比和缓动函数计算中间态样式
-function calStyle(frame, percent) {
+function calIntermediateStyle(frame, percent) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
   if(timingFunction !== linear) {
@@ -1157,7 +1157,7 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calStyle(current, percent);
+            current = calIntermediateStyle(current, percent);
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style

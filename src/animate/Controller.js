@@ -98,7 +98,6 @@ class Controller {
             let { value, options } = animate;
             options.autoPlay = false;
             let o = target.animate(value, options);
-            o.pause();
             this.add(o);
           });
         }
@@ -106,7 +105,6 @@ class Controller {
           let { value, options } = animate;
           options.autoPlay = false;
           let o = target.animate(value, options);
-          o.pause();
           this.add(o);
         }
       });

@@ -11306,7 +11306,6 @@
                     options = animate.options;
                 options.autoPlay = false;
                 var o = target.animate(value, options);
-                o.pause();
 
                 _this.add(o);
               });
@@ -11315,7 +11314,6 @@
                   options = animate.options;
               options.autoPlay = false;
               var o = target.animate(value, options);
-              o.pause();
 
               _this.add(o);
             }

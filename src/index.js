@@ -23,7 +23,6 @@ import reset from './style/reset';
 import frame from './animate/frame';
 import easing from './animate/easing';
 import level from './animate/level';
-import Controller from './animate/Controller';
 import math from './math/index';
 
 Geom.register('$line', Line);
@@ -86,7 +85,7 @@ let karas = {
       // 总控次数、速度
       ac.__op(options);
       // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-      if(options.autoPlay !== false) {
+      if(!options.hasOwnProperty('autoPlay') || options.autoPlay) {
         ac.play();
       }
     }

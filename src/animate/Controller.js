@@ -1,6 +1,6 @@
 import util from '../util/util';
 
-const { isNil } = util;
+const { isNil, isFunction } = util;
 
 const LIST = [
   'playbackRate',
@@ -82,9 +82,7 @@ class Controller {
 
   __action(k, args) {
     this.list.forEach(item => {
-      item.target.animationList.forEach(animate => {
-        animate[k].apply(animate, args);
-      });
+      item[k].apply(item, args);
     });
   }
 
@@ -97,42 +95,74 @@ class Controller {
         let { target, animate } = item;
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
-            let o = target.animate(animate.value, animate.options);
+            let { value, options } = animate;
+            options.autoPlay = false;
+            let o = target.animate(value, options);
+            o.pause();
             this.add(o);
           });
         }
         else {
-          let o = target.animate(animate.value, animate.options);
+          let { value, options } = animate;
+          options.autoPlay = false;
+          let o = target.animate(value, options);
+          o.pause();
           this.add(o);
         }
       });
     }
   }
 
-  play() {
+  play(cb) {
     this.init();
-    this.__action('play');
+    let once = true;
+    this.__action('play', [cb && function(diff) {
+      if(once) {
+        once = false;
+        if(isFunction(cb)) {
+          cb(diff);
+        }
+      }
+    }]);
   }
 
   pause() {
     this.__action('pause');
   }
 
-  cancel() {
-    this.__action('cancel');
+  cancel(cb) {
+    let once = true;
+    this.__action('cancel', [cb && function(diff) {
+      if(once) {
+        once = false;
+        if(isFunction(cb)) {
+          cb(diff);
+        }
+      }
+    }]);
   }
 
-  finish() {
-    this.__action('finish');
+  finish(cb) {
+    let once = true;
+    this.__action('finish', [cb && function(diff) {
+      if(once) {
+        once = false;
+        if(isFunction(cb)) {
+          cb(diff);
+        }
+      }
+    }]);
   }
 
   gotoAndStop(v, options, cb) {
     this.init();
     let once = true;
-    this.__action('gotoAndStop', [v, options, function(diff) {
+    this.__action('gotoAndStop', [v, options, cb && function(diff) {
       if(once) {
         once = false;
-        cb && cb(diff);
+        if(isFunction(cb)) {
+          cb(diff);
+        }
       }
     }]);
   }
@@ -140,10 +170,12 @@ class Controller {
   gotoAndPlay(v, options, cb) {
     this.init();
     let once = true;
-    this.__action('gotoAndPlay', [v, options, function(diff) {
+    this.__action('gotoAndPlay', [v, options, cb && function(diff) {
       if(once) {
         once = false;
-        cb && cb(diff);
+        if(isFunction(cb)) {
+          cb(diff);
+        }
       }
     }]);
   }

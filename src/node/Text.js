@@ -240,7 +240,11 @@ class Text extends Node {
     return this.__textWidth;
   }
   get baseLine() {
-    let last = this.lineBoxes[this.lineBoxes.length - 1];
+    let { lineBoxes } = this;
+    if(!lineBoxes.length) {
+      return 0;
+    }
+    let last = lineBoxes[lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
   }
   get currentStyle() {

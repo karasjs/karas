@@ -345,9 +345,24 @@ function calDiff(prev, next, k, target) {
   let p = prev[k];
   let n = next[k];
   if(k === 'transform') {
+    // transform因默认值null很特殊，不存在时需给默认矩阵
+    if(!p && !n) {
+      return;
+    }
+    let pm, nm;
+    if(p) {
+      pm = p[0][1];
+    }
+    else {
+      pm = [1, 0, 0, 1, 0, 0];
+    }
+    if(n) {
+      nm = n[0][1];
+    }
+    else {
+      nm = [1, 0, 0, 1, 0, 0];
+    }
     // transform特殊被初始化转成matrix矩阵，直接计算差值
-    let pm = p[0][1];
-    let nm = n[0][1];
     if(equalArr(pm, nm)) {
       return;
     }
@@ -699,8 +714,11 @@ function calIntermediateStyle(frame, percent) {
     if(item.hasOwnProperty('n')) {
       style[k] = n;
     }
-    // transform特殊处理，只有1个matrix
+    // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     else if(k === 'transform') {
+      if(!st) {
+        st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
+      }
       for(let i = 0; i < 6; i++) {
         st[0][1][i] += v[i] * percent;
       }

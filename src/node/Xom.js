@@ -1166,14 +1166,17 @@ class Xom extends Node {
     }
   }
 
-  animate(list, option, underControl) {
+  animate(list, options, underControl) {
     if(this.isDestroyed) {
       return;
     }
-    let animation = new Animation(this, list, option);
+    let animation = new Animation(this, list, options);
     this.animationList.push(animation);
     if(underControl) {
       this.root.animateController.add(animation);
+    }
+    if(options.hasOwnProperty('autoPlay') && !options.autoPlay) {
+      return animation;
     }
     return animation.play();
   }

@@ -39,7 +39,7 @@ class Img extends Dom {
     super.__layout(data);
     let { isDestroyed, src, style, currentStyle } = this;
     let { display, width, height } = currentStyle;
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || display === 'none' || !src) {
       return;
     }
     let { width: w, height: h } = this;

@@ -1238,12 +1238,15 @@ class Xom extends Node {
   get tagName() {
     return this.__tagName;
   }
+
   get isRoot() {
     return !this.parent;
   }
+
   get isGeom() {
     return this.tagName.charAt(0) === '$';
   }
+
   get innerWidth() {
     let { computedStyle: {
       paddingRight,
@@ -1253,6 +1256,7 @@ class Xom extends Node {
       + paddingLeft
       + paddingRight;
   }
+
   get innerHeight() {
     let { computedStyle: {
       paddingTop,
@@ -1262,6 +1266,7 @@ class Xom extends Node {
       + paddingTop
       + paddingBottom;
   }
+
   get outerWidth() {
     let { computedStyle: {
       borderLeftWidth,
@@ -1275,6 +1280,7 @@ class Xom extends Node {
       + marginLeft
       + marginRight;
   }
+
   get outerHeight() {
     let { computedStyle: {
       borderTopWidth,
@@ -1288,6 +1294,7 @@ class Xom extends Node {
       + marginTop
       + marginBottom;
   }
+
   get listener() {
     return this.__listener;
   }
@@ -1297,18 +1304,23 @@ class Xom extends Node {
   get matrix() {
     return this.__matrix;
   }
+
   get matrixEvent() {
     return this.__matrixEvent;
   }
+
   get id() {
     return this.__id;
   }
+
   get class() {
     return this.__class || [];
   }
+
   get animationList() {
     return this.__animationList;
   }
+
   get animating() {
     let { animationList } = this;
     for(let i = 0, len = animationList.length; i < len; i++) {
@@ -1319,6 +1331,7 @@ class Xom extends Node {
     }
     return false;
   }
+
   get animateStyle() {
     let { style, animationList } = this;
     let copy = clone(style);
@@ -1329,9 +1342,11 @@ class Xom extends Node {
     });
     return copy;
   }
+
   get currentStyle() {
     return this.__currentStyle;
   }
+
   get zIndexChildren() {
     if(this.isGeom) {
       return [];

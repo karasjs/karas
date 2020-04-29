@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .assert.value('input', 'Error: Library miss ID: b')
+      .assert.value('input', 'Error: Link library miss id: b')
       .end();
   }
 };

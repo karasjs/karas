@@ -48,42 +48,55 @@ class Node {
   get x() {
     return this.__x;
   }
+
   get y() {
     return this.__y;
   }
+
   get ox() {
     return this.__ox;
   }
+
   get oy() {
     return this.__oy;
   }
+
   get sx() {
     return this.x + this.ox;
   }
+
   get sy() {
     return this.y + this.oy;
   }
+
   get width() {
     return this.__width;
   }
+
   get height() {
     return this.__height;
   }
+
   get outerWidth() {
     return this.__width;
   }
+
   get outerHeight() {
     return this.__height;
   }
+
   get prev() {
     return this.__prev;
   }
+
   get next() {
     return this.__next;
   }
+
   get parent() {
     return this.__parent;
   }
+
   // canvas/svg根节点
   get root() {
     if(this.host) {
@@ -108,24 +121,31 @@ class Node {
       return this.parent.host;
     }
   }
+
   get style() {
     return this.__style;
   }
+
   get computedStyle() {
     return this.__computedStyle;
   }
+
   get ctx() {
     return this.__ctx;
   }
+
   get defs() {
     return this.__defs;
   }
+
   get baseLine() {
     return this.__baseLine;
   }
+
   get virtualDom() {
     return this.__virtualDom;
   }
+
   get isDestroyed() {
     return this.__isDestroyed;
   }

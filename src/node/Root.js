@@ -370,15 +370,19 @@ class Root extends Dom {
   get node() {
     return this.__node;
   }
+
   get renderMode() {
     return this.__renderMode;
   }
+
   get task() {
     return this.__task;
   }
+
   get ref() {
     return this.__ref;
   }
+
   get animateController() {
     return this.__animateController;
   }

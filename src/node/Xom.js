@@ -18,6 +18,11 @@ const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr } = util;
 const { calRelative, compute, repaint } = css;
 
+const INLINE = {
+  'span': true,
+  'img': true,
+};
+
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
@@ -151,7 +156,9 @@ class Xom extends Node {
       if(/^on[a-zA-Z]/.test(k)) {
         k = k.slice(2).toLowerCase();
         let arr = this.__listener[k] = this.__listener[k] || [];
-        arr.push(v);
+        if(arr.indexOf(v) === -1) {
+          arr.push(v);
+        }
       }
       else if(k === 'id' && v) {
         this.__id = v;
@@ -167,7 +174,9 @@ class Xom extends Node {
     this.__matrixEvent = null;
     this.__animationList = [];
     this.__loadBgi = {
-      cb: function() {}, // 刷新回调函数，用以destroy取消用
+      // 刷新回调函数，用以destroy取消用
+      cb: function() {
+      },
     };
   }
 
@@ -189,19 +198,39 @@ class Xom extends Node {
     });
   }
 
+  __init() {
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
+    }
+    let { style, parent } = this;
+    // 仅支持flex/block/inline/none
+    if(!style.display || !{
+      flex: true,
+      block: true,
+      inline: true,
+      none: true,
+    }.hasOwnProperty(style.display)) {
+      if(INLINE.hasOwnProperty(this.tagName)) {
+        style.display = 'inline';
+      }
+      else {
+        style.display = 'block';
+      }
+    }
+    // absolute和flex孩子强制block
+    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
+      style.display = 'block';
+    }
+  }
+
   __measure() {
-    let { children } = this;
-    if(children) {
-      children.forEach(child => {
-        if(child instanceof Xom) {
-          child.__measure();
-        }
-        else if(child instanceof Component) {
-          child.shadowRoot.__measure();
-        }
-        else {
-          child.__measure();
-        }
+    if(!this.isGeom) {
+      this.children.forEach(child => {
+        child.__measure();
       });
     }
   }
@@ -971,8 +1000,8 @@ class Xom extends Node {
         // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
         for(let i = zIndex.length - 1; i >= 0; i--) {
           let child = zIndex[i];
-          if((child instanceof Xom || child instanceof Component)
-            && isRelativeOrAbsolute(child)) {
+          if(child instanceof Xom && isRelativeOrAbsolute(child)
+            || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
             }
@@ -982,8 +1011,8 @@ class Xom extends Node {
         if(!childWillResponse) {
           for(let i = children.length - 1; i >= 0; i--) {
             let child = children[i];
-            if((child instanceof Xom || child instanceof Component)
-              && !isRelativeOrAbsolute(child)) {
+            if(child instanceof Xom && !isRelativeOrAbsolute(child)
+              || child instanceof Component && child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(child.shadowRoot)) {
               if(child.__emitEvent(e, force)) {
                 childWillResponse = true;
               }
@@ -1015,8 +1044,8 @@ class Xom extends Node {
       // 先响应absolute/relative高优先级，从后往前遮挡顺序
       for(let i = zIndex.length - 1; i >= 0; i--) {
         let child = zIndex[i];
-        if((child instanceof Xom || child instanceof Component)
-          && isRelativeOrAbsolute(child)) {
+        if(child instanceof Xom && isRelativeOrAbsolute(child)
+          || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }
@@ -1026,8 +1055,8 @@ class Xom extends Node {
       if(!childWillResponse) {
         for(let i = children.length - 1; i >= 0; i--) {
           let child = children[i];
-          if((child instanceof Xom || child instanceof Component)
-            && !isRelativeOrAbsolute(child)) {
+          if(child instanceof Xom && !isRelativeOrAbsolute(child)
+            || child instanceof Component && child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(child.shadowRoot)) {
             if(child.__emitEvent(e)) {
               childWillResponse = true;
             }
@@ -1192,6 +1221,13 @@ class Xom extends Node {
     }
   }
 
+  clearAnimate() {
+    this.animationList.splice(0).forEach(o => {
+      o.cancel();
+      o.__destroy();
+    });
+  }
+
   __computed() {
     compute(this, this.isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
@@ -1248,32 +1284,38 @@ class Xom extends Node {
   }
 
   get innerWidth() {
-    let { computedStyle: {
-      paddingRight,
-      paddingLeft,
-    } } = this;
+    let {
+      computedStyle: {
+        paddingRight,
+        paddingLeft,
+      }
+    } = this;
     return this.width
       + paddingLeft
       + paddingRight;
   }
 
   get innerHeight() {
-    let { computedStyle: {
-      paddingTop,
-      paddingBottom,
-    } } = this;
+    let {
+      computedStyle: {
+        paddingTop,
+        paddingBottom,
+      }
+    } = this;
     return this.height
       + paddingTop
       + paddingBottom;
   }
 
   get outerWidth() {
-    let { computedStyle: {
-      borderLeftWidth,
-      borderRightWidth,
-      marginRight,
-      marginLeft,
-    } } = this;
+    let {
+      computedStyle: {
+        borderLeftWidth,
+        borderRightWidth,
+        marginRight,
+        marginLeft,
+      }
+    } = this;
     return this.innerWidth
       + borderLeftWidth
       + borderRightWidth
@@ -1282,12 +1324,14 @@ class Xom extends Node {
   }
 
   get outerHeight() {
-    let { computedStyle: {
-      borderTopWidth,
-      borderBottomWidth,
-      marginTop,
-      marginBottom,
-    } } = this;
+    let {
+      computedStyle: {
+        borderTopWidth,
+        borderBottomWidth,
+        marginTop,
+        marginBottom,
+      }
+    } = this;
     return this.innerHeight
       + borderTopWidth
       + borderBottomWidth

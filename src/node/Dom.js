@@ -17,10 +17,6 @@ const TAG_NAME = {
   'span': true,
   'img': true,
 };
-const INLINE = {
-  'span': true,
-  'img': true,
-};
 
 function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
@@ -40,7 +36,7 @@ class Dom extends Xom {
    * 2. 打平children中的数组，变成一维
    * 3. 合并相连的Text节点
    * 4. 检测inline不能包含block和flex
-   * 5. 设置parent和prev/next和ctx和defs和mode
+   * 5. 设置parent和prev/next和ctx和defs和renderMode
    */
   __traverse(ctx, defs, renderMode) {
     let list = [];
@@ -99,20 +95,8 @@ class Dom extends Xom {
 
   // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
   __init() {
-    let { style, parent } = this;
-    // 仅支持flex/block/inline/none
-    if(!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
-      if(INLINE.hasOwnProperty(this.tagName)) {
-        style.display = 'inline';
-      }
-      else {
-        style.display = 'block';
-      }
-    }
-    // absolute和flex孩子强制block
-    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-      style.display = 'block';
-    }
+    super.__init();
+    let { style } = this;
     // 标准化处理，默认值、简写属性
     css.normalize(style, reset.dom);
     let isInline = style.display === 'inline';
@@ -129,20 +113,13 @@ class Dom extends Xom {
       if(isText || item.style.position !== 'absolute') {
         this.__flowChildren.push(item);
         if(isInline && !isText && item.style.display !== 'inline') {
-          throw new Error('inline can not contain block/flex');
+          throw new Error('Inline can not contain block/flex');
         }
       }
       else {
         this.__absChildren.push(item);
       }
     });
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
-    }
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -223,7 +200,7 @@ class Dom extends Xom {
     }
     // 递归children取最大值
     flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { b: b2, min: min2, max: max2 } = item.__calAutoBasis(isDirectionRow, w, h, true);
         b = Math.max(b, b2);
         min = Math.max(min, min2);
@@ -302,7 +279,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(item.currentStyle.display === 'inline') {
           // inline开头，不用考虑是否放得下直接放
           if(x === data.x) {
@@ -492,7 +469,7 @@ class Dom extends Xom {
     let basisSum = 0;
     let maxSum = 0;
     flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         // abs虚拟布局计算时纵向也是看横向宽度
         let { b, min, max } = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h);
         if(isVirtual) {
@@ -584,7 +561,7 @@ class Dom extends Xom {
       }
       // 主轴长度的最小值不能小于元素的最小长度，比如横向时的字符宽度
       main = Math.max(main, minList[i]);
-      if(item instanceof Xom || item instanceof Component) {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         let { currentStyle, computedStyle } = item;
         let {
           display,
@@ -781,7 +758,7 @@ class Dom extends Xom {
     // 递归布局，将inline的节点组成lineGroup一行
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -1112,7 +1089,7 @@ class Dom extends Xom {
     flowChildren.forEach(item => {
       if(!item.isMask
         && (item instanceof Text
-        || item.computedStyle.position === 'static')) {
+          || item.computedStyle.position === 'static')) {
         item.__renderByMask(renderMode);
       }
     });

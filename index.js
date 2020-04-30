@@ -4529,7 +4529,10 @@
             if (/^on[a-zA-Z]/.test(k)) {
               k = k.slice(2).toLowerCase();
               var arr = sr.listener[k] = sr.listener[k] || [];
-              arr.push(v);
+
+              if (arr.indexOf(v) === -1) {
+                arr.push(v);
+              }
             } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
               k = k.slice(3);
 
@@ -4690,7 +4693,7 @@
     return Component;
   }(Event);
 
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__setCtx'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__setCtx', '__measure', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -6092,7 +6095,6 @@
         var _this2 = this;
 
         var iterations = this.iterations,
-            direction = this.direction,
             duration = this.duration,
             list = this.list; // 执行次数小于1无需播放
 
@@ -6107,7 +6109,9 @@
           var current = list[i];
 
           if (current.hasOwnProperty('offset')) {
-            current.offset = parseFloat(current.offset); // 超过区间[0,1]
+            current.offset = parseFloat(current.offset) || 0;
+            current.offset = Math.max(0, current.offset);
+            current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
               list.splice(i, 1);
@@ -6130,24 +6134,42 @@
 
         list.forEach(function (item, i) {
           list[i] = clone$2(item);
-        }); // 首尾时间偏移强制为[0, 1]
+        }); // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
         var first = list[0];
-        first.offset = 0;
+
+        if (first.hasOwnProperty('offset') && first.offset > 0) {
+          first = {
+            offset: 0
+          };
+          list.unshift(first);
+        } else {
+          first.offset = 0;
+        }
+
         var last = list[list.length - 1];
-        last.offset = 1; // 计算没有设置offset的时间
+
+        if (last.hasOwnProperty('offset') && last.offset < 1) {
+          last = {
+            offset: 1
+          };
+          list.push(last);
+        } else {
+          last.offset = 1;
+        } // 计算没有设置offset的时间
+
 
         for (var _i7 = 1, _len4 = list.length; _i7 < _len4; _i7++) {
           var start = list[_i7]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
-          if (!start.offset) {
+          if (!start.hasOwnProperty('offset')) {
             var end = void 0;
             var j = _i7 + 1;
 
             for (; j < _len4; j++) {
               end = list[j];
 
-              if (end.offset) {
+              if (end.hasOwnProperty('offset')) {
                 break;
               }
             }
@@ -7085,6 +7107,10 @@
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
       repaint$2 = css.repaint;
+  var INLINE = {
+    'span': true,
+    'img': true
+  };
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     color = int2rgba$3(color);
@@ -7220,7 +7246,10 @@
         if (/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
           var arr = _this.__listener[k] = _this.__listener[k] || [];
-          arr.push(v);
+
+          if (arr.indexOf(v) === -1) {
+            arr.push(v);
+          }
         } else if (k === 'id' && v) {
           _this.__id = v;
         } else if (['class', 'className'].indexOf(k) > -1 && v) {
@@ -7236,8 +7265,8 @@
       _this.__matrixEvent = null;
       _this.__animationList = [];
       _this.__loadBgi = {
-        cb: function cb() {} // 刷新回调函数，用以destroy取消用
-
+        // 刷新回调函数，用以destroy取消用
+        cb: function cb() {}
       };
       return _this;
     } // 设置了css时，解析匹配
@@ -7265,19 +7294,45 @@
         });
       }
     }, {
+      key: "__init",
+      value: function __init() {
+        var ref = this.props.ref;
+
+        if (ref) {
+          var owner = this.host || this.root;
+
+          if (owner) {
+            owner.ref[ref] = this;
+          }
+        }
+
+        var style = this.style,
+            parent = this.parent; // 仅支持flex/block/inline/none
+
+        if (!style.display || !{
+          flex: true,
+          block: true,
+          inline: true,
+          none: true
+        }.hasOwnProperty(style.display)) {
+          if (INLINE.hasOwnProperty(this.tagName)) {
+            style.display = 'inline';
+          } else {
+            style.display = 'block';
+          }
+        } // absolute和flex孩子强制block
+
+
+        if (parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
+          style.display = 'block';
+        }
+      }
+    }, {
       key: "__measure",
       value: function __measure() {
-        var children = this.children;
-
-        if (children) {
-          children.forEach(function (child) {
-            if (child instanceof Xom) {
-              child.__measure();
-            } else if (child instanceof Component) {
-              child.shadowRoot.__measure();
-            } else {
-              child.__measure();
-            }
+        if (!this.isGeom) {
+          this.children.forEach(function (child) {
+            child.__measure();
           });
         }
       } // 获取margin/padding的实际值
@@ -8142,7 +8197,7 @@
             for (var i = zIndex.length - 1; i >= 0; i--) {
               var child = zIndex[i];
 
-              if ((child instanceof Xom || child instanceof Component) && isRelativeOrAbsolute(child)) {
+              if (child instanceof Xom && isRelativeOrAbsolute(child) || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
                 if (child.__emitEvent(e, force)) {
                   childWillResponse = true;
                 }
@@ -8154,7 +8209,7 @@
               for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
                 var _child = children[_i8];
 
-                if ((_child instanceof Xom || _child instanceof Component) && !isRelativeOrAbsolute(_child)) {
+                if (_child instanceof Xom && !isRelativeOrAbsolute(_child) || _child instanceof Component && _child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child.shadowRoot)) {
                   if (_child.__emitEvent(e, force)) {
                     childWillResponse = true;
                   }
@@ -8194,7 +8249,7 @@
           for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
             var _child2 = zIndex[_i9];
 
-            if ((_child2 instanceof Xom || _child2 instanceof Component) && isRelativeOrAbsolute(_child2)) {
+            if (_child2 instanceof Xom && isRelativeOrAbsolute(_child2) || _child2 instanceof Component && _child2.shadowRoot instanceof Xom && isRelativeOrAbsolute(_child2.shadowRoot)) {
               if (_child2.__emitEvent(e)) {
                 childWillResponse = true;
               }
@@ -8206,7 +8261,7 @@
             for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
               var _child3 = children[_i10];
 
-              if ((_child3 instanceof Xom || _child3 instanceof Component) && !isRelativeOrAbsolute(_child3)) {
+              if (_child3 instanceof Xom && !isRelativeOrAbsolute(_child3) || _child3 instanceof Component && _child3.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child3.shadowRoot)) {
                 if (_child3.__emitEvent(e)) {
                   childWillResponse = true;
                 }
@@ -8380,6 +8435,15 @@
             this.animationList.splice(i, 1);
           }
         }
+      }
+    }, {
+      key: "clearAnimate",
+      value: function clearAnimate() {
+        this.animationList.splice(0).forEach(function (o) {
+          o.cancel();
+
+          o.__destroy();
+        });
       }
     }, {
       key: "__computed",
@@ -8705,9 +8769,12 @@
     _createClass(Geom, [{
       key: "__init",
       value: function __init() {
-        var style = this.style;
+        _get(_getPrototypeOf(Geom.prototype), "__init", this).call(this);
 
-        if (this.isMask) {
+        var style = this.style,
+            isMask = this.isMask;
+
+        if (isMask) {
           style.position = 'absolute';
           style.display = 'block';
           style.visibility = 'visible';
@@ -8717,15 +8784,6 @@
         }
 
         css.normalize(style, reset.geom);
-        var ref = this.props.ref;
-
-        if (ref) {
-          var owner = this.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
-        }
       }
     }, {
       key: "__tryLayInline",
@@ -9116,10 +9174,6 @@
     'span': true,
     'img': true
   };
-  var INLINE = {
-    'span': true,
-    'img': true
-  };
 
   function isRelativeOrAbsolute$1(node) {
     return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
@@ -9148,7 +9202,7 @@
      * 2. 打平children中的数组，变成一维
      * 3. 合并相连的Text节点
      * 4. 检测inline不能包含block和flex
-     * 5. 设置parent和prev/next和ctx和defs和mode
+     * 5. 设置parent和prev/next和ctx和defs和renderMode
      */
 
 
@@ -9224,22 +9278,9 @@
       value: function __init() {
         var _this4 = this;
 
-        var style = this.style,
-            parent = this.parent; // 仅支持flex/block/inline/none
+        _get(_getPrototypeOf(Dom.prototype), "__init", this).call(this);
 
-        if (!style.display || ['flex', 'block', 'inline', 'none'].indexOf(style.display) === -1) {
-          if (INLINE.hasOwnProperty(this.tagName)) {
-            style.display = 'inline';
-          } else {
-            style.display = 'block';
-          }
-        } // absolute和flex孩子强制block
-
-
-        if (parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-          style.display = 'block';
-        } // 标准化处理，默认值、简写属性
-
+        var style = this.style; // 标准化处理，默认值、简写属性
 
         css.normalize(style, reset.dom);
         var isInline = style.display === 'inline';
@@ -9258,21 +9299,12 @@
             _this4.__flowChildren.push(item);
 
             if (isInline && !isText && item.style.display !== 'inline') {
-              throw new Error('inline can not contain block/flex');
+              throw new Error('Inline can not contain block/flex');
             }
           } else {
             _this4.__absChildren.push(item);
           }
         });
-        var ref = this.props.ref;
-
-        if (ref) {
-          var owner = this.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
-        }
       } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
 
     }, {
@@ -9363,7 +9395,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
                 b2 = _item$__calAutoBasis.b,
                 min2 = _item$__calAutoBasis.min,
@@ -9458,7 +9490,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             if (item.currentStyle.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -9678,7 +9710,7 @@
         var basisSum = 0;
         var maxSum = 0;
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             // abs虚拟布局计算时纵向也是看横向宽度
             var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
@@ -9781,7 +9813,7 @@
 
           main = Math.max(main, minList[i]);
 
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             var _currentStyle2 = item.currentStyle,
                 computedStyle = item.computedStyle;
             var display = _currentStyle2.display,
@@ -9992,7 +10024,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
             // inline开头，不用考虑是否放得下直接放
             if (x === data.x) {
               lineGroup.add(item);

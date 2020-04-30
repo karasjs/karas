@@ -152,7 +152,9 @@ class Component extends Event {
         if(/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
           let arr = sr.listener[k] = sr.listener[k] || [];
-          arr.push(v);
+          if(arr.indexOf(v) === -1) {
+            arr.push(v);
+          }
         }
         else if(/^on-[a-zA-Z\d_$]/.test(k)) {
           k = k.slice(3);
@@ -276,26 +278,33 @@ class Component extends Event {
   get tagName() {
     return this.__tagName;
   }
+
   get children() {
     return this.__children;
   }
+
   get shadowRoot() {
     return this.__shadowRoot;
   }
+
   get root() {
     if(this.parent) {
       return this.parent.root;
     }
   }
+
   get parent() {
     return this.__parent;
   }
+
   get ref() {
     return this.__ref;
   }
+
   get state() {
     return this.__state;
   }
+
   set state(v) {
     this.__state = v;
   }
@@ -313,6 +322,10 @@ class Component extends Event {
   '__renderAsMask',
   '__renderByMask',
   '__setCtx',
+  '__measure',
+  'animate',
+  'removeAnimate',
+  'clearAnimate',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

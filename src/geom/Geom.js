@@ -19,8 +19,9 @@ class Geom extends Xom {
   }
 
   __init() {
-    let style = this.style;
-    if(this.isMask) {
+    super.__init();
+    let { style, isMask } = this;
+    if(isMask) {
       style.position = 'absolute';
       style.display = 'block';
       style.visibility = 'visible';
@@ -29,13 +30,6 @@ class Geom extends Xom {
       style.strokeWidth = 0;
     }
     css.normalize(style, reset.geom);
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
-    }
   }
 
   __tryLayInline(w, total) {

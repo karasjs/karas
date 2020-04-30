@@ -868,7 +868,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { iterations, direction, duration, list } = this;
+    let { iterations, duration, list } = this;
     // 执行次数小于1无需播放
     if(iterations < 1 || list.length < 1) {
       return;
@@ -878,7 +878,9 @@ class Animation extends Event {
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
       if(current.hasOwnProperty('offset')) {
-        current.offset = parseFloat(current.offset);
+        current.offset = parseFloat(current.offset) || 0;
+        current.offset = Math.max(0, current.offset);
+        current.offset = Math.min(1, current.offset);
         // 超过区间[0,1]
         if(isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
           list.splice(i, 1);
@@ -901,21 +903,37 @@ class Animation extends Event {
     list.forEach((item, i) => {
       list[i] = clone(item);
     });
-    // 首尾时间偏移强制为[0, 1]
+    // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
     let first = list[0];
-    first.offset = 0;
+    if(first.hasOwnProperty('offset') && first.offset > 0) {
+      first = {
+        offset: 0,
+      };
+      list.unshift(first);
+    }
+    else {
+      first.offset = 0;
+    }
     let last = list[list.length - 1];
-    last.offset = 1;
+    if(last.hasOwnProperty('offset') && last.offset < 1) {
+      last = {
+        offset: 1,
+      };
+      list.push(last);
+    }
+    else {
+      last.offset = 1;
+    }
     // 计算没有设置offset的时间
     for(let i = 1, len = list.length; i < len; i++) {
       let start = list[i];
       // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
-      if(!start.offset) {
+      if(!start.hasOwnProperty('offset')) {
         let end;
         let j = i + 1;
         for(; j < len; j++) {
           end = list[j];
-          if(end.offset) {
+          if(end.hasOwnProperty('offset')) {
             break;
           }
         }

@@ -262,7 +262,6 @@ class Root extends Dom {
         let nvd = this.virtualDom;
         let nd = this.__defs;
         nvd.defs = nd.value;
-        nvd = util.clone(nvd);
         if(this.node.__root) {
           diff(this.node, this.node.__vd, nvd);
         }

@@ -112,6 +112,14 @@ class Node {
       return this;
     }
   }
+
+  get renderMode() {
+    let root = this.root;
+    if(root) {
+      return root.renderMode;
+    }
+  }
+
   // component根节点
   get host() {
     if(this.__host) {

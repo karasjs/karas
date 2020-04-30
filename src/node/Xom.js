@@ -435,7 +435,6 @@ class Xom extends Node {
   }
 
   render(renderMode) {
-    this.__renderMode = renderMode;
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -1342,9 +1341,7 @@ class Xom extends Node {
   get listener() {
     return this.__listener;
   }
-  get renderMode() {
-    return this.__renderMode;
-  }
+
   get matrix() {
     return this.__matrix;
   }

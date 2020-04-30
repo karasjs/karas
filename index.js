@@ -368,6 +368,15 @@
         }.hasOwnProperty(this.tagName)) {
           return this;
         }
+      }
+    }, {
+      key: "renderMode",
+      get: function get() {
+        var root = this.root;
+
+        if (root) {
+          return root.renderMode;
+        }
       } // component根节点
 
     }, {
@@ -2906,11 +2915,6 @@
       get: function get() {
         return this.style;
       }
-    }, {
-      key: "renderMode",
-      get: function get() {
-        return this.__renderMode;
-      }
     }]);
 
     return Text;
@@ -4347,7 +4351,8 @@
     }
   };
 
-  var isNil$2 = util.isNil;
+  var isNil$2 = util.isNil,
+      isFunction$1 = util.isFunction;
 
   function diff(ovd, nvd) {
     if (ovd !== nvd) {
@@ -4431,9 +4436,13 @@
         } // 构造函数中调用还未render
 
 
-        var o = this.shadowRoot;
+        var ovd = this.shadowRoot;
 
-        if (!o) {
+        if (!ovd) {
+          if (isFunction$1(cb)) {
+            cb();
+          }
+
           return;
         }
 
@@ -4443,15 +4452,24 @@
           root.delRefreshTask(this.__task);
           this.__task = {
             before: function before() {
-              var ovd = _this2.__traverse(o.ctx, o.defs, root.renderMode);
+              _this2.__traverse(ovd.ctx, ovd.defs, root.renderMode);
 
               _this2.__traverseCss();
 
-              _this2.__init(ovd);
+              _this2.__init();
 
               root.setRefreshLevel(level.REFLOW);
             },
-            after: cb
+            after: function after() {
+              // 先进行diff，继承动画，然后销毁老的
+              diff(ovd, _this2.shadowRoot);
+
+              ovd.__destroy();
+
+              if (isFunction$1(cb)) {
+                cb();
+              }
+            }
           };
           root.addRefreshTask(this.__task);
         }
@@ -4459,7 +4477,6 @@
     }, {
       key: "__traverse",
       value: function __traverse(ctx, defs, renderMode) {
-        var ovd = this.__shadowRoot;
         var sr = this.__shadowRoot = this.render(renderMode); // 可能返回的还是一个Component，递归处理
 
         while (sr instanceof Component) {
@@ -4477,7 +4494,6 @@
           sr = new Text(s);
           sr.__ctx = ctx;
           sr.__defs = defs;
-          sr.__renderMode = renderMode;
           sr.__style = this.props.style || {};
           this.__shadowRoot = sr;
           return;
@@ -4490,8 +4506,6 @@
         if (!sr.isGeom) {
           sr.__traverse(ctx, defs, renderMode);
         }
-
-        return ovd;
       }
     }, {
       key: "__traverseCss",
@@ -4507,7 +4521,7 @@
 
     }, {
       key: "__init",
-      value: function __init(ovd) {
+      value: function __init() {
         var _this3 = this;
 
         var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
@@ -4541,25 +4555,8 @@
               });
             }
           });
-        } // 防止重复
-
-
-        if (ovd) {
-          // setState后会生成新的sr，继承动画考虑
-          diff(ovd, sr);
-
-          ovd.__destroy();
-
-          return;
         }
 
-        Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId']).forEach(function (fn) {
-          Object.defineProperty(_this3, fn, {
-            get: function get() {
-              return this.shadowRoot[fn];
-            }
-          });
-        });
         var ref = this.props.ref;
 
         if (ref) {
@@ -4604,24 +4601,6 @@
         if (res) {
           e.target = this;
           return true;
-        }
-      }
-    }, {
-      key: "animate",
-      value: function animate(list, option) {
-        var sr = this.shadowRoot;
-
-        if (!(sr instanceof Text)) {
-          return sr.animate(list, option);
-        }
-      }
-    }, {
-      key: "removeAnimate",
-      value: function removeAnimate(o) {
-        var sr = this.shadowRoot;
-
-        if (!(sr instanceof Text)) {
-          return sr.removeAnimate(o);
         }
       }
     }, {
@@ -4693,11 +4672,22 @@
     return Component;
   }(Event);
 
+  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId', 'renderMode', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+    Object.defineProperty(Component.prototype, fn, {
+      get: function get() {
+        var sr = this.shadowRoot;
+
+        if (sr) {
+          return sr[fn];
+        }
+      }
+    });
+  });
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__setCtx', '__measure', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
-      if (sr && sr[fn]) {
+      if (sr && isFunction$1(sr[fn])) {
         return sr[fn].apply(sr, arguments);
       }
     };
@@ -4913,21 +4903,21 @@
     }
   };
 
-  var isFunction$1 = util.isFunction,
+  var isFunction$2 = util.isFunction,
       isObject = util.isObject;
 
   function traversal(list, diff, step) {
     if (step === 'before') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.before)) {
+        if (isObject(item) && isFunction$2(item.before)) {
           item.before(diff);
         }
       });
     } else if (step === 'after') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.after)) {
+        if (isObject(item) && isFunction$2(item.after)) {
           item.after(diff);
-        } else if (isFunction$1(item)) {
+        } else if (isFunction$2(item)) {
           item(diff);
         }
       });
@@ -5058,7 +5048,7 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = isFunction$1(handle) ? function (diff) {
+        var cb = isFunction$2(handle) ? function (diff) {
           handle(diff);
 
           if (animate) {
@@ -5254,7 +5244,7 @@
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
   var isNil$3 = util.isNil,
-      isFunction$2 = util.isFunction,
+      isFunction$3 = util.isFunction,
       isNumber = util.isNumber,
       isObject$1 = util.isObject,
       clone$2 = util.clone,
@@ -6003,7 +5993,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$2(options)) {
+    if (isFunction$3(options)) {
       cb = options;
       options = {};
     }
@@ -6214,7 +6204,7 @@
 
           _this2.emit(Event.FINISH);
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
         }; // 同步执行，用在finish()这种主动调用
@@ -6229,7 +6219,7 @@
             _this2.emit(Event.PLAY);
           }
 
-          if (isFunction$2(_this2.__playCb)) {
+          if (isFunction$3(_this2.__playCb)) {
             _this2.__playCb(diff, isDelay);
 
             _this2.__playCb = null;
@@ -6700,7 +6690,7 @@
 
             _this5.emit(Event.CANCEL);
 
-            if (isFunction$2(cb)) {
+            if (isFunction$3(cb)) {
               cb();
             }
           };
@@ -6788,7 +6778,7 @@
 
           _this6.__cancelTask();
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb(diff);
           }
         });
@@ -7568,8 +7558,6 @@
       key: "render",
       value: function render(renderMode) {
         var _this5 = this;
-
-        this.__renderMode = renderMode;
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
@@ -8551,11 +8539,6 @@
         return this.__listener;
       }
     }, {
-      key: "renderMode",
-      get: function get() {
-        return this.__renderMode;
-      }
-    }, {
       key: "matrix",
       get: function get() {
         return this.__matrix;
@@ -9268,7 +9251,6 @@
           } // 排除掉空的文本
           else if (!util.isNil(children)) {
               var text = new Text(children);
-              text.__renderMode = renderMode;
               list.push(text);
             }
       } // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
@@ -11237,7 +11219,7 @@
   }();
 
   var isNil$5 = util.isNil,
-      isFunction$3 = util.isFunction;
+      isFunction$4 = util.isFunction;
   var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
 
   function replaceOption(target, globalValue, key, vars) {
@@ -11362,7 +11344,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb(diff);
             }
           }
@@ -11382,7 +11364,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb(diff);
             }
           }
@@ -11397,7 +11379,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb(diff);
             }
           }
@@ -11413,7 +11395,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb(diff);
             }
           }
@@ -11429,7 +11411,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb(diff);
             }
           }
@@ -11514,7 +11496,7 @@
 
   var isNil$6 = util.isNil,
       isObject$2 = util.isObject,
-      isFunction$4 = util.isFunction;
+      isFunction$5 = util.isFunction;
   var PX$8 = unit.PX;
 
   function getDom(dom) {
@@ -11842,7 +11824,6 @@
             var nvd = _this2.virtualDom;
             var nd = _this2.__defs;
             nvd.defs = nd.value;
-            nvd = util.clone(nvd);
 
             if (_this2.node.__root) {
               diff$1(_this2.node, _this2.node.__vd, nvd);
@@ -11854,7 +11835,7 @@
             _this2.node.__defs = nd;
           }
 
-          if (isFunction$4(cb)) {
+          if (isFunction$5(cb)) {
             cb();
           }
 
@@ -11880,7 +11861,7 @@
 
               if (clone.length) {
                 clone.forEach(function (item) {
-                  if (isObject$2(item) && isFunction$4(item.before)) {
+                  if (isObject$2(item) && isFunction$5(item.before)) {
                     item.before(diff);
                   }
                 });
@@ -11902,9 +11883,9 @@
             },
             after: function after(diff) {
               clone.forEach(function (item) {
-                if (isObject$2(item) && isFunction$4(item.after)) {
+                if (isObject$2(item) && isFunction$5(item.after)) {
                   item.after(diff);
-                } else if (isFunction$4(item)) {
+                } else if (isFunction$5(item)) {
                   item(diff);
                 }
               });
@@ -13264,7 +13245,7 @@
   };
 
   var isNil$7 = util.isNil,
-      isFunction$5 = util.isFunction,
+      isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$5 = util.clone;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
@@ -13332,7 +13313,7 @@
             } // 支持函数模式和值模式
 
 
-            if (isFunction$5(value)) {
+            if (isFunction$6(value)) {
               value = value(v);
             }
 

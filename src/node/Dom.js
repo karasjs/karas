@@ -88,7 +88,6 @@ class Dom extends Xom {
     // 排除掉空的文本
     else if(!util.isNil(children)) {
       let text = new Text(children);
-      text.__renderMode = renderMode;
       list.push(text);
     }
   }

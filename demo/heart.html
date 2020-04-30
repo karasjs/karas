@@ -1422,7 +1422,7 @@
   var input = document.getElementById('btn');
   function exec(s) {
     var json = eval('(' + s.replace(/\r?\n/g, '') + ')');
-    var num = json.num || 1;
+    var num = json.vars.num || 1;
     var children = [data];
     for(var i = 1; i < num; i++) {
       var clone = karas.util.clone(data);

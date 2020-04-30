@@ -3717,301 +3717,6 @@
     genRdRect: genRdRect
   };
 
-  function quickSort(arr, begin, end, compare) {
-    if (begin >= end) {
-      return;
-    }
-
-    var i = begin,
-        j = end,
-        p = i,
-        v = arr[p],
-        seq = true;
-
-    while (i < j) {
-      if (seq) {
-        for (; i < j; j--) {
-          if (compare.call(arr, v, arr[j])) {
-            swap(arr, p, j);
-            p = j;
-            seq = !seq;
-            i++;
-            break;
-          }
-        }
-      } else {
-        for (; i < j; i++) {
-          if (compare.call(arr, arr[i], v)) {
-            swap(arr, p, i);
-            p = i;
-            seq = !seq;
-            j--;
-            break;
-          }
-        }
-      }
-    }
-
-    quickSort(arr, begin, p - 1, compare);
-    quickSort(arr, p + 1, end, compare);
-  }
-
-  function swap(arr, a, b) {
-    var temp = arr[a];
-    arr[a] = arr[b];
-    arr[b] = temp;
-  }
-
-  function sort (arr, compare) {
-    if (!Array.isArray(arr) || arr.length < 2) {
-      return arr;
-    }
-
-    compare = compare || function () {};
-
-    quickSort(arr, 0, arr.length - 1, compare);
-    return arr;
-  }
-
-  function splitClass(s) {
-    s = (s || '').trim();
-
-    if (s) {
-      return s.split(/\s+/);
-    }
-  }
-
-  function parse(dom, top, json) {
-    if (!json) {
-      return;
-    }
-
-    var list = [];
-    matchSel(dom, top, json, list);
-    sort(list, function (a, b) {
-      var pa = a[2];
-      var pb = b[2]; // 先比较优先级
-
-      for (var i = 0; i < 3; i++) {
-        if (pa[i] !== pb[i]) {
-          return pa[i] > pb[i];
-        }
-      } // 优先级相等比较出现顺序
-
-
-      return a[0] > b[0];
-    });
-    var res = {};
-
-    for (var i = list.length - 1; i >= 0; i--) {
-      var item = list[i];
-
-      var _item$ = _slicedToArray(item[1], 2),
-          k = _item$[0],
-          v = _item$[1];
-
-      if (!res.hasOwnProperty(k)) {
-        res[k] = v;
-      }
-    }
-
-    return res;
-  } // 从底部往上匹配，即.a .b这样的选择器是.b->.a逆序对比
-
-
-  function matchSel(dom, top, json, res) {
-    var _this = this;
-
-    var selList = combo(dom, json);
-    selList.forEach(function (sel) {
-      if (json.hasOwnProperty(sel)) {
-        var item = json[sel]; // 还未到根节点需继续向上，注意可以递归向上，多层级时需递归所有父层级组合
-
-        var parent = dom.parent;
-
-        while (parent) {
-          matchSel(parent, top, item, res);
-          parent = parent.parent;
-        } // 将当前层次的值存入
-
-
-        if (item.hasOwnProperty('_v')) {
-          dealStyle(res, item);
-        } // 父子选择器
-
-
-        if (item.hasOwnProperty('_>')) {
-          var parentStyle = item['_>'];
-          matchSel(dom.parent, _this, parentStyle, res);
-        } // 相邻兄弟选择器
-
-
-        if (item.hasOwnProperty('_+')) {
-          var sibling = item['_+'];
-          var prev = dom.prev;
-
-          if (prev && !(prev instanceof Text)) {
-            var prevSelList = combo(prev, sibling);
-            var hash = arr2hash$1(prevSelList);
-            Object.keys(sibling).forEach(function (k) {
-              var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
-
-              if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
-                dealStyle(res, item2);
-              }
-            });
-          }
-        } // 兄弟选择器，不一定相邻，一直往前找
-
-
-        if (item.hasOwnProperty('_~')) {
-          (function () {
-            var sibling = item['_~'];
-            var prev = dom.prev;
-
-            var _loop = function _loop() {
-              if (prev instanceof Text) {
-                prev = prev.prev;
-                return "continue";
-              }
-
-              var prevSelList = combo(prev, sibling);
-              var hash = arr2hash$1(prevSelList);
-              Object.keys(sibling).forEach(function (k) {
-                var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
-
-                if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
-                  dealStyle(res, item2);
-                }
-              });
-              prev = prev.prev;
-            };
-
-            while (prev) {
-              var _ret = _loop();
-
-              if (_ret === "continue") continue;
-            }
-          })();
-        }
-      }
-    });
-  } // 组合出dom的所有sel可能
-
-
-  function combo(dom, json) {
-    var klass = dom["class"],
-        tagName = dom.tagName,
-        id = dom.id;
-    klass = klass.slice();
-    sort(klass, function (a, b) {
-      return a > b;
-    });
-    var ks = [];
-
-    if (klass.length) {
-      comboClass(klass, ks, klass.length, 0);
-    } // 各种*的情况标识，只有存在时才放入sel组合，可以减少循环次数
-
-
-    var hasStarClass = json.hasOwnProperty('_*.');
-    var hasStarId = json.hasOwnProperty('_*#');
-    var hasStarIdClass = json.hasOwnProperty('_*.#');
-    var res = [tagName]; // 只有当前有_*时说明有*才匹配
-
-    if (json.hasOwnProperty('_*')) {
-      res.push('*');
-    }
-
-    if (id) {
-      id = '#' + id;
-      res.push(id);
-      res.push(tagName + id);
-
-      if (hasStarId) {
-        res.push('*' + id);
-      }
-    }
-
-    ks.forEach(function (klass) {
-      res.push(klass);
-      res.push(tagName + klass);
-
-      if (hasStarClass) {
-        res.push('*' + klass);
-      }
-
-      if (id) {
-        res.push(klass + id);
-        res.push(tagName + klass + id);
-
-        if (hasStarIdClass) {
-          res.push('*' + klass + id);
-        }
-      }
-    });
-    return res;
-  } // 组合出klass里多个的可能，如.b.a和.c.b.a，注意有排序，可以使得相等比较更容易
-
-
-  function comboClass(arr, res, len, i) {
-    if (len - i > 1) {
-      comboClass(arr, res, len, i + 1);
-
-      for (var j = 0, len2 = res.length; j < len2; j++) {
-        res.push(res[j] + '.' + arr[i]);
-      }
-    }
-
-    res.push('.' + arr[i]);
-  }
-
-  function dealStyle(res, item) {
-    item._v.forEach(function (style) {
-      style[2] = item._p;
-      res.push(style);
-    });
-  }
-
-  function arr2hash$1(arr) {
-    var hash = {};
-    arr.forEach(function (item) {
-      hash[item] = true;
-    });
-    return hash;
-  }
-
-  function mergeCss(a, b) {
-    if (!b) {
-      return a;
-    }
-
-    if (!a) {
-      return b;
-    }
-
-    Object.keys(b).forEach(function (i) {
-      var o = b[i];
-      var flag = {
-        _v: true,
-        _p: true
-      }.hasOwnProperty(i);
-
-      if (!flag && _typeof(o) === 'object' && a.hasOwnProperty(i)) {
-        a[i] = mergeCss(a[i], o);
-      } else {
-        a[i] = o;
-      }
-    });
-    return a;
-  }
-
-  var match = {
-    parse: parse,
-    splitClass: splitClass,
-    mergeCss: mergeCss
-  };
-
   var PERCENT$3 = unit.PERCENT,
       NUMBER$1 = unit.NUMBER;
 
@@ -4505,17 +4210,6 @@
 
         if (!sr.isGeom) {
           sr.__traverse(ctx, defs, renderMode);
-        }
-      }
-    }, {
-      key: "__traverseCss",
-      value: function __traverseCss() {
-        var sr = this.__shadowRoot; // shadowDom可以设置props.css，同时host的会覆盖它
-
-        if (!(sr instanceof Text)) {
-          var m = match.mergeCss(sr.props.css, this.props.css);
-
-          sr.__traverseCss(sr, m);
         }
       } // 组件传入的样式需覆盖shadowRoot的
 
@@ -7087,6 +6781,62 @@
     return Animation;
   }(Event);
 
+  function quickSort(arr, begin, end, compare) {
+    if (begin >= end) {
+      return;
+    }
+
+    var i = begin,
+        j = end,
+        p = i,
+        v = arr[p],
+        seq = true;
+
+    while (i < j) {
+      if (seq) {
+        for (; i < j; j--) {
+          if (compare.call(arr, v, arr[j])) {
+            swap(arr, p, j);
+            p = j;
+            seq = !seq;
+            i++;
+            break;
+          }
+        }
+      } else {
+        for (; i < j; i++) {
+          if (compare.call(arr, arr[i], v)) {
+            swap(arr, p, i);
+            p = i;
+            seq = !seq;
+            j--;
+            break;
+          }
+        }
+      }
+    }
+
+    quickSort(arr, begin, p - 1, compare);
+    quickSort(arr, p + 1, end, compare);
+  }
+
+  function swap(arr, a, b) {
+    var temp = arr[a];
+    arr[a] = arr[b];
+    arr[b] = temp;
+  }
+
+  function sort (arr, compare) {
+    if (!Array.isArray(arr) || arr.length < 2) {
+      return arr;
+    }
+
+    compare = compare || function () {};
+
+    quickSort(arr, 0, arr.length - 1, compare);
+    return arr;
+  }
+
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -7240,14 +6990,6 @@
           if (arr.indexOf(v) === -1) {
             arr.push(v);
           }
-        } else if (k === 'id' && v) {
-          _this.__id = v;
-        } else if (['class', 'className'].indexOf(k) > -1 && v) {
-          v = match.splitClass(v);
-
-          if (v) {
-            _this.__class = v;
-          }
         }
       });
 
@@ -7259,31 +7001,9 @@
         cb: function cb() {}
       };
       return _this;
-    } // 设置了css时，解析匹配
-
+    }
 
     _createClass(Xom, [{
-      key: "__traverseCss",
-      value: function __traverseCss(top, css) {
-        var _this2 = this;
-
-        if (!this.isGeom) {
-          this.children.forEach(function (item) {
-            if (item instanceof Xom || item instanceof Component) {
-              item.__traverseCss(top, css);
-            }
-          });
-        } // inline拥有最高优先级
-
-
-        var style = match.parse(this, top, css) || {};
-        Object.keys(style).forEach(function (i) {
-          if (!_this2.__style.hasOwnProperty(i)) {
-            _this2.__style[i] = style[i];
-          }
-        });
-      }
-    }, {
       key: "__init",
       value: function __init() {
         var ref = this.props.ref;
@@ -7330,13 +7050,13 @@
     }, {
       key: "__mp",
       value: function __mp(currentStyle, computedStyle, w) {
-        var _this3 = this;
+        var _this2 = this;
 
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = 'margin' + k;
           var b = 'padding' + k;
-          computedStyle[a] = _this3.__mpWidth(currentStyle[a], w);
-          computedStyle[b] = _this3.__mpWidth(currentStyle[b], w);
+          computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
+          computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
         });
       }
     }, {
@@ -7354,7 +7074,7 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual) {
-        var _this4 = this;
+        var _this3 = this;
 
         var w = data.w;
         var isDestroyed = this.isDestroyed,
@@ -7445,7 +7165,7 @@
         computedStyle.height = this.height; // 圆角边计算
 
         ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
-          calBorderRadius(_this4.width, _this4.height, "border".concat(k, "Radius"), currentStyle, computedStyle);
+          calBorderRadius(_this3.width, _this3.height, "border".concat(k, "Radius"), currentStyle, computedStyle);
         }); // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
@@ -7557,7 +7277,7 @@
     }, {
       key: "render",
       value: function render(renderMode) {
-        var _this5 = this;
+        var _this4 = this;
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
@@ -7975,7 +7695,7 @@
                   copy[1][1] = item[0];
                   copy[2][1] = item[1];
 
-                  _this5.virtualDom.bb.push({
+                  _this4.virtualDom.bb.push({
                     type: 'img',
                     tagName: 'image',
                     props: copy
@@ -7994,9 +7714,9 @@
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
 
-                  _this5.root.delRefreshTask(loadBgi.cb);
+                  _this4.root.delRefreshTask(loadBgi.cb);
 
-                  _this5.root.addRefreshTask(loadBgi.cb);
+                  _this4.root.addRefreshTask(loadBgi.cb);
                 }
               });
             }
@@ -8436,7 +8156,7 @@
     }, {
       key: "__computed",
       value: function __computed() {
-        var _this6 = this;
+        var _this5 = this;
 
         compute$1(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -8445,7 +8165,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__computed();
             } else {
-              item.__style = _this6.currentStyle;
+              item.__style = _this5.currentStyle;
               compute$1(item); // 文字首先测量所有字符宽度
 
               item.__measure();
@@ -8456,7 +8176,7 @@
     }, {
       key: "__repaint",
       value: function __repaint() {
-        var _this7 = this;
+        var _this6 = this;
 
         repaint$2(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
@@ -8465,7 +8185,7 @@
             if (item instanceof Xom || item instanceof Component) {
               item.__repaint();
             } else {
-              item.__style = _this7.currentStyle;
+              item.__style = _this6.currentStyle;
               repaint$2(item);
             }
           });
@@ -8547,16 +8267,6 @@
       key: "matrixEvent",
       get: function get() {
         return this.__matrixEvent;
-      }
-    }, {
-      key: "id",
-      get: function get() {
-        return this.__id;
-      }
-    }, {
-      key: "class",
-      get: function get() {
-        return this.__class || [];
       }
     }, {
       key: "animationList",
@@ -11738,8 +11448,6 @@
 
         this.__traverse(ctx, this.__defs, renderMode);
 
-        this.__traverseCss(this, this.props.css);
-
         this.__init();
 
         this.refresh(); // 第一次节点没有__root，渲染一次就有了才能diff
@@ -13397,14 +13105,14 @@
     }
   }
 
-  function parse$1(karas, json, animateRecords, vars, hash) {
+  function parse(karas, json, animateRecords, vars, hash) {
     if (isPrimitive(json) || json instanceof Node) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse$1(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, vars, hash);
       });
     }
 
@@ -13458,7 +13166,7 @@
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parse$1(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, vars, hash);
       }));
     }
 
@@ -13564,7 +13272,7 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse(json, dom) {
+    parse: function parse$1(json, dom) {
       var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
@@ -13576,7 +13284,7 @@
 
       var animateRecords = [];
 
-      var vd = parse$1(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+      var vd = parse(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

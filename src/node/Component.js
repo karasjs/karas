@@ -4,7 +4,6 @@ import Text from './Text';
 import util from '../util/util';
 import reset from '../style/reset';
 import css from '../style/css';
-import match from '../style/match';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
@@ -128,15 +127,6 @@ class Component extends Event {
     sr.__host = this;
     if(!sr.isGeom) {
       sr.__traverse(ctx, defs, renderMode);
-    }
-  }
-
-  __traverseCss() {
-    let sr = this.__shadowRoot;
-    // shadowDom可以设置props.css，同时host的会覆盖它
-    if(!(sr instanceof Text)) {
-      let m = match.mergeCss(sr.props.css, this.props.css);
-      sr.__traverseCss(sr, m);
     }
   }
 

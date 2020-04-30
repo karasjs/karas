@@ -5,7 +5,6 @@ import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
-import match from '../style/match';
 import css from '../style/css';
 import image from '../style/image';
 import util from '../util/util';
@@ -160,15 +159,6 @@ class Xom extends Node {
           arr.push(v);
         }
       }
-      else if(k === 'id' && v) {
-        this.__id = v;
-      }
-      else if(['class', 'className'].indexOf(k) > -1 && v) {
-        v = match.splitClass(v);
-        if(v) {
-          this.__class = v;
-        }
-      }
     });
     this.__matrix = null;
     this.__matrixEvent = null;
@@ -178,24 +168,6 @@ class Xom extends Node {
       cb: function() {
       },
     };
-  }
-
-  // 设置了css时，解析匹配
-  __traverseCss(top, css) {
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__traverseCss(top, css);
-        }
-      });
-    }
-    // inline拥有最高优先级
-    let style = match.parse(this, top, css) || {};
-    Object.keys(style).forEach(i => {
-      if(!this.__style.hasOwnProperty(i)) {
-        this.__style[i] = style[i];
-      }
-    });
   }
 
   __init() {
@@ -1348,14 +1320,6 @@ class Xom extends Node {
 
   get matrixEvent() {
     return this.__matrixEvent;
-  }
-
-  get id() {
-    return this.__id;
-  }
-
-  get class() {
-    return this.__class || [];
   }
 
   get animationList() {

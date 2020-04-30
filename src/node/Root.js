@@ -192,7 +192,6 @@ class Root extends Dom {
     }
     let { renderMode, ctx } = this;
     this.__traverse(ctx, this.__defs, renderMode);
-    this.__traverseCss(this, this.props.css);
     this.__init();
     this.refresh();
     // 第一次节点没有__root，渲染一次就有了才能diff

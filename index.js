@@ -1711,15 +1711,15 @@
       if (isNil$1(style.backgroundRepeat)) {
         var repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
 
-        if (repeat && isNil$1(style.backgroundRepeat)) {
-          style.backgroundRepeat = repeat[0].toLowerCase().trim();
+        if (repeat) {
+          style.backgroundRepeat = repeat[0].toLowerCase();
         }
       }
 
       if (isNil$1(style.backgroundPosition)) {
         var position = temp.match(reg.position);
 
-        if (position && isNil$1(style.backgroundPosition)) {
+        if (position) {
           style.backgroundPosition = position.join(' ');
         }
       }
@@ -10475,7 +10475,7 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props, [])); // 空url用错误图代替
 
-      if (!_this.src || !_this.src.trim()) {
+      if (!_this.src) {
         _this.__error = true;
 
         var _assertThisInitialize = _assertThisInitialized(_this),
@@ -10525,7 +10525,7 @@
 
         var w = this.width,
             h = this.height;
-        var cache = CACHE[this.src] = CACHE[this.src] || {
+        var cache = CACHE[src] = CACHE[src] || {
           state: INIT,
           task: []
         };

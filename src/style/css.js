@@ -222,13 +222,13 @@ function normalize(style, reset = []) {
     }
     if(isNil(style.backgroundRepeat)) {
       let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
-      if(repeat && isNil(style.backgroundRepeat)) {
-        style.backgroundRepeat = repeat[0].toLowerCase().trim();
+      if(repeat) {
+        style.backgroundRepeat = repeat[0].toLowerCase();
       }
     }
     if(isNil(style.backgroundPosition)) {
       let position = temp.match(reg.position);
-      if(position && isNil(style.backgroundPosition)) {
+      if(position) {
         style.backgroundPosition = position.join(' ');
       }
     }

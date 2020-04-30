@@ -19,7 +19,7 @@ class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props, []);
     // 空url用错误图代替
-    if(!this.src || !this.src.trim()) {
+    if(!this.src) {
       this.__error = true;
       let { style: { width, height } } = this;
       width = width || { unit: AUTO };
@@ -43,7 +43,7 @@ class Img extends Dom {
       return;
     }
     let { width: w, height: h } = this;
-    let cache = CACHE[this.src] = CACHE[this.src] || {
+    let cache = CACHE[src] = CACHE[src] || {
       state: INIT,
       task: [],
     };

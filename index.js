@@ -2498,7 +2498,7 @@
     }, {
       key: "baseLine",
       get: function get() {
-        return css.getBaseLine(this.parent.parent.computedStyle);
+        return css.getBaseLine(this.parent.computedStyle);
       }
     }, {
       key: "virtualDom",
@@ -2622,7 +2622,7 @@
         this.__y = y;
         var isDestroyed = this.isDestroyed,
             content = this.content,
-            computedStyle = this.parent.computedStyle,
+            computedStyle = this.computedStyle,
             lineBoxes = this.lineBoxes,
             charWidthList = this.charWidthList;
 
@@ -2763,7 +2763,7 @@
       key: "render",
       value: function render(renderMode, ctx) {
         var isDestroyed = this.isDestroyed,
-            computedStyle = this.parent.computedStyle;
+            computedStyle = this.computedStyle;
 
         if (isDestroyed || computedStyle.display === 'none') {
           return;
@@ -2826,6 +2826,21 @@
 
         var last = lineBoxes[lineBoxes.length - 1];
         return last.y - this.y + last.baseLine;
+      }
+    }, {
+      key: "style",
+      get: function get() {
+        return this.parent.style;
+      }
+    }, {
+      key: "currentStyle",
+      get: function get() {
+        return this.parent.currentStyle;
+      }
+    }, {
+      key: "computedStyle",
+      get: function get() {
+        return this.parent.computedStyle;
       }
     }]);
 

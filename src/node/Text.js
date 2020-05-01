@@ -87,7 +87,7 @@ class Text extends Node {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
-    let { isDestroyed, content, parent: { computedStyle }, lineBoxes, charWidthList } = this;
+    let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
@@ -202,7 +202,7 @@ class Text extends Node {
   }
 
   render(renderMode, ctx) {
-    const { isDestroyed, parent: { computedStyle } } = this;
+    const { isDestroyed, computedStyle } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
@@ -252,6 +252,18 @@ class Text extends Node {
     }
     let last = lineBoxes[lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
+  }
+
+  get style() {
+    return this.parent.style;
+  }
+
+  get currentStyle() {
+    return this.parent.currentStyle;
+  }
+
+  get computedStyle() {
+    return this.parent.computedStyle;
   }
 }
 

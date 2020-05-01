@@ -113,7 +113,6 @@ class Event {
   }
 
   static REFRESH = 'refresh';
-  static BEFORE_REFRESH = 'before-refresh';
   static PAUSE = 'pause';
   static PLAY = 'play';
   static FRAME = 'frame';

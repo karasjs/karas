@@ -293,7 +293,7 @@ function normalize(style, reset = []) {
   ].forEach(k => {
     let v = style[k];
     if(!isNil(v) && style.transform) {
-      console.error(`Can not use expand style "${k}" with "transform"`);
+      console.error(`Can not use expand style "${k}" with transform`);
     }
   });
   // 默认reset，根据传入不同，当style为空时覆盖
@@ -764,7 +764,6 @@ function normalize(style, reset = []) {
       style.stroke = rgba2int(temp);
     }
   }
-  // font除size相关
   // 删除缩写避免干扰动画计算
   delete style.background;
   delete style.flex;

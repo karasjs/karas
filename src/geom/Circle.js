@@ -14,7 +14,7 @@ class Circle extends Geom {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       cx,
@@ -27,11 +27,11 @@ class Circle extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, r, computedStyle } = this;
+    let { width, height, r, computedStyle } = this;
     computedStyle.r = r;
     r *= Math.min(width, height) * 0.5;
     if(renderMode === mode.CANVAS) {

@@ -17,7 +17,7 @@ const LOADED = 2;
 
 class Img extends Dom {
   constructor(tagName, props) {
-    super(tagName, props, []);
+    super(tagName, props);
     // 空url用错误图代替
     if(!this.src) {
       this.__error = true;
@@ -142,21 +142,23 @@ class Img extends Dom {
     super.__destroy();
   }
 
-  render(renderMode) {
-    super.render(renderMode);
-    let { ctx, sx: x, sy: y, width, height, src, isDestroyed, computedStyle: {
-      display,
-      borderTopWidth,
-      borderLeftWidth,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
-      borderTopLeftRadius,
-      borderTopRightRadius,
-      borderBottomRightRadius,
-      borderBottomLeftRadius,
-    } } = this;
+  render(renderMode, ctx, defs) {
+    super.render(renderMode, ctx, defs);
+    let {
+      sx: x, sy: y, width, height, src, isDestroyed, computedStyle: {
+        display,
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        borderTopLeftRadius,
+        borderTopRightRadius,
+        borderBottomRightRadius,
+        borderBottomLeftRadius,
+      }
+    } = this;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -271,7 +273,7 @@ class Img extends Dom {
           ['height', this.__imgHeight || 0]
         ];
         if(list) {
-          let maskId = this.defs.add({
+          let maskId = defs.add({
             tagName: 'mask',
             props: [],
             children: [
@@ -295,6 +297,7 @@ class Img extends Dom {
   get src() {
     return this.props.src;
   }
+
   get baseLine() {
     return this.height;
   }

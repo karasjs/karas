@@ -161,7 +161,7 @@ function rgba2int(color) {
     let c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
     if(c) {
       res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-      if(c[4]) {
+      if(!isNil(c[4])) {
         res[3] = parseFloat(c[4]);
       }
       else {

@@ -20,8 +20,8 @@ class Text extends Node {
   };
 
   // 预先计算每个字的宽度
-  __measure() {
-    let { ctx, content, computedStyle, charWidthList, renderMode } = this;
+  __measure(renderMode, ctx) {
+    let { content, parent: { computedStyle }, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
     if(renderMode === mode.CANVAS) {
@@ -69,7 +69,7 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, computedStyle, charWidthList } = this;
+    let { content, parent: { computedStyle }, charWidthList } = this;
     let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
@@ -87,8 +87,8 @@ class Text extends Node {
     let { x, y, w } = data;
     this.__x = x;
     this.__y = y;
-    let { isDestroyed, content, currentStyle, computedStyle, lineBoxes, charWidthList } = this;
-    if(isDestroyed || currentStyle.display === 'none') {
+    let { isDestroyed, content, parent: { computedStyle }, lineBoxes, charWidthList } = this;
+    if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
     this.__ox = this.__oy = 0;
@@ -134,7 +134,7 @@ class Text extends Node {
     // 最后一行，只有一行未满时也进这里
     if(begin < length && begin < i) {
       count = 0;
-      for(i = begin ;i < length; i++) {
+      for(i = begin; i < length; i++) {
         count += charWidthList[i];
       }
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
@@ -176,8 +176,8 @@ class Text extends Node {
     }
   }
 
-  __renderByMask(renderMode) {
-    this.render(renderMode);
+  __renderByMask(renderMode, ctx) {
+    this.render(renderMode, ctx);
   }
 
   __tryLayInline(w) {
@@ -201,8 +201,8 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode) {
-    const { isDestroyed, ctx, computedStyle } = this;
+  render(renderMode, ctx) {
+    const { isDestroyed, parent: { computedStyle } } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
@@ -211,7 +211,7 @@ class Text extends Node {
       ctx.fillStyle = computedStyle.color;
     }
     this.lineBoxes.forEach(item => {
-      item.render(renderMode, ctx);
+      item.render(renderMode, ctx, computedStyle);
     });
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
@@ -224,21 +224,27 @@ class Text extends Node {
   get content() {
     return this.__content;
   }
+
   set content(v) {
     this.__content = v;
   }
+
   get lineBoxes() {
     return this.__lineBoxes;
   }
+
   get charWidthList() {
     return this.__charWidthList;
   }
+
   get charWidth() {
     return this.__charWidth;
   }
+
   get textWidth() {
     return this.__textWidth;
   }
+
   get baseLine() {
     let { lineBoxes } = this;
     if(!lineBoxes.length) {
@@ -246,12 +252,6 @@ class Text extends Node {
     }
     let last = lineBoxes[lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
-  }
-  get currentStyle() {
-    return this.style;
-  }
-  get animateStyle() {
-    return this.style;
   }
 }
 

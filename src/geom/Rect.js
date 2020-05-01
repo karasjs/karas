@@ -22,7 +22,7 @@ class Rect extends Geom {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       originX,
@@ -35,11 +35,11 @@ class Rect extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, rx, ry, computedStyle } = this;
+    let { width, height, rx, ry, computedStyle } = this;
     computedStyle.rx = rx;
     computedStyle.ry = ry;
     rx = Math.min(rx, 0.5);

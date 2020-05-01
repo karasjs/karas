@@ -1,13 +1,12 @@
 import Xom from './Xom';
 import Text from './Text';
 import LineGroup from './LineGroup';
-import Geom from '../geom/Geom';
-import util from '../util/util';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import Component from './Component';
+import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
@@ -18,107 +17,38 @@ const TAG_NAME = {
   'img': true,
 };
 
+const INLINE = {
+  'span': true,
+  'img': true,
+};
+
 function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
 class Dom extends Xom {
   constructor(tagName, props, children) {
-    super(tagName, props);
-    this.__children = children || [];
-    this.__flowChildren = []; // 非绝对定位孩子
-    this.__absChildren = []; // 绝对定位孩子
+    super(tagName, props, children);
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
-  }
-
-  /**
-   * 1. 封装string为Text节点
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点
-   * 4. 检测inline不能包含block和flex
-   * 5. 设置parent和prev/next和ctx和defs和renderMode
-   */
-  __traverse(ctx, defs, renderMode) {
-    let list = [];
-    this.__traverseChildren(this.children, list, ctx, defs, renderMode);
-    for(let i = list.length - 1; i > 0; i--) {
-      let item = list[i];
-      if(item instanceof Text) {
-        let prev = list[i - 1];
-        if(prev instanceof Text) {
-          prev.content += item.content;
-          list.splice(i, 1);
-        }
-        else {
-          i--;
-        }
+    let { style, parent } = this;
+    if(!style.display || !{
+      flex: true,
+      block: true,
+      inline: true,
+      none: true,
+    }.hasOwnProperty(style.display)) {
+      if(INLINE.hasOwnProperty(this.tagName)) {
+        style.display = 'inline';
+      }
+      else {
+        style.display = 'block';
       }
     }
-    let prev = null;
-    list.forEach(item => {
-      item.__ctx = ctx;
-      item.__defs = defs;
-      if(prev) {
-        prev.__next = item;
-        item.__prev = prev;
-      }
-      item.__parent = this;
-      prev = item;
-    });
-    this.__children = list;
-  }
-
-  __traverseChildren(children, list, ctx, defs, renderMode) {
-    if(Array.isArray(children)) {
-      children.forEach(item => {
-        this.__traverseChildren(item, list, ctx, defs, renderMode);
-      });
+    // absolute和flex孩子强制block
+    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
+      style.display = 'block';
     }
-    else if(children instanceof Dom || children instanceof Component) {
-      if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg');
-      }
-      list.push(children);
-      children.__traverse(ctx, defs, renderMode);
-    }
-    // 图形没有children
-    else if(children instanceof Geom) {
-      list.push(children);
-    }
-    // 排除掉空的文本
-    else if(!util.isNil(children)) {
-      let text = new Text(children);
-      list.push(text);
-    }
-  }
-
-  // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
-  __init() {
-    super.__init();
-    let { style } = this;
-    // 标准化处理，默认值、简写属性
     css.normalize(style, reset.dom);
-    let isInline = style.display === 'inline';
-    this.children.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
-        item.__init();
-      }
-      // 文字使用父节点style
-      else {
-        item.__style = style;
-      }
-      // 普通流和定位流分开
-      let isText = item instanceof Text;
-      if(isText || item.style.position !== 'absolute') {
-        this.__flowChildren.push(item);
-        if(isInline && !isText && item.style.display !== 'inline') {
-          throw new Error('Inline can not contain block/flex');
-        }
-      }
-      else {
-        this.__absChildren.push(item);
-      }
-    });
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -1068,8 +998,8 @@ class Dom extends Xom {
     });
   }
 
-  render(renderMode) {
-    super.render(renderMode);
+  render(renderMode, ctx, defs) {
+    super.render(renderMode, ctx, defs);
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
@@ -1081,7 +1011,7 @@ class Dom extends Xom {
     // 先渲染过滤mask
     children.forEach(item => {
       if(item.isMask) {
-        item.__renderAsMask(renderMode);
+        item.__renderAsMask(renderMode, ctx, defs);
       }
     });
     // 先绘制static
@@ -1089,7 +1019,7 @@ class Dom extends Xom {
       if(!item.isMask
         && (item instanceof Text
           || item.computedStyle.position === 'static')) {
-        item.__renderByMask(renderMode);
+        item.__renderByMask(renderMode, ctx, defs);
       }
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
@@ -1097,7 +1027,7 @@ class Dom extends Xom {
     // 再绘制relative和absolute
     zIndex.forEach(item => {
       if(!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute(item)) {
-        item.__renderByMask(renderMode);
+        item.__renderByMask(renderMode, ctx, defs);
       }
     });
     if(renderMode === mode.SVG) {
@@ -1114,25 +1044,48 @@ class Dom extends Xom {
     });
     super.__destroy();
     this.children.splice(0);
-    this.flowChildren.splice(0);
-    this.absChildren.splice(0);
     this.lineGroups.splice(0);
   }
 
-  get tagName() {
-    return this.__tagName;
-  }
-
-  get children() {
-    return this.__children;
-  }
-
   get flowChildren() {
-    return this.__flowChildren;
+    return this.children.filter(item => {
+      if(item instanceof Component) {
+        item = item.shadowRoot;
+      }
+      return item instanceof Text || item.computedStyle.position !== 'absolute';
+    });
   }
 
   get absChildren() {
-    return this.__absChildren;
+    return this.children.filter(item => {
+      if(item instanceof Component) {
+        item = item.shadowRoot;
+      }
+      return item instanceof Xom && item.computedStyle.position === 'absolute';
+    });
+  }
+
+  get zIndexChildren() {
+    let zIndex = this.children.filter(item => {
+      return !item.isMask;
+    });
+    sort(zIndex, (a, b) => {
+      if(a instanceof Text) {
+        return;
+      }
+      if(b instanceof Text && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+          return true;
+        }
+      }
+      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+    });
+    return zIndex;
   }
 
   get lineGroups() {

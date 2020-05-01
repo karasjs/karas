@@ -29,7 +29,7 @@ class Line extends Geom {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       display,
@@ -41,11 +41,11 @@ class Line extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, x1, y1, x2, y2, controlA, controlB, computedStyle } = this;
+    let { width, height, x1, y1, x2, y2, controlA, controlB, computedStyle } = this;
     Object.assign(computedStyle, {
       x1,
       y1,

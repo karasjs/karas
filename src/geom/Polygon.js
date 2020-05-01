@@ -16,7 +16,7 @@ class Polygon extends Geom {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       originX,
@@ -29,11 +29,11 @@ class Polygon extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, points, controls, computedStyle } = this;
+    let { width, height, points, controls, computedStyle } = this;
     computedStyle.points = points.join('; ');
     computedStyle.controls = controls.join('; ');
     if(points.length < 2) {

@@ -11,7 +11,6 @@ import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
-import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr } = util;
@@ -132,8 +131,71 @@ function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
+/**
+ * 1. 封装string为Text节点
+ * 2. 打平children中的数组，变成一维
+ * 3. 合并相连的Text节点
+ */
+function flatten(parent, children) {
+  let list = [];
+  traverse(parent, list, children, {
+    lastText: null,
+    prev: null,
+  });
+  return list;
+}
+
+function traverse(parent, list, children, options) {
+  if(Array.isArray(children)) {
+    children.forEach(item => {
+      traverse(parent, list, item, options);
+    });
+  }
+  else if(children instanceof Xom) {
+    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
+      throw new Error('Can not nest canvas/svg');
+    }
+    list.push(children);
+    children.__parent = parent;
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  else if(children instanceof Component) {
+    list.push(children);
+    children.__init();
+    children.__parent = parent;
+    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  // 排除掉空的文本，连续的text合并
+  else if(!util.isNil(children) && children !== '') {
+    if(options.lastText) {
+      options.lastText.content += children;
+    }
+    else {
+      let text = options.lastText = new Text(children);
+      list.push(text);
+      text.__parent = parent;
+      if(options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+      options.prev = children;
+    }
+  }
+}
+
 class Xom extends Node {
-  constructor(tagName, props = []) {
+  constructor(tagName, props = [], children = []) {
     super();
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
@@ -160,51 +222,15 @@ class Xom extends Node {
         }
       }
     });
+    this.__children = flatten(this, children);
     this.__matrix = null;
-    this.__matrixEvent = null;
+    this.__matrixEvent = null; // 考虑继承的matrix，直接计算事件触发
     this.__animationList = [];
     this.__loadBgi = {
       // 刷新回调函数，用以destroy取消用
       cb: function() {
       },
     };
-  }
-
-  __init() {
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
-    }
-    let { style, parent } = this;
-    // 仅支持flex/block/inline/none
-    if(!style.display || !{
-      flex: true,
-      block: true,
-      inline: true,
-      none: true,
-    }.hasOwnProperty(style.display)) {
-      if(INLINE.hasOwnProperty(this.tagName)) {
-        style.display = 'inline';
-      }
-      else {
-        style.display = 'block';
-      }
-    }
-    // absolute和flex孩子强制block
-    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-      style.display = 'block';
-    }
-  }
-
-  __measure() {
-    if(!this.isGeom) {
-      this.children.forEach(child => {
-        child.__measure();
-      });
-    }
   }
 
   // 获取margin/padding的实际值
@@ -406,7 +432,7 @@ class Xom extends Node {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -416,7 +442,6 @@ class Xom extends Node {
     }
     let {
       isDestroyed,
-      ctx,
       currentStyle,
       computedStyle,
       width,
@@ -777,7 +802,7 @@ class Xom extends Node {
               props.push(['transform', 'matrix(' + matrix + ')']);
             }
             if(needMask) {
-              let maskId = this.defs.add({
+              let maskId = defs.add({
                 tagName: 'mask',
                 props: [],
                 children: [{
@@ -836,7 +861,7 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
     }
@@ -875,20 +900,18 @@ class Xom extends Node {
     }
   }
 
-  __renderByMask(renderMode) {
-    let { prev, root, ctx } = this;
+  __renderByMask(renderMode, ctx, defs) {
+    let { prev, root } = this;
     let hasMask = prev && prev.isMask;
     if(!hasMask) {
-      this.render(renderMode);
+      this.render(renderMode, ctx, defs);
       return;
     }
     if(renderMode === mode.CANVAS) {
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
       let { width, height } = root;
       let c = inject.getCacheCanvas(width, height);
-      this.__setCtx(c.ctx);
-      this.render(renderMode);
-      this.__setCtx(ctx);
+      this.render(renderMode, c.ctx);
       // 收集之前的mask列表
       let list = [];
       while(prev && prev.isMask) {
@@ -899,11 +922,9 @@ class Xom extends Node {
       if(list.length === 1) {
         prev = list[0];
         c.ctx.globalCompositeOperation = 'destination-in';
-        prev.__setCtx(c.ctx);
-        prev.render(renderMode);
+        prev.render(renderMode, c.ctx);
         // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
         c.draw(c.ctx);
-        prev.__setCtx(ctx);
         ctx.drawImage(c.canvas, 0, 0);
         c.draw(ctx);
       }
@@ -911,9 +932,7 @@ class Xom extends Node {
       else {
         let m = inject.getMaskCanvas(width, height);
         list.forEach(item => {
-          item.__setCtx(m.ctx);
-          item.render(renderMode);
-          item.__setCtx(ctx);
+          item.render(renderMode, m.ctx);
         });
         m.draw(m.ctx);
         c.ctx.globalCompositeOperation = 'destination-in';
@@ -932,7 +951,7 @@ class Xom extends Node {
       c.draw(c.ctx);
     }
     else if(renderMode === mode.SVG) {
-      this.render(renderMode);
+      this.render(renderMode, ctx);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       this.virtualDom.mask = prev.maskId;
     }
@@ -1079,7 +1098,7 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
     let { k, v, d } = vs;
     computedStyle[ks] = k + '-gradient(';
     let cx = x2 + iw * 0.5;
@@ -1087,12 +1106,12 @@ class Xom extends Node {
     let res;
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-      res = this.__getLg(renderMode, gd);
+      res = this.__getLg(renderMode, ctx, defs, gd);
       computedStyle[ks] += d + 'deg';
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
-      res = this.__getRg(renderMode, gd);
+      res = this.__getRg(renderMode, ctx, defs, gd);
       computedStyle[ks] += d;
     }
     v.forEach(item => {
@@ -1105,16 +1124,16 @@ class Xom extends Node {
     return res;
   }
 
-  __getLg(renderMode, gd) {
+  __getLg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
-      let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+      let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
         lg.addColorStop(item[1], item[0]);
       });
       return lg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = this.defs.add({
+      let uuid = defs.add({
         tagName: 'linearGradient',
         props: [
           ['x1', gd.x1],
@@ -1136,16 +1155,16 @@ class Xom extends Node {
     }
   }
 
-  __getRg(renderMode, gd) {
+  __getRg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
-      let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {
         rg.addColorStop(item[1], item[0]);
       });
       return rg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = this.defs.add({
+      let uuid = defs.add({
         tagName: 'radialGradient',
         props: [
           ['cx', gd.cx],
@@ -1199,55 +1218,75 @@ class Xom extends Node {
     });
   }
 
-  __computed() {
-    compute(this, this.isRoot);
-    // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__computed();
-        }
-        else {
-          item.__style = this.currentStyle;
-          compute(item);
-          // 文字首先测量所有字符宽度
-          item.__measure();
-        }
-      });
+  __prepare(renderMode, ctx, isRoot) {
+    let ref = this.props.ref;
+    if(ref) {
+      let owner = this.host || this.root;
+      if(owner) {
+        owner.ref[ref] = this;
+      }
     }
+    compute(this, isRoot);
+    let isInline = this.computedStyle.display === 'inline';
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__prepare(renderMode, ctx);
+        if(isInline) {
+          if(item instanceof Component) {
+            item = item.shadowRoot;
+          }
+          if(item instanceof Xom && item.computedStyle.display !== 'inline') {
+            throw new Error('Inline can not contain block/flex');
+          }
+        }
+      }
+      else {
+        // 文字首先测量所有字符宽度
+        item.__measure(renderMode, ctx);
+      }
+    });
   }
 
-  __repaint() {
-    repaint(this, this.isRoot);
+  __repaint(isRoot) {
+    repaint(this, isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__repaint();
-        }
-        else {
-          item.__style = this.currentStyle;
-          repaint(item);
-        }
-      });
-    }
-  }
-
-  __setCtx(ctx) {
-    super.__setCtx(ctx);
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        item.__setCtx(ctx);
-      });
-    }
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__repaint();
+      }
+    });
   }
 
   get tagName() {
     return this.__tagName;
   }
 
-  get isRoot() {
-    return !this.parent;
+  get children() {
+    return this.__children;
+  }
+
+  // canvas/svg根节点
+  get root() {
+    if(this.host) {
+      return this.host.root;
+    }
+    if(this.parent) {
+      return this.parent.root;
+    }
+    if(['canvas', 'svg'].indexOf(this.tagName) > -1) {
+      return this;
+    }
+  }
+
+  // component根节点
+  get host() {
+    if(this.__host) {
+      return this.__host;
+    }
+    if(this.parent) {
+      return this.parent.host;
+    }
   }
 
   get isGeom() {
@@ -1322,6 +1361,14 @@ class Xom extends Node {
     return this.__matrixEvent;
   }
 
+  get style() {
+    return this.__style;
+  }
+
+  get computedStyle() {
+    return this.__computedStyle;
+  }
+
   get animationList() {
     return this.__animationList;
   }
@@ -1352,31 +1399,6 @@ class Xom extends Node {
     return this.__currentStyle;
   }
 
-  get zIndexChildren() {
-    if(this.isGeom) {
-      return [];
-    }
-    let zIndex = (this.children || []).filter(item => {
-      return !item.isMask;
-    });
-    sort(zIndex, (a, b) => {
-      if(a instanceof Text) {
-        return;
-      }
-      if(b instanceof Text && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
-          return true;
-        }
-      }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-    });
-    return zIndex;
-  }
 }
 
 export default Xom;

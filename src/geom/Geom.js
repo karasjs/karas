@@ -16,21 +16,14 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMask = !!this.props.mask;
     this.__currentProps = this.props;
-    css.normalize(this.style, reset.geom);
-  }
-
-  __init() {
-    super.__init();
     let { style, isMask } = this;
     if(isMask) {
-      style.position = 'absolute';
-      style.display = 'block';
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
     }
-    css.normalize(style, reset.geom);
+    css.normalize(this.style, reset.geom);
   }
 
   __tryLayInline(w, total) {

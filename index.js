@@ -11121,30 +11121,23 @@
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
       _this.__isMask = !!_this.props.mask;
       _this.__currentProps = _this.props;
+
+      var _assertThisInitialize = _assertThisInitialized(_this),
+          style = _assertThisInitialize.style,
+          isMask = _assertThisInitialize.isMask;
+
+      if (isMask) {
+        style.visibility = 'visible';
+        style.background = null;
+        style.border = null;
+        style.strokeWidth = 0;
+      }
+
       css.normalize(_this.style, reset.geom);
       return _this;
     }
 
     _createClass(Geom, [{
-      key: "__init",
-      value: function __init() {
-        _get(_getPrototypeOf(Geom.prototype), "__init", this).call(this);
-
-        var style = this.style,
-            isMask = this.isMask;
-
-        if (isMask) {
-          style.position = 'absolute';
-          style.display = 'block';
-          style.visibility = 'visible';
-          style.background = null;
-          style.border = null;
-          style.strokeWidth = 0;
-        }
-
-        css.normalize(style, reset.geom);
-      }
-    }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
         // 无children，直接以style的width为宽度，不定义则为0

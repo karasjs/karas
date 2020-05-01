@@ -80,7 +80,7 @@ class Text extends Node {
         this.__charWidth = Math.max(this.charWidth, mw);
       }
     }
-    this.__textWidth += sum;
+    this.__textWidth = sum;
   }
 
   __layout(data, isVirtual) {
@@ -252,10 +252,6 @@ class Text extends Node {
     }
     let last = lineBoxes[lineBoxes.length - 1];
     return last.y - this.y + last.baseLine;
-  }
-
-  get style() {
-    return this.parent.style;
   }
 
   get currentStyle() {

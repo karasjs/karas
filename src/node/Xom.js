@@ -16,11 +16,6 @@ const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr } = util;
 const { calRelative, compute, repaint } = css;
 
-const INLINE = {
-  'span': true,
-  'img': true,
-};
-
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
@@ -166,7 +161,6 @@ function traverse(parent, list, children, options) {
   }
   else if(children instanceof Component) {
     list.push(children);
-    children.__init();
     children.__parent = parent;
     // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
     options.lastText = null;
@@ -174,6 +168,7 @@ function traverse(parent, list, children, options) {
       options.prev.__next = children;
       children.__prev = options.prev;
     }
+    children.__init();
     options.prev = children;
   }
   // 排除掉空的文本，连续的text合并
@@ -186,10 +181,10 @@ function traverse(parent, list, children, options) {
       list.push(text);
       text.__parent = parent;
       if(options.prev) {
-        options.prev.__next = children;
-        children.__prev = options.prev;
+        options.prev.__next = text;
+        text.__prev = options.prev;
       }
-      options.prev = children;
+      options.prev = text;
     }
   }
 }
@@ -1218,33 +1213,33 @@ class Xom extends Node {
     });
   }
 
-  __prepare(renderMode, ctx, isRoot) {
+  __initRef(root) {
     let ref = this.props.ref;
-    if(ref) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
+    if(util.isString(ref)) {
+      root.ref[ref] = this;
     }
-    compute(this, isRoot);
-    let isInline = this.computedStyle.display === 'inline';
-    // 即便自己不需要计算，但children还要继续递归检查
+    else if(util.isFunction(ref)) {
+      ref(root);
+    }
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {
-        item.__prepare(renderMode, ctx);
-        if(isInline) {
-          if(item instanceof Component) {
-            item = item.shadowRoot;
-          }
-          if(item instanceof Xom && item.computedStyle.display !== 'inline') {
-            throw new Error('Inline can not contain block/flex');
-          }
+        item.__initRef(root);
+      }
+    });
+  }
+
+  __measure(renderMode, ctx, isRoot) {
+    compute(this, isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      if(item instanceof Component) {
+        item = item.shadowRoot;
+        // component返回text时特殊处理，需要获取父亲样式
+        if(item instanceof Text) {
+          item.__parent = this;
         }
       }
-      else {
-        // 文字首先测量所有字符宽度
-        item.__measure(renderMode, ctx);
-      }
+      item.__measure(renderMode, ctx);
     });
   }
 

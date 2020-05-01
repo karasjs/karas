@@ -44,10 +44,6 @@ class Dom extends Xom {
         style.display = 'block';
       }
     }
-    // absolute和flex孩子强制block
-    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-      style.display = 'block';
-    }
     css.normalize(style, reset.dom);
   }
 
@@ -498,6 +494,10 @@ class Dom extends Xom {
           width,
           height,
         } = currentStyle;
+        // flex的child如果是inline，变为block
+        if(display === 'inline') {
+          currentStyle.display = computedStyle.display = 'block';
+        }
         if(isDirectionRow) {
           // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
           if(display === 'flex' && flexDirection === 'column' && fixedHeight && height.unit === AUTO) {
@@ -512,12 +512,8 @@ class Dom extends Xom {
           });
         }
         else {
-          // column的flex的child如果是inline，变为block
-          if(display === 'inline') {
-            currentStyle.display = computedStyle.display = 'block';
-          }
           // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-          else if(display === 'flex' && flexDirection === 'row' && width.unit === AUTO) {
+          if(display === 'flex' && flexDirection === 'row' && width.unit === AUTO) {
             width.value = w;
             width.unit = PX;
           }
@@ -688,6 +684,10 @@ class Dom extends Xom {
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+        if(item.computedStyle.display !== 'inline') {
+          item.currentStyle.display = item.computedStyle.display = 'inline';
+          console.warn('Inline can not contain block/flex');
+        }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
           lineGroup.add(item);
@@ -828,6 +828,9 @@ class Dom extends Xom {
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       let { currentStyle, computedStyle } = item;
+      if(computedStyle.display === 'inline') {
+        currentStyle.display = computedStyle.display = 'block';
+      }
       let { left, top, right, bottom, width, height, display, flexDirection } = currentStyle;
       let x2, y2, w2, h2;
       let onlyRight;

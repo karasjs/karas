@@ -2608,7 +2608,7 @@
           }
         }
 
-        this.__textWidth += sum;
+        this.__textWidth = sum;
       }
     }, {
       key: "__layout",
@@ -2826,11 +2826,6 @@
 
         var last = lineBoxes[lineBoxes.length - 1];
         return last.y - this.y + last.baseLine;
-      }
-    }, {
-      key: "style",
-      get: function get() {
-        return this.parent.style;
       }
     }, {
       key: "currentStyle",
@@ -3887,6 +3882,7 @@
   };
 
   var isNil$2 = util.isNil,
+      isString = util.isString,
       isFunction$1 = util.isFunction,
       clone$2 = util.clone;
 
@@ -3935,7 +3931,7 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Component).call(this));
 
-      if (!util.isString(tagName)) {
+      if (!isString(tagName)) {
         children = props;
         props = tagName;
         tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
@@ -4015,7 +4011,10 @@
 
 
         if (sr instanceof Node) {
-          sr.__host = this; // 覆盖sr的样式
+          sr.__host = this;
+
+          sr.__initRef(this); // 覆盖sr的样式
+
 
           var style = clone$2(this.props.style) || {};
           css.normalize(style);
@@ -4040,19 +4039,28 @@
               });
             }
           });
-        }
+        } else {
+          var s = '';
 
-        var ref = this.props.ref;
-
-        if (ref) {
-          var owner = this.parent.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
+          if (!isNil$2(sr)) {
+            s = util.encodeHtml(sr.toString());
           }
+
+          sr = new Text(s);
         }
 
         return this.__shadowRoot = sr;
+      }
+    }, {
+      key: "__initRef",
+      value: function __initRef(root) {
+        var ref = this.props.ref;
+
+        if (isString(ref)) {
+          root.ref[ref] = this;
+        } else if (isFunction$1(ref)) {
+          ref(root);
+        }
       }
     }, {
       key: "render",
@@ -4159,7 +4167,7 @@
     return Component;
   }(Event);
 
-  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'renderMode', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -4170,7 +4178,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__measure', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -6721,9 +6729,6 @@
       options.prev = children;
     } else if (children instanceof Component) {
       list.push(children);
-
-      children.__init();
-
       children.__parent = parent; // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
 
       options.lastText = null;
@@ -6732,6 +6737,8 @@
         options.prev.__next = children;
         children.__prev = options.prev;
       }
+
+      children.__init();
 
       options.prev = children;
     } // 排除掉空的文本，连续的text合并
@@ -6744,11 +6751,11 @@
           text.__parent = parent;
 
           if (options.prev) {
-            options.prev.__next = children;
-            children.__prev = options.prev;
+            options.prev.__next = text;
+            text.__prev = options.prev;
           }
 
-          options.prev = children;
+          options.prev = text;
         }
       }
   }
@@ -7898,38 +7905,39 @@
         });
       }
     }, {
-      key: "__prepare",
-      value: function __prepare(renderMode, ctx, isRoot) {
+      key: "__initRef",
+      value: function __initRef(root) {
         var ref = this.props.ref;
 
-        if (ref) {
-          var owner = this.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
+        if (util.isString(ref)) {
+          root.ref[ref] = this;
+        } else if (util.isFunction(ref)) {
+          ref(root);
         }
-
-        compute$1(this, isRoot);
-        var isInline = this.computedStyle.display === 'inline'; // 即便自己不需要计算，但children还要继续递归检查
 
         this.children.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component) {
-            item.__prepare(renderMode, ctx);
-
-            if (isInline) {
-              if (item instanceof Component) {
-                item = item.shadowRoot;
-              }
-
-              if (item instanceof Xom && item.computedStyle.display !== 'inline') {
-                throw new Error('Inline can not contain block/flex');
-              }
-            }
-          } else {
-            // 文字首先测量所有字符宽度
-            item.__measure(renderMode, ctx);
+            item.__initRef(root);
           }
+        });
+      }
+    }, {
+      key: "__measure",
+      value: function __measure(renderMode, ctx, isRoot) {
+        var _this5 = this;
+
+        compute$1(this, isRoot); // 即便自己不需要计算，但children还要继续递归检查
+
+        this.children.forEach(function (item) {
+          if (item instanceof Component) {
+            item = item.shadowRoot; // component返回text时特殊处理，需要获取父亲样式
+
+            if (item instanceof Text) {
+              item.__parent = _this5;
+            }
+          }
+
+          item.__measure(renderMode, ctx);
         });
       }
     }, {
@@ -8379,11 +8387,6 @@
         } else {
           style.display = 'block';
         }
-      } // absolute和flex孩子强制block
-
-
-      if (parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-        style.display = 'block';
       }
 
       css.normalize(style, reset.dom);
@@ -8903,7 +8906,11 @@
             var display = _currentStyle2.display,
                 _flexDirection = _currentStyle2.flexDirection,
                 width = _currentStyle2.width,
-                height = _currentStyle2.height;
+                height = _currentStyle2.height; // flex的child如果是inline，变为block
+
+            if (display === 'inline') {
+              _currentStyle2.display = computedStyle.display = 'block';
+            }
 
             if (isDirectionRow) {
               // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
@@ -8919,14 +8926,11 @@
                 h: h
               });
             } else {
-              // column的flex的child如果是inline，变为block
-              if (display === 'inline') {
-                _currentStyle2.display = computedStyle.display = 'block';
-              } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              else if (display === 'flex' && _flexDirection === 'row' && width.unit === AUTO$3) {
-                  width.value = w;
-                  width.unit = PX$5;
-                }
+              // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+              if (display === 'flex' && _flexDirection === 'row' && width.unit === AUTO$3) {
+                width.value = w;
+                width.unit = PX$5;
+              }
 
               item.__layout({
                 x: x,
@@ -9109,7 +9113,12 @@
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            // inline开头，不用考虑是否放得下直接放
+            if (item.computedStyle.display !== 'inline') {
+              item.currentStyle.display = item.computedStyle.display = 'inline';
+              console.warn('Inline can not contain block/flex');
+            } // inline开头，不用考虑是否放得下直接放
+
+
             if (x === data.x) {
               lineGroup.add(item);
 
@@ -9269,6 +9278,11 @@
         absChildren.forEach(function (item) {
           var currentStyle = item.currentStyle,
               computedStyle = item.computedStyle;
+
+          if (computedStyle.display === 'inline') {
+            currentStyle.display = computedStyle.display = 'block';
+          }
+
           var left = currentStyle.left,
               top = currentStyle.top,
               right = currentStyle.right,
@@ -10682,6 +10696,9 @@
       _this.__task = [];
       _this.__ref = {};
       _this.__animateController = new Controller();
+
+      _this.__initRef(_assertThisInitialized(_this));
+
       Event.mix(_assertThisInitialized(_this));
       return _this;
     }
@@ -10859,13 +10876,9 @@
 
         if (style.position === 'absolute') {
           style.position = 'static';
-        } // 根元素特殊处理无margin
+        } // 根节点满宽高
 
 
-        style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
-          value: 0,
-          unit: PX$7
-        };
         style.width = {
           value: this.width,
           unit: PX$7
@@ -10904,7 +10917,7 @@
         this.__refreshLevel = level.REPAINT; // 计算css继承，获取所有字体并准备测量文字
 
         if (lv === level.REFLOW) {
-          this.__prepare(renderMode, ctx, true);
+          this.__measure(renderMode, ctx, true);
         }
 
         inject.measureText(function () {

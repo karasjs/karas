@@ -55,6 +55,7 @@ class Root extends Dom {
     this.__task = [];
     this.__ref = {};
     this.__animateController = new Controller();
+    this.__initRef(this);
     Event.mix(this);
   }
 
@@ -190,11 +191,7 @@ class Root extends Dom {
     if(style.position === 'absolute') {
       style.position = 'static';
     }
-    // 根元素特殊处理无margin
-    style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
-      value: 0,
-      unit: PX,
-    };
+    // 根节点满宽高
     style.width = {
       value: this.width,
       unit: PX,
@@ -225,7 +222,7 @@ class Root extends Dom {
     this.__refreshLevel = level.REPAINT;
     // 计算css继承，获取所有字体并准备测量文字
     if(lv === level.REFLOW) {
-      this.__prepare(renderMode, ctx, true);
+      this.__measure(renderMode, ctx, true);
     }
     inject.measureText(() => {
       // 第一次默认REFLOW以及动画设计变更等需要布局

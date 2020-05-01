@@ -6,7 +6,7 @@ import css from '../style/css';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
-const { isNil, isFunction, clone } = util;
+const { isNil, isString, isFunction, clone } = util;
 
 function diff(ovd, nvd) {
   if(ovd !== nvd) {
@@ -41,7 +41,7 @@ function diff(ovd, nvd) {
 class Component extends Event {
   constructor(tagName, props, children) {
     super();
-    if(!util.isString(tagName)) {
+    if(!isString(tagName)) {
       children = props;
       props = tagName;
       tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
@@ -109,6 +109,7 @@ class Component extends Event {
     // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
     if(sr instanceof Node) {
       sr.__host = this;
+      sr.__initRef(this);
       // 覆盖sr的样式
       let style = clone(this.props.style) || {};
       css.normalize(style);
@@ -132,14 +133,24 @@ class Component extends Event {
         }
       });
     }
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.parent.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
+    else {
+      let s = '';
+      if(!isNil(sr)) {
+        s = util.encodeHtml(sr.toString());
       }
+      sr = new Text(s);
     }
     return this.__shadowRoot = sr;
+  }
+
+  __initRef(root) {
+    let ref = this.props.ref;
+    if(isString(ref)) {
+      root.ref[ref] = this;
+    }
+    else if(isFunction(ref)) {
+      ref(root);
+    }
   }
 
   render() {
@@ -248,7 +259,6 @@ Object.keys(repaint.GEOM).concat([
   'virtualDom',
   'mask',
   'maskId',
-  'renderMode',
   'textWidth',
   'content',
   'lineBoxes',
@@ -276,6 +286,7 @@ Object.keys(repaint.GEOM).concat([
   '__calAbs',
   '__renderAsMask',
   '__renderByMask',
+  '__measure',
   'animate',
   'removeAnimate',
   'clearAnimate',

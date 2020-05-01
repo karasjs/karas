@@ -4099,18 +4099,16 @@
         }
       }
     }, {
-      key: "__prepare",
-      value: function __prepare(renderMode, ctx) {
+      key: "__measure",
+      value: function __measure(renderMode, ctx) {
         var sr = this.shadowRoot;
 
-        if (!sr) {
-          return;
-        }
-
         if (sr instanceof Text) {
+          sr.__parent = this.parent;
+
           sr.__measure(renderMode, ctx);
         } else {
-          sr.__prepare(renderMode, ctx, true);
+          sr.__measure(renderMode, ctx, true);
         }
       }
     }, {
@@ -4178,7 +4176,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__measure', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -7924,19 +7922,9 @@
     }, {
       key: "__measure",
       value: function __measure(renderMode, ctx, isRoot) {
-        var _this5 = this;
-
         compute$1(this, isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
         this.children.forEach(function (item) {
-          if (item instanceof Component) {
-            item = item.shadowRoot; // component返回text时特殊处理，需要获取父亲样式
-
-            if (item instanceof Text) {
-              item.__parent = _this5;
-            }
-          }
-
           item.__measure(renderMode, ctx);
         });
       }

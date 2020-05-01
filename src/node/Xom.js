@@ -1232,13 +1232,6 @@ class Xom extends Node {
     compute(this, isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
     this.children.forEach(item => {
-      if(item instanceof Component) {
-        item = item.shadowRoot;
-        // component返回text时特殊处理，需要获取父亲样式
-        if(item instanceof Text) {
-          item.__parent = this;
-        }
-      }
       item.__measure(renderMode, ctx);
     });
   }

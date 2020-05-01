@@ -181,16 +181,14 @@ class Component extends Event {
     }
   }
 
-  __prepare(renderMode, ctx) {
+  __measure(renderMode, ctx) {
     let sr = this.shadowRoot;
-    if(!sr) {
-      return;
-    }
     if(sr instanceof Text) {
+      sr.__parent = this.parent;
       sr.__measure(renderMode, ctx);
     }
     else {
-      sr.__prepare(renderMode, ctx, true);
+      sr.__measure(renderMode, ctx, true);
     }
   }
 
@@ -286,7 +284,6 @@ Object.keys(repaint.GEOM).concat([
   '__calAbs',
   '__renderAsMask',
   '__renderByMask',
-  '__measure',
   'animate',
   'removeAnimate',
   'clearAnimate',

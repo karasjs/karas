@@ -686,7 +686,7 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(item.computedStyle.display !== 'inline') {
           item.currentStyle.display = item.computedStyle.display = 'inline';
-          console.warn('Inline can not contain block/flex');
+          console.error('Inline can not contain block/flex');
         }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {

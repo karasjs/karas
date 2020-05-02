@@ -5,7 +5,7 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
-const { isNil, rgba2int, int2rgba, clone } = util;
+const { isNil, rgba2int, int2rgba } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -595,7 +595,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontSize;
-  if(temp || temp === 0 || temp === '0') {
+  if(temp || temp === 0) {
     if(temp === 'inherit') {
       style.fontSize = {
         unit: INHERIT,
@@ -624,7 +624,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.fontWeight;
-  if(temp || temp === 0 || temp === '0') {
+  if(temp || temp === 0) {
     if(temp === 'bold') {
       style.fontWeight = {
         value: 700,
@@ -698,7 +698,7 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.lineHeight;
-  if(temp || temp === 0 || temp === '0') {
+  if(temp || temp === 0) {
     if(temp === 'inherit') {
       style.lineHeight = {
         unit: INHERIT,
@@ -709,6 +709,7 @@ function normalize(style, reset = []) {
         unit: AUTO,
       };
     }
+    // lineHeight默认数字，想要px必须强制带单位
     else if(/px$/.test(temp)) {
       style.lineHeight = {
         value: parseFloat(temp),
@@ -773,62 +774,36 @@ function normalize(style, reset = []) {
   return style;
 }
 
-// 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
+// 影响文字测量的只有字体和大小，必须提前处理，另顺带处理掉布局相关的属性
+/**
+ * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
+ * 影响文字测量的只有字体和大小，也需要提前处理
+ * 继承相关的计算，包括布局的，以及渲染repaint的
+ * @param node
+ * @param isRoot
+ */
 function compute(node, isRoot) {
   let { animateStyle } = node;
   let currentStyle = node.__currentStyle = animateStyle;
-  let { lineHeight, textAlign } = currentStyle;
-  let computedStyle = node.__computedStyle = clone(currentStyle);
-  let parent = node.parent;
-  let parentComputedStyle = parent && parent.computedStyle;
-  preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-  calLineHeight(node, lineHeight, computedStyle);
-  if(textAlign.unit === INHERIT) {
-    computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
+  let computedStyle = node.__computedStyle = {};
+  let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
+  let { fontSize, fontFamily, textAlign, lineHeight } = currentStyle;
+  if(fontSize.unit === INHERIT) {
+    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
+  }
+  else if(fontSize.unit === PERCENT) {
+    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value;
   }
   else {
-    computedStyle.textAlign = isRoot ? 'left' : textAlign.value;
+    computedStyle.fontSize = fontSize.value;
   }
-}
-
-// REPAINT等级下，刷新前首先执行，仅计算继承
-function repaint(node, isRoot) {
-  let { animateStyle, computedStyle } = node;
-  let currentStyle = node.__currentStyle = animateStyle;
-  let parent = node.parent;
-  let parentComputedStyle = parent && parent.computedStyle;
-  preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-}
-
-function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
-  let { fontStyle, fontWeight, fontSize, fontFamily, color } = currentStyle;
-  // 处理继承的属性
-  if(fontStyle.unit === INHERIT) {
-    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
-  }
-  else {
-    computedStyle.fontStyle = fontStyle.value;
-  }
-  if(fontWeight.unit === INHERIT) {
-    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
-  }
-  else {
-    computedStyle.fontWeight = fontWeight.value;
-  }
-  computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
   if(fontFamily.unit === INHERIT) {
     computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
   }
   else {
     computedStyle.fontFamily = fontFamily.value;
   }
-  if(color.unit === INHERIT) {
-    computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
-  }
-  else {
-    computedStyle.color = int2rgba(color.value);
-  }
-  // 处理可提前计算的属性，如border-width
+  // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
   [
     'borderTopWidth',
     'borderRightWidth',
@@ -841,10 +816,63 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   [
     'position',
     'display',
-    'visibility',
     'flexDirection',
     'justifyContent',
     'alignItems',
+    'flexGrow',
+    'flexShrink',
+  ].forEach(k => {
+    computedStyle[k] = currentStyle[k];
+  });
+  if(textAlign.unit === INHERIT) {
+    computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
+  }
+  else {
+    computedStyle.textAlign = isRoot ? 'left' : textAlign.value;
+  }
+  if(lineHeight.unit === INHERIT) {
+    computedStyle.lineHeight = isRoot ? calNormalLineHeight(computedStyle) : parentComputedStyle.lineHeight;
+  }
+  // 防止为0
+  else if(lineHeight.unit === PX) {
+    computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
+  }
+  else if(lineHeight.unit === NUMBER) {
+    computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
+  }
+  // normal
+  else {
+    computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+  }
+  repaint(node, isRoot);
+}
+
+// REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
+function repaint(node, isRoot) {
+  let { animateStyle, computedStyle } = node;
+  let currentStyle = node.__currentStyle = animateStyle;
+  let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
+  let { fontStyle, fontWeight, color } = currentStyle;
+  if(fontStyle.unit === INHERIT) {
+    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
+  }
+  else {
+    computedStyle.fontStyle = fontStyle.value;
+  }
+  if(fontWeight.unit === INHERIT) {
+    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
+  }
+  else {
+    computedStyle.fontWeight = fontWeight.value;
+  }
+  if(color.unit === INHERIT) {
+    computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
+  }
+  else {
+    computedStyle.color = int2rgba(color.value);
+  }
+  [
+    'visibility',
     'opacity',
     'zIndex',
     'borderTopStyle',
@@ -852,8 +880,6 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundRepeat',
-    'flexGrow',
-    'flexShrink',
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });
@@ -868,76 +894,14 @@ function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
   });
 }
 
-function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-  if(fontSize.unit === INHERIT) {
-    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
-  }
-  else if(fontSize.unit === PX) {
-    computedStyle.fontSize = fontSize.value;
-  }
-  else if(fontSize.unit === PERCENT) {
-    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
-  }
-  else {
-    computedStyle.fontSize = DEFAULT_FONT_SIZE;
-  }
-}
-
 function setFontStyle(style) {
   let { fontStyle, fontWeight, fontSize, fontFamily } = style;
-  return `${fontStyle} ${fontWeight} ${fontSize}px/${fontSize}px ${fontFamily}`;
+  return `${fontStyle || ''} ${fontWeight || ''} ${fontSize}px/${fontSize}px ${fontFamily}`;
 }
 
 function getBaseLine(style) {
   let normal = style.fontSize * font.arial.lhr;
   return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
-}
-
-function calLineHeight(xom, lineHeight, computedStyle) {
-  if(util.isNumber(lineHeight)) {
-  }
-  else if(lineHeight.unit === INHERIT) {
-    let parent = xom.parent;
-    if(parent) {
-      let pl = parent.style.lineHeight;
-      // 一直继承向上查找直到root
-      if(pl.unit === INHERIT) {
-        parent = parent.parent;
-        while(parent) {
-          pl = parent.style.lineHeight;
-          if(pl.unit !== INHERIT) {
-            break;
-          }
-        }
-      }
-      let parentComputedStyle = parent.computedStyle;
-      if(pl.unit === PX) {
-        computedStyle.lineHeight = parentComputedStyle.lineHeight;
-      }
-      else if(pl.unit === NUMBER) {
-        computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
-      }
-      else {
-        computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-      }
-    }
-    else {
-      // root的继承强制为normal
-      lineHeight.unit = AUTO;
-      computedStyle.lineHeight = calLineHeight(computedStyle);
-    }
-  }
-  // 防止为0
-  else if(lineHeight.unit === PX) {
-    computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
-  }
-  else if(lineHeight.unit === NUMBER) {
-    computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
-  }
-  // normal
-  else {
-    computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-  }
 }
 
 function calNormalLineHeight(computedStyle) {
@@ -1004,7 +968,6 @@ export default {
   repaint,
   setFontStyle,
   getBaseLine,
-  calLineHeight,
   calRelative,
   calAbsolute,
 };

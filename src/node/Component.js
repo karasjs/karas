@@ -139,6 +139,8 @@ class Component extends Event {
         s = util.encodeHtml(sr.toString());
       }
       sr = new Text(s);
+      // 文字视作为父节点的直接文字子节点
+      sr.__parent = this.parent;
     }
     return this.__shadowRoot = sr;
   }
@@ -184,7 +186,6 @@ class Component extends Event {
   __measure(renderMode, ctx) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      sr.__parent = this.parent;
       sr.__measure(renderMode, ctx);
     }
     else {

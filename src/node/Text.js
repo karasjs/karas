@@ -21,7 +21,7 @@ class Text extends Node {
 
   // 预先计算每个字的宽度
   __measure(renderMode, ctx) {
-    let { content, parent: { computedStyle }, charWidthList } = this;
+    let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
     if(renderMode === mode.CANVAS) {
@@ -69,7 +69,7 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, parent: { computedStyle }, charWidthList } = this;
+    let { content, computedStyle, charWidthList } = this;
     let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;

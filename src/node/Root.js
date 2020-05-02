@@ -218,9 +218,9 @@ class Root extends Dom {
       return;
     }
     defs.clear();
+    // 计算css继承，获取所有字体和大小并准备测量文字
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
-    // 计算css继承，获取所有字体并准备测量文字
     if(lv === level.REFLOW) {
       this.__measure(renderMode, ctx, true);
     }

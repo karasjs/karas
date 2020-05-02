@@ -85,6 +85,9 @@ function calBorderRadius(w, h, k, currentStyle, computedStyle) {
     let min = Math.min(w * 0.5, h * 0.5);
     computedStyle[k] = Math.min(min, s.value);
   }
+  else {
+    computedStyle[k] = 0;
+  }
 }
 
 function calBackgroundSize(value, x, y, w, h) {
@@ -255,13 +258,19 @@ class Xom extends Node {
 
   // absolute且无尺寸时，fake标明先假布局一次计算尺寸
   __layout(data, isVirtual) {
-    let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
       display,
       width,
       position,
     } = currentStyle;
+    if(isDestroyed || display === 'none') {
+      computedStyle.width = computedStyle.height = 0;
+      return;
+    }
+    this.__ox = this.__oy = 0;
+    let { w } = data;
+    // 提前计算margin和padding，百分比都是相对于宽度
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:
@@ -273,11 +282,7 @@ class Xom extends Node {
       }
     }
     this.__mp(currentStyle, computedStyle, w);
-    this.__ox = this.__oy = 0;
-    if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = 0;
-      return;
-    }
+    // 3种布局
     if(display === 'block') {
       this.__layoutBlock(data, isVirtual);
     }
@@ -328,10 +333,6 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
-    // 圆角边计算
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
-      calBorderRadius(this.width, this.height, `border${k}Radius`, currentStyle, computedStyle);
-    });
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -446,6 +447,10 @@ class Xom extends Node {
       outerWidth,
       outerHeight,
     } = this;
+    // 圆角边计算
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+      calBorderRadius(width, height, `border${k}Radius`, currentStyle, computedStyle);
+    });
     let {
       display,
       marginTop,
@@ -1374,6 +1379,9 @@ class Xom extends Node {
 
   get animateStyle() {
     let { style, animationList } = this;
+    if(!this.animating) {
+      return style;
+    }
     let copy = clone(style);
     animationList.forEach(item => {
       if(item.animating) {

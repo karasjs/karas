@@ -21,6 +21,7 @@ const DOM = {
   fontStyle: 'inherit',
   fontWeight: 'inherit',
   lineHeight: 'normal',
+  backgroundImage: null,
   backgroundColor: 'transparent',
   backgroundSize: 'auto',
   backgroundRepeat: 'repeat',

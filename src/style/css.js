@@ -212,12 +212,12 @@ function normalize(style, reset = []) {
         style.backgroundImage = gd[0];
         temp = temp.replace(gd[0], '');
       }
-    }
-    if(isNil(style.backgroundImage)) {
-      let img = reg.img.exec(temp);
-      if(img) {
-        style.backgroundImage = img[0];
-        temp = temp.replace(img[0], '');
+      else {
+        let img = reg.img.exec(temp);
+        if(img) {
+          style.backgroundImage = img[0];
+          temp = temp.replace(img[0], '');
+        }
       }
     }
     if(isNil(style.backgroundRepeat)) {

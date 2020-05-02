@@ -31,8 +31,7 @@ class Circle extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, r, computedStyle } = this;
-    computedStyle.r = r;
+    let { width, height, r } = this;
     r *= Math.min(width, height) * 0.5;
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;

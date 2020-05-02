@@ -39,9 +39,7 @@ class Rect extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, rx, ry, computedStyle } = this;
-    computedStyle.rx = rx;
-    computedStyle.ry = ry;
+    let { width, height, rx, ry } = this;
     rx = Math.min(rx, 0.5);
     ry = Math.min(ry, 0.5);
     rx *= width;

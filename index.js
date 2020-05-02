@@ -1623,15 +1623,13 @@
         if (gd) {
           style.backgroundImage = gd[0];
           temp = temp.replace(gd[0], '');
-        }
-      }
+        } else {
+          var img = reg.img.exec(temp);
 
-      if (isNil$1(style.backgroundImage)) {
-        var img = reg.img.exec(temp);
-
-        if (img) {
-          style.backgroundImage = img[0];
-          temp = temp.replace(img[0], '');
+          if (img) {
+            style.backgroundImage = img[0];
+            temp = temp.replace(img[0], '');
+          }
         }
       }
 
@@ -6812,20 +6810,13 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual) {
+        var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var display = currentStyle.display,
             width = currentStyle.width,
             position = currentStyle.position;
-
-        if (isDestroyed || display === 'none') {
-          computedStyle.width = computedStyle.height = 0;
-          return;
-        }
-
-        this.__ox = this.__oy = 0;
-        var w = data.w; // 提前计算margin和padding，百分比都是相对于宽度
 
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
@@ -6839,7 +6830,14 @@
           }
         }
 
-        this.__mp(currentStyle, computedStyle, w); // 3种布局
+        this.__mp(currentStyle, computedStyle, w);
+
+        this.__ox = this.__oy = 0;
+
+        if (isDestroyed || display === 'none') {
+          computedStyle.width = computedStyle.height = 0;
+          return;
+        } // 3种布局
 
 
         if (display === 'block') {
@@ -7456,6 +7454,8 @@
                 }
               });
             }
+
+            computedStyle.backgroundImage = backgroundImage;
           } else if (backgroundImage.k) {
             var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
 
@@ -8177,6 +8177,7 @@
     fontStyle: 'inherit',
     fontWeight: 'inherit',
     lineHeight: 'normal',
+    backgroundImage: null,
     backgroundColor: 'transparent',
     backgroundSize: 'auto',
     backgroundRepeat: 'repeat',
@@ -11555,16 +11556,7 @@
             x2 = this.x2,
             y2 = this.y2,
             controlA = this.controlA,
-            controlB = this.controlB,
-            computedStyle = this.computedStyle;
-        Object.assign(computedStyle, {
-          x1: x1,
-          y1: y1,
-          x2: x2,
-          y2: y2,
-          controlA: controlA.join(', '),
-          controlB: controlB.join(', ')
-        });
+            controlB = this.controlB;
         x1 = originX + x1 * width;
         y1 = originY + y1 * height;
         x2 = originX + x2 * width;
@@ -11725,11 +11717,7 @@
             height = this.height,
             points = this.points,
             controls = this.controls,
-            origin = this.origin,
-            computedStyle = this.computedStyle;
-        computedStyle.points = points.join('; ');
-        computedStyle.controls = controls.join('; ');
-        computedStyle.origin = origin;
+            origin = this.origin;
 
         if (points.length < 2) {
           return;
@@ -11972,10 +11960,7 @@
         var width = this.width,
             height = this.height,
             points = this.points,
-            controls = this.controls,
-            computedStyle = this.computedStyle;
-        computedStyle.points = points.join('; ');
-        computedStyle.controls = controls.join('; ');
+            controls = this.controls;
 
         if (points.length < 2) {
           console.error('Polygon must have at lease 2 points: ' + points);
@@ -12221,15 +12206,7 @@
             end = this.end,
             r = this.r,
             edge = this.edge,
-            closure = this.closure,
-            computedStyle = this.computedStyle;
-        Object.assign(computedStyle, {
-          begin: begin,
-          end: end,
-          r: r,
-          edge: edge,
-          closure: closure
-        });
+            closure = this.closure;
 
         if (begin === end) {
           return;
@@ -12404,10 +12381,7 @@
         var width = this.width,
             height = this.height,
             rx = this.rx,
-            ry = this.ry,
-            computedStyle = this.computedStyle;
-        computedStyle.rx = rx;
-        computedStyle.ry = ry;
+            ry = this.ry;
         rx = Math.min(rx, 0.5);
         ry = Math.min(ry, 0.5);
         rx *= width;
@@ -12526,9 +12500,7 @@
 
         var width = this.width,
             height = this.height,
-            r = this.r,
-            computedStyle = this.computedStyle;
-        computedStyle.r = r;
+            r = this.r;
         r *= Math.min(width, height) * 0.5;
 
         if (renderMode === mode.CANVAS) {
@@ -12626,10 +12598,7 @@
         var width = this.width,
             height = this.height,
             rx = this.rx,
-            ry = this.ry,
-            computedStyle = this.computedStyle;
-        computedStyle.rx = rx;
-        computedStyle.ry = ry;
+            ry = this.ry;
         rx *= width * 0.5;
         ry *= height * 0.5;
 

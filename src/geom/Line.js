@@ -45,15 +45,7 @@ class Line extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, x1, y1, x2, y2, controlA, controlB, computedStyle } = this;
-    Object.assign(computedStyle, {
-      x1,
-      y1,
-      x2,
-      y2,
-      controlA: controlA.join(', '),
-      controlB: controlB.join(', '),
-    });
+    let { width, height, x1, y1, x2, y2, controlA, controlB } = this;
     x1 = originX + x1 * width;
     y1 = originY + y1 * height;
     x2 = originX + x2 * width;

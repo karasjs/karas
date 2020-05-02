@@ -258,19 +258,13 @@ class Xom extends Node {
 
   // absolute且无尺寸时，fake标明先假布局一次计算尺寸
   __layout(data, isVirtual) {
+    let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
       display,
       width,
       position,
     } = currentStyle;
-    if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = 0;
-      return;
-    }
-    this.__ox = this.__oy = 0;
-    let { w } = data;
-    // 提前计算margin和padding，百分比都是相对于宽度
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:
@@ -282,6 +276,11 @@ class Xom extends Node {
       }
     }
     this.__mp(currentStyle, computedStyle, w);
+    this.__ox = this.__oy = 0;
+    if(isDestroyed || display === 'none') {
+      computedStyle.width = computedStyle.height = 0;
+      return;
+    }
     // 3种布局
     if(display === 'block') {
       this.__layoutBlock(data, isVirtual);
@@ -859,6 +858,7 @@ class Xom extends Node {
             }
           });
         }
+        computedStyle.backgroundImage = backgroundImage;
       }
       else if(backgroundImage.k) {
         let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);

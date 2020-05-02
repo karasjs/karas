@@ -39,9 +39,7 @@ class Ellipse extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, rx, ry, computedStyle } = this;
-    computedStyle.rx = rx;
-    computedStyle.ry = ry;
+    let { width, height, rx, ry } = this;
     rx *= width * 0.5;
     ry *= height * 0.5;
     if(renderMode === mode.CANVAS) {

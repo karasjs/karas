@@ -125,9 +125,8 @@ function unify(frames, target) {
 
 // 每次播放时处理继承值，以及转换transform为单matrix矩阵
 function inherit(frames, keys, target) {
-  let copy = clone(frames);
   let computedStyle = target.computedStyle;
-  copy.forEach(item => {
+  frames.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
       let v = style[k];
@@ -169,7 +168,6 @@ function inherit(frames, keys, target) {
       }
     });
   });
-  return copy;
 }
 
 // 对比两个样式的某个值是否相等
@@ -865,7 +863,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { iterations, duration, list } = this;
+    let { iterations, duration, list, easing, direction, target } = this;
     // 执行次数小于1无需播放
     if(iterations < 1 || list.length < 1) {
       return;
@@ -944,6 +942,38 @@ class Animation extends Event {
         i = j;
       }
     }
+    // 总的曲线控制
+    let timingFunction = getEasing(easing);
+    let frames = [];
+    // 换算每一关键帧样式标准化
+    list.forEach(item => {
+      frames.push(framing(item, duration, timingFunction));
+    });
+    this.__frames = frames;
+    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+    let keys = this.__keys = unify(frames, target);
+    inherit(frames, keys, target);
+    // 再计算两帧之间的变化，存入transition属性
+    let length = frames.length;
+    let prev = frames[0];
+    for(let i = 1; i < length; i++) {
+      let next = frames[i];
+      prev = calFrame(prev, next, keys, target);
+    }
+    // 反向存储帧的倒排结果
+    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
+      let framesR = clone(frames).reverse();
+      framesR.forEach(item => {
+        item.time = duration - item.time;
+        item.transition = [];
+      });
+      prev = framesR[0];
+      for(let i = 1; i < length; i++) {
+        let next = framesR[i];
+        prev = calFrame(prev, next, keys, target);
+      }
+      this.__framesR = framesR;
+    }
     // finish/cancel共有的before处理
     this.__clean = (isFinish) => {
       this.__cancelTask();
@@ -985,29 +1015,6 @@ class Animation extends Event {
     };
   }
 
-  __format() {
-    let { list, easing, duration, direction, target } = this;
-    // 总的曲线控制
-    let timingFunction = getEasing(easing);
-    let frames = [];
-    // 换算每一关键帧样式标准化
-    list.forEach(item => {
-      frames.push(framing(item, duration, timingFunction));
-    });
-    this.__frames = frames;
-    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-    this.__keys = unify(frames, target);
-    // 反向存储帧的倒排结果
-    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let framesR = clone(frames).reverse();
-      framesR.forEach(item => {
-        item.time = duration - item.time;
-        item.transition = [];
-      });
-      this.__framesR = framesR;
-    }
-  }
-
   __calDiffTime(diff) {
     let { playbackRate, spfLimit, fps } = this;
     this.__currentTime = this.__nextTime;
@@ -1044,12 +1051,9 @@ class Animation extends Event {
     let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
-      // 每次从头播放时，格式化帧数据以便播放计算
-      this.__format();
       let {
         frames,
         framesR,
-        target,
         direction,
         delay,
         endDelay,
@@ -1060,22 +1064,8 @@ class Animation extends Event {
       // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       let stayEnd = this.__stayEnd();
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      frames = inherit(frames, keys, target);
       // 再计算两帧之间的变化，存入transition属性
       let length = frames.length;
-      let prev = frames[0];
-      for(let i = 1; i < length; i++) {
-        let next = frames[i];
-        prev = calFrame(prev, next, keys, target);
-      }
-      if(framesR.length) {
-        framesR = inherit(framesR, keys, target);
-        prev = framesR[0];
-        for(let i = 1; i < length; i++) {
-          let next = framesR[i];
-          prev = calFrame(prev, next, keys, target);
-        }
-      }
       // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {

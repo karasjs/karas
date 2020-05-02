@@ -3105,13 +3105,13 @@
     return res;
   }
 
-  function calOrigin(transformOrigin, x, y, w, h) {
+  function calOrigin(transformOrigin, w, h) {
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
       if (item.unit === PX$2) {
-        tfo.push(item.value + (i ? y : x));
+        tfo.push(item.value);
       } else if (item.unit === PERCENT$2) {
-        tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+        tfo.push(item.value * (i ? h : w) * 0.01);
       }
     });
     return tfo;
@@ -3625,7 +3625,9 @@
     }, {
       value: 0,
       unit: PERCENT$3
-    }], x, y, w, h);
+    }], w, h);
+    tfo[0] += x;
+    tfo[1] += y;
     return transform$1.calMatrix(list, tfo, w, h);
   }
 
@@ -4409,6 +4411,8 @@
         var last = self.__now = inject.now();
 
         function cb() {
+          // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
+          inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
             if (!aTask.length && !task.length) {
               return;
@@ -4771,9 +4775,8 @@
 
 
   function inherit(frames, keys, target) {
-    var copy = clone$2(frames);
     var computedStyle = target.computedStyle;
-    copy.forEach(function (item) {
+    frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
@@ -4812,7 +4815,6 @@
         }
       });
     });
-    return copy;
   } // 对比两个样式的某个值是否相等
 
 
@@ -5546,7 +5548,10 @@
 
         var iterations = this.iterations,
             duration = this.duration,
-            list = this.list; // 执行次数小于1无需播放
+            list = this.list,
+            easing = this.easing,
+            direction = this.direction,
+            target = this.target; // 执行次数小于1无需播放
 
         if (iterations < 1 || list.length < 1) {
           return;
@@ -5635,6 +5640,47 @@
 
             _i7 = j;
           }
+        } // 总的曲线控制
+
+
+        var timingFunction = getEasing(easing);
+        var frames = []; // 换算每一关键帧样式标准化
+
+        list.forEach(function (item) {
+          frames.push(framing(item, duration, timingFunction));
+        });
+        this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+
+        var keys = this.__keys = unify(frames, target);
+        inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+
+        var length = frames.length;
+        var prev = frames[0];
+
+        for (var _i8 = 1; _i8 < length; _i8++) {
+          var next = frames[_i8];
+          prev = calFrame(prev, next, keys, target);
+        } // 反向存储帧的倒排结果
+
+
+        if ({
+          reverse: true,
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction)) {
+          var framesR = clone$2(frames).reverse();
+          framesR.forEach(function (item) {
+            item.time = duration - item.time;
+            item.transition = [];
+          });
+          prev = framesR[0];
+
+          for (var _i9 = 1; _i9 < length; _i9++) {
+            var _next = framesR[_i9];
+            prev = calFrame(prev, _next, keys, target);
+          }
+
+          this.__framesR = framesR;
         } // finish/cancel共有的before处理
 
 
@@ -5685,38 +5731,6 @@
             _this2.__playCb = null;
           }
         };
-      }
-    }, {
-      key: "__format",
-      value: function __format() {
-        var list = this.list,
-            easing = this.easing,
-            duration = this.duration,
-            direction = this.direction,
-            target = this.target; // 总的曲线控制
-
-        var timingFunction = getEasing(easing);
-        var frames = []; // 换算每一关键帧样式标准化
-
-        list.forEach(function (item) {
-          frames.push(framing(item, duration, timingFunction));
-        });
-        this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-
-        this.__keys = unify(frames, target); // 反向存储帧的倒排结果
-
-        if ({
-          reverse: true,
-          alternate: true,
-          'alternate-reverse': true
-        }.hasOwnProperty(direction)) {
-          var framesR = clone$2(frames).reverse();
-          framesR.forEach(function (item) {
-            item.time = duration - item.time;
-            item.transition = [];
-          });
-          this.__framesR = framesR;
-        }
       }
     }, {
       key: "__calDiffTime",
@@ -5770,12 +5784,8 @@
         var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
-          // 每次从头播放时，格式化帧数据以便播放计算
-          this.__format();
-
           var frames = this.frames,
               framesR = this.framesR,
-              target = this.target,
               direction = this.direction,
               delay = this.delay,
               endDelay = this.endDelay,
@@ -5785,27 +5795,9 @@
 
           var stayEnd = this.__stayEnd();
 
-          this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+          this.__currentTime = this.__nextTime = this.__fpsTime = 0; // 再计算两帧之间的变化，存入transition属性
 
-          var length = frames.length;
-          var prev = frames[0];
-
-          for (var i = 1; i < length; i++) {
-            var next = frames[i];
-            prev = calFrame(prev, next, keys, target);
-          }
-
-          if (framesR.length) {
-            framesR = inherit(framesR, keys, target);
-            prev = framesR[0];
-
-            for (var _i8 = 1; _i8 < length; _i8++) {
-              var _next = framesR[_i8];
-              prev = calFrame(prev, _next, keys, target);
-            }
-          } // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
-
+          var length = frames.length; // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
 
           var enterFrame = this.__enterFrame = {
             before: function before(diff) {
@@ -7091,8 +7083,10 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform$1.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
-        computedStyle.transformOrigin = tfo.join(' '); // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+        var tfo = transform$1.calOrigin(transformOrigin, outerWidth, outerHeight);
+        computedStyle.transformOrigin = tfo.join(' ');
+        tfo[0] += x;
+        tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
         var matrix = [1, 0, 0, 1, 0, 0];
         this.__matrix = matrix;
@@ -12993,6 +12987,8 @@
     return vd;
   }
 
+  var version = "0.28.5";
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -13001,6 +12997,7 @@
   Geom.register('$circle', Circle);
   Geom.register('$ellipse', Ellipse);
   var karas = {
+    version: version,
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
         throw new Error('Render dom must be canvas/svg');

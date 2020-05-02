@@ -24,6 +24,7 @@ import frame from './animate/frame';
 import easing from './animate/easing';
 import level from './animate/level';
 import math from './math/index';
+import { version } from '../package.json';
 
 Geom.register('$line', Line);
 Geom.register('$polyline', Polyline);
@@ -34,6 +35,7 @@ Geom.register('$circle', Circle);
 Geom.register('$ellipse', Ellipse);
 
 let karas = {
+  version,
   render(root, dom) {
     if(!(root instanceof Root)) {
       throw new Error('Render dom must be canvas/svg');

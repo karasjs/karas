@@ -511,8 +511,10 @@ class Xom extends Node {
       this.__virtualDom.opacity = opacity;
     }
     // transform和transformOrigin相关
-    let tfo = tf.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
+    let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
     computedStyle.transformOrigin = tfo.join(' ');
+    tfo[0] += x;
+    tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     let matrix = [1, 0, 0, 1, 0, 0];
     this.__matrix = matrix;

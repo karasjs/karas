@@ -44,6 +44,17 @@ function fitSize(style, width, height, data) {
   }
 }
 
+function setRes(cache, img) {
+  if(cache.success) {
+    img.__source = cache.source;
+  }
+  else {
+    img.__error = true;
+  }
+  img.__imgWidth = cache.width;
+  img.__imgHeight = cache.height;
+}
+
 class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props);
@@ -75,14 +86,7 @@ class Img extends Dom {
     let cache = CACHE[src];
     let loaded = cache && cache.state === LOADED;
     if(loaded) {
-      if(cache.success) {
-        this.__source = cache.source;
-      }
-      else {
-        this.__error = true;
-      }
-      this.__imgWidth = cache.width;
-      this.__imgHeight = cache.height;
+      setRes(cache, this);
       fitSize(currentStyle, cache.width, cache.height, data);
     }
     super.__layout(data);
@@ -90,16 +94,13 @@ class Img extends Dom {
       return;
     }
     let cb = cache => {
-      if(cache.success) {
-        this.__source = cache.source;
-      }
-      else {
-        this.__error = true;
-      }
       let lv = level.REPAINT;
       // 宽高已知，即便加载后绘制也无需重新布局；有个未知则反之需要计算
       if(width.unit === AUTO || height.unit === AUTO) {
         lv = level.REFLOW;
+      }
+      else {
+        setRes(cache, this);
       }
       let root = this.root;
       if(root) {

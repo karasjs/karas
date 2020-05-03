@@ -9608,6 +9608,17 @@
     }
   }
 
+  function setRes(cache, img) {
+    if (cache.success) {
+      img.__source = cache.source;
+    } else {
+      img.__error = true;
+    }
+
+    img.__imgWidth = cache.width;
+    img.__imgHeight = cache.height;
+  }
+
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
@@ -9669,14 +9680,7 @@
         var loaded = cache && cache.state === LOADED;
 
         if (loaded) {
-          if (cache.success) {
-            this.__source = cache.source;
-          } else {
-            this.__error = true;
-          }
-
-          this.__imgWidth = cache.width;
-          this.__imgHeight = cache.height;
+          setRes(cache, this);
           fitSize(currentStyle, cache.width, cache.height, data);
         }
 
@@ -9687,16 +9691,12 @@
         }
 
         var cb = function cb(cache) {
-          if (cache.success) {
-            _this2.__source = cache.source;
-          } else {
-            _this2.__error = true;
-          }
-
           var lv = level.REPAINT; // 宽高已知，即便加载后绘制也无需重新布局；有个未知则反之需要计算
 
           if (width.unit === AUTO$4 || height.unit === AUTO$4) {
             lv = level.REFLOW;
+          } else {
+            setRes(cache, _this2);
           }
 
           var root = _this2.root;

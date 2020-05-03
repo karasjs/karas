@@ -937,14 +937,12 @@ class Dom extends Xom {
         currentStyle.width = {
           value: w2,
           unit: PX,
-          virtual: true, // 特殊标识
         };
       }
       if(h2 !== undefined) {
         currentStyle.height = {
           value: h2,
           unit: PX,
-          virtual: true,
         };
       }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局

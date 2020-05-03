@@ -3135,7 +3135,7 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
-  var transform$1 = {
+  var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
@@ -3619,7 +3619,7 @@
       value: targetHeight / imgHeight,
       unit: NUMBER$1
     }]];
-    var tfo = transform$1.calOrigin([{
+    var tfo = tf.calOrigin([{
       value: 0,
       unit: PERCENT$3
     }, {
@@ -3628,7 +3628,7 @@
     }], w, h);
     tfo[0] += x;
     tfo[1] += y;
-    return transform$1.calMatrix(list, tfo, w, h);
+    return tf.calMatrix(list, tfo, w, h);
   }
 
   var image = {
@@ -4788,7 +4788,7 @@
         if (k === 'transform') {
           var ow = target.outerWidth;
           var oh = target.outerHeight;
-          var m = transform$1.calMatrix(v, [0, 0], ow, oh);
+          var m = tf.calMatrix(v, [0, 0], ow, oh);
           style[k] = [['matrix', m]];
         } else if (v.unit === INHERIT$1) {
           if (k === 'color') {
@@ -6810,6 +6810,11 @@
             width = currentStyle.width,
             position = currentStyle.position;
 
+        if (isDestroyed || display === 'none') {
+          computedStyle.width = computedStyle.height = 0;
+          return;
+        }
+
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
             case PX$4:
@@ -6824,13 +6829,7 @@
 
         this.__mp(currentStyle, computedStyle, w);
 
-        this.__ox = this.__oy = 0;
-
-        if (isDestroyed || display === 'none') {
-          computedStyle.width = computedStyle.height = 0;
-          return;
-        } // 3种布局
-
+        this.__ox = this.__oy = 0; // 3种布局
 
         if (display === 'block') {
           this.__layoutBlock(data, isVirtual);
@@ -7083,7 +7082,7 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform$1.calOrigin(transformOrigin, outerWidth, outerHeight);
+        var tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
         computedStyle.transformOrigin = tfo.join(' ');
         tfo[0] += x;
         tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
@@ -7098,7 +7097,7 @@
         parent = this.parent; // transform相对于自身
 
         if (transform) {
-          matrix = transform$1.calMatrix(transform, tfo, outerWidth, outerHeight);
+          matrix = tf.calMatrix(transform, tfo, outerWidth, outerHeight);
           this.__matrix = matrix;
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -7130,7 +7129,7 @@
             });
 
             if (temp.length) {
-              matrix = transform$1.calMatrix(temp, tfo, outerWidth, outerHeight);
+              matrix = tf.calMatrix(temp, tfo, outerWidth, outerHeight);
               this.__matrix = matrix;
             }
           }
@@ -7139,7 +7138,7 @@
 
         while (parent) {
           if (parent.matrixEvent) {
-            matrix = transform$1.mergeMatrix(parent.matrixEvent, matrix);
+            matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
             break;
           }
 
@@ -7730,7 +7729,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = transform$1.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
+        var inThis = tf.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
 
         if (inThis) {
           if (!e.target) {
@@ -7950,36 +7949,60 @@
       key: "innerWidth",
       get: function get() {
         var _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
             paddingRight = _this$computedStyle.paddingRight,
             paddingLeft = _this$computedStyle.paddingLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.width + paddingLeft + paddingRight;
       }
     }, {
       key: "innerHeight",
       get: function get() {
         var _this$computedStyle2 = this.computedStyle,
+            display = _this$computedStyle2.display,
             paddingTop = _this$computedStyle2.paddingTop,
             paddingBottom = _this$computedStyle2.paddingBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.height + paddingTop + paddingBottom;
       }
     }, {
       key: "outerWidth",
       get: function get() {
         var _this$computedStyle3 = this.computedStyle,
+            display = _this$computedStyle3.display,
             borderLeftWidth = _this$computedStyle3.borderLeftWidth,
             borderRightWidth = _this$computedStyle3.borderRightWidth,
             marginRight = _this$computedStyle3.marginRight,
             marginLeft = _this$computedStyle3.marginLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerWidth + borderLeftWidth + borderRightWidth + marginLeft + marginRight;
       }
     }, {
       key: "outerHeight",
       get: function get() {
         var _this$computedStyle4 = this.computedStyle,
+            display = _this$computedStyle4.display,
             borderTopWidth = _this$computedStyle4.borderTopWidth,
             borderBottomWidth = _this$computedStyle4.borderBottomWidth,
             marginTop = _this$computedStyle4.marginTop,
             marginBottom = _this$computedStyle4.marginBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerHeight + borderTopWidth + borderBottomWidth + marginTop + marginBottom;
       }
     }, {
@@ -8032,11 +8055,6 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-
-        if (!this.animating) {
-          return style;
-        }
-
         var copy = clone$3(style);
         animationList.forEach(function (item) {
           if (item.animating) {
@@ -9349,17 +9367,14 @@
           if (w2 !== undefined) {
             currentStyle.width = {
               value: w2,
-              unit: PX$5,
-              virtual: true // 特殊标识
-
+              unit: PX$5
             };
           }
 
           if (h2 !== undefined) {
             currentStyle.height = {
               value: h2,
-              unit: PX$5,
-              virtual: true
+              unit: PX$5
             };
           } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
@@ -9565,6 +9580,34 @@
   var LOADING = 1;
   var LOADED = 2;
 
+  function fitSize(style, width, height, data) {
+    var autoW = style.width.unit === AUTO$4;
+    var autoH = style.height.unit === AUTO$4;
+
+    if (autoW && autoH) {
+      style.width = {
+        value: width,
+        unit: PX$6
+      };
+      style.height = {
+        value: height,
+        unit: PX$6
+      };
+    } else if (autoW) {
+      var h = style.height.unit === PX$6 ? style.height.value : style.height.value * data.h * 0.01;
+      style.width = {
+        value: h * width / height,
+        unit: PX$6
+      };
+    } else if (autoH) {
+      var w = style.width.unit === PX$6 ? style.width.value : style.width.value * data.w * 0.01;
+      style.height = {
+        value: w * height / width,
+        unit: PX$6
+      };
+    }
+  }
+
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
@@ -9573,7 +9616,8 @@
 
       _classCallCheck(this, Img);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props)); // 空url用错误图代替
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props));
+      _this.__src = _this.props.src; // 空url用错误图代替
 
       if (!_this.src) {
         _this.__error = true;
@@ -9609,11 +9653,8 @@
       value: function __layout(data) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
-
         var isDestroyed = this.isDestroyed,
             src = this.src,
-            style = this.style,
             currentStyle = this.currentStyle;
         var display = currentStyle.display,
             width = currentStyle.width,
@@ -9621,52 +9662,41 @@
 
         if (isDestroyed || display === 'none' || !src) {
           return;
+        } // 布局前设置尺寸，因为可能preload已经加载好了
+
+
+        var cache = CACHE[src];
+        var loaded = cache && cache.state === LOADED;
+
+        if (loaded) {
+          if (cache.success) {
+            this.__source = cache.source;
+          } else {
+            this.__error = true;
+          }
+
+          this.__imgWidth = cache.width;
+          this.__imgHeight = cache.height;
+          fitSize(currentStyle, cache.width, cache.height, data);
         }
 
-        var w = this.width,
-            h = this.height;
-        var cache = CACHE[src] = CACHE[src] || {
-          state: INIT,
-          task: []
-        };
+        _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
 
-        var cb = function cb(cache, loaded) {
+        if (loaded) {
+          return;
+        }
+
+        var cb = function cb(cache) {
           if (cache.success) {
             _this2.__source = cache.source;
           } else {
             _this2.__error = true;
           }
 
-          _this2.__imgWidth = cache.width;
-          _this2.__imgHeight = cache.height;
-          var lv = level.REFLOW; // 宽高都为auto，使用加载测量的数据
+          var lv = level.REPAINT; // 宽高已知，即便加载后绘制也无需重新布局；有个未知则反之需要计算
 
-          if (width.unit === AUTO$4 && height.unit === AUTO$4) {
-            style.width = {
-              value: cache.width,
-              unit: PX$6
-            };
-            style.height = {
-              value: cache.height,
-              unit: PX$6
-            };
-          } // 否则有一方定义则按比例调整另一方适应
-          else if (width.unit === AUTO$4) {
-              style.width = {
-                value: h * cache.width / cache.height,
-                unit: PX$6
-              };
-            } else if (height.unit === AUTO$4) {
-              style.height = {
-                value: w * cache.height / cache.width,
-                unit: PX$6
-              };
-            } else {
-              lv = level.REPAINT;
-            }
-
-          if (loaded) {
-            return;
+          if (width.unit === AUTO$4 || height.unit === AUTO$4) {
+            lv = level.REFLOW;
           }
 
           var root = _this2.root;
@@ -9682,35 +9712,10 @@
           }
         };
 
-        if (cache.state === LOADED) {
-          cb(cache, true);
-        } else if (cache.state === LOADING) {
-          cache.task.push(cb);
-        } else if (cache.state === INIT) {
-          cache.state = LOADING;
-          cache.task.push(cb);
-          inject.measureImg(src, function (res) {
-            cache.success = res.success;
-
-            if (res.success) {
-              cache.width = res.width || 32;
-              cache.height = res.height || 32;
-              cache.source = res.source;
-            } else {
-              cache.width = 32;
-              cache.height = 32;
-            }
-
-            cache.state = LOADED;
-            var list = cache.task.splice(0);
-            list.forEach(function (cb) {
-              return cb(cache);
-            });
-          }, {
-            width: width,
-            height: height
-          });
-        }
+        Img.preload(src, cb, {
+          width: width,
+          height: height
+        });
       }
     }, {
       key: "__addGeom",
@@ -9834,16 +9839,11 @@
               ctx.drawImage(this.__source, originX, originY, width, height);
             }
           } else if (renderMode === mode.SVG) {
+            // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
             var matrix;
 
             if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵
-
-              if (this.matrix) {
-                this.__matrix = matrix = transform$1.mergeMatrix(this.__matrix, matrix);
-              }
-
-              matrix = matrix.join(',');
+              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height);
             }
 
             var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
@@ -9857,8 +9857,8 @@
               props.push(['mask', "url(#".concat(maskId, ")")]);
             }
 
-            if (matrix && matrix !== '1,0,0,1,0,0') {
-              props.push(['transform', 'matrix(' + matrix + ')']);
+            if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+              props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
             }
 
             this.virtualDom.children.push({
@@ -9872,12 +9872,66 @@
     }, {
       key: "src",
       get: function get() {
-        return this.props.src;
+        return this.__src;
+      },
+      set: function set(v) {
+        var root = this.root;
+
+        if (this.src !== v) {
+          this.__src = v;
+          this.__source = null;
+          this.__error = null;
+
+          if (root) {
+            root.delRefreshTask(this.__task);
+            this.__task = {
+              before: function before() {
+                root.setRefreshLevel(level.REFLOW);
+              }
+            };
+            root.addRefreshTask(this.__task);
+          }
+        }
       }
     }, {
       key: "baseLine",
       get: function get() {
         return this.height;
+      }
+    }], [{
+      key: "preload",
+      value: function preload(url, cb, options) {
+        var cache = CACHE[url] = CACHE[url] || {
+          state: INIT,
+          task: []
+        };
+
+        if (cache.state === LOADED) {
+          cb(cache);
+        } else if (cache.state === LOADING) {
+          cache.task.push(cb);
+        } else if (cache.state === INIT) {
+          cache.state = LOADING;
+          cache.task.push(cb);
+          inject.measureImg(url, function (res) {
+            cache.success = res.success;
+
+            if (res.success) {
+              cache.width = res.width || 32;
+              cache.height = res.height || 32;
+              cache.source = res.source;
+            } else {
+              cache.width = 32;
+              cache.height = 32;
+            }
+
+            cache.state = LOADED;
+            var list = cache.task.splice(0);
+            list.forEach(function (cb) {
+              return cb(cache);
+            });
+          }, options);
+        }
       }
     }]);
 

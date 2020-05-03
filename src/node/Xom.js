@@ -265,6 +265,10 @@ class Xom extends Node {
       width,
       position,
     } = currentStyle;
+    if(isDestroyed || display === 'none') {
+      computedStyle.width = computedStyle.height = 0;
+      return;
+    }
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:
@@ -277,10 +281,6 @@ class Xom extends Node {
     }
     this.__mp(currentStyle, computedStyle, w);
     this.__ox = this.__oy = 0;
-    if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = 0;
-      return;
-    }
     // 3种布局
     if(display === 'block') {
       this.__layoutBlock(data, isVirtual);
@@ -1291,10 +1291,14 @@ class Xom extends Node {
   get innerWidth() {
     let {
       computedStyle: {
+        display,
         paddingRight,
         paddingLeft,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.width
       + paddingLeft
       + paddingRight;
@@ -1303,10 +1307,14 @@ class Xom extends Node {
   get innerHeight() {
     let {
       computedStyle: {
+        display,
         paddingTop,
         paddingBottom,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.height
       + paddingTop
       + paddingBottom;
@@ -1315,12 +1323,16 @@ class Xom extends Node {
   get outerWidth() {
     let {
       computedStyle: {
+        display,
         borderLeftWidth,
         borderRightWidth,
         marginRight,
         marginLeft,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.innerWidth
       + borderLeftWidth
       + borderRightWidth
@@ -1331,12 +1343,16 @@ class Xom extends Node {
   get outerHeight() {
     let {
       computedStyle: {
+        display,
         borderTopWidth,
         borderBottomWidth,
         marginTop,
         marginBottom,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.innerHeight
       + borderTopWidth
       + borderBottomWidth
@@ -1381,9 +1397,6 @@ class Xom extends Node {
 
   get animateStyle() {
     let { style, animationList } = this;
-    if(!this.animating) {
-      return style;
-    }
     let copy = clone(style);
     animationList.forEach(item => {
       if(item.animating) {

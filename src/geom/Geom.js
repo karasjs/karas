@@ -22,8 +22,9 @@ class Geom extends Xom {
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
+      style.stroke = null;
     }
-    css.normalize(this.style, reset.geom);
+    css.normalize(this.style, reset.dom.concat(reset.geom));
   }
 
   __tryLayInline(w, total) {

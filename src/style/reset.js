@@ -83,7 +83,7 @@ Object.keys(DOM).forEach(k => {
   });
 });
 
-let geom = util.clone(dom);
+let geom = [];
 Object.keys(GEOM).forEach(k => {
   let v = GEOM[k];
   geom.push({

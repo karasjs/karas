@@ -182,8 +182,25 @@ class Root extends Dom {
     else if(this.tagName === 'svg') {
       this.__renderMode = mode.SVG;
     }
+    this.refresh();
+    // 第一次节点没有__root，渲染一次就有了才能diff
+    if(this.node.__root) {
+      this.node.__root.__destroy();
+    }
+    else {
+      initEvent(this.node);
+      this.node.__uuid = this.__uuid;
+    }
+    this.node.__root = this;
+  }
+
+  refresh() {
+    let { isDestroyed, renderMode, ctx, defs, style } = this;
+    if(isDestroyed) {
+      return;
+    }
+    defs.clear();
     // canvas/svg作为根节点一定是block或flex，不会是inline
-    let { style } = this;
     if(['flex', 'block'].indexOf(style.display) === -1) {
       style.display = 'block';
     }
@@ -200,24 +217,6 @@ class Root extends Dom {
       value: this.height,
       unit: PX,
     };
-    this.refresh();
-    // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.node.__root) {
-      this.node.__root.__destroy();
-    }
-    else {
-      initEvent(this.node);
-      this.node.__uuid = this.__uuid;
-    }
-    this.node.__root = this;
-  }
-
-  refresh() {
-    let { isDestroyed, renderMode, ctx, defs } = this;
-    if(isDestroyed) {
-      return;
-    }
-    defs.clear();
     // 计算css继承，获取所有字体和大小并准备测量文字
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;

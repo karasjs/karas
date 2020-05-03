@@ -30,7 +30,7 @@ class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props, children);
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
-    let { style, parent } = this;
+    let { style } = this;
     if(!style.display || !{
       flex: true,
       block: true,

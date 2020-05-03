@@ -8230,7 +8230,7 @@
       v: v
     });
   });
-  var geom$2 = util.clone(dom);
+  var geom$2 = [];
   Object.keys(GEOM).forEach(function (k) {
     var v = GEOM[k];
     geom$2.push({
@@ -8331,8 +8331,7 @@
       _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
       var _assertThisInitialize = _assertThisInitialized(_this),
-          style = _assertThisInitialize.style,
-          parent = _assertThisInitialize.parent;
+          style = _assertThisInitialize.style;
 
       if (!style.display || !{
         flex: true,
@@ -10822,29 +10821,8 @@
           this.__renderMode = mode.CANVAS;
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
-        } // canvas/svg作为根节点一定是block或flex，不会是inline
+        }
 
-
-        var style = this.style;
-
-        if (['flex', 'block'].indexOf(style.display) === -1) {
-          style.display = 'block';
-        } // 同理position不能为absolute
-
-
-        if (style.position === 'absolute') {
-          style.position = 'static';
-        } // 根节点满宽高
-
-
-        style.width = {
-          value: this.width,
-          unit: PX$7
-        };
-        style.height = {
-          value: this.height,
-          unit: PX$7
-        };
         this.refresh(); // 第一次节点没有__root，渲染一次就有了才能diff
 
         if (this.node.__root) {
@@ -10864,13 +10842,33 @@
         var isDestroyed = this.isDestroyed,
             renderMode = this.renderMode,
             ctx = this.ctx,
-            defs = this.defs;
+            defs = this.defs,
+            style = this.style;
 
         if (isDestroyed) {
           return;
         }
 
-        defs.clear(); // 计算css继承，获取所有字体和大小并准备测量文字
+        defs.clear(); // canvas/svg作为根节点一定是block或flex，不会是inline
+
+        if (['flex', 'block'].indexOf(style.display) === -1) {
+          style.display = 'block';
+        } // 同理position不能为absolute
+
+
+        if (style.position === 'absolute') {
+          style.position = 'static';
+        } // 根节点满宽高
+
+
+        style.width = {
+          value: this.width,
+          unit: PX$7
+        };
+        style.height = {
+          value: this.height,
+          unit: PX$7
+        }; // 计算css继承，获取所有字体和大小并准备测量文字
 
         var lv = this.__refreshLevel;
         this.__refreshLevel = level.REPAINT;
@@ -11102,9 +11100,10 @@
         style.background = null;
         style.border = null;
         style.strokeWidth = 0;
+        style.stroke = null;
       }
 
-      css.normalize(_this.style, reset.geom);
+      css.normalize(_this.style, reset.dom.concat(reset.geom));
       return _this;
     }
 

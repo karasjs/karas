@@ -696,8 +696,8 @@
   };
 
   var reg = {
-    position: /((-?[\d.]+(px|%))|(left|top|right|bottom|center)){1,2}/ig,
-    tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    position: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
@@ -1641,19 +1641,20 @@
         }
       }
 
-      if (isNil$1(style.backgroundPosition)) {
-        var position = temp.match(reg.position);
-
-        if (position) {
-          style.backgroundPosition = position.join(' ');
-        }
-      }
-
       if (isNil$1(style.backgroundColor)) {
         var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
 
         if (bgc) {
           style.backgroundColor = bgc[0];
+          temp = temp.replace(bgc[0], '');
+        }
+      }
+
+      if (isNil$1(style.backgroundPosition)) {
+        var position = temp.match(reg.position);
+
+        if (position) {
+          style.backgroundPosition = position.join(' ');
         }
       }
     } // 背景位置
@@ -1901,7 +1902,7 @@
     temp = style.transformOrigin;
 
     if (!isNil$1(temp)) {
-      var _match2 = temp.toString().match(reg.tfo);
+      var _match2 = temp.toString().match(reg.position);
 
       if (_match2) {
         if (_match2.length === 1) {
@@ -7374,7 +7375,7 @@
                   currentCtx.clearRect(0, 0, _width, _height);
                 }
               } else if (renderMode === mode.SVG) {
-                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
+                var _matrix = image.matrixResize(_width, _height, w, h, originX, originY, innerWidth, innerHeight);
 
                 if (_matrix) {
                   _matrix = _matrix.join(',');

@@ -786,7 +786,7 @@ class Xom extends Node {
             }
           }
           else if(renderMode === mode.SVG) {
-            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight);
+            let matrix = image.matrixResize(width, height, w, h, originX, originY, innerWidth, innerHeight);
             if(matrix) {
               matrix = matrix.join(',');
             }

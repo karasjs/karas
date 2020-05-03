@@ -226,16 +226,17 @@ function normalize(style, reset = []) {
         style.backgroundRepeat = repeat[0].toLowerCase();
       }
     }
-    if(isNil(style.backgroundPosition)) {
-      let position = temp.match(reg.position);
-      if(position) {
-        style.backgroundPosition = position.join(' ');
-      }
-    }
     if(isNil(style.backgroundColor)) {
       let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
       if(bgc) {
         style.backgroundColor = bgc[0];
+        temp = temp.replace(bgc[0], '');
+      }
+    }
+    if(isNil(style.backgroundPosition)) {
+      let position = temp.match(reg.position);
+      if(position) {
+        style.backgroundPosition = position.join(' ');
       }
     }
   }
@@ -456,7 +457,7 @@ function normalize(style, reset = []) {
   }
   temp = style.transformOrigin;
   if(!isNil(temp)) {
-    let match = temp.toString().match(reg.tfo);
+    let match = temp.toString().match(reg.position);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];

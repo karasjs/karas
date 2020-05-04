@@ -110,7 +110,6 @@ class Img extends Dom {
     let originX = x + marginLeft + borderLeftWidth + paddingLeft;
     let originY = y + marginTop + borderTopWidth + paddingTop;
     let loadImg = this.__loadImg;
-    let source = loadImg.source;
     if(loadImg.error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
@@ -179,59 +178,63 @@ class Img extends Dom {
         ]);
       }
     }
-    else if(source) {
-      // 圆角需要生成一个mask
-      let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-      if(renderMode === mode.CANVAS) {
-        // 有border-radius需模拟遮罩裁剪
-        if(list) {
-          let { width, height } = this.root;
-          let c = inject.getCacheCanvas(width, height);
-          c.ctx.drawImage(source, 0, 0, width, height);
-          c.ctx.globalCompositeOperation = 'destination-in';
-          border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
-          c.draw(c.ctx);
-          ctx.drawImage(c.canvas, 0, 0);
-          c.draw(ctx);
-          c.ctx.globalCompositeOperation = 'source-over';
-          c.ctx.clearRect(0, 0, width, height);
-          c.draw(c.ctx);
+    else if(loadImg.url === src) {
+      let source = loadImg.source;
+      // 无source不绘制
+      if(source) {
+        // 圆角需要生成一个mask
+        let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        if(renderMode === mode.CANVAS) {
+          // 有border-radius需模拟遮罩裁剪
+          if(list) {
+            let { width, height } = this.root;
+            let c = inject.getCacheCanvas(width, height);
+            c.ctx.drawImage(source, 0, 0, width, height);
+            c.ctx.globalCompositeOperation = 'destination-in';
+            border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
+            c.draw(c.ctx);
+            ctx.drawImage(c.canvas, 0, 0);
+            c.draw(ctx);
+            c.ctx.globalCompositeOperation = 'source-over';
+            c.ctx.clearRect(0, 0, width, height);
+            c.draw(c.ctx);
+          }
+          else {
+            ctx.drawImage(source, originX, originY, width, height);
+          }
         }
-        else {
-          ctx.drawImage(source, originX, originY, width, height);
-        }
-      }
-      else if(renderMode === mode.SVG) {
-        // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
-        let matrix;
-        if(width !== loadImg.width || height !== loadImg.height) {
-          matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
-        }
-        let props = [
-          ['xlink:href', src],
-          ['x', originX],
-          ['y', originY],
-          ['width', loadImg.width],
-          ['height', loadImg.height]
-        ];
-        if(list) {
-          let maskId = defs.add({
-            tagName: 'mask',
-            props: [],
-            children: [
-              border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list),
-            ],
+        else if(renderMode === mode.SVG) {
+          // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+          let matrix;
+          if(width !== loadImg.width || height !== loadImg.height) {
+            matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
+          }
+          let props = [
+            ['xlink:href', src],
+            ['x', originX],
+            ['y', originY],
+            ['width', loadImg.width],
+            ['height', loadImg.height]
+          ];
+          if(list) {
+            let maskId = defs.add({
+              tagName: 'mask',
+              props: [],
+              children: [
+                border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list),
+              ],
+            });
+            props.push(['mask', `url(#${maskId})`]);
+          }
+          if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+            props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+          }
+          this.virtualDom.children.push({
+            type: 'img',
+            tagName: 'image',
+            props,
           });
-          props.push(['mask', `url(#${maskId})`]);
         }
-        if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-          props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
-        }
-        this.virtualDom.children.push({
-          type: 'img',
-          tagName: 'image',
-          props,
-        });
       }
     }
     else {

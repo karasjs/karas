@@ -302,18 +302,13 @@ class Geom extends Xom {
 
   get animateProps() {
     let { props, animationList } = this;
-    let copy = {};
+    let copy = Object.assign({}, props);
     animationList.forEach(item => {
       if(item.animating) {
         Object.assign(copy, item.props);
       }
     });
-    let isEmpty = !Object.keys(copy).length;
-    if(isEmpty) {
-      return props;
-    }
-    props = clone(props);
-    return Object.assign(props, copy);
+    return copy;
   }
 
   get currentProps() {

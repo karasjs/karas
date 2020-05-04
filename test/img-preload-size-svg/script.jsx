@@ -1,7 +1,7 @@
 karas.inject.measureImg('../image.png', function() {
   let o = karas.render(
     <svg width="360" height="360">
-      <img src="../image.png"/>
+      <img src="../image.png" style={{width:50,height:50}}/>
     </svg>,
     '#test'
   );

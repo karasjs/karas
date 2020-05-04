@@ -313,7 +313,7 @@ class Geom extends Xom {
       return props;
     }
     props = clone(props);
-    return Object.assign(props, clone);
+    return Object.assign(props, copy);
   }
 
   get currentProps() {

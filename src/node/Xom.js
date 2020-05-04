@@ -1401,7 +1401,7 @@ class Xom extends Node {
       return style;
     }
     style = clone(style);
-    return Object.assign(style, clone);
+    return Object.assign(style, copy);
   }
 
   get currentStyle() {

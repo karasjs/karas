@@ -8083,7 +8083,7 @@
         }
 
         style = clone$3(style);
-        return Object.assign(style, clone$3);
+        return Object.assign(style, copy);
       }
     }, {
       key: "currentStyle",
@@ -11456,7 +11456,7 @@
         }
 
         props = clone$4(props);
-        return Object.assign(props, clone$4);
+        return Object.assign(props, copy);
       }
     }, {
       key: "currentProps",

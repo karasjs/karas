@@ -592,10 +592,8 @@ class Xom extends Node {
       renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
-    let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
-    let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
-    computedStyle.backgroundPositionX = bgX;
-    computedStyle.backgroundPositionY = bgY;
+    computedStyle.backgroundPositionX = 0;
+    computedStyle.backgroundPositionY = 0;
     backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
     computedStyle.backgroundSize = backgroundSize.join(' ');
     // 渐变或图片叠加
@@ -679,6 +677,10 @@ class Xom extends Node {
             else if(h === -1) {
               h = w * height / width;
             }
+            let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, width);
+            let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, height);
+            computedStyle.backgroundPositionX = bgX;
+            computedStyle.backgroundPositionY = bgY;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
             let xnl = 0;
             let xnr = 0;
@@ -847,6 +849,9 @@ class Xom extends Node {
                 });
               });
             }
+            computedStyle.backgroundSize = `${w} ${h}`;
+            computedStyle.backgroundPositionX = bgX;
+            computedStyle.backgroundPositionY = bgY;
           }
         }
         else {

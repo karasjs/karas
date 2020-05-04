@@ -7191,10 +7191,8 @@
           renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         }
 
-        var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
-        var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
-        computedStyle.backgroundPositionX = bgX;
-        computedStyle.backgroundPositionY = bgY;
+        computedStyle.backgroundPositionX = 0;
+        computedStyle.backgroundPositionY = 0;
         backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
         computedStyle.backgroundSize = backgroundSize.join(' '); // 渐变或图片叠加
 
@@ -7274,8 +7272,12 @@
                   w = h * _width / _height;
                 } else if (h === -1) {
                   h = w * _height / _width;
-                } // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+                }
 
+                var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, _width);
+                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, _height);
+                computedStyle.backgroundPositionX = bgX;
+                computedStyle.backgroundPositionY = bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
                 var xnl = 0;
                 var xnr = 0;
@@ -7458,6 +7460,10 @@
                     });
                   });
                 }
+
+                computedStyle.backgroundSize = "".concat(w, " ").concat(h);
+                computedStyle.backgroundPositionX = bgX;
+                computedStyle.backgroundPositionY = bgY;
               }
             } else {
               // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同

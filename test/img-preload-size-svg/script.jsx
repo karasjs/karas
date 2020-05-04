@@ -8,7 +8,7 @@ karas.inject.measureImg('../image.png', function() {
   let input = document.querySelector('#base64');
   input.value = document.querySelector('svg').outerHTML;
   o.on('refresh', function(lv) {
-    input.value += lv;
+    input.value += lv + document.querySelector('svg').outerHTML;
   });
 });
 

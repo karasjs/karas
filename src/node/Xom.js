@@ -596,7 +596,9 @@ class Xom extends Node {
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
-        if(loadBgi.url === backgroundImage) {
+        let source = loadBgi.source;
+        // source即加载成功
+        if(source) {
           backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
           let { width, height } = loadBgi;
           let [w, h] = backgroundSize;
@@ -756,8 +758,7 @@ class Xom extends Node {
           // 超出尺寸模拟mask截取
           let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
             || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-          let source = loadBgi.source;
-          if(renderMode === mode.CANVAS && source) {
+          if(renderMode === mode.CANVAS) {
             let c;
             let currentCtx;
             // 在离屏canvas上绘制
@@ -849,9 +850,12 @@ class Xom extends Node {
           computedStyle.backgroundPositionY = bgY;
         }
         else {
+          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
           loadBgi.url = backgroundImage;
+          loadBgi.source = null;
           inject.measureImg(backgroundImage, data => {
-            if(data.success) {
+            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
               loadBgi.source = data.source;
               loadBgi.width = data.width;
               loadBgi.height = data.height;
@@ -1384,26 +1388,20 @@ class Xom extends Node {
     return this.__animationList;
   }
 
-  get animating() {
-    let { animationList } = this;
-    for(let i = 0, len = animationList.length; i < len; i++) {
-      let item = animationList[i];
-      if(item.animating) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   get animateStyle() {
     let { style, animationList } = this;
-    let copy = clone(style);
+    let copy = {};
     animationList.forEach(item => {
       if(item.animating) {
         Object.assign(copy, item.style);
       }
     });
-    return copy;
+    let isEmpty = !Object.keys(copy).length;
+    if(isEmpty) {
+      return style;
+    }
+    style = clone(style);
+    return Object.assign(style, clone);
   }
 
   get currentStyle() {

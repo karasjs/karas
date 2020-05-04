@@ -4160,7 +4160,7 @@
   });
 
   var SPF = 1000 / 60;
-  var canvas = {
+  var CANVAS = {
     cache: null,
     mask: null
   };
@@ -4168,15 +4168,15 @@
   function cacheCanvas(key, width, height) {
     var o;
 
-    if (!canvas[key]) {
-      o = canvas[key] = document.createElement('canvas');
+    if (!CANVAS[key]) {
+      o = CANVAS[key] = document.createElement('canvas');
       o.style.position = 'absolute';
       o.style.left = '9999px';
       o.style.top = '-9999px';
       document.body.append(o);
     }
 
-    o = canvas[key];
+    o = CANVAS[key];
     o.setAttribute('width', width);
     o.setAttribute('height', height);
     o.style.width = width + 'px';
@@ -4189,6 +4189,10 @@
     };
   }
 
+  var IMG = {};
+  var INIT = 0;
+  var LOADING = 1;
+  var LOADED = 2;
   var inject = {
     measureText: function measureText(cb) {
       var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
@@ -4251,34 +4255,55 @@
       document.body.removeChild(div);
     },
     measureImg: function measureImg(url, cb) {
-      var img = new Image();
-
-      img.onload = function () {
-        cb({
-          success: true,
-          width: img.width,
-          height: img.height,
-          source: img
-        });
+      var cache = IMG[url] = IMG[url] || {
+        state: INIT,
+        task: []
       };
 
-      img.onerror = function () {
-        cb({
-          success: false
-        });
-      };
+      if (cache.state === LOADED) {
+        cb(cache);
+      } else if (cache.state === LOADING) {
+        cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cache.task.push(cb);
+        var img = new Image();
 
-      if (url.substr(0, 5) !== 'data:') {
-        var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+        img.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
 
-        if (host) {
-          if (location.hostname !== host[1]) {
-            img.crossOrigin = 'anonymous';
+        img.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        if (url.substr(0, 5) !== 'data:') {
+          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+
+          if (host) {
+            if (location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
           }
         }
-      }
 
-      img.src = url;
+        img.src = url;
+      }
     },
     warn: function warn(s) {
       console.warn(s);
@@ -7171,7 +7196,9 @@
           var loadBgi = this.__loadBgi;
 
           if (util.isString(backgroundImage)) {
-            if (loadBgi.url === backgroundImage) {
+            var source = loadBgi.source; // source即加载成功
+
+            if (source) {
               backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
               var _width = loadBgi.width,
                   _height = loadBgi.height;
@@ -7344,9 +7371,8 @@
 
 
               var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-              var source = loadBgi.source;
 
-              if (renderMode === mode.CANVAS && source) {
+              if (renderMode === mode.CANVAS) {
                 var c;
                 var currentCtx; // 在离屏canvas上绘制
 
@@ -7435,9 +7461,12 @@
               computedStyle.backgroundPositionX = bgX;
               computedStyle.backgroundPositionY = bgY;
             } else {
+              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
               loadBgi.url = backgroundImage;
+              loadBgi.source = null;
               inject.measureImg(backgroundImage, function (data) {
-                if (data.success) {
+                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
@@ -8037,32 +8066,24 @@
         return this.__animationList;
       }
     }, {
-      key: "animating",
-      get: function get() {
-        var animationList = this.animationList;
-
-        for (var i = 0, len = animationList.length; i < len; i++) {
-          var item = animationList[i];
-
-          if (item.animating) {
-            return true;
-          }
-        }
-
-        return false;
-      }
-    }, {
       key: "animateStyle",
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = clone$3(style);
+        var copy = {};
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.style);
           }
         });
-        return copy;
+        var isEmpty = !Object.keys(copy).length;
+
+        if (isEmpty) {
+          return style;
+        }
+
+        style = clone$3(style);
+        return Object.assign(style, clone$3);
       }
     }, {
       key: "currentStyle",
@@ -9574,51 +9595,7 @@
     return Dom;
   }(Xom);
 
-  var AUTO$4 = unit.AUTO,
-      PX$6 = unit.PX;
-  var CACHE = {};
-  var INIT = 0;
-  var LOADING = 1;
-  var LOADED = 2;
-
-  function fitSize(style, width, height, data) {
-    var autoW = style.width.unit === AUTO$4;
-    var autoH = style.height.unit === AUTO$4;
-
-    if (autoW && autoH) {
-      style.width = {
-        value: width,
-        unit: PX$6
-      };
-      style.height = {
-        value: height,
-        unit: PX$6
-      };
-    } else if (autoW) {
-      var h = style.height.unit === PX$6 ? style.height.value : style.height.value * data.h * 0.01;
-      style.width = {
-        value: h * width / height,
-        unit: PX$6
-      };
-    } else if (autoH) {
-      var w = style.width.unit === PX$6 ? style.width.value : style.width.value * data.w * 0.01;
-      style.height = {
-        value: w * height / width,
-        unit: PX$6
-      };
-    }
-  }
-
-  function setRes(cache, img) {
-    if (cache.success) {
-      img.__source = cache.source;
-    } else {
-      img.__error = true;
-    }
-
-    img.__imgWidth = cache.width;
-    img.__imgHeight = cache.height;
-  }
+  var AUTO$4 = unit.AUTO;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -9629,94 +9606,65 @@
       _classCallCheck(this, Img);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props));
-      _this.__src = _this.props.src; // 空url用错误图代替
+      _this.__src = _this.props.src;
+      var loadImg = _this.__loadImg = {
+        // 刷新回调函数，用以destroy取消用
+        cb: function cb() {}
+      }; // 空url用错误图代替
 
       if (!_this.src) {
-        _this.__error = true;
-
-        var _assertThisInitialize = _assertThisInitialized(_this),
-            _assertThisInitialize2 = _assertThisInitialize.style,
-            width = _assertThisInitialize2.width,
-            height = _assertThisInitialize2.height;
-
-        width = width || {
-          unit: AUTO$4
-        };
-        height = height || {
-          unit: AUTO$4
-        };
-
-        if (width.unit === AUTO$4) {
-          width.value = 32;
-          width.unit = PX$6;
-        }
-
-        if (height.unit === AUTO$4) {
-          height.value = 32;
-          height.unit = PX$6;
-        }
+        loadImg.error = true;
       }
 
       return _this;
     }
+    /**
+     * 覆盖xom的方法，在__layout3个分支中会首先被调用
+     * 当样式中固定宽高时，图片按样式尺寸，加载后重新绘制即可
+     * 只固定宽高一个时，加载完要计算缩放比，重新布局绘制
+     * 都没有固定，按照图片尺寸，重新布局绘制
+     * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
+     * @param data
+     * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
+     * @private
+     */
+
 
     _createClass(Img, [{
-      key: "__layout",
-      value: function __layout(data) {
-        var _this2 = this;
+      key: "__preLayout",
+      value: function __preLayout(data) {
+        var res = _get(_getPrototypeOf(Img.prototype), "__preLayout", this).call(this, data);
 
-        var isDestroyed = this.isDestroyed,
-            src = this.src,
-            currentStyle = this.currentStyle;
-        var display = currentStyle.display,
-            width = currentStyle.width,
-            height = currentStyle.height;
-
-        if (isDestroyed || display === 'none' || !src) {
-          return;
-        } // 布局前设置尺寸，因为可能preload已经加载好了
-
-
-        var cache = CACHE[src];
-        var loaded = cache && cache.state === LOADED;
-
-        if (loaded) {
-          setRes(cache, this);
-          fitSize(currentStyle, cache.width, cache.height, data);
+        if (res.fixedWidth && res.fixedHeight) {
+          return res;
         }
 
-        _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
+        var loadImg = this.__loadImg;
 
-        if (loaded) {
-          return;
-        }
-
-        var cb = function cb(cache) {
-          var lv = level.REPAINT; // 宽高已知，即便加载后绘制也无需重新布局；有个未知则反之需要计算
-
-          if (width.unit === AUTO$4 || height.unit === AUTO$4) {
-            lv = level.REFLOW;
+        if (loadImg.error) {
+          if (res.fixedWidth) {
+            res.h = res.w;
+          } else if (res.fixedHeight) {
+            res.w = res.h;
           } else {
-            setRes(cache, _this2);
+            res.w = res.h = 32;
           }
-
-          var root = _this2.root;
-
-          if (root) {
-            root.delRefreshTask(_this2.__task);
-            _this2.__task = {
-              before: function before() {
-                root.setRefreshLevel(lv);
-              }
-            };
-            root.addRefreshTask(_this2.__task);
+        } else if (loadImg.source) {
+          if (res.fixedWidth) {
+            res.h = res.w * loadImg.height / loadImg.width;
+          } else if (res.fixedHeight) {
+            res.w = res.h * loadImg.width / loadImg.height;
+          } else {
+            res.w = loadImg.width;
+            res.h = loadImg.height;
           }
-        };
+        } else {
+          res.w = res.h = 0;
+        }
 
-        Img.preload(src, cb, {
-          width: width,
-          height: height
-        });
+        res.fixedWidth = true;
+        res.fixedHeight = true;
+        return res;
       }
     }, {
       key: "__addGeom",
@@ -9765,8 +9713,10 @@
 
         var originX = x + marginLeft + borderLeftWidth + paddingLeft;
         var originY = y + marginTop + borderTopWidth + paddingTop;
+        var loadImg = this.__loadImg;
+        var source = loadImg.source;
 
-        if (this.__error) {
+        if (loadImg.error) {
           var strokeWidth = Math.min(width, height) * 0.02;
           var stroke = '#CCC';
           var fill = '#DDD';
@@ -9816,7 +9766,7 @@
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
-        } else if (this.__source) {
+        } else if (source) {
           // 圆角需要生成一个mask
           var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
@@ -9827,7 +9777,7 @@
                   _width = _this$root.width,
                   _height = _this$root.height;
               var c = inject.getCacheCanvas(_width, _height);
-              c.ctx.drawImage(this.__source, 0, 0, _width, _height);
+              c.ctx.drawImage(source, 0, 0, _width, _height);
               c.ctx.globalCompositeOperation = 'destination-in';
               border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
               c.draw(c.ctx);
@@ -9837,17 +9787,17 @@
               c.ctx.clearRect(0, 0, _width, _height);
               c.draw(c.ctx);
             } else {
-              ctx.drawImage(this.__source, originX, originY, width, height);
+              ctx.drawImage(source, originX, originY, width, height);
             }
           } else if (renderMode === mode.SVG) {
             // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
             var matrix;
 
-            if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height);
+            if (width !== loadImg.width || height !== loadImg.height) {
+              matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
             }
 
-            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
+            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
             if (list) {
               var maskId = defs.add({
@@ -9868,7 +9818,48 @@
               props: props
             });
           }
+        } else {
+          this.__load(src);
         }
+      }
+    }, {
+      key: "__load",
+      value: function __load(src) {
+        var _this2 = this;
+
+        var loadImg = this.__loadImg;
+        loadImg.url = src;
+        loadImg.source = null;
+        loadImg.error = null;
+        inject.measureImg(src, function (data) {
+          // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+          if (data.url === loadImg.url && !_this2.__isDestroyed) {
+            if (data.success) {
+              loadImg.source = data.source;
+              loadImg.width = data.width;
+              loadImg.height = data.height;
+            } else {
+              loadImg.error = true;
+            }
+
+            var root = _this2.root,
+                _this2$currentStyle = _this2.currentStyle,
+                width = _this2$currentStyle.width,
+                height = _this2$currentStyle.height;
+            root.delRefreshTask(loadImg.cb);
+            root.delRefreshTask(_this2.__task);
+
+            if (width.unit !== AUTO$4 && height.unit !== AUTO$4) {
+              root.addRefreshTask(loadImg.cb);
+            } else {
+              root.addRefreshTask(_this2.__task = {
+                before: function before() {
+                  root.setRefreshLevel(level.REFLOW);
+                }
+              });
+            }
+          }
+        });
       }
     }, {
       key: "src",
@@ -9880,17 +9871,9 @@
 
         if (this.src !== v) {
           this.__src = v;
-          this.__source = null;
-          this.__error = null;
 
           if (root) {
-            root.delRefreshTask(this.__task);
-            this.__task = {
-              before: function before() {
-                root.setRefreshLevel(level.REFLOW);
-              }
-            };
-            root.addRefreshTask(this.__task);
+            this.__load(v);
           }
         }
       }
@@ -9898,41 +9881,6 @@
       key: "baseLine",
       get: function get() {
         return this.height;
-      }
-    }], [{
-      key: "preload",
-      value: function preload(url, cb, options) {
-        var cache = CACHE[url] = CACHE[url] || {
-          state: INIT,
-          task: []
-        };
-
-        if (cache.state === LOADED) {
-          cb(cache);
-        } else if (cache.state === LOADING) {
-          cache.task.push(cb);
-        } else if (cache.state === INIT) {
-          cache.state = LOADING;
-          cache.task.push(cb);
-          inject.measureImg(url, function (res) {
-            cache.success = res.success;
-
-            if (res.success) {
-              cache.width = res.width || 32;
-              cache.height = res.height || 32;
-              cache.source = res.source;
-            } else {
-              cache.width = 32;
-              cache.height = 32;
-            }
-
-            cache.state = LOADED;
-            var list = cache.task.splice(0);
-            list.forEach(function (cb) {
-              return cb(cache);
-            });
-          }, options);
-        }
       }
     }]);
 
@@ -10651,7 +10599,7 @@
   var isNil$5 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
-  var PX$7 = unit.PX;
+  var PX$6 = unit.PX;
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
@@ -10918,11 +10866,11 @@
 
         style.width = {
           value: this.width,
-          unit: PX$7
+          unit: PX$6
         };
         style.height = {
           value: this.height,
-          unit: PX$7
+          unit: PX$6
         }; // 计算css继承，获取所有字体和大小并准备测量文字
 
         var lv = this.__refreshLevel;
@@ -11127,7 +11075,7 @@
   }(Dom);
 
   var AUTO$5 = unit.AUTO,
-      PX$8 = unit.PX,
+      PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
   var clone$4 = util.clone,
       int2rgba$4 = util.int2rgba,
@@ -11168,7 +11116,7 @@
         // 无children，直接以style的width为宽度，不定义则为0
         var width = this.currentStyle.width;
 
-        if (width.unit === PX$8) {
+        if (width.unit === PX$7) {
           return w - width.value;
         } else if (width.unit === PERCENT$7) {
           return w - total * width.value * 0.01;
@@ -11288,7 +11236,7 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom;
 
-        if (strokeWidth.unit === PX$8) {
+        if (strokeWidth.unit === PX$7) {
           strokeWidth = strokeWidth.value;
         } else if (strokeWidth.unit === PERCENT$7) {
           strokeWidth = strokeWidth.value * width * 0.01;
@@ -11495,13 +11443,20 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = clone$4(props);
+        var copy = {};
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.props);
           }
         });
-        return copy;
+        var isEmpty = !Object.keys(copy).length;
+
+        if (isEmpty) {
+          return props;
+        }
+
+        props = clone$4(props);
+        return Object.assign(props, clone$4);
       }
     }, {
       key: "currentProps",

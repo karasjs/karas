@@ -10,113 +10,66 @@ import level from '../animate/level';
 
 const { AUTO, PX } = unit;
 
-const CACHE = {};
-const INIT = 0;
-const LOADING = 1;
-const LOADED = 2;
-
-function fitSize(style, width, height, data) {
-  let autoW = style.width.unit === AUTO;
-  let autoH = style.height.unit === AUTO;
-  if(autoW && autoH) {
-    style.width = {
-      value: width,
-      unit: PX,
-    };
-    style.height = {
-      value: height,
-      unit: PX,
-    };
-  }
-  else if(autoW) {
-    let h = style.height.unit === PX ? style.height.value : style.height.value * data.h * 0.01;
-    style.width = {
-      value: h * width / height,
-      unit: PX,
-    };
-  }
-  else if(autoH) {
-    let w = style.width.unit === PX ? style.width.value : style.width.value * data.w * 0.01;
-    style.height = {
-      value: w * height / width,
-      unit: PX,
-    };
-  }
-}
-
-function setRes(cache, img) {
-  if(cache.success) {
-    img.__source = cache.source;
-  }
-  else {
-    img.__error = true;
-  }
-  img.__imgWidth = cache.width;
-  img.__imgHeight = cache.height;
-}
-
 class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__src = this.props.src;
+    let loadImg = this.__loadImg = {
+      // 刷新回调函数，用以destroy取消用
+      cb: function() {
+      },
+    };
     // 空url用错误图代替
     if(!this.src) {
-      this.__error = true;
-      let { style: { width, height } } = this;
-      width = width || { unit: AUTO };
-      height = height || { unit: AUTO };
-      if(width.unit === AUTO) {
-        width.value = 32;
-        width.unit = PX;
-      }
-      if(height.unit === AUTO) {
-        height.value = 32;
-        height.unit = PX;
-      }
+      loadImg.error = true;
     }
   }
 
-  __layout(data) {
-    let { isDestroyed, src, currentStyle } = this;
-    let { display, width, height } = currentStyle;
-    if(isDestroyed || display === 'none' || !src) {
-      return;
+  /**
+   * 覆盖xom的方法，在__layout3个分支中会首先被调用
+   * 当样式中固定宽高时，图片按样式尺寸，加载后重新绘制即可
+   * 只固定宽高一个时，加载完要计算缩放比，重新布局绘制
+   * 都没有固定，按照图片尺寸，重新布局绘制
+   * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
+   * @param data
+   * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
+   * @private
+   */
+  __preLayout(data) {
+    let res = super.__preLayout(data);
+    if(res.fixedWidth && res.fixedHeight) {
+      return res;
     }
-    // 布局前设置尺寸，因为可能preload已经加载好了
-    let cache = CACHE[src];
-    let loaded = cache && cache.state === LOADED;
-    if(loaded) {
-      setRes(cache, this);
-      fitSize(currentStyle, cache.width, cache.height, data);
-    }
-    super.__layout(data);
-    if(loaded) {
-      return;
-    }
-    let cb = cache => {
-      let lv = level.REPAINT;
-      // 宽高已知，即便加载后绘制也无需重新布局；有个未知则反之需要计算
-      if(width.unit === AUTO || height.unit === AUTO) {
-        lv = level.REFLOW;
+    let loadImg = this.__loadImg;
+    if(loadImg.error) {
+      if(res.fixedWidth) {
+        res.h = res.w;
+      }
+      else if(res.fixedHeight) {
+        res.w = res.h;
       }
       else {
-        setRes(cache, this);
+        res.w = res.h = 32;
       }
-      let root = this.root;
-      if(root) {
-        root.delRefreshTask(this.__task);
-        this.__task = {
-          before() {
-            root.setRefreshLevel(lv);
-          },
-        };
-        root.addRefreshTask(this.__task);
+    }
+    else if(loadImg.source) {
+      if(res.fixedWidth) {
+        res.h = res.w * loadImg.height / loadImg.width;
       }
-    };
-    Img.preload(src, cb, {
-      width,
-      height,
-    });
+      else if(res.fixedHeight) {
+        res.w = res.h * loadImg.width / loadImg.height;
+      }
+      else {
+        res.w = loadImg.width;
+        res.h = loadImg.height;
+      }
+    }
+    else {
+      res.w = res.h = 0;
+    }
+    res.fixedWidth = true;
+    res.fixedHeight = true;
+    return res;
   }
 
   __addGeom(tagName, props) {
@@ -136,7 +89,8 @@ class Img extends Dom {
   render(renderMode, ctx, defs) {
     super.render(renderMode, ctx, defs);
     let {
-      sx: x, sy: y, width, height, src, isDestroyed, computedStyle: {
+      sx: x, sy: y, width, height, src, isDestroyed,
+      computedStyle: {
         display,
         borderTopWidth,
         borderLeftWidth,
@@ -155,7 +109,9 @@ class Img extends Dom {
     }
     let originX = x + marginLeft + borderLeftWidth + paddingLeft;
     let originY = y + marginTop + borderTopWidth + paddingTop;
-    if(this.__error) {
+    let loadImg = this.__loadImg;
+    let source = loadImg.source;
+    if(loadImg.error) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
       let fill = '#DDD';
@@ -223,7 +179,7 @@ class Img extends Dom {
         ]);
       }
     }
-    else if(this.__source) {
+    else if(source) {
       // 圆角需要生成一个mask
       let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       if(renderMode === mode.CANVAS) {
@@ -231,7 +187,7 @@ class Img extends Dom {
         if(list) {
           let { width, height } = this.root;
           let c = inject.getCacheCanvas(width, height);
-          c.ctx.drawImage(this.__source, 0, 0, width, height);
+          c.ctx.drawImage(source, 0, 0, width, height);
           c.ctx.globalCompositeOperation = 'destination-in';
           border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
           c.draw(c.ctx);
@@ -242,22 +198,21 @@ class Img extends Dom {
           c.draw(c.ctx);
         }
         else {
-          ctx.drawImage(this.__source, originX, originY, width, height);
+          ctx.drawImage(source, originX, originY, width, height);
         }
       }
       else if(renderMode === mode.SVG) {
         // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
         let matrix;
-        if(this.__imgWidth !== undefined
-          && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-          matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height);
+        if(width !== loadImg.width || height !== loadImg.height) {
+          matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
         }
         let props = [
           ['xlink:href', src],
           ['x', originX],
           ['y', originY],
-          ['width', this.__imgWidth || 0],
-          ['height', this.__imgHeight || 0]
+          ['width', loadImg.width],
+          ['height', loadImg.height]
         ];
         if(list) {
           let maskId = defs.add({
@@ -279,6 +234,42 @@ class Img extends Dom {
         });
       }
     }
+    else {
+      this.__load(src);
+    }
+  }
+
+  __load(src) {
+    let loadImg = this.__loadImg;
+    loadImg.url = src;
+    loadImg.source = null;
+    loadImg.error = null;
+    inject.measureImg(src, data => {
+      // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+      if(data.url === loadImg.url && !this.__isDestroyed) {
+        if(data.success) {
+          loadImg.source = data.source;
+          loadImg.width = data.width;
+          loadImg.height = data.height;
+        }
+        else {
+          loadImg.error = true;
+        }
+        let { root, currentStyle: { width, height } } = this;
+        root.delRefreshTask(loadImg.cb);
+        root.delRefreshTask(this.__task);
+        if(width.unit !== AUTO && height.unit !== AUTO) {
+          root.addRefreshTask(loadImg.cb);
+        }
+        else {
+          root.addRefreshTask(this.__task = {
+            before() {
+              root.setRefreshLevel(level.REFLOW);
+            },
+          });
+        }
+      }
+    });
   }
 
   get src() {
@@ -289,54 +280,14 @@ class Img extends Dom {
     let { root } = this;
     if(this.src !== v) {
       this.__src = v;
-      this.__source = null;
-      this.__error = null;
       if(root) {
-        root.delRefreshTask(this.__task);
-        this.__task = {
-          before() {
-            root.setRefreshLevel(level.REFLOW);
-          },
-        };
-        root.addRefreshTask(this.__task);
+        this.__load(v);
       }
     }
   }
 
   get baseLine() {
     return this.height;
-  }
-
-  static preload(url, cb, options) {
-    let cache = CACHE[url] = CACHE[url] || {
-      state: INIT,
-      task: [],
-    };
-    if(cache.state === LOADED) {
-      cb(cache);
-    }
-    else if(cache.state === LOADING) {
-      cache.task.push(cb);
-    }
-    else if(cache.state === INIT) {
-      cache.state = LOADING;
-      cache.task.push(cb);
-      inject.measureImg(url, res => {
-        cache.success = res.success;
-        if(res.success) {
-          cache.width = res.width || 32;
-          cache.height = res.height || 32;
-          cache.source = res.source;
-        }
-        else {
-          cache.width = 32;
-          cache.height = 32;
-        }
-        cache.state = LOADED;
-        let list = cache.task.splice(0);
-        list.forEach(cb => cb(cache));
-      }, options);
-    }
   }
 }
 

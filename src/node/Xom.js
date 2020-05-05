@@ -770,6 +770,8 @@ class Xom extends Node {
                 let { width, height } = this.root;
                 c = inject.getCacheCanvas(width, height);
                 currentCtx = c.ctx;
+                // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
+                currentCtx.setTransform(...matrix);
               }
               else {
                 currentCtx = ctx;
@@ -785,8 +787,14 @@ class Xom extends Node {
                 currentCtx.globalCompositeOperation = 'destination-in';
                 renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.drawImage(c.canvas, 0, 0);
+                // 绘完后变正常即可
+                ctx.setTransform(...matrix);
                 currentCtx.globalCompositeOperation = 'source-over';
+                let { width, height } = this.root;
+                currentCtx.setTransform(1, 0, 0, 1, 0, 0);
                 currentCtx.clearRect(0, 0, width, height);
               }
             }

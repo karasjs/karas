@@ -1795,7 +1795,7 @@
         for (var i = 0; i < 2; i++) {
           var item = match[i];
 
-          if (/%$/.test(item) || /px$/.test(item)) {
+          if (/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(temp)) {
             calUnit(bc, i, item);
           } else if (item === '0' || item === 0) {
             bc.push({
@@ -7381,11 +7381,15 @@
                   var currentCtx; // 在离屏canvas上绘制
 
                   if (needMask) {
+                    var _currentCtx;
+
                     var _this$root = this.root,
                         _width2 = _this$root.width,
                         _height2 = _this$root.height;
                     c = inject.getCacheCanvas(_width2, _height2);
-                    currentCtx = c.ctx;
+                    currentCtx = c.ctx; // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
+
+                    (_currentCtx = currentCtx).setTransform.apply(_currentCtx, _toConsumableArray(matrix));
                   } else {
                     currentCtx = ctx;
                   } // 先画不考虑repeat的中心声明的
@@ -7399,10 +7403,18 @@
 
                   if (needMask) {
                     currentCtx.globalCompositeOperation = 'destination-in';
-                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                    ctx.drawImage(c.canvas, 0, 0);
+                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius); // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
+
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.drawImage(c.canvas, 0, 0); // 绘完后变正常即可
+
+                    ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
                     currentCtx.globalCompositeOperation = 'source-over';
-                    currentCtx.clearRect(0, 0, _width, _height);
+                    var _this$root2 = this.root,
+                        _width3 = _this$root2.width,
+                        _height3 = _this$root2.height;
+                    currentCtx.setTransform(1, 0, 0, 1, 0, 0);
+                    currentCtx.clearRect(0, 0, _width3, _height3);
                   }
                 } else if (renderMode === mode.SVG) {
                   var _matrix = image.matrixResize(_width, _height, w, h, bgX, bgY, innerWidth, innerHeight);

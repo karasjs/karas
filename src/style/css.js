@@ -368,7 +368,7 @@ function normalize(style, reset = []) {
       let bc = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item) || /px$/.test(item)) {
+        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(temp)) {
           calUnit(bc, i, item);
         }
         else if(item === '0' || item === 0) {

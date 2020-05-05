@@ -509,9 +509,7 @@
   function joinDef(def) {
     var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\"");
 
-    if (def.tagName === 'mask') {
-      s += ' maskUnits="userSpaceOnUse"';
-    } else {
+    if (def.tagName === 'mask') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -1795,8 +1793,12 @@
         for (var i = 0; i < 2; i++) {
           var item = match[i];
 
-          if (/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(temp)) {
+          if (/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
             calUnit(bc, i, item);
+
+            if (bc[i].unit === NUMBER) {
+              bc[i].unit = PX$1;
+            }
           } else if (item === '0' || item === 0) {
             bc.push({
               value: 0,
@@ -7599,7 +7601,7 @@
           c.ctx.clearRect(0, 0, width, height);
           c.draw(c.ctx);
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode, ctx); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+          this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
           this.virtualDom.mask = prev.maskId;
         }

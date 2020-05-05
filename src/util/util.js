@@ -107,7 +107,7 @@ function joinVd(vd) {
 function joinDef(def) {
   let s = `<${def.tagName} id="${def.uuid}"`;
   if(def.tagName === 'mask') {
-    s += ' maskUnits="userSpaceOnUse"';
+    // s += ' maskUnits="userSpaceOnUse"';
   }
   else {
     s += ' gradientUnits="userSpaceOnUse"';

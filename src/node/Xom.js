@@ -962,7 +962,7 @@ class Xom extends Node {
       c.draw(c.ctx);
     }
     else if(renderMode === mode.SVG) {
-      this.render(renderMode, ctx);
+      this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       this.virtualDom.mask = prev.maskId;
     }

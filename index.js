@@ -6643,13 +6643,13 @@
     }
   }
 
-  function calBackgroundSize(value, x, y, w, h) {
+  function calBackgroundSize(value, w, h) {
     var res = [];
     value.forEach(function (item, i) {
       if (item.unit === PX$4) {
         res.push(item.value);
       } else if (item.unit === PERCENT$5) {
-        res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+        res.push(item.value * (i ? h : w) * 0.01);
       } else if (item.unit === AUTO$2) {
         res.push(-1);
       } else if (item.unit === STRING$2) {
@@ -7193,7 +7193,7 @@
 
         computedStyle.backgroundPositionX = 0;
         computedStyle.backgroundPositionY = 0;
-        backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
+        backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
         computedStyle.backgroundSize = backgroundSize.join(' '); // 渐变或图片叠加
 
         if (backgroundImage) {
@@ -9595,13 +9595,13 @@
       _classCallCheck(this, Img);
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props));
-      _this.__src = _this.props.src;
+      var src = _this.props.src;
       var loadImg = _this.__loadImg = {
         // 刷新回调函数，用以destroy取消用
         cb: function cb() {}
       }; // 空url用错误图代替
 
-      if (!_this.src) {
+      if (!src) {
         loadImg.error = true;
       }
 
@@ -9675,14 +9675,16 @@
     }, {
       key: "render",
       value: function render(renderMode, ctx, defs) {
+        var _this2 = this;
+
         _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs);
 
         var x = this.sx,
             y = this.sy,
             width = this.width,
             height = this.height,
-            src = this.src,
             isDestroyed = this.isDestroyed,
+            src = this.props.src,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
             borderTopWidth = _this$computedStyle.borderTopWidth,
@@ -9811,62 +9813,39 @@
             }
           }
         } else {
-          this.__load(src);
-        }
-      }
-    }, {
-      key: "__load",
-      value: function __load(src) {
-        var _this2 = this;
+          var _loadImg = this.__loadImg;
+          _loadImg.url = src;
+          _loadImg.source = null;
+          _loadImg.error = null;
+          inject.measureImg(src, function (data) {
+            // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+            if (data.url === _loadImg.url && !_this2.__isDestroyed) {
+              if (data.success) {
+                _loadImg.source = data.source;
+                _loadImg.width = data.width;
+                _loadImg.height = data.height;
+              } else {
+                _loadImg.error = true;
+              }
 
-        var loadImg = this.__loadImg;
-        loadImg.url = src;
-        loadImg.source = null;
-        loadImg.error = null;
-        inject.measureImg(src, function (data) {
-          // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-          if (data.url === loadImg.url && !_this2.__isDestroyed) {
-            if (data.success) {
-              loadImg.source = data.source;
-              loadImg.width = data.width;
-              loadImg.height = data.height;
-            } else {
-              loadImg.error = true;
+              var root = _this2.root,
+                  _this2$currentStyle = _this2.currentStyle,
+                  _width2 = _this2$currentStyle.width,
+                  _height2 = _this2$currentStyle.height;
+              root.delRefreshTask(_loadImg.cb);
+              root.delRefreshTask(_this2.__task);
+
+              if (_width2.unit !== AUTO$4 && _height2.unit !== AUTO$4) {
+                root.addRefreshTask(_loadImg.cb);
+              } else {
+                root.addRefreshTask(_this2.__task = {
+                  before: function before() {
+                    root.setRefreshLevel(level.REFLOW);
+                  }
+                });
+              }
             }
-
-            var root = _this2.root,
-                _this2$currentStyle = _this2.currentStyle,
-                width = _this2$currentStyle.width,
-                height = _this2$currentStyle.height;
-            root.delRefreshTask(loadImg.cb);
-            root.delRefreshTask(_this2.__task);
-
-            if (width.unit !== AUTO$4 && height.unit !== AUTO$4) {
-              root.addRefreshTask(loadImg.cb);
-            } else {
-              root.addRefreshTask(_this2.__task = {
-                before: function before() {
-                  root.setRefreshLevel(level.REFLOW);
-                }
-              });
-            }
-          }
-        });
-      }
-    }, {
-      key: "src",
-      get: function get() {
-        return this.__src;
-      },
-      set: function set(v) {
-        var root = this.root;
-
-        if (this.src !== v) {
-          this.__src = v;
-
-          if (root) {
-            this.__load(v);
-          }
+          });
         }
       }
     }, {

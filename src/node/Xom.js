@@ -90,14 +90,14 @@ function calBorderRadius(w, h, k, currentStyle, computedStyle) {
   }
 }
 
-function calBackgroundSize(value, x, y, w, h) {
+function calBackgroundSize(value, w, h) {
   let res = [];
   value.forEach((item, i) => {
     if(item.unit === PX) {
       res.push(item.value);
     }
     else if(item.unit === PERCENT) {
-      res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+      res.push(item.value * (i ? h : w) * 0.01);
     }
     else if(item.unit === AUTO) {
       res.push(-1);
@@ -594,7 +594,7 @@ class Xom extends Node {
     }
     computedStyle.backgroundPositionX = 0;
     computedStyle.backgroundPositionY = 0;
-    backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
+    backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
     computedStyle.backgroundSize = backgroundSize.join(' ');
     // 渐变或图片叠加
     if(backgroundImage) {

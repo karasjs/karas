@@ -13,14 +13,14 @@ const { AUTO, PX } = unit;
 class Img extends Dom {
   constructor(tagName, props) {
     super(tagName, props);
-    this.__src = this.props.src;
+    let src = this.props.src;
     let loadImg = this.__loadImg = {
       // 刷新回调函数，用以destroy取消用
       cb: function() {
       },
     };
     // 空url用错误图代替
-    if(!this.src) {
+    if(!src) {
       loadImg.error = true;
     }
   }
@@ -89,7 +89,10 @@ class Img extends Dom {
   render(renderMode, ctx, defs) {
     super.render(renderMode, ctx, defs);
     let {
-      sx: x, sy: y, width, height, src, isDestroyed,
+      sx: x, sy: y, width, height, isDestroyed,
+      props: {
+        src,
+      },
       computedStyle: {
         display,
         borderTopWidth,
@@ -238,54 +241,36 @@ class Img extends Dom {
       }
     }
     else {
-      this.__load(src);
-    }
-  }
-
-  __load(src) {
-    let loadImg = this.__loadImg;
-    loadImg.url = src;
-    loadImg.source = null;
-    loadImg.error = null;
-    inject.measureImg(src, data => {
-      // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-      if(data.url === loadImg.url && !this.__isDestroyed) {
-        if(data.success) {
-          loadImg.source = data.source;
-          loadImg.width = data.width;
-          loadImg.height = data.height;
+      let loadImg = this.__loadImg;
+      loadImg.url = src;
+      loadImg.source = null;
+      loadImg.error = null;
+      inject.measureImg(src, data => {
+        // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+        if(data.url === loadImg.url && !this.__isDestroyed) {
+          if(data.success) {
+            loadImg.source = data.source;
+            loadImg.width = data.width;
+            loadImg.height = data.height;
+          }
+          else {
+            loadImg.error = true;
+          }
+          let { root, currentStyle: { width, height } } = this;
+          root.delRefreshTask(loadImg.cb);
+          root.delRefreshTask(this.__task);
+          if(width.unit !== AUTO && height.unit !== AUTO) {
+            root.addRefreshTask(loadImg.cb);
+          }
+          else {
+            root.addRefreshTask(this.__task = {
+              before() {
+                root.setRefreshLevel(level.REFLOW);
+              },
+            });
+          }
         }
-        else {
-          loadImg.error = true;
-        }
-        let { root, currentStyle: { width, height } } = this;
-        root.delRefreshTask(loadImg.cb);
-        root.delRefreshTask(this.__task);
-        if(width.unit !== AUTO && height.unit !== AUTO) {
-          root.addRefreshTask(loadImg.cb);
-        }
-        else {
-          root.addRefreshTask(this.__task = {
-            before() {
-              root.setRefreshLevel(level.REFLOW);
-            },
-          });
-        }
-      }
-    });
-  }
-
-  get src() {
-    return this.__src;
-  }
-
-  set src(v) {
-    let { root } = this;
-    if(this.src !== v) {
-      this.__src = v;
-      if(root) {
-        this.__load(v);
-      }
+      });
     }
   }
 

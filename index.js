@@ -6825,11 +6825,11 @@
         }
 
         return 0;
-      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，之后真正布局时传入isAbs标识
+      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸
 
     }, {
       key: "__layout",
-      value: function __layout(data, isVirtual, isAbs) {
+      value: function __layout(data, isVirtual, absHasCalWidth) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -6841,10 +6841,10 @@
         if (isDestroyed || display === 'none') {
           computedStyle.width = computedStyle.height = 0;
           return;
-        } // margin/padding在假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
+        } // margin/padding在自动宽度假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
 
 
-        if (!isAbs) {
+        if (!absHasCalWidth) {
           this.__mp(currentStyle, computedStyle, w);
         }
 
@@ -7497,6 +7497,9 @@
 
                   _this3.root.addRefreshTask(loadBgi.cb);
                 }
+              }, {
+                width: innerWidth,
+                height: innerHeight
               });
             }
 
@@ -9433,14 +9436,15 @@
             }, true);
 
             wl = item.outerWidth;
-          }
+          } // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
+
 
           item.__layout({
             x: x2,
             y: y2,
             w: wl,
             h: hl
-          }, false, true);
+          }, false, needCalWidth);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
@@ -9452,12 +9456,12 @@
         }); // 递归进行，遇到absolute/relative的设置新容器
 
         children.forEach(function (item) {
-          if (item instanceof Dom) {
+          if (item instanceof Xom) {
             item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
           } else if (item instanceof Component) {
             var sr = item.shadowRoot;
 
-            if (sr instanceof Dom) {
+            if (sr instanceof Xom) {
               sr.__layoutAbs(sr, data);
             }
           }
@@ -9862,6 +9866,9 @@
                 });
               }
             }
+          }, {
+            width: width,
+            height: height
           });
         }
       }

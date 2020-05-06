@@ -270,6 +270,9 @@ class Img extends Dom {
             });
           }
         }
+      }, {
+        width,
+        height,
       });
     }
   }

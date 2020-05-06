@@ -972,12 +972,13 @@ class Dom extends Xom {
         }, true);
         wl = item.outerWidth;
       }
+      // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
       item.__layout({
         x: x2,
         y: y2,
         w: wl,
         h: hl,
-      }, false, true);
+      }, false, needCalWidth);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }
@@ -987,12 +988,12 @@ class Dom extends Xom {
     });
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {
-      if(item instanceof Dom) {
+      if(item instanceof Xom) {
         item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
       }
       else if(item instanceof Component) {
         let sr = item.shadowRoot;
-        if(sr instanceof Dom) {
+        if(sr instanceof Xom) {
           sr.__layoutAbs(sr, data);
         }
       }

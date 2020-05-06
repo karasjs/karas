@@ -7428,7 +7428,6 @@
                     _matrix = _matrix.join(',');
                   }
 
-                  console.log(_matrix);
                   var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width], ['height', _height]];
                   var needResize;
 

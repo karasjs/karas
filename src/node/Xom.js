@@ -806,7 +806,6 @@ class Xom extends Node {
               if(matrix) {
                 matrix = matrix.join(',');
               }
-              console.log(matrix);
               let props = [
                 ['xlink:href', backgroundImage],
                 ['x', bgX],

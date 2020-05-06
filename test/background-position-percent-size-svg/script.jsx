@@ -6,5 +6,8 @@ let o = karas.render(
   </svg>,
   '#test'
 );
-let input = document.querySelector('#base64');
-input.value = document.querySelector('svg').outerHTML;
+
+o.on('refresh', () => {
+  let input = document.querySelector('#base64');
+  input.value = document.querySelector('svg').outerHTML;
+});

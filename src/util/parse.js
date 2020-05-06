@@ -104,11 +104,11 @@ function linkLibrary(item, hash) {
     });
   }
   // library中一定有id，因为是一级，二级+特殊需求才会出现放开
-  if(id) {
-    hash[id] = item;
+  if(isNil(id)) {
+    throw new Error('Library item miss id: ' + id);
   }
   else {
-    throw new Error('Library item miss id: ' + id);
+    hash[id] = item;
   }
 }
 

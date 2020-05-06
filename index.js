@@ -12825,10 +12825,10 @@
     } // library中一定有id，因为是一级，二级+特殊需求才会出现放开
 
 
-    if (id) {
-      hash[id] = item;
-    } else {
+    if (isNil$7(id)) {
       throw new Error('Library item miss id: ' + id);
+    } else {
+      hash[id] = item;
     }
   }
 
@@ -12989,7 +12989,7 @@
     return vd;
   }
 
-  var version = "0.29.1";
+  var version = "0.29.2";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

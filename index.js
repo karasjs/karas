@@ -10834,7 +10834,7 @@
       }
     }, {
       key: "refresh",
-      value: function refresh() {
+      value: function refresh(cb) {
         var _this2 = this;
 
         var isDestroyed = this.isDestroyed,
@@ -10917,6 +10917,11 @@
 
             _this2.node.__vd = nvd;
             _this2.node.__defs = nd;
+          } // 特殊cb，供小程序绘制完回调使用
+
+
+          if (isFunction$5(cb)) {
+            cb();
           }
 
           _this2.emit(Event.REFRESH, lv);
@@ -12984,7 +12989,7 @@
     return vd;
   }
 
-  var version = "0.28.5";
+  var version = "0.29.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

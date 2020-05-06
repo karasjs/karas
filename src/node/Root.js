@@ -194,7 +194,7 @@ class Root extends Dom {
     this.node.__root = this;
   }
 
-  refresh() {
+  refresh(cb) {
     let { isDestroyed, renderMode, ctx, defs, style } = this;
     if(isDestroyed) {
       return;
@@ -261,6 +261,10 @@ class Root extends Dom {
         }
         this.node.__vd = nvd;
         this.node.__defs = nd;
+      }
+      // 特殊cb，供小程序绘制完回调使用
+      if(isFunction(cb)) {
+        cb();
       }
       this.emit(Event.REFRESH, lv);
     });

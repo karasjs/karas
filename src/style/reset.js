@@ -21,6 +21,7 @@ const DOM = {
   fontStyle: 'inherit',
   fontWeight: 'inherit',
   lineHeight: 'normal',
+  backgroundImage: null,
   backgroundColor: 'transparent',
   backgroundSize: 'auto',
   backgroundRepeat: 'repeat',
@@ -82,7 +83,7 @@ Object.keys(DOM).forEach(k => {
   });
 });
 
-let geom = util.clone(dom);
+let geom = [];
 Object.keys(GEOM).forEach(k => {
   let v = GEOM[k];
   geom.push({
@@ -94,7 +95,6 @@ Object.keys(GEOM).forEach(k => {
 export default {
   DOM,
   GEOM,
-  XOM: Object.assign(DOM, GEOM),
   dom,
   geom,
 };

@@ -5,23 +5,16 @@ import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
-import match from '../style/match';
 import css from '../style/css';
 import image from '../style/image';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
-import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr } = util;
 const { calRelative, compute, repaint } = css;
-
-const INLINE = {
-  'span': true,
-  'img': true,
-};
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
@@ -92,16 +85,19 @@ function calBorderRadius(w, h, k, currentStyle, computedStyle) {
     let min = Math.min(w * 0.5, h * 0.5);
     computedStyle[k] = Math.min(min, s.value);
   }
+  else {
+    computedStyle[k] = 0;
+  }
 }
 
-function calBackgroundSize(value, x, y, w, h) {
+function calBackgroundSize(value, w, h) {
   let res = [];
   value.forEach((item, i) => {
     if(item.unit === PX) {
       res.push(item.value);
     }
     else if(item.unit === PERCENT) {
-      res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+      res.push(item.value * (i ? h : w) * 0.01);
     }
     else if(item.unit === AUTO) {
       res.push(-1);
@@ -133,8 +129,71 @@ function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
+/**
+ * 1. 封装string为Text节点
+ * 2. 打平children中的数组，变成一维
+ * 3. 合并相连的Text节点
+ */
+function flatten(parent, children) {
+  let list = [];
+  traverse(parent, list, children, {
+    lastText: null,
+    prev: null,
+  });
+  return list;
+}
+
+function traverse(parent, list, children, options) {
+  if(Array.isArray(children)) {
+    children.forEach(item => {
+      traverse(parent, list, item, options);
+    });
+  }
+  else if(children instanceof Xom) {
+    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
+      throw new Error('Can not nest canvas/svg');
+    }
+    list.push(children);
+    children.__parent = parent;
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  else if(children instanceof Component) {
+    list.push(children);
+    children.__parent = parent;
+    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    children.__init();
+    options.prev = children;
+  }
+  // 排除掉空的文本，连续的text合并
+  else if(!util.isNil(children) && children !== '') {
+    if(options.lastText) {
+      options.lastText.content += children;
+    }
+    else {
+      let text = options.lastText = new Text(children);
+      list.push(text);
+      text.__parent = parent;
+      if(options.prev) {
+        options.prev.__next = text;
+        text.__prev = options.prev;
+      }
+      options.prev = text;
+    }
+  }
+}
+
 class Xom extends Node {
-  constructor(tagName, props = []) {
+  constructor(tagName, props = [], children = []) {
     super();
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
@@ -160,79 +219,16 @@ class Xom extends Node {
           arr.push(v);
         }
       }
-      else if(k === 'id' && v) {
-        this.__id = v;
-      }
-      else if(['class', 'className'].indexOf(k) > -1 && v) {
-        v = match.splitClass(v);
-        if(v) {
-          this.__class = v;
-        }
-      }
     });
+    this.__children = flatten(this, children);
     this.__matrix = null;
-    this.__matrixEvent = null;
+    this.__matrixEvent = null; // 考虑继承的matrix，直接计算事件触发
     this.__animationList = [];
     this.__loadBgi = {
       // 刷新回调函数，用以destroy取消用
       cb: function() {
       },
     };
-  }
-
-  // 设置了css时，解析匹配
-  __traverseCss(top, css) {
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__traverseCss(top, css);
-        }
-      });
-    }
-    // inline拥有最高优先级
-    let style = match.parse(this, top, css) || {};
-    Object.keys(style).forEach(i => {
-      if(!this.__style.hasOwnProperty(i)) {
-        this.__style[i] = style[i];
-      }
-    });
-  }
-
-  __init() {
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
-      }
-    }
-    let { style, parent } = this;
-    // 仅支持flex/block/inline/none
-    if(!style.display || !{
-      flex: true,
-      block: true,
-      inline: true,
-      none: true,
-    }.hasOwnProperty(style.display)) {
-      if(INLINE.hasOwnProperty(this.tagName)) {
-        style.display = 'inline';
-      }
-      else {
-        style.display = 'block';
-      }
-    }
-    // absolute和flex孩子强制block
-    if(parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-      style.display = 'block';
-    }
-  }
-
-  __measure() {
-    if(!this.isGeom) {
-      this.children.forEach(child => {
-        child.__measure();
-      });
-    }
   }
 
   // 获取margin/padding的实际值
@@ -260,8 +256,8 @@ class Xom extends Node {
     return 0;
   }
 
-  // absolute且无尺寸时，fake标明先假布局一次计算尺寸
-  __layout(data, isVirtual) {
+  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸
+  __layout(data, isVirtual, absHasCalWidth) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
@@ -269,6 +265,14 @@ class Xom extends Node {
       width,
       position,
     } = currentStyle;
+    if(isDestroyed || display === 'none') {
+      computedStyle.width = computedStyle.height = 0;
+      return;
+    }
+    // margin/padding在自动宽度假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
+    if(!absHasCalWidth) {
+      this.__mp(currentStyle, computedStyle, w);
+    }
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:
@@ -279,12 +283,8 @@ class Xom extends Node {
           break;
       }
     }
-    this.__mp(currentStyle, computedStyle, w);
     this.__ox = this.__oy = 0;
-    if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = 0;
-      return;
-    }
+    // 3种布局
     if(display === 'block') {
       this.__layoutBlock(data, isVirtual);
     }
@@ -335,10 +335,6 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
-    // 圆角边计算
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
-      calBorderRadius(this.width, this.height, `border${k}Radius`, currentStyle, computedStyle);
-    });
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -434,7 +430,7 @@ class Xom extends Node {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -444,7 +440,6 @@ class Xom extends Node {
     }
     let {
       isDestroyed,
-      ctx,
       currentStyle,
       computedStyle,
       width,
@@ -454,6 +449,10 @@ class Xom extends Node {
       outerWidth,
       outerHeight,
     } = this;
+    // 圆角边计算
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+      calBorderRadius(width, height, `border${k}Radius`, currentStyle, computedStyle);
+    });
     let {
       display,
       marginTop,
@@ -515,8 +514,10 @@ class Xom extends Node {
       this.__virtualDom.opacity = opacity;
     }
     // transform和transformOrigin相关
-    let tfo = tf.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
+    let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
     computedStyle.transformOrigin = tfo.join(' ');
+    tfo[0] += x;
+    tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     let matrix = [1, 0, 0, 1, 0, 0];
     this.__matrix = matrix;
@@ -594,287 +595,300 @@ class Xom extends Node {
       renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
+    computedStyle.backgroundPositionX = 0;
+    computedStyle.backgroundPositionY = 0;
+    backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
+    computedStyle.backgroundSize = backgroundSize.join(' ');
     // 渐变或图片叠加
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
         if(loadBgi.url === backgroundImage) {
-          backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
-          let { width, height } = loadBgi;
-          let [w, h] = backgroundSize;
-          // -1为auto，-2为contain，-3为cover
-          if(w === -1 && h === -1) {
-            w = width;
-            h = height;
-          }
-          else if(w === -2) {
-            if(width > innerWidth && height > innerHeight) {
-              w = width / innerWidth;
-              h = height / innerHeight;
-              if(w >= h) {
-                w = innerWidth;
-                h = w * height / width;
-              }
-              else {
-                h = innerHeight;
-                w = h * width / height;
-              }
-            }
-            else if(width > innerWidth) {
-              w = innerWidth;
-              h = w * height / width;
-            }
-            else if(height > innerHeight) {
-              h = innerHeight;
-              w = h * width / height;
-            }
-            else {
+          let source = loadBgi.source;
+          // 无source不绘制
+          if(source) {
+            let { width, height } = loadBgi;
+            let [w, h] = backgroundSize;
+            // -1为auto，-2为contain，-3为cover
+            if(w === -1 && h === -1) {
               w = width;
               h = height;
             }
-          }
-          else if(w === -3) {
-            if(innerWidth > width && innerHeight > height) {
-              w = width / innerWidth;
-              h = height / innerHeight;
-              if(w <= h) {
-                w = innerWidth;
-                h = w * height / width;
-              }
-              else {
-                h = innerHeight;
-                w = h * width / height;
-              }
-            }
-            else if(innerWidth > width) {
-              w = innerWidth;
-              h = w * height / width;
-            }
-            else if(innerHeight > height) {
-              h = innerHeight;
-              w = h * width / height;
-            }
-            else {
-              w = width / innerWidth;
-              h = height / innerHeight;
-              if(w <= h) {
-                w = innerWidth;
-                h = w * height / width;
-              }
-              else {
-                h = innerHeight;
-                w = h * width / height;
-              }
-            }
-          }
-          else if(w === -1) {
-            w = h * width / height;
-          }
-          else if(h === -1) {
-            h = w * height / width;
-          }
-          let bgX = calBackgroundPosition(backgroundPositionX, innerWidth, width);
-          let bgY = calBackgroundPosition(backgroundPositionY, innerHeight, height);
-          let originX = x2 + bgX;
-          let originY = y2 + bgY;
-          // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
-          let xnl = 0;
-          let xnr = 0;
-          let ynt = 0;
-          let ynb = 0;
-          // repeat-x
-          if(['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
-            let diff = originX - x2;
-            if(diff > 0) {
-              xnl = Math.ceil(diff / w);
-            }
-            diff = x2 + innerWidth - originX - w;
-            if(diff > 0) {
-              xnr = Math.ceil(diff / w);
-            }
-          }
-          // repeat-y
-          if(['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
-            let diff = originY - y2;
-            if(diff > 0) {
-              ynt = Math.ceil(diff / h);
-            }
-            diff = y2 + innerHeight - originY - h;
-            if(diff > 0) {
-              ynb = Math.ceil(diff / h);
-            }
-          }
-          // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
-          let repeat = [];
-          if(xnl > 0) {
-            for(let i = 0; i < xnl; i++) {
-              repeat.push([originX - (i + 1) * w, originY]);
-            }
-          }
-          if(xnr > 0) {
-            for(let i = 0; i < xnr; i++) {
-              repeat.push([originX + (i + 1) * w, originY]);
-            }
-          }
-          if(ynt > 0) {
-            for(let i = 0; i < ynt; i++) {
-              repeat.push([originX, originY - (i + 1) * h]);
-            }
-          }
-          if(ynb > 0) {
-            for(let i = 0; i < ynb; i++) {
-              repeat.push([originX, originY + (i + 1) * h]);
-            }
-          }
-          // 原点和同行列十字画完，看4个角的情况
-          if(xnl > 0 && ynt > 0) {
-            for(let i = 0; i < xnl; i++) {
-              for(let j = 0; j < ynt; j++) {
-                repeat.push([originX - (i + 1) * w, originY - (j + 1) * h]);
-              }
-            }
-          }
-          if(xnr > 0 && ynt > 0) {
-            for(let i = 0; i < xnr; i++) {
-              for(let j = 0; j < ynt; j++) {
-                repeat.push([originX + (i + 1) * w, originY - (j + 1) * h]);
-              }
-            }
-          }
-          if(xnl > 0 && ynb > 0) {
-            for(let i = 0; i < xnl; i++) {
-              for(let j = 0; j < ynb; j++) {
-                repeat.push([originX - (i + 1) * w, originY + (j + 1) * h]);
-              }
-            }
-          }
-          if(xnr > 0 && ynb > 0) {
-            for(let i = 0; i < xnr; i++) {
-              for(let j = 0; j < ynb; j++) {
-                repeat.push([originX + (i + 1) * w, originY + (j + 1) * h]);
-              }
-            }
-          }
-          // 超出尺寸模拟mask截取
-          let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
-            || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-          let source = loadBgi.source;
-          if(renderMode === mode.CANVAS && source) {
-            let c;
-            let currentCtx;
-            // 在离屏canvas上绘制
-            if(needMask) {
-              let { width, height } = this.root;
-              c = inject.getCacheCanvas(width, height);
-              currentCtx = c.ctx;
-            }
-            else {
-              currentCtx = ctx;
-            }
-            // 先画不考虑repeat的中心声明的
-            currentCtx.drawImage(source, originX, originY, w, h);
-            // 再画重复的十字和4角象限
-            repeat.forEach(item => {
-              currentCtx.drawImage(source, item[0], item[1], w, h);
-            });
-            // mask特殊处理画回来
-            if(needMask) {
-              currentCtx.globalCompositeOperation = 'destination-in';
-              renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
-                borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-              ctx.drawImage(c.canvas, 0, 0);
-              currentCtx.globalCompositeOperation = 'source-over';
-              currentCtx.clearRect(0, 0, width, height);
-            }
-          }
-          else if(renderMode === mode.SVG) {
-            let matrix = image.matrixResize(width, height, w, h, x2, y2, innerWidth, innerHeight);
-            if(matrix) {
-              matrix = matrix.join(',');
-            }
-            let props = [
-              ['xlink:href', backgroundImage],
-              ['x', originX],
-              ['y', originY],
-              ['width', width || 0],
-              ['height', height || 0]
-            ];
-            let needResize;
-            if(matrix && matrix !== '1,0,0,1,0,0') {
-              needResize = true;
-              props.push(['transform', 'matrix(' + matrix + ')']);
-            }
-            if(needMask) {
-              let maskId = this.defs.add({
-                tagName: 'mask',
-                props: [],
-                children: [{
-                  tagName: 'rect',
-                  props: [
-                    ['x', x2],
-                    ['y', y2],
-                    ['width', innerWidth],
-                    ['height', innerHeight],
-                    ['fill', '#FFF']
-                  ],
-                }],
-              });
-              this.virtualDom.bbMask = `url(#${maskId})`;
-            }
-            // 先画不考虑repeat的中心声明的
-            this.virtualDom.bb.push({
-              type: 'img',
-              tagName: 'image',
-              props,
-            });
-            // 再画重复的十字和4角象限
-            repeat.forEach(item => {
-              let copy = clone(props);
-              if(needResize) {
-                let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
-                if(matrix && matrix !== '1,0,0,1,0,0') {
-                  matrix = matrix.join(',');
-                  copy[5][1] = 'matrix(' + matrix + ')';
+            else if(w === -2) {
+              if(width > innerWidth && height > innerHeight) {
+                w = width / innerWidth;
+                h = height / innerHeight;
+                if(w >= h) {
+                  w = innerWidth;
+                  h = w * height / width;
+                }
+                else {
+                  h = innerHeight;
+                  w = h * width / height;
                 }
               }
-              copy[1][1] = item[0];
-              copy[2][1] = item[1];
+              else if(width > innerWidth) {
+                w = innerWidth;
+                h = w * height / width;
+              }
+              else if(height > innerHeight) {
+                h = innerHeight;
+                w = h * width / height;
+              }
+              else {
+                w = width;
+                h = height;
+              }
+            }
+            else if(w === -3) {
+              if(innerWidth > width && innerHeight > height) {
+                w = width / innerWidth;
+                h = height / innerHeight;
+                if(w <= h) {
+                  w = innerWidth;
+                  h = w * height / width;
+                }
+                else {
+                  h = innerHeight;
+                  w = h * width / height;
+                }
+              }
+              else if(innerWidth > width) {
+                w = innerWidth;
+                h = w * height / width;
+              }
+              else if(innerHeight > height) {
+                h = innerHeight;
+                w = h * width / height;
+              }
+              else {
+                w = width / innerWidth;
+                h = height / innerHeight;
+                if(w <= h) {
+                  w = innerWidth;
+                  h = w * height / width;
+                }
+                else {
+                  h = innerHeight;
+                  w = h * width / height;
+                }
+              }
+            }
+            else if(w === -1) {
+              w = h * width / height;
+            }
+            else if(h === -1) {
+              h = w * height / width;
+            }
+            let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, width);
+            let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, height);
+            computedStyle.backgroundPositionX = bgX;
+            computedStyle.backgroundPositionY = bgY;
+            // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+            let xnl = 0;
+            let xnr = 0;
+            let ynt = 0;
+            let ynb = 0;
+            // repeat-x
+            if(['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
+              let diff = bgX - x2;
+              if(diff > 0) {
+                xnl = Math.ceil(diff / w);
+              }
+              diff = x2 + innerWidth - bgX - w;
+              if(diff > 0) {
+                xnr = Math.ceil(diff / w);
+              }
+            }
+            // repeat-y
+            if(['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
+              let diff = bgY - y2;
+              if(diff > 0) {
+                ynt = Math.ceil(diff / h);
+              }
+              diff = y2 + innerHeight - bgY - h;
+              if(diff > 0) {
+                ynb = Math.ceil(diff / h);
+              }
+            }
+            // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+            let repeat = [];
+            if(xnl > 0) {
+              for(let i = 0; i < xnl; i++) {
+                repeat.push([bgX - (i + 1) * w, bgY]);
+              }
+            }
+            if(xnr > 0) {
+              for(let i = 0; i < xnr; i++) {
+                repeat.push([bgX + (i + 1) * w, bgY]);
+              }
+            }
+            if(ynt > 0) {
+              for(let i = 0; i < ynt; i++) {
+                repeat.push([bgX, bgY - (i + 1) * h]);
+              }
+            }
+            if(ynb > 0) {
+              for(let i = 0; i < ynb; i++) {
+                repeat.push([bgX, bgY + (i + 1) * h]);
+              }
+            }
+            // 原点和同行列十字画完，看4个角的情况
+            if(xnl > 0 && ynt > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  repeat.push([bgX - (i + 1) * w, bgY - (j + 1) * h]);
+                }
+              }
+            }
+            if(xnr > 0 && ynt > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynt; j++) {
+                  repeat.push([bgX + (i + 1) * w, bgY - (j + 1) * h]);
+                }
+              }
+            }
+            if(xnl > 0 && ynb > 0) {
+              for(let i = 0; i < xnl; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  repeat.push([bgX - (i + 1) * w, bgY + (j + 1) * h]);
+                }
+              }
+            }
+            if(xnr > 0 && ynb > 0) {
+              for(let i = 0; i < xnr; i++) {
+                for(let j = 0; j < ynb; j++) {
+                  repeat.push([bgX + (i + 1) * w, bgY + (j + 1) * h]);
+                }
+              }
+            }
+            // 超出尺寸模拟mask截取
+            let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
+              || bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+            if(renderMode === mode.CANVAS) {
+              let c;
+              let currentCtx;
+              // 在离屏canvas上绘制
+              if(needMask) {
+                let { width, height } = this.root;
+                c = inject.getCacheCanvas(width, height);
+                currentCtx = c.ctx;
+                // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
+                currentCtx.setTransform(...matrix);
+              }
+              else {
+                currentCtx = ctx;
+              }
+              // 先画不考虑repeat的中心声明的
+              currentCtx.drawImage(source, bgX, bgY, w, h);
+              // 再画重复的十字和4角象限
+              repeat.forEach(item => {
+                currentCtx.drawImage(source, item[0], item[1], w, h);
+              });
+              // mask特殊处理画回来
+              if(needMask) {
+                currentCtx.globalCompositeOperation = 'destination-in';
+                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                  borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+                // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(c.canvas, 0, 0);
+                // 绘完后变正常即可
+                ctx.setTransform(...matrix);
+                currentCtx.globalCompositeOperation = 'source-over';
+                let { width, height } = this.root;
+                currentCtx.setTransform(1, 0, 0, 1, 0, 0);
+                currentCtx.clearRect(0, 0, width, height);
+              }
+            }
+            else if(renderMode === mode.SVG) {
+              let matrix = image.matrixResize(width, height, w, h, bgX, bgY, innerWidth, innerHeight);
+              if(matrix) {
+                matrix = matrix.join(',');
+              }
+              let props = [
+                ['xlink:href', backgroundImage],
+                ['x', bgX],
+                ['y', bgY],
+                ['width', width],
+                ['height', height]
+              ];
+              let needResize;
+              if(matrix && matrix !== '1,0,0,1,0,0') {
+                needResize = true;
+                props.push(['transform', 'matrix(' + matrix + ')']);
+              }
+              if(needMask) {
+                let maskId = defs.add({
+                  tagName: 'mask',
+                  props: [],
+                  children: [{
+                    tagName: 'rect',
+                    props: [
+                      ['x', x2],
+                      ['y', y2],
+                      ['width', innerWidth],
+                      ['height', innerHeight],
+                      ['fill', '#FFF']
+                    ],
+                  }],
+                });
+                this.virtualDom.bbMask = `url(#${maskId})`;
+              }
+              // 先画不考虑repeat的中心声明的
               this.virtualDom.bb.push({
                 type: 'img',
                 tagName: 'image',
-                props: copy,
+                props,
               });
-            });
+              // 再画重复的十字和4角象限
+              repeat.forEach(item => {
+                let copy = clone(props);
+                if(needResize) {
+                  let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
+                  if(matrix && matrix !== '1,0,0,1,0,0') {
+                    matrix = matrix.join(',');
+                    copy[5][1] = 'matrix(' + matrix + ')';
+                  }
+                }
+                copy[1][1] = item[0];
+                copy[2][1] = item[1];
+                this.virtualDom.bb.push({
+                  type: 'img',
+                  tagName: 'image',
+                  props: copy,
+                });
+              });
+            }
+            computedStyle.backgroundSize = `${w} ${h}`;
+            computedStyle.backgroundPositionX = bgX;
+            computedStyle.backgroundPositionY = bgY;
           }
-          computedStyle.backgroundSize = `${w} ${h}`;
-          computedStyle.backgroundPositionX = bgX;
-          computedStyle.backgroundPositionY = bgY;
         }
         else {
+          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
           loadBgi.url = backgroundImage;
+          loadBgi.source = null;
           inject.measureImg(backgroundImage, data => {
-            if(data.success) {
+            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
               loadBgi.source = data.source;
               loadBgi.width = data.width;
               loadBgi.height = data.height;
               this.root.delRefreshTask(loadBgi.cb);
               this.root.addRefreshTask(loadBgi.cb);
             }
+          }, {
+            width: innerWidth,
+            height: innerHeight,
           });
         }
+        computedStyle.backgroundImage = backgroundImage;
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
-    }
-    else {
-      let originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
-      let originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
-      computedStyle.backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight).join(' ');
-      computedStyle.backgroundPositionX = originX;
-      computedStyle.backgroundPositionY = originY;
-      computedStyle.backgroundRepeat = backgroundRepeat;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
@@ -903,20 +917,18 @@ class Xom extends Node {
     }
   }
 
-  __renderByMask(renderMode) {
-    let { prev, root, ctx } = this;
+  __renderByMask(renderMode, ctx, defs) {
+    let { prev, root } = this;
     let hasMask = prev && prev.isMask;
     if(!hasMask) {
-      this.render(renderMode);
+      this.render(renderMode, ctx, defs);
       return;
     }
     if(renderMode === mode.CANVAS) {
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
       let { width, height } = root;
       let c = inject.getCacheCanvas(width, height);
-      this.__setCtx(c.ctx);
-      this.render(renderMode);
-      this.__setCtx(ctx);
+      this.render(renderMode, c.ctx);
       // 收集之前的mask列表
       let list = [];
       while(prev && prev.isMask) {
@@ -927,11 +939,9 @@ class Xom extends Node {
       if(list.length === 1) {
         prev = list[0];
         c.ctx.globalCompositeOperation = 'destination-in';
-        prev.__setCtx(c.ctx);
-        prev.render(renderMode);
+        prev.render(renderMode, c.ctx);
         // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
         c.draw(c.ctx);
-        prev.__setCtx(ctx);
         ctx.drawImage(c.canvas, 0, 0);
         c.draw(ctx);
       }
@@ -939,9 +949,7 @@ class Xom extends Node {
       else {
         let m = inject.getMaskCanvas(width, height);
         list.forEach(item => {
-          item.__setCtx(m.ctx);
-          item.render(renderMode);
-          item.__setCtx(ctx);
+          item.render(renderMode, m.ctx);
         });
         m.draw(m.ctx);
         c.ctx.globalCompositeOperation = 'destination-in';
@@ -960,7 +968,7 @@ class Xom extends Node {
       c.draw(c.ctx);
     }
     else if(renderMode === mode.SVG) {
-      this.render(renderMode);
+      this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       this.virtualDom.mask = prev.maskId;
     }
@@ -1107,7 +1115,7 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
     let { k, v, d } = vs;
     computedStyle[ks] = k + '-gradient(';
     let cx = x2 + iw * 0.5;
@@ -1115,12 +1123,12 @@ class Xom extends Node {
     let res;
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-      res = this.__getLg(renderMode, gd);
+      res = this.__getLg(renderMode, ctx, defs, gd);
       computedStyle[ks] += d + 'deg';
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
-      res = this.__getRg(renderMode, gd);
+      res = this.__getRg(renderMode, ctx, defs, gd);
       computedStyle[ks] += d;
     }
     v.forEach(item => {
@@ -1133,16 +1141,16 @@ class Xom extends Node {
     return res;
   }
 
-  __getLg(renderMode, gd) {
+  __getLg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
-      let lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+      let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
         lg.addColorStop(item[1], item[0]);
       });
       return lg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = this.defs.add({
+      let uuid = defs.add({
         tagName: 'linearGradient',
         props: [
           ['x1', gd.x1],
@@ -1164,16 +1172,16 @@ class Xom extends Node {
     }
   }
 
-  __getRg(renderMode, gd) {
+  __getRg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
-      let rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {
         rg.addColorStop(item[1], item[0]);
       });
       return rg;
     }
     else if(renderMode === mode.SVG) {
-      let uuid = this.defs.add({
+      let uuid = defs.add({
         tagName: 'radialGradient',
         props: [
           ['cx', gd.cx],
@@ -1227,55 +1235,68 @@ class Xom extends Node {
     });
   }
 
-  __computed() {
-    compute(this, this.isRoot);
-    // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__computed();
-        }
-        else {
-          item.__style = this.currentStyle;
-          compute(item);
-          // 文字首先测量所有字符宽度
-          item.__measure();
-        }
-      });
+  __initRef(root) {
+    let ref = this.props.ref;
+    if(util.isString(ref)) {
+      root.ref[ref] = this;
     }
+    else if(util.isFunction(ref)) {
+      ref(root);
+    }
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__initRef(root);
+      }
+    });
   }
 
-  __repaint() {
-    repaint(this, this.isRoot);
+  __measure(renderMode, ctx, isRoot) {
+    compute(this, isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__repaint();
-        }
-        else {
-          item.__style = this.currentStyle;
-          repaint(item);
-        }
-      });
-    }
+    this.children.forEach(item => {
+      item.__measure(renderMode, ctx);
+    });
   }
 
-  __setCtx(ctx) {
-    super.__setCtx(ctx);
-    if(!this.isGeom) {
-      this.children.forEach(item => {
-        item.__setCtx(ctx);
-      });
-    }
+  __repaint(isRoot) {
+    repaint(this, isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__repaint();
+      }
+    });
   }
 
   get tagName() {
     return this.__tagName;
   }
 
-  get isRoot() {
-    return !this.parent;
+  get children() {
+    return this.__children;
+  }
+
+  // canvas/svg根节点
+  get root() {
+    if(this.host) {
+      return this.host.root;
+    }
+    if(this.parent) {
+      return this.parent.root;
+    }
+    if(['canvas', 'svg'].indexOf(this.tagName) > -1) {
+      return this;
+    }
+  }
+
+  // component根节点
+  get host() {
+    if(this.__host) {
+      return this.__host;
+    }
+    if(this.parent) {
+      return this.parent.host;
+    }
   }
 
   get isGeom() {
@@ -1285,10 +1306,14 @@ class Xom extends Node {
   get innerWidth() {
     let {
       computedStyle: {
+        display,
         paddingRight,
         paddingLeft,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.width
       + paddingLeft
       + paddingRight;
@@ -1297,10 +1322,14 @@ class Xom extends Node {
   get innerHeight() {
     let {
       computedStyle: {
+        display,
         paddingTop,
         paddingBottom,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.height
       + paddingTop
       + paddingBottom;
@@ -1309,12 +1338,16 @@ class Xom extends Node {
   get outerWidth() {
     let {
       computedStyle: {
+        display,
         borderLeftWidth,
         borderRightWidth,
         marginRight,
         marginLeft,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.innerWidth
       + borderLeftWidth
       + borderRightWidth
@@ -1325,12 +1358,16 @@ class Xom extends Node {
   get outerHeight() {
     let {
       computedStyle: {
+        display,
         borderTopWidth,
         borderBottomWidth,
         marginTop,
         marginBottom,
       }
     } = this;
+    if(display === 'none') {
+      return 0;
+    }
     return this.innerHeight
       + borderTopWidth
       + borderBottomWidth
@@ -1350,32 +1387,21 @@ class Xom extends Node {
     return this.__matrixEvent;
   }
 
-  get id() {
-    return this.__id;
+  get style() {
+    return this.__style;
   }
 
-  get class() {
-    return this.__class || [];
+  get computedStyle() {
+    return this.__computedStyle;
   }
 
   get animationList() {
     return this.__animationList;
   }
 
-  get animating() {
-    let { animationList } = this;
-    for(let i = 0, len = animationList.length; i < len; i++) {
-      let item = animationList[i];
-      if(item.animating) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   get animateStyle() {
     let { style, animationList } = this;
-    let copy = clone(style);
+    let copy = Object.assign({}, style);
     animationList.forEach(item => {
       if(item.animating) {
         Object.assign(copy, item.style);
@@ -1388,31 +1414,6 @@ class Xom extends Node {
     return this.__currentStyle;
   }
 
-  get zIndexChildren() {
-    if(this.isGeom) {
-      return [];
-    }
-    let zIndex = (this.children || []).filter(item => {
-      return !item.isMask;
-    });
-    sort(zIndex, (a, b) => {
-      if(a instanceof Text) {
-        return;
-      }
-      if(b instanceof Text && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
-          return true;
-        }
-      }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-    });
-    return zIndex;
-  }
 }
 
 export default Xom;

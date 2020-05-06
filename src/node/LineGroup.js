@@ -40,12 +40,15 @@ class LineGroup {
   get list() {
     return this.__list;
   }
+
   get x() {
     return this.__x;
   }
+
   get y() {
     return this.__y;
   }
+
   get width() {
     let width = 0;
     this.list.forEach(item => {
@@ -53,6 +56,7 @@ class LineGroup {
     });
     return width;
   }
+
   get height() {
     let height = 0;
     this.list.forEach(item => {
@@ -60,9 +64,11 @@ class LineGroup {
     });
     return height;
   }
+
   get baseLine() {
     return this.__baseLine;
   }
+
   get size() {
     return this.__list.length;
   }

@@ -55,6 +55,7 @@ class Root extends Dom {
     this.__task = [];
     this.__ref = {};
     this.__animateController = new Controller();
+    this.__initRef(this);
     Event.mix(this);
   }
 
@@ -181,19 +182,6 @@ class Root extends Dom {
     else if(this.tagName === 'svg') {
       this.__renderMode = mode.SVG;
     }
-    // canvas/svg作为根节点一定是block或flex，不会是inline
-    let { style } = this;
-    if(['flex', 'block'].indexOf(style.display) === -1) {
-      style.display = 'block';
-    }
-    // 同理position不能为absolute
-    if(style.position === 'absolute') {
-      style.position = 'static';
-    }
-    let { renderMode, ctx } = this;
-    this.__traverse(ctx, this.__defs, renderMode);
-    this.__traverseCss(this, this.props.css);
-    this.__init();
     this.refresh();
     // 第一次节点没有__root，渲染一次就有了才能diff
     if(this.node.__root) {
@@ -206,16 +194,21 @@ class Root extends Dom {
     this.node.__root = this;
   }
 
-  refresh(cb) {
-    let { isDestroyed, renderMode, style } = this;
+  refresh() {
+    let { isDestroyed, renderMode, ctx, defs, style } = this;
     if(isDestroyed) {
       return;
     }
-    // 根元素特殊处理
-    style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
-      value: 0,
-      unit: PX,
-    };
+    defs.clear();
+    // canvas/svg作为根节点一定是block或flex，不会是inline
+    if(['flex', 'block'].indexOf(style.display) === -1) {
+      style.display = 'block';
+    }
+    // 同理position不能为absolute
+    if(style.position === 'absolute') {
+      style.position = 'static';
+    }
+    // 根节点满宽高
     style.width = {
       value: this.width,
       unit: PX,
@@ -224,12 +217,11 @@ class Root extends Dom {
       value: this.height,
       unit: PX,
     };
-    this.__defs.clear();
+    // 计算css继承，获取所有字体和大小并准备测量文字
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
-    // 预先计算字体相关的继承
     if(lv === level.REFLOW) {
-      this.__computed();
+      this.__measure(renderMode, ctx, true);
     }
     inject.measureText(() => {
       // 第一次默认REFLOW以及动画设计变更等需要布局
@@ -249,18 +241,17 @@ class Root extends Dom {
           h: this.height,
         });
       }
-      // 没发生REFLOW只需要computed即可
+      // 没发生REFLOW只需要计算继承
       else {
-        this.__repaint();
+        this.__repaint(true);
       }
       if(renderMode === mode.CANVAS) {
         this.__clear();
       }
-      this.emit(Event.BEFORE_REFRESH, lv);
-      this.render(renderMode);
+      this.render(renderMode, ctx, defs);
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
-        let nd = this.__defs;
+        let nd = defs;
         nvd.defs = nd.value;
         if(this.node.__root) {
           diff(this.node, this.node.__vd, nvd);
@@ -271,10 +262,7 @@ class Root extends Dom {
         this.node.__vd = nvd;
         this.node.__defs = nd;
       }
-      if(isFunction(cb)) {
-        cb();
-      }
-      this.emit(Event.REFRESH);
+      this.emit(Event.REFRESH, lv);
     });
   }
 
@@ -372,6 +360,14 @@ class Root extends Dom {
 
   get renderMode() {
     return this.__renderMode;
+  }
+
+  get ctx() {
+    return this.__ctx;
+  }
+
+  get defs() {
+    return this.__defs;
   }
 
   get task() {

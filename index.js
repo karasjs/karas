@@ -241,19 +241,12 @@
       this.__oy = 0;
       this.__width = 0;
       this.__height = 0;
+      this.__baseLine = 0;
       this.__prev = null;
       this.__next = null;
-      this.__ctx = null; // canvas的context
-
-      this.__defs = null; // svg的defs
-
       this.__parent = null;
-      this.__style = {};
-      this.__computedStyle = {}; // 计算为绝对值的样式
-
-      this.__baseLine = 0;
-      this.__virtualDom = {};
       this.__host = null;
+      this.__virtualDom = {};
     }
 
     _createClass(Node, [{
@@ -278,12 +271,7 @@
       key: "__destroy",
       value: function __destroy() {
         this.__isDestroyed = true;
-        this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
-      }
-    }, {
-      key: "__setCtx",
-      value: function __setCtx(ctx) {
-        this.__ctx = ctx;
+        this.__parent = null;
       }
     }, {
       key: "x",
@@ -349,66 +337,6 @@
       key: "parent",
       get: function get() {
         return this.__parent;
-      } // canvas/svg根节点
-
-    }, {
-      key: "root",
-      get: function get() {
-        if (this.host) {
-          return this.host.root;
-        }
-
-        if (this.parent) {
-          return this.parent.root;
-        }
-
-        if (this.tagName && {
-          canvas: true,
-          svg: true
-        }.hasOwnProperty(this.tagName)) {
-          return this;
-        }
-      }
-    }, {
-      key: "renderMode",
-      get: function get() {
-        var root = this.root;
-
-        if (root) {
-          return root.renderMode;
-        }
-      } // component根节点
-
-    }, {
-      key: "host",
-      get: function get() {
-        if (this.__host) {
-          return this.__host;
-        }
-
-        if (this.parent) {
-          return this.parent.host;
-        }
-      }
-    }, {
-      key: "style",
-      get: function get() {
-        return this.__style;
-      }
-    }, {
-      key: "computedStyle",
-      get: function get() {
-        return this.__computedStyle;
-      }
-    }, {
-      key: "ctx",
-      get: function get() {
-        return this.__ctx;
-      }
-    }, {
-      key: "defs",
-      get: function get() {
-        return this.__defs;
       }
     }, {
       key: "baseLine",
@@ -581,9 +509,7 @@
   function joinDef(def) {
     var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\"");
 
-    if (def.tagName === 'mask') {
-      s += ' maskUnits="userSpaceOnUse"';
-    } else {
+    if (def.tagName === 'mask') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -638,7 +564,7 @@
       if (c) {
         res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
 
-        if (c[4]) {
+        if (!isNil(c[4])) {
           res[3] = parseFloat(c[4]);
         } else {
           res[3] = 1;
@@ -768,8 +694,8 @@
   };
 
   var reg = {
-    position: /((-?[\d.]+(px|%))|(left|top|right|bottom|center)){1,2}/ig,
-    tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    position: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
+    // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     gradient: /\b(\w+)-gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
@@ -1469,8 +1395,7 @@
       STRING = unit.STRING;
   var isNil$1 = util.isNil,
       rgba2int$2 = util.rgba2int,
-      int2rgba$2 = util.int2rgba,
-      clone$1 = util.clone;
+      int2rgba$2 = util.int2rgba;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
@@ -1696,15 +1621,13 @@
         if (gd) {
           style.backgroundImage = gd[0];
           temp = temp.replace(gd[0], '');
-        }
-      }
+        } else {
+          var img = reg.img.exec(temp);
 
-      if (isNil$1(style.backgroundImage)) {
-        var img = reg.img.exec(temp);
-
-        if (img) {
-          style.backgroundImage = img[0];
-          temp = temp.replace(img[0], '');
+          if (img) {
+            style.backgroundImage = img[0];
+            temp = temp.replace(img[0], '');
+          }
         }
       }
 
@@ -1716,19 +1639,20 @@
         }
       }
 
-      if (isNil$1(style.backgroundPosition)) {
-        var position = temp.match(reg.position);
-
-        if (position) {
-          style.backgroundPosition = position.join(' ');
-        }
-      }
-
       if (isNil$1(style.backgroundColor)) {
         var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
 
         if (bgc) {
           style.backgroundColor = bgc[0];
+          temp = temp.replace(bgc[0], '');
+        }
+      }
+
+      if (isNil$1(style.backgroundPosition)) {
+        var position = temp.match(reg.position);
+
+        if (position) {
+          style.backgroundPosition = position.join(' ');
         }
       }
     } // 背景位置
@@ -1784,7 +1708,7 @@
       var v = style[k];
 
       if (!isNil$1(v) && style.transform) {
-        console.error("Can not use expand style \"".concat(k, "\" with \"transform\""));
+        console.error("Can not use expand style \"".concat(k, "\" with transform"));
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
 
@@ -1869,8 +1793,12 @@
         for (var i = 0; i < 2; i++) {
           var item = match[i];
 
-          if (/%$/.test(item) || /px$/.test(item)) {
+          if (/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
             calUnit(bc, i, item);
+
+            if (bc[i].unit === NUMBER) {
+              bc[i].unit = PX$1;
+            }
           } else if (item === '0' || item === 0) {
             bc.push({
               value: 0,
@@ -1976,7 +1904,7 @@
     temp = style.transformOrigin;
 
     if (!isNil$1(temp)) {
-      var _match2 = temp.toString().match(reg.tfo);
+      var _match2 = temp.toString().match(reg.position);
 
       if (_match2) {
         if (_match2.length === 1) {
@@ -2102,7 +2030,7 @@
 
     temp = style.fontSize;
 
-    if (temp || temp === 0 || temp === '0') {
+    if (temp || temp === 0) {
       if (temp === 'inherit') {
         style.fontSize = {
           unit: INHERIT
@@ -2131,7 +2059,7 @@
 
     temp = style.fontWeight;
 
-    if (temp || temp === 0 || temp === '0') {
+    if (temp || temp === 0) {
       if (temp === 'bold') {
         style.fontWeight = {
           value: 700,
@@ -2206,7 +2134,7 @@
 
     temp = style.lineHeight;
 
-    if (temp || temp === 0 || temp === '0') {
+    if (temp || temp === 0) {
       if (temp === 'inherit') {
         style.lineHeight = {
           unit: INHERIT
@@ -2215,25 +2143,26 @@
         style.lineHeight = {
           unit: AUTO
         };
-      } else if (/px$/.test(temp)) {
-        style.lineHeight = {
-          value: parseFloat(temp),
-          unit: PX$1
-        };
-      } else {
-        var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
-
-        if (n === 'normal') {
+      } // lineHeight默认数字，想要px必须强制带单位
+      else if (/px$/.test(temp)) {
           style.lineHeight = {
-            unit: AUTO
+            value: parseFloat(temp),
+            unit: PX$1
           };
         } else {
-          style.lineHeight = {
-            value: n,
-            unit: NUMBER
-          };
+          var n = Math.max(0, parseFloat(temp)) || 'normal'; // 非法数字
+
+          if (n === 'normal') {
+            style.lineHeight = {
+              unit: AUTO
+            };
+          } else {
+            style.lineHeight = {
+              value: n,
+              unit: NUMBER
+            };
+          }
         }
-      }
     }
 
     temp = style.strokeDasharray;
@@ -2275,8 +2204,7 @@
       } else {
         style.stroke = rgba2int$2(temp);
       }
-    } // font除size相关
-    // 删除缩写避免干扰动画计算
+    } // 删除缩写避免干扰动画计算
 
 
     delete style.background;
@@ -2285,43 +2213,80 @@
     delete style.margin;
     delete style.padding;
     return style;
-  } // 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle计算继承和行高和文本对齐
+  } // 影响文字测量的只有字体和大小，必须提前处理，另顺带处理掉布局相关的属性
+
+  /**
+   * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
+   * 影响文字测量的只有字体和大小，也需要提前处理
+   * 继承相关的计算，包括布局的，以及渲染repaint的
+   * @param node
+   * @param isRoot
+   */
 
 
   function compute(node, isRoot) {
     var animateStyle = node.animateStyle;
     var currentStyle = node.__currentStyle = animateStyle;
-    var lineHeight = currentStyle.lineHeight,
-        textAlign = currentStyle.textAlign;
-    var computedStyle = node.__computedStyle = clone$1(currentStyle);
-    var parent = node.parent;
-    var parentComputedStyle = parent && parent.computedStyle;
-    preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-    calLineHeight(node, lineHeight, computedStyle);
+    var computedStyle = node.__computedStyle = {};
+    var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
+    var fontSize = currentStyle.fontSize,
+        fontFamily = currentStyle.fontFamily,
+        textAlign = currentStyle.textAlign,
+        lineHeight = currentStyle.lineHeight;
+
+    if (fontSize.unit === INHERIT) {
+      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
+    } else if (fontSize.unit === PERCENT$1) {
+      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value;
+    } else {
+      computedStyle.fontSize = fontSize.value;
+    }
+
+    if (fontFamily.unit === INHERIT) {
+      computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
+    } else {
+      computedStyle.fontFamily = fontFamily.value;
+    } // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
+
+
+    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
+      // border-width不支持百分比
+      computedStyle[k] = currentStyle[k].unit === PX$1 ? currentStyle[k].value : 0;
+    });
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'flexGrow', 'flexShrink'].forEach(function (k) {
+      computedStyle[k] = currentStyle[k];
+    });
 
     if (textAlign.unit === INHERIT) {
       computedStyle.textAlign = isRoot ? 'left' : parentComputedStyle.textAlign;
     } else {
       computedStyle.textAlign = isRoot ? 'left' : textAlign.value;
     }
-  } // REPAINT等级下，刷新前首先执行，仅计算继承
+
+    if (lineHeight.unit === INHERIT) {
+      computedStyle.lineHeight = isRoot ? calNormalLineHeight(computedStyle) : parentComputedStyle.lineHeight;
+    } // 防止为0
+    else if (lineHeight.unit === PX$1) {
+        computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
+      } else if (lineHeight.unit === NUMBER) {
+        computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
+      } // normal
+      else {
+          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
+        }
+
+    repaint(node, isRoot);
+  } // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
 
 
   function repaint(node, isRoot) {
     var animateStyle = node.animateStyle,
         computedStyle = node.computedStyle;
     var currentStyle = node.__currentStyle = animateStyle;
-    var parent = node.parent;
-    var parentComputedStyle = parent && parent.computedStyle;
-    preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot);
-  }
-
-  function preCompute(currentStyle, computedStyle, parentComputedStyle, isRoot) {
+    var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
     var fontStyle = currentStyle.fontStyle,
         fontWeight = currentStyle.fontWeight,
-        fontSize = currentStyle.fontSize,
-        fontFamily = currentStyle.fontFamily,
-        color = currentStyle.color; // 处理继承的属性
+        color = currentStyle.color;
 
     if (fontStyle.unit === INHERIT) {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -2335,26 +2300,13 @@
       computedStyle.fontWeight = fontWeight.value;
     }
 
-    computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot);
-
-    if (fontFamily.unit === INHERIT) {
-      computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
-    } else {
-      computedStyle.fontFamily = fontFamily.value;
-    }
-
     if (color.unit === INHERIT) {
       computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
     } else {
       computedStyle.color = int2rgba$2(color.value);
-    } // 处理可提前计算的属性，如border-width
+    }
 
-
-    ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].forEach(function (k) {
-      // border-width不支持百分比
-      computedStyle[k] = currentStyle[k].unit === PX$1 ? currentStyle[k].value : 0;
-    });
-    ['position', 'display', 'visibility', 'flexDirection', 'justifyContent', 'alignItems', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'flexGrow', 'flexShrink'].forEach(function (k) {
+    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -2362,73 +2314,17 @@
     });
   }
 
-  function computedFontSize(computedStyle, fontSize, parentComputedStyle, isRoot) {
-    if (fontSize.unit === INHERIT) {
-      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
-    } else if (fontSize.unit === PX$1) {
-      computedStyle.fontSize = fontSize.value;
-    } else if (fontSize.unit === PERCENT$1) {
-      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE * fontSize.value : parentComputedStyle.fontSize * fontSize.value;
-    } else {
-      computedStyle.fontSize = DEFAULT_FONT_SIZE;
-    }
-  }
-
   function setFontStyle(style) {
     var fontStyle = style.fontStyle,
         fontWeight = style.fontWeight,
         fontSize = style.fontSize,
         fontFamily = style.fontFamily;
-    return "".concat(fontStyle, " ").concat(fontWeight, " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+    return "".concat(fontStyle || '', " ").concat(fontWeight || '', " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
   }
 
   function getBaseLine(style) {
     var normal = style.fontSize * font.arial.lhr;
     return (style.lineHeight - normal) * 0.5 + style.fontSize * font.arial.blr;
-  }
-
-  function calLineHeight(xom, lineHeight, computedStyle) {
-    if (util.isNumber(lineHeight)) ; else if (lineHeight.unit === INHERIT) {
-      var parent = xom.parent;
-
-      if (parent) {
-        var pl = parent.style.lineHeight; // 一直继承向上查找直到root
-
-        if (pl.unit === INHERIT) {
-          parent = parent.parent;
-
-          while (parent) {
-            pl = parent.style.lineHeight;
-
-            if (pl.unit !== INHERIT) {
-              break;
-            }
-          }
-        }
-
-        var parentComputedStyle = parent.computedStyle;
-
-        if (pl.unit === PX$1) {
-          computedStyle.lineHeight = parentComputedStyle.lineHeight;
-        } else if (pl.unit === NUMBER) {
-          computedStyle.lineHeight = Math.max(pl.value, 0) * computedStyle.fontSize;
-        } else {
-          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-        }
-      } else {
-        // root的继承强制为normal
-        lineHeight.unit = AUTO;
-        computedStyle.lineHeight = calLineHeight(computedStyle);
-      }
-    } // 防止为0
-    else if (lineHeight.unit === PX$1) {
-        computedStyle.lineHeight = Math.max(lineHeight.value, 0) || calNormalLineHeight(computedStyle);
-      } else if (lineHeight.unit === NUMBER) {
-        computedStyle.lineHeight = Math.max(lineHeight.value, 0) * computedStyle.fontSize || calNormalLineHeight(computedStyle);
-      } // normal
-      else {
-          computedStyle.lineHeight = calNormalLineHeight(computedStyle);
-        }
   }
 
   function calNormalLineHeight(computedStyle) {
@@ -2492,7 +2388,6 @@
     repaint: repaint,
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine,
-    calLineHeight: calLineHeight,
     calRelative: calRelative,
     calAbsolute: calAbsolute
   };
@@ -2516,14 +2411,13 @@
 
     _createClass(LineBox, [{
       key: "render",
-      value: function render(renderMode, ctx) {
+      value: function render(renderMode, ctx, computedStyle) {
         var content = this.content,
             x = this.x,
             y = this.y,
             parent = this.parent;
         var ox = parent.ox,
-            oy = parent.oy,
-            computedStyle = parent.computedStyle;
+            oy = parent.oy;
         y += css.getBaseLine(computedStyle);
         x += ox;
         y += oy;
@@ -2609,12 +2503,10 @@
     _createClass(Text, [{
       key: "__measure",
       // 预先计算每个字的宽度
-      value: function __measure() {
-        var ctx = this.ctx,
-            content = this.content,
+      value: function __measure(renderMode, ctx) {
+        var content = this.content,
             computedStyle = this.computedStyle,
-            charWidthList = this.charWidthList,
-            renderMode = this.renderMode; // 每次都要清空重新计算，计算会有缓存
+            charWidthList = this.charWidthList; // 每次都要清空重新计算，计算会有缓存
 
         charWidthList.splice(0);
 
@@ -2684,7 +2576,7 @@
           }
         }
 
-        this.__textWidth += sum;
+        this.__textWidth = sum;
       }
     }, {
       key: "__layout",
@@ -2698,12 +2590,11 @@
         this.__y = y;
         var isDestroyed = this.isDestroyed,
             content = this.content,
-            currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             lineBoxes = this.lineBoxes,
             charWidthList = this.charWidthList;
 
-        if (isDestroyed || currentStyle.display === 'none') {
+        if (isDestroyed || computedStyle.display === 'none') {
           return;
         }
 
@@ -2805,8 +2696,8 @@
       }
     }, {
       key: "__renderByMask",
-      value: function __renderByMask(renderMode) {
-        this.render(renderMode);
+      value: function __renderByMask(renderMode, ctx) {
+        this.render(renderMode, ctx);
       }
     }, {
       key: "__tryLayInline",
@@ -2838,9 +2729,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode) {
+      value: function render(renderMode, ctx) {
         var isDestroyed = this.isDestroyed,
-            ctx = this.ctx,
             computedStyle = this.computedStyle;
 
         if (isDestroyed || computedStyle.display === 'none') {
@@ -2853,7 +2743,7 @@
         }
 
         this.lineBoxes.forEach(function (item) {
-          item.render(renderMode, ctx);
+          item.render(renderMode, ctx, computedStyle);
         });
 
         if (renderMode === mode.SVG) {
@@ -2908,12 +2798,12 @@
     }, {
       key: "currentStyle",
       get: function get() {
-        return this.style;
+        return this.parent.currentStyle;
       }
     }, {
-      key: "animateStyle",
+      key: "computedStyle",
       get: function get() {
-        return this.style;
+        return this.parent.computedStyle;
       }
     }]);
 
@@ -3218,13 +3108,13 @@
     return res;
   }
 
-  function calOrigin(transformOrigin, x, y, w, h) {
+  function calOrigin(transformOrigin, w, h) {
     var tfo = [];
     transformOrigin.forEach(function (item, i) {
       if (item.unit === PX$2) {
-        tfo.push(item.value + (i ? y : x));
+        tfo.push(item.value);
       } else if (item.unit === PERCENT$2) {
-        tfo.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+        tfo.push(item.value * (i ? h : w) * 0.01);
       }
     });
     return tfo;
@@ -3248,7 +3138,7 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
-  var transform$1 = {
+  var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
@@ -3717,301 +3607,6 @@
     genRdRect: genRdRect
   };
 
-  function quickSort(arr, begin, end, compare) {
-    if (begin >= end) {
-      return;
-    }
-
-    var i = begin,
-        j = end,
-        p = i,
-        v = arr[p],
-        seq = true;
-
-    while (i < j) {
-      if (seq) {
-        for (; i < j; j--) {
-          if (compare.call(arr, v, arr[j])) {
-            swap(arr, p, j);
-            p = j;
-            seq = !seq;
-            i++;
-            break;
-          }
-        }
-      } else {
-        for (; i < j; i++) {
-          if (compare.call(arr, arr[i], v)) {
-            swap(arr, p, i);
-            p = i;
-            seq = !seq;
-            j--;
-            break;
-          }
-        }
-      }
-    }
-
-    quickSort(arr, begin, p - 1, compare);
-    quickSort(arr, p + 1, end, compare);
-  }
-
-  function swap(arr, a, b) {
-    var temp = arr[a];
-    arr[a] = arr[b];
-    arr[b] = temp;
-  }
-
-  function sort (arr, compare) {
-    if (!Array.isArray(arr) || arr.length < 2) {
-      return arr;
-    }
-
-    compare = compare || function () {};
-
-    quickSort(arr, 0, arr.length - 1, compare);
-    return arr;
-  }
-
-  function splitClass(s) {
-    s = (s || '').trim();
-
-    if (s) {
-      return s.split(/\s+/);
-    }
-  }
-
-  function parse(dom, top, json) {
-    if (!json) {
-      return;
-    }
-
-    var list = [];
-    matchSel(dom, top, json, list);
-    sort(list, function (a, b) {
-      var pa = a[2];
-      var pb = b[2]; // 先比较优先级
-
-      for (var i = 0; i < 3; i++) {
-        if (pa[i] !== pb[i]) {
-          return pa[i] > pb[i];
-        }
-      } // 优先级相等比较出现顺序
-
-
-      return a[0] > b[0];
-    });
-    var res = {};
-
-    for (var i = list.length - 1; i >= 0; i--) {
-      var item = list[i];
-
-      var _item$ = _slicedToArray(item[1], 2),
-          k = _item$[0],
-          v = _item$[1];
-
-      if (!res.hasOwnProperty(k)) {
-        res[k] = v;
-      }
-    }
-
-    return res;
-  } // 从底部往上匹配，即.a .b这样的选择器是.b->.a逆序对比
-
-
-  function matchSel(dom, top, json, res) {
-    var _this = this;
-
-    var selList = combo(dom, json);
-    selList.forEach(function (sel) {
-      if (json.hasOwnProperty(sel)) {
-        var item = json[sel]; // 还未到根节点需继续向上，注意可以递归向上，多层级时需递归所有父层级组合
-
-        var parent = dom.parent;
-
-        while (parent) {
-          matchSel(parent, top, item, res);
-          parent = parent.parent;
-        } // 将当前层次的值存入
-
-
-        if (item.hasOwnProperty('_v')) {
-          dealStyle(res, item);
-        } // 父子选择器
-
-
-        if (item.hasOwnProperty('_>')) {
-          var parentStyle = item['_>'];
-          matchSel(dom.parent, _this, parentStyle, res);
-        } // 相邻兄弟选择器
-
-
-        if (item.hasOwnProperty('_+')) {
-          var sibling = item['_+'];
-          var prev = dom.prev;
-
-          if (prev && !(prev instanceof Text)) {
-            var prevSelList = combo(prev, sibling);
-            var hash = arr2hash$1(prevSelList);
-            Object.keys(sibling).forEach(function (k) {
-              var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
-
-              if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
-                dealStyle(res, item2);
-              }
-            });
-          }
-        } // 兄弟选择器，不一定相邻，一直往前找
-
-
-        if (item.hasOwnProperty('_~')) {
-          (function () {
-            var sibling = item['_~'];
-            var prev = dom.prev;
-
-            var _loop = function _loop() {
-              if (prev instanceof Text) {
-                prev = prev.prev;
-                return "continue";
-              }
-
-              var prevSelList = combo(prev, sibling);
-              var hash = arr2hash$1(prevSelList);
-              Object.keys(sibling).forEach(function (k) {
-                var item2 = sibling[k]; // 有值且兄弟选择器命中时存入结果
-
-                if (item2.hasOwnProperty('_v') && hash.hasOwnProperty(k)) {
-                  dealStyle(res, item2);
-                }
-              });
-              prev = prev.prev;
-            };
-
-            while (prev) {
-              var _ret = _loop();
-
-              if (_ret === "continue") continue;
-            }
-          })();
-        }
-      }
-    });
-  } // 组合出dom的所有sel可能
-
-
-  function combo(dom, json) {
-    var klass = dom["class"],
-        tagName = dom.tagName,
-        id = dom.id;
-    klass = klass.slice();
-    sort(klass, function (a, b) {
-      return a > b;
-    });
-    var ks = [];
-
-    if (klass.length) {
-      comboClass(klass, ks, klass.length, 0);
-    } // 各种*的情况标识，只有存在时才放入sel组合，可以减少循环次数
-
-
-    var hasStarClass = json.hasOwnProperty('_*.');
-    var hasStarId = json.hasOwnProperty('_*#');
-    var hasStarIdClass = json.hasOwnProperty('_*.#');
-    var res = [tagName]; // 只有当前有_*时说明有*才匹配
-
-    if (json.hasOwnProperty('_*')) {
-      res.push('*');
-    }
-
-    if (id) {
-      id = '#' + id;
-      res.push(id);
-      res.push(tagName + id);
-
-      if (hasStarId) {
-        res.push('*' + id);
-      }
-    }
-
-    ks.forEach(function (klass) {
-      res.push(klass);
-      res.push(tagName + klass);
-
-      if (hasStarClass) {
-        res.push('*' + klass);
-      }
-
-      if (id) {
-        res.push(klass + id);
-        res.push(tagName + klass + id);
-
-        if (hasStarIdClass) {
-          res.push('*' + klass + id);
-        }
-      }
-    });
-    return res;
-  } // 组合出klass里多个的可能，如.b.a和.c.b.a，注意有排序，可以使得相等比较更容易
-
-
-  function comboClass(arr, res, len, i) {
-    if (len - i > 1) {
-      comboClass(arr, res, len, i + 1);
-
-      for (var j = 0, len2 = res.length; j < len2; j++) {
-        res.push(res[j] + '.' + arr[i]);
-      }
-    }
-
-    res.push('.' + arr[i]);
-  }
-
-  function dealStyle(res, item) {
-    item._v.forEach(function (style) {
-      style[2] = item._p;
-      res.push(style);
-    });
-  }
-
-  function arr2hash$1(arr) {
-    var hash = {};
-    arr.forEach(function (item) {
-      hash[item] = true;
-    });
-    return hash;
-  }
-
-  function mergeCss(a, b) {
-    if (!b) {
-      return a;
-    }
-
-    if (!a) {
-      return b;
-    }
-
-    Object.keys(b).forEach(function (i) {
-      var o = b[i];
-      var flag = {
-        _v: true,
-        _p: true
-      }.hasOwnProperty(i);
-
-      if (!flag && _typeof(o) === 'object' && a.hasOwnProperty(i)) {
-        a[i] = mergeCss(a[i], o);
-      } else {
-        a[i] = o;
-      }
-    });
-    return a;
-  }
-
-  var match = {
-    parse: parse,
-    splitClass: splitClass,
-    mergeCss: mergeCss
-  };
-
   var PERCENT$3 = unit.PERCENT,
       NUMBER$1 = unit.NUMBER;
 
@@ -4027,14 +3622,16 @@
       value: targetHeight / imgHeight,
       unit: NUMBER$1
     }]];
-    var tfo = transform$1.calOrigin([{
+    var tfo = tf.calOrigin([{
       value: 0,
       unit: PERCENT$3
     }, {
       value: 0,
       unit: PERCENT$3
-    }], x, y, w, h);
-    return transform$1.calMatrix(list, tfo, w, h);
+    }], w, h);
+    tfo[0] += x;
+    tfo[1] += y;
+    return tf.calMatrix(list, tfo, w, h);
   }
 
   var image = {
@@ -4191,8 +3788,6 @@
 
   _defineProperty(Event, "REFRESH", 'refresh');
 
-  _defineProperty(Event, "BEFORE_REFRESH", 'before-refresh');
-
   _defineProperty(Event, "PAUSE", 'pause');
 
   _defineProperty(Event, "PLAY", 'play');
@@ -4206,101 +3801,6 @@
   _defineProperty(Event, "BEGIN", 'begin');
 
   _defineProperty(Event, "END", 'end');
-
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'normal',
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'visible',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1,
-    scaleY: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateZ: 0
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt'
-  };
-  var dom = [];
-  Object.keys(DOM).forEach(function (k) {
-    var v = DOM[k];
-    dom.push({
-      k: k,
-      v: v
-    });
-  });
-  var geom$2 = util.clone(dom);
-  Object.keys(GEOM).forEach(function (k) {
-    var v = GEOM[k];
-    geom$2.push({
-      k: k,
-      v: v
-    });
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    XOM: Object.assign(DOM, GEOM),
-    dom: dom,
-    geom: geom$2
-  };
 
   var level = {
     REPAINT: 0,
@@ -4346,13 +3846,20 @@
       borderLeftColor: true,
       borderRightColor: true,
       borderTopColor: true,
+      borderTopLeftRadius: true,
+      borderTopRightRadius: true,
+      borderBottomRightRadius: true,
+      borderBottomLeftRadius: true,
       visibility: true,
-      opacity: true
+      opacity: true,
+      zIndex: true
     }
   };
 
   var isNil$2 = util.isNil,
-      isFunction$1 = util.isFunction;
+      isString = util.isString,
+      isFunction$1 = util.isFunction,
+      clone$1 = util.clone;
 
   function diff(ovd, nvd) {
     if (ovd !== nvd) {
@@ -4399,7 +3906,7 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(Component).call(this));
 
-      if (!util.isString(tagName)) {
+      if (!isString(tagName)) {
         children = props;
         props = tagName;
         tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
@@ -4433,29 +3940,15 @@
           this.state = {};
         } else {
           Object.assign(this.state, n);
-        } // 构造函数中调用还未render
-
-
-        var ovd = this.shadowRoot;
-
-        if (!ovd) {
-          if (isFunction$1(cb)) {
-            cb();
-          }
-
-          return;
         }
 
         var root = this.root;
 
         if (root) {
           root.delRefreshTask(this.__task);
+          var ovd = this.shadowRoot;
           this.__task = {
             before: function before() {
-              _this2.__traverse(ovd.ctx, ovd.defs, root.renderMode);
-
-              _this2.__traverseCss();
-
               _this2.__init();
 
               root.setRefreshLevel(level.REFLOW);
@@ -4464,7 +3957,9 @@
               // 先进行diff，继承动画，然后销毁老的
               diff(ovd, _this2.shadowRoot);
 
-              ovd.__destroy();
+              if (ovd instanceof Node) {
+                ovd.__destroy();
+              }
 
               if (isFunction$1(cb)) {
                 cb();
@@ -4472,51 +3967,10 @@
             }
           };
           root.addRefreshTask(this.__task);
-        }
-      }
-    }, {
-      key: "__traverse",
-      value: function __traverse(ctx, defs, renderMode) {
-        var sr = this.__shadowRoot = this.render(renderMode); // 可能返回的还是一个Component，递归处理
-
-        while (sr instanceof Component) {
-          sr = this.__shadowRoot = sr.render(renderMode);
-        } // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
-
-
-        if (!(sr instanceof Node)) {
-          var s = '';
-
-          if (!isNil$2(sr)) {
-            s = util.encodeHtml(sr.toString());
+        } // 构造函数中调用还未render，
+        else if (isFunction$1(cb)) {
+            cb();
           }
-
-          sr = new Text(s);
-          sr.__ctx = ctx;
-          sr.__defs = defs;
-          sr.__style = this.props.style || {};
-          this.__shadowRoot = sr;
-          return;
-        }
-
-        sr.__ctx = ctx;
-        sr.__defs = defs;
-        sr.__host = this;
-
-        if (!sr.isGeom) {
-          sr.__traverse(ctx, defs, renderMode);
-        }
-      }
-    }, {
-      key: "__traverseCss",
-      value: function __traverseCss() {
-        var sr = this.__shadowRoot; // shadowDom可以设置props.css，同时host的会覆盖它
-
-        if (!(sr instanceof Text)) {
-          var m = match.mergeCss(sr.props.css, this.props.css);
-
-          sr.__traverseCss(sr, m);
-        }
       } // 组件传入的样式需覆盖shadowRoot的
 
     }, {
@@ -4524,18 +3978,23 @@
       value: function __init() {
         var _this3 = this;
 
-        var sr = this.shadowRoot; // 返回text节点特殊处理，赋予基本样式
+        var sr = this.render(); // 可能返回的还是一个Component，递归处理
 
-        if (sr instanceof Text) {
-          css.normalize(sr.style, reset.dom);
-        } else {
-          var style = this.props.style || {};
-          Object.assign(sr.style, style);
+        while (sr instanceof Component) {
+          sr = sr.__init();
+        } // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
 
-          sr.__init();
-        }
 
-        if (!(sr instanceof Text)) {
+        if (sr instanceof Node) {
+          sr.__host = this;
+
+          sr.__initRef(this); // 覆盖sr的样式
+
+
+          var style = clone$1(this.props.style) || {};
+          css.normalize(style);
+          Object.assign(sr.style, style); // 事件添加到sr，以及自定义事件
+
           this.__props.forEach(function (item) {
             var k = item[0];
             var v = item[1];
@@ -4555,16 +4014,29 @@
               });
             }
           });
+        } else {
+          var s = '';
+
+          if (!isNil$2(sr)) {
+            s = util.encodeHtml(sr.toString());
+          }
+
+          sr = new Text(s); // 文字视作为父节点的直接文字子节点
+
+          sr.__parent = this.parent;
         }
 
+        return this.__shadowRoot = sr;
+      }
+    }, {
+      key: "__initRef",
+      value: function __initRef(root) {
         var ref = this.props.ref;
 
-        if (ref) {
-          var owner = this.parent.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
+        if (isString(ref)) {
+          root.ref[ref] = this;
+        } else if (isFunction$1(ref)) {
+          ref(root);
         }
       }
     }, {
@@ -4604,16 +4076,14 @@
         }
       }
     }, {
-      key: "__computed",
-      value: function __computed() {
+      key: "__measure",
+      value: function __measure(renderMode, ctx) {
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
-          css.compute(sr, true);
-
-          sr.__measure();
+          sr.__measure(renderMode, ctx);
         } else {
-          sr.__computed();
+          sr.__measure(renderMode, ctx, true);
         }
       }
     }, {
@@ -4621,10 +4091,8 @@
       value: function __repaint() {
         var sr = this.shadowRoot;
 
-        if (sr instanceof Text) {
-          css.repaint(sr, true);
-        } else {
-          sr.__repaint();
+        if (sr instanceof Node) {
+          sr.__repaint(true);
         }
       }
     }, {
@@ -4672,7 +4140,7 @@
     return Component;
   }(Event);
 
-  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'ctx', 'defs', 'baseLine', 'virtualDom', 'mask', 'maskId', 'renderMode', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
     Object.defineProperty(Component.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -4683,7 +4151,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__setCtx', '__measure', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -4694,7 +4162,7 @@
   });
 
   var SPF = 1000 / 60;
-  var canvas = {
+  var CANVAS = {
     cache: null,
     mask: null
   };
@@ -4702,15 +4170,15 @@
   function cacheCanvas(key, width, height) {
     var o;
 
-    if (!canvas[key]) {
-      o = canvas[key] = document.createElement('canvas');
+    if (!CANVAS[key]) {
+      o = CANVAS[key] = document.createElement('canvas');
       o.style.position = 'absolute';
       o.style.left = '9999px';
       o.style.top = '-9999px';
       document.body.append(o);
     }
 
-    o = canvas[key];
+    o = CANVAS[key];
     o.setAttribute('width', width);
     o.setAttribute('height', height);
     o.style.width = width + 'px';
@@ -4723,6 +4191,10 @@
     };
   }
 
+  var IMG = {};
+  var INIT = 0;
+  var LOADING = 1;
+  var LOADED = 2;
   var inject = {
     measureText: function measureText(cb) {
       var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
@@ -4785,34 +4257,55 @@
       document.body.removeChild(div);
     },
     measureImg: function measureImg(url, cb) {
-      var img = new Image();
-
-      img.onload = function () {
-        cb({
-          success: true,
-          width: img.width,
-          height: img.height,
-          source: img
-        });
+      var cache = IMG[url] = IMG[url] || {
+        state: INIT,
+        task: []
       };
 
-      img.onerror = function () {
-        cb({
-          success: false
-        });
-      };
+      if (cache.state === LOADED) {
+        cb(cache);
+      } else if (cache.state === LOADING) {
+        cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cache.task.push(cb);
+        var img = new Image();
 
-      if (url.substr(0, 5) !== 'data:') {
-        var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+        img.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
 
-        if (host) {
-          if (location.hostname !== host[1]) {
-            img.crossOrigin = 'anonymous';
+        img.onerror = function () {
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        if (url.substr(0, 5) !== 'data:') {
+          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+
+          if (host) {
+            if (location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
           }
         }
-      }
 
-      img.src = url;
+        img.src = url;
+      }
     },
     warn: function warn(s) {
       console.warn(s);
@@ -4946,6 +4439,8 @@
         var last = self.__now = inject.now();
 
         function cb() {
+          // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
+          inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
             if (!aTask.length && !task.length) {
               return;
@@ -5308,9 +4803,8 @@
 
 
   function inherit(frames, keys, target) {
-    var copy = clone$2(frames);
     var computedStyle = target.computedStyle;
-    copy.forEach(function (item) {
+    frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
@@ -5322,7 +4816,7 @@
         if (k === 'transform') {
           var ow = target.outerWidth;
           var oh = target.outerHeight;
-          var m = transform$1.calMatrix(v, [0, 0], ow, oh);
+          var m = tf.calMatrix(v, [0, 0], ow, oh);
           style[k] = [['matrix', m]];
         } else if (v.unit === INHERIT$1) {
           if (k === 'color') {
@@ -5349,7 +4843,6 @@
         }
       });
     });
-    return copy;
   } // 对比两个样式的某个值是否相等
 
 
@@ -5461,13 +4954,10 @@
   } // 将当前frame的style赋值给动画style，xom绘制时获取
 
 
-  function genBeforeRefresh(frameStyle, animation, root, lv, sync) {
-    root.setRefreshLevel(lv); // finish()主动调用时不执行
+  function genBeforeRefresh(frameStyle, animation, root, lv) {
+    root.setRefreshLevel(lv); // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
 
-    if (!sync) {
-      // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
-      root.__frameHook();
-    }
+    root.__frameHook();
 
     var style = {};
     var props = {};
@@ -6086,7 +5576,10 @@
 
         var iterations = this.iterations,
             duration = this.duration,
-            list = this.list; // 执行次数小于1无需播放
+            list = this.list,
+            easing = this.easing,
+            direction = this.direction,
+            target = this.target; // 执行次数小于1无需播放
 
         if (iterations < 1 || list.length < 1) {
           return;
@@ -6175,6 +5668,47 @@
 
             _i7 = j;
           }
+        } // 总的曲线控制
+
+
+        var timingFunction = getEasing(easing);
+        var frames = []; // 换算每一关键帧样式标准化
+
+        list.forEach(function (item) {
+          frames.push(framing(item, duration, timingFunction));
+        });
+        this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+
+        var keys = this.__keys = unify(frames, target);
+        inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+
+        var length = frames.length;
+        var prev = frames[0];
+
+        for (var _i8 = 1; _i8 < length; _i8++) {
+          var next = frames[_i8];
+          prev = calFrame(prev, next, keys, target);
+        } // 反向存储帧的倒排结果
+
+
+        if ({
+          reverse: true,
+          alternate: true,
+          'alternate-reverse': true
+        }.hasOwnProperty(direction)) {
+          var framesR = clone$2(frames).reverse();
+          framesR.forEach(function (item) {
+            item.time = duration - item.time;
+            item.transition = [];
+          });
+          prev = framesR[0];
+
+          for (var _i9 = 1; _i9 < length; _i9++) {
+            var _next = framesR[_i9];
+            prev = calFrame(prev, _next, keys, target);
+          }
+
+          this.__framesR = framesR;
         } // finish/cancel共有的before处理
 
 
@@ -6225,38 +5759,6 @@
             _this2.__playCb = null;
           }
         };
-      }
-    }, {
-      key: "__format",
-      value: function __format() {
-        var list = this.list,
-            easing = this.easing,
-            duration = this.duration,
-            direction = this.direction,
-            target = this.target; // 总的曲线控制
-
-        var timingFunction = getEasing(easing);
-        var frames = []; // 换算每一关键帧样式标准化
-
-        list.forEach(function (item) {
-          frames.push(framing(item, duration, timingFunction));
-        });
-        this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
-
-        this.__keys = unify(frames, target); // 反向存储帧的倒排结果
-
-        if ({
-          reverse: true,
-          alternate: true,
-          'alternate-reverse': true
-        }.hasOwnProperty(direction)) {
-          var framesR = clone$2(frames).reverse();
-          framesR.forEach(function (item) {
-            item.time = duration - item.time;
-            item.transition = [];
-          });
-          this.__framesR = framesR;
-        }
       }
     }, {
       key: "__calDiffTime",
@@ -6310,12 +5812,8 @@
         var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
-          // 每次从头播放时，格式化帧数据以便播放计算
-          this.__format();
-
           var frames = this.frames,
               framesR = this.framesR,
-              target = this.target,
               direction = this.direction,
               delay = this.delay,
               endDelay = this.endDelay,
@@ -6325,27 +5823,9 @@
 
           var stayEnd = this.__stayEnd();
 
-          this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-          frames = inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+          this.__currentTime = this.__nextTime = this.__fpsTime = 0; // 再计算两帧之间的变化，存入transition属性
 
-          var length = frames.length;
-          var prev = frames[0];
-
-          for (var i = 1; i < length; i++) {
-            var next = frames[i];
-            prev = calFrame(prev, next, keys, target);
-          }
-
-          if (framesR.length) {
-            framesR = inherit(framesR, keys, target);
-            prev = framesR[0];
-
-            for (var _i8 = 1; _i8 < length; _i8++) {
-              var _next = framesR[_i8];
-              prev = calFrame(prev, _next, keys, target);
-            }
-          } // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
-
+          var length = frames.length; // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
 
           var enterFrame = this.__enterFrame = {
             before: function before(diff) {
@@ -7097,10 +6577,6 @@
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
       repaint$2 = css.repaint;
-  var INLINE = {
-    'span': true,
-    'img': true
-  };
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     color = int2rgba$3(color);
@@ -7164,16 +6640,18 @@
     if (s.unit === PX$4) {
       var min = Math.min(w * 0.5, h * 0.5);
       computedStyle[k] = Math.min(min, s.value);
+    } else {
+      computedStyle[k] = 0;
     }
   }
 
-  function calBackgroundSize(value, x, y, w, h) {
+  function calBackgroundSize(value, w, h) {
     var res = [];
     value.forEach(function (item, i) {
       if (item.unit === PX$4) {
         res.push(item.value);
       } else if (item.unit === PERCENT$5) {
-        res.push((i ? y : x) + item.value * (i ? h : w) * 0.01);
+        res.push(item.value * (i ? h : w) * 0.01);
       } else if (item.unit === AUTO$2) {
         res.push(-1);
       } else if (item.unit === STRING$2) {
@@ -7200,6 +6678,74 @@
   function isRelativeOrAbsolute(node) {
     return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
   }
+  /**
+   * 1. 封装string为Text节点
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点
+   */
+
+
+  function flatten(parent, children) {
+    var list = [];
+    traverse(parent, list, children, {
+      lastText: null,
+      prev: null
+    });
+    return list;
+  }
+
+  function traverse(parent, list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverse(parent, list, item, options);
+      });
+    } else if (children instanceof Xom) {
+      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg');
+      }
+
+      list.push(children);
+      children.__parent = parent;
+      options.lastText = null;
+
+      if (options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+
+      options.prev = children;
+    } else if (children instanceof Component) {
+      list.push(children);
+      children.__parent = parent; // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+
+      if (options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+
+      children.__init();
+
+      options.prev = children;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+        if (options.lastText) {
+          options.lastText.content += children;
+        } else {
+          var text = options.lastText = new Text(children);
+          list.push(text);
+          text.__parent = parent;
+
+          if (options.prev) {
+            options.prev.__next = text;
+            text.__prev = options.prev;
+          }
+
+          options.prev = text;
+        }
+      }
+  }
 
   var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
@@ -7208,6 +6754,7 @@
       var _this;
 
       var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+      var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
 
       _classCallCheck(this, Xom);
 
@@ -7240,103 +6787,32 @@
           if (arr.indexOf(v) === -1) {
             arr.push(v);
           }
-        } else if (k === 'id' && v) {
-          _this.__id = v;
-        } else if (['class', 'className'].indexOf(k) > -1 && v) {
-          v = match.splitClass(v);
-
-          if (v) {
-            _this.__class = v;
-          }
         }
       });
 
+      _this.__children = flatten(_assertThisInitialized(_this), children);
       _this.__matrix = null;
-      _this.__matrixEvent = null;
+      _this.__matrixEvent = null; // 考虑继承的matrix，直接计算事件触发
+
       _this.__animationList = [];
       _this.__loadBgi = {
         // 刷新回调函数，用以destroy取消用
         cb: function cb() {}
       };
       return _this;
-    } // 设置了css时，解析匹配
+    } // 获取margin/padding的实际值
 
 
     _createClass(Xom, [{
-      key: "__traverseCss",
-      value: function __traverseCss(top, css) {
-        var _this2 = this;
-
-        if (!this.isGeom) {
-          this.children.forEach(function (item) {
-            if (item instanceof Xom || item instanceof Component) {
-              item.__traverseCss(top, css);
-            }
-          });
-        } // inline拥有最高优先级
-
-
-        var style = match.parse(this, top, css) || {};
-        Object.keys(style).forEach(function (i) {
-          if (!_this2.__style.hasOwnProperty(i)) {
-            _this2.__style[i] = style[i];
-          }
-        });
-      }
-    }, {
-      key: "__init",
-      value: function __init() {
-        var ref = this.props.ref;
-
-        if (ref) {
-          var owner = this.host || this.root;
-
-          if (owner) {
-            owner.ref[ref] = this;
-          }
-        }
-
-        var style = this.style,
-            parent = this.parent; // 仅支持flex/block/inline/none
-
-        if (!style.display || !{
-          flex: true,
-          block: true,
-          inline: true,
-          none: true
-        }.hasOwnProperty(style.display)) {
-          if (INLINE.hasOwnProperty(this.tagName)) {
-            style.display = 'inline';
-          } else {
-            style.display = 'block';
-          }
-        } // absolute和flex孩子强制block
-
-
-        if (parent && style.display === 'inline' && (style.position === 'absolute' || parent.style.display === 'flex')) {
-          style.display = 'block';
-        }
-      }
-    }, {
-      key: "__measure",
-      value: function __measure() {
-        if (!this.isGeom) {
-          this.children.forEach(function (child) {
-            child.__measure();
-          });
-        }
-      } // 获取margin/padding的实际值
-
-    }, {
       key: "__mp",
       value: function __mp(currentStyle, computedStyle, w) {
-        var _this3 = this;
+        var _this2 = this;
 
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
           var a = 'margin' + k;
           var b = 'padding' + k;
-          computedStyle[a] = _this3.__mpWidth(currentStyle[a], w);
-          computedStyle[b] = _this3.__mpWidth(currentStyle[b], w);
+          computedStyle[a] = _this2.__mpWidth(currentStyle[a], w);
+          computedStyle[b] = _this2.__mpWidth(currentStyle[b], w);
         });
       }
     }, {
@@ -7349,13 +6825,11 @@
         }
 
         return 0;
-      } // absolute且无尺寸时，fake标明先假布局一次计算尺寸
+      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸
 
     }, {
       key: "__layout",
-      value: function __layout(data, isVirtual) {
-        var _this4 = this;
-
+      value: function __layout(data, isVirtual, absHasCalWidth) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -7363,6 +6837,16 @@
         var display = currentStyle.display,
             width = currentStyle.width,
             position = currentStyle.position;
+
+        if (isDestroyed || display === 'none') {
+          computedStyle.width = computedStyle.height = 0;
+          return;
+        } // margin/padding在自动宽度假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
+
+
+        if (!absHasCalWidth) {
+          this.__mp(currentStyle, computedStyle, w);
+        }
 
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
@@ -7376,14 +6860,7 @@
           }
         }
 
-        this.__mp(currentStyle, computedStyle, w);
-
-        this.__ox = this.__oy = 0;
-
-        if (isDestroyed || display === 'none') {
-          computedStyle.width = computedStyle.height = 0;
-          return;
-        }
+        this.__ox = this.__oy = 0; // 3种布局
 
         if (display === 'block') {
           this.__layoutBlock(data, isVirtual);
@@ -7442,11 +6919,7 @@
 
 
         computedStyle.width = this.width;
-        computedStyle.height = this.height; // 圆角边计算
-
-        ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
-          calBorderRadius(_this4.width, _this4.height, "border".concat(k, "Radius"), currentStyle, computedStyle);
-        }); // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        computedStyle.height = this.height; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
 
@@ -7556,8 +7029,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode) {
-        var _this5 = this;
+      value: function render(renderMode, ctx, defs) {
+        var _this3 = this;
 
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
@@ -7568,7 +7041,6 @@
         }
 
         var isDestroyed = this.isDestroyed,
-            ctx = this.ctx,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             width = this.width,
@@ -7576,7 +7048,11 @@
             innerWidth = this.innerWidth,
             innerHeight = this.innerHeight,
             outerWidth = this.outerWidth,
-            outerHeight = this.outerHeight;
+            outerHeight = this.outerHeight; // 圆角边计算
+
+        ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
+          calBorderRadius(width, height, "border".concat(k, "Radius"), currentStyle, computedStyle);
+        });
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
@@ -7637,8 +7113,10 @@
         } // transform和transformOrigin相关
 
 
-        var tfo = transform$1.calOrigin(transformOrigin, x, y, outerWidth, outerHeight);
-        computedStyle.transformOrigin = tfo.join(' '); // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
+        var tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
+        computedStyle.transformOrigin = tfo.join(' ');
+        tfo[0] += x;
+        tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
         var matrix = [1, 0, 0, 1, 0, 0];
         this.__matrix = matrix;
@@ -7650,7 +7128,7 @@
         parent = this.parent; // transform相对于自身
 
         if (transform) {
-          matrix = transform$1.calMatrix(transform, tfo, outerWidth, outerHeight);
+          matrix = tf.calMatrix(transform, tfo, outerWidth, outerHeight);
           this.__matrix = matrix;
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
@@ -7682,7 +7160,7 @@
             });
 
             if (temp.length) {
-              matrix = transform$1.calMatrix(temp, tfo, outerWidth, outerHeight);
+              matrix = tf.calMatrix(temp, tfo, outerWidth, outerHeight);
               this.__matrix = matrix;
             }
           }
@@ -7691,7 +7169,7 @@
 
         while (parent) {
           if (parent.matrixEvent) {
-            matrix = transform$1.mergeMatrix(parent.matrixEvent, matrix);
+            matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
             break;
           }
 
@@ -7716,304 +7194,321 @@
 
         if (!/,0\)$/.test(backgroundColor)) {
           renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-        } // 渐变或图片叠加
+        }
 
+        computedStyle.backgroundPositionX = 0;
+        computedStyle.backgroundPositionY = 0;
+        backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
+        computedStyle.backgroundSize = backgroundSize.join(' '); // 渐变或图片叠加
 
         if (backgroundImage) {
           var loadBgi = this.__loadBgi;
 
           if (util.isString(backgroundImage)) {
             if (loadBgi.url === backgroundImage) {
-              backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight);
-              var _width = loadBgi.width,
-                  _height = loadBgi.height;
+              var source = loadBgi.source; // 无source不绘制
 
-              var _backgroundSize = backgroundSize,
-                  _backgroundSize2 = _slicedToArray(_backgroundSize, 2),
-                  w = _backgroundSize2[0],
-                  h = _backgroundSize2[1]; // -1为auto，-2为contain，-3为cover
+              if (source) {
+                var _width = loadBgi.width,
+                    _height = loadBgi.height;
+
+                var _backgroundSize = backgroundSize,
+                    _backgroundSize2 = _slicedToArray(_backgroundSize, 2),
+                    w = _backgroundSize2[0],
+                    h = _backgroundSize2[1]; // -1为auto，-2为contain，-3为cover
 
 
-              if (w === -1 && h === -1) {
-                w = _width;
-                h = _height;
-              } else if (w === -2) {
-                if (_width > innerWidth && _height > innerHeight) {
-                  w = _width / innerWidth;
-                  h = _height / innerHeight;
-
-                  if (w >= h) {
-                    w = innerWidth;
-                    h = w * _height / _width;
-                  } else {
-                    h = innerHeight;
-                    w = h * _width / _height;
-                  }
-                } else if (_width > innerWidth) {
-                  w = innerWidth;
-                  h = w * _height / _width;
-                } else if (_height > innerHeight) {
-                  h = innerHeight;
-                  w = h * _width / _height;
-                } else {
+                if (w === -1 && h === -1) {
                   w = _width;
                   h = _height;
-                }
-              } else if (w === -3) {
-                if (innerWidth > _width && innerHeight > _height) {
-                  w = _width / innerWidth;
-                  h = _height / innerHeight;
+                } else if (w === -2) {
+                  if (_width > innerWidth && _height > innerHeight) {
+                    w = _width / innerWidth;
+                    h = _height / innerHeight;
 
-                  if (w <= h) {
+                    if (w >= h) {
+                      w = innerWidth;
+                      h = w * _height / _width;
+                    } else {
+                      h = innerHeight;
+                      w = h * _width / _height;
+                    }
+                  } else if (_width > innerWidth) {
                     w = innerWidth;
                     h = w * _height / _width;
-                  } else {
+                  } else if (_height > innerHeight) {
                     h = innerHeight;
                     w = h * _width / _height;
+                  } else {
+                    w = _width;
+                    h = _height;
                   }
-                } else if (innerWidth > _width) {
-                  w = innerWidth;
-                  h = w * _height / _width;
-                } else if (innerHeight > _height) {
-                  h = innerHeight;
-                  w = h * _width / _height;
-                } else {
-                  w = _width / innerWidth;
-                  h = _height / innerHeight;
+                } else if (w === -3) {
+                  if (innerWidth > _width && innerHeight > _height) {
+                    w = _width / innerWidth;
+                    h = _height / innerHeight;
 
-                  if (w <= h) {
+                    if (w <= h) {
+                      w = innerWidth;
+                      h = w * _height / _width;
+                    } else {
+                      h = innerHeight;
+                      w = h * _width / _height;
+                    }
+                  } else if (innerWidth > _width) {
                     w = innerWidth;
                     h = w * _height / _width;
-                  } else {
+                  } else if (innerHeight > _height) {
                     h = innerHeight;
                     w = h * _width / _height;
-                  }
-                }
-              } else if (w === -1) {
-                w = h * _width / _height;
-              } else if (h === -1) {
-                h = w * _height / _width;
-              }
+                  } else {
+                    w = _width / innerWidth;
+                    h = _height / innerHeight;
 
-              var bgX = calBackgroundPosition(backgroundPositionX, innerWidth, _width);
-              var bgY = calBackgroundPosition(backgroundPositionY, innerHeight, _height);
-              var originX = x2 + bgX;
-              var originY = y2 + bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
-
-              var xnl = 0;
-              var xnr = 0;
-              var ynt = 0;
-              var ynb = 0; // repeat-x
-
-              if (['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
-                var diff = originX - x2;
-
-                if (diff > 0) {
-                  xnl = Math.ceil(diff / w);
-                }
-
-                diff = x2 + innerWidth - originX - w;
-
-                if (diff > 0) {
-                  xnr = Math.ceil(diff / w);
-                }
-              } // repeat-y
-
-
-              if (['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
-                var _diff = originY - y2;
-
-                if (_diff > 0) {
-                  ynt = Math.ceil(_diff / h);
-                }
-
-                _diff = y2 + innerHeight - originY - h;
-
-                if (_diff > 0) {
-                  ynb = Math.ceil(_diff / h);
-                }
-              } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
-
-
-              var repeat = [];
-
-              if (xnl > 0) {
-                for (var i = 0; i < xnl; i++) {
-                  repeat.push([originX - (i + 1) * w, originY]);
-                }
-              }
-
-              if (xnr > 0) {
-                for (var _i = 0; _i < xnr; _i++) {
-                  repeat.push([originX + (_i + 1) * w, originY]);
-                }
-              }
-
-              if (ynt > 0) {
-                for (var _i2 = 0; _i2 < ynt; _i2++) {
-                  repeat.push([originX, originY - (_i2 + 1) * h]);
-                }
-              }
-
-              if (ynb > 0) {
-                for (var _i3 = 0; _i3 < ynb; _i3++) {
-                  repeat.push([originX, originY + (_i3 + 1) * h]);
-                }
-              } // 原点和同行列十字画完，看4个角的情况
-
-
-              if (xnl > 0 && ynt > 0) {
-                for (var _i4 = 0; _i4 < xnl; _i4++) {
-                  for (var j = 0; j < ynt; j++) {
-                    repeat.push([originX - (_i4 + 1) * w, originY - (j + 1) * h]);
-                  }
-                }
-              }
-
-              if (xnr > 0 && ynt > 0) {
-                for (var _i5 = 0; _i5 < xnr; _i5++) {
-                  for (var _j = 0; _j < ynt; _j++) {
-                    repeat.push([originX + (_i5 + 1) * w, originY - (_j + 1) * h]);
-                  }
-                }
-              }
-
-              if (xnl > 0 && ynb > 0) {
-                for (var _i6 = 0; _i6 < xnl; _i6++) {
-                  for (var _j2 = 0; _j2 < ynb; _j2++) {
-                    repeat.push([originX - (_i6 + 1) * w, originY + (_j2 + 1) * h]);
-                  }
-                }
-              }
-
-              if (xnr > 0 && ynb > 0) {
-                for (var _i7 = 0; _i7 < xnr; _i7++) {
-                  for (var _j3 = 0; _j3 < ynb; _j3++) {
-                    repeat.push([originX + (_i7 + 1) * w, originY + (_j3 + 1) * h]);
-                  }
-                }
-              } // 超出尺寸模拟mask截取
-
-
-              var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || originX < x2 || originY < y2 || w > innerWidth || h > innerHeight;
-              var source = loadBgi.source;
-
-              if (renderMode === mode.CANVAS && source) {
-                var c;
-                var currentCtx; // 在离屏canvas上绘制
-
-                if (needMask) {
-                  var _this$root = this.root,
-                      _width2 = _this$root.width,
-                      _height2 = _this$root.height;
-                  c = inject.getCacheCanvas(_width2, _height2);
-                  currentCtx = c.ctx;
-                } else {
-                  currentCtx = ctx;
-                } // 先画不考虑repeat的中心声明的
-
-
-                currentCtx.drawImage(source, originX, originY, w, h); // 再画重复的十字和4角象限
-
-                repeat.forEach(function (item) {
-                  currentCtx.drawImage(source, item[0], item[1], w, h);
-                }); // mask特殊处理画回来
-
-                if (needMask) {
-                  currentCtx.globalCompositeOperation = 'destination-in';
-                  renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                  ctx.drawImage(c.canvas, 0, 0);
-                  currentCtx.globalCompositeOperation = 'source-over';
-                  currentCtx.clearRect(0, 0, _width, _height);
-                }
-              } else if (renderMode === mode.SVG) {
-                var _matrix = image.matrixResize(_width, _height, w, h, x2, y2, innerWidth, innerHeight);
-
-                if (_matrix) {
-                  _matrix = _matrix.join(',');
-                }
-
-                var props = [['xlink:href', backgroundImage], ['x', originX], ['y', originY], ['width', _width || 0], ['height', _height || 0]];
-                var needResize;
-
-                if (_matrix && _matrix !== '1,0,0,1,0,0') {
-                  needResize = true;
-                  props.push(['transform', 'matrix(' + _matrix + ')']);
-                }
-
-                if (needMask) {
-                  var maskId = this.defs.add({
-                    tagName: 'mask',
-                    props: [],
-                    children: [{
-                      tagName: 'rect',
-                      props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
-                    }]
-                  });
-                  this.virtualDom.bbMask = "url(#".concat(maskId, ")");
-                } // 先画不考虑repeat的中心声明的
-
-
-                this.virtualDom.bb.push({
-                  type: 'img',
-                  tagName: 'image',
-                  props: props
-                }); // 再画重复的十字和4角象限
-
-                repeat.forEach(function (item) {
-                  var copy = clone$3(props);
-
-                  if (needResize) {
-                    var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
-
-                    if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
-                      _matrix2 = _matrix2.join(',');
-                      copy[5][1] = 'matrix(' + _matrix2 + ')';
+                    if (w <= h) {
+                      w = innerWidth;
+                      h = w * _height / _width;
+                    } else {
+                      h = innerHeight;
+                      w = h * _width / _height;
                     }
                   }
+                } else if (w === -1) {
+                  w = h * _width / _height;
+                } else if (h === -1) {
+                  h = w * _height / _width;
+                }
 
-                  copy[1][1] = item[0];
-                  copy[2][1] = item[1];
+                var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, _width);
+                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, _height);
+                computedStyle.backgroundPositionX = bgX;
+                computedStyle.backgroundPositionY = bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
-                  _this5.virtualDom.bb.push({
+                var xnl = 0;
+                var xnr = 0;
+                var ynt = 0;
+                var ynb = 0; // repeat-x
+
+                if (['repeat-x', 'repeat'].indexOf(backgroundRepeat) > -1) {
+                  var diff = bgX - x2;
+
+                  if (diff > 0) {
+                    xnl = Math.ceil(diff / w);
+                  }
+
+                  diff = x2 + innerWidth - bgX - w;
+
+                  if (diff > 0) {
+                    xnr = Math.ceil(diff / w);
+                  }
+                } // repeat-y
+
+
+                if (['repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1) {
+                  var _diff = bgY - y2;
+
+                  if (_diff > 0) {
+                    ynt = Math.ceil(_diff / h);
+                  }
+
+                  _diff = y2 + innerHeight - bgY - h;
+
+                  if (_diff > 0) {
+                    ynb = Math.ceil(_diff / h);
+                  }
+                } // 分同行列和4个角分别判断，先看同行同列，再看4个角的象限
+
+
+                var repeat = [];
+
+                if (xnl > 0) {
+                  for (var i = 0; i < xnl; i++) {
+                    repeat.push([bgX - (i + 1) * w, bgY]);
+                  }
+                }
+
+                if (xnr > 0) {
+                  for (var _i = 0; _i < xnr; _i++) {
+                    repeat.push([bgX + (_i + 1) * w, bgY]);
+                  }
+                }
+
+                if (ynt > 0) {
+                  for (var _i2 = 0; _i2 < ynt; _i2++) {
+                    repeat.push([bgX, bgY - (_i2 + 1) * h]);
+                  }
+                }
+
+                if (ynb > 0) {
+                  for (var _i3 = 0; _i3 < ynb; _i3++) {
+                    repeat.push([bgX, bgY + (_i3 + 1) * h]);
+                  }
+                } // 原点和同行列十字画完，看4个角的情况
+
+
+                if (xnl > 0 && ynt > 0) {
+                  for (var _i4 = 0; _i4 < xnl; _i4++) {
+                    for (var j = 0; j < ynt; j++) {
+                      repeat.push([bgX - (_i4 + 1) * w, bgY - (j + 1) * h]);
+                    }
+                  }
+                }
+
+                if (xnr > 0 && ynt > 0) {
+                  for (var _i5 = 0; _i5 < xnr; _i5++) {
+                    for (var _j = 0; _j < ynt; _j++) {
+                      repeat.push([bgX + (_i5 + 1) * w, bgY - (_j + 1) * h]);
+                    }
+                  }
+                }
+
+                if (xnl > 0 && ynb > 0) {
+                  for (var _i6 = 0; _i6 < xnl; _i6++) {
+                    for (var _j2 = 0; _j2 < ynb; _j2++) {
+                      repeat.push([bgX - (_i6 + 1) * w, bgY + (_j2 + 1) * h]);
+                    }
+                  }
+                }
+
+                if (xnr > 0 && ynb > 0) {
+                  for (var _i7 = 0; _i7 < xnr; _i7++) {
+                    for (var _j3 = 0; _j3 < ynb; _j3++) {
+                      repeat.push([bgX + (_i7 + 1) * w, bgY + (_j3 + 1) * h]);
+                    }
+                  }
+                } // 超出尺寸模拟mask截取
+
+
+                var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+
+                if (renderMode === mode.CANVAS) {
+                  var c;
+                  var currentCtx; // 在离屏canvas上绘制
+
+                  if (needMask) {
+                    var _currentCtx;
+
+                    var _this$root = this.root,
+                        _width2 = _this$root.width,
+                        _height2 = _this$root.height;
+                    c = inject.getCacheCanvas(_width2, _height2);
+                    currentCtx = c.ctx; // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
+
+                    (_currentCtx = currentCtx).setTransform.apply(_currentCtx, _toConsumableArray(matrix));
+                  } else {
+                    currentCtx = ctx;
+                  } // 先画不考虑repeat的中心声明的
+
+
+                  currentCtx.drawImage(source, bgX, bgY, w, h); // 再画重复的十字和4角象限
+
+                  repeat.forEach(function (item) {
+                    currentCtx.drawImage(source, item[0], item[1], w, h);
+                  }); // mask特殊处理画回来
+
+                  if (needMask) {
+                    currentCtx.globalCompositeOperation = 'destination-in';
+                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius); // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
+
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.drawImage(c.canvas, 0, 0); // 绘完后变正常即可
+
+                    ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+                    currentCtx.globalCompositeOperation = 'source-over';
+                    var _this$root2 = this.root,
+                        _width3 = _this$root2.width,
+                        _height3 = _this$root2.height;
+                    currentCtx.setTransform(1, 0, 0, 1, 0, 0);
+                    currentCtx.clearRect(0, 0, _width3, _height3);
+                  }
+                } else if (renderMode === mode.SVG) {
+                  var _matrix = image.matrixResize(_width, _height, w, h, bgX, bgY, innerWidth, innerHeight);
+
+                  if (_matrix) {
+                    _matrix = _matrix.join(',');
+                  }
+
+                  var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width], ['height', _height]];
+                  var needResize;
+
+                  if (_matrix && _matrix !== '1,0,0,1,0,0') {
+                    needResize = true;
+                    props.push(['transform', 'matrix(' + _matrix + ')']);
+                  }
+
+                  if (needMask) {
+                    var maskId = defs.add({
+                      tagName: 'mask',
+                      props: [],
+                      children: [{
+                        tagName: 'rect',
+                        props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
+                      }]
+                    });
+                    this.virtualDom.bbMask = "url(#".concat(maskId, ")");
+                  } // 先画不考虑repeat的中心声明的
+
+
+                  this.virtualDom.bb.push({
                     type: 'img',
                     tagName: 'image',
-                    props: copy
-                  });
-                });
-              }
+                    props: props
+                  }); // 再画重复的十字和4角象限
 
-              computedStyle.backgroundSize = "".concat(w, " ").concat(h);
-              computedStyle.backgroundPositionX = bgX;
-              computedStyle.backgroundPositionY = bgY;
+                  repeat.forEach(function (item) {
+                    var copy = clone$3(props);
+
+                    if (needResize) {
+                      var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
+
+                      if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
+                        _matrix2 = _matrix2.join(',');
+                        copy[5][1] = 'matrix(' + _matrix2 + ')';
+                      }
+                    }
+
+                    copy[1][1] = item[0];
+                    copy[2][1] = item[1];
+
+                    _this3.virtualDom.bb.push({
+                      type: 'img',
+                      tagName: 'image',
+                      props: copy
+                    });
+                  });
+                }
+
+                computedStyle.backgroundSize = "".concat(w, " ").concat(h);
+                computedStyle.backgroundPositionX = bgX;
+                computedStyle.backgroundPositionY = bgY;
+              }
             } else {
+              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
               loadBgi.url = backgroundImage;
+              loadBgi.source = null;
               inject.measureImg(backgroundImage, function (data) {
-                if (data.success) {
+                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
 
-                  _this5.root.delRefreshTask(loadBgi.cb);
+                  _this3.root.delRefreshTask(loadBgi.cb);
 
-                  _this5.root.addRefreshTask(loadBgi.cb);
+                  _this3.root.addRefreshTask(loadBgi.cb);
                 }
+              }, {
+                width: innerWidth,
+                height: innerHeight
               });
             }
+
+            computedStyle.backgroundImage = backgroundImage;
           } else if (backgroundImage.k) {
-            var bgi = this.__gradient(renderMode, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
           }
-        } else {
-          var _originX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, 0);
-
-          var _originY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, 0);
-
-          computedStyle.backgroundSize = calBackgroundSize(backgroundSize, x2, y2, innerWidth, innerHeight).join(' ');
-          computedStyle.backgroundPositionX = _originX;
-          computedStyle.backgroundPositionY = _originY;
-          computedStyle.backgroundRepeat = backgroundRepeat;
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
@@ -8056,14 +7551,13 @@
       }
     }, {
       key: "__renderByMask",
-      value: function __renderByMask(renderMode) {
+      value: function __renderByMask(renderMode, ctx, defs) {
         var prev = this.prev,
-            root = this.root,
-            ctx = this.ctx;
+            root = this.root;
         var hasMask = prev && prev.isMask;
 
         if (!hasMask) {
-          this.render(renderMode);
+          this.render(renderMode, ctx, defs);
           return;
         }
 
@@ -8072,13 +7566,7 @@
           var width = root.width,
               height = root.height;
           var c = inject.getCacheCanvas(width, height);
-
-          this.__setCtx(c.ctx);
-
-          this.render(renderMode);
-
-          this.__setCtx(ctx); // 收集之前的mask列表
-
+          this.render(renderMode, c.ctx); // 收集之前的mask列表
 
           var list = [];
 
@@ -8091,26 +7579,16 @@
           if (list.length === 1) {
             prev = list[0];
             c.ctx.globalCompositeOperation = 'destination-in';
-
-            prev.__setCtx(c.ctx);
-
-            prev.render(renderMode); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+            prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
 
             c.draw(c.ctx);
-
-            prev.__setCtx(ctx);
-
             ctx.drawImage(c.canvas, 0, 0);
             c.draw(ctx);
           } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
           else {
               var m = inject.getMaskCanvas(width, height);
               list.forEach(function (item) {
-                item.__setCtx(m.ctx);
-
-                item.render(renderMode);
-
-                item.__setCtx(ctx);
+                item.render(renderMode, m.ctx);
               });
               m.draw(m.ctx);
               c.ctx.globalCompositeOperation = 'destination-in';
@@ -8129,7 +7607,7 @@
           c.ctx.clearRect(0, 0, width, height);
           c.draw(c.ctx);
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+          this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
           this.virtualDom.mask = prev.maskId;
         }
@@ -8297,7 +7775,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             matrixEvent = this.matrixEvent;
-        var inThis = transform$1.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
+        var inThis = tf.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
 
         if (inThis) {
           if (!e.target) {
@@ -8313,7 +7791,7 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
         var k = vs.k,
             v = vs.v,
             d = vs.d;
@@ -8324,12 +7802,12 @@
 
         if (k === 'linear') {
           var gd = gradient.getLinear(v, d, cx, cy, iw, ih);
-          res = this.__getLg(renderMode, gd);
+          res = this.__getLg(renderMode, ctx, defs, gd);
           computedStyle[ks] += d + 'deg';
         } else if (k === 'radial') {
           var _gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
 
-          res = this.__getRg(renderMode, _gd);
+          res = this.__getRg(renderMode, ctx, defs, _gd);
           computedStyle[ks] += d;
         }
 
@@ -8345,15 +7823,15 @@
       }
     }, {
       key: "__getLg",
-      value: function __getLg(renderMode, gd) {
+      value: function __getLg(renderMode, ctx, defs, gd) {
         if (renderMode === mode.CANVAS) {
-          var lg = this.ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
+          var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach(function (item) {
             lg.addColorStop(item[1], item[0]);
           });
           return lg;
         } else if (renderMode === mode.SVG) {
-          var uuid = this.defs.add({
+          var uuid = defs.add({
             tagName: 'linearGradient',
             props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
             children: gd.stop.map(function (item) {
@@ -8368,15 +7846,15 @@
       }
     }, {
       key: "__getRg",
-      value: function __getRg(renderMode, gd) {
+      value: function __getRg(renderMode, ctx, defs, gd) {
         if (renderMode === mode.CANVAS) {
-          var rg = this.ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+          var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
           gd.stop.forEach(function (item) {
             rg.addColorStop(item[1], item[0]);
           });
           return rg;
         } else if (renderMode === mode.SVG) {
-          var uuid = this.defs.add({
+          var uuid = defs.add({
             tagName: 'radialGradient',
             props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
             children: gd.stop.map(function (item) {
@@ -8434,53 +7912,41 @@
         });
       }
     }, {
-      key: "__computed",
-      value: function __computed() {
-        var _this6 = this;
+      key: "__initRef",
+      value: function __initRef(root) {
+        var ref = this.props.ref;
 
-        compute$1(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
-
-        if (!this.isGeom) {
-          this.children.forEach(function (item) {
-            if (item instanceof Xom || item instanceof Component) {
-              item.__computed();
-            } else {
-              item.__style = _this6.currentStyle;
-              compute$1(item); // 文字首先测量所有字符宽度
-
-              item.__measure();
-            }
-          });
+        if (util.isString(ref)) {
+          root.ref[ref] = this;
+        } else if (util.isFunction(ref)) {
+          ref(root);
         }
+
+        this.children.forEach(function (item) {
+          if (item instanceof Xom || item instanceof Component) {
+            item.__initRef(root);
+          }
+        });
+      }
+    }, {
+      key: "__measure",
+      value: function __measure(renderMode, ctx, isRoot) {
+        compute$1(this, isRoot); // 即便自己不需要计算，但children还要继续递归检查
+
+        this.children.forEach(function (item) {
+          item.__measure(renderMode, ctx);
+        });
       }
     }, {
       key: "__repaint",
-      value: function __repaint() {
-        var _this7 = this;
+      value: function __repaint(isRoot) {
+        repaint$2(this, isRoot); // 即便自己不需要计算，但children还要继续递归检查
 
-        repaint$2(this, this.isRoot); // 即便自己不需要计算，但children还要继续递归检查
-
-        if (!this.isGeom) {
-          this.children.forEach(function (item) {
-            if (item instanceof Xom || item instanceof Component) {
-              item.__repaint();
-            } else {
-              item.__style = _this7.currentStyle;
-              repaint$2(item);
-            }
-          });
-        }
-      }
-    }, {
-      key: "__setCtx",
-      value: function __setCtx(ctx) {
-        _get(_getPrototypeOf(Xom.prototype), "__setCtx", this).call(this, ctx);
-
-        if (!this.isGeom) {
-          this.children.forEach(function (item) {
-            item.__setCtx(ctx);
-          });
-        }
+        this.children.forEach(function (item) {
+          if (item instanceof Xom || item instanceof Component) {
+            item.__repaint();
+          }
+        });
       }
     }, {
       key: "tagName",
@@ -8488,9 +7954,37 @@
         return this.__tagName;
       }
     }, {
-      key: "isRoot",
+      key: "children",
       get: function get() {
-        return !this.parent;
+        return this.__children;
+      } // canvas/svg根节点
+
+    }, {
+      key: "root",
+      get: function get() {
+        if (this.host) {
+          return this.host.root;
+        }
+
+        if (this.parent) {
+          return this.parent.root;
+        }
+
+        if (['canvas', 'svg'].indexOf(this.tagName) > -1) {
+          return this;
+        }
+      } // component根节点
+
+    }, {
+      key: "host",
+      get: function get() {
+        if (this.__host) {
+          return this.__host;
+        }
+
+        if (this.parent) {
+          return this.parent.host;
+        }
       }
     }, {
       key: "isGeom",
@@ -8501,36 +7995,60 @@
       key: "innerWidth",
       get: function get() {
         var _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
             paddingRight = _this$computedStyle.paddingRight,
             paddingLeft = _this$computedStyle.paddingLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.width + paddingLeft + paddingRight;
       }
     }, {
       key: "innerHeight",
       get: function get() {
         var _this$computedStyle2 = this.computedStyle,
+            display = _this$computedStyle2.display,
             paddingTop = _this$computedStyle2.paddingTop,
             paddingBottom = _this$computedStyle2.paddingBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.height + paddingTop + paddingBottom;
       }
     }, {
       key: "outerWidth",
       get: function get() {
         var _this$computedStyle3 = this.computedStyle,
+            display = _this$computedStyle3.display,
             borderLeftWidth = _this$computedStyle3.borderLeftWidth,
             borderRightWidth = _this$computedStyle3.borderRightWidth,
             marginRight = _this$computedStyle3.marginRight,
             marginLeft = _this$computedStyle3.marginLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerWidth + borderLeftWidth + borderRightWidth + marginLeft + marginRight;
       }
     }, {
       key: "outerHeight",
       get: function get() {
         var _this$computedStyle4 = this.computedStyle,
+            display = _this$computedStyle4.display,
             borderTopWidth = _this$computedStyle4.borderTopWidth,
             borderBottomWidth = _this$computedStyle4.borderBottomWidth,
             marginTop = _this$computedStyle4.marginTop,
             marginBottom = _this$computedStyle4.marginBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerHeight + borderTopWidth + borderBottomWidth + marginTop + marginBottom;
       }
     }, {
@@ -8549,14 +8067,14 @@
         return this.__matrixEvent;
       }
     }, {
-      key: "id",
+      key: "style",
       get: function get() {
-        return this.__id;
+        return this.__style;
       }
     }, {
-      key: "class",
+      key: "computedStyle",
       get: function get() {
-        return this.__class || [];
+        return this.__computedStyle;
       }
     }, {
       key: "animationList",
@@ -8564,26 +8082,11 @@
         return this.__animationList;
       }
     }, {
-      key: "animating",
-      get: function get() {
-        var animationList = this.animationList;
-
-        for (var i = 0, len = animationList.length; i < len; i++) {
-          var item = animationList[i];
-
-          if (item.animating) {
-            return true;
-          }
-        }
-
-        return false;
-      }
-    }, {
       key: "animateStyle",
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = clone$3(style);
+        var copy = Object.assign({}, style);
         animationList.forEach(function (item) {
           if (item.animating) {
             Object.assign(copy, item.style);
@@ -8595,37 +8098,6 @@
       key: "currentStyle",
       get: function get() {
         return this.__currentStyle;
-      }
-    }, {
-      key: "zIndexChildren",
-      get: function get() {
-        if (this.isGeom) {
-          return [];
-        }
-
-        var zIndex = (this.children || []).filter(function (item) {
-          return !item.isMask;
-        });
-        sort(zIndex, function (a, b) {
-          if (a instanceof Text) {
-            return;
-          }
-
-          if (b instanceof Text && isRelativeOrAbsolute(a)) {
-            return true;
-          }
-
-          if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
-            if (isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
-              return true;
-            }
-          }
-
-          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-            return true;
-          }
-        });
-        return zIndex;
       }
     }]);
 
@@ -8727,433 +8199,167 @@
     return LineGroup;
   }();
 
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'normal',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'visible',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateZ: 0
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt'
+  };
+  var dom = [];
+  Object.keys(DOM).forEach(function (k) {
+    var v = DOM[k];
+    dom.push({
+      k: k,
+      v: v
+    });
+  });
+  var geom$2 = [];
+  Object.keys(GEOM).forEach(function (k) {
+    var v = GEOM[k];
+    geom$2.push({
+      k: k,
+      v: v
+    });
+  });
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    dom: dom,
+    geom: geom$2
+  };
+
+  function quickSort(arr, begin, end, compare) {
+    if (begin >= end) {
+      return;
+    }
+
+    var i = begin,
+        j = end,
+        p = i,
+        v = arr[p],
+        seq = true;
+
+    while (i < j) {
+      if (seq) {
+        for (; i < j; j--) {
+          if (compare.call(arr, v, arr[j])) {
+            swap(arr, p, j);
+            p = j;
+            seq = !seq;
+            i++;
+            break;
+          }
+        }
+      } else {
+        for (; i < j; i++) {
+          if (compare.call(arr, arr[i], v)) {
+            swap(arr, p, i);
+            p = i;
+            seq = !seq;
+            j--;
+            break;
+          }
+        }
+      }
+    }
+
+    quickSort(arr, begin, p - 1, compare);
+    quickSort(arr, p + 1, end, compare);
+  }
+
+  function swap(arr, a, b) {
+    var temp = arr[a];
+    arr[a] = arr[b];
+    arr[b] = temp;
+  }
+
+  function sort (arr, compare) {
+    if (!Array.isArray(arr) || arr.length < 2) {
+      return arr;
+    }
+
+    compare = compare || function () {};
+
+    quickSort(arr, 0, arr.length - 1, compare);
+    return arr;
+  }
+
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
-  var clone$4 = util.clone,
-      int2rgba$4 = util.int2rgba,
-      isNil$4 = util.isNil;
-  var REGISTER = {};
-
-  var Geom = /*#__PURE__*/function (_Xom) {
-    _inherits(Geom, _Xom);
-
-    function Geom(tagName, props) {
-      var _this;
-
-      _classCallCheck(this, Geom);
-
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
-      _this.__isMask = !!_this.props.mask;
-      _this.__currentProps = _this.props;
-      return _this;
-    }
-
-    _createClass(Geom, [{
-      key: "__init",
-      value: function __init() {
-        _get(_getPrototypeOf(Geom.prototype), "__init", this).call(this);
-
-        var style = this.style,
-            isMask = this.isMask;
-
-        if (isMask) {
-          style.position = 'absolute';
-          style.display = 'block';
-          style.visibility = 'visible';
-          style.background = null;
-          style.border = null;
-          style.strokeWidth = 0;
-        }
-
-        css.normalize(style, reset.geom);
-      }
-    }, {
-      key: "__tryLayInline",
-      value: function __tryLayInline(w, total) {
-        // 无children，直接以style的width为宽度，不定义则为0
-        var width = this.currentStyle.width;
-
-        if (width.unit === PX$5) {
-          return w - width.value;
-        } else if (width.unit === PERCENT$6) {
-          return w - total * width.value * 0.01;
-        }
-
-        return w;
-      }
-    }, {
-      key: "__calAutoBasis",
-      value: function __calAutoBasis(isDirectionRow) {
-        var b = 0;
-        var min = 0;
-        var max = 0;
-        var currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle; // 计算需考虑style的属性
-
-        var width = currentStyle.width,
-            height = currentStyle.height;
-        var borderTopWidth = computedStyle.borderTopWidth,
-            borderRightWidth = computedStyle.borderRightWidth,
-            borderBottomWidth = computedStyle.borderBottomWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth;
-        var main = isDirectionRow ? width : height;
-
-        if (main.unit !== AUTO$3) {
-          b = max += main.value;
-        } // border也得计算在内
-
-
-        if (isDirectionRow) {
-          var w = borderRightWidth + borderLeftWidth;
-          b += w;
-          max += w;
-          min += w;
-        } else {
-          var h = borderTopWidth + borderBottomWidth;
-          b += h;
-          max += h;
-          min += h;
-        }
-
-        return {
-          b: b,
-          min: min,
-          max: max
-        };
-      }
-    }, {
-      key: "__layoutBlock",
-      value: function __layoutBlock(data, isVirtual) {
-        var _this$__preLayout = this.__preLayout(data),
-            fixedWidth = _this$__preLayout.fixedWidth,
-            fixedHeight = _this$__preLayout.fixedHeight,
-            w = _this$__preLayout.w,
-            h = _this$__preLayout.h;
-
-        this.__height = fixedHeight ? h : 0;
-
-        if (isVirtual) {
-          this.__width = fixedWidth ? w : 0;
-          return;
-        }
-
-        this.__width = w;
-
-        this.__marginAuto(this.currentStyle, data);
-      }
-    }, {
-      key: "__layoutFlex",
-      value: function __layoutFlex(data) {
-        // 无children所以等同于block
-        this.__layoutBlock(data);
-      }
-    }, {
-      key: "__layoutInline",
-      value: function __layoutInline(data) {
-        var _this$__preLayout2 = this.__preLayout(data),
-            fixedWidth = _this$__preLayout2.fixedWidth,
-            fixedHeight = _this$__preLayout2.fixedHeight,
-            x = _this$__preLayout2.x,
-            y = _this$__preLayout2.y,
-            w = _this$__preLayout2.w,
-            h = _this$__preLayout2.h; // 元素的width不能超过父元素w
-
-
-        this.__width = fixedWidth ? w : x - data.x;
-        this.__height = fixedHeight ? h : y - data.y;
-      }
-    }, {
-      key: "__preRender",
-      value: function __preRender(renderMode) {
-        var x = this.sx,
-            y = this.sy,
-            width = this.width,
-            height = this.height,
-            currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
-        var strokeWidth = currentStyle.strokeWidth,
-            fill = currentStyle.fill,
-            stroke = currentStyle.stroke,
-            strokeDasharray = currentStyle.strokeDasharray,
-            strokeLinecap = currentStyle.strokeLinecap;
-        var borderTopWidth = computedStyle.borderTopWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth,
-            display = computedStyle.display,
-            marginTop = computedStyle.marginTop,
-            marginLeft = computedStyle.marginLeft,
-            paddingTop = computedStyle.paddingTop,
-            paddingRight = computedStyle.paddingRight,
-            paddingBottom = computedStyle.paddingBottom,
-            paddingLeft = computedStyle.paddingLeft,
-            visibility = computedStyle.visibility;
-        var originX = x + borderLeftWidth + marginLeft + paddingLeft;
-        var originY = y + borderTopWidth + marginTop + paddingTop;
-        var cx = originX + width * 0.5;
-        var cy = originY + height * 0.5;
-        var iw = width + paddingLeft + paddingRight;
-        var ih = height + paddingTop + paddingBottom;
-
-        if (strokeWidth.unit === PX$5) {
-          strokeWidth = strokeWidth.value;
-        } else if (strokeWidth.unit === PERCENT$6) {
-          strokeWidth = strokeWidth.value * width * 0.01;
-        } else {
-          strokeWidth = 0;
-        }
-
-        computedStyle.strokeWidth = strokeWidth;
-
-        if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-          stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
-        } else {
-          computedStyle.stroke = stroke = int2rgba$4(stroke);
-        }
-
-        if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
-          fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
-        } else {
-          computedStyle.fill = fill = int2rgba$4(fill);
-        }
-
-        computedStyle.strokeWidth = strokeWidth;
-        computedStyle.strokeDasharray = strokeDasharray.join(', ');
-        computedStyle.strokeLinecap = strokeLinecap;
-        return {
-          x: x,
-          y: y,
-          originX: originX,
-          originY: originY,
-          cx: cx,
-          cy: cy,
-          display: display,
-          stroke: stroke,
-          strokeWidth: strokeWidth,
-          strokeDasharray: strokeDasharray,
-          strokeDasharrayStr: computedStyle.strokeDasharray,
-          strokeLinecap: strokeLinecap,
-          fill: fill,
-          visibility: visibility
-        };
-      }
-    }, {
-      key: "render",
-      value: function render(renderMode) {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode);
-
-        if (renderMode === mode.SVG) {
-          this.virtualDom.type = 'geom';
-        }
-
-        var isDestroyed = this.isDestroyed,
-            animateProps = this.animateProps,
-            display = this.computedStyle.display;
-        this.__currentProps = animateProps;
-
-        if (isDestroyed || display === 'none') {
-          return {
-            isDestroyed: isDestroyed,
-            display: display
-          };
-        }
-
-        return this.__preRender(renderMode);
-      }
-    }, {
-      key: "__renderAsMask",
-      value: function __renderAsMask(renderMode) {
-        // mask渲染在canvas等被遮罩层调用，svg生成maskId
-        if (renderMode === mode.SVG) {
-          this.render(renderMode);
-          var vd = this.virtualDom;
-          vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
-
-          var children = clone$4(vd.children);
-          var m = this.matrixEvent;
-          children.forEach(function (child) {
-            var xi = 0;
-            var yi = 1;
-            var x, y;
-            var props = child.props;
-
-            if (child.tagName === 'rect') {
-              for (var i = 0, len = props.length; i < len; i++) {
-                var _props$i = _slicedToArray(props[i], 2),
-                    k = _props$i[0],
-                    v = _props$i[1];
-
-                if (k === 'x') {
-                  xi = i;
-                  x = v;
-                } else if (k === 'y') {
-                  yi = i;
-                  y = v;
-                }
-              }
-
-              var point = matrix.calPoint([x, y], m);
-              props[xi][1] = point[0];
-              props[yi][1] = point[1];
-            } else if (child.tagName === 'circle' || child.tagName === 'ellipse') {
-              for (var _i = 0, _len = props.length; _i < _len; _i++) {
-                var _props$_i = _slicedToArray(props[_i], 2),
-                    _k = _props$_i[0],
-                    _v = _props$_i[1];
-
-                if (_k === 'cx') {
-                  xi = _i;
-                  x = _v;
-                } else if (_k === 'cy') {
-                  yi = _i;
-                  y = _v;
-                }
-              }
-
-              var _point = matrix.calPoint([x, y], m);
-
-              props[xi][1] = _point[0];
-              props[yi][1] = _point[1];
-            } else if (child.tagName === 'polygon') {
-              for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
-                var _props$_i2 = _slicedToArray(props[_i2], 2),
-                    _k2 = _props$_i2[0],
-                    _v2 = _props$_i2[1];
-
-                if (_k2 === 'points') {
-                  props[_i2][1] = _v2.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
-                  });
-                  break;
-                }
-              }
-            } else if (child.tagName === 'path') {
-              for (var _i3 = 0, _len3 = props.length; _i3 < _len3; _i3++) {
-                var _props$_i3 = _slicedToArray(props[_i3], 2),
-                    _k3 = _props$_i3[0],
-                    _v3 = _props$_i3[1];
-
-                if (_k3 === 'd') {
-                  props[_i3][1] = _v3.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
-                  });
-                  break;
-                }
-              }
-            }
-          }); // 连续多个mask需要合并
-
-          var prev = this.prev,
-              defs = this.defs;
-
-          if (prev && prev.isMask) {
-            var last = defs.value;
-            last = last[last.length - 1];
-            last.children = last.children.concat(children);
-            this.__maskId = prev.maskId;
-            return;
-          }
-
-          var maskId = defs.add({
-            tagName: 'mask',
-            props: [],
-            children: children
-          });
-          this.__maskId = "url(#".concat(maskId, ")");
-        }
-      }
-    }, {
-      key: "addGeom",
-      value: function addGeom(tagName, props) {
-        props = util.hash2arr(props);
-        this.virtualDom.children.push({
-          type: 'item',
-          tagName: tagName,
-          props: props
-        });
-      }
-    }, {
-      key: "getProps",
-      value: function getProps(k) {
-        var v = this.currentProps[k];
-
-        if (!isNil$4(v)) {
-          return v;
-        }
-
-        return this['__' + k];
-      }
-    }, {
-      key: "tagName",
-      get: function get() {
-        return this.__tagName;
-      }
-    }, {
-      key: "baseLine",
-      get: function get() {
-        return this.__height;
-      }
-    }, {
-      key: "isMask",
-      get: function get() {
-        return this.__isMask;
-      }
-    }, {
-      key: "maskId",
-      get: function get() {
-        return this.__maskId;
-      }
-    }, {
-      key: "animateProps",
-      get: function get() {
-        var props = this.props,
-            animationList = this.animationList;
-        var copy = clone$4(props);
-        animationList.forEach(function (item) {
-          if (item.animating) {
-            Object.assign(copy, item.props);
-          }
-        });
-        return copy;
-      }
-    }, {
-      key: "currentProps",
-      get: function get() {
-        return this.__currentProps;
-      }
-    }], [{
-      key: "getRegister",
-      value: function getRegister(name) {
-        if (!REGISTER.hasOwnProperty(name)) {
-          throw new Error("Geom has not register: ".concat(name));
-        }
-
-        return REGISTER[name];
-      }
-    }, {
-      key: "register",
-      value: function register(name, obj) {
-        if (Geom.hasRegister(name)) {
-          throw new Error("Geom has already register: ".concat(name));
-        }
-
-        REGISTER[name] = obj;
-      }
-    }, {
-      key: "hasRegister",
-      value: function hasRegister(name) {
-        return REGISTER.hasOwnProperty(name);
-      }
-    }]);
-
-    return Geom;
-  }(Xom);
-
-  var AUTO$4 = unit.AUTO,
-      PX$6 = unit.PX,
-      PERCENT$7 = unit.PERCENT;
   var calAbsolute$1 = css.calAbsolute;
   var TAG_NAME = {
     'div': true,
+    'span': true,
+    'img': true
+  };
+  var INLINE = {
     'span': true,
     'img': true
   };
@@ -9170,134 +8376,39 @@
 
       _classCallCheck(this, Dom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, tagName, props));
-      _this.__children = children || [];
-      _this.__flowChildren = []; // 非绝对定位孩子
-
-      _this.__absChildren = []; // 绝对定位孩子
-
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, tagName, props, children));
       _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
+      var _assertThisInitialize = _assertThisInitialized(_this),
+          style = _assertThisInitialize.style;
+
+      if (!style.display || !{
+        flex: true,
+        block: true,
+        inline: true,
+        none: true
+      }.hasOwnProperty(style.display)) {
+        if (INLINE.hasOwnProperty(_this.tagName)) {
+          style.display = 'inline';
+        } else {
+          style.display = 'block';
+        }
+      }
+
+      css.normalize(style, reset.dom);
       return _this;
-    }
-    /**
-     * 1. 封装string为Text节点
-     * 2. 打平children中的数组，变成一维
-     * 3. 合并相连的Text节点
-     * 4. 检测inline不能包含block和flex
-     * 5. 设置parent和prev/next和ctx和defs和renderMode
-     */
+    } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
 
 
     _createClass(Dom, [{
-      key: "__traverse",
-      value: function __traverse(ctx, defs, renderMode) {
-        var _this2 = this;
-
-        var list = [];
-
-        this.__traverseChildren(this.children, list, ctx, defs, renderMode);
-
-        for (var i = list.length - 1; i > 0; i--) {
-          var item = list[i];
-
-          if (item instanceof Text) {
-            var _prev = list[i - 1];
-
-            if (_prev instanceof Text) {
-              _prev.content += item.content;
-              list.splice(i, 1);
-            } else {
-              i--;
-            }
-          }
-        }
-
-        var prev = null;
-        list.forEach(function (item) {
-          item.__ctx = ctx;
-          item.__defs = defs;
-
-          if (prev) {
-            prev.__next = item;
-            item.__prev = prev;
-          }
-
-          item.__parent = _this2;
-          prev = item;
-        });
-        this.__children = list;
-      }
-    }, {
-      key: "__traverseChildren",
-      value: function __traverseChildren(children, list, ctx, defs, renderMode) {
-        var _this3 = this;
-
-        if (Array.isArray(children)) {
-          children.forEach(function (item) {
-            _this3.__traverseChildren(item, list, ctx, defs, renderMode);
-          });
-        } else if (children instanceof Dom || children instanceof Component) {
-          if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
-            throw new Error('Can not nest canvas/svg');
-          }
-
-          list.push(children);
-
-          children.__traverse(ctx, defs, renderMode);
-        } // 图形没有children
-        else if (children instanceof Geom) {
-            list.push(children);
-          } // 排除掉空的文本
-          else if (!util.isNil(children)) {
-              var text = new Text(children);
-              list.push(text);
-            }
-      } // 合并设置style，包括继承和默认值，修改一些自动值和固定值，测量所有文字的宽度
-
-    }, {
-      key: "__init",
-      value: function __init() {
-        var _this4 = this;
-
-        _get(_getPrototypeOf(Dom.prototype), "__init", this).call(this);
-
-        var style = this.style; // 标准化处理，默认值、简写属性
-
-        css.normalize(style, reset.dom);
-        var isInline = style.display === 'inline';
-        this.children.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
-            item.__init();
-          } // 文字使用父节点style
-          else {
-              item.__style = style;
-            } // 普通流和定位流分开
-
-
-          var isText = item instanceof Text;
-
-          if (isText || item.style.position !== 'absolute') {
-            _this4.__flowChildren.push(item);
-
-            if (isInline && !isText && item.style.display !== 'inline') {
-              throw new Error('Inline can not contain block/flex');
-            }
-          } else {
-            _this4.__absChildren.push(item);
-          }
-        });
-      } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
-
-    }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
         var flowChildren = this.flowChildren,
             width = this.currentStyle.width;
 
-        if (width.unit === PX$6) {
+        if (width.unit === PX$5) {
           return w - width.value;
-        } else if (width.unit === PERCENT$7) {
+        } else if (width.unit === PERCENT$6) {
           return w - total * width.value * 0.01;
         }
 
@@ -9367,7 +8478,7 @@
             borderLeftWidth = computedStyle.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
-        if (main.unit === PX$6) {
+        if (main.unit === PX$5) {
           b = max = main.value; // 递归时children的长度会影响flex元素的最小宽度
 
           if (isRecursion) {
@@ -9432,11 +8543,11 @@
       value: function __calMp(v, w) {
         var n = 0;
 
-        if (v.unit === PX$6) {
+        if (v.unit === PX$5) {
           n += v.value;
-        } else if (v.unit === PERCENT$7) {
+        } else if (v.unit === PERCENT$6) {
           v.value *= w * 0.01;
-          v.unit = PX$6;
+          v.unit = PX$5;
           n += v.value;
         }
 
@@ -9719,14 +8830,14 @@
             growSum += flexGrow;
             shrinkSum += flexShrink; // 根据basis不同，计算方式不同
 
-            if (flexBasis.unit === AUTO$4) {
+            if (flexBasis.unit === AUTO$3) {
               basisList.push(max);
               basisSum += max;
-            } else if (flexBasis.unit === PX$6) {
+            } else if (flexBasis.unit === PX$5) {
               computedStyle.flexBasis = b = flexBasis.value;
               basisList.push(b);
               basisSum += b;
-            } else if (flexBasis.unit === PERCENT$7) {
+            } else if (flexBasis.unit === PERCENT$6) {
               b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis.value * 0.01;
               basisList.push(b);
               basisSum += b;
@@ -9801,13 +8912,17 @@
             var display = _currentStyle2.display,
                 _flexDirection = _currentStyle2.flexDirection,
                 width = _currentStyle2.width,
-                height = _currentStyle2.height;
+                height = _currentStyle2.height; // flex的child如果是inline，变为block
+
+            if (display === 'inline') {
+              _currentStyle2.display = computedStyle.display = 'block';
+            }
 
             if (isDirectionRow) {
               // 横向flex的child如果是竖向flex，高度自动的话要等同于父flex的高度
-              if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === AUTO$4) {
+              if (display === 'flex' && _flexDirection === 'column' && fixedHeight && height.unit === AUTO$3) {
                 height.value = h;
-                height.unit = PX$6;
+                height.unit = PX$5;
               }
 
               item.__layout({
@@ -9817,14 +8932,11 @@
                 h: h
               });
             } else {
-              // column的flex的child如果是inline，变为block
-              if (display === 'inline') {
-                _currentStyle2.display = computedStyle.display = 'block';
-              } // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
-              else if (display === 'flex' && _flexDirection === 'row' && width.unit === AUTO$4) {
-                  width.value = w;
-                  width.unit = PX$6;
-                }
+              // 竖向flex的child如果是横向flex，宽度自动的话要等同于父flex的宽度
+              if (display === 'flex' && _flexDirection === 'row' && width.unit === AUTO$3) {
+                width.value = w;
+                width.unit = PX$5;
+              }
 
               item.__layout({
                 x: x,
@@ -9942,11 +9054,11 @@
                   paddingLeft = computedStyle.paddingLeft;
 
               if (isDirectionRow) {
-                if (currentStyle.height.unit === AUTO$4) {
+                if (currentStyle.height.unit === AUTO$3) {
                   item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 }
               } else {
-                if (currentStyle.width.unit === AUTO$4) {
+                if (currentStyle.width.unit === AUTO$3) {
                   item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
                 }
               }
@@ -9979,7 +9091,7 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual) {
-        var _this5 = this;
+        var _this2 = this;
 
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
@@ -10007,7 +9119,12 @@
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-            // inline开头，不用考虑是否放得下直接放
+            if (item.computedStyle.display !== 'inline') {
+              item.currentStyle.display = item.computedStyle.display = 'inline';
+              console.error('Inline can not contain block/flex');
+            } // inline开头，不用考虑是否放得下直接放
+
+
             if (x === data.x) {
               lineGroup.add(item);
 
@@ -10130,7 +9247,7 @@
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
-            var diff = _this5.__width - lineGroup.width;
+            var diff = _this2.__width - lineGroup.width;
 
             if (diff > 0) {
               lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
@@ -10167,6 +9284,11 @@
         absChildren.forEach(function (item) {
           var currentStyle = item.currentStyle,
               computedStyle = item.computedStyle;
+
+          if (computedStyle.display === 'inline') {
+            currentStyle.display = computedStyle.display = 'block';
+          }
+
           var left = currentStyle.left,
               top = currentStyle.top,
               right = currentStyle.right,
@@ -10183,28 +9305,28 @@
           var fixedBottom;
           var fixedLeft; // 判断何种方式的定位，比如左+宽度，左+右之类
 
-          if (left.unit !== AUTO$4) {
+          if (left.unit !== AUTO$3) {
             fixedLeft = true;
             computedStyle.left = calAbsolute$1(currentStyle, 'left', left, innerWidth);
           } else {
             computedStyle.left = 'auto';
           }
 
-          if (right.unit !== AUTO$4) {
+          if (right.unit !== AUTO$3) {
             fixedRight = true;
             computedStyle.right = calAbsolute$1(currentStyle, 'right', right, innerWidth);
           } else {
             computedStyle.right = 'auto';
           }
 
-          if (top.unit !== AUTO$4) {
+          if (top.unit !== AUTO$3) {
             fixedTop = true;
             computedStyle.top = calAbsolute$1(currentStyle, 'top', top, innerHeight);
           } else {
             computedStyle.top = 'auto';
           }
 
-          if (bottom.unit !== AUTO$4) {
+          if (bottom.unit !== AUTO$3) {
             fixedBottom = true;
             computedStyle.bottom = calAbsolute$1(currentStyle, 'bottom', bottom, innerHeight);
           } else {
@@ -10215,11 +9337,11 @@
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle.left;
             w2 = x + innerWidth - computedStyle.right - x2;
-          } else if (fixedLeft && width.unit !== AUTO$4) {
+          } else if (fixedLeft && width.unit !== AUTO$3) {
             x2 = x + computedStyle.left;
-            w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
-          } else if (fixedRight && width.unit !== AUTO$4) {
-            w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
+            w2 = width.unit === PX$5 ? width.value : innerWidth * width.value * 0.01;
+          } else if (fixedRight && width.unit !== AUTO$3) {
+            w2 = width.unit === PX$5 ? width.value : innerWidth * width.value * 0.01;
             x2 = x + innerWidth - computedStyle.right - w2;
           } else if (fixedLeft) {
             x2 = x + computedStyle.left;
@@ -10229,8 +9351,8 @@
           } else {
             x2 = x + paddingLeft;
 
-            if (width.unit !== AUTO$4) {
-              w2 = width.unit === PX$6 ? width.value : innerWidth * width.value * 0.01;
+            if (width.unit !== AUTO$3) {
+              w2 = width.unit === PX$5 ? width.value : innerWidth * width.value * 0.01;
             }
           } // top/bottom/height优先级同上
 
@@ -10238,11 +9360,11 @@
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle.top;
             h2 = y + innerHeight - computedStyle.bottom - y2;
-          } else if (fixedTop && height.unit !== AUTO$4) {
+          } else if (fixedTop && height.unit !== AUTO$3) {
             y2 = y + computedStyle.top;
-            h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
-          } else if (fixedBottom && height.unit !== AUTO$4) {
-            h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
+            h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
+          } else if (fixedBottom && height.unit !== AUTO$3) {
+            h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
             y2 = y + innerHeight - computedStyle.bottom - h2;
           } else if (fixedTop) {
             y2 = y + computedStyle.top;
@@ -10267,8 +9389,8 @@
                 y2 = y;
               }
 
-              if (height.unit !== AUTO$4) {
-                h2 = height.unit === PX$6 ? height.value : innerHeight * height.value * 0.01;
+              if (height.unit !== AUTO$3) {
+                h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
               }
             } // 直接或间接声明宽高的，等于已知样式
 
@@ -10276,17 +9398,14 @@
           if (w2 !== undefined) {
             currentStyle.width = {
               value: w2,
-              unit: PX$6,
-              virtual: true // 特殊标识
-
+              unit: PX$5
             };
           }
 
           if (h2 !== undefined) {
             currentStyle.height = {
               value: h2,
-              unit: PX$6,
-              virtual: true
+              unit: PX$5
             };
           } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
@@ -10317,14 +9436,15 @@
             }, true);
 
             wl = item.outerWidth;
-          }
+          } // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
+
 
           item.__layout({
             x: x2,
             y: y2,
             w: wl,
             h: hl
-          });
+          }, false, needCalWidth);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);
@@ -10349,8 +9469,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode) {
-        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode); // 不显示的为了diff也要根据type生成
+      value: function render(renderMode, ctx, defs) {
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs); // 不显示的为了diff也要根据type生成
 
 
         if (renderMode === mode.SVG) {
@@ -10371,13 +9491,13 @@
 
         children.forEach(function (item) {
           if (item.isMask) {
-            item.__renderAsMask(renderMode);
+            item.__renderAsMask(renderMode, ctx, defs);
           }
         }); // 先绘制static
 
         flowChildren.forEach(function (item) {
           if (!item.isMask && (item instanceof Text || item.computedStyle.position === 'static')) {
-            item.__renderByMask(renderMode);
+            item.__renderByMask(renderMode, ctx, defs);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
@@ -10385,7 +9505,7 @@
 
         zIndex.forEach(function (item) {
           if (!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute$1(item)) {
-            item.__renderByMask(renderMode);
+            item.__renderByMask(renderMode, ctx, defs);
           }
         });
 
@@ -10407,29 +9527,56 @@
         _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);
 
         this.children.splice(0);
-        this.flowChildren.splice(0);
-        this.absChildren.splice(0);
         this.lineGroups.splice(0);
-      }
-    }, {
-      key: "tagName",
-      get: function get() {
-        return this.__tagName;
-      }
-    }, {
-      key: "children",
-      get: function get() {
-        return this.__children;
       }
     }, {
       key: "flowChildren",
       get: function get() {
-        return this.__flowChildren;
+        return this.children.filter(function (item) {
+          if (item instanceof Component) {
+            item = item.shadowRoot;
+          }
+
+          return item instanceof Text || item.computedStyle.position !== 'absolute';
+        });
       }
     }, {
       key: "absChildren",
       get: function get() {
-        return this.__absChildren;
+        return this.children.filter(function (item) {
+          if (item instanceof Component) {
+            item = item.shadowRoot;
+          }
+
+          return item instanceof Xom && item.computedStyle.position === 'absolute';
+        });
+      }
+    }, {
+      key: "zIndexChildren",
+      get: function get() {
+        var zIndex = this.children.filter(function (item) {
+          return !item.isMask;
+        });
+        sort(zIndex, function (a, b) {
+          if (a instanceof Text) {
+            return;
+          }
+
+          if (b instanceof Text && isRelativeOrAbsolute$1(a)) {
+            return true;
+          }
+
+          if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
+            if (isRelativeOrAbsolute$1(a) && isRelativeOrAbsolute$1(b)) {
+              return true;
+            }
+          }
+
+          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute$1(a)) {
+            return true;
+          }
+        });
+        return zIndex;
       }
     }, {
       key: "lineGroups",
@@ -10458,12 +9605,7 @@
     return Dom;
   }(Xom);
 
-  var AUTO$5 = unit.AUTO,
-      PX$7 = unit.PX;
-  var CACHE = {};
-  var INIT = 0;
-  var LOADING = 1;
-  var LOADED = 2;
+  var AUTO$4 = unit.AUTO;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -10473,144 +9615,66 @@
 
       _classCallCheck(this, Img);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props, [])); // 空url用错误图代替
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props));
+      var src = _this.props.src;
+      var loadImg = _this.__loadImg = {
+        // 刷新回调函数，用以destroy取消用
+        cb: function cb() {}
+      }; // 空url用错误图代替
 
-      if (!_this.src) {
-        _this.__error = true;
-
-        var _assertThisInitialize = _assertThisInitialized(_this),
-            _assertThisInitialize2 = _assertThisInitialize.style,
-            width = _assertThisInitialize2.width,
-            height = _assertThisInitialize2.height;
-
-        width = width || {
-          unit: AUTO$5
-        };
-        height = height || {
-          unit: AUTO$5
-        };
-
-        if (width.unit === AUTO$5) {
-          width.value = 32;
-          width.unit = PX$7;
-        }
-
-        if (height.unit === AUTO$5) {
-          height.value = 32;
-          height.unit = PX$7;
-        }
+      if (!src) {
+        loadImg.error = true;
       }
 
       return _this;
     }
+    /**
+     * 覆盖xom的方法，在__layout3个分支中会首先被调用
+     * 当样式中固定宽高时，图片按样式尺寸，加载后重新绘制即可
+     * 只固定宽高一个时，加载完要计算缩放比，重新布局绘制
+     * 都没有固定，按照图片尺寸，重新布局绘制
+     * 这里计算非固定的情况，将其改为固定供布局渲染使用，未加载完成为0
+     * @param data
+     * @returns {{fixedWidth: boolean, w: *, x: *, h: *, y: *, fixedHeight: boolean}}
+     * @private
+     */
+
 
     _createClass(Img, [{
-      key: "__layout",
-      value: function __layout(data) {
-        var _this2 = this;
+      key: "__preLayout",
+      value: function __preLayout(data) {
+        var res = _get(_getPrototypeOf(Img.prototype), "__preLayout", this).call(this, data);
 
-        _get(_getPrototypeOf(Img.prototype), "__layout", this).call(this, data);
-
-        var isDestroyed = this.isDestroyed,
-            src = this.src,
-            style = this.style,
-            currentStyle = this.currentStyle;
-        var display = currentStyle.display,
-            width = currentStyle.width,
-            height = currentStyle.height;
-
-        if (isDestroyed || display === 'none' || !src) {
-          return;
+        if (res.fixedWidth && res.fixedHeight) {
+          return res;
         }
 
-        var w = this.width,
-            h = this.height;
-        var cache = CACHE[src] = CACHE[src] || {
-          state: INIT,
-          task: []
-        };
+        var loadImg = this.__loadImg;
 
-        var cb = function cb(cache, loaded) {
-          if (cache.success) {
-            _this2.__source = cache.source;
+        if (loadImg.error) {
+          if (res.fixedWidth) {
+            res.h = res.w;
+          } else if (res.fixedHeight) {
+            res.w = res.h;
           } else {
-            _this2.__error = true;
+            res.w = res.h = 32;
           }
-
-          _this2.__imgWidth = cache.width;
-          _this2.__imgHeight = cache.height;
-          var lv = level.REFLOW; // 宽高都为auto，使用加载测量的数据
-
-          if (width.unit === AUTO$5 && height.unit === AUTO$5) {
-            style.width = {
-              value: cache.width,
-              unit: PX$7
-            };
-            style.height = {
-              value: cache.height,
-              unit: PX$7
-            };
-          } // 否则有一方定义则按比例调整另一方适应
-          else if (width.unit === AUTO$5) {
-              style.width = {
-                value: h * cache.width / cache.height,
-                unit: PX$7
-              };
-            } else if (height.unit === AUTO$5) {
-              style.height = {
-                value: w * cache.height / cache.width,
-                unit: PX$7
-              };
-            } else {
-              lv = level.REPAINT;
-            }
-
-          if (loaded) {
-            return;
+        } else if (loadImg.source) {
+          if (res.fixedWidth) {
+            res.h = res.w * loadImg.height / loadImg.width;
+          } else if (res.fixedHeight) {
+            res.w = res.h * loadImg.width / loadImg.height;
+          } else {
+            res.w = loadImg.width;
+            res.h = loadImg.height;
           }
-
-          var root = _this2.root;
-
-          if (root) {
-            root.delRefreshTask(_this2.__task);
-            _this2.__task = {
-              before: function before() {
-                root.setRefreshLevel(lv);
-              }
-            };
-            root.addRefreshTask(_this2.__task);
-          }
-        };
-
-        if (cache.state === LOADED) {
-          cb(cache, true);
-        } else if (cache.state === LOADING) {
-          cache.task.push(cb);
-        } else if (cache.state === INIT) {
-          cache.state = LOADING;
-          cache.task.push(cb);
-          inject.measureImg(src, function (res) {
-            cache.success = res.success;
-
-            if (res.success) {
-              cache.width = res.width || 32;
-              cache.height = res.height || 32;
-              cache.source = res.source;
-            } else {
-              cache.width = 32;
-              cache.height = 32;
-            }
-
-            cache.state = LOADED;
-            var list = cache.task.splice(0);
-            list.forEach(function (cb) {
-              return cb(cache);
-            });
-          }, {
-            width: width,
-            height: height
-          });
+        } else {
+          res.w = res.h = 0;
         }
+
+        res.fixedWidth = true;
+        res.fixedHeight = true;
+        return res;
       }
     }, {
       key: "__addGeom",
@@ -10631,16 +9695,17 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode) {
-        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode);
+      value: function render(renderMode, ctx, defs) {
+        var _this2 = this;
 
-        var ctx = this.ctx,
-            x = this.sx,
+        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs);
+
+        var x = this.sx,
             y = this.sy,
             width = this.width,
             height = this.height,
-            src = this.src,
             isDestroyed = this.isDestroyed,
+            src = this.props.src,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
             borderTopWidth = _this$computedStyle.borderTopWidth,
@@ -10660,8 +9725,9 @@
 
         var originX = x + marginLeft + borderLeftWidth + paddingLeft;
         var originY = y + marginTop + borderTopWidth + paddingTop;
+        var loadImg = this.__loadImg;
 
-        if (this.__error) {
+        if (loadImg.error) {
           var strokeWidth = Math.min(width, height) * 0.02;
           var stroke = '#CCC';
           var fill = '#DDD';
@@ -10711,69 +9777,100 @@
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
-        } else if (this.__source) {
-          // 圆角需要生成一个mask
-          var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        } else if (loadImg.url === src) {
+          var source = loadImg.source; // 无source不绘制
 
-          if (renderMode === mode.CANVAS) {
-            // 有border-radius需模拟遮罩裁剪
-            if (list) {
-              var _this$root = this.root,
-                  _width = _this$root.width,
-                  _height = _this$root.height;
-              var c = inject.getCacheCanvas(_width, _height);
-              c.ctx.drawImage(this.__source, 0, 0, _width, _height);
-              c.ctx.globalCompositeOperation = 'destination-in';
-              border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
-              c.draw(c.ctx);
-              ctx.drawImage(c.canvas, 0, 0);
-              c.draw(ctx);
-              c.ctx.globalCompositeOperation = 'source-over';
-              c.ctx.clearRect(0, 0, _width, _height);
-              c.draw(c.ctx);
-            } else {
-              ctx.drawImage(this.__source, originX, originY, width, height);
-            }
-          } else if (renderMode === mode.SVG) {
-            var matrix;
+          if (source) {
+            // 圆角需要生成一个mask
+            var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
-            if (this.__imgWidth !== undefined && (width !== this.__imgWidth || height !== this.__imgHeight)) {
-              matrix = image.matrixResize(this.__imgWidth, this.__imgHeight, width, height, originX, originY, width, height); // 缩放图片的同时要考虑原先的矩阵
+            if (renderMode === mode.CANVAS) {
+              // 有border-radius需模拟遮罩裁剪
+              if (list) {
+                var _this$root = this.root,
+                    _width = _this$root.width,
+                    _height = _this$root.height;
+                var c = inject.getCacheCanvas(_width, _height);
+                c.ctx.drawImage(source, 0, 0, _width, _height);
+                c.ctx.globalCompositeOperation = 'destination-in';
+                border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
+                c.draw(c.ctx);
+                ctx.drawImage(c.canvas, 0, 0);
+                c.draw(ctx);
+                c.ctx.globalCompositeOperation = 'source-over';
+                c.ctx.clearRect(0, 0, _width, _height);
+                c.draw(c.ctx);
+              } else {
+                ctx.drawImage(source, originX, originY, width, height);
+              }
+            } else if (renderMode === mode.SVG) {
+              // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+              var matrix;
 
-              if (this.matrix) {
-                this.__matrix = matrix = transform$1.mergeMatrix(this.__matrix, matrix);
+              if (width !== loadImg.width || height !== loadImg.height) {
+                matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
               }
 
-              matrix = matrix.join(',');
-            }
+              var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
-            var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', this.__imgWidth || 0], ['height', this.__imgHeight || 0]];
+              if (list) {
+                var maskId = defs.add({
+                  tagName: 'mask',
+                  props: [],
+                  children: [border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list)]
+                });
+                props.push(['mask', "url(#".concat(maskId, ")")]);
+              }
 
-            if (list) {
-              var maskId = this.defs.add({
-                tagName: 'mask',
-                props: [],
-                children: [border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list)]
+              if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+                props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+              }
+
+              this.virtualDom.children.push({
+                type: 'img',
+                tagName: 'image',
+                props: props
               });
-              props.push(['mask', "url(#".concat(maskId, ")")]);
             }
-
-            if (matrix && matrix !== '1,0,0,1,0,0') {
-              props.push(['transform', 'matrix(' + matrix + ')']);
-            }
-
-            this.virtualDom.children.push({
-              type: 'img',
-              tagName: 'image',
-              props: props
-            });
           }
+        } else {
+          var _loadImg = this.__loadImg;
+          _loadImg.url = src;
+          _loadImg.source = null;
+          _loadImg.error = null;
+          inject.measureImg(src, function (data) {
+            // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+            if (data.url === _loadImg.url && !_this2.__isDestroyed) {
+              if (data.success) {
+                _loadImg.source = data.source;
+                _loadImg.width = data.width;
+                _loadImg.height = data.height;
+              } else {
+                _loadImg.error = true;
+              }
+
+              var root = _this2.root,
+                  _this2$currentStyle = _this2.currentStyle,
+                  _width2 = _this2$currentStyle.width,
+                  _height2 = _this2$currentStyle.height;
+              root.delRefreshTask(_loadImg.cb);
+              root.delRefreshTask(_this2.__task);
+
+              if (_width2.unit !== AUTO$4 && _height2.unit !== AUTO$4) {
+                root.addRefreshTask(_loadImg.cb);
+              } else {
+                root.addRefreshTask(_this2.__task = {
+                  before: function before() {
+                    root.setRefreshLevel(level.REFLOW);
+                  }
+                });
+              }
+            }
+          }, {
+            width: width,
+            height: height
+          });
         }
-      }
-    }, {
-      key: "src",
-      get: function get() {
-        return this.props.src;
       }
     }, {
       key: "baseLine",
@@ -11218,13 +10315,13 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
+  var isNil$4 = util.isNil,
       isFunction$4 = util.isFunction;
   var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
 
   function replaceOption(target, globalValue, key, vars) {
     // 优先vars，其次总控，都没有忽略即自己原本声明
-    if (!isNil$5(globalValue)) {
+    if (!isNil$4(globalValue)) {
       var decl = target['var-' + key];
 
       if (!decl) {
@@ -11494,10 +10591,10 @@
     return Controller;
   }();
 
-  var isNil$6 = util.isNil,
+  var isNil$5 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
-  var PX$8 = unit.PX;
+  var PX$6 = unit.PX;
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
@@ -11554,6 +10651,9 @@
       _this.__task = [];
       _this.__ref = {};
       _this.__animateController = new Controller();
+
+      _this.__initRef(_assertThisInitialized(_this));
+
       Event.mix(_assertThisInitialized(_this));
       return _this;
     }
@@ -11563,7 +10663,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$6(w)) {
+        if (!isNil$5(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -11573,7 +10673,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$6(h)) {
+        if (!isNil$5(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -11696,7 +10796,7 @@
             }
           }
 
-        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -11719,28 +10819,7 @@
           this.__renderMode = mode.CANVAS;
         } else if (this.tagName === 'svg') {
           this.__renderMode = mode.SVG;
-        } // canvas/svg作为根节点一定是block或flex，不会是inline
-
-
-        var style = this.style;
-
-        if (['flex', 'block'].indexOf(style.display) === -1) {
-          style.display = 'block';
-        } // 同理position不能为absolute
-
-
-        if (style.position === 'absolute') {
-          style.position = 'static';
         }
-
-        var renderMode = this.renderMode,
-            ctx = this.ctx;
-
-        this.__traverse(ctx, this.__defs, renderMode);
-
-        this.__traverseCss(this, this.props.css);
-
-        this.__init();
 
         this.refresh(); // 第一次节点没有__root，渲染一次就有了才能diff
 
@@ -11755,38 +10834,45 @@
       }
     }, {
       key: "refresh",
-      value: function refresh(cb) {
+      value: function refresh() {
         var _this2 = this;
 
         var isDestroyed = this.isDestroyed,
             renderMode = this.renderMode,
+            ctx = this.ctx,
+            defs = this.defs,
             style = this.style;
 
         if (isDestroyed) {
           return;
-        } // 根元素特殊处理
+        }
+
+        defs.clear(); // canvas/svg作为根节点一定是block或flex，不会是inline
+
+        if (['flex', 'block'].indexOf(style.display) === -1) {
+          style.display = 'block';
+        } // 同理position不能为absolute
 
 
-        style.marginTop = style.marginRight = style.marginBottom = style.marginLeft = {
-          value: 0,
-          unit: PX$8
-        };
+        if (style.position === 'absolute') {
+          style.position = 'static';
+        } // 根节点满宽高
+
+
         style.width = {
           value: this.width,
-          unit: PX$8
+          unit: PX$6
         };
         style.height = {
           value: this.height,
-          unit: PX$8
-        };
-
-        this.__defs.clear();
+          unit: PX$6
+        }; // 计算css继承，获取所有字体和大小并准备测量文字
 
         var lv = this.__refreshLevel;
-        this.__refreshLevel = level.REPAINT; // 预先计算字体相关的继承
+        this.__refreshLevel = level.REPAINT;
 
         if (lv === level.REFLOW) {
-          this.__computed();
+          this.__measure(renderMode, ctx, true);
         }
 
         inject.measureText(function () {
@@ -11807,22 +10893,20 @@
               w: _this2.width,
               h: _this2.height
             });
-          } // 没发生REFLOW只需要computed即可
+          } // 没发生REFLOW只需要计算继承
           else {
-              _this2.__repaint();
+              _this2.__repaint(true);
             }
 
           if (renderMode === mode.CANVAS) {
             _this2.__clear();
           }
 
-          _this2.emit(Event.BEFORE_REFRESH, lv);
-
-          _this2.render(renderMode);
+          _this2.render(renderMode, ctx, defs);
 
           if (renderMode === mode.SVG) {
             var nvd = _this2.virtualDom;
-            var nd = _this2.__defs;
+            var nd = defs;
             nvd.defs = nd.value;
 
             if (_this2.node.__root) {
@@ -11835,11 +10919,7 @@
             _this2.node.__defs = nd;
           }
 
-          if (isFunction$5(cb)) {
-            cb();
-          }
-
-          _this2.emit(Event.REFRESH);
+          _this2.emit(Event.REFRESH, lv);
         });
       }
     }, {
@@ -11960,6 +11040,16 @@
         return this.__renderMode;
       }
     }, {
+      key: "ctx",
+      get: function get() {
+        return this.__ctx;
+      }
+    }, {
+      key: "defs",
+      get: function get() {
+        return this.__defs;
+      }
+    }, {
       key: "task",
       get: function get() {
         return this.__task;
@@ -11978,6 +11068,416 @@
 
     return Root;
   }(Dom);
+
+  var AUTO$5 = unit.AUTO,
+      PX$7 = unit.PX,
+      PERCENT$7 = unit.PERCENT;
+  var clone$4 = util.clone,
+      int2rgba$4 = util.int2rgba,
+      isNil$6 = util.isNil;
+  var REGISTER = {};
+
+  var Geom = /*#__PURE__*/function (_Xom) {
+    _inherits(Geom, _Xom);
+
+    function Geom(tagName, props) {
+      var _this;
+
+      _classCallCheck(this, Geom);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this.__isMask = !!_this.props.mask;
+      _this.__currentProps = _this.props;
+
+      var _assertThisInitialize = _assertThisInitialized(_this),
+          style = _assertThisInitialize.style,
+          isMask = _assertThisInitialize.isMask;
+
+      if (isMask) {
+        style.visibility = 'visible';
+        style.background = null;
+        style.border = null;
+        style.strokeWidth = 0;
+        style.stroke = null;
+      }
+
+      css.normalize(_this.style, reset.dom.concat(reset.geom));
+      return _this;
+    }
+
+    _createClass(Geom, [{
+      key: "__tryLayInline",
+      value: function __tryLayInline(w, total) {
+        // 无children，直接以style的width为宽度，不定义则为0
+        var width = this.currentStyle.width;
+
+        if (width.unit === PX$7) {
+          return w - width.value;
+        } else if (width.unit === PERCENT$7) {
+          return w - total * width.value * 0.01;
+        }
+
+        return w;
+      }
+    }, {
+      key: "__calAutoBasis",
+      value: function __calAutoBasis(isDirectionRow) {
+        var b = 0;
+        var min = 0;
+        var max = 0;
+        var currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle; // 计算需考虑style的属性
+
+        var width = currentStyle.width,
+            height = currentStyle.height;
+        var borderTopWidth = computedStyle.borderTopWidth,
+            borderRightWidth = computedStyle.borderRightWidth,
+            borderBottomWidth = computedStyle.borderBottomWidth,
+            borderLeftWidth = computedStyle.borderLeftWidth;
+        var main = isDirectionRow ? width : height;
+
+        if (main.unit !== AUTO$5) {
+          b = max += main.value;
+        } // border也得计算在内
+
+
+        if (isDirectionRow) {
+          var w = borderRightWidth + borderLeftWidth;
+          b += w;
+          max += w;
+          min += w;
+        } else {
+          var h = borderTopWidth + borderBottomWidth;
+          b += h;
+          max += h;
+          min += h;
+        }
+
+        return {
+          b: b,
+          min: min,
+          max: max
+        };
+      }
+    }, {
+      key: "__layoutBlock",
+      value: function __layoutBlock(data, isVirtual) {
+        var _this$__preLayout = this.__preLayout(data),
+            fixedWidth = _this$__preLayout.fixedWidth,
+            fixedHeight = _this$__preLayout.fixedHeight,
+            w = _this$__preLayout.w,
+            h = _this$__preLayout.h;
+
+        this.__height = fixedHeight ? h : 0;
+
+        if (isVirtual) {
+          this.__width = fixedWidth ? w : 0;
+          return;
+        }
+
+        this.__width = w;
+
+        this.__marginAuto(this.currentStyle, data);
+      }
+    }, {
+      key: "__layoutFlex",
+      value: function __layoutFlex(data) {
+        // 无children所以等同于block
+        this.__layoutBlock(data);
+      }
+    }, {
+      key: "__layoutInline",
+      value: function __layoutInline(data) {
+        var _this$__preLayout2 = this.__preLayout(data),
+            fixedWidth = _this$__preLayout2.fixedWidth,
+            fixedHeight = _this$__preLayout2.fixedHeight,
+            x = _this$__preLayout2.x,
+            y = _this$__preLayout2.y,
+            w = _this$__preLayout2.w,
+            h = _this$__preLayout2.h; // 元素的width不能超过父元素w
+
+
+        this.__width = fixedWidth ? w : x - data.x;
+        this.__height = fixedHeight ? h : y - data.y;
+      }
+    }, {
+      key: "__preRender",
+      value: function __preRender(renderMode, ctx, defs) {
+        var x = this.sx,
+            y = this.sy,
+            width = this.width,
+            height = this.height,
+            currentStyle = this.currentStyle,
+            computedStyle = this.computedStyle;
+        var strokeWidth = currentStyle.strokeWidth,
+            fill = currentStyle.fill,
+            stroke = currentStyle.stroke,
+            strokeDasharray = currentStyle.strokeDasharray,
+            strokeLinecap = currentStyle.strokeLinecap;
+        var borderTopWidth = computedStyle.borderTopWidth,
+            borderLeftWidth = computedStyle.borderLeftWidth,
+            display = computedStyle.display,
+            marginTop = computedStyle.marginTop,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft,
+            visibility = computedStyle.visibility;
+        var originX = x + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = y + borderTopWidth + marginTop + paddingTop;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        var iw = width + paddingLeft + paddingRight;
+        var ih = height + paddingTop + paddingBottom;
+
+        if (strokeWidth.unit === PX$7) {
+          strokeWidth = strokeWidth.value;
+        } else if (strokeWidth.unit === PERCENT$7) {
+          strokeWidth = strokeWidth.value * width * 0.01;
+        } else {
+          strokeWidth = 0;
+        }
+
+        computedStyle.strokeWidth = strokeWidth;
+
+        if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
+          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
+        } else {
+          computedStyle.stroke = stroke = int2rgba$4(stroke);
+        }
+
+        if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
+          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
+        } else {
+          computedStyle.fill = fill = int2rgba$4(fill);
+        }
+
+        computedStyle.strokeWidth = strokeWidth;
+        computedStyle.strokeDasharray = strokeDasharray.join(', ');
+        computedStyle.strokeLinecap = strokeLinecap;
+        return {
+          x: x,
+          y: y,
+          originX: originX,
+          originY: originY,
+          cx: cx,
+          cy: cy,
+          display: display,
+          stroke: stroke,
+          strokeWidth: strokeWidth,
+          strokeDasharray: strokeDasharray,
+          strokeDasharrayStr: computedStyle.strokeDasharray,
+          strokeLinecap: strokeLinecap,
+          fill: fill,
+          visibility: visibility
+        };
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, ctx, defs) {
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
+
+        if (renderMode === mode.SVG) {
+          this.virtualDom.type = 'geom';
+        }
+
+        var isDestroyed = this.isDestroyed,
+            animateProps = this.animateProps,
+            display = this.computedStyle.display;
+        this.__currentProps = animateProps;
+
+        if (isDestroyed || display === 'none') {
+          return {
+            isDestroyed: isDestroyed,
+            display: display
+          };
+        }
+
+        return this.__preRender(renderMode, ctx, defs);
+      }
+    }, {
+      key: "__renderAsMask",
+      value: function __renderAsMask(renderMode, ctx, defs) {
+        // mask渲染在canvas等被遮罩层调用，svg生成maskId
+        if (renderMode === mode.SVG) {
+          this.render(renderMode, ctx, defs);
+          var vd = this.virtualDom;
+          vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
+
+          var children = clone$4(vd.children);
+          var m = this.matrixEvent;
+          children.forEach(function (child) {
+            var xi = 0;
+            var yi = 1;
+            var x, y;
+            var props = child.props;
+
+            if (child.tagName === 'rect') {
+              for (var i = 0, len = props.length; i < len; i++) {
+                var _props$i = _slicedToArray(props[i], 2),
+                    k = _props$i[0],
+                    v = _props$i[1];
+
+                if (k === 'x') {
+                  xi = i;
+                  x = v;
+                } else if (k === 'y') {
+                  yi = i;
+                  y = v;
+                }
+              }
+
+              var point = matrix.calPoint([x, y], m);
+              props[xi][1] = point[0];
+              props[yi][1] = point[1];
+            } else if (child.tagName === 'circle' || child.tagName === 'ellipse') {
+              for (var _i = 0, _len = props.length; _i < _len; _i++) {
+                var _props$_i = _slicedToArray(props[_i], 2),
+                    _k = _props$_i[0],
+                    _v = _props$_i[1];
+
+                if (_k === 'cx') {
+                  xi = _i;
+                  x = _v;
+                } else if (_k === 'cy') {
+                  yi = _i;
+                  y = _v;
+                }
+              }
+
+              var _point = matrix.calPoint([x, y], m);
+
+              props[xi][1] = _point[0];
+              props[yi][1] = _point[1];
+            } else if (child.tagName === 'polygon') {
+              for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
+                var _props$_i2 = _slicedToArray(props[_i2], 2),
+                    _k2 = _props$_i2[0],
+                    _v2 = _props$_i2[1];
+
+                if (_k2 === 'points') {
+                  props[_i2][1] = _v2.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                    return matrix.calPoint([$1, $2], m).join(',');
+                  });
+                  break;
+                }
+              }
+            } else if (child.tagName === 'path') {
+              for (var _i3 = 0, _len3 = props.length; _i3 < _len3; _i3++) {
+                var _props$_i3 = _slicedToArray(props[_i3], 2),
+                    _k3 = _props$_i3[0],
+                    _v3 = _props$_i3[1];
+
+                if (_k3 === 'd') {
+                  props[_i3][1] = _v3.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                    return matrix.calPoint([$1, $2], m).join(',');
+                  });
+                  break;
+                }
+              }
+            }
+          }); // 连续多个mask需要合并
+
+          var prev = this.prev;
+
+          if (prev && prev.isMask) {
+            var last = defs.value;
+            last = last[last.length - 1];
+            last.children = last.children.concat(children);
+            this.__maskId = prev.maskId;
+            return;
+          }
+
+          var maskId = defs.add({
+            tagName: 'mask',
+            props: [],
+            children: children
+          });
+          this.__maskId = "url(#".concat(maskId, ")");
+        }
+      }
+    }, {
+      key: "addGeom",
+      value: function addGeom(tagName, props) {
+        props = util.hash2arr(props);
+        this.virtualDom.children.push({
+          type: 'item',
+          tagName: tagName,
+          props: props
+        });
+      }
+    }, {
+      key: "getProps",
+      value: function getProps(k) {
+        var v = this.currentProps[k];
+
+        if (!isNil$6(v)) {
+          return v;
+        }
+
+        return this['__' + k];
+      }
+    }, {
+      key: "baseLine",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
+      key: "isMask",
+      get: function get() {
+        return this.__isMask;
+      }
+    }, {
+      key: "maskId",
+      get: function get() {
+        return this.__maskId;
+      }
+    }, {
+      key: "animateProps",
+      get: function get() {
+        var props = this.props,
+            animationList = this.animationList;
+        var copy = Object.assign({}, props);
+        animationList.forEach(function (item) {
+          if (item.animating) {
+            Object.assign(copy, item.props);
+          }
+        });
+        return copy;
+      }
+    }, {
+      key: "currentProps",
+      get: function get() {
+        return this.__currentProps;
+      }
+    }], [{
+      key: "getRegister",
+      value: function getRegister(name) {
+        if (!REGISTER.hasOwnProperty(name)) {
+          throw new Error("Geom has not register: ".concat(name));
+        }
+
+        return REGISTER[name];
+      }
+    }, {
+      key: "register",
+      value: function register(name, obj) {
+        if (Geom.hasRegister(name)) {
+          throw new Error("Geom has already register: ".concat(name));
+        }
+
+        REGISTER[name] = obj;
+      }
+    }, {
+      key: "hasRegister",
+      value: function hasRegister(name) {
+        return REGISTER.hasOwnProperty(name);
+      }
+    }]);
+
+    return Geom;
+  }(Xom);
 
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
@@ -12023,8 +11523,8 @@
 
     _createClass(Line, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             display = _get$call.display,
             visibility = _get$call.visibility,
@@ -12042,22 +11542,12 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             x1 = this.x1,
             y1 = this.y1,
             x2 = this.x2,
             y2 = this.y2,
             controlA = this.controlA,
-            controlB = this.controlB,
-            computedStyle = this.computedStyle;
-        Object.assign(computedStyle, {
-          x1: x1,
-          y1: y1,
-          x2: x2,
-          y2: y2,
-          controlA: controlA.join(', '),
-          controlB: controlB.join(', ')
-        });
+            controlB = this.controlB;
         x1 = originX + x1 * width;
         y1 = originY + y1 * height;
         x2 = originX + x2 * width;
@@ -12197,8 +11687,8 @@
 
     _createClass(Polyline, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -12216,14 +11706,9 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             points = this.points,
             controls = this.controls,
-            origin = this.origin,
-            computedStyle = this.computedStyle;
-        computedStyle.points = points.join('; ');
-        computedStyle.controls = controls.join('; ');
-        computedStyle.origin = origin;
+            origin = this.origin;
 
         if (points.length < 2) {
           return;
@@ -12445,8 +11930,8 @@
 
     _createClass(Polygon, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -12465,12 +11950,8 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             points = this.points,
-            controls = this.controls,
-            computedStyle = this.computedStyle;
-        computedStyle.points = points.join('; ');
-        computedStyle.controls = controls.join('; ');
+            controls = this.controls;
 
         if (points.length < 2) {
           console.error('Polygon must have at lease 2 points: ' + points);
@@ -12692,8 +12173,8 @@
 
     _createClass(Sector, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -12712,20 +12193,11 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             begin = this.begin,
             end = this.end,
             r = this.r,
             edge = this.edge,
-            closure = this.closure,
-            computedStyle = this.computedStyle;
-        Object.assign(computedStyle, {
-          begin: begin,
-          end: end,
-          r: r,
-          edge: edge,
-          closure: closure
-        });
+            closure = this.closure;
 
         if (begin === end) {
           return;
@@ -12879,8 +12351,8 @@
 
     _createClass(Rect, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -12899,12 +12371,8 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry,
-            computedStyle = this.computedStyle;
-        computedStyle.rx = rx;
-        computedStyle.ry = ry;
+            ry = this.ry;
         rx = Math.min(rx, 0.5);
         ry = Math.min(ry, 0.5);
         rx *= width;
@@ -13003,8 +12471,8 @@
 
     _createClass(Circle, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -13023,10 +12491,7 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
-            r = this.r,
-            computedStyle = this.computedStyle;
-        computedStyle.r = r;
+            r = this.r;
         r *= Math.min(width, height) * 0.5;
 
         if (renderMode === mode.CANVAS) {
@@ -13103,8 +12568,8 @@
 
     _createClass(Ellipse, [{
       key: "render",
-      value: function render(renderMode) {
-        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -13123,12 +12588,8 @@
 
         var width = this.width,
             height = this.height,
-            ctx = this.ctx,
             rx = this.rx,
-            ry = this.ry,
-            computedStyle = this.computedStyle;
-        computedStyle.rx = rx;
-        computedStyle.ry = ry;
+            ry = this.ry;
         rx *= width * 0.5;
         ry *= height * 0.5;
 
@@ -13397,14 +12858,14 @@
     }
   }
 
-  function parse$1(karas, json, animateRecords, vars, hash) {
+  function parse(karas, json, animateRecords, vars, hash) {
     if (isPrimitive(json) || json instanceof Node) {
       return json;
     }
 
     if (Array.isArray(json)) {
       return json.map(function (item) {
-        return parse$1(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, vars, hash);
       });
     }
 
@@ -13458,7 +12919,7 @@
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item) {
-        return parse$1(karas, item, animateRecords, vars, hash);
+        return parse(karas, item, animateRecords, vars, hash);
       }));
     }
 
@@ -13523,6 +12984,8 @@
     return vd;
   }
 
+  var version = "0.28.5";
+
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);
   Geom.register('$polygon', Polygon);
@@ -13531,6 +12994,7 @@
   Geom.register('$circle', Circle);
   Geom.register('$ellipse', Ellipse);
   var karas = {
+    version: version,
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
         throw new Error('Render dom must be canvas/svg');
@@ -13564,7 +13028,7 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse(json, dom) {
+    parse: function parse$1(json, dom) {
       var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
       // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
@@ -13576,7 +13040,7 @@
 
       var animateRecords = [];
 
-      var vd = parse$1(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+      var vd = parse(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
 
 
       if (dom) {

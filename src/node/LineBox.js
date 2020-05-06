@@ -12,9 +12,9 @@ class LineBox {
     this.__virtualDom = {};
   }
 
-  render(renderMode, ctx) {
+  render(renderMode, ctx, computedStyle) {
     let { content, x, y, parent } = this;
-    let { ox, oy, computedStyle } = parent;
+    let { ox, oy } = parent;
     y += css.getBaseLine(computedStyle);
     x += ox;
     y += oy;
@@ -50,21 +50,27 @@ class LineBox {
   get x() {
     return this.__x;
   }
+
   get y() {
     return this.__y;
   }
+
   get width() {
     return this.__width;
   }
+
   get content() {
     return this.__content;
   }
+
   get baseLine() {
     return css.getBaseLine(this.parent.computedStyle);
   }
+
   get virtualDom() {
     return this.__virtualDom;
   }
+
   get parent() {
     return this.__parent;
   }

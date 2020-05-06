@@ -16,20 +16,15 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMask = !!this.props.mask;
     this.__currentProps = this.props;
-  }
-
-  __init() {
-    super.__init();
     let { style, isMask } = this;
     if(isMask) {
-      style.position = 'absolute';
-      style.display = 'block';
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
+      style.stroke = null;
     }
-    css.normalize(style, reset.geom);
+    css.normalize(this.style, reset.dom.concat(reset.geom));
   }
 
   __tryLayInline(w, total) {
@@ -103,7 +98,7 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
   }
 
-  __preRender(renderMode) {
+  __preRender(renderMode, ctx, defs) {
     let { sx: x, sy: y, width, height, currentStyle, computedStyle } = this;
     let {
       strokeWidth,
@@ -141,13 +136,13 @@ class Geom extends Xom {
     }
     computedStyle.strokeWidth = strokeWidth;
     if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-      stroke = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
+      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
     }
     else {
       computedStyle.stroke = stroke = int2rgba(stroke);
     }
     if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-      fill = this.__gradient(renderMode, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
+      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
     }
     else {
       computedStyle.fill = fill = int2rgba(fill);
@@ -173,8 +168,8 @@ class Geom extends Xom {
     };
   }
 
-  render(renderMode) {
-    super.render(renderMode);
+  render(renderMode, ctx, defs) {
+    super.render(renderMode, ctx, defs);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }
@@ -186,13 +181,13 @@ class Geom extends Xom {
         display,
       };
     }
-    return this.__preRender(renderMode);
+    return this.__preRender(renderMode, ctx, defs);
   }
 
-  __renderAsMask(renderMode) {
+  __renderAsMask(renderMode, ctx, defs) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
-      this.render(renderMode);
+      this.render(renderMode, ctx, defs);
       let vd = this.virtualDom;
       vd.isMask = true;
       // svg的mask没有transform，需手动计算变换后的坐标应用
@@ -259,7 +254,7 @@ class Geom extends Xom {
         }
       });
       // 连续多个mask需要合并
-      let { prev, defs } = this;
+      let { prev } = this;
       if(prev && prev.isMask) {
         let last = defs.value;
         last = last[last.length - 1];
@@ -293,21 +288,21 @@ class Geom extends Xom {
     return this['__' + k];
   }
 
-  get tagName() {
-    return this.__tagName;
-  }
   get baseLine() {
     return this.__height;
   }
+
   get isMask() {
     return this.__isMask;
   }
+
   get maskId() {
     return this.__maskId;
   }
+
   get animateProps() {
     let { props, animationList } = this;
-    let copy = clone(props);
+    let copy = Object.assign({}, props);
     animationList.forEach(item => {
       if(item.animating) {
         Object.assign(copy, item.props);
@@ -315,6 +310,7 @@ class Geom extends Xom {
     });
     return copy;
   }
+
   get currentProps() {
     return this.__currentProps;
   }
@@ -325,12 +321,14 @@ class Geom extends Xom {
     }
     return REGISTER[name];
   }
+
   static register(name, obj) {
     if(Geom.hasRegister(name)) {
       throw new Error(`Geom has already register: ${name}`);
     }
     REGISTER[name] = obj;
   }
+
   static hasRegister(name) {
     return REGISTER.hasOwnProperty(name);
   }

@@ -70,7 +70,7 @@ class Sector extends Geom {
     }
   }
 
-  render(renderMode) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       cx,
@@ -83,18 +83,11 @@ class Sector extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, ctx, begin, end, r, edge, closure, computedStyle } = this;
-    Object.assign(computedStyle, {
-      begin,
-      end,
-      r,
-      edge,
-      closure,
-    });
+    let { width, height, begin, end, r, edge, closure } = this;
     if(begin === end) {
       return;
     }

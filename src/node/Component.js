@@ -2,13 +2,11 @@ import Event from '../util/Event';
 import Node from './Node';
 import Text from './Text';
 import util from '../util/util';
-import reset from '../style/reset';
 import css from '../style/css';
-import match from '../style/match';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
-const { isNil, isFunction } = util;
+const { isNil, isString, isFunction, clone } = util;
 
 function diff(ovd, nvd) {
   if(ovd !== nvd) {
@@ -43,7 +41,7 @@ function diff(ovd, nvd) {
 class Component extends Event {
   constructor(tagName, props, children) {
     super();
-    if(!util.isString(tagName)) {
+    if(!isString(tagName)) {
       children = props;
       props = tagName;
       tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
@@ -73,28 +71,21 @@ class Component extends Event {
     else {
       Object.assign(this.state, n);
     }
-    // 构造函数中调用还未render
-    let ovd = this.shadowRoot;
-    if(!ovd) {
-      if(isFunction(cb)) {
-        cb();
-      }
-      return;
-    }
     let root = this.root;
     if(root) {
       root.delRefreshTask(this.__task);
+      let ovd = this.shadowRoot;
       this.__task = {
         before: () => {
-          this.__traverse(ovd.ctx, ovd.defs, root.renderMode);
-          this.__traverseCss();
           this.__init();
           root.setRefreshLevel(level.REFLOW);
         },
         after: () => {
           // 先进行diff，继承动画，然后销毁老的
           diff(ovd, this.shadowRoot);
-          ovd.__destroy();
+          if(ovd instanceof Node) {
+            ovd.__destroy();
+          }
           if(isFunction(cb)) {
             cb();
           }
@@ -102,57 +93,28 @@ class Component extends Event {
       };
       root.addRefreshTask(this.__task);
     }
-  }
-
-  __traverse(ctx, defs, renderMode) {
-    let sr = this.__shadowRoot = this.render(renderMode);
-    // 可能返回的还是一个Component，递归处理
-    while(sr instanceof Component) {
-      sr = this.__shadowRoot = sr.render(renderMode);
-    }
-    // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
-    if(!(sr instanceof Node)) {
-      let s = '';
-      if(!isNil(sr)) {
-        s = util.encodeHtml(sr.toString());
-      }
-      sr = new Text(s);
-      sr.__ctx = ctx;
-      sr.__defs = defs;
-      sr.__style = this.props.style || {};
-      this.__shadowRoot = sr;
-      return;
-    }
-    sr.__ctx = ctx;
-    sr.__defs = defs;
-    sr.__host = this;
-    if(!sr.isGeom) {
-      sr.__traverse(ctx, defs, renderMode);
-    }
-  }
-
-  __traverseCss() {
-    let sr = this.__shadowRoot;
-    // shadowDom可以设置props.css，同时host的会覆盖它
-    if(!(sr instanceof Text)) {
-      let m = match.mergeCss(sr.props.css, this.props.css);
-      sr.__traverseCss(sr, m);
+    // 构造函数中调用还未render，
+    else if(isFunction(cb)) {
+      cb();
     }
   }
 
   // 组件传入的样式需覆盖shadowRoot的
   __init() {
-    let sr = this.shadowRoot;
-    // 返回text节点特殊处理，赋予基本样式
-    if(sr instanceof Text) {
-      css.normalize(sr.style, reset.dom);
+    let sr = this.render();
+    // 可能返回的还是一个Component，递归处理
+    while(sr instanceof Component) {
+      sr = sr.__init();
     }
-    else {
-      let style = this.props.style || {};
+    // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
+    if(sr instanceof Node) {
+      sr.__host = this;
+      sr.__initRef(this);
+      // 覆盖sr的样式
+      let style = clone(this.props.style) || {};
+      css.normalize(style);
       Object.assign(sr.style, style);
-      sr.__init();
-    }
-    if(!(sr instanceof Text)) {
+      // 事件添加到sr，以及自定义事件
       this.__props.forEach(item => {
         let k = item[0];
         let v = item[1];
@@ -171,12 +133,25 @@ class Component extends Event {
         }
       });
     }
-    let ref = this.props.ref;
-    if(ref) {
-      let owner = this.parent.host || this.root;
-      if(owner) {
-        owner.ref[ref] = this;
+    else {
+      let s = '';
+      if(!isNil(sr)) {
+        s = util.encodeHtml(sr.toString());
       }
+      sr = new Text(s);
+      // 文字视作为父节点的直接文字子节点
+      sr.__parent = this.parent;
+    }
+    return this.__shadowRoot = sr;
+  }
+
+  __initRef(root) {
+    let ref = this.props.ref;
+    if(isString(ref)) {
+      root.ref[ref] = this;
+    }
+    else if(isFunction(ref)) {
+      ref(root);
     }
   }
 
@@ -208,24 +183,20 @@ class Component extends Event {
     }
   }
 
-  __computed() {
+  __measure(renderMode, ctx) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      css.compute(sr, true);
-      sr.__measure();
+      sr.__measure(renderMode, ctx);
     }
     else {
-      sr.__computed();
+      sr.__measure(renderMode, ctx, true);
     }
   }
 
   __repaint() {
     let sr = this.shadowRoot;
-    if(sr instanceof Text) {
-      css.repaint(sr, true);
-    }
-    else {
-      sr.__repaint();
+    if(sr instanceof Node) {
+      sr.__repaint(true);
     }
   }
 
@@ -283,13 +254,10 @@ Object.keys(repaint.GEOM).concat([
   'computedStyle',
   'animateProps',
   'currentProps',
-  'ctx',
-  'defs',
   'baseLine',
   'virtualDom',
   'mask',
   'maskId',
-  'renderMode',
   'textWidth',
   'content',
   'lineBoxes',
@@ -317,8 +285,6 @@ Object.keys(repaint.GEOM).concat([
   '__calAbs',
   '__renderAsMask',
   '__renderByMask',
-  '__setCtx',
-  '__measure',
   'animate',
   'removeAnimate',
   'clearAnimate',

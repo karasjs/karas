@@ -1,7 +1,7 @@
-window.onerror = function(e) {
-  let input = document.querySelector('#base64');
-  input.value = 'error';
-};
+window.console.error = function(s) {
+  var input = document.querySelector('#base64');
+  input.value = s.toString();
+}
 
 karas.render(
   <canvas width="360" height="360">

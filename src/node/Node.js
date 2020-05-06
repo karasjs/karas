@@ -6,16 +6,12 @@ class Node {
     this.__oy = 0;
     this.__width = 0;
     this.__height = 0;
+    this.__baseLine = 0;
     this.__prev = null;
     this.__next = null;
-    this.__ctx = null; // canvas的context
-    this.__defs = null; // svg的defs
     this.__parent = null;
-    this.__style = {};
-    this.__computedStyle = {}; // 计算为绝对值的样式
-    this.__baseLine = 0;
-    this.__virtualDom = {};
     this.__host = null;
+    this.__virtualDom = {};
   }
 
   __offsetX(diff, isLayout) {
@@ -38,11 +34,7 @@ class Node {
 
   __destroy() {
     this.__isDestroyed = true;
-    this.__prev = this.__next = this.__ctx = this.__defs = this.__parent = this.__host = this.__root = null;
-  }
-
-  __setCtx(ctx) {
-    this.__ctx = ctx;
+    this.__parent = null;
   }
 
   get x() {
@@ -95,55 +87,6 @@ class Node {
 
   get parent() {
     return this.__parent;
-  }
-
-  // canvas/svg根节点
-  get root() {
-    if(this.host) {
-      return this.host.root;
-    }
-    if(this.parent) {
-      return this.parent.root;
-    }
-    if(this.tagName && {
-      canvas: true,
-      svg: true,
-    }.hasOwnProperty(this.tagName)) {
-      return this;
-    }
-  }
-
-  get renderMode() {
-    let root = this.root;
-    if(root) {
-      return root.renderMode;
-    }
-  }
-
-  // component根节点
-  get host() {
-    if(this.__host) {
-      return this.__host;
-    }
-    if(this.parent) {
-      return this.parent.host;
-    }
-  }
-
-  get style() {
-    return this.__style;
-  }
-
-  get computedStyle() {
-    return this.__computedStyle;
-  }
-
-  get ctx() {
-    return this.__ctx;
-  }
-
-  get defs() {
-    return this.__defs;
   }
 
   get baseLine() {

@@ -37,7 +37,12 @@ export default {
     borderLeftColor: true,
     borderRightColor: true,
     borderTopColor: true,
+    borderTopLeftRadius: true,
+    borderTopRightRadius: true,
+    borderBottomRightRadius: true,
+    borderBottomLeftRadius: true,
     visibility: true,
     opacity: true,
+    zIndex: true,
   },
 };

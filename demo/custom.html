@@ -18,13 +18,13 @@
       super(tagName, props);
     }
 
-    render(renderMode) {
+    render(renderMode, ctx, defs) {
       // 基类render中已经帮我们计算好许多必需的属性
-      let { originX, originY, display, stroke, strokeWidth, strokeDasharray, strokeDasharrayStr } = super.render(renderMode);
+      let { originX, originY, display, stroke, strokeWidth, strokeDasharray, strokeDasharrayStr } = super.render(renderMode, ctx, defs);
       if(display === 'none') {
         return;
       }
-      let { width, height, ctx } = this;
+      let { width, height } = this;
       // x,y被分为几格
       let nx = this.props.nx || 0;
       let ny = this.props.ny || 0;

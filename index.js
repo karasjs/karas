@@ -6843,6 +6843,8 @@
           return;
         }
 
+        this.__mp(currentStyle, computedStyle, w);
+
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
             case PX$4:
@@ -6854,8 +6856,6 @@
               break;
           }
         }
-
-        this.__mp(currentStyle, computedStyle, w);
 
         this.__ox = this.__oy = 0; // 3种布局
 

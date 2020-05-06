@@ -269,6 +269,7 @@ class Xom extends Node {
       computedStyle.width = computedStyle.height = 0;
       return;
     }
+    this.__mp(currentStyle, computedStyle, w);
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:
@@ -279,7 +280,6 @@ class Xom extends Node {
           break;
       }
     }
-    this.__mp(currentStyle, computedStyle, w);
     this.__ox = this.__oy = 0;
     // 3种布局
     if(display === 'block') {

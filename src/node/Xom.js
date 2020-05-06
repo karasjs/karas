@@ -680,8 +680,8 @@ class Xom extends Node {
             else if(h === -1) {
               h = w * height / width;
             }
-            let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, width);
-            let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, height);
+            let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
+            let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
             computedStyle.backgroundPositionX = bgX;
             computedStyle.backgroundPositionY = bgY;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
@@ -806,6 +806,7 @@ class Xom extends Node {
               if(matrix) {
                 matrix = matrix.join(',');
               }
+              console.log(matrix);
               let props = [
                 ['xlink:href', backgroundImage],
                 ['x', bgX],

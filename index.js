@@ -7279,8 +7279,8 @@
                   h = w * _height / _width;
                 }
 
-                var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, _width);
-                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, _height);
+                var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
+                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
                 computedStyle.backgroundPositionX = bgX;
                 computedStyle.backgroundPositionY = bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
@@ -7428,6 +7428,7 @@
                     _matrix = _matrix.join(',');
                   }
 
+                  console.log(_matrix);
                   var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width], ['height', _height]];
                   var needResize;
 

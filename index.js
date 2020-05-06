@@ -6825,11 +6825,11 @@
         }
 
         return 0;
-      } // absolute且无尺寸时，fake标明先假布局一次计算尺寸
+      } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，之后真正布局时传入isAbs标识
 
     }, {
       key: "__layout",
-      value: function __layout(data, isVirtual) {
+      value: function __layout(data, isVirtual, isAbs) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -6841,9 +6841,12 @@
         if (isDestroyed || display === 'none') {
           computedStyle.width = computedStyle.height = 0;
           return;
-        }
+        } // margin/padding在假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
 
-        this.__mp(currentStyle, computedStyle, w);
+
+        if (!isAbs) {
+          this.__mp(currentStyle, computedStyle, w);
+        }
 
         if (width.unit !== AUTO$2) {
           switch (width.unit) {
@@ -9437,7 +9440,7 @@
             y: y2,
             w: wl,
             h: hl
-          });
+          }, false, true);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);

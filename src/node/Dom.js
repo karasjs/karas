@@ -977,7 +977,7 @@ class Dom extends Xom {
         y: y2,
         w: wl,
         h: hl,
-      });
+      }, false, true);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }

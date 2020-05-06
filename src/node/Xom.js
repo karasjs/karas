@@ -256,8 +256,8 @@ class Xom extends Node {
     return 0;
   }
 
-  // absolute且无尺寸时，fake标明先假布局一次计算尺寸
-  __layout(data, isVirtual) {
+  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，之后真正布局时传入isAbs标识
+  __layout(data, isVirtual, isAbs) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
@@ -269,7 +269,10 @@ class Xom extends Node {
       computedStyle.width = computedStyle.height = 0;
       return;
     }
-    this.__mp(currentStyle, computedStyle, w);
+    // margin/padding在假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
+    if(!isAbs) {
+      this.__mp(currentStyle, computedStyle, w);
+    }
     if(width.unit !== AUTO) {
       switch(width.unit) {
         case PX:

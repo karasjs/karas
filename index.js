@@ -9456,12 +9456,12 @@
         }); // 递归进行，遇到absolute/relative的设置新容器
 
         children.forEach(function (item) {
-          if (item instanceof Xom) {
+          if (item instanceof Dom) {
             item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
           } else if (item instanceof Component) {
             var sr = item.shadowRoot;
 
-            if (sr instanceof Xom) {
+            if (sr instanceof Dom) {
               sr.__layoutAbs(sr, data);
             }
           }

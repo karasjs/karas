@@ -269,8 +269,8 @@ class Xom extends Node {
       computedStyle.width = computedStyle.height = 0;
       return;
     }
-    // margin/padding在自动宽度假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
-    if(!absHasCalWidth) {
+    // margin/padding在abs前已经计算过了，无需二次计算
+    if(isVirtual || !absHasCalWidth) {
       this.__mp(currentStyle, computedStyle, w);
     }
     if(width.unit !== AUTO) {

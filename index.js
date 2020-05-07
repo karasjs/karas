@@ -6854,10 +6854,10 @@
         if (isDestroyed || display === 'none') {
           computedStyle.width = computedStyle.height = 0;
           return;
-        } // margin/padding在自动宽度假布局时已经计算过了，无需二次计算，并且自动宽度会导致w不同
+        } // margin/padding在abs前已经计算过了，无需二次计算
 
 
-        if (!absHasCalWidth) {
+        if (isVirtual || !absHasCalWidth) {
           this.__mp(currentStyle, computedStyle, w);
         }
 
@@ -9296,7 +9296,9 @@
 
         absChildren.forEach(function (item) {
           var currentStyle = item.currentStyle,
-              computedStyle = item.computedStyle;
+              computedStyle = item.computedStyle; // 先根据容器宽度计算margin/padding
+
+          item.__mp(currentStyle, computedStyle, innerWidth);
 
           if (computedStyle.display === 'inline') {
             currentStyle.display = computedStyle.display = 'block';
@@ -9355,7 +9357,14 @@
             w2 = width.unit === PX$5 ? width.value : innerWidth * width.value * 0.01;
           } else if (fixedRight && width.unit !== AUTO$3) {
             w2 = width.unit === PX$5 ? width.value : innerWidth * width.value * 0.01;
-            x2 = x + innerWidth - computedStyle.right - w2;
+            x2 = x + innerWidth - computedStyle.right - w2; // 右对齐有尺寸时y值还需减去margin/border/padding的
+
+            x2 -= computedStyle.marginLeft;
+            x2 -= computedStyle.marginRight;
+            x2 -= computedStyle.paddingLeft;
+            x2 -= computedStyle.paddingRight;
+            x2 -= computedStyle.borderLeftWidth;
+            x2 -= computedStyle.borderRightWidth;
           } else if (fixedLeft) {
             x2 = x + computedStyle.left;
           } else if (fixedRight) {
@@ -9378,7 +9387,14 @@
             h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
           } else if (fixedBottom && height.unit !== AUTO$3) {
             h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
-            y2 = y + innerHeight - computedStyle.bottom - h2;
+            y2 = y + innerHeight - computedStyle.bottom - h2; // 底对齐有尺寸时y值还需减去margin/border/padding的
+
+            y2 -= computedStyle.marginTop;
+            y2 -= computedStyle.marginBottom;
+            y2 -= computedStyle.paddingTop;
+            y2 -= computedStyle.paddingBottom;
+            y2 -= computedStyle.borderTopWidth;
+            y2 -= computedStyle.borderBottomWidth;
           } else if (fixedTop) {
             y2 = y + computedStyle.top;
           } else if (fixedBottom) {

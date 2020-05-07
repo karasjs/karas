@@ -796,7 +796,7 @@ function compute(node, isRoot) {
     computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
   }
   else if(fontSize.unit === PERCENT) {
-    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value;
+    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value * 0.01;
   }
   else {
     computedStyle.fontSize = fontSize.value;

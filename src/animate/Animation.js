@@ -567,19 +567,48 @@ function calDiff(prev, next, k, target) {
     if(p.unit === n.unit) {
       diff = n.value - p.value;
     }
+    // 长度单位变化特殊计算，根据父元素computedStyle
     else if(p.unit === PX && n.unit === PERCENT) {
-      let v = p.value * 100 / parentComputedStyle[k];
-      diff = n.value - v;
+      let v;
+      if(k === 'fontSize') {
+        v = n.value * parentComputedStyle[k] * 0.01;
+      }
+      else if(k === 'flexBasis' || k === 'width'
+        || /margin/.test(k) || /padding/.test(k)
+        || ['left', 'right'].indexOf(k) > -1) {
+        v = n.value * parentComputedStyle.width * 0.01;
+      }
+      else if(k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+        v = n.value * parentComputedStyle.height * 0.01;
+      }
+      diff = v - p.value;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = p.value * 0.01 * parentComputedStyle[k];
-      diff = n.value - v;
+      let v;
+      if(k === 'fontSize') {
+        v = n.value * 100 / parentComputedStyle[k];
+      }
+      else if(k === 'flexBasis' || k === 'width'
+        || /margin/.test(k) || /padding/.test(k)
+        || ['left', 'right'].indexOf(k) > -1) {
+        v = n.value * 100 / parentComputedStyle.width;
+      }
+      else if(k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+        v = n.value * 100 / parentComputedStyle.height;
+      }
+      diff = v - p.value;
     }
     // lineHeight奇怪的单位变化
-    else {
-      return res;
+    else if(k === 'lineHeight') {
+      if(p.unit === PX && n.unit === NUMBER) {
+        diff = n.value * target.computedStyle.fontSize - p.value;
+      }
+      else if(p.unit === NUMBER && n.unit === PX) {
+        diff = n.value / target.computedStyle.fontSize - p.value;
+      }
     }
-    if(diff === 0) {
+    // 兜底NaN非法
+    if(diff === 0 || isNaN(diff)) {
       return;
     }
     res.v = diff;

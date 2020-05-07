@@ -4,7 +4,7 @@ import util from '../util/util';
 
 const { PX, PERCENT } = unit;
 const { matrix, geom } = math;
-const { d2r } = geom;
+const { d2r, transformPoint } = geom;
 
 function calSingle(t, k, v) {
   if(k === 'translateX') {
@@ -62,16 +62,6 @@ function calMatrix(transform, transformOrigin, ow, oh) {
   t[13] = -oy;
   m = matrix.multiply(m, t);
   return matrix.t43(m);
-}
-
-function transformPoint(matrix, x, y) {
-  let [a, b, c, d, e, f] = matrix;
-  return [a * x + c * y + e, b * x + d * y + f];
-}
-
-// 向量积
-function vectorProduct(x1, y1, x2, y2) {
-  return x1 * y2 - x2 * y1;
 }
 
 // 判断点是否在一个矩形内，比如事件发生是否在节点上

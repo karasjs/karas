@@ -788,10 +788,23 @@
     return true;
   }
 
+  function transformPoint(matrix, x, y) {
+    var _matrix = _slicedToArray(matrix, 6),
+        a = _matrix[0],
+        b = _matrix[1],
+        c = _matrix[2],
+        d = _matrix[3],
+        e = _matrix[4],
+        f = _matrix[5];
+
+    return [a * x + c * y + e, b * x + d * y + f];
+  }
+
   var geom = {
     vectorProduct: vectorProduct,
     pointInLine: pointInLine,
     pointInPolygon: pointInPolygon,
+    transformPoint: transformPoint,
     d2r: function d2r(n) {
       return n * Math.PI / 180;
     },
@@ -2237,7 +2250,7 @@
     if (fontSize.unit === INHERIT) {
       computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
     } else if (fontSize.unit === PERCENT$1) {
-      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value;
+      computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value * 0.01;
     } else {
       computedStyle.fontSize = fontSize.value;
     }
@@ -2973,7 +2986,8 @@
       PERCENT$2 = unit.PERCENT;
   var matrix$1 = math.matrix,
       geom$1 = math.geom;
-  var d2r$1 = geom$1.d2r;
+  var d2r$1 = geom$1.d2r,
+      transformPoint$1 = geom$1.transformPoint;
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
@@ -3030,45 +3044,33 @@
     t[13] = -oy;
     m = matrix$1.multiply(m, t);
     return matrix$1.t43(m);
-  }
-
-  function transformPoint(matrix, x, y) {
-    var _matrix = _slicedToArray(matrix, 6),
-        a = _matrix[0],
-        b = _matrix[1],
-        c = _matrix[2],
-        d = _matrix[3],
-        e = _matrix[4],
-        f = _matrix[5];
-
-    return [a * x + c * y + e, b * x + d * y + f];
-  } // 向量积
+  } // 判断点是否在一个矩形内，比如事件发生是否在节点上
 
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-      var _transformPoint = transformPoint(matrix, x1, y1);
+      var _transformPoint = transformPoint$1(matrix, x1, y1);
 
       var _transformPoint2 = _slicedToArray(_transformPoint, 2);
 
       x1 = _transformPoint2[0];
       y1 = _transformPoint2[1];
 
-      var _transformPoint3 = transformPoint(matrix, x2, y2);
+      var _transformPoint3 = transformPoint$1(matrix, x2, y2);
 
       var _transformPoint4 = _slicedToArray(_transformPoint3, 2);
 
       x2 = _transformPoint4[0];
       y2 = _transformPoint4[1];
 
-      var _transformPoint5 = transformPoint(matrix, x4, y4);
+      var _transformPoint5 = transformPoint$1(matrix, x4, y4);
 
       var _transformPoint6 = _slicedToArray(_transformPoint5, 2);
 
       x4 = _transformPoint6[0];
       y4 = _transformPoint6[1];
 
-      var _transformPoint7 = transformPoint(matrix, x3, y3);
+      var _transformPoint7 = transformPoint$1(matrix, x3, y3);
 
       var _transformPoint8 = _slicedToArray(_transformPoint7, 2);
 
@@ -5250,20 +5252,42 @@
 
       if (p.unit === n.unit) {
         diff = n.value - p.value;
-      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v11 = p.value * 100 / parentComputedStyle[k];
+      } // 长度单位变化特殊计算，根据父元素computedStyle
+      else if (p.unit === PX$3 && n.unit === PERCENT$4) {
+          var _v11;
 
-        diff = n.value - _v11;
-      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v12 = p.value * 0.01 * parentComputedStyle[k];
+          if (k === 'fontSize') {
+            _v11 = n.value * parentComputedStyle[k] * 0.01;
+          } else if (k === 'flexBasis' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+            _v11 = n.value * parentComputedStyle.width * 0.01;
+          } else if (k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+            _v11 = n.value * parentComputedStyle.height * 0.01;
+          }
 
-        diff = n.value - _v12;
-      } // lineHeight奇怪的单位变化
-      else {
-          return res;
-        }
+          diff = _v11 - p.value;
+        } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
+          var _v12;
 
-      if (diff === 0) {
+          if (k === 'fontSize') {
+            _v12 = n.value * 100 / parentComputedStyle[k];
+          } else if (k === 'flexBasis' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+            _v12 = n.value * 100 / parentComputedStyle.width;
+          } else if (k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+            _v12 = n.value * 100 / parentComputedStyle.height;
+          }
+
+          diff = _v12 - p.value;
+        } // lineHeight奇怪的单位变化
+        else if (k === 'lineHeight') {
+            if (p.unit === PX$3 && n.unit === NUMBER$2) {
+              diff = n.value * target.computedStyle.fontSize - p.value;
+            } else if (p.unit === NUMBER$2 && n.unit === PX$3) {
+              diff = n.value / target.computedStyle.fontSize - p.value;
+            }
+          } // 兜底NaN非法
+
+
+      if (diff === 0 || isNaN(diff)) {
         return;
       }
 
@@ -9533,7 +9557,7 @@
         var zIndex = this.zIndexChildren; // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          if (!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute$1(item)) {
+          if (!(item instanceof Text) && isRelativeOrAbsolute$1(item)) {
             item.__renderByMask(renderMode, ctx, defs);
           }
         });

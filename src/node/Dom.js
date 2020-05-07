@@ -1044,7 +1044,7 @@ class Dom extends Xom {
     let zIndex = this.zIndexChildren;
     // 再绘制relative和absolute
     zIndex.forEach(item => {
-      if(!item.isMask && !(item instanceof Text) && isRelativeOrAbsolute(item)) {
+      if(!(item instanceof Text) && isRelativeOrAbsolute(item)) {
         item.__renderByMask(renderMode, ctx, defs);
       }
     });

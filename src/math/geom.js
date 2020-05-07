@@ -66,10 +66,16 @@ function pointInPolygon(x, y, vertexes) {
   return true;
 }
 
+function transformPoint(matrix, x, y) {
+  let [a, b, c, d, e, f] = matrix;
+  return [a * x + c * y + e, b * x + d * y + f];
+}
+
 export default {
   vectorProduct,
   pointInLine,
   pointInPolygon,
+  transformPoint,
   d2r(n) {
     return n * Math.PI / 180;
   },

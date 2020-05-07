@@ -224,16 +224,12 @@ class Controller {
     this.__set('endDelay', v);
   }
 
-  set duration(v) {
-    this.__set('duration', v);
-  }
-
   set fill(v) {
     this.__set('fill', v);
   }
 
-  set easing(v) {
-    this.__set('easing', v);
+  set direction(v) {
+    this.__set('direction', v);
   }
 }
 

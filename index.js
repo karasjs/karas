@@ -4853,6 +4853,8 @@
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
+    } else if (COLOR_HASH.hasOwnProperty(k)) {
+      return a.unit === b.unit && equalArr$1(a.value, b.value);
     } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
       var av = a.v;
       var bv = b.v;
@@ -5381,14 +5383,27 @@
     }
 
     return timingFunction;
-  } // 根据百分比和缓动函数计算中间态样式
+  }
+  /**
+   * 根据百分比和缓动函数计算中间态样式
+   * 当easing定义为steps时，优先计算
+   * @param frame 当前帧
+   * @param percent 到下一帧时间的百分比
+   * @param steps 定义的steps数量
+   * @param stepsD 定义的steps方向
+   * @returns {*}
+   */
 
 
-  function calIntermediateStyle(frame, percent) {
+  function calIntermediateStyle(frame, percent, steps, stepsD) {
     var style = clone$2(frame.style);
-    var timingFunction = getEasing(frame.easing);
+    var timingFunction = getEasing(frame.easing); // steps有效定义正整数
 
-    if (timingFunction !== linear) {
+    if (steps && steps > 0) {
+      var per = 1 / steps;
+      var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+      percent = n / steps;
+    } else if (timingFunction !== linear) {
       percent = timingFunction(percent);
     }
 
@@ -5538,7 +5553,7 @@
       }
 
       var op = _this.__options = options || {};
-      _this.duration = op.duration;
+      _this.__duration = Math.max(0, parseFloat(op.duration) || 0);
       _this.delay = op.delay;
       _this.endDelay = op.endDelay;
       _this.iterations = op.iterations;
@@ -5546,7 +5561,7 @@
       _this.fill = op.fill;
       _this.direction = op.direction;
       _this.playbackRate = op.playbackRate;
-      _this.easing = op.easing;
+      _this.__easing = op.easing;
       _this.playCount = 0;
       _this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
 
@@ -5578,7 +5593,6 @@
             duration = this.duration,
             list = this.list,
             easing = this.easing,
-            direction = this.direction,
             target = this.target; // 执行次数小于1无需播放
 
         if (iterations < 1 || list.length < 1) {
@@ -5668,6 +5682,14 @@
 
             _i7 = j;
           }
+        } // steps暂存
+
+
+        var steps = /steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(easing);
+
+        if (steps) {
+          this.__steps = parseInt(steps[1]);
+          this.__stepsD = steps[2];
         } // 总的曲线控制
 
 
@@ -5691,26 +5713,19 @@
         } // 反向存储帧的倒排结果
 
 
-        if ({
-          reverse: true,
-          alternate: true,
-          'alternate-reverse': true
-        }.hasOwnProperty(direction)) {
-          var framesR = clone$2(frames).reverse();
-          framesR.forEach(function (item) {
-            item.time = duration - item.time;
-            item.transition = [];
-          });
-          prev = framesR[0];
+        var framesR = clone$2(frames).reverse();
+        framesR.forEach(function (item) {
+          item.time = duration - item.time;
+          item.transition = [];
+        });
+        prev = framesR[0];
 
-          for (var _i9 = 1; _i9 < length; _i9++) {
-            var _next = framesR[_i9];
-            prev = calFrame(prev, _next, keys, target);
-          }
+        for (var _i9 = 1; _i9 < length; _i9++) {
+          var _next = framesR[_i9];
+          prev = calFrame(prev, _next, keys, target);
+        }
 
-          this.__framesR = framesR;
-        } // finish/cancel共有的before处理
-
+        this.__framesR = framesR; // finish/cancel共有的before处理
 
         this.__clean = function (isFinish) {
           _this2.__cancelTask();
@@ -5819,9 +5834,12 @@
               endDelay = this.endDelay,
               keys = this.keys,
               __clean = this.__clean,
-              __fin = this.__fin; // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
+              __fin = this.__fin; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
 
           var stayEnd = this.__stayEnd();
+
+          var stayBegin = this.__stayBegin(); // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
+
 
           this.__currentTime = this.__nextTime = this.__fpsTime = 0; // 再计算两帧之间的变化，存入transition属性
 
@@ -5863,8 +5881,6 @@
               var needRefresh, lv; // 还没过前置delay
 
               if (currentTime < delay) {
-                var stayBegin = _this3.__stayBegin();
-
                 if (stayBegin) {
                   var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
@@ -5977,7 +5993,7 @@
               else {
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
-                  current = calIntermediateStyle(current, percent);
+                  current = calIntermediateStyle(current, percent, _this3.__steps, _this3.__stepsD);
 
                   var _calRefresh7 = calRefresh(current, style, keys);
 
@@ -6489,9 +6505,6 @@
       key: "easing",
       get: function get() {
         return this.__easing;
-      },
-      set: function set(v) {
-        this.__easing = v;
       }
     }, {
       key: "startTime",
@@ -10572,19 +10585,14 @@
         this.__set('endDelay', v);
       }
     }, {
-      key: "duration",
-      set: function set(v) {
-        this.__set('duration', v);
-      }
-    }, {
       key: "fill",
       set: function set(v) {
         this.__set('fill', v);
       }
     }, {
-      key: "easing",
+      key: "direction",
       set: function set(v) {
-        this.__set('easing', v);
+        this.__set('direction', v);
       }
     }]);
 
@@ -12863,7 +12871,9 @@
     }
   }
 
-  function parse(karas, json, animateRecords, vars, hash) {
+  function parse(karas, json, animateRecords, vars) {
+    var hash = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : {};
+
     if (isPrimitive(json) || json instanceof Node) {
       return json;
     }

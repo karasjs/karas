@@ -183,6 +183,9 @@ function equalStyle(k, a, b) {
     || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
+  else if(COLOR_HASH.hasOwnProperty(k)) {
+    return a.unit === b.unit && equalArr(a.value, b.value);
+  }
   else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
     let av = a.v;
     let bv = b.v;
@@ -695,11 +698,25 @@ function getEasing(ea) {
   return timingFunction;
 }
 
-// 根据百分比和缓动函数计算中间态样式
-function calIntermediateStyle(frame, percent) {
+/**
+ * 根据百分比和缓动函数计算中间态样式
+ * 当easing定义为steps时，优先计算
+ * @param frame 当前帧
+ * @param percent 到下一帧时间的百分比
+ * @param steps 定义的steps数量
+ * @param stepsD 定义的steps方向
+ * @returns {*}
+ */
+function calIntermediateStyle(frame, percent, steps, stepsD) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
-  if(timingFunction !== linear) {
+  // steps有效定义正整数
+  if(steps && steps > 0) {
+    let per = 1 / steps;
+    let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+    percent = n / steps;
+  }
+  else if(timingFunction !== linear) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
@@ -839,7 +856,7 @@ class Animation extends Event {
       options = this.__options;
     }
     let op = this.__options = options || {};
-    this.duration = op.duration;
+    this.__duration = Math.max(0, parseFloat(op.duration) || 0);
     this.delay = op.delay;
     this.endDelay = op.endDelay;
     this.iterations = op.iterations;
@@ -847,7 +864,7 @@ class Animation extends Event {
     this.fill = op.fill;
     this.direction = op.direction;
     this.playbackRate = op.playbackRate;
-    this.easing = op.easing;
+    this.__easing = op.easing;
     this.playCount = 0;
     this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
     this.__frames = []; // 每帧数据
@@ -863,7 +880,7 @@ class Animation extends Event {
   }
 
   __init() {
-    let { iterations, duration, list, easing, direction, target } = this;
+    let { iterations, duration, list, easing, target } = this;
     // 执行次数小于1无需播放
     if(iterations < 1 || list.length < 1) {
       return;
@@ -942,6 +959,12 @@ class Animation extends Event {
         i = j;
       }
     }
+    // steps暂存
+    let steps = /steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(easing);
+    if(steps) {
+      this.__steps = parseInt(steps[1]);
+      this.__stepsD = steps[2];
+    }
     // 总的曲线控制
     let timingFunction = getEasing(easing);
     let frames = [];
@@ -961,19 +984,17 @@ class Animation extends Event {
       prev = calFrame(prev, next, keys, target);
     }
     // 反向存储帧的倒排结果
-    if({ reverse: true, alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-      let framesR = clone(frames).reverse();
-      framesR.forEach(item => {
-        item.time = duration - item.time;
-        item.transition = [];
-      });
-      prev = framesR[0];
-      for(let i = 1; i < length; i++) {
-        let next = framesR[i];
-        prev = calFrame(prev, next, keys, target);
-      }
-      this.__framesR = framesR;
+    let framesR = clone(frames).reverse();
+    framesR.forEach(item => {
+      item.time = duration - item.time;
+      item.transition = [];
+    });
+    prev = framesR[0];
+    for(let i = 1; i < length; i++) {
+      let next = framesR[i];
+      prev = calFrame(prev, next, keys, target);
     }
+    this.__framesR = framesR;
     // finish/cancel共有的before处理
     this.__clean = (isFinish) => {
       this.__cancelTask();
@@ -1061,8 +1082,10 @@ class Animation extends Event {
         __clean,
         __fin,
       } = this;
-      // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
+      // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
+      let stayBegin = this.__stayBegin();
+      // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
       // 再计算两帧之间的变化，存入transition属性
       let length = frames.length;
@@ -1092,7 +1115,6 @@ class Animation extends Event {
           let needRefresh, lv;
           // 还没过前置delay
           if(currentTime < delay) {
-            let stayBegin = this.__stayBegin();
             if(stayBegin) {
               let current = frames[0].style;
               // 对比第一帧，以及和第一帧同key的当前样式
@@ -1180,7 +1202,7 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent);
+            current = calIntermediateStyle(current, percent, this.__steps, this.__stepsD);
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
@@ -1542,10 +1564,6 @@ class Animation extends Event {
 
   get easing() {
     return this.__easing;
-  }
-
-  set easing(v) {
-    this.__easing = v;
   }
 
   get startTime() {

@@ -141,7 +141,7 @@ function linkChild(child, libraryItem) {
   }
 }
 
-function parse(karas, json, animateRecords, vars, hash) {
+function parse(karas, json, animateRecords, vars, hash = {}) {
   if(isPrimitive(json) || json instanceof Node) {
     return json;
   }

@@ -257,7 +257,7 @@ class Xom extends Node {
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸
-  __layout(data, isVirtual, absHasCalWidth) {
+  __layout(data, isVirtual, fromAbs) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
@@ -270,7 +270,7 @@ class Xom extends Node {
       return;
     }
     // margin/padding在abs前已经计算过了，无需二次计算
-    if(isVirtual || !absHasCalWidth) {
+    if(!fromAbs) {
       this.__mp(currentStyle, computedStyle, w);
     }
     if(width.unit !== AUTO) {

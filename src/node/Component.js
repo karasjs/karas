@@ -285,6 +285,7 @@ Object.keys(repaint.GEOM).concat([
   '__calAbs',
   '__renderAsMask',
   '__renderByMask',
+  '__mp',
   'animate',
   'removeAnimate',
   'clearAnimate',

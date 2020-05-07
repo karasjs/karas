@@ -985,7 +985,7 @@ class Dom extends Xom {
           y: y2,
           w: wl,
           h: hl,
-        }, true);
+        }, true, true);
         wl = item.outerWidth;
       }
       // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
@@ -994,7 +994,7 @@ class Dom extends Xom {
         y: y2,
         w: wl,
         h: hl,
-      }, false, needCalWidth);
+      }, false, true);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
       }

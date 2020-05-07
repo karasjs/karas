@@ -4151,7 +4151,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -6842,7 +6842,7 @@
 
     }, {
       key: "__layout",
-      value: function __layout(data, isVirtual, absHasCalWidth) {
+      value: function __layout(data, isVirtual, fromAbs) {
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -6857,7 +6857,7 @@
         } // margin/padding在abs前已经计算过了，无需二次计算
 
 
-        if (isVirtual || !absHasCalWidth) {
+        if (!fromAbs) {
           this.__mp(currentStyle, computedStyle, w);
         }
 
@@ -9462,7 +9462,7 @@
               y: y2,
               w: wl,
               h: hl
-            }, true);
+            }, true, true);
 
             wl = item.outerWidth;
           } // needCalWidth传入，因为自适应尺寸上面已经计算过一次margin/padding了
@@ -9473,7 +9473,7 @@
             y: y2,
             w: wl,
             h: hl
-          }, false, needCalWidth);
+          }, false, true);
 
           if (onlyRight) {
             item.__offsetX(-item.outerWidth, true);

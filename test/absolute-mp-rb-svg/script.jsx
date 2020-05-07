@@ -4,7 +4,7 @@ let o = karas.render(
       position: 'absolute',
       right:0,
       bottom:0,
-      padding: '20%',
+      padding: 50,
       width:100,
       height:100,
       background:'#F00',

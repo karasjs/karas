@@ -254,6 +254,18 @@ function equalArr(a, b) {
   return true;
 }
 
+function extend(target, source) {
+  if(source === null || typeof source !== 'object') {
+    return target;
+  }
+  let keys = Object.keys(source);
+  let i = keys.length;
+  while(i--) {
+    target[keys[i]] = source[keys[i]];
+  }
+  return target;
+}
+
 let util = {
   isObject: isType('Object'),
   isString: isType('String'),
@@ -279,6 +291,7 @@ let util = {
   hash2arr,
   clone,
   equalArr,
+  extend,
 };
 
 export default util;

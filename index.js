@@ -666,6 +666,21 @@
     return true;
   }
 
+  function extend(target, source) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    var keys = Object.keys(source);
+    var i = keys.length;
+
+    while (i--) {
+      target[keys[i]] = source[keys[i]];
+    }
+
+    return target;
+  }
+
   var util = {
     isObject: isType('Object'),
     isString: isType('String'),
@@ -690,7 +705,8 @@
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
-    equalArr: equalArr
+    equalArr: equalArr,
+    extend: extend
   };
 
   var reg = {
@@ -1482,6 +1498,8 @@
           }
         });
       }
+
+      delete style[key];
     }
   }
   /**
@@ -1570,6 +1588,7 @@
           style[k] = temp;
         }
       });
+      delete style.border;
     }
 
     ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
@@ -1586,6 +1605,7 @@
           style[k] = temp;
         }
       });
+      delete style.borderWidth;
     }
 
     temp = style.borderColor;
@@ -1598,6 +1618,7 @@
           style[k] = rgba2int$2(temp);
         }
       });
+      delete style.borderColor;
     }
 
     temp = style.borderStyle;
@@ -1610,6 +1631,7 @@
           style[k] = temp;
         }
       });
+      delete style.borderStyle;
     }
 
     temp = style.borderRadius;
@@ -1622,6 +1644,7 @@
           style[k] = temp;
         }
       });
+      delete style.borderRadius;
     }
 
     temp = style.background; // 处理渐变背景缩写
@@ -1668,6 +1691,8 @@
           style.backgroundPosition = position.join(' ');
         }
       }
+
+      delete style.background;
     } // 背景位置
 
 
@@ -1686,6 +1711,7 @@
 
       style.backgroundPositionX = _temp2[0];
       style.backgroundPositionY = _temp2[1];
+      delete style.backgroundPosition;
     } // flex
 
 
@@ -1712,6 +1738,8 @@
       } else {
         parseFlex(style, 0, 1, 'auto');
       }
+
+      delete style.flex;
     } // margin
 
 
@@ -1970,6 +1998,7 @@
 
         style["".concat(k, "X")] = _arr5[0];
         style["".concat(k, "Y")] = _arr5[1];
+        delete style[k];
       }
     });
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
@@ -2217,14 +2246,8 @@
       } else {
         style.stroke = rgba2int$2(temp);
       }
-    } // 删除缩写避免干扰动画计算
+    }
 
-
-    delete style.background;
-    delete style.flex;
-    delete style.border;
-    delete style.margin;
-    delete style.padding;
     return style;
   } // 影响文字测量的只有字体和大小，必须提前处理，另顺带处理掉布局相关的属性
 
@@ -3840,7 +3863,8 @@
       fill: true,
       backgroundColor: true,
       backgroundImage: true,
-      backgroundPosition: true,
+      backgroundPositionX: true,
+      backgroundPositionY: true,
       backgroundRepeat: true,
       backgroundSize: true,
       stroke: true,
@@ -3861,7 +3885,8 @@
   var isNil$2 = util.isNil,
       isString = util.isString,
       isFunction$1 = util.isFunction,
-      clone$1 = util.clone;
+      clone$1 = util.clone,
+      extend$1 = util.extend;
 
   function diff(ovd, nvd) {
     if (ovd !== nvd) {
@@ -3941,7 +3966,7 @@
         if (isNil$2(n)) {
           this.state = {};
         } else {
-          Object.assign(this.state, n);
+          extend$1(this.state, n);
         }
 
         var root = this.root;
@@ -3995,7 +4020,7 @@
 
           var style = clone$1(this.props.style) || {};
           css.normalize(style);
-          Object.assign(sr.style, style); // 事件添加到sr，以及自定义事件
+          extend$1(sr.style, style); // 事件添加到sr，以及自定义事件
 
           this.__props.forEach(function (item) {
             var k = item[0];
@@ -4988,27 +5013,22 @@
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
    * @param style 关键帧样式
    * @param duration 动画时间长度
-   * @param timingFunction options的easing曲线控制
+   * @param es options的easing曲线控制，frame没有自定义则使用全局的
    * @returns {{style: *, time: number, easing: *, transition: []}}
    */
 
 
-  function framing(style, duration, timingFunction) {
+  function framing(style, duration, es) {
     var offset = style.offset,
         easing = style.easing; // 这两个特殊值提出来存储不干扰style
 
     delete style.offset;
     delete style.easing;
-
-    if (timingFunction !== linear) {
-      offset = timingFunction(offset);
-    }
-
     css.normalize(style);
     return {
       style: style,
       time: offset * duration,
-      easing: easing,
+      easing: es || easing,
       transition: []
     };
   }
@@ -5071,7 +5091,7 @@
           var v = ni.value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'];
           res.v.push(v - pi.value);
         } else if (pi.unit === PERCENT$4 && ni.unit === PX$3) {
-          var _v = ni.value * 100 * target[i ? 'outerHeight' : 'outerWidth'];
+          var _v = ni.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
 
           res.v.push(_v - pi.value);
         }
@@ -5100,7 +5120,7 @@
 
         res.v = _v3;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v4 = n.value * 100 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+        var _v4 = n.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
 
         _v4 = _v4 - p.value;
 
@@ -5130,7 +5150,7 @@
 
         res.v = _v6;
       } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v7 = n.value * 100 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+        var _v7 = n.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
         _v7 = _v7 - p.value;
 
@@ -5154,7 +5174,7 @@
 
           res.v.push(_v8 - _pi.value);
         } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v9 = _ni.value * 100 * target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni.value * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v9 - _pi.value);
         } else {
@@ -5194,9 +5214,9 @@
               if (a[1].unit === b[1].unit) {
                 t.push(b[1].value - a[1].value);
               } else if (a[1].unit === PX$3 && b[1].unit === PERCENT$4) {
-                t.push(b[1].value - a[1].value * 100 / innerWidth);
+                t.push(b[1].value * innerWidth * 0.01 - a[1].value);
               } else if (a[1].unit === PERCENT$4 && b[1].unit === PX$3) {
-                t.push(b[1].value - a[1].value * 0.01 / innerWidth);
+                t.push(b[1].value * 100 / innerWidth - a[1].value);
               }
 
               if (eq) {
@@ -5715,14 +5735,12 @@
         if (steps) {
           this.__steps = parseInt(steps[1]);
           this.__stepsD = steps[2];
-        } // 总的曲线控制
+        }
 
-
-        var timingFunction = getEasing(easing);
         var frames = []; // 换算每一关键帧样式标准化
 
         list.forEach(function (item) {
-          frames.push(framing(item, duration, timingFunction));
+          frames.push(framing(item, duration, easing));
         });
         this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
@@ -6611,7 +6629,8 @@
       STRING$2 = unit.STRING;
   var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
-      equalArr$2 = util.equalArr;
+      equalArr$2 = util.equalArr,
+      extend$2 = util.extend;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
       repaint$2 = css.repaint;
@@ -8124,10 +8143,10 @@
       get: function get() {
         var style = this.style,
             animationList = this.animationList;
-        var copy = Object.assign({}, style);
+        var copy = extend$2({}, style);
         animationList.forEach(function (item) {
           if (item.animating) {
-            Object.assign(copy, item.style);
+            extend$2(copy, item.style);
           }
         });
         return copy;
@@ -11128,7 +11147,8 @@
       PERCENT$7 = unit.PERCENT;
   var clone$4 = util.clone,
       int2rgba$4 = util.int2rgba,
-      isNil$6 = util.isNil;
+      isNil$6 = util.isNil,
+      extend$3 = util.extend;
   var REGISTER = {};
 
   var Geom = /*#__PURE__*/function (_Xom) {
@@ -11492,10 +11512,10 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = Object.assign({}, props);
+        var copy = extend$3({}, props);
         animationList.forEach(function (item) {
           if (item.animating) {
-            Object.assign(copy, item.props);
+            extend$3(copy, item.props);
           }
         });
         return copy;
@@ -12762,7 +12782,8 @@
   var isNil$7 = util.isNil,
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
-      clone$5 = util.clone;
+      clone$5 = util.clone,
+      extend$4 = util.extend;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
@@ -12900,10 +12921,10 @@
     if (init) {
       var props = child.props = child.props || {};
       var style = props.style;
-      Object.assign(props, init); // style特殊处理，防止被上面覆盖丢失原始值
+      extend$4(props, init); // style特殊处理，防止被上面覆盖丢失原始值
 
       if (style) {
-        Object.assign(style, init.style);
+        extend$4(style, init.style);
         props.style = style;
       } // 删除以免二次解析
 

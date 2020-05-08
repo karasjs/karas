@@ -13,7 +13,7 @@ import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
-const { clone, int2rgba, equalArr } = util;
+const { clone, int2rgba, equalArr, extend } = util;
 const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -1401,10 +1401,10 @@ class Xom extends Node {
 
   get animateStyle() {
     let { style, animationList } = this;
-    let copy = Object.assign({}, style);
+    let copy = extend({}, style);
     animationList.forEach(item => {
       if(item.animating) {
-        Object.assign(copy, item.style);
+        extend(copy, item.style);
       }
     });
     return copy;

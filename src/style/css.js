@@ -73,6 +73,7 @@ function parseMarginPadding(style, key) {
         }
       });
     }
+    delete style[key];
   }
 }
 
@@ -161,6 +162,7 @@ function normalize(style, reset = []) {
         style[k] = temp;
       }
     });
+    delete style.border;
   }
   ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
     parserOneBorder(style, k);
@@ -174,6 +176,7 @@ function normalize(style, reset = []) {
         style[k] = temp;
       }
     });
+    delete style.borderWidth;
   }
   temp = style.borderColor;
   if(temp) {
@@ -183,6 +186,7 @@ function normalize(style, reset = []) {
         style[k] = rgba2int(temp);
       }
     });
+    delete style.borderColor;
   }
   temp = style.borderStyle;
   if(temp) {
@@ -192,6 +196,7 @@ function normalize(style, reset = []) {
         style[k] = temp;
       }
     });
+    delete style.borderStyle;
   }
   temp = style.borderRadius;
   if(temp) {
@@ -201,6 +206,7 @@ function normalize(style, reset = []) {
         style[k] = temp;
       }
     });
+    delete style.borderRadius;
   }
   temp = style.background;
   // 处理渐变背景缩写
@@ -239,6 +245,7 @@ function normalize(style, reset = []) {
         style.backgroundPosition = position.join(' ');
       }
     }
+    delete style.background;
   }
   // 背景位置
   temp = style.backgroundPosition;
@@ -248,6 +255,7 @@ function normalize(style, reset = []) {
       temp[1] = '50%';
     }
     [style.backgroundPositionX, style.backgroundPositionY] = temp;
+    delete style.backgroundPosition;
   }
   // flex
   temp = style.flex;
@@ -278,6 +286,7 @@ function normalize(style, reset = []) {
     else {
       parseFlex(style, 0, 1, 'auto');
     }
+    delete style.flex;
   }
   // margin
   parseMarginPadding(style, 'margin');
@@ -504,6 +513,7 @@ function normalize(style, reset = []) {
       }
       style[`${k}X`] = arr[0];
       style[`${k}Y`] = arr[1];
+      delete style[k];
     }
   });
   [
@@ -769,12 +779,6 @@ function normalize(style, reset = []) {
       style.stroke = rgba2int(temp);
     }
   }
-  // 删除缩写避免干扰动画计算
-  delete style.background;
-  delete style.flex;
-  delete style.border;
-  delete style.margin;
-  delete style.padding;
   return style;
 }
 

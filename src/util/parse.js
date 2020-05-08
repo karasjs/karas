@@ -2,7 +2,7 @@ import util from './util';
 import abbr from './abbr';
 import Node from '../node/Node';
 
-let { isNil, isFunction, isPrimitive, clone } = util;
+let { isNil, isFunction, isPrimitive, clone, extend } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
 
 /**
@@ -130,10 +130,10 @@ function linkChild(child, libraryItem) {
   if(init) {
     let props = child.props = child.props || {};
     let style = props.style;
-    Object.assign(props, init);
+    extend(props, init);
     // style特殊处理，防止被上面覆盖丢失原始值
     if(style) {
-      Object.assign(style, init.style);
+      extend(style, init.style);
       props.style = style;
     }
     // 删除以免二次解析

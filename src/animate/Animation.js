@@ -306,22 +306,19 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
  * @param style 关键帧样式
  * @param duration 动画时间长度
- * @param timingFunction options的easing曲线控制
+ * @param es options的easing曲线控制，frame没有自定义则使用全局的
  * @returns {{style: *, time: number, easing: *, transition: []}}
  */
-function framing(style, duration, timingFunction) {
+function framing(style, duration, es) {
   let { offset, easing } = style;
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
-  if(timingFunction !== linear) {
-    offset = timingFunction(offset);
-  }
   css.normalize(style);
   return {
     style,
     time: offset * duration,
-    easing,
+    easing: es || easing,
     transition: [],
   };
 }
@@ -387,7 +384,7 @@ function calDiff(prev, next, k, target) {
         res.v.push(v - pi.value);
       }
       else if(pi.unit === PERCENT && ni.unit === PX) {
-        let v = ni.value * 100 * target[i ? 'outerHeight' : 'outerWidth'];
+        let v = ni.value * 100 / target[i ? 'outerHeight' : 'outerWidth'];
         res.v.push(v - pi.value);
       }
     }
@@ -412,7 +409,7 @@ function calDiff(prev, next, k, target) {
       res.v = v;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = n.value * 100 * target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
+      let v = n.value * 100 / target[k === 'backgroundPositionX' ? 'innerWidth' : 'innerHeight'];
       v = v - p.value;
       if(v === 0) {
         return;
@@ -437,7 +434,7 @@ function calDiff(prev, next, k, target) {
       res.v = v;
     }
     else if(p.unit === PERCENT && n.unit === PX) {
-      let v = n.value * 100 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+      let v = n.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
       v = v - p.value;
       if(v === 0) {
         return;
@@ -458,7 +455,7 @@ function calDiff(prev, next, k, target) {
         res.v.push(v - pi.value);
       }
       else if(pi.unit === PERCENT && ni.unit === PX) {
-        let v = ni.value * 100 * target[i ? 'innerWidth' : 'innerHeight'];
+        let v = ni.value * 100 / target[i ? 'innerWidth' : 'innerHeight'];
         res.v.push(v - pi.value);
       }
       else {
@@ -501,10 +498,10 @@ function calDiff(prev, next, k, target) {
             t.push(b[1].value - a[1].value);
           }
           else if(a[1].unit === PX && b[1].unit === PERCENT) {
-            t.push(b[1].value - a[1].value * 100 / innerWidth);
+            t.push(b[1].value * innerWidth * 0.01 - a[1].value);
           }
           else if(a[1].unit === PERCENT && b[1].unit === PX) {
-            t.push(b[1].value - a[1].value * 0.01 / innerWidth);
+            t.push(b[1].value * 100 / innerWidth - a[1].value);
           }
           if(eq) {
             eq = t[4] === 0;
@@ -995,12 +992,10 @@ class Animation extends Event {
       this.__steps = parseInt(steps[1]);
       this.__stepsD = steps[2];
     }
-    // 总的曲线控制
-    let timingFunction = getEasing(easing);
     let frames = [];
     // 换算每一关键帧样式标准化
     list.forEach(item => {
-      frames.push(framing(item, duration, timingFunction));
+      frames.push(framing(item, duration, easing));
     });
     this.__frames = frames;
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式

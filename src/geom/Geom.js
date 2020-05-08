@@ -7,7 +7,7 @@ import util from '../util/util';
 import matrix from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
-const { clone, int2rgba, isNil } = util;
+const { clone, int2rgba, isNil, extend } = util;
 
 const REGISTER = {};
 
@@ -302,10 +302,10 @@ class Geom extends Xom {
 
   get animateProps() {
     let { props, animationList } = this;
-    let copy = Object.assign({}, props);
+    let copy = extend({}, props);
     animationList.forEach(item => {
       if(item.animating) {
-        Object.assign(copy, item.props);
+        extend(copy, item.props);
       }
     });
     return copy;

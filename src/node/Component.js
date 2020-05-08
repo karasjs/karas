@@ -6,7 +6,7 @@ import css from '../style/css';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
-const { isNil, isString, isFunction, clone } = util;
+const { isNil, isString, isFunction, clone, extend } = util;
 
 function diff(ovd, nvd) {
   if(ovd !== nvd) {
@@ -69,7 +69,7 @@ class Component extends Event {
       this.state = {};
     }
     else {
-      Object.assign(this.state, n);
+      extend(this.state, n);
     }
     let root = this.root;
     if(root) {
@@ -113,7 +113,7 @@ class Component extends Event {
       // 覆盖sr的样式
       let style = clone(this.props.style) || {};
       css.normalize(style);
-      Object.assign(sr.style, style);
+      extend(sr.style, style);
       // 事件添加到sr，以及自定义事件
       this.__props.forEach(item => {
         let k = item[0];

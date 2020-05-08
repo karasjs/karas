@@ -562,6 +562,7 @@ function calDiff(prev, next, k, target) {
       res.n = p;
       return res;
     }
+    let computedStyle = target.computedStyle;
     let parentComputedStyle = (target.parent || target).computedStyle;
     let diff = 0;
     if(p.unit === n.unit) {
@@ -573,12 +574,12 @@ function calDiff(prev, next, k, target) {
       if(k === 'fontSize') {
         v = n.value * parentComputedStyle[k] * 0.01;
       }
-      else if(k === 'flexBasis' || k === 'width'
+      else if(k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width'
         || /margin/.test(k) || /padding/.test(k)
         || ['left', 'right'].indexOf(k) > -1) {
         v = n.value * parentComputedStyle.width * 0.01;
       }
-      else if(k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+      else if(k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
         v = n.value * parentComputedStyle.height * 0.01;
       }
       diff = v - p.value;
@@ -588,12 +589,12 @@ function calDiff(prev, next, k, target) {
       if(k === 'fontSize') {
         v = n.value * 100 / parentComputedStyle[k];
       }
-      else if(k === 'flexBasis' || k === 'width'
+      else if(k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width'
         || /margin/.test(k) || /padding/.test(k)
         || ['left', 'right'].indexOf(k) > -1) {
         v = n.value * 100 / parentComputedStyle.width;
       }
-      else if(k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+      else if(k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
         v = n.value * 100 / parentComputedStyle.height;
       }
       diff = v - p.value;
@@ -601,10 +602,10 @@ function calDiff(prev, next, k, target) {
     // lineHeight奇怪的单位变化
     else if(k === 'lineHeight') {
       if(p.unit === PX && n.unit === NUMBER) {
-        diff = n.value * target.computedStyle.fontSize - p.value;
+        diff = n.value * computedStyle.fontSize - p.value;
       }
       else if(p.unit === NUMBER && n.unit === PX) {
-        diff = n.value / target.computedStyle.fontSize - p.value;
+        diff = n.value / computedStyle.fontSize - p.value;
       }
     }
     // 兜底NaN非法

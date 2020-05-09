@@ -5028,7 +5028,7 @@
     return {
       style: style,
       time: offset * duration,
-      easing: es || easing,
+      easing: easing || es,
       transition: []
     };
   }
@@ -5423,6 +5423,20 @@
     if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
       var v = ea.match(/[\d.]+/g);
       timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+    } else if (timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea)) {
+      var steps = parseInt(timingFunction[1]);
+      var stepsD = timingFunction[2];
+
+      timingFunction = function timingFunction(percent) {
+        // steps有效定义正整数
+        if (steps && steps > 0) {
+          var per = 1 / steps;
+          var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+          return n / steps;
+        }
+
+        return percent;
+      };
     } else {
       timingFunction = easing[ea] || linear;
     }
@@ -5434,21 +5448,15 @@
    * 当easing定义为steps时，优先计算
    * @param frame 当前帧
    * @param percent 到下一帧时间的百分比
-   * @param steps 定义的steps数量
-   * @param stepsD 定义的steps方向
    * @returns {*}
    */
 
 
-  function calIntermediateStyle(frame, percent, steps, stepsD) {
+  function calIntermediateStyle(frame, percent) {
     var style = clone$2(frame.style);
-    var timingFunction = getEasing(frame.easing); // steps有效定义正整数
+    var timingFunction = getEasing(frame.easing);
 
-    if (steps && steps > 0) {
-      var per = 1 / steps;
-      var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-      percent = n / steps;
-    } else if (timingFunction !== linear) {
+    if (timingFunction !== linear) {
       percent = timingFunction(percent);
     }
 
@@ -5727,14 +5735,6 @@
 
             _i7 = j;
           }
-        } // steps暂存
-
-
-        var steps = /steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(easing);
-
-        if (steps) {
-          this.__steps = parseInt(steps[1]);
-          this.__stepsD = steps[2];
         }
 
         var frames = []; // 换算每一关键帧样式标准化
@@ -6036,7 +6036,7 @@
               else {
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
-                  current = calIntermediateStyle(current, percent, _this3.__steps, _this3.__stepsD);
+                  current = calIntermediateStyle(current, percent);
 
                   var _calRefresh7 = calRefresh(current, style, keys);
 

@@ -318,7 +318,7 @@ function framing(style, duration, es) {
   return {
     style,
     time: offset * duration,
-    easing: es || easing,
+    easing: easing || es,
     transition: [],
   };
 }
@@ -719,6 +719,19 @@ function getEasing(ea) {
     let v = ea.match(/[\d.]+/g);
     timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
   }
+  else if((timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea))) {
+    let steps = parseInt(timingFunction[1]);
+    let stepsD = timingFunction[2];
+    timingFunction = function(percent) {
+      // steps有效定义正整数
+      if(steps && steps > 0) {
+        let per = 1 / steps;
+        let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+        return n / steps;
+      }
+      return percent;
+    };
+  }
   else {
     timingFunction = easing[ea] || linear;
   }
@@ -730,20 +743,12 @@ function getEasing(ea) {
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
  * @param percent 到下一帧时间的百分比
- * @param steps 定义的steps数量
- * @param stepsD 定义的steps方向
  * @returns {*}
  */
-function calIntermediateStyle(frame, percent, steps, stepsD) {
+function calIntermediateStyle(frame, percent) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
-  // steps有效定义正整数
-  if(steps && steps > 0) {
-    let per = 1 / steps;
-    let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-    percent = n / steps;
-  }
-  else if(timingFunction !== linear) {
+  if(timingFunction !== linear) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
@@ -986,12 +991,6 @@ class Animation extends Event {
         i = j;
       }
     }
-    // steps暂存
-    let steps = /steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(easing);
-    if(steps) {
-      this.__steps = parseInt(steps[1]);
-      this.__stepsD = steps[2];
-    }
     let frames = [];
     // 换算每一关键帧样式标准化
     list.forEach(item => {
@@ -1227,7 +1226,7 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent, this.__steps, this.__stepsD);
+            current = calIntermediateStyle(current, percent);
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style

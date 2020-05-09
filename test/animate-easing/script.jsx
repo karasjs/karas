@@ -9,6 +9,7 @@ let animation = t.animate([
   {},
   {
     fontSize: 100,
+    easing: 'cubic-bezier(1, 0, 1, 0)',
   },
   {}
 ], {
@@ -17,4 +18,4 @@ let animation = t.animate([
   easing: 'cubic-bezier(0, 1, 0, 1)',
 });
 let input = document.querySelector('input');
-input.value = parseInt(animation.frames[1].time);
+input.value = animation.frames[0].easing + '/' + animation.frames[1].easing;

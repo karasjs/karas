@@ -237,7 +237,7 @@ function calRadialRadius(d, iw, ih, cx, cy, x1, y1, x2, y2) {
   if(/circle|ellipse|at|closest|farthest/i.test(d)) {
     let i = d.indexOf('at');
     let at;
-    let s;
+    let s = d;
     if(i > -1) {
       at = d.slice(i + 2);
       s = d.slice(0, i - 1);
@@ -418,21 +418,21 @@ function parseGradient(s) {
     let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
-      let arr = item.split(/\s+/);
-      arr[0] = rgba2int(arr[0]);
-      if(arr[1]) {
-        if(/%$/.test(arr[1])) {
+      let res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))(\s+-?[\d.]+(?:px|%))?/i.exec(item);
+      let arr = [rgba2int(res[1])];
+      if(res[2]) {
+        if(/%$/.test(res[2])) {
           arr[1] = {
-            value: parseFloat(arr[1]),
+            value: parseFloat(res[2]),
             unit: PERCENT,
-            str: arr[1],
+            str: res[2],
           };
         }
         else {
           arr[1] = {
-            value: parseFloat(arr[1]),
+            value: parseFloat(res[2]),
             unit: PX,
-            str: arr[1],
+            str: res[2],
           };
         }
       }

@@ -1088,7 +1088,7 @@
     if (/circle|ellipse|at|closest|farthest/i.test(d)) {
       var i = d.indexOf('at');
       var at;
-      var s;
+      var s = d;
 
       if (i > -1) {
         at = d.slice(i + 2);
@@ -1315,21 +1315,21 @@
       var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
       var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
-        var arr = item.split(/\s+/);
-        arr[0] = rgba2int$1(arr[0]);
+        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))(\s+-?[\d.]+(?:px|%))?/i.exec(item);
+        var arr = [rgba2int$1(res[1])];
 
-        if (arr[1]) {
-          if (/%$/.test(arr[1])) {
+        if (res[2]) {
+          if (/%$/.test(res[2])) {
             arr[1] = {
-              value: parseFloat(arr[1]),
+              value: parseFloat(res[2]),
               unit: PERCENT,
-              str: arr[1]
+              str: res[2]
             };
           } else {
             arr[1] = {
-              value: parseFloat(arr[1]),
+              value: parseFloat(res[2]),
               unit: PX,
-              str: arr[1]
+              str: res[2]
             };
           }
         }
@@ -11316,13 +11316,13 @@
         computedStyle.strokeWidth = strokeWidth;
 
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
+          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
         } else {
           computedStyle.stroke = stroke = int2rgba$4(stroke);
         }
 
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
-          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
+          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
         } else {
           computedStyle.fill = fill = int2rgba$4(fill);
         }

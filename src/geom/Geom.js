@@ -136,13 +136,13 @@ class Geom extends Xom {
     }
     computedStyle.strokeWidth = strokeWidth;
     if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'stroke', stroke, computedStyle);
+      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
     }
     else {
       computedStyle.stroke = stroke = int2rgba(stroke);
     }
     if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originY + iw, originY + ih, iw, ih, 'fill', fill, computedStyle);
+      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
     }
     else {
       computedStyle.fill = fill = int2rgba(fill);

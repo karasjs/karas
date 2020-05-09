@@ -416,9 +416,9 @@ function parseGradient(s) {
       k: gradient[1],
     };
     let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
-    let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
+    let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
-      let res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))(\s+-?[\d.]+(?:px|%))?/i.exec(item);
+      let res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
       let arr = [rgba2int(res[1])];
       if(res[2]) {
         if(/%$/.test(res[2])) {

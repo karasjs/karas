@@ -1313,9 +1313,9 @@
         k: gradient[1]
       };
       var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
-      var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))(\s+-?[\d.]+(px|%))?/ig);
+      var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
-        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))(\s+-?[\d.]+(?:px|%))?/i.exec(item);
+        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
         var arr = [rgba2int$1(res[1])];
 
         if (res[2]) {

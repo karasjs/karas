@@ -11424,7 +11424,7 @@
 
               props[xi][1] = _point[0];
               props[yi][1] = _point[1];
-            } else if (child.tagName === 'polygon') {
+            } else if (child.tagName === 'polyline') {
               for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
                 var _props$_i2 = _slicedToArray(props[_i2], 2),
                     _k2 = _props$_i2[0],

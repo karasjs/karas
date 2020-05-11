@@ -230,7 +230,7 @@ class Geom extends Xom {
           props[xi][1] = point[0];
           props[yi][1] = point[1];
         }
-        else if(child.tagName === 'polygon') {
+        else if(child.tagName === 'polyline') {
           for(let i = 0, len = props.length; i < len; i++) {
             let [k, v] = props[i];
             if(k === 'points') {

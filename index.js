@@ -11734,19 +11734,12 @@
 
       _classCallCheck(this, Polyline);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, tagName, props)); // 折线所有点的列表
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, tagName, props)); // 所有点的列表
 
       _this.__points = [];
 
       if (Array.isArray(_this.props.points)) {
         _this.__points = _this.props.points;
-      } // 原点位置，4个角，默认左下
-
-
-      if (['TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(_this.props.origin) > -1) {
-        _this.__origin = _this.props.origin;
-      } else {
-        _this.__origin = 'TOP_LEFT';
       } // 控制点
 
 
@@ -11760,6 +11753,33 @@
     }
 
     _createClass(Polyline, [{
+      key: "__getPoints",
+      value: function __getPoints(originX, originY, width, height, points, controls) {
+        var pts = [];
+        var cls = [];
+        var hasControl = false;
+        points.forEach(function (item) {
+          pts.push([originX + item[0] * width, originY + item[1] * height]);
+        });
+        controls.forEach(function (item) {
+          if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+            var arr = [];
+            item.forEach(function (item2, i) {
+              if (i === 0 || i === 2) {
+                arr.push(originX + item[i] * width);
+              } else {
+                arr.push(originY + item[i] * height);
+              }
+            });
+            cls.push(arr);
+            hasControl = true;
+          } else {
+            cls.push(null);
+          }
+        });
+        return [pts, cls, hasControl];
+      }
+    }, {
       key: "render",
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
@@ -11768,6 +11788,7 @@
             originY = _get$call.originY,
             display = _get$call.display,
             visibility = _get$call.visibility,
+            fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
@@ -11781,108 +11802,30 @@
         var width = this.width,
             height = this.height,
             points = this.points,
-            controls = this.controls,
-            origin = this.origin;
+            controls = this.controls;
+
+        var _this$__getPoints = this.__getPoints(originX, originY, width, height, points, controls),
+            _this$__getPoints2 = _slicedToArray(_this$__getPoints, 3),
+            pts = _this$__getPoints2[0],
+            cls = _this$__getPoints2[1],
+            hasControl = _this$__getPoints2[2];
 
         if (points.length < 2) {
+          console.error('Points must have at lease 2 item: ' + points);
           return;
         }
 
         for (var i = 0, len = points.length; i < len; i++) {
           if (!Array.isArray(points[i]) || points[i].length < 2) {
+            console.error('Each Point must have a coords: ' + points[i]);
             return;
           }
-        }
-
-        var pts = [];
-        var cls = [];
-        var hasControll;
-
-        if (origin === 'TOP_LEFT') {
-          points.forEach(function (item) {
-            pts.push([originX + item[0] * width, originY + item[1] * height]);
-          });
-          controls.forEach(function (item) {
-            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-              var arr = [];
-              item.forEach(function (item2, i) {
-                if (i === 0 || i === 2) {
-                  arr.push(originX + item[i] * width);
-                } else {
-                  arr.push(originY + item[i] * height);
-                }
-              });
-              cls.push(arr);
-              hasControll = true;
-            } else {
-              cls.push(null);
-            }
-          });
-        } else if (origin === 'TOP_RIGHT') {
-          points.forEach(function (item) {
-            pts.push([originX + width - item[0] * width, originY + item[1] * height]);
-          });
-          controls.forEach(function (item) {
-            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-              var arr = [];
-              item.forEach(function (item2, i) {
-                if (i === 0 || i === 2) {
-                  arr.push(originX + width - item[i] * width);
-                } else {
-                  arr.push(originY + item[i] * height);
-                }
-              });
-              cls.push(arr);
-              hasControll = true;
-            } else {
-              cls.push(null);
-            }
-          });
-        } else if (origin === 'BOTTOM_LEFT') {
-          points.forEach(function (item) {
-            pts.push([originX + item[0] * width, originY + height - item[1] * height]);
-          });
-          controls.forEach(function (item) {
-            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-              var arr = [];
-              item.forEach(function (item2, i) {
-                if (i === 0 || i === 2) {
-                  arr.push(originX + item[i] * width);
-                } else {
-                  arr.push(originY + height - item[i] * height);
-                }
-              });
-              cls.push(arr);
-              hasControll = true;
-            } else {
-              cls.push(null);
-            }
-          });
-        } else if (origin === 'BOTTOM_RIGHT') {
-          points.forEach(function (item) {
-            pts.push([originX + width - item[0] * width, originY + height - item[1] * height]);
-          });
-          controls.forEach(function (item) {
-            if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-              var arr = [];
-              item.forEach(function (item2, i) {
-                if (i === 0 || i === 2) {
-                  arr.push(originX + width - item[i] * width);
-                } else {
-                  arr.push(originY + height - item[i] * height);
-                }
-              });
-              cls.push(arr);
-              hasControll = true;
-            } else {
-              cls.push(null);
-            }
-          });
         }
 
         if (renderMode === mode.CANVAS) {
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
+          ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
@@ -11901,16 +11844,18 @@
             }
           }
 
+          ctx.fill();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
           var tagName;
 
-          if (hasControll) {
+          if (hasControl) {
             var s = "M".concat(pts[0][0], ",").concat(pts[0][1]);
 
             for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
@@ -11966,211 +11911,36 @@
       get: function get() {
         return this.getProps('controls');
       }
-    }, {
-      key: "origin",
-      get: function get() {
-        return this.getProps('origin');
-      }
     }]);
 
     return Polyline;
   }(Geom);
 
-  var Polygon = /*#__PURE__*/function (_Geom) {
-    _inherits(Polygon, _Geom);
+  var Polygon = /*#__PURE__*/function (_Polyline) {
+    _inherits(Polygon, _Polyline);
 
     function Polygon(tagName, props) {
-      var _this;
-
       _classCallCheck(this, Polygon);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, tagName, props)); // 所有点的列表
-
-      _this.__points = [];
-
-      if (Array.isArray(_this.props.points)) {
-        _this.__points = _this.props.points;
-      } // 控制点
-
-
-      _this.__controls = [];
-
-      if (Array.isArray(_this.props.controls)) {
-        _this.__controls = _this.props.controls;
-      }
-
-      return _this;
+      return _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, tagName, props));
     }
 
     _createClass(Polygon, [{
-      key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Polygon.prototype), "render", this).call(this, renderMode, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            originX = _get$call.originX,
-            originY = _get$call.originY,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+      key: "__getPoints",
+      value: function __getPoints(originX, originY, width, height, points, controls) {
+        var _get$call = _get(_getPrototypeOf(Polygon.prototype), "__getPoints", this).call(this, originX, originY, width, height, points, controls),
+            _get$call2 = _slicedToArray(_get$call, 3),
+            pts = _get$call2[0],
+            cls = _get$call2[1],
+            hasControl = _get$call2[2];
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
-          return;
-        }
-
-        var width = this.width,
-            height = this.height,
-            points = this.points,
-            controls = this.controls;
-
-        if (points.length < 2) {
-          console.error('Polygon must have at lease 2 points: ' + points);
-          return;
-        }
-
-        for (var i = 0, len = points.length; i < len; i++) {
-          if (!Array.isArray(points[i]) || points[i].length < 2) {
-            return;
-          }
-        }
-
-        var pts = [];
-        points.forEach(function (item) {
-          pts.push([originX + item[0] * width, originY + item[1] * height]);
-        });
-        var cls = [];
-        var hasControll;
-        controls.forEach(function (item) {
-          if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-            var arr = [];
-            item.forEach(function (item2, i) {
-              if (i === 0 || i === 2) {
-                arr.push(originX + item[i] * width);
-              } else {
-                arr.push(originY + item[i] * height);
-              }
-            });
-            cls.push(arr);
-            hasControll = true;
-          } else {
-            cls.push(null);
-          }
-        });
-
-        if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.setLineDash(strokeDasharray);
-          ctx.beginPath();
-          ctx.moveTo(pts[0][0], pts[0][1]);
-
-          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
-            var point = pts[_i];
-            var _cl = cls[_i - 1];
-
-            if (!_cl || !_cl.length) {
-              ctx.lineTo(point[0], point[1]);
-            } else if (_cl.length === 4) {
-              ctx.bezierCurveTo(_cl[0], _cl[1], _cl[2], _cl[3], point[0], point[1]);
-            } else {
-              ctx.quadraticCurveTo(_cl[0], _cl[1], point[0], point[1]);
-            }
-          }
-
-          var cl = cls[pts.length - 1];
-
-          if (!cl || !cl.length) {
-            ctx.lineTo(pts[0][0], pts[0][1]);
-          } else if (cl.length === 4) {
-            ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], pts[0][0], pts[0][1]);
-          } else {
-            ctx.quadraticCurveTo(cl[0], cl[1], pts[0][0], pts[0][1]);
-          }
-
-          ctx.fill();
-
-          if (strokeWidth > 0) {
-            ctx.stroke();
-          }
-
-          ctx.closePath();
-        } else if (renderMode === mode.SVG) {
-          var props = [];
-          var tagName;
-
-          if (hasControll) {
-            var s = "M".concat(pts[0][0], ",").concat(pts[0][1]);
-
-            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
-              var _point = pts[_i2];
-              var _cl3 = cls[_i2 - 1];
-
-              if (!_cl3 || !_cl3.length) {
-                s += "L".concat(_point[0], ",").concat(_point[1]);
-              } else if (_cl3.length === 4) {
-                s += "C".concat(_cl3[0], ",").concat(_cl3[1], " ").concat(_cl3[2], ",").concat(_cl3[3], " ").concat(_point[0], ",").concat(_point[1]);
-              } else {
-                s += "Q".concat(_cl3[0], ",").concat(_cl3[1], " ").concat(_point[0], ",").concat(_point[1]);
-              }
-            }
-
-            var _cl2 = cls[pts.length - 1];
-
-            if (!_cl2 || !_cl2.length) {
-              s += "L".concat(pts[0][0], ",").concat(pts[0][1]);
-            } else if (_cl2.length === 4) {
-              s += "C".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(_cl2[2], ",").concat(_cl2[3], " ").concat(pts[0][0], ",").concat(pts[0][1]);
-            } else {
-              s += "Q".concat(_cl2[0], ",").concat(_cl2[1], " ").concat(pts[0][0], ",").concat(pts[0][1]);
-            }
-
-            props.push(['d', s]);
-            tagName = 'path';
-          } else {
-            var _s = '';
-
-            for (var _i3 = 0, _len3 = pts.length; _i3 < _len3; _i3++) {
-              var _point2 = pts[_i3];
-              _s += "".concat(_point2[0], ",").concat(_point2[1], " ");
-            }
-
-            props.push(['points', _s]);
-            tagName = 'polygon';
-          }
-
-          props = props.concat([['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]);
-
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
-
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          this.addGeom(tagName, props);
-        }
-      }
-    }, {
-      key: "points",
-      get: function get() {
-        return this.getProps('points');
-      }
-    }, {
-      key: "controls",
-      get: function get() {
-        return this.getProps('controls');
+        pts.push(pts[0]);
+        return [pts, cls, hasControl];
       }
     }]);
 
     return Polygon;
-  }(Geom);
+  }(Polyline);
 
   var OFFSET = Math.PI * 0.5;
 

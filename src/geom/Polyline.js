@@ -4,23 +4,47 @@ import mode from '../util/mode';
 class Polyline extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
-    // 折线所有点的列表
+    // 所有点的列表
     this.__points = [];
     if(Array.isArray(this.props.points)) {
       this.__points = this.props.points;
-    }
-    // 原点位置，4个角，默认左下
-    if(['TOP_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_RIGHT'].indexOf(this.props.origin) > -1) {
-      this.__origin = this.props.origin;
-    }
-    else {
-      this.__origin = 'TOP_LEFT';
     }
     // 控制点
     this.__controls = [];
     if(Array.isArray(this.props.controls)) {
       this.__controls = this.props.controls;
     }
+  }
+
+  __getPoints(originX, originY, width, height, points, controls) {
+    let pts = [];
+    let cls = [];
+    let hasControl = false;
+    points.forEach(item => {
+      pts.push([
+        originX + item[0] * width,
+        originY + item[1] * height
+      ]);
+    });
+    controls.forEach(item => {
+      if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
+        let arr = [];
+        item.forEach((item2, i) => {
+          if(i === 0 || i === 2) {
+            arr.push(originX + item[i] * width);
+          }
+          else {
+            arr.push(originY + item[i] * height);
+          }
+        });
+        cls.push(arr);
+        hasControl = true;
+      }
+      else {
+        cls.push(null);
+      }
+    });
+    return [pts, cls, hasControl];
   }
 
   render(renderMode, ctx, defs) {
@@ -30,6 +54,7 @@ class Polyline extends Geom {
       originY,
       display,
       visibility,
+      fill,
       stroke,
       strokeWidth,
       strokeDasharray,
@@ -39,125 +64,22 @@ class Polyline extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, points, controls, origin } = this;
+    let { width, height, points, controls } = this;
+    let [pts, cls, hasControl] = this.__getPoints(originX, originY, width, height, points, controls);
     if(points.length < 2) {
+      console.error('Points must have at lease 2 item: ' + points);
       return;
     }
     for(let i = 0, len = points.length; i < len; i++) {
       if(!Array.isArray(points[i]) || points[i].length < 2) {
+        console.error('Each Point must have a coords: ' + points[i]);
         return;
       }
-    }
-    let pts = [];
-    let cls = [];
-    let hasControll;
-    if(origin === 'TOP_LEFT') {
-      points.forEach(item => {
-        pts.push([
-          originX + item[0] * width,
-          originY + item[1] * height
-        ]);
-      });
-      controls.forEach(item => {
-        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-          let arr = [];
-          item.forEach((item2, i) => {
-            if(i === 0 || i === 2) {
-              arr.push(originX + item[i] * width);
-            }
-            else {
-              arr.push(originY + item[i] * height);
-            }
-          });
-          cls.push(arr);
-          hasControll = true;
-        }
-        else {
-          cls.push(null);
-        }
-      });
-    }
-    else if(origin === 'TOP_RIGHT') {
-      points.forEach(item => {
-        pts.push([
-          originX + width - item[0] * width,
-          originY + item[1] * height
-        ]);
-      });
-      controls.forEach(item => {
-        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-          let arr = [];
-          item.forEach((item2, i) => {
-            if(i === 0 || i === 2) {
-              arr.push(originX + width - item[i] * width);
-            }
-            else {
-              arr.push(originY + item[i] * height);
-            }
-          });
-          cls.push(arr);
-          hasControll = true;
-        }
-        else {
-          cls.push(null);
-        }
-      });
-    }
-    else if(origin === 'BOTTOM_LEFT') {
-      points.forEach(item => {
-        pts.push([
-          originX + item[0] * width,
-          originY + height - item[1] * height
-        ]);
-      });
-      controls.forEach(item => {
-        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-          let arr = [];
-          item.forEach((item2, i) => {
-            if(i === 0 || i === 2) {
-              arr.push(originX + item[i] * width);
-            }
-            else {
-              arr.push(originY + height - item[i] * height);
-            }
-          });
-          cls.push(arr);
-          hasControll = true;
-        }
-        else {
-          cls.push(null);
-        }
-      });
-    }
-    else if(origin === 'BOTTOM_RIGHT') {
-      points.forEach(item => {
-        pts.push([
-          originX + width - item[0] * width,
-          originY + height - item[1] * height
-        ]);
-      });
-      controls.forEach(item => {
-        if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-          let arr = [];
-          item.forEach((item2, i) => {
-            if(i === 0 || i === 2) {
-              arr.push(originX + width - item[i] * width);
-            }
-            else {
-              arr.push(originY + height - item[i] * height);
-            }
-          });
-          cls.push(arr);
-          hasControll = true;
-        }
-        else {
-          cls.push(null);
-        }
-      });
     }
     if(renderMode === mode.CANVAS) {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
+      ctx.fillStyle = fill;
       ctx.lineCap = strokeLinecap;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
@@ -175,6 +97,7 @@ class Polyline extends Geom {
           ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
         }
       }
+      ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
@@ -182,12 +105,12 @@ class Polyline extends Geom {
     }
     else if(renderMode === mode.SVG) {
       let props = [
-        ['fill', 'none'],
+        ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
       let tagName;
-      if(hasControll) {
+      if(hasControl) {
         let s = `M${pts[0][0]},${pts[0][1]}`;
         for(let i = 1, len = pts.length; i < len; i++) {
           let point = pts[i];
@@ -232,9 +155,6 @@ class Polyline extends Geom {
   }
   get controls() {
     return this.getProps('controls');
-  }
-  get origin() {
-    return this.getProps('origin');
   }
 }
 

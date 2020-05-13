@@ -341,7 +341,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data) {
-    let { x, y, w, h } = data;
+    let { x, y, w, h, w2, h2 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -377,6 +377,11 @@ class Xom extends Node {
           break;
       }
     }
+    // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+    else if(w2 !== undefined) {
+      fixedWidth = true;
+      w = w2;
+    }
     if(height.unit !== AUTO) {
       fixedHeight = true;
       switch(height.unit) {
@@ -387,6 +392,10 @@ class Xom extends Node {
           h *= height.value * 0.01;
           break;
       }
+    }
+    else if(h2 !== undefined) {
+      fixedHeight = true;
+      h = h2;
     }
     // margin/padding/border影响x和y和尺寸
     x += borderLeftWidth + marginLeft + paddingLeft;

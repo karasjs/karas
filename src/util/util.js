@@ -263,7 +263,8 @@ function extend(target, source, keys) {
   }
   let i = keys.length;
   while(i--) {
-    target[keys[i]] = source[keys[i]];
+    let k = keys[i];
+    target[k] = source[k];
   }
   return target;
 }

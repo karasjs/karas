@@ -644,7 +644,8 @@
     var i = keys.length;
 
     while (i--) {
-      target[keys[i]] = source[keys[i]];
+      var k = keys[i];
+      target[k] = source[k];
     }
 
     return target;
@@ -7076,7 +7077,9 @@
         var x = data.x,
             y = data.y,
             w = data.w,
-            h = data.h;
+            h = data.h,
+            w2 = data.w2,
+            h2 = data.h2;
         this.__x = x;
         this.__y = y;
         var currentStyle = this.currentStyle,
@@ -7111,7 +7114,11 @@
               w *= width.value * 0.01;
               break;
           }
-        }
+        } // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+        else if (w2 !== undefined) {
+            fixedWidth = true;
+            w = w2;
+          }
 
         if (height.unit !== AUTO$2) {
           fixedHeight = true;
@@ -7125,6 +7132,9 @@
               h *= height.value * 0.01;
               break;
           }
+        } else if (h2 !== undefined) {
+          fixedHeight = true;
+          h = h2;
         } // margin/padding/border影响x和y和尺寸
 
 
@@ -9447,22 +9457,7 @@
               if (height.unit !== AUTO$3) {
                 h2 = height.unit === PX$5 ? height.value : innerHeight * height.value * 0.01;
               }
-            } // 直接或间接声明宽高的，等于已知样式
-
-
-          if (w2 !== undefined) {
-            currentStyle.width = {
-              value: w2,
-              unit: PX$5
-            };
-          }
-
-          if (h2 !== undefined) {
-            currentStyle.height = {
-              value: h2,
-              unit: PX$5
-            };
-          } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
+            } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
 
           var needCalWidth;
@@ -9498,7 +9493,10 @@
             x: x2,
             y: y2,
             w: wl,
-            h: hl
+            h: hl,
+            w2: w2,
+            // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
+            h2: h2
           }, false, true);
 
           if (onlyRight) {

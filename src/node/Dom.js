@@ -948,19 +948,6 @@ class Dom extends Xom {
           h2 = height.unit === PX ? height.value : innerHeight * height.value * 0.01;
         }
       }
-      // 直接或间接声明宽高的，等于已知样式
-      if(w2 !== undefined) {
-        currentStyle.width = {
-          value: w2,
-          unit: PX,
-        };
-      }
-      if(h2 !== undefined) {
-        currentStyle.height = {
-          value: h2,
-          unit: PX,
-        };
-      }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
       let needCalWidth;
       if(display === 'block' && w2 === undefined) {
@@ -994,6 +981,8 @@ class Dom extends Xom {
         y: y2,
         w: wl,
         h: hl,
+        w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
+        h2,
       }, false, true);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);

@@ -8,7 +8,7 @@ import image from '../style/image';
 import border from '../style/border';
 import level from '../animate/level';
 
-const { AUTO, PX } = unit;
+const { AUTO } = unit;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -230,7 +230,7 @@ class Img extends Dom {
             props.push(['mask', `url(#${maskId})`]);
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-            props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+            props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
           }
           this.virtualDom.children.push({
             type: 'img',

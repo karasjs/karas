@@ -5,7 +5,7 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
-const { isNil, rgba2int, int2rgba } = util;
+const { isNil, rgba2int } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -242,7 +242,8 @@ function normalize(style, reset = []) {
     if(isNil(style.backgroundPosition)) {
       let position = temp.match(reg.position);
       if(position) {
-        style.backgroundPosition = position.join(' ');
+        style.backgroundPositionX = position[0];
+        style.backgroundPositionY = position.length > 1 ? position[1] : position[0];
       }
     }
     delete style.background;
@@ -329,17 +330,11 @@ function normalize(style, reset = []) {
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = {
-        value: rgba2int(bgc[0]),
-        unit: RGBA,
-      };
+      style.backgroundColor = rgba2int(bgc[0]);
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      style.backgroundColor = {
-        value: rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]),
-        unit: RGBA,
-      };
+      style.backgroundColor = rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]);
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
@@ -409,10 +404,7 @@ function normalize(style, reset = []) {
     k = 'border' + k + 'Color';
     let v = style[k];
     if(!isNil(v)) {
-      style[k] = {
-        value: rgba2int(v),
-        unit: RGBA,
-      };
+      style[k] = rgba2int(v);
     }
   });
   temp = style.transform;
@@ -852,13 +844,16 @@ function compute(node, isRoot) {
   else {
     computedStyle.lineHeight = calNormalLineHeight(computedStyle);
   }
-  repaint(node, isRoot);
+  repaint(node, isRoot, currentStyle);
 }
 
 // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
-function repaint(node, isRoot) {
-  let { animateStyle, computedStyle } = node;
-  let currentStyle = node.__currentStyle = animateStyle;
+function repaint(node, isRoot, currentStyle) {
+  if(!currentStyle) {
+    let { animateStyle } = node;
+    currentStyle = node.__currentStyle = animateStyle;
+  }
+  let computedStyle = node.computedStyle;
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
   let { fontStyle, fontWeight, color } = currentStyle;
   if(fontStyle.unit === INHERIT) {
@@ -874,10 +869,10 @@ function repaint(node, isRoot) {
     computedStyle.fontWeight = fontWeight.value;
   }
   if(color.unit === INHERIT) {
-    computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
+    computedStyle.color = isRoot ? [0, 0, 0, 1] : parentComputedStyle.color;
   }
   else {
-    computedStyle.color = int2rgba(color.value);
+    computedStyle.color = color.value;
   }
   [
     'visibility',
@@ -888,17 +883,13 @@ function repaint(node, isRoot) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundRepeat',
-  ].forEach(k => {
-    computedStyle[k] = currentStyle[k];
-  });
-  [
     'backgroundColor',
     'borderTopColor',
     'borderRightColor',
     'borderBottomColor',
     'borderLeftColor',
   ].forEach(k => {
-    computedStyle[k] = int2rgba(currentStyle[k].value);
+    computedStyle[k] = currentStyle[k];
   });
 }
 

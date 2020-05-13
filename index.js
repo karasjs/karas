@@ -57,40 +57,6 @@
     return obj;
   }
 
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
-  }
-
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -580,9 +546,9 @@
   function int2rgba(color) {
     if (Array.isArray(color)) {
       if (color.length === 4) {
-        return "rgba(".concat(color.join(','), ")");
+        return "rgba(".concat(joinArr(color, ','), ")");
       } else if (color.length === 3) {
-        return "rgba(".concat(color.join(','), ",1)");
+        return "rgba(".concat(joinArr(color, ','), ",1)");
       }
     }
 
@@ -666,12 +632,15 @@
     return true;
   }
 
-  function extend(target, source) {
+  function extend(target, source, keys) {
     if (source === null || _typeof(source) !== 'object') {
       return target;
     }
 
-    var keys = Object.keys(source);
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
     var i = keys.length;
 
     while (i--) {
@@ -679,6 +648,16 @@
     }
 
     return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
   }
 
   var util = {
@@ -706,7 +685,8 @@
     hash2arr: hash2arr,
     clone: clone,
     equalArr: equalArr,
-    extend: extend
+    extend: extend,
+    joinArr: joinArr
   };
 
   var reg = {
@@ -1423,8 +1403,7 @@
       RGBA = unit.RGBA,
       STRING = unit.STRING;
   var isNil$1 = util.isNil,
-      rgba2int$2 = util.rgba2int,
-      int2rgba$2 = util.int2rgba;
+      rgba2int$2 = util.rgba2int;
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
@@ -1688,7 +1667,8 @@
         var position = temp.match(reg.position);
 
         if (position) {
-          style.backgroundPosition = position.join(' ');
+          style.backgroundPositionX = position[0];
+          style.backgroundPositionY = position.length > 1 ? position[1] : position[0];
         }
       }
 
@@ -1780,16 +1760,10 @@
       var _bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
 
       if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
-        style.backgroundColor = {
-          value: rgba2int$2(_bgc[0]),
-          unit: RGBA
-        };
+        style.backgroundColor = rgba2int$2(_bgc[0]);
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
-        style.backgroundColor = {
-          value: rgba2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]),
-          unit: RGBA
-        };
+        style.backgroundColor = rgba2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]);
       }
     }
 
@@ -1867,10 +1841,7 @@
       var v = style[k];
 
       if (!isNil$1(v)) {
-        style[k] = {
-          value: rgba2int$2(v),
-          unit: RGBA
-        };
+        style[k] = rgba2int$2(v);
       }
     });
     temp = style.transform;
@@ -2311,18 +2282,22 @@
           computedStyle.lineHeight = calNormalLineHeight(computedStyle);
         }
 
-    repaint(node, isRoot);
+    repaint(node, isRoot, currentStyle);
   } // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
 
 
-  function repaint(node, isRoot) {
-    var animateStyle = node.animateStyle,
-        computedStyle = node.computedStyle;
-    var currentStyle = node.__currentStyle = animateStyle;
+  function repaint(node, isRoot, currentStyle) {
+    if (!currentStyle) {
+      var animateStyle = node.animateStyle;
+      currentStyle = node.__currentStyle = animateStyle;
+    }
+
+    var computedStyle = node.computedStyle;
     var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-    var fontStyle = currentStyle.fontStyle,
-        fontWeight = currentStyle.fontWeight,
-        color = currentStyle.color;
+    var _currentStyle = currentStyle,
+        fontStyle = _currentStyle.fontStyle,
+        fontWeight = _currentStyle.fontWeight,
+        color = _currentStyle.color;
 
     if (fontStyle.unit === INHERIT) {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -2337,16 +2312,13 @@
     }
 
     if (color.unit === INHERIT) {
-      computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
+      computedStyle.color = isRoot ? [0, 0, 0, 1] : parentComputedStyle.color;
     } else {
-      computedStyle.color = int2rgba$2(color.value);
+      computedStyle.color = color.value;
     }
 
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
+    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
-    });
-    ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-      computedStyle[k] = int2rgba$2(currentStyle[k].value);
     });
   }
 
@@ -2853,6 +2825,107 @@
     data: {}
   });
 
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'normal',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'visible',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateZ: 0
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt'
+  };
+  var dom = [];
+  var domKey = [];
+  Object.keys(DOM).forEach(function (k) {
+    domKey.push(k);
+    var v = DOM[k];
+    dom.push({
+      k: k,
+      v: v
+    });
+  });
+  var geom$1 = [];
+  var geomKey = [];
+  Object.keys(GEOM).forEach(function (k) {
+    geomKey.push(k);
+    var v = GEOM[k];
+    geom$1.push({
+      k: k,
+      v: v
+    });
+  });
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    domKey: domKey,
+    geomKey: geomKey,
+    dom: dom,
+    geom: geom$1
+  };
+
   // 生成4*4单位矩阵
   function identity() {
     var m = [];
@@ -3008,9 +3081,9 @@
   var PX$2 = unit.PX,
       PERCENT$2 = unit.PERCENT;
   var matrix$1 = math.matrix,
-      geom$1 = math.geom;
-  var d2r$1 = geom$1.d2r,
-      transformPoint$1 = geom$1.transformPoint;
+      geom$2 = math.geom;
+  var d2r$1 = geom$2.d2r,
+      transformPoint$1 = geom$2.transformPoint;
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
@@ -3099,7 +3172,7 @@
 
       x3 = _transformPoint8[0];
       y3 = _transformPoint8[1];
-      return geom$1.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+      return geom$2.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -6598,13 +6671,22 @@
       key: "animating",
       get: function get() {
         var playState = this.playState,
-            options = this.options;
+            fill = this.fill,
+            delay = this.delay,
+            playCount = this.playCount,
+            currentTime = this.currentTime;
 
         if (playState === 'idle') {
           return false;
-        }
+        } // 结束停留认为是在动画中
 
-        return playState !== 'finished' || ['forwards', 'both'].indexOf(options.fill) > -1;
+
+        if (playState === 'finished') {
+          return ['forwards', 'both'].indexOf(fill) > -1;
+        } // 没过前置delay也认为没开始动画
+
+
+        return ['backwards', 'both'].indexOf(fill) > -1 || currentTime >= delay || playCount > 0;
       }
     }, {
       key: "spfLimit",
@@ -6628,15 +6710,16 @@
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
   var clone$3 = util.clone,
-      int2rgba$3 = util.int2rgba,
+      int2rgba$2 = util.int2rgba,
       equalArr$2 = util.equalArr,
-      extend$2 = util.extend;
+      extend$2 = util.extend,
+      joinArr$1 = util.joinArr;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
       repaint$2 = css.repaint;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
-    color = int2rgba$3(color);
+    color = int2rgba$2(color);
 
     if (renderMode === mode.CANVAS) {
       points.forEach(function (point) {
@@ -6694,7 +6777,7 @@
   function calBorderRadius(w, h, k, currentStyle, computedStyle) {
     var s = currentStyle[k]; // 暂时只支持px，限制最大为窄边一半
 
-    if (s.unit === PX$4) {
+    if (s.unit === PX$4 && s.value > 0) {
       var min = Math.min(w * 0.5, h * 0.5);
       computedStyle[k] = Math.min(min, s.value);
     } else {
@@ -6719,11 +6802,7 @@
   }
 
   function calBackgroundPosition(position, container, size) {
-    if (position.value === 'right' || position.value === 'bottom') {
-      return container - size;
-    } else if (position.value === 'center') {
-      return (container - size) * 0.5;
-    } else if (position.unit === PX$4) {
+    if (position.unit === PX$4) {
       return position.value;
     } else if (position.unit === PERCENT$5) {
       return (container - size) * position.value * 0.01;
@@ -7171,7 +7250,7 @@
 
 
         var tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
-        computedStyle.transformOrigin = tfo.join(' ');
+        computedStyle.transformOrigin = tfo.slice(0);
         tfo[0] += x;
         tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
@@ -7222,7 +7301,7 @@
             }
           }
 
-        computedStyle.transform = 'matrix(' + matrix.join(', ') + ')'; // 变换对事件影响，canvas要设置渲染
+        computedStyle.transform = matrix; // 变换对事件影响，canvas要设置渲染
 
         while (parent) {
           if (parent.matrixEvent) {
@@ -7239,7 +7318,7 @@
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
         } else if (renderMode === mode.SVG) {
           if (!equalArr$2(this.matrix, [1, 0, 0, 1, 0, 0])) {
-            this.virtualDom.transform = "matrix(".concat(this.matrix.join(','), ")");
+            this.virtualDom.transform = "matrix(".concat(joinArr$1(this.matrix, ','), ")");
           }
         } // 隐藏不渲染
 
@@ -7249,14 +7328,14 @@
         } // 背景色垫底
 
 
-        if (!/,0\)$/.test(backgroundColor)) {
-          renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        if (backgroundColor[3] > 0) {
+          renderBgc(renderMode, int2rgba$2(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         }
 
-        computedStyle.backgroundPositionX = 0;
-        computedStyle.backgroundPositionY = 0;
+        computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+        computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
         backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-        computedStyle.backgroundSize = backgroundSize.join(' '); // 渐变或图片叠加
+        computedStyle.backgroundSize = backgroundSize; // 渐变或图片叠加
 
         if (backgroundImage) {
           var loadBgi = this.__loadBgi;
@@ -7337,9 +7416,7 @@
                 }
 
                 var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
-                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
-                computedStyle.backgroundPositionX = bgX;
-                computedStyle.backgroundPositionY = bgY; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h); // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
                 var xnl = 0;
                 var xnr = 0;
@@ -7481,16 +7558,12 @@
                 } else if (renderMode === mode.SVG) {
                   var _matrix = image.matrixResize(_width, _height, w, h, bgX, bgY, innerWidth, innerHeight);
 
-                  if (_matrix) {
-                    _matrix = _matrix.join(',');
-                  }
-
                   var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width], ['height', _height]];
                   var needResize;
 
-                  if (_matrix && _matrix !== '1,0,0,1,0,0') {
+                  if (_matrix && !equalArr$2(_matrix, [1, 0, 0, 1, 0, 0])) {
                     needResize = true;
-                    props.push(['transform', 'matrix(' + _matrix + ')']);
+                    props.push(['transform', 'matrix(' + joinArr$1(_matrix, ',') + ')']);
                   }
 
                   if (needMask) {
@@ -7518,9 +7591,8 @@
                     if (needResize) {
                       var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
 
-                      if (_matrix2 && _matrix2 !== '1,0,0,1,0,0') {
-                        _matrix2 = _matrix2.join(',');
-                        copy[5][1] = 'matrix(' + _matrix2 + ')';
+                      if (_matrix2 && !equalArr$2(_matrix2, [1, 0, 0, 1, 0, 0])) {
+                        copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
                       }
                     }
 
@@ -7534,10 +7606,6 @@
                     });
                   });
                 }
-
-                computedStyle.backgroundSize = "".concat(w, " ").concat(h);
-                computedStyle.backgroundPositionX = bgX;
-                computedStyle.backgroundPositionY = bgY;
               }
             } else {
               // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
@@ -7565,18 +7633,19 @@
             var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
+            computedStyle.backgroundImage = bgi;
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
-        if (borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
+        if (borderTopWidth > 0 && borderTopColor[3] > 0) {
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
           var deg2 = Math.atan(borderTopWidth / borderRightWidth);
           var points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
           renderBorder(renderMode, points, borderTopColor, ctx, this);
         }
 
-        if (borderRightWidth > 0 && !/,0\)$/.test(borderRightColor)) {
+        if (borderRightWidth > 0 && borderRightColor[3] > 0) {
           var _deg = Math.atan(borderRightWidth / borderTopWidth);
 
           var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
@@ -7586,7 +7655,7 @@
           renderBorder(renderMode, _points, borderRightColor, ctx, this);
         }
 
-        if (borderBottomWidth > 0 && !/,0\)$/.test(borderBottomColor)) {
+        if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
           var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
 
           var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
@@ -7596,7 +7665,7 @@
           renderBorder(renderMode, _points2, borderBottomColor, ctx, this);
         }
 
-        if (borderLeftWidth > 0 && !/,0\)$/.test(borderLeftColor)) {
+        if (borderLeftWidth > 0 && borderLeftColor[3] > 0) {
           var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
 
           var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
@@ -7869,7 +7938,7 @@
         }
 
         v.forEach(function (item) {
-          computedStyle[ks] += ', ' + int2rgba$3(item[0]);
+          computedStyle[ks] += ', ' + int2rgba$2(item[0]);
 
           if (item[1]) {
             computedStyle[ks] += ' ' + item[1].str;
@@ -8141,15 +8210,21 @@
     }, {
       key: "animateStyle",
       get: function get() {
+        var _this4 = this;
+
         var style = this.style,
             animationList = this.animationList;
-        var copy = extend$2({}, style);
+        var copy;
         animationList.forEach(function (item) {
           if (item.animating) {
-            extend$2(copy, item.style);
+            if (!copy) {
+              copy = extend$2({}, style, _this4.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
+            }
+
+            extend$2(copy, item.style, item.keys);
           }
         });
-        return copy;
+        return copy || style;
       }
     }, {
       key: "currentStyle",
@@ -8255,101 +8330,6 @@
 
     return LineGroup;
   }();
-
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'normal',
-    backgroundImage: null,
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'visible',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1,
-    scaleY: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateZ: 0
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt'
-  };
-  var dom = [];
-  Object.keys(DOM).forEach(function (k) {
-    var v = DOM[k];
-    dom.push({
-      k: k,
-      v: v
-    });
-  });
-  var geom$2 = [];
-  Object.keys(GEOM).forEach(function (k) {
-    var v = GEOM[k];
-    geom$2.push({
-      k: k,
-      v: v
-    });
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    dom: dom,
-    geom: geom$2
-  };
 
   function quickSort(arr, begin, end, compare) {
     if (begin >= end) {
@@ -9583,10 +9563,8 @@
         });
 
         if (renderMode === mode.SVG) {
-          this.__virtualDom = _objectSpread2({}, this.virtualDom, {
-            children: zIndex.map(function (item) {
-              return item.virtualDom;
-            })
+          this.virtualDom.children = zIndex.map(function (item) {
+            return item.virtualDom;
           });
         }
       }
@@ -9627,7 +9605,8 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
-        var zIndex = this.children.filter(function (item) {
+        var zIndex = this.children.filter(function (item, i) {
+          item.__iIndex = i;
           return !item.isMask;
         });
         sort(zIndex, function (a, b) {
@@ -9639,13 +9618,21 @@
             return true;
           }
 
-          if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
-            if (isRelativeOrAbsolute$1(a) && isRelativeOrAbsolute$1(b)) {
+          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute$1(a)) {
+            return true;
+          }
+
+          if (isRelativeOrAbsolute$1(a) && isRelativeOrAbsolute$1(b)) {
+            if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
               return true;
+            }
+
+            if (a.computedStyle.zIndex < b.computedStyle.zIndex) {
+              return false;
             }
           }
 
-          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute$1(a)) {
+          if (a.__iIndex > b.__iIndex) {
             return true;
           }
         });
@@ -9896,7 +9883,7 @@
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-                props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+                props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
               }
 
               this.virtualDom.children.push({
@@ -11146,9 +11133,10 @@
       PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
   var clone$4 = util.clone,
-      int2rgba$4 = util.int2rgba,
+      int2rgba$3 = util.int2rgba,
       isNil$6 = util.isNil,
-      extend$3 = util.extend;
+      extend$3 = util.extend,
+      joinArr$2 = util.joinArr;
   var REGISTER = {};
 
   var Geom = /*#__PURE__*/function (_Xom) {
@@ -11318,17 +11306,17 @@
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
           stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
         } else {
-          computedStyle.stroke = stroke = int2rgba$4(stroke);
+          computedStyle.stroke = stroke = int2rgba$3(stroke);
         }
 
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
           fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
         } else {
-          computedStyle.fill = fill = int2rgba$4(fill);
+          computedStyle.fill = fill = int2rgba$3(fill);
         }
 
         computedStyle.strokeWidth = strokeWidth;
-        computedStyle.strokeDasharray = strokeDasharray.join(', ');
+        computedStyle.strokeDasharray = util.joinArr(strokeDasharray, ',');
         computedStyle.strokeLinecap = strokeLinecap;
         return {
           x: x,
@@ -11432,7 +11420,7 @@
 
                 if (_k2 === 'points') {
                   props[_i2][1] = _v2.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
+                    return joinArr$2(matrix.calPoint([$1, $2], m), ',');
                   });
                   break;
                 }
@@ -11445,7 +11433,7 @@
 
                 if (_k3 === 'd') {
                   props[_i3][1] = _v3.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return matrix.calPoint([$1, $2], m).join(',');
+                    return joinArr$2(matrix.calPoint([$1, $2], m), ',');
                   });
                   break;
                 }
@@ -11512,13 +11500,17 @@
       get: function get() {
         var props = this.props,
             animationList = this.animationList;
-        var copy = extend$3({}, props);
+        var copy;
         animationList.forEach(function (item) {
           if (item.animating) {
-            extend$3(copy, item.props);
+            if (!copy) {
+              copy = extend$3({}, props);
+            }
+
+            extend$3(copy, item.props, item.keys);
           }
         });
-        return copy;
+        return copy || props;
       }
     }, {
       key: "currentProps",

@@ -1049,10 +1049,7 @@ class Dom extends Xom {
       }
     });
     if(renderMode === mode.SVG) {
-      this.__virtualDom = {
-        ...this.virtualDom,
-        children: zIndex.map(item => item.virtualDom),
-      };
+      this.virtualDom.children = zIndex.map(item => item.virtualDom);
     }
   }
 
@@ -1084,7 +1081,8 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    let zIndex = this.children.filter(item => {
+    let zIndex = this.children.filter((item, i) => {
+      item.__iIndex = i;
       return !item.isMask;
     });
     sort(zIndex, (a, b) => {
@@ -1094,12 +1092,18 @@ class Dom extends Xom {
       if(b instanceof Text && isRelativeOrAbsolute(a)) {
         return true;
       }
-      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+        return true;
+      }
+      if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+        if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
           return true;
         }
+        if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
+          return false;
+        }
       }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
+      if(a.__iIndex > b.__iIndex) {
         return true;
       }
     });

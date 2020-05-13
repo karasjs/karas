@@ -1,6 +1,7 @@
 import Node from './Node';
 import Text from './Text';
 import mode from '../util/mode';
+import reset from '../style/reset';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -13,7 +14,7 @@ import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
-const { clone, int2rgba, equalArr, extend } = util;
+const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -81,7 +82,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bb
 function calBorderRadius(w, h, k, currentStyle, computedStyle) {
   let s = currentStyle[k];
   // 暂时只支持px，限制最大为窄边一半
-  if(s.unit === PX) {
+  if(s.unit === PX && s.value > 0) {
     let min = Math.min(w * 0.5, h * 0.5);
     computedStyle[k] = Math.min(min, s.value);
   }
@@ -110,13 +111,7 @@ function calBackgroundSize(value, w, h) {
 }
 
 function calBackgroundPosition(position, container, size) {
-  if(position.value === 'right' || position.value === 'bottom') {
-    return container - size;
-  }
-  else if(position.value === 'center') {
-    return (container - size) * 0.5;
-  }
-  else if(position.unit === PX) {
+  if(position.unit === PX) {
     return position.value;
   }
   else if(position.unit === PERCENT) {
@@ -515,7 +510,7 @@ class Xom extends Node {
     }
     // transform和transformOrigin相关
     let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
-    computedStyle.transformOrigin = tfo.join(' ');
+    computedStyle.transformOrigin = tfo.slice(0);
     tfo[0] += x;
     tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
@@ -568,7 +563,7 @@ class Xom extends Node {
         this.__matrix = matrix;
       }
     }
-    computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
+    computedStyle.transform = matrix;
     // 变换对事件影响，canvas要设置渲染
     while(parent) {
       if(parent.matrixEvent) {
@@ -583,7 +578,7 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       if(!equalArr(this.matrix, [1, 0, 0, 1, 0, 0])) {
-        this.virtualDom.transform = `matrix(${this.matrix.join(',')})`;
+        this.virtualDom.transform = `matrix(${joinArr(this.matrix, ',')})`;
       }
     }
     // 隐藏不渲染
@@ -591,14 +586,16 @@ class Xom extends Node {
       return;
     }
     // 背景色垫底
-    if(!/,0\)$/.test(backgroundColor)) {
-      renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
+    if(backgroundColor[3] > 0) {
+      renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
-    computedStyle.backgroundPositionX = 0;
-    computedStyle.backgroundPositionY = 0;
+    computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
+      ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+    computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
+      ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
     backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-    computedStyle.backgroundSize = backgroundSize.join(' ');
+    computedStyle.backgroundSize = backgroundSize;
     // 渐变或图片叠加
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
@@ -682,8 +679,6 @@ class Xom extends Node {
             }
             let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
             let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
-            computedStyle.backgroundPositionX = bgX;
-            computedStyle.backgroundPositionY = bgY;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
             let xnl = 0;
             let xnr = 0;
@@ -803,9 +798,6 @@ class Xom extends Node {
             }
             else if(renderMode === mode.SVG) {
               let matrix = image.matrixResize(width, height, w, h, bgX, bgY, innerWidth, innerHeight);
-              if(matrix) {
-                matrix = matrix.join(',');
-              }
               let props = [
                 ['xlink:href', backgroundImage],
                 ['x', bgX],
@@ -814,9 +806,9 @@ class Xom extends Node {
                 ['height', height]
               ];
               let needResize;
-              if(matrix && matrix !== '1,0,0,1,0,0') {
+              if(matrix && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
                 needResize = true;
-                props.push(['transform', 'matrix(' + matrix + ')']);
+                props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
               }
               if(needMask) {
                 let maskId = defs.add({
@@ -846,9 +838,8 @@ class Xom extends Node {
                 let copy = clone(props);
                 if(needResize) {
                   let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(matrix && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+                    copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
                   }
                 }
                 copy[1][1] = item[0];
@@ -860,9 +851,6 @@ class Xom extends Node {
                 });
               });
             }
-            computedStyle.backgroundSize = `${w} ${h}`;
-            computedStyle.backgroundPositionX = bgX;
-            computedStyle.backgroundPositionY = bgY;
           }
         }
         else {
@@ -888,28 +876,29 @@ class Xom extends Node {
       else if(backgroundImage.k) {
         let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
+        computedStyle.backgroundImage = bgi;
       }
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
-    if(borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
+    if(borderTopWidth > 0 && borderTopColor[3] > 0) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
       let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
       renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
-    if(borderRightWidth > 0 && !/,0\)$/.test(borderRightColor)) {
+    if(borderRightWidth > 0 && borderRightColor[3] > 0) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
       let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
       renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
-    if(borderBottomWidth > 0 && !/,0\)$/.test(borderBottomColor)) {
+    if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
       let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
       renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
-    if(borderLeftWidth > 0 && !/,0\)$/.test(borderLeftColor)) {
+    if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
       let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
@@ -1401,13 +1390,16 @@ class Xom extends Node {
 
   get animateStyle() {
     let { style, animationList } = this;
-    let copy = extend({}, style);
+    let copy;
     animationList.forEach(item => {
       if(item.animating) {
-        extend(copy, item.style);
+        if(!copy) {
+          copy = extend({}, style, this.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
+        }
+        extend(copy, item.style, item.keys);
       }
     });
-    return copy;
+    return copy || style;
   }
 
   get currentStyle() {

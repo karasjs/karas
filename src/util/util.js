@@ -178,10 +178,10 @@ function rgba2int(color) {
 function int2rgba(color) {
   if(Array.isArray(color)) {
     if(color.length === 4) {
-      return `rgba(${color.join(',')})`;
+      return `rgba(${joinArr(color, ',')})`;
     }
     else if(color.length === 3) {
-      return `rgba(${color.join(',')},1)`;
+      return `rgba(${joinArr(color, ',')},1)`;
     }
   }
   return color || 'rgba(0,0,0,0)';
@@ -254,16 +254,26 @@ function equalArr(a, b) {
   return true;
 }
 
-function extend(target, source) {
+function extend(target, source, keys) {
   if(source === null || typeof source !== 'object') {
     return target;
   }
-  let keys = Object.keys(source);
+  if(!keys) {
+    keys = Object.keys(source);
+  }
   let i = keys.length;
   while(i--) {
     target[keys[i]] = source[keys[i]];
   }
   return target;
+}
+
+function joinArr(arr, split) {
+  let s = arr.length ? arr[0] : '';
+  for(let i = 1, len = arr.length; i < len; i++) {
+    s += split + arr[i];
+  }
+  return s;
 }
 
 let util = {
@@ -292,6 +302,7 @@ let util = {
   clone,
   equalArr,
   extend,
+  joinArr,
 };
 
 export default util;

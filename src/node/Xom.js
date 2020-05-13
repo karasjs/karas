@@ -366,7 +366,12 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(width.unit !== AUTO) {
+    // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+    if(w2 !== undefined) {
+      fixedWidth = true;
+      w = w2;
+    }
+    else if(width.unit !== AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case PX:
@@ -377,12 +382,11 @@ class Xom extends Node {
           break;
       }
     }
-    // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-    else if(w2 !== undefined) {
-      fixedWidth = true;
-      w = w2;
+    if(h2 !== undefined) {
+      fixedHeight = true;
+      h = h2;
     }
-    if(height.unit !== AUTO) {
+    else if(height.unit !== AUTO) {
       fixedHeight = true;
       switch(height.unit) {
         case PX:
@@ -392,10 +396,6 @@ class Xom extends Node {
           h *= height.value * 0.01;
           break;
       }
-    }
-    else if(h2 !== undefined) {
-      fixedHeight = true;
-      h = h2;
     }
     // margin/padding/border影响x和y和尺寸
     x += borderLeftWidth + marginLeft + paddingLeft;

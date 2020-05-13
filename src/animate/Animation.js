@@ -1285,6 +1285,14 @@ class Animation extends Event {
     return this;
   }
 
+  resume(cb) {
+    let { isDestroyed, duration, playState } = this;
+    if(isDestroyed || duration <= 0 || playState !== 'paused') {
+      return this;
+    }
+    return this.play(cb);
+  }
+
   finish(cb) {
     let self = this;
     let { isDestroyed, duration, playState, list } = self;

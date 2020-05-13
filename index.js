@@ -6211,6 +6211,19 @@
         return this;
       }
     }, {
+      key: "resume",
+      value: function resume(cb) {
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState;
+
+        if (isDestroyed || duration <= 0 || playState !== 'paused') {
+          return this;
+        }
+
+        return this.play(cb);
+      }
+    }, {
       key: "finish",
       value: function finish(cb) {
         var _this4 = this;
@@ -7100,9 +7113,12 @@
             paddingLeft = computedStyle.paddingLeft; // 除了auto外都是固定宽高度
 
         var fixedWidth;
-        var fixedHeight;
+        var fixedHeight; // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
 
-        if (width.unit !== AUTO$2) {
+        if (w2 !== undefined) {
+          fixedWidth = true;
+          w = w2;
+        } else if (width.unit !== AUTO$2) {
           fixedWidth = true;
 
           switch (width.unit) {
@@ -7114,13 +7130,12 @@
               w *= width.value * 0.01;
               break;
           }
-        } // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
-        else if (w2 !== undefined) {
-            fixedWidth = true;
-            w = w2;
-          }
+        }
 
-        if (height.unit !== AUTO$2) {
+        if (h2 !== undefined) {
+          fixedHeight = true;
+          h = h2;
+        } else if (height.unit !== AUTO$2) {
           fixedHeight = true;
 
           switch (height.unit) {
@@ -7132,9 +7147,6 @@
               h *= height.value * 0.01;
               break;
           }
-        } else if (h2 !== undefined) {
-          fixedHeight = true;
-          h = h2;
         } // margin/padding/border影响x和y和尺寸
 
 
@@ -10528,6 +10540,21 @@
       key: "pause",
       value: function pause() {
         this.__action('pause');
+      }
+    }, {
+      key: "resume",
+      value: function resume(cb) {
+        var once = true;
+
+        this.__action('resume', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
       }
     }, {
       key: "cancel",

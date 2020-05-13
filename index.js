@@ -7452,7 +7452,9 @@
                 }
 
                 var bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
-                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h); // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+                var bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h); // 超出尺寸模拟mask截取
+
+                var needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
                 var xnl = 0;
                 var xnr = 0;
@@ -7493,25 +7495,49 @@
 
                 if (xnl > 0) {
                   for (var i = 0; i < xnl; i++) {
-                    repeat.push([bgX - (i + 1) * w, bgY]);
+                    var _x = bgX - (i + 1) * w;
+
+                    repeat.push([_x, bgY]); // 看最左边超过没有
+
+                    if (!needMask && i === 0 && _x < x2) {
+                      needMask = true;
+                    }
                   }
                 }
 
                 if (xnr > 0) {
                   for (var _i = 0; _i < xnr; _i++) {
-                    repeat.push([bgX + (_i + 1) * w, bgY]);
+                    var _x2 = bgX + (_i + 1) * w;
+
+                    repeat.push([_x2, bgY]); // 看最右边超过没有
+
+                    if (!needMask && _i === xnr - 1 && _x2 + w > x2 + innerWidth) {
+                      needMask = true;
+                    }
                   }
                 }
 
                 if (ynt > 0) {
                   for (var _i2 = 0; _i2 < ynt; _i2++) {
-                    repeat.push([bgX, bgY - (_i2 + 1) * h]);
+                    var _y = bgY - (_i2 + 1) * h;
+
+                    repeat.push([bgX, _y]); // 看最上边超过没有
+
+                    if (!needMask && _i2 === 0 && _y < y2) {
+                      needMask = true;
+                    }
                   }
                 }
 
                 if (ynb > 0) {
                   for (var _i3 = 0; _i3 < ynb; _i3++) {
-                    repeat.push([bgX, bgY + (_i3 + 1) * h]);
+                    var _y2 = bgY + (_i3 + 1) * h;
+
+                    repeat.push([bgX, _y2]); // 看最下边超过没有
+
+                    if (!needMask && _i3 === ynb - 1 && _y2 + w > y2 + innerHeight) {
+                      needMask = true;
+                    }
                   }
                 } // 原点和同行列十字画完，看4个角的情况
 
@@ -7546,10 +7572,12 @@
                       repeat.push([bgX + (_i7 + 1) * w, bgY + (_j3 + 1) * h]);
                     }
                   }
-                } // 超出尺寸模拟mask截取
+                }
 
-
-                var needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1 || bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+                if (!needMask && repeat.length) {
+                  for (var _i8 = 0, len = repeat.length; _i8 < len; _i8++) {
+                  }
+                }
 
                 if (renderMode === mode.CANVAS) {
                   var c;
@@ -7833,8 +7861,8 @@
 
 
             if (!childWillResponse) {
-              for (var _i8 = children.length - 1; _i8 >= 0; _i8--) {
-                var _child = children[_i8];
+              for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
+                var _child = children[_i9];
 
                 if (_child instanceof Xom && !isRelativeOrAbsolute(_child) || _child instanceof Component && _child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child.shadowRoot)) {
                   if (_child.__emitEvent(e, force)) {
@@ -7873,8 +7901,8 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
-            var _child2 = zIndex[_i9];
+          for (var _i10 = zIndex.length - 1; _i10 >= 0; _i10--) {
+            var _child2 = zIndex[_i10];
 
             if (_child2 instanceof Xom && isRelativeOrAbsolute(_child2) || _child2 instanceof Component && _child2.shadowRoot instanceof Xom && isRelativeOrAbsolute(_child2.shadowRoot)) {
               if (_child2.__emitEvent(e)) {
@@ -7885,8 +7913,8 @@
 
 
           if (!childWillResponse) {
-            for (var _i10 = children.length - 1; _i10 >= 0; _i10--) {
-              var _child3 = children[_i10];
+            for (var _i11 = children.length - 1; _i11 >= 0; _i11--) {
+              var _child3 = children[_i11];
 
               if (_child3 instanceof Xom && !isRelativeOrAbsolute(_child3) || _child3 instanceof Component && _child3.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child3.shadowRoot)) {
                 if (_child3.__emitEvent(e)) {

@@ -696,6 +696,8 @@ class Xom extends Node {
             }
             let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
             let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
+            // 超出尺寸模拟mask截取
+            let needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
             let xnl = 0;
             let xnr = 0;
@@ -727,22 +729,42 @@ class Xom extends Node {
             let repeat = [];
             if(xnl > 0) {
               for(let i = 0; i < xnl; i++) {
-                repeat.push([bgX - (i + 1) * w, bgY]);
+                let x = bgX - (i + 1) * w;
+                repeat.push([x, bgY]);
+                // 看最左边超过没有
+                if(!needMask && i === 0 && x < x2) {
+                  needMask = true;
+                }
               }
             }
             if(xnr > 0) {
               for(let i = 0; i < xnr; i++) {
-                repeat.push([bgX + (i + 1) * w, bgY]);
+                let x = bgX + (i + 1) * w;
+                repeat.push([x, bgY]);
+                // 看最右边超过没有
+                if(!needMask && i === xnr - 1 && x + w > x2 + innerWidth) {
+                  needMask = true;
+                }
               }
             }
             if(ynt > 0) {
               for(let i = 0; i < ynt; i++) {
-                repeat.push([bgX, bgY - (i + 1) * h]);
+                let y = bgY - (i + 1) * h;
+                repeat.push([bgX, y]);
+                // 看最上边超过没有
+                if(!needMask && i === 0 && y < y2) {
+                  needMask = true;
+                }
               }
             }
             if(ynb > 0) {
               for(let i = 0; i < ynb; i++) {
-                repeat.push([bgX, bgY + (i + 1) * h]);
+                let y = bgY + (i + 1) * h;
+                repeat.push([bgX, y]);
+                // 看最下边超过没有
+                if(!needMask && i === ynb - 1 && y + w > y2 + innerHeight) {
+                  needMask = true;
+                }
               }
             }
             // 原点和同行列十字画完，看4个角的情况
@@ -774,9 +796,11 @@ class Xom extends Node {
                 }
               }
             }
-            // 超出尺寸模拟mask截取
-            let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
-              || bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+            if(!needMask && repeat.length) {
+              for(let i = 0, len = repeat.length; i < len; i++) {
+                let item = repeat;
+              }
+            }
             if(renderMode === mode.CANVAS) {
               let c;
               let currentCtx;

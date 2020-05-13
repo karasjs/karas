@@ -1302,14 +1302,12 @@
           if (/%$/.test(res[2])) {
             arr[1] = {
               value: parseFloat(res[2]),
-              unit: PERCENT,
-              str: res[2]
+              unit: PERCENT
             };
           } else {
             arr[1] = {
               value: parseFloat(res[2]),
-              unit: PX,
-              str: res[2]
+              unit: PX
             };
           }
         }
@@ -6682,23 +6680,13 @@
     }, {
       key: "animating",
       get: function get() {
-        var playState = this.playState,
-            fill = this.fill,
-            delay = this.delay,
-            playCount = this.playCount,
-            currentTime = this.currentTime;
+        var playState = this.playState;
 
         if (playState === 'idle') {
           return false;
-        } // 结束停留认为是在动画中
+        }
 
-
-        if (playState === 'finished') {
-          return ['forwards', 'both'].indexOf(fill) > -1;
-        } // 没过前置delay也认为没开始动画
-
-
-        return ['backwards', 'both'].indexOf(fill) > -1 || currentTime >= delay || playCount > 0;
+        return playState !== 'finished' || this.__stayEnd();
       }
     }, {
       key: "spfLimit",
@@ -7639,14 +7627,13 @@
                 height: innerHeight
               });
             }
-
-            computedStyle.backgroundImage = backgroundImage;
           } else if (backgroundImage.k) {
-            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage);
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
-            computedStyle.backgroundImage = bgi;
           }
+
+          computedStyle.backgroundImage = backgroundImage;
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
@@ -7929,11 +7916,10 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs) {
         var k = vs.k,
             v = vs.v,
             d = vs.d;
-        computedStyle[ks] = k + '-gradient(';
         var cx = x2 + iw * 0.5;
         var cy = y2 + ih * 0.5;
         var res;
@@ -7941,22 +7927,12 @@
         if (k === 'linear') {
           var gd = gradient.getLinear(v, d, cx, cy, iw, ih);
           res = this.__getLg(renderMode, ctx, defs, gd);
-          computedStyle[ks] += d + 'deg';
         } else if (k === 'radial') {
           var _gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
 
           res = this.__getRg(renderMode, ctx, defs, _gd);
-          computedStyle[ks] += d;
         }
 
-        v.forEach(function (item) {
-          computedStyle[ks] += ', ' + int2rgba$2(item[0]);
-
-          if (item[1]) {
-            computedStyle[ks] += ' ' + item[1].str;
-          }
-        });
-        computedStyle[ks] += ')';
         return res;
       }
     }, {
@@ -8233,7 +8209,7 @@
               copy = extend$2({}, style, _this4.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
             }
 
-            extend$2(copy, item.style, item.keys);
+            extend$2(copy, item.style);
           }
         });
         return copy || style;
@@ -9647,7 +9623,7 @@
             }
           } else if (b instanceof Xom) {
             if (raB) {
-              return;
+              return false;
             }
           }
 
@@ -11319,21 +11295,24 @@
         }
 
         computedStyle.strokeWidth = strokeWidth;
+        computedStyle.stroke = stroke;
 
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
+          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke);
         } else {
-          computedStyle.stroke = stroke = int2rgba$3(stroke);
+          stroke = int2rgba$3(stroke);
         }
 
+        computedStyle.fill = fill;
+
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
-          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
+          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill);
         } else {
-          computedStyle.fill = fill = int2rgba$3(fill);
+          fill = int2rgba$3(fill);
         }
 
         computedStyle.strokeWidth = strokeWidth;
-        computedStyle.strokeDasharray = util.joinArr(strokeDasharray, ',');
+        computedStyle.strokeDasharray = strokeDasharray;
         computedStyle.strokeLinecap = strokeLinecap;
         return {
           x: x,
@@ -11346,7 +11325,7 @@
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
-          strokeDasharrayStr: computedStyle.strokeDasharray,
+          strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
           strokeLinecap: strokeLinecap,
           fill: fill,
           visibility: visibility

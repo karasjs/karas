@@ -1630,16 +1630,11 @@ class Animation extends Event {
   }
 
   get animating() {
-    let { playState, fill, delay, playCount, currentTime } = this;
+    let { playState } = this;
     if(playState === 'idle') {
       return false;
     }
-    // 结束停留认为是在动画中
-    if(playState === 'finished') {
-      return ['forwards', 'both'].indexOf(fill) > -1;
-    }
-    // 没过前置delay也认为没开始动画
-    return ['backwards', 'both'].indexOf(fill) > -1 || currentTime >= delay || playCount > 0;
+    return playState !== 'finished' || this.__stayEnd();
   }
 
   get spfLimit() {

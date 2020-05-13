@@ -871,13 +871,12 @@ class Xom extends Node {
             height: innerHeight,
           });
         }
-        computedStyle.backgroundImage = backgroundImage;
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
-        computedStyle.backgroundImage = bgi;
       }
+      computedStyle.backgroundImage = backgroundImage;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
@@ -1104,29 +1103,19 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
+  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs) {
     let { k, v, d } = vs;
-    computedStyle[ks] = k + '-gradient(';
     let cx = x2 + iw * 0.5;
     let cy = y2 + ih * 0.5;
     let res;
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
       res = this.__getLg(renderMode, ctx, defs, gd);
-      computedStyle[ks] += d + 'deg';
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
       res = this.__getRg(renderMode, ctx, defs, gd);
-      computedStyle[ks] += d;
     }
-    v.forEach(item => {
-      computedStyle[ks] += ', ' + int2rgba(item[0]);
-      if(item[1]) {
-        computedStyle[ks] += ' ' + item[1].str;
-      }
-    });
-    computedStyle[ks] += ')';
     return res;
   }
 
@@ -1396,7 +1385,7 @@ class Xom extends Node {
         if(!copy) {
           copy = extend({}, style, this.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
         }
-        extend(copy, item.style, item.keys);
+        extend(copy, item.style);
       }
     });
     return copy || style;

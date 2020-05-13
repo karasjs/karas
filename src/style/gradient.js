@@ -425,14 +425,12 @@ function parseGradient(s) {
           arr[1] = {
             value: parseFloat(res[2]),
             unit: PERCENT,
-            str: res[2],
           };
         }
         else {
           arr[1] = {
             value: parseFloat(res[2]),
             unit: PX,
-            str: res[2],
           };
         }
       }

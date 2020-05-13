@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(500)
-      .assert.value('input', 'matrix(1, 0, 0, 1, 0, 0)/matrix(1, 0, 0, 1, 10, 20)/matrix(1, 0, 0, 1, 50, 60)')
+      .assert.value('input', '1,0,0,1,0,0/1,0,0,1,10,20/1,0,0,1,50,60')
       .end();
   }
 };

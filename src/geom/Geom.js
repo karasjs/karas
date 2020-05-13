@@ -135,20 +135,22 @@ class Geom extends Xom {
       strokeWidth = 0;
     }
     computedStyle.strokeWidth = strokeWidth;
+    computedStyle.stroke = stroke;
     if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
+      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke);
     }
     else {
-      computedStyle.stroke = stroke = int2rgba(stroke);
+      stroke = int2rgba(stroke);
     }
+    computedStyle.fill = fill;
     if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
+      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill);
     }
     else {
-      computedStyle.fill = fill = int2rgba(fill);
+      fill = int2rgba(fill);
     }
     computedStyle.strokeWidth = strokeWidth;
-    computedStyle.strokeDasharray = util.joinArr(strokeDasharray, ',');
+    computedStyle.strokeDasharray = strokeDasharray;
     computedStyle.strokeLinecap = strokeLinecap;
     return {
       x,
@@ -161,7 +163,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
-      strokeDasharrayStr: computedStyle.strokeDasharray,
+      strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
       strokeLinecap,
       fill,
       visibility,

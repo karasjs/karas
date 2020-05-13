@@ -1113,7 +1113,7 @@ class Dom extends Xom {
       }
       else if(b instanceof Xom) {
         if(raB) {
-          return;
+          return false;
         }
       }
       return a.__iIndex > b.__iIndex;

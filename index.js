@@ -1760,10 +1760,16 @@
       var _bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
 
       if (_bgc && [4, 7].indexOf(_bgc[0].length) > -1) {
-        style.backgroundColor = rgba2int$2(_bgc[0]);
+        style.backgroundColor = {
+          value: rgba2int$2(_bgc[0]),
+          unit: RGBA
+        };
       } else {
         _bgc = /rgba?\(.+\)/i.exec(temp);
-        style.backgroundColor = rgba2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]);
+        style.backgroundColor = {
+          value: rgba2int$2(_bgc ? _bgc[0] : [0, 0, 0, 0]),
+          unit: RGBA
+        };
       }
     }
 
@@ -1841,7 +1847,10 @@
       var v = style[k];
 
       if (!isNil$1(v)) {
-        style[k] = rgba2int$2(v);
+        style[k] = {
+          value: rgba2int$2(v),
+          unit: RGBA
+        };
       }
     });
     temp = style.transform;
@@ -2317,8 +2326,11 @@
       computedStyle.color = color.value;
     }
 
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
+    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
+    });
+    ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
+      computedStyle[k] = currentStyle[k].value;
     });
   }
 
@@ -9624,6 +9636,10 @@
               if (a.computedStyle.zIndex < b.computedStyle.zIndex) {
                 return false;
               }
+            } else if (raA) {
+              return true;
+            } else if (raB) {
+              return false;
             }
           } else if (a instanceof Xom) {
             if (raA) {

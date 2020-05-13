@@ -1099,6 +1099,12 @@ class Dom extends Xom {
             return false;
           }
         }
+        else if(raA) {
+          return true;
+        }
+        else if(raB) {
+          return false;
+        }
       }
       else if(a instanceof Xom) {
         if(raA) {

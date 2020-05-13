@@ -330,11 +330,17 @@ function normalize(style, reset = []) {
     // 先赋值默认透明，后续操作有合法值覆盖
     let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
     if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      style.backgroundColor = rgba2int(bgc[0]);
+      style.backgroundColor = {
+        value: rgba2int(bgc[0]),
+        unit: RGBA,
+      };
     }
     else {
       bgc = /rgba?\(.+\)/i.exec(temp);
-      style.backgroundColor = rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]);
+      style.backgroundColor = {
+        value: rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]),
+        unit: RGBA,
+      };
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
@@ -404,7 +410,10 @@ function normalize(style, reset = []) {
     k = 'border' + k + 'Color';
     let v = style[k];
     if(!isNil(v)) {
-      style[k] = rgba2int(v);
+      style[k] = {
+        value: rgba2int(v),
+        unit: RGBA,
+      };
     }
   });
   temp = style.transform;
@@ -883,13 +892,17 @@ function repaint(node, isRoot, currentStyle) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundRepeat',
+  ].forEach(k => {
+    computedStyle[k] = currentStyle[k];
+  });
+  [
     'backgroundColor',
     'borderTopColor',
     'borderRightColor',
     'borderBottomColor',
     'borderLeftColor',
   ].forEach(k => {
-    computedStyle[k] = currentStyle[k];
+    computedStyle[k] = currentStyle[k].value;
   });
 }
 

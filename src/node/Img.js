@@ -37,10 +37,21 @@ class Img extends Dom {
    */
   __preLayout(data) {
     let res = super.__preLayout(data);
+    let loadImg = this.__loadImg;
+    // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+    if(!loadImg.error) {
+      let src = this.props.src;
+      let cache = inject.IMG[src];
+      if(cache && cache.state === inject.LOADED) {
+        loadImg.url = src;
+        loadImg.source = cache.source;
+        loadImg.width = cache.width;
+        loadImg.height = cache.height;
+      }
+    }
     if(res.fixedWidth && res.fixedHeight) {
       return res;
     }
-    let loadImg = this.__loadImg;
     if(loadImg.error) {
       if(res.fixedWidth) {
         res.h = res.w;

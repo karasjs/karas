@@ -600,6 +600,12 @@ class Xom extends Node {
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
+        // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+        let cache = inject.IMG[backgroundImage];
+        if(cache && cache.state === inject.LOADED) {
+          loadBgi.url = backgroundImage;
+          loadBgi.source = cache.source;
+        }
         if(loadBgi.url === backgroundImage) {
           let source = loadBgi.source;
           // 无source不绘制

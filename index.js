@@ -4366,6 +4366,10 @@
       MEASURE_TEXT.data = {};
       document.body.removeChild(div);
     },
+    IMG: IMG,
+    INIT: INIT,
+    LOADED: LOADED,
+    LOADING: LOADING,
     measureImg: function measureImg(url, cb) {
       var cache = IMG[url] = IMG[url] || {
         state: INIT,
@@ -7341,6 +7345,14 @@
           var loadBgi = this.__loadBgi;
 
           if (util.isString(backgroundImage)) {
+            // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+            var cache = inject.IMG[backgroundImage];
+
+            if (cache && cache.state === inject.LOADED) {
+              loadBgi.url = backgroundImage;
+              loadBgi.source = cache.source;
+            }
+
             if (loadBgi.url === backgroundImage) {
               var source = loadBgi.source; // 无source不绘制
 
@@ -9698,11 +9710,23 @@
       value: function __preLayout(data) {
         var res = _get(_getPrototypeOf(Img.prototype), "__preLayout", this).call(this, data);
 
+        var loadImg = this.__loadImg; // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+
+        if (!loadImg.error) {
+          var src = this.props.src;
+          var cache = inject.IMG[src];
+
+          if (cache && cache.state === inject.LOADED) {
+            loadImg.url = src;
+            loadImg.source = cache.source;
+            loadImg.width = cache.width;
+            loadImg.height = cache.height;
+          }
+        }
+
         if (res.fixedWidth && res.fixedHeight) {
           return res;
         }
-
-        var loadImg = this.__loadImg;
 
         if (loadImg.error) {
           if (res.fixedWidth) {

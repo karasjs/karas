@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(500)
-      .assert.value('input', 'radial-gradient(farthest-corner, rgba(255,0,0,1) 0%, rgba(0,0,255,1) 99%, rgba(255,255,255,1))/radial-gradient(farthest-corner, rgba(255,0,0,1) 0%, rgba(0,0,255,1) 1%, rgba(255,255,255,1))')
+      .assert.value('input', '{"k":"radial","v":[[[255,0,0,1],{"value":0,"unit":2}],[[0,0,255,1],{"value":99,"unit":2}],[[255,255,255,1]]],"d":"farthest-corner"}/{"k":"radial","v":[[[255,0,0,1],{"value":0,"unit":2}],[[0,0,255,1],{"value":1,"unit":2}],[[255,255,255,1]]],"d":"farthest-corner"}')
       .end();
   }
 };

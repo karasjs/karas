@@ -605,6 +605,8 @@ class Xom extends Node {
         if(cache && cache.state === inject.LOADED) {
           loadBgi.url = backgroundImage;
           loadBgi.source = cache.source;
+          loadBgi.width = cache.width;
+          loadBgi.height = cache.height;
         }
         if(loadBgi.url === backgroundImage) {
           let source = loadBgi.source;

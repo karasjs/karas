@@ -2436,7 +2436,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', computedStyle.color], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', "".concat(computedStyle.fontSize, "px")]],
+            props: [['x', x], ['y', y], ['fill', util.int2rgba(computedStyle.color)], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', "".concat(computedStyle.fontSize, "px")]],
             content: util.encodeHtml(content)
           };
         }
@@ -2747,7 +2747,7 @@
 
         if (renderMode === mode.CANVAS) {
           ctx.font = css.setFontStyle(computedStyle);
-          ctx.fillStyle = computedStyle.color;
+          ctx.fillStyle = util.int2rgba(computedStyle.color);
         }
 
         this.lineBoxes.forEach(function (item) {
@@ -9610,31 +9610,32 @@
           return !item.isMask;
         });
         sort(zIndex, function (a, b) {
-          if (a instanceof Text) {
-            return;
-          }
+          var xomA = a instanceof Xom;
+          var xomB = b instanceof Xom;
+          var raA = isRelativeOrAbsolute$1(a);
+          var raB = isRelativeOrAbsolute$1(b);
 
-          if (b instanceof Text && isRelativeOrAbsolute$1(a)) {
-            return true;
-          }
+          if (xomA && xomB) {
+            if (raA && raB) {
+              if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
+                return true;
+              }
 
-          if (b.computedStyle.position === 'static' && isRelativeOrAbsolute$1(a)) {
-            return true;
-          }
-
-          if (isRelativeOrAbsolute$1(a) && isRelativeOrAbsolute$1(b)) {
-            if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
+              if (a.computedStyle.zIndex < b.computedStyle.zIndex) {
+                return false;
+              }
+            }
+          } else if (a instanceof Xom) {
+            if (raA) {
               return true;
             }
-
-            if (a.computedStyle.zIndex < b.computedStyle.zIndex) {
-              return false;
+          } else if (b instanceof Xom) {
+            if (raB) {
+              return;
             }
           }
 
-          if (a.__iIndex > b.__iIndex) {
-            return true;
-          }
+          return a.__iIndex > b.__iIndex;
         });
         return zIndex;
       }

@@ -2,6 +2,7 @@ import Node from './Node';
 import LineBox from './LineBox';
 import css from '../style/css';
 import mode from '../util/mode';
+import util from '../util/util';
 
 class Text extends Node {
   constructor(content) {
@@ -208,7 +209,7 @@ class Text extends Node {
     }
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
-      ctx.fillStyle = computedStyle.color;
+      ctx.fillStyle = util.int2rgba(computedStyle.color);
     }
     this.lineBoxes.forEach(item => {
       item.render(renderMode, ctx, computedStyle);

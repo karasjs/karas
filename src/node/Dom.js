@@ -1086,26 +1086,31 @@ class Dom extends Xom {
       return !item.isMask;
     });
     sort(zIndex, (a, b) => {
-      if(a instanceof Text) {
-        return;
+      let xomA = a instanceof Xom;
+      let xomB = b instanceof Xom;
+      let raA = isRelativeOrAbsolute(a);
+      let raB = isRelativeOrAbsolute(b);
+      if(xomA && xomB) {
+        if(raA && raB) {
+          if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+            return true;
+          }
+          if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
+            return false;
+          }
+        }
       }
-      if(b instanceof Text && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
-        if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+      else if(a instanceof Xom) {
+        if(raA) {
           return true;
         }
-        if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
-          return false;
+      }
+      else if(b instanceof Xom) {
+        if(raB) {
+          return;
         }
       }
-      if(a.__iIndex > b.__iIndex) {
-        return true;
-      }
+      return a.__iIndex > b.__iIndex;
     });
     return zIndex;
   }

@@ -5127,7 +5127,7 @@
   /**
    * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
    * 没有变化返回空
-   * auto等无法比较的不参与计算，但会返回仅有k没有v，来标识无过度效果
+   * auto等无法比较的不参与计算，不返回来标识无过度效果
    * @param prev 上一帧样式
    * @param next 下一帧样式
    * @param k 比较的样式名
@@ -5330,7 +5330,31 @@
             }
 
             res.d = _v10;
-          }
+          } // 径向渐变的位置
+          else {
+              res.p = [];
+
+              for (var _i4 = 0; _i4 < 2; _i4++) {
+                var pp = p.p[_i4];
+                var np = n.p[_i4];
+
+                if (pp.unit === np.unit) {
+                  res.p.push(np.value - pp.value);
+                } else if (pp.unit === PX$3 && np.unit === PERCENT$4) {
+                  var _v11 = np.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
+
+                  res.p.push(_v11 - pp.value);
+                } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
+                  var _v12 = np.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+
+                  res.p.push(_v12 - pp.value);
+                }
+              }
+
+              if (eq && equalArr$1(res.p, [0, 0])) {
+                return;
+              }
+            }
         } // 纯色
         else {
             if (equalArr$1(n, p)) {
@@ -5367,29 +5391,29 @@
         diff = n.value - p.value;
       } // 长度单位变化特殊计算，根据父元素computedStyle
       else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-          var _v11;
+          var _v13;
 
           if (k === 'fontSize') {
-            _v11 = n.value * parentComputedStyle[k] * 0.01;
+            _v13 = n.value * parentComputedStyle[k] * 0.01;
           } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
-            _v11 = n.value * parentComputedStyle.width * 0.01;
+            _v13 = n.value * parentComputedStyle.width * 0.01;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
-            _v11 = n.value * parentComputedStyle.height * 0.01;
+            _v13 = n.value * parentComputedStyle.height * 0.01;
           }
 
-          diff = _v11 - p.value;
+          diff = _v13 - p.value;
         } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-          var _v12;
+          var _v14;
 
           if (k === 'fontSize') {
-            _v12 = n.value * 100 / parentComputedStyle[k];
+            _v14 = n.value * 100 / parentComputedStyle[k];
           } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
-            _v12 = n.value * 100 / parentComputedStyle.width;
+            _v14 = n.value * 100 / parentComputedStyle.width;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
-            _v12 = n.value * 100 / parentComputedStyle.height;
+            _v14 = n.value * 100 / parentComputedStyle.height;
           }
 
-          diff = _v12 - p.value;
+          diff = _v14 - p.value;
         } // lineHeight奇怪的单位变化
         else if (k === 'lineHeight') {
             if (p.unit === PX$3 && n.unit === NUMBER$2) {
@@ -5419,24 +5443,24 @@
 
         res.v = [];
 
-        for (var _i4 = 0, _len2 = Math.min(p.length, n.length); _i4 < _len2; _i4++) {
-          var _pv = p[_i4];
-          var _nv = n[_i4];
+        for (var _i5 = 0, _len2 = Math.min(p.length, n.length); _i5 < _len2; _i5++) {
+          var _pv = p[_i5];
+          var _nv = n[_i5];
 
           if (isNil$4(_pv) || isNil$4(_nv)) {
             res.v.push(_nv);
           } else {
-            var _v13 = [];
+            var _v15 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
               if (isNil$4(_pv[j]) || isNil$4(_nv[j])) {
-                _v13.push(_nv[j]);
+                _v15.push(_nv[j]);
               } else {
-                _v13.push(_nv[j] - _pv[j]);
+                _v15.push(_nv[j] - _pv[j]);
               }
             }
 
-            res.v.push(_v13);
+            res.v.push(_v15);
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
@@ -5556,7 +5580,8 @@
       var k = item.k,
           v = item.v,
           n = item.n,
-          d = item.d;
+          d = item.d,
+          p = item.p;
       var st = style[k]; // 没有中间态的如display
 
       if (item.hasOwnProperty('n')) {
@@ -5584,9 +5609,9 @@
           }
         } else if (GRADIENT_HASH.hasOwnProperty(k)) {
           if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-            for (var _i5 = 0, len = Math.min(st.v.length, v.length); _i5 < len; _i5++) {
-              var a = st.v[_i5];
-              var b = v[_i5];
+            for (var _i6 = 0, len = Math.min(st.v.length, v.length); _i6 < len; _i6++) {
+              var a = st.v[_i6];
+              var b = v[_i6];
               a[0][0] += b[0][0] * percent;
               a[0][1] += b[0][1] * percent;
               a[0][2] += b[0][2] * percent;
@@ -5599,6 +5624,11 @@
 
             if (st.k === 'linear' && st.d !== undefined && d !== undefined) {
               st.d += d * percent;
+            }
+
+            if (st.k === 'radial' && st.p !== undefined && p !== undefined) {
+              st.p[0].value += p[0] * percent;
+              st.p[1].value += p[1] * percent;
             }
           } // fill纯色
           else {
@@ -5618,14 +5648,14 @@
             var _st = style[k];
 
             if (k === 'points' || k === 'controls') {
-              for (var _i6 = 0, _len3 = Math.min(_st.length, v.length); _i6 < _len3; _i6++) {
-                if (isNil$4(_st[_i6]) || !_st[_i6].length) {
+              for (var _i7 = 0, _len3 = Math.min(_st.length, v.length); _i7 < _len3; _i7++) {
+                if (isNil$4(_st[_i7]) || !_st[_i7].length) {
                   continue;
                 }
 
-                for (var j = 0, len2 = Math.min(_st[_i6].length, v[_i6].length); j < len2; j++) {
-                  if (!isNil$4(_st[_i6][j]) && !isNil$4(v[_i6][j])) {
-                    _st[_i6][j] += v[_i6][j] * percent;
+                for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
+                  if (!isNil$4(_st[_i7][j]) && !isNil$4(v[_i7][j])) {
+                    _st[_i7][j] += v[_i7][j] * percent;
                   }
                 }
               }
@@ -5801,12 +5831,12 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i7 = 1, _len4 = list.length; _i7 < _len4; _i7++) {
-          var start = list[_i7]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i8 = 1, _len4 = list.length; _i8 < _len4; _i8++) {
+          var start = list[_i8]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i7 + 1;
+            var j = _i8 + 1;
 
             for (; j < _len4; j++) {
               end = list[j];
@@ -5816,16 +5846,16 @@
               }
             }
 
-            var num = j - _i7 + 1;
-            start = list[_i7 - 1];
+            var num = j - _i8 + 1;
+            start = list[_i8 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i7; k < j; k++) {
+            for (var k = _i8; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i7);
+              item.offset = start.offset + per * (k + 1 - _i8);
             }
 
-            _i7 = j;
+            _i8 = j;
           }
         }
 
@@ -5842,8 +5872,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i8 = 1; _i8 < length; _i8++) {
-          var next = frames[_i8];
+        for (var _i9 = 1; _i9 < length; _i9++) {
+          var next = frames[_i9];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -5855,8 +5885,8 @@
         });
         prev = framesR[0];
 
-        for (var _i9 = 1; _i9 < length; _i9++) {
-          var _next = framesR[_i9];
+        for (var _i10 = 1; _i10 < length; _i10++) {
+          var _next = framesR[_i10];
           prev = calFrame(prev, _next, keys, target);
         }
 

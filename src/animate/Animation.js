@@ -326,7 +326,7 @@ function framing(style, duration, es) {
 /**
  * 计算两帧之间的差，单位不同的以后面为准，返回的v表示差值
  * 没有变化返回空
- * auto等无法比较的不参与计算，但会返回仅有k没有v，来标识无过度效果
+ * auto等无法比较的不参与计算，不返回来标识无过度效果
  * @param prev 上一帧样式
  * @param next 下一帧样式
  * @param k 比较的样式名
@@ -520,8 +520,27 @@ function calDiff(prev, next, k, target) {
         }
         res.d = v;
       }
-      // TODO: 径向渐变的圆心
+      // 径向渐变的位置
       else {
+        res.p = [];
+        for(let i = 0; i < 2; i++) {
+          let pp = p.p[i];
+          let np = n.p[i];
+          if(pp.unit === np.unit) {
+            res.p.push(np.value - pp.value);
+          }
+          else if(pp.unit === PX && np.unit === PERCENT) {
+            let v = np.value * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
+            res.p.push(v - pp.value);
+          }
+          else if(pp.unit === PERCENT && np.unit === PX) {
+            let v = np.value * 100 / target[i ? 'innerWidth' : 'innerHeight'];
+            res.p.push(v - pp.value);
+          }
+        }
+        if(eq && equalArr(res.p, [0, 0])) {
+          return;
+        }
       }
     }
     // 纯色
@@ -752,7 +771,7 @@ function calIntermediateStyle(frame, percent) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
-    let { k, v, n, d } = item;
+    let { k, v, n, d, p } = item;
     let st = style[k];
     // 没有中间态的如display
     if(item.hasOwnProperty('n')) {
@@ -796,6 +815,10 @@ function calIntermediateStyle(frame, percent) {
         }
         if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
           st.d += d * percent;
+        }
+        if(st.k === 'radial' && st.p !== undefined && p !== undefined) {
+          st.p[0].value += p[0] * percent;
+          st.p[1].value += p[1] * percent;
         }
       }
       // fill纯色

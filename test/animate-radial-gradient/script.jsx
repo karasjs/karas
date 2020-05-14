@@ -7,10 +7,10 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    background: 'radial-gradient(#F00 0%, #00F 99%, #FFF)',
+    background: 'radial-gradient(at 0% 0%, #F00 0%, #00F 99%, #FFF)',
   },
   {
-    background: 'radial-gradient(#F00 0%, #00F 1%, #FFF)',
+    background: 'radial-gradient(at 100% 100%, #F00 0%, #00F 1%, #FFF)',
   }
 ], {
   duration: 200,

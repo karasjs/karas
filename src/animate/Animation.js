@@ -520,7 +520,7 @@ function calDiff(prev, next, k, target) {
         }
         res.d = v;
       }
-      // TODO: 径向渐变的半径和圆心
+      // TODO: 径向渐变的圆心
       else {
       }
     }

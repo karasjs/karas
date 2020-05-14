@@ -813,7 +813,8 @@
   };
 
   var rgba2int$1 = util.rgba2int,
-      int2rgba$1 = util.int2rgba;
+      int2rgba$1 = util.int2rgba,
+      isNil$1 = util.isNil;
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
   var d2r = geom.d2r;
@@ -845,6 +846,32 @@
       }
 
     return deg % 360;
+  }
+
+  function getRadialPosition(data) {
+    if (/%$/.test(data) || /px$/.test(data) || /^-?[\d.]+$/.test(data)) {
+      return {
+        value: parseFloat(data),
+        unit: /%/.test(data) ? PERCENT : PX
+      };
+    } else {
+      var res = {
+        value: {
+          top: 0,
+          left: 0,
+          center: 50,
+          right: 100,
+          bottom: 100
+        }[data],
+        unit: PERCENT
+      };
+
+      if (isNil$1(res.value)) {
+        res.value = 50;
+      }
+
+      return res;
+    }
   } // 获取color-stop区间范围，去除无用值
 
 
@@ -1059,142 +1086,103 @@
     }
 
     return [x0, y0, x1, y1];
-  } // 获取径向渐变半径
+  } // 获取径向渐变圆心半径
 
 
-  function calRadialRadius(d, iw, ih, cx, cy, x1, y1, x2, y2) {
-    var size = 'farthest-corner';
-    var r; // 半径
+  function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
+    // let size = 'farthest-corner';
+    var cx, cy;
 
-    if (/circle|ellipse|at|closest|farthest/i.test(d)) {
-      var i = d.indexOf('at');
-      var at;
-      var s = d;
-
-      if (i > -1) {
-        at = d.slice(i + 2);
-        s = d.slice(0, i - 1);
-      }
-
-      s = /(closest|farthest)-(side|corner)/.exec(s);
-
-      if (s) {
-        size = s[0];
-      } // 指定宽高后size失效，置null标识
-      else {
-          s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
-
-          if (s) {
-            size = null;
-
-            if (s[1].indexOf('px') > -1) {
-              r = parseFloat(s[1]) * 0.5;
-            } else {
-              r = parseFloat(s[1]) * iw * 0.005;
-            }
-          }
-        }
-
-      if (at) {
-        s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
-
-        if (s) {
-          if (s[1].indexOf('px') > -1) {
-            cx = x1 + parseFloat(s[1]);
-          } else {
-            cx = x1 + parseFloat(s[1]) * iw * 0.01;
-          } // y可以省略，此时等同于x
-
-
-          var by = s[2] || s[1];
-
-          if (by.indexOf('px') > -1) {
-            cy = y1 + parseFloat(by);
-          } else {
-            cy = y1 + parseFloat(by) * ih * 0.01;
-          }
-        }
-      }
+    if (position[0].unit === PX) {
+      cx = x1 + position[0].value;
+    } else {
+      cx = x1 + position[0].value * iw * 0.01;
     }
 
-    if (size) {
-      if (size === 'closest-side') {
-        // 在边外特殊情况只有end颜色填充
-        if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-          r = 0;
-        } else {
-          var xl;
-          var yl;
+    if (position[1].unit === PX) {
+      cy = y1 + position[1].value;
+    } else {
+      cy = y1 + position[1].value * ih * 0.01;
+    }
 
-          if (cx < x1 + iw * 0.5) {
-            xl = cx - x1;
-          } else {
-            xl = x2 - cx;
-          }
+    var r;
 
-          if (cy < y1 + ih * 0.5) {
-            yl = cy - y1;
-          } else {
-            yl = y2 - cy;
-          }
-
-          r = Math.min(xl, yl);
-        }
-      } else if (size === 'closest-corner') {
-        var _xl;
-
-        var _yl;
+    if (size === 'closest-side') {
+      // 在边外特殊情况只有end颜色填充
+      if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
+        r = 0;
+      } else {
+        var xl;
+        var yl;
 
         if (cx < x1 + iw * 0.5) {
-          _xl = cx - x1;
+          xl = cx - x1;
         } else {
-          _xl = x2 - cx;
+          xl = x2 - cx;
         }
 
         if (cy < y1 + ih * 0.5) {
-          _yl = cy - y1;
+          yl = cy - y1;
         } else {
-          _yl = y2 - cy;
+          yl = y2 - cy;
         }
 
-        r = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
-      } else if (size === 'farthest-side') {
-        if (cx <= x1) {
-          r = x1 - cx + iw;
-        } else if (cx >= x2) {
-          r = cx - x2 + iw;
-        } else if (cy <= y1) {
-          r = y1 - cy + ih;
-        } else if (cx >= y2) {
-          r = cy - y2 + ih;
+        r = Math.min(xl, yl);
+      }
+    } else if (size === 'closest-corner') {
+      var _xl;
+
+      var _yl;
+
+      if (cx < x1 + iw * 0.5) {
+        _xl = cx - x1;
+      } else {
+        _xl = x2 - cx;
+      }
+
+      if (cy < y1 + ih * 0.5) {
+        _yl = cy - y1;
+      } else {
+        _yl = y2 - cy;
+      }
+
+      r = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
+    } else if (size === 'farthest-side') {
+      if (cx <= x1) {
+        r = x1 - cx + iw;
+      } else if (cx >= x2) {
+        r = cx - x2 + iw;
+      } else if (cy <= y1) {
+        r = y1 - cy + ih;
+      } else if (cx >= y2) {
+        r = cy - y2 + ih;
+      } else {
+        var _xl2 = Math.max(x2 - cx, cx - x1);
+
+        var _yl2 = Math.max(y2 - cy, cy - y1);
+
+        r = Math.max(_xl2, _yl2);
+      }
+    } // 默认farthest-corner
+    else {
+        var _xl3;
+
+        var _yl3;
+
+        if (cx < x1 + iw * 0.5) {
+          _xl3 = x2 - cx;
         } else {
-          var _xl2 = Math.max(x2 - cx, cx - x1);
-
-          var _yl2 = Math.max(y2 - cy, cy - y1);
-
-          r = Math.max(_xl2, _yl2);
+          _xl3 = cx - x1;
         }
-      } // 默认farthest-corner
-      else {
-          var _xl3;
 
-          var _yl3;
-
-          if (cx < x1 + iw * 0.5) {
-            _xl3 = x2 - cx;
-          } else {
-            _xl3 = cx - x1;
-          }
-
-          if (cy < y1 + ih * 0.5) {
-            _yl3 = y2 - cy;
-          } else {
-            _yl3 = cy - y1;
-          }
-
-          r = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
+        if (cy < y1 + ih * 0.5) {
+          _yl3 = y2 - cy;
+        } else {
+          _yl3 = cy - y1;
         }
-    }
+
+        r = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
+      }
 
     return [r, cx, cy];
   } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
@@ -1293,45 +1281,61 @@
       var o = {
         k: gradient[1]
       };
-      var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
+
+      if (o.k === 'linear') {
+        var deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+
+        if (deg) {
+          o.d = getLinearDeg(deg[0].toLowerCase());
+        } else {
+          o.d = 180;
+        }
+      } else if (o.k === 'radial') {
+        o.s = gradient[2].indexOf('ellipse') > -1 ? 'ellipse' : 'circle';
+        var size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
+
+        if (size) {
+          o.z = size[0].toLowerCase();
+        } else {
+          o.z = 'farthest-corner';
+        }
+
+        var position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+
+        if (position) {
+          var x = getRadialPosition(position[1]);
+          var y = position[2] ? getRadialPosition(position[2]) : x;
+          o.p = [x, y];
+        } else {
+          o.p = [{
+            value: 50,
+            unit: PERCENT
+          }, {
+            value: 50,
+            unit: PERCENT
+          }];
+        }
+      }
+
       var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
         var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
         var arr = [rgba2int$1(res[1])];
 
         if (res[2]) {
+          arr[1] = {
+            value: parseFloat(res[2])
+          };
+
           if (/%$/.test(res[2])) {
-            arr[1] = {
-              value: parseFloat(res[2]),
-              unit: PERCENT
-            };
+            arr[1].unit = PERCENT;
           } else {
-            arr[1] = {
-              value: parseFloat(res[2]),
-              unit: PX
-            };
+            arr[1].unit = PX;
           }
         }
 
         return arr;
       });
-
-      if (deg) {
-        var i = gradient[2].indexOf(',');
-
-        if (o.k === 'linear') {
-          o.d = getLinearDeg(gradient[2].slice(0, i));
-        } else {
-          o.d = gradient[2].slice(0, i);
-        }
-      } else {
-        if (o.k === 'linear') {
-          o.d = 180;
-        } else {
-          o.d = 'farthest-corner';
-        }
-      }
-
       return o;
     }
   }
@@ -1357,15 +1361,15 @@
     };
   }
 
-  function getRadial(v, d, cx, cy, x1, y1, x2, y2) {
+  function getRadial(v, shape, size, position, x1, y1, x2, y2) {
     var w = x2 - x1;
     var h = y2 - y1;
 
-    var _calRadialRadius = calRadialRadius(d, w, h, cx, cy, x1, y1, x2, y2),
+    var _calRadialRadius = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2),
         _calRadialRadius2 = _slicedToArray(_calRadialRadius, 3),
         r = _calRadialRadius2[0],
-        cx2 = _calRadialRadius2[1],
-        cy2 = _calRadialRadius2[2];
+        cx = _calRadialRadius2[1],
+        cy = _calRadialRadius2[2];
 
     var stop = getColorStop(v, r * 2); // 超限情况等同于只显示end的bgc
 
@@ -1373,15 +1377,15 @@
       var end = stop[stop.length - 1];
       end[1] = 0;
       stop = [end];
-      cx2 = x1;
-      cy2 = y1; // 肯定大于最长直径
+      cx = x1;
+      cy = y1; // 肯定大于最长直径
 
       r = w + h;
     }
 
     return {
-      cx: cx2,
-      cy: cy2,
+      cx: cx,
+      cy: cy,
       r: r,
       stop: stop
     };
@@ -1401,7 +1405,7 @@
       DEG = unit.DEG,
       RGBA = unit.RGBA,
       STRING = unit.STRING;
-  var isNil$1 = util.isNil,
+  var isNil$2 = util.isNil,
       rgba2int$2 = util.rgba2int;
   var DEFAULT_FONT_SIZE = 16;
 
@@ -1409,22 +1413,22 @@
     var k = "border".concat(direction);
     var v = style[k];
 
-    if (isNil$1(v)) {
+    if (isNil$2(v)) {
       return;
     } // 后面会统一格式化处理
 
 
-    if (isNil$1(style[k + 'Width'])) {
+    if (isNil$2(style[k + 'Width'])) {
       var w = /\b[\d.]+px\b/i.exec(v);
       style[k + 'Width'] = w ? w[0] : 0;
     }
 
-    if (isNil$1(style[k + 'Style'])) {
+    if (isNil$2(style[k + 'Style'])) {
       var s = /\b(solid|dashed|dotted)\b/i.exec(v);
       style[k + 'Style'] = s ? s[1] : 'solid';
     }
 
-    if (isNil$1(style[k + 'Color'])) {
+    if (isNil$2(style[k + 'Color'])) {
       var c = /#[0-9a-f]{3,6}/i.exec(v);
 
       if (c && [4, 7].indexOf(c[0].length) > -1) {
@@ -1439,15 +1443,15 @@
   }
 
   function parseFlex(style, grow, shrink, basis) {
-    if (isNil$1(style.flexGrow)) {
+    if (isNil$2(style.flexGrow)) {
       style.flexGrow = grow;
     }
 
-    if (isNil$1(style.flexShrink)) {
+    if (isNil$2(style.flexShrink)) {
       style.flexShrink = shrink;
     }
 
-    if (isNil$1(style.flexBasis)) {
+    if (isNil$2(style.flexBasis)) {
       style.flexBasis = basis;
     }
   }
@@ -1471,7 +1475,7 @@
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k, i) {
           k = key + k;
 
-          if (isNil$1(style[k])) {
+          if (isNil$2(style[k])) {
             style[k] = match[i];
           }
         });
@@ -1562,7 +1566,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k;
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1578,7 +1582,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Width';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           // width后面会统一格式化处理
           style[k] = temp;
         }
@@ -1592,7 +1596,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Color';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = rgba2int$2(temp);
         }
       });
@@ -1605,7 +1609,7 @@
       ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
         k = 'border' + k + 'Style';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1618,7 +1622,7 @@
       ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
         k = 'border' + k + 'Radius';
 
-        if (isNil$1(style[k])) {
+        if (isNil$2(style[k])) {
           style[k] = temp;
         }
       });
@@ -1629,7 +1633,7 @@
 
     if (temp) {
       // gradient/image和颜色可以并存
-      if (isNil$1(style.backgroundImage)) {
+      if (isNil$2(style.backgroundImage)) {
         var gd = reg.gradient.exec(temp);
 
         if (gd) {
@@ -1645,7 +1649,7 @@
         }
       }
 
-      if (isNil$1(style.backgroundRepeat)) {
+      if (isNil$2(style.backgroundRepeat)) {
         var repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
 
         if (repeat) {
@@ -1653,7 +1657,7 @@
         }
       }
 
-      if (isNil$1(style.backgroundColor)) {
+      if (isNil$2(style.backgroundColor)) {
         var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
 
         if (bgc) {
@@ -1662,7 +1666,7 @@
         }
       }
 
-      if (isNil$1(style.backgroundPosition)) {
+      if (isNil$2(style.backgroundPosition)) {
         var position = temp.match(reg.position);
 
         if (position) {
@@ -1677,7 +1681,7 @@
 
     temp = style.backgroundPosition;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       temp = temp.toString().split(/\s+/);
 
       if (temp.length === 1) {
@@ -1727,7 +1731,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (!isNil$1(v) && style.transform) {
+      if (!isNil$2(v) && style.transform) {
         console.error("Can not use expand style \"".concat(k, "\" with transform"));
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
@@ -1736,7 +1740,7 @@
       var k = item.k,
           v = item.v;
 
-      if (isNil$1(style[k])) {
+      if (isNil$2(style[k])) {
         style[k] = v;
       }
     }); // 背景图
@@ -1775,7 +1779,7 @@
     ['backgroundPositionX', 'backgroundPositionY'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$1(temp)) {
+      if (!isNil$2(temp)) {
         if (/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(style, k, temp);
           temp = style[k];
@@ -1845,7 +1849,7 @@
       k = 'border' + k + 'Color';
       var v = style[k];
 
-      if (!isNil$1(v)) {
+      if (!isNil$2(v)) {
         style[k] = {
           value: rgba2int$2(v),
           unit: RGBA
@@ -1923,7 +1927,7 @@
 
     temp = style.transformOrigin;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       var _match2 = temp.toString().match(reg.position);
 
       if (_match2) {
@@ -1954,7 +1958,7 @@
               unit: PERCENT$1
             }); // 不规范的写法变默认值50%
 
-            if (isNil$1(tfo[_i].value)) {
+            if (isNil$2(tfo[_i].value)) {
               tfo[_i].value = 50;
             }
           }
@@ -1968,7 +1972,7 @@
     ['translate', 'scale', 'skew'].forEach(function (k) {
       temp = style[k];
 
-      if (!isNil$1(temp)) {
+      if (!isNil$2(temp)) {
         var _arr5 = temp.toString().split(/\s*,\s*/);
 
         if (_arr5.length === 1) {
@@ -1983,7 +1987,7 @@
     ['translateX', 'translateY', 'scaleX', 'scaleY', 'skewX', 'skewY', 'rotateZ', 'rotate'].forEach(function (k) {
       var v = style[k];
 
-      if (isNil$1(v)) {
+      if (isNil$2(v)) {
         return;
       }
 
@@ -2023,7 +2027,7 @@
     ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
-      if (isNil$1(v)) {
+      if (isNil$2(v)) {
         return;
       }
 
@@ -2188,7 +2192,7 @@
 
     temp = style.strokeDasharray;
 
-    if (!isNil$1(temp)) {
+    if (!isNil$2(temp)) {
       var _match3 = temp.toString().match(/[\d.]+/g);
 
       if (_match3) {
@@ -3966,7 +3970,7 @@
     }
   };
 
-  var isNil$2 = util.isNil,
+  var isNil$3 = util.isNil,
       isString = util.isString,
       isFunction$1 = util.isFunction,
       clone$1 = util.clone,
@@ -4047,7 +4051,7 @@
       value: function setState(n, cb) {
         var _this2 = this;
 
-        if (isNil$2(n)) {
+        if (isNil$3(n)) {
           this.state = {};
         } else {
           extend$1(this.state, n);
@@ -4128,7 +4132,7 @@
         } else {
           var s = '';
 
-          if (!isNil$2(sr)) {
+          if (!isNil$3(sr)) {
             s = util.encodeHtml(sr.toString());
           }
 
@@ -4853,7 +4857,7 @@
       RGBA$1 = unit.RGBA,
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
-  var isNil$3 = util.isNil,
+  var isNil$4 = util.isNil,
       isFunction$3 = util.isFunction,
       isNumber = util.isNumber,
       isObject$1 = util.isObject,
@@ -4894,7 +4898,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!isNil$3(v) && !hash.hasOwnProperty(k)) {
+        if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
           keys.push(k);
         }
@@ -4924,7 +4928,7 @@
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (isNil$3(v)) {
+        if (isNil$4(v)) {
           return;
         }
 
@@ -5043,7 +5047,7 @@
       var n = frameStyle[k];
       var p = lastStyle[k]; // 前后均非空对比
 
-      if (!isNil$3(n) && !isNil$3(p)) {
+      if (!isNil$4(n) && !isNil$4(p)) {
         if (!equalStyle(k, n, p)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
@@ -5057,7 +5061,7 @@
           }
         }
       } // 有一个为空时即不等
-      else if (!isNil$3(n) || !isNil$3(p)) {
+      else if (!isNil$4(n) || !isNil$4(p)) {
           res = true;
 
           if (isStyleReflow(k)) {
@@ -5081,7 +5085,7 @@
     Object.keys(frameStyle).forEach(function (i) {
       var v = frameStyle[i];
 
-      if (isNil$3(v)) {
+      if (isNil$4(v)) {
         return;
       } // geom的属性变化
 
@@ -5402,10 +5406,10 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (isNil$3(p)) {
+      if (isNil$4(p)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
-        if (isNil$3(n) || isNil$3(p)) {
+        if (isNil$4(n) || isNil$4(p)) {
           return p;
         }
 
@@ -5419,13 +5423,13 @@
           var _pv = p[_i4];
           var _nv = n[_i4];
 
-          if (isNil$3(_pv) || isNil$3(_nv)) {
+          if (isNil$4(_pv) || isNil$4(_nv)) {
             res.v.push(_nv);
           } else {
             var _v13 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
-              if (isNil$3(_pv[j]) || isNil$3(_nv[j])) {
+              if (isNil$4(_pv[j]) || isNil$4(_nv[j])) {
                 _v13.push(_nv[j]);
               } else {
                 _v13.push(_nv[j] - _pv[j]);
@@ -5436,7 +5440,7 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
-        if (isNil$3(n) || isNil$3(p)) {
+        if (isNil$4(n) || isNil$4(p)) {
           return p;
         }
 
@@ -5615,12 +5619,12 @@
 
             if (k === 'points' || k === 'controls') {
               for (var _i6 = 0, _len3 = Math.min(_st.length, v.length); _i6 < _len3; _i6++) {
-                if (isNil$3(_st[_i6]) || !_st[_i6].length) {
+                if (isNil$4(_st[_i6]) || !_st[_i6].length) {
                   continue;
                 }
 
                 for (var j = 0, len2 = Math.min(_st[_i6].length, v[_i6].length); j < len2; j++) {
-                  if (!isNil$3(_st[_i6][j]) && !isNil$3(v[_i6][j])) {
+                  if (!isNil$4(_st[_i6][j]) && !isNil$4(v[_i6][j])) {
                     _st[_i6][j] += v[_i6][j] * percent;
                   }
                 }
@@ -7692,7 +7696,7 @@
               });
             }
           } else if (backgroundImage.k) {
-            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage);
+            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
           }
@@ -7980,10 +7984,13 @@
       }
     }, {
       key: "__gradient",
-      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs) {
+      value: function __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, vs) {
         var k = vs.k,
             v = vs.v,
-            d = vs.d;
+            d = vs.d,
+            s = vs.s,
+            z = vs.z,
+            p = vs.p;
         var cx = x2 + iw * 0.5;
         var cy = y2 + ih * 0.5;
         var res;
@@ -7992,7 +7999,7 @@
           var gd = gradient.getLinear(v, d, cx, cy, iw, ih);
           res = this.__getLg(renderMode, ctx, defs, gd);
         } else if (k === 'radial') {
-          var _gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
+          var _gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
 
           res = this.__getRg(renderMode, ctx, defs, _gd);
         }
@@ -10432,13 +10439,13 @@
     return Defs;
   }();
 
-  var isNil$4 = util.isNil,
+  var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction;
   var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
 
   function replaceOption(target, globalValue, key, vars) {
     // 优先vars，其次总控，都没有忽略即自己原本声明
-    if (!isNil$4(globalValue)) {
+    if (!isNil$5(globalValue)) {
       var decl = target['var-' + key];
 
       if (!decl) {
@@ -10718,7 +10725,7 @@
     return Controller;
   }();
 
-  var isNil$5 = util.isNil,
+  var isNil$6 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
   var PX$6 = unit.PX;
@@ -10790,7 +10797,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$5(w)) {
+        if (!isNil$6(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -10800,7 +10807,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$5(h)) {
+        if (!isNil$6(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -10923,7 +10930,7 @@
             }
           }
 
-        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -11206,7 +11213,7 @@
       PERCENT$7 = unit.PERCENT;
   var clone$4 = util.clone,
       int2rgba$3 = util.int2rgba,
-      isNil$6 = util.isNil,
+      isNil$7 = util.isNil,
       extend$3 = util.extend,
       joinArr$2 = util.joinArr;
   var REGISTER = {};
@@ -11377,7 +11384,7 @@
         computedStyle.stroke = stroke;
 
         if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke);
+          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
         } else {
           stroke = int2rgba$3(stroke);
         }
@@ -11385,7 +11392,7 @@
         computedStyle.fill = fill;
 
         if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
-          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill);
+          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
         } else {
           fill = int2rgba$3(fill);
         }
@@ -11549,7 +11556,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!isNil$6(v)) {
+        if (!isNil$7(v)) {
           return v;
         }
 
@@ -12616,7 +12623,7 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isNil$7 = util.isNil,
+  var isNil$8 = util.isNil,
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$5 = util.clone,
@@ -12663,7 +12670,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$7(v)) {
+            if (isNil$8(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -12716,7 +12723,7 @@
         if (!isPrimitive(child)) {
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
-          if (isNil$7(libraryId)) {
+          if (isNil$8(libraryId)) {
             return;
           }
 
@@ -12732,7 +12739,7 @@
     } // library中一定有id，因为是一级，二级+特殊需求才会出现放开
 
 
-    if (isNil$7(id)) {
+    if (isNil$8(id)) {
       throw new Error('Library item miss id: ' + id);
     } else {
       hash[id] = item;
@@ -12797,7 +12804,7 @@
       json.library = null;
       json.libraryId = null;
     } // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
-    else if (!isNil$7(libraryId) && hash) {
+    else if (!isNil$8(libraryId) && hash) {
         var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
         if (libraryItem) {

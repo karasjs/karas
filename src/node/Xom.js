@@ -914,7 +914,7 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage);
+        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
       computedStyle.backgroundImage = backgroundImage;
@@ -1144,8 +1144,8 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs) {
-    let { k, v, d } = vs;
+  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, vs) {
+    let { k, v, d, s, z, p } = vs;
     let cx = x2 + iw * 0.5;
     let cy = y2 + ih * 0.5;
     let res;
@@ -1154,7 +1154,7 @@ class Xom extends Node {
       res = this.__getLg(renderMode, ctx, defs, gd);
     }
     else if(k === 'radial') {
-      let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
+      let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
       res = this.__getRg(renderMode, ctx, defs, gd);
     }
     return res;

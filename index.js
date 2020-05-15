@@ -9871,9 +9871,10 @@
             borderTopLeftRadius = _this$computedStyle.borderTopLeftRadius,
             borderTopRightRadius = _this$computedStyle.borderTopRightRadius,
             borderBottomRightRadius = _this$computedStyle.borderBottomRightRadius,
-            borderBottomLeftRadius = _this$computedStyle.borderBottomLeftRadius;
+            borderBottomLeftRadius = _this$computedStyle.borderBottomLeftRadius,
+            visibility = _this$computedStyle.visibility;
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
         }
 

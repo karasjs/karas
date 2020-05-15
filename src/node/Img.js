@@ -116,9 +116,10 @@ class Img extends Dom {
         borderTopRightRadius,
         borderBottomRightRadius,
         borderBottomLeftRadius,
+        visibility,
       }
     } = this;
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let originX = x + marginLeft + borderLeftWidth + paddingLeft;

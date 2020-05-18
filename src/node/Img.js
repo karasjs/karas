@@ -8,7 +8,7 @@ import image from '../style/image';
 import border from '../style/border';
 import level from '../animate/level';
 
-const { AUTO, PX } = unit;
+const { AUTO } = unit;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -37,10 +37,21 @@ class Img extends Dom {
    */
   __preLayout(data) {
     let res = super.__preLayout(data);
+    let loadImg = this.__loadImg;
+    // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+    if(!loadImg.error) {
+      let src = this.props.src;
+      let cache = inject.IMG[src];
+      if(cache && cache.state === inject.LOADED) {
+        loadImg.url = src;
+        loadImg.source = cache.source;
+        loadImg.width = cache.width;
+        loadImg.height = cache.height;
+      }
+    }
     if(res.fixedWidth && res.fixedHeight) {
       return res;
     }
-    let loadImg = this.__loadImg;
     if(loadImg.error) {
       if(res.fixedWidth) {
         res.h = res.w;
@@ -105,9 +116,10 @@ class Img extends Dom {
         borderTopRightRadius,
         borderBottomRightRadius,
         borderBottomLeftRadius,
+        visibility,
       }
     } = this;
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
     let originX = x + marginLeft + borderLeftWidth + paddingLeft;
@@ -230,7 +242,7 @@ class Img extends Dom {
             props.push(['mask', `url(#${maskId})`]);
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-            props.push(['transform', 'matrix(' + matrix.join(',') + ')']);
+            props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
           }
           this.virtualDom.children.push({
             type: 'img',

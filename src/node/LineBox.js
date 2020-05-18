@@ -28,7 +28,7 @@ class LineBox {
         props: [
           ['x', x],
           ['y', y],
-          ['fill', computedStyle.color],
+          ['fill', util.int2rgba(computedStyle.color)],
           ['font-family', computedStyle.fontFamily],
           ['font-weight', computedStyle.fontWeight],
           ['font-style', computedStyle.fontStyle],

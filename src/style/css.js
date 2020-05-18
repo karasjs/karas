@@ -5,7 +5,7 @@ import reg from './reg';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
-const { isNil, rgba2int, int2rgba } = util;
+const { isNil, rgba2int } = util;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -242,7 +242,8 @@ function normalize(style, reset = []) {
     if(isNil(style.backgroundPosition)) {
       let position = temp.match(reg.position);
       if(position) {
-        style.backgroundPosition = position.join(' ');
+        style.backgroundPositionX = position[0];
+        style.backgroundPositionY = position.length > 1 ? position[1] : position[0];
       }
     }
     delete style.background;
@@ -852,13 +853,16 @@ function compute(node, isRoot) {
   else {
     computedStyle.lineHeight = calNormalLineHeight(computedStyle);
   }
-  repaint(node, isRoot);
+  repaint(node, isRoot, currentStyle);
 }
 
 // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
-function repaint(node, isRoot) {
-  let { animateStyle, computedStyle } = node;
-  let currentStyle = node.__currentStyle = animateStyle;
+function repaint(node, isRoot, currentStyle) {
+  if(!currentStyle) {
+    let { animateStyle } = node;
+    currentStyle = node.__currentStyle = animateStyle;
+  }
+  let computedStyle = node.computedStyle;
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
   let { fontStyle, fontWeight, color } = currentStyle;
   if(fontStyle.unit === INHERIT) {
@@ -874,10 +878,10 @@ function repaint(node, isRoot) {
     computedStyle.fontWeight = fontWeight.value;
   }
   if(color.unit === INHERIT) {
-    computedStyle.color = isRoot ? 'rgba(0,0,0,1)' : parentComputedStyle.color;
+    computedStyle.color = isRoot ? [0, 0, 0, 1] : parentComputedStyle.color;
   }
   else {
-    computedStyle.color = int2rgba(color.value);
+    computedStyle.color = color.value;
   }
   [
     'visibility',
@@ -898,7 +902,7 @@ function repaint(node, isRoot) {
     'borderBottomColor',
     'borderLeftColor',
   ].forEach(k => {
-    computedStyle[k] = int2rgba(currentStyle[k].value);
+    computedStyle[k] = currentStyle[k].value;
   });
 }
 

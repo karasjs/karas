@@ -1,6 +1,7 @@
 import Node from './Node';
 import Text from './Text';
 import mode from '../util/mode';
+import reset from '../style/reset';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -13,7 +14,7 @@ import Animation from '../animate/Animation';
 import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
-const { clone, int2rgba, equalArr, extend } = util;
+const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative, compute, repaint } = css;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -81,7 +82,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bb
 function calBorderRadius(w, h, k, currentStyle, computedStyle) {
   let s = currentStyle[k];
   // 暂时只支持px，限制最大为窄边一半
-  if(s.unit === PX) {
+  if(s.unit === PX && s.value > 0) {
     let min = Math.min(w * 0.5, h * 0.5);
     computedStyle[k] = Math.min(min, s.value);
   }
@@ -110,13 +111,7 @@ function calBackgroundSize(value, w, h) {
 }
 
 function calBackgroundPosition(position, container, size) {
-  if(position.value === 'right' || position.value === 'bottom') {
-    return container - size;
-  }
-  else if(position.value === 'center') {
-    return (container - size) * 0.5;
-  }
-  else if(position.unit === PX) {
+  if(position.unit === PX) {
     return position.value;
   }
   else if(position.unit === PERCENT) {
@@ -346,7 +341,7 @@ class Xom extends Node {
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
   __preLayout(data) {
-    let { x, y, w, h } = data;
+    let { x, y, w, h, w2, h2 } = data;
     this.__x = x;
     this.__y = y;
     let { currentStyle, computedStyle } = this;
@@ -371,7 +366,12 @@ class Xom extends Node {
     // 除了auto外都是固定宽高度
     let fixedWidth;
     let fixedHeight;
-    if(width.unit !== AUTO) {
+    // 绝对定位是left+right这种其实等于定义了width，但不能修改原始style，存入特殊变量标识
+    if(w2 !== undefined) {
+      fixedWidth = true;
+      w = w2;
+    }
+    else if(width.unit !== AUTO) {
       fixedWidth = true;
       switch(width.unit) {
         case PX:
@@ -382,7 +382,11 @@ class Xom extends Node {
           break;
       }
     }
-    if(height.unit !== AUTO) {
+    if(h2 !== undefined) {
+      fixedHeight = true;
+      h = h2;
+    }
+    else if(height.unit !== AUTO) {
       fixedHeight = true;
       switch(height.unit) {
         case PX:
@@ -515,7 +519,7 @@ class Xom extends Node {
     }
     // transform和transformOrigin相关
     let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
-    computedStyle.transformOrigin = tfo.join(' ');
+    computedStyle.transformOrigin = tfo.slice(0);
     tfo[0] += x;
     tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
@@ -568,7 +572,7 @@ class Xom extends Node {
         this.__matrix = matrix;
       }
     }
-    computedStyle.transform = 'matrix(' + matrix.join(', ') + ')';
+    computedStyle.transform = matrix;
     // 变换对事件影响，canvas要设置渲染
     while(parent) {
       if(parent.matrixEvent) {
@@ -583,7 +587,7 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       if(!equalArr(this.matrix, [1, 0, 0, 1, 0, 0])) {
-        this.virtualDom.transform = `matrix(${this.matrix.join(',')})`;
+        this.virtualDom.transform = `matrix(${joinArr(this.matrix, ',')})`;
       }
     }
     // 隐藏不渲染
@@ -591,18 +595,28 @@ class Xom extends Node {
       return;
     }
     // 背景色垫底
-    if(!/,0\)$/.test(backgroundColor)) {
-      renderBgc(renderMode, backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
+    if(backgroundColor[3] > 0) {
+      renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
-    computedStyle.backgroundPositionX = 0;
-    computedStyle.backgroundPositionY = 0;
+    computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
+      ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+    computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
+      ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
     backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-    computedStyle.backgroundSize = backgroundSize.join(' ');
+    computedStyle.backgroundSize = backgroundSize;
     // 渐变或图片叠加
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
+        // 可能已提前加载好了，或有缓存，为减少刷新直接使用
+        let cache = inject.IMG[backgroundImage];
+        if(cache && cache.state === inject.LOADED) {
+          loadBgi.url = backgroundImage;
+          loadBgi.source = cache.source;
+          loadBgi.width = cache.width;
+          loadBgi.height = cache.height;
+        }
         if(loadBgi.url === backgroundImage) {
           let source = loadBgi.source;
           // 无source不绘制
@@ -682,8 +696,8 @@ class Xom extends Node {
             }
             let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
             let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
-            computedStyle.backgroundPositionX = bgX;
-            computedStyle.backgroundPositionY = bgY;
+            // 超出尺寸模拟mask截取
+            let needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
             let xnl = 0;
             let xnr = 0;
@@ -715,22 +729,42 @@ class Xom extends Node {
             let repeat = [];
             if(xnl > 0) {
               for(let i = 0; i < xnl; i++) {
-                repeat.push([bgX - (i + 1) * w, bgY]);
+                let x = bgX - (i + 1) * w;
+                repeat.push([x, bgY]);
+                // 看最左边超过没有
+                if(!needMask && i === 0 && x < x2) {
+                  needMask = true;
+                }
               }
             }
             if(xnr > 0) {
               for(let i = 0; i < xnr; i++) {
-                repeat.push([bgX + (i + 1) * w, bgY]);
+                let x = bgX + (i + 1) * w;
+                repeat.push([x, bgY]);
+                // 看最右边超过没有
+                if(!needMask && i === xnr - 1 && x + w > x2 + innerWidth) {
+                  needMask = true;
+                }
               }
             }
             if(ynt > 0) {
               for(let i = 0; i < ynt; i++) {
-                repeat.push([bgX, bgY - (i + 1) * h]);
+                let y = bgY - (i + 1) * h;
+                repeat.push([bgX, y]);
+                // 看最上边超过没有
+                if(!needMask && i === 0 && y < y2) {
+                  needMask = true;
+                }
               }
             }
             if(ynb > 0) {
               for(let i = 0; i < ynb; i++) {
-                repeat.push([bgX, bgY + (i + 1) * h]);
+                let y = bgY + (i + 1) * h;
+                repeat.push([bgX, y]);
+                // 看最下边超过没有
+                if(!needMask && i === ynb - 1 && y + w > y2 + innerHeight) {
+                  needMask = true;
+                }
               }
             }
             // 原点和同行列十字画完，看4个角的情况
@@ -762,9 +796,11 @@ class Xom extends Node {
                 }
               }
             }
-            // 超出尺寸模拟mask截取
-            let needMask = ['repeat-x', 'repeat-y', 'repeat'].indexOf(backgroundRepeat) > -1
-              || bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+            if(!needMask && repeat.length) {
+              for(let i = 0, len = repeat.length; i < len; i++) {
+                let item = repeat;
+              }
+            }
             if(renderMode === mode.CANVAS) {
               let c;
               let currentCtx;
@@ -803,9 +839,6 @@ class Xom extends Node {
             }
             else if(renderMode === mode.SVG) {
               let matrix = image.matrixResize(width, height, w, h, bgX, bgY, innerWidth, innerHeight);
-              if(matrix) {
-                matrix = matrix.join(',');
-              }
               let props = [
                 ['xlink:href', backgroundImage],
                 ['x', bgX],
@@ -814,9 +847,9 @@ class Xom extends Node {
                 ['height', height]
               ];
               let needResize;
-              if(matrix && matrix !== '1,0,0,1,0,0') {
+              if(matrix && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
                 needResize = true;
-                props.push(['transform', 'matrix(' + matrix + ')']);
+                props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
               }
               if(needMask) {
                 let maskId = defs.add({
@@ -846,9 +879,8 @@ class Xom extends Node {
                 let copy = clone(props);
                 if(needResize) {
                   let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
-                  if(matrix && matrix !== '1,0,0,1,0,0') {
-                    matrix = matrix.join(',');
-                    copy[5][1] = 'matrix(' + matrix + ')';
+                  if(matrix && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+                    copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
                   }
                 }
                 copy[1][1] = item[0];
@@ -860,9 +892,6 @@ class Xom extends Node {
                 });
               });
             }
-            computedStyle.backgroundSize = `${w} ${h}`;
-            computedStyle.backgroundPositionX = bgX;
-            computedStyle.backgroundPositionY = bgY;
           }
         }
         else {
@@ -883,33 +912,33 @@ class Xom extends Node {
             height: innerHeight,
           });
         }
-        computedStyle.backgroundImage = backgroundImage;
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, 'backgroundImage', backgroundImage, computedStyle);
+        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
+      computedStyle.backgroundImage = backgroundImage;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
-    if(borderTopWidth > 0 && !/,0\)$/.test(borderTopColor)) {
+    if(borderTopWidth > 0 && borderTopColor[3] > 0) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
       let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
       renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
-    if(borderRightWidth > 0 && !/,0\)$/.test(borderRightColor)) {
+    if(borderRightWidth > 0 && borderRightColor[3] > 0) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
       let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
       renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
-    if(borderBottomWidth > 0 && !/,0\)$/.test(borderBottomColor)) {
+    if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
       let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
       renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
-    if(borderLeftWidth > 0 && !/,0\)$/.test(borderLeftColor)) {
+    if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
       let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
@@ -1115,29 +1144,19 @@ class Xom extends Node {
     }
   }
 
-  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, ks, vs, computedStyle) {
-    let { k, v, d } = vs;
-    computedStyle[ks] = k + '-gradient(';
+  __gradient(renderMode, ctx, defs, x2, y2, x3, y3, iw, ih, vs) {
+    let { k, v, d, s, z, p } = vs;
     let cx = x2 + iw * 0.5;
     let cy = y2 + ih * 0.5;
     let res;
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
       res = this.__getLg(renderMode, ctx, defs, gd);
-      computedStyle[ks] += d + 'deg';
     }
     else if(k === 'radial') {
-      let gd = gradient.getRadial(v, d, cx, cy, x2, y2, x3, y3);
+      let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
       res = this.__getRg(renderMode, ctx, defs, gd);
-      computedStyle[ks] += d;
     }
-    v.forEach(item => {
-      computedStyle[ks] += ', ' + int2rgba(item[0]);
-      if(item[1]) {
-        computedStyle[ks] += ' ' + item[1].str;
-      }
-    });
-    computedStyle[ks] += ')';
     return res;
   }
 
@@ -1401,13 +1420,16 @@ class Xom extends Node {
 
   get animateStyle() {
     let { style, animationList } = this;
-    let copy = extend({}, style);
+    let copy;
     animationList.forEach(item => {
       if(item.animating) {
+        if(!copy) {
+          copy = extend({}, style, this.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
+        }
         extend(copy, item.style);
       }
     });
-    return copy;
+    return copy || style;
   }
 
   get currentStyle() {

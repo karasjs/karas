@@ -7,7 +7,7 @@ import util from '../util/util';
 import matrix from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
-const { clone, int2rgba, isNil, extend } = util;
+const { clone, int2rgba, isNil, extend, joinArr } = util;
 
 const REGISTER = {};
 
@@ -135,20 +135,22 @@ class Geom extends Xom {
       strokeWidth = 0;
     }
     computedStyle.strokeWidth = strokeWidth;
+    computedStyle.stroke = stroke;
     if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'stroke', stroke, computedStyle);
+      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
     }
     else {
-      computedStyle.stroke = stroke = int2rgba(stroke);
+      stroke = int2rgba(stroke);
     }
+    computedStyle.fill = fill;
     if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, 'fill', fill, computedStyle);
+      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
     }
     else {
-      computedStyle.fill = fill = int2rgba(fill);
+      fill = int2rgba(fill);
     }
     computedStyle.strokeWidth = strokeWidth;
-    computedStyle.strokeDasharray = strokeDasharray.join(', ');
+    computedStyle.strokeDasharray = strokeDasharray;
     computedStyle.strokeLinecap = strokeLinecap;
     return {
       x,
@@ -161,7 +163,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
-      strokeDasharrayStr: computedStyle.strokeDasharray,
+      strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
       strokeLinecap,
       fill,
       visibility,
@@ -235,7 +237,7 @@ class Geom extends Xom {
             let [k, v] = props[i];
             if(k === 'points') {
               props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return matrix.calPoint([$1, $2], m).join(',');
+                return joinArr(matrix.calPoint([$1, $2], m), ',');
               });
               break;
             }
@@ -246,7 +248,7 @@ class Geom extends Xom {
             let [k, v] = props[i];
             if(k === 'd') {
               props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return matrix.calPoint([$1, $2], m).join(',');
+                return joinArr(matrix.calPoint([$1, $2], m), ',');
               });
               break;
             }
@@ -302,13 +304,16 @@ class Geom extends Xom {
 
   get animateProps() {
     let { props, animationList } = this;
-    let copy = extend({}, props);
+    let copy;
     animationList.forEach(item => {
       if(item.animating) {
-        extend(copy, item.props);
+        if(!copy) {
+          copy = extend({}, props);
+        }
+        extend(copy, item.props, item.keys);
       }
     });
-    return copy;
+    return copy || props;
   }
 
   get currentProps() {

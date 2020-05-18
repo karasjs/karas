@@ -948,19 +948,6 @@ class Dom extends Xom {
           h2 = height.unit === PX ? height.value : innerHeight * height.value * 0.01;
         }
       }
-      // 直接或间接声明宽高的，等于已知样式
-      if(w2 !== undefined) {
-        currentStyle.width = {
-          value: w2,
-          unit: PX,
-        };
-      }
-      if(h2 !== undefined) {
-        currentStyle.height = {
-          value: h2,
-          unit: PX,
-        };
-      }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
       let needCalWidth;
       if(display === 'block' && w2 === undefined) {
@@ -994,6 +981,8 @@ class Dom extends Xom {
         y: y2,
         w: wl,
         h: hl,
+        w2, // left+right这种等于有宽度，但不能修改style，继续传入到__preLayout中特殊对待
+        h2,
       }, false, true);
       if(onlyRight) {
         item.__offsetX(-item.outerWidth, true);
@@ -1049,10 +1038,7 @@ class Dom extends Xom {
       }
     });
     if(renderMode === mode.SVG) {
-      this.__virtualDom = {
-        ...this.virtualDom,
-        children: zIndex.map(item => item.virtualDom),
-      };
+      this.virtualDom.children = zIndex.map(item => item.virtualDom);
     }
   }
 
@@ -1084,24 +1070,42 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    let zIndex = this.children.filter(item => {
+    let zIndex = this.children.filter((item, i) => {
+      item.__iIndex = i;
       return !item.isMask;
     });
     sort(zIndex, (a, b) => {
-      if(a instanceof Text) {
-        return;
+      let xomA = a instanceof Xom;
+      let xomB = b instanceof Xom;
+      let raA = isRelativeOrAbsolute(a);
+      let raB = isRelativeOrAbsolute(b);
+      if(xomA && xomB) {
+        if(raA && raB) {
+          if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+            return true;
+          }
+          if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
+            return false;
+          }
+        }
+        else if(raA) {
+          return true;
+        }
+        else if(raB) {
+          return false;
+        }
       }
-      if(b instanceof Text && isRelativeOrAbsolute(a)) {
-        return true;
-      }
-      if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        if(isRelativeOrAbsolute(a) && isRelativeOrAbsolute(b)) {
+      else if(a instanceof Xom) {
+        if(raA) {
           return true;
         }
       }
-      if(b.computedStyle.position === 'static' && isRelativeOrAbsolute(a)) {
-        return true;
+      else if(b instanceof Xom) {
+        if(raB) {
+          return false;
+        }
       }
+      return a.__iIndex > b.__iIndex;
     });
     return zIndex;
   }

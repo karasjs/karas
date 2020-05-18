@@ -75,7 +75,9 @@ const GEOM = {
 };
 
 let dom = [];
+let domKey = [];
 Object.keys(DOM).forEach(k => {
+  domKey.push(k);
   let v = DOM[k];
   dom.push({
     k,
@@ -84,7 +86,9 @@ Object.keys(DOM).forEach(k => {
 });
 
 let geom = [];
+let geomKey = [];
 Object.keys(GEOM).forEach(k => {
+  geomKey.push(k);
   let v = GEOM[k];
   geom.push({
     k,
@@ -95,6 +99,8 @@ Object.keys(GEOM).forEach(k => {
 export default {
   DOM,
   GEOM,
+  domKey,
+  geomKey,
   dom,
   geom,
 };

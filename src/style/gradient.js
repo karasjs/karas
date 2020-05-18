@@ -3,7 +3,7 @@ import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
 
-const { rgba2int, int2rgba } = util;
+const { rgba2int, int2rgba, isNil } = util;
 const { PX, PERCENT } = unit;
 const { d2r } = geom;
 
@@ -40,6 +40,31 @@ function getLinearDeg(v) {
     }
   }
   return deg % 360;
+}
+
+function getRadialPosition(data) {
+  if(/%$/.test(data) || /px$/.test(data) || /^-?[\d.]+$/.test(data)) {
+    return {
+      value: parseFloat(data),
+      unit: /%/.test(data) ? PERCENT : PX,
+    };
+  }
+  else {
+    let res = {
+      value: {
+        top: 0,
+        left: 0,
+        center: 50,
+        right: 100,
+        bottom: 100,
+      }[data],
+      unit: PERCENT,
+    };
+    if(isNil(res.value)) {
+      res.value = 50;
+    }
+    return res;
+  }
 }
 
 // 获取color-stop区间范围，去除无用值
@@ -230,131 +255,97 @@ function calLinearCoords(deg, length, cx, cy) {
   return [x0, y0, x1, y1];
 }
 
-// 获取径向渐变半径
-function calRadialRadius(d, iw, ih, cx, cy, x1, y1, x2, y2) {
-  let size = 'farthest-corner';
-  let r; // 半径
-  if(/circle|ellipse|at|closest|farthest/i.test(d)) {
-    let i = d.indexOf('at');
-    let at;
-    let s = d;
-    if(i > -1) {
-      at = d.slice(i + 2);
-      s = d.slice(0, i - 1);
+// 获取径向渐变圆心半径
+function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
+  // let size = 'farthest-corner';
+  let cx, cy;
+  if(position[0].unit === PX) {
+    cx = x1 + position[0].value;
+  }
+  else {
+    cx = x1 + position[0].value * iw * 0.01;
+  }
+  if(position[1].unit === PX) {
+    cy = y1 + position[1].value;
+  }
+  else {
+    cy = y1 + position[1].value * ih * 0.01;
+  }
+  let r;
+  if(size === 'closest-side') {
+    // 在边外特殊情况只有end颜色填充
+    if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
+      r = 0;
     }
-    s = /(closest|farthest)-(side|corner)/.exec(s);
-    if(s) {
-      size = s[0];
-    }
-    // 指定宽高后size失效，置null标识
     else {
-      s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(s);
-      if(s) {
-        size = null;
-        if(s[1].indexOf('px') > -1) {
-          r = parseFloat(s[1]) * 0.5;
-        }
-        else {
-          r = parseFloat(s[1]) * iw * 0.005;
-        }
+      let xl;
+      let yl;
+      if(cx < x1 + iw * 0.5) {
+        xl = cx - x1;
+      } else {
+        xl = x2 - cx;
       }
-    }
-    if(at) {
-      s = /\s+(-?[\d.]+(?:px|%))\s*(-?[\d.]+(?:px|%))?/.exec(at);
-      if(s) {
-        if(s[1].indexOf('px') > -1) {
-          cx = x1 + parseFloat(s[1]);
-        }
-        else {
-          cx =  x1 + parseFloat(s[1]) * iw * 0.01;
-        }
-        // y可以省略，此时等同于x
-        let by = s[2] || s[1];
-        if(by.indexOf('px') > -1) {
-          cy = y1 + parseFloat(by);
-        }
-        else {
-          cy = y1 + parseFloat(by) * ih * 0.01;
-        }
+      if(cy < y1 + ih * 0.5) {
+        yl = cy - y1;
+      } else {
+        yl = y2 - cy;
       }
+      r = Math.min(xl, yl);
     }
   }
-  if(size) {
-    if(size === 'closest-side') {
-      // 在边外特殊情况只有end颜色填充
-      if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-        r = 0;
-      }
-      else {
-        let xl;
-        let yl;
-        if(cx < x1 + iw * 0.5) {
-          xl = cx - x1;
-        } else {
-          xl = x2 - cx;
-        }
-        if(cy < y1 + ih * 0.5) {
-          yl = cy - y1;
-        } else {
-          yl = y2 - cy;
-        }
-        r = Math.min(xl, yl);
-      }
+  else if(size === 'closest-corner') {
+    let xl;
+    let yl;
+    if(cx < x1 + iw * 0.5) {
+      xl = cx - x1;
     }
-    else if(size === 'closest-corner') {
-      let xl;
-      let yl;
-      if(cx < x1 + iw * 0.5) {
-        xl = cx - x1;
-      }
-      else {
-        xl = x2 - cx;
-      }
-      if(cy < y1 + ih * 0.5) {
-        yl = cy - y1;
-      }
-      else {
-        yl = y2 - cy;
-      }
-      r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
-    }
-    else if(size === 'farthest-side') {
-      if(cx <= x1) {
-        r = x1 - cx + iw;
-      }
-      else if(cx >= x2) {
-        r = cx - x2 + iw;
-      }
-      else if(cy <= y1) {
-        r = y1 - cy + ih;
-      }
-      else if(cx >= y2) {
-        r = cy - y2 + ih;
-      }
-      else {
-        let xl = Math.max(x2 - cx, cx - x1);
-        let yl = Math.max(y2 - cy, cy - y1);
-        r = Math.max(xl, yl);
-      }
-    }
-    // 默认farthest-corner
     else {
-      let xl;
-      let yl;
-      if(cx < x1 + iw * 0.5) {
-        xl = x2 - cx;
-      }
-      else {
-        xl = cx - x1;
-      }
-      if(cy < y1 + ih * 0.5) {
-        yl = y2 - cy;
-      }
-      else {
-        yl = cy - y1;
-      }
-      r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+      xl = x2 - cx;
     }
+    if(cy < y1 + ih * 0.5) {
+      yl = cy - y1;
+    }
+    else {
+      yl = y2 - cy;
+    }
+    r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+  }
+  else if(size === 'farthest-side') {
+    if(cx <= x1) {
+      r = x1 - cx + iw;
+    }
+    else if(cx >= x2) {
+      r = cx - x2 + iw;
+    }
+    else if(cy <= y1) {
+      r = y1 - cy + ih;
+    }
+    else if(cx >= y2) {
+      r = cy - y2 + ih;
+    }
+    else {
+      let xl = Math.max(x2 - cx, cx - x1);
+      let yl = Math.max(y2 - cy, cy - y1);
+      r = Math.max(xl, yl);
+    }
+  }
+  // 默认farthest-corner
+  else {
+    let xl;
+    let yl;
+    if(cx < x1 + iw * 0.5) {
+      xl = x2 - cx;
+    }
+    else {
+      xl = cx - x1;
+    }
+    if(cy < y1 + ih * 0.5) {
+      yl = y2 - cy;
+    }
+    else {
+      yl = cy - y1;
+    }
+    r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
   }
   return [r, cx, cy];
 }
@@ -415,46 +406,57 @@ function parseGradient(s) {
     let o = {
       k: gradient[1],
     };
-    let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)|circle|ellipse|at|closest|farthest|((closest|farthest)-(side|corner))/.exec(gradient[2]);
+    if(o.k === 'linear') {
+      let deg = /(-?[\d.]+deg)|(to\s+[toprighbml]+)/i.exec(gradient[2]);
+      if(deg) {
+        o.d = getLinearDeg(deg[0].toLowerCase());
+      }
+      else {
+        o.d = 180;
+      }
+    }
+    else if(o.k === 'radial') {
+      o.s = gradient[2].indexOf('ellipse') > -1 ? 'ellipse' : 'circle';
+      let size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
+      if(size) {
+        o.z = size[0].toLowerCase();
+      }
+      else {
+        o.z = 'farthest-corner';
+      }
+      let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      if(position) {
+        let x = getRadialPosition(position[1]);
+        let y = position[2] ? getRadialPosition(position[2]) : x;
+        o.p = [x, y];
+      }
+      else {
+        o.p = [{
+          value: 50,
+          unit: PERCENT,
+        }, {
+          value: 50,
+          unit: PERCENT,
+        }];
+      }
+    }
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
       let res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
       let arr = [rgba2int(res[1])];
       if(res[2]) {
+        arr[1] = {
+          value: parseFloat(res[2]),
+        };
         if(/%$/.test(res[2])) {
-          arr[1] = {
-            value: parseFloat(res[2]),
-            unit: PERCENT,
-            str: res[2],
-          };
+          arr[1].unit = PERCENT;
         }
         else {
-          arr[1] = {
-            value: parseFloat(res[2]),
-            unit: PX,
-            str: res[2],
-          };
+          arr[1].unit = PX;
         }
       }
       return arr;
     });
-    if(deg) {
-      let i = gradient[2].indexOf(',');
-      if(o.k === 'linear') {
-        o.d = getLinearDeg(gradient[2].slice(0, i));
-      }
-      else {
-        o.d = gradient[2].slice(0, i);
-      }
-    }
-    else {
-      if(o.k === 'linear') {
-        o.d = 180;
-      }
-      else {
-        o.d = 'farthest-corner';
-      }
-    }
     return o;
   }
 }
@@ -473,24 +475,24 @@ function getLinear(v, d, cx, cy, w, h) {
   };
 }
 
-function getRadial(v, d, cx, cy, x1, y1, x2, y2) {
+function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
-  let [r, cx2, cy2] = calRadialRadius(d, w, h, cx, cy, x1, y1, x2, y2);
+  let [r, cx, cy] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
   let stop = getColorStop(v, r * 2);
   // 超限情况等同于只显示end的bgc
   if(r <= 0) {
     let end = stop[stop.length - 1];
     end[1] = 0;
     stop = [end];
-    cx2 = x1;
-    cy2 = y1;
+    cx = x1;
+    cy = y1;
     // 肯定大于最长直径
     r = w + h;
   }
   return {
-    cx: cx2,
-    cy: cy2,
+    cx,
+    cy,
     r,
     stop,
   };

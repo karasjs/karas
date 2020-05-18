@@ -7,10 +7,10 @@ let o = karas.render(
 let t = o.ref.t;
 let animation = t.animate([
   {
-    background: 'radial-gradient(#F00 0%, #00F 99%, #FFF)',
+    background: 'radial-gradient(at 0% 0%, #F00 0%, #00F 99%, #FFF)',
   },
   {
-    background: 'radial-gradient(#F00 0%, #00F 1%, #FFF)',
+    background: 'radial-gradient(at 100% 100%, #F00 0%, #00F 1%, #FFF)',
   }
 ], {
   duration: 200,
@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.backgroundImage;
+    input.value = JSON.stringify(t.computedStyle.backgroundImage);
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.backgroundImage;
+  input.value += '/' + JSON.stringify(t.computedStyle.backgroundImage);
 });

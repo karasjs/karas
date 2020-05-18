@@ -128,6 +128,18 @@ class Controller {
     this.__action('pause');
   }
 
+  resume(cb) {
+    let once = true;
+    this.__action('resume', [cb && function(diff) {
+      if(once) {
+        once = false;
+        if(isFunction(cb)) {
+          cb(diff);
+        }
+      }
+    }]);
+  }
+
   cancel(cb) {
     let once = true;
     this.__action('cancel', [cb && function(diff) {

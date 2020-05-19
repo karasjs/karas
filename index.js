@@ -6862,10 +6862,6 @@
 
     return 0;
   }
-
-  function isRelativeOrAbsolute(node) {
-    return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
-  }
   /**
    * 1. 封装string为Text节点
    * 2. 打平children中的数组，变成一维
@@ -7886,7 +7882,7 @@
             for (var i = zIndex.length - 1; i >= 0; i--) {
               var child = zIndex[i];
 
-              if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
+              if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
                 if (child.__emitEvent(e, force)) {
                   childWillResponse = true;
                 }
@@ -7925,7 +7921,7 @@
           for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
             var _child = zIndex[_i9];
 
-            if (_child instanceof Xom || _child instanceof Component && _child.shadowRoot instanceof Xom && isRelativeOrAbsolute(_child.shadowRoot)) {
+            if (_child instanceof Xom || _child instanceof Component && _child.shadowRoot instanceof Xom) {
               if (_child.__emitEvent(e)) {
                 childWillResponse = true;
               }
@@ -8464,7 +8460,7 @@
     'img': true
   };
 
-  function isRelativeOrAbsolute$1(node) {
+  function isRelativeOrAbsolute(node) {
     return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
   }
 
@@ -9608,7 +9604,7 @@
         var zIndex = this.zIndexChildren; // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          if (!(item instanceof Text) && isRelativeOrAbsolute$1(item)) {
+          if (!(item instanceof Text) && isRelativeOrAbsolute(item)) {
             item.__renderByMask(renderMode, ctx, defs);
           }
         });
@@ -9664,8 +9660,8 @@
         sort(zIndex, function (a, b) {
           var xomA = a instanceof Xom;
           var xomB = b instanceof Xom;
-          var raA = isRelativeOrAbsolute$1(a);
-          var raB = isRelativeOrAbsolute$1(b);
+          var raA = isRelativeOrAbsolute(a);
+          var raB = isRelativeOrAbsolute(b);
 
           if (xomA && xomB) {
             if (raA && raB) {

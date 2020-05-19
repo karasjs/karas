@@ -120,10 +120,6 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
-function isRelativeOrAbsolute(node) {
-  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
-}
-
 /**
  * 1. 封装string为Text节点
  * 2. 打平children中的数组，变成一维
@@ -1037,7 +1033,7 @@ class Xom extends Node {
         for(let i = zIndex.length - 1; i >= 0; i--) {
           let child = zIndex[i];
           if(child instanceof Xom
-            || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
+            || child instanceof Component && child.shadowRoot instanceof Xom) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
             }
@@ -1069,7 +1065,7 @@ class Xom extends Node {
       for(let i = zIndex.length - 1; i >= 0; i--) {
         let child = zIndex[i];
         if(child instanceof Xom
-          || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
+          || child instanceof Component && child.shadowRoot instanceof Xom) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
           }

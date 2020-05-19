@@ -7376,8 +7376,14 @@
           if (!equalArr$2(this.matrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = "matrix(".concat(joinArr$1(this.matrix, ','), ")");
           }
-        } // 隐藏不渲染
+        } // 先计算，防止隐藏不执行
 
+
+        computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+        computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
+        backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
+        computedStyle.backgroundSize = backgroundSize;
+        computedStyle.backgroundImage = backgroundImage; // 隐藏不渲染
 
         if (visibility === 'hidden') {
           return;
@@ -7386,12 +7392,8 @@
 
         if (backgroundColor[3] > 0) {
           renderBgc(renderMode, int2rgba$2(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-        }
+        } // 渐变或图片叠加
 
-        computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
-        computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
-        backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-        computedStyle.backgroundSize = backgroundSize; // 渐变或图片叠加
 
         if (backgroundImage) {
           var loadBgi = this.__loadBgi;
@@ -7726,8 +7728,6 @@
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
           }
-
-          computedStyle.backgroundImage = backgroundImage;
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 

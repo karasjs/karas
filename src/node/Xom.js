@@ -586,6 +586,14 @@ class Xom extends Node {
         this.virtualDom.transform = `matrix(${joinArr(this.matrix, ',')})`;
       }
     }
+    // 先计算，防止隐藏不执行
+    computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
+      ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+    computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
+      ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
+    backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
+    computedStyle.backgroundSize = backgroundSize;
+    computedStyle.backgroundImage = backgroundImage;
     // 隐藏不渲染
     if(visibility === 'hidden') {
       return;
@@ -595,12 +603,6 @@ class Xom extends Node {
       renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
-    computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
-      ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
-    computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
-      ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
-    backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-    computedStyle.backgroundSize = backgroundSize;
     // 渐变或图片叠加
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
@@ -913,7 +915,6 @@ class Xom extends Node {
         let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
         renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
       }
-      computedStyle.backgroundImage = backgroundImage;
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {

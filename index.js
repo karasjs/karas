@@ -7882,26 +7882,13 @@
 
         if (force) {
           if (!this.isGeom) {
-            // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
+            // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
             for (var i = zIndex.length - 1; i >= 0; i--) {
               var child = zIndex[i];
 
-              if (child instanceof Xom && isRelativeOrAbsolute(child) || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
+              if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
                 if (child.__emitEvent(e, force)) {
                   childWillResponse = true;
-                }
-              }
-            } // 再看普通流，从后往前遮挡顺序
-
-
-            if (!childWillResponse) {
-              for (var _i9 = children.length - 1; _i9 >= 0; _i9--) {
-                var _child = children[_i9];
-
-                if (_child instanceof Xom && !isRelativeOrAbsolute(_child) || _child instanceof Component && _child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child.shadowRoot)) {
-                  if (_child.__emitEvent(e, force)) {
-                    childWillResponse = true;
-                  }
                 }
               }
             }
@@ -7934,26 +7921,13 @@
         }
 
         if (!this.isGeom) {
-          // 先响应absolute/relative高优先级，从后往前遮挡顺序
-          for (var _i10 = zIndex.length - 1; _i10 >= 0; _i10--) {
-            var _child2 = zIndex[_i10];
+          // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
+          for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
+            var _child = zIndex[_i9];
 
-            if (_child2 instanceof Xom && isRelativeOrAbsolute(_child2) || _child2 instanceof Component && _child2.shadowRoot instanceof Xom && isRelativeOrAbsolute(_child2.shadowRoot)) {
-              if (_child2.__emitEvent(e)) {
+            if (_child instanceof Xom || _child instanceof Component && _child.shadowRoot instanceof Xom && isRelativeOrAbsolute(_child.shadowRoot)) {
+              if (_child.__emitEvent(e)) {
                 childWillResponse = true;
-              }
-            }
-          } // 再看普通流，从后往前遮挡顺序
-
-
-          if (!childWillResponse) {
-            for (var _i11 = children.length - 1; _i11 >= 0; _i11--) {
-              var _child3 = children[_i11];
-
-              if (_child3 instanceof Xom && !isRelativeOrAbsolute(_child3) || _child3 instanceof Component && _child3.shadowRoot instanceof Xom && !isRelativeOrAbsolute(_child3.shadowRoot)) {
-                if (_child3.__emitEvent(e)) {
-                  childWillResponse = true;
-                }
               }
             }
           }
@@ -9683,8 +9657,9 @@
       key: "zIndexChildren",
       get: function get() {
         var zIndex = this.children.filter(function (item, i) {
-          item.__iIndex = i;
-          return !item.isMask;
+          item.__iIndex = i; // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+
+          return !item.isMask && item.computedStyle;
         });
         sort(zIndex, function (a, b) {
           var xomA = a instanceof Xom;

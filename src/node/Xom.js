@@ -1033,25 +1033,13 @@ class Xom extends Node {
     // touchmove之类强制的直接通知即可
     if(force) {
       if(!this.isGeom) {
-        // 先响应absolute/relative高优先级，综合zIndex和从后往前遮挡顺序
+        // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
         for(let i = zIndex.length - 1; i >= 0; i--) {
           let child = zIndex[i];
-          if(child instanceof Xom && isRelativeOrAbsolute(child)
+          if(child instanceof Xom
             || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
             if(child.__emitEvent(e, force)) {
               childWillResponse = true;
-            }
-          }
-        }
-        // 再看普通流，从后往前遮挡顺序
-        if(!childWillResponse) {
-          for(let i = children.length - 1; i >= 0; i--) {
-            let child = children[i];
-            if(child instanceof Xom && !isRelativeOrAbsolute(child)
-              || child instanceof Component && child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(child.shadowRoot)) {
-              if(child.__emitEvent(e, force)) {
-                childWillResponse = true;
-              }
             }
           }
         }
@@ -1077,25 +1065,13 @@ class Xom extends Node {
       return true;
     }
     if(!this.isGeom) {
-      // 先响应absolute/relative高优先级，从后往前遮挡顺序
+      // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
       for(let i = zIndex.length - 1; i >= 0; i--) {
         let child = zIndex[i];
-        if(child instanceof Xom && isRelativeOrAbsolute(child)
+        if(child instanceof Xom
           || child instanceof Component && child.shadowRoot instanceof Xom && isRelativeOrAbsolute(child.shadowRoot)) {
           if(child.__emitEvent(e)) {
             childWillResponse = true;
-          }
-        }
-      }
-      // 再看普通流，从后往前遮挡顺序
-      if(!childWillResponse) {
-        for(let i = children.length - 1; i >= 0; i--) {
-          let child = children[i];
-          if(child instanceof Xom && !isRelativeOrAbsolute(child)
-            || child instanceof Component && child.shadowRoot instanceof Xom && !isRelativeOrAbsolute(child.shadowRoot)) {
-            if(child.__emitEvent(e)) {
-              childWillResponse = true;
-            }
           }
         }
       }

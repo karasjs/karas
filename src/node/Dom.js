@@ -1072,7 +1072,8 @@ class Dom extends Xom {
   get zIndexChildren() {
     let zIndex = this.children.filter((item, i) => {
       item.__iIndex = i;
-      return !item.isMask;
+      // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+      return !item.isMask && item.computedStyle;
     });
     sort(zIndex, (a, b) => {
       let xomA = a instanceof Xom;

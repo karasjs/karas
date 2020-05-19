@@ -2329,7 +2329,7 @@
       computedStyle.color = color.value;
     }
 
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
+    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -7271,9 +7271,9 @@
             borderBottomLeftRadius = computedStyle.borderBottomLeftRadius,
             visibility = computedStyle.visibility,
             backgroundRepeat = computedStyle.backgroundRepeat,
+            backgroundImage = computedStyle.backgroundImage,
             opacity = computedStyle.opacity;
-        var backgroundImage = currentStyle.backgroundImage,
-            backgroundSize = currentStyle.backgroundSize,
+        var backgroundSize = currentStyle.backgroundSize,
             backgroundPositionX = currentStyle.backgroundPositionX,
             backgroundPositionY = currentStyle.backgroundPositionY,
             transform = currentStyle.transform,
@@ -7382,8 +7382,7 @@
         computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
         computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
         backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-        computedStyle.backgroundSize = backgroundSize;
-        computedStyle.backgroundImage = backgroundImage; // 隐藏不渲染
+        computedStyle.backgroundSize = backgroundSize; // 隐藏不渲染
 
         if (visibility === 'hidden') {
           return;
@@ -9581,7 +9580,6 @@
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
             visibility = _this$computedStyle.visibility,
-            flowChildren = this.flowChildren,
             children = this.children;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -9593,20 +9591,12 @@
           if (item.isMask) {
             item.__renderAsMask(renderMode, ctx, defs);
           }
-        }); // 先绘制static
-
-        flowChildren.forEach(function (item) {
-          if (!item.isMask && (item instanceof Text || item.computedStyle.position === 'static')) {
-            item.__renderByMask(renderMode, ctx, defs);
-          }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndex = this.zIndexChildren; // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          if (!(item instanceof Text) && isRelativeOrAbsolute(item)) {
-            item.__renderByMask(renderMode, ctx, defs);
-          }
+          item.__renderByMask(renderMode, ctx, defs);
         });
 
         if (renderMode === mode.SVG) {
@@ -9635,7 +9625,7 @@
             item = item.shadowRoot;
           }
 
-          return item instanceof Text || item.computedStyle.position !== 'absolute';
+          return item instanceof Text || item.computedStyle && item.computedStyle.position !== 'absolute';
         });
       }
     }, {
@@ -9646,7 +9636,7 @@
             item = item.shadowRoot;
           }
 
-          return item instanceof Xom && item.computedStyle.position === 'absolute';
+          return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
         });
       }
     }, {

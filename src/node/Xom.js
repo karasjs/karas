@@ -480,10 +480,10 @@ class Xom extends Node {
       borderBottomLeftRadius,
       visibility,
       backgroundRepeat,
+      backgroundImage,
       opacity,
     } = computedStyle;
     let {
-      backgroundImage,
       backgroundSize,
       backgroundPositionX,
       backgroundPositionY,
@@ -593,7 +593,6 @@ class Xom extends Node {
       ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
     backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
     computedStyle.backgroundSize = backgroundSize;
-    computedStyle.backgroundImage = backgroundImage;
     // 隐藏不渲染
     if(visibility === 'hidden') {
       return;

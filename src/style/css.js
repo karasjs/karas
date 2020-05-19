@@ -892,6 +892,7 @@ function repaint(node, isRoot, currentStyle) {
     'borderBottomStyle',
     'borderLeftStyle',
     'backgroundRepeat',
+    'backgroundImage',
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

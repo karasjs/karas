@@ -1011,7 +1011,7 @@ class Dom extends Xom {
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }
-    let { isDestroyed, computedStyle: { display, visibility }, flowChildren, children } = this;
+    let { isDestroyed, computedStyle: { display, visibility }, children } = this;
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
@@ -1021,21 +1021,11 @@ class Dom extends Xom {
         item.__renderAsMask(renderMode, ctx, defs);
       }
     });
-    // 先绘制static
-    flowChildren.forEach(item => {
-      if(!item.isMask
-        && (item instanceof Text
-          || item.computedStyle.position === 'static')) {
-        item.__renderByMask(renderMode, ctx, defs);
-      }
-    });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndex = this.zIndexChildren;
     // 再绘制relative和absolute
     zIndex.forEach(item => {
-      if(!(item instanceof Text) && isRelativeOrAbsolute(item)) {
-        item.__renderByMask(renderMode, ctx, defs);
-      }
+      item.__renderByMask(renderMode, ctx, defs);
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
@@ -1056,7 +1046,7 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Text || item.computedStyle.position !== 'absolute';
+      return item instanceof Text || item.computedStyle && item.computedStyle.position !== 'absolute';
     });
   }
 
@@ -1065,7 +1055,7 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Xom && item.computedStyle.position === 'absolute';
+      return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
     });
   }
 

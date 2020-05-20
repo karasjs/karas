@@ -22,7 +22,7 @@ class Rect extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, ctx, defs, isHidden) {
     let {
       isDestroyed,
       originX,
@@ -35,7 +35,7 @@ class Rect extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode, ctx, defs);
+    } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }

@@ -98,7 +98,7 @@ class Geom extends Xom {
     this.__height = fixedHeight ? h : y - data.y;
   }
 
-  __preRender(renderMode, ctx, defs) {
+  __preRender(renderMode, ctx, defs, isHidden) {
     let { sx: x, sy: y, width, height, currentStyle, computedStyle } = this;
     let {
       strokeWidth,
@@ -170,8 +170,8 @@ class Geom extends Xom {
     };
   }
 
-  render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+  render(renderMode, ctx, defs, isHidden) {
+    super.render(renderMode, ctx, defs, isHidden);
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }
@@ -183,7 +183,7 @@ class Geom extends Xom {
         display,
       };
     }
-    return this.__preRender(renderMode, ctx, defs);
+    return this.__preRender(renderMode, ctx, defs, isHidden);
   }
 
   __renderAsMask(renderMode, ctx, defs) {

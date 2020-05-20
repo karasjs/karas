@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import util from "../util/util";
 
 const OFFSET = Math.PI * 0.5;
 
@@ -70,7 +69,7 @@ class Sector extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, ctx, defs, isHidden) {
     let {
       isDestroyed,
       cx,
@@ -83,7 +82,7 @@ class Sector extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode, ctx, defs);
+    } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }

@@ -22,7 +22,7 @@ class Ellipse extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, ctx, defs, isHidden) {
     let {
       isDestroyed,
       cx,
@@ -35,7 +35,7 @@ class Ellipse extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
-    } = super.render(renderMode, ctx, defs);
+    } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }

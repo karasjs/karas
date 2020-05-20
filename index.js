@@ -11352,7 +11352,7 @@
       }
     }, {
       key: "__preRender",
-      value: function __preRender(renderMode, ctx, defs) {
+      value: function __preRender(renderMode, ctx, defs, isHidden) {
         var x = this.sx,
             y = this.sy,
             width = this.width,
@@ -11428,8 +11428,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
+      value: function render(renderMode, ctx, defs, isHidden) {
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden);
 
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'geom';
@@ -11447,7 +11447,7 @@
           };
         }
 
-        return this.__preRender(renderMode, ctx, defs);
+        return this.__preRender(renderMode, ctx, defs, isHidden);
       }
     }, {
       key: "__renderAsMask",
@@ -11680,8 +11680,8 @@
 
     _createClass(Line, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             display = _get$call.display,
             visibility = _get$call.visibility,
@@ -11864,8 +11864,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -12100,8 +12100,8 @@
 
     _createClass(Sector, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -12278,8 +12278,8 @@
 
     _createClass(Rect, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -12398,8 +12398,8 @@
 
     _createClass(Circle, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -12495,8 +12495,8 @@
 
     _createClass(Ellipse, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, ctx, defs, isHidden) {
+        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,

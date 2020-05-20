@@ -204,7 +204,7 @@ class Text extends Node {
 
   render(renderMode, ctx) {
     const { isDestroyed, computedStyle } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
+    if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
       return;
     }
     if(renderMode === mode.CANVAS) {

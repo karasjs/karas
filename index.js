@@ -2329,7 +2329,8 @@
       computedStyle.color = color.value;
     }
 
-    ['visibility', 'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage'].forEach(function (k) {
+    ['visibility', // render()处理继承导致的父hidden子也hidden
+    'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -7219,9 +7220,17 @@
           }
         }
       }
+      /**
+       * 渲染基础方法，Dom/Geom公用
+       * @param renderMode
+       * @param ctx
+       * @param defs
+       * @param isHidden visibility:hidden时标识所有子元素只计算不渲染
+       */
+
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, ctx, defs, isHidden) {
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
@@ -7384,7 +7393,8 @@
         backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
         computedStyle.backgroundSize = backgroundSize; // 隐藏不渲染
 
-        if (visibility === 'hidden') {
+        if (visibility === 'hidden' || isHidden) {
+          computedStyle.visibility = 'hidden';
           return;
         } // 背景色垫底
 
@@ -7769,13 +7779,13 @@
       }
     }, {
       key: "__renderByMask",
-      value: function __renderByMask(renderMode, ctx, defs) {
+      value: function __renderByMask(renderMode, ctx, defs, isHidden) {
         var prev = this.prev,
             root = this.root;
-        var hasMask = prev && prev.isMask;
+        var hasMask = prev && prev.isMask; // visibility:hidden时无视mask
 
-        if (!hasMask) {
-          this.render(renderMode, ctx, defs);
+        if (!hasMask || isHidden) {
+          this.render(renderMode, ctx, defs, isHidden);
           return;
         }
 
@@ -9568,8 +9578,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs); // 不显示的为了diff也要根据type生成
+      value: function render(renderMode, ctx, defs, isHidden) {
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden); // 不显示的为了diff也要根据type生成
 
 
         if (renderMode === mode.SVG) {
@@ -9582,24 +9592,31 @@
             visibility = _this$computedStyle.visibility,
             children = this.children;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none') {
           return;
+        }
+
+        if (!isHidden && visibility === 'hidden') {
+          isHidden = true;
         } // 先渲染过滤mask
 
 
-        children.forEach(function (item) {
-          if (item.isMask) {
-            item.__renderAsMask(renderMode, ctx, defs);
-          }
-        }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+        if (!isHidden) {
+          children.forEach(function (item) {
+            if (item.isMask) {
+              item.__renderAsMask(renderMode, ctx, defs);
+            }
+          });
+        } // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+
 
         var zIndex = this.zIndexChildren; // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          item.__renderByMask(renderMode, ctx, defs);
+          item.__renderByMask(renderMode, ctx, defs, isHidden);
         });
 
-        if (renderMode === mode.SVG) {
+        if (!isHidden && renderMode === mode.SVG) {
           this.virtualDom.children = zIndex.map(function (item) {
             return item.virtualDom;
           });

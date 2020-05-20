@@ -430,7 +430,14 @@ class Xom extends Node {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  /**
+   * 渲染基础方法，Dom/Geom公用
+   * @param renderMode
+   * @param ctx
+   * @param defs
+   * @param isHidden visibility:hidden时标识所有子元素只计算不渲染
+   */
+  render(renderMode, ctx, defs, isHidden) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -594,7 +601,8 @@ class Xom extends Node {
     backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
     computedStyle.backgroundSize = backgroundSize;
     // 隐藏不渲染
-    if(visibility === 'hidden') {
+    if(visibility === 'hidden' || isHidden) {
+      computedStyle.visibility = 'hidden';
       return;
     }
     // 背景色垫底
@@ -942,11 +950,12 @@ class Xom extends Node {
     }
   }
 
-  __renderByMask(renderMode, ctx, defs) {
+  __renderByMask(renderMode, ctx, defs, isHidden) {
     let { prev, root } = this;
     let hasMask = prev && prev.isMask;
-    if(!hasMask) {
-      this.render(renderMode, ctx, defs);
+    // visibility:hidden时无视mask
+    if(!hasMask || isHidden) {
+      this.render(renderMode, ctx, defs, isHidden);
       return;
     }
     if(renderMode === mode.CANVAS) {

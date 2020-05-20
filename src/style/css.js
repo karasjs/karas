@@ -884,7 +884,7 @@ function repaint(node, isRoot, currentStyle) {
     computedStyle.color = color.value;
   }
   [
-    'visibility',
+    'visibility', // render()处理继承导致的父hidden子也hidden
     'opacity',
     'zIndex',
     'borderTopStyle',

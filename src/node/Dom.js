@@ -1005,29 +1005,34 @@ class Dom extends Xom {
     });
   }
 
-  render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+  render(renderMode, ctx, defs, isHidden) {
+    super.render(renderMode, ctx, defs, isHidden);
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }
     let { isDestroyed, computedStyle: { display, visibility }, children } = this;
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none') {
       return;
     }
+    if(!isHidden && visibility === 'hidden') {
+      isHidden = true;
+    }
     // 先渲染过滤mask
-    children.forEach(item => {
-      if(item.isMask) {
-        item.__renderAsMask(renderMode, ctx, defs);
-      }
-    });
+    if(!isHidden) {
+      children.forEach(item => {
+        if(item.isMask) {
+          item.__renderAsMask(renderMode, ctx, defs);
+        }
+      });
+    }
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndex = this.zIndexChildren;
     // 再绘制relative和absolute
     zIndex.forEach(item => {
-      item.__renderByMask(renderMode, ctx, defs);
+      item.__renderByMask(renderMode, ctx, defs, isHidden);
     });
-    if(renderMode === mode.SVG) {
+    if(!isHidden && renderMode === mode.SVG) {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
     }
   }

@@ -9827,10 +9827,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, ctx, defs, isHidden) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs);
+        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden);
 
         var x = this.sx,
             y = this.sy,
@@ -12914,7 +12914,7 @@
     return vd;
   }
 
-  var version = "0.29.6";
+  var version = "0.30.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

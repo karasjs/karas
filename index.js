@@ -6747,8 +6747,8 @@
         return this.__spfLimit;
       },
       set: function set(v) {
-        if (util.isNumber(v)) {
-          v = Math.max(v, parseInt(v) || 0);
+        if (util.isNumber(v) || /^\d/.test(v)) {
+          this.__spfLimit = Math.max(v, parseInt(v) || 0);
         } else {
           this.__spfLimit = !!v;
         }
@@ -12914,7 +12914,7 @@
     return vd;
   }
 
-  var version = "0.30.0";
+  var version = "0.30.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

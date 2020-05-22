@@ -1673,8 +1673,8 @@ class Animation extends Event {
   }
 
   set spfLimit(v) {
-    if(util.isNumber(v)) {
-      v = Math.max(v, parseInt(v) || 0);
+    if(util.isNumber(v) || /^\d/.test(v)) {
+      this.__spfLimit = Math.max(v, parseInt(v) || 0);
     }
     else {
       this.__spfLimit = !!v;

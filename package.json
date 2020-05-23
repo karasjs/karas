@@ -18,8 +18,7 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "selenite": "~0.3.2",
-    "yurine": "~0.3.0"
+    "yurine": "~0.3.1"
   },
   "devDependencies": {
     "@babel/core": "^7.8.7",

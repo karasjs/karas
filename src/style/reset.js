@@ -64,6 +64,7 @@ const DOM = {
   skewX: 0,
   skewY: 0,
   rotateZ: 0,
+  filter: null,
 };
 
 const GEOM = {

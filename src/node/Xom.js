@@ -489,6 +489,7 @@ class Xom extends Node {
       backgroundRepeat,
       backgroundImage,
       opacity,
+      filter,
     } = computedStyle;
     let {
       backgroundSize,
@@ -947,6 +948,37 @@ class Xom extends Node {
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
       let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
       renderBorder(renderMode, points, borderLeftColor, ctx, this);
+    }
+    if(filter) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0 && renderMode === mode.SVG) {
+          // 模糊框卷积尺寸 #66
+          let d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+          d *= 3;
+          if(d % 2 === 0) {
+            d++;
+          }
+          let id = defs.add({
+            tagName: 'filter',
+            props: [
+              ['x', -d / outerWidth],
+              ['y', -d / outerHeight],
+              ['width', 1 + d * 2 / outerWidth],
+              ['height', 1 + d * 2 / outerHeight]
+            ],
+            children: [
+              {
+                tagName: 'feGaussianBlur',
+                props: [
+                  ['stdDeviation', v],
+                ],
+              }
+            ],
+          });
+          this.virtualDom.filter = `url(#${id})`;
+        }
+      });
     }
   }
 

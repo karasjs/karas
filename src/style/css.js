@@ -370,12 +370,12 @@ function normalize(style, reset = []) {
   // 背景尺寸
   temp = style.backgroundSize;
   if(temp) {
+    let bc = style.backgroundSize = [];
     let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];
       }
-      let bc = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
         if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
@@ -402,7 +402,12 @@ function normalize(style, reset = []) {
           });
         }
       }
-      style.backgroundSize = bc;
+    }
+    else {
+      bc.push({
+        unit: AUTO,
+      });
+      bc[1] = bc[0];
     }
   }
   // border-color
@@ -418,9 +423,9 @@ function normalize(style, reset = []) {
   });
   temp = style.transform;
   if(temp) {
+    let transform = style.transform = [];
     let match = temp.toString().match(/\w+\(.+?\)/g);
     if(match) {
-      let transform = [];
       match.forEach(item => {
         let i = item.indexOf('(');
         let k = item.slice(0, i);
@@ -465,17 +470,16 @@ function normalize(style, reset = []) {
           transform.push(arr2);
         }
       });
-      style.transform = transform;
     }
   }
   temp = style.transformOrigin;
   if(!isNil(temp)) {
+    let tfo = style.transformOrigin = [];
     let match = temp.toString().match(reg.position);
     if(match) {
       if(match.length === 1) {
         match[1] = match[0];
       }
-      let tfo = [];
       for(let i = 0; i < 2; i++) {
         let item = match[i];
         if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
@@ -501,7 +505,13 @@ function normalize(style, reset = []) {
           }
         }
       }
-      style.transformOrigin = tfo;
+    }
+    else {
+      tfo.push({
+        value: 50,
+        unit: PERCENT,
+      });
+      tfo[1] = tfo[0];
     }
   }
   // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
@@ -780,6 +790,17 @@ function normalize(style, reset = []) {
       style.stroke = rgba2int(temp);
     }
   }
+  temp = style.filter;
+  if(temp) {
+    style.filter = [];
+    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/.exec(temp);
+    if(blur) {
+      let v = parseFloat(blur[1]) || 0;
+      if(v) {
+        style.filter.push(['blur', v]);
+      }
+    }
+  }
   return style;
 }
 
@@ -893,6 +914,7 @@ function repaint(node, isRoot, currentStyle) {
     'borderLeftStyle',
     'backgroundRepeat',
     'backgroundImage',
+    'filter',
   ].forEach(k => {
     computedStyle[k] = currentStyle[k];
   });

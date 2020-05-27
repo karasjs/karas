@@ -175,6 +175,16 @@ function equalStyle(k, a, b) {
   if(k === 'transform') {
     return equalArr(a[0][1], b[0][1]);
   }
+  else if(k === 'filter') {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      if(!equalArr(a[i], b[i])) {
+        return false;
+      }
+    }
+  }
   else if(k === 'transformOrigin' || k === 'backgroundSize') {
     return a[0].value === b[0].value && a[0].unit === b[0].unit
       && a[1].value === b[1].value && a[1].unit === b[1].unit;
@@ -370,6 +380,18 @@ function calDiff(prev, next, k, target) {
       nm[5] - pm[5],
     ];
     return res;
+  }
+  else if(k === 'filter') {
+    // 目前只有1个blur，可以简单处理
+    if(!p || !p.length) {
+      res.v = n[0][1];
+    }
+    else if(!n || !n.length) {
+      res.v = -p[0][1];
+    }
+    else {
+      res.v = n[0][1] - p[0][1];
+    }
   }
   else if(k === 'transformOrigin') {
     res.v = [];
@@ -785,6 +807,13 @@ function calIntermediateStyle(frame, percent) {
       for(let i = 0; i < 6; i++) {
         st[0][1][i] += v[i] * percent;
       }
+    }
+    else if(k === 'filter') {
+      // 只有1个样式声明了filter另外一个为空
+      if(!st) {
+        st = style[k] = [['blur', 0]];
+      }
+      st[0][1] += v * percent;
     }
     else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
       || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {

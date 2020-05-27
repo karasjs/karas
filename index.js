@@ -88,6 +88,19 @@
     return _setPrototypeOf(o, p);
   }
 
+  function _isNativeReflectConstruct() {
+    if (typeof Reflect === "undefined" || !Reflect.construct) return false;
+    if (Reflect.construct.sham) return false;
+    if (typeof Proxy === "function") return true;
+
+    try {
+      Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function _assertThisInitialized(self) {
     if (self === void 0) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -102,6 +115,25 @@
     }
 
     return _assertThisInitialized(self);
+  }
+
+  function _createSuper(Derived) {
+    var hasNativeReflectConstruct = _isNativeReflectConstruct();
+
+    return function _createSuperInternal() {
+      var Super = _getPrototypeOf(Derived),
+          result;
+
+      if (hasNativeReflectConstruct) {
+        var NewTarget = _getPrototypeOf(this).constructor;
+
+        result = Reflect.construct(Super, arguments, NewTarget);
+      } else {
+        result = Super.apply(this, arguments);
+      }
+
+      return _possibleConstructorReturn(this, result);
+    };
   }
 
   function _superPropBase(object, property) {
@@ -135,19 +167,15 @@
   }
 
   function _slicedToArray(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
   }
 
   function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
 
   function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
-
-      return arr2;
-    }
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
   }
 
   function _arrayWithHoles(arr) {
@@ -155,14 +183,11 @@
   }
 
   function _iterableToArray(iter) {
-    if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
   }
 
   function _iterableToArrayLimit(arr, i) {
-    if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
-      return;
-    }
-
+    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
     var _arr = [];
     var _n = true;
     var _d = false;
@@ -188,12 +213,29 @@
     return _arr;
   }
 
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
   function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance");
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
   var Node = /*#__PURE__*/function () {
@@ -467,15 +509,16 @@
       _s2 += '</g>';
       var opacity = vd.opacity,
           transform = vd.transform,
-          mask = vd.mask;
-      return "<g".concat(opacity !== 1 ? " opacity=\"".concat(opacity, "\"") : '').concat(transform ? " transform=\"".concat(transform, "\"") : '').concat(mask ? " mask=\"".concat(mask, "\"") : '', ">").concat(_s2, "</g>");
+          mask = vd.mask,
+          filter = vd.filter;
+      return "<g".concat(opacity !== 1 ? " opacity=\"".concat(opacity, "\"") : '').concat(transform ? " transform=\"".concat(transform, "\"") : '').concat(mask ? " mask=\"".concat(mask, "\"") : '').concat(filter ? " filter=\"".concat(filter, "\"") : '', ">").concat(_s2, "</g>");
     }
   }
 
   function joinDef(def) {
     var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\"");
 
-    if (def.tagName === 'mask') ; else {
+    if (def.tagName === 'mask') ; else if (def.tagName === 'filter') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -1805,14 +1848,13 @@
     temp = style.backgroundSize;
 
     if (temp) {
+      var bc = style.backgroundSize = [];
       var match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
 
       if (match) {
         if (match.length === 1) {
           match[1] = match[0];
         }
-
-        var bc = [];
 
         for (var i = 0; i < 2; i++) {
           var item = match[i];
@@ -1839,8 +1881,11 @@
             });
           }
         }
-
-        style.backgroundSize = bc;
+      } else {
+        bc.push({
+          unit: AUTO
+        });
+        bc[1] = bc[0];
       }
     } // border-color
 
@@ -1859,11 +1904,11 @@
     temp = style.transform;
 
     if (temp) {
+      var transform = style.transform = [];
+
       var _match = temp.toString().match(/\w+\(.+?\)/g);
 
       if (_match) {
-        var transform = [];
-
         _match.forEach(function (item) {
           var i = item.indexOf('(');
           var k = item.slice(0, i);
@@ -1920,22 +1965,20 @@
             transform.push(arr2);
           }
         });
-
-        style.transform = transform;
       }
     }
 
     temp = style.transformOrigin;
 
     if (!isNil$2(temp)) {
+      var tfo = style.transformOrigin = [];
+
       var _match2 = temp.toString().match(reg.position);
 
       if (_match2) {
         if (_match2.length === 1) {
           _match2[1] = _match2[0];
         }
-
-        var tfo = [];
 
         for (var _i = 0; _i < 2; _i++) {
           var _item = _match2[_i];
@@ -1963,8 +2006,12 @@
             }
           }
         }
-
-        style.transformOrigin = tfo;
+      } else {
+        tfo.push({
+          value: 50,
+          unit: PERCENT$1
+        });
+        tfo[1] = tfo[0];
       }
     } // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
 
@@ -2231,6 +2278,21 @@
       }
     }
 
+    temp = style.filter;
+
+    if (temp) {
+      style.filter = [];
+      var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/.exec(temp);
+
+      if (blur) {
+        var _v = parseFloat(blur[1]) || 0;
+
+        if (_v) {
+          style.filter.push(['blur', _v]);
+        }
+      }
+    }
+
     return style;
   } // 影响文字测量的只有字体和大小，必须提前处理，另顺带处理掉布局相关的属性
 
@@ -2330,7 +2392,7 @@
     }
 
     ['visibility', // render()处理继承导致的父hidden子也hidden
-    'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage'].forEach(function (k) {
+    'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage', 'filter'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -2510,12 +2572,14 @@
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
 
+    var _super = _createSuper(Text);
+
     function Text(content) {
       var _this;
 
       _classCallCheck(this, Text);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Text).call(this));
+      _this = _super.call(this);
       _this.__content = content.toString();
       _this.__lineBoxes = [];
       _this.__charWidthList = [];
@@ -2904,7 +2968,8 @@
     scaleY: 1,
     skewX: 0,
     skewY: 0,
-    rotateZ: 0
+    rotateZ: 0,
+    filter: null
   };
   var GEOM = {
     fill: 'transparent',
@@ -3967,7 +4032,8 @@
       borderBottomLeftRadius: true,
       visibility: true,
       opacity: true,
-      zIndex: true
+      zIndex: true,
+      filter: true
     }
   };
 
@@ -4015,12 +4081,14 @@
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
+    var _super = _createSuper(Component);
+
     function Component(tagName, props, children) {
       var _this;
 
       _classCallCheck(this, Component);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Component).call(this));
+      _this = _super.call(this);
 
       if (!isString(tagName)) {
         children = props;
@@ -4969,6 +5037,16 @@
   function equalStyle(k, a, b) {
     if (k === 'transform') {
       return equalArr$1(a[0][1], b[0][1]);
+    } else if (k === 'filter') {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var i = 0, len = a.length; i < len; i++) {
+        if (!equalArr$1(a[i], b[i])) {
+          return false;
+        }
+      }
     } else if (k === 'transformOrigin' || k === 'backgroundSize') {
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
@@ -4983,9 +5061,9 @@
         return false;
       }
 
-      for (var i = 0, len = av.length; i < len; i++) {
-        var ai = av[i];
-        var bi = bv[i];
+      for (var _i = 0, _len = av.length; _i < _len; _i++) {
+        var ai = av[_i];
+        var bi = bv[_i];
 
         if (ai.length !== bi.length) {
           return false;
@@ -5011,12 +5089,12 @@
           return false;
         }
 
-        for (var _i = 0, _len = a.length; _i < _len; _i++) {
-          if (a[_i] === b[_i]) {
+        for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+          if (a[_i2] === b[_i2]) {
             continue;
           }
 
-          if (a[_i][0] !== b[_i][0] || a[_i][1] !== b[_i][1]) {
+          if (a[_i2][0] !== b[_i2][0] || a[_i2][1] !== b[_i2][1]) {
             return false;
           }
         }
@@ -5171,6 +5249,15 @@
 
       res.v = [nm[0] - pm[0], nm[1] - pm[1], nm[2] - pm[2], nm[3] - pm[3], nm[4] - pm[4], nm[5] - pm[5]];
       return res;
+    } else if (k === 'filter') {
+      // 目前只有1个blur，可以简单处理
+      if (!p || !p.length) {
+        res.v = n[0][1];
+      } else if (!n || !n.length) {
+        res.v = -p[0][1];
+      } else {
+        res.v = n[0][1] - p[0][1];
+      }
     } else if (k === 'transformOrigin') {
       res.v = [];
 
@@ -5256,18 +5343,18 @@
     } else if (k === 'backgroundSize') {
       res.v = [];
 
-      for (var _i2 = 0; _i2 < 2; _i2++) {
-        var _pi = p[_i2];
-        var _ni = n[_i2];
+      for (var _i3 = 0; _i3 < 2; _i3++) {
+        var _pi = p[_i3];
+        var _ni = n[_i3];
 
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
-          var _v8 = _ni.value * 0.01 * target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v8 = _ni.value * 0.01 * target[_i3 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v8 - _pi.value);
         } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v9 = _ni.value * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni.value * 100 / target[_i3 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v9 - _pi.value);
         } else {
@@ -5296,9 +5383,9 @@
           var innerWidth = target.innerWidth;
           var eq;
 
-          for (var _i3 = 0, len = Math.min(pv.length, nv.length); _i3 < len; _i3++) {
-            var a = pv[_i3];
-            var b = nv[_i3];
+          for (var _i4 = 0, len = Math.min(pv.length, nv.length); _i4 < len; _i4++) {
+            var a = pv[_i4];
+            var b = nv[_i4];
             var t = [];
             t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
             eq = equalArr$1(t, [0, 0, 0, 0]);
@@ -5335,18 +5422,18 @@
           else {
               res.p = [];
 
-              for (var _i4 = 0; _i4 < 2; _i4++) {
-                var pp = p.p[_i4];
-                var np = n.p[_i4];
+              for (var _i5 = 0; _i5 < 2; _i5++) {
+                var pp = p.p[_i5];
+                var np = n.p[_i5];
 
                 if (pp.unit === np.unit) {
                   res.p.push(np.value - pp.value);
                 } else if (pp.unit === PX$3 && np.unit === PERCENT$4) {
-                  var _v11 = np.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
+                  var _v11 = np.value * 0.01 * target[_i5 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v11 - pp.value);
                 } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
-                  var _v12 = np.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+                  var _v12 = np.value * 100 / target[_i5 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v12 - pp.value);
                 }
@@ -5444,9 +5531,9 @@
 
         res.v = [];
 
-        for (var _i5 = 0, _len2 = Math.min(p.length, n.length); _i5 < _len2; _i5++) {
-          var _pv = p[_i5];
-          var _nv = n[_i5];
+        for (var _i6 = 0, _len3 = Math.min(p.length, n.length); _i6 < _len3; _i6++) {
+          var _pv = p[_i6];
+          var _nv = n[_i6];
 
           if (isNil$4(_pv) || isNil$4(_nv)) {
             res.v.push(_nv);
@@ -5596,6 +5683,13 @@
           for (var i = 0; i < 6; i++) {
             st[0][1][i] += v[i] * percent;
           }
+        } else if (k === 'filter') {
+          // 只有1个样式声明了filter另外一个为空
+          if (!st) {
+            st = style[k] = [['blur', 0]];
+          }
+
+          st[0][1] += v * percent;
         } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
           if (v !== 0) {
             st.value += v * percent;
@@ -5610,9 +5704,9 @@
           }
         } else if (GRADIENT_HASH.hasOwnProperty(k)) {
           if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-            for (var _i6 = 0, len = Math.min(st.v.length, v.length); _i6 < len; _i6++) {
-              var a = st.v[_i6];
-              var b = v[_i6];
+            for (var _i7 = 0, len = Math.min(st.v.length, v.length); _i7 < len; _i7++) {
+              var a = st.v[_i7];
+              var b = v[_i7];
               a[0][0] += b[0][0] * percent;
               a[0][1] += b[0][1] * percent;
               a[0][2] += b[0][2] * percent;
@@ -5649,14 +5743,14 @@
             var _st = style[k];
 
             if (k === 'points' || k === 'controls') {
-              for (var _i7 = 0, _len3 = Math.min(_st.length, v.length); _i7 < _len3; _i7++) {
-                if (isNil$4(_st[_i7]) || !_st[_i7].length) {
+              for (var _i8 = 0, _len4 = Math.min(_st.length, v.length); _i8 < _len4; _i8++) {
+                if (isNil$4(_st[_i8]) || !_st[_i8].length) {
                   continue;
                 }
 
-                for (var j = 0, len2 = Math.min(_st[_i7].length, v[_i7].length); j < len2; j++) {
-                  if (!isNil$4(_st[_i7][j]) && !isNil$4(v[_i7][j])) {
-                    _st[_i7][j] += v[_i7][j] * percent;
+                for (var j = 0, len2 = Math.min(_st[_i8].length, v[_i8].length); j < len2; j++) {
+                  if (!isNil$4(_st[_i8][j]) && !isNil$4(v[_i8][j])) {
+                    _st[_i8][j] += v[_i8][j] * percent;
                   }
                 }
               }
@@ -5687,12 +5781,14 @@
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
 
+    var _super = _createSuper(Animation);
+
     function Animation(target, list, options) {
       var _this;
 
       _classCallCheck(this, Animation);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Animation).call(this));
+      _this = _super.call(this);
       _this.__id = uuid++;
       _this.__target = target;
       list = clone$2(list || []);
@@ -5832,14 +5928,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i8 = 1, _len4 = list.length; _i8 < _len4; _i8++) {
-          var start = list[_i8]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i9 = 1, _len5 = list.length; _i9 < _len5; _i9++) {
+          var start = list[_i9]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i8 + 1;
+            var j = _i9 + 1;
 
-            for (; j < _len4; j++) {
+            for (; j < _len5; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -5847,16 +5943,16 @@
               }
             }
 
-            var num = j - _i8 + 1;
-            start = list[_i8 - 1];
+            var num = j - _i9 + 1;
+            start = list[_i9 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i8; k < j; k++) {
+            for (var k = _i9; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i8);
+              item.offset = start.offset + per * (k + 1 - _i9);
             }
 
-            _i8 = j;
+            _i9 = j;
           }
         }
 
@@ -5873,8 +5969,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i9 = 1; _i9 < length; _i9++) {
-          var next = frames[_i9];
+        for (var _i10 = 1; _i10 < length; _i10++) {
+          var next = frames[_i10];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -5886,8 +5982,8 @@
         });
         prev = framesR[0];
 
-        for (var _i10 = 1; _i10 < length; _i10++) {
-          var _next = framesR[_i10];
+        for (var _i11 = 1; _i11 < length; _i11++) {
+          var _next = framesR[_i11];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -6935,6 +7031,8 @@
   var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
 
+    var _super = _createSuper(Xom);
+
     function Xom(tagName) {
       var _this;
 
@@ -6943,7 +7041,7 @@
 
       _classCallCheck(this, Xom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Xom).call(this)); // 构建工具中都是arr，手写可能出现hash情况
+      _this = _super.call(this); // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
@@ -7281,7 +7379,8 @@
             visibility = computedStyle.visibility,
             backgroundRepeat = computedStyle.backgroundRepeat,
             backgroundImage = computedStyle.backgroundImage,
-            opacity = computedStyle.opacity;
+            opacity = computedStyle.opacity,
+            filter = computedStyle.filter;
         var backgroundSize = currentStyle.backgroundSize,
             backgroundPositionX = currentStyle.backgroundPositionX,
             backgroundPositionY = currentStyle.backgroundPositionY,
@@ -7775,6 +7874,34 @@
           var _points3 = border.calPoints(borderLeftWidth, borderLeftStyle, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
 
           renderBorder(renderMode, _points3, borderLeftColor, ctx, this);
+        }
+
+        if (filter) {
+          filter.forEach(function (item) {
+            var _item = _slicedToArray(item, 2),
+                k = _item[0],
+                v = _item[1];
+
+            if (k === 'blur' && v > 0 && renderMode === mode.SVG) {
+              // 模糊框卷积尺寸 #66
+              var d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+              d *= 3;
+
+              if (d % 2 === 0) {
+                d++;
+              }
+
+              var id = defs.add({
+                tagName: 'filter',
+                props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
+                children: [{
+                  tagName: 'feGaussianBlur',
+                  props: [['stdDeviation', v]]
+                }]
+              });
+              _this3.virtualDom.filter = "url(#".concat(id, ")");
+            }
+          });
         }
       }
     }, {
@@ -8476,12 +8603,14 @@
   var Dom = /*#__PURE__*/function (_Xom) {
     _inherits(Dom, _Xom);
 
+    var _super = _createSuper(Dom);
+
     function Dom(tagName, props, children) {
       var _this;
 
       _classCallCheck(this, Dom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Dom).call(this, tagName, props, children));
+      _this = _super.call(this, tagName, props, children);
       _this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
 
       var _assertThisInitialize = _assertThisInitialized(_this),
@@ -9730,12 +9859,14 @@
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
+    var _super = _createSuper(Img);
+
     function Img(tagName, props) {
       var _this;
 
       _classCallCheck(this, Img);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Img).call(this, tagName, props));
+      _this = _super.call(this, tagName, props);
       var src = _this.props.src;
       var loadImg = _this.__loadImg = {
         // 刷新回调函数，用以destroy取消用
@@ -10147,7 +10278,8 @@
   function diffX2X(elem, ovd, nvd) {
     var transform = nvd.transform,
         opacity = nvd.opacity,
-        mask = nvd.mask;
+        mask = nvd.mask,
+        filter = nvd.filter;
 
     if (ovd.transform !== transform) {
       if (transform) {
@@ -10171,6 +10303,14 @@
         elem.setAttribute('mask', mask);
       } else {
         elem.removeAttribute('mask');
+      }
+    }
+
+    if (ovd.filter !== filter) {
+      if (filter) {
+        elem.setAttribute('filter', filter);
+      } else {
+        elem.removeAttribute('filter');
       }
     }
   }
@@ -10780,12 +10920,14 @@
   var Root = /*#__PURE__*/function (_Dom) {
     _inherits(Root, _Dom);
 
+    var _super = _createSuper(Root);
+
     function Root(tagName, props, children) {
       var _this;
 
       _classCallCheck(this, Root);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Root).call(this, tagName, props, children));
+      _this = _super.call(this, tagName, props, children);
       _this.__node = null; // 真实DOM引用
 
       _this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
@@ -11230,12 +11372,14 @@
   var Geom = /*#__PURE__*/function (_Xom) {
     _inherits(Geom, _Xom);
 
+    var _super = _createSuper(Geom);
+
     function Geom(tagName, props) {
       var _this;
 
       _classCallCheck(this, Geom);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Geom).call(this, tagName, props));
+      _this = _super.call(this, tagName, props);
       _this.__isMask = !!_this.props.mask;
       _this.__currentProps = _this.props;
 
@@ -11639,12 +11783,14 @@
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
+    var _super = _createSuper(Line);
+
     function Line(tagName, props) {
       var _this;
 
       _classCallCheck(this, Line);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Line).call(this, tagName, props)); // x1,y1和x2,y2表明线段的首尾坐标，control表明控制点坐标
+      _this = _super.call(this, tagName, props); // x1,y1和x2,y2表明线段的首尾坐标，control表明控制点坐标
 
       _this.__x1 = _this.__y1 = 0;
       _this.__x2 = _this.__y2 = 1;
@@ -11812,12 +11958,14 @@
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
+    var _super = _createSuper(Polyline);
+
     function Polyline(tagName, props) {
       var _this;
 
       _classCallCheck(this, Polyline);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Polyline).call(this, tagName, props)); // 所有点的列表
+      _this = _super.call(this, tagName, props); // 所有点的列表
 
       _this.__points = [];
 
@@ -12002,10 +12150,12 @@
   var Polygon = /*#__PURE__*/function (_Polyline) {
     _inherits(Polygon, _Polyline);
 
+    var _super = _createSuper(Polygon);
+
     function Polygon(tagName, props) {
       _classCallCheck(this, Polygon);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, tagName, props));
+      return _super.call(this, tagName, props);
     }
 
     _createClass(Polygon, [{
@@ -12044,12 +12194,14 @@
   var Sector = /*#__PURE__*/function (_Geom) {
     _inherits(Sector, _Geom);
 
+    var _super = _createSuper(Sector);
+
     function Sector(tagName, props) {
       var _this;
 
       _classCallCheck(this, Sector);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Sector).call(this, tagName, props)); // 角度
+      _this = _super.call(this, tagName, props); // 角度
 
       _this.__begin = 0;
       _this.__end = 0;
@@ -12246,12 +12398,14 @@
   var Rect = /*#__PURE__*/function (_Geom) {
     _inherits(Rect, _Geom);
 
+    var _super = _createSuper(Rect);
+
     function Rect(tagName, props) {
       var _this;
 
       _classCallCheck(this, Rect);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Rect).call(this, tagName, props)); // 圆角
+      _this = _super.call(this, tagName, props); // 圆角
 
       _this.__rx = 0;
 
@@ -12376,12 +12530,14 @@
   var Circle = /*#__PURE__*/function (_Geom) {
     _inherits(Circle, _Geom);
 
+    var _super = _createSuper(Circle);
+
     function Circle(tagName, props) {
       var _this;
 
       _classCallCheck(this, Circle);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, tagName, props)); // 半径[0, ∞)，默认1
+      _this = _super.call(this, tagName, props); // 半径[0, ∞)，默认1
 
       _this.__r = 1;
 
@@ -12463,12 +12619,14 @@
   var Ellipse = /*#__PURE__*/function (_Geom) {
     _inherits(Ellipse, _Geom);
 
+    var _super = _createSuper(Ellipse);
+
     function Ellipse(tagName, props) {
       var _this;
 
       _classCallCheck(this, Ellipse);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(Ellipse).call(this, tagName, props)); // 半径[0, ∞)，默认1
+      _this = _super.call(this, tagName, props); // 半径[0, ∞)，默认1
 
       _this.__rx = 1;
 

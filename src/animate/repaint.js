@@ -45,5 +45,6 @@ export default {
     visibility: true,
     opacity: true,
     zIndex: true,
+    filter: true,
   },
 };

@@ -99,8 +99,8 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, mask } = vd;
-    return `<g${opacity !== 1 ? ` opacity="${opacity}"` : ''}${transform ? ` transform="${transform}"` : ''}${mask ? ` mask="${mask}"` : ''}>${s}</g>`;
+    let { opacity, transform, mask, filter } = vd;
+    return `<g${opacity !== 1 ? ` opacity="${opacity}"` : ''}${transform ? ` transform="${transform}"` : ''}${mask ? ` mask="${mask}"` : ''}${filter ? ` filter="${filter}"` : ''}>${s}</g>`;
   }
 }
 
@@ -108,6 +108,9 @@ function joinDef(def) {
   let s = `<${def.tagName} id="${def.uuid}"`;
   if(def.tagName === 'mask') {
     // s += ' maskUnits="userSpaceOnUse"';
+  }
+  else if(def.tagName === 'filter') {
+    // s += ' filterUnits="userSpaceOnUse"';
   }
   else {
     s += ' gradientUnits="userSpaceOnUse"';

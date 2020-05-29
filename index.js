@@ -10052,17 +10052,17 @@
               // 有border-radius需模拟遮罩裁剪
               if (list) {
                 var _this$root = this.root,
-                    _width = _this$root.width,
-                    _height = _this$root.height;
-                var c = inject.getCacheCanvas(_width, _height);
-                c.ctx.drawImage(source, 0, 0, _width, _height);
+                    w = _this$root.width,
+                    h = _this$root.height;
+                var c = inject.getCacheCanvas(w, h);
+                c.ctx.drawImage(source, originX, originY, width, height);
                 c.ctx.globalCompositeOperation = 'destination-in';
-                border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
+                border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
                 c.draw(c.ctx);
                 ctx.drawImage(c.canvas, 0, 0);
                 c.draw(ctx);
                 c.ctx.globalCompositeOperation = 'source-over';
-                c.ctx.clearRect(0, 0, _width, _height);
+                c.ctx.clearRect(0, 0, w, h);
                 c.draw(c.ctx);
               } else {
                 ctx.drawImage(source, originX, originY, width, height);
@@ -10115,12 +10115,12 @@
 
               var root = _this2.root,
                   _this2$currentStyle = _this2.currentStyle,
-                  _width2 = _this2$currentStyle.width,
-                  _height2 = _this2$currentStyle.height;
+                  _width = _this2$currentStyle.width,
+                  _height = _this2$currentStyle.height;
               root.delRefreshTask(_loadImg.cb);
               root.delRefreshTask(_this2.__task);
 
-              if (_width2.unit !== AUTO$4 && _height2.unit !== AUTO$4) {
+              if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
                 root.addRefreshTask(_loadImg.cb);
               } else {
                 root.addRefreshTask(_this2.__task = {

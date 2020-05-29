@@ -202,16 +202,16 @@ class Img extends Dom {
         if(renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
-            let { width, height } = this.root;
-            let c = inject.getCacheCanvas(width, height);
-            c.ctx.drawImage(source, 0, 0, width, height);
+            let { width: w, height: h } = this.root;
+            let c = inject.getCacheCanvas(w, h);
+            c.ctx.drawImage(source, originX, originY, width, height);
             c.ctx.globalCompositeOperation = 'destination-in';
             border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
             c.draw(c.ctx);
             ctx.drawImage(c.canvas, 0, 0);
             c.draw(ctx);
             c.ctx.globalCompositeOperation = 'source-over';
-            c.ctx.clearRect(0, 0, width, height);
+            c.ctx.clearRect(0, 0, w, h);
             c.draw(c.ctx);
           }
           else {

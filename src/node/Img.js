@@ -107,6 +107,8 @@ class Img extends Dom {
       computedStyle: {
         display,
         borderTopWidth,
+        borderRightWidth,
+        borderBottomWidth,
         borderLeftWidth,
         marginTop,
         marginLeft,
@@ -198,20 +200,23 @@ class Img extends Dom {
       // 无source不绘制
       if(source) {
         // 圆角需要生成一个mask
-        let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        let list = border.calRadius(originX, originY, width, height,
+          borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+          borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         if(renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
-            let { width, height } = this.root;
-            let c = inject.getCacheCanvas(width, height);
-            c.ctx.drawImage(source, 0, 0, width, height);
+            let { width: w, height: h } = this.root;
+            let c = inject.getCacheCanvas(w, h);
+            c.ctx.drawImage(source, originX, originY, width, height);
             c.ctx.globalCompositeOperation = 'destination-in';
-            border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
+            c.ctx.fillStyle = '#FFF';
+            border.genRdRectCanvas(c.ctx, list);
             c.draw(c.ctx);
             ctx.drawImage(c.canvas, 0, 0);
             c.draw(ctx);
             c.ctx.globalCompositeOperation = 'source-over';
-            c.ctx.clearRect(0, 0, width, height);
+            c.ctx.clearRect(0, 0, w, h);
             c.draw(c.ctx);
           }
           else {
@@ -232,11 +237,19 @@ class Img extends Dom {
             ['height', loadImg.height]
           ];
           if(list) {
+            let d = border.genRdRectSvg(list);
             let maskId = defs.add({
               tagName: 'mask',
               props: [],
               children: [
-                border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list),
+                {
+                  type: 'item',
+                  tagName: 'path',
+                  props: [
+                    ['d', d],
+                    ['fill', '#FFF']
+                  ],
+                }
               ],
             });
             props.push(['mask', `url(#${maskId})`]);

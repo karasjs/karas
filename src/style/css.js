@@ -421,6 +421,33 @@ function normalize(style, reset = []) {
       };
     }
   });
+  // border-radius
+  ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+    k = 'border' + k + 'Radius';
+    let v = style[k];
+    if(!isNil(v)) {
+      let arr = v.toString().split(/\s*\/\s*/);
+      if(arr.length === 1) {
+        arr[1] = arr[0];
+      }
+      for(let i = 0; i < 2; i++) {
+        let item = arr[i];
+        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
+          calUnit(arr, i, item);
+          if(arr[i].unit === NUMBER) {
+            arr[i].unit = PX;
+          }
+        }
+        else {
+          arr[i] = {
+            value: 0,
+            unit: PX,
+          };
+        }
+      }
+      style[k] = arr;
+    }
+  });
   temp = style.transform;
   if(temp) {
     let transform = style.transform = [];
@@ -581,10 +608,6 @@ function normalize(style, reset = []) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
-    'borderTopLeftRadius',
-    'borderTopRightRadius',
-    'borderBottomRightRadius',
-    'borderBottomLeftRadius',
     'top',
     'right',
     'bottom',

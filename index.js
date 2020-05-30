@@ -1900,6 +1900,38 @@
           unit: RGBA
         };
       }
+    }); // border-radius
+
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
+      k = 'border' + k + 'Radius';
+      var v = style[k];
+
+      if (!isNil$2(v)) {
+        var _arr2 = v.toString().split(/\s*\/\s*/);
+
+        if (_arr2.length === 1) {
+          _arr2[1] = _arr2[0];
+        }
+
+        for (var _i = 0; _i < 2; _i++) {
+          var _item = _arr2[_i];
+
+          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
+            calUnit(_arr2, _i, _item);
+
+            if (_arr2[_i].unit === NUMBER) {
+              _arr2[_i].unit = PX$1;
+            }
+          } else {
+            _arr2[_i] = {
+              value: 0,
+              unit: PX$1
+            };
+          }
+        }
+
+        style[k] = _arr2;
+      }
     });
     temp = style.transform;
 
@@ -1915,18 +1947,18 @@
           var v = item.slice(i + 1, item.length - 1);
 
           if (k === 'matrix') {
-            var _arr2 = v.toString().split(/\s*,\s*/);
+            var _arr3 = v.toString().split(/\s*,\s*/);
 
-            _arr2 = _arr2.map(function (item) {
+            _arr3 = _arr3.map(function (item) {
               return parseFloat(item);
             });
 
-            if (_arr2.length > 6) {
-              _arr2 = _arr2.slice(0, 6);
+            if (_arr3.length > 6) {
+              _arr3 = _arr3.slice(0, 6);
             }
 
-            if (_arr2.length === 6) {
-              transform.push(['matrix', _arr2]);
+            if (_arr3.length === 6) {
+              transform.push(['matrix', _arr3]);
             }
           } else if ({
             'translateX': true,
@@ -1942,23 +1974,23 @@
               k = 'rotateZ';
             }
 
-            var _arr3 = calUnit([k, v], 1, v);
+            var _arr4 = calUnit([k, v], 1, v);
 
-            compatibleTransform(k, _arr3[1]);
-            transform.push(_arr3);
+            compatibleTransform(k, _arr4[1]);
+            transform.push(_arr4);
           } else if ({
             translate: true,
             scale: true,
             skew: true
           }.hasOwnProperty(k)) {
-            var _arr4 = v.toString().split(/\s*,\s*/);
+            var _arr5 = v.toString().split(/\s*,\s*/);
 
-            if (_arr4.length === 1) {
-              _arr4[1] = _arr4[0];
+            if (_arr5.length === 1) {
+              _arr5[1] = _arr5[0];
             }
 
-            var arr1 = calUnit(["".concat(k, "X"), _arr4[0]], 1, _arr4[0]);
-            var arr2 = calUnit(["".concat(k, "Y"), _arr4[1]], 1, _arr4[1]);
+            var arr1 = calUnit(["".concat(k, "X"), _arr5[0]], 1, _arr5[0]);
+            var arr2 = calUnit(["".concat(k, "Y"), _arr5[1]], 1, _arr5[1]);
             compatibleTransform(k, arr1[1]);
             compatibleTransform(k, arr2[1]);
             transform.push(arr1);
@@ -1980,14 +2012,14 @@
           _match2[1] = _match2[0];
         }
 
-        for (var _i = 0; _i < 2; _i++) {
-          var _item = _match2[_i];
+        for (var _i2 = 0; _i2 < 2; _i2++) {
+          var _item2 = _match2[_i2];
 
-          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
-            calUnit(tfo, _i, _item);
+          if (/%$/.test(_item2) || /px$/.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
+            calUnit(tfo, _i2, _item2);
 
-            if (tfo[_i].unit === NUMBER) {
-              tfo[_i].unit = PX$1;
+            if (tfo[_i2].unit === NUMBER) {
+              tfo[_i2].unit = PX$1;
             }
           } else {
             tfo.push({
@@ -1997,12 +2029,12 @@
                 center: 50,
                 right: 100,
                 bottom: 100
-              }[_item],
+              }[_item2],
               unit: PERCENT$1
             }); // 不规范的写法变默认值50%
 
-            if (isNil$2(tfo[_i].value)) {
-              tfo[_i].value = 50;
+            if (isNil$2(tfo[_i2].value)) {
+              tfo[_i2].value = 50;
             }
           }
         }
@@ -2020,14 +2052,14 @@
       temp = style[k];
 
       if (!isNil$2(temp)) {
-        var _arr5 = temp.toString().split(/\s*,\s*/);
+        var _arr6 = temp.toString().split(/\s*,\s*/);
 
-        if (_arr5.length === 1) {
-          _arr5[1] = _arr5[0];
+        if (_arr6.length === 1) {
+          _arr6[1] = _arr6[0];
         }
 
-        style["".concat(k, "X")] = _arr5[0];
-        style["".concat(k, "Y")] = _arr5[1];
+        style["".concat(k, "X")] = _arr6[0];
+        style["".concat(k, "Y")] = _arr6[1];
         delete style[k];
       }
     });
@@ -2071,7 +2103,7 @@
     } // 转化不同单位值为对象标准化，不写单位的变成number单位转化为px
 
 
-    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
+    ['marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'top', 'right', 'bottom', 'left', 'width', 'height', 'flexBasis', 'strokeWidth'].forEach(function (k) {
       var v = style[k];
 
       if (isNil$2(v)) {
@@ -3324,10 +3356,6 @@
     mergeMatrix: mergeMatrix
   };
 
-  /* 获取合适的虚线实体空白宽度ps/pd和数量n
-   * 总长total，start边长bs，end边长be，内容长w，
-   * 实体长范围[smin,smax]，空白长范围[dmin,dmax]
-   */
   var H = geom.H;
 
   function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
@@ -3728,20 +3756,71 @@
     return points;
   }
 
-  function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
-    var need = btlr || btrr || bbrr || bblr;
+  function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+    var need;
+
+    var _btlr = _slicedToArray(btlr, 2),
+        btlx = _btlr[0],
+        btly = _btlr[1];
+
+    var _btrr = _slicedToArray(btrr, 2),
+        btrx = _btrr[0],
+        btry = _btrr[1];
+
+    var _bbrr = _slicedToArray(bbrr, 2),
+        bbrx = _bbrr[0],
+        bbry = _bbrr[1];
+
+    var _bblr = _slicedToArray(bblr, 2),
+        bblx = _bblr[0],
+        bbly = _bblr[1]; // 先减去对应borderWidth，应为border可能比较宽，弧度只体现在外圆弧
+
+
+    btlx -= blw;
+    btly -= btw;
+    btrx -= brw;
+    btry -= btw;
+    bbrx -= brw;
+    bbry -= bbw;
+    bblx -= blw;
+    bbly -= bbw; // 圆角必须x/y都>0才有效，一方为0视为不绘制
+
+    if (btlx && btly || btrx && btry || bbrx && bbry || bblx && bbly) {
+      need = true;
+    } // console.log(btlx, btly, btrx, btry, bbrx, bbry, bblx, bbly);
+
 
     if (need) {
       var list = [];
-      list.push([x + btlr, y]);
-      list.push([x + w - btrr, y]);
-      list.push([x + w - btrr * (1 - H), y, x + w, y + btrr * (1 - H), x + w, y + btrr]);
-      list.push([x + w, y + h - bbrr]);
-      list.push([x + w, y + h - bbrr * (1 - H), x + w - bbrr * (1 - H), y + h, x + w - bbrr, y + h]);
-      list.push([x + bblr, y + h]);
-      list.push([x + bblr * (1 - H), y + h, x, y + h - bblr * (1 - H), x, y + h - bblr]);
-      list.push([x, y + btlr]);
-      list.push([x, y + btlr * (1 - H), x + btlr * (1 - H), y, x + btlr, y]);
+
+      if (btlx && btly) {
+        list.push([x, y + btly]);
+        list.push([x, y + btly * (1 - H), x + btlx * (1 - H), y, x + btlx, y]);
+      } else {
+        list.push([x, y]);
+      }
+
+      if (btrx && btry) {
+        list.push([x + w - btrx, y]);
+        list.push([x + w - btrx * (1 - H), y, x + w, y + btry * (1 - H), x + w, y + btry]);
+      } else {
+        list.push([x + w, y]);
+      }
+
+      if (bbrx && bbry) {
+        list.push([x + w, y + h - bbry]);
+        list.push([x + w, y + h - bbry * (1 - H), x + w - bbrx * (1 - H), y + h, x + w - bbrx, y + h]);
+      } else {
+        list.push([x + w, y + h]);
+      }
+
+      if (bblx && bbly) {
+        list.push([x + bblx, y + h]);
+        list.push([x + bblx * (1 - H), y + h, x, y + h - bbly * (1 - H), x, y + h - bbly]);
+      } else {
+        list.push([x, y + h]);
+      }
+
       return list;
     }
   }
@@ -3779,11 +3858,48 @@
     }
   }
 
+  function genRdRectCanvas(ctx, list) {
+    ctx.beginPath();
+    ctx.moveTo(list[0][0], list[0][1]);
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        ctx.lineTo(item[0], item[1]);
+      } else if (item.length === 6) {
+        ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
+      }
+    }
+
+    ctx.fill();
+    ctx.closePath();
+  }
+
+  function genRdRectSvg(list) {
+    var s = "M".concat(list[0][0], ",").concat(list[0][1]);
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        s += "L".concat(item[0], ",").concat(item[1]);
+      } else if (item.length === 6) {
+        s += "C".concat(item[0], ",").concat(item[1], ",").concat(item[2], ",").concat(item[3], ",").concat(item[4], ",").concat(item[5]);
+      }
+    } // s += `L${list[0][0]},${list[0][1]}`;
+
+
+    return s;
+  }
+
   var border = {
     calDashed: calDashed,
     calPoints: calPoints,
     calRadius: calRadius,
-    genRdRect: genRdRect
+    genRdRect: genRdRect,
+    genRdRectCanvas: genRdRectCanvas,
+    genRdRectSvg: genRdRectSvg
   };
 
   var PERCENT$3 = unit.PERCENT,
@@ -6900,38 +7016,73 @@
     }
   }
 
-  function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
-    var list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-    var res = list ? border.genRdRect(renderMode, ctx, color, x, y, w, h, list) : null;
+  function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+    // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+    var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
 
     if (renderMode === mode.CANVAS) {
-      // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间，canvas上面已经绘制
-      if (!list) {
+      ctx.fillStyle = color;
+
+      if (list) {
+        border.genRdRectCanvas(ctx, list);
+      } else {
         ctx.beginPath();
-        ctx.fillStyle = color;
         ctx.rect(x, y, w, h);
         ctx.fill();
         ctx.closePath();
       }
     } else if (renderMode === mode.SVG) {
-      // 没有圆角矩形res为空走入普通矩形
-      xom.virtualDom.bb.push(res || {
-        type: 'item',
-        tagName: 'rect',
-        props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', color]]
-      });
+      if (list) {
+        var d = border.genRdRectSvg(list);
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [['d', d], ['fill', color]]
+        });
+      } else {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'rect',
+          props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', color]]
+        });
+      }
     }
   }
 
-  function calBorderRadius(w, h, k, currentStyle, computedStyle) {
-    var s = currentStyle[k]; // 暂时只支持px，限制最大为窄边一半
+  function calBorderRadius(w, h, currentStyle, computedStyle) {
+    var ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+    ks.forEach(function (k, i) {
+      ks[i] = k = "border".concat(k, "Radius");
+      computedStyle[k] = currentStyle[k].map(function (item, i) {
+        if (item.unit === PX$4) {
+          return item.value;
+        } else {
+          return item.value * (i ? h : w) * 0.01;
+        }
+      });
+    }); // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
 
-    if (s.unit === PX$4 && s.value > 0) {
-      var min = Math.min(w * 0.5, h * 0.5);
-      computedStyle[k] = Math.min(min, s.value);
-    } else {
-      computedStyle[k] = 0;
-    }
+    ks.forEach(function (k, i) {
+      var j = i % 2 === 0 ? 0 : 1;
+      var target = j ? h : w;
+      var prev = computedStyle[k];
+      var next = computedStyle[ks[(i + 1) % 4]]; // 相加超过边长则是相交
+
+      if (prev[j] + next[j] > target) {
+        var half = target * 0.5; // 都超过一半中点取中点
+
+        if (prev[j] >= half && next[j] >= half) {
+          prev[j] = next[j] = half;
+        } // 仅1个超过中点，因相交用总长减去另一方即可
+        else if (prev[j] > half) {
+            prev[j] = target - next[j];
+          } else if (next[j] > half) {
+            next[j] = target - prev[j];
+          }
+      }
+
+      console.log(k, computedStyle[k]);
+    });
   }
 
   function calBackgroundSize(value, w, h) {
@@ -7349,9 +7500,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight; // 圆角边计算
 
-        ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
-          calBorderRadius(width, height, "border".concat(k, "Radius"), currentStyle, computedStyle);
-        });
+        calBorderRadius(width, height, currentStyle, computedStyle);
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
@@ -7499,7 +7648,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, int2rgba$2(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          renderBgc(renderMode, int2rgba$2(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         } // 渐变或图片叠加
 
 
@@ -9972,6 +10121,8 @@
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
             borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderRightWidth = _this$computedStyle.borderRightWidth,
+            borderBottomWidth = _this$computedStyle.borderBottomWidth,
             borderLeftWidth = _this$computedStyle.borderLeftWidth,
             marginTop = _this$computedStyle.marginTop,
             marginLeft = _this$computedStyle.marginLeft,
@@ -10046,23 +10197,24 @@
 
           if (source) {
             // 圆角需要生成一个mask
-            var list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            var list = border.calRadius(originX, originY, width, height, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
 
             if (renderMode === mode.CANVAS) {
               // 有border-radius需模拟遮罩裁剪
               if (list) {
                 var _this$root = this.root,
-                    _width = _this$root.width,
-                    _height = _this$root.height;
-                var c = inject.getCacheCanvas(_width, _height);
-                c.ctx.drawImage(source, 0, 0, _width, _height);
+                    w = _this$root.width,
+                    h = _this$root.height;
+                var c = inject.getCacheCanvas(w, h);
+                c.ctx.drawImage(source, originX, originY, width, height);
                 c.ctx.globalCompositeOperation = 'destination-in';
-                border.genRdRect(renderMode, c.ctx, '#FFF', x, y, _width, _height, list);
+                c.ctx.fillStyle = '#FFF';
+                border.genRdRectCanvas(c.ctx, list);
                 c.draw(c.ctx);
                 ctx.drawImage(c.canvas, 0, 0);
                 c.draw(ctx);
                 c.ctx.globalCompositeOperation = 'source-over';
-                c.ctx.clearRect(0, 0, _width, _height);
+                c.ctx.clearRect(0, 0, w, h);
                 c.draw(c.ctx);
               } else {
                 ctx.drawImage(source, originX, originY, width, height);
@@ -10078,10 +10230,15 @@
               var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
+                var d = border.genRdRectSvg(list);
                 var maskId = defs.add({
                   tagName: 'mask',
                   props: [],
-                  children: [border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list)]
+                  children: [{
+                    type: 'item',
+                    tagName: 'path',
+                    props: [['d', d], ['fill', '#FFF']]
+                  }]
                 });
                 props.push(['mask', "url(#".concat(maskId, ")")]);
               }
@@ -10115,12 +10272,12 @@
 
               var root = _this2.root,
                   _this2$currentStyle = _this2.currentStyle,
-                  _width2 = _this2$currentStyle.width,
-                  _height2 = _this2$currentStyle.height;
+                  _width = _this2$currentStyle.width,
+                  _height = _this2$currentStyle.height;
               root.delRefreshTask(_loadImg.cb);
               root.delRefreshTask(_this2.__task);
 
-              if (_width2.unit !== AUTO$4 && _height2.unit !== AUTO$4) {
+              if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
                 root.addRefreshTask(_loadImg.cb);
               } else {
                 root.addRefreshTask(_this2.__task = {

@@ -421,19 +421,56 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
   return points;
 }
 
-function calRadius(x, y, w, h, btlr, btrr, bbrr, bblr) {
-  let need = btlr || btrr || bbrr || bblr;
+function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  let need;
+  let [btlx, btly] = btlr;
+  let [btrx, btry] = btrr;
+  let [bbrx, bbry] = bbrr;
+  let [bblx, bbly] = bblr;
+  // 先减去对应borderWidth，应为border可能比较宽，弧度只体现在外圆弧
+  btlx -= blw;
+  btly -= btw;
+  btrx -= brw;
+  btry -= btw;
+  bbrx -= brw;
+  bbry -= bbw;
+  bblx -= blw;
+  bbly -= bbw;
+  // 圆角必须x/y都>0才有效，一方为0视为不绘制
+  if(btlx && btly || btrx && btry || bbrx && bbry || bblx && bbly) {
+    need = true;
+  }
+  // console.log(btlx, btly, btrx, btry, bbrx, bbry, bblx, bbly);
   if(need) {
     let list = [];
-    list.push([x + btlr, y]);
-    list.push([x + w - btrr, y]);
-    list.push([x + w - btrr * (1 - H), y, x + w, y + btrr *  (1 - H), x + w, y + btrr]);
-    list.push([x + w, y + h - bbrr]);
-    list.push([x + w, y + h - bbrr * (1 - H), x + w - bbrr * (1 - H), y + h, x + w - bbrr, y + h]);
-    list.push([x + bblr, y + h]);
-    list.push([x + bblr * (1 - H), y + h, x, y + h - bblr * (1 - H), x, y + h - bblr]);
-    list.push([x, y + btlr]);
-    list.push([x, y + btlr * (1 - H), x + btlr * (1 - H), y, x + btlr, y]);
+    if(btlx && btly) {
+      list.push([x, y + btly]);
+      list.push([x, y + (btly) * (1 - H), x + btlx * (1 - H), y, x + btlx, y]);
+    }
+    else {
+      list.push([x, y]);
+    }
+    if(btrx && btry) {
+      list.push([x + w - btrx, y]);
+      list.push([x + w - btrx * (1 - H), y, x + w, y + btry *  (1 - H), x + w, y + btry]);
+    }
+    else {
+      list.push([x + w, y]);
+    }
+    if(bbrx && bbry) {
+      list.push([x + w, y + h - bbry]);
+      list.push([x + w, y + h - bbry * (1 - H), x + w - bbrx * (1 - H), y + h, x + w - bbrx, y + h]);
+    }
+    else {
+      list.push([x + w, y + h]);
+    }
+    if(bblx && bbly) {
+      list.push([x + bblx, y + h]);
+      list.push([x + bblx * (1 - H), y + h, x, y + h - bbly * (1 - H), x, y + h - bbly]);
+    }
+    else {
+      list.push([x, y + h]);
+    }
     return list;
   }
 }
@@ -471,9 +508,42 @@ function genRdRect(renderMode, ctx, color, x, y, w, h, list) {
   }
 }
 
+function genRdRectCanvas(ctx, list) {
+  ctx.beginPath();
+  ctx.moveTo(list[0][0], list[0][1]);
+  for(let i = 1, len = list.length; i < len; i++) {
+    let item = list[i];
+    if(item.length === 2) {
+      ctx.lineTo(item[0], item[1]);
+    }
+    else if(item.length === 6) {
+      ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
+    }
+  }
+  ctx.fill();
+  ctx.closePath();
+}
+
+function genRdRectSvg(list) {
+  let s = `M${list[0][0]},${list[0][1]}`;
+  for(let i = 1, len = list.length; i < len; i++) {
+    let item = list[i];
+    if(item.length === 2) {
+      s += `L${item[0]},${item[1]}`;
+    }
+    else if(item.length === 6) {
+      s += `C${item[0]},${item[1]},${item[2]},${item[3]},${item[4]},${item[5]}`;
+    }
+  }
+  // s += `L${list[0][0]},${list[0][1]}`;
+  return s;
+}
+
 export default {
   calDashed,
   calPoints,
   calRadius,
   genRdRect,
+  genRdRectCanvas,
+  genRdRectSvg,
 };

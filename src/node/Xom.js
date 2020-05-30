@@ -50,45 +50,85 @@ function renderBorder(renderMode, points, color, ctx, xom) {
   }
 }
 
-function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
-  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-  let res = list ? border.genRdRect(renderMode, ctx, color, x, y, w, h, list) : null;
+function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
-    // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间，canvas上面已经绘制
-    if(!list) {
+    ctx.fillStyle = color;
+    if(list) {
+      border.genRdRectCanvas(ctx, list);
+    }
+    else {
       ctx.beginPath();
-      ctx.fillStyle = color;
       ctx.rect(x, y, w, h);
       ctx.fill();
       ctx.closePath();
     }
   }
   else if(renderMode === mode.SVG) {
-    // 没有圆角矩形res为空走入普通矩形
-    xom.virtualDom.bb.push(res || {
-      type: 'item',
-      tagName: 'rect',
-      props: [
-        ['x', x],
-        ['y', y],
-        ['width', w],
-        ['height', h],
-        ['fill', color]
-      ],
-    });
+    if(list) {
+      let d = border.genRdRectSvg(list);
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', d],
+          ['fill', color]
+        ],
+      });
+    }
+    else {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'rect',
+        props: [
+          ['x', x],
+          ['y', y],
+          ['width', w],
+          ['height', h],
+          ['fill', color]
+        ],
+      });
+    }
   }
 }
 
-function calBorderRadius(w, h, k, currentStyle, computedStyle) {
-  let s = currentStyle[k];
-  // 暂时只支持px，限制最大为窄边一半
-  if(s.unit === PX && s.value > 0) {
-    let min = Math.min(w * 0.5, h * 0.5);
-    computedStyle[k] = Math.min(min, s.value);
-  }
-  else {
-    computedStyle[k] = 0;
-  }
+function calBorderRadius(w, h, currentStyle, computedStyle) {
+  let ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+  ks.forEach((k, i) => {
+    ks[i] = k = `border${k}Radius`;
+    computedStyle[k] = currentStyle[k].map((item, i) => {
+      if(item.unit === PX) {
+        return item.value;
+      }
+      else {
+        return item.value * (i ? h : w) * 0.01;
+      }
+    });
+  });
+  // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
+  ks.forEach((k, i) => {
+    let j = i % 2 === 0 ? 0 : 1;
+    let target = j ? h : w;
+    let prev = computedStyle[k];
+    let next = computedStyle[ks[(i + 1) % 4]];
+    // 相加超过边长则是相交
+    if(prev[j] + next[j] > target) {
+      let half = target * 0.5;
+      // 都超过一半中点取中点
+      if(prev[j] >= half && next[j] >= half) {
+        prev[j] = next[j] = half;
+      }
+      // 仅1个超过中点，因相交用总长减去另一方即可
+      else if(prev[j] > half) {
+        prev[j] = target - next[j];
+      }
+      else if(next[j] > half) {
+        next[j] = target - prev[j];
+      }
+    }
+    console.log(k, computedStyle[k]);
+  });
 }
 
 function calBackgroundSize(value, w, h) {
@@ -457,9 +497,7 @@ class Xom extends Node {
       outerHeight,
     } = this;
     // 圆角边计算
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
-      calBorderRadius(width, height, `border${k}Radius`, currentStyle, computedStyle);
-    });
+    calBorderRadius(width, height, currentStyle, computedStyle);
     let {
       display,
       marginTop,
@@ -609,6 +647,7 @@ class Xom extends Node {
     // 背景色垫底
     if(backgroundColor[3] > 0) {
       renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
+        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
     // 渐变或图片叠加

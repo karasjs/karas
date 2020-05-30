@@ -82,5 +82,11 @@ export default {
   r2d(n) {
     return n * 180 / Math.PI;
   },
-  H: 4 * (Math.sqrt(2) - 1) / 3, // 贝塞尔曲线模拟1/4圆
+  // 贝塞尔曲线模拟1/4圆弧比例
+  H: 4 * (Math.sqrt(2) - 1) / 3,
+  // <90任意角度贝塞尔曲线拟合圆弧的比例公式
+  h(deg) {
+    deg *= 0.5;
+    return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
+  },
 };

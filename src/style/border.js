@@ -427,7 +427,7 @@ function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
   let [btrx, btry] = btrr;
   let [bbrx, bbry] = bbrr;
   let [bblx, bbly] = bblr;
-  // 先减去对应borderWidth，应为border可能比较宽，弧度只体现在外圆弧
+  // 先减去对应borderWidth，因为border可能比较宽，弧度只体现在外圆弧，有可能radius为0减去后为负数需判断
   btlx -= blw;
   btly -= btw;
   btrx -= brw;
@@ -436,41 +436,42 @@ function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
   bbry -= bbw;
   bblx -= blw;
   bbly -= bbw;
-  // 圆角必须x/y都>0才有效，一方为0视为不绘制
-  if(btlx && btly || btrx && btry || bbrx && bbry || bblx && bbly) {
+  // 圆角必须x/y都>0才有效，否则视为不绘制
+  if(btlx > 0 && btly > 0 || btrx > 0 && btry > 0 || bbrx > 0 && bbry > 0 || bblx > 0 && bbly > 0) {
     need = true;
   }
   // console.log(btlx, btly, btrx, btry, bbrx, bbry, bblx, bbly);
   if(need) {
     let list = [];
-    if(btlx && btly) {
+    if(btlx > 0 && btly > 0) {
       list.push([x, y + btly]);
       list.push([x, y + (btly) * (1 - H), x + btlx * (1 - H), y, x + btlx, y]);
     }
     else {
       list.push([x, y]);
     }
-    if(btrx && btry) {
+    if(btrx > 0 && btry > 0) {
       list.push([x + w - btrx, y]);
       list.push([x + w - btrx * (1 - H), y, x + w, y + btry *  (1 - H), x + w, y + btry]);
     }
     else {
       list.push([x + w, y]);
     }
-    if(bbrx && bbry) {
+    if(bbrx > 0 && bbry > 0) {
       list.push([x + w, y + h - bbry]);
       list.push([x + w, y + h - bbry * (1 - H), x + w - bbrx * (1 - H), y + h, x + w - bbrx, y + h]);
     }
     else {
       list.push([x + w, y + h]);
     }
-    if(bblx && bbly) {
+    if(bblx > 0 && bbly > 0) {
       list.push([x + bblx, y + h]);
       list.push([x + bblx * (1 - H), y + h, x, y + h - bbly * (1 - H), x, y + h - bbly]);
     }
     else {
       list.push([x, y + h]);
     }
+    // console.log(list);
     return list;
   }
 }

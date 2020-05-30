@@ -3773,7 +3773,7 @@
 
     var _bblr = _slicedToArray(bblr, 2),
         bblx = _bblr[0],
-        bbly = _bblr[1]; // 先减去对应borderWidth，应为border可能比较宽，弧度只体现在外圆弧
+        bbly = _bblr[1]; // 先减去对应borderWidth，因为border可能比较宽，弧度只体现在外圆弧，有可能radius为0减去后为负数需判断
 
 
     btlx -= blw;
@@ -3783,9 +3783,9 @@
     bbrx -= brw;
     bbry -= bbw;
     bblx -= blw;
-    bbly -= bbw; // 圆角必须x/y都>0才有效，一方为0视为不绘制
+    bbly -= bbw; // 圆角必须x/y都>0才有效，否则视为不绘制
 
-    if (btlx && btly || btrx && btry || bbrx && bbry || bblx && bbly) {
+    if (btlx > 0 && btly > 0 || btrx > 0 && btry > 0 || bbrx > 0 && bbry > 0 || bblx > 0 && bbly > 0) {
       need = true;
     } // console.log(btlx, btly, btrx, btry, bbrx, bbry, bblx, bbly);
 
@@ -3793,33 +3793,34 @@
     if (need) {
       var list = [];
 
-      if (btlx && btly) {
+      if (btlx > 0 && btly > 0) {
         list.push([x, y + btly]);
         list.push([x, y + btly * (1 - H), x + btlx * (1 - H), y, x + btlx, y]);
       } else {
         list.push([x, y]);
       }
 
-      if (btrx && btry) {
+      if (btrx > 0 && btry > 0) {
         list.push([x + w - btrx, y]);
         list.push([x + w - btrx * (1 - H), y, x + w, y + btry * (1 - H), x + w, y + btry]);
       } else {
         list.push([x + w, y]);
       }
 
-      if (bbrx && bbry) {
+      if (bbrx > 0 && bbry > 0) {
         list.push([x + w, y + h - bbry]);
         list.push([x + w, y + h - bbry * (1 - H), x + w - bbrx * (1 - H), y + h, x + w - bbrx, y + h]);
       } else {
         list.push([x + w, y + h]);
       }
 
-      if (bblx && bbly) {
+      if (bblx > 0 && bbly > 0) {
         list.push([x + bblx, y + h]);
         list.push([x + bblx * (1 - H), y + h, x, y + h - bbly * (1 - H), x, y + h - bbly]);
       } else {
         list.push([x, y + h]);
-      }
+      } // console.log(list);
+
 
       return list;
     }
@@ -7079,9 +7080,8 @@
           } else if (next[j] > half) {
             next[j] = target - prev[j];
           }
-      }
+      } // console.log(k, computedStyle[k]);
 
-      console.log(k, computedStyle[k]);
     });
   }
 
@@ -7863,11 +7863,6 @@
                   }
                 }
 
-                if (!needMask && repeat.length) {
-                  for (var _i8 = 0, len = repeat.length; _i8 < len; _i8++) {
-                  }
-                }
-
                 if (renderMode === mode.CANVAS) {
                   var c;
                   var currentCtx; // 在离屏canvas上绘制
@@ -7895,7 +7890,7 @@
 
                   if (needMask) {
                     currentCtx.globalCompositeOperation = 'destination-in';
-                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius); // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
+                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius); // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
 
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.drawImage(c.canvas, 0, 0); // 绘完后变正常即可
@@ -8203,8 +8198,8 @@
 
         if (!this.isGeom) {
           // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-          for (var _i9 = zIndex.length - 1; _i9 >= 0; _i9--) {
-            var _child = zIndex[_i9];
+          for (var _i8 = zIndex.length - 1; _i8 >= 0; _i8--) {
+            var _child = zIndex[_i8];
 
             if (_child instanceof Xom || _child instanceof Component && _child.shadowRoot instanceof Xom) {
               if (_child.__emitEvent(e)) {

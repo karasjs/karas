@@ -127,7 +127,7 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
         next[j] = target - prev[j];
       }
     }
-    console.log(k, computedStyle[k]);
+    // console.log(k, computedStyle[k]);
   });
 }
 
@@ -841,11 +841,6 @@ class Xom extends Node {
                 }
               }
             }
-            if(!needMask && repeat.length) {
-              for(let i = 0, len = repeat.length; i < len; i++) {
-                let item = repeat;
-              }
-            }
             if(renderMode === mode.CANVAS) {
               let c;
               let currentCtx;
@@ -870,6 +865,7 @@ class Xom extends Node {
               if(needMask) {
                 currentCtx.globalCompositeOperation = 'destination-in';
                 renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                  borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
                 // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
                 ctx.setTransform(1, 0, 0, 1, 0, 0);

@@ -7978,7 +7978,7 @@
           } else if (backgroundImage.k) {
             var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
 
-            renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
+            renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 

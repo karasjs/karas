@@ -252,7 +252,7 @@ class Img extends Dom {
                 }
               ],
             });
-            props.push(['mask', `url(#${maskId})`]);
+            this.virtualDom.conMask = `url(#${maskId})`;
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);

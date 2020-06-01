@@ -51,7 +51,11 @@ function joinVirtualDom(vd) {
   vd.bb.forEach(item => {
     s += joinVd(item);
   });
-  s += '</g><g>';
+  s += '</g><g';
+  if(vd.conMask) {
+    s += ` mask="${vd.conMask}"`;
+  }
+  s += '>';
   vd.children.forEach(item => {
     if(item.isMask) {
       return;
@@ -91,7 +95,11 @@ function joinVd(vd) {
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
-    s += '</g><g>';
+    s += '</g><g';
+    if(vd.conMask) {
+      s += ` mask="${vd.conMask}"`;
+    }
+    s += '>';
     vd.children.forEach(item => {
       if(item.isMask) {
         return;

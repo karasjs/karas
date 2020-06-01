@@ -455,7 +455,13 @@
     vd.bb.forEach(function (item) {
       s += joinVd(item);
     });
-    s += '</g><g>';
+    s += '</g><g';
+
+    if (vd.conMask) {
+      s += " mask=\"".concat(vd.conMask, "\"");
+    }
+
+    s += '>';
     vd.children.forEach(function (item) {
       if (item.isMask) {
         return;
@@ -498,7 +504,13 @@
       vd.bb.forEach(function (item) {
         _s2 += joinVd(item);
       });
-      _s2 += '</g><g>';
+      _s2 += '</g><g';
+
+      if (vd.conMask) {
+        _s2 += " mask=\"".concat(vd.conMask, "\"");
+      }
+
+      _s2 += '>';
       vd.children.forEach(function (item) {
         if (item.isMask) {
           return;
@@ -10240,7 +10252,7 @@
                     props: [['d', d], ['fill', '#FFF']]
                   }]
                 });
-                props.push(['mask', "url(#".concat(maskId, ")")]);
+                this.virtualDom.conMask = "url(#".concat(maskId, ")");
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -10436,7 +10448,8 @@
     var transform = nvd.transform,
         opacity = nvd.opacity,
         mask = nvd.mask,
-        filter = nvd.filter;
+        filter = nvd.filter,
+        conMask = nvd.conMask;
 
     if (ovd.transform !== transform) {
       if (transform) {
@@ -10468,6 +10481,14 @@
         elem.setAttribute('filter', filter);
       } else {
         elem.removeAttribute('filter');
+      }
+    }
+
+    if (ovd.conMask !== conMask) {
+      if (conMask) {
+        elem.childNodes[1].setAttribute('mask', conMask);
+      } else {
+        elem.childNodes[1].removeAttribute('mask');
       }
     }
   }

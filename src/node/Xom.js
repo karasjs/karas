@@ -12,41 +12,60 @@ import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
+import draw from '../util/draw';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative, compute, repaint } = css;
+const { genCanvasPolygon, genSvgPolygon } = draw;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
+    ctx.fillStyle = color;
     points.forEach(point => {
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.moveTo(point[0], point[1]);
-      for(let i = 2, len = point.length; i < len; i += 2) {
-        ctx.lineTo(point[i], point[i + 1]);
-      }
-      ctx.fill();
-      ctx.closePath();
+      genCanvasPolygon(ctx, point);
     });
+    // points.forEach(point => {
+    //   ctx.beginPath();
+    //   ctx.fillStyle = color;
+    //   ctx.moveTo(point[0], point[1]);
+    //   for(let i = 2, len = point.length; i < len; i += 2) {
+    //     ctx.lineTo(point[i], point[i + 1]);
+    //   }
+    //   ctx.fill();
+    //   ctx.closePath();
+    // });
   }
   else if(renderMode === mode.SVG) {
     let s = '';
     points.forEach(point => {
-      s += `M ${point[0]} ${point[1]}`;
-      for(let i = 2, len = point.length; i < len; i += 2) {
-        s += `L ${point[i]} ${point[i + 1]} `;
-      }
+      s += genSvgPolygon(point);
     });
     xom.virtualDom.bb.push({
       type: 'item',
       tagName: 'path',
       props: [
         ['d', s],
-        ['fill', color],
+        ['fill', color]
       ],
     });
+    // let s = '';
+    // points.forEach(point => {
+    //   console.log(point);
+    //   s += `M ${point[0]} ${point[1]}`;
+    //   for(let i = 2, len = point.length; i < len; i += 2) {
+    //     s += `L ${point[i]} ${point[i + 1]} `;
+    //   }
+    // });
+    // xom.virtualDom.bb.push({
+    //   type: 'item',
+    //   tagName: 'path',
+    //   props: [
+    //     ['d', s],
+    //     ['fill', color],
+    //   ],
+    // });
   }
 }
 
@@ -56,7 +75,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   if(renderMode === mode.CANVAS) {
     ctx.fillStyle = color;
     if(list) {
-      border.genRdRectCanvas(ctx, list);
+      genCanvasPolygon(ctx, list);
     }
     else {
       ctx.beginPath();
@@ -67,7 +86,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   }
   else if(renderMode === mode.SVG) {
     if(list) {
-      let d = border.genRdRectSvg(list);
+      let d = genSvgPolygon(list);
       xom.virtualDom.bb.push({
         type: 'item',
         tagName: 'path',
@@ -965,7 +984,10 @@ class Xom extends Node {
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
+      window.ctx = ctx;
+      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 0,
+        borderTopLeftRadius, borderTopRightRadius);
       renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {

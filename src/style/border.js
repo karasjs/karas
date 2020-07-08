@@ -985,8 +985,14 @@ function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsL
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
-        points[2] = controls2[3];
-        points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
       }
     });
   }
@@ -1021,8 +1027,14 @@ function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsL
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
-        points[2] = controls2[3];
-        points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
       }
     });
   }
@@ -1065,12 +1077,9 @@ function calBezierTopLeft(p1, p2, ox, oy, sx, r, isStart, crossDx) {
     cpy1 = oy - Math.cos(deg1) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1153,22 +1162,9 @@ function calBezierTopRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
     cpy2 = oy - Math.cos(deg2) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1]
-    ];
-  }
-  // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
-  if(deg1 === deg2) {
-    return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1325,8 +1321,14 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
       points[0] = controls1[3];
       points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
-        points[2] = controls2[0];
-        points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
       }
     });
   }
@@ -1359,8 +1361,14 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
       points[0] = controls1[3];
       points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
-        points[2] = controls2[0];
-        points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
       }
     });
   }
@@ -1402,12 +1410,9 @@ function calBezierRightTop(p1, p2, ox, oy, sx, r, isStart, crossDx) {
     cpy1 = oy - Math.cos(deg1) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1489,12 +1494,9 @@ function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
     cpy2 = oy + Math.cos(deg2) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1655,8 +1657,14 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
-        points[2] = controls2[3];
-        points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
       }
     });
   }
@@ -1691,8 +1699,14 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
-        points[2] = controls2[3];
-        points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
       }
     });
   }
@@ -1735,12 +1749,9 @@ function calBezierBottomLeft(p1, p2, ox, oy, sx, r, isStart, crossDx) {
     cpy1 = oy + Math.cos(deg1) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1823,12 +1834,9 @@ function calBezierBottomRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
     cpy2 = oy + Math.cos(deg2) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -1985,8 +1993,14 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
       points[0] = controls1[3];
       points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
-        points[2] = controls2[0];
-        points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
       }
     });
   }
@@ -2019,8 +2033,14 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
       points[0] = controls1[3];
       points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
-        points[2] = controls2[0];
-        points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        if(controls2.length === 1) {
+          points[2] = controls2[0];
+          points.pop();
+        }
+        else {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
       }
     });
   }
@@ -2062,12 +2082,9 @@ function calBezierLeftTop(p1, p2, ox, oy, sx, r, isStart, crossDx) {
     cpy1 = oy - Math.cos(deg1) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }
@@ -2149,12 +2166,9 @@ function calBezierLeftBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
     cpy2 = oy + Math.cos(deg2) * r;
   }
   // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-  // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+  // 使得交点相同角度相同无法计算，直接返回1个点即可
   if(deg1 === deg2) {
     return [
-      [cpx1, cpy1],
-      [cpx1, cpy1],
-      [cpx1, cpy1],
       [cpx1, cpy1]
     ];
   }

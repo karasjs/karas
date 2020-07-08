@@ -3914,8 +3914,13 @@
         points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
 
         if (needInner) {
-          points[2] = controls2[3];
-          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[3];
+            points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          }
         }
       });
     }
@@ -3964,8 +3969,13 @@
         points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
 
         if (_needInner) {
-          points[2] = controls2[3];
-          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[3];
+            points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          }
         }
       });
     }
@@ -4013,11 +4023,11 @@
       cpx1 = ox - Math.sin(deg1) * r / sx;
       cpy1 = oy - Math.cos(deg1) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4098,17 +4108,11 @@
       cpx2 = ox + Math.sin(deg2) * r / sx;
       cpy2 = oy - Math.cos(deg2) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
-    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
-
-
-    if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4234,8 +4238,13 @@
         points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
 
         if (needInner) {
-          points[2] = controls2[0];
-          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[0];
+            points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          }
         }
       });
     }
@@ -4282,8 +4291,13 @@
         points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
 
         if (_needInner2) {
-          points[2] = controls2[0];
-          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[0];
+            points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          }
         }
       });
     }
@@ -4331,11 +4345,11 @@
       cpx1 = ox + Math.sin(deg1) * r / sx;
       cpy1 = oy - Math.cos(deg1) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4416,11 +4430,11 @@
       cpx2 = ox + Math.sin(deg2) * r / sx;
       cpy2 = oy + Math.cos(deg2) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4551,8 +4565,13 @@
         points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
 
         if (needInner) {
-          points[2] = controls2[3];
-          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[3];
+            points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          }
         }
       });
     }
@@ -4601,8 +4620,13 @@
         points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
 
         if (_needInner3) {
-          points[2] = controls2[3];
-          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[3];
+            points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+          }
         }
       });
     }
@@ -4650,11 +4674,11 @@
       cpx1 = ox - Math.sin(deg1) * r / sx;
       cpy1 = oy + Math.cos(deg1) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4735,11 +4759,11 @@
       cpx2 = ox + Math.sin(deg2) * r / sx;
       cpy2 = oy + Math.cos(deg2) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -4865,8 +4889,13 @@
         points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
 
         if (needInner) {
-          points[2] = controls2[0];
-          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[0];
+            points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          }
         }
       });
     }
@@ -4913,8 +4942,13 @@
         points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
 
         if (_needInner4) {
-          points[2] = controls2[0];
-          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          if (controls2.length === 1) {
+            points[2] = controls2[0];
+            points.pop();
+          } else {
+            points[2] = controls2[0];
+            points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+          }
         }
       });
     }
@@ -4962,11 +4996,11 @@
       cpx1 = ox - Math.sin(deg1) * r / sx;
       cpy1 = oy - Math.cos(deg1) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -5047,11 +5081,11 @@
       cpx2 = ox - Math.sin(deg2) * r / sx;
       cpy2 = oy + Math.cos(deg2) * r;
     } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
-    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+    // 使得交点相同角度相同无法计算，直接返回1个点即可
 
 
     if (deg1 === deg2) {
-      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+      return [[cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
@@ -9317,9 +9351,8 @@
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
-        }
+        } // 边框需考虑尖角，两条相交边平分45°夹角
 
-        window.ctx = ctx; // 边框需考虑尖角，两条相交边平分45°夹角
 
         if (borderTopWidth > 0 && borderTopColor[3] > 0) {
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);

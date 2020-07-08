@@ -426,7 +426,7 @@ function normalize(style, reset = []) {
     k = 'border' + k + 'Radius';
     let v = style[k];
     if(!isNil(v)) {
-      let arr = v.toString().split(/\s*\/\s*/);
+      let arr = v.toString().split(/\s+/);
       if(arr.length === 1) {
         arr[1] = arr[0];
       }

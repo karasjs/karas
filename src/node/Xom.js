@@ -984,7 +984,6 @@ class Xom extends Node {
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-      window.ctx = ctx;
       let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2,
         x1, x2, x3, x4, y1, y2, y3, y4, 0,
         borderTopLeftRadius, borderTopRightRadius);
@@ -993,19 +992,25 @@ class Xom extends Node {
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 1,
+        borderTopRightRadius, borderBottomRightRadius);
       renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 2,
+        borderBottomLeftRadius, borderBottomRightRadius);
       renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 3,
+        borderTopLeftRadius, borderBottomLeftRadius);
       renderBorder(renderMode, points, borderLeftColor, ctx, this);
     }
     if(filter) {

@@ -1924,7 +1924,7 @@
       var v = style[k];
 
       if (!isNil$2(v)) {
-        var _arr2 = v.toString().split(/\s*\/\s*/);
+        var _arr2 = v.toString().split(/\s+/);
 
         if (_arr2.length === 1) {
           _arr2[1] = _arr2[0];
@@ -3465,7 +3465,8 @@
         pd: pd
       };
     }
-  } // 获取边框分割为几块的坐标，虚线分割为若干四边形和三边型
+  } // 获取边框分割为几块的坐标，虚线分割为若干四边形、三边型、五边形
+  // 三边形重复内外边交点形成四边形，五边形进行切割形成2个四边形
   // direction为上右下左0123
 
 
@@ -3512,7 +3513,7 @@
                 cross2 = y1 + (x4 - main2) * Math.tan(deg2);
 
                 if (isLast) {
-                  points.push([[main1, y1], [x4, y1], [main1, cross1]]);
+                  points.push([[main1, y1], [x4, y1], [x4, y1], [main1, cross1]]);
                 } else {
                   points.push([[main1, y1], [main2, y1], [main2, cross2], [main1, cross1]]);
                 }
@@ -3521,16 +3522,20 @@
                   // 上部分和borderLeft重叠
                   if (main1 < x2) {
                     cross1 = y1 + (main1 - x1) * Math.tan(deg1);
+                    points.push([[main1, y1], [x2, y1], [x2, y2], [main1, cross1]]);
 
                     if (isLast) {
-                      points.push([[main1, y1], [x4, y1], [x3, y2], [x2, y2], [main1, cross1]]);
+                      points.push([[x2, y1], [x3, y1], [x3, y2], [x2, y2]]);
+                      points.push([[x3, y1], [x4, y1], [x4, y1], [x2, y2]]);
                     } else {
                       // 下部分和borderRight重叠
                       if (main2 > x3) {
-                        points.push([[main1, y1], [main2, y1], [x3, y2], [x2, y2], [main1, cross1]]);
+                        cross2 = y1 + (x4 - main2) * Math.tan(deg2);
+                        points.push([[x2, y1], [x3, y1], [x3, y2], [x2, y2]]);
+                        points.push([[x3, y1], [main2, y1], [main2, cross2], [x3, y2]]);
                       } // 下部独立
                       else {
-                          points.push([[main1, y1], [main2, y1], [main2, y2], [x2, y2], [main1, cross1]]);
+                          points.push([[x2, y1], [main2, y1], [main2, y2], [x2, y2]]);
                         }
                     }
                   } // 下部分和borderRight重叠
@@ -3538,17 +3543,23 @@
                       cross1 = y1 + (x4 - main2) * Math.tan(deg2); // 上部分和borderLeft重叠
 
                       if (main1 < x2) {
+                        cross2 = y1 + (main1 - x1) * Math.tan(deg1);
+                        points.push([[main1, y1], [x2, y1], [x2, y2], [main1, cross2]]);
+                        points.push([[x2, y1], [x3, y1], [x3, y2], [x2, y2]]);
+
                         if (isLast) {
-                          points.push([[main1, y1], [x4, y1], [x3, y2], [x2, y2], [main1, cross1]]);
+                          points.push([[x3, y1], [x4, y1], [x4, y1], [x3, y2]]);
                         } else {
-                          points.push([[main1, y1], [main2, y1], [main2, cross1], [x3, y2], [x2, y2], [main1, cross1]]);
+                          points.push([[x3, y1], [main2, y1], [main2, cross1], [x3, y2]]);
                         }
                       } // 上部独立
                       else {
+                          points.push([[main1, y1], [x3, y1], [x3, y2], [main1, y2]]);
+
                           if (isLast) {
-                            points.push([[main1, y1], [x4, y1], [x3, y2], [main1, y2]]);
+                            points.push([[x3, y1], [x4, y1], [x4, y1], [x3, y2]]);
                           } else {
-                            points.push([[main1, y1], [main2, y1], [main2, cross1], [x3, y2], [main1, y2]]);
+                            points.push([[x3, y1], [main2, y1], [main2, cross1], [x3, y2]]);
                           }
                         }
                     } // 完全独立
@@ -3576,7 +3587,7 @@
                 cross2 = x3 + (main2 - y3) * Math.tan(deg2);
 
                 if (isLast) {
-                  points.push([[cross1, main1], [x4, main1], [x4, y4]]);
+                  points.push([[cross1, main1], [x4, main1], [x4, y4], [x4, y4]]);
                 } else {
                   points.push([[cross1, main1], [x4, main1], [x4, main2], [cross2, main2]]);
                 }
@@ -3585,16 +3596,20 @@
                   // 上部分和borderTop重叠
                   if (main1 < y2) {
                     cross1 = x3 + (y2 - main1) * Math.tan(deg1);
+                    points.push([[cross1, main1], [x4, main1], [x4, y2], [x3, y2]]);
 
                     if (isLast) {
-                      points.push([[x3, y2], [cross1, main1], [x4, main1], [x4, y4], [x3, y4]]);
+                      points.push([[x3, y2], [x4, y2], [x4, y3], [x3, y3]]);
+                      points.push([[x3, y3], [x4, y3], [x4, y4], [x4, y4]]);
                     } else {
                       // 下部分和borderBottom重叠
                       if (main2 > y3) {
-                        points.push([[x3, y2], [cross1, main1], [x4, main1], [x4, main2], [cross1, main2], [x3, y3]]);
+                        cross2 = x3 + (main2 - y3) * Math.tan(deg2);
+                        points.push([[x3, y2], [x4, y2], [x4, y3], [x3, y3]]);
+                        points.push([[x3, y3], [x4, y3], [x4, main2], [cross2, main2]]);
                       } // 下部独立
                       else {
-                          points.push([[x3, y2], [cross1, main1], [x4, main1], [x4, main2], [x3, main2]]);
+                          points.push([[x3, y2], [x4, y2], [x4, main2], [x3, main2]]);
                         }
                     }
                   } // 下部分和borderBottom重叠
@@ -3602,17 +3617,23 @@
                       cross1 = x3 + (main2 - y3) * Math.tan(deg2); // 上部分和borderTop重叠
 
                       if (main1 < y2) {
+                        cross2 = x3 + (y2 - main1) * Math.tan(deg1);
+                        points.push([[cross2, main1], [x4, main1], [x4, y2], [x3, y2]]);
+                        points.push([[x3, y2], [x4, y2], [x4, y3], [x3, y3]]);
+
                         if (isLast) {
-                          points.push([[x3, y2], [cross1, main1], [x4, main1], [x4, y4], [x3, y3]]);
+                          points.push([[x3, y3], [x4, y3], [x4, x4], [x4, x4]]);
                         } else {
-                          points.push([[x3, y2], [cross1, main1], [x4, main1], [x4, main2], [cross1, main2], [x3, y3]]);
+                          points.push([[x3, y3], [x4, y3], [x4, main2], [cross1, main2]]);
                         }
                       } // 上部独立
                       else {
+                          points.push([[x3, main1], [x4, main1], [x4, y3], [x3, y3]]);
+
                           if (isLast) {
-                            points.push([[x3, main1], [x4, main1], [x4, y4], [x3, y3]]);
+                            points.push([[x3, y3], [x4, y3], [x4, y4], [x4, y4]]);
                           } else {
-                            points.push([[x3, main1], [x4, main1], [x4, main2], [cross1, main2], [x3, y3]]);
+                            points.push([[x3, y3], [x4, y3], [x4, main2], [cross1, main2]]);
                           }
                         }
                     } // 完全独立
@@ -3640,7 +3661,7 @@
                 cross2 = y4 - (main2 - x1) * Math.tan(deg2);
 
                 if (isLast) {
-                  points.push([[main1, cross1], [x4, y4], [main1, y4]]);
+                  points.push([[main1, cross1], [x4, y4], [x4, y4], [main1, y4]]);
                 } else {
                   points.push([[main1, cross1], [main2, cross2], [main2, y4], [main1, y4]]);
                 }
@@ -3648,17 +3669,21 @@
               else {
                   // 上部分和borderLeft重叠
                   if (main1 < x2) {
-                    cross1 = y3 + (main1 - x1) * Math.tan(deg1);
+                    cross1 = y4 - (main1 - x1) * Math.tan(deg1);
+                    points.push([[main1, cross1], [x2, y3], [x2, y4], [main1, y4]]);
 
                     if (isLast) {
-                      points.push([[main1, cross1], [x2, y3], [x3, y3], [x4, y4], [main1, y4]]);
+                      points.push([[x2, y3], [x3, y3], [x3, y4], [x2, y4]]);
+                      points.push([[x3, y3], [x4, y4], [x4, y4], [x3, y4]]);
                     } else {
                       // 下部分和borderRight重叠
                       if (main2 > x3) {
-                        points.push([[main1, cross1], [x2, y3], [x3, y3], [main2, y4], [main1, y4]]);
+                        cross2 = y4 - (main2 - x1) * Math.tan(deg2);
+                        points.push([[x2, y3], [x3, y3], [x3, y4], [x2, y4]]);
+                        points.push([[x3, y3], [main2, cross2], [main2, y4], [x3, y4]]);
                       } // 下部独立
                       else {
-                          points.push([[main1, cross1], [x2, y3], [main2, y3], [main2, y4], [main1, y4]]);
+                          points.push([[x2, y3], [main2, y3], [main2, y4], [x2, y4]]);
                         }
                     }
                   } // 下部分和borderRight重叠
@@ -3666,17 +3691,23 @@
                       cross1 = y4 - (x4 - main2) * Math.tan(deg2); // 上部分和borderLeft重叠
 
                       if (main1 < x2) {
+                        cross2 = y4 - (main1 - x1) * Math.tan(deg1);
+                        points.push([[main1, cross2], [x2, y3], [x2, y4], [main1, y4]]);
+                        points.push([[x2, y3], [x3, y3], [x3, y4], [x2, y4]]);
+
                         if (isLast) {
-                          points.push([[main1, cross1], [x3, y3], [x4, y4], [main1, y4]]);
+                          points.push([[x3, y3], [x4, y4], [x4, y4], [x3, y4]]);
                         } else {
-                          points.push([[main1, cross1], [x3, y3], [main2, cross1], [main2, y4], [main1, y4]]);
+                          points.push([[x3, y3], [main2, cross1], [main2, y4], [x3, y4]]);
                         }
                       } // 上部独立
                       else {
+                          points.push([[main1, y3], [x3, y3], [x3, y4], [main1, y4]]);
+
                           if (isLast) {
-                            points.push([[main1, y3], [x3, y3], [x4, y4], [main1, y4]]);
+                            points.push([[x3, y3], [x4, y4], [x4, y4], [x3, y4]]);
                           } else {
-                            points.push([[main1, y3], [x3, y3], [main2, cross1], [main2, y4], [main1, y4]]);
+                            points.push([[x3, y3], [main2, cross1], [main2, y4], [x3, y4]]);
                           }
                         }
                     } // 完全独立
@@ -3704,7 +3735,7 @@
                 cross2 = x1 + (y4 - main2) * Math.tan(deg2);
 
                 if (isLast) {
-                  points.push([[x1, main1], [cross1, main1], [x1, y4]]);
+                  points.push([[x1, main1], [cross1, main1], [x1, y4], [x1, y4]]);
                 } else {
                   points.push([[x1, main1], [cross1, main1], [cross2, main2], [x1, main2]]);
                 }
@@ -3713,16 +3744,20 @@
                   // 上部分和borderTop重叠
                   if (main1 < y2) {
                     cross1 = x1 + (main1 - y1) * Math.tan(deg1);
+                    points.push([[x1, main1], [cross1, main1], [x2, y2], [x1, y2]]);
 
                     if (isLast) {
-                      points.push([[x1, main1], [cross1, main1], [x2, y2], [x2, y3], [x1, y4]]);
+                      points.push([[x1, y2], [x2, y2], [x2, y3], [x1, y3]]);
+                      points.push([[x1, y3], [x2, y3], [x1, y4], [x1, y4]]);
                     } else {
                       // 下部分和borderBottom重叠
                       if (main2 > y3) {
-                        points.push([[x1, main1], [cross1, main1], [x2, y2], [x2, y3], [cross1, main2], [x1, main2]]);
+                        cross2 = x1 + (y4 - main2) * Math.tan(deg2);
+                        points.push([[x1, y2], [x2, y2], [x2, y3], [x1, y3]]);
+                        points.push([[x1, y3], [x2, y3], [cross2, main2], [x1, main2]]);
                       } // 下部独立
                       else {
-                          points.push([[x1, main1], [cross1, main1], [x2, y2], [x2, main2], [x1, main2]]);
+                          points.push([[x1, y2], [x2, y2], [x2, main2], [x1, main2]]);
                         }
                     }
                   } // 下部分和borderBottom重叠
@@ -3730,17 +3765,23 @@
                       cross1 = x1 + (y4 - main2) * Math.tan(deg2); // 上部分和borderTop重叠
 
                       if (main1 < y2) {
+                        cross2 = x1 + (main1 - y1) * Math.tan(deg1);
+                        points.push([[x1, main1], [cross2, main1], [x2, y2], [x1, y1]]);
+                        points.push([[x1, y2], [x2, y2], [x2, y3], [x1, y3]]);
+
                         if (isLast) {
-                          points.push([[x1, main1], [cross1, main1], [x2, y2], [x2, y3], [x1, y4]]);
+                          points.push([[x1, y3], [x2, y3], [x1, y4], [x1, y4]]);
                         } else {
-                          points.push([[x1, main1], [cross1, main1], [x2, y2], [x2, y3], [cross1, main2], [x1, main2]]);
+                          points.push([[x1, y3], [x2, y3], [cross1, main2], [x1, main2]]);
                         }
                       } // 上部独立
                       else {
+                          points.push([[x1, main1], [x2, main1], [x2, y3], [x1, y3]]);
+
                           if (isLast) {
-                            points.push([[x1, main1], [x2, main1], [x2, y3], [x1, y4]]);
+                            points.push([[x1, y3], [x2, y3], [x1, y4], [x1, y4]]);
                           } else {
-                            points.push([[x1, main1], [x2, main1], [x2, y3], [cross1, main2], [x1, main2]]);
+                            points.push([[x1, y3], [x2, y3], [cross1, main2], [x1, main2]]);
                           }
                         }
                     } // 完全独立
@@ -3756,30 +3797,34 @@
         }
 
         if (direction === 0) {
-          return calRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, direction, points, beginRadius, endRadius);
+          return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        } else if (direction === 1) {
+          return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        } else if (direction === 2) {
+          return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        } else if (direction === 3) {
+          return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
         }
-
-        return points;
       }
     } // 兜底返回实线
 
 
     if (direction === 0) {
       points.push([[x1, y1], [x4, y1], [x3, y2], [x2, y2]]);
-      return calRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, direction, points, beginRadius, endRadius);
+      return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 1) {
       points.push([[x3, y2], [x4, y1], [x4, y4], [x3, y3]]);
+      return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 2) {
-      points.push([[x1, y4], [x2, y3], [x3, y3], [x4, y4]]);
+      points.push([[x2, y3], [x3, y3], [x4, y4], [x1, y4]]);
+      return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 3) {
       points.push([[x1, y1], [x2, y2], [x2, y3], [x1, y4]]);
+      return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     }
-
-    return points;
   }
 
-  function calRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, direction, pointsList, beginRadius, endRadius) {
-    // console.log(btlr, btrr);
+  function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
     var _beginRadius = _slicedToArray(beginRadius, 2),
         brx = _beginRadius[0],
         bry = _beginRadius[1];
@@ -3791,23 +3836,20 @@
 
     if ((!brx || !bry) && (!erx || !ery)) {
       return pointsList;
-    } // 分界坐标，左圆角、右圆角、中间矩形，3个区域2个坐标；当左右圆角相接时中间矩形为0即中间2个坐标相等
+    } // 分界坐标圆心，左圆角、右圆角、中间矩形，3个区域2个坐标；当左右圆角相接时中间矩形为0即中间2个坐标相等
 
 
     var oxl = x2 + brx - (x2 - x1);
     var oxr = x3 - erx + (x4 - x3); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
     // 也有可能左右圆角相接，跨越的只分为左右2份
     // 最终左圆角内的存入begin，右圆角内的存入end，中间center
-    // 拆分可能遇到5个点的情况，在虚线相交时会有，舍弃内侧的中点
-    // 另外也有3个点的情况
 
     var beginList = [];
     var centerList = [];
     var endList = [];
 
     for (var i = 0, len = pointsList.length; i < len; i++) {
-      var points = pointsList[i]; // console.log(points);
-      // 全在左圆角
+      var points = pointsList[i]; // 全在左圆角
 
       if (points[1][0] < oxl) {
         beginList.push(points);
@@ -3816,76 +3858,122 @@
           endList.push(points);
         } // 跨越左右圆角
         else if (points[1][0] > oxr && points[0][0] < oxl) {
-            beginList.push([points[0], [oxl - 1, y1], [oxl - 1, y2], points[points.length - 1]]);
+            beginList.push([points[0], [oxl, y1], [oxl, y2], points[3]]);
 
             if (oxl < oxr) {
-              centerList.push([[oxl + 1, y1], [oxr - 1, y1], [oxr - 1, y2], [oxl + 1, y1]]);
+              centerList.push([[oxl, y1], [oxr, y1], [oxr, y2], [oxl, y2]]);
             }
 
-            endList.push([[oxr + 1, y1], points[1], points[2], [oxr + 1, y2]]);
+            endList.push([[oxr, y1], points[1], points[2], [oxr, y2]]);
           } // 跨越右圆角
           else if (points[1][0] > oxr) {
-              centerList.push([points[0], [oxr - 1, y1], [oxr - 1, y2], points[points.length - 1]]);
+              centerList.push([points[0], [oxr, y1], [oxr, y2], points[3]]);
               endList.push([[oxr, y1], points[1], points[2], [oxr, y2]]);
             } // 跨越左圆角
             else if (points[0][0] < oxl) {
-                beginList.push([points[0], [oxl, y1], [oxl, y2], points[points.length - 1]]);
-                centerList.push([[oxl + 1, y1], points[1], points[2], [oxl + 1, y2]]);
+                beginList.push([points[0], [oxl, y1], [oxl, y2], points[3]]);
+                centerList.push([[oxl, y1], points[1], points[2], [oxl, y2]]);
               } else {
                 centerList.push(points);
               }
+    }
+
+    var beginLength = beginList.length;
+
+    if (beginLength) {
+      // 边宽可能大于圆角尺寸，边的里面无需圆弧化
+      var needInner = brx && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
+
+      var crossDeg = Math.atan((x2 - x1) / (y2 - y1));
+      var rx1 = brx;
+      var ry1 = bry;
+      var sx1 = ry1 / rx1;
+      var oyl = y1 + bry;
+      var rx2 = brx - (x2 - x1);
+      var ry2 = bry - (y2 - y1);
+      var sx2 = ry2 / rx2;
+      beginList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === 0) {
+          controls1 = calBezierTopLeft(points[0], points[1], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+
+          if (needInner) {
+            controls2 = calBezierTopLeft(points[3], points[2], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          }
+        } else {
+          controls1 = calBezierTopLeft(points[0], points[1], oxl, oyl, sx1, ry1);
+
+          if (needInner) {
+            controls2 = calBezierTopLeft(points[3], points[2], oxl, oyl, sx2, ry2);
+          }
+        }
+
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+        if (needInner) {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
+      });
     }
 
     var endLength = endList.length;
 
     if (endLength) {
       // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-      var needInner = erx && borderWidth < ery;
-      var crossDeg = Math.atan((x4 - x3) / (y2 - y1));
-      var rx1 = erx;
-      var ry1 = ery;
-      var sx1 = ry1 / rx1;
+      var _needInner = erx && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
+
+
+      var _crossDeg = Math.atan((x4 - x3) / (y2 - y1));
+
+      var _rx = erx;
+      var _ry = ery;
+
+      var _sx = _ry / _rx;
+
       var oyr = y1 + ery;
-      var rx2 = erx - (x4 - x3);
-      var ry2 = ery - (y2 - y1);
-      var sx2 = ry2 / rx2;
+
+      var _rx2 = erx - (x4 - x3);
+
+      var _ry2 = ery - (y2 - y1);
+
+      var _sx2 = _ry2 / _rx2;
+
       endList.forEach(function (points, i) {
-        // console.warn(points);
         var controls1;
         var controls2;
 
         if (i === endLength - 1) {
-          controls1 = calBezier(points[0], points[1], oxr, oyr, sx1, ry1, true, Math.tan(crossDeg) * ry1); // 有可能出现3个点的情况，内层只有1个点无需弯曲
+          controls1 = calBezierTopRight(points[0], points[1], oxr, oyr, _sx, _ry, true, Math.tan(_crossDeg) * _ry);
 
-          if (needInner && points.length > 3) {
-            controls2 = calBezier(points[3], points[2], oxr, oyr, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          if (_needInner) {
+            controls2 = calBezierTopRight(points[3], points[2], oxr, oyr, _sx2, _ry2, true, Math.tan(_crossDeg) * _ry2);
           }
         } else {
-          controls1 = calBezier(points[0], points[1], oxr, oyr, sx1, ry1);
+          controls1 = calBezierTopRight(points[0], points[1], oxr, oyr, _sx, _ry);
 
-          if (needInner) {
-            controls2 = calBezier(points[3], points[2], oxr, oyr, sx2, ry2);
+          if (_needInner) {
+            controls2 = calBezierTopRight(points[3], points[2], oxr, oyr, _sx2, _ry2);
           }
         }
 
-        points[0] = controls1[3];
-        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
 
-        if (needInner && points.length > 3) {
-          points[2] = controls2[0];
-          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        if (_needInner) {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
         }
       });
     }
 
-    console.log(beginList);
-    console.log(centerList);
-    console.log(endList);
     return beginList.concat(centerList).concat(endList);
   }
 
-  function calBezier(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
-    // console.log(p1, p2, ox, oy, sx, r, isEnd, crossDx);
+  function calBezierTopLeft(p1, p2, ox, oy, sx, r, isStart, crossDx) {
     // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
     var _p = _slicedToArray(p1, 2),
         p1x = _p[0],
@@ -3894,6 +3982,91 @@
     var _p2 = _slicedToArray(p2, 2),
         p2x = _p2[0],
         p2y = _p2[1];
+
+    var dx1 = -p1x + ox;
+    var dsx1 = dx1 * sx;
+    var dx2 = -p2x + ox;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg2 = Math.atan(dsx2 / (oy - p2y)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx2 = ox - Math.sin(deg2) * r / sx;
+    var cpy2 = oy - Math.cos(deg2) * r;
+    var deg1;
+    var cpx1;
+    var cpy1; // 最初的是两条border的交界线，需要特殊求交界线延长和椭圆的交点，不能直连圆心求交点
+
+    if (isStart) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg1 = Math.PI * 0.5 - alpha;
+      cpx1 = ox - Math.cos(alpha) * r / sx;
+      cpy1 = oy - Math.sin(alpha) * r;
+    } else {
+      deg1 = Math.atan(dsx1 / (oy - p1y));
+      cpx1 = ox - Math.sin(deg1) * r / sx;
+      cpy1 = oy - Math.cos(deg1) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 - degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox - cdx1 / sx;
+    var cy1 = oy - cdy1;
+    var degTg2 = deg2 + degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox - cdx2 / sx;
+    var cy2 = oy - cdy2; // window.ctx.fillStyle = '#F90';
+    // window.ctx.beginPath();
+    // window.ctx.arc(p1x, p1y, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(p2x, p2y, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
+  }
+
+  function calBezierTopRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p3 = _slicedToArray(p1, 2),
+        p1x = _p3[0],
+        p1y = _p3[1];
+
+    var _p4 = _slicedToArray(p2, 2),
+        p2x = _p4[0],
+        p2y = _p4[1];
 
     var dx1 = p1x - ox;
     var dsx1 = dx1 * sx;
@@ -3924,10 +4097,22 @@
       deg2 = Math.atan(dsx2 / (oy - p2y));
       cpx2 = ox + Math.sin(deg2) * r / sx;
       cpy2 = oy - Math.cos(deg2) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom.h(deg2 - deg1);
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3943,7 +4128,7 @@
     var cdx2 = Math.sin(degTg2) * c;
     var cdy2 = Math.cos(degTg2) * c;
     var cx2 = ox + cdx2 / sx;
-    var cy2 = oy - cdy2; // window.ctx.fillStyle = '#FF0';
+    var cy2 = oy - cdy2; // window.ctx.fillStyle = '#F90';
     // window.ctx.beginPath();
     // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
     // window.ctx.fill();
@@ -3951,13 +4136,956 @@
     // window.ctx.beginPath();
     // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
     // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
     // window.ctx.fillStyle = '#0F0';
     // window.ctx.beginPath();
     // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
     // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
+  }
+
+  function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+    var _beginRadius2 = _slicedToArray(beginRadius, 2),
+        brx = _beginRadius2[0],
+        bry = _beginRadius2[1];
+
+    var _endRadius2 = _slicedToArray(endRadius, 2),
+        erx = _endRadius2[0],
+        ery = _endRadius2[1]; // 一条边的两侧圆角均为0时无效
+
+
+    if ((!brx || !bry) && (!erx || !ery)) {
+      return pointsList;
+    } // 分界坐标圆心，上圆角、下圆角、中间矩形，3个区域2个坐标；当上下圆角相接时中间矩形为0即中间2个坐标相等
+
+
+    var oyt = y2 + bry - (y2 - y1);
+    var oyb = y3 - ery + (y4 - y3);
+    var beginList = [];
+    var centerList = [];
+    var endList = []; // 同borderTop拆分
+
+    for (var i = 0, len = pointsList.length; i < len; i++) {
+      var points = pointsList[i]; // 全在上圆角
+
+      if (points[2][1] < oyt) {
+        beginList.push(points);
+      } // 全在下圆角
+      else if (points[0][1] > oyb) {
+          endList.push(points);
+        } // 跨越上下圆角
+        else if (points[2][1] > oyb && points[0][1] < oyt) {
+            beginList.push([points[0], points[1], [x4, oyt], [x3, oyt]]);
+
+            if (oyt < oyb) {
+              centerList.push([[x3, oyt], [x4, oyt], [x4, oyb], [x3, oyb]]);
+            }
+
+            endList.push([[x3, oyb], [x4, oyb], points[2], points[3]]);
+          } // 跨越下圆角
+          else if (points[2][1] > oyb) {
+              centerList.push([points[0], points[1], [x4, oyb], [x3, oyb]]);
+              endList.push([[x3, oyb], [x4, oyb], points[2], points[3]]);
+            } // 跨越上圆角
+            else if (points[1][1] < oyt) {
+                beginList.push([points[0], points[1], [x4, oyt], [x3, oyt]]);
+                centerList.push([[x3, oyt], [x4, oyt], points[2], points[3]]);
+              } else {
+                centerList.push(points);
+              }
+    }
+
+    var beginLength = beginList.length;
+
+    if (beginLength) {
+      var needInner = bry && borderWidth < brx;
+      var crossDeg = Math.atan((x4 - x3) / (y2 - y1));
+      var rx1 = brx;
+      var ry1 = bry;
+      var sx1 = ry1 / rx1;
+      var oxt = x4 - brx;
+      var rx2 = brx - (x4 - x3);
+      var ry2 = bry - (y2 - y1);
+      var sx2 = ry2 / rx2;
+      beginList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === 0) {
+          controls1 = calBezierRightTop(points[1], points[2], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+
+          if (needInner) {
+            controls2 = calBezierRightTop(points[0], points[3], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          }
+        } else {
+          controls1 = calBezierRightTop(points[1], points[2], oxt, oyt, sx1, ry1);
+
+          if (needInner) {
+            controls2 = calBezierRightTop(points[0], points[3], oxt, oyt, sx2, ry2);
+          }
+        }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
+
+        if (needInner) {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
+      });
+    }
+
+    var endLength = endList.length;
+
+    if (endLength) {
+      var _needInner2 = ery && borderWidth < erx;
+
+      var _crossDeg2 = Math.atan((x4 - x3) / (y4 - y3));
+
+      var _rx3 = erx;
+      var _ry3 = ery;
+
+      var _sx3 = _ry3 / _rx3;
+
+      var oxb = x4 - erx;
+
+      var _rx4 = erx - (x4 - x3);
+
+      var _ry4 = ery - (y4 - y3);
+
+      var _sx4 = _ry4 / _rx4;
+
+      endList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === endLength - 1) {
+          controls1 = calBezierRightBottom(points[1], points[2], oxb, oyb, _sx3, _ry3, true, Math.tan(_crossDeg2) * _ry3);
+
+          if (_needInner2) {
+            controls2 = calBezierRightBottom(points[0], points[3], oxb, oyb, _sx4, _ry4, true, Math.tan(_crossDeg2) * _ry4);
+          }
+        } else {
+          controls1 = calBezierRightBottom(points[1], points[2], oxb, oyb, _sx3, _ry3);
+
+          if (_needInner2) {
+            controls2 = calBezierRightBottom(points[0], points[3], oxb, oyb, _sx4, _ry4);
+          }
+        }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
+
+        if (_needInner2) {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
+      });
+    }
+
+    return beginList.concat(centerList).concat(endList);
+  }
+
+  function calBezierRightTop(p1, p2, ox, oy, sx, r, isStart, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p5 = _slicedToArray(p1, 2),
+        p1x = _p5[0],
+        p1y = _p5[1];
+
+    var _p6 = _slicedToArray(p2, 2),
+        p2x = _p6[0],
+        p2y = _p6[1];
+
+    var dx1 = p1x - ox;
+    var dsx1 = dx1 * sx;
+    var dx2 = p2x - ox;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg2 = Math.atan(dsx2 / (oy - p2y)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx2 = ox + Math.sin(deg2) * r / sx;
+    var cpy2 = oy - Math.cos(deg2) * r;
+    var deg1;
+    var cpx1;
+    var cpy1;
+
+    if (isStart) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg1 = Math.PI * 0.5 - alpha;
+      cpx1 = ox + Math.cos(alpha) * r / sx;
+      cpy1 = oy - Math.sin(alpha) * r;
+    } else {
+      deg1 = Math.atan(dsx1 / (oy - p1y));
+      cpx1 = ox + Math.sin(deg1) * r / sx;
+      cpy1 = oy - Math.cos(deg1) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 + degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox + cdx1 / sx;
+    var cy1 = oy - cdy1;
+    var degTg2 = deg2 - degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox + cdx2 / sx;
+    var cy2 = oy - cdy2; // window.ctx.fillStyle = '#000';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
     // window.ctx.fillStyle = '#00F';
     // window.ctx.beginPath();
     // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx2, cpy2], [cx2, cy2], [cx1, cy1], [cpx1, cpy1]];
+  }
+
+  function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p7 = _slicedToArray(p1, 2),
+        p1x = _p7[0],
+        p1y = _p7[1];
+
+    var _p8 = _slicedToArray(p2, 2),
+        p2x = _p8[0],
+        p2y = _p8[1];
+
+    var dx1 = p1x - ox;
+    var dsx1 = dx1 * sx;
+    var dx2 = p2x - ox;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg1 = Math.atan(dsx1 / (p1y - oy)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx1 = ox + Math.sin(deg1) * r / sx;
+    var cpy1 = oy + Math.cos(deg1) * r;
+    var deg2;
+    var cpx2;
+    var cpy2;
+
+    if (isEnd) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg2 = Math.PI * 0.5 - alpha;
+      cpx2 = ox + Math.cos(alpha) * r / sx;
+      cpy2 = oy + Math.sin(alpha) * r;
+    } else {
+      deg2 = Math.atan(dsx2 / (p2y - oy));
+      cpx2 = ox + Math.sin(deg2) * r / sx;
+      cpy2 = oy + Math.cos(deg2) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 - degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox + cdx1 / sx;
+    var cy1 = oy + cdy1;
+    var degTg2 = deg2 + degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox + cdx2 / sx;
+    var cy2 = oy + cdy2; // window.ctx.fillStyle = '#F90';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx2, cpy2], [cx2, cy2], [cx1, cy1], [cpx1, cpy1]];
+  }
+
+  function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+    var _beginRadius3 = _slicedToArray(beginRadius, 2),
+        brx = _beginRadius3[0],
+        bry = _beginRadius3[1];
+
+    var _endRadius3 = _slicedToArray(endRadius, 2),
+        erx = _endRadius3[0],
+        ery = _endRadius3[1]; // 一条边的两侧圆角均为0时无效
+
+
+    if ((!brx || !bry) && (!erx || !ery)) {
+      return pointsList;
+    } // 分界坐标圆心，左圆角、右圆角、中间矩形，3个区域2个坐标；当左右圆角相接时中间矩形为0即中间2个坐标相等
+
+
+    var oxl = x2 + brx - (x2 - x1);
+    var oxr = x3 - erx + (x4 - x3); // 先拆分，当一块四边形跨越左右圆角和中间非圆角时被拆为3份，只跨一边圆角拆2份，不跨不处理
+    // 也有可能左右圆角相接，跨越的只分为左右2份
+    // 最终左圆角内的存入begin，右圆角内的存入end，中间center
+
+    var beginList = [];
+    var centerList = [];
+    var endList = [];
+
+    for (var i = 0, len = pointsList.length; i < len; i++) {
+      var points = pointsList[i]; // 全在左圆角
+
+      if (points[1][0] < oxl) {
+        beginList.push(points);
+      } // 全在右圆角
+      else if (points[0][0] > oxr) {
+          endList.push(points);
+        } // 跨越左右圆角
+        else if (points[1][0] > oxr && points[0][0] < oxl) {
+            beginList.push([points[0], [oxl, y3], [oxl, y4], points[3]]);
+
+            if (oxl < oxr) {
+              centerList.push([[oxl, y3], [oxr, y3], [oxr, y4], [oxl, y4]]);
+            }
+
+            endList.push([[oxr, y3], points[1], points[2], [oxr, y4]]);
+          } // 跨越右圆角
+          else if (points[1][0] > oxr) {
+              centerList.push([points[0], [oxr, y3], [oxr, y4], points[3]]);
+              endList.push([[oxr, y3], points[1], points[2], [oxr, y4]]);
+            } // 跨越左圆角
+            else if (points[0][0] < oxl) {
+                beginList.push([points[0], [oxl, y3], [oxl, y4], points[3]]);
+                centerList.push([[oxl, y3], points[1], points[2], [oxl, y4]]);
+              } else {
+                centerList.push(points);
+              }
+    }
+
+    var beginLength = beginList.length;
+
+    if (beginLength) {
+      // 边宽可能大于圆角尺寸，边的里面无需圆弧化
+      var needInner = brx && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
+
+      var crossDeg = Math.atan((x2 - x1) / (y4 - y3));
+      var rx1 = brx;
+      var ry1 = bry;
+      var sx1 = ry1 / rx1;
+      var oyl = y4 - bry;
+      var rx2 = brx - (x2 - x1);
+      var ry2 = bry - (y4 - y3);
+      var sx2 = ry2 / rx2;
+      beginList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === 0) {
+          controls1 = calBezierBottomLeft(points[3], points[2], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+
+          if (needInner) {
+            controls2 = calBezierBottomLeft(points[0], points[1], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          }
+        } else {
+          controls1 = calBezierBottomLeft(points[3], points[2], oxl, oyl, sx1, ry1);
+
+          if (needInner) {
+            controls2 = calBezierBottomLeft(points[0], points[1], oxl, oyl, sx2, ry2);
+          }
+        }
+
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+        if (needInner) {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
+      });
+    }
+
+    var endLength = endList.length;
+
+    if (endLength) {
+      // 边宽可能大于圆角尺寸，边的里面无需圆弧化
+      var _needInner3 = erx && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
+
+
+      var _crossDeg3 = Math.atan((x4 - x3) / (y4 - y3));
+
+      var _rx5 = erx;
+      var _ry5 = ery;
+
+      var _sx5 = _ry5 / _rx5;
+
+      var oyr = y4 - ery;
+
+      var _rx6 = erx - (x4 - x3);
+
+      var _ry6 = ery - (y4 - y3);
+
+      var _sx6 = _ry6 / _rx6;
+
+      endList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === endLength - 1) {
+          controls1 = calBezierBottomRight(points[3], points[2], oxr, oyr, _sx5, _ry5, true, Math.tan(_crossDeg3) * _ry5);
+
+          if (_needInner3) {
+            controls2 = calBezierBottomRight(points[0], points[1], oxr, oyr, _sx6, _ry6, true, Math.tan(_crossDeg3) * _ry6);
+          }
+        } else {
+          controls1 = calBezierBottomRight(points[3], points[2], oxr, oyr, _sx5, _ry5);
+
+          if (_needInner3) {
+            controls2 = calBezierBottomRight(points[0], points[1], oxr, oyr, _sx6, _ry6);
+          }
+        }
+
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
+
+        if (_needInner3) {
+          points[2] = controls2[3];
+          points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
+        }
+      });
+    }
+
+    return beginList.concat(centerList).concat(endList);
+  }
+
+  function calBezierBottomLeft(p1, p2, ox, oy, sx, r, isStart, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p9 = _slicedToArray(p1, 2),
+        p1x = _p9[0],
+        p1y = _p9[1];
+
+    var _p10 = _slicedToArray(p2, 2),
+        p2x = _p10[0],
+        p2y = _p10[1];
+
+    var dx1 = -p1x + ox;
+    var dsx1 = dx1 * sx;
+    var dx2 = -p2x + ox;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg2 = Math.atan(dsx2 / (p2y - oy)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx2 = ox - Math.sin(deg2) * r / sx;
+    var cpy2 = oy + Math.cos(deg2) * r;
+    var deg1;
+    var cpx1;
+    var cpy1; // 最初的是两条border的交界线，需要特殊求交界线延长和椭圆的交点，不能直连圆心求交点
+
+    if (isStart) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg1 = Math.PI * 0.5 - alpha;
+      cpx1 = ox - Math.cos(alpha) * r / sx;
+      cpy1 = oy + Math.sin(alpha) * r;
+    } else {
+      deg1 = Math.atan(dsx1 / (p1y - oy));
+      cpx1 = ox - Math.sin(deg1) * r / sx;
+      cpy1 = oy + Math.cos(deg1) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 - degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox - cdx1 / sx;
+    var cy1 = oy + cdy1;
+    var degTg2 = deg2 + degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox - cdx2 / sx;
+    var cy2 = oy + cdy2; // window.ctx.fillStyle = '#F90';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
+  }
+
+  function calBezierBottomRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p11 = _slicedToArray(p1, 2),
+        p1x = _p11[0],
+        p1y = _p11[1];
+
+    var _p12 = _slicedToArray(p2, 2),
+        p2x = _p12[0],
+        p2y = _p12[1];
+
+    var dx1 = p1x - ox;
+    var dsx1 = dx1 * sx;
+    var dx2 = p2x - ox;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg1 = Math.atan(dsx1 / (p1y - oy)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx1 = ox + Math.sin(deg1) * r / sx;
+    var cpy1 = oy + Math.cos(deg1) * r;
+    var deg2;
+    var cpx2;
+    var cpy2; // 最后的是两条border的交界线，需要特殊求交界线延长和椭圆的交点，不能直连圆心求交点
+
+    if (isEnd) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg2 = Math.PI * 0.5 - alpha;
+      cpx2 = ox + Math.cos(alpha) * r / sx;
+      cpy2 = oy + Math.sin(alpha) * r;
+    } else {
+      deg2 = Math.atan(dsx2 / (p2y - oy));
+      cpx2 = ox + Math.sin(deg2) * r / sx;
+      cpy2 = oy + Math.cos(deg2) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 + degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox + cdx1 / sx;
+    var cy1 = oy + cdy1;
+    var degTg2 = deg2 - degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox + cdx2 / sx;
+    var cy2 = oy + cdy2; // window.ctx.fillStyle = '#F90';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
+  }
+
+  function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+    var _beginRadius4 = _slicedToArray(beginRadius, 2),
+        brx = _beginRadius4[0],
+        bry = _beginRadius4[1];
+
+    var _endRadius4 = _slicedToArray(endRadius, 2),
+        erx = _endRadius4[0],
+        ery = _endRadius4[1]; // 一条边的两侧圆角均为0时无效
+
+
+    if ((!brx || !bry) && (!erx || !ery)) {
+      return pointsList;
+    } // 分界坐标圆心，上圆角、下圆角、中间矩形，3个区域2个坐标；当上下圆角相接时中间矩形为0即中间2个坐标相等
+
+
+    var oyt = y2 + bry - (y2 - y1);
+    var oyb = y3 - ery + (y4 - y3);
+    var beginList = [];
+    var centerList = [];
+    var endList = []; // 同borderTop拆分
+
+    for (var i = 0, len = pointsList.length; i < len; i++) {
+      var points = pointsList[i]; // 全在上圆角
+
+      if (points[2][1] < oyt) {
+        beginList.push(points);
+      } // 全在下圆角
+      else if (points[0][1] > oyb) {
+          endList.push(points);
+        } // 跨越上下圆角
+        else if (points[2][1] > oyb && points[0][1] < oyt) {
+            beginList.push([points[0], points[1], [x2, oyt], [x1, oyt]]);
+
+            if (oyt < oyb) {
+              centerList.push([[x1, oyt], [x2, oyt], [x2, oyb], [x1, oyb]]);
+            }
+
+            endList.push([[x1, oyb], [x2, oyb], points[2], points[3]]);
+          } // 跨越下圆角
+          else if (points[2][1] > oyb) {
+              centerList.push([points[0], points[1], [x2, oyb], [x1, oyb]]);
+              endList.push([[x1, oyb], [x2, oyb], points[2], points[3]]);
+            } // 跨越上圆角
+            else if (points[1][1] < oyt) {
+                beginList.push([points[0], points[1], [x2, oyt], [x1, oyt]]);
+                centerList.push([[x1, oyt], [x2, oyt], points[2], points[3]]);
+              } else {
+                centerList.push(points);
+              }
+    }
+
+    var beginLength = beginList.length;
+
+    if (beginLength) {
+      var needInner = bry && borderWidth < brx;
+      var crossDeg = Math.atan((x2 - x1) / (y2 - y1));
+      var rx1 = brx;
+      var ry1 = bry;
+      var sx1 = ry1 / rx1;
+      var oxt = x1 + brx;
+      var rx2 = brx - (x2 - x1);
+      var ry2 = bry - (y2 - y1);
+      var sx2 = ry2 / rx2;
+      beginList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === 0) {
+          controls1 = calBezierLeftTop(points[0], points[3], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+
+          if (needInner) {
+            controls2 = calBezierLeftTop(points[1], points[2], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          }
+        } else {
+          controls1 = calBezierLeftTop(points[0], points[3], oxt, oyt, sx1, ry1);
+
+          if (needInner) {
+            controls2 = calBezierLeftTop(points[1], points[2], oxt, oyt, sx2, ry2);
+          }
+        }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
+
+        if (needInner) {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
+      });
+    }
+
+    var endLength = endList.length;
+
+    if (endLength) {
+      var _needInner4 = ery && borderWidth < erx;
+
+      var _crossDeg4 = Math.atan((x2 - x1) / (y4 - y3));
+
+      var _rx7 = erx;
+      var _ry7 = ery;
+
+      var _sx7 = _ry7 / _rx7;
+
+      var oxb = x1 + erx;
+
+      var _rx8 = erx - (x2 - x1);
+
+      var _ry8 = ery - (y4 - y3);
+
+      var _sx8 = _ry8 / _rx8;
+
+      endList.forEach(function (points, i) {
+        var controls1;
+        var controls2;
+
+        if (i === endLength - 1) {
+          controls1 = calBezierLeftBottom(points[0], points[3], oxb, oyb, _sx7, _ry7, true, Math.tan(_crossDeg4) * _ry7);
+
+          if (_needInner4) {
+            controls2 = calBezierLeftBottom(points[1], points[2], oxb, oyb, _sx8, _ry8, true, Math.tan(_crossDeg4) * _ry8);
+          }
+        } else {
+          controls1 = calBezierLeftBottom(points[0], points[3], oxb, oyb, _sx7, _ry7);
+
+          if (_needInner4) {
+            controls2 = calBezierLeftBottom(points[1], points[2], oxb, oyb, _sx8, _ry8);
+          }
+        }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
+
+        if (_needInner4) {
+          points[2] = controls2[0];
+          points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
+        }
+      });
+    }
+
+    return beginList.concat(centerList).concat(endList);
+  }
+
+  function calBezierLeftTop(p1, p2, ox, oy, sx, r, isStart, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p13 = _slicedToArray(p1, 2),
+        p1x = _p13[0],
+        p1y = _p13[1];
+
+    var _p14 = _slicedToArray(p2, 2),
+        p2x = _p14[0],
+        p2y = _p14[1];
+
+    var dx1 = ox - p1x;
+    var dsx1 = dx1 * sx;
+    var dx2 = ox - p2x;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg2 = Math.atan(dsx2 / (oy - p2y)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx2 = ox - Math.sin(deg2) * r / sx;
+    var cpy2 = oy - Math.cos(deg2) * r;
+    var deg1;
+    var cpx1;
+    var cpy1;
+
+    if (isStart) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg1 = Math.PI * 0.5 - alpha;
+      cpx1 = ox - Math.cos(alpha) * r / sx;
+      cpy1 = oy - Math.sin(alpha) * r;
+    } else {
+      deg1 = Math.atan(dsx1 / (oy - p1y));
+      cpx1 = ox - Math.sin(deg1) * r / sx;
+      cpy1 = oy - Math.cos(deg1) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 + degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox - cdx1 / sx;
+    var cy1 = oy - cdy1;
+    var degTg2 = deg2 - degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox - cdx2 / sx;
+    var cy2 = oy - cdy2; // window.ctx.fillStyle = '#000';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.closePath();
+
+    return [[cpx2, cpy2], [cx2, cy2], [cx1, cy1], [cpx1, cpy1]];
+  }
+
+  function calBezierLeftBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
+    // 先缩放x轴，椭圆变圆，2个点x坐标相应变化，y不变
+    var _p15 = _slicedToArray(p1, 2),
+        p1x = _p15[0],
+        p1y = _p15[1];
+
+    var _p16 = _slicedToArray(p2, 2),
+        p2x = _p16[0],
+        p2y = _p16[1];
+
+    var dx1 = ox - p1x;
+    var dsx1 = dx1 * sx;
+    var dx2 = ox - p2x;
+    var dsx2 = dx2 * sx; // 求2个点和1/4圆弧的交点坐标，和圆心连线，反三角函数求出夹角
+
+    var deg1 = Math.atan(dsx1 / (p1y - oy)); // 根据角和半径再三角函数求交点坐标，可以直接缩放x轴恢复原本椭圆坐标，求贝塞尔控制点用不到交点
+
+    var cpx1 = ox - Math.sin(deg1) * r / sx;
+    var cpy1 = oy + Math.cos(deg1) * r;
+    var deg2;
+    var cpx2;
+    var cpy2;
+
+    if (isEnd) {
+      // 交界线和y轴夹角beta以及交点的x坐标都会受缩放影响，先化圆好求交点坐标
+      var crossDsx = crossDx * sx;
+      var beta = Math.atan(crossDsx / r); // 公式计算可得beta和交点连圆心的角alpha关系
+
+      var tanBetaDiv2Sqrt = Math.sqrt(Math.tan(beta) / 2);
+      var tanAlphaHalf = tanBetaDiv2Sqrt / (1 + tanBetaDiv2Sqrt);
+      var alpha = Math.atan(tanAlphaHalf) * 2; // 获得alpha后直接根据半径求出交点坐标
+
+      deg2 = Math.PI * 0.5 - alpha;
+      cpx2 = ox - Math.cos(alpha) * r / sx;
+      cpy2 = oy + Math.sin(alpha) * r;
+    } else {
+      deg2 = Math.atan(dsx2 / (p2y - oy));
+      cpx2 = ox - Math.sin(deg2) * r / sx;
+      cpy2 = oy + Math.cos(deg2) * r;
+    } // 首尾只有3个点情况下重复了顶点形成4边形，同时圆角x/y相等有inner时
+    // 使得交点相同角度相同无法计算，直接返回4个同样的点即可
+
+
+    if (deg1 === deg2) {
+      return [[cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1], [cpx1, cpy1]];
+    } // 根据夹角求贝塞尔拟合圆弧长度
+
+
+    var h = geom.h(Math.abs(deg1 - deg2));
+    var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
+    // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
+    // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
+
+    var c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    var degTg = Math.atan(d / r);
+    var degTg1 = deg1 - degTg;
+    var cdx1 = Math.sin(degTg1) * c;
+    var cdy1 = Math.cos(degTg1) * c;
+    var cx1 = ox - cdx1 / sx;
+    var cy1 = oy + cdy1;
+    var degTg2 = deg2 + degTg;
+    var cdx2 = Math.sin(degTg2) * c;
+    var cdy2 = Math.cos(degTg2) * c;
+    var cx2 = ox - cdx2 / sx;
+    var cy2 = oy + cdy2; // window.ctx.fillStyle = '#F90';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx1, cpy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0FF';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx1, cy1, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#00F';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cx2, cy2, 1,0, 2 * Math.PI);
+    // window.ctx.fill();
+    // window.ctx.fillStyle = '#0F0';
+    // window.ctx.beginPath();
+    // window.ctx.arc(cpx2, cpy2, 1,0, 2 * Math.PI);
     // window.ctx.fill();
     // window.ctx.closePath();
 
@@ -4050,7 +5178,6 @@
   }
 
   var border = {
-    calDashed: calDashed,
     calPoints: calPoints,
     calRadius: calRadius
   };
@@ -8190,13 +9317,13 @@
 
             renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
-        } // 边框需考虑尖角，两条相交边平分45°夹角
+        }
 
+        window.ctx = ctx; // 边框需考虑尖角，两条相交边平分45°夹角
 
         if (borderTopWidth > 0 && borderTopColor[3] > 0) {
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
           var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-          window.ctx = ctx;
           var points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
           renderBorder(renderMode, points, borderTopColor, ctx, this);
         }
@@ -8206,7 +9333,7 @@
 
           var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-          var _points = border.calPoints(borderRightWidth, borderRightStyle, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+          var _points = border.calPoints(borderRightWidth, borderRightStyle, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
 
           renderBorder(renderMode, _points, borderRightColor, ctx, this);
         }
@@ -8216,7 +9343,7 @@
 
           var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-          var _points2 = border.calPoints(borderBottomWidth, borderBottomStyle, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+          var _points2 = border.calPoints(borderBottomWidth, borderBottomStyle, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
 
           renderBorder(renderMode, _points2, borderBottomColor, ctx, this);
         }
@@ -8226,7 +9353,7 @@
 
           var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-          var _points3 = border.calPoints(borderLeftWidth, borderLeftStyle, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+          var _points3 = border.calPoints(borderLeftWidth, borderLeftStyle, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
 
           renderBorder(renderMode, _points3, borderLeftColor, ctx, this);
         }

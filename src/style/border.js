@@ -819,16 +819,16 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
         }
       }
       if(direction === 0) {
-        return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        return calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
       }
       else if(direction === 1) {
-        return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        return calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
       }
       else if(direction === 2) {
-        return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        return calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
       }
       else if(direction === 3) {
-        return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+        return calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
       }
     }
   }
@@ -840,7 +840,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
       [x3, y2],
       [x2, y2]
     ]);
-    return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+    return calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 1) {
     points.push([
@@ -849,7 +849,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
       [x4, y4],
       [x3, y3]
     ]);
-    return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+    return calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 2) {
     points.push([
@@ -858,7 +858,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
       [x4, y4],
       [x1, y4]
     ]);
-    return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+    return calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 3) {
     points.push([
@@ -867,11 +867,11 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
       [x2, y3],
       [x1, y4]
     ]);
-    return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+    return calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
 }
 
-function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
   let [brx, bry] = beginRadius;
   let [erx, ery] = endRadius;
   // 一条边的两侧圆角均为0时无效
@@ -899,55 +899,109 @@ function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsL
     }
     // 跨越左右圆角
     else if(points[1][0] > oxr && points[0][0] < oxl) {
+      let ya = oxl < x2 ? (y1 + Math.tan(deg1) * (oxl - x1)) : y2;
+      let yb = oxr > x3 ? (y1 + Math.tan(deg2) * (x4 - oxr)) : y2;
       beginList.push([
         points[0],
         [oxl, y1],
-        [oxl, y2],
+        [oxl, ya],
         points[3]
       ]);
       if(oxl < oxr) {
-        centerList.push([
-          [oxl, y1],
-          [oxr, y1],
-          [oxr, y2],
-          [oxl, y2],
-        ]);
+        if(oxl > x2 && oxr < x3) {
+          centerList.push([
+            [oxl, y1],
+            [oxr, y1],
+            [oxr, y2],
+            [oxl, y2],
+          ]);
+        }
+        else if(oxl > x2) {
+          centerList.push([
+            [oxl, y1],
+            [x3, y1],
+            [x3, y2],
+            [oxl, y2],
+          ]);
+          centerList.push([
+            [x3, y1],
+            [oxr, y1],
+            [oxr, yb],
+            [x3, y2]
+          ]);
+        }
+        else if(oxr < x3) {
+          centerList.push([
+            [oxl, y1],
+            [x2, y1],
+            [x2, y2],
+            [oxl, ya]
+          ]);
+          centerList.push([
+            [x2, y1],
+            [oxr, y1],
+            [oxr, y2],
+            [x2, y2],
+          ]);
+        }
+        else {
+          centerList.push([
+            [oxl, y1],
+            [x2, y1],
+            [x2, y2],
+            [oxl, ya]
+          ]);
+          centerList.push([
+            [x2, y1],
+            [x3, y1],
+            [x3, y2],
+            [x2, y2],
+          ]);
+          centerList.push([
+            [x3, y1],
+            [oxr, y1],
+            [oxr, yb],
+            [x3, y2]
+          ]);
+        }
       }
       endList.push([
         [oxr, y1],
         points[1],
         points[2],
-        [oxr, y2]
+        [oxr, yb]
       ]);
     }
     // 跨越右圆角
     else if(points[1][0] > oxr) {
+      let y = oxr > x3 ? (y1 + Math.tan(deg2) * (x4 - oxr)) : y2;
       centerList.push([
         points[0],
         [oxr, y1],
-        [oxr, y2],
+        [oxr, y],
         points[3]
       ]);
       endList.push([
         [oxr, y1],
         points[1],
         points[2],
-        [oxr, y2]
+        [oxr, y]
       ]);
     }
     // 跨越左圆角
     else if(points[0][0] < oxl) {
+      let y = oxl < x2 ? (y1 + Math.tan(deg1) * (oxl - x1)) : y2;
       beginList.push([
         points[0],
         [oxl, y1],
-        [oxl, y2],
+        [oxl, y],
         points[3]
       ]);
       centerList.push([
         [oxl, y1],
         points[1],
         points[2],
-        [oxl, y2],
+        [oxl, y],
       ]);
     }
     else {
@@ -1211,7 +1265,7 @@ function calBezierTopRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
   ];
 }
 
-function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
   let [brx, bry] = beginRadius;
   let [erx, ery] = endRadius;
   // 一条边的两侧圆角均为0时无效
@@ -1232,27 +1286,79 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
       beginList.push(points);
     }
     // 全在下圆角
-    else if(points[0][1] > oyb) {
+    else if(points[1][1] > oyb) {
       endList.push(points);
     }
     // 跨越上下圆角
-    else if(points[2][1] > oyb && points[0][1] < oyt) {
+    else if(points[2][1] > oyb && points[1][1] < oyt) {
+      let xa = oyt < y2 ? (x3 + Math.tan(deg2) * (y2 - oyt)) : x3;
+      let xb = oyb > y3 ? (x3 + Math.tan(deg1) * (oyb - y3)) : x3;
       beginList.push([
         points[0],
         points[1],
         [x4, oyt],
-        [x3, oyt]
+        [xa, oyt]
       ]);
       if(oyt < oyb) {
-        centerList.push([
-          [x3, oyt],
-          [x4, oyt],
-          [x4, oyb],
-          [x3, oyb]
-        ]);
+        if(oyb < y3 && oyt > y2) {
+          centerList.push([
+            [x3, oyt],
+            [x4, oyt],
+            [x4, oyb],
+            [x3, oyb]
+          ]);
+        }
+        else if(oyt > y2) {
+          centerList.push([
+            [x3, y2],
+            [x4, y2],
+            [x4, y3],
+            [x3, y3],
+          ]);
+          centerList.push([
+            [x3, y3],
+            [x4, y3],
+            [x4, oyb],
+            [xb, oyb],
+          ]);
+        }
+        else if(oyb < y3) {
+          centerList.push([
+            [xa, oyt],
+            [x4, oyt],
+            [x4, y2],
+            [x3, y2],
+          ]);
+          centerList.push([
+            [x3, y2],
+            [x4, y2],
+            [x4, oyb],
+            [x3, oyb],
+          ]);
+        }
+        else {
+          centerList.push([
+            [xa, oyt],
+            [x4, oyt],
+            [x4, y2],
+            [x3, y2],
+          ]);
+          centerList.push([
+            [x3, y2],
+            [x4, y2],
+            [x4, y3],
+            [x3, y3],
+          ]);
+          centerList.push([
+            [x3, y3],
+            [x4, y3],
+            [x4, oyb],
+            [xb, oyb],
+          ]);
+        }
       }
       endList.push([
-        [x3, oyb],
+        [xb, oyb],
         [x4, oyb],
         points[2],
         points[3]
@@ -1260,14 +1366,15 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
     }
     // 跨越下圆角
     else if(points[2][1] > oyb) {
+      let x = oyb > y3 ? (x3 + Math.tan(deg1) * (oyb - y3)) : x3;
       centerList.push([
         points[0],
         points[1],
         [x4, oyb],
-        [x3, oyb]
+        [x, oyb]
       ]);
       endList.push([
-        [x3, oyb],
+        [x, oyb],
         [x4, oyb],
         points[2],
         points[3]
@@ -1275,14 +1382,15 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
     }
     // 跨越上圆角
     else if(points[1][1] < oyt) {
+      let x = oyt < y2 ? (x3 + Math.tan(deg2) * (y2 - oyt)) : x3;
       beginList.push([
         points[0],
         points[1],
         [x4, oyt],
-        [x3, oyt]
+        [x, oyt]
       ]);
       centerList.push([
-        [x3, oyt],
+        [x, oyt],
         [x4, oyt],
         points[2],
         points[3]
@@ -1318,8 +1426,6 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
           controls2 = calBezierRightTop(points[0], points[3], oxt, oyt, sx2, ry2);
         }
       }
-      points[0] = controls1[3];
-      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -1330,6 +1436,12 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
           points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
         }
       }
+      else {
+        points[2] = points[3];
+        points[3] = points[0];
+      }
+      points[0] = controls1[3];
+      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
     });
   }
   let endLength = endList.length;
@@ -1358,8 +1470,6 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
           controls2 = calBezierRightBottom(points[0], points[3], oxb, oyb, sx2, ry2);
         }
       }
-      points[0] = controls1[3];
-      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -1370,6 +1480,12 @@ function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, point
           points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
         }
       }
+      else {
+        points[2] = points[3];
+        points[3] = points[0];
+      }
+      points[0] = controls1[3];
+      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
     });
   }
   return beginList.concat(centerList).concat(endList);
@@ -1543,7 +1659,7 @@ function calBezierRightBottom(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
   ];
 }
 
-function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
   let [brx, bry] = beginRadius;
   let [erx, ery] = endRadius;
   // 一条边的两侧圆角均为0时无效
@@ -1562,61 +1678,115 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
   for(let i = 0, len = pointsList.length; i < len; i++) {
     let points = pointsList[i];
     // 全在左圆角
-    if(points[1][0] < oxl) {
+    if(points[2][0] < oxl) {
       beginList.push(points);
     }
     // 全在右圆角
-    else if(points[0][0] > oxr) {
+    else if(points[3][0] > oxr) {
       endList.push(points);
     }
     // 跨越左右圆角
-    else if(points[1][0] > oxr && points[0][0] < oxl) {
+    else if(points[2][0] > oxr && points[3][0] < oxl) {
+      let ya = oxl < x2 ? (y4 - Math.tan(deg1) * (oxl - x1)) : y2;
+      let yb = oxr > x3 ? (y4 - Math.tan(deg2) * (x4 - oxr)) : y3;
       beginList.push([
         points[0],
-        [oxl, y3],
+        [oxl, ya],
         [oxl, y4],
         points[3]
       ]);
       if(oxl < oxr) {
-        centerList.push([
-          [oxl, y3],
-          [oxr, y3],
-          [oxr, y4],
-          [oxl, y4],
-        ]);
+        if(oxl > x2 && oxr < x3) {
+          centerList.push([
+            [oxl, y3],
+            [oxr, y3],
+            [oxr, y4],
+            [oxl, y4],
+          ]);
+        }
+        else if(oxl > x2) {
+          centerList.push([
+            [oxl, y3],
+            [x3, y3],
+            [x3, y4],
+            [oxl, y4],
+          ]);
+          centerList.push([
+            [x3, y3],
+            [oxr, yb],
+            [oxr, y4],
+            [x3, y4]
+          ]);
+        }
+        else if(oxr < x3) {
+          centerList.push([
+            [oxl, ya],
+            [x2, y3],
+            [x2, y4],
+            [oxl, y4]
+          ]);
+          centerList.push([
+            [x2, y3],
+            [oxr, y3],
+            [oxr, y4],
+            [x2, y4],
+          ]);
+        }
+        else {
+          centerList.push([
+            [oxl, ya],
+            [x2, y3],
+            [x2, y4],
+            [oxl, y4]
+          ]);
+          centerList.push([
+            [x2, y3],
+            [x3, y3],
+            [x3, y4],
+            [x2, y4],
+          ]);
+          centerList.push([
+            [x3, y3],
+            [oxr, yb],
+            [oxr, y4],
+            [x3, y4]
+          ]);
+        }
       }
       endList.push([
-        [oxr, y3],
+        [oxr, yb],
         points[1],
         points[2],
         [oxr, y4]
       ]);
     }
     // 跨越右圆角
-    else if(points[1][0] > oxr) {
+    else if(points[2][0] > oxr) {
+      let y = oxr > x3 ? (y4 - Math.tan(deg2) * (x4 - oxr)) : y3;
       centerList.push([
         points[0],
-        [oxr, y3],
+        [oxr, y],
         [oxr, y4],
         points[3]
       ]);
       endList.push([
-        [oxr, y3],
+        [oxr, y],
         points[1],
         points[2],
         [oxr, y4]
       ]);
     }
     // 跨越左圆角
-    else if(points[0][0] < oxl) {
+    else if(points[3][0] < oxl) {
+      let y = oxl < x2 ? (y4 - Math.tan(deg1) * (oxl - x1)) : y2;
       beginList.push([
         points[0],
-        [oxl, y3],
+        [oxl, y],
         [oxl, y4],
         points[3]
       ]);
       centerList.push([
-        [oxl, y3],
+        [oxl, y],
         points[1],
         points[2],
         [oxl, y4],
@@ -1654,8 +1824,6 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
           controls2 = calBezierBottomLeft(points[0], points[1], oxl, oyl, sx2, ry2);
         }
       }
-      points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -1666,6 +1834,12 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
           points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
         }
       }
+      else {
+        points[2] = points[1];
+        points[3] = points[0];
+      }
+      points[0] = controls1[0];
+      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
     });
   }
   let endLength = endList.length;
@@ -1696,8 +1870,6 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
           controls2 = calBezierBottomRight(points[0], points[1], oxr, oyr, sx2, ry2);
         }
       }
-      points[0] = controls1[0];
-      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -1708,6 +1880,12 @@ function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, poin
           points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
         }
       }
+      else {
+        points[2] = points[1];
+        points[3] = points[0];
+      }
+      points[0] = controls1[0];
+      points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
     });
   }
   return beginList.concat(centerList).concat(endList);
@@ -1883,7 +2061,7 @@ function calBezierBottomRight(p1, p2, ox, oy, sx, r, isEnd, crossDx) {
   ];
 }
 
-function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
   let [brx, bry] = beginRadius;
   let [erx, ery] = endRadius;
   // 一条边的两侧圆角均为0时无效
@@ -1900,7 +2078,7 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
   for(let i = 0, len = pointsList.length; i < len; i++) {
     let points = pointsList[i];
     // 全在上圆角
-    if(points[2][1] < oyt) {
+    if(points[3][1] < oyt) {
       beginList.push(points);
     }
     // 全在下圆角
@@ -1908,54 +2086,108 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
       endList.push(points);
     }
     // 跨越上下圆角
-    else if(points[2][1] > oyb && points[0][1] < oyt) {
+    else if(points[3][1] > oyb && points[0][1] < oyt) {
+      let xa = oyt < y2 ? (x2 - Math.tan(deg2) * (y2 - oyt)) : x2;
+      let xb = oyb > y3 ? (x2 - Math.tan(deg1) * (oyb - y3)) : x2;
       beginList.push([
         points[0],
         points[1],
-        [x2, oyt],
+        [xa, oyt],
         [x1, oyt]
       ]);
       if(oyt < oyb) {
-        centerList.push([
-          [x1, oyt],
-          [x2, oyt],
-          [x2, oyb],
-          [x1, oyb]
-        ]);
+        if(oyb < y3 && oyt > y2) {
+          centerList.push([
+            [x1, oyt],
+            [x2, oyt],
+            [x2, oyb],
+            [x1, oyb]
+          ]);
+        }
+        else if(oyt > y2) {
+          centerList.push([
+            [x1, oyt],
+            [x2, oyt],
+            [x2, y3],
+            [x1, y3],
+          ]);
+          centerList.push([
+            [x1, y3],
+            [x2, y3],
+            [xb, oyb],
+            [x1, oyb],
+          ]);
+        }
+        else if(oyb < y3) {
+          centerList.push([
+            [x1, oyt],
+            [xa, oyt],
+            [x2, y2],
+            [x1, y2],
+          ]);
+          centerList.push([
+            [x1, y2],
+            [x2, y2],
+            [x2, oyb],
+            [x1, oyb],
+          ]);
+        }
+        else {
+          centerList.push([
+            [x1, oyt],
+            [xa, oyt],
+            [x2, y2],
+            [x1, y2],
+          ]);
+          centerList.push([
+            [x1, y2],
+            [x2, y2],
+            [x2, y3],
+            [x1, y3],
+          ]);
+          centerList.push([
+            [x1, y3],
+            [x2, y3],
+            [xb, oyb],
+            [x1, oyb],
+          ]);
+        }
       }
       endList.push([
         [x1, oyb],
-        [x2, oyb],
+        [xb, oyb],
         points[2],
         points[3]
       ]);
     }
     // 跨越下圆角
-    else if(points[2][1] > oyb) {
+    else if(points[3][1] > oyb) {
+      let x = oyb > y3 ? (x2 - Math.tan(deg1) * (oyb - y3)) : x2;
       centerList.push([
         points[0],
         points[1],
-        [x2, oyb],
+        [x, oyb],
         [x1, oyb]
       ]);
       endList.push([
         [x1, oyb],
-        [x2, oyb],
+        [x, oyb],
         points[2],
         points[3]
       ]);
     }
     // 跨越上圆角
     else if(points[1][1] < oyt) {
+      let x = oyt < y2 ? (x2 - Math.tan(deg2) * (y2 - oyt)) : x2;
       beginList.push([
         points[0],
         points[1],
-        [x2, oyt],
+        [x, oyt],
         [x1, oyt]
       ]);
       centerList.push([
         [x1, oyt],
-        [x2, oyt],
+        [x, oyt],
         points[2],
         points[3]
       ]);
@@ -1990,8 +2222,6 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
           controls2 = calBezierLeftTop(points[1], points[2], oxt, oyt, sx2, ry2);
         }
       }
-      points[0] = controls1[3];
-      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -2002,6 +2232,11 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
           points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
         }
       }
+      else {
+        points[3] = points[1];
+      }
+      points[0] = controls1[3];
+      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
     });
   }
   let endLength = endList.length;
@@ -2030,8 +2265,6 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
           controls2 = calBezierLeftBottom(points[1], points[2], oxb, oyb, sx2, ry2);
         }
       }
-      points[0] = controls1[3];
-      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       if(needInner) {
         if(controls2.length === 1) {
           points[2] = controls2[0];
@@ -2042,6 +2275,11 @@ function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points
           points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
         }
       }
+      else {
+        points[3] = points[1];
+      }
+      points[0] = controls1[3];
+      points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
     });
   }
   return beginList.concat(centerList).concat(endList);

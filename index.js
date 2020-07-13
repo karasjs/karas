@@ -3797,13 +3797,13 @@
         }
 
         if (direction === 0) {
-          return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+          return calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
         } else if (direction === 1) {
-          return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+          return calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
         } else if (direction === 2) {
-          return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+          return calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
         } else if (direction === 3) {
-          return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+          return calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
         }
       }
     } // 兜底返回实线
@@ -3811,20 +3811,20 @@
 
     if (direction === 0) {
       points.push([[x1, y1], [x4, y1], [x3, y2], [x2, y2]]);
-      return calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+      return calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 1) {
       points.push([[x3, y2], [x4, y1], [x4, y4], [x3, y3]]);
-      return calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+      return calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 2) {
       points.push([[x2, y3], [x3, y3], [x4, y4], [x1, y4]]);
-      return calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+      return calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     } else if (direction === 3) {
       points.push([[x1, y1], [x2, y2], [x2, y3], [x1, y4]]);
-      return calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
+      return calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
     }
   }
 
-  function calTopRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
     var _beginRadius = _slicedToArray(beginRadius, 2),
         brx = _beginRadius[0],
         bry = _beginRadius[1];
@@ -3858,21 +3858,38 @@
           endList.push(points);
         } // 跨越左右圆角
         else if (points[1][0] > oxr && points[0][0] < oxl) {
-            beginList.push([points[0], [oxl, y1], [oxl, y2], points[3]]);
+            var ya = oxl < x2 ? y1 + Math.tan(deg1) * (oxl - x1) : y2;
+            var yb = oxr > x3 ? y1 + Math.tan(deg2) * (x4 - oxr) : y2;
+            beginList.push([points[0], [oxl, y1], [oxl, ya], points[3]]);
 
             if (oxl < oxr) {
-              centerList.push([[oxl, y1], [oxr, y1], [oxr, y2], [oxl, y2]]);
+              if (oxl > x2 && oxr < x3) {
+                centerList.push([[oxl, y1], [oxr, y1], [oxr, y2], [oxl, y2]]);
+              } else if (oxl > x2) {
+                centerList.push([[oxl, y1], [x3, y1], [x3, y2], [oxl, y2]]);
+                centerList.push([[x3, y1], [oxr, y1], [oxr, yb], [x3, y2]]);
+              } else if (oxr < x3) {
+                centerList.push([[oxl, y1], [x2, y1], [x2, y2], [oxl, ya]]);
+                centerList.push([[x2, y1], [oxr, y1], [oxr, y2], [x2, y2]]);
+              } else {
+                centerList.push([[oxl, y1], [x2, y1], [x2, y2], [oxl, ya]]);
+                centerList.push([[x2, y1], [x3, y1], [x3, y2], [x2, y2]]);
+                centerList.push([[x3, y1], [oxr, y1], [oxr, yb], [x3, y2]]);
+              }
             }
 
-            endList.push([[oxr, y1], points[1], points[2], [oxr, y2]]);
+            endList.push([[oxr, y1], points[1], points[2], [oxr, yb]]);
           } // 跨越右圆角
           else if (points[1][0] > oxr) {
-              centerList.push([points[0], [oxr, y1], [oxr, y2], points[3]]);
-              endList.push([[oxr, y1], points[1], points[2], [oxr, y2]]);
+              var y = oxr > x3 ? y1 + Math.tan(deg2) * (x4 - oxr) : y2;
+              centerList.push([points[0], [oxr, y1], [oxr, y], points[3]]);
+              endList.push([[oxr, y1], points[1], points[2], [oxr, y]]);
             } // 跨越左圆角
             else if (points[0][0] < oxl) {
-                beginList.push([points[0], [oxl, y1], [oxl, y2], points[3]]);
-                centerList.push([[oxl, y1], points[1], points[2], [oxl, y2]]);
+                var _y = oxl < x2 ? y1 + Math.tan(deg1) * (oxl - x1) : y2;
+
+                beginList.push([points[0], [oxl, y1], [oxl, _y], points[3]]);
+                centerList.push([[oxl, y1], points[1], points[2], [oxl, _y]]);
               } else {
                 centerList.push(points);
               }
@@ -4153,7 +4170,7 @@
     return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
   }
 
-  function calRightRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
     var _beginRadius2 = _slicedToArray(beginRadius, 2),
         brx = _beginRadius2[0],
         bry = _beginRadius2[1];
@@ -4180,25 +4197,42 @@
       if (points[2][1] < oyt) {
         beginList.push(points);
       } // 全在下圆角
-      else if (points[0][1] > oyb) {
+      else if (points[1][1] > oyb) {
           endList.push(points);
         } // 跨越上下圆角
-        else if (points[2][1] > oyb && points[0][1] < oyt) {
-            beginList.push([points[0], points[1], [x4, oyt], [x3, oyt]]);
+        else if (points[2][1] > oyb && points[1][1] < oyt) {
+            var xa = oyt < y2 ? x3 + Math.tan(deg2) * (y2 - oyt) : x3;
+            var xb = oyb > y3 ? x3 + Math.tan(deg1) * (oyb - y3) : x3;
+            beginList.push([points[0], points[1], [x4, oyt], [xa, oyt]]);
 
             if (oyt < oyb) {
-              centerList.push([[x3, oyt], [x4, oyt], [x4, oyb], [x3, oyb]]);
+              if (oyb < y3 && oyt > y2) {
+                centerList.push([[x3, oyt], [x4, oyt], [x4, oyb], [x3, oyb]]);
+              } else if (oyt > y2) {
+                centerList.push([[x3, y2], [x4, y2], [x4, y3], [x3, y3]]);
+                centerList.push([[x3, y3], [x4, y3], [x4, oyb], [xb, oyb]]);
+              } else if (oyb < y3) {
+                centerList.push([[xa, oyt], [x4, oyt], [x4, y2], [x3, y2]]);
+                centerList.push([[x3, y2], [x4, y2], [x4, oyb], [x3, oyb]]);
+              } else {
+                centerList.push([[xa, oyt], [x4, oyt], [x4, y2], [x3, y2]]);
+                centerList.push([[x3, y2], [x4, y2], [x4, y3], [x3, y3]]);
+                centerList.push([[x3, y3], [x4, y3], [x4, oyb], [xb, oyb]]);
+              }
             }
 
-            endList.push([[x3, oyb], [x4, oyb], points[2], points[3]]);
+            endList.push([[xb, oyb], [x4, oyb], points[2], points[3]]);
           } // 跨越下圆角
           else if (points[2][1] > oyb) {
-              centerList.push([points[0], points[1], [x4, oyb], [x3, oyb]]);
-              endList.push([[x3, oyb], [x4, oyb], points[2], points[3]]);
+              var x = oyb > y3 ? x3 + Math.tan(deg1) * (oyb - y3) : x3;
+              centerList.push([points[0], points[1], [x4, oyb], [x, oyb]]);
+              endList.push([[x, oyb], [x4, oyb], points[2], points[3]]);
             } // 跨越上圆角
             else if (points[1][1] < oyt) {
-                beginList.push([points[0], points[1], [x4, oyt], [x3, oyt]]);
-                centerList.push([[x3, oyt], [x4, oyt], points[2], points[3]]);
+                var _x = oyt < y2 ? x3 + Math.tan(deg2) * (y2 - oyt) : x3;
+
+                beginList.push([points[0], points[1], [x4, oyt], [_x, oyt]]);
+                centerList.push([[_x, oyt], [x4, oyt], points[2], points[3]]);
               } else {
                 centerList.push(points);
               }
@@ -4234,9 +4268,6 @@
           }
         }
 
-        points[0] = controls1[3];
-        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
-
         if (needInner) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4245,7 +4276,13 @@
             points[2] = controls2[0];
             points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
           }
+        } else {
+          points[2] = points[3];
+          points[3] = points[0];
         }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       });
     }
 
@@ -4287,9 +4324,6 @@
           }
         }
 
-        points[0] = controls1[3];
-        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
-
         if (_needInner2) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4298,7 +4332,13 @@
             points[2] = controls2[0];
             points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
           }
+        } else {
+          points[2] = points[3];
+          points[3] = points[0];
         }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       });
     }
 
@@ -4475,7 +4515,7 @@
     return [[cpx2, cpy2], [cx2, cy2], [cx1, cy1], [cpx1, cpy1]];
   }
 
-  function calBottomRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
     var _beginRadius3 = _slicedToArray(beginRadius, 2),
         brx = _beginRadius3[0],
         bry = _beginRadius3[1];
@@ -4502,28 +4542,45 @@
     for (var i = 0, len = pointsList.length; i < len; i++) {
       var points = pointsList[i]; // 全在左圆角
 
-      if (points[1][0] < oxl) {
+      if (points[2][0] < oxl) {
         beginList.push(points);
       } // 全在右圆角
-      else if (points[0][0] > oxr) {
+      else if (points[3][0] > oxr) {
           endList.push(points);
         } // 跨越左右圆角
-        else if (points[1][0] > oxr && points[0][0] < oxl) {
-            beginList.push([points[0], [oxl, y3], [oxl, y4], points[3]]);
+        else if (points[2][0] > oxr && points[3][0] < oxl) {
+            var ya = oxl < x2 ? y4 - Math.tan(deg1) * (oxl - x1) : y2;
+            var yb = oxr > x3 ? y4 - Math.tan(deg2) * (x4 - oxr) : y3;
+            beginList.push([points[0], [oxl, ya], [oxl, y4], points[3]]);
 
             if (oxl < oxr) {
-              centerList.push([[oxl, y3], [oxr, y3], [oxr, y4], [oxl, y4]]);
+              if (oxl > x2 && oxr < x3) {
+                centerList.push([[oxl, y3], [oxr, y3], [oxr, y4], [oxl, y4]]);
+              } else if (oxl > x2) {
+                centerList.push([[oxl, y3], [x3, y3], [x3, y4], [oxl, y4]]);
+                centerList.push([[x3, y3], [oxr, yb], [oxr, y4], [x3, y4]]);
+              } else if (oxr < x3) {
+                centerList.push([[oxl, ya], [x2, y3], [x2, y4], [oxl, y4]]);
+                centerList.push([[x2, y3], [oxr, y3], [oxr, y4], [x2, y4]]);
+              } else {
+                centerList.push([[oxl, ya], [x2, y3], [x2, y4], [oxl, y4]]);
+                centerList.push([[x2, y3], [x3, y3], [x3, y4], [x2, y4]]);
+                centerList.push([[x3, y3], [oxr, yb], [oxr, y4], [x3, y4]]);
+              }
             }
 
-            endList.push([[oxr, y3], points[1], points[2], [oxr, y4]]);
+            endList.push([[oxr, yb], points[1], points[2], [oxr, y4]]);
           } // 跨越右圆角
-          else if (points[1][0] > oxr) {
-              centerList.push([points[0], [oxr, y3], [oxr, y4], points[3]]);
-              endList.push([[oxr, y3], points[1], points[2], [oxr, y4]]);
+          else if (points[2][0] > oxr) {
+              var y = oxr > x3 ? y4 - Math.tan(deg2) * (x4 - oxr) : y3;
+              centerList.push([points[0], [oxr, y], [oxr, y4], points[3]]);
+              endList.push([[oxr, y], points[1], points[2], [oxr, y4]]);
             } // 跨越左圆角
-            else if (points[0][0] < oxl) {
-                beginList.push([points[0], [oxl, y3], [oxl, y4], points[3]]);
-                centerList.push([[oxl, y3], points[1], points[2], [oxl, y4]]);
+            else if (points[3][0] < oxl) {
+                var _y2 = oxl < x2 ? y4 - Math.tan(deg1) * (oxl - x1) : y2;
+
+                beginList.push([points[0], [oxl, _y2], [oxl, y4], points[3]]);
+                centerList.push([[oxl, _y2], points[1], points[2], [oxl, y4]]);
               } else {
                 centerList.push(points);
               }
@@ -4561,9 +4618,6 @@
           }
         }
 
-        points[0] = controls1[0];
-        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
-
         if (needInner) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4572,7 +4626,13 @@
             points[2] = controls2[3];
             points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
           }
+        } else {
+          points[2] = points[1];
+          points[3] = points[0];
         }
+
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       });
     }
 
@@ -4616,9 +4676,6 @@
           }
         }
 
-        points[0] = controls1[0];
-        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
-
         if (_needInner3) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4627,7 +4684,13 @@
             points[2] = controls2[3];
             points[3] = controls2[2].concat(controls2[1]).concat(controls2[0]);
           }
+        } else {
+          points[2] = points[1];
+          points[3] = points[0];
         }
+
+        points[0] = controls1[0];
+        points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       });
     }
 
@@ -4804,7 +4867,7 @@
     return [[cpx1, cpy1], [cx1, cy1], [cx2, cy2], [cpx2, cpy2]];
   }
 
-  function calLeftRadiusPoints(borderWidth, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
+  function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, pointsList, beginRadius, endRadius) {
     var _beginRadius4 = _slicedToArray(beginRadius, 2),
         brx = _beginRadius4[0],
         bry = _beginRadius4[1];
@@ -4828,28 +4891,45 @@
     for (var i = 0, len = pointsList.length; i < len; i++) {
       var points = pointsList[i]; // 全在上圆角
 
-      if (points[2][1] < oyt) {
+      if (points[3][1] < oyt) {
         beginList.push(points);
       } // 全在下圆角
       else if (points[0][1] > oyb) {
           endList.push(points);
         } // 跨越上下圆角
-        else if (points[2][1] > oyb && points[0][1] < oyt) {
-            beginList.push([points[0], points[1], [x2, oyt], [x1, oyt]]);
+        else if (points[3][1] > oyb && points[0][1] < oyt) {
+            var xa = oyt < y2 ? x2 - Math.tan(deg2) * (y2 - oyt) : x2;
+            var xb = oyb > y3 ? x2 - Math.tan(deg1) * (oyb - y3) : x2;
+            beginList.push([points[0], points[1], [xa, oyt], [x1, oyt]]);
 
             if (oyt < oyb) {
-              centerList.push([[x1, oyt], [x2, oyt], [x2, oyb], [x1, oyb]]);
+              if (oyb < y3 && oyt > y2) {
+                centerList.push([[x1, oyt], [x2, oyt], [x2, oyb], [x1, oyb]]);
+              } else if (oyt > y2) {
+                centerList.push([[x1, oyt], [x2, oyt], [x2, y3], [x1, y3]]);
+                centerList.push([[x1, y3], [x2, y3], [xb, oyb], [x1, oyb]]);
+              } else if (oyb < y3) {
+                centerList.push([[x1, oyt], [xa, oyt], [x2, y2], [x1, y2]]);
+                centerList.push([[x1, y2], [x2, y2], [x2, oyb], [x1, oyb]]);
+              } else {
+                centerList.push([[x1, oyt], [xa, oyt], [x2, y2], [x1, y2]]);
+                centerList.push([[x1, y2], [x2, y2], [x2, y3], [x1, y3]]);
+                centerList.push([[x1, y3], [x2, y3], [xb, oyb], [x1, oyb]]);
+              }
             }
 
-            endList.push([[x1, oyb], [x2, oyb], points[2], points[3]]);
+            endList.push([[x1, oyb], [xb, oyb], points[2], points[3]]);
           } // 跨越下圆角
-          else if (points[2][1] > oyb) {
-              centerList.push([points[0], points[1], [x2, oyb], [x1, oyb]]);
-              endList.push([[x1, oyb], [x2, oyb], points[2], points[3]]);
+          else if (points[3][1] > oyb) {
+              var x = oyb > y3 ? x2 - Math.tan(deg1) * (oyb - y3) : x2;
+              centerList.push([points[0], points[1], [x, oyb], [x1, oyb]]);
+              endList.push([[x1, oyb], [x, oyb], points[2], points[3]]);
             } // 跨越上圆角
             else if (points[1][1] < oyt) {
-                beginList.push([points[0], points[1], [x2, oyt], [x1, oyt]]);
-                centerList.push([[x1, oyt], [x2, oyt], points[2], points[3]]);
+                var _x2 = oyt < y2 ? x2 - Math.tan(deg2) * (y2 - oyt) : x2;
+
+                beginList.push([points[0], points[1], [_x2, oyt], [x1, oyt]]);
+                centerList.push([[x1, oyt], [_x2, oyt], points[2], points[3]]);
               } else {
                 centerList.push(points);
               }
@@ -4885,9 +4965,6 @@
           }
         }
 
-        points[0] = controls1[3];
-        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
-
         if (needInner) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4896,7 +4973,12 @@
             points[2] = controls2[0];
             points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
           }
+        } else {
+          points[3] = points[1];
         }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       });
     }
 
@@ -4938,9 +5020,6 @@
           }
         }
 
-        points[0] = controls1[3];
-        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
-
         if (_needInner4) {
           if (controls2.length === 1) {
             points[2] = controls2[0];
@@ -4949,7 +5028,12 @@
             points[2] = controls2[0];
             points[3] = controls2[1].concat(controls2[2]).concat(controls2[3]);
           }
+        } else {
+          points[3] = points[1];
         }
+
+        points[0] = controls1[3];
+        points[1] = controls1[2].concat(controls1[1]).concat(controls1[0]);
       });
     }
 

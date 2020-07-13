@@ -11454,6 +11454,8 @@
   }(Xom);
 
   var AUTO$4 = unit.AUTO;
+  var genCanvasPolygon$2 = draw.genCanvasPolygon,
+      genSvgPolygon$2 = draw.genSvgPolygon;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -11659,7 +11661,7 @@
                 c.ctx.drawImage(source, originX, originY, width, height);
                 c.ctx.globalCompositeOperation = 'destination-in';
                 c.ctx.fillStyle = '#FFF';
-                border.genRdRectCanvas(c.ctx, list);
+                genCanvasPolygon$2(ctx, list);
                 c.draw(c.ctx);
                 ctx.drawImage(c.canvas, 0, 0);
                 c.draw(ctx);
@@ -11680,7 +11682,7 @@
               var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
-                var d = border.genRdRectSvg(list);
+                var d = genSvgPolygon$2(list);
                 var maskId = defs.add({
                   tagName: 'mask',
                   props: [],

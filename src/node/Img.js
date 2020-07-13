@@ -6,9 +6,11 @@ import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
+import draw from '../util/draw';
 import level from '../animate/level';
 
 const { AUTO } = unit;
+const { genCanvasPolygon, genSvgPolygon } = draw;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -211,7 +213,7 @@ class Img extends Dom {
             c.ctx.drawImage(source, originX, originY, width, height);
             c.ctx.globalCompositeOperation = 'destination-in';
             c.ctx.fillStyle = '#FFF';
-            border.genRdRectCanvas(c.ctx, list);
+            genCanvasPolygon(ctx, list);
             c.draw(c.ctx);
             ctx.drawImage(c.canvas, 0, 0);
             c.draw(ctx);
@@ -237,7 +239,7 @@ class Img extends Dom {
             ['height', loadImg.height]
           ];
           if(list) {
-            let d = border.genRdRectSvg(list);
+            let d = genSvgPolygon(list);
             let maskId = defs.add({
               tagName: 'mask',
               props: [],

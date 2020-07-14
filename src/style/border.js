@@ -834,39 +834,103 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
   }
   // 兜底返回实线
   if(direction === 0) {
+    if(x2 > x1) {
+      points.push([
+        [x1, y1],
+        [x2, y1],
+        [x2, y2],
+        [x1, y1]
+      ]);
+    }
     points.push([
-      [x1, y1],
-      [x4, y1],
+      [x2, y1],
+      [x3, y1],
       [x3, y2],
       [x2, y2]
     ]);
+    if(x4 > x3) {
+      points.push([
+        [x3, y1],
+        [x4, y1],
+        [x4, y1],
+        [x3, y2]
+      ]);
+    }
     return calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 1) {
+    if(y2 > y1) {
+      points.push([
+        [x4, y1],
+        [x4, y1],
+        [x4, y2],
+        [x3, y2]
+      ]);
+    }
     points.push([
       [x3, y2],
-      [x4, y1],
-      [x4, y4],
+      [x4, y2],
+      [x4, y3],
       [x3, y3]
     ]);
+    if(y4 > y3) {
+      points.push([
+        [x3, y3],
+        [x4, y3],
+        [x4, y4],
+        [x4, y4]
+      ]);
+    }
     return calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 2) {
+    if(x2 > x1) {
+      points.push([
+        [x1, y4],
+        [x2, y3],
+        [x2, y4],
+        [x1, y4]
+      ]);
+    }
     points.push([
       [x2, y3],
       [x3, y3],
-      [x4, y4],
-      [x1, y4]
+      [x3, y4],
+      [x2, y4]
     ]);
+    if(x4 > x3) {
+      points.push([
+        [x3, y3],
+        [x4, y4],
+        [x4, y4],
+        [x3, y4]
+      ]);
+    }
     return calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
   else if(direction === 3) {
+    if(y2 > y1) {
+      points.push([
+        [x1, y1],
+        [x1, y1],
+        [x2, y2],
+        [x1, y2]
+      ]);
+    }
     points.push([
-      [x1, y1],
+      [x1, y2],
       [x2, y2],
       [x2, y3],
-      [x1, y4]
+      [x1, y3]
     ]);
+    if(y4 > y3) {
+      points.push([
+        [x1, y3],
+        [x2, y3],
+        [x1, y4],
+        [x1, y4]
+      ]);
+    }
     return calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, points, beginRadius, endRadius);
   }
 }
@@ -1778,7 +1842,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
     }
     // 跨越左圆角
     else if(points[3][0] < oxl) {
-      let y = oxl < x2 ? (y4 - Math.tan(deg1) * (oxl - x1)) : y2;
+      let y = oxl < x2 ? (y4 - Math.tan(deg1) * (oxl - x1)) : y3;
       beginList.push([
         points[0],
         [oxl, y],

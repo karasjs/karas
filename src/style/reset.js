@@ -73,6 +73,8 @@ const GEOM = {
   strokeWidth: 1,
   strokeDasharray: '',
   strokeLinecap: 'butt',
+  strokeLinejoin: 'miter',
+  strokeMiterlimit: 4,
 };
 
 let dom = [];

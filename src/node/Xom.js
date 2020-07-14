@@ -12,83 +12,142 @@ import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
+import draw from '../util/draw';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative, compute, repaint } = css;
+const { genCanvasPolygon, genSvgPolygon } = draw;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
+    ctx.fillStyle = color;
     points.forEach(point => {
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.moveTo(point[0], point[1]);
-      for(let i = 2, len = point.length; i < len; i += 2) {
-        ctx.lineTo(point[i], point[i + 1]);
-      }
-      ctx.fill();
-      ctx.closePath();
+      genCanvasPolygon(ctx, point);
     });
+    // points.forEach(point => {
+    //   ctx.beginPath();
+    //   ctx.fillStyle = color;
+    //   ctx.moveTo(point[0], point[1]);
+    //   for(let i = 2, len = point.length; i < len; i += 2) {
+    //     ctx.lineTo(point[i], point[i + 1]);
+    //   }
+    //   ctx.fill();
+    //   ctx.closePath();
+    // });
   }
   else if(renderMode === mode.SVG) {
     let s = '';
     points.forEach(point => {
-      s += `M ${point[0]} ${point[1]}`;
-      for(let i = 2, len = point.length; i < len; i += 2) {
-        s += `L ${point[i]} ${point[i + 1]} `;
-      }
+      s += genSvgPolygon(point);
     });
     xom.virtualDom.bb.push({
       type: 'item',
       tagName: 'path',
       props: [
         ['d', s],
-        ['fill', color],
+        ['fill', color]
       ],
     });
+    // let s = '';
+    // points.forEach(point => {
+    //   console.log(point);
+    //   s += `M ${point[0]} ${point[1]}`;
+    //   for(let i = 2, len = point.length; i < len; i += 2) {
+    //     s += `L ${point[i]} ${point[i + 1]} `;
+    //   }
+    // });
+    // xom.virtualDom.bb.push({
+    //   type: 'item',
+    //   tagName: 'path',
+    //   props: [
+    //     ['d', s],
+    //     ['fill', color],
+    //   ],
+    // });
   }
 }
 
-function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btlr, btrr, bbrr, bblr) {
-  let list = border.calRadius(x, y, w, h, btlr, btrr, bbrr, bblr);
-  let res = list ? border.genRdRect(renderMode, ctx, color, x, y, w, h, list) : null;
+function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
-    // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间，canvas上面已经绘制
-    if(!list) {
+    ctx.fillStyle = color;
+    if(list) {
+      genCanvasPolygon(ctx, list);
+    }
+    else {
       ctx.beginPath();
-      ctx.fillStyle = color;
       ctx.rect(x, y, w, h);
       ctx.fill();
       ctx.closePath();
     }
   }
   else if(renderMode === mode.SVG) {
-    // 没有圆角矩形res为空走入普通矩形
-    xom.virtualDom.bb.push(res || {
-      type: 'item',
-      tagName: 'rect',
-      props: [
-        ['x', x],
-        ['y', y],
-        ['width', w],
-        ['height', h],
-        ['fill', color]
-      ],
-    });
+    if(list) {
+      let d = genSvgPolygon(list);
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', d],
+          ['fill', color]
+        ],
+      });
+    }
+    else {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'rect',
+        props: [
+          ['x', x],
+          ['y', y],
+          ['width', w],
+          ['height', h],
+          ['fill', color]
+        ],
+      });
+    }
   }
 }
 
-function calBorderRadius(w, h, k, currentStyle, computedStyle) {
-  let s = currentStyle[k];
-  // 暂时只支持px，限制最大为窄边一半
-  if(s.unit === PX && s.value > 0) {
-    let min = Math.min(w * 0.5, h * 0.5);
-    computedStyle[k] = Math.min(min, s.value);
-  }
-  else {
-    computedStyle[k] = 0;
-  }
+function calBorderRadius(w, h, currentStyle, computedStyle) {
+  let ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+  ks.forEach((k, i) => {
+    ks[i] = k = `border${k}Radius`;
+    computedStyle[k] = currentStyle[k].map((item, i) => {
+      if(item.unit === PX) {
+        return item.value;
+      }
+      else {
+        return item.value * (i ? h : w) * 0.01;
+      }
+    });
+  });
+  // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
+  ks.forEach((k, i) => {
+    let j = i % 2 === 0 ? 0 : 1;
+    let target = j ? h : w;
+    let prev = computedStyle[k];
+    let next = computedStyle[ks[(i + 1) % 4]];
+    // 相加超过边长则是相交
+    if(prev[j] + next[j] > target) {
+      let half = target * 0.5;
+      // 都超过一半中点取中点
+      if(prev[j] >= half && next[j] >= half) {
+        prev[j] = next[j] = half;
+      }
+      // 仅1个超过中点，因相交用总长减去另一方即可
+      else if(prev[j] > half) {
+        prev[j] = target - next[j];
+      }
+      else if(next[j] > half) {
+        next[j] = target - prev[j];
+      }
+    }
+    // console.log(k, computedStyle[k]);
+  });
 }
 
 function calBackgroundSize(value, w, h) {
@@ -457,9 +516,7 @@ class Xom extends Node {
       outerHeight,
     } = this;
     // 圆角边计算
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
-      calBorderRadius(width, height, `border${k}Radius`, currentStyle, computedStyle);
-    });
+    calBorderRadius(width, height, currentStyle, computedStyle);
     let {
       display,
       marginTop,
@@ -609,6 +666,7 @@ class Xom extends Node {
     // 背景色垫底
     if(backgroundColor[3] > 0) {
       renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
+        borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
     // 渐变或图片叠加
@@ -802,11 +860,6 @@ class Xom extends Node {
                 }
               }
             }
-            if(!needMask && repeat.length) {
-              for(let i = 0, len = repeat.length; i < len; i++) {
-                let item = repeat;
-              }
-            }
             if(renderMode === mode.CANVAS) {
               let c;
               let currentCtx;
@@ -831,6 +884,7 @@ class Xom extends Node {
               if(needMask) {
                 currentCtx.globalCompositeOperation = 'destination-in';
                 renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                  borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
                 // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -921,32 +975,42 @@ class Xom extends Node {
       }
       else if(backgroundImage.k) {
         let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
-        renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this);
+        renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this,
+          borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+          borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       }
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
       let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
       let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0);
+      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 0,
+        borderTopLeftRadius, borderTopRightRadius);
       renderBorder(renderMode, points, borderTopColor, ctx, this);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
       let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1);
+      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 1,
+        borderTopRightRadius, borderBottomRightRadius);
       renderBorder(renderMode, points, borderRightColor, ctx, this);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
       let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 2);
+      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 2,
+        borderBottomLeftRadius, borderBottomRightRadius);
       renderBorder(renderMode, points, borderBottomColor, ctx, this);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
       let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 3);
+      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2,
+        x1, x2, x3, x4, y1, y2, y3, y4, 3,
+        borderTopLeftRadius, borderBottomLeftRadius);
       renderBorder(renderMode, points, borderLeftColor, ctx, this);
     }
     if(filter) {

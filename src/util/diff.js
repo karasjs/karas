@@ -125,7 +125,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, mask, filter } = nvd;
+  let { transform, opacity, mask, filter, conMask } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -157,6 +157,14 @@ function diffX2X(elem, ovd, nvd) {
     }
     else {
       elem.removeAttribute('filter');
+    }
+  }
+  if(ovd.conMask !== conMask) {
+    if(conMask) {
+      elem.childNodes[1].setAttribute('mask', conMask);
+    }
+    else {
+      elem.childNodes[1].removeAttribute('mask');
     }
   }
 }

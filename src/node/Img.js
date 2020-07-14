@@ -6,9 +6,11 @@ import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
+import draw from '../util/draw';
 import level from '../animate/level';
 
 const { AUTO } = unit;
+const { genCanvasPolygon, genSvgPolygon } = draw;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -107,6 +109,8 @@ class Img extends Dom {
       computedStyle: {
         display,
         borderTopWidth,
+        borderRightWidth,
+        borderBottomWidth,
         borderLeftWidth,
         marginTop,
         marginLeft,
@@ -198,7 +202,9 @@ class Img extends Dom {
       // 无source不绘制
       if(source) {
         // 圆角需要生成一个mask
-        let list = border.calRadius(originX, originY, width, height, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        let list = border.calRadius(originX, originY, width, height,
+          borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+          borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         if(renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
@@ -206,7 +212,8 @@ class Img extends Dom {
             let c = inject.getCacheCanvas(w, h);
             c.ctx.drawImage(source, originX, originY, width, height);
             c.ctx.globalCompositeOperation = 'destination-in';
-            border.genRdRect(renderMode, c.ctx, '#FFF', x, y, width, height, list);
+            c.ctx.fillStyle = '#FFF';
+            genCanvasPolygon(ctx, list);
             c.draw(c.ctx);
             ctx.drawImage(c.canvas, 0, 0);
             c.draw(ctx);
@@ -232,14 +239,22 @@ class Img extends Dom {
             ['height', loadImg.height]
           ];
           if(list) {
+            let d = genSvgPolygon(list);
             let maskId = defs.add({
               tagName: 'mask',
               props: [],
               children: [
-                border.genRdRect(renderMode, ctx, '#FFF', originX, originY, width, height, list),
+                {
+                  type: 'item',
+                  tagName: 'path',
+                  props: [
+                    ['d', d],
+                    ['fill', '#FFF']
+                  ],
+                }
               ],
             });
-            props.push(['mask', `url(#${maskId})`]);
+            this.virtualDom.conMask = `url(#${maskId})`;
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);

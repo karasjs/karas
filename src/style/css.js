@@ -374,7 +374,12 @@ function normalize(style, reset = []) {
     let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
     if(match) {
       if(match.length === 1) {
-        match[1] = match[0];
+        if(match[0] === 'contain' || match[0] === 'cover') {
+          match[1] = match[0];
+        }
+        else {
+          match[1] = 'auto';
+        }
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];
@@ -419,6 +424,33 @@ function normalize(style, reset = []) {
         value: rgba2int(v),
         unit: RGBA,
       };
+    }
+  });
+  // border-radius
+  ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+    k = 'border' + k + 'Radius';
+    let v = style[k];
+    if(!isNil(v)) {
+      let arr = v.toString().split(/\s+/);
+      if(arr.length === 1) {
+        arr[1] = arr[0];
+      }
+      for(let i = 0; i < 2; i++) {
+        let item = arr[i];
+        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
+          calUnit(arr, i, item);
+          if(arr[i].unit === NUMBER) {
+            arr[i].unit = PX;
+          }
+        }
+        else {
+          arr[i] = {
+            value: 0,
+            unit: PX,
+          };
+        }
+      }
+      style[k] = arr;
     }
   });
   temp = style.transform;
@@ -581,10 +613,6 @@ function normalize(style, reset = []) {
     'borderRightWidth',
     'borderBottomWidth',
     'borderLeftWidth',
-    'borderTopLeftRadius',
-    'borderTopRightRadius',
-    'borderBottomRightRadius',
-    'borderBottomLeftRadius',
     'top',
     'right',
     'bottom',

@@ -8958,7 +8958,7 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight; // 圆角边计算
 
-        calBorderRadius(width, height, currentStyle, computedStyle);
+        calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
         var display = computedStyle.display,
             marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,

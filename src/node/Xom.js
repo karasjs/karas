@@ -516,7 +516,7 @@ class Xom extends Node {
       outerHeight,
     } = this;
     // 圆角边计算
-    calBorderRadius(width, height, currentStyle, computedStyle);
+    calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
     let {
       display,
       marginTop,

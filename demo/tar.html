@@ -58,14 +58,14 @@
   let t = o.ref.t;
   let t2 = o2.ref.t;
   let res = karas.math.tar.transform([0, 0, 80, 10, 30, 50], [10, 20, 100, 0, 100, 100]);
-  let style = {
+  let style = karas.css.normalize({
     transform: `matrix(${res.join(',')})`,
-  };
+  });
   let n = true;
   setInterval(function() {
     if(n) {
-      t.style.transform = karas.css.normalize(style).transform;
-      t2.style.transform = karas.css.normalize(style).transform;
+      t.style.transform = style.transform;
+      t2.style.transform = style.transform;
     }
     else {
       t.style.transform = null;

@@ -374,7 +374,12 @@ function normalize(style, reset = []) {
     let match = temp.toString().match(/\b(?:(-?[\d.]+(px|%)?)|(contain|cover|auto))/ig);
     if(match) {
       if(match.length === 1) {
-        match[1] = match[0];
+        if(match[0] === 'contain' || match[0] === 'cover') {
+          match[1] = match[0];
+        }
+        else {
+          match[1] = 'auto';
+        }
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];

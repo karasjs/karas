@@ -82,6 +82,8 @@ class Sector extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
     } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
@@ -100,6 +102,8 @@ class Sector extends Geom {
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
       ctx.lineCap = strokeLinecap;
+      ctx.lineJoin = strokeLinejoin;
+      ctx.miterLimit = strokeMiterlimit;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
@@ -140,6 +144,12 @@ class Sector extends Geom {
         if(strokeLinecap !== 'butt') {
           props.push(['stroke-linecap', strokeLinecap]);
         }
+        if(strokeLinejoin !== 'miter') {
+          props.push(['stroke-linejoin', strokeLinejoin]);
+        }
+        if(strokeMiterlimit !== 4) {
+          props.push(['stroke-miterlimit', strokeMiterlimit]);
+        }
         this.addGeom('path', props);
       }
       else {
@@ -161,6 +171,12 @@ class Sector extends Geom {
           }
           if(strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+          if(strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+          if(strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
           this.addGeom('path', props);
         }

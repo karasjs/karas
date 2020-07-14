@@ -60,6 +60,8 @@ class Polyline extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
     } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
@@ -81,6 +83,8 @@ class Polyline extends Geom {
       ctx.lineWidth = strokeWidth;
       ctx.fillStyle = fill;
       ctx.lineCap = strokeLinecap;
+      ctx.lineJoin = strokeLinejoin;
+      ctx.miterLimit = strokeMiterlimit;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(pts[0][0], pts[0][1]);
@@ -145,6 +149,12 @@ class Polyline extends Geom {
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);
+      }
+      if(strokeLinejoin !== 'miter') {
+        props.push(['stroke-linejoin', strokeLinejoin]);
+      }
+      if(strokeMiterlimit !== 4) {
+        props.push(['stroke-miterlimit', strokeMiterlimit]);
       }
       this.addGeom(tagName, props);
     }

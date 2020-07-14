@@ -106,6 +106,8 @@ class Geom extends Xom {
       stroke,
       strokeDasharray,
       strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
     } = currentStyle;
     let {
       borderTopWidth,
@@ -165,6 +167,8 @@ class Geom extends Xom {
       strokeDasharray,
       strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
       strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
       fill,
       visibility,
     };

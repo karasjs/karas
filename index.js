@@ -3025,7 +3025,9 @@
     stroke: '#000',
     strokeWidth: 1,
     strokeDasharray: '',
-    strokeLinecap: 'butt'
+    strokeLinecap: 'butt',
+    strokeLinejoin: 'miter',
+    strokeMiterlimit: 4
   };
   var dom = [];
   var domKey = [];
@@ -13125,7 +13127,9 @@
             fill = currentStyle.fill,
             stroke = currentStyle.stroke,
             strokeDasharray = currentStyle.strokeDasharray,
-            strokeLinecap = currentStyle.strokeLinecap;
+            strokeLinecap = currentStyle.strokeLinecap,
+            strokeLinejoin = currentStyle.strokeLinejoin,
+            strokeMiterlimit = currentStyle.strokeMiterlimit;
         var borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             display = computedStyle.display,
@@ -13184,6 +13188,8 @@
           strokeDasharray: strokeDasharray,
           strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
           strokeLinecap: strokeLinecap,
+          strokeLinejoin: strokeLinejoin,
+          strokeMiterlimit: strokeMiterlimit,
           fill: fill,
           visibility: visibility
         };
@@ -13455,7 +13461,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -13493,6 +13501,8 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = strokeWidth;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
@@ -13533,6 +13543,14 @@
 
           if (strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          if (strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+
+          if (strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
           this.addGeom('path', props);
@@ -13642,7 +13660,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -13676,6 +13696,8 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
@@ -13745,6 +13767,14 @@
 
           if (strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          if (strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+
+          if (strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
           this.addGeom(tagName, props);
@@ -13882,7 +13912,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -13923,6 +13955,8 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
@@ -13963,6 +13997,14 @@
               props.push(['stroke-linecap', strokeLinecap]);
             }
 
+            if (strokeLinejoin !== 'miter') {
+              props.push(['stroke-linejoin', strokeLinejoin]);
+            }
+
+            if (strokeMiterlimit !== 4) {
+              props.push(['stroke-miterlimit', strokeMiterlimit]);
+            }
+
             this.addGeom('path', props);
           } else {
             this.addGeom('path', [['d', closure ? "M".concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z") : "M".concat(cx, ",").concat(cy, " L").concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z")], ['fill', fill]]);
@@ -13976,6 +14018,14 @@
 
               if (strokeLinecap !== 'butt') {
                 _props.push(['stroke-linecap', strokeLinecap]);
+              }
+
+              if (strokeLinejoin !== 'miter') {
+                _props.push(['stroke-linejoin', strokeLinejoin]);
+              }
+
+              if (strokeMiterlimit !== 4) {
+                _props.push(['stroke-miterlimit', strokeMiterlimit]);
               }
 
               this.addGeom('path', _props);
@@ -14062,7 +14112,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -14082,6 +14134,8 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
@@ -14125,6 +14179,14 @@
 
           if (strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          if (strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+
+          if (strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
           this.addGeom('rect', props);
@@ -14184,7 +14246,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -14200,6 +14264,8 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, 2 * Math.PI);
@@ -14219,6 +14285,14 @@
 
           if (strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          if (strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+
+          if (strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
           this.addGeom('circle', props);
@@ -14283,7 +14357,9 @@
             strokeWidth = _get$call.strokeWidth,
             strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap;
+            strokeLinecap = _get$call.strokeLinecap,
+            strokeLinejoin = _get$call.strokeLinejoin,
+            strokeMiterlimit = _get$call.strokeMiterlimit;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return;
@@ -14301,6 +14377,8 @@
           ctx.lineWidth = strokeWidth;
           ctx.fillStyle = fill;
           ctx.lineCap = strokeLinecap;
+          ctx.lineJoin = strokeLinejoin;
+          ctx.miterLimit = strokeMiterlimit;
           ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
@@ -14332,6 +14410,14 @@
 
           if (strokeLinecap !== 'butt') {
             props.push(['stroke-linecap', strokeLinecap]);
+          }
+
+          if (strokeLinejoin !== 'miter') {
+            props.push(['stroke-linejoin', strokeLinejoin]);
+          }
+
+          if (strokeMiterlimit !== 4) {
+            props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
           this.addGeom('ellipse', props);

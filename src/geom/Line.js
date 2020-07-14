@@ -41,6 +41,8 @@ class Line extends Geom {
       strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
     } = super.render(renderMode, ctx, defs, isHidden);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
@@ -67,6 +69,8 @@ class Line extends Geom {
       ctx.strokeStyle = stroke;
       ctx.lineWidth = strokeWidth;
       ctx.lineCap = strokeLinecap;
+      ctx.lineJoin = strokeLinejoin;
+      ctx.miterLimit = strokeMiterlimit;
       ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
@@ -112,6 +116,12 @@ class Line extends Geom {
       }
       if(strokeLinecap !== 'butt') {
         props.push(['stroke-linecap', strokeLinecap]);
+      }
+      if(strokeLinejoin !== 'miter') {
+        props.push(['stroke-linejoin', strokeLinejoin]);
+      }
+      if(strokeMiterlimit !== 4) {
+        props.push(['stroke-miterlimit', strokeMiterlimit]);
       }
       this.addGeom('path', props);
     }

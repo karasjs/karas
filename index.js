@@ -3902,7 +3902,7 @@
 
     if (beginLength) {
       // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-      var needInner = brx && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
+      var needInner = brx > x2 - x1 && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
 
       var crossDeg = Math.atan((x2 - x1) / (y2 - y1));
       var rx1 = brx;
@@ -3949,7 +3949,7 @@
 
     if (endLength) {
       // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-      var _needInner = erx && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
+      var _needInner = erx > x4 - x3 && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
 
 
       var _crossDeg = Math.atan((x4 - x3) / (y2 - y1));
@@ -4244,7 +4244,7 @@
     var beginLength = beginList.length;
 
     if (beginLength) {
-      var needInner = bry && borderWidth < brx;
+      var needInner = bry > y2 - y1 && borderWidth < brx;
       var crossDeg = Math.atan((x4 - x3) / (y2 - y1));
       var rx1 = brx;
       var ry1 = bry;
@@ -4292,7 +4292,7 @@
     var endLength = endList.length;
 
     if (endLength) {
-      var _needInner2 = ery && borderWidth < erx;
+      var _needInner2 = ery > y4 - y3 && borderWidth < erx;
 
       var _crossDeg2 = Math.atan((x4 - x3) / (y4 - y3));
 
@@ -4593,7 +4593,7 @@
 
     if (beginLength) {
       // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-      var needInner = brx && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
+      var needInner = brx > x2 - x1 && borderWidth < bry; // 算这个角度是为了头部和上条边相交线的延长线
 
       var crossDeg = Math.atan((x2 - x1) / (y4 - y3));
       var rx1 = brx;
@@ -4643,7 +4643,7 @@
 
     if (endLength) {
       // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-      var _needInner3 = erx && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
+      var _needInner3 = erx > x4 - x3 && borderWidth < ery; // 算这个角度是为了最后和下条边相交线的延长线
 
 
       var _crossDeg3 = Math.atan((x4 - x3) / (y4 - y3));
@@ -4941,7 +4941,7 @@
     var beginLength = beginList.length;
 
     if (beginLength) {
-      var needInner = bry && borderWidth < brx;
+      var needInner = bry > y2 - y1 && borderWidth < brx;
       var crossDeg = Math.atan((x2 - x1) / (y2 - y1));
       var rx1 = brx;
       var ry1 = bry;
@@ -4988,7 +4988,7 @@
     var endLength = endList.length;
 
     if (endLength) {
-      var _needInner4 = ery && borderWidth < erx;
+      var _needInner4 = ery > y4 - y3 && borderWidth < erx;
 
       var _crossDeg4 = Math.atan((x2 - x1) / (y4 - y3));
 
@@ -14777,7 +14777,7 @@
     return vd;
   }
 
-  var version = "0.31.0";
+  var version = "0.31.1";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

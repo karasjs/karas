@@ -1075,7 +1075,7 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
   let beginLength = beginList.length;
   if(beginLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-    let needInner = brx && borderWidth < bry;
+    let needInner = brx > (x2 - x1) && borderWidth < bry;
     // 算这个角度是为了头部和上条边相交线的延长线
     let crossDeg = Math.atan((x2 - x1) / (y2 - y1));
     let rx1 = brx;
@@ -1117,7 +1117,7 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
   let endLength = endList.length;
   if(endLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-    let needInner = erx && borderWidth < ery;
+    let needInner = erx > (x4 - x3) && borderWidth < ery;
     // 算这个角度是为了最后和下条边相交线的延长线
     let crossDeg = Math.atan((x4 - x3) / (y2 - y1));
     let rx1 = erx;
@@ -1466,7 +1466,7 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
   }
   let beginLength = beginList.length;
   if(beginLength) {
-    let needInner = bry && borderWidth < brx;
+    let needInner = bry > (y2 - y1) && borderWidth < brx;
     let crossDeg = Math.atan((x4 - x3) / (y2 - y1));
     let rx1 = brx;
     let ry1 = bry;
@@ -1510,7 +1510,7 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
   }
   let endLength = endList.length;
   if(endLength) {
-    let needInner = ery && borderWidth < erx;
+    let needInner = ery > (y4 - y3) && borderWidth < erx;
     let crossDeg = Math.atan((x4 - x3) / (y4 - y3));
     let rx1 = erx;
     let ry1 = ery;
@@ -1863,7 +1863,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
   let beginLength = beginList.length;
   if(beginLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-    let needInner = brx && borderWidth < bry;
+    let needInner = brx > (x2 - x1) && borderWidth < bry;
     // 算这个角度是为了头部和上条边相交线的延长线
     let crossDeg = Math.atan((x2 - x1) / (y4 - y3));
     let rx1 = brx;
@@ -1909,7 +1909,7 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
   let endLength = endList.length;
   if(endLength) {
     // 边宽可能大于圆角尺寸，边的里面无需圆弧化
-    let needInner = erx && borderWidth < ery;
+    let needInner = erx > (x4 - x3) && borderWidth < ery;
     // 算这个角度是为了最后和下条边相交线的延长线
     let crossDeg = Math.atan((x4 - x3) / (y4 - y3));
     let rx1 = erx;
@@ -2262,7 +2262,7 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
   }
   let beginLength = beginList.length;
   if(beginLength) {
-    let needInner = bry && borderWidth < brx;
+    let needInner = bry > (y2 - y1) && borderWidth < brx;
     let crossDeg = Math.atan((x2 - x1) / (y2 - y1));
     let rx1 = brx;
     let ry1 = bry;
@@ -2305,7 +2305,7 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
   }
   let endLength = endList.length;
   if(endLength) {
-    let needInner = ery && borderWidth < erx;
+    let needInner = ery > (y4 - y3) && borderWidth < erx;
     let crossDeg = Math.atan((x2 - x1) / (y4 - y3));
     let rx1 = erx;
     let ry1 = ery;

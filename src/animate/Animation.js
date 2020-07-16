@@ -48,6 +48,7 @@ const KEY_LENGTH = [
   'paddingRight',
   'paddingTop',
   'strokeWidth',
+  'strokeMiterlimit',
 ];
 
 const KEY_GRADIENT = [
@@ -993,12 +994,24 @@ class Animation extends Event {
     }
     // 只有1帧复制出来变成2帧方便运行
     if(list.length === 1) {
-      list.push(list[0]);
+      list[0] = clone(list[0]);
+      if(list[0].offset === 1) {
+        list.unshift({
+          offset: 0,
+        });
+      }
+      else {
+        let copy = clone(list[0]);
+        copy.offset = 1;
+        list.push(copy);
+      }
     }
     // 强制clone防止同引用
-    list.forEach((item, i) => {
-      list[i] = clone(item);
-    });
+    else {
+      list.forEach((item, i) => {
+        list[i] = clone(item);
+      });
+    }
     // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
     let first = list[0];
     if(first.hasOwnProperty('offset') && first.offset > 0) {

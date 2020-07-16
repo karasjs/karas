@@ -5532,6 +5532,10 @@
       fontStyle: true,
       strokeWidth: true,
       fill: true,
+      strokeDasharray: true,
+      strokeLinecap: true,
+      strokeLinejoin: true,
+      strokeMiterlimit: true,
       backgroundColor: true,
       backgroundImage: true,
       backgroundPositionX: true,
@@ -6451,7 +6455,7 @@
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
-  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth'];
+  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth', 'strokeMiterlimit'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
@@ -7414,13 +7418,24 @@
 
 
         if (list.length === 1) {
-          list.push(list[0]);
+          list[0] = clone$2(list[0]);
+
+          if (list[0].offset === 1) {
+            list.unshift({
+              offset: 0
+            });
+          } else {
+            var copy = clone$2(list[0]);
+            copy.offset = 1;
+            list.push(copy);
+          }
         } // 强制clone防止同引用
+        else {
+            list.forEach(function (item, i) {
+              list[i] = clone$2(item);
+            });
+          } // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
-
-        list.forEach(function (item, i) {
-          list[i] = clone$2(item);
-        }); // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
         var first = list[0];
 

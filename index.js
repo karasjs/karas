@@ -6130,8 +6130,6 @@
     function Frame() {
       _classCallCheck(this, Frame);
 
-      this.__aTask = []; // 专门动画刷新，确保每帧优先执行，动画单异步
-
       this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
@@ -6142,8 +6140,7 @@
       key: "__init",
       value: function __init() {
         var self = this;
-        var aTask = self.aTask,
-            task = self.task;
+        var task = self.task;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -6151,7 +6148,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (!aTask.length && !task.length) {
+            if (!task.length) {
               return;
             }
 
@@ -6161,20 +6158,17 @@
 
             last = now; // 优先动画计算
 
-            var clone1 = aTask.slice(0);
-            var clone2 = task.slice(0);
-            traversal(clone1, diff, 'before');
-            traversal(clone2, diff, 'before'); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
+            var clone = task.slice(0);
+            traversal(clone, diff, 'before'); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
 
             self.__hookTask.splice(0).forEach(function (item) {
               return item();
             }); // 普通的before/after
 
 
-            traversal(clone1, diff, 'after');
-            traversal(clone2, diff, 'after'); // 还有则继续，没有则停止节省性能
+            traversal(clone, diff, 'after'); // 还有则继续，没有则停止节省性能
 
-            if (aTask.length || task.length) {
+            if (task.length) {
               cb();
             }
           });
@@ -6183,68 +6177,46 @@
         cb();
       }
     }, {
-      key: "__onFrame",
-      value: function __onFrame(handle, target) {
+      key: "onFrame",
+      value: function onFrame(handle) {
         if (!handle) {
           return;
         }
 
-        var aTask = this.aTask,
-            task = this.task;
+        var task = this.task;
 
-        if (!aTask.length && !task.length) {
+        if (!task.length) {
           this.__init();
         }
 
-        target.push(handle);
+        task.push(handle);
       }
     }, {
-      key: "__offFrame",
-      value: function __offFrame(handle, target) {
+      key: "offFrame",
+      value: function offFrame(handle) {
         if (!handle) {
           return;
         }
 
-        for (var i = 0, len = target.length; i < len; i++) {
-          var item = target[i]; // 需考虑nextFrame包裹的引用对比
+        var task = this.task;
+
+        for (var i = 0, len = task.length; i < len; i++) {
+          var item = task[i]; // 需考虑nextFrame包裹的引用对比
 
           if (item === handle || item.__karasFramecb === handle) {
-            target.splice(i, 1);
+            task.splice(i, 1);
             break;
           }
         }
 
-        var aTask = this.aTask,
-            task = this.task;
-
-        if (!aTask.length && !task.length) {
+        if (!task.length) {
           inject.cancelAnimationFrame(this.id);
           this.__now = null;
         }
       }
     }, {
-      key: "onFrame",
-      value: function onFrame(handle) {
-        this.__onFrame(handle, this.task);
-      }
-    }, {
-      key: "offFrame",
-      value: function offFrame(handle) {
-        this.__offFrame(handle, this.task);
-      }
-    }, {
-      key: "__onFrameA",
-      value: function __onFrameA(handle) {
-        this.__onFrame(handle, this.aTask);
-      }
-    }, {
-      key: "__offFrameA",
-      value: function __offFrameA(handle) {
-        this.__offFrame(handle, this.aTask);
-      }
-    }, {
-      key: "__nextFrame",
-      value: function __nextFrame(handle, animate) {
+      key: "nextFrame",
+      value: function nextFrame(handle) {
         var _this = this;
 
         if (!handle) {
@@ -6255,40 +6227,17 @@
         var cb = isFunction$2(handle) ? function (diff) {
           handle(diff);
 
-          if (animate) {
-            _this.__offFrameA(cb);
-          } else {
-            _this.offFrame(cb);
-          }
+          _this.offFrame(cb);
         } : {
           before: handle.before,
           after: function after(diff) {
             handle.after(diff);
 
-            if (animate) {
-              _this.__offFrameA(cb);
-            } else {
-              _this.offFrame(cb);
-            }
+            _this.offFrame(cb);
           }
         };
         cb.__karasFramecb = handle;
-
-        if (animate) {
-          this.__onFrameA(cb);
-        } else {
-          this.onFrame(cb);
-        }
-      }
-    }, {
-      key: "nextFrame",
-      value: function nextFrame(handle) {
-        this.__nextFrame(handle);
-      }
-    }, {
-      key: "__nextFrameA",
-      value: function __nextFrameA(handle) {
-        this.__nextFrame(handle, true);
+        this.onFrame(cb);
       }
     }, {
       key: "task",
@@ -7780,7 +7729,7 @@
                     playCount = ++_this3.__playCount; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
 
                     if (playCount >= iterations) {
-                      frame.__offFrameA(enterFrame);
+                      frame.offFrame(enterFrame);
                     }
                   }
               } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
@@ -7850,8 +7799,7 @@
         } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
 
-        frame.__onFrameA(this.__enterFrame);
-
+        frame.onFrame(this.__enterFrame);
         this.__startTime = frame.__now;
         return this;
       }
@@ -7936,7 +7884,7 @@
           }
 
           if (needRefresh) {
-            frame.__nextFrameA(this.__enterFrame = {
+            frame.nextFrame(this.__enterFrame = {
               before: function before() {
                 genBeforeRefresh(current, _this4, root, lv);
 
@@ -7999,7 +7947,7 @@
           };
 
           if (needRefresh) {
-            frame.__nextFrameA(this.__enterFrame = {
+            frame.nextFrame(this.__enterFrame = {
               before: function before() {
                 genBeforeRefresh({}, _this5, root, lv);
 
@@ -8155,8 +8103,7 @@
     }, {
       key: "__cancelTask",
       value: function __cancelTask() {
-        frame.__offFrameA(this.__enterFrame);
-
+        frame.offFrame(this.__enterFrame);
         this.__playCb = null;
       }
     }, {

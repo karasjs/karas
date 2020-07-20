@@ -9857,7 +9857,7 @@
         if (util.isString(ref)) {
           root.ref[ref] = this;
         } else if (util.isFunction(ref)) {
-          ref(root);
+          ref(this);
         }
 
         this.children.forEach(function (item) {
@@ -14792,7 +14792,7 @@
     return vd;
   }
 
-  var version = "0.31.2";
+  var version = "0.31.3";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

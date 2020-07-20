@@ -1337,7 +1337,7 @@ class Xom extends Node {
       root.ref[ref] = this;
     }
     else if(util.isFunction(ref)) {
-      ref(root);
+      ref(this);
     }
     this.children.forEach(item => {
       if(item instanceof Xom || item instanceof Component) {

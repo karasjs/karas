@@ -14792,7 +14792,7 @@
     return vd;
   }
 
-  var version = "0.31.3";
+  var version = "0.31.4";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

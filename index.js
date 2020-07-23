@@ -3056,6 +3056,17 @@
     return [m[0], m[1], m[4], m[5], m[12], m[13]];
   }
 
+  function t34(m3) {
+    var m = identity();
+    m[0] = m3[0];
+    m[1] = m3[1];
+    m[4] = m3[2];
+    m[5] = m3[3];
+    m[12] = m3[4];
+    m[13] = m3[5];
+    return m;
+  }
+
   function calPoint(point, m) {
     var _point = _slicedToArray(point, 2),
         x = _point[0],
@@ -3068,6 +3079,7 @@
     identity: identity,
     multiply: multiply,
     t43: t43,
+    t34: t34,
     calPoint: calPoint
   };
 
@@ -3214,15 +3226,9 @@
     }
   }
 
-  function calMatrix(transform, transformOrigin, ow, oh) {
-    var _transformOrigin = _slicedToArray(transformOrigin, 2),
-        ox = _transformOrigin[0],
-        oy = _transformOrigin[1];
-
+  function calMatrix(transform, ow, oh) {
     var list = normalize$1(transform, ow, oh);
     var m = matrix$1.identity();
-    m[12] = ox;
-    m[13] = oy;
     list.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
@@ -3232,11 +3238,28 @@
       calSingle(t, k, v);
       m = matrix$1.multiply(m, t);
     });
-    var t = matrix$1.identity();
-    t[12] = -ox;
-    t[13] = -oy;
-    m = matrix$1.multiply(m, t);
     return matrix$1.t43(m);
+  }
+
+  function calMatrixByOrigin(m, transformOrigin) {
+    var _transformOrigin = _slicedToArray(transformOrigin, 2),
+        ox = _transformOrigin[0],
+        oy = _transformOrigin[1];
+
+    var t = matrix$1.identity();
+    t[12] = ox;
+    t[13] = oy;
+    var res = matrix$1.multiply(t, matrix$1.t34(m));
+    var t2 = matrix$1.identity();
+    t2[12] = -ox;
+    t2[13] = -oy;
+    res = matrix$1.multiply(res, t2);
+    return matrix$1.t43(res);
+  }
+
+  function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
+    var m = calMatrix(transform, ow, oh);
+    return calMatrixByOrigin(m, transformOrigin);
   } // 判断点是否在一个矩形内，比如事件发生是否在节点上
 
 
@@ -3315,27 +3338,18 @@
     return tfo;
   }
 
-  function convert(m3) {
-    var m = matrix$1.identity();
-    m[0] = m3[0];
-    m[1] = m3[1];
-    m[4] = m3[2];
-    m[5] = m3[3];
-    m[12] = m3[4];
-    m[13] = m3[5];
-    return m;
-  }
-
   function mergeMatrix(a, b) {
-    var m1 = convert(a);
-    var m2 = convert(b);
+    var m1 = matrix$1.t34(a);
+    var m2 = matrix$1.t34(b);
     var m = matrix$1.multiply(m1, m2);
-    return [m[0], m[1], m[4], m[5], m[12], m[13]];
+    return matrix$1.t43(m);
   }
 
   var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
+    calMatrixByOrigin: calMatrixByOrigin,
+    calMatrixWithOrigin: calMatrixWithOrigin,
     pointInQuadrilateral: pointInQuadrilateral,
     mergeMatrix: mergeMatrix
   };
@@ -5327,7 +5341,7 @@
     }], w, h);
     tfo[0] += x;
     tfo[1] += y;
-    return tf.calMatrix(list, tfo, w, h);
+    return tf.calMatrixWithOrigin(list, tfo, w, h);
   }
 
   var image = {
@@ -6474,7 +6488,7 @@
         if (k === 'transform') {
           var ow = target.outerWidth;
           var oh = target.outerHeight;
-          var m = tf.calMatrix(v, [0, 0], ow, oh);
+          var m = tf.calMatrix(v, ow, oh);
           style[k] = [['matrix', m]];
         } else if (v.unit === INHERIT$1) {
           if (k === 'color') {
@@ -8988,7 +9002,7 @@
         tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
         var matrix = [1, 0, 0, 1, 0, 0];
-        this.__matrix = matrix;
+        this.__matrix = computedStyle.matrix = matrix;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -8997,8 +9011,7 @@
         parent = this.parent; // transform相对于自身
 
         if (transform) {
-          matrix = tf.calMatrix(transform, tfo, outerWidth, outerHeight);
-          this.__matrix = matrix;
+          matrix = tf.calMatrix(transform, outerWidth, outerHeight);
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
             var temp = [];
@@ -9029,20 +9042,19 @@
             });
 
             if (temp.length) {
-              matrix = tf.calMatrix(temp, tfo, outerWidth, outerHeight);
-              this.__matrix = matrix;
+              matrix = tf.calMatrix(temp, outerWidth, outerHeight);
             }
           }
 
-        computedStyle.transform = matrix; // 变换对事件影响，canvas要设置渲染
+        this.__matrix = computedStyle.transform = matrix;
+        matrix = tf.calMatrixByOrigin(matrix, tfo);
+        var renderMatrix = matrix; // 变换对事件影响，canvas要设置渲染
 
-        while (parent) {
+        if (parent) {
           if (parent.matrixEvent) {
-            matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-            break;
-          }
+            matrix = tf.mergeMatrix(parent.matrixEvent, matrix); // break;
+          } // parent = parent.parent;
 
-          parent = parent.parent;
         }
 
         this.__matrixEvent = matrix;
@@ -9050,8 +9062,8 @@
         if (renderMode === mode.CANVAS) {
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
         } else if (renderMode === mode.SVG) {
-          if (!equalArr$2(this.matrix, [1, 0, 0, 1, 0, 0])) {
-            this.virtualDom.transform = "matrix(".concat(joinArr$1(this.matrix, ','), ")");
+          if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+            this.virtualDom.transform = "matrix(".concat(joinArr$1(renderMatrix, ','), ")");
           }
         } // 先计算，防止隐藏不执行
 

@@ -45,23 +45,34 @@ function calSingle(t, k, v) {
   }
 }
 
-function calMatrix(transform, transformOrigin, ow, oh) {
-  let [ox, oy] = transformOrigin;
+function calMatrix(transform, ow, oh) {
   let list = normalize(transform, ow, oh);
   let m = matrix.identity();
-  m[12] = ox;
-  m[13] = oy;
   list.forEach(item => {
     let [k, v] = item;
     let t = matrix.identity();
     calSingle(t, k, v);
     m = matrix.multiply(m, t);
   });
-  let t = matrix.identity();
-  t[12] = -ox;
-  t[13] = -oy;
-  m = matrix.multiply(m, t);
   return matrix.t43(m);
+}
+
+function calMatrixByOrigin(m, transformOrigin) {
+  let [ox, oy] = transformOrigin;
+  let t = matrix.identity();
+  t[12] = ox;
+  t[13] = oy;
+  let res = matrix.multiply(t, matrix.t34(m));
+  let t2 = matrix.identity();
+  t2[12] = -ox;
+  t2[13] = -oy;
+  res = matrix.multiply(res, t2);
+  return matrix.t43(res);
+}
+
+function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
+  let m = calMatrix(transform, ow, oh);
+  return calMatrixByOrigin(m, transformOrigin);
 }
 
 // 判断点是否在一个矩形内，比如事件发生是否在节点上
@@ -122,31 +133,18 @@ function calOrigin(transformOrigin, w, h) {
   return tfo;
 }
 
-function convert(m3) {
-  let m = matrix.identity();
-  m[0] = m3[0];
-  m[1] = m3[1];
-  m[4] = m3[2];
-  m[5] = m3[3];
-  m[12] = m3[4];
-  m[13] = m3[5];
-  return m;
-}
-
 function mergeMatrix(a, b) {
-  let m1 = convert(a);
-  let m2 = convert(b);
+  let m1 = matrix.t34(a);
+  let m2 = matrix.t34(b);
   let m = matrix.multiply(m1, m2);
-  return [
-    m[0], m[1],
-    m[4], m[5],
-    m[12], m[13]
-  ];
+  return matrix.t43(m);
 }
 
 export default {
   calMatrix,
   calOrigin,
+  calMatrixByOrigin,
+  calMatrixWithOrigin,
   pointInQuadrilateral,
   mergeMatrix,
 };

@@ -585,15 +585,14 @@ class Xom extends Node {
     tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     let matrix = [1, 0, 0, 1, 0, 0];
-    this.__matrix = matrix;
+    this.__matrix = computedStyle.matrix = matrix;
     if(isDestroyed || display === 'none') {
       return;
     }
     parent = this.parent;
     // transform相对于自身
     if(transform) {
-      matrix = tf.calMatrix(transform, tfo, outerWidth, outerHeight);
-      this.__matrix = matrix;
+      matrix = tf.calMatrix(transform, outerWidth, outerHeight);
     }
     // 没有transform则看是否有扩展的css独立变换属性
     else {
@@ -629,26 +628,27 @@ class Xom extends Node {
         temp.push([k, v]);
       });
       if(temp.length) {
-        matrix = tf.calMatrix(temp, tfo, outerWidth, outerHeight);
-        this.__matrix = matrix;
+        matrix = tf.calMatrix(temp, outerWidth, outerHeight);
       }
     }
-    computedStyle.transform = matrix;
+    this.__matrix = computedStyle.transform = matrix;
+    matrix = tf.calMatrixByOrigin(matrix, tfo);
+    let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
-    while(parent) {
+    if(parent) {
       if(parent.matrixEvent) {
         matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
-        break;
+        // break;
       }
-      parent = parent.parent;
+      // parent = parent.parent;
     }
     this.__matrixEvent = matrix;
     if(renderMode === mode.CANVAS) {
       ctx.setTransform(...matrix);
     }
     else if(renderMode === mode.SVG) {
-      if(!equalArr(this.matrix, [1, 0, 0, 1, 0, 0])) {
-        this.virtualDom.transform = `matrix(${joinArr(this.matrix, ',')})`;
+      if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+        this.virtualDom.transform = `matrix(${joinArr(renderMatrix, ',')})`;
       }
     }
     // 先计算，防止隐藏不执行

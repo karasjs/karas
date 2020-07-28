@@ -1653,11 +1653,34 @@
     temp = style.borderRadius;
 
     if (temp) {
-      ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k) {
+      // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
+      temp = temp.split('/');
+
+      if (temp.length === 1) {
+        temp[1] = temp[0];
+      }
+
+      for (var i = 0; i < 2; i++) {
+        var item = temp[i].toString().split(/\s+/);
+
+        if (item.length === 0) {
+          temp[i] = [0, 0, 0, 0];
+        } else if (item.length === 1) {
+          temp[i] = [item[0], item[0], item[0], item[0]];
+        } else if (item.length === 2) {
+          temp[i] = [item[0], item[1], item[0], item[1]];
+        } else if (item.length === 3) {
+          temp[i] = [item[0], item[1], item[2], item[1]];
+        } else {
+          temp[i] = item.slice(0, 4);
+        }
+      }
+
+      ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(function (k, i) {
         k = 'border' + k + 'Radius';
 
         if (isNil$2(style[k])) {
-          style[k] = temp;
+          style[k] = temp[0][i] + ' ' + temp[1][i];
         }
       });
       delete style.borderRadius;
@@ -1851,23 +1874,23 @@
           }
         }
 
-        for (var i = 0; i < 2; i++) {
-          var item = match[i];
+        for (var _i = 0; _i < 2; _i++) {
+          var _item = match[_i];
 
-          if (/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
-            calUnit(bc, i, item);
+          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
+            calUnit(bc, _i, _item);
 
-            if (bc[i].unit === NUMBER) {
-              bc[i].unit = PX$1;
+            if (bc[_i].unit === NUMBER) {
+              bc[_i].unit = PX$1;
             }
-          } else if (item === '0' || item === 0) {
+          } else if (_item === '0' || _item === 0) {
             bc.push({
               value: 0,
               unit: PX$1
             });
-          } else if (item === 'contain' || item === 'cover') {
+          } else if (_item === 'contain' || _item === 'cover') {
             bc.push({
-              value: item,
+              value: _item,
               unit: STRING
             });
           } else {
@@ -1908,17 +1931,17 @@
           _arr2[1] = _arr2[0];
         }
 
-        for (var _i = 0; _i < 2; _i++) {
-          var _item = _arr2[_i];
+        for (var _i2 = 0; _i2 < 2; _i2++) {
+          var _item2 = _arr2[_i2];
 
-          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
-            calUnit(_arr2, _i, _item);
+          if (/%$/.test(_item2) || /px$/.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
+            calUnit(_arr2, _i2, _item2);
 
-            if (_arr2[_i].unit === NUMBER) {
-              _arr2[_i].unit = PX$1;
+            if (_arr2[_i2].unit === NUMBER) {
+              _arr2[_i2].unit = PX$1;
             }
           } else {
-            _arr2[_i] = {
+            _arr2[_i2] = {
               value: 0,
               unit: PX$1
             };
@@ -2007,14 +2030,14 @@
           _match2[1] = _match2[0];
         }
 
-        for (var _i2 = 0; _i2 < 2; _i2++) {
-          var _item2 = _match2[_i2];
+        for (var _i3 = 0; _i3 < 2; _i3++) {
+          var _item3 = _match2[_i3];
 
-          if (/%$/.test(_item2) || /px$/.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
-            calUnit(tfo, _i2, _item2);
+          if (/%$/.test(_item3) || /px$/.test(_item3) || /^-?[\d.]+$/.test(_item3)) {
+            calUnit(tfo, _i3, _item3);
 
-            if (tfo[_i2].unit === NUMBER) {
-              tfo[_i2].unit = PX$1;
+            if (tfo[_i3].unit === NUMBER) {
+              tfo[_i3].unit = PX$1;
             }
           } else {
             tfo.push({
@@ -2024,12 +2047,12 @@
                 center: 50,
                 right: 100,
                 bottom: 100
-              }[_item2],
+              }[_item3],
               unit: PERCENT$1
             }); // 不规范的写法变默认值50%
 
-            if (isNil$2(tfo[_i2].value)) {
-              tfo[_i2].value = 50;
+            if (isNil$2(tfo[_i3].value)) {
+              tfo[_i3].value = 50;
             }
           }
         }

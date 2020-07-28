@@ -813,6 +813,18 @@
 
     return [a * x + c * y + e, b * x + d * y + f];
   }
+  /**
+   * 余弦定理3边长求夹角
+   * @param a
+   * @param b
+   * @param c
+   */
+
+
+  function angleBySide(a, b, c) {
+    var theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+    return Math.acos(theta);
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -830,7 +842,8 @@
     h: function h(deg) {
       deg *= 0.5;
       return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
-    }
+    },
+    angleBySide: angleBySide
   };
 
   var rgba2int$1 = util.rgba2int,
@@ -3032,7 +3045,7 @@
     }
 
     return m;
-  } // 矩阵a*b
+  } // 矩阵a*b，固定4*4
 
 
   function multiply(a, b) {
@@ -3112,67 +3125,106 @@
         tx2 = _target[2],
         ty2 = _target[3],
         tx3 = _target[4],
-        ty3 = _target[5]; // 第0步，将目标三角第1个a点移到和源三角一样的原点上
+        ty3 = _target[5];
 
-
-    var dx = tx1 - sx1;
-    var dy = tx2 - sx2;
-    tx1 -= dx;
-    ty1 -= dy;
-    tx2 -= dx;
-    ty2 -= dy;
-    tx3 -= dx;
-    ty3 -= dy;
-    var m = matrix.identity(); // 第1步，以第1条边AB为基准，将其贴合x轴上，为后续倾斜不干扰做准备
+    var m = matrix.identity();
+    m[12] = -sx1;
+    m[13] = -sy1;
+    var t; // 第1步，以第1条边ab为基准，将其贴合x轴上，为后续倾斜不干扰做准备
 
     var theta = calDeg(sx1, sy1, sx2, sy2);
-    var t = rotate(-theta);
-    m = matrix.multiply(t, m); // 第2步，以第1条边AB为基准，缩放至目标ab相同长度
+
+    if (theta !== 0) {
+      t = rotate(-theta);
+      m = matrix.multiply(t, m);
+    } // 第2步，以第1条边AB为基准，缩放x至目标ab相同长度
+
 
     var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
     var lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
-    var scale = lt / ls;
-    t = matrix.identity();
-    t[0] = t[5] = scale;
-    m = matrix.multiply(t, m); // 第3步，缩放y，先将目标旋转到x轴上，再变换坐标计算
 
-    theta = calDeg(tx1, ty1, tx2, ty2);
-    t = rotate(-theta); // 目标三角反向旋转至x轴后的第2、3点坐标，求得旋转角度
+    if (ls !== lt) {
+      var scale = lt / ls;
+      t = matrix.identity();
+      t[0] = scale;
+      m = matrix.multiply(t, m);
+    } // 第3步，缩放y，先将目标三角形旋转到x轴平行，再变换坐标计算
 
-    var _matrix$calPoint = matrix.calPoint([tx2, ty2], matrix.t43(t)),
+
+    var n = matrix.identity();
+    n[12] = -tx1;
+    n[13] = -ty1;
+    theta = calDeg(tx1, ty1, tx2, ty2); // 记录下这个旋转角度，后面源三角形要旋转
+
+    var alpha = -theta;
+
+    if (theta !== 0) {
+      t = rotate(-theta);
+      n = matrix.multiply(t, n);
+    }
+
+    n = matrix.t43(n); // 目标三角反向旋转至x轴后的坐标
+
+    var by1 = matrix.calPoint([tx1, ty1], n)[1];
+    var by3 = matrix.calPoint([tx3, ty3], n)[1]; // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
+
+    ls = matrix.calPoint([sx3, sy3], matrix.t43(m))[1];
+    lt = by3 - by1; // 缩放y
+
+    if (ls !== lt) {
+      var _scale = lt / ls;
+
+      t = matrix.identity();
+      t[5] = _scale;
+      m = matrix.multiply(t, m);
+    } // 第4步，x轴倾斜，用余弦定理求目前a和A的夹角
+
+
+    n = matrix.t43(m);
+
+    var _matrix$calPoint = matrix.calPoint([sx1, sy1], n),
         _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
-        ax2 = _matrix$calPoint2[0],
-        ay2 = _matrix$calPoint2[1];
+        ax1 = _matrix$calPoint2[0],
+        ay1 = _matrix$calPoint2[1];
 
-    var _matrix$calPoint3 = matrix.calPoint([tx3, ty3], matrix.t43(t)),
+    var _matrix$calPoint3 = matrix.calPoint([sx2, sy2], n),
         _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
-        ax3 = _matrix$calPoint4[0],
-        ay3 = _matrix$calPoint4[1];
+        ax2 = _matrix$calPoint4[0],
+        ay2 = _matrix$calPoint4[1];
 
-    var alpha = Math.atan((ax2 - ax3) / (ay3 - ay2));
-    var by3 = matrix.calPoint([sx3, sy3], matrix.t43(m))[1]; // 缩放y
-
-    scale = ay3 / by3;
-    t = matrix.identity();
-    t[5] = scale;
-    m = matrix.multiply(t, m); // 第4步，x轴倾斜，第3点的x/y的tan值
-
-    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], matrix.t43(m)),
+    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], n),
         _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
-        x3 = _matrix$calPoint6[0],
-        y3 = _matrix$calPoint6[1];
+        ax3 = _matrix$calPoint6[0],
+        ay3 = _matrix$calPoint6[1];
 
-    theta = Math.atan((ax3 - x3) / y3);
+    var ab = Math.sqrt(Math.pow(ax2 - ax1, 2) + Math.pow(ay2 - ay1, 2));
+    var ac = Math.sqrt(Math.pow(ax3 - ax1, 2) + Math.pow(ay3 - ay1, 2));
+    var bc = Math.sqrt(Math.pow(ax2 - ax3, 2) + Math.pow(ay2 - ay3, 2));
+    var AB = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
+    var AC = Math.sqrt(Math.pow(tx3 - tx1, 2) + Math.pow(ty3 - ty1, 2));
+    var BC = Math.sqrt(Math.pow(tx2 - tx3, 2) + Math.pow(ty2 - ty3, 2));
+    var a = geom.angleBySide(bc, ab, ac);
+    var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，不知道为什么不能直接倾斜差值角度
+
+    if (a !== A) {
+      t = matrix.identity();
+      t[4] = Math.tan(a - Math.PI * 0.5);
+      m = matrix.multiply(t, m);
+      t = matrix.identity();
+      t[4] = Math.tan(Math.PI * 0.5 - A);
+      m = matrix.multiply(t, m);
+    } // 第5步，再次旋转，角度为目标旋转到x轴的负值
+
+
+    if (alpha !== 0) {
+      t = rotate(-alpha);
+      m = matrix.multiply(t, m);
+    } // 第6步，移动第一个点的差值
+
+
     t = matrix.identity();
-    t[4] = Math.tan(theta);
-    m = matrix.multiply(t, m); // 第5步，再次旋转，角度为目标旋转到x轴的负值
-
-    t = rotate(-alpha);
-    m = matrix.multiply(t, m); // 第6步，移动第一个点的差值
-
-    t = matrix.identity();
-    t[12] = dx;
-    t[13] = dy;
+    t[12] = tx1;
+    t[13] = ty1;
     m = matrix.multiply(t, m);
     return matrix.t43(m);
   }
@@ -3245,6 +3297,10 @@
     var _transformOrigin = _slicedToArray(transformOrigin, 2),
         ox = _transformOrigin[0],
         oy = _transformOrigin[1];
+
+    if (ox === 0 && oy === 0) {
+      return m;
+    }
 
     var t = matrix$1.identity();
     t[12] = ox;

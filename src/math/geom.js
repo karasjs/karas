@@ -34,6 +34,17 @@ function transformPoint(matrix, x, y) {
   return [a * x + c * y + e, b * x + d * y + f];
 }
 
+/**
+ * 余弦定理3边长求夹角
+ * @param a
+ * @param b
+ * @param c
+ */
+function angleBySide(a, b, c) {
+  let theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
+  return Math.acos(theta);
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
@@ -51,4 +62,5 @@ export default {
     deg *= 0.5;
     return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
   },
+  angleBySide,
 };

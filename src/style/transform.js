@@ -59,6 +59,9 @@ function calMatrix(transform, ow, oh) {
 
 function calMatrixByOrigin(m, transformOrigin) {
   let [ox, oy] = transformOrigin;
+  if(ox === 0 && oy === 0) {
+    return m;
+  }
   let t = matrix.identity();
   t[12] = ox;
   t[13] = oy;

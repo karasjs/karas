@@ -7,7 +7,7 @@ function identity() {
   return m;
 }
 
-// 矩阵a*b
+// 矩阵a*b，固定4*4
 function multiply(a, b) {
   let res = [];
   for(let i = 0; i < 4; i++) {

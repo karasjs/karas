@@ -27,10 +27,6 @@ const KEY_LENGTH = [
   'borderLeftWidth',
   'borderRightWidth',
   'borderTopWidth',
-  'borderTopLeftRadius',
-  'borderTopRightRadius',
-  'borderBottomRightRadius',
-  'borderBottomLeftRadius',
   'bottom',
   'left',
   'right',
@@ -57,6 +53,13 @@ const KEY_GRADIENT = [
   'stroke',
 ];
 
+const KEY_RADIUS = [
+'borderTopLeftRadius',
+'borderTopRightRadius',
+'borderBottomRightRadius',
+'borderBottomLeftRadius',
+];
+
 const COLOR_HASH = {};
 KEY_COLOR.forEach(k => {
   COLOR_HASH[k] = true;
@@ -65,6 +68,11 @@ KEY_COLOR.forEach(k => {
 const LENGTH_HASH = {};
 KEY_LENGTH.forEach(k => {
   LENGTH_HASH[k] = true;
+});
+
+const RADIUS_HASH = {};
+KEY_RADIUS.forEach(k => {
+  RADIUS_HASH[k] = true;
 });
 
 const GRADIENT_HASH = {};
@@ -193,6 +201,10 @@ function equalStyle(k, a, b) {
   else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
     || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
+  }
+  else if(RADIUS_HASH.hasOwnProperty(k)) {
+    return a[0].value === b[0].value && a[0].unit === b[0].unit
+      && a[1].value === b[1].value && a[1].unit === b[1].unit;
   }
   else if(COLOR_HASH.hasOwnProperty(k)) {
     return a.unit === b.unit && equalArr(a.value, b.value);
@@ -592,6 +604,29 @@ function calDiff(prev, next, k, target) {
       n[3] - p[3]
     ];
   }
+  else if(RADIUS_HASH.hasOwnProperty(k)) {
+    // x/y都相等无需
+    if(n[0].value === p[0].value && n[0].unit === p[0].unit
+      && n[1].value === p[1].value && n[1].unit === p[1].unit) {
+      return;
+    }
+    let computedStyle = target.computedStyle;
+    res.v = [];
+    for(let i = 0; i < 2; i++) {
+      if(n[i].unit === p[i].unit) {
+        res.v.push(n[i].value - p[i].value);
+      }
+      else if(p[i].unit === PX && n[i].unit === PERCENT) {
+        res.v.push(n[i].value * 0.01 * target[i ? 'outerHeight' : 'outerWidth'] - p[i].value);
+      }
+      else if(p[i].unit === PERCENT && n[i].unit === PX) {
+        res.v.push(n[i].value * 100 / target[i ? 'outerHeight' : 'outerWidth'] - p[i].value);
+      }
+      else {
+        res.v.push(0);
+      }
+    }
+  }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     // auto不做动画
     if(p.unit === AUTO && n.unit === AUTO) {
@@ -815,6 +850,11 @@ function calIntermediateStyle(frame, percent) {
         st = style[k] = [['blur', 0]];
       }
       st[0][1] += v * percent;
+    }
+    else if(RADIUS_HASH.hasOwnProperty(k)) {
+      for(let i = 0; i < 2; i++) {
+        st[i].value += v[i] * percent;
+      }
     }
     else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
       || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {

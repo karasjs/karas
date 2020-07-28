@@ -77,13 +77,10 @@ function transform(source, target) {
   let BC = Math.sqrt(Math.pow(tx2 - tx3, 2) + Math.pow(ty2 - ty3, 2));
   let a = geom.angleBySide(bc, ab, ac);
   let A = geom.angleBySide(BC, AB, AC);
-  // 先至90°，再旋转至目标角，不知道为什么不能直接倾斜差值角度
+  // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
   if(a !== A) {
     t = matrix.identity();
-    t[4] = Math.tan(a - Math.PI * 0.5);
-    m = matrix.multiply(t, m);
-    t = matrix.identity();
-    t[4] = Math.tan(Math.PI * 0.5 - A);
+    t[4] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
     m = matrix.multiply(t, m);
   }
   // 第5步，再次旋转，角度为目标旋转到x轴的负值

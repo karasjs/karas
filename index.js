@@ -1654,7 +1654,7 @@
 
     if (temp) {
       // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
-      temp = temp.split('/');
+      temp = temp.toString().split('/');
 
       if (temp.length === 1) {
         temp[1] = temp[0];
@@ -3234,14 +3234,11 @@
     var AC = Math.sqrt(Math.pow(tx3 - tx1, 2) + Math.pow(ty3 - ty1, 2));
     var BC = Math.sqrt(Math.pow(tx2 - tx3, 2) + Math.pow(ty2 - ty3, 2));
     var a = geom.angleBySide(bc, ab, ac);
-    var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，不知道为什么不能直接倾斜差值角度
+    var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
 
     if (a !== A) {
       t = matrix.identity();
-      t[4] = Math.tan(a - Math.PI * 0.5);
-      m = matrix.multiply(t, m);
-      t = matrix.identity();
-      t[4] = Math.tan(Math.PI * 0.5 - A);
+      t[4] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
       m = matrix.multiply(t, m);
     } // 第5步，再次旋转，角度为目标旋转到x轴的负值
 
@@ -6504,8 +6501,9 @@
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
-  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth', 'strokeMiterlimit'];
+  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth', 'strokeMiterlimit'];
   var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
+  var KEY_RADIUS = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'];
   var COLOR_HASH = {};
   KEY_COLOR.forEach(function (k) {
     COLOR_HASH[k] = true;
@@ -6513,6 +6511,10 @@
   var LENGTH_HASH = {};
   KEY_LENGTH.forEach(function (k) {
     LENGTH_HASH[k] = true;
+  });
+  var RADIUS_HASH = {};
+  KEY_RADIUS.forEach(function (k) {
+    RADIUS_HASH[k] = true;
   });
   var GRADIENT_HASH = {};
   KEY_GRADIENT.forEach(function (k) {
@@ -6621,6 +6623,8 @@
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
+    } else if (RADIUS_HASH.hasOwnProperty(k)) {
+      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (COLOR_HASH.hasOwnProperty(k)) {
       return a.unit === b.unit && equalArr$1(a.value, b.value);
     } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
@@ -7030,6 +7034,26 @@
       }
 
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
+    } else if (RADIUS_HASH.hasOwnProperty(k)) {
+      // x/y都相等无需
+      if (n[0].value === p[0].value && n[0].unit === p[0].unit && n[1].value === p[1].value && n[1].unit === p[1].unit) {
+        return;
+      }
+
+      var computedStyle = target.computedStyle;
+      res.v = [];
+
+      for (var _i6 = 0; _i6 < 2; _i6++) {
+        if (n[_i6].unit === p[_i6].unit) {
+          res.v.push(n[_i6].value - p[_i6].value);
+        } else if (p[_i6].unit === PX$3 && n[_i6].unit === PERCENT$4) {
+          res.v.push(n[_i6].value * 0.01 * target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
+        } else if (p[_i6].unit === PERCENT$4 && n[_i6].unit === PX$3) {
+          res.v.push(n[_i6].value * 100 / target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
+        } else {
+          res.v.push(0);
+        }
+      }
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       // auto不做动画
       if (p.unit === AUTO$1 && n.unit === AUTO$1) {
@@ -7041,7 +7065,7 @@
         return res;
       }
 
-      var computedStyle = target.computedStyle;
+      var _computedStyle = target.computedStyle;
       var parentComputedStyle = (target.parent || target).computedStyle;
       var diff = 0;
 
@@ -7053,7 +7077,7 @@
 
           if (k === 'fontSize') {
             _v13 = n.value * parentComputedStyle[k] * 0.01;
-          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+          } else if (k === 'flexBasis' && _computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
             _v13 = n.value * parentComputedStyle.width * 0.01;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
             _v13 = n.value * parentComputedStyle.height * 0.01;
@@ -7065,7 +7089,7 @@
 
           if (k === 'fontSize') {
             _v14 = n.value * 100 / parentComputedStyle[k];
-          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+          } else if (k === 'flexBasis' && _computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
             _v14 = n.value * 100 / parentComputedStyle.width;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
             _v14 = n.value * 100 / parentComputedStyle.height;
@@ -7075,9 +7099,9 @@
         } // lineHeight奇怪的单位变化
         else if (k === 'lineHeight') {
             if (p.unit === PX$3 && n.unit === NUMBER$2) {
-              diff = n.value * computedStyle.fontSize - p.value;
+              diff = n.value * _computedStyle.fontSize - p.value;
             } else if (p.unit === NUMBER$2 && n.unit === PX$3) {
-              diff = n.value / computedStyle.fontSize - p.value;
+              diff = n.value / _computedStyle.fontSize - p.value;
             }
           } // 兜底NaN非法
 
@@ -7101,9 +7125,9 @@
 
         res.v = [];
 
-        for (var _i6 = 0, _len3 = Math.min(p.length, n.length); _i6 < _len3; _i6++) {
-          var _pv = p[_i6];
-          var _nv = n[_i6];
+        for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
+          var _pv = p[_i7];
+          var _nv = n[_i7];
 
           if (isNil$4(_pv) || isNil$4(_nv)) {
             res.v.push(_nv);
@@ -7260,6 +7284,10 @@
           }
 
           st[0][1] += v * percent;
+        } else if (RADIUS_HASH.hasOwnProperty(k)) {
+          for (var _i8 = 0; _i8 < 2; _i8++) {
+            st[_i8].value += v[_i8] * percent;
+          }
         } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
           if (v !== 0) {
             st.value += v * percent;
@@ -7274,9 +7302,9 @@
           }
         } else if (GRADIENT_HASH.hasOwnProperty(k)) {
           if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-            for (var _i7 = 0, len = Math.min(st.v.length, v.length); _i7 < len; _i7++) {
-              var a = st.v[_i7];
-              var b = v[_i7];
+            for (var _i9 = 0, len = Math.min(st.v.length, v.length); _i9 < len; _i9++) {
+              var a = st.v[_i9];
+              var b = v[_i9];
               a[0][0] += b[0][0] * percent;
               a[0][1] += b[0][1] * percent;
               a[0][2] += b[0][2] * percent;
@@ -7313,14 +7341,14 @@
             var _st = style[k];
 
             if (k === 'points' || k === 'controls') {
-              for (var _i8 = 0, _len4 = Math.min(_st.length, v.length); _i8 < _len4; _i8++) {
-                if (isNil$4(_st[_i8]) || !_st[_i8].length) {
+              for (var _i10 = 0, _len4 = Math.min(_st.length, v.length); _i10 < _len4; _i10++) {
+                if (isNil$4(_st[_i10]) || !_st[_i10].length) {
                   continue;
                 }
 
-                for (var j = 0, len2 = Math.min(_st[_i8].length, v[_i8].length); j < len2; j++) {
-                  if (!isNil$4(_st[_i8][j]) && !isNil$4(v[_i8][j])) {
-                    _st[_i8][j] += v[_i8][j] * percent;
+                for (var j = 0, len2 = Math.min(_st[_i10].length, v[_i10].length); j < len2; j++) {
+                  if (!isNil$4(_st[_i10][j]) && !isNil$4(v[_i10][j])) {
+                    _st[_i10][j] += v[_i10][j] * percent;
                   }
                 }
               }
@@ -7509,12 +7537,12 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i9 = 1, _len5 = list.length; _i9 < _len5; _i9++) {
-          var start = list[_i9]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i11 = 1, _len5 = list.length; _i11 < _len5; _i11++) {
+          var start = list[_i11]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i9 + 1;
+            var j = _i11 + 1;
 
             for (; j < _len5; j++) {
               end = list[j];
@@ -7524,16 +7552,16 @@
               }
             }
 
-            var num = j - _i9 + 1;
-            start = list[_i9 - 1];
+            var num = j - _i11 + 1;
+            start = list[_i11 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i9; k < j; k++) {
+            for (var k = _i11; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i9);
+              item.offset = start.offset + per * (k + 1 - _i11);
             }
 
-            _i9 = j;
+            _i11 = j;
           }
         }
 
@@ -7550,8 +7578,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i10 = 1; _i10 < length; _i10++) {
-          var next = frames[_i10];
+        for (var _i12 = 1; _i12 < length; _i12++) {
+          var next = frames[_i12];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -7563,8 +7591,8 @@
         });
         prev = framesR[0];
 
-        for (var _i11 = 1; _i11 < length; _i11++) {
-          var _next = framesR[_i11];
+        for (var _i13 = 1; _i13 < length; _i13++) {
+          var _next = framesR[_i13];
           prev = calFrame(prev, _next, keys, target);
         }
 

@@ -201,7 +201,7 @@ function normalize(style, reset = []) {
   temp = style.borderRadius;
   if(temp) {
     // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
-    temp = temp.split('/');
+    temp = temp.toString().split('/');
     if(temp.length === 1) {
       temp[1] = temp[0];
     }

@@ -2398,7 +2398,8 @@
     var _currentStyle = currentStyle,
         fontStyle = _currentStyle.fontStyle,
         fontWeight = _currentStyle.fontWeight,
-        color = _currentStyle.color;
+        color = _currentStyle.color,
+        visibility = _currentStyle.visibility;
 
     if (fontStyle.unit === INHERIT) {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -2418,8 +2419,13 @@
       computedStyle.color = color.value;
     }
 
-    ['visibility', // render()处理继承导致的父hidden子也hidden
-    'opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage', 'filter'].forEach(function (k) {
+    if (visibility === 'inherit') {
+      computedStyle.visibility = isRoot ? 'visible' : parentComputedStyle.visibility;
+    } else {
+      computedStyle.visibility = visibility;
+    }
+
+    ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage', 'filter'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
     ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -2985,7 +2991,7 @@
     alignItems: 'stretch',
     textAlign: 'inherit',
     transformOrigin: 'center',
-    visibility: 'visible',
+    visibility: 'inherit',
     opacity: 1,
     zIndex: 0,
     transform: null,
@@ -3125,7 +3131,8 @@
         tx2 = _target[2],
         ty2 = _target[3],
         tx3 = _target[4],
-        ty3 = _target[5];
+        ty3 = _target[5]; // 第0步，将源三角第1个a点移到原点
+
 
     var m = matrix.identity();
     m[12] = -sx1;
@@ -3137,7 +3144,7 @@
     if (theta !== 0) {
       t = rotate(-theta);
       m = matrix.multiply(t, m);
-    } // 第2步，以第1条边AB为基准，缩放x至目标ab相同长度
+    } // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
 
 
     var ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
@@ -8964,12 +8971,11 @@
        * @param renderMode
        * @param ctx
        * @param defs
-       * @param isHidden visibility:hidden时标识所有子元素只计算不渲染
        */
 
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
+      value: function render(renderMode, ctx, defs) {
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
@@ -9129,7 +9135,7 @@
         backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
         computedStyle.backgroundSize = backgroundSize; // 隐藏不渲染
 
-        if (visibility === 'hidden' || isHidden) {
+        if (visibility === 'hidden') {
           computedStyle.visibility = 'hidden';
           return;
         } // 背景色垫底
@@ -9538,13 +9544,13 @@
       }
     }, {
       key: "__renderByMask",
-      value: function __renderByMask(renderMode, ctx, defs, isHidden) {
+      value: function __renderByMask(renderMode, ctx, defs) {
         var prev = this.prev,
             root = this.root;
-        var hasMask = prev && prev.isMask; // visibility:hidden时无视mask
+        var hasMask = prev && prev.isMask;
 
-        if (!hasMask || isHidden) {
-          this.render(renderMode, ctx, defs, isHidden);
+        if (!hasMask) {
+          this.render(renderMode, ctx, defs);
           return;
         }
 
@@ -11339,8 +11345,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden); // 不显示的为了diff也要根据type生成
+      value: function render(renderMode, ctx, defs) {
+        _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs); // 不显示的为了diff也要根据type生成
 
 
         if (renderMode === mode.SVG) {
@@ -11355,29 +11361,22 @@
 
         if (isDestroyed || display === 'none') {
           return;
-        }
-
-        if (!isHidden && visibility === 'hidden') {
-          isHidden = true;
         } // 先渲染过滤mask
 
 
-        if (!isHidden) {
-          children.forEach(function (item) {
-            if (item.isMask) {
-              item.__renderAsMask(renderMode, ctx, defs);
-            }
-          });
-        } // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-
+        children.forEach(function (item) {
+          if (item.isMask) {
+            item.__renderAsMask(renderMode, ctx, defs);
+          }
+        }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndex = this.zIndexChildren; // 再绘制relative和absolute
 
         zIndex.forEach(function (item) {
-          item.__renderByMask(renderMode, ctx, defs, isHidden);
+          item.__renderByMask(renderMode, ctx, defs);
         });
 
-        if (!isHidden && renderMode === mode.SVG) {
+        if (renderMode === mode.SVG) {
           this.virtualDom.children = zIndex.map(function (item) {
             return item.virtualDom;
           });
@@ -11592,10 +11591,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
+      value: function render(renderMode, ctx, defs) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden);
+        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs);
 
         var x = this.sx,
             y = this.sy,
@@ -13147,7 +13146,7 @@
       }
     }, {
       key: "__preRender",
-      value: function __preRender(renderMode, ctx, defs, isHidden) {
+      value: function __preRender(renderMode, ctx, defs) {
         var x = this.sx,
             y = this.sy,
             width = this.width,
@@ -13227,8 +13226,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden);
+      value: function render(renderMode, ctx, defs) {
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
 
         if (renderMode === mode.SVG) {
           this.virtualDom.type = 'geom';
@@ -13246,7 +13245,7 @@
           };
         }
 
-        return this.__preRender(renderMode, ctx, defs, isHidden);
+        return this.__preRender(renderMode, ctx, defs);
       }
     }, {
       key: "__renderAsMask",
@@ -13481,8 +13480,8 @@
 
     _createClass(Line, [{
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             display = _get$call.display,
             visibility = _get$call.visibility,
@@ -13679,8 +13678,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -13931,8 +13930,8 @@
 
     _createClass(Sector, [{
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -14131,8 +14130,8 @@
 
     _createClass(Rect, [{
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             originX = _get$call.originX,
             originY = _get$call.originY,
@@ -14265,8 +14264,8 @@
 
     _createClass(Circle, [{
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,
@@ -14376,8 +14375,8 @@
 
     _createClass(Ellipse, [{
       key: "render",
-      value: function render(renderMode, ctx, defs, isHidden) {
-        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs, isHidden),
+      value: function render(renderMode, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cx = _get$call.cx,
             cy = _get$call.cy,

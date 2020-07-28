@@ -19,6 +19,7 @@ function rotate(theta) {
 function transform(source, target) {
   let [sx1, sy1, sx2, sy2, sx3, sy3] = source;
   let [tx1, ty1, tx2, ty2, tx3, ty3] = target;
+  // 第0步，将源三角第1个a点移到原点
   let m = matrix.identity();
   m[12] = -sx1;
   m[13] = -sy1;
@@ -29,7 +30,7 @@ function transform(source, target) {
     t = rotate(-theta);
     m = matrix.multiply(t, m);
   }
-  // 第2步，以第1条边AB为基准，缩放x至目标ab相同长度
+  // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
   let ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
   let lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
   if(ls !== lt) {

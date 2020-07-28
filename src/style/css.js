@@ -913,7 +913,7 @@ function repaint(node, isRoot, currentStyle) {
   }
   let computedStyle = node.computedStyle;
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-  let { fontStyle, fontWeight, color } = currentStyle;
+  let { fontStyle, fontWeight, color, visibility } = currentStyle;
   if(fontStyle.unit === INHERIT) {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
@@ -932,8 +932,13 @@ function repaint(node, isRoot, currentStyle) {
   else {
     computedStyle.color = color.value;
   }
+  if(visibility === 'inherit') {
+    computedStyle.visibility = isRoot ? 'visible' : parentComputedStyle.visibility;
+  }
+  else {
+    computedStyle.visibility = visibility;
+  }
   [
-    'visibility', // render()处理继承导致的父hidden子也hidden
     'opacity',
     'zIndex',
     'borderTopStyle',

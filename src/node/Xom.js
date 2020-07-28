@@ -494,9 +494,8 @@ class Xom extends Node {
    * @param renderMode
    * @param ctx
    * @param defs
-   * @param isHidden visibility:hidden时标识所有子元素只计算不渲染
    */
-  render(renderMode, ctx, defs, isHidden) {
+  render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         bb: [],
@@ -659,7 +658,7 @@ class Xom extends Node {
     backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
     computedStyle.backgroundSize = backgroundSize;
     // 隐藏不渲染
-    if(visibility === 'hidden' || isHidden) {
+    if(visibility === 'hidden') {
       computedStyle.visibility = 'hidden';
       return;
     }
@@ -1046,12 +1045,11 @@ class Xom extends Node {
     }
   }
 
-  __renderByMask(renderMode, ctx, defs, isHidden) {
+  __renderByMask(renderMode, ctx, defs) {
     let { prev, root } = this;
     let hasMask = prev && prev.isMask;
-    // visibility:hidden时无视mask
-    if(!hasMask || isHidden) {
-      this.render(renderMode, ctx, defs, isHidden);
+    if(!hasMask) {
+      this.render(renderMode, ctx, defs);
       return;
     }
     if(renderMode === mode.CANVAS) {

@@ -14,7 +14,7 @@ class Circle extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs, isHidden) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       cx,
@@ -29,7 +29,7 @@ class Circle extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs, isHidden);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }

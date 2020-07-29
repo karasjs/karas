@@ -47,7 +47,7 @@ class Polyline extends Geom {
     return [pts, cls, hasControl];
   }
 
-  render(renderMode, ctx, defs, isHidden) {
+  render(renderMode, ctx, defs) {
     let {
       isDestroyed,
       originX,
@@ -62,7 +62,7 @@ class Polyline extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs, isHidden);
+    } = super.render(renderMode, ctx, defs);
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }

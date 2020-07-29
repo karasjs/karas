@@ -7,7 +7,7 @@ function identity() {
   return m;
 }
 
-// 矩阵a*b
+// 矩阵a*b，固定4*4
 function multiply(a, b) {
   let res = [];
   for(let i = 0; i < 4; i++) {
@@ -30,6 +30,17 @@ function t43(m) {
   ];
 }
 
+function t34(m3) {
+  let m = identity();
+  m[0] = m3[0];
+  m[1] = m3[1];
+  m[4] = m3[2];
+  m[5] = m3[3];
+  m[12] = m3[4];
+  m[13] = m3[5];
+  return m;
+}
+
 function calPoint(point, m) {
   let [x, y] = point;
   return [
@@ -42,5 +53,6 @@ export default {
   identity,
   multiply,
   t43,
+  t34,
   calPoint,
 };

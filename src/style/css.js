@@ -200,10 +200,33 @@ function normalize(style, reset = []) {
   }
   temp = style.borderRadius;
   if(temp) {
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach(k => {
+    // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
+    temp = temp.toString().split('/');
+    if(temp.length === 1) {
+      temp[1] = temp[0];
+    }
+    for(let i = 0; i < 2; i++) {
+      let item = temp[i].toString().split(/\s+/);
+      if(item.length === 0) {
+        temp[i] = [0, 0, 0, 0];
+      }
+      else if(item.length === 1) {
+        temp[i] = [item[0], item[0], item[0], item[0]];
+      }
+      else if(item.length === 2) {
+        temp[i] = [item[0], item[1], item[0], item[1]];
+      }
+      else if(item.length === 3) {
+        temp[i] = [item[0], item[1], item[2], item[1]];
+      }
+      else {
+        temp[i] = item.slice(0, 4);
+      }
+    }
+    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach((k, i) => {
       k = 'border' + k + 'Radius';
       if(isNil(style[k])) {
-        style[k] = temp;
+        style[k] = temp[0][i] + ' ' + temp[1][i];
       }
     });
     delete style.borderRadius;
@@ -913,7 +936,7 @@ function repaint(node, isRoot, currentStyle) {
   }
   let computedStyle = node.computedStyle;
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-  let { fontStyle, fontWeight, color } = currentStyle;
+  let { fontStyle, fontWeight, color, visibility } = currentStyle;
   if(fontStyle.unit === INHERIT) {
     computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
   }
@@ -932,8 +955,13 @@ function repaint(node, isRoot, currentStyle) {
   else {
     computedStyle.color = color.value;
   }
+  if(visibility === 'inherit') {
+    computedStyle.visibility = isRoot ? 'visible' : parentComputedStyle.visibility;
+  }
+  else {
+    computedStyle.visibility = visibility;
+  }
   [
-    'visibility', // render()处理继承导致的父hidden子也hidden
     'opacity',
     'zIndex',
     'borderTopStyle',

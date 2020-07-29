@@ -53,7 +53,7 @@ const DOM = {
   alignItems: 'stretch',
   textAlign: 'inherit',
   transformOrigin: 'center',
-  visibility: 'visible',
+  visibility: 'inherit',
   opacity: 1,
   zIndex: 0,
   transform: null,

@@ -1,9 +1,25 @@
 import matrix from './matrix';
 import geom from './geom';
 
-// 一条边相对于自己开始点的角度
+// 一条边相对于自己开始点的x向量角度，即从x到此边旋转，0~180和-180~0，需要判断象限
 function calDeg(x1, y1, x2, y2) {
-  return Math.atan((y2 - y1) / (x2 - x1));
+  let dx = x2 - x1;
+  let dy = y2 - y1;
+  let atan = Math.atan(Math.abs(dy) / Math.abs(dx));
+  // 2象限
+  if(dx < 0 && dy >= 0) {
+    return Math.PI - atan;
+  }
+  // 3象限
+  if(dx < 0 && dy < 0) {
+    return atan - Math.PI;
+  }
+  // 1象限
+  if(dx >= 0 && dy >= 0) {
+    return atan;
+  }
+  // 4象限，顺时针正好
+  return -atan;
 }
 
 function rotate(theta) {
@@ -14,6 +30,108 @@ function rotate(theta) {
   t[1] = sin;
   t[4] = -sin;
   return t;
+}
+
+/**
+ * 两点距离
+ * @param x1
+ * @param y1
+ * @param x2
+ * @param y2
+ */
+function distance(x1, y1, x2, y2) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+/**
+ * 确保3个点中，a点在三角形左上方，b/c在右方，同时ab到ac要顺时针旋转
+ * @param points
+ */
+function pointIndex(points) {
+  let [x1, y1, x2, y2, x3, y3] = points;
+  let index = [0, 1, 2];
+  // 将a点放入最左
+  if(x2 < x1 && x2 < x3) {
+    [x1, y1, x2, y2] = [x2, y2, x1, y1];
+    index[0] = 1;
+    index[1] = 0;
+  }
+  else if(x3 < x2 && x3 < x1) {
+    [x1, y1, x3, y3] = [x3, y3, x1, y1];
+    index[0] = 2;
+    index[2] = 0;
+  }
+  // 有可能出现2个并列的情况，判断取上面那个
+  if(x1 === x2) {
+    if(y1 > y2) {
+      [x1, y1, x2, y2] = [x2, y2, x1, y1];
+      let t = index[0];
+      index[0] = index[1];
+      index[1] = t;
+    }
+  }
+  else if(x1 === x3) {
+    if(y1 > y3) {
+      [x1, y1, x3, y3] = [x3, y3, x1, y1];
+      let t = index[0];
+      index[0] = index[2];
+      index[2] = t;
+    }
+  }
+  // ab到ac要顺时针旋转，即2个向量夹角为正，用向量叉乘判断正负
+  let cross = (x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1);
+  if(cross < 0) {
+    [x2, y2, x3, y3] = [x3, y3, x2, y2];
+    let t = index[1];
+    index[1] = index[2];
+    index[2] = t;
+  }
+  return [x1, y1, x2, y2, x3, y3, index];
+}
+
+/**
+ * 第2个点根据第一个点的交换顺序交换
+ * @param points
+ * @param index
+ * @returns {[]}
+ */
+function pointByIndex(points, index) {
+  let res = [];
+  for(let i = 0, len = index.length; i < len; i++) {
+    let j = index[i];
+    res.push(points[j * 2]);
+    res.push(points[j * 2 + 1]);
+  }
+  return res;
+}
+
+/**
+ * 确保3个点中，a点在三角形左上方，b/c在右方，同时ab到ac要顺时针旋转
+ * @param source 源3个点
+ * @param target 目标3个点
+ * @returns 交换顺序后的点坐标
+ */
+function exchangeOrder(source, target) {
+  let [sx1, sy1, sx2, sy2, sx3, sy3, index] = pointIndex(source);
+  let [tx1, ty1, tx2, ty2, tx3, ty3] = pointByIndex(target, index);
+  return [
+    [sx1, sy1, sx2, sy2, sx3, sy3],
+    [tx1, ty1, tx2, ty2, tx3, ty3]
+  ];
+}
+
+/**
+ * 存在一种情况，变换结果使得三角形镜像相反了，即顶点a越过bc线，判断是否溢出
+ * @param source
+ * @param target
+ * @returns {boolean}是否溢出
+ */
+function isOverflow(source, target) {
+  let [sx1, sy1, sx2, sy2, sx3, sy3] = source;
+  let [tx1, ty1, tx2, ty2, tx3, ty3] = target;
+  let cross1 = (sx2 - sx1) * (sy3 - sy1) - (sx3 - sx1) * (sy2 - sy1);
+  let cross2 = (tx2 - tx1) * (ty3 - ty1) - (tx3 - tx1) * (ty2 - ty1);
+  return cross1 > 0 && cross2 < 0 || cross1 < 0 && cross2 > 0;
 }
 
 function transform(source, target) {
@@ -31,8 +149,8 @@ function transform(source, target) {
     m = matrix.multiply(t, m);
   }
   // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
-  let ls = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
-  let lt = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
+  let ls = distance(sx1, sy1, sx2, sy2);
+  let lt = distance(tx1, ty1, tx2, ty2);
   if(ls !== lt) {
     let scale = lt / ls;
     t = matrix.identity();
@@ -44,19 +162,17 @@ function transform(source, target) {
   n[12] = -tx1;
   n[13] = -ty1;
   theta = calDeg(tx1, ty1, tx2, ty2);
-  // 记录下这个旋转角度，后面源三角形要旋转
-  let alpha = -theta;
+  // 记录下这个旋转角度，后面源三角形要反向旋转
+  let alpha = theta;
   if(theta !== 0) {
     t = rotate(-theta);
     n = matrix.multiply(t, n);
   }
   n = matrix.t43(n);
   // 目标三角反向旋转至x轴后的坐标
-  let by1 = matrix.calPoint([tx1, ty1], n)[1];
-  let by3 = matrix.calPoint([tx3, ty3], n)[1];
   // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
-  ls = matrix.calPoint([sx3, sy3], matrix.t43(m))[1];
-  lt = by3 - by1;
+  ls = Math.abs(matrix.calPoint([sx3, sy3], matrix.t43(m))[1]);
+  lt = Math.abs(matrix.calPoint([tx3, ty3], n)[1]);
   // 缩放y
   if(ls !== lt) {
     let scale = lt / ls;
@@ -69,12 +185,12 @@ function transform(source, target) {
   let [ax1, ay1] = matrix.calPoint([sx1, sy1], n);
   let [ax2, ay2] = matrix.calPoint([sx2, sy2], n);
   let [ax3, ay3] = matrix.calPoint([sx3, sy3], n);
-  let ab = Math.sqrt(Math.pow(ax2 - ax1, 2) + Math.pow(ay2 - ay1, 2));
-  let ac = Math.sqrt(Math.pow(ax3 - ax1, 2) + Math.pow(ay3 - ay1, 2));
-  let bc = Math.sqrt(Math.pow(ax2 - ax3, 2) + Math.pow(ay2 - ay3, 2));
-  let AB = Math.sqrt(Math.pow(tx2 - tx1, 2) + Math.pow(ty2 - ty1, 2));
-  let AC = Math.sqrt(Math.pow(tx3 - tx1, 2) + Math.pow(ty3 - ty1, 2));
-  let BC = Math.sqrt(Math.pow(tx2 - tx3, 2) + Math.pow(ty2 - ty3, 2));
+  let ab = distance(ax1, ay1, ax2, ay2);
+  let ac = distance(ax1, ay1, ax3, ay3);
+  let bc = distance(ax3, ay3, ax2, ay2);
+  let AB = distance(tx1, ty1, tx2, ty2);
+  let AC = distance(tx1, ty1, tx3, ty3);
+  let BC = distance(tx3, ty3, tx2, ty2);
   let a = geom.angleBySide(bc, ab, ac);
   let A = geom.angleBySide(BC, AB, AC);
   // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
@@ -85,7 +201,7 @@ function transform(source, target) {
   }
   // 第5步，再次旋转，角度为目标旋转到x轴的负值
   if(alpha !== 0) {
-    t = rotate(-alpha);
+    t = rotate(alpha);
     m = matrix.multiply(t, m);
   }
   // 第6步，移动第一个点的差值
@@ -97,5 +213,7 @@ function transform(source, target) {
 }
 
 export default {
+  exchangeOrder,
+  isOverflow,
   transform,
 };

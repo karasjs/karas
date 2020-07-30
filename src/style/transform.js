@@ -8,20 +8,20 @@ const { d2r, transformPoint } = geom;
 
 function calSingle(t, k, v) {
   if(k === 'translateX') {
-    t[12] = v;
+    t[4] = v;
   }
   else if(k === 'translateY') {
-    t[13] = v;
+    t[5] = v;
   }
   else if(k === 'scaleX') {
     t[0] = v;
   }
   else if(k === 'scaleY') {
-    t[5] = v;
+    t[3] = v;
   }
   else if(k === 'skewX') {
     v = d2r(v);
-    t[4] = Math.tan(v);
+    t[2] = Math.tan(v);
   }
   else if(k === 'skewY') {
     v = d2r(v);
@@ -31,17 +31,17 @@ function calSingle(t, k, v) {
     v = d2r(v);
     let sin = Math.sin(v);
     let cos = Math.cos(v);
-    t[0] = t[5] = cos;
+    t[0] = t[3] = cos;
     t[1] = sin;
-    t[4] = -sin;
+    t[2] = -sin;
   }
   else if(k === 'matrix') {
     t[0] = v[0];
     t[1] = v[1];
-    t[4] = v[2];
-    t[5] = v[3];
-    t[12] = v[4];
-    t[13] = v[5];
+    t[2] = v[2];
+    t[3] = v[3];
+    t[4] = v[4];
+    t[5] = v[5];
   }
 }
 
@@ -54,7 +54,7 @@ function calMatrix(transform, ow, oh) {
     calSingle(t, k, v);
     m = matrix.multiply(m, t);
   });
-  return matrix.t43(m);
+  return m;
 }
 
 function calMatrixByOrigin(m, transformOrigin) {
@@ -63,14 +63,14 @@ function calMatrixByOrigin(m, transformOrigin) {
     return m;
   }
   let t = matrix.identity();
-  t[12] = ox;
-  t[13] = oy;
-  let res = matrix.multiply(t, matrix.t34(m));
+  t[4] = ox;
+  t[5] = oy;
+  let res = matrix.multiply(t, m);
   let t2 = matrix.identity();
-  t2[12] = -ox;
-  t2[13] = -oy;
+  t2[4] = -ox;
+  t2[5] = -oy;
   res = matrix.multiply(res, t2);
-  return matrix.t43(res);
+  return res;
 }
 
 function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
@@ -136,18 +136,10 @@ function calOrigin(transformOrigin, w, h) {
   return tfo;
 }
 
-function mergeMatrix(a, b) {
-  let m1 = matrix.t34(a);
-  let m2 = matrix.t34(b);
-  let m = matrix.multiply(m1, m2);
-  return matrix.t43(m);
-}
-
 export default {
   calMatrix,
   calOrigin,
   calMatrixByOrigin,
   calMatrixWithOrigin,
   pointInQuadrilateral,
-  mergeMatrix,
 };

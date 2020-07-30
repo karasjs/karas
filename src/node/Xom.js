@@ -13,6 +13,7 @@ import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 import draw from '../util/draw';
+import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
@@ -26,16 +27,6 @@ function renderBorder(renderMode, points, color, ctx, xom) {
     points.forEach(point => {
       genCanvasPolygon(ctx, point);
     });
-    // points.forEach(point => {
-    //   ctx.beginPath();
-    //   ctx.fillStyle = color;
-    //   ctx.moveTo(point[0], point[1]);
-    //   for(let i = 2, len = point.length; i < len; i += 2) {
-    //     ctx.lineTo(point[i], point[i + 1]);
-    //   }
-    //   ctx.fill();
-    //   ctx.closePath();
-    // });
   }
   else if(renderMode === mode.SVG) {
     let s = '';
@@ -50,22 +41,6 @@ function renderBorder(renderMode, points, color, ctx, xom) {
         ['fill', color]
       ],
     });
-    // let s = '';
-    // points.forEach(point => {
-    //   console.log(point);
-    //   s += `M ${point[0]} ${point[1]}`;
-    //   for(let i = 2, len = point.length; i < len; i += 2) {
-    //     s += `L ${point[i]} ${point[i + 1]} `;
-    //   }
-    // });
-    // xom.virtualDom.bb.push({
-    //   type: 'item',
-    //   tagName: 'path',
-    //   props: [
-    //     ['d', s],
-    //     ['fill', color],
-    //   ],
-    // });
   }
 }
 
@@ -114,9 +89,13 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
 
 function calBorderRadius(w, h, currentStyle, computedStyle) {
   let ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+  let noRadius = true;
   ks.forEach((k, i) => {
     ks[i] = k = `border${k}Radius`;
     computedStyle[k] = currentStyle[k].map((item, i) => {
+      if(item.value > 0) {
+        noRadius = false;
+      }
       if(item.unit === PX) {
         return item.value;
       }
@@ -125,6 +104,10 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
       }
     });
   });
+  // 优化提前跳出
+  if(noRadius) {
+    return;
+  }
   // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
   ks.forEach((k, i) => {
     let j = i % 2 === 0 ? 0 : 1;
@@ -146,7 +129,6 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
         next[j] = target - prev[j];
       }
     }
-    // console.log(k, computedStyle[k]);
   });
 }
 
@@ -636,7 +618,7 @@ class Xom extends Node {
     // 变换对事件影响，canvas要设置渲染
     if(parent) {
       if(parent.matrixEvent) {
-        matrix = tf.mergeMatrix(parent.matrixEvent, matrix);
+        matrix = mx.multiply(parent.matrixEvent, matrix);
         // break;
       }
       // parent = parent.parent;

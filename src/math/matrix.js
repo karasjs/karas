@@ -1,44 +1,18 @@
 // 生成4*4单位矩阵
 function identity() {
-  const m = [];
-  for(let i = 0; i < 16; i++) {
-    m.push(i % 5 === 0 ? 1 : 0);
-  }
-  return m;
+  return [1, 0, 0, 1, 0, 0];
 }
 
-// 矩阵a*b，固定4*4
+// 矩阵a*b，固定两个matrix都是长度6
 function multiply(a, b) {
-  let res = [];
-  for(let i = 0; i < 4; i++) {
-    const row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
-    for(let j = 0; j < 4; j++) {
-      let k = j * 4;
-      let col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-      let n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-      res[i + k] = n;
-    }
-  }
-  return res;
-}
-
-function t43(m) {
   return [
-    m[0], m[1],
-    m[4], m[5],
-    m[12], m[13],
+    a[0] * b[0] + a[2] * b[1],
+    a[1] * b[0] + a[3] * b[1],
+    a[0] * b[2] + a[2] * b[3],
+    a[1] * b[2] + a[3] * b[3],
+    a[0] * b[4] + a[2] * b[5] + a[4],
+    a[1] * b[4] + a[3] * b[5] + a[5]
   ];
-}
-
-function t34(m3) {
-  let m = identity();
-  m[0] = m3[0];
-  m[1] = m3[1];
-  m[4] = m3[2];
-  m[5] = m3[3];
-  m[12] = m3[4];
-  m[13] = m3[5];
-  return m;
 }
 
 function calPoint(point, m) {
@@ -52,7 +26,5 @@ function calPoint(point, m) {
 export default {
   identity,
   multiply,
-  t43,
-  t34,
   calPoint,
 };

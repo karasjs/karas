@@ -3098,46 +3098,12 @@
 
   // 生成4*4单位矩阵
   function identity() {
-    var m = [];
-
-    for (var i = 0; i < 16; i++) {
-      m.push(i % 5 === 0 ? 1 : 0);
-    }
-
-    return m;
-  } // 矩阵a*b，固定4*4
+    return [1, 0, 0, 1, 0, 0];
+  } // 矩阵a*b，固定两个matrix都是长度6
 
 
   function multiply(a, b) {
-    var res = [];
-
-    for (var i = 0; i < 4; i++) {
-      var row = [a[i], a[i + 4], a[i + 8], a[i + 12]];
-
-      for (var j = 0; j < 4; j++) {
-        var k = j * 4;
-        var col = [b[k], b[k + 1], b[k + 2], b[k + 3]];
-        var n = row[0] * col[0] + row[1] * col[1] + row[2] * col[2] + row[3] * col[3];
-        res[i + k] = n;
-      }
-    }
-
-    return res;
-  }
-
-  function t43(m) {
-    return [m[0], m[1], m[4], m[5], m[12], m[13]];
-  }
-
-  function t34(m3) {
-    var m = identity();
-    m[0] = m3[0];
-    m[1] = m3[1];
-    m[4] = m3[2];
-    m[5] = m3[3];
-    m[12] = m3[4];
-    m[13] = m3[5];
-    return m;
+    return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
   }
 
   function calPoint(point, m) {
@@ -3151,8 +3117,6 @@
   var matrix = {
     identity: identity,
     multiply: multiply,
-    t43: t43,
-    t34: t34,
     calPoint: calPoint
   };
 
@@ -3183,9 +3147,9 @@
     var sin = Math.sin(theta);
     var cos = Math.cos(theta);
     var t = matrix.identity();
-    t[0] = t[5] = cos;
+    t[0] = t[3] = cos;
     t[1] = sin;
-    t[4] = -sin;
+    t[2] = -sin;
     return t;
   }
   /**
@@ -3362,8 +3326,8 @@
 
 
     var m = matrix.identity();
-    m[12] = -sx1;
-    m[13] = -sy1;
+    m[4] = -sx1;
+    m[5] = -sy1;
     var t; // 第1步，以第1条边ab为基准，将其贴合x轴上，为后续倾斜不干扰做准备
 
     var theta = calDeg(sx1, sy1, sx2, sy2);
@@ -3386,8 +3350,8 @@
 
 
     var n = matrix.identity();
-    n[12] = -tx1;
-    n[13] = -ty1;
+    n[4] = -tx1;
+    n[5] = -ty1;
     theta = calDeg(tx1, ty1, tx2, ty2); // 记录下这个旋转角度，后面源三角形要反向旋转
 
     var alpha = theta;
@@ -3395,24 +3359,23 @@
     if (theta !== 0) {
       t = rotate(-theta);
       n = matrix.multiply(t, n);
-    }
-
-    n = matrix.t43(n); // 目标三角反向旋转至x轴后的坐标
+    } // 目标三角反向旋转至x轴后的坐标
     // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
 
-    ls = Math.abs(matrix.calPoint([sx3, sy3], matrix.t43(m))[1]);
+
+    ls = Math.abs(matrix.calPoint([sx3, sy3], m)[1]);
     lt = Math.abs(matrix.calPoint([tx3, ty3], n)[1]); // 缩放y
 
     if (ls !== lt) {
       var _scale = lt / ls;
 
       t = matrix.identity();
-      t[5] = _scale;
+      t[3] = _scale;
       m = matrix.multiply(t, m);
     } // 第4步，x轴倾斜，用余弦定理求目前a和A的夹角
 
 
-    n = matrix.t43(m);
+    n = m;
 
     var _matrix$calPoint = matrix.calPoint([sx1, sy1], n),
         _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
@@ -3440,7 +3403,7 @@
 
     if (a !== A) {
       t = matrix.identity();
-      t[4] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
+      t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
       m = matrix.multiply(t, m);
     } // 第5步，再次旋转，角度为目标旋转到x轴的负值
 
@@ -3452,10 +3415,10 @@
 
 
     t = matrix.identity();
-    t[12] = tx1;
-    t[13] = ty1;
+    t[4] = tx1;
+    t[5] = ty1;
     m = matrix.multiply(t, m);
-    return matrix.t43(m);
+    return m;
   }
 
   var tar = {
@@ -3479,16 +3442,16 @@
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
-      t[12] = v;
+      t[4] = v;
     } else if (k === 'translateY') {
-      t[13] = v;
+      t[5] = v;
     } else if (k === 'scaleX') {
       t[0] = v;
     } else if (k === 'scaleY') {
-      t[5] = v;
+      t[3] = v;
     } else if (k === 'skewX') {
       v = d2r$1(v);
-      t[4] = Math.tan(v);
+      t[2] = Math.tan(v);
     } else if (k === 'skewY') {
       v = d2r$1(v);
       t[1] = Math.tan(v);
@@ -3496,16 +3459,16 @@
       v = d2r$1(v);
       var sin = Math.sin(v);
       var cos = Math.cos(v);
-      t[0] = t[5] = cos;
+      t[0] = t[3] = cos;
       t[1] = sin;
-      t[4] = -sin;
+      t[2] = -sin;
     } else if (k === 'matrix') {
       t[0] = v[0];
       t[1] = v[1];
-      t[4] = v[2];
-      t[5] = v[3];
-      t[12] = v[4];
-      t[13] = v[5];
+      t[2] = v[2];
+      t[3] = v[3];
+      t[4] = v[4];
+      t[5] = v[5];
     }
   }
 
@@ -3521,7 +3484,7 @@
       calSingle(t, k, v);
       m = matrix$1.multiply(m, t);
     });
-    return matrix$1.t43(m);
+    return m;
   }
 
   function calMatrixByOrigin(m, transformOrigin) {
@@ -3534,14 +3497,14 @@
     }
 
     var t = matrix$1.identity();
-    t[12] = ox;
-    t[13] = oy;
-    var res = matrix$1.multiply(t, matrix$1.t34(m));
+    t[4] = ox;
+    t[5] = oy;
+    var res = matrix$1.multiply(t, m);
     var t2 = matrix$1.identity();
-    t2[12] = -ox;
-    t2[13] = -oy;
+    t2[4] = -ox;
+    t2[5] = -oy;
     res = matrix$1.multiply(res, t2);
-    return matrix$1.t43(res);
+    return res;
   }
 
   function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
@@ -3625,20 +3588,12 @@
     return tfo;
   }
 
-  function mergeMatrix(a, b) {
-    var m1 = matrix$1.t34(a);
-    var m2 = matrix$1.t34(b);
-    var m = matrix$1.multiply(m1, m2);
-    return matrix$1.t43(m);
-  }
-
   var tf = {
     calMatrix: calMatrix,
     calOrigin: calOrigin,
     calMatrixByOrigin: calMatrixByOrigin,
     calMatrixWithOrigin: calMatrixWithOrigin,
-    pointInQuadrilateral: pointInQuadrilateral,
-    mergeMatrix: mergeMatrix
+    pointInQuadrilateral: pointInQuadrilateral
   };
 
   var H = geom.H;
@@ -8731,16 +8686,7 @@
       ctx.fillStyle = color;
       points.forEach(function (point) {
         genCanvasPolygon$1(ctx, point);
-      }); // points.forEach(point => {
-      //   ctx.beginPath();
-      //   ctx.fillStyle = color;
-      //   ctx.moveTo(point[0], point[1]);
-      //   for(let i = 2, len = point.length; i < len; i += 2) {
-      //     ctx.lineTo(point[i], point[i + 1]);
-      //   }
-      //   ctx.fill();
-      //   ctx.closePath();
-      // });
+      });
     } else if (renderMode === mode.SVG) {
       var s = '';
       points.forEach(function (point) {
@@ -8750,22 +8696,7 @@
         type: 'item',
         tagName: 'path',
         props: [['d', s], ['fill', color]]
-      }); // let s = '';
-      // points.forEach(point => {
-      //   console.log(point);
-      //   s += `M ${point[0]} ${point[1]}`;
-      //   for(let i = 2, len = point.length; i < len; i += 2) {
-      //     s += `L ${point[i]} ${point[i + 1]} `;
-      //   }
-      // });
-      // xom.virtualDom.bb.push({
-      //   type: 'item',
-      //   tagName: 'path',
-      //   props: [
-      //     ['d', s],
-      //     ['fill', color],
-      //   ],
-      // });
+      });
     }
   }
 
@@ -8804,16 +8735,26 @@
 
   function calBorderRadius(w, h, currentStyle, computedStyle) {
     var ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
+    var noRadius = true;
     ks.forEach(function (k, i) {
       ks[i] = k = "border".concat(k, "Radius");
       computedStyle[k] = currentStyle[k].map(function (item, i) {
+        if (item.value > 0) {
+          noRadius = false;
+        }
+
         if (item.unit === PX$4) {
           return item.value;
         } else {
           return item.value * (i ? h : w) * 0.01;
         }
       });
-    }); // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
+    }); // 优化提前跳出
+
+    if (noRadius) {
+      return;
+    } // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
+
 
     ks.forEach(function (k, i) {
       var j = i % 2 === 0 ? 0 : 1;
@@ -8832,8 +8773,7 @@
           } else if (next[j] > half) {
             next[j] = target - prev[j];
           }
-      } // console.log(k, computedStyle[k]);
-
+      }
     });
   }
 
@@ -9318,8 +9258,8 @@
         tfo[0] += x;
         tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
-        var matrix = [1, 0, 0, 1, 0, 0];
-        this.__matrix = computedStyle.matrix = matrix;
+        var matrix$1 = [1, 0, 0, 1, 0, 0];
+        this.__matrix = computedStyle.matrix = matrix$1;
 
         if (isDestroyed || display === 'none') {
           return;
@@ -9328,7 +9268,7 @@
         parent = this.parent; // transform相对于自身
 
         if (transform) {
-          matrix = tf.calMatrix(transform, outerWidth, outerHeight);
+          matrix$1 = tf.calMatrix(transform, outerWidth, outerHeight);
         } // 没有transform则看是否有扩展的css独立变换属性
         else {
             var temp = [];
@@ -9359,25 +9299,25 @@
             });
 
             if (temp.length) {
-              matrix = tf.calMatrix(temp, outerWidth, outerHeight);
+              matrix$1 = tf.calMatrix(temp, outerWidth, outerHeight);
             }
           }
 
-        this.__matrix = computedStyle.transform = matrix;
-        matrix = tf.calMatrixByOrigin(matrix, tfo);
-        var renderMatrix = matrix; // 变换对事件影响，canvas要设置渲染
+        this.__matrix = computedStyle.transform = matrix$1;
+        matrix$1 = tf.calMatrixByOrigin(matrix$1, tfo);
+        var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
 
         if (parent) {
           if (parent.matrixEvent) {
-            matrix = tf.mergeMatrix(parent.matrixEvent, matrix); // break;
+            matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1); // break;
           } // parent = parent.parent;
 
         }
 
-        this.__matrixEvent = matrix;
+        this.__matrixEvent = matrix$1;
 
         if (renderMode === mode.CANVAS) {
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix$1));
         } else if (renderMode === mode.SVG) {
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = "matrix(".concat(joinArr$1(renderMatrix, ','), ")");
@@ -9625,7 +9565,7 @@
                     c = inject.getCacheCanvas(_width2, _height2);
                     currentCtx = c.ctx; // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
 
-                    (_currentCtx = currentCtx).setTransform.apply(_currentCtx, _toConsumableArray(matrix));
+                    (_currentCtx = currentCtx).setTransform.apply(_currentCtx, _toConsumableArray(matrix$1));
                   } else {
                     currentCtx = ctx;
                   } // 先画不考虑repeat的中心声明的
@@ -9644,7 +9584,7 @@
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                     ctx.drawImage(c.canvas, 0, 0); // 绘完后变正常即可
 
-                    ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+                    ctx.setTransform.apply(ctx, _toConsumableArray(matrix$1));
                     currentCtx.globalCompositeOperation = 'source-over';
                     var _this$root2 = this.root,
                         _width3 = _this$root2.width,

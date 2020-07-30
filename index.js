@@ -825,6 +825,35 @@
     var theta = (Math.pow(b, 2) + Math.pow(c, 2) - Math.pow(a, 2)) / (2 * b * c);
     return Math.acos(theta);
   }
+  /**
+   * 两点距离
+   * @param x1
+   * @param y1
+   * @param x2
+   * @param y2
+   */
+
+
+  function pointsDistance(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  }
+  /**
+   * 三角形内心
+   * @param x1
+   * @param y1
+   * @param x2
+   * @param y2
+   * @param x3
+   * @param y3
+   */
+
+
+  function triangleIncentre(x1, y1, x2, y2, x3, y3) {
+    var a = pointsDistance(x2, y2, x3, y3);
+    var b = pointsDistance(x1, y1, x3, y3);
+    var c = pointsDistance(x1, y1, x2, y2);
+    return [(a * x1 + b * x2 + c * x3) / (a + b + c), (a * y1 + b * y2 + c * y3) / (a + b + c)];
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -843,7 +872,9 @@
       deg *= 0.5;
       return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
     },
-    angleBySide: angleBySide
+    angleBySide: angleBySide,
+    pointsDistance: pointsDistance,
+    triangleIncentre: triangleIncentre
   };
 
   var rgba2int$1 = util.rgba2int,
@@ -3158,18 +3189,6 @@
     return t;
   }
   /**
-   * 两点距离
-   * @param x1
-   * @param y1
-   * @param x2
-   * @param y2
-   */
-
-
-  function distance(x1, y1, x2, y2) {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  }
-  /**
    * 确保3个点中，a点在三角形左上方，b/c在右方，同时ab到ac要顺时针旋转
    * @param points
    */
@@ -3355,8 +3374,8 @@
     } // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
 
 
-    var ls = distance(sx1, sy1, sx2, sy2);
-    var lt = distance(tx1, ty1, tx2, ty2);
+    var ls = geom.pointsDistance(sx1, sy1, sx2, sy2);
+    var lt = geom.pointsDistance(tx1, ty1, tx2, ty2);
 
     if (ls !== lt) {
       var scale = lt / ls;
@@ -3410,12 +3429,12 @@
         ax3 = _matrix$calPoint6[0],
         ay3 = _matrix$calPoint6[1];
 
-    var ab = distance(ax1, ay1, ax2, ay2);
-    var ac = distance(ax1, ay1, ax3, ay3);
-    var bc = distance(ax3, ay3, ax2, ay2);
-    var AB = distance(tx1, ty1, tx2, ty2);
-    var AC = distance(tx1, ty1, tx3, ty3);
-    var BC = distance(tx3, ty3, tx2, ty2);
+    var ab = geom.pointsDistance(ax1, ay1, ax2, ay2);
+    var ac = geom.pointsDistance(ax1, ay1, ax3, ay3);
+    var bc = geom.pointsDistance(ax3, ay3, ax2, ay2);
+    var AB = geom.pointsDistance(tx1, ty1, tx2, ty2);
+    var AC = geom.pointsDistance(tx1, ty1, tx3, ty3);
+    var BC = geom.pointsDistance(tx3, ty3, tx2, ty2);
     var a = geom.angleBySide(bc, ab, ac);
     var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
 

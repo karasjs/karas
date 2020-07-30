@@ -33,17 +33,6 @@ function rotate(theta) {
 }
 
 /**
- * 两点距离
- * @param x1
- * @param y1
- * @param x2
- * @param y2
- */
-function distance(x1, y1, x2, y2) {
-  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-}
-
-/**
  * 确保3个点中，a点在三角形左上方，b/c在右方，同时ab到ac要顺时针旋转
  * @param points
  */
@@ -149,8 +138,8 @@ function transform(source, target) {
     m = matrix.multiply(t, m);
   }
   // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
-  let ls = distance(sx1, sy1, sx2, sy2);
-  let lt = distance(tx1, ty1, tx2, ty2);
+  let ls = geom.pointsDistance(sx1, sy1, sx2, sy2);
+  let lt = geom.pointsDistance(tx1, ty1, tx2, ty2);
   if(ls !== lt) {
     let scale = lt / ls;
     t = matrix.identity();
@@ -185,12 +174,12 @@ function transform(source, target) {
   let [ax1, ay1] = matrix.calPoint([sx1, sy1], n);
   let [ax2, ay2] = matrix.calPoint([sx2, sy2], n);
   let [ax3, ay3] = matrix.calPoint([sx3, sy3], n);
-  let ab = distance(ax1, ay1, ax2, ay2);
-  let ac = distance(ax1, ay1, ax3, ay3);
-  let bc = distance(ax3, ay3, ax2, ay2);
-  let AB = distance(tx1, ty1, tx2, ty2);
-  let AC = distance(tx1, ty1, tx3, ty3);
-  let BC = distance(tx3, ty3, tx2, ty2);
+  let ab = geom.pointsDistance(ax1, ay1, ax2, ay2);
+  let ac = geom.pointsDistance(ax1, ay1, ax3, ay3);
+  let bc = geom.pointsDistance(ax3, ay3, ax2, ay2);
+  let AB = geom.pointsDistance(tx1, ty1, tx2, ty2);
+  let AC = geom.pointsDistance(tx1, ty1, tx3, ty3);
+  let BC = geom.pointsDistance(tx3, ty3, tx2, ty2);
   let a = geom.angleBySide(bc, ab, ac);
   let A = geom.angleBySide(BC, AB, AC);
   // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度

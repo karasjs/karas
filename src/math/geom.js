@@ -45,6 +45,36 @@ function angleBySide(a, b, c) {
   return Math.acos(theta);
 }
 
+/**
+ * 两点距离
+ * @param x1
+ * @param y1
+ * @param x2
+ * @param y2
+ */
+function pointsDistance(x1, y1, x2, y2) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+/**
+ * 三角形内心
+ * @param x1
+ * @param y1
+ * @param x2
+ * @param y2
+ * @param x3
+ * @param y3
+ */
+function triangleIncentre(x1, y1, x2, y2, x3, y3) {
+  let a = pointsDistance(x2, y2, x3, y3);
+  let b = pointsDistance(x1, y1, x3, y3);
+  let c = pointsDistance(x1, y1, x2, y2);
+  return [
+    (a * x1 + b * x2 + c * x3) / (a + b + c),
+    (a * y1 + b * y2 + c * y3) / (a + b + c),
+  ];
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
@@ -63,4 +93,6 @@ export default {
     return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
   },
   angleBySide,
+  pointsDistance,
+  triangleIncentre,
 };

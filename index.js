@@ -550,7 +550,7 @@
     item.props.forEach(function (item) {
       s += ' ' + item[0] + '="' + item[1] + '"';
     });
-    s += '</' + item.tagName + '>';
+    s += '></' + item.tagName + '>';
     return s;
   }
 
@@ -8762,7 +8762,7 @@
       var j = i % 2 === 0 ? 0 : 1;
       var target = j ? h : w;
       var prev = computedStyle[k];
-      var next = computedStyle[ks[(i + 1) % 4]]; // 相加超过边长则是相交
+      var next = computedStyle[borderRadiusKs[(i + 1) % 4]]; // 相加超过边长则是相交
 
       if (prev[j] + next[j] > target) {
         var half = target * 0.5; // 都超过一半中点取中点
@@ -11615,43 +11615,86 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
+        var noAbs = true;
         var zIndex = this.children.filter(function (item, i) {
-          item.__iIndex = i; // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+          // 临时变量为排序使用
+          item.__iIndex = i;
+          var isXom = item instanceof Xom;
+          item.__iXom = isXom;
+
+          if (isXom) {
+            var isAbs = isRelativeOrAbsolute(item);
+
+            if (isAbs) {
+              item.__iAbs = isAbs;
+              noAbs = false;
+            }
+          } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+
 
           return !item.isMask && item.computedStyle;
-        });
-        sort(zIndex, function (a, b) {
-          var xomA = a instanceof Xom;
-          var xomB = b instanceof Xom;
-          var raA = isRelativeOrAbsolute(a);
-          var raB = isRelativeOrAbsolute(b);
+        }); // 提前跳出
 
-          if (xomA && xomB) {
-            if (raA && raB) {
-              if (a.computedStyle.zIndex > b.computedStyle.zIndex) {
-                return true;
-              }
+        if (noAbs) {
+          return zIndex;
+        }
 
-              if (a.computedStyle.zIndex < b.computedStyle.zIndex) {
-                return false;
+        zIndex.sort(function (a, b) {
+          if (a.__iXom && b.__iXom) {
+            if (a.__iAbs && b.__iAbs) {
+              if (a.computedStyle.zIndex !== b.computedStyle.zIndex) {
+                return a.computedStyle.zIndex - b.computedStyle.zIndex;
               }
-            } else if (raA) {
-              return true;
-            } else if (raB) {
-              return false;
+            } else if (a.__iAbs) {
+              return 1;
+            } else if (b.__iAbs) {
+              return -1;
             }
-          } else if (a instanceof Xom) {
-            if (raA) {
-              return true;
+          } else if (a.__iXom) {
+            if (a.__iAbs) {
+              return 1;
             }
-          } else if (b instanceof Xom) {
-            if (raB) {
-              return false;
+          } else if (b.__iXom) {
+            if (b.__iAbs) {
+              return -1;
             }
           }
 
-          return a.__iIndex > b.__iIndex;
-        });
+          return a.__iIndex - b.__iIndex;
+        }); // sort(zIndex, (a, b) => {
+        //   let xomA = a instanceof Xom;
+        //   let xomB = b instanceof Xom;
+        //   let raA = isRelativeOrAbsolute(a);
+        //   let raB = isRelativeOrAbsolute(b);
+        //   if(xomA && xomB) {
+        //     if(raA && raB) {
+        //       if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
+        //         return true;
+        //       }
+        //       if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
+        //         return false;
+        //       }
+        //     }
+        //     else if(raA) {
+        //       return true;
+        //     }
+        //     else if(raB) {
+        //       return false;
+        //     }
+        //   }
+        //   else if(a instanceof Xom) {
+        //     if(raA) {
+        //       return true;
+        //     }
+        //   }
+        //   else if(b instanceof Xom) {
+        //     if(raB) {
+        //       return false;
+        //     }
+        //   }
+        //   return a.__iIndex > b.__iIndex;
+        // });
+
         return zIndex;
       }
     }, {

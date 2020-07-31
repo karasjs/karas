@@ -144,7 +144,7 @@ function joinItem(item) {
   item.props.forEach(item => {
     s += ' ' + item[0] + '="' + item[1] + '"';
   });
-  s += '</' + item.tagName + '>';
+  s += '></' + item.tagName + '>';
   return s;
 }
 

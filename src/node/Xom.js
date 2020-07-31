@@ -115,7 +115,7 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
     let j = i % 2 === 0 ? 0 : 1;
     let target = j ? h : w;
     let prev = computedStyle[k];
-    let next = computedStyle[ks[(i + 1) % 4]];
+    let next = computedStyle[borderRadiusKs[(i + 1) % 4]];
     // 相加超过边长则是相交
     if(prev[j] + next[j] > target) {
       let half = target * 0.5;

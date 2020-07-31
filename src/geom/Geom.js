@@ -273,7 +273,7 @@ class Geom extends Xom {
         props: [],
         children,
       });
-      this.__maskId = `url(#${maskId})`;
+      this.__maskId = 'url(#' + maskId + ')';
     }
   }
 

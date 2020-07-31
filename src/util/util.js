@@ -45,7 +45,7 @@ function joinVirtualDom(vd) {
   });
   s += '</defs><g';
   if(vd.bbMask) {
-    s += ` mask="${vd.bbMask}"`;
+    s += ' mask="' + vd.bbMask + '"';
   }
   s += '>';
   vd.bb.forEach(item => {
@@ -53,7 +53,7 @@ function joinVirtualDom(vd) {
   });
   s += '</g><g';
   if(vd.conMask) {
-    s += ` mask="${vd.conMask}"`;
+    s += ' mask="' + vd.conMask + '"';
   }
   s += '>';
   vd.children.forEach(item => {
@@ -71,12 +71,12 @@ function joinVd(vd) {
   if(vd.type === 'item' || vd.type === 'img') {
     let s = '';
     vd.props.forEach(item => {
-      s += ` ${item[0]}="${item[1]}"`;
+      s += ' ' + item[0] + '="' + item[1] + '"';
     });
     if(vd.tagName === 'text') {
-      return `<text${s}>${vd.content}</text>`;
+      return '<text' + s + '>' + vd.content + '</text>';
     }
-    return `<${vd.tagName}${s}/>`;
+    return '<' + vd.tagName + s + '/>';
   }
   else if(vd.type === 'text') {
     let s = ``;
@@ -84,12 +84,12 @@ function joinVd(vd) {
     vd.children.forEach(item => {
       s += joinVd(item);
     });
-    return `<g>${s}</g>`;
+    return '<g>' + s + '</g>';
   }
   else if(vd.type === 'dom' || vd.type === 'geom') {
     let s = '<g';
     if(vd.bbMask) {
-      s += ` mask="${vd.bbMask}"`;
+      s += ' mask="' + vd.bbMask + '"';
     }
     s += '>';
     vd.bb.forEach(item => {
@@ -97,7 +97,7 @@ function joinVd(vd) {
     });
     s += '</g><g';
     if(vd.conMask) {
-      s += ` mask="${vd.conMask}"`;
+      s += ' mask="' + vd.conMask + '"';
     }
     s += '>';
     vd.children.forEach(item => {
@@ -108,12 +108,17 @@ function joinVd(vd) {
     });
     s += '</g>';
     let { opacity, transform, mask, filter } = vd;
-    return `<g${opacity !== 1 ? ` opacity="${opacity}"` : ''}${transform ? ` transform="${transform}"` : ''}${mask ? ` mask="${mask}"` : ''}${filter ? ` filter="${filter}"` : ''}>${s}</g>`;
+    return '<g'
+      + (opacity !== 1 ? (' opacity="' + opacity + '"') : '')
+      + (transform ? (' transform="' + transform + '"') : '')
+      + (mask ? (' mask="' + mask + '"') : '')
+      + (filter ? (' filter="' + filter + '"') : '')
+      + '>' + s + '</g>';
   }
 }
 
 function joinDef(def) {
-  let s = `<${def.tagName} id="${def.uuid}"`;
+  let s = '<' + def.tagName + ' id="' + def.uuid + '"';
   if(def.tagName === 'mask') {
     // s += ' maskUnits="userSpaceOnUse"';
   }
@@ -124,22 +129,22 @@ function joinDef(def) {
     s += ' gradientUnits="userSpaceOnUse"';
   }
   def.props.forEach(item => {
-    s += ` ${item[0]}="${item[1]}"`;
+    s += ' ' + item[0] + '="' + item[1] + '"';
   });
   s += '>';
   def.children.forEach(item => {
     s += joinItem(item);
   });
-  s += `</${def.tagName}>`;
+  s += '</' + def.tagName + '>';
   return s;
 }
 
 function joinItem(item) {
-  let s = `<${item.tagName}`;
+  let s = '<' + item.tagName;
   item.props.forEach(item => {
-    s += ` ${item[0]}="${item[1]}"`;
+    s += ' ' + item[0] + '="' + item[1] + '"';
   });
-  s += `></${item.tagName}>`;
+  s += '</' + item.tagName + '>';
   return s;
 }
 
@@ -189,10 +194,10 @@ function rgba2int(color) {
 function int2rgba(color) {
   if(Array.isArray(color)) {
     if(color.length === 4) {
-      return `rgba(${joinArr(color, ',')})`;
+      return 'rgba(' + joinArr(color, ',') + ')';
     }
     else if(color.length === 3) {
-      return `rgba(${joinArr(color, ',')},1)`;
+      return 'rgba(' + joinArr(color, ',') + ',1)';
     }
   }
   return color || 'rgba(0,0,0,0)';

@@ -192,7 +192,7 @@ function getColorStop(v, length) {
           let c1 = rgba2int(first[0]);
           let c2 = rgba2int(next[0]);
           let c = getCsStartLimit(c1, first[1], c2, next[1], length);
-          first[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+          first[0] = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
           first[1] = 0;
         }
         if(last[1] > 1) {
@@ -200,7 +200,7 @@ function getColorStop(v, length) {
           let c1 = rgba2int(prev[0]);
           let c2 = rgba2int(last[0]);
           let c = getCsEndLimit(c1, prev[1], c2, last[1], length);
-          last[0] = `rgba(${c[0]},${c[1]},${c[2]},${c[3]})`;
+          last[0] = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
           last[1] = 1;
         }
       }
@@ -389,14 +389,14 @@ function getCsLimit(first, last, length) {
   let g = Math.floor(g1 + (g2 - g1) * p);
   let b = Math.floor(b1 + (b2 - b1) * p);
   let a = a1 + (a2 - a1) * p;
-  first[0] = `rgba(${r},${g},${b},${a})`;
+  first[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
   first[1] = 0;
   p = (length + l1) / (l1 + l2);
   r = Math.floor(r1 + (r2 - r1) * p);
   g = Math.floor(g1 + (g2 - g1) * p);
   b = Math.floor(b1 + (b2 - b1) * p);
   a = a1 + (a2 - a1) * p;
-  last[0] = `rgba(${r},${g},${b},${a})`;
+  last[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
   last[1] = 1;
 }
 

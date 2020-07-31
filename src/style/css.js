@@ -10,7 +10,7 @@ const { isNil, rgba2int } = util;
 const DEFAULT_FONT_SIZE = 16;
 
 function parserOneBorder(style, direction) {
-  let k = `border${direction}`;
+  let k = 'border' + direction;
   let v = style[k];
   if(isNil(v)) {
     return;
@@ -517,8 +517,8 @@ function normalize(style, reset = []) {
           if(arr.length === 1) {
             arr[1] = arr[0];
           }
-          let arr1 = calUnit([`${k}X`, arr[0]], 1, arr[0]);
-          let arr2 = calUnit([`${k}Y`, arr[1]], 1, arr[1]);
+          let arr1 = calUnit([k + 'X', arr[0]], 1, arr[0]);
+          let arr2 = calUnit([k + 'Y', arr[1]], 1, arr[1]);
           compatibleTransform(k, arr1[1]);
           compatibleTransform(k, arr2[1]);
           transform.push(arr1);
@@ -577,8 +577,8 @@ function normalize(style, reset = []) {
       if(arr.length === 1) {
         arr[1] = arr[0];
       }
-      style[`${k}X`] = arr[0];
-      style[`${k}Y`] = arr[1];
+      style[k + 'X'] = arr[0];
+      style[k + 'Y'] = arr[1];
       delete style[k];
     }
   });
@@ -987,7 +987,7 @@ function repaint(node, isRoot, currentStyle) {
 
 function setFontStyle(style) {
   let { fontStyle, fontWeight, fontSize, fontFamily } = style;
-  return `${fontStyle || ''} ${fontWeight || ''} ${fontSize}px/${fontSize}px ${fontFamily}`;
+  return (fontStyle || '') + ' ' + (fontWeight || '') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || '');
 }
 
 function getBaseLine(style) {

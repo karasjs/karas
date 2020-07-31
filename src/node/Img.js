@@ -189,7 +189,10 @@ class Img extends Dom {
         let s = '';
         for(let i = 0, len = pts.length; i < len; i++) {
           let point = pts[i];
-          s += `${point[0]},${point[1]} `;
+          if(i) {
+            s += ' ';
+          }
+          s += point[0] + ',' + point[1];
         }
         this.__addGeom('polygon', [
           ['points', s],
@@ -254,7 +257,7 @@ class Img extends Dom {
                 }
               ],
             });
-            this.virtualDom.conMask = `url(#${maskId})`;
+            this.virtualDom.conMask = 'url(#' + maskId + ')';
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);

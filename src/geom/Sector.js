@@ -132,8 +132,9 @@ class Sector extends Geom {
       if(edge) {
         let props = [
           ['d', closure
-            ? `M${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`
-            : `M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${large} 1 ${x2} ${y2} z`],
+            ? ('M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z')
+            : ('M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z')
+          ],
           ['fill', fill],
           ['stroke', stroke],
           ['stroke-width', strokeWidth]
@@ -155,13 +156,14 @@ class Sector extends Geom {
       else {
         this.addGeom('path', [
           ['d', closure
-            ? `M${x1},${y1} A${r} ${r} 0 ${large} 1 ${x2},${y2} z`
-            : `M${cx},${cy} L${x1},${y1} A${r} ${r} 0 ${large} 1 ${x2},${y2} z`],
+            ? ('M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z')
+            : ('M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z')
+          ],
           ['fill', fill]
         ]);
         if(strokeWidth > 0) {
           let props = [
-            ['d', `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`],
+            ['d', 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2],
             ['fill', 'rgba(0,0,0,0)'],
             ['stroke', stroke],
             ['stroke-width', strokeWidth]

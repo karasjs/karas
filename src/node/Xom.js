@@ -87,14 +87,16 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   }
 }
 
+let borderRadiusKs = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'];
 function calBorderRadius(w, h, currentStyle, computedStyle) {
-  let ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
   let noRadius = true;
-  ks.forEach((k, i) => {
-    ks[i] = k = `border${k}Radius`;
+  borderRadiusKs.forEach(k => {
     computedStyle[k] = currentStyle[k].map((item, i) => {
       if(item.value > 0) {
         noRadius = false;
+      }
+      else {
+        return 0;
       }
       if(item.unit === PX) {
         return item.value;
@@ -109,7 +111,7 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
     return;
   }
   // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
-  ks.forEach((k, i) => {
+  borderRadiusKs.forEach((k, i) => {
     let j = i % 2 === 0 ? 0 : 1;
     let target = j ? h : w;
     let prev = computedStyle[k];
@@ -546,15 +548,14 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    // 先设置透明度，可以向上累积
-    let parent = this.parent;
-    let opa = opacity;
-    while(parent) {
-      opa *= parent.computedStyle.opacity;
-      parent = parent.parent;
-    }
+    // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
-      ctx.globalAlpha = opa;
+      let parent = this.parent;
+      while(parent) {
+        opacity *= parent.computedStyle.opacity;
+        parent = parent.parent;
+      }
+      ctx.globalAlpha = opacity;
     }
     else {
       this.__virtualDom.opacity = opacity;
@@ -570,7 +571,7 @@ class Xom extends Node {
     if(isDestroyed || display === 'none') {
       return;
     }
-    parent = this.parent;
+    let parent = this.parent;
     // transform相对于自身
     if(transform) {
       matrix = tf.calMatrix(transform, outerWidth, outerHeight);
@@ -629,7 +630,7 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
-        this.virtualDom.transform = `matrix(${joinArr(renderMatrix, ',')})`;
+        this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
     // 先计算，防止隐藏不执行
@@ -907,7 +908,7 @@ class Xom extends Node {
                     ],
                   }],
                 });
-                this.virtualDom.bbMask = `url(#${maskId})`;
+                this.virtualDom.bbMask = 'url(#' + maskId + ')';
               }
               // 先画不考虑repeat的中心声明的
               this.virtualDom.bb.push({
@@ -1021,7 +1022,7 @@ class Xom extends Node {
               }
             ],
           });
-          this.virtualDom.filter = `url(#${id})`;
+          this.virtualDom.filter = 'url(#' + id + ')';
         }
       });
     }
@@ -1244,7 +1245,7 @@ class Xom extends Node {
           };
         }),
       });
-      return `url(#${uuid})`;
+      return 'url(#' + uuid + ')';
     }
   }
 
@@ -1274,7 +1275,7 @@ class Xom extends Node {
           };
         }),
       });
-      return `url(#${uuid})`;
+      return 'url(#' + uuid + ')';
     }
   }
 

@@ -94,16 +94,16 @@ class Line extends Geom {
     else if(renderMode === mode.SVG) {
       let d;
       if(curve === 3) {
-        d = `M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}`;
+        d = 'M' + x1 + ',' + y1 + ' C' + cx1 + ',' + cy1 + ' ' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
       }
       else if(curve === 2) {
-        d = `M${x1},${y1} Q${cx2},${cy2} ${x2},${y2}`;
+        d = 'M' + x1 + ',' + y1 + ' Q' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
       }
       else if(curve === 1) {
-        d = `M${x1},${y1} Q${cx1},${cy1} ${x2},${y2}`;
+        d = 'M' + x1 + ',' + y1 + ' Q' + cx1 + ',' + cy1 + ' ' + x2 + ',' + y2;
       }
       else {
-        d = `M${x1},${y1} L${x2},${y2}`;
+        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
       }
       let props = [
         ['d', d],

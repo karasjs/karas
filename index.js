@@ -448,7 +448,7 @@
     s += '</defs><g';
 
     if (vd.bbMask) {
-      s += " mask=\"".concat(vd.bbMask, "\"");
+      s += ' mask="' + vd.bbMask + '"';
     }
 
     s += '>';
@@ -458,7 +458,7 @@
     s += '</g><g';
 
     if (vd.conMask) {
-      s += " mask=\"".concat(vd.conMask, "\"");
+      s += ' mask="' + vd.conMask + '"';
     }
 
     s += '>';
@@ -478,26 +478,26 @@
     if (vd.type === 'item' || vd.type === 'img') {
       var s = '';
       vd.props.forEach(function (item) {
-        s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+        s += ' ' + item[0] + '="' + item[1] + '"';
       });
 
       if (vd.tagName === 'text') {
-        return "<text".concat(s, ">").concat(vd.content, "</text>");
+        return '<text' + s + '>' + vd.content + '</text>';
       }
 
-      return "<".concat(vd.tagName).concat(s, "/>");
+      return '<' + vd.tagName + s + '/>';
     } else if (vd.type === 'text') {
       var _s = ""; // text有许多lineBox
 
       vd.children.forEach(function (item) {
         _s += joinVd(item);
       });
-      return "<g>".concat(_s, "</g>");
+      return '<g>' + _s + '</g>';
     } else if (vd.type === 'dom' || vd.type === 'geom') {
       var _s2 = '<g';
 
       if (vd.bbMask) {
-        _s2 += " mask=\"".concat(vd.bbMask, "\"");
+        _s2 += ' mask="' + vd.bbMask + '"';
       }
 
       _s2 += '>';
@@ -507,7 +507,7 @@
       _s2 += '</g><g';
 
       if (vd.conMask) {
-        _s2 += " mask=\"".concat(vd.conMask, "\"");
+        _s2 += ' mask="' + vd.conMask + '"';
       }
 
       _s2 += '>';
@@ -523,34 +523,34 @@
           transform = vd.transform,
           mask = vd.mask,
           filter = vd.filter;
-      return "<g".concat(opacity !== 1 ? " opacity=\"".concat(opacity, "\"") : '').concat(transform ? " transform=\"".concat(transform, "\"") : '').concat(mask ? " mask=\"".concat(mask, "\"") : '').concat(filter ? " filter=\"".concat(filter, "\"") : '', ">").concat(_s2, "</g>");
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
   function joinDef(def) {
-    var s = "<".concat(def.tagName, " id=\"").concat(def.uuid, "\"");
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
 
     if (def.tagName === 'mask') ; else if (def.tagName === 'filter') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
     def.props.forEach(function (item) {
-      s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+      s += ' ' + item[0] + '="' + item[1] + '"';
     });
     s += '>';
     def.children.forEach(function (item) {
       s += joinItem(item);
     });
-    s += "</".concat(def.tagName, ">");
+    s += '</' + def.tagName + '>';
     return s;
   }
 
   function joinItem(item) {
-    var s = "<".concat(item.tagName);
+    var s = '<' + item.tagName;
     item.props.forEach(function (item) {
-      s += " ".concat(item[0], "=\"").concat(item[1], "\"");
+      s += ' ' + item[0] + '="' + item[1] + '"';
     });
-    s += "></".concat(item.tagName, ">");
+    s += '</' + item.tagName + '>';
     return s;
   }
 
@@ -601,9 +601,9 @@
   function int2rgba(color) {
     if (Array.isArray(color)) {
       if (color.length === 4) {
-        return "rgba(".concat(joinArr(color, ','), ")");
+        return 'rgba(' + joinArr(color, ',') + ')';
       } else if (color.length === 3) {
-        return "rgba(".concat(joinArr(color, ','), ",1)");
+        return 'rgba(' + joinArr(color, ',') + ',1)';
       }
     }
 
@@ -1083,7 +1083,7 @@
 
                 var _c = getCsStartLimit(c1, first[1], c2, next[1], length);
 
-                first[0] = "rgba(".concat(_c[0], ",").concat(_c[1], ",").concat(_c[2], ",").concat(_c[3], ")");
+                first[0] = 'rgba(' + _c[0] + ',' + _c[1] + ',' + _c[2] + ',' + _c[3] + ')';
                 first[1] = 0;
               }
 
@@ -1096,7 +1096,7 @@
 
                 var _c4 = getCsEndLimit(_c2, _prev[1], _c3, last[1], length);
 
-                last[0] = "rgba(".concat(_c4[0], ",").concat(_c4[1], ",").concat(_c4[2], ",").concat(_c4[3], ")");
+                last[0] = 'rgba(' + _c4[0] + ',' + _c4[1] + ',' + _c4[2] + ',' + _c4[3] + ')';
                 last[1] = 1;
               }
             }
@@ -1328,14 +1328,14 @@
     var g = Math.floor(g1 + (g2 - g1) * p);
     var b = Math.floor(b1 + (b2 - b1) * p);
     var a = a1 + (a2 - a1) * p;
-    first[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
+    first[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     first[1] = 0;
     p = (length + l1) / (l1 + l2);
     r = Math.floor(r1 + (r2 - r1) * p);
     g = Math.floor(g1 + (g2 - g1) * p);
     b = Math.floor(b1 + (b2 - b1) * p);
     a = a1 + (a2 - a1) * p;
-    last[0] = "rgba(".concat(r, ",").concat(g, ",").concat(b, ",").concat(a, ")");
+    last[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     last[1] = 1;
   }
 
@@ -1475,7 +1475,7 @@
   var DEFAULT_FONT_SIZE = 16;
 
   function parserOneBorder(style, direction) {
-    var k = "border".concat(direction);
+    var k = 'border' + direction;
     var v = style[k];
 
     if (isNil$2(v)) {
@@ -2038,8 +2038,8 @@
               _arr5[1] = _arr5[0];
             }
 
-            var arr1 = calUnit(["".concat(k, "X"), _arr5[0]], 1, _arr5[0]);
-            var arr2 = calUnit(["".concat(k, "Y"), _arr5[1]], 1, _arr5[1]);
+            var arr1 = calUnit([k + 'X', _arr5[0]], 1, _arr5[0]);
+            var arr2 = calUnit([k + 'Y', _arr5[1]], 1, _arr5[1]);
             compatibleTransform(k, arr1[1]);
             compatibleTransform(k, arr2[1]);
             transform.push(arr1);
@@ -2107,8 +2107,8 @@
           _arr6[1] = _arr6[0];
         }
 
-        style["".concat(k, "X")] = _arr6[0];
-        style["".concat(k, "Y")] = _arr6[1];
+        style[k + 'X'] = _arr6[0];
+        style[k + 'Y'] = _arr6[1];
         delete style[k];
       }
     });
@@ -2492,7 +2492,7 @@
         fontWeight = style.fontWeight,
         fontSize = style.fontSize,
         fontFamily = style.fontFamily;
-    return "".concat(fontStyle || '', " ").concat(fontWeight || '', " ").concat(fontSize, "px/").concat(fontSize, "px ").concat(fontFamily);
+    return (fontStyle || '') + ' ' + (fontWeight || '') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || '');
   }
 
   function getBaseLine(style) {
@@ -2601,7 +2601,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', util.int2rgba(computedStyle.color)], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', "".concat(computedStyle.fontSize, "px")]],
+            props: [['x', x], ['y', y], ['fill', util.int2rgba(computedStyle.color)], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', computedStyle.fontSize + 'px']],
             content: util.encodeHtml(content)
           };
         }
@@ -8641,17 +8641,17 @@
   }
 
   function genSvgPolygon(list) {
-    var s = "M".concat(list[0][0], ",").concat(list[0][1]);
+    var s = 'M' + list[0][0] + ',' + list[0][1];
 
     for (var i = 1, len = list.length; i < len; i++) {
       var item = list[i];
 
       if (item.length === 2) {
-        s += "L".concat(item[0], ",").concat(item[1]);
+        s += 'L' + item[0] + ',' + item[1];
       } else if (item.length === 4) {
-        s += "Q".concat(item[0], ",").concat(item[1], ",").concat(item[2], ",").concat(item[3]);
+        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
       } else if (item.length === 6) {
-        s += "C".concat(item[0], ",").concat(item[1], ",").concat(item[2], ",").concat(item[3], ",").concat(item[4], ",").concat(item[5]);
+        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
       }
     } // s += `L${list[0][0]},${list[0][1]}`;
 
@@ -8733,14 +8733,16 @@
     }
   }
 
+  var borderRadiusKs = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'];
+
   function calBorderRadius(w, h, currentStyle, computedStyle) {
-    var ks = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'];
     var noRadius = true;
-    ks.forEach(function (k, i) {
-      ks[i] = k = "border".concat(k, "Radius");
+    borderRadiusKs.forEach(function (k) {
       computedStyle[k] = currentStyle[k].map(function (item, i) {
         if (item.value > 0) {
           noRadius = false;
+        } else {
+          return 0;
         }
 
         if (item.unit === PX$4) {
@@ -8756,7 +8758,7 @@
     } // radius限制，相交的2个之和不能超过边长，如果2个都超过中点取中点，只有1个超过取交点，这包含了单个不能超过总长的逻辑
 
 
-    ks.forEach(function (k, i) {
+    borderRadiusKs.forEach(function (k, i) {
       var j = i % 2 === 0 ? 0 : 1;
       var target = j ? h : w;
       var prev = computedStyle[k];
@@ -9236,18 +9238,17 @@
         var y1 = y + marginTop;
         var y2 = y1 + borderTopWidth;
         var y3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = y3 + borderBottomWidth; // 先设置透明度，可以向上累积
-
-        var parent = this.parent;
-        var opa = opacity;
-
-        while (parent) {
-          opa *= parent.computedStyle.opacity;
-          parent = parent.parent;
-        }
+        var y4 = y3 + borderBottomWidth; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
-          ctx.globalAlpha = opa;
+          var _parent = this.parent;
+
+          while (_parent) {
+            opacity *= _parent.computedStyle.opacity;
+            _parent = _parent.parent;
+          }
+
+          ctx.globalAlpha = opacity;
         } else {
           this.__virtualDom.opacity = opacity;
         } // transform和transformOrigin相关
@@ -9265,7 +9266,7 @@
           return;
         }
 
-        parent = this.parent; // transform相对于自身
+        var parent = this.parent; // transform相对于自身
 
         if (transform) {
           matrix$1 = tf.calMatrix(transform, outerWidth, outerHeight);
@@ -9320,7 +9321,7 @@
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix$1));
         } else if (renderMode === mode.SVG) {
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
-            this.virtualDom.transform = "matrix(".concat(joinArr$1(renderMatrix, ','), ")");
+            this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           }
         } // 先计算，防止隐藏不执行
 
@@ -9612,7 +9613,7 @@
                         props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
                       }]
                     });
-                    this.virtualDom.bbMask = "url(#".concat(maskId, ")");
+                    this.virtualDom.bbMask = 'url(#' + maskId + ')';
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -9732,7 +9733,7 @@
                   props: [['stdDeviation', v]]
                 }]
               });
-              _this3.virtualDom.filter = "url(#".concat(id, ")");
+              _this3.virtualDom.filter = 'url(#' + id + ')';
             }
           });
         }
@@ -9995,7 +9996,7 @@
               };
             })
           });
-          return "url(#".concat(uuid, ")");
+          return 'url(#' + uuid + ')';
         }
       }
     }, {
@@ -10018,7 +10019,7 @@
               };
             })
           });
-          return "url(#".concat(uuid, ")");
+          return 'url(#' + uuid + ')';
         }
       }
     }, {
@@ -11866,7 +11867,12 @@
 
             for (var _i = 0, _len = pts.length; _i < _len; _i++) {
               var _point = pts[_i];
-              s += "".concat(_point[0], ",").concat(_point[1], " ");
+
+              if (_i) {
+                s += ' ';
+              }
+
+              s += _point[0] + ',' + _point[1];
             }
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
@@ -11919,7 +11925,7 @@
                     props: [['d', d], ['fill', '#FFF']]
                   }]
                 });
-                this.virtualDom.conMask = "url(#".concat(maskId, ")");
+                this.virtualDom.conMask = 'url(#' + maskId + ')';
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -12408,7 +12414,7 @@
     _createClass(Defs, [{
       key: "add",
       value: function add(data) {
-        data.uuid = "karas-defs-".concat(this.id, "-").concat(this.count++);
+        data.uuid = 'karas-defs-' + this.id + '-' + this.count++;
         this.list.push(data);
         return data.uuid;
       }
@@ -13540,7 +13546,7 @@
             props: [],
             children: children
           });
-          this.__maskId = "url(#".concat(maskId, ")");
+          this.__maskId = 'url(#' + maskId + ')';
         }
       }
     }, {
@@ -13751,13 +13757,13 @@
           var d;
 
           if (curve === 3) {
-            d = "M".concat(x1, ",").concat(y1, " C").concat(cx1, ",").concat(cy1, " ").concat(cx2, ",").concat(cy2, " ").concat(x2, ",").concat(y2);
+            d = 'M' + x1 + ',' + y1 + ' C' + cx1 + ',' + cy1 + ' ' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
           } else if (curve === 2) {
-            d = "M".concat(x1, ",").concat(y1, " Q").concat(cx2, ",").concat(cy2, " ").concat(x2, ",").concat(y2);
+            d = 'M' + x1 + ',' + y1 + ' Q' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
           } else if (curve === 1) {
-            d = "M".concat(x1, ",").concat(y1, " Q").concat(cx1, ",").concat(cy1, " ").concat(x2, ",").concat(y2);
+            d = 'M' + x1 + ',' + y1 + ' Q' + cx1 + ',' + cy1 + ' ' + x2 + ',' + y2;
           } else {
-            d = "M".concat(x1, ",").concat(y1, " L").concat(x2, ",").concat(y2);
+            d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
           }
 
           var props = [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
@@ -13952,18 +13958,18 @@
           var tagName;
 
           if (hasControl) {
-            var s = "M".concat(pts[0][0], ",").concat(pts[0][1]);
+            var s = 'M' + pts[0][0] + ',' + pts[0][1];
 
             for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
               var _point = pts[_i2];
               var _cl = cls[_i2 - 1];
 
               if (!_cl || !_cl.length) {
-                s += "L".concat(_point[0], ",").concat(_point[1]);
+                s += 'L' + _point[0] + ',' + _point[1];
               } else if (_cl.length === 4) {
-                s += "C".concat(_cl[0], ",").concat(_cl[1], " ").concat(_cl[2], ",").concat(_cl[3], " ").concat(_point[0], ",").concat(_point[1]);
+                s += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
               } else {
-                s += "Q".concat(_cl[0], ",").concat(_cl[1], " ").concat(_point[0], ",").concat(_point[1]);
+                s += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
               }
             }
 
@@ -13979,7 +13985,7 @@
                 _s += ' ';
               }
 
-              _s += "".concat(_point2[0], ",").concat(_point2[1]);
+              _s += _point2[0] + ',' + _point2[1];
             }
 
             props.push(['points', _s]);
@@ -14212,7 +14218,7 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           if (edge) {
-            var props = [['d', closure ? "M".concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z") : "M".concat(cx, " ").concat(cy, " L").concat(x1, " ").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, " ").concat(y2, " z")], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+            var props = [['d', closure ? 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z' : 'M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z'], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
             if (strokeDasharray.length) {
               props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14232,10 +14238,10 @@
 
             this.addGeom('path', props);
           } else {
-            this.addGeom('path', [['d', closure ? "M".concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z") : "M".concat(cx, ",").concat(cy, " L").concat(x1, ",").concat(y1, " A").concat(r, " ").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2, " z")], ['fill', fill]]);
+            this.addGeom('path', [['d', closure ? 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z' : 'M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z'], ['fill', fill]]);
 
             if (strokeWidth > 0) {
-              var _props = [['d', "M".concat(x1, ",").concat(y1, " A").concat(r, ",").concat(r, " 0 ").concat(large, " 1 ").concat(x2, ",").concat(y2)], ['fill', 'rgba(0,0,0,0)'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+              var _props = [['d', 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2], ['fill', 'rgba(0,0,0,0)'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
               if (strokeDasharray.length) {
                 _props.push(['stroke-dasharray', strokeDasharrayStr]);

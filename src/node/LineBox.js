@@ -32,7 +32,7 @@ class LineBox {
           ['font-family', computedStyle.fontFamily],
           ['font-weight', computedStyle.fontWeight],
           ['font-style', computedStyle.fontStyle],
-          ['font-size', `${computedStyle.fontSize}px`]
+          ['font-size', computedStyle.fontSize + 'px']
         ],
         content: util.encodeHtml(content),
       };

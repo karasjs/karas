@@ -8,36 +8,6 @@ import repaint from '../animate/repaint';
 
 const { isNil, isString, isFunction, clone, extend } = util;
 
-function diff(ovd, nvd) {
-  if(ovd !== nvd) {
-    // 相同继承，不同取消，过滤text
-    if(ovd.tagName === nvd.tagName && nvd.tagName) {
-      ovd.animationList.forEach(item => {
-        item.__target = nvd;
-      });
-      nvd.__animationList = ovd.animationList.splice(0);
-      // 递归进行
-      let oc = ovd.children;
-      let nc = nvd.children;
-      if(oc && nc) {
-        let ol = oc.length;
-        let nl = nc.length;
-        for(let i = 0, len = Math.min(ol, nl); i < len; i++) {
-          ovd = oc[i];
-          nvd = nc[i];
-          if(ovd instanceof Component) {
-            ovd = ovd.shadowRoot;
-          }
-          if(nvd instanceof Component) {
-            nvd = nvd.shadowRoot;
-          }
-          diff(ovd, nvd);
-        }
-      }
-    }
-  }
-}
-
 class Component extends Event {
   constructor(tagName, props, children) {
     super();
@@ -62,6 +32,7 @@ class Component extends Event {
     this.__parent = null;
     this.__ref = {};
     this.__state = {};
+    this.__isMount = false;
   }
 
   setState(n, cb) {
@@ -81,8 +52,6 @@ class Component extends Event {
           root.setRefreshLevel(level.REFLOW);
         },
         after: () => {
-          // 先进行diff，继承动画，然后销毁老的
-          diff(ovd, this.shadowRoot);
           if(ovd instanceof Node) {
             ovd.__destroy();
           }
@@ -99,7 +68,6 @@ class Component extends Event {
     }
   }
 
-  // 组件传入的样式需覆盖shadowRoot的
   __init() {
     let sr = this.render();
     // 可能返回的还是一个Component，递归处理
@@ -110,7 +78,7 @@ class Component extends Event {
     if(sr instanceof Node) {
       sr.__host = this;
       sr.__initRef(this);
-      // 覆盖sr的样式
+      // 组件传入的样式需覆盖shadowRoot的
       let style = clone(this.props.style) || {};
       css.normalize(style);
       extend(sr.style, style);
@@ -159,6 +127,11 @@ class Component extends Event {
   }
 
   __destroy() {
+    let { componentWillUnmount } = this;
+    if(isFunction(componentWillUnmount)) {
+      componentWillUnmount.call(this);
+      this.__isMount = false;
+    }
     this.root.delRefreshTask(this.__task);
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
@@ -183,7 +156,17 @@ class Component extends Event {
     }
   }
 
+  // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
   __measure(renderMode, ctx) {
+    if(!this.__isMount) {
+      this.__isMount = true;
+      this.__init();
+      this.root.once(Event.REFRESH, () => {
+        if(isFunction(this.componentDidMount)) {
+          this.componentDidMount();
+        }
+      });
+    }
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
       sr.__measure(renderMode, ctx);

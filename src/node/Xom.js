@@ -205,7 +205,7 @@ function traverse(parent, list, children, options) {
       options.prev.__next = children;
       children.__prev = options.prev;
     }
-    children.__init();
+    // children.__init();
     options.prev = children;
   }
   // 排除掉空的文本，连续的text合并

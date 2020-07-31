@@ -5820,41 +5820,6 @@
       clone$1 = util.clone,
       extend$1 = util.extend;
 
-  function diff(ovd, nvd) {
-    if (ovd !== nvd) {
-      // 相同继承，不同取消，过滤text
-      if (ovd.tagName === nvd.tagName && nvd.tagName) {
-        ovd.animationList.forEach(function (item) {
-          item.__target = nvd;
-        });
-        nvd.__animationList = ovd.animationList.splice(0); // 递归进行
-
-        var oc = ovd.children;
-        var nc = nvd.children;
-
-        if (oc && nc) {
-          var ol = oc.length;
-          var nl = nc.length;
-
-          for (var i = 0, len = Math.min(ol, nl); i < len; i++) {
-            ovd = oc[i];
-            nvd = nc[i];
-
-            if (ovd instanceof Component) {
-              ovd = ovd.shadowRoot;
-            }
-
-            if (nvd instanceof Component) {
-              nvd = nvd.shadowRoot;
-            }
-
-            diff(ovd, nvd);
-          }
-        }
-      }
-    }
-  }
-
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
@@ -5889,6 +5854,7 @@
       _this.__parent = null;
       _this.__ref = {};
       _this.__state = {};
+      _this.__isMount = false;
       return _this;
     }
 
@@ -5915,9 +5881,6 @@
               root.setRefreshLevel(level.REFLOW);
             },
             after: function after() {
-              // 先进行diff，继承动画，然后销毁老的
-              diff(ovd, _this2.shadowRoot);
-
               if (ovd instanceof Node) {
                 ovd.__destroy();
               }
@@ -5932,8 +5895,7 @@
         else if (isFunction$1(cb)) {
             cb();
           }
-      } // 组件传入的样式需覆盖shadowRoot的
-
+      }
     }, {
       key: "__init",
       value: function __init() {
@@ -5949,7 +5911,7 @@
         if (sr instanceof Node) {
           sr.__host = this;
 
-          sr.__initRef(this); // 覆盖sr的样式
+          sr.__initRef(this); // 组件传入的样式需覆盖shadowRoot的
 
 
           var style = clone$1(this.props.style) || {};
@@ -6006,6 +5968,13 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
+        var componentWillUnmount = this.componentWillUnmount;
+
+        if (isFunction$1(componentWillUnmount)) {
+          componentWillUnmount.call(this);
+          this.__isMount = false;
+        }
+
         this.root.delRefreshTask(this.__task);
 
         if (this.shadowRoot) {
@@ -6035,10 +6004,25 @@
           e.target = this;
           return true;
         }
-      }
+      } // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
+
     }, {
       key: "__measure",
       value: function __measure(renderMode, ctx) {
+        var _this4 = this;
+
+        if (!this.__isMount) {
+          this.__isMount = true;
+
+          this.__init();
+
+          this.root.once(Event.REFRESH, function () {
+            if (isFunction$1(_this4.componentDidMount)) {
+              _this4.componentDidMount();
+            }
+          });
+        }
+
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
@@ -8849,9 +8833,8 @@
       if (options.prev) {
         options.prev.__next = children;
         children.__prev = options.prev;
-      }
+      } // children.__init();
 
-      children.__init();
 
       options.prev = children;
     } // 排除掉空的文本，连续的text合并
@@ -10360,62 +10343,6 @@
     return LineGroup;
   }();
 
-  function quickSort(arr, begin, end, compare) {
-    if (begin >= end) {
-      return;
-    }
-
-    var i = begin,
-        j = end,
-        p = i,
-        v = arr[p],
-        seq = true;
-
-    while (i < j) {
-      if (seq) {
-        for (; i < j; j--) {
-          if (compare.call(arr, v, arr[j])) {
-            swap(arr, p, j);
-            p = j;
-            seq = !seq;
-            i++;
-            break;
-          }
-        }
-      } else {
-        for (; i < j; i++) {
-          if (compare.call(arr, arr[i], v)) {
-            swap(arr, p, i);
-            p = i;
-            seq = !seq;
-            j--;
-            break;
-          }
-        }
-      }
-    }
-
-    quickSort(arr, begin, p - 1, compare);
-    quickSort(arr, p + 1, end, compare);
-  }
-
-  function swap(arr, a, b) {
-    var temp = arr[a];
-    arr[a] = arr[b];
-    arr[b] = temp;
-  }
-
-  function sort (arr, compare) {
-    if (!Array.isArray(arr) || arr.length < 2) {
-      return arr;
-    }
-
-    compare = compare || function () {};
-
-    quickSort(arr, 0, arr.length - 1, compare);
-    return arr;
-  }
-
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
@@ -11550,9 +11477,7 @@
         }
 
         var isDestroyed = this.isDestroyed,
-            _this$computedStyle = this.computedStyle,
-            display = _this$computedStyle.display,
-            visibility = _this$computedStyle.visibility,
+            display = this.computedStyle.display,
             children = this.children;
 
         if (isDestroyed || display === 'none') {
@@ -11661,40 +11586,7 @@
           }
 
           return a.__iIndex - b.__iIndex;
-        }); // sort(zIndex, (a, b) => {
-        //   let xomA = a instanceof Xom;
-        //   let xomB = b instanceof Xom;
-        //   let raA = isRelativeOrAbsolute(a);
-        //   let raB = isRelativeOrAbsolute(b);
-        //   if(xomA && xomB) {
-        //     if(raA && raB) {
-        //       if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-        //         return true;
-        //       }
-        //       if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
-        //         return false;
-        //       }
-        //     }
-        //     else if(raA) {
-        //       return true;
-        //     }
-        //     else if(raB) {
-        //       return false;
-        //     }
-        //   }
-        //   else if(a instanceof Xom) {
-        //     if(raA) {
-        //       return true;
-        //     }
-        //   }
-        //   else if(b instanceof Xom) {
-        //     if(raB) {
-        //       return false;
-        //     }
-        //   }
-        //   return a.__iIndex > b.__iIndex;
-        // });
-
+        });
         return zIndex;
       }
     }, {
@@ -12034,7 +11926,7 @@
   var joinVd$1 = util.joinVd,
       joinDef$1 = util.joinDef;
 
-  function diff$1(elem, ovd, nvd) {
+  function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
     diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
@@ -13089,7 +12981,7 @@
             nvd.defs = nd.value;
 
             if (_this2.node.__root) {
-              diff$1(_this2.node, _this2.node.__vd, nvd);
+              diff(_this2.node, _this2.node.__vd, nvd);
             } else {
               _this2.node.innerHTML = util.joinVirtualDom(nvd);
             }
@@ -15144,7 +15036,6 @@
     mode: mode,
     Component: Component,
     Event: Event,
-    sort: sort,
     util: util,
     inject: inject,
     css: css,

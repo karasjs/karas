@@ -12,7 +12,6 @@ import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
-import sort from './util/sort';
 import util from './util/util';
 import parse from './util/parse';
 import inject from './util/inject';
@@ -106,7 +105,6 @@ let karas = {
   mode,
   Component,
   Event,
-  sort,
   util,
   inject,
   css,

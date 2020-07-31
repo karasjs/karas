@@ -6,7 +6,6 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import Component from './Component';
-import sort from '../util/sort';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
@@ -1011,7 +1010,7 @@ class Dom extends Xom {
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }
-    let { isDestroyed, computedStyle: { display, visibility }, children } = this;
+    let { isDestroyed, computedStyle: { display }, children } = this;
     if(isDestroyed || display === 'none') {
       return;
     }
@@ -1106,39 +1105,6 @@ class Dom extends Xom {
       }
       return a.__iIndex - b.__iIndex;
     });
-    // sort(zIndex, (a, b) => {
-    //   let xomA = a instanceof Xom;
-    //   let xomB = b instanceof Xom;
-    //   let raA = isRelativeOrAbsolute(a);
-    //   let raB = isRelativeOrAbsolute(b);
-    //   if(xomA && xomB) {
-    //     if(raA && raB) {
-    //       if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-    //         return true;
-    //       }
-    //       if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
-    //         return false;
-    //       }
-    //     }
-    //     else if(raA) {
-    //       return true;
-    //     }
-    //     else if(raB) {
-    //       return false;
-    //     }
-    //   }
-    //   else if(a instanceof Xom) {
-    //     if(raA) {
-    //       return true;
-    //     }
-    //   }
-    //   else if(b instanceof Xom) {
-    //     if(raB) {
-    //       return false;
-    //     }
-    //   }
-    //   return a.__iIndex > b.__iIndex;
-    // });
     return zIndex;
   }
 

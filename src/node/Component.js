@@ -1,6 +1,7 @@
-import Event from '../util/Event';
 import Node from './Node';
 import Text from './Text';
+import tool from './tool';
+import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
 import level from '../animate/level';
@@ -28,8 +29,8 @@ class Component extends Event {
       this.__props = util.hash2arr(props);
     }
     this.__children = children || [];
-    this.__shadowRoot = null;
     this.__parent = null;
+    this.__host = null;
     this.__ref = {};
     this.__state = {};
     this.__isMount = false;
@@ -48,7 +49,7 @@ class Component extends Event {
       let ovd = this.shadowRoot;
       this.__task = {
         before: () => {
-          this.__init();
+          this.__init(root, this);
           root.setRefreshLevel(level.REFLOW);
         },
         after: () => {
@@ -68,16 +69,13 @@ class Component extends Event {
     }
   }
 
-  __init() {
+  __create() {
     let sr = this.render();
     // 可能返回的还是一个Component，递归处理
     while(sr instanceof Component) {
-      sr = sr.__init();
+      sr = sr.render();
     }
-    // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
     if(sr instanceof Node) {
-      sr.__host = this;
-      sr.__initRef(this);
       // 组件传入的样式需覆盖shadowRoot的
       let style = clone(this.props.style) || {};
       css.normalize(style);
@@ -107,19 +105,20 @@ class Component extends Event {
         s = util.encodeHtml(sr.toString());
       }
       sr = new Text(s);
-      // 文字视作为父节点的直接文字子节点
-      sr.__parent = this.parent;
     }
     return this.__shadowRoot = sr;
   }
 
-  __initRef(root) {
-    let ref = this.props.ref;
-    if(isString(ref)) {
-      root.ref[ref] = this;
+  __init(root, host) {
+    tool.init(this, root, host);
+    let sr = this.__create();
+    if(sr instanceof Text) {
+      // 文字视作为父节点的直接文字子节点
+      sr.__parent = this.parent;
+      sr.__host = host;
     }
-    else if(isFunction(ref)) {
-      ref(root);
+    else {
+      sr.__init(root, this);
     }
   }
 
@@ -161,7 +160,6 @@ class Component extends Event {
     let { root } = this;
     if(!this.__isMount) {
       this.__isMount = true;
-      this.__init();
       let { componentDidMount } = this;
       if(isFunction(componentDidMount)) {
         root.once(Event.REFRESH, () => {
@@ -180,7 +178,7 @@ class Component extends Event {
 
   __repaint() {
     let sr = this.shadowRoot;
-    if(sr instanceof Node) {
+    if(!(sr instanceof Text)) {
       sr.__repaint(true);
     }
   }
@@ -198,9 +196,11 @@ class Component extends Event {
   }
 
   get root() {
-    if(this.parent) {
-      return this.parent.root;
-    }
+    return this.__root;
+  }
+
+  get host() {
+    return this.__host;
   }
 
   get parent() {

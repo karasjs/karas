@@ -24,5 +24,4 @@ t.setState({
 }, () => {
   let input = document.querySelector('#base64');
   input.value = document.querySelector('svg').outerHTML;
-
 });

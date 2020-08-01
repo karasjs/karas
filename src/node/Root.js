@@ -55,7 +55,7 @@ class Root extends Dom {
     this.__task = [];
     this.__ref = {};
     this.__animateController = new Controller();
-    this.__initRef(this);
+    this.__init(this, this);
     Event.mix(this);
   }
 

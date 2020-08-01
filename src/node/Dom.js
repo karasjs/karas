@@ -6,6 +6,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import Component from './Component';
+import util from '../util/util';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
@@ -25,9 +26,71 @@ function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
+/**
+ * 1. 封装string为Text节点
+ * 2. 打平children中的数组，变成一维
+ * 3. 合并相连的Text节点
+ */
+function flatten(parent, children) {
+  let list = [];
+  traverse(parent, list, children, {
+    lastText: null,
+    prev: null,
+  });
+  return list;
+}
+
+function traverse(parent, list, children, options) {
+  if(Array.isArray(children)) {
+    children.forEach(item => {
+      traverse(parent, list, item, options);
+    });
+  }
+  else if(children instanceof Xom) {
+    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
+      throw new Error('Can not nest canvas/svg');
+    }
+    list.push(children);
+    children.__parent = parent;
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  else if(children instanceof Component) {
+    list.push(children);
+    children.__parent = parent;
+    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  // 排除掉空的文本，连续的text合并
+  else if(!util.isNil(children) && children !== '') {
+    if(options.lastText) {
+      options.lastText.content += children;
+    }
+    else {
+      let text = options.lastText = new Text(children);
+      list.push(text);
+      text.__parent = parent;
+      if(options.prev) {
+        options.prev.__next = text;
+        text.__prev = options.prev;
+      }
+      options.prev = text;
+    }
+  }
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
-    super(tagName, props, children);
+    super(tagName, props);
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
     let { style } = this;
     if(!style.display || !{
@@ -44,6 +107,7 @@ class Dom extends Xom {
       }
     }
     css.normalize(style, reset.dom);
+    this.__children = children || [];
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -1011,7 +1075,7 @@ class Dom extends Xom {
       this.virtualDom.type = 'dom';
     }
     let { isDestroyed, computedStyle: { display }, children } = this;
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || display === 'none' || !children.length) {
       return;
     }
     // 先渲染过滤mask
@@ -1031,6 +1095,34 @@ class Dom extends Xom {
     }
   }
 
+  __init(root, host) {
+    super.__init(root, host);
+    (this.__children = flatten(this, this.children))
+      .forEach(item => {
+        if(item instanceof Xom || item instanceof Component) {
+          item.__init(root, host);
+        }
+      });
+  }
+
+  __measure(renderMode, ctx, isRoot) {
+    super.__measure(renderMode, ctx, isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      item.__measure(renderMode, ctx);
+    });
+  }
+
+  __repaint(isRoot) {
+    super.__repaint(isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__repaint();
+      }
+    });
+  }
+
   __destroy() {
     this.children.forEach(child => {
       child.__destroy();
@@ -1038,6 +1130,10 @@ class Dom extends Xom {
     super.__destroy();
     this.children.splice(0);
     this.lineGroups.splice(0);
+  }
+
+  get children() {
+    return this.__children;
   }
 
   get flowChildren() {

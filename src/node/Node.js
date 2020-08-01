@@ -10,8 +10,8 @@ class Node {
     this.__prev = null;
     this.__next = null;
     this.__parent = null;
+    this.__root = null;
     this.__host = null;
-    this.__virtualDom = {};
   }
 
   __offsetX(diff, isLayout) {
@@ -87,6 +87,16 @@ class Node {
 
   get parent() {
     return this.__parent;
+  }
+
+  // canvas/svg根节点
+  get root() {
+    return this.__root;
+  }
+
+  // component根节点
+  get host() {
+    return this.__host;
   }
 
   get baseLine() {

@@ -8636,6 +8636,292 @@
     return Animation;
   }(Event);
 
+  var isNil$5 = util.isNil,
+      isFunction$4 = util.isFunction;
+  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
+
+  function replaceOption(target, globalValue, key, vars) {
+    // 优先vars，其次总控，都没有忽略即自己原本声明
+    if (!isNil$5(globalValue)) {
+      var decl = target['var-' + key];
+
+      if (!decl) {
+        target[key] = globalValue;
+      } else {
+        var id = decl.id;
+
+        if (!id || !vars[id]) {
+          target[key] = globalValue;
+        }
+      }
+    }
+  }
+
+  function replaceGlobal(global, options) {
+    LIST.forEach(function (k) {
+      if (global.hasOwnProperty(k)) {
+        replaceOption(options, global[k], k, global.vars);
+      }
+    });
+  }
+
+  var Controller = /*#__PURE__*/function () {
+    function Controller() {
+      _classCallCheck(this, Controller);
+
+      this.__records = [];
+      this.__list = [];
+    }
+
+    _createClass(Controller, [{
+      key: "__op",
+      value: function __op(options) {
+        this.records.forEach(function (record) {
+          var animate = record.animate;
+
+          if (Array.isArray(animate)) {
+            animate.forEach(function (item) {
+              // 用总控替换动画属性中的值，注意vars优先级
+              replaceGlobal(options, item.options);
+            });
+          } else {
+            replaceGlobal(options, animate.options);
+          }
+        });
+      }
+    }, {
+      key: "add",
+      value: function add(v) {
+        if (this.__list.indexOf(v) === -1) {
+          this.list.push(v);
+        }
+      }
+    }, {
+      key: "remove",
+      value: function remove(v) {
+        var i = this.list.indexOf(v);
+
+        if (i > -1) {
+          this.list.splice(i, 1);
+        }
+      }
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        this.__records = [];
+        this.__list = [];
+      }
+    }, {
+      key: "__action",
+      value: function __action(k, args) {
+        this.list.forEach(function (item) {
+          item[k].apply(item, args);
+        });
+      }
+    }, {
+      key: "init",
+      value: function init() {
+        var _this = this;
+
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
+        var records = this.records;
+
+        if (records.length) {
+          // 清除防止重复调用，并且新的json还会进入整体逻辑
+          records.splice(0).forEach(function (item) {
+            var target = item.target,
+                animate = item.animate;
+
+            if (Array.isArray(animate)) {
+              animate.forEach(function (animate) {
+                var value = animate.value,
+                    options = animate.options;
+                options.autoPlay = false;
+                var o = target.animate(value, options);
+
+                _this.add(o);
+              });
+            } else {
+              var value = animate.value,
+                  options = animate.options;
+              options.autoPlay = false;
+              var o = target.animate(value, options);
+
+              _this.add(o);
+            }
+          });
+        }
+      }
+    }, {
+      key: "play",
+      value: function play(cb) {
+        this.init();
+        var once = true;
+
+        this.__action('play', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        this.__action('pause');
+      }
+    }, {
+      key: "resume",
+      value: function resume(cb) {
+        var once = true;
+
+        this.__action('resume', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "cancel",
+      value: function cancel(cb) {
+        var once = true;
+
+        this.__action('cancel', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "finish",
+      value: function finish(cb) {
+        var once = true;
+
+        this.__action('finish', [cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndStop",
+      value: function gotoAndStop(v, options, cb) {
+        this.init();
+        var once = true;
+
+        this.__action('gotoAndStop', [v, options, cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "gotoAndPlay",
+      value: function gotoAndPlay(v, options, cb) {
+        this.init();
+        var once = true;
+
+        this.__action('gotoAndPlay', [v, options, cb && function (diff) {
+          if (once) {
+            once = false;
+
+            if (isFunction$4(cb)) {
+              cb(diff);
+            }
+          }
+        }]);
+      }
+    }, {
+      key: "__set",
+      value: function __set(key, value) {
+        this.list.forEach(function (item) {
+          item[key] = value;
+        });
+      }
+    }, {
+      key: "records",
+      get: function get() {
+        return this.__records;
+      }
+    }, {
+      key: "list",
+      get: function get() {
+        return this.__list;
+      }
+    }, {
+      key: "playbackRate",
+      set: function set(v) {
+        this.__set('playbackRate', v);
+      }
+    }, {
+      key: "iterations",
+      set: function set(v) {
+        this.__set('iterations', v);
+      }
+    }, {
+      key: "playCount",
+      set: function set(v) {
+        this.__set('playCount', v);
+      }
+    }, {
+      key: "fps",
+      set: function set(v) {
+        this.__set('fps', v);
+      }
+    }, {
+      key: "currentTime",
+      set: function set(v) {
+        this.__set('currentTime', v);
+      }
+    }, {
+      key: "spfLimit",
+      set: function set(v) {
+        this.__set('spfLimit', v);
+      }
+    }, {
+      key: "delay",
+      set: function set(v) {
+        this.__set('delay', v);
+      }
+    }, {
+      key: "endDelay",
+      set: function set(v) {
+        this.__set('endDelay', v);
+      }
+    }, {
+      key: "fill",
+      set: function set(v) {
+        this.__set('fill', v);
+      }
+    }, {
+      key: "direction",
+      set: function set(v) {
+        this.__set('direction', v);
+      }
+    }]);
+
+    return Controller;
+  }();
+
   function genCanvasPolygon(ctx, list) {
     ctx.beginPath();
     ctx.moveTo(list[0][0], list[0][1]);
@@ -9967,16 +10253,19 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, options, underControl) {
+      value: function animate(list) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
         if (this.isDestroyed) {
           return;
         }
 
         var animation = new Animation(this, list, options);
         this.animationList.push(animation);
+        var controller = options.controller instanceof Controller && options.controller;
 
-        if (underControl) {
-          this.root.animateController.add(animation);
+        if (controller) {
+          controller.add(animation);
         }
 
         if (options.hasOwnProperty('autoPlay') && !options.autoPlay) {
@@ -12384,292 +12673,6 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
-      isFunction$4 = util.isFunction;
-  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
-
-  function replaceOption(target, globalValue, key, vars) {
-    // 优先vars，其次总控，都没有忽略即自己原本声明
-    if (!isNil$5(globalValue)) {
-      var decl = target['var-' + key];
-
-      if (!decl) {
-        target[key] = globalValue;
-      } else {
-        var id = decl.id;
-
-        if (!id || !vars[id]) {
-          target[key] = globalValue;
-        }
-      }
-    }
-  }
-
-  function replaceGlobal(global, options) {
-    LIST.forEach(function (k) {
-      if (global.hasOwnProperty(k)) {
-        replaceOption(options, global[k], k, global.vars);
-      }
-    });
-  }
-
-  var Controller = /*#__PURE__*/function () {
-    function Controller() {
-      _classCallCheck(this, Controller);
-
-      this.__records = [];
-      this.__list = [];
-    }
-
-    _createClass(Controller, [{
-      key: "__op",
-      value: function __op(options) {
-        this.records.forEach(function (record) {
-          var animate = record.animate;
-
-          if (Array.isArray(animate)) {
-            animate.forEach(function (item) {
-              // 用总控替换动画属性中的值，注意vars优先级
-              replaceGlobal(options, item.options);
-            });
-          } else {
-            replaceGlobal(options, animate.options);
-          }
-        });
-      }
-    }, {
-      key: "add",
-      value: function add(v) {
-        if (this.__list.indexOf(v) === -1) {
-          this.list.push(v);
-        }
-      }
-    }, {
-      key: "remove",
-      value: function remove(v) {
-        var i = this.list.indexOf(v);
-
-        if (i > -1) {
-          this.list.splice(i, 1);
-        }
-      }
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        this.__records = [];
-        this.__list = [];
-      }
-    }, {
-      key: "__action",
-      value: function __action(k, args) {
-        this.list.forEach(function (item) {
-          item[k].apply(item, args);
-        });
-      }
-    }, {
-      key: "init",
-      value: function init() {
-        var _this = this;
-
-        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        var records = this.records;
-
-        if (records.length) {
-          // 清除防止重复调用，并且新的json还会进入整体逻辑
-          records.splice(0).forEach(function (item) {
-            var target = item.target,
-                animate = item.animate;
-
-            if (Array.isArray(animate)) {
-              animate.forEach(function (animate) {
-                var value = animate.value,
-                    options = animate.options;
-                options.autoPlay = false;
-                var o = target.animate(value, options);
-
-                _this.add(o);
-              });
-            } else {
-              var value = animate.value,
-                  options = animate.options;
-              options.autoPlay = false;
-              var o = target.animate(value, options);
-
-              _this.add(o);
-            }
-          });
-        }
-      }
-    }, {
-      key: "play",
-      value: function play(cb) {
-        this.init();
-        var once = true;
-
-        this.__action('play', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "pause",
-      value: function pause() {
-        this.__action('pause');
-      }
-    }, {
-      key: "resume",
-      value: function resume(cb) {
-        var once = true;
-
-        this.__action('resume', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "cancel",
-      value: function cancel(cb) {
-        var once = true;
-
-        this.__action('cancel', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "finish",
-      value: function finish(cb) {
-        var once = true;
-
-        this.__action('finish', [cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "gotoAndStop",
-      value: function gotoAndStop(v, options, cb) {
-        this.init();
-        var once = true;
-
-        this.__action('gotoAndStop', [v, options, cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "gotoAndPlay",
-      value: function gotoAndPlay(v, options, cb) {
-        this.init();
-        var once = true;
-
-        this.__action('gotoAndPlay', [v, options, cb && function (diff) {
-          if (once) {
-            once = false;
-
-            if (isFunction$4(cb)) {
-              cb(diff);
-            }
-          }
-        }]);
-      }
-    }, {
-      key: "__set",
-      value: function __set(key, value) {
-        this.list.forEach(function (item) {
-          item[key] = value;
-        });
-      }
-    }, {
-      key: "records",
-      get: function get() {
-        return this.__records;
-      }
-    }, {
-      key: "list",
-      get: function get() {
-        return this.__list;
-      }
-    }, {
-      key: "playbackRate",
-      set: function set(v) {
-        this.__set('playbackRate', v);
-      }
-    }, {
-      key: "iterations",
-      set: function set(v) {
-        this.__set('iterations', v);
-      }
-    }, {
-      key: "playCount",
-      set: function set(v) {
-        this.__set('playCount', v);
-      }
-    }, {
-      key: "fps",
-      set: function set(v) {
-        this.__set('fps', v);
-      }
-    }, {
-      key: "currentTime",
-      set: function set(v) {
-        this.__set('currentTime', v);
-      }
-    }, {
-      key: "spfLimit",
-      set: function set(v) {
-        this.__set('spfLimit', v);
-      }
-    }, {
-      key: "delay",
-      set: function set(v) {
-        this.__set('delay', v);
-      }
-    }, {
-      key: "endDelay",
-      set: function set(v) {
-        this.__set('endDelay', v);
-      }
-    }, {
-      key: "fill",
-      set: function set(v) {
-        this.__set('fill', v);
-      }
-    }, {
-      key: "direction",
-      set: function set(v) {
-        this.__set('direction', v);
-      }
-    }]);
-
-    return Controller;
-  }();
-
   var isNil$6 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
@@ -12731,7 +12734,6 @@
       _this.__mh = 0;
       _this.__task = [];
       _this.__ref = {};
-      _this.__animateController = new Controller();
 
       _this.__init(_assertThisInitialized(_this), _assertThisInitialized(_this));
 
@@ -12878,7 +12880,7 @@
           }
 
         this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
-        this.__defs = this.node.__karas ? this.node.__karas.defs : Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
+        this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
           var css = window.getComputedStyle(dom, null);
@@ -12904,17 +12906,14 @@
 
         this.refresh(); // 第一次节点没有__root，渲染一次就有了才能diff
 
-        if (this.node.__karas) {
-          this.node.__karas.root.destroy();
+        if (this.node.__root) {
+          this.node.__root.destroy();
         } else {
           initEvent(this.node);
+          this.node.__uuid = this.__uuid;
         }
 
-        this.node.__karas = {
-          root: this,
-          uuid: this.__uuid,
-          defs: this.__defs
-        };
+        this.node.__root = this;
       }
     }, {
       key: "refresh",
@@ -12992,13 +12991,14 @@
             var nvd = _this2.virtualDom;
             nvd.defs = defs.value;
 
-            if (_this2.node.__karas) {
-              diff(_this2.node, _this2.node.__karas.vd, nvd);
+            if (_this2.node.__root) {
+              diff(_this2.node, _this2.node.__vd, nvd);
             } else {
               _this2.node.innerHTML = util.joinVirtualDom(nvd);
             }
 
-            _this2.node.__karas.vd = nvd;
+            _this2.node.__vd = nvd;
+            _this2.node.__defs = defs;
           } // 特殊cb，供小程序绘制完回调使用
 
 
@@ -13018,7 +13018,7 @@
         var n = this.node;
 
         if (n) {
-          n.__karas = null;
+          n.__root = null;
         }
       }
     }, {
@@ -13157,11 +13157,6 @@
       key: "ref",
       get: function get() {
         return this.__ref;
-      }
-    }, {
-      key: "animateController",
-      get: function get() {
-        return this.__animateController;
       }
     }]);
 
@@ -15021,8 +15016,9 @@
 
       var animateRecords = [];
 
-      var vd = parse(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+      var vd = parse(this, json, animateRecords, options.vars);
 
+      var controller = options.controller instanceof Controller && options.controller; // 有dom时parse作为根方法渲染
 
       if (dom) {
         var tagName = json.tagName;
@@ -15030,18 +15026,24 @@
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
         } // parse直接（非递归）的动画记录
+        // let ac = vd.animateController;
+        // ac.__records = animateRecords;
 
 
-        var ac = vd.animateController;
-        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+        if (controller) {
+          controller.__records = controller.__records.concat(animateRecords);
+        } // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+
 
         this.render(vd, dom); // 总控次数、速度
 
-        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        if (controller) {
+          controller.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
 
-        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
-          ac.play();
+          if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+            controller.play();
+          }
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {
@@ -15068,7 +15070,8 @@
     frame: frame,
     easing: easing,
     level: level,
-    math: math
+    math: math,
+    Controller: Controller
   };
 
   if (typeof window !== 'undefined') {

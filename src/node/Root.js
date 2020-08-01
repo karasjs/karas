@@ -54,7 +54,6 @@ class Root extends Dom {
     this.__mh = 0;
     this.__task = [];
     this.__ref = {};
-    this.__animateController = new Controller();
     this.__init(this, this);
     Event.mix(this);
   }
@@ -161,7 +160,7 @@ class Root extends Dom {
       }
     }
     this.__uuid = isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
-    this.__defs = this.node.__karas ? this.node.__karas.defs : Defs.getInstance(this.__uuid);
+    this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
@@ -184,17 +183,14 @@ class Root extends Dom {
     }
     this.refresh();
     // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.node.__karas) {
-      this.node.__karas.root.destroy();
+    if(this.node.__root) {
+      this.node.__root.destroy();
     }
     else {
       initEvent(this.node);
+      this.node.__uuid = this.__uuid;
     }
-    this.node.__karas = {
-      root: this,
-      uuid: this.__uuid,
-      defs: this.__defs,
-    };
+    this.node.__root = this;
   }
 
   refresh(cb) {
@@ -255,13 +251,14 @@ class Root extends Dom {
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
         nvd.defs = defs.value;
-        if(this.node.__karas) {
-          diff(this.node, this.node.__karas.vd, nvd);
+        if(this.node.__root) {
+          diff(this.node, this.node.__vd, nvd);
         }
         else {
           this.node.innerHTML = util.joinVirtualDom(nvd);
         }
-        this.node.__karas.vd = nvd;
+        this.node.__vd = nvd;
+        this.node.__defs = defs;
       }
       // 特殊cb，供小程序绘制完回调使用
       if(isFunction(cb)) {
@@ -276,7 +273,7 @@ class Root extends Dom {
     frame.offFrame(this.__rTask);
     let n = this.node;
     if(n) {
-      n.__karas = null;
+      n.__root = null;
     }
   }
 
@@ -390,10 +387,6 @@ class Root extends Dom {
 
   get ref() {
     return this.__ref;
-  }
-
-  get animateController() {
-    return this.__animateController;
   }
 }
 

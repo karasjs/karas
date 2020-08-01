@@ -11,6 +11,7 @@ import image from '../style/image';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
+import Controller from '../animate/Controller';
 import inject from '../util/inject';
 import draw from '../util/draw';
 import mx from '../math/matrix';
@@ -1213,14 +1214,15 @@ class Xom extends Node {
     }
   }
 
-  animate(list, options, underControl) {
+  animate(list, options = {}) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, options);
     this.animationList.push(animation);
-    if(underControl) {
-      this.root.animateController.add(animation);
+    let controller = options.controller instanceof Controller && options.controller;
+    if(controller) {
+      controller.add(animation);
     }
     if(options.hasOwnProperty('autoPlay') && !options.autoPlay) {
       return animation;

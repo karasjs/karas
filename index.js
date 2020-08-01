@@ -5532,8 +5532,13 @@
     }, {
       key: "render",
       value: function render(renderMode, ctx) {
+        var vd = this.__virtualDom = {
+          type: 'text',
+          children: []
+        };
         var isDestroyed = this.isDestroyed,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            lineBoxes = this.lineBoxes;
 
         if (isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
           return;
@@ -5544,17 +5549,14 @@
           ctx.fillStyle = util.int2rgba(computedStyle.color);
         }
 
-        this.lineBoxes.forEach(function (item) {
+        lineBoxes.forEach(function (item) {
           item.render(renderMode, ctx, computedStyle);
         });
 
         if (renderMode === mode.SVG) {
-          this.__virtualDom = {
-            type: 'text',
-            children: this.lineBoxes.map(function (lineBox) {
-              return lineBox.virtualDom;
-            })
-          };
+          vd.children = lineBoxes.map(function (lineBox) {
+            return lineBox.virtualDom;
+          });
         }
       }
     }, {

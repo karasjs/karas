@@ -161,7 +161,7 @@ class Root extends Dom {
       }
     }
     this.__uuid = isNil(this.__node.__uuid) ? uuid++ : this.__node.__uuid;
-    this.__defs = this.node.__defs || Defs.getInstance(this.__uuid);
+    this.__defs = this.node.__karas ? this.node.__karas.defs : Defs.getInstance(this.__uuid);
     // 没有设置width/height则采用css计算形式
     if(!this.width || !this.height) {
       let css = window.getComputedStyle(dom, null);
@@ -184,14 +184,17 @@ class Root extends Dom {
     }
     this.refresh();
     // 第一次节点没有__root，渲染一次就有了才能diff
-    if(this.node.__root) {
-      this.node.__root.__destroy();
+    if(this.node.__karas) {
+      this.node.__karas.root.destroy();
     }
     else {
       initEvent(this.node);
-      this.node.__uuid = this.__uuid;
     }
-    this.node.__root = this;
+    this.node.__karas = {
+      root: this,
+      uuid: this.__uuid,
+      defs: this.__defs,
+    };
   }
 
   refresh(cb) {
@@ -251,16 +254,14 @@ class Root extends Dom {
       this.render(renderMode, ctx, defs);
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
-        let nd = defs;
-        nvd.defs = nd.value;
-        if(this.node.__root) {
-          diff(this.node, this.node.__vd, nvd);
+        nvd.defs = defs.value;
+        if(this.node.__karas) {
+          diff(this.node, this.node.__karas.vd, nvd);
         }
         else {
           this.node.innerHTML = util.joinVirtualDom(nvd);
         }
-        this.node.__vd = nvd;
-        this.node.__defs = nd;
+        this.node.__karas.vd = nvd;
       }
       // 特殊cb，供小程序绘制完回调使用
       if(isFunction(cb)) {
@@ -268,6 +269,15 @@ class Root extends Dom {
       }
       this.emit(Event.REFRESH, lv);
     });
+  }
+
+  destroy() {
+    this.__destroy();
+    frame.offFrame(this.__rTask);
+    let n = this.node;
+    if(n) {
+      n.__karas = null;
+    }
   }
 
   addRefreshTask(cb) {

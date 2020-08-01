@@ -158,14 +158,16 @@ class Component extends Event {
 
   // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
   __measure(renderMode, ctx) {
+    let { root } = this;
     if(!this.__isMount) {
       this.__isMount = true;
       this.__init();
-      this.root.once(Event.REFRESH, () => {
-        if(isFunction(this.componentDidMount)) {
-          this.componentDidMount();
-        }
-      });
+      let { componentDidMount } = this;
+      if(isFunction(componentDidMount)) {
+        root.once(Event.REFRESH, () => {
+          componentDidMount.call(this);
+        });
+      }
     }
     let sr = this.shadowRoot;
     if(sr instanceof Text) {

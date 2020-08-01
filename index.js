@@ -6011,16 +6011,20 @@
       value: function __measure(renderMode, ctx) {
         var _this4 = this;
 
+        var root = this.root;
+
         if (!this.__isMount) {
           this.__isMount = true;
 
           this.__init();
 
-          this.root.once(Event.REFRESH, function () {
-            if (isFunction$1(_this4.componentDidMount)) {
-              _this4.componentDidMount();
-            }
-          });
+          var componentDidMount = this.componentDidMount;
+
+          if (isFunction$1(componentDidMount)) {
+            root.once(Event.REFRESH, function () {
+              componentDidMount.call(_this4);
+            });
+          }
         }
 
         var sr = this.shadowRoot;
@@ -10061,7 +10065,7 @@
         }
 
         this.children.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom) {
             item.__initRef(root);
           }
         });

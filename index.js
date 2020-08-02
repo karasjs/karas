@@ -11432,7 +11432,11 @@
       }
     }, {
       key: "__emitEvent",
-      value: function __emitEvent(e) {
+      value: function __emitEvent(e, force) {
+        if (force) {
+          return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e, force);
+        }
+
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle;
 
@@ -11469,17 +11473,7 @@
         } // child不触发再看自己
 
 
-        if (this.willResponseEvent(e)) {
-          if (cb) {
-            cb.forEach(function (item) {
-              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
-                item(e);
-              }
-            });
-          }
-
-          return true;
-        }
+        return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e);
       }
     }, {
       key: "children",

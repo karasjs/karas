@@ -1131,7 +1131,10 @@ class Dom extends Xom {
     this.lineGroups.splice(0);
   }
 
-  __emitEvent(e) {
+  __emitEvent(e, force) {
+    if(force) {
+      return super.__emitEvent(e, force);
+    }
     let { isDestroyed, computedStyle } = this;
     if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
       return;
@@ -1160,16 +1163,7 @@ class Dom extends Xom {
       }
     }
     // child不触发再看自己
-    if(this.willResponseEvent(e)) {
-      if(cb) {
-        cb.forEach(item => {
-          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-            item(e);
-          }
-        });
-      }
-      return true;
-    }
+    return super.__emitEvent(e);
   }
 
   get children() {

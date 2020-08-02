@@ -1,3 +1,5 @@
+let controller = new karas.Controller();
+
 let o = karas.parse({
   tagName: 'canvas',
   props: {
@@ -31,12 +33,13 @@ let o = karas.parse({
 }, '#test', {
   playbackRate: 10,
   iterations: 3,
+  controller,
   vars: {
     a: 2,
   },
 });
 let input = document.querySelector('input');
-let animate = o.animateController.list[0];
+let animate = controller.list[0];
 let n = 0;
 let b = 0;
 animate.on('begin', function() {

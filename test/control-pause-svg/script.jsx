@@ -1,3 +1,5 @@
+let controller = new karas.Controller();
+
 let o = karas.parse({
   tagName: 'canvas',
   props: {
@@ -25,12 +27,14 @@ let o = karas.parse({
       children: [123]
     }
   ],
-}, '#test');
+}, '#test', {
+  controller,
+});
 let input = document.querySelector('input');
 let n = 0;
 o.on('refresh', function() {
   n++;
-  o.animateController.pause();
+  controller.pause();
 });
 setTimeout(function() {
   input.value = n;

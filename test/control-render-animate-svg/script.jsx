@@ -1,3 +1,5 @@
+let controller = new karas.Controller();
+
 let o = karas.render(
   <svg width="360" height="360">
     <span ref="t">123</span>
@@ -5,8 +7,7 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('input');
-let ac = o.animateController;
-input.value = ac.records.length + ',' + ac.list.length;
+input.value = controller.records.length + ',' + controller.list.length;
 o.ref.t.animate([{
   color: '#f00'
 }, {
@@ -14,5 +15,6 @@ o.ref.t.animate([{
 }], {
   duration: 200,
   fill: 'both',
+  controller,
 }, true);
-input.value += '/' + ac.records.length + ',' + ac.list.length;
+input.value += '/' + controller.records.length + ',' + controller.list.length;

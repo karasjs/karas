@@ -1,3 +1,5 @@
+let controller = new karas.Controller();
+
 let o = karas.parse({
   tagName: 'canvas',
   props: {
@@ -40,10 +42,11 @@ let o = karas.parse({
   ],
 }, '#test', {
   autoPlay: false,
+  controller,
 });
 let input = document.querySelector('input');
 let n = 0;
-o.animateController.play(function() {
+controller.play(function() {
   n++;
 });
 setTimeout(function() {

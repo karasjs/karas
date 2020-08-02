@@ -12732,6 +12732,9 @@
       _this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
 
       _this.__mh = 0;
+      _this.__sx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+
+      _this.__sy = 1;
       _this.__task = [];
       _this.__ref = {};
 
@@ -12796,15 +12799,15 @@
         var x, y; // 触摸结束取消特殊没有touches
 
         if (['touchend', 'touchcancel'].indexOf(e.type) === -1) {
-          var node = this.node;
+          var node = this.node,
+              __sx = this.__sx,
+              __sy = this.__sy;
 
           var _node$getBoundingClie = node.getBoundingClientRect(),
               x2 = _node$getBoundingClie.x,
               y2 = _node$getBoundingClie.y,
               left = _node$getBoundingClie.left,
-              top = _node$getBoundingClie.top,
-              width = _node$getBoundingClie.width,
-              height = _node$getBoundingClie.height;
+              top = _node$getBoundingClie.top;
 
           x = x2 || left || 0;
           y = y2 || top || 0;
@@ -12814,16 +12817,14 @@
               pageY = _ref.pageY;
 
           x = pageX - x;
-          y = pageY - y;
-          var sx = width / this.width;
-          var sy = height / this.height; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
+          y = pageY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
 
-          if (sx !== 1) {
-            x /= sx;
+          if (__sx !== 1) {
+            x *= __sx;
           }
 
-          if (sy !== 1) {
-            y /= sy;
+          if (__sy !== 1) {
+            y *= __sy;
           }
         }
 
@@ -13020,6 +13021,12 @@
         if (n) {
           n.__root = null;
         }
+      }
+    }, {
+      key: "scale",
+      value: function scale(x, y) {
+        this.__sx = x;
+        this.__sy = y;
       }
     }, {
       key: "addRefreshTask",

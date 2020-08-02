@@ -8,7 +8,6 @@ import inject from '../util/inject';
 import Event from '../util/Event';
 import frame from '../animate/frame';
 import level from '../animate/level';
-import Controller from '../animate/Controller';
 
 const { isNil, isObject, isFunction } = util;
 
@@ -52,6 +51,8 @@ class Root extends Dom {
     this.__node = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
+    this.__sx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+    this.__sy = 1;
     this.__task = [];
     this.__ref = {};
     this.__init(this, this);
@@ -98,21 +99,19 @@ class Root extends Dom {
     let x, y;
     // 触摸结束取消特殊没有touches
     if(['touchend', 'touchcancel'].indexOf(e.type) === -1) {
-      let { node } = this;
-      let { x: x2, y: y2, left, top, width, height } = node.getBoundingClientRect();
+      let { node, __sx, __sy } = this;
+      let { x: x2, y: y2, left, top } = node.getBoundingClientRect();
       x = x2 || left || 0;
       y = y2 || top || 0;
       let { pageX, pageY } = e.touches ? e.touches[0] : e;
       x = pageX - x;
       y = pageY - y;
-      let sx = width / this.width;
-      let sy = height / this.height;
       // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
-      if(sx !== 1) {
-        x /= sx;
+      if(__sx !== 1) {
+        x *= __sx;
       }
-      if(sy !== 1) {
-        y /= sy;
+      if(__sy !== 1) {
+        y *= __sy;
       }
     }
     let data = {
@@ -275,6 +274,11 @@ class Root extends Dom {
     if(n) {
       n.__root = null;
     }
+  }
+
+  scale(x, y) {
+    this.__sx = x;
+    this.__sy = y;
   }
 
   addRefreshTask(cb) {

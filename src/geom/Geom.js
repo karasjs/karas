@@ -14,10 +14,11 @@ const REGISTER = {};
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
+    this.__isClip = !!this.props.isClip;
     this.__isMask = !!this.props.mask;
     this.__currentProps = this.props;
-    let { style, isMask } = this;
-    if(isMask) {
+    let { style, isClip, isMask } = this;
+    if(isClip || isMask) {
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
@@ -194,10 +195,15 @@ class Geom extends Xom {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
-      let vd = this.virtualDom;
-      vd.isMask = true;
+      let { isClip, virtualDom } = this;
+      if(this.isClip) {
+        virtualDom.isClip = true;
+      }
+      else {
+        virtualDom.isMask = true;
+      }
       // svg的mask没有transform，需手动计算变换后的坐标应用
-      let children = clone(vd.children);
+      let children = clone(virtualDom.children);
       let m = this.matrixEvent;
       children.forEach(child => {
         let xi = 0;
@@ -261,19 +267,36 @@ class Geom extends Xom {
       });
       // 连续多个mask需要合并
       let { prev } = this;
-      if(prev && prev.isMask) {
-        let last = defs.value;
-        last = last[last.length - 1];
-        last.children = last.children.concat(children);
-        this.__maskId = prev.maskId;
-        return;
+      if(isClip) {
+        if(prev && prev.isClip) {
+          let last = defs.value;
+          last = last[last.length - 1];
+          last.children = last.children.concat(children);
+          this.__clipId = prev.clipId;
+          return;
+        }
+        let clipId = defs.add({
+          tagName: 'clipPath',
+          props: [],
+          children,
+        });
+        this.__clipId = 'url(#' + clipId + ')';
       }
-      let maskId = defs.add({
-        tagName: 'mask',
-        props: [],
-        children,
-      });
-      this.__maskId = 'url(#' + maskId + ')';
+      else {
+        if(prev && prev.isMask) {
+          let last = defs.value;
+          last = last[last.length - 1];
+          last.children = last.children.concat(children);
+          this.__maskId = prev.maskId;
+          return;
+        }
+        let maskId = defs.add({
+          tagName: 'mask',
+          props: [],
+          children,
+        });
+        this.__maskId = 'url(#' + maskId + ')';
+      }
     }
   }
 
@@ -296,6 +319,14 @@ class Geom extends Xom {
 
   get baseLine() {
     return this.__height;
+  }
+
+  get isClip() {
+    return this.__isClip;
+  }
+
+  get clipId() {
+    return this.__clipId;
   }
 
   get isMask() {

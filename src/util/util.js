@@ -107,10 +107,14 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, mask, filter } = vd;
+    let { opacity, transform, clip, mask, filter } = vd;
+    if(clip) {
+      mask = null;
+    }
     return '<g'
       + (opacity !== 1 ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
+      + (clip ? (' clip-path="' + clip + '"') : '')
       + (mask ? (' mask="' + mask + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
       + '>' + s + '</g>';
@@ -119,7 +123,7 @@ function joinVd(vd) {
 
 function joinDef(def) {
   let s = '<' + def.tagName + ' id="' + def.uuid + '"';
-  if(def.tagName === 'mask') {
+  if(def.tagName === 'mask' || def.tagName === 'clipPath') {
     // s += ' maskUnits="userSpaceOnUse"';
   }
   else if(def.tagName === 'filter') {

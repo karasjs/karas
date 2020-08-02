@@ -504,16 +504,22 @@
       _s2 += '</g>';
       var opacity = vd.opacity,
           transform = vd.transform,
+          clip = vd.clip,
           mask = vd.mask,
           filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+
+      if (clip) {
+        mask = null;
+      }
+
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
   function joinDef(def) {
     var s = '<' + def.tagName + ' id="' + def.uuid + '"';
 
-    if (def.tagName === 'mask') ; else if (def.tagName === 'filter') ; else {
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -9964,62 +9970,88 @@
       value: function __renderByMask(renderMode, ctx, defs) {
         var prev = this.prev,
             root = this.root;
-        var hasMask = prev && prev.isMask;
+        var hasMaskOrClip = prev && (prev.isMask || prev.isClip);
 
-        if (!hasMask) {
+        if (!hasMaskOrClip) {
           this.render(renderMode, ctx, defs);
           return;
         }
 
         if (renderMode === mode.CANVAS) {
-          // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
-          var width = root.width,
-              height = root.height;
-          var c = inject.getCacheCanvas(width, height);
-          this.render(renderMode, c.ctx); // 收集之前的mask列表
+          // clip简单，使用ctx的clip()即可
+          if (prev.isClip) {
+            ctx.save(); // 收集之前的clip列表
 
-          var list = [];
+            var list = [];
 
-          while (prev && prev.isMask) {
-            list.unshift(prev);
-            prev = prev.prev;
-          } // 当mask只有1个时，无需生成m，直接在c上即可
+            while (prev && prev.isClip) {
+              list.unshift(prev);
+              prev = prev.prev;
+            }
 
-
-          if (list.length === 1) {
-            prev = list[0];
-            c.ctx.globalCompositeOperation = 'destination-in';
-            prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
-
-            c.draw(c.ctx);
-            ctx.drawImage(c.canvas, 0, 0);
-            c.draw(ctx);
-          } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+            list.forEach(function (item) {
+              item.render(renderMode, ctx);
+            });
+            ctx.clip();
+            this.render(renderMode, ctx);
+            ctx.restore();
+          } // canvas借用1或2个离屏canvas来处理，c绘制本xom，m绘制多个mask
           else {
-              var m = inject.getMaskCanvas(width, height);
-              list.forEach(function (item) {
-                item.render(renderMode, m.ctx);
-              });
-              m.draw(m.ctx);
-              c.ctx.globalCompositeOperation = 'destination-in';
-              c.ctx.drawImage(m.canvas, 0, 0);
+              var width = root.width,
+                  height = root.height;
+              var c = inject.getCacheCanvas(width, height);
+              this.render(renderMode, c.ctx); // 收集之前的mask列表
+
+              var _list = [];
+
+              while (prev && prev.isMask) {
+                _list.unshift(prev);
+
+                prev = prev.prev;
+              } // 当mask只有1个时，无需生成m，直接在c上即可
+
+
+              if (_list.length === 1) {
+                prev = _list[0];
+                c.ctx.globalCompositeOperation = 'destination-in';
+                prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+
+                c.draw(c.ctx);
+                ctx.drawImage(c.canvas, 0, 0);
+                c.draw(ctx);
+              } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+              else {
+                  var m = inject.getMaskCanvas(width, height);
+
+                  _list.forEach(function (item) {
+                    item.render(renderMode, m.ctx);
+                  });
+
+                  m.draw(m.ctx);
+                  c.ctx.globalCompositeOperation = 'destination-in';
+                  c.ctx.drawImage(m.canvas, 0, 0);
+                  c.draw(c.ctx);
+                  ctx.drawImage(c.canvas, 0, 0);
+                  c.draw(ctx); // 清除
+
+                  m.ctx.globalCompositeOperation = 'source-over';
+                  m.ctx.clearRect(0, 0, width, height);
+                  m.draw(m.ctx);
+                } // 清除
+
+
+              c.ctx.globalCompositeOperation = 'source-over';
+              c.ctx.clearRect(0, 0, width, height);
               c.draw(c.ctx);
-              ctx.drawImage(c.canvas, 0, 0);
-              c.draw(ctx); // 清除
-
-              m.ctx.globalCompositeOperation = 'source-over';
-              m.ctx.clearRect(0, 0, width, height);
-              m.draw(m.ctx);
-            } // 清除
-
-
-          c.ctx.globalCompositeOperation = 'source-over';
-          c.ctx.clearRect(0, 0, width, height);
-          c.draw(c.ctx);
+            }
         } else if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
-          this.virtualDom.mask = prev.maskId;
+          if (prev.isClip) {
+            this.virtualDom.clip = prev.clipId;
+          } else {
+            this.virtualDom.mask = prev.maskId;
+          }
         }
       }
     }, {
@@ -11739,7 +11771,7 @@
 
 
         children.forEach(function (item) {
-          if (item.isMask) {
+          if (item.isClip || item.isMask) {
             item.__renderAsMask(renderMode, ctx, defs);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
@@ -12330,6 +12362,7 @@
   function diffX2X(elem, ovd, nvd) {
     var transform = nvd.transform,
         opacity = nvd.opacity,
+        clip = nvd.clip,
         mask = nvd.mask,
         filter = nvd.filter,
         conMask = nvd.conMask;
@@ -12350,6 +12383,14 @@
       }
     } // geom不会有mask，对比一直相等
 
+
+    if (ovd.clip !== clip) {
+      if (clip) {
+        elem.setAttribute('clip-path', clip);
+      } else {
+        elem.removeAttribute('clip-path');
+      }
+    }
 
     if (ovd.mask !== mask) {
       if (mask) {
@@ -12796,11 +12837,11 @@
           y = pageY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
 
           if (__sx !== 1) {
-            x *= __sx;
+            x /= __sx;
           }
 
           if (__sy !== 1) {
-            y *= __sy;
+            y /= __sy;
           }
         }
 
@@ -13167,14 +13208,16 @@
       _classCallCheck(this, Geom);
 
       _this = _super.call(this, tagName, props);
+      _this.__isClip = !!_this.props.isClip;
       _this.__isMask = !!_this.props.mask;
       _this.__currentProps = _this.props;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
+          isClip = _assertThisInitialize.isClip,
           isMask = _assertThisInitialize.isMask;
 
-      if (isMask) {
+      if (isClip || isMask) {
         style.visibility = 'visible';
         style.background = null;
         style.border = null;
@@ -13390,10 +13433,17 @@
         // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs);
-          var vd = this.virtualDom;
-          vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
+          var isClip = this.isClip,
+              virtualDom = this.virtualDom;
 
-          var children = clone$4(vd.children);
+          if (this.isClip) {
+            virtualDom.isClip = true;
+          } else {
+            virtualDom.isMask = true;
+          } // svg的mask没有transform，需手动计算变换后的坐标应用
+
+
+          var children = clone$4(virtualDom.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -13469,20 +13519,37 @@
 
           var prev = this.prev;
 
-          if (prev && prev.isMask) {
-            var last = defs.value;
-            last = last[last.length - 1];
-            last.children = last.children.concat(children);
-            this.__maskId = prev.maskId;
-            return;
-          }
+          if (isClip) {
+            if (prev && prev.isClip) {
+              var last = defs.value;
+              last = last[last.length - 1];
+              last.children = last.children.concat(children);
+              this.__clipId = prev.clipId;
+              return;
+            }
 
-          var maskId = defs.add({
-            tagName: 'mask',
-            props: [],
-            children: children
-          });
-          this.__maskId = 'url(#' + maskId + ')';
+            var clipId = defs.add({
+              tagName: 'clipPath',
+              props: [],
+              children: children
+            });
+            this.__clipId = 'url(#' + clipId + ')';
+          } else {
+            if (prev && prev.isMask) {
+              var _last = defs.value;
+              _last = _last[_last.length - 1];
+              _last.children = _last.children.concat(children);
+              this.__maskId = prev.maskId;
+              return;
+            }
+
+            var maskId = defs.add({
+              tagName: 'mask',
+              props: [],
+              children: children
+            });
+            this.__maskId = 'url(#' + maskId + ')';
+          }
         }
       }
     }, {
@@ -13510,6 +13577,16 @@
       key: "baseLine",
       get: function get() {
         return this.__height;
+      }
+    }, {
+      key: "isClip",
+      get: function get() {
+        return this.__isClip;
+      }
+    }, {
+      key: "clipId",
+      get: function get() {
+        return this.__clipId;
       }
     }, {
       key: "isMask",
@@ -15001,7 +15078,7 @@
 
       var vd = parse(this, json, animateRecords, options.vars);
 
-      var controller = options.controller instanceof Controller && options.controller; // 有dom时parse作为根方法渲染
+      var controller = options.controller instanceof Controller ? options.controller : new Controller(); // 有dom时parse作为根方法渲染
 
       if (dom) {
         var tagName = json.tagName;
@@ -15011,18 +15088,13 @@
         } // 动画记录
 
 
-        if (controller) {
-          controller.__records = controller.__records.concat(animateRecords);
-        }
-
+        controller.__records = controller.__records.concat(animateRecords);
         this.render(vd, dom); // 总控次数、速度
 
-        if (controller) {
-          controller.__op(options);
+        controller.__op(options);
 
-          if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
-            controller.play();
-          }
+        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+          controller.play();
         }
       } // 递归的parse，如果有动画controller，暂存
       else if (controller) {

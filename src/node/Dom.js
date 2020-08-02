@@ -1080,7 +1080,7 @@ class Dom extends Xom {
     }
     // 先渲染过滤mask
     children.forEach(item => {
-      if(item.isMask) {
+      if(item.isClip || item.isMask) {
         item.__renderAsMask(renderMode, ctx, defs);
       }
     });

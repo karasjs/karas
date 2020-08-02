@@ -108,10 +108,10 @@ class Root extends Dom {
       y = pageY - y;
       // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
       if(__sx !== 1) {
-        x *= __sx;
+        x /= __sx;
       }
       if(__sy !== 1) {
-        y *= __sy;
+        y /= __sy;
       }
     }
     let data = {

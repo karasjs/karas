@@ -73,7 +73,7 @@ let karas = {
     // 暂存所有动画声明，等root的生成后开始执行
     let animateRecords = [];
     let vd = parse(this, json, animateRecords, options.vars);
-    let controller = options.controller instanceof Controller && options.controller;
+    let controller = options.controller instanceof Controller ? options.controller : new Controller();
     // 有dom时parse作为根方法渲染
     if(dom) {
       let { tagName } = json;
@@ -81,16 +81,12 @@ let karas = {
         throw new Error('Parse dom must be canvas/svg');
       }
       // 动画记录
-      if(controller) {
-        controller.__records = controller.__records.concat(animateRecords);
-      }
+      controller.__records = controller.__records.concat(animateRecords);
       this.render(vd, dom);
       // 总控次数、速度
-      if(controller) {
-        controller.__op(options);
-        if(!options.hasOwnProperty('autoPlay') || options.autoPlay) {
-          controller.play();
-        }
+      controller.__op(options);
+      if(!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+        controller.play();
       }
     }
     // 递归的parse，如果有动画controller，暂存

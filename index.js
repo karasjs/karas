@@ -8762,9 +8762,9 @@
         }
 
         if (item.unit === PX$4) {
-          return item.value;
+          return Math.max(0, item.value);
         } else {
-          return item.value * (i ? h : w) * 0.01;
+          return Math.max(0, item.value * (i ? h : w) * 0.01);
         }
       });
     }); // 优化提前跳出
@@ -9134,11 +9134,15 @@
             innerWidth = this.innerWidth,
             innerHeight = this.innerHeight,
             outerWidth = this.outerWidth,
-            outerHeight = this.outerHeight; // 圆角边计算
+            outerHeight = this.outerHeight;
+
+        if (isDestroyed || computedStyle.display === 'none') {
+          return;
+        } // 圆角边计算
+
 
         calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
-        var display = computedStyle.display,
-            marginTop = computedStyle.marginTop,
+        var marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
             paddingTop = computedStyle.paddingTop,
             paddingRight = computedStyle.paddingRight,
@@ -9181,21 +9185,7 @@
         var y1 = y + marginTop;
         var y2 = y1 + borderTopWidth;
         var y3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = y3 + borderBottomWidth; // 先设置透明度，canvas可以向上累积
-
-        if (renderMode === mode.CANVAS) {
-          var _parent = this.parent;
-
-          while (_parent) {
-            opacity *= _parent.computedStyle.opacity;
-            _parent = _parent.parent;
-          }
-
-          ctx.globalAlpha = opacity;
-        } else {
-          this.__virtualDom.opacity = opacity;
-        } // transform和transformOrigin相关
-
+        var y4 = y3 + borderBottomWidth; // transform和transformOrigin相关
 
         var tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
         computedStyle.transformOrigin = tfo.slice(0);
@@ -9203,13 +9193,20 @@
         tfo[1] += y; // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
 
         var matrix$1 = [1, 0, 0, 1, 0, 0];
-        this.__matrix = computedStyle.matrix = matrix$1;
+        var parent = this.parent; // 先设置透明度，canvas可以向上累积
 
-        if (isDestroyed || display === 'none') {
-          return;
-        }
+        if (renderMode === mode.CANVAS) {
+          var p = parent || this.host && this.host.parent;
 
-        var parent = this.parent; // transform相对于自身
+          if (p) {
+            opacity *= p.__opacity;
+          }
+
+          this.__opacity = ctx.globalAlpha = opacity;
+        } else {
+          this.__virtualDom.opacity = opacity;
+        } // transform相对于自身
+
 
         if (transform) {
           matrix$1 = tf.calMatrix(transform, outerWidth, outerHeight);
@@ -9253,9 +9250,8 @@
 
         if (parent) {
           if (parent.matrixEvent) {
-            matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1); // break;
-          } // parent = parent.parent;
-
+            matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1);
+          }
         }
 
         this.__matrixEvent = matrix$1;

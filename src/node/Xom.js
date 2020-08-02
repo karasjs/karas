@@ -99,10 +99,10 @@ function calBorderRadius(w, h, currentStyle, computedStyle) {
         return 0;
       }
       if(item.unit === PX) {
-        return item.value;
+        return Math.max(0, item.value);
       }
       else {
-        return item.value * (i ? h : w) * 0.01;
+        return Math.max(0, item.value * (i ? h : w) * 0.01);
       }
     });
   });
@@ -432,10 +432,12 @@ class Xom extends Node {
       outerWidth,
       outerHeight,
     } = this;
+    if(isDestroyed || computedStyle.display === 'none') {
+      return;
+    }
     // 圆角边计算
     calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
     let {
-      display,
       marginTop,
       marginLeft,
       paddingTop,
@@ -482,18 +484,6 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    // 先设置透明度，canvas可以向上累积
-    if(renderMode === mode.CANVAS) {
-      let parent = this.parent;
-      while(parent) {
-        opacity *= parent.computedStyle.opacity;
-        parent = parent.parent;
-      }
-      ctx.globalAlpha = opacity;
-    }
-    else {
-      this.__virtualDom.opacity = opacity;
-    }
     // transform和transformOrigin相关
     let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
     computedStyle.transformOrigin = tfo.slice(0);
@@ -501,11 +491,18 @@ class Xom extends Node {
     tfo[1] += y;
     // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
     let matrix = [1, 0, 0, 1, 0, 0];
-    this.__matrix = computedStyle.matrix = matrix;
-    if(isDestroyed || display === 'none') {
-      return;
-    }
     let parent = this.parent;
+    // 先设置透明度，canvas可以向上累积
+    if(renderMode === mode.CANVAS) {
+      let p = parent || this.host && this.host.parent;
+      if(p) {
+        opacity *= p.__opacity;
+      }
+      this.__opacity = ctx.globalAlpha = opacity;
+    }
+    else {
+      this.__virtualDom.opacity = opacity;
+    }
     // transform相对于自身
     if(transform) {
       matrix = tf.calMatrix(transform, outerWidth, outerHeight);
@@ -554,9 +551,7 @@ class Xom extends Node {
     if(parent) {
       if(parent.matrixEvent) {
         matrix = mx.multiply(parent.matrixEvent, matrix);
-        // break;
       }
-      // parent = parent.parent;
     }
     this.__matrixEvent = matrix;
     if(renderMode === mode.CANVAS) {

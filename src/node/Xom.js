@@ -777,40 +777,21 @@ class Xom extends Node {
               }
             }
             if(renderMode === mode.CANVAS) {
-              let c;
-              let currentCtx;
-              // 在离屏canvas上绘制
               if(needMask) {
-                let { width, height } = this.root;
-                c = inject.getCacheCanvas(width, height);
-                currentCtx = c.ctx;
-                // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
-                currentCtx.setTransform(...matrix);
-              }
-              else {
-                currentCtx = ctx;
-              }
-              // 先画不考虑repeat的中心声明的
-              currentCtx.drawImage(source, bgX, bgY, w, h);
-              // 再画重复的十字和4角象限
-              repeat.forEach(item => {
-                currentCtx.drawImage(source, item[0], item[1], w, h);
-              });
-              // mask特殊处理画回来
-              if(needMask) {
-                currentCtx.globalCompositeOperation = 'destination-in';
-                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                ctx.save();
+                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this,
                   borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.drawImage(c.canvas, 0, 0);
-                // 绘完后变正常即可
-                ctx.setTransform(...matrix);
-                currentCtx.globalCompositeOperation = 'source-over';
-                let { width, height } = this.root;
-                currentCtx.setTransform(1, 0, 0, 1, 0, 0);
-                currentCtx.clearRect(0, 0, width, height);
+                ctx.clip();
+              }
+              // 先画不考虑repeat的中心声明的
+              ctx.drawImage(source, bgX, bgY, w, h);
+              // 再画重复的十字和4角象限
+              repeat.forEach(item => {
+                ctx.drawImage(source, item[0], item[1], w, h);
+              });
+              if(needMask) {
+                ctx.restore();
               }
             }
             else if(renderMode === mode.SVG) {

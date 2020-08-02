@@ -203,7 +203,11 @@ class Text extends Node {
   }
 
   render(renderMode, ctx) {
-    const { isDestroyed, computedStyle } = this;
+    let vd = this.__virtualDom = {
+      type: 'text',
+      children: [],
+    };
+    const { isDestroyed, computedStyle, lineBoxes } = this;
     if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
       return;
     }
@@ -211,14 +215,11 @@ class Text extends Node {
       ctx.font = css.setFontStyle(computedStyle);
       ctx.fillStyle = util.int2rgba(computedStyle.color);
     }
-    this.lineBoxes.forEach(item => {
+    lineBoxes.forEach(item => {
       item.render(renderMode, ctx, computedStyle);
     });
     if(renderMode === mode.SVG) {
-      this.__virtualDom = {
-        type: 'text',
-        children: this.lineBoxes.map(lineBox => lineBox.virtualDom),
-      };
+      vd.children = lineBoxes.map(lineBox => lineBox.virtualDom);
     }
   }
 

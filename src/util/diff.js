@@ -142,7 +142,6 @@ function diffX2X(elem, ovd, nvd) {
       elem.removeAttribute('opacity');
     }
   }
-  // geom不会有mask，对比一直相等
   if(ovd.mask !== mask) {
     if(mask) {
       elem.setAttribute('mask', mask);

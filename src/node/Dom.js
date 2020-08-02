@@ -6,7 +6,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import Component from './Component';
-import sort from '../util/sort';
+import util from '../util/util';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
@@ -26,9 +26,71 @@ function isRelativeOrAbsolute(node) {
   return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
 }
 
+/**
+ * 1. 封装string为Text节点
+ * 2. 打平children中的数组，变成一维
+ * 3. 合并相连的Text节点
+ */
+function flatten(parent, children) {
+  let list = [];
+  traverse(parent, list, children, {
+    lastText: null,
+    prev: null,
+  });
+  return list;
+}
+
+function traverse(parent, list, children, options) {
+  if(Array.isArray(children)) {
+    children.forEach(item => {
+      traverse(parent, list, item, options);
+    });
+  }
+  else if(children instanceof Xom) {
+    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
+      throw new Error('Can not nest canvas/svg');
+    }
+    list.push(children);
+    children.__parent = parent;
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  else if(children instanceof Component) {
+    list.push(children);
+    children.__parent = parent;
+    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+    options.lastText = null;
+    if(options.prev) {
+      options.prev.__next = children;
+      children.__prev = options.prev;
+    }
+    options.prev = children;
+  }
+  // 排除掉空的文本，连续的text合并
+  else if(!util.isNil(children) && children !== '') {
+    if(options.lastText) {
+      options.lastText.content += children;
+    }
+    else {
+      let text = options.lastText = new Text(children);
+      list.push(text);
+      text.__parent = parent;
+      if(options.prev) {
+        options.prev.__next = text;
+        text.__prev = options.prev;
+      }
+      options.prev = text;
+    }
+  }
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
-    super(tagName, props, children);
+    super(tagName, props);
     this.__lineGroups = []; // 一行inline元素组成的LineGroup对象后的存放列表
     let { style } = this;
     if(!style.display || !{
@@ -45,6 +107,7 @@ class Dom extends Xom {
       }
     }
     css.normalize(style, reset.dom);
+    this.__children = children || [];
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -1011,8 +1074,8 @@ class Dom extends Xom {
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }
-    let { isDestroyed, computedStyle: { display, visibility }, children } = this;
-    if(isDestroyed || display === 'none') {
+    let { isDestroyed, computedStyle: { display }, children } = this;
+    if(isDestroyed || display === 'none' || !children.length) {
       return;
     }
     // 先渲染过滤mask
@@ -1023,13 +1086,40 @@ class Dom extends Xom {
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndex = this.zIndexChildren;
-    // 再绘制relative和absolute
     zIndex.forEach(item => {
       item.__renderByMask(renderMode, ctx, defs);
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
     }
+  }
+
+  __init(root, host) {
+    super.__init(root, host);
+    (this.__children = flatten(this, this.children))
+      .forEach(item => {
+        if(item instanceof Xom || item instanceof Component) {
+          item.__init(root, host);
+        }
+      });
+  }
+
+  __measure(renderMode, ctx, isRoot) {
+    super.__measure(renderMode, ctx, isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      item.__measure(renderMode, ctx);
+    });
+  }
+
+  __repaint(isRoot) {
+    super.__repaint(isRoot);
+    // 即便自己不需要计算，但children还要继续递归检查
+    this.children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component) {
+        item.__repaint();
+      }
+    });
   }
 
   __destroy() {
@@ -1039,6 +1129,10 @@ class Dom extends Xom {
     super.__destroy();
     this.children.splice(0);
     this.lineGroups.splice(0);
+  }
+
+  get children() {
+    return this.__children;
   }
 
   get flowChildren() {
@@ -1060,86 +1154,37 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    let noAbs = true;
-    let zIndex = this.children.filter((item, i) => {
-      // 临时变量为排序使用
-      item.__iIndex = i;
-      let isXom = item instanceof Xom;
-      item.__iXom = isXom;
-      if(isXom) {
-        let isAbs = isRelativeOrAbsolute(item);
-        if(isAbs) {
-          item.__iAbs = isAbs;
-          noAbs = false;
-        }
+    let flow = [];
+    let abs = [];
+    this.children.forEach((item, i) => {
+      let child = item;
+      if(item instanceof Component) {
+        item = item.shadowRoot;
       }
       // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      return !item.isMask && item.computedStyle;
-    });
-    // 提前跳出
-    if(noAbs) {
-      return zIndex;
-    }
-    zIndex.sort(function(a, b) {
-      if(a.__iXom && b.__iXom) {
-        if(a.__iAbs && b.__iAbs) {
-          if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
-            return a.computedStyle.zIndex - b.computedStyle.zIndex;
+      if(!item.isMask && item.computedStyle) {
+        if(item instanceof Xom) {
+          if(isRelativeOrAbsolute(item)) {
+            // 临时变量为排序使用
+            child.__iIndex = i;
+            abs.push(child);
+          }
+          else {
+            flow.push(child);
           }
         }
-        else if(a.__iAbs) {
-          return 1;
-        }
-        else if(b.__iAbs) {
-          return -1;
+        else {
+          flow.push(child);
         }
       }
-      else if(a.__iXom) {
-        if(a.__iAbs) {
-          return 1;
-        }
-      }
-      else if(b.__iXom) {
-        if(b.__iAbs) {
-          return -1;
-        }
+    });
+    abs.sort(function(a, b) {
+      if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
+        return a.computedStyle.zIndex - b.computedStyle.zIndex;
       }
       return a.__iIndex - b.__iIndex;
     });
-    // sort(zIndex, (a, b) => {
-    //   let xomA = a instanceof Xom;
-    //   let xomB = b instanceof Xom;
-    //   let raA = isRelativeOrAbsolute(a);
-    //   let raB = isRelativeOrAbsolute(b);
-    //   if(xomA && xomB) {
-    //     if(raA && raB) {
-    //       if(a.computedStyle.zIndex > b.computedStyle.zIndex) {
-    //         return true;
-    //       }
-    //       if(a.computedStyle.zIndex < b.computedStyle.zIndex) {
-    //         return false;
-    //       }
-    //     }
-    //     else if(raA) {
-    //       return true;
-    //     }
-    //     else if(raB) {
-    //       return false;
-    //     }
-    //   }
-    //   else if(a instanceof Xom) {
-    //     if(raA) {
-    //       return true;
-    //     }
-    //   }
-    //   else if(b instanceof Xom) {
-    //     if(raB) {
-    //       return false;
-    //     }
-    //   }
-    //   return a.__iIndex > b.__iIndex;
-    // });
-    return zIndex;
+    return flow.concat(abs);
   }
 
   get lineGroups() {

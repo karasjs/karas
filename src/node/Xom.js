@@ -1,5 +1,5 @@
 import Node from './Node';
-import Text from './Text';
+import tool from './tool';
 import mode from '../util/mode';
 import reset from '../style/reset';
 import unit from '../style/unit';
@@ -163,71 +163,8 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
-/**
- * 1. 封装string为Text节点
- * 2. 打平children中的数组，变成一维
- * 3. 合并相连的Text节点
- */
-function flatten(parent, children) {
-  let list = [];
-  traverse(parent, list, children, {
-    lastText: null,
-    prev: null,
-  });
-  return list;
-}
-
-function traverse(parent, list, children, options) {
-  if(Array.isArray(children)) {
-    children.forEach(item => {
-      traverse(parent, list, item, options);
-    });
-  }
-  else if(children instanceof Xom) {
-    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
-      throw new Error('Can not nest canvas/svg');
-    }
-    list.push(children);
-    children.__parent = parent;
-    options.lastText = null;
-    if(options.prev) {
-      options.prev.__next = children;
-      children.__prev = options.prev;
-    }
-    options.prev = children;
-  }
-  else if(children instanceof Component) {
-    list.push(children);
-    children.__parent = parent;
-    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-    options.lastText = null;
-    if(options.prev) {
-      options.prev.__next = children;
-      children.__prev = options.prev;
-    }
-    children.__init();
-    options.prev = children;
-  }
-  // 排除掉空的文本，连续的text合并
-  else if(!util.isNil(children) && children !== '') {
-    if(options.lastText) {
-      options.lastText.content += children;
-    }
-    else {
-      let text = options.lastText = new Text(children);
-      list.push(text);
-      text.__parent = parent;
-      if(options.prev) {
-        options.prev.__next = text;
-        text.__prev = options.prev;
-      }
-      options.prev = text;
-    }
-  }
-}
-
 class Xom extends Node {
-  constructor(tagName, props = [], children = []) {
+  constructor(tagName, props = []) {
     super();
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
@@ -254,9 +191,6 @@ class Xom extends Node {
         }
       }
     });
-    this.__children = flatten(this, children);
-    this.__matrix = null;
-    this.__matrixEvent = null; // 考虑继承的matrix，直接计算事件触发
     this.__animationList = [];
     this.__loadBgi = {
       // 刷新回调函数，用以destroy取消用
@@ -843,40 +777,21 @@ class Xom extends Node {
               }
             }
             if(renderMode === mode.CANVAS) {
-              let c;
-              let currentCtx;
-              // 在离屏canvas上绘制
               if(needMask) {
-                let { width, height } = this.root;
-                c = inject.getCacheCanvas(width, height);
-                currentCtx = c.ctx;
-                // 和当前画布matrix一致，防止当前设置值导致离屏绘制超出边界
-                currentCtx.setTransform(...matrix);
-              }
-              else {
-                currentCtx = ctx;
-              }
-              // 先画不考虑repeat的中心声明的
-              currentCtx.drawImage(source, bgX, bgY, w, h);
-              // 再画重复的十字和4角象限
-              repeat.forEach(item => {
-                currentCtx.drawImage(source, item[0], item[1], w, h);
-              });
-              // mask特殊处理画回来
-              if(needMask) {
-                currentCtx.globalCompositeOperation = 'destination-in';
-                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, currentCtx, this,
+                ctx.save();
+                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this,
                   borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                // 将离屏内容绘制回来时先重置默认matrix，因为离屏已经保持一致
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.drawImage(c.canvas, 0, 0);
-                // 绘完后变正常即可
-                ctx.setTransform(...matrix);
-                currentCtx.globalCompositeOperation = 'source-over';
-                let { width, height } = this.root;
-                currentCtx.setTransform(1, 0, 0, 1, 0, 0);
-                currentCtx.clearRect(0, 0, width, height);
+                ctx.clip();
+              }
+              // 先画不考虑repeat的中心声明的
+              ctx.drawImage(source, bgX, bgY, w, h);
+              // 再画重复的十字和4角象限
+              repeat.forEach(item => {
+                ctx.drawImage(source, item[0], item[1], w, h);
+              });
+              if(needMask) {
+                ctx.restore();
               }
             }
             else if(renderMode === mode.SVG) {
@@ -1096,28 +1011,28 @@ class Xom extends Node {
     this.animationList.forEach(item => item.__destroy());
     this.root.delRefreshTask(this.__loadBgi.cb);
     super.__destroy();
-    this.__matrix = this.__matrixEvent = null;
+    this.__matrix = this.__matrixEvent = this.__root = null;
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
     let { event: { type } } = e;
-    let { isDestroyed, listener, children, computedStyle } = this;
+    let { isDestroyed, computedStyle } = this;
     if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
       return;
     }
+    let { isGeom, listener, zIndexChildren } = this;
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];
     }
     let childWillResponse;
-    let zIndex = this.zIndexChildren;
     // touchmove之类强制的直接通知即可
     if(force) {
-      if(!this.isGeom) {
+      if(!isGeom) {
         // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-        for(let i = zIndex.length - 1; i >= 0; i--) {
-          let child = zIndex[i];
+        for(let i = zIndexChildren.length - 1; i >= 0; i--) {
+          let child = zIndexChildren[i];
           if(child instanceof Xom
             || child instanceof Component && child.shadowRoot instanceof Xom) {
             if(child.__emitEvent(e, force)) {
@@ -1146,10 +1061,10 @@ class Xom extends Node {
       }
       return true;
     }
-    if(!this.isGeom) {
+    if(!isGeom) {
       // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-      for(let i = zIndex.length - 1; i >= 0; i--) {
-        let child = zIndex[i];
+      for(let i = zIndexChildren.length - 1; i >= 0; i--) {
+        let child = zIndexChildren[i];
         if(child instanceof Xom
           || child instanceof Component && child.shadowRoot instanceof Xom) {
           if(child.__emitEvent(e)) {
@@ -1312,68 +1227,20 @@ class Xom extends Node {
     });
   }
 
-  __initRef(root) {
-    let ref = this.props.ref;
-    if(util.isString(ref)) {
-      root.ref[ref] = this;
-    }
-    else if(util.isFunction(ref)) {
-      ref(this);
-    }
-    this.children.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
-        item.__initRef(root);
-      }
-    });
+  __init(root, host) {
+    tool.init(this, root, host);
   }
 
   __measure(renderMode, ctx, isRoot) {
     compute(this, isRoot);
-    // 即便自己不需要计算，但children还要继续递归检查
-    this.children.forEach(item => {
-      item.__measure(renderMode, ctx);
-    });
   }
 
   __repaint(isRoot) {
     repaint(this, isRoot);
-    // 即便自己不需要计算，但children还要继续递归检查
-    this.children.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
-        item.__repaint();
-      }
-    });
   }
 
   get tagName() {
     return this.__tagName;
-  }
-
-  get children() {
-    return this.__children;
-  }
-
-  // canvas/svg根节点
-  get root() {
-    if(this.host) {
-      return this.host.root;
-    }
-    if(this.parent) {
-      return this.parent.root;
-    }
-    if(['canvas', 'svg'].indexOf(this.tagName) > -1) {
-      return this;
-    }
-  }
-
-  // component根节点
-  get host() {
-    if(this.__host) {
-      return this.__host;
-    }
-    if(this.parent) {
-      return this.parent.host;
-    }
   }
 
   get isGeom() {

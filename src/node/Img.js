@@ -211,18 +211,11 @@ class Img extends Dom {
         if(renderMode === mode.CANVAS) {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
-            let { width: w, height: h } = this.root;
-            let c = inject.getCacheCanvas(w, h);
-            c.ctx.drawImage(source, originX, originY, width, height);
-            c.ctx.globalCompositeOperation = 'destination-in';
-            c.ctx.fillStyle = '#FFF';
+            ctx.save();
             genCanvasPolygon(ctx, list);
-            c.draw(c.ctx);
-            ctx.drawImage(c.canvas, 0, 0);
-            c.draw(ctx);
-            c.ctx.globalCompositeOperation = 'source-over';
-            c.ctx.clearRect(0, 0, w, h);
-            c.draw(c.ctx);
+            ctx.clip();
+            ctx.drawImage(source, originX, originY, width, height);
+            ctx.restore();
           }
           else {
             ctx.drawImage(source, originX, originY, width, height);

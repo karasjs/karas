@@ -12,7 +12,6 @@ import Circle from './geom/Circle';
 import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
-import sort from './util/sort';
 import util from './util/util';
 import parse from './util/parse';
 import inject from './util/inject';
@@ -23,6 +22,7 @@ import reset from './style/reset';
 import frame from './animate/frame';
 import easing from './animate/easing';
 import level from './animate/level';
+import Controller from './animate/Controller';
 import math from './math/index';
 import { version } from '../package.json';
 
@@ -106,7 +106,6 @@ let karas = {
   mode,
   Component,
   Event,
-  sort,
   util,
   inject,
   css,
@@ -117,6 +116,7 @@ let karas = {
   easing,
   level,
   math,
+  Controller,
 };
 
 if(typeof window !== 'undefined') {

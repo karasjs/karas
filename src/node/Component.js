@@ -1,42 +1,13 @@
-import Event from '../util/Event';
 import Node from './Node';
 import Text from './Text';
+import tool from './tool';
+import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
 import level from '../animate/level';
 import repaint from '../animate/repaint';
 
 const { isNil, isString, isFunction, clone, extend } = util;
-
-function diff(ovd, nvd) {
-  if(ovd !== nvd) {
-    // 相同继承，不同取消，过滤text
-    if(ovd.tagName === nvd.tagName && nvd.tagName) {
-      ovd.animationList.forEach(item => {
-        item.__target = nvd;
-      });
-      nvd.__animationList = ovd.animationList.splice(0);
-      // 递归进行
-      let oc = ovd.children;
-      let nc = nvd.children;
-      if(oc && nc) {
-        let ol = oc.length;
-        let nl = nc.length;
-        for(let i = 0, len = Math.min(ol, nl); i < len; i++) {
-          ovd = oc[i];
-          nvd = nc[i];
-          if(ovd instanceof Component) {
-            ovd = ovd.shadowRoot;
-          }
-          if(nvd instanceof Component) {
-            nvd = nvd.shadowRoot;
-          }
-          diff(ovd, nvd);
-        }
-      }
-    }
-  }
-}
 
 class Component extends Event {
   constructor(tagName, props, children) {
@@ -58,10 +29,11 @@ class Component extends Event {
       this.__props = util.hash2arr(props);
     }
     this.__children = children || [];
-    this.__shadowRoot = null;
     this.__parent = null;
+    this.__host = null;
     this.__ref = {};
     this.__state = {};
+    this.__isMount = false;
   }
 
   setState(n, cb) {
@@ -77,12 +49,10 @@ class Component extends Event {
       let ovd = this.shadowRoot;
       this.__task = {
         before: () => {
-          this.__init();
+          this.__init(root, this);
           root.setRefreshLevel(level.REFLOW);
         },
         after: () => {
-          // 先进行diff，继承动画，然后销毁老的
-          diff(ovd, this.shadowRoot);
           if(ovd instanceof Node) {
             ovd.__destroy();
           }
@@ -99,18 +69,14 @@ class Component extends Event {
     }
   }
 
-  // 组件传入的样式需覆盖shadowRoot的
-  __init() {
+  __create() {
     let sr = this.render();
     // 可能返回的还是一个Component，递归处理
     while(sr instanceof Component) {
-      sr = sr.__init();
+      sr = sr.render();
     }
-    // node情况不可能是text，因为text节点只出现在dom内，直接返回的text是string
     if(sr instanceof Node) {
-      sr.__host = this;
-      sr.__initRef(this);
-      // 覆盖sr的样式
+      // 组件传入的样式需覆盖shadowRoot的
       let style = clone(this.props.style) || {};
       css.normalize(style);
       extend(sr.style, style);
@@ -139,19 +105,20 @@ class Component extends Event {
         s = util.encodeHtml(sr.toString());
       }
       sr = new Text(s);
-      // 文字视作为父节点的直接文字子节点
-      sr.__parent = this.parent;
     }
     return this.__shadowRoot = sr;
   }
 
-  __initRef(root) {
-    let ref = this.props.ref;
-    if(isString(ref)) {
-      root.ref[ref] = this;
+  __init(root, host) {
+    tool.init(this, root, host);
+    let sr = this.__create();
+    if(sr instanceof Text) {
+      // 文字视作为父节点的直接文字子节点
+      sr.__parent = this.parent;
+      sr.__host = host;
     }
-    else if(isFunction(ref)) {
-      ref(root);
+    else {
+      sr.__init(root, this);
     }
   }
 
@@ -159,6 +126,11 @@ class Component extends Event {
   }
 
   __destroy() {
+    let { componentWillUnmount } = this;
+    if(isFunction(componentWillUnmount)) {
+      componentWillUnmount.call(this);
+      this.__isMount = false;
+    }
     this.root.delRefreshTask(this.__task);
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
@@ -183,7 +155,18 @@ class Component extends Event {
     }
   }
 
+  // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
   __measure(renderMode, ctx) {
+    let { root } = this;
+    if(!this.__isMount) {
+      this.__isMount = true;
+      let { componentDidMount } = this;
+      if(isFunction(componentDidMount)) {
+        root.once(Event.REFRESH, () => {
+          componentDidMount.call(this);
+        });
+      }
+    }
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
       sr.__measure(renderMode, ctx);
@@ -195,7 +178,7 @@ class Component extends Event {
 
   __repaint() {
     let sr = this.shadowRoot;
-    if(sr instanceof Node) {
+    if(!(sr instanceof Text)) {
       sr.__repaint(true);
     }
   }
@@ -213,9 +196,11 @@ class Component extends Event {
   }
 
   get root() {
-    if(this.parent) {
-      return this.parent.root;
-    }
+    return this.__root;
+  }
+
+  get host() {
+    return this.__host;
   }
 
   get parent() {

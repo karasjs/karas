@@ -1,4 +1,9 @@
+let input = document.querySelector('input');
+
 class Component extends karas.Component {
+  componentDidMount() {
+    input.value = this.state.t;
+  }
   constructor(...data) {
     super(...data);
     this.state = {
@@ -11,9 +16,9 @@ class Component extends karas.Component {
 }
 
 let o = karas.render(
-  <svg width="360" height="360">
+  <canvas width="360" height="360">
     <Component/>
-  </svg>,
+  </canvas>,
   '#test'
 );
 
@@ -23,11 +28,10 @@ let a = c.shadowRoot.animate([{
 }, {
   translateX: 100,
 }], {
-  duration: 500,
+  duration: 100,
   fill: 'both',
 });
 a.on('finish', () => {
-  let input = document.querySelector('input');
   input.value = c.shadowRoot.computedStyle.translateX;
 });
 c.setState({

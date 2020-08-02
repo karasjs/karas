@@ -1012,7 +1012,7 @@ class Xom extends Node {
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
     let { isDestroyed, computedStyle } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
+    if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
       return;
     }
     let { event: { type } } = e;

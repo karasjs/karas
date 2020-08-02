@@ -9742,7 +9742,7 @@
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle;
 
-        if (isDestroyed || computedStyle.display === 'none') {
+        if (isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
           return;
         }
 

@@ -1,5 +1,3 @@
-let controller = new karas.Controller();
-
 let o = karas.render(
   <svg width="360" height="360">
     {
@@ -20,14 +18,13 @@ let o = karas.render(
           },
         },
         children: [123]
-      }, {
-        controller,
       })
     }
   </svg>,
   '#test'
 );
 let input = document.querySelector('input');
-input.value = controller.records.length + ',' + controller.list.length;
-controller.play();
-input.value += '/' + controller.records.length + ',' + controller.list.length;
+let ac = o.animateController;
+input.value = ac.records.length + ',' + ac.list.length;
+ac.play();
+input.value += '/' + ac.records.length + ',' + ac.list.length;

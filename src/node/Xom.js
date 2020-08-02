@@ -11,7 +11,6 @@ import image from '../style/image';
 import util from '../util/util';
 import Component from './Component';
 import Animation from '../animate/Animation';
-import Controller from '../animate/Controller';
 import inject from '../util/inject';
 import draw from '../util/draw';
 import mx from '../math/matrix';
@@ -304,6 +303,13 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+    let ar = this.__animateRecords;
+    if(ar) {
+      this.__animateRecords = null;
+      let ac = this.root.animateController;
+      ac.__records = ac.records.concat(ar);
+    }
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -1230,15 +1236,14 @@ class Xom extends Node {
     }
   }
 
-  animate(list, options = {}) {
+  animate(list, options, underControl) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, options);
     this.animationList.push(animation);
-    let controller = options.controller instanceof Controller && options.controller;
-    if(controller) {
-      controller.add(animation);
+    if(underControl) {
+      this.root.animateController.add(animation);
     }
     if(options.hasOwnProperty('autoPlay') && !options.autoPlay) {
       return animation;

@@ -1,5 +1,3 @@
-let controller = new karas.Controller();
-
 let o = karas.parse({
   tagName: 'canvas',
   props: {
@@ -27,8 +25,6 @@ let o = karas.parse({
       children: [123]
     }
   ],
-}, '#test', {
-  controller,
-});
+}, '#test');
 let input = document.querySelector('input');
-input.value = controller.list.length;
+input.value = o.animateController.list.length;

@@ -80,28 +80,22 @@ let karas = {
       if(['canvas', 'svg'].indexOf(tagName) === -1) {
         throw new Error('Parse dom must be canvas/svg');
       }
-      // parse直接（非递归）的动画记录
-      // let ac = vd.animateController;
-      // ac.__records = animateRecords;
+      // 动画记录
       if(controller) {
         controller.__records = controller.__records.concat(animateRecords);
       }
-      // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
       this.render(vd, dom);
       // 总控次数、速度
       if(controller) {
         controller.__op(options);
-        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
         if(!options.hasOwnProperty('autoPlay') || options.autoPlay) {
           controller.play();
         }
       }
     }
-    // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
-    else {
-      if(animateRecords.length) {
-        vd.__animateRecords = animateRecords;
-      }
+    // 递归的parse，如果有动画controller，暂存
+    else if(controller) {
+      controller.__records = controller.__records.concat(animateRecords);
     }
     return vd;
   },

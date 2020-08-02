@@ -9276,15 +9276,7 @@
 
 
         computedStyle.width = this.width;
-        computedStyle.height = this.height; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
-
-        var ar = this.__animateRecords;
-
-        if (ar) {
-          this.__animateRecords = null;
-          var ac = this.root.animateController;
-          ac.__records = ac.records.concat(ar);
-        }
+        computedStyle.height = this.height;
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -11839,54 +11831,38 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
-        var noAbs = true;
-        var zIndex = this.children.filter(function (item, i) {
-          // 临时变量为排序使用
-          item.__iIndex = i;
-          var isXom = item instanceof Xom;
-          item.__iXom = isXom;
+        var flow = [];
+        var abs = [];
+        this.children.forEach(function (item, i) {
+          var child = item;
 
-          if (isXom) {
-            var isAbs = isRelativeOrAbsolute(item);
-
-            if (isAbs) {
-              item.__iAbs = isAbs;
-              noAbs = false;
-            }
+          if (item instanceof Component) {
+            item = item.shadowRoot;
           } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
 
 
-          return !item.isMask && item.computedStyle;
-        }); // 提前跳出
-
-        if (noAbs) {
-          return zIndex;
-        }
-
-        zIndex.sort(function (a, b) {
-          if (a.__iXom && b.__iXom) {
-            if (a.__iAbs && b.__iAbs) {
-              if (a.computedStyle.zIndex !== b.computedStyle.zIndex) {
-                return a.computedStyle.zIndex - b.computedStyle.zIndex;
+          if (!item.isMask && item.computedStyle) {
+            if (item instanceof Xom) {
+              if (isRelativeOrAbsolute(item)) {
+                // 临时变量为排序使用
+                child.__iIndex = i;
+                abs.push(child);
+              } else {
+                flow.push(child);
               }
-            } else if (a.__iAbs) {
-              return 1;
-            } else if (b.__iAbs) {
-              return -1;
+            } else {
+              flow.push(child);
             }
-          } else if (a.__iXom) {
-            if (a.__iAbs) {
-              return 1;
-            }
-          } else if (b.__iXom) {
-            if (b.__iAbs) {
-              return -1;
-            }
+          }
+        });
+        abs.sort(function (a, b) {
+          if (a.computedStyle.zIndex !== b.computedStyle.zIndex) {
+            return a.computedStyle.zIndex - b.computedStyle.zIndex;
           }
 
           return a.__iIndex - b.__iIndex;
         });
-        return zIndex;
+        return flow.concat(abs);
       }
     }, {
       key: "lineGroups",
@@ -15032,31 +15008,25 @@
 
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
-        } // parse直接（非递归）的动画记录
-        // let ac = vd.animateController;
-        // ac.__records = animateRecords;
+        } // 动画记录
 
 
         if (controller) {
           controller.__records = controller.__records.concat(animateRecords);
-        } // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
-
+        }
 
         this.render(vd, dom); // 总控次数、速度
 
         if (controller) {
-          controller.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-
+          controller.__op(options);
 
           if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
             controller.play();
           }
         }
-      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
-      else {
-          if (animateRecords.length) {
-            vd.__animateRecords = animateRecords;
-          }
+      } // 递归的parse，如果有动画controller，暂存
+      else if (controller) {
+          controller.__records = controller.__records.concat(animateRecords);
         }
 
       return vd;

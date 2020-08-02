@@ -1155,53 +1155,37 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    let noAbs = true;
-    let zIndex = this.children.filter((item, i) => {
-      // 临时变量为排序使用
-      item.__iIndex = i;
-      let isXom = item instanceof Xom;
-      item.__iXom = isXom;
-      if(isXom) {
-        let isAbs = isRelativeOrAbsolute(item);
-        if(isAbs) {
-          item.__iAbs = isAbs;
-          noAbs = false;
-        }
+    let flow = [];
+    let abs = [];
+    this.children.forEach((item, i) => {
+      let child = item;
+      if(item instanceof Component) {
+        item = item.shadowRoot;
       }
       // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      return !item.isMask && item.computedStyle;
-    });
-    // 提前跳出
-    if(noAbs) {
-      return zIndex;
-    }
-    zIndex.sort(function(a, b) {
-      if(a.__iXom && b.__iXom) {
-        if(a.__iAbs && b.__iAbs) {
-          if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
-            return a.computedStyle.zIndex - b.computedStyle.zIndex;
+      if(!item.isMask && item.computedStyle) {
+        if(item instanceof Xom) {
+          if(isRelativeOrAbsolute(item)) {
+            // 临时变量为排序使用
+            child.__iIndex = i;
+            abs.push(child);
+          }
+          else {
+            flow.push(child);
           }
         }
-        else if(a.__iAbs) {
-          return 1;
-        }
-        else if(b.__iAbs) {
-          return -1;
+        else {
+          flow.push(child);
         }
       }
-      else if(a.__iXom) {
-        if(a.__iAbs) {
-          return 1;
-        }
-      }
-      else if(b.__iXom) {
-        if(b.__iAbs) {
-          return -1;
-        }
+    });
+    abs.sort(function(a, b) {
+      if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
+        return a.computedStyle.zIndex - b.computedStyle.zIndex;
       }
       return a.__iIndex - b.__iIndex;
     });
-    return zIndex;
+    return flow.concat(abs);
   }
 
   get lineGroups() {

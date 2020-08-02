@@ -39,7 +39,12 @@ function renderProp(k, v) {
 function initEvent(node) {
   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
     node.addEventListener(type, e => {
-      node.__root.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
+      if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
+        node.__root.__touchstartTarget.__emitEvent(e, true);
+      }
+      else {
+        node.__root.__cb(e);
+      }
     });
   });
 }
@@ -93,8 +98,8 @@ class Root extends Dom {
     return res;
   }
 
-  // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接强制响应
-  __cb(e, force) {
+  // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
+  __cb(e) {
     if(e.type === 'touchmove' && !this.__touchstartTarget) {
       return;
     }
@@ -134,7 +139,7 @@ class Root extends Dom {
       y,
       __hasEmitted: false,
     };
-    this.__emitEvent(data, force);
+    this.__emitEvent(data);
     return data;
   }
 

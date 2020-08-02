@@ -140,13 +140,10 @@ class Component extends Event {
     this.__parent = null;
   }
 
-  __emitEvent(e, force) {
+  __emitEvent(e) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
       return;
-    }
-    if(force) {
-      return sr.__emitEvent(e, force);
     }
     let res = sr.__emitEvent(e);
     if(res) {

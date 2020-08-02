@@ -6015,15 +6015,11 @@
       }
     }, {
       key: "__emitEvent",
-      value: function __emitEvent(e, force) {
+      value: function __emitEvent(e) {
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
           return;
-        }
-
-        if (force) {
-          return sr.__emitEvent(e, force);
         }
 
         var res = sr.__emitEvent(e);
@@ -9743,93 +9739,41 @@
     }, {
       key: "__emitEvent",
       value: function __emitEvent(e, force) {
-        var type = e.event.type;
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle;
 
-        if (isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
+        if (isDestroyed || computedStyle.display === 'none') {
           return;
         }
 
-        var isGeom = this.isGeom,
-            listener = this.listener,
-            zIndexChildren = this.zIndexChildren;
+        var type = e.event.type;
+        var listener = this.listener;
         var cb;
 
         if (listener.hasOwnProperty(type)) {
           cb = listener[type];
-        }
+        } // touchmove之类强制的直接由Root通知即可
 
-        var childWillResponse; // touchmove之类强制的直接通知即可
 
         if (force) {
-          if (!isGeom) {
-            // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-            for (var i = zIndexChildren.length - 1; i >= 0; i--) {
-              var child = zIndexChildren[i];
-
-              if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-                if (child.__emitEvent(e, force)) {
-                  childWillResponse = true;
-                }
-              }
-            }
-          } // touchmove之类也需要考虑target是否是自己以及孩子
-
-
-          if (!childWillResponse && this.root.__touchstartTarget !== this) {
-            return;
-          }
-
-          if (e.__stopPropagation) {
-            return;
-          }
-
-          if (['touchmove', 'touchend', 'touchcancel'].indexOf(type) > -1) {
-            e.target = this.root.__touchstartTarget;
-          }
+          e.target = this;
 
           if (cb) {
             cb.forEach(function (item) {
-              if (e.__stopImmediatePropagation) {
-                return;
+              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
+                item(e);
               }
-
-              item(e);
             });
           }
 
           return true;
-        }
-
-        if (!isGeom) {
-          // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-          for (var _i8 = zIndexChildren.length - 1; _i8 >= 0; _i8--) {
-            var _child = zIndexChildren[_i8];
-
-            if (_child instanceof Xom || _child instanceof Component && _child.shadowRoot instanceof Xom) {
-              if (_child.__emitEvent(e)) {
-                childWillResponse = true;
-              }
-            }
-          }
-        }
-
-        if (e.__stopPropagation) {
-          return;
-        } // child触发则parent一定触发，否则判断事件坐标是否在节点内且未被遮挡
+        } // 非force的判断事件坐标是否在节点内
 
 
-        if (childWillResponse || this.willResponseEvent(e)) {
-          e.__hasEmitted = true;
-
+        if (this.willResponseEvent(e)) {
           if (cb) {
             cb.forEach(function (item) {
-              if (e.__stopImmediatePropagation) {
-                return;
-              }
-
-              if (util.isFunction(item)) {
+              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
                 item(e);
               }
             });
@@ -9842,13 +9786,7 @@
       key: "willResponseEvent",
       value: function willResponseEvent(e) {
         var x = e.x,
-            y = e.y,
-            __hasEmitted = e.__hasEmitted;
-
-        if (__hasEmitted) {
-          return;
-        }
-
+            y = e.y;
         var sx = this.sx,
             sy = this.sy,
             outerWidth = this.outerWidth,
@@ -11493,6 +11431,57 @@
         this.lineGroups.splice(0);
       }
     }, {
+      key: "__emitEvent",
+      value: function __emitEvent(e) {
+        var isDestroyed = this.isDestroyed,
+            computedStyle = this.computedStyle;
+
+        if (isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
+          return;
+        }
+
+        var type = e.event.type;
+        var listener = this.listener,
+            zIndexChildren = this.zIndexChildren;
+        var cb;
+
+        if (listener.hasOwnProperty(type)) {
+          cb = listener[type];
+        } // child触发则parent一定触发
+
+
+        for (var i = zIndexChildren.length - 1; i >= 0; i--) {
+          var child = zIndexChildren[i];
+
+          if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+            if (child.__emitEvent(e)) {
+              if (cb) {
+                cb.forEach(function (item) {
+                  if (util.isFunction(item) && !e.__stopImmediatePropagation) {
+                    item(e);
+                  }
+                });
+              }
+
+              return true;
+            }
+          }
+        } // child不触发再看自己
+
+
+        if (this.willResponseEvent(e)) {
+          if (cb) {
+            cb.forEach(function (item) {
+              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
+                item(e);
+              }
+            });
+          }
+
+          return true;
+        }
+      }
+    }, {
       key: "children",
       get: function get() {
         return this.__children;
@@ -12652,7 +12641,11 @@
   function initEvent(node) {
     ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
       node.addEventListener(type, function (e) {
-        node.__root.__cb(e, ['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1);
+        if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
+          node.__root.__touchstartTarget.__emitEvent(e, true);
+        } else {
+          node.__root.__cb(e);
+        }
       });
     });
   }
@@ -12731,11 +12724,11 @@
 
         res += "></".concat(this.tagName, ">");
         return res;
-      } // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接强制响应
+      } // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
 
     }, {
       key: "__cb",
-      value: function __cb(e, force) {
+      value: function __cb(e) {
         if (e.type === 'touchmove' && !this.__touchstartTarget) {
           return;
         }
@@ -12791,7 +12784,7 @@
           __hasEmitted: false
         };
 
-        this.__emitEvent(data, force);
+        this.__emitEvent(data);
 
         return data;
       }

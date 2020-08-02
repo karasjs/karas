@@ -1131,6 +1131,47 @@ class Dom extends Xom {
     this.lineGroups.splice(0);
   }
 
+  __emitEvent(e) {
+    let { isDestroyed, computedStyle } = this;
+    if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
+      return;
+    }
+    let { event: { type } } = e;
+    let { listener, zIndexChildren } = this;
+    let cb;
+    if(listener.hasOwnProperty(type)) {
+      cb = listener[type];
+    }
+    // child触发则parent一定触发
+    for(let i = zIndexChildren.length - 1; i >=0; i--) {
+      let child = zIndexChildren[i];
+      if(child instanceof Xom
+        || child instanceof Component && child.shadowRoot instanceof Xom) {
+        if(child.__emitEvent(e)) {
+          if(cb) {
+            cb.forEach(item => {
+              if(util.isFunction(item) && !e.__stopImmediatePropagation) {
+                item(e);
+              }
+            });
+          }
+          return true;
+        }
+      }
+    }
+    // child不触发再看自己
+    if(this.willResponseEvent(e)) {
+      if(cb) {
+        cb.forEach(item => {
+          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
+            item(e);
+          }
+        });
+      }
+      return true;
+    }
+  }
+
   get children() {
     return this.__children;
   }

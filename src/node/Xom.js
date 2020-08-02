@@ -1011,75 +1011,33 @@ class Xom extends Node {
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
   __emitEvent(e, force) {
-    let { event: { type } } = e;
     let { isDestroyed, computedStyle } = this;
-    if(isDestroyed || computedStyle.display === 'none' || e.__stopPropagation) {
+    if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
-    let { isGeom, listener, zIndexChildren } = this;
+    let { event: { type } } = e;
+    let { listener } = this;
     let cb;
     if(listener.hasOwnProperty(type)) {
       cb = listener[type];
     }
-    let childWillResponse;
-    // touchmove之类强制的直接通知即可
+    // touchmove之类强制的直接由Root通知即可
     if(force) {
-      if(!isGeom) {
-        // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-        for(let i = zIndexChildren.length - 1; i >= 0; i--) {
-          let child = zIndexChildren[i];
-          if(child instanceof Xom
-            || child instanceof Component && child.shadowRoot instanceof Xom) {
-            if(child.__emitEvent(e, force)) {
-              childWillResponse = true;
-            }
-          }
-        }
-      }
-      // touchmove之类也需要考虑target是否是自己以及孩子
-      if(!childWillResponse && this.root.__touchstartTarget !== this) {
-        return;
-      }
-      if(e.__stopPropagation) {
-        return;
-      }
-      if(['touchmove', 'touchend', 'touchcancel'].indexOf(type) > -1) {
-        e.target = this.root.__touchstartTarget;
-      }
+      e.target = this;
       if(cb) {
         cb.forEach(item => {
-          if(e.__stopImmediatePropagation) {
-            return;
+          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
+            item(e);
           }
-          item(e);
         });
       }
       return true;
     }
-    if(!isGeom) {
-      // 先响应absolute/relative高优先级，再看普通流，综合zIndex和从后往前遮挡顺序
-      for(let i = zIndexChildren.length - 1; i >= 0; i--) {
-        let child = zIndexChildren[i];
-        if(child instanceof Xom
-          || child instanceof Component && child.shadowRoot instanceof Xom) {
-          if(child.__emitEvent(e)) {
-            childWillResponse = true;
-          }
-        }
-      }
-    }
-    if(e.__stopPropagation) {
-      return;
-    }
-    // child触发则parent一定触发，否则判断事件坐标是否在节点内且未被遮挡
-    if(childWillResponse || this.willResponseEvent(e)) {
-      e.__hasEmitted = true;
+    // 非force的判断事件坐标是否在节点内
+    if(this.willResponseEvent(e)) {
       if(cb) {
         cb.forEach(item => {
-          if(e.__stopImmediatePropagation) {
-            return;
-          }
-          if(util.isFunction(item)) {
+          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
             item(e);
           }
         });
@@ -1089,10 +1047,7 @@ class Xom extends Node {
   }
 
   willResponseEvent(e) {
-    let { x, y, __hasEmitted } = e;
-    if(__hasEmitted) {
-      return;
-    }
+    let { x, y } = e;
     let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
     let inThis = tf.pointInQuadrilateral(x, y,
       sx, sy,

@@ -125,7 +125,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, clip, mask, filter, conMask } = nvd;
+  let { transform, opacity, mask, filter, conMask } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -140,15 +140,6 @@ function diffX2X(elem, ovd, nvd) {
     }
     else {
       elem.removeAttribute('opacity');
-    }
-  }
-  // geom不会有mask，对比一直相等
-  if(ovd.clip !== clip) {
-    if(clip) {
-      elem.setAttribute('clip-path', clip);
-    }
-    else {
-      elem.removeAttribute('clip-path');
     }
   }
   if(ovd.mask !== mask) {

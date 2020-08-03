@@ -1208,13 +1208,16 @@ class Dom extends Xom {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用
             child.__iIndex = i;
+            let z = child.__zIndex = item.computedStyle.zIndex;
             abs.push(child);
-            if(lastIndex !== undefined && !needSort) {
-              let zIndex = child.computedStyle.zIndex;
-              if(zIndex < lastIndex) {
+            if(lastIndex === undefined) {
+              lastIndex = z;
+            }
+            else if(!needSort) {
+              if(z < lastIndex) {
                 needSort = true;
               }
-              lastIndex = zIndex;
+              lastIndex = z;
             }
           }
           else {
@@ -1227,8 +1230,8 @@ class Dom extends Xom {
       }
     });
     needSort && abs.sort(function(a, b) {
-      if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
-        return a.computedStyle.zIndex - b.computedStyle.zIndex;
+      if(a.__zIndex !== b.__zIndex) {
+        return a.__zIndex - b.__zIndex;
       }
       return a.__iIndex - b.__iIndex;
     });

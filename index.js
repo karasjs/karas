@@ -11512,6 +11512,8 @@
       get: function get() {
         var flow = [];
         var abs = [];
+        var needSort = false;
+        var lastIndex;
         this.children.forEach(function (item, i) {
           var child = item;
 
@@ -11525,7 +11527,18 @@
               if (isRelativeOrAbsolute(item)) {
                 // 临时变量为排序使用
                 child.__iIndex = i;
+                var z = child.__zIndex = item.computedStyle.zIndex;
                 abs.push(child);
+
+                if (lastIndex === undefined) {
+                  lastIndex = z;
+                } else if (!needSort) {
+                  if (z < lastIndex) {
+                    needSort = true;
+                  }
+
+                  lastIndex = z;
+                }
               } else {
                 flow.push(child);
               }
@@ -11533,6 +11546,13 @@
               flow.push(child);
             }
           }
+        });
+        needSort && abs.sort(function (a, b) {
+          if (a.__zIndex !== b.__zIndex) {
+            return a.__zIndex - b.__zIndex;
+          }
+
+          return a.__iIndex - b.__iIndex;
         });
         return flow.concat(abs);
       }
@@ -14903,7 +14923,7 @@
     return vd;
   }
 
-  var version = "0.32.1";
+  var version = "0.33.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

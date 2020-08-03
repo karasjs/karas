@@ -11459,6 +11459,11 @@
 
           if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
             if (child.__emitEvent(e)) {
+              // 孩子阻止冒泡
+              if (e.__stopPropagation) {
+                return;
+              }
+
               if (cb) {
                 cb.forEach(function (item) {
                   if (util.isFunction(item) && !e.__stopImmediatePropagation) {
@@ -11528,13 +11533,6 @@
               flow.push(child);
             }
           }
-        });
-        abs.sort(function (a, b) {
-          if (a.computedStyle.zIndex !== b.computedStyle.zIndex) {
-            return a.computedStyle.zIndex - b.computedStyle.zIndex;
-          }
-
-          return a.__iIndex - b.__iIndex;
         });
         return flow.concat(abs);
       }
@@ -12955,7 +12953,9 @@
       }
     }, {
       key: "scale",
-      value: function scale(x, y) {
+      value: function scale() {
+        var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
+        var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : x;
         this.__sx = x;
         this.__sy = y;
       }

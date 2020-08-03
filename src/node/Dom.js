@@ -1151,6 +1151,10 @@ class Dom extends Xom {
       if(child instanceof Xom
         || child instanceof Component && child.shadowRoot instanceof Xom) {
         if(child.__emitEvent(e)) {
+          // 孩子阻止冒泡
+          if(e.__stopPropagation) {
+            return;
+          }
           if(cb) {
             cb.forEach(item => {
               if(util.isFunction(item) && !e.__stopImmediatePropagation) {
@@ -1191,6 +1195,8 @@ class Dom extends Xom {
   get zIndexChildren() {
     let flow = [];
     let abs = [];
+    let needSort = false;
+    let lastIndex;
     this.children.forEach((item, i) => {
       let child = item;
       if(item instanceof Component) {
@@ -1203,6 +1209,13 @@ class Dom extends Xom {
             // 临时变量为排序使用
             child.__iIndex = i;
             abs.push(child);
+            if(lastIndex !== undefined && !needSort) {
+              let zIndex = child.computedStyle.zIndex;
+              if(zIndex < lastIndex) {
+                needSort = true;
+              }
+              lastIndex = zIndex;
+            }
           }
           else {
             flow.push(child);
@@ -1213,7 +1226,7 @@ class Dom extends Xom {
         }
       }
     });
-    abs.sort(function(a, b) {
+    needSort && abs.sort(function(a, b) {
       if(a.computedStyle.zIndex !== b.computedStyle.zIndex) {
         return a.computedStyle.zIndex - b.computedStyle.zIndex;
       }

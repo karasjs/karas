@@ -283,7 +283,7 @@ class Root extends Dom {
     }
   }
 
-  scale(x, y) {
+  scale(x = 1, y = x) {
     this.__sx = x;
     this.__sy = y;
   }

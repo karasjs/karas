@@ -732,7 +732,7 @@
     var ref = target.props.ref;
 
     if (util.isString(ref) && ref) {
-      root.ref[ref] = target;
+      host.ref[ref] = target;
     } else if (util.isFunction(ref)) {
       ref(target);
     }

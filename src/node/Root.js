@@ -200,25 +200,25 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { isDestroyed, renderMode, ctx, defs, style } = this;
+    let { isDestroyed, renderMode, ctx, defs, style, currentStyle } = this;
     if(isDestroyed) {
       return;
     }
     defs.clear();
     // canvas/svg作为根节点一定是block或flex，不会是inline
     if(['flex', 'block'].indexOf(style.display) === -1) {
-      style.display = 'block';
+      currentStyle.display = style.display = 'block';
     }
     // 同理position不能为absolute
     if(style.position === 'absolute') {
-      style.position = 'static';
+      currentStyle.positoin = style.position = 'static';
     }
     // 根节点满宽高
-    style.width = {
+    currentStyle.width = style.width = {
       value: this.width,
       unit: PX,
     };
-    style.height = {
+    currentStyle.height = style.height = {
       value: this.height,
       unit: PX,
     };
@@ -359,6 +359,7 @@ class Root extends Dom {
 
   __frameHook() {
     // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+    // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
     let r = this.__hookTask = this.__hookTask || (() => {
       this.refresh();
     });

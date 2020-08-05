@@ -4986,13 +4986,12 @@
    * 继承相关的计算，包括布局的，以及渲染repaint的
    * @param node
    * @param isRoot
+   * @param currentStyle
+   * @param computedStyle
    */
 
 
-  function compute(node, isRoot) {
-    var animateStyle = node.animateStyle;
-    var currentStyle = node.__currentStyle = animateStyle;
-    var computedStyle = node.__computedStyle = {};
+  function compute(node, isRoot, currentStyle, computedStyle) {
     var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
     var fontSize = currentStyle.fontSize,
         fontFamily = currentStyle.fontFamily,
@@ -5040,23 +5039,16 @@
           computedStyle.lineHeight = calNormalLineHeight(computedStyle);
         }
 
-    repaint(node, isRoot, currentStyle);
+    repaint(node, isRoot, currentStyle, computedStyle);
   } // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
 
 
-  function repaint(node, isRoot, currentStyle) {
-    if (!currentStyle) {
-      var animateStyle = node.animateStyle;
-      currentStyle = node.__currentStyle = animateStyle;
-    }
-
-    var computedStyle = node.computedStyle;
+  function repaint(node, isRoot, currentStyle, computedStyle) {
     var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-    var _currentStyle = currentStyle,
-        fontStyle = _currentStyle.fontStyle,
-        fontWeight = _currentStyle.fontWeight,
-        color = _currentStyle.color,
-        visibility = _currentStyle.visibility;
+    var fontStyle = currentStyle.fontStyle,
+        fontWeight = currentStyle.fontWeight,
+        color = currentStyle.color,
+        visibility = currentStyle.visibility;
 
     if (fontStyle.unit === INHERIT) {
       computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
@@ -6614,29 +6606,30 @@
 
   function genBeforeRefresh(frameStyle, animation, root, lv) {
     root.setRefreshLevel(lv); // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
+    // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
 
     root.__frameHook();
 
     var style = {};
-    var props = {};
+    var target = animation.target;
     Object.keys(frameStyle).forEach(function (i) {
       var v = frameStyle[i];
 
       if (isNil$3(v)) {
         return;
-      } // geom的属性变化
+      }
 
+      style[i] = v; // geom的属性变化
 
       if (repaint$1.GEOM.hasOwnProperty(i)) {
-        props[i] = v;
-        style[i] = v;
+        target.currentProps[i] = v;
       } // 样式
       else {
-          style[i] = v;
+          // 将动画样式直接赋给currentStyle
+          target.currentStyle[i] = v;
         }
     });
     animation.__style = style;
-    animation.__props = props;
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -7487,6 +7480,7 @@
           _this2.__cancelTask();
 
           _this2.__nextTime = 0;
+          var restore;
 
           if (isFinish) {
             _this2.__currentTime = _this2.delay + duration + _this2.endDelay;
@@ -7495,11 +7489,24 @@
 
             if (!_this2.__stayEnd()) {
               _this2.__style = {};
+              restore = true;
             }
           } else {
             _this2.__playCount = _this2.__currentTime = 0;
             _this2.__playState = 'idle';
             _this2.__style = {};
+            restore = true;
+          } // 动画取消结束不停留在最后一帧需要还原target原本的样式
+
+
+          if (restore) {
+            keys.forEach(function (k) {
+              if (repaint$1.GEOM.hasOwnProperty(k)) {
+                target.__currentProps[k] = target.props[k];
+              } else {
+                target.__currentStyle[k] = target.style[k];
+              }
+            });
           }
         }; // 生成finish的任务事件
 
@@ -7712,26 +7719,19 @@
 
                 if (stayEnd || !isLastCount) {
                   current = current.style;
-
-                  var _calRefresh3 = calRefresh(current, style, keys);
-
-                  var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
-
-                  needRefresh = _calRefresh4[0];
-                  lv = _calRefresh4[1];
                 } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
                 else {
                     current = {};
+                  }
 
-                    var _calRefresh5 = calRefresh(current, style, keys);
+                var _calRefresh3 = calRefresh(current, style, keys);
 
-                    var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
+                var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
 
-                    needRefresh = _calRefresh6[0];
-                    lv = _calRefresh6[1];
-                  } // 非尾每轮次放完增加次数和计算下轮准备
+                needRefresh = _calRefresh4[0];
+                lv = _calRefresh4[1];
 
-
+                // 非尾每轮次放完增加次数和计算下轮准备
                 if (!isLastCount) {
                   _this3.__nextTime = currentTime - duration;
                   playCount = ++_this3.__playCount;
@@ -7751,12 +7751,12 @@
                   var percent = (currentTime - current.time) / total;
                   current = calIntermediateStyle(current, percent);
 
-                  var _calRefresh7 = calRefresh(current, style, keys);
+                  var _calRefresh5 = calRefresh(current, style, keys);
 
-                  var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
+                  var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
 
-                  needRefresh = _calRefresh8[0];
-                  lv = _calRefresh8[1];
+                  needRefresh = _calRefresh6[0];
+                  lv = _calRefresh6[1];
                 } // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
 
 
@@ -7879,21 +7879,21 @@
           if (self.__stayEnd()) {
             current = frames[frames.length - 1].style;
 
+            var _calRefresh7 = calRefresh(current, style, keys);
+
+            var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
+
+            needRefresh = _calRefresh8[0];
+            lv = _calRefresh8[1];
+          } else {
+            current = {};
+
             var _calRefresh9 = calRefresh(current, style, keys);
 
             var _calRefresh10 = _slicedToArray(_calRefresh9, 2);
 
             needRefresh = _calRefresh10[0];
             lv = _calRefresh10[1];
-          } else {
-            current = {};
-
-            var _calRefresh11 = calRefresh(current, style, keys);
-
-            var _calRefresh12 = _slicedToArray(_calRefresh11, 2);
-
-            needRefresh = _calRefresh12[0];
-            lv = _calRefresh12[1];
           }
 
           if (needRefresh) {
@@ -7942,10 +7942,10 @@
             __clean = this.__clean;
 
         if (root) {
-          var _calRefresh13 = calRefresh({}, style, keys),
-              _calRefresh14 = _slicedToArray(_calRefresh13, 2),
-              needRefresh = _calRefresh14[0],
-              lv = _calRefresh14[1];
+          var _calRefresh11 = calRefresh({}, style, keys),
+              _calRefresh12 = _slicedToArray(_calRefresh11, 2),
+              needRefresh = _calRefresh12[0],
+              lv = _calRefresh12[1];
 
           var task = function task() {
             _this5.__cancelTask();
@@ -8151,11 +8151,6 @@
       key: "style",
       get: function get() {
         return this.__style;
-      }
-    }, {
-      key: "props",
-      get: function get() {
-        return this.__props;
       }
     }, {
       key: "list",
@@ -8397,7 +8392,6 @@
   var clone$2 = util.clone,
       int2rgba$2 = util.int2rgba,
       equalArr$2 = util.equalArr,
-      extend$1 = util.extend,
       joinArr$1 = util.joinArr;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
@@ -8557,7 +8551,9 @@
 
       _this.__style = _this.props.style || {}; // style被解析后的k-v形式
 
-      _this.__currentStyle = _this.__style; // 动画过程中绘制一开始会merge动画样式
+      _this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
+
+      _this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
 
       _this.__listener = {};
 
@@ -9642,12 +9638,12 @@
     }, {
       key: "__measure",
       value: function __measure(renderMode, ctx, isRoot) {
-        compute$1(this, isRoot);
+        compute$1(this, isRoot, this.currentStyle, this.computedStyle);
       }
     }, {
       key: "__repaint",
       value: function __repaint(isRoot) {
-        repaint$2(this, isRoot);
+        repaint$2(this, isRoot, this.currentStyle, this.computedStyle);
       }
     }, {
       key: "tagName",
@@ -9748,25 +9744,6 @@
       key: "animationList",
       get: function get() {
         return this.__animationList;
-      }
-    }, {
-      key: "animateStyle",
-      get: function get() {
-        var _this4 = this;
-
-        var style = this.style,
-            animationList = this.animationList;
-        var copy;
-        animationList.forEach(function (item) {
-          if (item.animating) {
-            if (!copy) {
-              copy = extend$1({}, style, _this4.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
-            }
-
-            extend$1(copy, item.style);
-          }
-        });
-        return copy || style;
       }
     }, {
       key: "currentStyle",
@@ -9876,7 +9853,7 @@
   var isNil$4 = util.isNil,
       isString = util.isString,
       isFunction$3 = util.isFunction,
-      extend$2 = util.extend;
+      extend$1 = util.extend;
 
   var Component = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
@@ -9924,7 +9901,7 @@
         if (isNil$4(n)) {
           this.state = {};
         } else {
-          extend$2(this.state, n);
+          extend$1(this.state, n);
         }
 
         var root = this.root;
@@ -9968,7 +9945,9 @@
         if (sr instanceof Node) {
           // 组件传入的样式需覆盖shadowRoot的
           var style = css.normalize(this.props.style || {});
-          extend$2(sr.style, style); // 事件添加到sr，以及自定义事件
+          var keys = Object.keys(style);
+          extend$1(sr.style, style, keys);
+          extend$1(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
 
           this.__props.forEach(function (item) {
             var k = item[0];
@@ -10273,7 +10252,9 @@
         }
       }
 
-      _this.__style = css.normalize(style, reset.dom);
+      _this.__style = css.normalize(style, reset.dom); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
+
+      _this.__currentStyle = util.extend({}, _this.__style);
       _this.__children = children || [];
       return _this;
     } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -12875,7 +12856,8 @@
             renderMode = this.renderMode,
             ctx = this.ctx,
             defs = this.defs,
-            style = this.style;
+            style = this.style,
+            currentStyle = this.currentStyle;
 
         if (isDestroyed) {
           return;
@@ -12884,20 +12866,20 @@
         defs.clear(); // canvas/svg作为根节点一定是block或flex，不会是inline
 
         if (['flex', 'block'].indexOf(style.display) === -1) {
-          style.display = 'block';
+          currentStyle.display = style.display = 'block';
         } // 同理position不能为absolute
 
 
         if (style.position === 'absolute') {
-          style.position = 'static';
+          currentStyle.positoin = style.position = 'static';
         } // 根节点满宽高
 
 
-        style.width = {
+        currentStyle.width = style.width = {
           value: this.width,
           unit: PX$6
         };
-        style.height = {
+        currentStyle.height = style.height = {
           value: this.height,
           unit: PX$6
         }; // 计算css继承，获取所有字体和大小并准备测量文字
@@ -13068,6 +13050,7 @@
         var _this4 = this;
 
         // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+        // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
         var r = this.__hookTask = this.__hookTask || function () {
           _this4.refresh();
         };
@@ -13133,7 +13116,6 @@
   var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
-      extend$3 = util.extend,
       joinArr$2 = util.joinArr;
   var REGISTER = {};
 
@@ -13149,7 +13131,6 @@
 
       _this = _super.call(this, tagName, props);
       _this.__isMask = !!_this.props.mask;
-      _this.__currentProps = _this.props;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
@@ -13164,6 +13145,8 @@
       }
 
       _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
+      _this.__currentStyle = util.extend({}, _this.__style);
+      _this.__currentProps = util.extend({}, _this.props);
       return _this;
     }
 
@@ -13352,9 +13335,7 @@
         }
 
         var isDestroyed = this.isDestroyed,
-            animateProps = this.animateProps,
             display = this.computedStyle.display;
-        this.__currentProps = animateProps;
 
         if (isDestroyed || display === 'none') {
           return {
@@ -13501,23 +13482,6 @@
       key: "maskId",
       get: function get() {
         return this.__maskId;
-      }
-    }, {
-      key: "animateProps",
-      get: function get() {
-        var props = this.props,
-            animationList = this.animationList;
-        var copy;
-        animationList.forEach(function (item) {
-          if (item.animating) {
-            if (!copy) {
-              copy = extend$3({}, props);
-            }
-
-            extend$3(copy, item.props, item.keys);
-          }
-        });
-        return copy || props;
       }
     }, {
       key: "currentProps",
@@ -14646,7 +14610,7 @@
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$4 = util.clone,
-      extend$4 = util.extend;
+      extend$2 = util.extend;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
       abbrAnimate$1 = abbr.abbrAnimate;
@@ -14784,10 +14748,10 @@
     if (init) {
       var props = child.props = child.props || {};
       var style = props.style;
-      extend$4(props, init); // style特殊处理，防止被上面覆盖丢失原始值
+      extend$2(props, init); // style特殊处理，防止被上面覆盖丢失原始值
 
       if (style) {
-        extend$4(style, init.style);
+        extend$2(style, init.style);
         props.style = style;
       } // 删除以免二次解析
 

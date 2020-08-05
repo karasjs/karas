@@ -107,6 +107,8 @@ class Dom extends Xom {
       }
     }
     this.__style = css.normalize(style, reset.dom);
+    // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
+    this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];
   }
 

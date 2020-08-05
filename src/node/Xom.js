@@ -177,7 +177,8 @@ class Xom extends Node {
     this.__tagName = tagName;
     // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
     this.__style = this.props.style || {}; // style被解析后的k-v形式
-    this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
+    this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
+    this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
     this.__props.forEach(item => {
       let k = item[0];
@@ -1181,11 +1182,11 @@ class Xom extends Node {
   }
 
   __measure(renderMode, ctx, isRoot) {
-    compute(this, isRoot);
+    compute(this, isRoot, this.currentStyle, this.computedStyle);
   }
 
   __repaint(isRoot) {
-    repaint(this, isRoot);
+    repaint(this, isRoot, this.currentStyle, this.computedStyle);
   }
 
   get tagName() {
@@ -1290,20 +1291,6 @@ class Xom extends Node {
 
   get animationList() {
     return this.__animationList;
-  }
-
-  get animateStyle() {
-    let { style, animationList } = this;
-    let copy;
-    animationList.forEach(item => {
-      if(item.animating) {
-        if(!copy) {
-          copy = extend({}, style, this.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
-        }
-        extend(copy, item.style);
-      }
-    });
-    return copy || style;
   }
 
   get currentStyle() {

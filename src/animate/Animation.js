@@ -303,26 +303,27 @@ function calRefresh(frameStyle, lastStyle, keys) {
 function genBeforeRefresh(frameStyle, animation, root, lv) {
   root.setRefreshLevel(lv);
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
+  // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
   let style = {};
-  let props = {};
+  let target = animation.target;
   Object.keys(frameStyle).forEach(i => {
     let v = frameStyle[i];
     if(isNil(v)) {
       return;
     }
+    style[i] = v;
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
-      props[i] = v;
-      style[i] = v;
+      target.currentProps[i] = v;
     }
     // 样式
     else {
-      style[i] = v;
+      // 将动画样式直接赋给currentStyle
+      target.currentStyle[i] = v;
     }
   });
   animation.__style = style;
-  animation.__props = props;
 }
 
 /**
@@ -1128,6 +1129,7 @@ class Animation extends Event {
     this.__clean = (isFinish) => {
       this.__cancelTask();
       this.__nextTime = 0;
+      let restore;
       if(isFinish) {
         this.__currentTime = this.delay + duration + this.endDelay;
         this.__playCount = iterations;
@@ -1135,12 +1137,25 @@ class Animation extends Event {
         // cancel需要清除finish根据情况保留
         if(!this.__stayEnd()) {
           this.__style = {};
+          restore = true;
         }
       }
       else {
         this.__playCount = this.__currentTime = 0;
         this.__playState = 'idle';
         this.__style = {};
+        restore = true;
+      }
+      // 动画取消结束不停留在最后一帧需要还原target原本的样式
+      if(restore) {
+        keys.forEach(k => {
+          if(repaint.GEOM.hasOwnProperty(k)) {
+            target.__currentProps[k] = target.props[k];
+          }
+          else {
+            target.__currentStyle[k] = target.style[k];
+          }
+        });
       }
     };
     // 生成finish的任务事件
@@ -1304,13 +1319,12 @@ class Animation extends Event {
             // 多次播放时到达最后一帧也会显示
             if(stayEnd || !isLastCount) {
               current = current.style;
-              [needRefresh, lv] = calRefresh(current, style, keys);
             }
             // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
             else {
               current = {};
-              [needRefresh, lv] = calRefresh(current, style, keys);
             }
+            [needRefresh, lv] = calRefresh(current, style, keys);
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {
               this.__nextTime = currentTime - duration;
@@ -1592,10 +1606,6 @@ class Animation extends Event {
 
   get style() {
     return this.__style;
-  }
-
-  get props() {
-    return this.__props;
   }
 
   get list() {

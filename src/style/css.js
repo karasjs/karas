@@ -864,11 +864,10 @@ function normalize(style, reset = []) {
  * 继承相关的计算，包括布局的，以及渲染repaint的
  * @param node
  * @param isRoot
+ * @param currentStyle
+ * @param computedStyle
  */
-function compute(node, isRoot) {
-  let { animateStyle } = node;
-  let currentStyle = node.__currentStyle = animateStyle;
-  let computedStyle = node.__computedStyle = {};
+function compute(node, isRoot, currentStyle, computedStyle) {
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
   let { fontSize, fontFamily, textAlign, lineHeight } = currentStyle;
   if(fontSize.unit === INHERIT) {
@@ -927,16 +926,11 @@ function compute(node, isRoot) {
   else {
     computedStyle.lineHeight = calNormalLineHeight(computedStyle);
   }
-  repaint(node, isRoot, currentStyle);
+  repaint(node, isRoot, currentStyle, computedStyle);
 }
 
 // REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
-function repaint(node, isRoot, currentStyle) {
-  if(!currentStyle) {
-    let { animateStyle } = node;
-    currentStyle = node.__currentStyle = animateStyle;
-  }
-  let computedStyle = node.computedStyle;
+function repaint(node, isRoot, currentStyle, computedStyle) {
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
   let { fontStyle, fontWeight, color, visibility } = currentStyle;
   if(fontStyle.unit === INHERIT) {

@@ -15,7 +15,6 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMask = !!this.props.mask;
-    this.__currentProps = this.props;
     let { style, isMask } = this;
     if(isMask) {
       style.visibility = 'visible';
@@ -25,6 +24,8 @@ class Geom extends Xom {
       style.stroke = null;
     }
     this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
+    this.__currentStyle = util.extend({}, this.__style);
+    this.__currentProps = util.extend({}, this.props);
   }
 
   __tryLayInline(w, total) {
@@ -179,8 +180,7 @@ class Geom extends Xom {
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'geom';
     }
-    let { isDestroyed, animateProps, computedStyle: { display } } = this;
-    this.__currentProps = animateProps;
+    let { isDestroyed, computedStyle: { display } } = this;
     if(isDestroyed || display === 'none') {
       return {
         isDestroyed,
@@ -304,20 +304,6 @@ class Geom extends Xom {
 
   get maskId() {
     return this.__maskId;
-  }
-
-  get animateProps() {
-    let { props, animationList } = this;
-    let copy;
-    animationList.forEach(item => {
-      if(item.animating) {
-        if(!copy) {
-          copy = extend({}, props);
-        }
-        extend(copy, item.props, item.keys);
-      }
-    });
-    return copy || props;
   }
 
   get currentProps() {

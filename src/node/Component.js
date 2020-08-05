@@ -78,7 +78,9 @@ class Component extends Event {
     if(sr instanceof Node) {
       // 组件传入的样式需覆盖shadowRoot的
       let style = css.normalize(this.props.style || {});
-      extend(sr.style, style);
+      let keys = Object.keys(style);
+      extend(sr.style, style, keys);
+      extend(sr.currentStyle, style, keys);
       // 事件添加到sr，以及自定义事件
       this.__props.forEach(item => {
         let k = item[0];

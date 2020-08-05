@@ -77,8 +77,7 @@ class Component extends Event {
     }
     if(sr instanceof Node) {
       // 组件传入的样式需覆盖shadowRoot的
-      let style = clone(this.props.style) || {};
-      css.normalize(style);
+      let style = css.normalize(this.props.style || {});
       extend(sr.style, style);
       // 事件添加到sr，以及自定义事件
       this.__props.forEach(item => {

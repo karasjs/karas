@@ -106,7 +106,7 @@ class Dom extends Xom {
         style.display = 'block';
       }
     }
-    css.normalize(style, reset.dom);
+    this.__style = css.normalize(style, reset.dom);
     this.__children = children || [];
   }
 

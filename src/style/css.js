@@ -153,6 +153,8 @@ function compatibleTransform(k, v) {
  * @returns 标准化的样式
  */
 function normalize(style, reset = []) {
+  // style只有单层无需深度clone
+  style = util.extend({}, style);
   // 缩写提前处理，因为reset里没有缩写
   let temp = style.border;
   if(temp) {

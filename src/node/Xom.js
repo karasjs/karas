@@ -9,7 +9,6 @@ import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
 import util from '../util/util';
-import Component from './Component';
 import Animation from '../animate/Animation';
 import inject from '../util/inject';
 import draw from '../util/draw';
@@ -177,7 +176,7 @@ class Xom extends Node {
     }
     this.__tagName = tagName;
     // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
-    this.__style = clone(this.props.style) || {}; // style被解析后的k-v形式
+    this.__style = this.props.style || {}; // style被解析后的k-v形式
     this.__currentStyle = this.__style; // 动画过程中绘制一开始会merge动画样式
     this.__listener = {};
     this.__props.forEach(item => {

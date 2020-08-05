@@ -337,7 +337,7 @@ function framing(style, duration, es) {
   // 这两个特殊值提出来存储不干扰style
   delete style.offset;
   delete style.easing;
-  css.normalize(style);
+  style = css.normalize(style);
   return {
     style,
     time: offset * duration,

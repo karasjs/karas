@@ -4225,7 +4225,9 @@
 
   function normalize$1(style) {
     var reset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-    // 缩写提前处理，因为reset里没有缩写
+    // style只有单层无需深度clone
+    style = util.extend({}, style); // 缩写提前处理，因为reset里没有缩写
+
     var temp = style.border;
 
     if (temp) {
@@ -5197,6 +5199,170 @@
     matrixResize: matrixResize
   };
 
+  var isFunction = util.isFunction;
+
+  var Event = /*#__PURE__*/function () {
+    function Event() {
+      _classCallCheck(this, Event);
+
+      this.__eHash = {};
+    }
+
+    _createClass(Event, [{
+      key: "on",
+      value: function on(id, handle) {
+        if (!handle) {
+          return;
+        }
+
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.on(id[i], handle);
+          }
+        } else if (handle) {
+          if (!self.__eHash.hasOwnProperty(id)) {
+            self.__eHash[id] = [];
+          } // 遍历防止此handle被侦听过了
+
+
+          for (var _i = 0, item = self.__eHash[id], _len = item.length; _i < _len; _i++) {
+            if (item[_i] === handle) {
+              return self;
+            }
+          }
+
+          self.__eHash[id].push(handle);
+        }
+
+        return self;
+      }
+    }, {
+      key: "once",
+      value: function once(id, handle) {
+        if (!isFunction(handle)) {
+          return;
+        }
+
+        var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
+
+        function cb() {
+          for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
+            data[_key] = arguments[_key];
+          }
+
+          handle.apply(self, data);
+          self.off(id, cb);
+        }
+
+        cb.__karasEventCb = handle;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.once(id[i], handle);
+          }
+        } else if (handle) {
+          self.on(id, cb);
+        }
+
+        return this;
+      }
+    }, {
+      key: "off",
+      value: function off(id, handle) {
+        var self = this;
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.off(id[i], handle);
+          }
+        } else if (self.__eHash.hasOwnProperty(id)) {
+          if (handle) {
+            for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
+              // 需考虑once包裹的引用对比
+              if (item[_i2] === handle || item[_i2].__karasEventCb === handle) {
+                item.splice(_i2, 1);
+                break;
+              }
+            }
+          } // 未定义为全部清除
+          else {
+              delete self.__eHash[id];
+            }
+        }
+
+        return this;
+      }
+    }, {
+      key: "emit",
+      value: function emit(id) {
+        var self = this;
+
+        for (var _len4 = arguments.length, data = new Array(_len4 > 1 ? _len4 - 1 : 0), _key2 = 1; _key2 < _len4; _key2++) {
+          data[_key2 - 1] = arguments[_key2];
+        }
+
+        if (Array.isArray(id)) {
+          for (var i = 0, len = id.length; i < len; i++) {
+            self.emit(id[i], data);
+          }
+        } else {
+          if (self.__eHash.hasOwnProperty(id)) {
+            var list = self.__eHash[id];
+
+            if (list.length) {
+              list = list.slice();
+
+              for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
+                var cb = list[_i3];
+
+                if (isFunction(cb)) {
+                  cb.apply(self, data);
+                }
+              }
+            }
+          }
+        }
+
+        return this;
+      }
+    }], [{
+      key: "mix",
+      value: function mix() {
+        for (var i = arguments.length - 1; i >= 0; i--) {
+          var o = i < 0 || arguments.length <= i ? undefined : arguments[i];
+          var event = new Event();
+          o.__eHash = {};
+          var fns = ['on', 'once', 'off', 'emit'];
+
+          for (var j = fns.length - 1; j >= 0; j--) {
+            var fn = fns[j];
+            o[fn] = event[fn];
+          }
+        }
+      }
+    }]);
+
+    return Event;
+  }();
+
+  _defineProperty(Event, "REFRESH", 'refresh');
+
+  _defineProperty(Event, "PAUSE", 'pause');
+
+  _defineProperty(Event, "PLAY", 'play');
+
+  _defineProperty(Event, "FRAME", 'frame');
+
+  _defineProperty(Event, "FINISH", 'finish');
+
+  _defineProperty(Event, "CANCEL", 'cancel');
+
+  _defineProperty(Event, "BEGIN", 'begin');
+
+  _defineProperty(Event, "END", 'end');
+
   var LineBox = /*#__PURE__*/function () {
     function LineBox(parent, x, y, w, content) {
       _classCallCheck(this, LineBox);
@@ -5621,519 +5787,6 @@
     data: {}
   });
 
-  var isFunction = util.isFunction;
-
-  var Event = /*#__PURE__*/function () {
-    function Event() {
-      _classCallCheck(this, Event);
-
-      this.__eHash = {};
-    }
-
-    _createClass(Event, [{
-      key: "on",
-      value: function on(id, handle) {
-        if (!handle) {
-          return;
-        }
-
-        var self = this;
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.on(id[i], handle);
-          }
-        } else if (handle) {
-          if (!self.__eHash.hasOwnProperty(id)) {
-            self.__eHash[id] = [];
-          } // 遍历防止此handle被侦听过了
-
-
-          for (var _i = 0, item = self.__eHash[id], _len = item.length; _i < _len; _i++) {
-            if (item[_i] === handle) {
-              return self;
-            }
-          }
-
-          self.__eHash[id].push(handle);
-        }
-
-        return self;
-      }
-    }, {
-      key: "once",
-      value: function once(id, handle) {
-        if (!isFunction(handle)) {
-          return;
-        }
-
-        var self = this; // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-
-        function cb() {
-          for (var _len2 = arguments.length, data = new Array(_len2), _key = 0; _key < _len2; _key++) {
-            data[_key] = arguments[_key];
-          }
-
-          handle.apply(self, data);
-          self.off(id, cb);
-        }
-
-        cb.__karasEventCb = handle;
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.once(id[i], handle);
-          }
-        } else if (handle) {
-          self.on(id, cb);
-        }
-
-        return this;
-      }
-    }, {
-      key: "off",
-      value: function off(id, handle) {
-        var self = this;
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.off(id[i], handle);
-          }
-        } else if (self.__eHash.hasOwnProperty(id)) {
-          if (handle) {
-            for (var _i2 = 0, item = self.__eHash[id], _len3 = item.length; _i2 < _len3; _i2++) {
-              // 需考虑once包裹的引用对比
-              if (item[_i2] === handle || item[_i2].__karasEventCb === handle) {
-                item.splice(_i2, 1);
-                break;
-              }
-            }
-          } // 未定义为全部清除
-          else {
-              delete self.__eHash[id];
-            }
-        }
-
-        return this;
-      }
-    }, {
-      key: "emit",
-      value: function emit(id) {
-        var self = this;
-
-        for (var _len4 = arguments.length, data = new Array(_len4 > 1 ? _len4 - 1 : 0), _key2 = 1; _key2 < _len4; _key2++) {
-          data[_key2 - 1] = arguments[_key2];
-        }
-
-        if (Array.isArray(id)) {
-          for (var i = 0, len = id.length; i < len; i++) {
-            self.emit(id[i], data);
-          }
-        } else {
-          if (self.__eHash.hasOwnProperty(id)) {
-            var list = self.__eHash[id];
-
-            if (list.length) {
-              list = list.slice();
-
-              for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
-                var cb = list[_i3];
-
-                if (isFunction(cb)) {
-                  cb.apply(self, data);
-                }
-              }
-            }
-          }
-        }
-
-        return this;
-      }
-    }], [{
-      key: "mix",
-      value: function mix() {
-        for (var i = arguments.length - 1; i >= 0; i--) {
-          var o = i < 0 || arguments.length <= i ? undefined : arguments[i];
-          var event = new Event();
-          o.__eHash = {};
-          var fns = ['on', 'once', 'off', 'emit'];
-
-          for (var j = fns.length - 1; j >= 0; j--) {
-            var fn = fns[j];
-            o[fn] = event[fn];
-          }
-        }
-      }
-    }]);
-
-    return Event;
-  }();
-
-  _defineProperty(Event, "REFRESH", 'refresh');
-
-  _defineProperty(Event, "PAUSE", 'pause');
-
-  _defineProperty(Event, "PLAY", 'play');
-
-  _defineProperty(Event, "FRAME", 'frame');
-
-  _defineProperty(Event, "FINISH", 'finish');
-
-  _defineProperty(Event, "CANCEL", 'cancel');
-
-  _defineProperty(Event, "BEGIN", 'begin');
-
-  _defineProperty(Event, "END", 'end');
-
-  var level = {
-    REPAINT: 0,
-    REFLOW: 1
-  };
-
-  var repaint$1 = {
-    GEOM: {
-      x1: true,
-      y1: true,
-      x2: true,
-      y2: true,
-      controlA: true,
-      controlB: true,
-      r: true,
-      rx: true,
-      ry: true,
-      begin: true,
-      end: true,
-      points: true,
-      controls: true
-    },
-    STYLE: {
-      transform: true,
-      translateX: true,
-      translateY: true,
-      skewX: true,
-      skewY: true,
-      scaleX: true,
-      scaleY: true,
-      rotateZ: true,
-      color: true,
-      fontStyle: true,
-      strokeWidth: true,
-      fill: true,
-      strokeDasharray: true,
-      strokeLinecap: true,
-      strokeLinejoin: true,
-      strokeMiterlimit: true,
-      backgroundColor: true,
-      backgroundImage: true,
-      backgroundPositionX: true,
-      backgroundPositionY: true,
-      backgroundRepeat: true,
-      backgroundSize: true,
-      stroke: true,
-      borderBottomColor: true,
-      borderLeftColor: true,
-      borderRightColor: true,
-      borderTopColor: true,
-      borderTopLeftRadius: true,
-      borderTopRightRadius: true,
-      borderBottomRightRadius: true,
-      borderBottomLeftRadius: true,
-      visibility: true,
-      opacity: true,
-      zIndex: true,
-      filter: true
-    }
-  };
-
-  var isNil$3 = util.isNil,
-      isString = util.isString,
-      isFunction$1 = util.isFunction,
-      clone$1 = util.clone,
-      extend$1 = util.extend;
-
-  var Component = /*#__PURE__*/function (_Event) {
-    _inherits(Component, _Event);
-
-    var _super = _createSuper(Component);
-
-    function Component(tagName, props, children) {
-      var _this;
-
-      _classCallCheck(this, Component);
-
-      _this = _super.call(this);
-
-      if (!isString(tagName)) {
-        children = props;
-        props = tagName;
-        tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
-      }
-
-      _this.__tagName = tagName;
-      props = props || []; // 构建工具中都是arr，手写可能出现hash情况
-
-      if (Array.isArray(props)) {
-        _this.props = util.arr2hash(props);
-        _this.__props = props;
-      } else {
-        _this.props = props;
-        _this.__props = util.hash2arr(props);
-      }
-
-      _this.__children = children || [];
-      _this.__parent = null;
-      _this.__host = null;
-      _this.__ref = {};
-      _this.__state = {};
-      _this.__isMount = false;
-      return _this;
-    }
-
-    _createClass(Component, [{
-      key: "setState",
-      value: function setState(n, cb) {
-        var _this2 = this;
-
-        if (isNil$3(n)) {
-          this.state = {};
-        } else {
-          extend$1(this.state, n);
-        }
-
-        var root = this.root;
-
-        if (root) {
-          root.delRefreshTask(this.__task);
-          var ovd = this.shadowRoot;
-          this.__task = {
-            before: function before() {
-              _this2.__init(root, _this2);
-
-              root.setRefreshLevel(level.REFLOW);
-            },
-            after: function after() {
-              if (ovd instanceof Node) {
-                ovd.__destroy();
-              }
-
-              if (isFunction$1(cb)) {
-                cb();
-              }
-            }
-          };
-          root.addRefreshTask(this.__task);
-        } // 构造函数中调用还未render，
-        else if (isFunction$1(cb)) {
-            cb();
-          }
-      }
-    }, {
-      key: "__create",
-      value: function __create() {
-        var _this3 = this;
-
-        var sr = this.render(); // 可能返回的还是一个Component，递归处理
-
-        while (sr instanceof Component) {
-          sr = sr.render();
-        }
-
-        if (sr instanceof Node) {
-          // 组件传入的样式需覆盖shadowRoot的
-          var style = clone$1(this.props.style) || {};
-          css.normalize(style);
-          extend$1(sr.style, style); // 事件添加到sr，以及自定义事件
-
-          this.__props.forEach(function (item) {
-            var k = item[0];
-            var v = item[1];
-
-            if (/^on[a-zA-Z]/.test(k)) {
-              k = k.slice(2).toLowerCase();
-              var arr = sr.listener[k] = sr.listener[k] || [];
-
-              if (arr.indexOf(v) === -1) {
-                arr.push(v);
-              }
-            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-              k = k.slice(3);
-
-              _this3.on(k, function () {
-                v.apply(void 0, arguments);
-              });
-            }
-          });
-        } else {
-          var s = '';
-
-          if (!isNil$3(sr)) {
-            s = util.encodeHtml(sr.toString());
-          }
-
-          sr = new Text(s);
-        }
-
-        return this.__shadowRoot = sr;
-      }
-    }, {
-      key: "__init",
-      value: function __init(root, host) {
-        tool.init(this, root, host);
-
-        var sr = this.__create();
-
-        if (sr instanceof Text) {
-          // 文字视作为父节点的直接文字子节点
-          sr.__parent = this.parent;
-          sr.__host = host;
-        } else {
-          sr.__init(root, this);
-        }
-      }
-    }, {
-      key: "render",
-      value: function render() {}
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        var componentWillUnmount = this.componentWillUnmount;
-
-        if (isFunction$1(componentWillUnmount)) {
-          componentWillUnmount.call(this);
-          this.__isMount = false;
-        }
-
-        this.root.delRefreshTask(this.__task);
-
-        if (this.shadowRoot) {
-          this.shadowRoot.__destroy();
-        }
-
-        this.children.splice(0);
-        this.__shadowRoot = null;
-        this.__parent = null;
-      }
-    }, {
-      key: "__emitEvent",
-      value: function __emitEvent(e) {
-        var sr = this.shadowRoot;
-
-        if (sr instanceof Text) {
-          return;
-        }
-
-        var res = sr.__emitEvent(e);
-
-        if (res) {
-          e.target = this;
-          return true;
-        }
-      } // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
-
-    }, {
-      key: "__measure",
-      value: function __measure(renderMode, ctx) {
-        var _this4 = this;
-
-        var root = this.root;
-
-        if (!this.__isMount) {
-          this.__isMount = true;
-          var componentDidMount = this.componentDidMount;
-
-          if (isFunction$1(componentDidMount)) {
-            root.once(Event.REFRESH, function () {
-              componentDidMount.call(_this4);
-            });
-          }
-        }
-
-        var sr = this.shadowRoot;
-
-        if (sr instanceof Text) {
-          sr.__measure(renderMode, ctx);
-        } else {
-          sr.__measure(renderMode, ctx, true);
-        }
-      }
-    }, {
-      key: "__repaint",
-      value: function __repaint() {
-        var sr = this.shadowRoot;
-
-        if (!(sr instanceof Text)) {
-          sr.__repaint(true);
-        }
-      }
-    }, {
-      key: "tagName",
-      get: function get() {
-        return this.__tagName;
-      }
-    }, {
-      key: "children",
-      get: function get() {
-        return this.__children;
-      }
-    }, {
-      key: "shadowRoot",
-      get: function get() {
-        return this.__shadowRoot;
-      }
-    }, {
-      key: "root",
-      get: function get() {
-        return this.__root;
-      }
-    }, {
-      key: "host",
-      get: function get() {
-        return this.__host;
-      }
-    }, {
-      key: "parent",
-      get: function get() {
-        return this.__parent;
-      }
-    }, {
-      key: "ref",
-      get: function get() {
-        return this.__ref;
-      }
-    }, {
-      key: "state",
-      get: function get() {
-        return this.__state;
-      },
-      set: function set(v) {
-        this.__state = v;
-      }
-    }]);
-
-    return Component;
-  }(Event);
-
-  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
-    Object.defineProperty(Component.prototype, fn, {
-      get: function get() {
-        var sr = this.shadowRoot;
-
-        if (sr) {
-          return sr[fn];
-        }
-      }
-    });
-  });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
-    Component.prototype[fn] = function () {
-      var sr = this.shadowRoot;
-
-      if (sr && isFunction$1(sr[fn])) {
-        return sr[fn].apply(sr, arguments);
-      }
-    };
-  });
-
   var SPF = 1000 / 60;
   var CANVAS = {
     cache: null,
@@ -6373,21 +6026,21 @@
     }
   };
 
-  var isFunction$2 = util.isFunction,
+  var isFunction$1 = util.isFunction,
       isObject = util.isObject;
 
   function traversal(list, diff, step) {
     if (step === 'before') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$2(item.before)) {
+        if (isObject(item) && isFunction$1(item.before)) {
           item.before(diff);
         }
       });
     } else if (step === 'after') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$2(item.after)) {
+        if (isObject(item) && isFunction$1(item.after)) {
           item.after(diff);
-        } else if (isFunction$2(item)) {
+        } else if (isFunction$1(item)) {
           item(diff);
         }
       });
@@ -6492,7 +6145,7 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = isFunction$2(handle) ? function (diff) {
+        var cb = isFunction$1(handle) ? function (diff) {
           handle(diff);
 
           _this.offFrame(cb);
@@ -6657,6 +6310,66 @@
     cubicBezier: bezier
   };
 
+  var level = {
+    REPAINT: 0,
+    REFLOW: 1
+  };
+
+  var repaint$1 = {
+    GEOM: {
+      x1: true,
+      y1: true,
+      x2: true,
+      y2: true,
+      controlA: true,
+      controlB: true,
+      r: true,
+      rx: true,
+      ry: true,
+      begin: true,
+      end: true,
+      points: true,
+      controls: true
+    },
+    STYLE: {
+      transform: true,
+      translateX: true,
+      translateY: true,
+      skewX: true,
+      skewY: true,
+      scaleX: true,
+      scaleY: true,
+      rotateZ: true,
+      color: true,
+      fontStyle: true,
+      strokeWidth: true,
+      fill: true,
+      strokeDasharray: true,
+      strokeLinecap: true,
+      strokeLinejoin: true,
+      strokeMiterlimit: true,
+      backgroundColor: true,
+      backgroundImage: true,
+      backgroundPositionX: true,
+      backgroundPositionY: true,
+      backgroundRepeat: true,
+      backgroundSize: true,
+      stroke: true,
+      borderBottomColor: true,
+      borderLeftColor: true,
+      borderRightColor: true,
+      borderTopColor: true,
+      borderTopLeftRadius: true,
+      borderTopRightRadius: true,
+      borderBottomRightRadius: true,
+      borderBottomLeftRadius: true,
+      visibility: true,
+      opacity: true,
+      zIndex: true,
+      filter: true
+    }
+  };
+
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -6664,11 +6377,11 @@
       RGBA$1 = unit.RGBA,
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
-  var isNil$4 = util.isNil,
-      isFunction$3 = util.isFunction,
+  var isNil$3 = util.isNil,
+      isFunction$2 = util.isFunction,
       isNumber = util.isNumber,
       isObject$1 = util.isObject,
-      clone$2 = util.clone,
+      clone$1 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
@@ -6710,7 +6423,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
+        if (!isNil$3(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
           keys.push(k);
         }
@@ -6740,7 +6453,7 @@
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (isNil$4(v)) {
+        if (isNil$3(v)) {
           return;
         }
 
@@ -6871,7 +6584,7 @@
       var n = frameStyle[k];
       var p = lastStyle[k]; // 前后均非空对比
 
-      if (!isNil$4(n) && !isNil$4(p)) {
+      if (!isNil$3(n) && !isNil$3(p)) {
         if (!equalStyle(k, n, p)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
@@ -6885,7 +6598,7 @@
           }
         }
       } // 有一个为空时即不等
-      else if (!isNil$4(n) || !isNil$4(p)) {
+      else if (!isNil$3(n) || !isNil$3(p)) {
           res = true;
 
           if (isStyleReflow(k)) {
@@ -6909,7 +6622,7 @@
     Object.keys(frameStyle).forEach(function (i) {
       var v = frameStyle[i];
 
-      if (isNil$4(v)) {
+      if (isNil$3(v)) {
         return;
       } // geom的属性变化
 
@@ -6935,12 +6648,13 @@
 
 
   function framing(style, duration, es) {
-    var offset = style.offset,
-        easing = style.easing; // 这两个特殊值提出来存储不干扰style
+    var _style = style,
+        offset = _style.offset,
+        easing = _style.easing; // 这两个特殊值提出来存储不干扰style
 
     delete style.offset;
     delete style.easing;
-    css.normalize(style);
+    style = css.normalize(style);
     return {
       style: style,
       time: offset * duration,
@@ -7283,10 +6997,10 @@
 
       res.v = diff;
     } else if (repaint$1.GEOM.hasOwnProperty(k)) {
-      if (isNil$4(p)) {
+      if (isNil$3(p)) {
         res.n = null;
       } else if (k === 'points' || k === 'controls') {
-        if (isNil$4(n) || isNil$4(p)) {
+        if (isNil$3(n) || isNil$3(p)) {
           return p;
         }
 
@@ -7300,13 +7014,13 @@
           var _pv = p[_i7];
           var _nv = n[_i7];
 
-          if (isNil$4(_pv) || isNil$4(_nv)) {
+          if (isNil$3(_pv) || isNil$3(_nv)) {
             res.v.push(_nv);
           } else {
             var _v15 = [];
 
             for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
-              if (isNil$4(_pv[j]) || isNil$4(_nv[j])) {
+              if (isNil$3(_pv[j]) || isNil$3(_nv[j])) {
                 _v15.push(_nv[j]);
               } else {
                 _v15.push(_nv[j] - _pv[j]);
@@ -7317,7 +7031,7 @@
           }
         }
       } else if (k === 'controlA' || k === 'controlB') {
-        if (isNil$4(n) || isNil$4(p)) {
+        if (isNil$3(n) || isNil$3(p)) {
           return p;
         }
 
@@ -7422,7 +7136,7 @@
 
 
   function calIntermediateStyle(frame, percent) {
-    var style = clone$2(frame.style);
+    var style = clone$1(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction !== linear) {
@@ -7513,12 +7227,12 @@
 
             if (k === 'points' || k === 'controls') {
               for (var _i10 = 0, _len4 = Math.min(_st.length, v.length); _i10 < _len4; _i10++) {
-                if (isNil$4(_st[_i10]) || !_st[_i10].length) {
+                if (isNil$3(_st[_i10]) || !_st[_i10].length) {
                   continue;
                 }
 
                 for (var j = 0, len2 = Math.min(_st[_i10].length, v[_i10].length); j < len2; j++) {
-                  if (!isNil$4(_st[_i10][j]) && !isNil$4(v[_i10][j])) {
+                  if (!isNil$3(_st[_i10][j]) && !isNil$3(v[_i10][j])) {
                     _st[_i10][j] += v[_i10][j] * percent;
                   }
                 }
@@ -7537,7 +7251,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$3(options)) {
+    if (isFunction$2(options)) {
       cb = options;
       options = {};
     }
@@ -7560,7 +7274,7 @@
       _this = _super.call(this);
       _this.__id = uuid++;
       _this.__target = target;
-      list = clone$2(list || []);
+      list = clone$1(list || []);
 
       if (Array.isArray(list)) {
         _this.__list = list.filter(function (item) {
@@ -7666,21 +7380,21 @@
 
 
         if (list.length === 1) {
-          list[0] = clone$2(list[0]);
+          list[0] = clone$1(list[0]);
 
           if (list[0].offset === 1) {
             list.unshift({
               offset: 0
             });
           } else {
-            var copy = clone$2(list[0]);
+            var copy = clone$1(list[0]);
             copy.offset = 1;
             list.push(copy);
           }
         } // 强制clone防止同引用
         else {
             list.forEach(function (item, i) {
-              list[i] = clone$2(item);
+              list[i] = clone$1(item);
             });
           } // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
@@ -7755,7 +7469,7 @@
         } // 反向存储帧的倒排结果
 
 
-        var framesR = clone$2(frames).reverse();
+        var framesR = clone$1(frames).reverse();
         framesR.forEach(function (item) {
           item.time = duration - item.time;
           item.transition = [];
@@ -7795,7 +7509,7 @@
 
           _this2.emit(Event.FINISH);
 
-          if (isFunction$3(cb)) {
+          if (isFunction$2(cb)) {
             cb();
           }
         }; // 同步执行，用在finish()这种主动调用
@@ -7810,7 +7524,7 @@
             _this2.emit(Event.PLAY);
           }
 
-          if (isFunction$3(_this2.__playCb)) {
+          if (isFunction$2(_this2.__playCb)) {
             _this2.__playCb(diff, isDelay);
 
             _this2.__playCb = null;
@@ -8240,7 +7954,7 @@
 
             _this5.emit(Event.CANCEL);
 
-            if (isFunction$3(cb)) {
+            if (isFunction$2(cb)) {
               cb();
             }
           };
@@ -8328,7 +8042,7 @@
 
           _this6.__cancelTask();
 
-          if (isFunction$3(cb)) {
+          if (isFunction$2(cb)) {
             cb(diff);
           }
         });
@@ -8680,10 +8394,10 @@
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING;
-  var clone$3 = util.clone,
+  var clone$2 = util.clone,
       int2rgba$2 = util.int2rgba,
       equalArr$2 = util.equalArr,
-      extend$2 = util.extend,
+      extend$1 = util.extend,
       joinArr$1 = util.joinArr;
   var calRelative$1 = css.calRelative,
       compute$1 = css.compute,
@@ -8841,7 +8555,7 @@
 
       _this.__tagName = tagName; // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
 
-      _this.__style = clone$3(_this.props.style) || {}; // style被解析后的k-v形式
+      _this.__style = _this.props.style || {}; // style被解析后的k-v形式
 
       _this.__currentStyle = _this.__style; // 动画过程中绘制一开始会merge动画样式
 
@@ -9536,7 +9250,7 @@
                   }); // 再画重复的十字和4角象限
 
                   repeat.forEach(function (item) {
-                    var copy = clone$3(props);
+                    var copy = clone$2(props);
 
                     if (needResize) {
                       var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -10046,10 +9760,10 @@
         animationList.forEach(function (item) {
           if (item.animating) {
             if (!copy) {
-              copy = extend$2({}, style, _this4.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
+              copy = extend$1({}, style, _this4.isGeom ? reset.domKey.concat(reset.geomKey) : reset.domKey);
             }
 
-            extend$2(copy, item.style);
+            extend$1(copy, item.style);
           }
         });
         return copy || style;
@@ -10158,6 +9872,293 @@
 
     return LineGroup;
   }();
+
+  var isNil$4 = util.isNil,
+      isString = util.isString,
+      isFunction$3 = util.isFunction,
+      extend$2 = util.extend;
+
+  var Component = /*#__PURE__*/function (_Event) {
+    _inherits(Component, _Event);
+
+    var _super = _createSuper(Component);
+
+    function Component(tagName, props, children) {
+      var _this;
+
+      _classCallCheck(this, Component);
+
+      _this = _super.call(this);
+
+      if (!isString(tagName)) {
+        children = props;
+        props = tagName;
+        tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
+      }
+
+      _this.__tagName = tagName;
+      props = props || []; // 构建工具中都是arr，手写可能出现hash情况
+
+      if (Array.isArray(props)) {
+        _this.props = util.arr2hash(props);
+        _this.__props = props;
+      } else {
+        _this.props = props;
+        _this.__props = util.hash2arr(props);
+      }
+
+      _this.__children = children || [];
+      _this.__parent = null;
+      _this.__host = null;
+      _this.__ref = {};
+      _this.__state = {};
+      _this.__isMount = false;
+      return _this;
+    }
+
+    _createClass(Component, [{
+      key: "setState",
+      value: function setState(n, cb) {
+        var _this2 = this;
+
+        if (isNil$4(n)) {
+          this.state = {};
+        } else {
+          extend$2(this.state, n);
+        }
+
+        var root = this.root;
+
+        if (root) {
+          root.delRefreshTask(this.__task);
+          var ovd = this.shadowRoot;
+          this.__task = {
+            before: function before() {
+              _this2.__init(root, _this2);
+
+              root.setRefreshLevel(level.REFLOW);
+            },
+            after: function after() {
+              if (ovd instanceof Node) {
+                ovd.__destroy();
+              }
+
+              if (isFunction$3(cb)) {
+                cb();
+              }
+            }
+          };
+          root.addRefreshTask(this.__task);
+        } // 构造函数中调用还未render，
+        else if (isFunction$3(cb)) {
+            cb();
+          }
+      }
+    }, {
+      key: "__create",
+      value: function __create() {
+        var _this3 = this;
+
+        var sr = this.render(); // 可能返回的还是一个Component，递归处理
+
+        while (sr instanceof Component) {
+          sr = sr.render();
+        }
+
+        if (sr instanceof Node) {
+          // 组件传入的样式需覆盖shadowRoot的
+          var style = css.normalize(this.props.style || {});
+          extend$2(sr.style, style); // 事件添加到sr，以及自定义事件
+
+          this.__props.forEach(function (item) {
+            var k = item[0];
+            var v = item[1];
+
+            if (/^on[a-zA-Z]/.test(k)) {
+              k = k.slice(2).toLowerCase();
+              var arr = sr.listener[k] = sr.listener[k] || [];
+
+              if (arr.indexOf(v) === -1) {
+                arr.push(v);
+              }
+            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+              k = k.slice(3);
+
+              _this3.on(k, function () {
+                v.apply(void 0, arguments);
+              });
+            }
+          });
+        } else {
+          var s = '';
+
+          if (!isNil$4(sr)) {
+            s = util.encodeHtml(sr.toString());
+          }
+
+          sr = new Text(s);
+        }
+
+        return this.__shadowRoot = sr;
+      }
+    }, {
+      key: "__init",
+      value: function __init(root, host) {
+        tool.init(this, root, host);
+
+        var sr = this.__create();
+
+        if (sr instanceof Text) {
+          // 文字视作为父节点的直接文字子节点
+          sr.__parent = this.parent;
+          sr.__host = host;
+        } else {
+          sr.__init(root, this);
+        }
+      }
+    }, {
+      key: "render",
+      value: function render() {}
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        var componentWillUnmount = this.componentWillUnmount;
+
+        if (isFunction$3(componentWillUnmount)) {
+          componentWillUnmount.call(this);
+          this.__isMount = false;
+        }
+
+        this.root.delRefreshTask(this.__task);
+
+        if (this.shadowRoot) {
+          this.shadowRoot.__destroy();
+        }
+
+        this.children.splice(0);
+        this.__shadowRoot = null;
+        this.__parent = null;
+      }
+    }, {
+      key: "__emitEvent",
+      value: function __emitEvent(e) {
+        var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          return;
+        }
+
+        var res = sr.__emitEvent(e);
+
+        if (res) {
+          e.target = this;
+          return true;
+        }
+      } // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
+
+    }, {
+      key: "__measure",
+      value: function __measure(renderMode, ctx) {
+        var _this4 = this;
+
+        var root = this.root;
+
+        if (!this.__isMount) {
+          this.__isMount = true;
+          var componentDidMount = this.componentDidMount;
+
+          if (isFunction$3(componentDidMount)) {
+            root.once(Event.REFRESH, function () {
+              componentDidMount.call(_this4);
+            });
+          }
+        }
+
+        var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          sr.__measure(renderMode, ctx);
+        } else {
+          sr.__measure(renderMode, ctx, true);
+        }
+      }
+    }, {
+      key: "__repaint",
+      value: function __repaint() {
+        var sr = this.shadowRoot;
+
+        if (!(sr instanceof Text)) {
+          sr.__repaint(true);
+        }
+      }
+    }, {
+      key: "tagName",
+      get: function get() {
+        return this.__tagName;
+      }
+    }, {
+      key: "children",
+      get: function get() {
+        return this.__children;
+      }
+    }, {
+      key: "shadowRoot",
+      get: function get() {
+        return this.__shadowRoot;
+      }
+    }, {
+      key: "root",
+      get: function get() {
+        return this.__root;
+      }
+    }, {
+      key: "host",
+      get: function get() {
+        return this.__host;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
+      }
+    }, {
+      key: "ref",
+      get: function get() {
+        return this.__ref;
+      }
+    }, {
+      key: "state",
+      get: function get() {
+        return this.__state;
+      },
+      set: function set(v) {
+        this.__state = v;
+      }
+    }]);
+
+    return Component;
+  }(Event);
+
+  Object.keys(repaint$1.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+    Object.defineProperty(Component.prototype, fn, {
+      get: function get() {
+        var sr = this.shadowRoot;
+
+        if (sr) {
+          return sr[fn];
+        }
+      }
+    });
+  });
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+    Component.prototype[fn] = function () {
+      var sr = this.shadowRoot;
+
+      if (sr && isFunction$3(sr[fn])) {
+        return sr[fn].apply(sr, arguments);
+      }
+    };
+  });
 
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
@@ -10272,7 +10273,7 @@
         }
       }
 
-      css.normalize(style, reset.dom);
+      _this.__style = css.normalize(style, reset.dom);
       _this.__children = children || [];
       return _this;
     } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -13129,7 +13130,7 @@
   var AUTO$5 = unit.AUTO,
       PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
-  var clone$4 = util.clone,
+  var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
       isNil$7 = util.isNil,
       extend$3 = util.extend,
@@ -13162,7 +13163,7 @@
         style.stroke = null;
       }
 
-      css.normalize(_this.style, reset.dom.concat(reset.geom));
+      _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
       return _this;
     }
 
@@ -13373,7 +13374,7 @@
           var vd = this.virtualDom;
           vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
 
-          var children = clone$4(vd.children);
+          var children = clone$3(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -14644,7 +14645,7 @@
   var isNil$8 = util.isNil,
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
-      clone$5 = util.clone,
+      clone$4 = util.clone,
       extend$4 = util.extend;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
@@ -14767,7 +14768,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
     child.tagName = libraryItem.tagName;
-    child.props = clone$5(libraryItem.props);
+    child.props = clone$4(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {

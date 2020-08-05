@@ -25,5 +25,5 @@ let res = karas.math.tar.transform([0, 0, 80, 10, 30, 50], [10, 20, 100, 0, 100,
 let style = {
   transform: `matrix(${res.join(',')})`,
 };
-t.style.transform = karas.css.normalize(style).transform;
+t.currentStyle.transform = t.style.transform = karas.css.normalize(style).transform;
 o.refresh();

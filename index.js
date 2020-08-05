@@ -6612,13 +6612,8 @@
 
     var style = {};
     var target = animation.target;
-    Object.keys(frameStyle).forEach(function (i) {
+    animation.keys.forEach(function (i) {
       var v = frameStyle[i];
-
-      if (isNil$3(v)) {
-        return;
-      }
-
       style[i] = v; // geom的属性变化
 
       if (repaint$1.GEOM.hasOwnProperty(i)) {
@@ -13146,7 +13141,7 @@
 
       _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
       _this.__currentStyle = util.extend({}, _this.__style);
-      _this.__currentProps = util.extend({}, _this.props);
+      _this.__currentProps = util.clone(_this.props);
       return _this;
     }
 

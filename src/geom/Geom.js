@@ -25,7 +25,7 @@ class Geom extends Xom {
     }
     this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
     this.__currentStyle = util.extend({}, this.__style);
-    this.__currentProps = util.extend({}, this.props);
+    this.__currentProps = util.clone(this.props);
   }
 
   __tryLayInline(w, total) {

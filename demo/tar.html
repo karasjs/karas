@@ -68,12 +68,12 @@
   let flag = true;
   setInterval(function() {
     if(flag) {
-      s.style.transform = style.transform;
-      s2.style.transform = style.transform;
+      s.currentStyle.transform = s.style.transform = style.transform;
+      s2.currentStyle.transform = s2.style.transform = style.transform;
     }
     else {
-      s.style.transform = null;
-      s2.style.transform = null;
+      s.currentStyle.transform = s.style.transform = null;
+      s2.currentStyle.transform = s2.style.transform = null;
     }
     o.refresh();
     o2.refresh();

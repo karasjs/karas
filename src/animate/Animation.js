@@ -307,11 +307,8 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
   root.__frameHook();
   let style = {};
   let target = animation.target;
-  Object.keys(frameStyle).forEach(i => {
+  animation.keys.forEach(i => {
     let v = frameStyle[i];
-    if(isNil(v)) {
-      return;
-    }
     style[i] = v;
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {

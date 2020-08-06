@@ -137,15 +137,15 @@ function transform(source, target) {
     t = rotate(-theta);
     m = matrix.multiply(t, m);
   }
-  // 第2步，以第1条边AB为基准，缩放ab至目标相同长度
+  // 第2步，以第1条边AB为基准，缩放x轴ab至目标相同长度，可与4步合并
   let ls = geom.pointsDistance(sx1, sy1, sx2, sy2);
   let lt = geom.pointsDistance(tx1, ty1, tx2, ty2);
-  if(ls !== lt) {
-    let scale = lt / ls;
-    t = matrix.identity();
-    t[0] = scale;
-    m = matrix.multiply(t, m);
-  }
+  // if(ls !== lt) {
+    // let scale = lt / ls;
+    // t = matrix.identity();
+    // t[0] = scale;
+    // m = matrix.multiply(t, m);
+  // }
   // 第3步，缩放y，先将目标三角形旋转到x轴平行，再变换坐标计算
   let n = matrix.identity();
   n[4] = -tx1;
@@ -159,13 +159,23 @@ function transform(source, target) {
   }
   // 目标三角反向旋转至x轴后的坐标
   // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
-  ls = Math.abs(matrix.calPoint([sx3, sy3], m)[1]);
-  lt = Math.abs(matrix.calPoint([tx3, ty3], n)[1]);
+  let ls2 = Math.abs(matrix.calPoint([sx3, sy3], m)[1]);
+  let lt2 = Math.abs(matrix.calPoint([tx3, ty3], n)[1]);
   // 缩放y
-  if(ls !== lt) {
-    let scale = lt / ls;
+  // if(ls2 !== lt2) {
+    // let scale = lt / ls;
+    // t = matrix.identity();
+    // t[3] = scale;
+    // m = matrix.multiply(t, m);
+  // }
+  if(ls !== lt || ls2 !== lt2) {
     t = matrix.identity();
-    t[3] = scale;
+    if(ls !== lt) {
+      t[0] = lt / ls;
+    }
+    if(ls2 !== lt2) {
+      t[3] = lt2 / ls2;
+    }
     m = matrix.multiply(t, m);
   }
   // 第4步，x轴倾斜，用余弦定理求目前a和A的夹角
@@ -187,13 +197,16 @@ function transform(source, target) {
     t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
     m = matrix.multiply(t, m);
   }
-  // 第5步，再次旋转，角度为目标旋转到x轴的负值
+  // 第5步，再次旋转，角度为目标旋转到x轴的负值，可与下步合并
   if(alpha !== 0) {
     t = rotate(alpha);
-    m = matrix.multiply(t, m);
+    // m = matrix.multiply(t, m);
+  }
+  else {
+    t = matrix.identity();
   }
   // 第6步，移动第一个点的差值
-  t = matrix.identity();
+  // t = matrix.identity();
   t[4] = tx1;
   t[5] = ty1;
   m = matrix.multiply(t, m);

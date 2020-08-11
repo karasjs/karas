@@ -126,6 +126,8 @@ function isOverflow(source, target) {
 function transform(source, target) {
   let [sx1, sy1, sx2, sy2, sx3, sy3] = source;
   let [tx1, ty1, tx2, ty2, tx3, ty3] = target;
+  // 记录翻转
+  let overflow = isOverflow(source, target);
   // 第0步，将源三角第1个a点移到原点
   let m = matrix.identity();
   m[4] = -sx1;
@@ -196,6 +198,12 @@ function transform(source, target) {
     t = matrix.identity();
     t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
     m = matrix.multiply(t, m);
+  }
+  // 发生翻转时特殊处理按x轴垂直翻转
+  if(overflow) {
+    m[1] = -m[1];
+    m[3] = -m[3];
+    m[5] = -m[5];
   }
   // 第5步，再次旋转，角度为目标旋转到x轴的负值，可与下步合并
   if(alpha !== 0) {

@@ -1216,8 +1216,10 @@
         tx2 = _target2[2],
         ty2 = _target2[3],
         tx3 = _target2[4],
-        ty3 = _target2[5]; // 第0步，将源三角第1个a点移到原点
+        ty3 = _target2[5]; // 记录翻转
 
+
+    var overflow = isOverflow(source, target); // 第0步，将源三角第1个a点移到原点
 
     var m = matrix.identity();
     m[4] = -sx1;
@@ -1309,6 +1311,13 @@
       t = matrix.identity();
       t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
       m = matrix.multiply(t, m);
+    } // 发生翻转时特殊处理按x轴垂直翻转
+
+
+    if (overflow) {
+      m[1] = -m[1];
+      m[3] = -m[3];
+      m[5] = -m[5];
     } // 第5步，再次旋转，角度为目标旋转到x轴的负值，可与下步合并
 
 

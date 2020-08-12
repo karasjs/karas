@@ -6007,7 +6007,7 @@
       }
     }, {
       key: "onFrame",
-      value: function onFrame(handle, reverse) {
+      value: function onFrame(handle) {
         if (!handle) {
           return;
         }
@@ -6018,11 +6018,7 @@
           this.__init();
         }
 
-        if (reverse) {
-          task.unshift(handle);
-        } else {
-          task.push(handle);
-        }
+        task.push(handle);
       }
     }, {
       key: "offFrame",
@@ -6049,7 +6045,7 @@
       }
     }, {
       key: "nextFrame",
-      value: function nextFrame(handle, reverse) {
+      value: function nextFrame(handle) {
         var _this = this;
 
         if (!handle) {
@@ -6064,13 +6060,13 @@
         } : {
           before: handle.before,
           after: function after(diff) {
-            handle.after(diff);
+            handle.after && handle.after(diff);
 
             _this.offFrame(cb);
           }
         };
         cb.__karasFramecb = handle;
-        this.onFrame(cb, reverse);
+        this.onFrame(cb);
       }
     }, {
       key: "task",
@@ -7396,6 +7392,7 @@
 
           _this2.__nextTime = 0;
           var restore;
+          var style = _this2.style;
 
           if (isFinish) {
             _this2.__currentTime = _this2.delay + duration + _this2.endDelay;
@@ -7411,15 +7408,19 @@
             _this2.__playState = 'idle';
             _this2.__style = {};
             restore = true;
-          } // 动画取消结束不停留在最后一帧需要还原target原本的样式
+          } // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
 
 
           if (restore) {
             keys.forEach(function (k) {
               if (repaint$1.GEOM.hasOwnProperty(k)) {
-                target.__currentProps[k] = target.props[k];
+                if (target.__currentProps[k] === style[k]) {
+                  target.__currentProps[k] = target.props[k];
+                }
               } else {
-                target.__currentStyle[k] = target.style[k];
+                if (target.__currentStyle[k] === style[k]) {
+                  target.__currentStyle[k] = target.style[k];
+                }
               }
             });
           }
@@ -7875,8 +7876,6 @@
           };
 
           if (needRefresh) {
-            // 将回调插到frame的task头部，因为涉及到clean()还原currentStyle为style的逻辑
-            // 并发时后执行会清掉前面的动画，所以放到列表前面先执行
             frame.nextFrame(this.__enterFrame = {
               before: function before() {
                 genBeforeRefresh({}, _this5, root, lv);
@@ -7888,7 +7887,7 @@
 
                 task();
               }
-            }, true);
+            });
           } // 无刷新同步进行
           else {
               __clean();
@@ -8039,10 +8038,18 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        this.__clean && this.__clean();
-        this.__startTime = null;
-        this.__isDestroyed = true;
-        this.removeControl();
+        var self = this; // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
+
+        frame.nextFrame({
+          before: function before() {
+            self.__clean();
+
+            self.__target = null;
+          }
+        });
+        self.__startTime = null;
+        self.__isDestroyed = true;
+        self.removeControl();
       }
     }, {
       key: "id",
@@ -8258,7 +8265,8 @@
     return Animation;
   }(Event);
 
-  function genCanvasPolygon(ctx, list, method) {
+  function genCanvasPolygon(ctx, list) {
+    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
     ctx.beginPath();
     ctx.moveTo(list[0][0], list[0][1]);
 
@@ -9552,9 +9560,10 @@
           var i = this.animationList.indexOf(o);
 
           if (i > -1) {
-            o.cancel(function () {
-              o.__destroy();
-            });
+            o.cancel();
+
+            o.__destroy();
+
             this.animationList.splice(i, 1);
           }
         }
@@ -9563,9 +9572,9 @@
       key: "clearAnimate",
       value: function clearAnimate() {
         this.animationList.splice(0).forEach(function (o) {
-          o.cancel(function () {
-            o.__destroy();
-          });
+          o.cancel();
+
+          o.__destroy();
         });
       }
     }, {

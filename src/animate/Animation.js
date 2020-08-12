@@ -1127,6 +1127,7 @@ class Animation extends Event {
       this.__cancelTask();
       this.__nextTime = 0;
       let restore;
+      let style = this.style;
       if(isFinish) {
         this.__currentTime = this.delay + duration + this.endDelay;
         this.__playCount = iterations;
@@ -1143,14 +1144,18 @@ class Animation extends Event {
         this.__style = {};
         restore = true;
       }
-      // 动画取消结束不停留在最后一帧需要还原target原本的样式
+      // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
       if(restore) {
         keys.forEach(k => {
           if(repaint.GEOM.hasOwnProperty(k)) {
-            target.__currentProps[k] = target.props[k];
+            if(target.__currentProps[k] === style[k]) {
+              target.__currentProps[k] = target.props[k];
+            }
           }
           else {
-            target.__currentStyle[k] = target.style[k];
+            if(target.__currentStyle[k] === style[k]) {
+              target.__currentStyle[k] = target.style[k];
+            }
           }
         });
       }
@@ -1468,8 +1473,6 @@ class Animation extends Event {
         }
       };
       if(needRefresh) {
-        // 将回调插到frame的task头部，因为涉及到clean()还原currentStyle为style的逻辑
-        // 并发时后执行会清掉前面的动画，所以放到列表前面先执行
         frame.nextFrame(this.__enterFrame = {
           before: () => {
             genBeforeRefresh({}, this, root, lv);
@@ -1479,7 +1482,7 @@ class Animation extends Event {
             __frameCb(diff);
             task();
           },
-        }, true);
+        });
       }
       // 无刷新同步进行
       else {
@@ -1581,10 +1584,17 @@ class Animation extends Event {
   }
 
   __destroy() {
-    this.__clean && this.__clean();
-    this.__startTime = null;
-    this.__isDestroyed = true;
-    this.removeControl();
+    let self = this;
+    // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
+    frame.nextFrame({
+      before() {
+        self.__clean();
+        self.__target = null;
+      },
+    });
+    self.__startTime = null;
+    self.__isDestroyed = true;
+    self.removeControl();
   }
 
   get id() {

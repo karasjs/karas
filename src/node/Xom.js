@@ -1186,9 +1186,8 @@ class Xom extends Node {
     if(o instanceof Animation) {
       let i = this.animationList.indexOf(o);
       if(i > -1) {
-        o.cancel(function() {
-          o.__destroy();
-        });
+        o.cancel();
+        o.__destroy();
         this.animationList.splice(i, 1);
       }
     }
@@ -1196,9 +1195,8 @@ class Xom extends Node {
 
   clearAnimate() {
     this.animationList.splice(0).forEach(o => {
-      o.cancel(function() {
-        o.__destroy();
-      });
+      o.cancel();
+      o.__destroy();
     });
   }
 

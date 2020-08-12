@@ -1,4 +1,4 @@
-function genCanvasPolygon(ctx, list, method) {
+function genCanvasPolygon(ctx, list, method = 'fill') {
   ctx.beginPath();
   ctx.moveTo(list[0][0], list[0][1]);
   for(let i = 1, len = list.length; i < len; i++) {

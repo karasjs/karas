@@ -63,7 +63,7 @@ class Frame {
     cb();
   }
 
-  onFrame(handle, reverse) {
+  onFrame(handle) {
     if(!handle) {
       return;
     }
@@ -71,12 +71,7 @@ class Frame {
     if(!task.length) {
       this.__init();
     }
-    if(reverse) {
-      task.unshift(handle);
-    }
-    else {
-      task.push(handle);
-    }
+    task.push(handle);
   }
 
   offFrame(handle) {
@@ -98,7 +93,7 @@ class Frame {
     }
   }
 
-  nextFrame(handle, reverse) {
+  nextFrame(handle) {
     if(!handle) {
       return;
     }
@@ -109,12 +104,12 @@ class Frame {
     } : {
       before: handle.before,
       after: diff => {
-        handle.after(diff);
+        handle.after && handle.after(diff);
         this.offFrame(cb);
       },
     };
     cb.__karasFramecb = handle;
-    this.onFrame(cb, reverse);
+    this.onFrame(cb);
   }
 
   get task() {

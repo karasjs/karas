@@ -1,4 +1,4 @@
-function genCanvasPolygon(ctx, list) {
+function genCanvasPolygon(ctx, list, method) {
   ctx.beginPath();
   ctx.moveTo(list[0][0], list[0][1]);
   for(let i = 1, len = list.length; i < len; i++) {
@@ -13,7 +13,7 @@ function genCanvasPolygon(ctx, list) {
       ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
     }
   }
-  ctx.fill();
+  ctx[method]();
   ctx.closePath();
 }
 

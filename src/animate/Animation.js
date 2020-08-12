@@ -1468,6 +1468,8 @@ class Animation extends Event {
         }
       };
       if(needRefresh) {
+        // 将回调插到frame的task头部，因为涉及到clean()还原currentStyle为style的逻辑
+        // 并发时后执行会清掉前面的动画，所以放到列表前面先执行
         frame.nextFrame(this.__enterFrame = {
           before: () => {
             genBeforeRefresh({}, this, root, lv);
@@ -1477,7 +1479,7 @@ class Animation extends Event {
             __frameCb(diff);
             task();
           },
-        });
+        }, true);
       }
       // 无刷新同步进行
       else {

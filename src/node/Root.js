@@ -39,11 +39,12 @@ function renderProp(k, v) {
 function initEvent(node) {
   ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(type => {
     node.addEventListener(type, e => {
+      let root = node.__root;
       if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-        node.__root.__touchstartTarget.__emitEvent(e, true);
+        root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
       }
       else {
-        node.__root.__cb(e);
+        root.__cb(e);
       }
     });
   });
@@ -98,11 +99,7 @@ class Root extends Dom {
     return res;
   }
 
-  // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
-  __cb(e) {
-    if(e.type === 'touchmove' && !this.__touchstartTarget) {
-      return;
-    }
+  __wrapEvent(e) {
     let x, y;
     // 触摸结束取消特殊没有touches
     if(['touchend', 'touchcancel'].indexOf(e.type) === -1) {
@@ -121,7 +118,7 @@ class Root extends Dom {
         y /= __sy;
       }
     }
-    let data = {
+    return {
       event: e,
       stopPropagation() {
         this.__stopPropagation = true;
@@ -139,6 +136,14 @@ class Root extends Dom {
       y,
       __hasEmitted: false,
     };
+  }
+
+  // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
+  __cb(e) {
+    if(e.type === 'touchmove' && !this.__touchstartTarget) {
+      return;
+    }
+    let data = this.__wrapEvent(e);
     this.__emitEvent(data);
     return data;
   }

@@ -1,7 +1,6 @@
 import Node from './Node';
 import tool from './tool';
 import mode from '../util/mode';
-import reset from '../style/reset';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
@@ -10,13 +9,15 @@ import css from '../style/css';
 import image from '../style/image';
 import util from '../util/util';
 import Animation from '../animate/Animation';
+// import rp from '../animate/repaint';
+// import level from '../animate/level';
 import inject from '../util/inject';
 import draw from '../util/draw';
 import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT, STRING } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
-const { calRelative, compute, repaint } = css;
+const { normalize, calRelative, compute, repaint } = css;
 const { genCanvasPolygon, genSvgPolygon } = draw;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -43,18 +44,18 @@ function renderBorder(renderMode, points, color, ctx, xom) {
   }
 }
 
-function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
     ctx.fillStyle = color;
     if(list) {
-      genCanvasPolygon(ctx, list);
+      genCanvasPolygon(ctx, list, method);
     }
     else {
       ctx.beginPath();
       ctx.rect(x, y, w, h);
-      ctx.fill();
+      ctx[method]();
       ctx.closePath();
     }
   }
@@ -776,8 +777,7 @@ class Xom extends Node {
                 ctx.save();
                 renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this,
                   borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-                  borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                ctx.clip();
+                  borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
               }
               // 先画不考虑repeat的中心声明的
               ctx.drawImage(source, bgX, bgY, w, h);
@@ -1005,6 +1005,7 @@ class Xom extends Node {
     }
     this.animationList.forEach(item => item.__destroy());
     this.root.delRefreshTask(this.__loadBgi.cb);
+    this.root.delRefreshTask(this.__task);
     super.__destroy();
     this.__matrix = this.__matrixEvent = this.__root = null;
   }
@@ -1144,6 +1145,28 @@ class Xom extends Node {
     }
   }
 
+  // updateStyle(style, cb) {
+  //   let format = normalize(style);
+  //   extend(this.__style, format);
+  //   extend(this.__currentStyle, format);
+  //   let root = this.root;
+  //   if(root) {
+  //     let lv = level.REPAINT;
+  //     for(let i in style) {
+  //       if(!rp.STYLE.hasOwnProperty(i)) {
+  //         lv = level.REFLOW;
+  //         break;
+  //       }
+  //     }
+  //     root.addRefreshTask(this.__task = {
+  //       before() {
+  //         root.setRefreshLevel(lv);
+  //       },
+  //       after: cb,
+  //     });
+  //   }
+  // }
+
   animate(list, options, underControl) {
     if(this.isDestroyed) {
       return;
@@ -1163,8 +1186,9 @@ class Xom extends Node {
     if(o instanceof Animation) {
       let i = this.animationList.indexOf(o);
       if(i > -1) {
-        o.cancel();
-        o.__destroy();
+        o.cancel(function() {
+          o.__destroy();
+        });
         this.animationList.splice(i, 1);
       }
     }
@@ -1172,8 +1196,9 @@ class Xom extends Node {
 
   clearAnimate() {
     this.animationList.splice(0).forEach(o => {
-      o.cancel();
-      o.__destroy();
+      o.cancel(function() {
+        o.__destroy();
+      });
     });
   }
 

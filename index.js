@@ -750,110 +750,6 @@
     SVG: 1
   };
 
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'normal',
-    backgroundImage: null,
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'inherit',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1,
-    scaleY: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateZ: 0,
-    filter: null
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt',
-    strokeLinejoin: 'miter',
-    strokeMiterlimit: 4
-  };
-  var dom = [];
-  var domKey = [];
-  Object.keys(DOM).forEach(function (k) {
-    domKey.push(k);
-    var v = DOM[k];
-    dom.push({
-      k: k,
-      v: v
-    });
-  });
-  var geom = [];
-  var geomKey = [];
-  Object.keys(GEOM).forEach(function (k) {
-    geomKey.push(k);
-    var v = GEOM[k];
-    geom.push({
-      k: k,
-      v: v
-    });
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    domKey: domKey,
-    geomKey: geomKey,
-    dom: dom,
-    geom: geom
-  };
-
   var unit = {
     AUTO: 0,
     PX: 1,
@@ -992,7 +888,7 @@
     return [(a * x1 + b * x2 + c * x3) / (a + b + c), (a * y1 + b * y2 + c * y3) / (a + b + c)];
   }
 
-  var geom$1 = {
+  var geom = {
     vectorProduct: vectorProduct,
     pointInPolygon: pointInPolygon,
     transformPoint: transformPoint,
@@ -1234,8 +1130,8 @@
     } // 第2步，以第1条边AB为基准，缩放x轴ab至目标相同长度，可与4步合并
 
 
-    var ls = geom$1.pointsDistance(sx1, sy1, sx2, sy2);
-    var lt = geom$1.pointsDistance(tx1, ty1, tx2, ty2); // if(ls !== lt) {
+    var ls = geom.pointsDistance(sx1, sy1, sx2, sy2);
+    var lt = geom.pointsDistance(tx1, ty1, tx2, ty2); // if(ls !== lt) {
     // let scale = lt / ls;
     // t = matrix.identity();
     // t[0] = scale;
@@ -1298,14 +1194,14 @@
         ax3 = _matrix$calPoint6[0],
         ay3 = _matrix$calPoint6[1];
 
-    var ab = geom$1.pointsDistance(ax1, ay1, ax2, ay2);
-    var ac = geom$1.pointsDistance(ax1, ay1, ax3, ay3);
-    var bc = geom$1.pointsDistance(ax3, ay3, ax2, ay2);
-    var AB = geom$1.pointsDistance(tx1, ty1, tx2, ty2);
-    var AC = geom$1.pointsDistance(tx1, ty1, tx3, ty3);
-    var BC = geom$1.pointsDistance(tx3, ty3, tx2, ty2);
-    var a = geom$1.angleBySide(bc, ab, ac);
-    var A = geom$1.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
+    var ab = geom.pointsDistance(ax1, ay1, ax2, ay2);
+    var ac = geom.pointsDistance(ax1, ay1, ax3, ay3);
+    var bc = geom.pointsDistance(ax3, ay3, ax2, ay2);
+    var AB = geom.pointsDistance(tx1, ty1, tx2, ty2);
+    var AC = geom.pointsDistance(tx1, ty1, tx3, ty3);
+    var BC = geom.pointsDistance(tx3, ty3, tx2, ty2);
+    var a = geom.angleBySide(bc, ab, ac);
+    var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
 
     if (a !== A) {
       t = matrix.identity();
@@ -1344,15 +1240,15 @@
   var math = {
     matrix: matrix,
     tar: tar,
-    geom: geom$1
+    geom: geom
   };
 
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
   var matrix$1 = math.matrix,
-      geom$2 = math.geom;
-  var d2r = geom$2.d2r,
-      transformPoint$1 = geom$2.transformPoint;
+      geom$1 = math.geom;
+  var d2r = geom$1.d2r,
+      transformPoint$1 = geom$1.transformPoint;
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
@@ -1456,7 +1352,7 @@
 
       x3 = _transformPoint8[0];
       y3 = _transformPoint8[1];
-      return geom$2.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+      return geom$1.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -1522,7 +1418,7 @@
       isNil$1 = util.isNil;
   var PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT;
-  var d2r$1 = geom$1.d2r;
+  var d2r$1 = geom.d2r;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -2102,7 +1998,7 @@
     getRadial: getRadial
   };
 
-  var H = geom$1.H;
+  var H = geom.H;
 
   function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
     var n = 1;
@@ -2813,7 +2709,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -2898,7 +2794,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3158,7 +3054,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3243,7 +3139,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3510,7 +3406,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3595,7 +3491,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3853,7 +3749,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -3938,7 +3834,7 @@
     } // 根据夹角求贝塞尔拟合圆弧长度
 
 
-    var h = geom$1.h(Math.abs(deg1 - deg2));
+    var h = geom.h(Math.abs(deg1 - deg2));
     var d = h * r; // 过交点做切线，知道切线段长度d，求切线上从交点延长d的坐标，即为控制点
     // 圆心交点控制点连成直角三角形，获得斜边即圆心到控制点距离c
     // 求切线角，用上面夹角减去切线角可得控制点和圆心连线的角，从而获得坐标
@@ -6111,7 +6007,7 @@
       }
     }, {
       key: "onFrame",
-      value: function onFrame(handle) {
+      value: function onFrame(handle, reverse) {
         if (!handle) {
           return;
         }
@@ -6122,7 +6018,11 @@
           this.__init();
         }
 
-        task.push(handle);
+        if (reverse) {
+          task.unshift(handle);
+        } else {
+          task.push(handle);
+        }
       }
     }, {
       key: "offFrame",
@@ -6149,7 +6049,7 @@
       }
     }, {
       key: "nextFrame",
-      value: function nextFrame(handle) {
+      value: function nextFrame(handle, reverse) {
         var _this = this;
 
         if (!handle) {
@@ -6170,7 +6070,7 @@
           }
         };
         cb.__karasFramecb = handle;
-        this.onFrame(cb);
+        this.onFrame(cb, reverse);
       }
     }, {
       key: "task",
@@ -7975,6 +7875,8 @@
           };
 
           if (needRefresh) {
+            // 将回调插到frame的task头部，因为涉及到clean()还原currentStyle为style的逻辑
+            // 并发时后执行会清掉前面的动画，所以放到列表前面先执行
             frame.nextFrame(this.__enterFrame = {
               before: function before() {
                 genBeforeRefresh({}, _this5, root, lv);
@@ -7986,7 +7888,7 @@
 
                 task();
               }
-            });
+            }, true);
           } // 无刷新同步进行
           else {
               __clean();
@@ -8356,7 +8258,7 @@
     return Animation;
   }(Event);
 
-  function genCanvasPolygon(ctx, list) {
+  function genCanvasPolygon(ctx, list, method) {
     ctx.beginPath();
     ctx.moveTo(list[0][0], list[0][1]);
 
@@ -8372,7 +8274,7 @@
       }
     }
 
-    ctx.fill();
+    ctx[method]();
     ctx.closePath();
   }
 
@@ -8436,6 +8338,7 @@
   }
 
   function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 16 && arguments[16] !== undefined ? arguments[16] : 'fill';
     // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
     var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
 
@@ -8443,11 +8346,11 @@
       ctx.fillStyle = color;
 
       if (list) {
-        genCanvasPolygon$1(ctx, list);
+        genCanvasPolygon$1(ctx, list, method);
       } else {
         ctx.beginPath();
         ctx.rect(x, y, w, h);
-        ctx.fill();
+        ctx[method]();
         ctx.closePath();
       }
     } else if (renderMode === mode.SVG) {
@@ -9216,8 +9119,7 @@
                 if (renderMode === mode.CANVAS) {
                   if (needMask) {
                     ctx.save();
-                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
-                    ctx.clip();
+                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -9455,6 +9357,7 @@
           return item.__destroy();
         });
         this.root.delRefreshTask(this.__loadBgi.cb);
+        this.root.delRefreshTask(this.__task);
 
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
@@ -9600,7 +9503,28 @@
           });
           return 'url(#' + uuid + ')';
         }
-      }
+      } // updateStyle(style, cb) {
+      //   let format = normalize(style);
+      //   extend(this.__style, format);
+      //   extend(this.__currentStyle, format);
+      //   let root = this.root;
+      //   if(root) {
+      //     let lv = level.REPAINT;
+      //     for(let i in style) {
+      //       if(!rp.STYLE.hasOwnProperty(i)) {
+      //         lv = level.REFLOW;
+      //         break;
+      //       }
+      //     }
+      //     root.addRefreshTask(this.__task = {
+      //       before() {
+      //         root.setRefreshLevel(lv);
+      //       },
+      //       after: cb,
+      //     });
+      //   }
+      // }
+
     }, {
       key: "animate",
       value: function animate(list, options, underControl) {
@@ -9628,10 +9552,9 @@
           var i = this.animationList.indexOf(o);
 
           if (i > -1) {
-            o.cancel();
-
-            o.__destroy();
-
+            o.cancel(function () {
+              o.__destroy();
+            });
             this.animationList.splice(i, 1);
           }
         }
@@ -9640,9 +9563,9 @@
       key: "clearAnimate",
       value: function clearAnimate() {
         this.animationList.splice(0).forEach(function (o) {
-          o.cancel();
-
-          o.__destroy();
+          o.cancel(function () {
+            o.__destroy();
+          });
         });
       }
     }, {
@@ -9864,6 +9787,110 @@
 
     return LineGroup;
   }();
+
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'normal',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'inherit',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateZ: 0,
+    filter: null
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt',
+    strokeLinejoin: 'miter',
+    strokeMiterlimit: 4
+  };
+  var dom = [];
+  var domKey = [];
+  Object.keys(DOM).forEach(function (k) {
+    domKey.push(k);
+    var v = DOM[k];
+    dom.push({
+      k: k,
+      v: v
+    });
+  });
+  var geom$2 = [];
+  var geomKey = [];
+  Object.keys(GEOM).forEach(function (k) {
+    geomKey.push(k);
+    var v = GEOM[k];
+    geom$2.push({
+      k: k,
+      v: v
+    });
+  });
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    domKey: domKey,
+    geomKey: geomKey,
+    dom: dom,
+    geom: geom$2
+  };
 
   var isNil$4 = util.isNil,
       isString = util.isString,
@@ -11787,8 +11814,7 @@
               // 有border-radius需模拟遮罩裁剪
               if (list) {
                 ctx.save();
-                genCanvasPolygon$2(ctx, list);
-                ctx.clip();
+                genCanvasPolygon$2(ctx, list, 'clip');
                 ctx.drawImage(source, originX, originY, width, height);
                 ctx.restore();
               } else {
@@ -12650,10 +12676,12 @@
   function initEvent(node) {
     ['click', 'dblclick', 'mousedown', 'mousemove', 'mouseup', 'touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function (type) {
       node.addEventListener(type, function (e) {
+        var root = node.__root;
+
         if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-          node.__root.__touchstartTarget.__emitEvent(e, true);
+          root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
         } else {
-          node.__root.__cb(e);
+          root.__cb(e);
         }
       });
     });
@@ -12733,15 +12761,10 @@
 
         res += "></".concat(this.tagName, ">");
         return res;
-      } // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
-
+      }
     }, {
-      key: "__cb",
-      value: function __cb(e) {
-        if (e.type === 'touchmove' && !this.__touchstartTarget) {
-          return;
-        }
-
+      key: "__wrapEvent",
+      value: function __wrapEvent(e) {
         var x, y; // 触摸结束取消特殊没有touches
 
         if (['touchend', 'touchcancel'].indexOf(e.type) === -1) {
@@ -12774,7 +12797,7 @@
           }
         }
 
-        var data = {
+        return {
           event: e,
           stopPropagation: function stopPropagation() {
             this.__stopPropagation = true;
@@ -12792,6 +12815,16 @@
           y: y,
           __hasEmitted: false
         };
+      } // 类似touchend/touchcancel/touchmove这种无需判断是否发生于元素上，直接响应
+
+    }, {
+      key: "__cb",
+      value: function __cb(e) {
+        if (e.type === 'touchmove' && !this.__touchstartTarget) {
+          return;
+        }
+
+        var data = this.__wrapEvent(e);
 
         this.__emitEvent(data);
 
@@ -14269,8 +14302,8 @@
           if (rx === 0 && ry === 0) {
             ctx.rect(originX, originY, width, height);
           } else {
-            var ox = rx * geom$1.H;
-            var oy = ry * geom$1.H;
+            var ox = rx * geom.H;
+            var oy = ry * geom.H;
             ctx.moveTo(originX + rx, originY);
             ctx.lineTo(originX + width - rx, originY);
             ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
@@ -14512,8 +14545,8 @@
           if (ctx.ellipse) {
             ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
           } else {
-            var ox = rx * geom$1.H;
-            var oy = ry * geom$1.H;
+            var ox = rx * geom.H;
+            var oy = ry * geom.H;
             ctx.moveTo(cx - rx, cy);
             ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
             ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);

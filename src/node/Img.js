@@ -212,8 +212,7 @@ class Img extends Dom {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
             ctx.save();
-            genCanvasPolygon(ctx, list);
-            ctx.clip();
+            genCanvasPolygon(ctx, list, 'clip');
             ctx.drawImage(source, originX, originY, width, height);
             ctx.restore();
           }

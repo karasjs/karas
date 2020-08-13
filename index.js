@@ -14945,7 +14945,7 @@
     return vd;
   }
 
-  var version = "0.33.3";
+  var version = "0.33.4";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

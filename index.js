@@ -8282,8 +8282,8 @@
       }
     }
 
-    ctx[method]();
     ctx.closePath();
+    ctx[method]();
   }
 
   function genSvgPolygon(list) {

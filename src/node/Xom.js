@@ -9,15 +9,15 @@ import css from '../style/css';
 import image from '../style/image';
 import util from '../util/util';
 import Animation from '../animate/Animation';
-// import rp from '../animate/repaint';
-// import level from '../animate/level';
+import rp from '../animate/repaint';
+import level from '../animate/level';
 import inject from '../util/inject';
 import draw from '../util/draw';
 import mx from '../math/matrix';
 
-const { AUTO, PX, PERCENT, STRING } = unit;
+const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
-const { normalize, calRelative, compute, repaint } = css;
+const { normalize, calRelative, compute } = css;
 const { genCanvasPolygon, genSvgPolygon } = draw;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -176,7 +176,6 @@ class Xom extends Node {
       this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
-    // 引用如json时由于直接normalize处理style对象，需clone防止影响，比如再次渲染时style格式错误
     this.__style = this.props.style || {}; // style被解析后的k-v形式
     this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
     this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
@@ -198,6 +197,7 @@ class Xom extends Node {
       cb: function() {
       },
     };
+    this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
   }
 
   // 获取margin/padding的实际值
@@ -304,6 +304,8 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
+    // 设置缓存hash，render时计算
+    this.__cacheStyle = {};
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -432,12 +434,140 @@ class Xom extends Node {
       innerHeight,
       outerWidth,
       outerHeight,
+      __cacheStyle,
+      parent,
     } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
+    let {
+      backgroundPositionX,
+      backgroundPositionY,
+    } = currentStyle;
+    // 先根据cache计算需要重新计算的computedStyle
+    if(!__cacheStyle.transformOrigin) {
+      __cacheStyle.transformOrigin = true;
+      computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
+    }
+    if(!__cacheStyle.transform
+      || !__cacheStyle.translateX
+      || !__cacheStyle.translateY
+      || !__cacheStyle.rotateZ
+      || !__cacheStyle.scaleX
+      || !__cacheStyle.scaleY
+      || !__cacheStyle.skewX
+      || !__cacheStyle.skewY) {
+      __cacheStyle.transform = true;
+      let matrix;
+      // transform相对于自身
+      if(currentStyle.transform) {
+        matrix = tf.calMatrix(currentStyle.transform, outerWidth, outerHeight);
+      }
+      // 没有transform则看是否有扩展的css独立变换属性
+      else {
+        let temp = [];
+        [
+          'translateX',
+          'translateY',
+          'rotateZ',
+          'rotate',
+          'skewX',
+          'skewY',
+          'scaleX',
+          'scaleY',
+        ].forEach(k => {
+          let v = currentStyle[k];
+          if(util.isNil(v)) {
+            return;
+          }
+          computedStyle[k] = v.value;
+          // scale为1和其它为0避免计算浪费
+          let isScale = k.indexOf('scale') > -1;
+          if(v.value === 1 && isScale || !isScale && v.value === 0) {
+            return;
+          }
+          if(v.unit === PERCENT) {
+            if(k === 'translateX') {
+              computedStyle[k] = v.value * outerWidth * 0.01;
+            }
+            else if(k === 'translateY') {
+              computedStyle[k] = v.value * outerHeight * 0.01;
+            }
+          }
+          temp.push([k, v]);
+        });
+        if(temp.length) {
+          matrix = tf.calMatrix(temp, outerWidth, outerHeight);
+        }
+      }
+      this.__matrix = computedStyle.transform = matrix || [1, 0, 0, 1, 0, 0];
+    }
+    if(!__cacheStyle.backgroundPositionX) {
+      __cacheStyle.backgroundPositionX = true;
+      computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
+        ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+    }
+    if(!__cacheStyle.backgroundPositionY) {
+      __cacheStyle.backgroundPositionY = true;
+      computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
+        ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
+    }
+    if(!__cacheStyle.backgroundSize) {
+      __cacheStyle.backgroundSize = true;
+      computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
+    }
+    // 这些直接赋值的不需要再算缓存
+    [
+      'opacity',
+      'zIndex',
+      'borderTopStyle',
+      'borderRightStyle',
+      'borderBottomStyle',
+      'borderLeftStyle',
+      'backgroundRepeat',
+      'backgroundImage',
+      'filter',
+    ].forEach(k => {
+      computedStyle[k] = currentStyle[k];
+    });
+    [
+      'backgroundColor',
+      'borderTopColor',
+      'borderRightColor',
+      'borderBottomColor',
+      'borderLeftColor',
+    ].forEach(k => {
+      computedStyle[k] = currentStyle[k].value;
+    });
+    // 强制计算继承性的
+    if(parent) {
+      let parentComputedStyle = parent.computedStyle;
+      [
+        'fontStyle',
+        'fontWeight',
+        'color',
+        'visibility'
+      ].forEach(k => {
+        if(currentStyle[k].unit === INHERIT) {
+          computedStyle[k] = parentComputedStyle[k];
+        }
+        else {
+          computedStyle[k] = currentStyle[k].value || currentStyle[k];
+        }
+      });
+    }
     // 圆角边计算
-    calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+    if(!__cacheStyle.borderTopLeftRadius
+      || !__cacheStyle.borderTopRightRadius
+      || !__cacheStyle.borderBottomRightRadius
+      || !__cacheStyle.borderBottomLeftRadius) {
+      __cacheStyle.borderTopLeftRadius
+        = __cacheStyle.borderTopRightRadius
+        = __cacheStyle.borderBottomRightRadius
+        = __cacheStyle.borderBottomLeftRadius
+        = true;
+      calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+    }
     let {
       marginTop,
       marginLeft,
@@ -467,14 +597,10 @@ class Xom extends Node {
       backgroundImage,
       opacity,
       filter,
-    } = computedStyle;
-    let {
       backgroundSize,
-      backgroundPositionX,
-      backgroundPositionY,
-      transform,
       transformOrigin,
-    } = currentStyle;
+      transform,
+    } = computedStyle;
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
     let x1 = x + marginLeft;
@@ -485,14 +611,6 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    // transform和transformOrigin相关
-    let tfo = tf.calOrigin(transformOrigin, outerWidth, outerHeight);
-    computedStyle.transformOrigin = tfo.slice(0);
-    tfo[0] += x;
-    tfo[1] += y;
-    // canvas继承祖先matrix，没有则恢复默认，防止其它matrix影响；svg则要考虑事件
-    let matrix = [1, 0, 0, 1, 0, 0];
-    let parent = this.parent;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
       let p = parent || this.host && this.host.parent;
@@ -504,48 +622,10 @@ class Xom extends Node {
     else {
       this.__virtualDom.opacity = opacity;
     }
-    // transform相对于自身
-    if(transform) {
-      matrix = tf.calMatrix(transform, outerWidth, outerHeight);
-    }
-    // 没有transform则看是否有扩展的css独立变换属性
-    else {
-      let temp = [];
-      [
-        'translateX',
-        'translateY',
-        'rotateZ',
-        'rotate',
-        'skewX',
-        'skewY',
-        'scaleX',
-        'scaleY',
-      ].forEach(k => {
-        let v = currentStyle[k];
-        if(util.isNil(v)) {
-          return;
-        }
-        computedStyle[k] = v.value;
-        // scale为1和其它为0避免计算浪费
-        let isScale = k.indexOf('scale') > -1;
-        if(v.value === 1 && isScale || !isScale && v.value === 0) {
-          return;
-        }
-        if(v.unit === PERCENT) {
-          if(k === 'translateX') {
-            computedStyle[k] = v.value * outerWidth * 0.01;
-          }
-          else if(k === 'translateY') {
-            computedStyle[k] = v.value * outerHeight * 0.01;
-          }
-        }
-        temp.push([k, v]);
-      });
-      if(temp.length) {
-        matrix = tf.calMatrix(temp, outerWidth, outerHeight);
-      }
-    }
-    this.__matrix = computedStyle.transform = matrix;
+    let tfo = transformOrigin.slice(0);
+    tfo[0] += x;
+    tfo[1] += y;
+    let matrix = transform;
     matrix = tf.calMatrixByOrigin(matrix, tfo);
     let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
@@ -563,16 +643,39 @@ class Xom extends Node {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
-    // 先计算，防止隐藏不执行
-    computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
-      ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
-    computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
-      ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
-    backgroundSize = calBackgroundSize(backgroundSize, innerWidth, innerHeight);
-    computedStyle.backgroundSize = backgroundSize;
-    // 隐藏不渲染
+    // 防止隐藏不加载背景图
+    if(backgroundImage) {
+      let loadBgi = this.__loadBgi;
+      if(util.isString(backgroundImage)) {
+        let cache = inject.IMG[backgroundImage];
+        if(cache && cache.state === inject.LOADED) {
+          loadBgi.url = backgroundImage;
+          loadBgi.source = cache.source;
+          loadBgi.width = cache.width;
+          loadBgi.height = cache.height;
+        }
+        if(loadBgi.url !== backgroundImage) {
+          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+          loadBgi.url = backgroundImage;
+          loadBgi.source = null;
+          inject.measureImg(backgroundImage, data => {
+            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
+              loadBgi.source = data.source;
+              loadBgi.width = data.width;
+              loadBgi.height = data.height;
+              this.root.delRefreshTask(loadBgi.cb);
+              this.root.addRefreshTask(loadBgi.cb);
+            }
+          }, {
+            width: innerWidth,
+            height: innerHeight,
+          });
+        }
+      }
+    }
+    // 隐藏不渲染，但要加载背景图
     if(visibility === 'hidden') {
-      computedStyle.visibility = 'hidden';
       return;
     }
     // 背景色垫底
@@ -585,14 +688,6 @@ class Xom extends Node {
     if(backgroundImage) {
       let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
-        // 可能已提前加载好了，或有缓存，为减少刷新直接使用
-        let cache = inject.IMG[backgroundImage];
-        if(cache && cache.state === inject.LOADED) {
-          loadBgi.url = backgroundImage;
-          loadBgi.source = cache.source;
-          loadBgi.width = cache.width;
-          loadBgi.height = cache.height;
-        }
         if(loadBgi.url === backgroundImage) {
           let source = loadBgi.source;
           // 无source不绘制
@@ -845,24 +940,6 @@ class Xom extends Node {
               });
             }
           }
-        }
-        else {
-          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-          loadBgi.url = backgroundImage;
-          loadBgi.source = null;
-          inject.measureImg(backgroundImage, data => {
-            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
-              loadBgi.source = data.source;
-              loadBgi.width = data.width;
-              loadBgi.height = data.height;
-              this.root.delRefreshTask(loadBgi.cb);
-              this.root.addRefreshTask(loadBgi.cb);
-            }
-          }, {
-            width: innerWidth,
-            height: innerHeight,
-          });
         }
       }
       else if(backgroundImage.k) {
@@ -1145,27 +1222,28 @@ class Xom extends Node {
     }
   }
 
-  // updateStyle(style, cb) {
-  //   let format = normalize(style);
-  //   extend(this.__style, format);
-  //   extend(this.__currentStyle, format);
-  //   let root = this.root;
-  //   if(root) {
-  //     let lv = level.REPAINT;
-  //     for(let i in style) {
-  //       if(!rp.STYLE.hasOwnProperty(i)) {
-  //         lv = level.REFLOW;
-  //         break;
-  //       }
-  //     }
-  //     root.addRefreshTask(this.__task = {
-  //       before() {
-  //         root.setRefreshLevel(lv);
-  //       },
-  //       after: cb,
-  //     });
-  //   }
-  // }
+  updateStyle(style, cb) {
+    let { root, __style, __currentStyle, __cacheStyle } = this;
+    if(root) {
+      let lv = level.REPAINT;
+      for(let i in style) {
+        if(style.hasOwnProperty(i) && !rp.STYLE.hasOwnProperty(i)) {
+          lv = level.REFLOW;
+          __cacheStyle[i] = false;
+          break;
+        }
+      }
+      root.addRefreshTask(this.__task = {
+        before() {
+          let format = normalize(style);
+          extend(__style, format);
+          extend(__currentStyle, format);
+          root.setRefreshLevel(lv);
+        },
+        after: cb,
+      });
+    }
+  }
 
   animate(list, options, underControl) {
     if(this.isDestroyed) {
@@ -1208,16 +1286,8 @@ class Xom extends Node {
     compute(this, isRoot, this.currentStyle, this.computedStyle);
   }
 
-  __repaint(isRoot) {
-    repaint(this, isRoot, this.currentStyle, this.computedStyle);
-  }
-
   get tagName() {
     return this.__tagName;
-  }
-
-  get isGeom() {
-    return this.tagName.charAt(0) === '$';
   }
 
   get innerWidth() {

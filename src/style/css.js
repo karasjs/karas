@@ -854,6 +854,20 @@ function normalize(style, reset = []) {
       }
     }
   }
+  temp = style.visibility;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.visibility = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.visibility = {
+        value: temp,
+        unit: STRING,
+      };
+    }
+  }
   return style;
 }
 
@@ -926,59 +940,6 @@ function compute(node, isRoot, currentStyle, computedStyle) {
   else {
     computedStyle.lineHeight = calNormalLineHeight(computedStyle);
   }
-  repaint(node, isRoot, currentStyle, computedStyle);
-}
-
-// REPAINT等级下，刷新前首先执行，如继承等提前计算computedStyle
-function repaint(node, isRoot, currentStyle, computedStyle) {
-  let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-  let { fontStyle, fontWeight, color, visibility } = currentStyle;
-  if(fontStyle.unit === INHERIT) {
-    computedStyle.fontStyle = isRoot ? 'normal' : parentComputedStyle.fontStyle;
-  }
-  else {
-    computedStyle.fontStyle = fontStyle.value;
-  }
-  if(fontWeight.unit === INHERIT) {
-    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
-  }
-  else {
-    computedStyle.fontWeight = fontWeight.value;
-  }
-  if(color.unit === INHERIT) {
-    computedStyle.color = isRoot ? [0, 0, 0, 1] : parentComputedStyle.color;
-  }
-  else {
-    computedStyle.color = color.value;
-  }
-  if(visibility === 'inherit') {
-    computedStyle.visibility = isRoot ? 'visible' : parentComputedStyle.visibility;
-  }
-  else {
-    computedStyle.visibility = visibility;
-  }
-  [
-    'opacity',
-    'zIndex',
-    'borderTopStyle',
-    'borderRightStyle',
-    'borderBottomStyle',
-    'borderLeftStyle',
-    'backgroundRepeat',
-    'backgroundImage',
-    'filter',
-  ].forEach(k => {
-    computedStyle[k] = currentStyle[k];
-  });
-  [
-    'backgroundColor',
-    'borderTopColor',
-    'borderRightColor',
-    'borderBottomColor',
-    'borderLeftColor',
-  ].forEach(k => {
-    computedStyle[k] = currentStyle[k].value;
-  });
 }
 
 function setFontStyle(style) {
@@ -1052,7 +1013,6 @@ function calAbsolute(currentStyle, k, v, size) {
 export default {
   normalize,
   compute,
-  repaint,
   setFontStyle,
   getBaseLine,
   calRelative,

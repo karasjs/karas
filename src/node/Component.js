@@ -174,13 +174,6 @@ class Component extends Event {
     }
   }
 
-  __repaint() {
-    let sr = this.shadowRoot;
-    if(!(sr instanceof Text)) {
-      sr.__repaint(true);
-    }
-  }
-
   get tagName() {
     return this.__tagName;
   }

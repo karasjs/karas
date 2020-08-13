@@ -318,6 +318,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     else {
       // 将动画样式直接赋给currentStyle
       target.currentStyle[i] = v;
+      target.__cacheStyle[i] = false;
     }
   });
   animation.__style = style;

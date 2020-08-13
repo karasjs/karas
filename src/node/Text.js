@@ -177,10 +177,6 @@ class Text extends Node {
     }
   }
 
-  __renderByMask(renderMode, ctx) {
-    this.render(renderMode, ctx);
-  }
-
   __tryLayInline(w) {
     return w - this.textWidth;
   }
@@ -203,11 +199,13 @@ class Text extends Node {
   }
 
   render(renderMode, ctx) {
-    let vd = this.__virtualDom = {
-      type: 'text',
-      children: [],
-    };
-    const { isDestroyed, computedStyle, lineBoxes } = this;
+    if(renderMode === mode.SVG) {
+      this.__virtualDom = {
+        type: 'text',
+        children: [],
+      };
+    }
+    let { isDestroyed, computedStyle, lineBoxes } = this;
     if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
       return;
     }
@@ -219,7 +217,7 @@ class Text extends Node {
       item.render(renderMode, ctx, computedStyle);
     });
     if(renderMode === mode.SVG) {
-      vd.children = lineBoxes.map(lineBox => lineBox.virtualDom);
+      this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);
     }
   }
 
@@ -264,5 +262,7 @@ class Text extends Node {
     return this.parent.computedStyle;
   }
 }
+
+Text.prototype.__renderByMask = Text.prototype.render;
 
 export default Text;

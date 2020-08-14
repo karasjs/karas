@@ -22,7 +22,6 @@ let o = karas.render(
 );
 let t = o.ref.t;
 let res = karas.math.tar.transform([0, 0, 80, 10, 30, 50], [10, 20, 100, 0, 100, 100]);
-t.currentStyle.transform = t.style.transform = karas.css.normalize(style).transform;
 t.updateStyle({
   transform: `matrix(${res.join(',')})`,
 });

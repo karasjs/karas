@@ -14243,13 +14243,10 @@
         }
 
         r = __cacheProps.r;
-
-        var _cacheProps = _slicedToArray(__cacheProps, 4),
-            x1 = _cacheProps[0],
-            y1 = _cacheProps[1],
-            x2 = _cacheProps[2],
-            y2 = _cacheProps[3];
-
+        var x1 = __cacheProps.x1,
+            y1 = __cacheProps.y1,
+            x2 = __cacheProps.x2,
+            y2 = __cacheProps.y2;
         var large = end - begin > 180 ? 1 : 0;
 
         if (renderMode === mode.CANVAS) {

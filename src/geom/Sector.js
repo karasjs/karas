@@ -103,7 +103,7 @@ class Sector extends Geom {
       __cacheProps.y2 = y2;
     }
     r = __cacheProps.r;
-    let [x1, y1, x2, y2] = __cacheProps;
+    let {x1, y1, x2, y2} = __cacheProps;
     let large = (end - begin) > 180 ? 1 : 0;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();

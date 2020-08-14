@@ -21,9 +21,10 @@ const { normalize, calRelative, compute } = css;
 const { genCanvasPolygon, genSvgPolygon } = draw;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
-  color = int2rgba(color);
   if(renderMode === mode.CANVAS) {
-    ctx.fillStyle = color;
+    if(ctx.fillStyle !== color) {
+      ctx.fillStyle = color;
+    }
     points.forEach(point => {
       genCanvasPolygon(ctx, point);
     });
@@ -48,7 +49,9 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
-    ctx.fillStyle = color;
+    if(ctx.fillStyle !== color) {
+      ctx.fillStyle = color;
+    }
     if(list) {
       genCanvasPolygon(ctx, list, method);
     }
@@ -594,7 +597,9 @@ class Xom extends Node {
       'borderBottomColor',
       'borderLeftColor',
     ].forEach(k => {
-      computedStyle[k] = currentStyle[k].value;
+      if(!__cacheStyle[k]) {
+        __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k].value);
+      }
     });
     // 强制计算继承性的
     if(parent) {
@@ -709,7 +714,7 @@ class Xom extends Node {
     }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
-      renderBgc(renderMode, int2rgba(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this,
+      renderBgc(renderMode, __cacheStyle.backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
@@ -984,7 +989,7 @@ class Xom extends Node {
       let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2,
         x1, x2, x3, x4, y1, y2, y3, y4, 0,
         borderTopLeftRadius, borderTopRightRadius);
-      renderBorder(renderMode, points, borderTopColor, ctx, this);
+      renderBorder(renderMode, points, __cacheStyle.borderTopColor, ctx, this);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
       let deg1 = Math.atan(borderRightWidth / borderTopWidth);
@@ -992,7 +997,7 @@ class Xom extends Node {
       let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2,
         x1, x2, x3, x4, y1, y2, y3, y4, 1,
         borderTopRightRadius, borderBottomRightRadius);
-      renderBorder(renderMode, points, borderRightColor, ctx, this);
+      renderBorder(renderMode, points, __cacheStyle.borderRightColor, ctx, this);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
       let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
@@ -1000,7 +1005,7 @@ class Xom extends Node {
       let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2,
         x1, x2, x3, x4, y1, y2, y3, y4, 2,
         borderBottomLeftRadius, borderBottomRightRadius);
-      renderBorder(renderMode, points, borderBottomColor, ctx, this);
+      renderBorder(renderMode, points, __cacheStyle.borderBottomColor, ctx, this);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
@@ -1008,7 +1013,7 @@ class Xom extends Node {
       let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2,
         x1, x2, x3, x4, y1, y2, y3, y4, 3,
         borderTopLeftRadius, borderBottomLeftRadius);
-      renderBorder(renderMode, points, borderLeftColor, ctx, this);
+      renderBorder(renderMode, points, __cacheStyle.borderLeftColor, ctx, this);
     }
     if(filter) {
       filter.forEach(item => {

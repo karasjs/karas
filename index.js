@@ -8307,10 +8307,11 @@
       genSvgPolygon$1 = draw.genSvgPolygon;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
-    color = int2rgba$2(color);
-
     if (renderMode === mode.CANVAS) {
-      ctx.fillStyle = color;
+      if (ctx.fillStyle !== color) {
+        ctx.fillStyle = color;
+      }
+
       points.forEach(function (point) {
         genCanvasPolygon$1(ctx, point);
       });
@@ -8333,7 +8334,9 @@
     var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
 
     if (renderMode === mode.CANVAS) {
-      ctx.fillStyle = color;
+      if (ctx.fillStyle !== color) {
+        ctx.fillStyle = color;
+      }
 
       if (list) {
         genCanvasPolygon$1(ctx, list, method);
@@ -8894,7 +8897,9 @@
           computedStyle[k] = currentStyle[k];
         });
         ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-          computedStyle[k] = currentStyle[k].value;
+          if (!__cacheStyle[k]) {
+            __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k].value);
+          }
         }); // 强制计算继承性的
 
         if (parent) {
@@ -9001,7 +9006,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, int2rgba$2(backgroundColor), x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          renderBgc(renderMode, __cacheStyle.backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         } // 渐变或图片叠加
 
 
@@ -9284,7 +9289,7 @@
           var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
           var deg2 = Math.atan(borderTopWidth / borderRightWidth);
           var points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
-          renderBorder(renderMode, points, borderTopColor, ctx, this);
+          renderBorder(renderMode, points, __cacheStyle.borderTopColor, ctx, this);
         }
 
         if (borderRightWidth > 0 && borderRightColor[3] > 0) {
@@ -9294,7 +9299,7 @@
 
           var _points = border.calPoints(borderRightWidth, borderRightStyle, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
 
-          renderBorder(renderMode, _points, borderRightColor, ctx, this);
+          renderBorder(renderMode, _points, __cacheStyle.borderRightColor, ctx, this);
         }
 
         if (borderBottomWidth > 0 && borderBottomColor[3] > 0) {
@@ -9304,7 +9309,7 @@
 
           var _points2 = border.calPoints(borderBottomWidth, borderBottomStyle, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
 
-          renderBorder(renderMode, _points2, borderBottomColor, ctx, this);
+          renderBorder(renderMode, _points2, __cacheStyle.borderBottomColor, ctx, this);
         }
 
         if (borderLeftWidth > 0 && borderLeftColor[3] > 0) {
@@ -9314,7 +9319,7 @@
 
           var _points3 = border.calPoints(borderLeftWidth, borderLeftStyle, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
 
-          renderBorder(renderMode, _points3, borderLeftColor, ctx, this);
+          renderBorder(renderMode, _points3, __cacheStyle.borderLeftColor, ctx, this);
         }
 
         if (filter) {

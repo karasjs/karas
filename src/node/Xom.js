@@ -309,6 +309,7 @@ class Xom extends Node {
     computedStyle.height = this.height;
     // 设置缓存hash，render时计算
     this.__cacheStyle = {};
+    this.__cacheProps = {};
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -470,19 +471,27 @@ class Xom extends Node {
       backgroundPositionY,
     } = currentStyle;
     // 先根据cache计算需要重新计算的computedStyle
-    if(!__cacheStyle.transformOrigin) {
+    if(__cacheStyle.transformOrigin === undefined) {
       __cacheStyle.transformOrigin = true;
       computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
     }
-    if(!__cacheStyle.transform
-      || !__cacheStyle.translateX
-      || !__cacheStyle.translateY
-      || !__cacheStyle.rotateZ
-      || !__cacheStyle.scaleX
-      || !__cacheStyle.scaleY
-      || !__cacheStyle.skewX
-      || !__cacheStyle.skewY) {
-      __cacheStyle.transform = true;
+    if(__cacheStyle.transform === undefined
+      || __cacheStyle.translateX === undefined
+      || __cacheStyle.translateY === undefined
+      || __cacheStyle.rotateZ === undefined
+      || __cacheStyle.scaleX === undefined
+      || __cacheStyle.scaleY === undefined
+      || __cacheStyle.skewX === undefined
+      || __cacheStyle.skewY === undefined) {
+      __cacheStyle.transform
+        = __cacheStyle.translateX
+        = __cacheStyle.translateY
+        = __cacheStyle.rotateZ
+        = __cacheStyle.scaleX
+        = __cacheStyle.scaleY
+        = __cacheStyle.skewX
+        = __cacheStyle.skewY
+        = true;
       let matrix;
       // transform相对于自身
       if(currentStyle.transform) {
@@ -527,21 +536,21 @@ class Xom extends Node {
       }
       this.__matrix = computedStyle.transform = matrix || [1, 0, 0, 1, 0, 0];
     }
-    if(!__cacheStyle.backgroundPositionX) {
+    if(__cacheStyle.backgroundPositionX === undefined) {
       __cacheStyle.backgroundPositionX = true;
       computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
         ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
     }
-    if(!__cacheStyle.backgroundPositionY) {
+    if(__cacheStyle.backgroundPositionY === undefined) {
       __cacheStyle.backgroundPositionY = true;
       computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
         ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
     }
-    if(!__cacheStyle.backgroundSize) {
+    if(__cacheStyle.backgroundSize === undefined) {
       __cacheStyle.backgroundSize = true;
       computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
     }
-    if(!__cacheStyle.backgroundImage) {
+    if(__cacheStyle.backgroundImage === undefined) {
       let backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage;
       // 防止隐藏不加载背景图
       if(util.isString(backgroundImage)) {
@@ -597,7 +606,7 @@ class Xom extends Node {
       'borderBottomColor',
       'borderLeftColor',
     ].forEach(k => {
-      if(!__cacheStyle[k]) {
+      if(__cacheStyle[k] === undefined) {
         __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k].value);
       }
     });
@@ -642,10 +651,10 @@ class Xom extends Node {
       }
     }
     // 圆角边计算
-    if(!__cacheStyle.borderTopLeftRadius
-      || !__cacheStyle.borderTopRightRadius
-      || !__cacheStyle.borderBottomRightRadius
-      || !__cacheStyle.borderBottomLeftRadius) {
+    if(__cacheStyle.borderTopLeftRadius === undefined
+      || __cacheStyle.borderTopRightRadius === undefined
+      || __cacheStyle.borderBottomRightRadius === undefined
+      || __cacheStyle.borderBottomLeftRadius === undefined) {
       __cacheStyle.borderTopLeftRadius
         = __cacheStyle.borderTopRightRadius
         = __cacheStyle.borderBottomRightRadius
@@ -1262,7 +1271,8 @@ class Xom extends Node {
       for(let i in style) {
         if(style.hasOwnProperty(i) && !rp.STYLE.hasOwnProperty(i)) {
           lv = level.REFLOW;
-          __cacheStyle[i] = false;
+          // repaint置空，如果reflow会重新生成空的
+          __cacheStyle[i] = undefined;
           break;
         }
       }

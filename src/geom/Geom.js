@@ -26,6 +26,7 @@ class Geom extends Xom {
     this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
+    this.__cacheProps = {};
   }
 
   __tryLayInline(w, total) {
@@ -120,7 +121,7 @@ class Geom extends Xom {
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
     // 先根据cache计算需要重新计算的computedStyle
-    if(!__cacheStyle.stroke) {
+    if(__cacheStyle.stroke === undefined) {
       let stroke = currentStyle.stroke;
       computedStyle.stroke = stroke;
       if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
@@ -130,7 +131,7 @@ class Geom extends Xom {
         __cacheStyle.stroke = int2rgba(currentStyle.stroke);
       }
     }
-    if(!__cacheStyle.fill) {
+    if(__cacheStyle.fill === undefined) {
       let fill = currentStyle.fill;
       computedStyle.fill = fill;
       if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
@@ -140,7 +141,7 @@ class Geom extends Xom {
         __cacheStyle.fill = int2rgba(currentStyle.fill);
       }
     }
-    if(!__cacheStyle.strokeWidth) {
+    if(__cacheStyle.strokeWidth === undefined) {
       __cacheStyle.strokeWidth = true;
       let strokeWidth = currentStyle.strokeWidth;
       if(strokeWidth.unit === PX) {
@@ -153,7 +154,7 @@ class Geom extends Xom {
         computedStyle.strokeWidth = 0;
       }
     }
-    if(!__cacheStyle.strokeWidth) {
+    if(__cacheStyle.strokeWidth === undefined) {
       __cacheStyle.strokeWidth = true;
       let strokeWidth = currentStyle.strokeWidth;
       if(strokeWidth.unit === PX) {
@@ -166,7 +167,7 @@ class Geom extends Xom {
         computedStyle.strokeWidth = 0;
       }
     }
-    if(!__cacheStyle.strokeDasharray) {
+    if(__cacheStyle.strokeDasharray === undefined) {
       __cacheStyle.strokeDasharray = true;
       computedStyle.strokeDasharray = currentStyle.strokeDasharray;
       __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');

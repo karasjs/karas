@@ -6513,11 +6513,12 @@
 
       if (repaint.GEOM.hasOwnProperty(i)) {
         target.currentProps[i] = v;
+        target.__cacheProps[i] = undefined;
       } // 样式
       else {
           // 将动画样式直接赋给currentStyle
           target.currentStyle[i] = v;
-          target.__cacheStyle[i] = false;
+          target.__cacheStyle[i] = undefined;
         }
     });
     animation.__style = style;
@@ -8610,7 +8611,8 @@
         computedStyle.width = this.width;
         computedStyle.height = this.height; // 设置缓存hash，render时计算
 
-        this.__cacheStyle = {}; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        this.__cacheStyle = {};
+        this.__cacheProps = {}; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
 
@@ -8786,13 +8788,13 @@
         var backgroundPositionX = currentStyle.backgroundPositionX,
             backgroundPositionY = currentStyle.backgroundPositionY; // 先根据cache计算需要重新计算的computedStyle
 
-        if (!__cacheStyle.transformOrigin) {
+        if (__cacheStyle.transformOrigin === undefined) {
           __cacheStyle.transformOrigin = true;
           computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
         }
 
-        if (!__cacheStyle.transform || !__cacheStyle.translateX || !__cacheStyle.translateY || !__cacheStyle.rotateZ || !__cacheStyle.scaleX || !__cacheStyle.scaleY || !__cacheStyle.skewX || !__cacheStyle.skewY) {
-          __cacheStyle.transform = true;
+        if (__cacheStyle.transform === undefined || __cacheStyle.translateX === undefined || __cacheStyle.translateY === undefined || __cacheStyle.rotateZ === undefined || __cacheStyle.scaleX === undefined || __cacheStyle.scaleY === undefined || __cacheStyle.skewX === undefined || __cacheStyle.skewY === undefined) {
+          __cacheStyle.transform = __cacheStyle.translateX = __cacheStyle.translateY = __cacheStyle.rotateZ = __cacheStyle.scaleX = __cacheStyle.scaleY = __cacheStyle.skewX = __cacheStyle.skewY = true;
 
           var _matrix; // transform相对于自身
 
@@ -8836,22 +8838,22 @@
           this.__matrix = computedStyle.transform = _matrix || [1, 0, 0, 1, 0, 0];
         }
 
-        if (!__cacheStyle.backgroundPositionX) {
+        if (__cacheStyle.backgroundPositionX === undefined) {
           __cacheStyle.backgroundPositionX = true;
           computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
         }
 
-        if (!__cacheStyle.backgroundPositionY) {
+        if (__cacheStyle.backgroundPositionY === undefined) {
           __cacheStyle.backgroundPositionY = true;
           computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
         }
 
-        if (!__cacheStyle.backgroundSize) {
+        if (__cacheStyle.backgroundSize === undefined) {
           __cacheStyle.backgroundSize = true;
           computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
         }
 
-        if (!__cacheStyle.backgroundImage) {
+        if (__cacheStyle.backgroundImage === undefined) {
           var _backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage; // 防止隐藏不加载背景图
 
 
@@ -8897,7 +8899,7 @@
           computedStyle[k] = currentStyle[k];
         });
         ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-          if (!__cacheStyle[k]) {
+          if (__cacheStyle[k] === undefined) {
             __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k].value);
           }
         }); // 强制计算继承性的
@@ -8937,7 +8939,7 @@
           } // 圆角边计算
 
 
-        if (!__cacheStyle.borderTopLeftRadius || !__cacheStyle.borderTopRightRadius || !__cacheStyle.borderBottomRightRadius || !__cacheStyle.borderBottomLeftRadius) {
+        if (__cacheStyle.borderTopLeftRadius === undefined || __cacheStyle.borderTopRightRadius === undefined || __cacheStyle.borderBottomRightRadius === undefined || __cacheStyle.borderBottomLeftRadius === undefined) {
           __cacheStyle.borderTopLeftRadius = __cacheStyle.borderTopRightRadius = __cacheStyle.borderBottomRightRadius = __cacheStyle.borderBottomLeftRadius = true;
           calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
         }
@@ -9590,8 +9592,9 @@
 
           for (var i in style) {
             if (style.hasOwnProperty(i) && !repaint.STYLE.hasOwnProperty(i)) {
-              lv = level.REFLOW;
-              __cacheStyle[i] = false;
+              lv = level.REFLOW; // repaint置空，如果reflow会重新生成空的
+
+              __cacheStyle[i] = undefined;
               break;
             }
           }
@@ -13246,6 +13249,7 @@
       _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__currentProps = util.clone(_this.props);
+      _this.__cacheProps = {};
       return _this;
     }
 
@@ -13371,7 +13375,7 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom; // 先根据cache计算需要重新计算的computedStyle
 
-        if (!__cacheStyle.stroke) {
+        if (__cacheStyle.stroke === undefined) {
           var _stroke = currentStyle.stroke;
           computedStyle.stroke = _stroke;
 
@@ -13382,7 +13386,7 @@
           }
         }
 
-        if (!__cacheStyle.fill) {
+        if (__cacheStyle.fill === undefined) {
           var _fill = currentStyle.fill;
           computedStyle.fill = _fill;
 
@@ -13393,7 +13397,7 @@
           }
         }
 
-        if (!__cacheStyle.strokeWidth) {
+        if (__cacheStyle.strokeWidth === undefined) {
           __cacheStyle.strokeWidth = true;
           var _strokeWidth = currentStyle.strokeWidth;
 
@@ -13406,7 +13410,7 @@
           }
         }
 
-        if (!__cacheStyle.strokeWidth) {
+        if (__cacheStyle.strokeWidth === undefined) {
           __cacheStyle.strokeWidth = true;
           var _strokeWidth2 = currentStyle.strokeWidth;
 
@@ -13419,7 +13423,7 @@
           }
         }
 
-        if (!__cacheStyle.strokeDasharray) {
+        if (__cacheStyle.strokeDasharray === undefined) {
           __cacheStyle.strokeDasharray = true;
           computedStyle.strokeDasharray = currentStyle.strokeDasharray;
           __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
@@ -13939,7 +13943,8 @@
         var width = this.width,
             height = this.height,
             points = this.points,
-            controls = this.controls;
+            controls = this.controls,
+            __cacheProps = this.__cacheProps;
 
         var _this$__getPoints = this.__getPoints(originX, originY, width, height, points, controls),
             _this$__getPoints2 = _slicedToArray(_this$__getPoints, 3),

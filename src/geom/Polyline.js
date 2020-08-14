@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import draw from '../util/draw';
 
 class Polyline extends Geom {
   constructor(tagName, props) {
@@ -66,7 +67,7 @@ class Polyline extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, points, controls } = this;
+    let { width, height, points, controls, __cacheProps } = this;
     let [pts, cls, hasControl] = this.__getPoints(originX, originY, width, height, points, controls);
     if(points.length < 2) {
       console.error('Points must have at lease 2 item: ' + points);

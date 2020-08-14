@@ -313,12 +313,13 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
       target.currentProps[i] = v;
+      target.__cacheProps[i] = undefined;
     }
     // 样式
     else {
       // 将动画样式直接赋给currentStyle
       target.currentStyle[i] = v;
-      target.__cacheStyle[i] = false;
+      target.__cacheStyle[i] = undefined;
     }
   });
   animation.__style = style;

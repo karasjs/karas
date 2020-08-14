@@ -8837,6 +8837,23 @@
               computedStyle[k] = currentStyle[k].value || currentStyle[k];
             }
           });
+        } else {
+          // root和component的根节点不能是inherit
+          if (currentStyle.fontStyle.unit === 4) {
+            computedStyle.fontStyle = 'normal';
+          }
+
+          if (currentStyle.fontWeight.unit === 4) {
+            computedStyle.fontWeight = 400;
+          }
+
+          if (currentStyle.color.unit === 4) {
+            computedStyle.color = [0, 0, 0, 1];
+          }
+
+          if (currentStyle.visibility.unit === 4) {
+            computedStyle.visibility = 'visible';
+          }
         } // 圆角边计算
 
 
@@ -10028,8 +10045,9 @@
           extend$2(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
 
           this.__props.forEach(function (item) {
-            var k = item[0];
-            var v = item[1];
+            var _item = _slicedToArray(item, 2),
+                k = _item[0],
+                v = _item[1];
 
             if (/^on[a-zA-Z]/.test(k)) {
               k = k.slice(2).toLowerCase();
@@ -10198,7 +10216,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle'].forEach(function (fn) {
     Component.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -12658,11 +12676,7 @@
   var isNil$6 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
-  var STRING$3 = unit.STRING,
-      NUMBER$3 = unit.NUMBER,
-      PX$6 = unit.PX,
-      RGBA$2 = unit.RGBA,
-      INHERIT$3 = unit.INHERIT;
+  var PX$6 = unit.PX;
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
@@ -12940,38 +12954,6 @@
 
         if (style.position === 'absolute') {
           computedStyle.position = currentStyle.positoin = style.position = 'static';
-        }
-
-        if (style.fontStyle.unit === INHERIT$3) {
-          computedStyle.fontStyle = 'normal';
-          currentStyle.fontStyle = style.fontStyle = {
-            value: 'normal',
-            unit: STRING$3
-          };
-        }
-
-        if (style.fontWeight.unit === INHERIT$3) {
-          computedStyle.fontWeight = 400;
-          currentStyle.fontWeight = style.fontWeight = {
-            value: 400,
-            unit: NUMBER$3
-          };
-        }
-
-        if (style.color.unit === INHERIT$3) {
-          currentStyle.color = style.color = {
-            value: '#000',
-            unit: RGBA$2
-          };
-          computedStyle.color = [0, 0, 0, 1];
-        }
-
-        if (style.visibility.unit === INHERIT$3) {
-          computedStyle.visibility = 'visible';
-          style.visibility = currentStyle.visibility = {
-            value: 'visible',
-            unit: STRING$3
-          };
         } // 根节点满宽高
 
 

@@ -83,8 +83,7 @@ class Component extends Event {
       extend(sr.currentStyle, style, keys);
       // 事件添加到sr，以及自定义事件
       this.__props.forEach(item => {
-        let k = item[0];
-        let v = item[1];
+        let [k, v] = item;
         if(/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
           let arr = sr.listener[k] = sr.listener[k] || [];
@@ -265,6 +264,7 @@ Object.keys(repaint.GEOM).concat([
   'animate',
   'removeAnimate',
   'clearAnimate',
+  'updateStyle'
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

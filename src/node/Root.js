@@ -218,34 +218,6 @@ class Root extends Dom {
     if(style.position === 'absolute') {
       computedStyle.position = currentStyle.positoin = style.position = 'static';
     }
-    if(style.fontStyle.unit === INHERIT) {
-      computedStyle.fontStyle = 'normal';
-      currentStyle.fontStyle = style.fontStyle = {
-        value: 'normal',
-        unit: STRING,
-      };
-    }
-    if(style.fontWeight.unit === INHERIT) {
-      computedStyle.fontWeight = 400;
-      currentStyle.fontWeight = style.fontWeight = {
-        value: 400,
-        unit: NUMBER,
-      };
-    }
-    if(style.color.unit === INHERIT) {
-      currentStyle.color = style.color = {
-        value: '#000',
-        unit: RGBA,
-      };
-      computedStyle.color = [0, 0, 0, 1];
-    }
-    if(style.visibility.unit === INHERIT) {
-      computedStyle.visibility = 'visible';
-      style.visibility = currentStyle.visibility = {
-        value: 'visible',
-        unit: STRING,
-      };
-    }
     // 根节点满宽高
     currentStyle.width = style.width = {
       value: this.width,

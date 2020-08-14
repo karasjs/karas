@@ -556,8 +556,18 @@ class Xom extends Node {
         }
       });
     }
+    // root和component的根节点不能是inherit
     else {
-      // root和component的根节点不能是inherit
+      [
+        'fontStyle',
+        'fontWeight',
+        'color',
+        'visibility'
+      ].forEach(k => {
+        if(currentStyle[k].unit !== INHERIT) {
+          computedStyle[k] = currentStyle[k].value || currentStyle[k];
+        }
+      });
       if(currentStyle.fontStyle.unit === 4) {
         computedStyle.fontStyle = 'normal';
       }

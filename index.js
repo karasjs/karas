@@ -8837,24 +8837,30 @@
               computedStyle[k] = currentStyle[k].value || currentStyle[k];
             }
           });
-        } else {
-          // root和component的根节点不能是inherit
-          if (currentStyle.fontStyle.unit === 4) {
-            computedStyle.fontStyle = 'normal';
-          }
+        } // root和component的根节点不能是inherit
+        else {
+            ['fontStyle', 'fontWeight', 'color', 'visibility'].forEach(function (k) {
+              if (currentStyle[k].unit !== INHERIT$2) {
+                computedStyle[k] = currentStyle[k].value || currentStyle[k];
+              }
+            });
 
-          if (currentStyle.fontWeight.unit === 4) {
-            computedStyle.fontWeight = 400;
-          }
+            if (currentStyle.fontStyle.unit === 4) {
+              computedStyle.fontStyle = 'normal';
+            }
 
-          if (currentStyle.color.unit === 4) {
-            computedStyle.color = [0, 0, 0, 1];
-          }
+            if (currentStyle.fontWeight.unit === 4) {
+              computedStyle.fontWeight = 400;
+            }
 
-          if (currentStyle.visibility.unit === 4) {
-            computedStyle.visibility = 'visible';
-          }
-        } // 圆角边计算
+            if (currentStyle.color.unit === 4) {
+              computedStyle.color = [0, 0, 0, 1];
+            }
+
+            if (currentStyle.visibility.unit === 4) {
+              computedStyle.visibility = 'visible';
+            }
+          } // 圆角边计算
 
 
         if (!__cacheStyle.borderTopLeftRadius || !__cacheStyle.borderTopRightRadius || !__cacheStyle.borderBottomRightRadius || !__cacheStyle.borderBottomLeftRadius) {

@@ -12,7 +12,7 @@ class LineBox {
     this.__virtualDom = {};
   }
 
-  render(renderMode, ctx, computedStyle) {
+  render(renderMode, ctx, computedStyle, cacheStyle) {
     let { content, x, y, parent } = this;
     let { ox, oy } = parent;
     y += css.getBaseLine(computedStyle);
@@ -28,7 +28,7 @@ class LineBox {
         props: [
           ['x', x],
           ['y', y],
-          ['fill', util.int2rgba(computedStyle.color)],
+          ['fill', cacheStyle.color],
           ['font-family', computedStyle.fontFamily],
           ['font-weight', computedStyle.fontWeight],
           ['font-style', computedStyle.fontStyle],

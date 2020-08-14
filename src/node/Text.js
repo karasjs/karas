@@ -220,7 +220,7 @@ class Text extends Node {
       }
     }
     lineBoxes.forEach(item => {
-      item.render(renderMode, ctx, computedStyle);
+      item.render(renderMode, ctx, computedStyle, cacheStyle);
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);

@@ -5264,7 +5264,7 @@
 
     _createClass(LineBox, [{
       key: "render",
-      value: function render(renderMode, ctx, computedStyle) {
+      value: function render(renderMode, ctx, computedStyle, cacheStyle) {
         var content = this.content,
             x = this.x,
             y = this.y,
@@ -5281,7 +5281,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', util.int2rgba(computedStyle.color)], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', computedStyle.fontSize + 'px']],
+            props: [['x', x], ['y', y], ['fill', cacheStyle.color], ['font-family', computedStyle.fontFamily], ['font-weight', computedStyle.fontWeight], ['font-style', computedStyle.fontStyle], ['font-size', computedStyle.fontSize + 'px']],
             content: util.encodeHtml(content)
           };
         }
@@ -5611,7 +5611,7 @@
         }
 
         lineBoxes.forEach(function (item) {
-          item.render(renderMode, ctx, computedStyle);
+          item.render(renderMode, ctx, computedStyle, cacheStyle);
         });
 
         if (renderMode === mode.SVG) {
@@ -8925,29 +8925,21 @@
         if (parent) {
           var parentComputedStyle = parent.computedStyle;
           ['fontStyle', 'color', 'visibility'].forEach(function (k) {
-            if (__cacheStyle[k] === undefined) {
-              __cacheStyle[k] = true;
+            if (currentStyle[k].unit === INHERIT$2) {
+              computedStyle[k] = parentComputedStyle[k];
+            } else {
+              computedStyle[k] = currentStyle[k].value;
+            }
 
-              if (currentStyle[k].unit === INHERIT$2) {
-                computedStyle[k] = parentComputedStyle[k];
-              } else {
-                computedStyle[k] = currentStyle[k].value;
-              }
-
-              if (k === 'color') {
-                __cacheStyle.color = int2rgba$2(computedStyle.color);
-              }
+            if (k === 'color') {
+              __cacheStyle.color = int2rgba$2(computedStyle.color);
             }
           });
         } // root和component的根节点不能是inherit
         else {
             ['fontStyle', 'color', 'visibility'].forEach(function (k) {
-              if (__cacheStyle[k] === undefined) {
-                __cacheStyle[k] = true;
-
-                if (currentStyle[k].unit !== INHERIT$2) {
-                  computedStyle[k] = currentStyle[k].value;
-                }
+              if (currentStyle[k].unit !== INHERIT$2) {
+                computedStyle[k] = currentStyle[k].value;
 
                 if (k === 'color') {
                   __cacheStyle.color = int2rgba$2(computedStyle.color);

@@ -120,16 +120,6 @@ class Geom extends Xom {
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
     // 先根据cache计算需要重新计算的computedStyle
-    if(!__cacheStyle.fill) {
-      let fill = currentStyle.fill;
-      computedStyle.fill = fill;
-      if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-        __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
-      }
-      else {
-        __cacheStyle.fill = int2rgba(currentStyle.fill);
-      }
-    }
     if(!__cacheStyle.stroke) {
       let stroke = currentStyle.stroke;
       computedStyle.stroke = stroke;
@@ -138,6 +128,16 @@ class Geom extends Xom {
       }
       else {
         __cacheStyle.stroke = int2rgba(currentStyle.stroke);
+      }
+    }
+    if(!__cacheStyle.fill) {
+      let fill = currentStyle.fill;
+      computedStyle.fill = fill;
+      if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
+        __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
+      }
+      else {
+        __cacheStyle.fill = int2rgba(currentStyle.fill);
       }
     }
     if(!__cacheStyle.strokeWidth) {

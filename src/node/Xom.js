@@ -583,7 +583,6 @@ class Xom extends Node {
       'borderBottomStyle',
       'borderLeftStyle',
       'backgroundRepeat',
-      'backgroundImage',
       'filter',
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];

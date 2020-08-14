@@ -8890,7 +8890,7 @@
         } // 这些直接赋值的不需要再算缓存
 
 
-        ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'backgroundImage', 'filter'].forEach(function (k) {
+        ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'filter'].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         });
         ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -13366,17 +13366,6 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom; // 先根据cache计算需要重新计算的computedStyle
 
-        if (!__cacheStyle.fill) {
-          var _fill = currentStyle.fill;
-          computedStyle.fill = _fill;
-
-          if (_fill && (_fill.k === 'linear' || _fill.k === 'radial')) {
-            __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _fill);
-          } else {
-            __cacheStyle.fill = int2rgba$3(currentStyle.fill);
-          }
-        }
-
         if (!__cacheStyle.stroke) {
           var _stroke = currentStyle.stroke;
           computedStyle.stroke = _stroke;
@@ -13385,6 +13374,17 @@
             __cacheStyle.stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _stroke);
           } else {
             __cacheStyle.stroke = int2rgba$3(currentStyle.stroke);
+          }
+        }
+
+        if (!__cacheStyle.fill) {
+          var _fill = currentStyle.fill;
+          computedStyle.fill = _fill;
+
+          if (_fill && (_fill.k === 'linear' || _fill.k === 'radial')) {
+            __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _fill);
+          } else {
+            __cacheStyle.fill = int2rgba$3(currentStyle.fill);
           }
         }
 

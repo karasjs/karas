@@ -544,7 +544,6 @@ class Xom extends Node {
       let parentComputedStyle = parent.computedStyle;
       [
         'fontStyle',
-        'fontWeight',
         'color',
         'visibility'
       ].forEach(k => {
@@ -560,7 +559,6 @@ class Xom extends Node {
     else {
       [
         'fontStyle',
-        'fontWeight',
         'color',
         'visibility'
       ].forEach(k => {

@@ -883,7 +883,7 @@ function normalize(style, reset = []) {
  */
 function compute(node, isRoot, currentStyle, computedStyle) {
   let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-  let { fontSize, fontFamily, textAlign, lineHeight } = currentStyle;
+  let { fontSize, fontFamily, fontWeight, textAlign, lineHeight } = currentStyle;
   if(fontSize.unit === INHERIT) {
     computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
   }
@@ -898,6 +898,12 @@ function compute(node, isRoot, currentStyle, computedStyle) {
   }
   else {
     computedStyle.fontFamily = fontFamily.value;
+  }
+  if(fontWeight.unit === INHERIT) {
+    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontFamily;
+  }
+  else {
+    computedStyle.fontWeight = fontWeight.value;
   }
   // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
   [

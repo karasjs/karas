@@ -4926,6 +4926,7 @@
     var parentComputedStyle = isRoot ? null : node.parent.computedStyle;
     var fontSize = currentStyle.fontSize,
         fontFamily = currentStyle.fontFamily,
+        fontWeight = currentStyle.fontWeight,
         textAlign = currentStyle.textAlign,
         lineHeight = currentStyle.lineHeight;
 
@@ -4941,6 +4942,12 @@
       computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
     } else {
       computedStyle.fontFamily = fontFamily.value;
+    }
+
+    if (fontWeight.unit === INHERIT) {
+      computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontFamily;
+    } else {
+      computedStyle.fontWeight = fontWeight.value;
     } // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
 
 
@@ -8830,7 +8837,7 @@
 
         if (parent) {
           var parentComputedStyle = parent.computedStyle;
-          ['fontStyle', 'fontWeight', 'color', 'visibility'].forEach(function (k) {
+          ['fontStyle', 'color', 'visibility'].forEach(function (k) {
             if (currentStyle[k].unit === INHERIT$2) {
               computedStyle[k] = parentComputedStyle[k];
             } else {
@@ -8839,7 +8846,7 @@
           });
         } // root和component的根节点不能是inherit
         else {
-            ['fontStyle', 'fontWeight', 'color', 'visibility'].forEach(function (k) {
+            ['fontStyle', 'color', 'visibility'].forEach(function (k) {
               if (currentStyle[k].unit !== INHERIT$2) {
                 computedStyle[k] = currentStyle[k].value || currentStyle[k];
               }

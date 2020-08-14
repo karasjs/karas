@@ -33,11 +33,14 @@ class Circle extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, r } = this;
-    r *= Math.min(width, height) * 0.5;
+    let { width, height, r, __cacheProps } = this;
+    if(__cacheProps.r === undefined) {
+      r *= Math.min(width, height) * 0.5;
+      __cacheProps.r = r;
+    }
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.arc(cx, cy, __cacheProps.r, 0, 2 * Math.PI);
       ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
@@ -48,7 +51,7 @@ class Circle extends Geom {
       let props = [
         ['cx', cx],
         ['cy', cy],
-        ['r', r],
+        ['r', __cacheProps.r],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]

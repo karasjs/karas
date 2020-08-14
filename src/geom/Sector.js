@@ -88,14 +88,22 @@ class Sector extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, begin, end, r, edge, closure } = this;
+    let { width, height, begin, end, r, edge, closure, __cacheProps } = this;
     if(begin === end) {
       return;
     }
-    r *= Math.min(width, height) * 0.5;
-    let x1, y1, x2, y2;
-    [ x1, y1 ] = getCoordsByDegree(cx, cy, r, begin);
-    [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
+    if(__cacheProps.r === undefined || __cacheProps.begin === undefined || __cacheProps.end === undefined) {
+      __cacheProps.begin = __cacheProps.end = true;
+      __cacheProps.r = r *= Math.min(width, height) * 0.5;
+      let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
+      let [x2, y2] = getCoordsByDegree(cx, cy, r, end);
+      __cacheProps.x1 = x1;
+      __cacheProps.x2 = x2;
+      __cacheProps.y1 = y1;
+      __cacheProps.y2 = y2;
+    }
+    r = __cacheProps.r;
+    let [x1, y1, x2, y2] = __cacheProps;
     let large = (end - begin) > 180 ? 1 : 0;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();

@@ -47,23 +47,53 @@ class Line extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, x1, y1, x2, y2, controlA, controlB } = this;
-    x1 = originX + x1 * width;
-    y1 = originY + y1 * height;
-    x2 = originX + x2 * width;
-    y2 = originY + y2 * height;
+    let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps } = this;
+    if(__cacheProps.x1 === undefined) {
+      x1 = originX + x1 * width;
+    }
+    if(__cacheProps.x2 === undefined) {
+      x2 = originX + x2 * width;
+    }
+    if(__cacheProps.y1 === undefined) {
+      y1 = originY + y1 * height;
+    }
+    if(__cacheProps.y2 === undefined) {
+      y2 = originY + y2 * height;
+    }
+    if(__cacheProps.controlA === undefined) {
+      if(controlA.length === 2) {
+        __cacheProps.controlA = [
+          originX + controlA[0] * width,
+          originY + controlA[1] * height
+        ];
+      }
+      else {
+        __cacheProps.controlA = [];
+      }
+    }
+    if(__cacheProps.controlB === undefined) {
+      if(controlB.length === 2) {
+        __cacheProps.controlB = [
+          originX + controlB[0] * width,
+          originY + controlB[1] * height
+        ];
+      }
+      else {
+        __cacheProps.controlB = [];
+      }
+    }
     let curve = 0;
     // 控制点，曲线
     let cx1, cy1, cx2, cy2;
-    if(controlA.length === 2) {
+    if(__cacheProps.controlA.length === 2) {
       curve++;
-      cx1 = originX + controlA[0] * width;
-      cy1 = originY + controlA[1] * height;
+      cx1 = __cacheProps.controlA[0];
+      cy1 = __cacheProps.controlA[1];
     }
-    if(controlB.length === 2) {
+    if(__cacheProps.controlB.length === 2) {
       curve += 2;
-      cx2 = originX + controlB[0] * width;
-      cy2 = originY + controlB[1] * height;
+      cx2 = __cacheProps.controlB[0];
+      cy2 = __cacheProps.controlB[1];
     }
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
@@ -80,10 +110,10 @@ class Line extends Geom {
       else {
         ctx.lineTo(x2, y2);
       }
+      ctx.closePath();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let d;

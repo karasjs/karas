@@ -9591,11 +9591,14 @@
           var lv = level.REPAINT;
 
           for (var i in style) {
-            if (style.hasOwnProperty(i) && !repaint.STYLE.hasOwnProperty(i)) {
-              lv = level.REFLOW; // repaint置空，如果reflow会重新生成空的
-
+            if (style.hasOwnProperty(i)) {
+              // repaint置空，如果reflow会重新生成空的
               __cacheStyle[i] = undefined;
-              break;
+
+              if (repaint.STYLE.hasOwnProperty(i)) {
+                lv = level.REFLOW;
+                break;
+              }
             }
           }
 
@@ -13754,25 +13757,55 @@
             x2 = this.x2,
             y2 = this.y2,
             controlA = this.controlA,
-            controlB = this.controlB;
-        x1 = originX + x1 * width;
-        y1 = originY + y1 * height;
-        x2 = originX + x2 * width;
-        y2 = originY + y2 * height;
+            controlB = this.controlB,
+            __cacheProps = this.__cacheProps;
+
+        if (__cacheProps.x1 === undefined) {
+          x1 = originX + x1 * width;
+        }
+
+        if (__cacheProps.x2 === undefined) {
+          x2 = originX + x2 * width;
+        }
+
+        if (__cacheProps.y1 === undefined) {
+          y1 = originY + y1 * height;
+        }
+
+        if (__cacheProps.y2 === undefined) {
+          y2 = originY + y2 * height;
+        }
+
+        if (__cacheProps.controlA === undefined) {
+          if (controlA.length === 2) {
+            __cacheProps.controlA = [originX + controlA[0] * width, originY + controlA[1] * height];
+          } else {
+            __cacheProps.controlA = [];
+          }
+        }
+
+        if (__cacheProps.controlB === undefined) {
+          if (controlB.length === 2) {
+            __cacheProps.controlB = [originX + controlB[0] * width, originY + controlB[1] * height];
+          } else {
+            __cacheProps.controlB = [];
+          }
+        }
+
         var curve = 0; // 控制点，曲线
 
         var cx1, cy1, cx2, cy2;
 
-        if (controlA.length === 2) {
+        if (__cacheProps.controlA.length === 2) {
           curve++;
-          cx1 = originX + controlA[0] * width;
-          cy1 = originY + controlA[1] * height;
+          cx1 = __cacheProps.controlA[0];
+          cy1 = __cacheProps.controlA[1];
         }
 
-        if (controlB.length === 2) {
+        if (__cacheProps.controlB.length === 2) {
           curve += 2;
-          cx2 = originX + controlB[0] * width;
-          cy2 = originY + controlB[1] * height;
+          cx2 = __cacheProps.controlB[0];
+          cy2 = __cacheProps.controlB[1];
         }
 
         if (renderMode === mode.CANVAS) {
@@ -13789,11 +13822,11 @@
             ctx.lineTo(x2, y2);
           }
 
+          ctx.closePath();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var d;
 
@@ -13894,29 +13927,22 @@
     _createClass(Polyline, [{
       key: "__getPoints",
       value: function __getPoints(originX, originY, width, height, points, controls) {
-        var pts = [];
-        var cls = [];
-        var hasControl = false;
-        points.forEach(function (item) {
-          pts.push([originX + item[0] * width, originY + item[1] * height]);
-        });
-        controls.forEach(function (item) {
-          if (Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-            var arr = [];
-            item.forEach(function (item2, i) {
+        return points.map(function (item, i) {
+          var res = [originX + item[0] * width, originY + item[1] * height];
+          var cp = controls[i];
+
+          if (Array.isArray(cp) && (cp.length === 2 || cp.length === 4)) {
+            cp.forEach(function (item, i) {
               if (i === 0 || i === 2) {
-                arr.push(originX + item[i] * width);
+                res.push(originX + item * width);
               } else {
-                arr.push(originY + item[i] * height);
+                res.push(originY * item * height);
               }
             });
-            cls.push(arr);
-            hasControl = true;
-          } else {
-            cls.push(null);
           }
+
+          return res;
         });
-        return [pts, cls, hasControl];
       }
     }, {
       key: "render",
@@ -13946,86 +13972,34 @@
             controls = this.controls,
             __cacheProps = this.__cacheProps;
 
-        var _this$__getPoints = this.__getPoints(originX, originY, width, height, points, controls),
-            _this$__getPoints2 = _slicedToArray(_this$__getPoints, 3),
-            pts = _this$__getPoints2[0],
-            cls = _this$__getPoints2[1],
-            hasControl = _this$__getPoints2[2];
+        if (__cacheProps.points === undefined && __cacheProps.controls === undefined) {
+          __cacheProps.points = __cacheProps.controls = this.__getPoints(originX, originY, width, height, points, controls);
+        }
 
-        if (points.length < 2) {
+        if (__cacheProps.points.length < 2) {
           console.error('Points must have at lease 2 item: ' + points);
           return;
         }
 
-        for (var i = 0, len = points.length; i < len; i++) {
-          if (!Array.isArray(points[i]) || points[i].length < 2) {
-            console.error('Each Point must have a coords: ' + points[i]);
+        for (var i = 0, len = __cacheProps.points.length; i < len; i++) {
+          var item = __cacheProps.points[i];
+
+          if (!Array.isArray(item) || item.length < 2) {
+            console.error('Each Point must have a coords: ' + item);
             return;
           }
         }
 
         if (renderMode === mode.CANVAS) {
-          ctx.beginPath();
-          ctx.moveTo(pts[0][0], pts[0][1]);
-
-          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
-            var point = pts[_i];
-            var cl = cls[_i - 1];
-
-            if (!cl || !cl.length) {
-              ctx.lineTo(point[0], point[1]);
-            } else if (cl.length === 4) {
-              ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
-            } else {
-              ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
-            }
-          }
-
-          ctx.fill();
+          draw.genCanvasPolygon(ctx, __cacheProps.points);
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
-          var tagName;
-
-          if (hasControl) {
-            var s = 'M' + pts[0][0] + ',' + pts[0][1];
-
-            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
-              var _point = pts[_i2];
-              var _cl = cls[_i2 - 1];
-
-              if (!_cl || !_cl.length) {
-                s += 'L' + _point[0] + ',' + _point[1];
-              } else if (_cl.length === 4) {
-                s += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
-              } else {
-                s += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
-              }
-            }
-
-            props.push(['d', s]);
-            tagName = 'path';
-          } else {
-            var _s = '';
-
-            for (var _i3 = 0, _len3 = pts.length; _i3 < _len3; _i3++) {
-              var _point2 = pts[_i3];
-
-              if (_i3) {
-                _s += ' ';
-              }
-
-              _s += _point2[0] + ',' + _point2[1];
-            }
-
-            props.push(['points', _s]);
-            tagName = 'polyline';
-          }
+          var d = draw.genSvgPolygon(__cacheProps.points);
+          props.push(['d', d]);
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14043,7 +14017,7 @@
             props.push(['stroke-miterlimit', strokeMiterlimit]);
           }
 
-          this.addGeom(tagName, props);
+          this.addGeom('path', props);
         }
       }
     }, {
@@ -14192,28 +14166,41 @@
             end = this.end,
             r = this.r,
             edge = this.edge,
-            closure = this.closure;
+            closure = this.closure,
+            __cacheProps = this.__cacheProps;
 
         if (begin === end) {
           return;
         }
 
-        r *= Math.min(width, height) * 0.5;
-        var x1, y1, x2, y2;
+        if (__cacheProps.r === undefined || __cacheProps.begin === undefined || __cacheProps.end === undefined) {
+          __cacheProps.begin = __cacheProps.end = true;
+          __cacheProps.r = r *= Math.min(width, height) * 0.5;
 
-        var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin);
+          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
+              _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
+              _x = _getCoordsByDegree2[0],
+              _y = _getCoordsByDegree2[1];
 
-        var _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2);
+          var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end),
+              _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
+              _x2 = _getCoordsByDegree4[0],
+              _y2 = _getCoordsByDegree4[1];
 
-        x1 = _getCoordsByDegree2[0];
-        y1 = _getCoordsByDegree2[1];
+          __cacheProps.x1 = _x;
+          __cacheProps.x2 = _x2;
+          __cacheProps.y1 = _y;
+          __cacheProps.y2 = _y2;
+        }
 
-        var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end);
+        r = __cacheProps.r;
 
-        var _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2);
+        var _cacheProps = _slicedToArray(__cacheProps, 4),
+            x1 = _cacheProps[0],
+            y1 = _cacheProps[1],
+            x2 = _cacheProps[2],
+            y2 = _cacheProps[3];
 
-        x2 = _getCoordsByDegree4[0];
-        y2 = _getCoordsByDegree4[1];
         var large = end - begin > 180 ? 1 : 0;
 
         if (renderMode === mode.CANVAS) {
@@ -14382,38 +14369,46 @@
         var width = this.width,
             height = this.height,
             rx = this.rx,
-            ry = this.ry;
-        rx = Math.min(rx, 0.5);
-        ry = Math.min(ry, 0.5);
-        rx *= width;
-        ry *= height;
+            ry = this.ry,
+            __cacheProps = this.__cacheProps;
+
+        if (__cacheProps.rx === undefined) {
+          rx = Math.min(rx, 0.5);
+          rx *= width;
+          __cacheProps.rx = rx;
+
+          if (rx) {
+            __cacheProps.ox = rx * geom.H;
+          }
+        }
+
+        if (__cacheProps.ry === undefined) {
+          ry = Math.min(ry, 0.5);
+          ry *= height;
+          __cacheProps.ry = ry;
+
+          if (ry) {
+            __cacheProps.oy = ry * geom.H;
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
 
-          if (rx === 0 && ry === 0) {
+          if (__cacheProps.rx === 0 && __cacheProps.ry === 0) {
             ctx.rect(originX, originY, width, height);
+            ctx.closePath();
+            ctx.fill();
           } else {
-            var ox = rx * geom.H;
-            var oy = ry * geom.H;
-            ctx.moveTo(originX + rx, originY);
-            ctx.lineTo(originX + width - rx, originY);
-            ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
-            ctx.lineTo(originX + width, originY + height - ry);
-            ctx.bezierCurveTo(originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height);
-            ctx.lineTo(originX + rx, originY + height);
-            ctx.bezierCurveTo(originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry);
-            ctx.lineTo(originX, originY + ry);
-            ctx.bezierCurveTo(originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY);
+            var ox = __cacheProps.ox;
+            var oy = __cacheProps.oy;
+            var list = [[originX + rx, originY], [originX + width - rx, originY], [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry], [originX + width, originY + height - ry], [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height], [originX + rx, originY + height], [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry], [originX, originY + ry], [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]];
+            draw.genCanvasPolygon(ctx, list);
           }
-
-          ctx.fill();
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
@@ -14508,12 +14503,17 @@
 
         var width = this.width,
             height = this.height,
-            r = this.r;
-        r *= Math.min(width, height) * 0.5;
+            r = this.r,
+            __cacheProps = this.__cacheProps;
+
+        if (__cacheProps.r === undefined) {
+          r *= Math.min(width, height) * 0.5;
+          __cacheProps.r = r;
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+          ctx.arc(cx, cy, __cacheProps.r, 0, 2 * Math.PI);
           ctx.fill();
 
           if (strokeWidth > 0) {
@@ -14522,7 +14522,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['cx', cx], ['cy', cy], ['r', r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['cx', cx], ['cy', cy], ['r', __cacheProps.r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14613,32 +14613,44 @@
         var width = this.width,
             height = this.height,
             rx = this.rx,
-            ry = this.ry;
-        rx *= width * 0.5;
-        ry *= height * 0.5;
+            ry = this.ry,
+            __cacheProps = this.__cacheProps;
+
+        if (__cacheProps.rx === undefined) {
+          rx *= width * 0.5;
+          __cacheProps.rx = rx;
+
+          if (rx) {
+            __cacheProps.ox = rx * geom.H;
+          }
+        }
+
+        if (__cacheProps.ry === undefined) {
+          ry *= height * 0.5;
+          __cacheProps.ry = ry;
+
+          if (ry) {
+            __cacheProps.oy = ry * geom.H;
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
 
           if (ctx.ellipse) {
-            ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+            ctx.ellipse(cx, cy, __cacheProps.rx, __cacheProps.ry, 0, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
           } else {
-            var ox = rx * geom.H;
-            var oy = ry * geom.H;
-            ctx.moveTo(cx - rx, cy);
-            ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
-            ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
-            ctx.bezierCurveTo(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
-            ctx.bezierCurveTo(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
+            var ox = __cacheProps.ox;
+            var oy = __cacheProps.oy;
+            var list = [[cx - rx, cy], [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry], [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy], [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry], [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]];
+            draw.genCanvasPolygon(ctx, list);
           }
-
-          ctx.fill();
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['cx', cx], ['cy', cy], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 

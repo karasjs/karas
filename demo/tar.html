@@ -62,18 +62,23 @@
   let t = o.ref.t;
   let t2 = o2.ref.t;
   let res = karas.math.tar.transform([50, 10, 80, 20, 30, 50], [10, 20, 100, 5, 90, 80]);
-  let style = karas.css.normalize({
-    transform: `matrix(${res.join(',')})`,
-  });
   let flag = true;
   setInterval(function() {
     if(flag) {
-      s.currentStyle.transform = s.style.transform = style.transform;
-      s2.currentStyle.transform = s2.style.transform = style.transform;
+      s.updateStyle({
+        transform: `matrix(${res.join(',')})`,
+      });
+      s2.updateStyle({
+        transform: `matrix(${res.join(',')})`,
+      });
     }
     else {
-      s.currentStyle.transform = s.style.transform = null;
-      s2.currentStyle.transform = s2.style.transform = null;
+      s.updateStyle({
+        transform: null,
+      });
+      s2.updateStyle({
+        transform: null,
+      });
     }
     o.refresh();
     o2.refresh();

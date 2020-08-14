@@ -18,34 +18,24 @@ class Polyline extends Geom {
   }
 
   __getPoints(originX, originY, width, height, points, controls) {
-    let pts = [];
-    let cls = [];
-    let hasControl = false;
-    points.forEach(item => {
-      pts.push([
+    return points.map((item, i) => {
+      let res = [
         originX + item[0] * width,
-        originY + item[1] * height
-      ]);
-    });
-    controls.forEach(item => {
-      if(Array.isArray(item) && (item.length === 2 || item.length === 4)) {
-        let arr = [];
-        item.forEach((item2, i) => {
+        originY + item[1] * height,
+      ];
+      let cp = controls[i];
+      if(Array.isArray(cp) && (cp.length === 2 || cp.length === 4)) {
+        cp.forEach((item, i) => {
           if(i === 0 || i === 2) {
-            arr.push(originX + item[i] * width);
+            res.push(originX + item * width);
           }
           else {
-            arr.push(originY + item[i] * height);
+            res.push(originY * item * height);
           }
         });
-        cls.push(arr);
-        hasControl = true;
       }
-      else {
-        cls.push(null);
-      }
+      return res;
     });
-    return [pts, cls, hasControl];
   }
 
   render(renderMode, ctx, defs) {
@@ -68,38 +58,25 @@ class Polyline extends Geom {
       return;
     }
     let { width, height, points, controls, __cacheProps } = this;
-    let [pts, cls, hasControl] = this.__getPoints(originX, originY, width, height, points, controls);
-    if(points.length < 2) {
+    if(__cacheProps.points === undefined && __cacheProps.controls === undefined) {
+      __cacheProps.points = __cacheProps.controls = this.__getPoints(originX, originY, width, height, points, controls);
+    }
+    if(__cacheProps.points.length < 2) {
       console.error('Points must have at lease 2 item: ' + points);
       return;
     }
-    for(let i = 0, len = points.length; i < len; i++) {
-      if(!Array.isArray(points[i]) || points[i].length < 2) {
-        console.error('Each Point must have a coords: ' + points[i]);
+    for(let i = 0, len = __cacheProps.points.length; i < len; i++) {
+      let item = __cacheProps.points[i];
+      if(!Array.isArray(item) || item.length < 2) {
+        console.error('Each Point must have a coords: ' + item);
         return;
       }
     }
     if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      for(let i = 1, len = pts.length; i < len; i++) {
-        let point = pts[i];
-        let cl = cls[i - 1];
-        if(!cl || !cl.length) {
-          ctx.lineTo(point[0], point[1]);
-        }
-        else if(cl.length === 4) {
-          ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
-        }
-        else {
-          ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
-        }
-      }
-      ctx.fill();
+      draw.genCanvasPolygon(ctx, __cacheProps.points);
       if(strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
@@ -107,37 +84,8 @@ class Polyline extends Geom {
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      let tagName;
-      if(hasControl) {
-        let s = 'M' + pts[0][0] + ',' + pts[0][1];
-        for(let i = 1, len = pts.length; i < len; i++) {
-          let point = pts[i];
-          let cl = cls[i - 1];
-          if(!cl || !cl.length) {
-            s += 'L' + point[0] + ',' + point[1];
-          }
-          else if(cl.length === 4) {
-            s += 'C' + cl[0] + ',' + cl[1] + ' ' + cl[2] + ',' + cl[3] + ' ' + point[0] + ',' + point[1];
-          }
-          else {
-            s += 'Q' + cl[0] + ',' + cl[1] + ' ' + point[0] + ',' + point[1];
-          }
-        }
-        props.push(['d', s]);
-        tagName = 'path';
-      }
-      else {
-        let s = '';
-        for(let i = 0, len = pts.length; i < len; i++) {
-          let point = pts[i];
-          if(i) {
-            s += ' ';
-          }
-          s += point[0] + ',' + point[1];
-        }
-        props.push(['points', s]);
-        tagName = 'polyline';
-      }
+      let d = draw.genSvgPolygon(__cacheProps.points);
+      props.push(['d', d]);
       if(strokeDasharray.length) {
         props.push(['stroke-dasharray', strokeDasharrayStr]);
       }
@@ -150,7 +98,7 @@ class Polyline extends Geom {
       if(strokeMiterlimit !== 4) {
         props.push(['stroke-miterlimit', strokeMiterlimit]);
       }
-      this.addGeom(tagName, props);
+      this.addGeom('path', props);
     }
   }
 

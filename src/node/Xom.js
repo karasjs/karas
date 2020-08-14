@@ -1269,11 +1269,13 @@ class Xom extends Node {
     if(root) {
       let lv = level.REPAINT;
       for(let i in style) {
-        if(style.hasOwnProperty(i) && !rp.STYLE.hasOwnProperty(i)) {
-          lv = level.REFLOW;
+        if(style.hasOwnProperty(i)) {
           // repaint置空，如果reflow会重新生成空的
           __cacheStyle[i] = undefined;
-          break;
+          if(rp.STYLE.hasOwnProperty(i)) {
+            lv = level.REFLOW;
+            break;
+          }
         }
       }
       root.addRefreshTask(this.__task = {

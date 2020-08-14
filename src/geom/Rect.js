@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import draw from '../util/draw';
 import geom from '../math/geom';
 
 class Rect extends Geom {
@@ -41,34 +42,49 @@ class Rect extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, rx, ry } = this;
-    rx = Math.min(rx, 0.5);
-    ry = Math.min(ry, 0.5);
-    rx *= width;
-    ry *= height;
+    let { width, height, rx, ry, __cacheProps } = this;
+    if(__cacheProps.rx === undefined) {
+      rx = Math.min(rx, 0.5);
+      rx *= width;
+      __cacheProps.rx = rx;
+      if(rx) {
+        __cacheProps.ox = rx * geom.H;
+      }
+    }
+    if(__cacheProps.ry === undefined) {
+      ry = Math.min(ry, 0.5);
+      ry *= height;
+      __cacheProps.ry = ry;
+      if(ry) {
+        __cacheProps.oy = ry * geom.H;
+      }
+    }
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
-      if(rx === 0 && ry === 0) {
+      if(__cacheProps.rx === 0 && __cacheProps.ry === 0) {
         ctx.rect(originX, originY, width, height);
+        ctx.closePath();
+        ctx.fill();
       }
       else {
-        let ox = rx * geom.H;
-        let oy = ry * geom.H;
-        ctx.moveTo(originX + rx, originY);
-        ctx.lineTo(originX + width - rx, originY);
-        ctx.bezierCurveTo(originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry);
-        ctx.lineTo(originX + width, originY + height - ry);
-        ctx.bezierCurveTo(originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height);
-        ctx.lineTo(originX + rx, originY + height);
-        ctx.bezierCurveTo(originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry);
-        ctx.lineTo(originX, originY + ry);
-        ctx.bezierCurveTo(originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY);
+        let ox = __cacheProps.ox;
+        let oy = __cacheProps.oy;
+        let list = [
+          [originX + rx, originY],
+          [originX + width - rx, originY],
+          [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry],
+          [originX + width, originY + height - ry],
+          [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height],
+          [originX + rx, originY + height],
+          [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry],
+          [originX, originY + ry],
+          [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]
+        ];
+        draw.genCanvasPolygon(ctx, list);
       }
-      ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [

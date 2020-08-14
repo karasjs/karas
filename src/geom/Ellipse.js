@@ -1,5 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import draw from '../util/draw';
 import geom from '../math/geom';
 
 class Ellipse extends Geom {
@@ -41,28 +42,43 @@ class Ellipse extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return;
     }
-    let { width, height, rx, ry } = this;
-    rx *= width * 0.5;
-    ry *= height * 0.5;
+    let { width, height, rx, ry, __cacheProps } = this;
+    if(__cacheProps.rx === undefined) {
+      rx *= width * 0.5;
+      __cacheProps.rx = rx;
+      if(rx) {
+        __cacheProps.ox = rx * geom.H;
+      }
+    }
+    if(__cacheProps.ry === undefined) {
+      ry *= height * 0.5;
+      __cacheProps.ry = ry;
+      if(ry) {
+        __cacheProps.oy = ry * geom.H;
+      }
+    }
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
       if(ctx.ellipse) {
-        ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+        ctx.ellipse(cx, cy, __cacheProps.rx, __cacheProps.ry, 0, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
       }
       else {
-        let ox = rx * geom.H;
-        let oy = ry * geom.H;
-        ctx.moveTo(cx - rx, cy);
-        ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
-        ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
-        ctx.bezierCurveTo(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
-        ctx.bezierCurveTo(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
+        let ox = __cacheProps.ox;
+        let oy = __cacheProps.oy;
+        let list = [
+          [cx - rx, cy],
+          [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry],
+          [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy],
+          [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry],
+          [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]
+        ];
+        draw.genCanvasPolygon(ctx, list);
       }
-      ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [

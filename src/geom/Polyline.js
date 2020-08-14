@@ -79,13 +79,6 @@ class Polyline extends Geom {
       }
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.fillStyle = fill;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(pts[0][0], pts[0][1]);
       for(let i = 1, len = pts.length; i < len; i++) {

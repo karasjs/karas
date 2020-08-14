@@ -36,13 +36,6 @@ class Circle extends Geom {
     let { width, height, r } = this;
     r *= Math.min(width, height) * 0.5;
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.fillStyle = fill;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, 2 * Math.PI);
       ctx.fill();

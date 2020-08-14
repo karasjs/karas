@@ -98,13 +98,6 @@ class Sector extends Geom {
     [ x2, y2 ] = getCoordsByDegree(cx, cy, r, end);
     let large = (end - begin) > 180 ? 1 : 0;
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.fillStyle = fill;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
       if(edge) {

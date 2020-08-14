@@ -1114,16 +1114,6 @@ class Dom extends Xom {
     });
   }
 
-  __repaint(isRoot) {
-    super.__repaint(isRoot);
-    // 即便自己不需要计算，但children还要继续递归检查
-    this.children.forEach(item => {
-      if(item instanceof Xom || item instanceof Component) {
-        item.__repaint();
-      }
-    });
-  }
-
   __destroy() {
     this.children.forEach(child => {
       child.__destroy();
@@ -1210,7 +1200,7 @@ class Dom extends Xom {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用
             child.__iIndex = i;
-            let z = child.__zIndex = item.computedStyle.zIndex;
+            let z = child.__zIndex = item.currentStyle.zIndex;
             abs.push(child);
             if(lastIndex === undefined) {
               lastIndex = z;

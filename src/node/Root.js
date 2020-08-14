@@ -12,7 +12,7 @@ import Controller from '../animate/Controller';
 
 const { isNil, isObject, isFunction } = util;
 
-const { PX } = unit;
+const { STRING, NUMBER, PX, RGBA, INHERIT } = unit;
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {
@@ -205,18 +205,18 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { isDestroyed, renderMode, ctx, defs, style, currentStyle } = this;
+    let { isDestroyed, renderMode, ctx, defs, style, currentStyle, computedStyle } = this;
     if(isDestroyed) {
       return;
     }
     defs.clear();
     // canvas/svg作为根节点一定是block或flex，不会是inline
     if(['flex', 'block'].indexOf(style.display) === -1) {
-      currentStyle.display = style.display = 'block';
+      computedStyle.display = currentStyle.display = style.display = 'block';
     }
     // 同理position不能为absolute
     if(style.position === 'absolute') {
-      currentStyle.positoin = style.position = 'static';
+      computedStyle.position = currentStyle.positoin = style.position = 'static';
     }
     // 根节点满宽高
     currentStyle.width = style.width = {
@@ -234,7 +234,7 @@ class Root extends Dom {
       this.__measure(renderMode, ctx, true);
     }
     inject.measureText(() => {
-      // 第一次默认REFLOW以及动画设计变更等需要布局
+      // 第一次默认REFLOW以及样式涉及变更等需要布局
       if(lv === level.REFLOW) {
         // 布局分为两步，普通流和定位流，互相递归
         this.__layout({
@@ -250,10 +250,6 @@ class Root extends Dom {
           w: this.width,
           h: this.height,
         });
-      }
-      // 没发生REFLOW只需要计算继承
-      else {
-        this.__repaint(true);
       }
       if(renderMode === mode.CANVAS) {
         this.__clear();

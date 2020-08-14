@@ -4945,7 +4945,7 @@
     }
 
     if (fontWeight.unit === INHERIT) {
-      computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontFamily;
+      computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
     } else {
       computedStyle.fontWeight = fontWeight.value;
     } // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
@@ -14980,7 +14980,7 @@
     return vd;
   }
 
-  var version = "0.33.4";
+  var version = "0.34.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

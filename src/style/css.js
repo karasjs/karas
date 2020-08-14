@@ -900,7 +900,7 @@ function compute(node, isRoot, currentStyle, computedStyle) {
     computedStyle.fontFamily = fontFamily.value;
   }
   if(fontWeight.unit === INHERIT) {
-    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontFamily;
+    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
   }
   else {
     computedStyle.fontWeight = fontWeight.value;

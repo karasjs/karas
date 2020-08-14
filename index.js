@@ -8546,14 +8546,14 @@
           }
         }
 
-        this.__ox = this.__oy = 0; // 3种布局
+        this.__ox = this.__oy = 0; // 3种布局，默认block
 
-        if (display === 'block') {
-          this.__layoutBlock(data, isVirtual);
-        } else if (display === 'flex') {
+        if (display === 'flex') {
           this.__layoutFlex(data, isVirtual);
         } else if (display === 'inline') {
           this.__layoutInline(data, isVirtual);
+        } else {
+          this.__layoutBlock(data, isVirtual);
         } // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
 
 
@@ -8757,8 +8757,29 @@
 
         if (isDestroyed || computedStyle.display === 'none') {
           return;
-        }
+        } // 使用sx和sy渲染位置，考虑了relative和translate影响
 
+
+        var x = this.sx,
+            y = this.sy;
+        var marginTop = computedStyle.marginTop,
+            marginLeft = computedStyle.marginLeft,
+            paddingTop = computedStyle.paddingTop,
+            paddingRight = computedStyle.paddingRight,
+            paddingBottom = computedStyle.paddingBottom,
+            paddingLeft = computedStyle.paddingLeft,
+            borderLeftWidth = computedStyle.borderLeftWidth,
+            borderRightWidth = computedStyle.borderRightWidth,
+            borderTopWidth = computedStyle.borderTopWidth,
+            borderBottomWidth = computedStyle.borderBottomWidth;
+        var x1 = x + marginLeft;
+        var x2 = x1 + borderLeftWidth;
+        var x3 = x2 + width + paddingLeft + paddingRight;
+        var x4 = x3 + borderRightWidth;
+        var y1 = y + marginTop;
+        var y2 = y1 + borderTopWidth;
+        var y3 = y2 + height + paddingTop + paddingBottom;
+        var y4 = y3 + borderBottomWidth;
         var backgroundPositionX = currentStyle.backgroundPositionX,
             backgroundPositionY = currentStyle.backgroundPositionY; // 先根据cache计算需要重新计算的computedStyle
 
@@ -8825,6 +8846,47 @@
         if (!__cacheStyle.backgroundSize) {
           __cacheStyle.backgroundSize = true;
           computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
+        }
+
+        if (!__cacheStyle.backgroundImage) {
+          var _backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage; // 防止隐藏不加载背景图
+
+
+          if (util.isString(_backgroundImage)) {
+            __cacheStyle.backgroundImage = true;
+            var loadBgi = this.__loadBgi;
+            var cache = inject.IMG[_backgroundImage];
+
+            if (cache && cache.state === inject.LOADED) {
+              loadBgi.url = _backgroundImage;
+              loadBgi.source = cache.source;
+              loadBgi.width = cache.width;
+              loadBgi.height = cache.height;
+            }
+
+            if (loadBgi.url !== _backgroundImage) {
+              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+              loadBgi.url = _backgroundImage;
+              loadBgi.source = null;
+              inject.measureImg(_backgroundImage, function (data) {
+                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
+                  loadBgi.source = data.source;
+                  loadBgi.width = data.width;
+                  loadBgi.height = data.height;
+
+                  _this3.root.delRefreshTask(loadBgi.cb);
+
+                  _this3.root.addRefreshTask(loadBgi.cb);
+                }
+              }, {
+                width: innerWidth,
+                height: innerHeight
+              });
+            }
+          } else if (_backgroundImage && _backgroundImage.k) {
+            __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, _backgroundImage);
+          }
         } // 这些直接赋值的不需要再算缓存
 
 
@@ -8875,23 +8937,13 @@
           calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
         }
 
-        var marginTop = computedStyle.marginTop,
-            marginLeft = computedStyle.marginLeft,
-            paddingTop = computedStyle.paddingTop,
-            paddingRight = computedStyle.paddingRight,
-            paddingBottom = computedStyle.paddingBottom,
-            paddingLeft = computedStyle.paddingLeft,
-            backgroundColor = computedStyle.backgroundColor,
-            borderTopWidth = computedStyle.borderTopWidth,
+        var backgroundColor = computedStyle.backgroundColor,
             borderTopColor = computedStyle.borderTopColor,
             borderTopStyle = computedStyle.borderTopStyle,
-            borderRightWidth = computedStyle.borderRightWidth,
             borderRightColor = computedStyle.borderRightColor,
             borderRightStyle = computedStyle.borderRightStyle,
-            borderBottomWidth = computedStyle.borderBottomWidth,
             borderBottomColor = computedStyle.borderBottomColor,
             borderBottomStyle = computedStyle.borderBottomStyle,
-            borderLeftWidth = computedStyle.borderLeftWidth,
             borderLeftColor = computedStyle.borderLeftColor,
             borderLeftStyle = computedStyle.borderLeftStyle,
             borderTopLeftRadius = computedStyle.borderTopLeftRadius,
@@ -8905,18 +8957,7 @@
             filter = computedStyle.filter,
             backgroundSize = computedStyle.backgroundSize,
             transformOrigin = computedStyle.transformOrigin,
-            transform = computedStyle.transform; // 使用sx和sy渲染位置，考虑了relative和translate影响
-
-        var x = this.sx,
-            y = this.sy;
-        var x1 = x + marginLeft;
-        var x2 = x1 + borderLeftWidth;
-        var x3 = x2 + width + paddingLeft + paddingRight;
-        var x4 = x3 + borderRightWidth;
-        var y1 = y + marginTop;
-        var y2 = y1 + borderTopWidth;
-        var y3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = y3 + borderBottomWidth; // 先设置透明度，canvas可以向上累积
+            transform = computedStyle.transform; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
           var p = parent || this.host && this.host.parent;
@@ -8951,43 +8992,6 @@
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           }
-        } // 防止隐藏不加载背景图
-
-
-        if (backgroundImage) {
-          var loadBgi = this.__loadBgi;
-
-          if (util.isString(backgroundImage)) {
-            var cache = inject.IMG[backgroundImage];
-
-            if (cache && cache.state === inject.LOADED) {
-              loadBgi.url = backgroundImage;
-              loadBgi.source = cache.source;
-              loadBgi.width = cache.width;
-              loadBgi.height = cache.height;
-            }
-
-            if (loadBgi.url !== backgroundImage) {
-              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-              loadBgi.url = backgroundImage;
-              loadBgi.source = null;
-              inject.measureImg(backgroundImage, function (data) {
-                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
-                  loadBgi.source = data.source;
-                  loadBgi.width = data.width;
-                  loadBgi.height = data.height;
-
-                  _this3.root.delRefreshTask(loadBgi.cb);
-
-                  _this3.root.addRefreshTask(loadBgi.cb);
-                }
-              }, {
-                width: innerWidth,
-                height: innerHeight
-              });
-            }
-          }
         } // 隐藏不渲染，但要加载背景图
 
 
@@ -9002,9 +9006,9 @@
 
 
         if (backgroundImage) {
-          var _loadBgi = this.__loadBgi;
-
           if (util.isString(backgroundImage)) {
+            var _loadBgi = this.__loadBgi;
+
             if (_loadBgi.url === backgroundImage) {
               var source = _loadBgi.source; // 无source不绘制
 
@@ -9271,9 +9275,7 @@
               }
             }
           } else if (backgroundImage.k) {
-            var bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
-
-            renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            renderBgc(renderMode, __cacheStyle.backgroundImage, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -13344,15 +13346,9 @@
             y = this.sy,
             width = this.width,
             height = this.height,
+            __cacheStyle = this.__cacheStyle,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
-        var strokeWidth = currentStyle.strokeWidth,
-            fill = currentStyle.fill,
-            stroke = currentStyle.stroke,
-            strokeDasharray = currentStyle.strokeDasharray,
-            strokeLinecap = currentStyle.strokeLinecap,
-            strokeLinejoin = currentStyle.strokeLinejoin,
-            strokeMiterlimit = currentStyle.strokeMiterlimit;
         var borderTopWidth = computedStyle.borderTopWidth,
             borderLeftWidth = computedStyle.borderLeftWidth,
             display = computedStyle.display,
@@ -13368,36 +13364,105 @@
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         var iw = width + paddingLeft + paddingRight;
-        var ih = height + paddingTop + paddingBottom;
+        var ih = height + paddingTop + paddingBottom; // 先根据cache计算需要重新计算的computedStyle
 
-        if (strokeWidth.unit === PX$7) {
-          strokeWidth = strokeWidth.value;
-        } else if (strokeWidth.unit === PERCENT$7) {
-          strokeWidth = strokeWidth.value * width * 0.01;
-        } else {
-          strokeWidth = 0;
+        if (!__cacheStyle.fill) {
+          var _fill = currentStyle.fill;
+          computedStyle.fill = _fill;
+
+          if (_fill && (_fill.k === 'linear' || _fill.k === 'radial')) {
+            __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _fill);
+          } else {
+            __cacheStyle.fill = int2rgba$3(currentStyle.fill);
+          }
         }
 
-        computedStyle.strokeWidth = strokeWidth;
-        computedStyle.stroke = stroke;
+        if (!__cacheStyle.stroke) {
+          var _stroke = currentStyle.stroke;
+          computedStyle.stroke = _stroke;
 
-        if (stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-          stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
-        } else {
-          stroke = int2rgba$3(stroke);
+          if (_stroke && (_stroke.k === 'linear' || _stroke.k === 'radial')) {
+            __cacheStyle.stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _stroke);
+          } else {
+            __cacheStyle.stroke = int2rgba$3(currentStyle.stroke);
+          }
         }
 
-        computedStyle.fill = fill;
+        if (!__cacheStyle.strokeWidth) {
+          __cacheStyle.strokeWidth = true;
+          var _strokeWidth = currentStyle.strokeWidth;
 
-        if (fill && (fill.k === 'linear' || fill.k === 'radial')) {
-          fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
-        } else {
-          fill = int2rgba$3(fill);
+          if (_strokeWidth.unit === PX$7) {
+            computedStyle.strokeWidth = _strokeWidth.value;
+          } else if (_strokeWidth.unit === PERCENT$7) {
+            computedStyle.strokeWidth = _strokeWidth.value * width * 0.01;
+          } else {
+            computedStyle.strokeWidth = 0;
+          }
         }
 
-        computedStyle.strokeWidth = strokeWidth;
-        computedStyle.strokeDasharray = strokeDasharray;
-        computedStyle.strokeLinecap = strokeLinecap;
+        if (!__cacheStyle.strokeWidth) {
+          __cacheStyle.strokeWidth = true;
+          var _strokeWidth2 = currentStyle.strokeWidth;
+
+          if (_strokeWidth2.unit === PX$7) {
+            computedStyle.strokeWidth = _strokeWidth2.value;
+          } else if (_strokeWidth2.unit === PERCENT$7) {
+            computedStyle.strokeWidth = _strokeWidth2.value * width * 0.01;
+          } else {
+            computedStyle.strokeWidth = 0;
+          }
+        }
+
+        if (!__cacheStyle.strokeDasharray) {
+          __cacheStyle.strokeDasharray = true;
+          computedStyle.strokeDasharray = currentStyle.strokeDasharray;
+          __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
+        } // 直接赋值的
+
+
+        ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit'].forEach(function (k) {
+          computedStyle[k] = currentStyle[k];
+        });
+        var fill = __cacheStyle.fill,
+            stroke = __cacheStyle.stroke,
+            strokeDasharrayStr = __cacheStyle.strokeDasharrayStr;
+        var strokeWidth = computedStyle.strokeWidth,
+            strokeLinecap = computedStyle.strokeLinecap,
+            strokeLinejoin = computedStyle.strokeLinejoin,
+            strokeMiterlimit = computedStyle.strokeMiterlimit,
+            strokeDasharray = computedStyle.strokeDasharray;
+
+        if (renderMode === mode.CANVAS) {
+          if (ctx.fillStyle !== fill) {
+            ctx.fillStyle = fill;
+          }
+
+          if (ctx.strokeStyle !== stroke) {
+            ctx.strokeStyle = stroke;
+          }
+
+          if (ctx.lineWidth !== strokeWidth) {
+            ctx.lineWidth = strokeWidth;
+          }
+
+          if (ctx.lineCap !== strokeLinecap) {
+            ctx.lineCap = strokeLinecap;
+          }
+
+          if (ctx.lineJoin !== strokeLinejoin) {
+            ctx.lineJoin = strokeLinejoin;
+          }
+
+          if (ctx.miterLimit !== strokeMiterlimit) {
+            ctx.miterLimit = strokeMiterlimit;
+          }
+
+          if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+            ctx.setLineDash(strokeDasharray);
+          }
+        }
+
         return {
           x: x,
           y: y,
@@ -13409,7 +13474,7 @@
           stroke: stroke,
           strokeWidth: strokeWidth,
           strokeDasharray: strokeDasharray,
-          strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
+          strokeDasharrayStr: strokeDasharrayStr,
           strokeLinecap: strokeLinecap,
           strokeLinejoin: strokeLinejoin,
           strokeMiterlimit: strokeMiterlimit,
@@ -13702,12 +13767,6 @@
         }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(x1, y1);
 
@@ -13896,13 +13955,6 @@
         }
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.moveTo(pts[0][0], pts[0][1]);
 
@@ -14155,13 +14207,6 @@
         var large = end - begin > 180 ? 1 : 0;
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
@@ -14334,13 +14379,6 @@
         ry *= height;
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
           if (rx === 0 && ry === 0) {
@@ -14464,13 +14502,6 @@
         r *= Math.min(width, height) * 0.5;
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, 2 * Math.PI);
           ctx.fill();
@@ -14577,13 +14608,6 @@
         ry *= height * 0.5;
 
         if (renderMode === mode.CANVAS) {
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = strokeWidth;
-          ctx.fillStyle = fill;
-          ctx.lineCap = strokeLinecap;
-          ctx.lineJoin = strokeLinejoin;
-          ctx.miterLimit = strokeMiterlimit;
-          ctx.setLineDash(strokeDasharray);
           ctx.beginPath();
 
           if (ctx.ellipse) {

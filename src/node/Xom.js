@@ -253,15 +253,15 @@ class Xom extends Node {
       }
     }
     this.__ox = this.__oy = 0;
-    // 3种布局
-    if(display === 'block') {
-      this.__layoutBlock(data, isVirtual);
-    }
-    else if(display === 'flex') {
+    // 3种布局，默认block
+    if(display === 'flex') {
       this.__layoutFlex(data, isVirtual);
     }
     else if(display === 'inline') {
       this.__layoutInline(data, isVirtual);
+    }
+    else {
+      this.__layoutBlock(data, isVirtual);
     }
     // relative渲染时做偏移，百分比基于父元素，若父元素没有定高则为0
     if(position === 'relative') {
@@ -440,6 +440,28 @@ class Xom extends Node {
     if(isDestroyed || computedStyle.display === 'none') {
       return;
     }
+    // 使用sx和sy渲染位置，考虑了relative和translate影响
+    let { sx: x, sy: y } = this;
+    let {
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
+      borderLeftWidth,
+      borderRightWidth,
+      borderTopWidth,
+      borderBottomWidth,
+    } = computedStyle;
+    let x1 = x + marginLeft;
+    let x2 = x1 + borderLeftWidth;
+    let x3 = x2 + width + paddingLeft + paddingRight;
+    let x4 = x3 + borderRightWidth;
+    let y1 = y + marginTop;
+    let y2 = y1 + borderTopWidth;
+    let y3 = y2 + height + paddingTop + paddingBottom;
+    let y4 = y3 + borderBottomWidth;
     let {
       backgroundPositionX,
       backgroundPositionY,
@@ -515,6 +537,42 @@ class Xom extends Node {
     if(!__cacheStyle.backgroundSize) {
       __cacheStyle.backgroundSize = true;
       computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
+    }
+    if(!__cacheStyle.backgroundImage) {
+      let backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage;
+      // 防止隐藏不加载背景图
+      if(util.isString(backgroundImage)) {
+        __cacheStyle.backgroundImage = true;
+        let loadBgi = this.__loadBgi;
+        let cache = inject.IMG[backgroundImage];
+        if(cache && cache.state === inject.LOADED) {
+          loadBgi.url = backgroundImage;
+          loadBgi.source = cache.source;
+          loadBgi.width = cache.width;
+          loadBgi.height = cache.height;
+        }
+        if(loadBgi.url !== backgroundImage) {
+          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+          loadBgi.url = backgroundImage;
+          loadBgi.source = null;
+          inject.measureImg(backgroundImage, data => {
+            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
+              loadBgi.source = data.source;
+              loadBgi.width = data.width;
+              loadBgi.height = data.height;
+              this.root.delRefreshTask(loadBgi.cb);
+              this.root.addRefreshTask(loadBgi.cb);
+            }
+          }, {
+            width: innerWidth,
+            height: innerHeight,
+          });
+        }
+      }
+      else if(backgroundImage && backgroundImage.k) {
+        __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
+      }
     }
     // 这些直接赋值的不需要再算缓存
     [
@@ -592,23 +650,13 @@ class Xom extends Node {
       calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
     }
     let {
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
       backgroundColor,
-      borderTopWidth,
       borderTopColor,
       borderTopStyle,
-      borderRightWidth,
       borderRightColor,
       borderRightStyle,
-      borderBottomWidth,
       borderBottomColor,
       borderBottomStyle,
-      borderLeftWidth,
       borderLeftColor,
       borderLeftStyle,
       borderTopLeftRadius,
@@ -624,16 +672,6 @@ class Xom extends Node {
       transformOrigin,
       transform,
     } = computedStyle;
-    // 使用sx和sy渲染位置，考虑了relative和translate影响
-    let { sx: x, sy: y } = this;
-    let x1 = x + marginLeft;
-    let x2 = x1 + borderLeftWidth;
-    let x3 = x2 + width + paddingLeft + paddingRight;
-    let x4 = x3 + borderRightWidth;
-    let y1 = y + marginTop;
-    let y2 = y1 + borderTopWidth;
-    let y3 = y2 + height + paddingTop + paddingBottom;
-    let y4 = y3 + borderBottomWidth;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
       let p = parent || this.host && this.host.parent;
@@ -666,37 +704,6 @@ class Xom extends Node {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
-    // 防止隐藏不加载背景图
-    if(backgroundImage) {
-      let loadBgi = this.__loadBgi;
-      if(util.isString(backgroundImage)) {
-        let cache = inject.IMG[backgroundImage];
-        if(cache && cache.state === inject.LOADED) {
-          loadBgi.url = backgroundImage;
-          loadBgi.source = cache.source;
-          loadBgi.width = cache.width;
-          loadBgi.height = cache.height;
-        }
-        if(loadBgi.url !== backgroundImage) {
-          // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-          loadBgi.url = backgroundImage;
-          loadBgi.source = null;
-          inject.measureImg(backgroundImage, data => {
-            // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-            if(data.success && data.url === loadBgi.url && !this.__isDestroyed) {
-              loadBgi.source = data.source;
-              loadBgi.width = data.width;
-              loadBgi.height = data.height;
-              this.root.delRefreshTask(loadBgi.cb);
-              this.root.addRefreshTask(loadBgi.cb);
-            }
-          }, {
-            width: innerWidth,
-            height: innerHeight,
-          });
-        }
-      }
-    }
     // 隐藏不渲染，但要加载背景图
     if(visibility === 'hidden') {
       return;
@@ -709,8 +716,8 @@ class Xom extends Node {
     }
     // 渐变或图片叠加
     if(backgroundImage) {
-      let loadBgi = this.__loadBgi;
       if(util.isString(backgroundImage)) {
+        let loadBgi = this.__loadBgi;
         if(loadBgi.url === backgroundImage) {
           let source = loadBgi.source;
           // 无source不绘制
@@ -966,8 +973,7 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        let bgi = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
-        renderBgc(renderMode, bgi, x2, y2, innerWidth, innerHeight, ctx, this,
+        renderBgc(renderMode, __cacheStyle.backgroundImage, x2, y2, innerWidth, innerHeight, ctx, this,
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
           borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       }

@@ -7,7 +7,7 @@ import util from '../util/util';
 import matrix from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
-const { clone, int2rgba, isNil, extend, joinArr } = util;
+const { clone, int2rgba, isNil, joinArr } = util;
 
 const REGISTER = {};
 
@@ -100,16 +100,7 @@ class Geom extends Xom {
   }
 
   __preRender(renderMode, ctx, defs) {
-    let { sx: x, sy: y, width, height, currentStyle, computedStyle } = this;
-    let {
-      strokeWidth,
-      fill,
-      stroke,
-      strokeDasharray,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-    } = currentStyle;
+    let { sx: x, sy: y, width, height, __cacheStyle, currentStyle, computedStyle } = this;
     let {
       borderTopWidth,
       borderLeftWidth,
@@ -128,33 +119,101 @@ class Geom extends Xom {
     let cy = originY + height * 0.5;
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
-    if(strokeWidth.unit === PX) {
-      strokeWidth = strokeWidth.value;
+    // 先根据cache计算需要重新计算的computedStyle
+    if(!__cacheStyle.fill) {
+      let fill = currentStyle.fill;
+      computedStyle.fill = fill;
+      if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
+        __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
+      }
+      else {
+        __cacheStyle.fill = int2rgba(currentStyle.fill);
+      }
     }
-    else if(strokeWidth.unit === PERCENT) {
-      strokeWidth = strokeWidth.value * width * 0.01;
+    if(!__cacheStyle.stroke) {
+      let stroke = currentStyle.stroke;
+      computedStyle.stroke = stroke;
+      if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
+        __cacheStyle.stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
+      }
+      else {
+        __cacheStyle.stroke = int2rgba(currentStyle.stroke);
+      }
     }
-    else {
-      strokeWidth = 0;
+    if(!__cacheStyle.strokeWidth) {
+      __cacheStyle.strokeWidth = true;
+      let strokeWidth = currentStyle.strokeWidth;
+      if(strokeWidth.unit === PX) {
+        computedStyle.strokeWidth = strokeWidth.value;
+      }
+      else if(strokeWidth.unit === PERCENT) {
+        computedStyle.strokeWidth = strokeWidth.value * width * 0.01;
+      }
+      else {
+        computedStyle.strokeWidth = 0;
+      }
     }
-    computedStyle.strokeWidth = strokeWidth;
-    computedStyle.stroke = stroke;
-    if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-      stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
+    if(!__cacheStyle.strokeWidth) {
+      __cacheStyle.strokeWidth = true;
+      let strokeWidth = currentStyle.strokeWidth;
+      if(strokeWidth.unit === PX) {
+        computedStyle.strokeWidth = strokeWidth.value;
+      }
+      else if(strokeWidth.unit === PERCENT) {
+        computedStyle.strokeWidth = strokeWidth.value * width * 0.01;
+      }
+      else {
+        computedStyle.strokeWidth = 0;
+      }
     }
-    else {
-      stroke = int2rgba(stroke);
+    if(!__cacheStyle.strokeDasharray) {
+      __cacheStyle.strokeDasharray = true;
+      computedStyle.strokeDasharray = currentStyle.strokeDasharray;
+      __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
     }
-    computedStyle.fill = fill;
-    if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-      fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
+    // 直接赋值的
+    [
+      'strokeLinecap',
+      'strokeLinejoin',
+      'strokeMiterlimit'
+    ].forEach(k => {
+      computedStyle[k] = currentStyle[k];
+    });
+    let {
+      fill,
+      stroke,
+      strokeDasharrayStr,
+    } = __cacheStyle;
+    let {
+      strokeWidth,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      strokeDasharray,
+    } = computedStyle;
+    if(renderMode === mode.CANVAS) {
+      if(ctx.fillStyle !== fill) {
+        ctx.fillStyle = fill;
+      }
+      if(ctx.strokeStyle !== stroke) {
+        ctx.strokeStyle = stroke;
+      }
+      if(ctx.lineWidth !== strokeWidth) {
+        ctx.lineWidth = strokeWidth;
+      }
+      if(ctx.lineCap !== strokeLinecap) {
+        ctx.lineCap = strokeLinecap;
+      }
+      if(ctx.lineJoin !== strokeLinejoin) {
+        ctx.lineJoin = strokeLinejoin;
+      }
+      if(ctx.miterLimit !== strokeMiterlimit) {
+        ctx.miterLimit = strokeMiterlimit;
+      }
+      if(!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+        ctx.setLineDash(strokeDasharray);
+      }
     }
-    else {
-      fill = int2rgba(fill);
-    }
-    computedStyle.strokeWidth = strokeWidth;
-    computedStyle.strokeDasharray = strokeDasharray;
-    computedStyle.strokeLinecap = strokeLinecap;
     return {
       x,
       y,
@@ -166,7 +225,7 @@ class Geom extends Xom {
       stroke,
       strokeWidth,
       strokeDasharray,
-      strokeDasharrayStr: util.joinArr(strokeDasharray, ','),
+      strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,

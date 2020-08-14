@@ -45,13 +45,6 @@ class Ellipse extends Geom {
     rx *= width * 0.5;
     ry *= height * 0.5;
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.fillStyle = fill;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       if(ctx.ellipse) {
         ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);

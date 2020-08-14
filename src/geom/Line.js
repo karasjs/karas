@@ -66,12 +66,6 @@ class Line extends Geom {
       cy2 = originY + controlB[1] * height;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       if(curve === 3) {

@@ -47,13 +47,6 @@ class Rect extends Geom {
     rx *= width;
     ry *= height;
     if(renderMode === mode.CANVAS) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = strokeWidth;
-      ctx.fillStyle = fill;
-      ctx.lineCap = strokeLinecap;
-      ctx.lineJoin = strokeLinejoin;
-      ctx.miterLimit = strokeMiterlimit;
-      ctx.setLineDash(strokeDasharray);
       ctx.beginPath();
       if(rx === 0 && ry === 0) {
         ctx.rect(originX, originY, width, height);

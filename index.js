@@ -8263,8 +8263,8 @@
       }
     }
 
-    ctx.closePath();
     ctx[method]();
+    ctx.closePath();
   }
 
   function genSvgPolygon(list) {
@@ -8786,15 +8786,18 @@
         var y3 = y2 + height + paddingTop + paddingBottom;
         var y4 = y3 + borderBottomWidth;
         var backgroundPositionX = currentStyle.backgroundPositionX,
-            backgroundPositionY = currentStyle.backgroundPositionY; // 先根据cache计算需要重新计算的computedStyle
+            backgroundPositionY = currentStyle.backgroundPositionY;
+        var matrixCache = __cacheStyle.matrix; // 先根据cache计算需要重新计算的computedStyle
 
         if (__cacheStyle.transformOrigin === undefined) {
           __cacheStyle.transformOrigin = true;
+          matrixCache = false;
           computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
         }
 
         if (__cacheStyle.transform === undefined || __cacheStyle.translateX === undefined || __cacheStyle.translateY === undefined || __cacheStyle.rotateZ === undefined || __cacheStyle.scaleX === undefined || __cacheStyle.scaleY === undefined || __cacheStyle.skewX === undefined || __cacheStyle.skewY === undefined) {
           __cacheStyle.transform = __cacheStyle.translateX = __cacheStyle.translateY = __cacheStyle.rotateZ = __cacheStyle.scaleX = __cacheStyle.scaleY = __cacheStyle.skewX = __cacheStyle.skewY = true;
+          matrixCache = false;
 
           var _matrix; // transform相对于自身
 
@@ -8973,20 +8976,34 @@
             opacity *= p.__opacity;
           }
 
-          this.__opacity = ctx.globalAlpha = opacity;
+          this.__opacity = opacity;
+
+          if (ctx.globalAlpha !== opacity) {
+            ctx.globalAlpha = opacity;
+          }
         } else {
           this.__virtualDom.opacity = opacity;
+        } // 省略计算
+
+
+        var matrix$1;
+
+        if (matrixCache) {
+          matrix$1 = matrixCache;
+        } else {
+          var tfo = transformOrigin.slice(0);
+          tfo[0] += x;
+          tfo[1] += y;
+          matrix$1 = transform;
+          matrix$1 = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix$1, tfo);
         }
 
-        var tfo = transformOrigin.slice(0);
-        tfo[0] += x;
-        tfo[1] += y;
-        var matrix$1 = transform;
-        matrix$1 = tf.calMatrixByOrigin(matrix$1, tfo);
         var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
 
         if (parent) {
-          if (parent.matrixEvent) {
+          if (equalArr$2(matrix$1, [1, 0, 0, 1, 0, 0])) {
+            matrix$1 = parent.matrixEvent;
+          } else {
             matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1);
           }
         }
@@ -13822,11 +13839,11 @@
             ctx.lineTo(x2, y2);
           }
 
-          ctx.closePath();
-
           if (strokeWidth > 0) {
             ctx.stroke();
           }
+
+          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var d;
 
@@ -13926,19 +13943,16 @@
 
     _createClass(Polyline, [{
       key: "__getPoints",
-      value: function __getPoints(originX, originY, width, height, points, controls) {
-        return points.map(function (item, i) {
-          var res = [originX + item[0] * width, originY + item[1] * height];
-          var cp = controls[i];
+      value: function __getPoints(originX, originY, width, height, points, len) {
+        return points.map(function (item) {
+          var res = [];
 
-          if (Array.isArray(cp) && (cp.length === 2 || cp.length === 4)) {
-            cp.forEach(function (item, i) {
-              if (i === 0 || i === 2) {
-                res.push(originX + item * width);
-              } else {
-                res.push(originY * item * height);
-              }
-            });
+          for (var i = 0; i < item.length; i++) {
+            if (i === 0 || i === 2) {
+              res.push(originX + item[i] * width);
+            } else {
+              res.push(originY + item[i] * height);
+            }
           }
 
           return res;
@@ -13972,8 +13986,12 @@
             controls = this.controls,
             __cacheProps = this.__cacheProps;
 
-        if (__cacheProps.points === undefined && __cacheProps.controls === undefined) {
-          __cacheProps.points = __cacheProps.controls = this.__getPoints(originX, originY, width, height, points, controls);
+        if (__cacheProps.points === undefined) {
+          __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
+        }
+
+        if (__cacheProps.controls === undefined) {
+          __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
         }
 
         if (__cacheProps.points.length < 2) {
@@ -13990,16 +14008,51 @@
           }
         }
 
+        var pts = __cacheProps.points;
+        var cls = __cacheProps.controls;
+
         if (renderMode === mode.CANVAS) {
-          draw.genCanvasPolygon(ctx, __cacheProps.points);
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]);
+
+          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
+            var point = pts[_i];
+            var cl = cls[_i - 1];
+
+            if (!cl || !cl.length) {
+              ctx.lineTo(point[0], point[1]);
+            } else if (cl.length === 4) {
+              ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
+            } else {
+              ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
+            }
+          }
+
+          ctx.fill();
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
+
+          ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
-          var d = draw.genSvgPolygon(__cacheProps.points);
-          props.push(['d', d]);
+          var s = 'M' + pts[0][0] + ',' + pts[0][1];
+
+          for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
+            var _point = pts[_i2];
+            var _cl = cls[_i2 - 1];
+
+            if (!_cl || !_cl.length) {
+              s += 'L' + _point[0] + ',' + _point[1];
+            } else if (_cl.length === 4) {
+              s += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
+            } else {
+              s += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
+            }
+          }
+
+          props.push(['d', s]);
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14048,15 +14101,11 @@
 
     _createClass(Polygon, [{
       key: "__getPoints",
-      value: function __getPoints(originX, originY, width, height, points, controls) {
-        var _get$call = _get(_getPrototypeOf(Polygon.prototype), "__getPoints", this).call(this, originX, originY, width, height, points, controls),
-            _get$call2 = _slicedToArray(_get$call, 3),
-            pts = _get$call2[0],
-            cls = _get$call2[1],
-            hasControl = _get$call2[2];
+      value: function __getPoints(originX, originY, width, height, points, len) {
+        var res = _get(_getPrototypeOf(Polygon.prototype), "__getPoints", this).call(this, originX, originY, width, height, points, len);
 
-        pts.push(pts[0]);
-        return [pts, cls, hasControl];
+        res.push(res[0]);
+        return res;
       }
     }]);
 

@@ -17,22 +17,16 @@ class Polyline extends Geom {
     }
   }
 
-  __getPoints(originX, originY, width, height, points, controls) {
-    return points.map((item, i) => {
-      let res = [
-        originX + item[0] * width,
-        originY + item[1] * height,
-      ];
-      let cp = controls[i];
-      if(Array.isArray(cp) && (cp.length === 2 || cp.length === 4)) {
-        cp.forEach((item, i) => {
-          if(i === 0 || i === 2) {
-            res.push(originX + item * width);
-          }
-          else {
-            res.push(originY * item * height);
-          }
-        });
+  __getPoints(originX, originY, width, height, points, len) {
+    return points.map(item => {
+      let res = [];
+      for(let i = 0; i < item.length; i++) {
+        if(i === 0 || i === 2) {
+          res.push(originX + item[i] * width);
+        }
+        else {
+          res.push(originY + item[i] * height);
+        }
       }
       return res;
     });
@@ -58,8 +52,11 @@ class Polyline extends Geom {
       return;
     }
     let { width, height, points, controls, __cacheProps } = this;
-    if(__cacheProps.points === undefined && __cacheProps.controls === undefined) {
-      __cacheProps.points = __cacheProps.controls = this.__getPoints(originX, originY, width, height, points, controls);
+    if(__cacheProps.points === undefined) {
+      __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
+    }
+    if(__cacheProps.controls === undefined) {
+      __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
     }
     if(__cacheProps.points.length < 2) {
       console.error('Points must have at lease 2 item: ' + points);
@@ -72,11 +69,29 @@ class Polyline extends Geom {
         return;
       }
     }
+    let pts = __cacheProps.points;
+    let cls = __cacheProps.controls;
     if(renderMode === mode.CANVAS) {
-      draw.genCanvasPolygon(ctx, __cacheProps.points);
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for(let i = 1, len = pts.length; i < len; i++) {
+        let point = pts[i];
+        let cl = cls[i - 1];
+        if(!cl || !cl.length) {
+          ctx.lineTo(point[0], point[1]);
+        }
+        else if(cl.length === 4) {
+          ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
+        }
+        else {
+          ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
+        }
+      }
+      ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
@@ -84,8 +99,21 @@ class Polyline extends Geom {
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      let d = draw.genSvgPolygon(__cacheProps.points);
-      props.push(['d', d]);
+      let s = 'M' + pts[0][0] + ',' + pts[0][1];
+      for(let i = 1, len = pts.length; i < len; i++) {
+        let point = pts[i];
+        let cl = cls[i - 1];
+        if(!cl || !cl.length) {
+          s += 'L' + point[0] + ',' + point[1];
+        }
+        else if(cl.length === 4) {
+          s += 'C' + cl[0] + ',' + cl[1] + ' ' + cl[2] + ',' + cl[3] + ' ' + point[0] + ',' + point[1];
+        }
+        else {
+          s += 'Q' + cl[0] + ',' + cl[1] + ' ' + point[0] + ',' + point[1];
+        }
+      }
+      props.push(['d', s]);
       if(strokeDasharray.length) {
         props.push(['stroke-dasharray', strokeDasharrayStr]);
       }

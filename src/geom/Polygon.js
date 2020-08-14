@@ -5,10 +5,10 @@ class Polygon extends Polyline {
     super(tagName, props);
   }
 
-  __getPoints(originX, originY, width, height, points, controls) {
-    let [pts, cls, hasControl] = super.__getPoints(originX, originY, width, height, points, controls);
-    pts.push(pts[0]);
-    return [pts, cls, hasControl];
+  __getPoints(originX, originY, width, height, points, len) {
+    let res = super.__getPoints(originX, originY, width, height, points, len);
+    res.push(res[0]);
+    return res;
   }
 }
 

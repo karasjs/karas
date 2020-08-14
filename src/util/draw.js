@@ -13,8 +13,8 @@ function genCanvasPolygon(ctx, list, method = 'fill') {
       ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
     }
   }
-  ctx.closePath();
   ctx[method]();
+  ctx.closePath();
 }
 
 function genSvgPolygon(list) {

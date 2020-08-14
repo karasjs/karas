@@ -470,9 +470,11 @@ class Xom extends Node {
       backgroundPositionX,
       backgroundPositionY,
     } = currentStyle;
+    let matrixCache = __cacheStyle.matrix;
     // 先根据cache计算需要重新计算的computedStyle
     if(__cacheStyle.transformOrigin === undefined) {
       __cacheStyle.transformOrigin = true;
+      matrixCache = false;
       computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
     }
     if(__cacheStyle.transform === undefined
@@ -492,6 +494,7 @@ class Xom extends Node {
         = __cacheStyle.skewX
         = __cacheStyle.skewY
         = true;
+      matrixCache = false;
       let matrix;
       // transform相对于自身
       if(currentStyle.transform) {
@@ -691,20 +694,33 @@ class Xom extends Node {
       if(p) {
         opacity *= p.__opacity;
       }
-      this.__opacity = ctx.globalAlpha = opacity;
+      this.__opacity = opacity;
+      if(ctx.globalAlpha !== opacity) {
+        ctx.globalAlpha = opacity;
+      }
     }
     else {
       this.__virtualDom.opacity = opacity;
     }
-    let tfo = transformOrigin.slice(0);
-    tfo[0] += x;
-    tfo[1] += y;
-    let matrix = transform;
-    matrix = tf.calMatrixByOrigin(matrix, tfo);
+    // 省略计算
+    let matrix;
+    if(matrixCache) {
+      matrix = matrixCache;
+    }
+    else {
+      let tfo = transformOrigin.slice(0);
+      tfo[0] += x;
+      tfo[1] += y;
+      matrix = transform;
+      matrix = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix, tfo);
+    }
     let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(parent) {
-      if(parent.matrixEvent) {
+      if(equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+        matrix = parent.matrixEvent;
+      }
+      else {
         matrix = mx.multiply(parent.matrixEvent, matrix);
       }
     }

@@ -8957,7 +8957,7 @@
 
             if (currentStyle.color.unit === 4) {
               computedStyle.color = [0, 0, 0, 1];
-              __cacheStyle.color = '#000';
+              __cacheStyle.color = 'rgba(0,0,0,1)';
             }
 
             if (currentStyle.visibility.unit === 4) {

@@ -5589,15 +5589,25 @@
 
         var isDestroyed = this.isDestroyed,
             computedStyle = this.computedStyle,
-            lineBoxes = this.lineBoxes;
+            lineBoxes = this.lineBoxes,
+            cacheStyle = this.cacheStyle;
 
         if (isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
           return;
         }
 
         if (renderMode === mode.CANVAS) {
-          ctx.font = css.setFontStyle(computedStyle);
-          ctx.fillStyle = util.int2rgba(computedStyle.color);
+          var font = css.setFontStyle(computedStyle);
+
+          if (ctx.font !== font) {
+            ctx.font = font;
+          }
+
+          var color = cacheStyle.color;
+
+          if (ctx.fillStyle !== color) {
+            ctx.fillStyle = color;
+          }
         }
 
         lineBoxes.forEach(function (item) {
@@ -5659,6 +5669,11 @@
       key: "computedStyle",
       get: function get() {
         return this.parent.computedStyle;
+      }
+    }, {
+      key: "cacheStyle",
+      get: function get() {
+        return this.parent.__cacheStyle;
       }
     }]);
 
@@ -8910,17 +8925,33 @@
         if (parent) {
           var parentComputedStyle = parent.computedStyle;
           ['fontStyle', 'color', 'visibility'].forEach(function (k) {
-            if (currentStyle[k].unit === INHERIT$2) {
-              computedStyle[k] = parentComputedStyle[k];
-            } else {
-              computedStyle[k] = currentStyle[k].value || currentStyle[k];
+            if (__cacheStyle[k] === undefined) {
+              __cacheStyle[k] = true;
+
+              if (currentStyle[k].unit === INHERIT$2) {
+                computedStyle[k] = parentComputedStyle[k];
+              } else {
+                computedStyle[k] = currentStyle[k].value;
+              }
+
+              if (k === 'color') {
+                __cacheStyle.color = int2rgba$2(computedStyle.color);
+              }
             }
           });
         } // root和component的根节点不能是inherit
         else {
             ['fontStyle', 'color', 'visibility'].forEach(function (k) {
-              if (currentStyle[k].unit !== INHERIT$2) {
-                computedStyle[k] = currentStyle[k].value || currentStyle[k];
+              if (__cacheStyle[k] === undefined) {
+                __cacheStyle[k] = true;
+
+                if (currentStyle[k].unit !== INHERIT$2) {
+                  computedStyle[k] = currentStyle[k].value;
+                }
+
+                if (k === 'color') {
+                  __cacheStyle.color = int2rgba$2(computedStyle.color);
+                }
               }
             });
 
@@ -8934,6 +8965,7 @@
 
             if (currentStyle.color.unit === 4) {
               computedStyle.color = [0, 0, 0, 1];
+              __cacheStyle.color = '#000';
             }
 
             if (currentStyle.visibility.unit === 4) {

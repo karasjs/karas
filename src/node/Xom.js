@@ -621,11 +621,17 @@ class Xom extends Node {
         'color',
         'visibility'
       ].forEach(k => {
-        if(currentStyle[k].unit === INHERIT) {
-          computedStyle[k] = parentComputedStyle[k];
-        }
-        else {
-          computedStyle[k] = currentStyle[k].value || currentStyle[k];
+        if(__cacheStyle[k] === undefined) {
+          __cacheStyle[k] = true;
+          if(currentStyle[k].unit === INHERIT) {
+            computedStyle[k] = parentComputedStyle[k];
+          }
+          else {
+            computedStyle[k] = currentStyle[k].value;
+          }
+          if(k === 'color') {
+            __cacheStyle.color = int2rgba(computedStyle.color);
+          }
         }
       });
     }
@@ -636,8 +642,14 @@ class Xom extends Node {
         'color',
         'visibility'
       ].forEach(k => {
-        if(currentStyle[k].unit !== INHERIT) {
-          computedStyle[k] = currentStyle[k].value || currentStyle[k];
+        if(__cacheStyle[k] === undefined) {
+          __cacheStyle[k] = true;
+          if(currentStyle[k].unit !== INHERIT) {
+            computedStyle[k] = currentStyle[k].value;
+          }
+          if(k === 'color') {
+            __cacheStyle.color = int2rgba(computedStyle.color)
+          }
         }
       });
       if(currentStyle.fontStyle.unit === 4) {
@@ -648,6 +660,7 @@ class Xom extends Node {
       }
       if(currentStyle.color.unit === 4) {
         computedStyle.color = [0, 0, 0, 1];
+        __cacheStyle.color = '#000';
       }
       if(currentStyle.visibility.unit === 4) {
         computedStyle.visibility = 'visible';

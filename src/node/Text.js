@@ -205,13 +205,19 @@ class Text extends Node {
         children: [],
       };
     }
-    let { isDestroyed, computedStyle, lineBoxes } = this;
+    let { isDestroyed, computedStyle, lineBoxes, cacheStyle } = this;
     if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
       return;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.font = css.setFontStyle(computedStyle);
-      ctx.fillStyle = util.int2rgba(computedStyle.color);
+      let font = css.setFontStyle(computedStyle);
+      if(ctx.font !== font) {
+        ctx.font = font;
+      }
+      let color = cacheStyle.color;
+      if(ctx.fillStyle !== color) {
+        ctx.fillStyle = color;
+      }
     }
     lineBoxes.forEach(item => {
       item.render(renderMode, ctx, computedStyle);
@@ -260,6 +266,10 @@ class Text extends Node {
 
   get computedStyle() {
     return this.parent.computedStyle;
+  }
+
+  get cacheStyle() {
+    return this.parent.__cacheStyle;
   }
 }
 

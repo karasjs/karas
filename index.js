@@ -11590,7 +11590,7 @@
               if (isRelativeOrAbsolute(item)) {
                 // 临时变量为排序使用
                 child.__iIndex = i;
-                var z = child.__zIndex = item.computedStyle.zIndex;
+                var z = child.__zIndex = item.currentStyle.zIndex;
                 abs.push(child);
 
                 if (lastIndex === undefined) {

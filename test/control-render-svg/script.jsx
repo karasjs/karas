@@ -25,6 +25,6 @@ let o = karas.render(
 );
 let input = document.querySelector('input');
 let ac = o.animateController;
-input.value = ac.records.length + ',' + ac.list.length;
+input.value = ac.__records.length + ',' + ac.list.length;
 ac.play();
-input.value += '/' + ac.records.length + ',' + ac.list.length;
+input.value += '/' + ac.__records.length + ',' + ac.list.length;

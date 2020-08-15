@@ -8631,13 +8631,13 @@
           this.__animateRecords = null;
           var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
 
-          if (ac.options.autoPlay === false) {
+          if (ar.options && ar.options.autoPlay === false) {
             ac.__records = ac.__records.concat(ar.list);
           } // 自动播放进入列表开始播放
           else {
               ac.__auto = ac.__auto.concat(ar.list);
 
-              ar.__playAuto();
+              ac.__playAuto();
             }
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -9660,7 +9660,7 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, options, underControl) {
+      value: function animate(list, options) {
         if (this.isDestroyed) {
           return;
         }
@@ -9668,11 +9668,7 @@
         var animation = new Animation(this, list, options);
         this.animationList.push(animation);
 
-        if (underControl) {
-          this.root.animateController.add(animation);
-        }
-
-        if (options.hasOwnProperty('autoPlay') && !options.autoPlay) {
+        if (options.autoPlay === false) {
           return animation;
         }
 
@@ -12566,16 +12562,16 @@
             if (Array.isArray(animate)) {
               animate.forEach(function (animate) {
                 var value = animate.value,
-                    options = animate.options; // options.autoPlay = false;
-
+                    options = animate.options;
+                options.autoPlay = false;
                 var o = target.animate(value, options);
 
                 _this.add(o);
               });
             } else {
               var value = animate.value,
-                  options = animate.options; // options.autoPlay = false;
-
+                  options = animate.options;
+              options.autoPlay = false;
               var o = target.animate(value, options);
 
               _this.add(o);

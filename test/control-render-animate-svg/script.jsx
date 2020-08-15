@@ -6,7 +6,7 @@ let o = karas.render(
 );
 let input = document.querySelector('input');
 let ac = o.animateController;
-input.value = ac.records.length + ',' + ac.list.length;
+input.value = ac.__records.length + ',' + ac.list.length;
 o.ref.t.animate([{
   color: '#f00'
 }, {
@@ -15,4 +15,4 @@ o.ref.t.animate([{
   duration: 200,
   fill: 'both',
 }, true);
-input.value += '/' + ac.records.length + ',' + ac.list.length;
+input.value += '/' + ac.__records.length + ',' + ac.list.length;

@@ -97,14 +97,14 @@ class Controller {
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
             let { value, options } = animate;
-            // options.autoPlay = false;
+            options.autoPlay = false;
             let o = target.animate(value, options);
             this.add(o);
           });
         }
         else {
           let { value, options } = animate;
-          // options.autoPlay = false;
+          options.autoPlay = false;
           let o = target.animate(value, options);
           this.add(o);
         }

@@ -8629,8 +8629,16 @@
 
         if (ar) {
           this.__animateRecords = null;
-          var ac = this.root.animateController;
-          ac.__records = ac.records.concat(ar);
+          var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
+
+          if (ac.options.autoPlay === false) {
+            ac.__records = ac.__records.concat(ar.list);
+          } // 自动播放进入列表开始播放
+          else {
+              ac.__auto = ac.__auto.concat(ar.list);
+
+              ar.__playAuto();
+            }
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -12450,60 +12458,68 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
-      isFunction$4 = util.isFunction;
-  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
-
-  function replaceOption(target, globalValue, key, vars) {
-    // 优先vars，其次总控，都没有忽略即自己原本声明
-    if (!isNil$5(globalValue)) {
-      var decl = target['var-' + key];
-
-      if (!decl) {
-        target[key] = globalValue;
-      } else {
-        var id = decl.id;
-
-        if (!id || !vars[id]) {
-          target[key] = globalValue;
-        }
-      }
-    }
-  }
-
-  function replaceGlobal(global, options) {
-    LIST.forEach(function (k) {
-      if (global.hasOwnProperty(k)) {
-        replaceOption(options, global[k], k, global.vars);
-      }
-    });
-  }
+  var isFunction$4 = util.isFunction; // const LIST = [
+  //   'playbackRate',
+  //   'iterations',
+  //   'fps',
+  //   'spfLimit',
+  //   'delay',
+  //   'endDelay',
+  //   'duration',
+  //   'direction',
+  //   'fill',
+  //   'playCount',
+  //   'currentTime',
+  //   'easing',
+  // ];
+  // function replaceOption(target, globalValue, key, vars) {
+  //   // 优先vars，其次总控，都没有忽略即自己原本声明
+  //   if(!isNil(globalValue)) {
+  //     let decl = target['var-' + key];
+  //     if(!decl) {
+  //       target[key] = globalValue;
+  //     }
+  //     else {
+  //       let id = decl.id;
+  //       if(!id || !vars[id]) {
+  //         target[key] = globalValue;
+  //       }
+  //     }
+  //   }
+  // }
+  //
+  // function replaceGlobal(global, options) {
+  //   LIST.forEach(k => {
+  //     if(global.hasOwnProperty(k)) {
+  //       replaceOption(options, global[k], k, global.vars);
+  //     }
+  //   });
+  // }
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
       _classCallCheck(this, Controller);
 
       this.__records = [];
+      this.__auto = [];
       this.__list = [];
-    }
+    } // __op(options, target = this.__records) {
+    //   target.forEach(record => {
+    //     let { animate } = record;
+    //     if(Array.isArray(animate)) {
+    //       animate.forEach(item => {
+    //         // 用总控替换动画属性中的值，注意vars优先级
+    //         replaceGlobal(options, item.options);
+    //       });
+    //     }
+    //     else {
+    //       replaceGlobal(options, animate.options);
+    //     }
+    //   });
+    // }
+
 
     _createClass(Controller, [{
-      key: "__op",
-      value: function __op(options) {
-        this.records.forEach(function (record) {
-          var animate = record.animate;
-
-          if (Array.isArray(animate)) {
-            animate.forEach(function (item) {
-              // 用总控替换动画属性中的值，注意vars优先级
-              replaceGlobal(options, item.options);
-            });
-          } else {
-            replaceGlobal(options, animate.options);
-          }
-        });
-      }
-    }, {
       key: "add",
       value: function add(v) {
         if (this.__list.indexOf(v) === -1) {
@@ -12523,6 +12539,7 @@
       key: "__destroy",
       value: function __destroy() {
         this.__records = [];
+        this.__auto = [];
         this.__list = [];
       }
     }, {
@@ -12537,34 +12554,41 @@
       value: function init() {
         var _this = this;
 
-        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        var records = this.records;
+        var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
 
-        if (records.length) {
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
+        if (target.length) {
           // 清除防止重复调用，并且新的json还会进入整体逻辑
-          records.splice(0).forEach(function (item) {
+          target.splice(0).forEach(function (item) {
             var target = item.target,
                 animate = item.animate;
 
             if (Array.isArray(animate)) {
               animate.forEach(function (animate) {
                 var value = animate.value,
-                    options = animate.options;
-                options.autoPlay = false;
+                    options = animate.options; // options.autoPlay = false;
+
                 var o = target.animate(value, options);
 
                 _this.add(o);
               });
             } else {
               var value = animate.value,
-                  options = animate.options;
-              options.autoPlay = false;
+                  options = animate.options; // options.autoPlay = false;
+
               var o = target.animate(value, options);
 
               _this.add(o);
             }
           });
         }
+      }
+    }, {
+      key: "__playAuto",
+      value: function __playAuto(cb) {
+        this.init(this.__auto);
+
+        this.__action('play');
       }
     }, {
       key: "play",
@@ -12672,11 +12696,6 @@
         });
       }
     }, {
-      key: "records",
-      get: function get() {
-        return this.__records;
-      }
-    }, {
       key: "list",
       get: function get() {
         return this.__list;
@@ -12736,7 +12755,7 @@
     return Controller;
   }();
 
-  var isNil$6 = util.isNil,
+  var isNil$5 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
   var PX$6 = unit.PX;
@@ -12819,7 +12838,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$6(w)) {
+        if (!isNil$5(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -12829,7 +12848,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$6(h)) {
+        if (!isNil$5(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -12955,7 +12974,7 @@
             }
           }
 
-        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -13257,7 +13276,7 @@
       PERCENT$7 = unit.PERCENT;
   var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
-      isNil$7 = util.isNil,
+      isNil$6 = util.isNil,
       joinArr$2 = util.joinArr;
   var REGISTER = {};
 
@@ -13668,7 +13687,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!isNil$7(v)) {
+        if (!isNil$6(v)) {
           return v;
         }
 
@@ -14810,7 +14829,7 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isNil$8 = util.isNil,
+  var isNil$7 = util.isNil,
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$4 = util.clone,
@@ -14857,7 +14876,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$8(v)) {
+            if (isNil$7(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -14910,7 +14929,7 @@
         if (!isPrimitive(child)) {
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
-          if (isNil$8(libraryId)) {
+          if (isNil$7(libraryId)) {
             return;
           }
 
@@ -14926,7 +14945,7 @@
     } // library中一定有id，因为是一级，二级+特殊需求才会出现放开
 
 
-    if (isNil$8(id)) {
+    if (isNil$7(id)) {
       throw new Error('Library item miss id: ' + id);
     } else {
       hash[id] = item;
@@ -14991,7 +15010,7 @@
       json.library = null;
       json.libraryId = null;
     } // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
-    else if (!isNil$8(libraryId) && hash) {
+    else if (!isNil$7(libraryId) && hash) {
         var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
         if (libraryItem) {
@@ -15116,21 +15135,28 @@
         } // parse直接（非递归）的动画记录
 
 
-        var ac = vd.animateController;
-        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+        var ac = options.controller instanceof Controller ? options.controller : vd.animateController; // ac.__records = animateRecords;
+        // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
         karas.render(vd, dom); // 总控次数、速度
-
-        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-
+        // ac.__op(options);
+        // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
-          ac.play();
+          ac.__auto = ac.__auto.concat(animateRecords);
+
+          ac.__playAuto();
+        } else {
+          ac.__records = ac.__records.concat(animateRecords);
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
       else {
           if (animateRecords.length) {
-            vd.__animateRecords = animateRecords;
+            vd.__animateRecords = {
+              options: options,
+              list: animateRecords,
+              controller: options.controller instanceof Controller ? options.controller : null
+            };
           }
         }
 

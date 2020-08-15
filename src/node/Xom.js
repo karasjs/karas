@@ -313,8 +313,16 @@ class Xom extends Node {
     let ar = this.__animateRecords;
     if(ar) {
       this.__animateRecords = null;
-      let ac = this.root.animateController;
-      ac.__records = ac.records.concat(ar);
+      let ac = ar.controller || this.root.animateController;
+      // 不自动播放进入记录列表，等待手动调用
+      if(ac.options.autoPlay === false) {
+        ac.__records = ac.__records.concat(ar.list);
+      }
+      // 自动播放进入列表开始播放
+      else {
+        ac.__auto = ac.__auto.concat(ar.list);
+        ar.__playAuto();
+      }
     }
   }
 

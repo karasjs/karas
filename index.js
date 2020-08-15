@@ -15124,7 +15124,7 @@
         ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
 
-        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+        if (options.autoPlay !== false) {
           ac.play();
         }
       } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
@@ -15199,7 +15199,7 @@
       return new cp(props, children);
     },
     parse: function parse(json, dom, options) {
-      parser.parse(this, json, dom, options);
+      return parser.parse(this, json, dom, options);
     },
     Root: Root,
     Dom: Dom,

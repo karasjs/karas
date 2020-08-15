@@ -1,6 +1,7 @@
 import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
+import Controller from '../animate/Controller';
 
 export default {
   parse(karas, json, dom, options = {}) {
@@ -26,7 +27,7 @@ export default {
       // 总控次数、速度
       ac.__op(options);
       // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-      if(!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+      if(options.autoPlay !== false) {
         ac.play();
       }
     }

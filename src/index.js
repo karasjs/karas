@@ -59,7 +59,7 @@ let karas = {
     return new cp(props, children);
   },
   parse(json, dom, options) {
-    parser.parse(this, json, dom, options);
+    return parser.parse(this, json, dom, options);
   },
   Root,
   Dom,

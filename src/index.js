@@ -13,10 +13,10 @@ import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
 import util from './util/util';
-import parser from './parser';
+import parser from './parser/index';
 import inject from './util/inject';
-import style from './style';
-import animate from './animate';
+import style from './style/index';
+import animate from './animate/index';
 import math from './math/index';
 import { version } from '../package.json';
 

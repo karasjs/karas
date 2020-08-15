@@ -741,8 +741,49 @@
     target.__host = host;
   }
 
+  function genCanvasPolygon(ctx, list) {
+    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
+    ctx.beginPath();
+    ctx.moveTo(list[0][0], list[0][1]);
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        ctx.lineTo(item[0], item[1]);
+      } else if (item.length === 4) {
+        ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
+      } else if (item.length === 6) {
+        ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
+      }
+    }
+
+    ctx[method]();
+    ctx.closePath();
+  }
+
+  function genSvgPolygon(list) {
+    var s = 'M' + list[0][0] + ',' + list[0][1];
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        s += 'L' + item[0] + ',' + item[1];
+      } else if (item.length === 4) {
+        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
+      } else if (item.length === 6) {
+        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
+      }
+    }
+
+    return s;
+  }
+
   var tool = {
-    init: init
+    init: init,
+    genCanvasPolygon: genCanvasPolygon,
+    genSvgPolygon: genSvgPolygon
   };
 
   var mode = {
@@ -8261,51 +8302,6 @@
     return Animation;
   }(Event);
 
-  function genCanvasPolygon(ctx, list) {
-    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
-    ctx.beginPath();
-    ctx.moveTo(list[0][0], list[0][1]);
-
-    for (var i = 1, len = list.length; i < len; i++) {
-      var item = list[i];
-
-      if (item.length === 2) {
-        ctx.lineTo(item[0], item[1]);
-      } else if (item.length === 4) {
-        ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
-      } else if (item.length === 6) {
-        ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
-      }
-    }
-
-    ctx[method]();
-    ctx.closePath();
-  }
-
-  function genSvgPolygon(list) {
-    var s = 'M' + list[0][0] + ',' + list[0][1];
-
-    for (var i = 1, len = list.length; i < len; i++) {
-      var item = list[i];
-
-      if (item.length === 2) {
-        s += 'L' + item[0] + ',' + item[1];
-      } else if (item.length === 4) {
-        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
-      } else if (item.length === 6) {
-        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
-      }
-    } // s += `L${list[0][0]},${list[0][1]}`;
-
-
-    return s;
-  }
-
-  var draw = {
-    genCanvasPolygon: genCanvasPolygon,
-    genSvgPolygon: genSvgPolygon
-  };
-
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -8319,8 +8315,8 @@
   var normalize$2 = css.normalize,
       calRelative$1 = css.calRelative,
       compute$1 = css.compute;
-  var genCanvasPolygon$1 = draw.genCanvasPolygon,
-      genSvgPolygon$1 = draw.genSvgPolygon;
+  var genCanvasPolygon$1 = tool.genCanvasPolygon,
+      genSvgPolygon$1 = tool.genSvgPolygon;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
@@ -11708,8 +11704,8 @@
   }(Xom);
 
   var AUTO$4 = unit.AUTO;
-  var genCanvasPolygon$2 = draw.genCanvasPolygon,
-      genSvgPolygon$2 = draw.genSvgPolygon;
+  var genCanvasPolygon$2 = tool.genCanvasPolygon,
+      genSvgPolygon$2 = tool.genSvgPolygon;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -14473,7 +14469,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[originX + rx, originY], [originX + width - rx, originY], [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry], [originX + width, originY + height - ry], [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height], [originX + rx, originY + height], [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry], [originX, originY + ry], [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]];
-            draw.genCanvasPolygon(ctx, list);
+            tool.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -14715,7 +14711,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[cx - rx, cy], [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry], [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy], [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry], [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]];
-            draw.genCanvasPolygon(ctx, list);
+            tool.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -15096,6 +15092,68 @@
     return vd;
   }
 
+  var parser = {
+    parse: function parse$1(karas, json, dom) {
+      var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+      if (!inject.isDom(dom)) {
+        options = dom || {};
+        dom = null;
+      } // 暂存所有动画声明，等root的生成后开始执行
+
+
+      var animateRecords = [];
+
+      var vd = parse(karas, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+
+
+      if (dom) {
+        var tagName = json.tagName;
+
+        if (['canvas', 'svg'].indexOf(tagName) === -1) {
+          throw new Error('Parse dom must be canvas/svg');
+        } // parse直接（非递归）的动画记录
+
+
+        var ac = vd.animateController;
+        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+
+        karas.render(vd, dom); // 总控次数、速度
+
+        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+
+
+        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
+          ac.play();
+        }
+      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
+      else {
+          if (animateRecords.length) {
+            vd.__animateRecords = animateRecords;
+          }
+        }
+
+      return vd;
+    },
+    abbr: abbr
+  };
+
+  var style = {
+    css: css,
+    reset: reset,
+    unit: unit
+  };
+
+  var animate = {
+    Animation: Animation,
+    Controller: Controller,
+    easing: easing,
+    frame: frame,
+    level: level,
+    repaint: repaint
+  };
+
   var version = "0.34.0";
 
   Geom.register('$line', Line);
@@ -15140,48 +15198,8 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse$1(json, dom) {
-      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-      if (!inject.isDom(dom)) {
-        options = dom || {};
-        dom = null;
-      } // 暂存所有动画声明，等root的生成后开始执行
-
-
-      var animateRecords = [];
-
-      var vd = parse(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
-
-
-      if (dom) {
-        var tagName = json.tagName;
-
-        if (['canvas', 'svg'].indexOf(tagName) === -1) {
-          throw new Error('Parse dom must be canvas/svg');
-        } // parse直接（非递归）的动画记录
-
-
-        var ac = vd.animateController;
-        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
-
-        this.render(vd, dom); // 总控次数、速度
-
-        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-
-
-        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
-          ac.play();
-        }
-      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
-      else {
-          if (animateRecords.length) {
-            vd.__animateRecords = animateRecords;
-          }
-        }
-
-      return vd;
+    parse: function parse(json, dom, options) {
+      parser.parse(this, json, dom, options);
     },
     Root: Root,
     Dom: Dom,
@@ -15192,15 +15210,10 @@
     Event: Event,
     util: util,
     inject: inject,
-    css: css,
-    unit: unit,
-    reset: reset,
-    abbr: abbr,
-    frame: frame,
-    easing: easing,
-    level: level,
-    math: math,
-    Controller: Controller
+    style: style,
+    parser: parser,
+    animate: animate,
+    math: math
   };
 
   if (typeof window !== 'undefined') {

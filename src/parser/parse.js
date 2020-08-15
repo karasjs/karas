@@ -1,4 +1,4 @@
-import util from './util';
+import util from '../util/util';
 import abbr from './abbr';
 import Node from '../node/Node';
 

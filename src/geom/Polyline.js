@@ -1,6 +1,5 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import draw from '../util/draw';
 
 class Polyline extends Geom {
   constructor(tagName, props) {

@@ -12,13 +12,12 @@ import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
 import level from '../animate/level';
 import inject from '../util/inject';
-import draw from '../util/draw';
 import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { normalize, calRelative, compute } = css;
-const { genCanvasPolygon, genSvgPolygon } = draw;
+const { genCanvasPolygon, genSvgPolygon } = tool;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {

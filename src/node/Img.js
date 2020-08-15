@@ -1,4 +1,5 @@
 import Dom from './Dom';
+import tool from './tool';
 import mode from '../util/mode';
 import inject from '../util/inject';
 import util from '../util/util';
@@ -6,11 +7,10 @@ import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
-import draw from '../util/draw';
 import level from '../animate/level';
 
 const { AUTO } = unit;
-const { genCanvasPolygon, genSvgPolygon } = draw;
+const { genCanvasPolygon, genSvgPolygon } = tool;
 
 class Img extends Dom {
   constructor(tagName, props) {

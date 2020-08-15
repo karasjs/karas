@@ -12454,43 +12454,7 @@
     return Defs;
   }();
 
-  var isFunction$4 = util.isFunction; // const LIST = [
-  //   'playbackRate',
-  //   'iterations',
-  //   'fps',
-  //   'spfLimit',
-  //   'delay',
-  //   'endDelay',
-  //   'duration',
-  //   'direction',
-  //   'fill',
-  //   'playCount',
-  //   'currentTime',
-  //   'easing',
-  // ];
-  // function replaceOption(target, globalValue, key, vars) {
-  //   // 优先vars，其次总控，都没有忽略即自己原本声明
-  //   if(!isNil(globalValue)) {
-  //     let decl = target['var-' + key];
-  //     if(!decl) {
-  //       target[key] = globalValue;
-  //     }
-  //     else {
-  //       let id = decl.id;
-  //       if(!id || !vars[id]) {
-  //         target[key] = globalValue;
-  //       }
-  //     }
-  //   }
-  // }
-  //
-  // function replaceGlobal(global, options) {
-  //   LIST.forEach(k => {
-  //     if(global.hasOwnProperty(k)) {
-  //       replaceOption(options, global[k], k, global.vars);
-  //     }
-  //   });
-  // }
+  var isFunction$4 = util.isFunction;
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
@@ -12499,21 +12463,7 @@
       this.__records = [];
       this.__auto = [];
       this.__list = [];
-    } // __op(options, target = this.__records) {
-    //   target.forEach(record => {
-    //     let { animate } = record;
-    //     if(Array.isArray(animate)) {
-    //       animate.forEach(item => {
-    //         // 用总控替换动画属性中的值，注意vars优先级
-    //         replaceGlobal(options, item.options);
-    //       });
-    //     }
-    //     else {
-    //       replaceGlobal(options, animate.options);
-    //     }
-    //   });
-    // }
-
+    }
 
     _createClass(Controller, [{
       key: "add",

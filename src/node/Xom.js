@@ -202,6 +202,7 @@ class Xom extends Node {
       },
     };
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
+    this.__cacheSvg = false; // svg模式渲染有变化置null，无变化时直接赋给当前vd
   }
 
   // 获取margin/padding的实际值
@@ -310,6 +311,7 @@ class Xom extends Node {
     computedStyle.height = this.height;
     // 设置缓存hash，render时计算
     this.__cacheStyle = {};
+    this.__cacheSvg = false;
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -430,6 +432,14 @@ class Xom extends Node {
    */
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
+      if(this.__cacheSvg) {
+        this.__virtualDom = extend({
+          cache: true,
+        }, this.__virtualDom);
+        this.__virtualDom.children = [];
+        return;
+      }
+      this.__cacheSvg = true;
       this.__virtualDom = {
         bb: [],
         children: [],
@@ -1331,6 +1341,7 @@ class Xom extends Node {
         if(style.hasOwnProperty(i)) {
           // repaint置空，如果reflow会重新生成空的
           __cacheStyle[i] = undefined;
+          this.__cacheSvg = false;
           if(rp.STYLE.hasOwnProperty(i)) {
             lv = level.REFLOW;
             break;

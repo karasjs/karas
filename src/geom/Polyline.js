@@ -34,6 +34,7 @@ class Polyline extends Geom {
   render(renderMode, ctx, defs) {
     let {
       isDestroyed,
+      cache,
       originX,
       originY,
       display,
@@ -47,15 +48,17 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
     let { width, height, points, controls, __cacheProps } = this;
     if(__cacheProps.points === undefined) {
       __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
+      __cacheProps.d = null;
     }
     if(__cacheProps.controls === undefined) {
       __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
+      __cacheProps.d = null;
     }
     if(__cacheProps.points.length < 2) {
       console.error('Points must have at lease 2 item: ' + points);
@@ -98,21 +101,25 @@ class Polyline extends Geom {
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      let s = 'M' + pts[0][0] + ',' + pts[0][1];
-      for(let i = 1, len = pts.length; i < len; i++) {
-        let point = pts[i];
-        let cl = cls[i - 1];
-        if(!cl || !cl.length) {
-          s += 'L' + point[0] + ',' + point[1];
+      // 矢量坐标不变时无需重复计算
+      if(!__cacheProps.d) {
+        let d = 'M' + pts[0][0] + ',' + pts[0][1];
+        for(let i = 1, len = pts.length; i < len; i++) {
+          let point = pts[i];
+          let cl = cls[i - 1];
+          if(!cl || !cl.length) {
+            d += 'L' + point[0] + ',' + point[1];
+          }
+          else if(cl.length === 4) {
+            d += 'C' + cl[0] + ',' + cl[1] + ' ' + cl[2] + ',' + cl[3] + ' ' + point[0] + ',' + point[1];
+          }
+          else {
+            d += 'Q' + cl[0] + ',' + cl[1] + ' ' + point[0] + ',' + point[1];
+          }
         }
-        else if(cl.length === 4) {
-          s += 'C' + cl[0] + ',' + cl[1] + ' ' + cl[2] + ',' + cl[3] + ' ' + point[0] + ',' + point[1];
-        }
-        else {
-          s += 'Q' + cl[0] + ',' + cl[1] + ' ' + point[0] + ',' + point[1];
-        }
+        __cacheProps.d = d;
       }
-      props.push(['d', s]);
+      props.push(['d', __cacheProps.d]);
       if(strokeDasharray.length) {
         props.push(['stroke-dasharray', strokeDasharrayStr]);
       }

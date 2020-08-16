@@ -183,9 +183,11 @@ function diffX2X(elem, ovd, nvd) {
 }
 
 function diffD2D(elem, ovd, nvd, root) {
-  diffX2X(elem, ovd, nvd);
-  if(!root) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  if(!nvd.cache) {
+    diffX2X(elem, ovd, nvd);
+    if(!root) {
+      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    }
   }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
@@ -231,6 +233,9 @@ function diffD2G(elem, ovd, nvd) {
 }
 
 function diffT2T(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -255,6 +260,9 @@ function diffG2D(elem, ovd, nvd) {
 }
 
 function diffG2G(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   diffX2X(elem, ovd, nvd);
   diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
   let ol = ovd.children.length;
@@ -319,6 +327,9 @@ function diffItem(elem, i, ovd, nvd, isText) {
 }
 
 function diffItemSelf(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   let op = {};
   for(let i = 0, len = ovd.props.length; i < len; i++) {
     let prop = ovd.props[i];

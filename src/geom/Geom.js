@@ -245,6 +245,11 @@ class Geom extends Xom {
   render(renderMode, ctx, defs) {
     super.render(renderMode, ctx, defs);
     if(renderMode === mode.SVG) {
+      if(this.virtualDom.cache) {
+        return {
+          cache: true,
+        };
+      }
       this.virtualDom.type = 'geom';
     }
     let { isDestroyed, computedStyle: { display } } = this;

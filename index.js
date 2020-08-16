@@ -6579,6 +6579,7 @@
           target.__cacheStyle[i] = undefined;
         }
     });
+    target.__cacheSvg = false;
     animation.__style = style;
   }
   /**
@@ -8504,6 +8505,8 @@
       };
       _this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
 
+      _this.__cacheSvg = false; // svg模式渲染有变化置null，无变化时直接赋给当前vd
+
       return _this;
     } // 获取margin/padding的实际值
 
@@ -8626,7 +8629,8 @@
         computedStyle.width = this.width;
         computedStyle.height = this.height; // 设置缓存hash，render时计算
 
-        this.__cacheStyle = {}; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        this.__cacheStyle = {};
+        this.__cacheSvg = false; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
 
@@ -8763,6 +8767,15 @@
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
+          if (this.__cacheSvg) {
+            this.__virtualDom = extend$1({
+              cache: true
+            }, this.__virtualDom);
+            this.__virtualDom.children = [];
+            return;
+          }
+
+          this.__cacheSvg = true;
           this.__virtualDom = {
             bb: [],
             children: [],
@@ -9670,6 +9683,7 @@
             if (style.hasOwnProperty(i)) {
               // repaint置空，如果reflow会重新生成空的
               __cacheStyle[i] = undefined;
+              this.__cacheSvg = false;
 
               if (repaint.STYLE.hasOwnProperty(i)) {
                 lv = level.REFLOW;
@@ -11549,7 +11563,15 @@
         if (renderMode === mode.SVG) {
           this.virtualDom.children = zIndex.map(function (item) {
             return item.virtualDom;
-          });
+          }); // 没变化则将text孩子设置cache
+
+          if (this.virtualDom.cache) {
+            this.virtualDom.children.forEach(function (item) {
+              if (item.type === 'text') {
+                item.cache = true;
+              }
+            });
+          }
         }
       }
     }, {
@@ -11756,7 +11778,8 @@
       var src = _this.props.src;
       var loadImg = _this.__loadImg = {
         // 刷新回调函数，用以destroy取消用
-        cb: function cb() {}
+        cb: function cb() {},
+        cache: false
       }; // 空url用错误图代替
 
       if (!src) {
@@ -11979,11 +12002,18 @@
                 props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
               }
 
-              this.virtualDom.children.push({
+              var vd = {
                 type: 'img',
                 tagName: 'image',
                 props: props
-              });
+              }; // dom没有变化且img也没变化才能缓存
+
+              if (loadImg.cache && this.virtualDom.cache) {
+                vd.cache = true;
+              }
+
+              loadImg.cache = true;
+              this.virtualDom.children.push(vd);
             }
           }
         } else {
@@ -11991,6 +12021,7 @@
           _loadImg.url = src;
           _loadImg.source = null;
           _loadImg.error = null;
+          _loadImg.cache = false;
           inject.measureImg(src, function (data) {
             // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
             if (data.url === _loadImg.url && !_this2.__isDestroyed) {
@@ -12230,10 +12261,12 @@
   }
 
   function diffD2D(elem, ovd, nvd, root) {
-    diffX2X(elem, ovd, nvd);
+    if (!nvd.cache) {
+      diffX2X(elem, ovd, nvd);
 
-    if (!root) {
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+      if (!root) {
+        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+      }
     }
 
     var ol = ovd.children.length;
@@ -12282,6 +12315,10 @@
   }
 
   function diffT2T(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12308,6 +12345,10 @@
   }
 
   function diffG2G(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     diffX2X(elem, ovd, nvd);
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
     var ol = ovd.children.length;
@@ -12377,6 +12418,10 @@
   }
 
   function diffItemSelf(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     var op = {};
 
     for (var i = 0, len = ovd.props.length; i < len; i++) {
@@ -13560,6 +13605,12 @@
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
 
         if (renderMode === mode.SVG) {
+          if (this.virtualDom.cache) {
+            return {
+              cache: true
+            };
+          }
+
           this.virtualDom.type = 'geom';
         }
 
@@ -13821,6 +13872,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             display = _get$call.display,
             visibility = _get$call.visibility,
             originX = _get$call.originX,
@@ -13833,7 +13885,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14033,6 +14085,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -14046,7 +14099,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14058,10 +14111,12 @@
 
         if (__cacheProps.points === undefined) {
           __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
+          __cacheProps.d = null;
         }
 
         if (__cacheProps.controls === undefined) {
           __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
+          __cacheProps.d = null;
         }
 
         if (__cacheProps.points.length < 2) {
@@ -14106,23 +14161,28 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
-          var s = 'M' + pts[0][0] + ',' + pts[0][1];
+          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]; // 矢量坐标不变时无需重复计算
 
-          for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
-            var _point = pts[_i2];
-            var _cl = cls[_i2 - 1];
+          if (!__cacheProps.d) {
+            var d = 'M' + pts[0][0] + ',' + pts[0][1];
 
-            if (!_cl || !_cl.length) {
-              s += 'L' + _point[0] + ',' + _point[1];
-            } else if (_cl.length === 4) {
-              s += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
-            } else {
-              s += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
+            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
+              var _point = pts[_i2];
+              var _cl = cls[_i2 - 1];
+
+              if (!_cl || !_cl.length) {
+                d += 'L' + _point[0] + ',' + _point[1];
+              } else if (_cl.length === 4) {
+                d += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
+              } else {
+                d += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
+              }
             }
+
+            __cacheProps.d = d;
           }
 
-          props.push(['d', s]);
+          props.push(['d', __cacheProps.d]);
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14262,6 +14322,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14275,7 +14336,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14465,6 +14526,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -14478,7 +14540,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14600,6 +14662,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14613,7 +14676,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14709,6 +14772,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14722,7 +14786,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 

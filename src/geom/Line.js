@@ -32,6 +32,7 @@ class Line extends Geom {
   render(renderMode, ctx, defs) {
     let {
       isDestroyed,
+      cache,
       display,
       visibility,
       originX,
@@ -44,7 +45,7 @@ class Line extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
     let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps } = this;

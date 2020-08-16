@@ -20,6 +20,7 @@ class Img extends Dom {
       // 刷新回调函数，用以destroy取消用
       cb: function() {
       },
+      cache: false,
     };
     // 空url用错误图代替
     if(!src) {
@@ -254,11 +255,17 @@ class Img extends Dom {
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
           }
-          this.virtualDom.children.push({
+          let vd = {
             type: 'img',
             tagName: 'image',
             props,
-          });
+          };
+          // dom没有变化且img也没变化才能缓存
+          if(loadImg.cache && this.virtualDom.cache) {
+            vd.cache = true;
+          }
+          loadImg.cache = true;
+          this.virtualDom.children.push(vd);
         }
       }
     }
@@ -267,6 +274,7 @@ class Img extends Dom {
       loadImg.url = src;
       loadImg.source = null;
       loadImg.error = null;
+      loadImg.cache = false;
       inject.measureImg(src, data => {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if(data.url === loadImg.url && !this.__isDestroyed) {

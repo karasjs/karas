@@ -322,6 +322,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
       target.__cacheStyle[i] = undefined;
     }
   });
+  target.__cacheSvg = false;
   animation.__style = style;
 }
 

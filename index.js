@@ -13386,6 +13386,8 @@
         this.__width = w;
 
         this.__marginAuto(this.currentStyle, data);
+
+        this.__cacheProps = {};
       }
     }, {
       key: "__layoutFlex",
@@ -13407,6 +13409,7 @@
 
         this.__width = fixedWidth ? w : x - data.x;
         this.__height = fixedHeight ? h : y - data.y;
+        this.__cacheProps = {};
       }
     }, {
       key: "__preRender",

@@ -20,7 +20,6 @@ class Img extends Dom {
       // 刷新回调函数，用以destroy取消用
       cb: function() {
       },
-      cache: false,
     };
     // 空url用错误图代替
     if(!src) {
@@ -264,8 +263,12 @@ class Img extends Dom {
           if(loadImg.cache && this.virtualDom.cache) {
             vd.cache = true;
           }
+          // conMask需要更新
+          else {
+            delete this.virtualDom.cache;
+          }
           loadImg.cache = true;
-          this.virtualDom.children.push(vd);
+          this.virtualDom.children = [vd];
         }
       }
     }

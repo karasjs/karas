@@ -1091,7 +1091,8 @@ class Dom extends Xom {
     zIndex.forEach(item => {
       item.__renderByMask(renderMode, ctx, defs);
     });
-    if(renderMode === mode.SVG) {
+    // img的children在子类特殊处理
+    if(renderMode === mode.SVG && this.tagName !== 'img') {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
       // 没变化则将text孩子设置cache
       if(this.virtualDom.cache) {

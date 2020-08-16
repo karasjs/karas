@@ -1160,6 +1160,7 @@ class Animation extends Event {
               target.__currentStyle[k] = target.style[k];
             }
           }
+          target.__cacheSvg = false;
         });
       }
     };

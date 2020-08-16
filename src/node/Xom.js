@@ -202,7 +202,6 @@ class Xom extends Node {
       },
     };
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
-    this.__cacheSvg = false; // svg模式渲染有变化置null，无变化时直接赋给当前vd
   }
 
   // 获取margin/padding的实际值
@@ -436,7 +435,6 @@ class Xom extends Node {
         this.__virtualDom = extend({
           cache: true,
         }, this.__virtualDom);
-        this.__virtualDom.children = [];
         return;
       }
       this.__cacheSvg = true;
@@ -594,6 +592,7 @@ class Xom extends Node {
               loadBgi.source = data.source;
               loadBgi.width = data.width;
               loadBgi.height = data.height;
+              this.__cacheSvg = false;
               this.root.delRefreshTask(loadBgi.cb);
               this.root.addRefreshTask(loadBgi.cb);
             }

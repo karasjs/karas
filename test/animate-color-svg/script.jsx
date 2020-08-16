@@ -14,7 +14,6 @@ let animation = t.animate([
   }
 ], {
   duration: 200,
-  fill: 'forwards',
 });
 animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');

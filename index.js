@@ -7462,6 +7462,8 @@
                   target.__currentStyle[k] = target.style[k];
                 }
               }
+
+              target.__cacheSvg = false;
             });
           }
         }; // 生成finish的任务事件
@@ -8505,8 +8507,6 @@
       };
       _this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
 
-      _this.__cacheSvg = false; // svg模式渲染有变化置null，无变化时直接赋给当前vd
-
       return _this;
     } // 获取margin/padding的实际值
 
@@ -8771,7 +8771,6 @@
             this.__virtualDom = extend$1({
               cache: true
             }, this.__virtualDom);
-            this.__virtualDom.children = [];
             return;
           }
 
@@ -8917,6 +8916,7 @@
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
+                  _this3.__cacheSvg = false;
 
                   _this3.root.delRefreshTask(loadBgi.cb);
 
@@ -11558,9 +11558,9 @@
         var zIndex = this.zIndexChildren;
         zIndex.forEach(function (item) {
           item.__renderByMask(renderMode, ctx, defs);
-        });
+        }); // img的children在子类特殊处理
 
-        if (renderMode === mode.SVG) {
+        if (renderMode === mode.SVG && this.tagName !== 'img') {
           this.virtualDom.children = zIndex.map(function (item) {
             return item.virtualDom;
           }); // 没变化则将text孩子设置cache
@@ -11778,8 +11778,7 @@
       var src = _this.props.src;
       var loadImg = _this.__loadImg = {
         // 刷新回调函数，用以destroy取消用
-        cb: function cb() {},
-        cache: false
+        cb: function cb() {}
       }; // 空url用错误图代替
 
       if (!src) {
@@ -12010,10 +12009,13 @@
 
               if (loadImg.cache && this.virtualDom.cache) {
                 vd.cache = true;
-              }
+              } // conMask需要更新
+              else {
+                  delete this.virtualDom.cache;
+                }
 
               loadImg.cache = true;
-              this.virtualDom.children.push(vd);
+              this.virtualDom.children = [vd];
             }
           }
         } else {

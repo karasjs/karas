@@ -5948,6 +5948,9 @@
     getCacheCanvas: function getCacheCanvas(width, height) {
       return cacheCanvas('cache', width, height);
     },
+    getMaskCanvas: function getMaskCanvas(width, height) {
+      return cacheCanvas('mask', width, height);
+    },
     isDom: function isDom(o) {
       if (o) {
         if (util.isString(o)) {
@@ -9400,46 +9403,60 @@
         var prev = this.prev,
             root = this.root;
         var hasMask = prev && prev.isMask;
+        var hasClip = prev && prev.isClip;
 
-        if (!hasMask) {
+        if (!hasMask && !hasClip) {
           this.render(renderMode, ctx, defs);
           return;
         }
 
         if (renderMode === mode.CANVAS) {
-          // canvas借用1个离屏canvas来处理
-          var width = root.width,
-              height = root.height;
-          var c = inject.getCacheCanvas(width, height);
-          this.render(renderMode, c.ctx);
-          c.ctx.globalCompositeOperation = 'destination-in'; // 劫持beginPath/fill/closePath，使得多个mask连续绘制
+          // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
+          if (hasMask) {
+            var width = root.width,
+                height = root.height;
+            var c = inject.getCacheCanvas(width, height);
+            this.render(renderMode, c.ctx); // 收集之前的mask列表
 
-          c.ctx.beginPath();
-          var fill = c.ctx.fill;
-          var beginPath = c.ctx.beginPath;
-          var closePath = c.ctx.closePath;
+            var list = [];
 
-          c.ctx.fill = c.ctx.beginPath = c.ctx.closePath = function () {};
-
-          while (prev && prev.isMask) {
-            prev.render(renderMode, c.ctx);
-            prev = prev.prev;
-          } // 还原并绘制mask区域
+            while (prev && prev.isMask) {
+              list.unshift(prev);
+              prev = prev.prev;
+            } // 当mask只有1个时，无需生成m，直接在c上即可
 
 
-          c.ctx.fill = fill;
-          c.ctx.beginPath = beginPath;
-          c.ctx.closePath = closePath;
-          c.ctx.fill();
-          c.ctx.closePath(); // 小程序需强制刷新
+            if (list.length === 1) {
+              prev = list[0];
+              c.ctx.globalCompositeOperation = 'destination-in';
+              prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
 
-          c.draw(c.ctx);
-          ctx.drawImage(c.canvas, 0, 0);
-          c.draw(ctx); // 清除
+              c.draw(c.ctx);
+              ctx.drawImage(c.canvas, 0, 0);
+              c.draw(ctx);
+            } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+            else {
+                var m = inject.getMaskCanvas(width, height);
+                list.forEach(function (item) {
+                  item.render(renderMode, m.ctx);
+                });
+                m.draw(m.ctx);
+                c.ctx.globalCompositeOperation = 'destination-in';
+                c.ctx.drawImage(m.canvas, 0, 0);
+                c.draw(c.ctx);
+                ctx.drawImage(c.canvas, 0, 0);
+                c.draw(ctx); // 清除
 
-          c.ctx.globalCompositeOperation = 'source-over';
-          c.ctx.clearRect(0, 0, width, height);
-          c.draw(c.ctx);
+                m.ctx.globalCompositeOperation = 'source-over';
+                m.ctx.clearRect(0, 0, width, height);
+                m.draw(m.ctx);
+              } // 清除
+
+
+            c.ctx.globalCompositeOperation = 'source-over';
+            c.ctx.clearRect(0, 0, width, height);
+            c.draw(c.ctx);
+          }
         } else if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 

@@ -8767,7 +8767,7 @@
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
-          if (this.__cacheSvg) {
+          if (this.__cacheSvg && this !== this.root) {
             this.__virtualDom = extend$1({
               cache: true
             }, this.__virtualDom);
@@ -11974,7 +11974,17 @@
                 ctx.drawImage(source, originX, originY, width, height);
               }
             } else if (renderMode === mode.SVG) {
-              // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+              // dom没有变化且img也没变化才能缓存
+              if (loadImg.cache && this.virtualDom.cache) {
+                this.virtualDom.children[0].cache = true;
+                return;
+              } // conMask需要更新
+              else {
+                  delete this.virtualDom.cache;
+                }
+
+              loadImg.cache = true; // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+
               var matrix;
 
               if (width !== loadImg.width || height !== loadImg.height) {
@@ -12005,16 +12015,7 @@
                 type: 'img',
                 tagName: 'image',
                 props: props
-              }; // dom没有变化且img也没变化才能缓存
-
-              if (loadImg.cache && this.virtualDom.cache) {
-                vd.cache = true;
-              } // conMask需要更新
-              else {
-                  delete this.virtualDom.cache;
-                }
-
-              loadImg.cache = true;
+              };
               this.virtualDom.children = [vd];
             }
           }

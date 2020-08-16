@@ -221,6 +221,16 @@ class Img extends Dom {
           }
         }
         else if(renderMode === mode.SVG) {
+          // dom没有变化且img也没变化才能缓存
+          if(loadImg.cache && this.virtualDom.cache) {
+            this.virtualDom.children[0].cache = true;
+            return;
+          }
+          // conMask需要更新
+          else {
+            delete this.virtualDom.cache;
+          }
+          loadImg.cache = true;
           // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
           let matrix;
           if(width !== loadImg.width || height !== loadImg.height) {
@@ -259,15 +269,6 @@ class Img extends Dom {
             tagName: 'image',
             props,
           };
-          // dom没有变化且img也没变化才能缓存
-          if(loadImg.cache && this.virtualDom.cache) {
-            vd.cache = true;
-          }
-          // conMask需要更新
-          else {
-            delete this.virtualDom.cache;
-          }
-          loadImg.cache = true;
           this.virtualDom.children = [vd];
         }
       }

@@ -431,7 +431,7 @@ class Xom extends Node {
    */
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
-      if(this.__cacheSvg) {
+      if(this.__cacheSvg && this !== this.root) {
         this.__virtualDom = extend({
           cache: true,
         }, this.__virtualDom);

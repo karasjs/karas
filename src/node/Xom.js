@@ -308,7 +308,6 @@ class Xom extends Node {
     computedStyle.height = this.height;
     // 设置缓存hash，render时计算
     this.__cacheStyle = {};
-    this.__cacheProps = {};
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -1095,43 +1094,32 @@ class Xom extends Node {
       return;
     }
     if(renderMode === mode.CANVAS) {
-      // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
+      // canvas借用1个离屏canvas来处理
       let { width, height } = root;
       let c = inject.getCacheCanvas(width, height);
       this.render(renderMode, c.ctx);
-      // 收集之前的mask列表
-      let list = [];
+      c.ctx.globalCompositeOperation = 'destination-in';
+      // 劫持beginPath/fill/closePath，使得多个mask连续绘制
+      c.ctx.beginPath();
+      let fill = c.ctx.fill;
+      let beginPath = c.ctx.beginPath;
+      let closePath = c.ctx.closePath;
+      c.ctx.fill = c.ctx.beginPath = c.ctx.closePath = function() {
+      };
       while(prev && prev.isMask) {
-        list.unshift(prev);
+        prev.render(renderMode, c.ctx);
         prev = prev.prev;
       }
-      // 当mask只有1个时，无需生成m，直接在c上即可
-      if(list.length === 1) {
-        prev = list[0];
-        c.ctx.globalCompositeOperation = 'destination-in';
-        prev.render(renderMode, c.ctx);
-        // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
-        c.draw(c.ctx);
-        ctx.drawImage(c.canvas, 0, 0);
-        c.draw(ctx);
-      }
-      // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
-      else {
-        let m = inject.getMaskCanvas(width, height);
-        list.forEach(item => {
-          item.render(renderMode, m.ctx);
-        });
-        m.draw(m.ctx);
-        c.ctx.globalCompositeOperation = 'destination-in';
-        c.ctx.drawImage(m.canvas, 0, 0);
-        c.draw(c.ctx);
-        ctx.drawImage(c.canvas, 0, 0);
-        c.draw(ctx);
-        // 清除
-        m.ctx.globalCompositeOperation = 'source-over';
-        m.ctx.clearRect(0, 0, width, height);
-        m.draw(m.ctx);
-      }
+      // 还原并绘制mask区域
+      c.ctx.fill = fill;
+      c.ctx.beginPath = beginPath;
+      c.ctx.closePath = closePath;
+      c.ctx.fill();
+      c.ctx.closePath();
+      // 小程序需强制刷新
+      c.draw(c.ctx);
+      ctx.drawImage(c.canvas, 0, 0);
+      c.draw(ctx);
       // 清除
       c.ctx.globalCompositeOperation = 'source-over';
       c.ctx.clearRect(0, 0, width, height);

@@ -15,13 +15,17 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMask = !!this.props.mask;
-    let { style, isMask } = this;
-    if(isMask) {
+    this.__isClip = !!this.props.clip;
+    let { style, isMask, isClip } = this;
+    if(isMask || isClip) {
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
       style.stroke = null;
+      if(isClip) {
+        style.fill = '#FFF';
+      }
     }
     this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
     this.__currentStyle = util.extend({}, this.__style);
@@ -250,12 +254,17 @@ class Geom extends Xom {
     return this.__preRender(renderMode, ctx, defs);
   }
 
-  __renderAsMask(renderMode, ctx, defs) {
+  __renderAsMask(renderMode, ctx, defs, isClip) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
       let vd = this.virtualDom;
-      vd.isMask = true;
+      if(isClip) {
+        vd.isClip = true;
+      }
+      else {
+        vd.isMask = true;
+      }
       // svg的mask没有transform，需手动计算变换后的坐标应用
       let children = clone(vd.children);
       let m = this.matrixEvent;
@@ -321,19 +330,29 @@ class Geom extends Xom {
       });
       // 连续多个mask需要合并
       let { prev } = this;
-      if(prev && prev.isMask) {
+      if(prev && isClip ? prev.isClip : prev.isMask) {
         let last = defs.value;
         last = last[last.length - 1];
         last.children = last.children.concat(children);
-        this.__maskId = prev.maskId;
+        if(isClip) {
+          this.__clipId = prev.clipId;
+        }
+        else {
+          this.__maskId = prev.maskId;
+        }
         return;
       }
-      let maskId = defs.add({
-        tagName: 'mask',
+      let id = defs.add({
+        tagName: isClip ? 'clip' : 'mask',
         props: [],
         children,
       });
-      this.__maskId = 'url(#' + maskId + ')';
+      if(isClip) {
+        this.__clipId = 'url(#' + id + ')';
+      }
+      else {
+        this.__maskId = 'url(#' + id + ')';
+      }
     }
   }
 
@@ -362,8 +381,16 @@ class Geom extends Xom {
     return this.__isMask;
   }
 
+  get isClip() {
+    return this.__isClip;
+  }
+
   get maskId() {
     return this.__maskId;
+  }
+
+  get clipId() {
+    return this.__clipId;
   }
 
   get currentProps() {

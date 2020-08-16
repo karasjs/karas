@@ -1085,6 +1085,9 @@ class Dom extends Xom {
       if(item.isMask) {
         item.__renderAsMask(renderMode, ctx, defs);
       }
+      else if(item.isClip) {
+        item.__renderAsMask(renderMode, ctx, defs, true);
+      }
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndex = this.zIndexChildren;

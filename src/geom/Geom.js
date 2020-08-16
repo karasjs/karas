@@ -331,7 +331,7 @@ class Geom extends Xom {
       });
       // 连续多个mask需要合并
       let { prev } = this;
-      if(prev && isClip ? prev.isClip : prev.isMask) {
+      if(prev && (isClip ? prev.isClip : prev.isMask)) {
         let last = defs.value;
         last = last[last.length - 1];
         last.children = last.children.concat(children);

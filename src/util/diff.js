@@ -149,6 +149,9 @@ function diffX2X(elem, ovd, nvd) {
     else {
       elem.removeAttribute('mask');
     }
+    if(ovd.clip) {
+      elem.removeAttribute('clip-path');
+    }
   }
   if(ovd.clip !== clip) {
     if(clip) {
@@ -156,6 +159,9 @@ function diffX2X(elem, ovd, nvd) {
     }
     else {
       elem.removeAttribute('clip-path');
+    }
+    if(ovd.mask) {
+      elem.removeAttribute('mask');
     }
   }
   if(ovd.filter !== filter) {

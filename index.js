@@ -9487,7 +9487,6 @@
           if (hasMask) {
             this.virtualDom.mask = prev.maskId;
           } else if (hasClip) {
-            console.log(prev.clipId);
             this.virtualDom.clip = prev.clipId;
           }
         }
@@ -11537,10 +11536,8 @@
 
 
         children.forEach(function (item) {
-          if (item.isMask) {
-            item.__renderAsMask(renderMode, ctx, defs);
-          } else if (item.isClip) {
-            item.__renderAsMask(renderMode, ctx, defs, true);
+          if (item.isMask || item.isClip) {
+            item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
@@ -12197,6 +12194,10 @@
       } else {
         elem.removeAttribute('mask');
       }
+
+      if (ovd.clip) {
+        elem.removeAttribute('clip-path');
+      }
     }
 
     if (ovd.clip !== clip) {
@@ -12204,6 +12205,10 @@
         elem.setAttribute('clip-path', clip);
       } else {
         elem.removeAttribute('clip-path');
+      }
+
+      if (ovd.mask) {
+        elem.removeAttribute('mask');
       }
     }
 
@@ -13658,7 +13663,7 @@
 
           var prev = this.prev;
 
-          if (prev && isClip ? prev.isClip : prev.isMask) {
+          if (prev && (isClip ? prev.isClip : prev.isMask)) {
             var last = defs.value;
             last = last[last.length - 1];
             last.children = last.children.concat(children);

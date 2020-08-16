@@ -1168,7 +1168,6 @@ class Xom extends Node {
         this.virtualDom.mask = prev.maskId;
       }
       else if(hasClip) {
-        console.log(prev.clipId);
         this.virtualDom.clip = prev.clipId;
       }
     }

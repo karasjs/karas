@@ -446,7 +446,7 @@
 
     s += '>';
     vd.children.forEach(function (item) {
-      if (item.isMask) {
+      if (item.isMask || item.isClip) {
         return;
       }
 
@@ -495,7 +495,7 @@
 
       _s2 += '>';
       vd.children.forEach(function (item) {
-        if (item.isMask) {
+        if (item.isMask || item.isClip) {
           return;
         }
 
@@ -505,15 +505,16 @@
       var opacity = vd.opacity,
           transform = vd.transform,
           mask = vd.mask,
+          clip = vd.clip,
           filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
   function joinDef(def) {
     var s = '<' + def.tagName + ' id="' + def.uuid + '"';
 
-    if (def.tagName === 'mask') ; else if (def.tagName === 'filter') ; else {
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -8449,6 +8450,8 @@
     return 0;
   }
 
+  function empty() {}
+
   var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
 
@@ -9456,11 +9459,37 @@
             c.ctx.globalCompositeOperation = 'source-over';
             c.ctx.clearRect(0, 0, width, height);
             c.draw(c.ctx);
-          }
+          } // 劫持canvas原生方法使得多个clip矢量连续绘制
+          else if (hasClip) {
+              ctx.save();
+              ctx.beginPath();
+              var fill = ctx.fill;
+              var beginPath = ctx.beginPath;
+              var closePath = ctx.closePath;
+              ctx.fill = ctx.beginPath = ctx.closePath = empty;
+
+              while (prev && prev.isClip) {
+                prev.render(renderMode, ctx);
+                prev = prev.prev;
+              }
+
+              ctx.fill = fill;
+              ctx.beginPath = beginPath;
+              ctx.closePath = closePath;
+              ctx.clip();
+              ctx.closePath();
+              this.render(renderMode, ctx);
+              ctx.restore();
+            }
         } else if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
-          this.virtualDom.mask = prev.maskId;
+          if (hasMask) {
+            this.virtualDom.mask = prev.maskId;
+          } else if (hasClip) {
+            console.log(prev.clipId);
+            this.virtualDom.clip = prev.clipId;
+          }
         }
       }
     }, {
@@ -11651,7 +11680,7 @@
           } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
 
 
-          if (!item.isMask && item.computedStyle) {
+          if (!item.isMask && !item.isClip && item.computedStyle) {
             if (item instanceof Xom) {
               if (isRelativeOrAbsolute(item)) {
                 // 临时变量为排序使用
@@ -12142,6 +12171,7 @@
     var transform = nvd.transform,
         opacity = nvd.opacity,
         mask = nvd.mask,
+        clip = nvd.clip,
         filter = nvd.filter,
         conMask = nvd.conMask;
 
@@ -12166,6 +12196,14 @@
         elem.setAttribute('mask', mask);
       } else {
         elem.removeAttribute('mask');
+      }
+    }
+
+    if (ovd.clip !== clip) {
+      if (clip) {
+        elem.setAttribute('clip-path', clip);
+      } else {
+        elem.removeAttribute('clip-path');
       }
     }
 
@@ -13259,6 +13297,7 @@
 
         if (isClip) {
           style.fill = '#FFF';
+          style.opacity = 1;
         }
       }
 
@@ -13634,7 +13673,7 @@
           }
 
           var id = defs.add({
-            tagName: isClip ? 'clip' : 'mask',
+            tagName: isClip ? 'clipPath' : 'mask',
             props: [],
             children: children
           });

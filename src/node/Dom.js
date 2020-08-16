@@ -1198,7 +1198,7 @@ class Dom extends Xom {
         item = item.shadowRoot;
       }
       // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      if(!item.isMask && item.computedStyle) {
+      if(!item.isMask && !item.isClip && item.computedStyle) {
         if(item instanceof Xom) {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用

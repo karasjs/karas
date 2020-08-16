@@ -25,6 +25,7 @@ class Geom extends Xom {
       style.stroke = null;
       if(isClip) {
         style.fill = '#FFF';
+        style.opacity = 1;
       }
     }
     this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
@@ -343,7 +344,7 @@ class Geom extends Xom {
         return;
       }
       let id = defs.add({
-        tagName: isClip ? 'clip' : 'mask',
+        tagName: isClip ? 'clipPath' : 'mask',
         props: [],
         children,
       });

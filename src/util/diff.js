@@ -125,7 +125,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, mask, filter, conMask } = nvd;
+  let { transform, opacity, mask, clip, filter, conMask } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -148,6 +148,14 @@ function diffX2X(elem, ovd, nvd) {
     }
     else {
       elem.removeAttribute('mask');
+    }
+  }
+  if(ovd.clip !== clip) {
+    if(clip) {
+      elem.setAttribute('clip-path', clip);
+    }
+    else {
+      elem.removeAttribute('clip-path');
     }
   }
   if(ovd.filter !== filter) {

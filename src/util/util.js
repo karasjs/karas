@@ -57,7 +57,7 @@ function joinVirtualDom(vd) {
   }
   s += '>';
   vd.children.forEach(item => {
-    if(item.isMask) {
+    if(item.isMask || item.isClip) {
       return;
     }
     s += joinVd(item);
@@ -101,17 +101,18 @@ function joinVd(vd) {
     }
     s += '>';
     vd.children.forEach(item => {
-      if(item.isMask) {
+      if(item.isMask || item.isClip) {
         return;
       }
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, mask, filter } = vd;
+    let { opacity, transform, mask, clip, filter } = vd;
     return '<g'
       + (opacity !== 1 ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
       + (mask ? (' mask="' + mask + '"') : '')
+      + (clip ? (' clip-path="' + clip + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
       + '>' + s + '</g>';
   }
@@ -119,7 +120,7 @@ function joinVd(vd) {
 
 function joinDef(def) {
   let s = '<' + def.tagName + ' id="' + def.uuid + '"';
-  if(def.tagName === 'mask') {
+  if(def.tagName === 'mask' || def.tagName === 'clipPath') {
     // s += ' maskUnits="userSpaceOnUse"';
   }
   else if(def.tagName === 'filter') {

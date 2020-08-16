@@ -165,6 +165,8 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
+function empty() {}
+
 class Xom extends Node {
   constructor(tagName, props = []) {
     super();
@@ -1138,12 +1140,37 @@ class Xom extends Node {
         c.ctx.clearRect(0, 0, width, height);
         c.draw(c.ctx);
       }
-      else {}
+      // 劫持canvas原生方法使得多个clip矢量连续绘制
+      else if(hasClip) {
+        ctx.save();
+        ctx.beginPath();
+        let fill = ctx.fill;
+        let beginPath = ctx.beginPath;
+        let closePath = ctx.closePath;
+        ctx.fill = ctx.beginPath = ctx.closePath = empty;
+        while(prev && prev.isClip) {
+          prev.render(renderMode, ctx);
+          prev = prev.prev;
+        }
+        ctx.fill = fill;
+        ctx.beginPath = beginPath;
+        ctx.closePath = closePath;
+        ctx.clip();
+        ctx.closePath();
+        this.render(renderMode, ctx);
+        ctx.restore();
+      }
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
-      this.virtualDom.mask = prev.maskId;
+      if(hasMask) {
+        this.virtualDom.mask = prev.maskId;
+      }
+      else if(hasClip) {
+        console.log(prev.clipId);
+        this.virtualDom.clip = prev.clipId;
+      }
     }
   }
 

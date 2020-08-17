@@ -5,7 +5,7 @@ const { joinVd, joinDef } = util;
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
   diffDefs(cns[0], ovd.defs, nvd.defs);
-  diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
   diffD2D(elem, ovd, nvd, true);
 }
 
@@ -125,7 +125,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, mask, filter, conMask } = nvd;
+  let { transform, opacity, mask, clip, filter, conClip } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -149,6 +149,20 @@ function diffX2X(elem, ovd, nvd) {
     else {
       elem.removeAttribute('mask');
     }
+    if(ovd.clip) {
+      elem.removeAttribute('clip-path');
+    }
+  }
+  if(ovd.clip !== clip) {
+    if(clip) {
+      elem.setAttribute('clip-path', clip);
+    }
+    else {
+      elem.removeAttribute('clip-path');
+    }
+    if(ovd.mask) {
+      elem.removeAttribute('mask');
+    }
   }
   if(ovd.filter !== filter) {
     if(filter) {
@@ -158,20 +172,22 @@ function diffX2X(elem, ovd, nvd) {
       elem.removeAttribute('filter');
     }
   }
-  if(ovd.conMask !== conMask) {
-    if(conMask) {
-      elem.childNodes[1].setAttribute('mask', conMask);
+  if(ovd.conClip !== conClip) {
+    if(conClip) {
+      elem.childNodes[1].setAttribute('clip-path', conClip);
     }
     else {
-      elem.childNodes[1].removeAttribute('mask');
+      elem.childNodes[1].removeAttribute('clip-path');
     }
   }
 }
 
 function diffD2D(elem, ovd, nvd, root) {
-  diffX2X(elem, ovd, nvd);
-  if(!root) {
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  if(!nvd.cache) {
+    diffX2X(elem, ovd, nvd);
+    if(!root) {
+      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    }
   }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
@@ -195,7 +211,7 @@ function diffD2D(elem, ovd, nvd, root) {
 
 function diffD2G(elem, ovd, nvd) {
   diffX2X(elem, ovd, nvd);
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -217,6 +233,9 @@ function diffD2G(elem, ovd, nvd) {
 }
 
 function diffT2T(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -241,8 +260,11 @@ function diffG2D(elem, ovd, nvd) {
 }
 
 function diffG2G(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   diffX2X(elem, ovd, nvd);
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;
@@ -263,15 +285,15 @@ function diffG2G(elem, ovd, nvd) {
   }
 }
 
-function diffBb(elem, obb, nbb, oMask, nMask) {
+function diffBb(elem, obb, nbb, oClip, nClip) {
   let ol = obb.length;
   let nl = nbb.length;
-  if(oMask !== nMask) {
+  if(oClip !== nClip) {
     if(!nMask) {
-      elem.removeAttribute('mask');
+      elem.removeAttribute('clip-path');
     }
     else {
-      elem.setAttribute('mask', nMask);
+      elem.setAttribute('clip-path', nClip);
     }
   }
   let i = 0;
@@ -305,6 +327,9 @@ function diffItem(elem, i, ovd, nvd, isText) {
 }
 
 function diffItemSelf(elem, ovd, nvd) {
+  if(nvd.cache) {
+    return;
+  }
   let op = {};
   for(let i = 0, len = ovd.props.length; i < len; i++) {
     let prop = ovd.props[i];

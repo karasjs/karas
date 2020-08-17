@@ -1082,8 +1082,8 @@ class Dom extends Xom {
     }
     // 先渲染过滤mask
     children.forEach(item => {
-      if(item.isMask) {
-        item.__renderAsMask(renderMode, ctx, defs);
+      if(item.isMask || item.isClip) {
+        item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
       }
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
@@ -1091,8 +1091,17 @@ class Dom extends Xom {
     zIndex.forEach(item => {
       item.__renderByMask(renderMode, ctx, defs);
     });
-    if(renderMode === mode.SVG) {
+    // img的children在子类特殊处理
+    if(renderMode === mode.SVG && this.tagName !== 'img') {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
+      // 没变化则将text孩子设置cache
+      if(this.virtualDom.cache) {
+        this.virtualDom.children.forEach(item => {
+          if(item.type === 'text') {
+            item.cache = true;
+          }
+        });
+      }
     }
   }
 
@@ -1195,7 +1204,7 @@ class Dom extends Xom {
         item = item.shadowRoot;
       }
       // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      if(!item.isMask && item.computedStyle) {
+      if(!item.isMask && !item.isClip && item.computedStyle) {
         if(item instanceof Xom) {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用

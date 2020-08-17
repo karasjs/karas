@@ -1,5 +1,5 @@
 let o = karas.parse({
-  tagName: 'canvas',
+  tagName: 'svg',
   props: {
     width: 360,
     height: 360,
@@ -18,7 +18,7 @@ let o = karas.parse({
           }
         ],
         options: {
-          duration: 2000,
+          duration: 200,
           fill: 'both',
           'var-iterations': {
             id: 'a'
@@ -29,8 +29,6 @@ let o = karas.parse({
     }
   ],
 }, '#test', {
-  playbackRate: 10,
-  iterations: 3,
   vars: {
     a: 2,
   },

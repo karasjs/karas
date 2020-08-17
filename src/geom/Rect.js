@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import draw from '../util/draw';
+import tool from '../node/tool';
 import geom from '../math/geom';
 
 class Rect extends Geom {
@@ -26,6 +26,7 @@ class Rect extends Geom {
   render(renderMode, ctx, defs) {
     let {
       isDestroyed,
+      cache,
       originX,
       originY,
       display,
@@ -39,7 +40,7 @@ class Rect extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
     let { width, height, rx, ry, __cacheProps } = this;
@@ -80,7 +81,7 @@ class Rect extends Geom {
           [originX, originY + ry],
           [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]
         ];
-        draw.genCanvasPolygon(ctx, list);
+        tool.genCanvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();

@@ -1,65 +1,12 @@
 import util from '../util/util';
 
-const { isNil, isFunction } = util;
-
-const LIST = [
-  'playbackRate',
-  'iterations',
-  'fps',
-  'spfLimit',
-  'delay',
-  'endDelay',
-  'duration',
-  'direction',
-  'fill',
-  'playCount',
-  'currentTime',
-  'easing',
-];
-
-function replaceOption(target, globalValue, key, vars) {
-  // 优先vars，其次总控，都没有忽略即自己原本声明
-  if(!isNil(globalValue)) {
-    let decl = target['var-' + key];
-    if(!decl) {
-      target[key] = globalValue;
-    }
-    else {
-      let id = decl.id;
-      if(!id || !vars[id]) {
-        target[key] = globalValue;
-      }
-    }
-  }
-}
-
-function replaceGlobal(global, options) {
-  LIST.forEach(k => {
-    if(global.hasOwnProperty(k)) {
-      replaceOption(options, global[k], k, global.vars);
-    }
-  });
-}
+const { isFunction } = util;
 
 class Controller {
   constructor() {
     this.__records = [];
+    this.__auto = [];
     this.__list = [];
-  }
-
-  __op(options) {
-    this.records.forEach(record => {
-      let { animate } = record;
-      if(Array.isArray(animate)) {
-        animate.forEach(item => {
-          // 用总控替换动画属性中的值，注意vars优先级
-          replaceGlobal(options, item.options);
-        });
-      }
-      else {
-        replaceGlobal(options, animate.options);
-      }
-    });
   }
 
   add(v) {
@@ -77,6 +24,7 @@ class Controller {
 
   __destroy() {
     this.__records = [];
+    this.__auto = [];
     this.__list = [];
   }
 
@@ -86,12 +34,11 @@ class Controller {
     });
   }
 
-  init() {
+  init(target = this.__records) {
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-    let records = this.records;
-    if(records.length) {
+    if(target.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
-      records.splice(0).forEach(item => {
+      target.splice(0).forEach(item => {
         let { target, animate } = item;
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
@@ -109,6 +56,11 @@ class Controller {
         }
       });
     }
+  }
+
+  __playAuto(cb) {
+    this.init(this.__auto);
+    this.__action('play');
   }
 
   play(cb) {
@@ -188,10 +140,6 @@ class Controller {
         }
       }
     }]);
-  }
-
-  get records() {
-    return this.__records;
   }
 
   get list() {

@@ -12,13 +12,12 @@ import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
 import level from '../animate/level';
 import inject from '../util/inject';
-import draw from '../util/draw';
 import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { normalize, calRelative, compute } = css;
-const { genCanvasPolygon, genSvgPolygon } = draw;
+const { genCanvasPolygon, genSvgPolygon } = tool;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -166,6 +165,8 @@ function calBackgroundPosition(position, container, size) {
   return 0;
 }
 
+function empty() {}
+
 class Xom extends Node {
   constructor(tagName, props = []) {
     super();
@@ -309,13 +310,21 @@ class Xom extends Node {
     computedStyle.height = this.height;
     // 设置缓存hash，render时计算
     this.__cacheStyle = {};
-    this.__cacheProps = {};
+    this.__cacheSvg = false;
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
       this.__animateRecords = null;
-      let ac = this.root.animateController;
-      ac.__records = ac.records.concat(ar);
+      let ac = ar.controller || this.root.animateController;
+      // 不自动播放进入记录列表，等待手动调用
+      if(ar.options && ar.options.autoPlay === false) {
+        ac.__records = ac.__records.concat(ar.list);
+      }
+      // 自动播放进入列表开始播放
+      else {
+        ac.__auto = ac.__auto.concat(ar.list);
+        ac.__playAuto();
+      }
     }
   }
 
@@ -422,6 +431,13 @@ class Xom extends Node {
    */
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
+      if(this.__cacheSvg && this !== this.root) {
+        this.__virtualDom = extend({
+          cache: true,
+        }, this.__virtualDom);
+        return;
+      }
+      this.__cacheSvg = true;
       this.__virtualDom = {
         bb: [],
         children: [],
@@ -576,6 +592,7 @@ class Xom extends Node {
               loadBgi.source = data.source;
               loadBgi.width = data.width;
               loadBgi.height = data.height;
+              this.__cacheSvg = false;
               this.root.delRefreshTask(loadBgi.cb);
               this.root.addRefreshTask(loadBgi.cb);
             }
@@ -965,8 +982,8 @@ class Xom extends Node {
                 props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
               }
               if(needMask) {
-                let maskId = defs.add({
-                  tagName: 'mask',
+                let id = defs.add({
+                  tagName: 'clipPath',
                   props: [],
                   children: [{
                     tagName: 'rect',
@@ -979,7 +996,7 @@ class Xom extends Node {
                     ],
                   }],
                 });
-                this.virtualDom.bbMask = 'url(#' + maskId + ')';
+                this.virtualDom.bbClip = 'url(#' + id + ')';
               }
               // 先画不考虑repeat的中心声明的
               this.virtualDom.bb.push({
@@ -1083,57 +1100,85 @@ class Xom extends Node {
   __renderByMask(renderMode, ctx, defs) {
     let { prev, root } = this;
     let hasMask = prev && prev.isMask;
-    if(!hasMask) {
+    let hasClip = prev && prev.isClip;
+    if(!hasMask && !hasClip) {
       this.render(renderMode, ctx, defs);
       return;
     }
     if(renderMode === mode.CANVAS) {
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
-      let { width, height } = root;
-      let c = inject.getCacheCanvas(width, height);
-      this.render(renderMode, c.ctx);
-      // 收集之前的mask列表
-      let list = [];
-      while(prev && prev.isMask) {
-        list.unshift(prev);
-        prev = prev.prev;
-      }
-      // 当mask只有1个时，无需生成m，直接在c上即可
-      if(list.length === 1) {
-        prev = list[0];
-        c.ctx.globalCompositeOperation = 'destination-in';
-        prev.render(renderMode, c.ctx);
-        // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
-        c.draw(c.ctx);
-        ctx.drawImage(c.canvas, 0, 0);
-        c.draw(ctx);
-      }
-      // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
-      else {
-        let m = inject.getMaskCanvas(width, height);
-        list.forEach(item => {
-          item.render(renderMode, m.ctx);
-        });
-        m.draw(m.ctx);
-        c.ctx.globalCompositeOperation = 'destination-in';
-        c.ctx.drawImage(m.canvas, 0, 0);
-        c.draw(c.ctx);
-        ctx.drawImage(c.canvas, 0, 0);
-        c.draw(ctx);
+      if(hasMask) {
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height);
+        this.render(renderMode, c.ctx);
+        // 收集之前的mask列表
+        let list = [];
+        while(prev && prev.isMask) {
+          list.unshift(prev);
+          prev = prev.prev;
+        }
+        // 当mask只有1个时，无需生成m，直接在c上即可
+        if(list.length === 1) {
+          prev = list[0];
+          c.ctx.globalCompositeOperation = 'destination-in';
+          prev.render(renderMode, c.ctx);
+          // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+          c.draw(c.ctx);
+          ctx.drawImage(c.canvas, 0, 0);
+          c.draw(ctx);
+        }
+        // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+        else {
+          let m = inject.getMaskCanvas(width, height);
+          list.forEach(item => {
+            item.render(renderMode, m.ctx);
+          });
+          m.draw(m.ctx);
+          c.ctx.globalCompositeOperation = 'destination-in';
+          c.ctx.drawImage(m.canvas, 0, 0);
+          c.draw(c.ctx);
+          ctx.drawImage(c.canvas, 0, 0);
+          c.draw(ctx);
+          // 清除
+          m.ctx.globalCompositeOperation = 'source-over';
+          m.ctx.clearRect(0, 0, width, height);
+          m.draw(m.ctx);
+        }
         // 清除
-        m.ctx.globalCompositeOperation = 'source-over';
-        m.ctx.clearRect(0, 0, width, height);
-        m.draw(m.ctx);
+        c.ctx.globalCompositeOperation = 'source-over';
+        c.ctx.clearRect(0, 0, width, height);
+        c.draw(c.ctx);
       }
-      // 清除
-      c.ctx.globalCompositeOperation = 'source-over';
-      c.ctx.clearRect(0, 0, width, height);
-      c.draw(c.ctx);
+      // 劫持canvas原生方法使得多个clip矢量连续绘制
+      else if(hasClip) {
+        ctx.save();
+        ctx.beginPath();
+        let fill = ctx.fill;
+        let beginPath = ctx.beginPath;
+        let closePath = ctx.closePath;
+        ctx.fill = ctx.beginPath = ctx.closePath = empty;
+        while(prev && prev.isClip) {
+          prev.render(renderMode, ctx);
+          prev = prev.prev;
+        }
+        ctx.fill = fill;
+        ctx.beginPath = beginPath;
+        ctx.closePath = closePath;
+        ctx.clip();
+        ctx.closePath();
+        this.render(renderMode, ctx);
+        ctx.restore();
+      }
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
-      this.virtualDom.mask = prev.maskId;
+      if(hasMask) {
+        this.virtualDom.mask = prev.maskId;
+      }
+      else if(hasClip) {
+        this.virtualDom.clip = prev.clipId;
+      }
     }
   }
 
@@ -1295,6 +1340,7 @@ class Xom extends Node {
         if(style.hasOwnProperty(i)) {
           // repaint置空，如果reflow会重新生成空的
           __cacheStyle[i] = undefined;
+          this.__cacheSvg = false;
           if(rp.STYLE.hasOwnProperty(i)) {
             lv = level.REFLOW;
             break;
@@ -1313,16 +1359,13 @@ class Xom extends Node {
     }
   }
 
-  animate(list, options, underControl) {
+  animate(list, options) {
     if(this.isDestroyed) {
       return;
     }
     let animation = new Animation(this, list, options);
     this.animationList.push(animation);
-    if(underControl) {
-      this.root.animateController.add(animation);
-    }
-    if(options.hasOwnProperty('autoPlay') && !options.autoPlay) {
+    if(options.autoPlay === false) {
       return animation;
     }
     return animation.play();

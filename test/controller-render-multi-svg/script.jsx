@@ -1,8 +1,11 @@
+let controller = new karas.animate.Controller();
+
 let o = karas.render(
   <svg width="360" height="360">
     {
       karas.parse({
         tagName: 'span',
+        props: {},
         animate: {
           value: [
             {
@@ -14,15 +17,19 @@ let o = karas.render(
           ],
           options: {
             duration: 200,
-            fill: 'both',
+            fill: 'forwards',
           },
         },
-        children: [123]
+        children: [456]
+      }, {
+        controller,
+        autoPlay: false,
       })
     }
     {
       karas.parse({
         tagName: 'span',
+        props: {},
         animate: {
           value: [
             {
@@ -34,19 +41,18 @@ let o = karas.render(
           ],
           options: {
             duration: 200,
-            fill: 'both',
+            fill: 'forwards',
           },
         },
         children: [456]
       }, {
-        autoPlay: false,
+        controller,
       })
     }
   </svg>,
   '#test'
 );
 let input = document.querySelector('input');
-let ac = o.animateController;
-input.value = ac.__records.length + ',' + ac.__auto.length + ',' + ac.list.length;
-ac.play();
-input.value += '/' + ac.__records.length + ',' + ac.__auto.length + ',' + ac.list.length;
+controller.list[0].on('finish', function() {
+  input.value = o.children[0].computedStyle.color + '/' + o.children[1].computedStyle.color;
+});

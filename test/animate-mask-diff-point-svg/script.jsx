@@ -11,6 +11,18 @@ let o = karas.parse(
         "props":{
           "mask":true,
           "points":[
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              1
+            ]
           ],
           "style":{
             "position":"absolute",
@@ -60,7 +72,8 @@ let o = karas.parse(
               }
             ],
             "options":{
-              "duration":200
+              "duration": 200,
+              "fill": "both"
             }
           }
         ]

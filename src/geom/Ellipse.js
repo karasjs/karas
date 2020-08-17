@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import draw from '../util/draw';
+import tool from '../node/tool';
 import geom from '../math/geom';
 
 class Ellipse extends Geom {
@@ -26,6 +26,7 @@ class Ellipse extends Geom {
   render(renderMode, ctx, defs) {
     let {
       isDestroyed,
+      cache,
       cx,
       cy,
       display,
@@ -39,7 +40,7 @@ class Ellipse extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
     let { width, height, rx, ry, __cacheProps } = this;
@@ -74,7 +75,7 @@ class Ellipse extends Geom {
           [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry],
           [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]
         ];
-        draw.genCanvasPolygon(ctx, list);
+        tool.genCanvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();

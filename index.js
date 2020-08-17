@@ -430,8 +430,8 @@
     });
     s += '</defs><g';
 
-    if (vd.bbMask) {
-      s += ' mask="' + vd.bbMask + '"';
+    if (vd.bbClip) {
+      s += ' clip-path="' + vd.bbClip + '"';
     }
 
     s += '>';
@@ -440,13 +440,13 @@
     });
     s += '</g><g';
 
-    if (vd.conMask) {
-      s += ' mask="' + vd.conMask + '"';
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
     }
 
     s += '>';
     vd.children.forEach(function (item) {
-      if (item.isMask) {
+      if (item.isMask || item.isClip) {
         return;
       }
 
@@ -479,8 +479,8 @@
     } else if (vd.type === 'dom' || vd.type === 'geom') {
       var _s2 = '<g';
 
-      if (vd.bbMask) {
-        _s2 += ' mask="' + vd.bbMask + '"';
+      if (vd.bbClip) {
+        _s2 += ' clip-path="' + vd.bbClip + '"';
       }
 
       _s2 += '>';
@@ -489,13 +489,13 @@
       });
       _s2 += '</g><g';
 
-      if (vd.conMask) {
-        _s2 += ' mask="' + vd.conMask + '"';
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
       }
 
       _s2 += '>';
       vd.children.forEach(function (item) {
-        if (item.isMask) {
+        if (item.isMask || item.isClip) {
           return;
         }
 
@@ -505,15 +505,16 @@
       var opacity = vd.opacity,
           transform = vd.transform,
           mask = vd.mask,
+          clip = vd.clip,
           filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
   function joinDef(def) {
     var s = '<' + def.tagName + ' id="' + def.uuid + '"';
 
-    if (def.tagName === 'mask') ; else if (def.tagName === 'filter') ; else {
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
       s += ' gradientUnits="userSpaceOnUse"';
     }
 
@@ -741,8 +742,49 @@
     target.__host = host;
   }
 
+  function genCanvasPolygon(ctx, list) {
+    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
+    ctx.beginPath();
+    ctx.moveTo(list[0][0], list[0][1]);
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        ctx.lineTo(item[0], item[1]);
+      } else if (item.length === 4) {
+        ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
+      } else if (item.length === 6) {
+        ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
+      }
+    }
+
+    ctx[method]();
+    ctx.closePath();
+  }
+
+  function genSvgPolygon(list) {
+    var s = 'M' + list[0][0] + ',' + list[0][1];
+
+    for (var i = 1, len = list.length; i < len; i++) {
+      var item = list[i];
+
+      if (item.length === 2) {
+        s += 'L' + item[0] + ',' + item[1];
+      } else if (item.length === 4) {
+        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
+      } else if (item.length === 6) {
+        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
+      }
+    }
+
+    return s;
+  }
+
   var tool = {
-    init: init
+    init: init,
+    genCanvasPolygon: genCanvasPolygon,
+    genSvgPolygon: genSvgPolygon
   };
 
   var mode = {
@@ -5701,6 +5743,7 @@
     if (!CANVAS[key]) {
       o = CANVAS[key] = document.createElement('canvas');
       o.style.position = 'absolute';
+      o.style.visibility = 'hidden';
       o.style.left = '9999px';
       o.style.top = '-9999px';
       document.body.append(o);
@@ -6536,6 +6579,7 @@
           target.__cacheStyle[i] = undefined;
         }
     });
+    target.__cacheSvg = false;
     animation.__style = style;
   }
   /**
@@ -7418,6 +7462,8 @@
                   target.__currentStyle[k] = target.style[k];
                 }
               }
+
+              target.__cacheSvg = false;
             });
           }
         }; // 生成finish的任务事件
@@ -8261,51 +8307,6 @@
     return Animation;
   }(Event);
 
-  function genCanvasPolygon(ctx, list) {
-    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
-    ctx.beginPath();
-    ctx.moveTo(list[0][0], list[0][1]);
-
-    for (var i = 1, len = list.length; i < len; i++) {
-      var item = list[i];
-
-      if (item.length === 2) {
-        ctx.lineTo(item[0], item[1]);
-      } else if (item.length === 4) {
-        ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
-      } else if (item.length === 6) {
-        ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
-      }
-    }
-
-    ctx[method]();
-    ctx.closePath();
-  }
-
-  function genSvgPolygon(list) {
-    var s = 'M' + list[0][0] + ',' + list[0][1];
-
-    for (var i = 1, len = list.length; i < len; i++) {
-      var item = list[i];
-
-      if (item.length === 2) {
-        s += 'L' + item[0] + ',' + item[1];
-      } else if (item.length === 4) {
-        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
-      } else if (item.length === 6) {
-        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
-      }
-    } // s += `L${list[0][0]},${list[0][1]}`;
-
-
-    return s;
-  }
-
-  var draw = {
-    genCanvasPolygon: genCanvasPolygon,
-    genSvgPolygon: genSvgPolygon
-  };
-
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -8319,8 +8320,8 @@
   var normalize$2 = css.normalize,
       calRelative$1 = css.calRelative,
       compute$1 = css.compute;
-  var genCanvasPolygon$1 = draw.genCanvasPolygon,
-      genSvgPolygon$1 = draw.genSvgPolygon;
+  var genCanvasPolygon$1 = tool.genCanvasPolygon,
+      genSvgPolygon$1 = tool.genSvgPolygon;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
@@ -8451,6 +8452,8 @@
 
     return 0;
   }
+
+  function empty() {}
 
   var Xom = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
@@ -8627,14 +8630,22 @@
         computedStyle.height = this.height; // 设置缓存hash，render时计算
 
         this.__cacheStyle = {};
-        this.__cacheProps = {}; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
+        this.__cacheSvg = false; // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
         var ar = this.__animateRecords;
 
         if (ar) {
           this.__animateRecords = null;
-          var ac = this.root.animateController;
-          ac.__records = ac.records.concat(ar);
+          var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
+
+          if (ar.options && ar.options.autoPlay === false) {
+            ac.__records = ac.__records.concat(ar.list);
+          } // 自动播放进入列表开始播放
+          else {
+              ac.__auto = ac.__auto.concat(ar.list);
+
+              ac.__playAuto();
+            }
         }
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
@@ -8756,6 +8767,14 @@
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
+          if (this.__cacheSvg && this !== this.root) {
+            this.__virtualDom = extend$1({
+              cache: true
+            }, this.__virtualDom);
+            return;
+          }
+
+          this.__cacheSvg = true;
           this.__virtualDom = {
             bb: [],
             children: [],
@@ -8897,6 +8916,7 @@
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
+                  _this3.__cacheSvg = false;
 
                   _this3.root.delRefreshTask(loadBgi.cb);
 
@@ -9281,15 +9301,15 @@
                   }
 
                   if (needMask) {
-                    var maskId = defs.add({
-                      tagName: 'mask',
+                    var id = defs.add({
+                      tagName: 'clipPath',
                       props: [],
                       children: [{
                         tagName: 'rect',
                         props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
                       }]
                     });
-                    this.virtualDom.bbMask = 'url(#' + maskId + ')';
+                    this.virtualDom.bbClip = 'url(#' + id + ')';
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -9380,7 +9400,7 @@
                 d++;
               }
 
-              var id = defs.add({
+              var _id = defs.add({
                 tagName: 'filter',
                 props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                 children: [{
@@ -9388,7 +9408,8 @@
                   props: [['stdDeviation', v]]
                 }]
               });
-              _this3.virtualDom.filter = 'url(#' + id + ')';
+
+              _this3.virtualDom.filter = 'url(#' + _id + ')';
             }
           });
         }
@@ -9399,61 +9420,89 @@
         var prev = this.prev,
             root = this.root;
         var hasMask = prev && prev.isMask;
+        var hasClip = prev && prev.isClip;
 
-        if (!hasMask) {
+        if (!hasMask && !hasClip) {
           this.render(renderMode, ctx, defs);
           return;
         }
 
         if (renderMode === mode.CANVAS) {
           // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
-          var width = root.width,
-              height = root.height;
-          var c = inject.getCacheCanvas(width, height);
-          this.render(renderMode, c.ctx); // 收集之前的mask列表
+          if (hasMask) {
+            var width = root.width,
+                height = root.height;
+            var c = inject.getCacheCanvas(width, height);
+            this.render(renderMode, c.ctx); // 收集之前的mask列表
 
-          var list = [];
+            var list = [];
 
-          while (prev && prev.isMask) {
-            list.unshift(prev);
-            prev = prev.prev;
-          } // 当mask只有1个时，无需生成m，直接在c上即可
+            while (prev && prev.isMask) {
+              list.unshift(prev);
+              prev = prev.prev;
+            } // 当mask只有1个时，无需生成m，直接在c上即可
 
 
-          if (list.length === 1) {
-            prev = list[0];
-            c.ctx.globalCompositeOperation = 'destination-in';
-            prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
-
-            c.draw(c.ctx);
-            ctx.drawImage(c.canvas, 0, 0);
-            c.draw(ctx);
-          } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
-          else {
-              var m = inject.getMaskCanvas(width, height);
-              list.forEach(function (item) {
-                item.render(renderMode, m.ctx);
-              });
-              m.draw(m.ctx);
+            if (list.length === 1) {
+              prev = list[0];
               c.ctx.globalCompositeOperation = 'destination-in';
-              c.ctx.drawImage(m.canvas, 0, 0);
+              prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+
               c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
-              c.draw(ctx); // 清除
+              c.draw(ctx);
+            } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
+            else {
+                var m = inject.getMaskCanvas(width, height);
+                list.forEach(function (item) {
+                  item.render(renderMode, m.ctx);
+                });
+                m.draw(m.ctx);
+                c.ctx.globalCompositeOperation = 'destination-in';
+                c.ctx.drawImage(m.canvas, 0, 0);
+                c.draw(c.ctx);
+                ctx.drawImage(c.canvas, 0, 0);
+                c.draw(ctx); // 清除
 
-              m.ctx.globalCompositeOperation = 'source-over';
-              m.ctx.clearRect(0, 0, width, height);
-              m.draw(m.ctx);
-            } // 清除
+                m.ctx.globalCompositeOperation = 'source-over';
+                m.ctx.clearRect(0, 0, width, height);
+                m.draw(m.ctx);
+              } // 清除
 
 
-          c.ctx.globalCompositeOperation = 'source-over';
-          c.ctx.clearRect(0, 0, width, height);
-          c.draw(c.ctx);
+            c.ctx.globalCompositeOperation = 'source-over';
+            c.ctx.clearRect(0, 0, width, height);
+            c.draw(c.ctx);
+          } // 劫持canvas原生方法使得多个clip矢量连续绘制
+          else if (hasClip) {
+              ctx.save();
+              ctx.beginPath();
+              var fill = ctx.fill;
+              var beginPath = ctx.beginPath;
+              var closePath = ctx.closePath;
+              ctx.fill = ctx.beginPath = ctx.closePath = empty;
+
+              while (prev && prev.isClip) {
+                prev.render(renderMode, ctx);
+                prev = prev.prev;
+              }
+
+              ctx.fill = fill;
+              ctx.beginPath = beginPath;
+              ctx.closePath = closePath;
+              ctx.clip();
+              ctx.closePath();
+              this.render(renderMode, ctx);
+              ctx.restore();
+            }
         } else if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
-          this.virtualDom.mask = prev.maskId;
+          if (hasMask) {
+            this.virtualDom.mask = prev.maskId;
+          } else if (hasClip) {
+            this.virtualDom.clip = prev.clipId;
+          }
         }
       }
     }, {
@@ -9635,6 +9684,7 @@
             if (style.hasOwnProperty(i)) {
               // repaint置空，如果reflow会重新生成空的
               __cacheStyle[i] = undefined;
+              this.__cacheSvg = false;
 
               if (repaint.STYLE.hasOwnProperty(i)) {
                 lv = level.REFLOW;
@@ -9656,7 +9706,7 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, options, underControl) {
+      value: function animate(list, options) {
         if (this.isDestroyed) {
           return;
         }
@@ -9664,11 +9714,7 @@
         var animation = new Animation(this, list, options);
         this.animationList.push(animation);
 
-        if (underControl) {
-          this.root.animateController.add(animation);
-        }
-
-        if (options.hasOwnProperty('autoPlay') && !options.autoPlay) {
+        if (options.autoPlay === false) {
           return animation;
         }
 
@@ -11505,20 +11551,28 @@
 
 
         children.forEach(function (item) {
-          if (item.isMask) {
-            item.__renderAsMask(renderMode, ctx, defs);
+          if (item.isMask || item.isClip) {
+            item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndex = this.zIndexChildren;
         zIndex.forEach(function (item) {
           item.__renderByMask(renderMode, ctx, defs);
-        });
+        }); // img的children在子类特殊处理
 
-        if (renderMode === mode.SVG) {
+        if (renderMode === mode.SVG && this.tagName !== 'img') {
           this.virtualDom.children = zIndex.map(function (item) {
             return item.virtualDom;
-          });
+          }); // 没变化则将text孩子设置cache
+
+          if (this.virtualDom.cache) {
+            this.virtualDom.children.forEach(function (item) {
+              if (item.type === 'text') {
+                item.cache = true;
+              }
+            });
+          }
         }
       }
     }, {
@@ -11646,7 +11700,7 @@
           } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
 
 
-          if (!item.isMask && item.computedStyle) {
+          if (!item.isMask && !item.isClip && item.computedStyle) {
             if (item instanceof Xom) {
               if (isRelativeOrAbsolute(item)) {
                 // 临时变量为排序使用
@@ -11708,8 +11762,8 @@
   }(Xom);
 
   var AUTO$4 = unit.AUTO;
-  var genCanvasPolygon$2 = draw.genCanvasPolygon,
-      genSvgPolygon$2 = draw.genSvgPolygon;
+  var genCanvasPolygon$2 = tool.genCanvasPolygon,
+      genSvgPolygon$2 = tool.genSvgPolygon;
 
   var Img = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -11763,6 +11817,8 @@
             loadImg.width = cache.width;
             loadImg.height = cache.height;
           }
+
+          loadImg.cache = false;
         }
 
         if (res.fixedWidth && res.fixedHeight) {
@@ -11885,6 +11941,8 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
+            this.virtualDom.children = [];
+
             this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'rgba(0,0,0,0)']]);
 
             this.__addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill]]);
@@ -11921,7 +11979,29 @@
                 ctx.drawImage(source, originX, originY, width, height);
               }
             } else if (renderMode === mode.SVG) {
-              // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+              // img没有变化无需diff，直接用上次的vd
+              if (loadImg.cache) {
+                loadImg.cache.cache = true;
+                this.virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
+
+                if (!this.virtualDom.cache && list) {
+                  var d = genSvgPolygon$2(list);
+                  var id = defs.add({
+                    tagName: 'clipPath',
+                    props: [],
+                    children: [{
+                      type: 'item',
+                      tagName: 'path',
+                      props: [['d', d], ['fill', '#FFF']]
+                    }]
+                  });
+                  this.virtualDom.conClip = 'url(#' + id + ')';
+                }
+
+                return;
+              } // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+
+
               var matrix;
 
               if (width !== loadImg.width || height !== loadImg.height) {
@@ -11931,28 +12011,33 @@
               var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
-                var d = genSvgPolygon$2(list);
-                var maskId = defs.add({
-                  tagName: 'mask',
+                var _d = genSvgPolygon$2(list);
+
+                var _id = defs.add({
+                  tagName: 'clipPath',
                   props: [],
                   children: [{
                     type: 'item',
                     tagName: 'path',
-                    props: [['d', d], ['fill', '#FFF']]
+                    props: [['d', _d], ['fill', '#FFF']]
                   }]
                 });
-                this.virtualDom.conMask = 'url(#' + maskId + ')';
+
+                this.virtualDom.conClip = 'url(#' + _id + ')';
+                delete this.virtualDom.cache;
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
                 props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
               }
 
-              this.virtualDom.children.push({
+              var vd = {
                 type: 'img',
                 tagName: 'image',
                 props: props
-              });
+              };
+              this.virtualDom.children = [vd];
+              loadImg.cache = vd;
             }
           }
         } else {
@@ -11960,6 +12045,7 @@
           _loadImg.url = src;
           _loadImg.source = null;
           _loadImg.error = null;
+          _loadImg.cache = false;
           inject.measureImg(src, function (data) {
             // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
             if (data.url === _loadImg.url && !_this2.__isDestroyed) {
@@ -12010,7 +12096,7 @@
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
-    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     diffD2D(elem, ovd, nvd, true);
   }
 
@@ -12137,8 +12223,9 @@
     var transform = nvd.transform,
         opacity = nvd.opacity,
         mask = nvd.mask,
+        clip = nvd.clip,
         filter = nvd.filter,
-        conMask = nvd.conMask;
+        conClip = nvd.conClip;
 
     if (ovd.transform !== transform) {
       if (transform) {
@@ -12162,6 +12249,22 @@
       } else {
         elem.removeAttribute('mask');
       }
+
+      if (ovd.clip) {
+        elem.removeAttribute('clip-path');
+      }
+    }
+
+    if (ovd.clip !== clip) {
+      if (clip) {
+        elem.setAttribute('clip-path', clip);
+      } else {
+        elem.removeAttribute('clip-path');
+      }
+
+      if (ovd.mask) {
+        elem.removeAttribute('mask');
+      }
     }
 
     if (ovd.filter !== filter) {
@@ -12172,20 +12275,22 @@
       }
     }
 
-    if (ovd.conMask !== conMask) {
-      if (conMask) {
-        elem.childNodes[1].setAttribute('mask', conMask);
+    if (ovd.conClip !== conClip) {
+      if (conClip) {
+        elem.childNodes[1].setAttribute('clip-path', conClip);
       } else {
-        elem.childNodes[1].removeAttribute('mask');
+        elem.childNodes[1].removeAttribute('clip-path');
       }
     }
   }
 
   function diffD2D(elem, ovd, nvd, root) {
-    diffX2X(elem, ovd, nvd);
+    if (!nvd.cache) {
+      diffX2X(elem, ovd, nvd);
 
-    if (!root) {
-      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+      if (!root) {
+        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+      }
     }
 
     var ol = ovd.children.length;
@@ -12211,7 +12316,7 @@
 
   function diffD2G(elem, ovd, nvd) {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12234,6 +12339,10 @@
   }
 
   function diffT2T(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12260,8 +12369,12 @@
   }
 
   function diffG2G(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12283,15 +12396,15 @@
     }
   }
 
-  function diffBb(elem, obb, nbb, oMask, nMask) {
+  function diffBb(elem, obb, nbb, oClip, nClip) {
     var ol = obb.length;
     var nl = nbb.length;
 
-    if (oMask !== nMask) {
+    if (oClip !== nClip) {
       if (!nMask) {
-        elem.removeAttribute('mask');
+        elem.removeAttribute('clip-path');
       } else {
-        elem.setAttribute('mask', nMask);
+        elem.setAttribute('clip-path', nClip);
       }
     }
 
@@ -12329,6 +12442,10 @@
   }
 
   function diffItemSelf(elem, ovd, nvd) {
+    if (nvd.cache) {
+      return;
+    }
+
     var op = {};
 
     for (var i = 0, len = ovd.props.length; i < len; i++) {
@@ -12454,60 +12571,18 @@
     return Defs;
   }();
 
-  var isNil$5 = util.isNil,
-      isFunction$4 = util.isFunction;
-  var LIST = ['playbackRate', 'iterations', 'fps', 'spfLimit', 'delay', 'endDelay', 'duration', 'direction', 'fill', 'playCount', 'currentTime', 'easing'];
-
-  function replaceOption(target, globalValue, key, vars) {
-    // 优先vars，其次总控，都没有忽略即自己原本声明
-    if (!isNil$5(globalValue)) {
-      var decl = target['var-' + key];
-
-      if (!decl) {
-        target[key] = globalValue;
-      } else {
-        var id = decl.id;
-
-        if (!id || !vars[id]) {
-          target[key] = globalValue;
-        }
-      }
-    }
-  }
-
-  function replaceGlobal(global, options) {
-    LIST.forEach(function (k) {
-      if (global.hasOwnProperty(k)) {
-        replaceOption(options, global[k], k, global.vars);
-      }
-    });
-  }
+  var isFunction$4 = util.isFunction;
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
       _classCallCheck(this, Controller);
 
       this.__records = [];
+      this.__auto = [];
       this.__list = [];
     }
 
     _createClass(Controller, [{
-      key: "__op",
-      value: function __op(options) {
-        this.records.forEach(function (record) {
-          var animate = record.animate;
-
-          if (Array.isArray(animate)) {
-            animate.forEach(function (item) {
-              // 用总控替换动画属性中的值，注意vars优先级
-              replaceGlobal(options, item.options);
-            });
-          } else {
-            replaceGlobal(options, animate.options);
-          }
-        });
-      }
-    }, {
       key: "add",
       value: function add(v) {
         if (this.__list.indexOf(v) === -1) {
@@ -12527,6 +12602,7 @@
       key: "__destroy",
       value: function __destroy() {
         this.__records = [];
+        this.__auto = [];
         this.__list = [];
       }
     }, {
@@ -12541,12 +12617,12 @@
       value: function init() {
         var _this = this;
 
-        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        var records = this.records;
+        var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
 
-        if (records.length) {
+        // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
+        if (target.length) {
           // 清除防止重复调用，并且新的json还会进入整体逻辑
-          records.splice(0).forEach(function (item) {
+          target.splice(0).forEach(function (item) {
             var target = item.target,
                 animate = item.animate;
 
@@ -12569,6 +12645,13 @@
             }
           });
         }
+      }
+    }, {
+      key: "__playAuto",
+      value: function __playAuto(cb) {
+        this.init(this.__auto);
+
+        this.__action('play');
       }
     }, {
       key: "play",
@@ -12676,11 +12759,6 @@
         });
       }
     }, {
-      key: "records",
-      get: function get() {
-        return this.__records;
-      }
-    }, {
       key: "list",
       get: function get() {
         return this.__list;
@@ -12740,7 +12818,7 @@
     return Controller;
   }();
 
-  var isNil$6 = util.isNil,
+  var isNil$5 = util.isNil,
       isObject$2 = util.isObject,
       isFunction$5 = util.isFunction;
   var PX$6 = unit.PX;
@@ -12823,7 +12901,7 @@
       value: function __initProps() {
         var w = this.props.width;
 
-        if (!isNil$6(w)) {
+        if (!isNil$5(w)) {
           var value = parseFloat(w) || 0;
 
           if (value > 0) {
@@ -12833,7 +12911,7 @@
 
         var h = this.props.height;
 
-        if (!isNil$6(h)) {
+        if (!isNil$5(h)) {
           var _value = parseFloat(h) || 0;
 
           if (_value > 0) {
@@ -12959,7 +13037,7 @@
             }
           }
 
-        this.__uuid = isNil$6(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
+        this.__uuid = isNil$5(this.__node.__uuid) ? uuid$1++ : this.__node.__uuid;
         this.__defs = this.node.__defs || Defs.getInstance(this.__uuid); // 没有设置width/height则采用css计算形式
 
         if (!this.width || !this.height) {
@@ -13261,7 +13339,7 @@
       PERCENT$7 = unit.PERCENT;
   var clone$3 = util.clone,
       int2rgba$3 = util.int2rgba,
-      isNil$7 = util.isNil,
+      isNil$6 = util.isNil,
       joinArr$2 = util.joinArr;
   var REGISTER = {};
 
@@ -13277,17 +13355,24 @@
 
       _this = _super.call(this, tagName, props);
       _this.__isMask = !!_this.props.mask;
+      _this.__isClip = !!_this.props.clip;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
-          isMask = _assertThisInitialize.isMask;
+          isMask = _assertThisInitialize.isMask,
+          isClip = _assertThisInitialize.isClip;
 
-      if (isMask) {
+      if (isMask || isClip) {
         style.visibility = 'visible';
         style.background = null;
         style.border = null;
         style.strokeWidth = 0;
         style.stroke = null;
+
+        if (isClip) {
+          style.fill = '#FFF';
+          style.opacity = 1;
+        }
       }
 
       _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
@@ -13370,6 +13455,8 @@
         this.__width = w;
 
         this.__marginAuto(this.currentStyle, data);
+
+        this.__cacheProps = {};
       }
     }, {
       key: "__layoutFlex",
@@ -13391,6 +13478,7 @@
 
         this.__width = fixedWidth ? w : x - data.x;
         this.__height = fixedHeight ? h : y - data.y;
+        this.__cacheProps = {};
       }
     }, {
       key: "__preRender",
@@ -13541,6 +13629,12 @@
         _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
 
         if (renderMode === mode.SVG) {
+          if (this.virtualDom.cache) {
+            return {
+              cache: true
+            };
+          }
+
           this.virtualDom.type = 'geom';
         }
 
@@ -13558,12 +13652,18 @@
       }
     }, {
       key: "__renderAsMask",
-      value: function __renderAsMask(renderMode, ctx, defs) {
+      value: function __renderAsMask(renderMode, ctx, defs, isClip) {
         // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
           this.render(renderMode, ctx, defs);
           var vd = this.virtualDom;
-          vd.isMask = true; // svg的mask没有transform，需手动计算变换后的坐标应用
+
+          if (isClip) {
+            vd.isClip = true;
+          } else {
+            vd.isMask = true;
+          } // svg的mask没有transform，需手动计算变换后的坐标应用
+
 
           var children = clone$3(vd.children);
           var m = this.matrixEvent;
@@ -13641,20 +13741,31 @@
 
           var prev = this.prev;
 
-          if (prev && prev.isMask) {
+          if (prev && (isClip ? prev.isClip : prev.isMask)) {
             var last = defs.value;
             last = last[last.length - 1];
             last.children = last.children.concat(children);
-            this.__maskId = prev.maskId;
+
+            if (isClip) {
+              this.__clipId = prev.clipId;
+            } else {
+              this.__maskId = prev.maskId;
+            }
+
             return;
           }
 
-          var maskId = defs.add({
-            tagName: 'mask',
+          var id = defs.add({
+            tagName: isClip ? 'clipPath' : 'mask',
             props: [],
             children: children
           });
-          this.__maskId = 'url(#' + maskId + ')';
+
+          if (isClip) {
+            this.__clipId = 'url(#' + id + ')';
+          } else {
+            this.__maskId = 'url(#' + id + ')';
+          }
         }
       }
     }, {
@@ -13672,7 +13783,7 @@
       value: function getProps(k) {
         var v = this.currentProps[k];
 
-        if (!isNil$7(v)) {
+        if (!isNil$6(v)) {
           return v;
         }
 
@@ -13689,9 +13800,19 @@
         return this.__isMask;
       }
     }, {
+      key: "isClip",
+      get: function get() {
+        return this.__isClip;
+      }
+    }, {
       key: "maskId",
       get: function get() {
         return this.__maskId;
+      }
+    }, {
+      key: "clipId",
+      get: function get() {
+        return this.__clipId;
       }
     }, {
       key: "currentProps",
@@ -13775,6 +13896,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             display = _get$call.display,
             visibility = _get$call.visibility,
             originX = _get$call.originX,
@@ -13787,7 +13909,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -13987,6 +14109,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -14000,7 +14123,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14012,10 +14135,12 @@
 
         if (__cacheProps.points === undefined) {
           __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
+          __cacheProps.d = null;
         }
 
         if (__cacheProps.controls === undefined) {
           __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
+          __cacheProps.d = null;
         }
 
         if (__cacheProps.points.length < 2) {
@@ -14060,23 +14185,28 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
-          var s = 'M' + pts[0][0] + ',' + pts[0][1];
+          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]; // 矢量坐标不变时无需重复计算
 
-          for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
-            var _point = pts[_i2];
-            var _cl = cls[_i2 - 1];
+          if (!__cacheProps.d) {
+            var d = 'M' + pts[0][0] + ',' + pts[0][1];
 
-            if (!_cl || !_cl.length) {
-              s += 'L' + _point[0] + ',' + _point[1];
-            } else if (_cl.length === 4) {
-              s += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
-            } else {
-              s += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
+            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
+              var _point = pts[_i2];
+              var _cl = cls[_i2 - 1];
+
+              if (!_cl || !_cl.length) {
+                d += 'L' + _point[0] + ',' + _point[1];
+              } else if (_cl.length === 4) {
+                d += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
+              } else {
+                d += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
+              }
             }
+
+            __cacheProps.d = d;
           }
 
-          props.push(['d', s]);
+          props.push(['d', __cacheProps.d]);
 
           if (strokeDasharray.length) {
             props.push(['stroke-dasharray', strokeDasharrayStr]);
@@ -14216,6 +14346,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14229,7 +14360,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14419,6 +14550,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             originX = _get$call.originX,
             originY = _get$call.originY,
             display = _get$call.display,
@@ -14432,7 +14564,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14473,7 +14605,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[originX + rx, originY], [originX + width - rx, originY], [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry], [originX + width, originY + height - ry], [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height], [originX + rx, originY + height], [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry], [originX, originY + ry], [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]];
-            draw.genCanvasPolygon(ctx, list);
+            tool.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -14554,6 +14686,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14567,7 +14700,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14663,6 +14796,7 @@
       value: function render(renderMode, ctx, defs) {
         var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
+            cache = _get$call.cache,
             cx = _get$call.cx,
             cy = _get$call.cy,
             display = _get$call.display,
@@ -14676,7 +14810,7 @@
             strokeLinejoin = _get$call.strokeLinejoin,
             strokeMiterlimit = _get$call.strokeMiterlimit;
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
           return;
         }
 
@@ -14715,7 +14849,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[cx - rx, cy], [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry], [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy], [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry], [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]];
-            draw.genCanvasPolygon(ctx, list);
+            tool.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -14814,7 +14948,7 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var isNil$8 = util.isNil,
+  var isNil$7 = util.isNil,
       isFunction$6 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$4 = util.clone,
@@ -14861,7 +14995,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$8(v)) {
+            if (isNil$7(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -14914,7 +15048,7 @@
         if (!isPrimitive(child)) {
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
-          if (isNil$8(libraryId)) {
+          if (isNil$7(libraryId)) {
             return;
           }
 
@@ -14930,7 +15064,7 @@
     } // library中一定有id，因为是一级，二级+特殊需求才会出现放开
 
 
-    if (isNil$8(id)) {
+    if (isNil$7(id)) {
       throw new Error('Library item miss id: ' + id);
     } else {
       hash[id] = item;
@@ -14995,7 +15129,7 @@
       json.library = null;
       json.libraryId = null;
     } // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
-    else if (!isNil$8(libraryId) && hash) {
+    else if (!isNil$7(libraryId) && hash) {
         var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
         if (libraryItem) {
@@ -15096,6 +15230,72 @@
     return vd;
   }
 
+  var parser = {
+    parse: function parse$1(karas, json, dom) {
+      var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
+      if (!inject.isDom(dom)) {
+        options = dom || {};
+        dom = null;
+      } // 暂存所有动画声明，等root的生成后开始执行
+
+
+      var animateRecords = [];
+
+      var vd = parse(karas, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
+
+
+      if (dom) {
+        var tagName = json.tagName;
+
+        if (['canvas', 'svg'].indexOf(tagName) === -1) {
+          throw new Error('Parse dom must be canvas/svg');
+        } // parse直接（非递归）的动画记录
+
+
+        var ac = options.controller instanceof Controller ? options.controller : vd.animateController; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
+
+        karas.render(vd, dom); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+
+        if (options.autoPlay !== false) {
+          ac.__auto = ac.__auto.concat(animateRecords);
+
+          ac.__playAuto();
+        } else {
+          ac.__records = ac.__records.concat(animateRecords);
+        }
+      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
+      else {
+          if (animateRecords.length) {
+            vd.__animateRecords = {
+              options: options,
+              list: animateRecords,
+              controller: options.controller instanceof Controller ? options.controller : null
+            };
+          }
+        }
+
+      return vd;
+    },
+    abbr: abbr
+  };
+
+  var style = {
+    css: css,
+    reset: reset,
+    unit: unit
+  };
+
+  var animate = {
+    Animation: Animation,
+    Controller: Controller,
+    easing: easing,
+    frame: frame,
+    level: level,
+    repaint: repaint
+  };
+
   var version = "0.34.0";
 
   Geom.register('$line', Line);
@@ -15140,48 +15340,8 @@
     createCp: function createCp(cp, props, children) {
       return new cp(props, children);
     },
-    parse: function parse$1(json, dom) {
-      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
-      if (!inject.isDom(dom)) {
-        options = dom || {};
-        dom = null;
-      } // 暂存所有动画声明，等root的生成后开始执行
-
-
-      var animateRecords = [];
-
-      var vd = parse(this, json, animateRecords, options.vars); // 有dom时parse作为根方法渲染
-
-
-      if (dom) {
-        var tagName = json.tagName;
-
-        if (['canvas', 'svg'].indexOf(tagName) === -1) {
-          throw new Error('Parse dom must be canvas/svg');
-        } // parse直接（非递归）的动画记录
-
-
-        var ac = vd.animateController;
-        ac.__records = animateRecords; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
-
-        this.render(vd, dom); // 总控次数、速度
-
-        ac.__op(options); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
-
-
-        if (!options.hasOwnProperty('autoPlay') || options.autoPlay) {
-          ac.play();
-        }
-      } // 递归的parse，如果有动画，此时还没root，先暂存下来，等上面的root的render第一次布局时收集
-      else {
-          if (animateRecords.length) {
-            vd.__animateRecords = animateRecords;
-          }
-        }
-
-      return vd;
+    parse: function parse(json, dom, options) {
+      return parser.parse(this, json, dom, options);
     },
     Root: Root,
     Dom: Dom,
@@ -15192,15 +15352,10 @@
     Event: Event,
     util: util,
     inject: inject,
-    css: css,
-    unit: unit,
-    reset: reset,
-    abbr: abbr,
-    frame: frame,
-    easing: easing,
-    level: level,
-    math: math,
-    Controller: Controller
+    style: style,
+    parser: parser,
+    animate: animate,
+    math: math
   };
 
   if (typeof window !== 'undefined') {

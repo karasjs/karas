@@ -12,7 +12,7 @@ import Controller from '../animate/Controller';
 
 const { isNil, isObject, isFunction } = util;
 
-const { STRING, NUMBER, PX, RGBA, INHERIT } = unit;
+const { PX } = unit;
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {

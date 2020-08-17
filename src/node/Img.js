@@ -1,4 +1,5 @@
 import Dom from './Dom';
+import tool from './tool';
 import mode from '../util/mode';
 import inject from '../util/inject';
 import util from '../util/util';
@@ -6,11 +7,10 @@ import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
-import draw from '../util/draw';
 import level from '../animate/level';
 
 const { AUTO } = unit;
-const { genCanvasPolygon, genSvgPolygon } = draw;
+const { genCanvasPolygon, genSvgPolygon } = tool;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -50,6 +50,7 @@ class Img extends Dom {
         loadImg.width = cache.width;
         loadImg.height = cache.height;
       }
+      loadImg.cache = false;
     }
     if(res.fixedWidth && res.fixedHeight) {
       return res;
@@ -171,6 +172,7 @@ class Img extends Dom {
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
+        this.virtualDom.children = [];
         this.__addGeom('rect', [
           ['x', originX],
           ['y', originY],
@@ -221,6 +223,31 @@ class Img extends Dom {
           }
         }
         else if(renderMode === mode.SVG) {
+          // img没有变化无需diff，直接用上次的vd
+          if(loadImg.cache) {
+            loadImg.cache.cache = true;
+            this.virtualDom.children = [loadImg.cache];
+            // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
+            if(!this.virtualDom.cache && list) {
+              let d = genSvgPolygon(list);
+              let id = defs.add({
+                tagName: 'clipPath',
+                props: [],
+                children: [
+                  {
+                    type: 'item',
+                    tagName: 'path',
+                    props: [
+                      ['d', d],
+                      ['fill', '#FFF']
+                    ],
+                  }
+                ],
+              });
+              this.virtualDom.conClip = 'url(#' + id + ')';
+            }
+            return;
+          }
           // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
           let matrix;
           if(width !== loadImg.width || height !== loadImg.height) {
@@ -235,8 +262,8 @@ class Img extends Dom {
           ];
           if(list) {
             let d = genSvgPolygon(list);
-            let maskId = defs.add({
-              tagName: 'mask',
+            let id = defs.add({
+              tagName: 'clipPath',
               props: [],
               children: [
                 {
@@ -249,16 +276,19 @@ class Img extends Dom {
                 }
               ],
             });
-            this.virtualDom.conMask = 'url(#' + maskId + ')';
+            this.virtualDom.conClip = 'url(#' + id + ')';
+            delete this.virtualDom.cache;
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
           }
-          this.virtualDom.children.push({
+          let vd = {
             type: 'img',
             tagName: 'image',
             props,
-          });
+          };
+          this.virtualDom.children = [vd];
+          loadImg.cache = vd;
         }
       }
     }
@@ -267,6 +297,7 @@ class Img extends Dom {
       loadImg.url = src;
       loadImg.source = null;
       loadImg.error = null;
+      loadImg.cache = false;
       inject.measureImg(src, data => {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if(data.url === loadImg.url && !this.__isDestroyed) {

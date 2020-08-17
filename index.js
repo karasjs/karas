@@ -12014,7 +12014,7 @@
                 var _d = genSvgPolygon$2(list);
 
                 var _id = defs.add({
-                  tagName: 'mask',
+                  tagName: 'clipPath',
                   props: [],
                   children: [{
                     type: 'item',
@@ -12024,6 +12024,7 @@
                 });
 
                 this.virtualDom.conClip = 'url(#' + _id + ')';
+                delete this.virtualDom.cache;
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {

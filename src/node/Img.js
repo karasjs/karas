@@ -263,7 +263,7 @@ class Img extends Dom {
           if(list) {
             let d = genSvgPolygon(list);
             let id = defs.add({
-              tagName: 'mask',
+              tagName: 'clipPath',
               props: [],
               children: [
                 {
@@ -277,6 +277,7 @@ class Img extends Dom {
               ],
             });
             this.virtualDom.conClip = 'url(#' + id + ')';
+            delete this.virtualDom.cache;
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);

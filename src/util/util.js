@@ -44,16 +44,16 @@ function joinVirtualDom(vd) {
     s += joinDef(item);
   });
   s += '</defs><g';
-  if(vd.bbMask) {
-    s += ' mask="' + vd.bbMask + '"';
+  if(vd.bbClip) {
+    s += ' clip-path="' + vd.bbClip + '"';
   }
   s += '>';
   vd.bb.forEach(item => {
     s += joinVd(item);
   });
   s += '</g><g';
-  if(vd.conMask) {
-    s += ' mask="' + vd.conMask + '"';
+  if(vd.conClip) {
+    s += ' clip-path="' + vd.conClip + '"';
   }
   s += '>';
   vd.children.forEach(item => {
@@ -88,16 +88,16 @@ function joinVd(vd) {
   }
   else if(vd.type === 'dom' || vd.type === 'geom') {
     let s = '<g';
-    if(vd.bbMask) {
-      s += ' mask="' + vd.bbMask + '"';
+    if(vd.bbClip) {
+      s += ' clip-path="' + vd.bbClip + '"';
     }
     s += '>';
     vd.bb.forEach(item => {
       s += joinVd(item);
     });
     s += '</g><g';
-    if(vd.conMask) {
-      s += ' mask="' + vd.conMask + '"';
+    if(vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
     }
     s += '>';
     vd.children.forEach(item => {

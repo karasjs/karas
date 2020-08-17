@@ -982,8 +982,8 @@ class Xom extends Node {
                 props.push(['transform', 'matrix(' + joinArr(matrix, ',') + ')']);
               }
               if(needMask) {
-                let maskId = defs.add({
-                  tagName: 'mask',
+                let id = defs.add({
+                  tagName: 'clipPath',
                   props: [],
                   children: [{
                     tagName: 'rect',
@@ -996,7 +996,7 @@ class Xom extends Node {
                     ],
                   }],
                 });
-                this.virtualDom.bbMask = 'url(#' + maskId + ')';
+                this.virtualDom.bbClip = 'url(#' + id + ')';
               }
               // 先画不考虑repeat的中心声明的
               this.virtualDom.bb.push({

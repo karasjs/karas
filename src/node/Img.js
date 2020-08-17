@@ -230,8 +230,8 @@ class Img extends Dom {
             // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
             if(!this.virtualDom.cache && list) {
               let d = genSvgPolygon(list);
-              let maskId = defs.add({
-                tagName: 'mask',
+              let id = defs.add({
+                tagName: 'clipPath',
                 props: [],
                 children: [
                   {
@@ -244,7 +244,7 @@ class Img extends Dom {
                   }
                 ],
               });
-              this.virtualDom.conMask = 'url(#' + maskId + ')';
+              this.virtualDom.conClip = 'url(#' + id + ')';
             }
             return;
           }
@@ -262,7 +262,7 @@ class Img extends Dom {
           ];
           if(list) {
             let d = genSvgPolygon(list);
-            let maskId = defs.add({
+            let id = defs.add({
               tagName: 'mask',
               props: [],
               children: [
@@ -276,7 +276,7 @@ class Img extends Dom {
                 }
               ],
             });
-            this.virtualDom.conMask = 'url(#' + maskId + ')';
+            this.virtualDom.conClip = 'url(#' + id + ')';
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);

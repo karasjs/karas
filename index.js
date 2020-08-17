@@ -430,8 +430,8 @@
     });
     s += '</defs><g';
 
-    if (vd.bbMask) {
-      s += ' mask="' + vd.bbMask + '"';
+    if (vd.bbClip) {
+      s += ' clip-path="' + vd.bbClip + '"';
     }
 
     s += '>';
@@ -440,8 +440,8 @@
     });
     s += '</g><g';
 
-    if (vd.conMask) {
-      s += ' mask="' + vd.conMask + '"';
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
     }
 
     s += '>';
@@ -479,8 +479,8 @@
     } else if (vd.type === 'dom' || vd.type === 'geom') {
       var _s2 = '<g';
 
-      if (vd.bbMask) {
-        _s2 += ' mask="' + vd.bbMask + '"';
+      if (vd.bbClip) {
+        _s2 += ' clip-path="' + vd.bbClip + '"';
       }
 
       _s2 += '>';
@@ -489,8 +489,8 @@
       });
       _s2 += '</g><g';
 
-      if (vd.conMask) {
-        _s2 += ' mask="' + vd.conMask + '"';
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
       }
 
       _s2 += '>';
@@ -9301,15 +9301,15 @@
                   }
 
                   if (needMask) {
-                    var maskId = defs.add({
-                      tagName: 'mask',
+                    var id = defs.add({
+                      tagName: 'clipPath',
                       props: [],
                       children: [{
                         tagName: 'rect',
                         props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
                       }]
                     });
-                    this.virtualDom.bbMask = 'url(#' + maskId + ')';
+                    this.virtualDom.bbClip = 'url(#' + id + ')';
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -9400,7 +9400,7 @@
                 d++;
               }
 
-              var id = defs.add({
+              var _id = defs.add({
                 tagName: 'filter',
                 props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                 children: [{
@@ -9408,7 +9408,8 @@
                   props: [['stdDeviation', v]]
                 }]
               });
-              _this3.virtualDom.filter = 'url(#' + id + ')';
+
+              _this3.virtualDom.filter = 'url(#' + _id + ')';
             }
           });
         }
@@ -11985,8 +11986,8 @@
 
                 if (!this.virtualDom.cache && list) {
                   var d = genSvgPolygon$2(list);
-                  var maskId = defs.add({
-                    tagName: 'mask',
+                  var id = defs.add({
+                    tagName: 'clipPath',
                     props: [],
                     children: [{
                       type: 'item',
@@ -11994,7 +11995,7 @@
                       props: [['d', d], ['fill', '#FFF']]
                     }]
                   });
-                  this.virtualDom.conMask = 'url(#' + maskId + ')';
+                  this.virtualDom.conClip = 'url(#' + id + ')';
                 }
 
                 return;
@@ -12012,7 +12013,7 @@
               if (list) {
                 var _d = genSvgPolygon$2(list);
 
-                var _maskId = defs.add({
+                var _id = defs.add({
                   tagName: 'mask',
                   props: [],
                   children: [{
@@ -12022,7 +12023,7 @@
                   }]
                 });
 
-                this.virtualDom.conMask = 'url(#' + _maskId + ')';
+                this.virtualDom.conClip = 'url(#' + _id + ')';
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -12094,7 +12095,7 @@
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
     diffDefs(cns[0], ovd.defs, nvd.defs);
-    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     diffD2D(elem, ovd, nvd, true);
   }
 
@@ -12223,7 +12224,7 @@
         mask = nvd.mask,
         clip = nvd.clip,
         filter = nvd.filter,
-        conMask = nvd.conMask;
+        conClip = nvd.conClip;
 
     if (ovd.transform !== transform) {
       if (transform) {
@@ -12273,11 +12274,11 @@
       }
     }
 
-    if (ovd.conMask !== conMask) {
-      if (conMask) {
-        elem.childNodes[1].setAttribute('mask', conMask);
+    if (ovd.conClip !== conClip) {
+      if (conClip) {
+        elem.childNodes[1].setAttribute('clip-path', conClip);
       } else {
-        elem.childNodes[1].removeAttribute('mask');
+        elem.childNodes[1].removeAttribute('clip-path');
       }
     }
   }
@@ -12287,7 +12288,7 @@
       diffX2X(elem, ovd, nvd);
 
       if (!root) {
-        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+        diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
       }
     }
 
@@ -12314,7 +12315,7 @@
 
   function diffD2G(elem, ovd, nvd) {
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12372,7 +12373,7 @@
     }
 
     diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbMask, nvd.bbMask);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -12394,15 +12395,15 @@
     }
   }
 
-  function diffBb(elem, obb, nbb, oMask, nMask) {
+  function diffBb(elem, obb, nbb, oClip, nClip) {
     var ol = obb.length;
     var nl = nbb.length;
 
-    if (oMask !== nMask) {
+    if (oClip !== nClip) {
       if (!nMask) {
-        elem.removeAttribute('mask');
+        elem.removeAttribute('clip-path');
       } else {
-        elem.setAttribute('mask', nMask);
+        elem.setAttribute('clip-path', nClip);
       }
     }
 

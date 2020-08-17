@@ -8767,10 +8767,13 @@
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
-          if (this.__cacheSvg && this !== this.root) {
-            this.__virtualDom = extend$1({
-              cache: true
-            }, this.__virtualDom);
+          if (this.__cacheSvg) {
+            var n = {};
+            Object.keys(this.__virtualDom).forEach(function (k) {
+              n[k] = _this3.__virtualDom[k];
+            });
+            n.cache = true;
+            this.__virtualDom = n;
             return;
           }
 
@@ -15296,7 +15299,7 @@
     repaint: repaint
   };
 
-  var version = "0.34.0";
+  var version = "0.35.0";
 
   Geom.register('$line', Line);
   Geom.register('$polyline', Polyline);

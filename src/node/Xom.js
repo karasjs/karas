@@ -431,10 +431,13 @@ class Xom extends Node {
    */
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
-      if(this.__cacheSvg && this !== this.root) {
-        this.__virtualDom = extend({
-          cache: true,
-        }, this.__virtualDom);
+      if(this.__cacheSvg) {
+        let n = {};
+        Object.keys(this.__virtualDom).forEach(k => {
+          n[k] = this.__virtualDom[k];
+        });
+        n.cache = true;
+        this.__virtualDom = n;
         return;
       }
       this.__cacheSvg = true;

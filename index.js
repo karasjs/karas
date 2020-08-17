@@ -11816,6 +11816,8 @@
             loadImg.width = cache.width;
             loadImg.height = cache.height;
           }
+
+          loadImg.cache = false;
         }
 
         if (res.fixedWidth && res.fixedHeight) {
@@ -11938,6 +11940,8 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
+            this.virtualDom.children = [];
+
             this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'rgba(0,0,0,0)']]);
 
             this.__addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill]]);
@@ -11974,16 +11978,28 @@
                 ctx.drawImage(source, originX, originY, width, height);
               }
             } else if (renderMode === mode.SVG) {
-              // dom没有变化且img也没变化才能缓存
-              if (loadImg.cache && this.virtualDom.cache) {
-                this.virtualDom.children[0].cache = true;
-                return;
-              } // conMask需要更新
-              else {
-                  delete this.virtualDom.cache;
+              // img没有变化无需diff，直接用上次的vd
+              if (loadImg.cache) {
+                loadImg.cache.cache = true;
+                this.virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
+
+                if (!this.virtualDom.cache && list) {
+                  var d = genSvgPolygon$2(list);
+                  var maskId = defs.add({
+                    tagName: 'mask',
+                    props: [],
+                    children: [{
+                      type: 'item',
+                      tagName: 'path',
+                      props: [['d', d], ['fill', '#FFF']]
+                    }]
+                  });
+                  this.virtualDom.conMask = 'url(#' + maskId + ')';
                 }
 
-              loadImg.cache = true; // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+                return;
+              } // 缩放图片，无需考虑原先矩阵，xom里对父层<g>已经变换过了
+
 
               var matrix;
 
@@ -11994,17 +12010,19 @@
               var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
-                var d = genSvgPolygon$2(list);
-                var maskId = defs.add({
+                var _d = genSvgPolygon$2(list);
+
+                var _maskId = defs.add({
                   tagName: 'mask',
                   props: [],
                   children: [{
                     type: 'item',
                     tagName: 'path',
-                    props: [['d', d], ['fill', '#FFF']]
+                    props: [['d', _d], ['fill', '#FFF']]
                   }]
                 });
-                this.virtualDom.conMask = 'url(#' + maskId + ')';
+
+                this.virtualDom.conMask = 'url(#' + _maskId + ')';
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -12017,6 +12035,7 @@
                 props: props
               };
               this.virtualDom.children = [vd];
+              loadImg.cache = vd;
             }
           }
         } else {

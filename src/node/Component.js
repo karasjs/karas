@@ -1,23 +1,29 @@
 import Node from './Node';
 import Text from './Text';
-import tool from './tool';
+import builder from '../util/builder';
+import updater from '../util/updater';
 import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
-import level from '../animate/level';
 import repaint from '../animate/repaint';
 
-const { isNil, isString, isFunction, clone, extend } = util;
+const { isNil, isFunction, clone, extend } = util;
+
+/**
+ * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
+ * @param cp
+ */
+function setUpdateFlag(cp) {
+  cp.__hasUpdate = true;
+  let host = cp.host;
+  if(host) {
+    setUpdateFlag(host);
+  }
+}
 
 class Component extends Event {
-  constructor(tagName, props, children) {
+  constructor(props) {
     super();
-    if(!isString(tagName)) {
-      children = props;
-      props = tagName;
-      tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
-    }
-    this.__tagName = tagName;
     props = props || [];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
@@ -28,55 +34,61 @@ class Component extends Event {
       this.props = props;
       this.__props = util.hash2arr(props);
     }
-    this.__children = children || [];
     this.__parent = null;
     this.__host = null;
     this.__ref = {};
     this.__state = {};
-    this.__isMount = false;
+    this.__isMounted = false;
   }
 
   setState(n, cb) {
     if(isNil(n)) {
-      this.state = {};
+      n = {};
     }
     else {
-      extend(this.state, n);
+      let state = clone(this.state);
+      n = extend(state, n);
     }
     let root = this.root;
-    if(root) {
+    if(root && this.__isMounted) {
       root.delRefreshTask(this.__task);
-      let ovd = this.shadowRoot;
       this.__task = {
         before: () => {
-          this.__init(root, this);
-          root.setRefreshLevel(level.REFLOW);
+          // 标识更新
+          this.__nextState = n;
+          setUpdateFlag(this);
         },
         after: () => {
-          if(ovd instanceof Node) {
-            ovd.__destroy();
-          }
           if(isFunction(cb)) {
             cb();
           }
         },
+        __state: true, // 特殊标识来源让root刷新时识别
       };
       root.addRefreshTask(this.__task);
     }
     // 构造函数中调用还未render，
     else if(isFunction(cb)) {
+      this.__state = n;
       cb();
     }
   }
 
-  __create() {
-    let sr = this.render();
-    // 可能返回的还是一个Component，递归处理
-    while(sr instanceof Component) {
-      sr = sr.render();
+  /**
+   * build中调用初始化，json有值时是update过程才有，且处理过flatten
+   * @param json
+   * @private
+   */
+  __init(json) {
+    let root = this.root;
+    let cd = json || builder.flattenJson(this.render());
+    let sr = builder.initCp(cd, root, this, this);
+    this.__cd = cd;
+    if(sr instanceof Text) {
+      // 文字视作为父节点的直接文字子节点
+      sr.__parent = this.parent;
     }
-    if(sr instanceof Node) {
-      // 组件传入的样式需覆盖shadowRoot的
+    else if(sr instanceof Node) {
       let style = css.normalize(this.props.style || {});
       let keys = Object.keys(style);
       extend(sr.style, style, keys);
@@ -99,26 +111,24 @@ class Component extends Event {
         }
       });
     }
+    else if(sr instanceof Component) {
+      console.warn('Component render() return a component: '
+        + this.tagName + ' -> ' + sr.tagName
+        + ', should not inherit style/event');
+    }
     else {
-      let s = '';
-      if(!isNil(sr)) {
-        s = util.encodeHtml(sr.toString());
+      throw new Error('Component render() must return a dom/text: ' + this.tagName);
+    }
+    sr.__host = this;
+    this.__shadowRoot = sr;
+    if(!this.__isMounted) {
+      this.__isMounted = true;
+      let { componentDidMount } = this;
+      if(isFunction(componentDidMount)) {
+        root.once(Event.REFRESH, () => {
+          componentDidMount.call(this);
+        });
       }
-      sr = new Text(s);
-    }
-    return this.__shadowRoot = sr;
-  }
-
-  __init(root, host) {
-    tool.init(this, root, host);
-    let sr = this.__create();
-    if(sr instanceof Text) {
-      // 文字视作为父节点的直接文字子节点
-      sr.__parent = this.parent;
-      sr.__host = host;
-    }
-    else {
-      sr.__init(root, this);
     }
   }
 
@@ -126,16 +136,19 @@ class Component extends Event {
   }
 
   __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
+    this.__isDestroyed = true;
     let { componentWillUnmount } = this;
     if(isFunction(componentWillUnmount)) {
       componentWillUnmount.call(this);
-      this.__isMount = false;
+      this.__isMounted = false;
     }
     this.root.delRefreshTask(this.__task);
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }
-    this.children.splice(0);
     this.__shadowRoot = null;
     this.__parent = null;
   }
@@ -152,22 +165,12 @@ class Component extends Event {
     }
   }
 
-  // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
   __measure(renderMode, ctx) {
-    let { root } = this;
-    if(!this.__isMount) {
-      this.__isMount = true;
-      let { componentDidMount } = this;
-      if(isFunction(componentDidMount)) {
-        root.once(Event.REFRESH, () => {
-          componentDidMount.call(this);
-        });
-      }
-    }
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
       sr.__measure(renderMode, ctx);
     }
+    // 其它类型为Xom或Component
     else {
       sr.__measure(renderMode, ctx, true);
     }
@@ -175,10 +178,6 @@ class Component extends Event {
 
   get tagName() {
     return this.__tagName;
-  }
-
-  get children() {
-    return this.__children;
   }
 
   get shadowRoot() {
@@ -207,6 +206,10 @@ class Component extends Event {
 
   set state(v) {
     this.__state = v;
+  }
+
+  get isDestroyed() {
+    return this.__isDestroyed;
   }
 }
 

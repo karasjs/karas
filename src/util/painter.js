@@ -1,17 +1,3 @@
-import util from '../util/util';
-
-function init(target, root, host) {
-  let ref = target.props.ref;
-  if(util.isString(ref) && ref) {
-    host.ref[ref] = target;
-  }
-  else if(util.isFunction(ref)) {
-    ref(target);
-  }
-  target.__root = root;
-  target.__host = host;
-}
-
 function genCanvasPolygon(ctx, list, method = 'fill') {
   ctx.beginPath();
   ctx.moveTo(list[0][0], list[0][1]);
@@ -49,7 +35,6 @@ function genSvgPolygon(list) {
 }
 
 export default {
-  init,
   genCanvasPolygon,
   genSvgPolygon,
 };

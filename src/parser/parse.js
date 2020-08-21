@@ -174,7 +174,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       throw new Error('Link library miss id: ' + libraryId);
     }
   }
-  let { tagName, props = {}, children = [], animate = [] } = json;
+  let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + json);
   }
@@ -194,6 +194,9 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     vd = karas.createVd(tagName, props, children.map(item => {
       return parse(karas, item, animateRecords, vars, hash);
     }));
+  }
+  if(__animateRecords) {
+    vd.__animateRecords = __animateRecords;
   }
   let animationRecord;
   if(animate) {

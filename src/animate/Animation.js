@@ -323,6 +323,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     }
   });
   target.__cacheSvg = false;
+  window.test = target;
   animation.__style = style;
 }
 

@@ -378,370 +378,6 @@
     return Node;
   }();
 
-  var toString = {}.toString;
-
-  function isType(type) {
-    return function (obj) {
-      return toString.call(obj) === '[object ' + type + ']';
-    };
-  }
-
-  function _joinSourceArray(arr) {
-    var res = '';
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        res += _joinSourceArray(item);
-      } else {
-        res += stringify(item);
-      }
-    }
-
-    return res;
-  }
-
-  function stringify(s) {
-    if (isNil(s)) {
-      return '';
-    }
-
-    return s.toString();
-  }
-
-  function encodeHtml(s, prop) {
-    if (prop) {
-      return s.replace(/"/g, '&quot;');
-    }
-
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-  }
-
-  function isNil(v) {
-    return v === undefined || v === null;
-  } // 根元素专用
-
-
-  function joinVirtualDom(vd) {
-    var s = '<defs>';
-    vd.defs.forEach(function (item) {
-      s += joinDef(item);
-    });
-    s += '</defs><g';
-
-    if (vd.bbClip) {
-      s += ' clip-path="' + vd.bbClip + '"';
-    }
-
-    s += '>';
-    vd.bb.forEach(function (item) {
-      s += joinVd(item);
-    });
-    s += '</g><g';
-
-    if (vd.conClip) {
-      s += ' clip-path="' + vd.conClip + '"';
-    }
-
-    s += '>';
-    vd.children.forEach(function (item) {
-      if (item.isMask || item.isClip) {
-        return;
-      }
-
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return s;
-  } // 普通元素
-
-
-  function joinVd(vd) {
-    if (vd.type === 'item' || vd.type === 'img') {
-      var s = '';
-      vd.props.forEach(function (item) {
-        s += ' ' + item[0] + '="' + item[1] + '"';
-      });
-
-      if (vd.tagName === 'text') {
-        return '<text' + s + '>' + vd.content + '</text>';
-      }
-
-      return '<' + vd.tagName + s + '/>';
-    } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
-
-      vd.children.forEach(function (item) {
-        _s += joinVd(item);
-      });
-      return '<g>' + _s + '</g>';
-    } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g';
-
-      if (vd.bbClip) {
-        _s2 += ' clip-path="' + vd.bbClip + '"';
-      }
-
-      _s2 += '>';
-      vd.bb.forEach(function (item) {
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g><g';
-
-      if (vd.conClip) {
-        _s2 += ' clip-path="' + vd.conClip + '"';
-      }
-
-      _s2 += '>';
-      vd.children.forEach(function (item) {
-        if (item.isMask || item.isClip) {
-          return;
-        }
-
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g>';
-      var opacity = vd.opacity,
-          transform = vd.transform,
-          mask = vd.mask,
-          clip = vd.clip,
-          filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
-    }
-  }
-
-  function joinDef(def) {
-    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
-
-    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
-      s += ' gradientUnits="userSpaceOnUse"';
-    }
-
-    def.props.forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '>';
-    def.children.forEach(function (item) {
-      s += joinItem(item);
-    });
-    s += '</' + def.tagName + '>';
-    return s;
-  }
-
-  function joinItem(item) {
-    var s = '<' + item.tagName;
-    item.props.forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '></' + item.tagName + '>';
-    return s;
-  }
-
-  function rgba2int(color) {
-    if (Array.isArray(color)) {
-      return color;
-    }
-
-    var res = [];
-
-    if (!color || color === 'transparent') {
-      res = [0, 0, 0, 0];
-    } else if (color.charAt(0) === '#') {
-      color = color.slice(1);
-
-      if (color.length === 3) {
-        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-      } else if (color.length === 6) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4), 16));
-      } else {
-        res[0] = res[1] = res[2] = 0;
-      }
-
-      res[3] = 1;
-    } else {
-      var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-
-      if (c) {
-        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-
-        if (!isNil(c[4])) {
-          res[3] = parseFloat(c[4]);
-        } else {
-          res[3] = 1;
-        }
-      } else {
-        res = [0, 0, 0, 0];
-      }
-    }
-
-    return res;
-  }
-
-  function int2rgba(color) {
-    if (Array.isArray(color)) {
-      if (color.length === 4) {
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return color || 'rgba(0,0,0,0)';
-  }
-
-  function arr2hash(arr) {
-    var hash = {};
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        hash[item[0]] = item[1];
-      } else {
-        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-          var k = list[j];
-          hash[k] = item[k];
-        }
-      }
-    }
-
-    return hash;
-  }
-
-  function hash2arr(hash) {
-    if (Array.isArray(hash)) {
-      return hash;
-    }
-
-    var arr = [];
-
-    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-      var k = list[i];
-      arr.push([k, hash[k]]);
-    }
-
-    return arr;
-  }
-
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    }
-
-    if (util.isDate(obj)) {
-      return new Date(obj);
-    }
-
-    var n = Array.isArray(obj) ? [] : {};
-    Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
-    });
-    return n;
-  }
-
-  function equalArr(a, b) {
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      }
-
-      if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  function extend(target, source, keys) {
-    if (source === null || _typeof(source) !== 'object') {
-      return target;
-    }
-
-    if (!keys) {
-      keys = Object.keys(source);
-    }
-
-    var i = keys.length;
-
-    while (i--) {
-      var k = keys[i];
-      target[k] = source[k];
-    }
-
-    return target;
-  }
-
-  function joinArr(arr, split) {
-    var s = arr.length ? arr[0] : '';
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-      s += split + arr[i];
-    }
-
-    return s;
-  }
-
-  var util = {
-    isObject: isType('Object'),
-    isString: isType('String'),
-    isFunction: isType('Function'),
-    isNumber: isType('Number'),
-    isBoolean: isType('Boolean'),
-    isDate: isType('Date'),
-    isNil: isNil,
-    isPrimitive: function isPrimitive(v) {
-      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
-    },
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    rgba2int: rgba2int,
-    int2rgba: int2rgba,
-    arr2hash: arr2hash,
-    hash2arr: hash2arr,
-    clone: clone,
-    equalArr: equalArr,
-    extend: extend,
-    joinArr: joinArr
-  };
-
-  function init(target, root, host) {
-    var ref = target.props.ref;
-
-    if (util.isString(ref) && ref) {
-      host.ref[ref] = target;
-    } else if (util.isFunction(ref)) {
-      ref(target);
-    }
-
-    target.__root = root;
-    target.__host = host;
-  }
-
   function genCanvasPolygon(ctx, list) {
     var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
     ctx.beginPath();
@@ -781,8 +417,7 @@
     return s;
   }
 
-  var tool = {
-    init: init,
+  var painter = {
     genCanvasPolygon: genCanvasPolygon,
     genSvgPolygon: genSvgPolygon
   };
@@ -1283,6 +918,432 @@
     matrix: matrix,
     tar: tar,
     geom: geom
+  };
+
+  var toString = {}.toString;
+
+  function isType(type) {
+    return function (obj) {
+      return toString.call(obj) === '[object ' + type + ']';
+    };
+  }
+
+  var isObject = isType('Object');
+  var isString = isType('String');
+  var isFunction = isType('Function');
+  var isNumber = isType('Number');
+  var isBoolean = isType('Boolean');
+  var isDate = isType('Date');
+
+  function isNil(v) {
+    return v === undefined || v === null;
+  }
+
+  function _joinSourceArray(arr) {
+    var res = '';
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        res += _joinSourceArray(item);
+      } else {
+        res += stringify(item);
+      }
+    }
+
+    return res;
+  }
+
+  function stringify(s) {
+    if (isNil(s)) {
+      return '';
+    }
+
+    return s.toString();
+  }
+
+  function encodeHtml(s, prop) {
+    if (prop) {
+      return s.replace(/"/g, '&quot;');
+    }
+
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+  } // 根元素专用
+
+
+  function joinVirtualDom(vd) {
+    var s = '<defs>';
+    vd.defs.forEach(function (item) {
+      s += joinDef(item);
+    });
+    s += '</defs><g';
+
+    if (vd.bbClip) {
+      s += ' clip-path="' + vd.bbClip + '"';
+    }
+
+    s += '>';
+    vd.bb.forEach(function (item) {
+      s += joinVd(item);
+    });
+    s += '</g><g';
+
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
+    }
+
+    s += '>';
+    vd.children.forEach(function (item) {
+      if (item.isMask || item.isClip) {
+        return;
+      }
+
+      s += joinVd(item);
+    });
+    s += '</g>';
+    return s;
+  } // 普通元素
+
+
+  function joinVd(vd) {
+    if (vd.type === 'item' || vd.type === 'img') {
+      var s = '';
+      vd.props.forEach(function (item) {
+        s += ' ' + item[0] + '="' + item[1] + '"';
+      });
+
+      if (vd.tagName === 'text') {
+        return '<text' + s + '>' + vd.content + '</text>';
+      }
+
+      return '<' + vd.tagName + s + '/>';
+    } else if (vd.type === 'text') {
+      var _s = ""; // text有许多lineBox
+
+      vd.children.forEach(function (item) {
+        _s += joinVd(item);
+      });
+      return '<g>' + _s + '</g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = '<g';
+
+      if (vd.bbClip) {
+        _s2 += ' clip-path="' + vd.bbClip + '"';
+      }
+
+      _s2 += '>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g><g';
+
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
+      }
+
+      _s2 += '>';
+      vd.children.forEach(function (item) {
+        if (item.isMask || item.isClip) {
+          return;
+        }
+
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g>';
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          mask = vd.mask,
+          clip = vd.clip,
+          filter = vd.filter;
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+    }
+  }
+
+  function joinDef(def) {
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
+
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
+    def.props.forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '>';
+    def.children.forEach(function (item) {
+      s += joinItem(item);
+    });
+    s += '</' + def.tagName + '>';
+    return s;
+  }
+
+  function joinItem(item) {
+    var s = '<' + item.tagName;
+    item.props.forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '></' + item.tagName + '>';
+    return s;
+  }
+
+  function rgba2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
+    var res = [];
+
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
+      color = color.slice(1);
+
+      if (color.length === 3) {
+        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+      } else if (color.length === 6) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4), 16));
+      } else {
+        res[0] = res[1] = res[2] = 0;
+      }
+
+      res[3] = 1;
+    } else {
+      var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+
+      if (c) {
+        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+
+        if (!isNil(c[4])) {
+          res[3] = parseFloat(c[4]);
+        } else {
+          res[3] = 1;
+        }
+      } else {
+        res = [0, 0, 0, 0];
+      }
+    }
+
+    return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return color || 'rgba(0,0,0,0)';
+  }
+
+  function arr2hash(arr) {
+    var hash = {};
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        hash[item[0]] = item[1];
+      } else {
+        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+          var k = list[j];
+          hash[k] = item[k];
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
+    var arr = [];
+
+    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+      var k = list[i];
+      arr.push([k, hash[k]]);
+    }
+
+    return arr;
+  }
+
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    }
+
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+    Object.keys(obj).forEach(function (i) {
+      n[i] = clone(obj[i]);
+    });
+    return n;
+  }
+  /**
+   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equalArr(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      }
+
+      if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  /**
+   * 深度对比对象
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equal(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isObject(a) && isObject(b)) {
+      var hash = {};
+
+      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+        var k = arr[i];
+
+        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+          return false;
+        }
+
+        hash[k] = true;
+      } // a没有b有则false
+
+
+      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
+        var _k = _arr[_i];
+
+        if (!hash.hasOwnProperty(_k)) {
+          return false;
+        }
+      }
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        if (!equal(a[_i2], b[_i2])) {
+          return false;
+        }
+      }
+    } else {
+      return a === b;
+    }
+
+    return true;
+  }
+
+  function extend(target, source, keys) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
+    var i = 0;
+    var len = keys.length;
+
+    while (i < len) {
+      var k = keys[i];
+      target[k] = source[k];
+      i++;
+    }
+
+    return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
+  }
+
+  function extendAnimate(ovd, nvd) {
+    var list = nvd.__animationList = ovd.animationList.splice(0);
+    list.forEach(function (item) {
+      item.__target = nvd;
+    });
+  }
+
+  var util = {
+    isObject: isObject,
+    isString: isString,
+    isFunction: isFunction,
+    isNumber: isNumber,
+    isBoolean: isBoolean,
+    isDate: isDate,
+    isNil: isNil,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinDef: joinDef,
+    rgba2int: rgba2int,
+    int2rgba: int2rgba,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr,
+    clone: clone,
+    equalArr: equalArr,
+    equal: equal,
+    extend: extend,
+    joinArr: joinArr,
+    extendAnimate: extendAnimate
   };
 
   var PX = unit.PX,
@@ -5128,7 +5189,7 @@
     matrixResize: matrixResize
   };
 
-  var isFunction = util.isFunction;
+  var isFunction$1 = util.isFunction;
 
   var Event = /*#__PURE__*/function () {
     function Event() {
@@ -5170,7 +5231,7 @@
     }, {
       key: "once",
       value: function once(id, handle) {
-        if (!isFunction(handle)) {
+        if (!isFunction$1(handle)) {
           return;
         }
 
@@ -5246,7 +5307,7 @@
               for (var _i3 = 0, _len5 = list.length; _i3 < _len5; _i3++) {
                 var cb = list[_i3];
 
-                if (isFunction(cb)) {
+                if (isFunction$1(cb)) {
                   cb.apply(self, data);
                 }
               }
@@ -5389,7 +5450,7 @@
       _classCallCheck(this, Text);
 
       _this = _super.call(this);
-      _this.__content = content.toString();
+      _this.__content = util.isNil(content) ? '' : content.toString();
       _this.__lineBoxes = [];
       _this.__charWidthList = [];
       _this.__charWidth = 0;
@@ -5947,10 +6008,11 @@
       return Date.now();
     },
     getCacheCanvas: function getCacheCanvas(width, height) {
-      return cacheCanvas('cache', width, height);
+      var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '__cache__';
+      return cacheCanvas(key, width, height);
     },
     getMaskCanvas: function getMaskCanvas(width, height) {
-      return cacheCanvas('mask', width, height);
+      return cacheCanvas('__mask__', width, height);
     },
     isDom: function isDom(o) {
       if (o) {
@@ -5971,21 +6033,21 @@
     }
   };
 
-  var isFunction$1 = util.isFunction,
-      isObject = util.isObject;
+  var isFunction$2 = util.isFunction,
+      isObject$1 = util.isObject;
 
   function traversal(list, diff, step) {
     if (step === 'before') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.before)) {
+        if (isObject$1(item) && isFunction$2(item.before)) {
           item.before(diff);
         }
       });
     } else if (step === 'after') {
       list.forEach(function (item) {
-        if (isObject(item) && isFunction$1(item.after)) {
+        if (isObject$1(item) && isFunction$2(item.after)) {
           item.after(diff);
-        } else if (isFunction$1(item)) {
+        } else if (isFunction$2(item)) {
           item(diff);
         }
       });
@@ -6090,7 +6152,7 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = isFunction$1(handle) ? function (diff) {
+        var cb = isFunction$2(handle) ? function (diff) {
           handle(diff);
 
           _this.offFrame(cb);
@@ -6323,9 +6385,9 @@
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
   var isNil$3 = util.isNil,
-      isFunction$2 = util.isFunction,
-      isNumber = util.isNumber,
-      isObject$1 = util.isObject,
+      isFunction$3 = util.isFunction,
+      isNumber$1 = util.isNumber,
+      isObject$2 = util.isObject,
       clone$1 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
@@ -6580,6 +6642,7 @@
         }
     });
     target.__cacheSvg = false;
+    window.test = target;
     animation.__style = style;
   }
   /**
@@ -7195,7 +7258,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$2(options)) {
+    if (isFunction$3(options)) {
       cb = options;
       options = {};
     }
@@ -7222,10 +7285,10 @@
 
       if (Array.isArray(list)) {
         _this.__list = list.filter(function (item) {
-          return item && isObject$1(item);
+          return item && isObject$2(item);
         });
       } // 动画过程另外一种形式，object描述k-v形式
-      else if (list && isObject$1(list)) {
+      else if (list && isObject$2(list)) {
           var nl = [];
           Object.keys(list).forEach(function (k) {
             var v = list[k];
@@ -7244,7 +7307,7 @@
           _this.__list = [];
         }
 
-      if (isNumber(options)) {
+      if (isNumber$1(options)) {
         _this.__options = {
           duration: options
         };
@@ -7474,7 +7537,7 @@
 
           _this2.emit(Event.FINISH);
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb();
           }
         }; // 同步执行，用在finish()这种主动调用
@@ -7489,7 +7552,7 @@
             _this2.emit(Event.PLAY);
           }
 
-          if (isFunction$2(_this2.__playCb)) {
+          if (isFunction$3(_this2.__playCb)) {
             _this2.__playCb(diff, isDelay);
 
             _this2.__playCb = null;
@@ -7912,7 +7975,7 @@
 
             _this5.emit(Event.CANCEL);
 
-            if (isFunction$2(cb)) {
+            if (isFunction$3(cb)) {
               cb();
             }
           };
@@ -8000,7 +8063,7 @@
 
           _this6.__cancelTask();
 
-          if (isFunction$2(cb)) {
+          if (isFunction$3(cb)) {
             cb(diff);
           }
         });
@@ -8320,8 +8383,8 @@
   var normalize$2 = css.normalize,
       calRelative$1 = css.calRelative,
       compute$1 = css.compute;
-  var genCanvasPolygon$1 = tool.genCanvasPolygon,
-      genSvgPolygon$1 = tool.genSvgPolygon;
+  var genCanvasPolygon$1 = painter.genCanvasPolygon,
+      genSvgPolygon$1 = painter.genSvgPolygon;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
@@ -8768,10 +8831,7 @@
 
         if (renderMode === mode.SVG) {
           if (this.__cacheSvg) {
-            var n = {};
-            Object.keys(this.__virtualDom).forEach(function (k) {
-              n[k] = _this3.__virtualDom[k];
-            });
+            var n = extend$1({}, this.__virtualDom);
             n.cache = true;
             this.__virtualDom = n;
             return;
@@ -9014,11 +9074,10 @@
             filter = computedStyle.filter,
             backgroundSize = computedStyle.backgroundSize,
             transformOrigin = computedStyle.transformOrigin,
-            transform = computedStyle.transform; // 先设置透明度，canvas可以向上累积
+            transform = computedStyle.transform;
+        var p = parent || this.host && this.host.parent; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
-          var p = parent || this.host && this.host.parent;
-
           if (p) {
             opacity *= p.__opacity;
           }
@@ -9047,11 +9106,11 @@
 
         var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
 
-        if (parent) {
+        if (p) {
           if (equalArr$2(matrix$1, [1, 0, 0, 1, 0, 0])) {
-            matrix$1 = parent.matrixEvent;
+            matrix$1 = p.matrixEvent;
           } else {
-            matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1);
+            matrix$1 = matrix.multiply(p.matrixEvent, matrix$1);
           }
         }
 
@@ -9511,6 +9570,10 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
+        if (this.isDestroyed) {
+          return;
+        }
+
         var ref = this.props.ref;
 
         if (ref) {
@@ -9746,11 +9809,6 @@
 
           o.__destroy();
         });
-      }
-    }, {
-      key: "__init",
-      value: function __init(root, host) {
-        tool.init(this, root, host);
       }
     }, {
       key: "__measure",
@@ -10061,30 +10119,584 @@
     geom: geom$2
   };
 
-  var isNil$4 = util.isNil,
-      isString = util.isString,
-      isFunction$3 = util.isFunction,
-      extend$2 = util.extend;
+  var Xom$1, Dom, Img, Geom, Component; // 类型为引用防止json仿造
 
-  var Component = /*#__PURE__*/function (_Event) {
+  var TYPE_PL = {
+    _: 0
+  };
+  var TYPE_VD = {
+    _: 1
+  };
+  var TYPE_GM = {
+    _: 2
+  };
+  var TYPE_CP = {
+    _: 3
+  };
+
+  function initRoot(cd, root) {
+    var children = build(flattenJson(cd), root, root);
+    return relation(root, children);
+  }
+
+  function initCp(json, root, owner) {
+    if (util.isObject(json)) {
+      // cp的flatten在__init中自己做
+      var vd = build(json, root, owner, owner);
+
+      if (Array.isArray(vd)) {
+        relation(owner, vd);
+      }
+
+      return vd;
+    } else {
+      return new Text(json);
+    }
+  }
+  /**
+   * 将初始json文件生成virtualDom
+   * @param json
+   * @param root
+   * @param owner
+   * @param host
+   * @returns vd
+   */
+
+
+  function build(json, root, owner, host) {
+    if (Array.isArray(json)) {
+      return json.map(function (item) {
+        return build(item, root, owner, host);
+      });
+    }
+
+    var vd;
+
+    if (util.isObject(json) && json.$$type) {
+      var tagName = json.tagName,
+          props = json.props,
+          children = json.children,
+          klass = json.klass,
+          $$type = json.$$type,
+          inherit = json.inherit,
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
+
+      if ($$type === TYPE_PL) {
+        return json.value;
+      }
+
+      if ($$type === TYPE_VD) {
+        if (tagName === 'div' || tagName === 'span') {
+          vd = new Dom(tagName, props);
+          children = relation(vd, build(children, root, owner, host));
+          vd.__children = children;
+        } else if (tagName === 'img') {
+          vd = new Img(tagName, props);
+        }
+      } else if ($$type === TYPE_GM) {
+        var _klass = Geom.getRegister(tagName);
+
+        vd = new _klass(tagName, props);
+      } else if ($$type === TYPE_CP) {
+        vd = new klass(props);
+        vd.__tagName = tagName;
+      } else {
+        return new Text(json);
+      } // 根parse需要用到真正的vd引用
+
+
+      json.vd = vd; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
+
+      if (__animateRecords) {
+        vd.__animateRecords = __animateRecords;
+
+        __animateRecords.list.forEach(function (item) {
+          item.target = vd;
+        });
+      } // 更新过程中key相同的vd继承动画
+
+
+      if (inherit) {
+        util.extendAnimate(inherit, vd);
+      }
+
+      vd.__root = root;
+
+      if (host) {
+        vd.__host = host;
+      }
+
+      if ($$type === TYPE_CP) {
+        vd.__init();
+      }
+
+      var ref = props.ref;
+
+      if (util.isString(ref) && ref) {
+        owner.ref[ref] = vd;
+      } else if (util.isFunction(ref)) {
+        ref(vd);
+      }
+
+      return vd;
+    }
+
+    return new Text(json);
+  }
+  /**
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点，即string内容
+   */
+
+
+  function flattenJson(parent) {
+    if (Array.isArray(parent)) {
+      return parent.map(function (item) {
+        return flattenJson(item);
+      });
+    } else if (!parent || [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+      return parent;
+    }
+
+    var list = [];
+    traverseJson(list, parent.children, {
+      lastText: null
+    });
+    parent.children = list;
+    return parent;
+  }
+
+  function traverseJson(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverseJson(list, item, options);
+      });
+    } else if (children && (children.$$type === TYPE_VD || children.$$type === TYPE_GM)) {
+      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg');
+      }
+
+      if (children.$$type === TYPE_VD) {
+        flattenJson(children.children);
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children && (children.$$type === TYPE_CP || children.$$type === TYPE_PL)) {
+      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+        if (options.lastText !== null) {
+          list[list.length - 1] = options.lastText += children;
+        } else {
+          list.push(children);
+        }
+      }
+  }
+  /**
+   * 设置关系，父子和兄弟
+   * @param parent
+   * @param children
+   * @param options
+   * @returns {Xom|Text|Component}
+   */
+
+
+  function relation(parent, children) {
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        relation(parent, item, options);
+      });
+    } else if (children instanceof Xom$1 || children instanceof Component || children instanceof Text) {
+      children.__parent = parent;
+
+      if (options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+
+      options.prev = children;
+
+      if (children instanceof Dom) {
+        relation(children, children.children);
+      }
+    }
+
+    return children;
+  }
+
+  var builder = {
+    ref: function ref(o) {
+      Xom$1 = o.Xom;
+      Dom = o.Dom;
+      Img = o.Img;
+      Geom = o.Geom;
+      Component = o.Component;
+    },
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP,
+    TYPE_PL: TYPE_PL,
+    initRoot: initRoot,
+    initCp: initCp,
+    flattenJson: flattenJson,
+    relation: relation,
+    build: build
+  };
+
+  var TYPE_PL$1 = builder.TYPE_PL,
+      TYPE_VD$1 = builder.TYPE_VD,
+      TYPE_GM$1 = builder.TYPE_GM,
+      TYPE_CP$1 = builder.TYPE_CP;
+  var Xom$2, Dom$1, Img$1, Geom$1, Component$1;
+  var updateList = [];
+  var removeList = [];
+  var KEY_FLAG = {};
+  /**
+   * setState后刷新前先根遍历检查组件开始进行shouldComponentUpdate判断
+   */
+
+  function check(vd) {
+    if (vd instanceof Dom$1) {
+      vd.children.forEach(function (child) {
+        if (child instanceof Dom$1) {
+          check(child);
+        } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
+        else if (child instanceof Component$1 && child.__hasUpdate) {
+            child.__hasUpdate = false;
+            checkCp(child, child.props);
+          }
+      });
+    }
+  }
+  /**
+   * 检查cp是否有state变更
+   * @param cp
+   * @param nextProps
+   * @param forceCheckUpdate
+   */
+
+
+  function checkCp(cp, nextProps, forceCheckUpdate) {
+    if (cp.__nextState || forceCheckUpdate) {
+      var shouldUpdate;
+
+      if (util.isFunction(cp.shouldComponentUpdate)) {
+        shouldUpdate = cp.shouldComponentUpdate(nextProps, cp.__nextState || cp.state);
+      } else {
+        // 没有默认更新
+        shouldUpdate = true;
+      }
+
+      if (shouldUpdate) {
+        updateCp(cp, nextProps, cp.__nextState || cp.state);
+      } // 不更新则递归检查子tree的cp
+      else {
+          check(cp.shadowRoot);
+        }
+    } else {
+      check(cp.shadowRoot);
+    }
+  }
+  /**
+   * 更新组件的props和state，清空__nextState
+   * @param cp
+   * @param props
+   * @param state
+   */
+
+
+  function updateCp(cp, props, state) {
+    cp.props = props;
+    cp.__props = util.hash2arr(cp.props);
+    cp.__state = state;
+    cp.__nextState = null;
+    var oldSr = cp.shadowRoot;
+    var oldJson = cp.__cd;
+    var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
+
+    diffSr(cp.shadowRoot, oldJson, json);
+
+    cp.__init(json);
+
+    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
+
+    if (!util.isObject(json) || json.$$type !== TYPE_PL$1) {
+      removeList.push(oldSr);
+    }
+  }
+  /**
+   * 非一级组件sr进行对比，key相同的无需重新生成且继承动画
+   * @param vd
+   * @param oj oldJson
+   * @param nj
+   */
+
+
+  function diffSr(vd, oj, nj) {
+    // 先遍历检查key相同的，将没有变化的key暂存下来，深度优先，这样叶子节点出现在前面，当key的叶子也有key时，确保叶子先对比
+    var ojk = getKeyHash(oj, {}, vd);
+    var njk = getKeyHash(nj, {});
+    var keyList = [];
+    var cpList = []; // 先对比key对应的节点
+
+    Object.keys(njk).forEach(function (k) {
+      var o = ojk[k]; // 有可能老的没有这个key
+
+      if (!o) {
+        return;
+      }
+
+      var n = njk[k];
+      var oj = o.json;
+      var nj = n.json;
+      var vd = o.vd; // 相同class的组件进行对比替换
+
+      if (oj.$$type === TYPE_CP$1 && nj.$$type === TYPE_CP$1) {
+        if (oj.klass === nj.klass) {
+
+          diffCp(oj, nj, vd); // 标识对比过了
+
+          oj.key = nj.key = KEY_FLAG; // 老的sr里需删除这个vd，因为老sr会回收
+
+          cpList.push(vd);
+        }
+      } // 相同类型的vd进行对比继承动画
+      else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
+          nj.inherit = vd;
+          oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
+
+          if (nj.$$type === TYPE_VD$1) {
+            keyList.push({
+              vd: vd,
+              oj: oj,
+              nj: nj
+            });
+          }
+        }
+    }); // key相同的dom对比children，下面非key逻辑就不做了
+
+    keyList.forEach(function (item) {
+      diffChildren(item.vd, item.oj, item.nj);
+    }); // 整体tree进行对比
+
+    diffChild(vd, oj, nj); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收，这里处理key的
+
+    cpList.forEach(function (vd) {
+      removeCpFromOldTree(vd);
+    });
+  }
+  /**
+   * 递归检查dom的children，相同的无需重新生成，用PL类型占位符代替直接返回老vd
+   * @param vd
+   * @param oj
+   * @param nj
+   * @param replaceKeyHash
+   */
+
+
+  function diffChild(vd, oj, nj, replaceKeyHash) {
+    if (util.isObject(nj)) {
+      if (nj.$$type === TYPE_CP$1) {
+        // key对比过了忽略
+        if (nj.key === KEY_FLAG) {
+          return;
+        } // 相同class的组件处理
+
+
+        if (oj.$$type === nj.$$type && oj.klass === nj.klass) {
+          diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
+
+          removeCpFromOldTree(vd);
+        }
+      } // dom类型递归children
+      else if (nj.$$type === TYPE_VD$1 && oj.$$type === TYPE_VD$1) {
+          if (oj.tagName === nj.tagName) {
+            nj.inherit = vd;
+          }
+
+          diffChildren(vd, oj, nj);
+        }
+    }
+  }
+  /**
+   * dom类型的vd对比children
+   * @param vd
+   * @param oj
+   * @param nj
+   * @param replaceKeyHash
+   */
+
+
+  function diffChildren(vd, oj, nj, replaceKeyHash) {
+    var oc = oj.children;
+    var nc = nj.children;
+    var ol = oc.length;
+    var nl = nc.length;
+    var children = vd.children;
+
+    for (var i = 0, of = 0, nf = 0, len = Math.min(ol, nl); i < len; i++) {
+      var o = oc[i + of];
+      var n = nc[i + nf]; // 新老都是key直接跳过
+
+      if (o.key === KEY_FLAG && n.key === KEY_FLAG) ; // 其中一个是key对比过了调整索引和长度
+      else if (o.key === KEY_FLAG) {
+          of++;
+          ol--;
+          i--;
+          len = Math.min(ol, nl);
+        } else if (n.key === KEY_FLAG) {
+          nf++;
+          nl--;
+          i--;
+          len = Math.min(ol, nl);
+        } else {
+          diffChild(children[i], o, n);
+        }
+    }
+  }
+  /**
+   * 根据json对比看cp如何更新
+   * @param oj
+   * @param nj
+   * @param vd
+   */
+
+
+  function diffCp(oj, nj, vd) {
+    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
+    // 否则需要强制触发组件更新，包含setState内容
+    nj.$$type = TYPE_PL$1;
+    nj.value = vd;
+    checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
+  }
+  /**
+   * 深度优先遍历json，将有key的记录在hash中，如果传入根vd，同步递归保存对应位置的vd
+   * @param json
+   * @param hash
+   * @param vd
+   * @returns {*}
+   */
+
+
+  function getKeyHash(json, hash, vd) {
+    if (Array.isArray(json)) {
+      json.forEach(function (item, i) {
+        return getKeyHash(item, hash, vd && vd[i]);
+      });
+    } else if (util.isObject(json)) {
+      if (json.$$type === TYPE_VD$1 || json.$$type === TYPE_GM$1 || json.$$type === TYPE_CP$1) {
+        // 深度优先
+        if (json.$$type === TYPE_VD$1) {
+          getKeyHash(json.children, hash, vd && vd.children);
+        }
+
+        var key = json.props.key;
+
+        if (!util.isNil(key) && key !== '') {
+          // 重复key错误警告
+          if (hash.hasOwnProperty(key)) {
+            console.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+          }
+
+          hash[key] = {
+            json: json,
+            vd: vd
+          };
+        }
+      }
+    }
+
+    return hash;
+  }
+  /**
+   * 非一级组件diff发生更新时，其需要从sr的tree中移除，因为sr会销毁
+   */
+
+
+  function removeCpFromOldTree(vd) {
+    // root下的一级组件不会发生回收情况，忽略
+    if (!vd.host) {
+      return;
+    }
+
+    var parent = vd.parent;
+
+    if (parent) {
+      var i = parent.children.indexOf(vd);
+
+      if (i > -1) {
+        parent.children.splice(i, 1);
+      } else {
+        throw new Error('Can not find child: ' + vd.tagName);
+      }
+    }
+  }
+  /**
+   * 执行componentDidUpdate/destroy
+   */
+
+
+  function did() {
+    updateList.forEach(function (item) {
+      if (util.isFunction(item.componentDidUpdate)) {
+        item.componentDidUpdate();
+      }
+    });
+    updateList = [];
+    removeList.forEach(function (item) {
+      item.__destroy();
+    });
+    removeList = [];
+  }
+
+  var updater = {
+    ref: function ref(o) {
+      Xom$2 = o.Xom;
+      Dom$1 = o.Dom;
+      Img$1 = o.Img;
+      Geom$1 = o.Geom;
+      Component$1 = o.Component;
+    },
+    updateList: updateList,
+    check: check,
+    checkCp: checkCp,
+    did: did
+  };
+
+  var isNil$4 = util.isNil,
+      isFunction$4 = util.isFunction,
+      clone$3 = util.clone,
+      extend$2 = util.extend;
+  /**
+   * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
+   * @param cp
+   */
+
+  function setUpdateFlag(cp) {
+    cp.__hasUpdate = true;
+    var host = cp.host;
+
+    if (host) {
+      setUpdateFlag(host);
+    }
+  }
+
+  var Component$2 = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
     var _super = _createSuper(Component);
 
-    function Component(tagName, props, children) {
+    function Component(props) {
       var _this;
 
       _classCallCheck(this, Component);
 
       _this = _super.call(this);
-
-      if (!isString(tagName)) {
-        children = props;
-        props = tagName;
-        tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1];
-      }
-
-      _this.__tagName = tagName;
       props = props || []; // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
@@ -10095,12 +10707,11 @@
         _this.__props = util.hash2arr(props);
       }
 
-      _this.__children = children || [];
       _this.__parent = null;
       _this.__host = null;
       _this.__ref = {};
       _this.__state = {};
-      _this.__isMount = false;
+      _this.__isMounted = false;
       return _this;
     }
 
@@ -10110,51 +10721,57 @@
         var _this2 = this;
 
         if (isNil$4(n)) {
-          this.state = {};
+          n = {};
         } else {
-          extend$2(this.state, n);
+          var state = clone$3(this.state);
+          n = extend$2(state, n);
         }
 
         var root = this.root;
 
-        if (root) {
+        if (root && this.__isMounted) {
           root.delRefreshTask(this.__task);
-          var ovd = this.shadowRoot;
           this.__task = {
             before: function before() {
-              _this2.__init(root, _this2);
-
-              root.setRefreshLevel(level.REFLOW);
+              // 标识更新
+              _this2.__nextState = n;
+              setUpdateFlag(_this2);
             },
             after: function after() {
-              if (ovd instanceof Node) {
-                ovd.__destroy();
-              }
-
-              if (isFunction$3(cb)) {
+              if (isFunction$4(cb)) {
                 cb();
               }
-            }
+            },
+            __state: true // 特殊标识来源让root刷新时识别
+
           };
           root.addRefreshTask(this.__task);
         } // 构造函数中调用还未render，
-        else if (isFunction$3(cb)) {
+        else if (isFunction$4(cb)) {
+            this.__state = n;
             cb();
           }
       }
+      /**
+       * build中调用初始化，json有值时是update过程才有，且处理过flatten
+       * @param json
+       * @private
+       */
+
     }, {
-      key: "__create",
-      value: function __create() {
+      key: "__init",
+      value: function __init(json) {
         var _this3 = this;
 
-        var sr = this.render(); // 可能返回的还是一个Component，递归处理
+        var root = this.root;
+        var cd = json || builder.flattenJson(this.render());
+        var sr = builder.initCp(cd, root, this, this);
+        this.__cd = cd;
 
-        while (sr instanceof Component) {
-          sr = sr.render();
-        }
-
-        if (sr instanceof Node) {
-          // 组件传入的样式需覆盖shadowRoot的
+        if (sr instanceof Text) {
+          // 文字视作为父节点的直接文字子节点
+          sr.__parent = this.parent;
+        } else if (sr instanceof Node) {
           var style = css.normalize(this.props.style || {});
           var keys = Object.keys(style);
           extend$2(sr.style, style, keys);
@@ -10180,31 +10797,24 @@
               });
             }
           });
+        } else if (sr instanceof Component) {
+          console.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
-          var s = '';
-
-          if (!isNil$4(sr)) {
-            s = util.encodeHtml(sr.toString());
-          }
-
-          sr = new Text(s);
+          throw new Error('Component render() must return a dom/text: ' + this.tagName);
         }
 
-        return this.__shadowRoot = sr;
-      }
-    }, {
-      key: "__init",
-      value: function __init(root, host) {
-        tool.init(this, root, host);
+        sr.__host = this;
+        this.__shadowRoot = sr;
 
-        var sr = this.__create();
+        if (!this.__isMounted) {
+          this.__isMounted = true;
+          var componentDidMount = this.componentDidMount;
 
-        if (sr instanceof Text) {
-          // 文字视作为父节点的直接文字子节点
-          sr.__parent = this.parent;
-          sr.__host = host;
-        } else {
-          sr.__init(root, this);
+          if (isFunction$4(componentDidMount)) {
+            root.once(Event.REFRESH, function () {
+              componentDidMount.call(_this3);
+            });
+          }
         }
       }
     }, {
@@ -10213,11 +10823,16 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
+        if (this.isDestroyed) {
+          return;
+        }
+
+        this.__isDestroyed = true;
         var componentWillUnmount = this.componentWillUnmount;
 
-        if (isFunction$3(componentWillUnmount)) {
+        if (isFunction$4(componentWillUnmount)) {
           componentWillUnmount.call(this);
-          this.__isMount = false;
+          this.__isMounted = false;
         }
 
         this.root.delRefreshTask(this.__task);
@@ -10226,7 +10841,6 @@
           this.shadowRoot.__destroy();
         }
 
-        this.children.splice(0);
         this.__shadowRoot = null;
         this.__parent = null;
       }
@@ -10245,43 +10859,23 @@
           e.target = this;
           return true;
         }
-      } // Root布局前时measure调用，第一次渲染初始化生成shadowRoot
-
+      }
     }, {
       key: "__measure",
       value: function __measure(renderMode, ctx) {
-        var _this4 = this;
-
-        var root = this.root;
-
-        if (!this.__isMount) {
-          this.__isMount = true;
-          var componentDidMount = this.componentDidMount;
-
-          if (isFunction$3(componentDidMount)) {
-            root.once(Event.REFRESH, function () {
-              componentDidMount.call(_this4);
-            });
-          }
-        }
-
         var sr = this.shadowRoot;
 
         if (sr instanceof Text) {
           sr.__measure(renderMode, ctx);
-        } else {
-          sr.__measure(renderMode, ctx, true);
-        }
+        } // 其它类型为Xom或Component
+        else {
+            sr.__measure(renderMode, ctx, true);
+          }
       }
     }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
-      }
-    }, {
-      key: "children",
-      get: function get() {
-        return this.__children;
       }
     }, {
       key: "shadowRoot",
@@ -10316,13 +10910,18 @@
       set: function set(v) {
         this.__state = v;
       }
+    }, {
+      key: "isDestroyed",
+      get: function get() {
+        return this.__isDestroyed;
+      }
     }]);
 
     return Component;
   }(Event);
 
   Object.keys(repaint.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
-    Object.defineProperty(Component.prototype, fn, {
+    Object.defineProperty(Component$2.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
 
@@ -10333,10 +10932,10 @@
     });
   });
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle'].forEach(function (fn) {
-    Component.prototype[fn] = function () {
+    Component$2.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
-      if (sr && isFunction$3(sr[fn])) {
+      if (sr && isFunction$4(sr[fn])) {
         return sr[fn].apply(sr, arguments);
       }
     };
@@ -10357,76 +10956,11 @@
   };
 
   function isRelativeOrAbsolute(node) {
-    return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
-  }
-  /**
-   * 1. 封装string为Text节点
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点
-   */
-
-
-  function flatten(parent, children) {
-    var list = [];
-    traverse(parent, list, children, {
-      lastText: null,
-      prev: null
-    });
-    return list;
+    var position = node.computedStyle.position;
+    return position === 'relative' || position === 'absolute';
   }
 
-  function traverse(parent, list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverse(parent, list, item, options);
-      });
-    } else if (children instanceof Xom) {
-      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg');
-      }
-
-      list.push(children);
-      children.__parent = parent;
-      options.lastText = null;
-
-      if (options.prev) {
-        options.prev.__next = children;
-        children.__prev = options.prev;
-      }
-
-      options.prev = children;
-    } else if (children instanceof Component) {
-      list.push(children);
-      children.__parent = parent; // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-
-      if (options.prev) {
-        options.prev.__next = children;
-        children.__prev = options.prev;
-      }
-
-      options.prev = children;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-        if (options.lastText) {
-          options.lastText.content += children;
-        } else {
-          var text = options.lastText = new Text(children);
-          list.push(text);
-          text.__parent = parent;
-
-          if (options.prev) {
-            options.prev.__next = text;
-            text.__prev = options.prev;
-          }
-
-          options.prev = text;
-        }
-      }
-  }
-
-  var Dom = /*#__PURE__*/function (_Xom) {
+  var Dom$2 = /*#__PURE__*/function (_Xom) {
     _inherits(Dom, _Xom);
 
     var _super = _createSuper(Dom);
@@ -10483,7 +11017,7 @@
 
           var item = flowChildren[i];
 
-          if (item instanceof Xom || item instanceof Component) {
+          if (item instanceof Xom || item instanceof Component$2) {
             w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;
@@ -10551,7 +11085,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
             var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
                 b2 = _item$__calAutoBasis.b,
                 min2 = _item$__calAutoBasis.min,
@@ -10646,7 +11180,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
             if (item.currentStyle.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -10866,7 +11400,7 @@
         var basisSum = 0;
         var maxSum = 0;
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
             // abs虚拟布局计算时纵向也是看横向宽度
             var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
@@ -10969,7 +11503,7 @@
 
           main = Math.max(main, minList[i]);
 
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
             var _currentStyle2 = item.currentStyle,
                 computedStyle = item.computedStyle;
             var display = _currentStyle2.display,
@@ -11181,7 +11715,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
             if (item.computedStyle.display !== 'inline') {
               item.currentStyle.display = item.computedStyle.display = 'inline';
               console.error('Inline can not contain block/flex');
@@ -11525,7 +12059,7 @@
         children.forEach(function (item) {
           if (item instanceof Dom) {
             item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
-          } else if (item instanceof Component) {
+          } else if (item instanceof Component$2) {
             var sr = item.shadowRoot;
 
             if (sr instanceof Dom) {
@@ -11579,17 +12113,6 @@
         }
       }
     }, {
-      key: "__init",
-      value: function __init(root, host) {
-        _get(_getPrototypeOf(Dom.prototype), "__init", this).call(this, root, host);
-
-        (this.__children = flatten(this, this.children)).forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component) {
-            item.__init(root, host);
-          }
-        });
-      }
-    }, {
       key: "__measure",
       value: function __measure(renderMode, ctx, isRoot) {
         _get(_getPrototypeOf(Dom.prototype), "__measure", this).call(this, renderMode, ctx, isRoot); // 即便自己不需要计算，但children还要继续递归检查
@@ -11602,6 +12125,10 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
+        if (this.isDestroyed) {
+          return;
+        }
+
         this.children.forEach(function (child) {
           child.__destroy();
         });
@@ -11638,7 +12165,7 @@
         for (var i = zIndexChildren.length - 1; i >= 0; i--) {
           var child = zIndexChildren[i];
 
-          if (child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+          if (child instanceof Xom || child instanceof Component$2 && child.shadowRoot instanceof Xom) {
             if (child.__emitEvent(e)) {
               // 孩子阻止冒泡
               if (e.__stopPropagation) {
@@ -11670,7 +12197,7 @@
       key: "flowChildren",
       get: function get() {
         return this.children.filter(function (item) {
-          if (item instanceof Component) {
+          if (item instanceof Component$2) {
             item = item.shadowRoot;
           }
 
@@ -11681,7 +12208,7 @@
       key: "absChildren",
       get: function get() {
         return this.children.filter(function (item) {
-          if (item instanceof Component) {
+          if (item instanceof Component$2) {
             item = item.shadowRoot;
           }
 
@@ -11698,7 +12225,7 @@
         this.children.forEach(function (item, i) {
           var child = item;
 
-          if (item instanceof Component) {
+          if (item instanceof Component$2) {
             item = item.shadowRoot;
           } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
 
@@ -11765,10 +12292,10 @@
   }(Xom);
 
   var AUTO$4 = unit.AUTO;
-  var genCanvasPolygon$2 = tool.genCanvasPolygon,
-      genSvgPolygon$2 = tool.genSvgPolygon;
+  var genCanvasPolygon$2 = painter.genCanvasPolygon,
+      genSvgPolygon$2 = painter.genSvgPolygon;
 
-  var Img = /*#__PURE__*/function (_Dom) {
+  var Img$2 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
     var _super = _createSuper(Img);
@@ -12091,7 +12618,7 @@
     }]);
 
     return Img;
-  }(Dom);
+  }(Dom$2);
 
   var joinVd$1 = util.joinVd,
       joinDef$1 = util.joinDef;
@@ -12190,7 +12717,7 @@
     }
   }
 
-  function diffChild(elem, ovd, nvd) {
+  function diffChild$1(elem, ovd, nvd) {
     if (ovd.type === 'dom') {
       if (nvd.type === 'dom') {
         diffD2D(elem, ovd, nvd);
@@ -12303,7 +12830,7 @@
     var cns = lastChild.childNodes;
 
     for (; i < Math.min(ol, nl); i++) {
-      diffChild(cns[i], ovd.children[i], nvd.children[i]);
+      diffChild$1(cns[i], ovd.children[i], nvd.children[i]);
     }
 
     if (i < ol) {
@@ -12574,7 +13101,7 @@
     return Defs;
   }();
 
-  var isFunction$4 = util.isFunction;
+  var isFunction$5 = util.isFunction;
 
   var Controller = /*#__PURE__*/function () {
     function Controller() {
@@ -12620,12 +13147,12 @@
       value: function init() {
         var _this = this;
 
-        var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
+        var list = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.__records;
 
         // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-        if (target.length) {
+        if (list.length) {
           // 清除防止重复调用，并且新的json还会进入整体逻辑
-          target.splice(0).forEach(function (item) {
+          list.splice(0).forEach(function (item) {
             var target = item.target,
                 animate = item.animate;
 
@@ -12651,7 +13178,7 @@
       }
     }, {
       key: "__playAuto",
-      value: function __playAuto(cb) {
+      value: function __playAuto() {
         this.init(this.__auto);
 
         this.__action('play');
@@ -12666,7 +13193,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12686,7 +13213,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12701,7 +13228,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12716,7 +13243,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12732,7 +13259,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12748,7 +13275,7 @@
           if (once) {
             once = false;
 
-            if (isFunction$4(cb)) {
+            if (isFunction$5(cb)) {
               cb(diff);
             }
           }
@@ -12822,8 +13349,8 @@
   }();
 
   var isNil$5 = util.isNil,
-      isObject$2 = util.isObject,
-      isFunction$5 = util.isFunction;
+      isObject$3 = util.isObject,
+      isFunction$6 = util.isFunction;
   var PX$6 = unit.PX;
 
   function getDom(dom) {
@@ -12880,7 +13407,9 @@
 
       _classCallCheck(this, Root);
 
-      _this = _super.call(this, tagName, props, children);
+      _this = _super.call(this, tagName, props);
+      _this.__cd = children; // 原始children，再初始化过程中生成真正的dom
+
       _this.__node = null; // 真实DOM引用
 
       _this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
@@ -12891,9 +13420,7 @@
       _this.__sy = 1;
       _this.__task = [];
       _this.__ref = {};
-      _this.__animateController = new Controller();
-
-      _this.__init(_assertThisInitialized(_this), _assertThisInitialized(_this));
+      _this.__animateController = new Controller(); // this.__init(this, this);
 
       Event.mix(_assertThisInitialized(_this));
       return _this;
@@ -13015,6 +13542,7 @@
       key: "appendTo",
       value: function appendTo(dom) {
         dom = getDom(dom);
+        this.__children = builder.initRoot(this.__cd, this);
 
         this.__initProps();
 
@@ -13112,18 +13640,19 @@
         currentStyle.height = style.height = {
           value: this.height,
           unit: PX$6
-        }; // 计算css继承，获取所有字体和大小并准备测量文字
+        }; // 目前3个等级：组件state变更的STATE、dom变化布局的REFLOW、动画渲染的REPAINT
 
         var lv = this.__refreshLevel;
         this.__refreshLevel = level.REPAINT;
 
-        if (lv === level.REFLOW) {
+        if (lv >= level.REFLOW) {
           this.__measure(renderMode, ctx, true);
-        }
+        } // 计算css继承，获取所有字体和大小并准备测量文字
+
 
         inject.measureText(function () {
           // 第一次默认REFLOW以及样式涉及变更等需要布局
-          if (lv === level.REFLOW) {
+          if (lv >= level.REFLOW) {
             // 布局分为两步，普通流和定位流，互相递归
             _this2.__layout({
               x: 0,
@@ -13162,7 +13691,7 @@
           } // 特殊cb，供小程序绘制完回调使用
 
 
-          if (isFunction$5(cb)) {
+          if (isFunction$6(cb)) {
             cb();
           }
 
@@ -13207,13 +13736,36 @@
               clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
-                clone.forEach(function (item) {
-                  if (isObject$2(item) && isFunction$5(item.before)) {
+                var setStateList = [];
+                clone.forEach(function (item, i) {
+                  if (isObject$3(item) && isFunction$6(item.before)) {
+                    // 收集组件setState的更新，特殊处理
+                    if (item.__state) {
+                      setStateList.push({
+                        i: i,
+                        o: item
+                      });
+                    }
+
                     item.before(diff);
                   }
-                });
+                }); // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
 
-                _this3.refresh(); // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
+                if (setStateList.length) {
+                  updater.check(_this3);
+                } // 有组件更新，则需要重新布局
+
+
+                var len = updater.updateList.length;
+
+                if (len) {
+                  _this3.setRefreshLevel(level.REFLOW);
+
+                  _this3.refresh();
+                } // 有可能组件都不需要更新，且没有其它触发的渲染更新
+                else if (clone.length > setStateList.length) {
+                    _this3.refresh();
+                  } // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
 
 
                 var r = _this3.__hookTask;
@@ -13225,14 +13777,17 @@
                   if (i > -1) {
                     hookTask.splice(i, 1);
                   }
-                }
+                } // 触发didUpdate
+
+
+                updater.did();
               }
             },
             after: function after(diff) {
               clone.forEach(function (item) {
-                if (isObject$2(item) && isFunction$5(item.after)) {
+                if (isObject$3(item) && isFunction$6(item.after)) {
                   item.after(diff);
-                } else if (isFunction$5(item)) {
+                } else if (isFunction$6(item)) {
                   item(diff);
                 }
               });
@@ -13335,18 +13890,18 @@
     }]);
 
     return Root;
-  }(Dom);
+  }(Dom$2);
 
   var AUTO$5 = unit.AUTO,
       PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
-  var clone$3 = util.clone,
+  var clone$4 = util.clone,
       int2rgba$3 = util.int2rgba,
       isNil$6 = util.isNil,
       joinArr$2 = util.joinArr;
   var REGISTER = {};
 
-  var Geom = /*#__PURE__*/function (_Xom) {
+  var Geom$2 = /*#__PURE__*/function (_Xom) {
     _inherits(Geom, _Xom);
 
     var _super = _createSuper(Geom);
@@ -13668,7 +14223,7 @@
           } // svg的mask没有transform，需手动计算变换后的坐标应用
 
 
-          var children = clone$3(vd.children);
+          var children = clone$4(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
             var xi = 0;
@@ -14060,7 +14615,7 @@
     }]);
 
     return Line;
-  }(Geom);
+  }(Geom$2);
 
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
@@ -14243,7 +14798,7 @@
     }]);
 
     return Polyline;
-  }(Geom);
+  }(Geom$2);
 
   var Polygon = /*#__PURE__*/function (_Polyline) {
     _inherits(Polygon, _Polyline);
@@ -14511,7 +15066,7 @@
     }]);
 
     return Sector;
-  }(Geom);
+  }(Geom$2);
 
   var Rect = /*#__PURE__*/function (_Geom) {
     _inherits(Rect, _Geom);
@@ -14608,7 +15163,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[originX + rx, originY], [originX + width - rx, originY], [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry], [originX + width, originY + height - ry], [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height], [originX + rx, originY + height], [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry], [originX, originY + ry], [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]];
-            tool.genCanvasPolygon(ctx, list);
+            painter.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -14657,7 +15212,7 @@
     }]);
 
     return Rect;
-  }(Geom);
+  }(Geom$2);
 
   var Circle = /*#__PURE__*/function (_Geom) {
     _inherits(Circle, _Geom);
@@ -14757,7 +15312,7 @@
     }]);
 
     return Circle;
-  }(Geom);
+  }(Geom$2);
 
   var Ellipse = /*#__PURE__*/function (_Geom) {
     _inherits(Ellipse, _Geom);
@@ -14852,7 +15407,7 @@
             var ox = __cacheProps.ox;
             var oy = __cacheProps.oy;
             var list = [[cx - rx, cy], [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry], [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy], [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry], [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]];
-            tool.genCanvasPolygon(ctx, list);
+            painter.genCanvasPolygon(ctx, list);
           }
 
           if (strokeWidth > 0) {
@@ -14893,7 +15448,7 @@
     }]);
 
     return Ellipse;
-  }(Geom);
+  }(Geom$2);
 
   var fullCssProperty = {
     skewX: 'kx',
@@ -14952,9 +15507,9 @@
   };
 
   var isNil$7 = util.isNil,
-      isFunction$6 = util.isFunction,
+      isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
-      clone$4 = util.clone,
+      clone$5 = util.clone,
       extend$3 = util.extend;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
@@ -15021,7 +15576,7 @@
             } // 支持函数模式和值模式
 
 
-            if (isFunction$6(value)) {
+            if (isFunction$7(value)) {
               value = value(v);
             }
 
@@ -15077,7 +15632,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
     child.tagName = libraryItem.tagName;
-    child.props = clone$4(libraryItem.props);
+    child.props = clone$5(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {
@@ -15148,7 +15703,8 @@
         _json$children = json.children,
         children = _json$children === void 0 ? [] : _json$children,
         _json$animate = json.animate,
-        animate = _json$animate === void 0 ? [] : _json$animate;
+        animate = _json$animate === void 0 ? [] : _json$animate,
+        __animateRecords = json.__animateRecords;
 
     if (!tagName) {
       throw new Error('Dom must have a tagName: ' + json);
@@ -15170,6 +15726,10 @@
       vd = karas.createVd(tagName, props, children.map(function (item) {
         return parse(karas, item, animateRecords, vars, hash);
       }));
+    }
+
+    if (__animateRecords) {
+      vd.__animateRecords = __animateRecords;
     }
 
     var animationRecord;
@@ -15259,7 +15819,11 @@
 
         var ac = options.controller instanceof Controller ? options.controller : vd.animateController; // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
 
-        karas.render(vd, dom); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
+        karas.render(vd, dom); // 由于vd首先生成的都是json，根parse要特殊处理将target指向真正的vd引用，json的vd在builder中赋值
+
+        animateRecords.forEach(function (item) {
+          item.target = item.target.vd;
+        }); // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
 
         if (options.autoPlay !== false) {
           ac.__auto = ac.__auto.concat(animateRecords);
@@ -15301,13 +15865,13 @@
 
   var version = "0.35.0";
 
-  Geom.register('$line', Line);
-  Geom.register('$polyline', Polyline);
-  Geom.register('$polygon', Polygon);
-  Geom.register('$sector', Sector);
-  Geom.register('$rect', Rect);
-  Geom.register('$circle', Circle);
-  Geom.register('$ellipse', Ellipse);
+  Geom$2.register('$line', Line);
+  Geom$2.register('$polyline', Polyline);
+  Geom$2.register('$polygon', Polygon);
+  Geom$2.register('$sector', Sector);
+  Geom$2.register('$rect', Rect);
+  Geom$2.register('$circle', Circle);
+  Geom$2.register('$ellipse', Ellipse);
   var karas = {
     version: version,
     render: function render(root, dom) {
@@ -15326,32 +15890,42 @@
         return new Root(tagName, props, children);
       }
 
-      if (Dom.isValid(tagName)) {
-        if (tagName === 'img') {
-          return new Img(tagName, props);
-        }
-
-        return new Dom(tagName, props, children);
+      if (Dom$2.isValid(tagName)) {
+        return {
+          tagName: tagName,
+          props: props,
+          children: children,
+          $$type: builder.TYPE_VD
+        }; // if(tagName === 'img') {
+        //   return new Img(tagName, props);
+        // }
+        // return new Dom(tagName, props, children);
       }
 
       throw new Error("Can not use <".concat(tagName, ">"));
     },
     createGm: function createGm(tagName, props) {
-      var klass = Geom.getRegister(tagName);
-      return new klass(tagName, props);
+      return {
+        tagName: tagName,
+        props: props,
+        $$type: builder.TYPE_GM
+      }; // let klass = Geom.getRegister(tagName);
+      // return new klass(tagName, props);
     },
-    createCp: function createCp(cp, props, children) {
-      return new cp(props, children);
+    createCp: function createCp(klass, props, children, tagName) {
+      props.children = children;
+      return {
+        klass: klass,
+        tagName: tagName,
+        props: props,
+        $$type: builder.TYPE_CP
+      }; // return new cp(props, children);
     },
     parse: function parse(json, dom, options) {
       return parser.parse(this, json, dom, options);
     },
-    Root: Root,
-    Dom: Dom,
-    Img: Img,
-    Geom: Geom,
     mode: mode,
-    Component: Component,
+    Component: Component$2,
     Event: Event,
     util: util,
     inject: inject,
@@ -15360,6 +15934,20 @@
     animate: animate,
     math: math
   };
+  builder.ref({
+    Xom: Xom,
+    Dom: Dom$2,
+    Img: Img$2,
+    Geom: Geom$2,
+    Component: Component$2
+  });
+  updater.ref({
+    Xom: Xom,
+    Dom: Dom$2,
+    Img: Img$2,
+    Geom: Geom$2,
+    Component: Component$2
+  });
 
   if (typeof window !== 'undefined') {
     window.karas = karas;

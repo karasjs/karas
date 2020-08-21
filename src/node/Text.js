@@ -7,7 +7,7 @@ import util from '../util/util';
 class Text extends Node {
   constructor(content) {
     super();
-    this.__content = content.toString();
+    this.__content = util.isNil(content) ? '' : content.toString();
     this.__lineBoxes = [];
     this.__charWidthList = [];
     this.__charWidth = 0;

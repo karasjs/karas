@@ -9,7 +9,7 @@ class Component extends karas.Component {
 
 class Component2 extends karas.Component {
   constructor(...data) {
-    super('cp2', ...data);
+    super(...data);
   }
   render() {
     return <div>123</div>;

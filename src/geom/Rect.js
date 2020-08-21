@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import tool from '../node/tool';
+import painter from '../util/painter';
 import geom from '../math/geom';
 
 class Rect extends Geom {
@@ -81,7 +81,7 @@ class Rect extends Geom {
           [originX, originY + ry],
           [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]
         ];
-        tool.genCanvasPolygon(ctx, list);
+        painter.genCanvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();

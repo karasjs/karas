@@ -1,6 +1,9 @@
+import Xom from './node/Xom';
 import Dom from './node/Dom';
 import Img from './node/Img';
 import Root from './node/Root';
+import builder from './util/builder';
+import updater from './util/updater';
 import mode from './util/mode';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
@@ -44,27 +47,41 @@ let karas = {
       return new Root(tagName, props, children);
     }
     if(Dom.isValid(tagName)) {
-      if(tagName === 'img') {
-        return new Img(tagName, props);
-      }
-      return new Dom(tagName, props, children);
+      return {
+        tagName,
+        props,
+        children,
+        $$type: builder.TYPE_VD,
+      };
+      // if(tagName === 'img') {
+      //   return new Img(tagName, props);
+      // }
+      // return new Dom(tagName, props, children);
     }
     throw new Error(`Can not use <${tagName}>`);
   },
   createGm(tagName, props) {
-    let klass = Geom.getRegister(tagName);
-    return new klass(tagName, props);
+    return {
+      tagName,
+      props,
+      $$type: builder.TYPE_GM,
+    };
+    // let klass = Geom.getRegister(tagName);
+    // return new klass(tagName, props);
   },
-  createCp(cp, props, children) {
-    return new cp(props, children);
+  createCp(klass, props, children, tagName) {
+    props.children = children;
+    return {
+      klass,
+      tagName,
+      props,
+      $$type: builder.TYPE_CP,
+    };
+    // return new cp(props, children);
   },
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);
   },
-  Root,
-  Dom,
-  Img,
-  Geom,
   mode,
   Component,
   Event,
@@ -75,6 +92,21 @@ let karas = {
   animate,
   math,
 };
+
+builder.ref({
+  Xom,
+  Dom,
+  Img,
+  Geom,
+  Component,
+});
+updater.ref({
+  Xom,
+  Dom,
+  Img,
+  Geom,
+  Component,
+});
 
 if(typeof window !== 'undefined') {
   window.karas = karas;

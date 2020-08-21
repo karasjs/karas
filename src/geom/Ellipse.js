@@ -1,6 +1,6 @@
 import Geom from './Geom';
 import mode from '../util/mode';
-import tool from '../node/tool';
+import painter from '../util/painter';
 import geom from '../math/geom';
 
 class Ellipse extends Geom {
@@ -75,7 +75,7 @@ class Ellipse extends Geom {
           [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry],
           [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]
         ];
-        tool.genCanvasPolygon(ctx, list);
+        painter.genCanvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();

@@ -1,5 +1,5 @@
 import Node from './Node';
-import tool from './tool';
+import painter from '../util/painter';
 import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
@@ -17,7 +17,7 @@ import mx from '../math/matrix';
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { normalize, calRelative, compute } = css;
-const { genCanvasPolygon, genSvgPolygon } = tool;
+const { genCanvasPolygon, genSvgPolygon } = painter;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
@@ -432,10 +432,7 @@ class Xom extends Node {
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
       if(this.__cacheSvg) {
-        let n = {};
-        Object.keys(this.__virtualDom).forEach(k => {
-          n[k] = this.__virtualDom[k];
-        });
+        let n = extend({}, this.__virtualDom);
         n.cache = true;
         this.__virtualDom = n;
         return;
@@ -715,9 +712,9 @@ class Xom extends Node {
       transformOrigin,
       transform,
     } = computedStyle;
+    let p = parent || this.host && this.host.parent;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
-      let p = parent || this.host && this.host.parent;
       if(p) {
         opacity *= p.__opacity;
       }
@@ -743,12 +740,12 @@ class Xom extends Node {
     }
     let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
-    if(parent) {
+    if(p) {
       if(equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-        matrix = parent.matrixEvent;
+        matrix = p.matrixEvent;
       }
       else {
-        matrix = mx.multiply(parent.matrixEvent, matrix);
+        matrix = mx.multiply(p.matrixEvent, matrix);
       }
     }
     this.__matrixEvent = matrix;
@@ -1186,6 +1183,9 @@ class Xom extends Node {
   }
 
   __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
     let ref = this.props.ref;
     if(ref) {
       let owner = this.host || this.root;
@@ -1390,10 +1390,6 @@ class Xom extends Node {
       o.cancel();
       o.__destroy();
     });
-  }
-
-  __init(root, host) {
-    tool.init(this, root, host);
   }
 
   __measure(renderMode, ctx, isRoot) {

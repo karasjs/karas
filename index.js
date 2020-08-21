@@ -10329,7 +10329,14 @@
 
       if (children instanceof Dom) {
         relation(children, children.children);
-      }
+      } // 文字视作为父节点的直接文字子节点
+      else if (children instanceof Component) {
+          var sr = children.shadowRoot;
+
+          if (sr instanceof Text) {
+            sr.__parent = parent;
+          }
+        }
     }
 
     return children;
@@ -10774,10 +10781,7 @@
         var sr = builder.initCp(cd, root, this, this);
         this.__cd = cd;
 
-        if (sr instanceof Text) {
-          // 文字视作为父节点的直接文字子节点
-          sr.__parent = this.parent;
-        } else if (sr instanceof Node) {
+        if (sr instanceof Text) ; else if (sr instanceof Node) {
           var style = css.normalize(this.props.style || {});
           var keys = Object.keys(style);
           extend$2(sr.style, style, keys);
@@ -13414,7 +13418,7 @@
       _classCallCheck(this, Root);
 
       _this = _super.call(this, tagName, props);
-      _this.__cd = children; // 原始children，再初始化过程中生成真正的dom
+      _this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
 
       _this.__node = null; // 真实DOM引用
 
@@ -13426,8 +13430,7 @@
       _this.__sy = 1;
       _this.__task = [];
       _this.__ref = {};
-      _this.__animateController = new Controller(); // this.__init(this, this);
-
+      _this.__animateController = new Controller();
       Event.mix(_assertThisInitialized(_this));
       return _this;
     }
@@ -13552,6 +13555,7 @@
 
         this.__initProps();
 
+        this.__root = this;
         this.__refreshLevel = level.REFLOW; // 已有root节点
 
         if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {

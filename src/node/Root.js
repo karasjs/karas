@@ -57,7 +57,7 @@ let uuid = 0;
 class Root extends Dom {
   constructor(tagName, props, children) {
     super(tagName, props);
-    this.__cd = children; // 原始children，再初始化过程中生成真正的dom
+    this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
     this.__node = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
@@ -66,7 +66,6 @@ class Root extends Dom {
     this.__task = [];
     this.__ref = {};
     this.__animateController = new Controller();
-    // this.__init(this, this);
     Event.mix(this);
   }
 
@@ -155,6 +154,7 @@ class Root extends Dom {
     dom = getDom(dom);
     this.__children = builder.initRoot(this.__cd, this);
     this.__initProps();
+    this.__root = this;
     this.__refreshLevel = level.REFLOW;
     // 已有root节点
     if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {

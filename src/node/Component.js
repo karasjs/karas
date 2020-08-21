@@ -85,8 +85,7 @@ class Component extends Event {
     let sr = builder.initCp(cd, root, this, this);
     this.__cd = cd;
     if(sr instanceof Text) {
-      // 文字视作为父节点的直接文字子节点
-      sr.__parent = this.parent;
+      // 文字视作为父节点的直接文字子节点，在builder里做
     }
     else if(sr instanceof Node) {
       let style = css.normalize(this.props.style || {});

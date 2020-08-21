@@ -10188,11 +10188,17 @@
       if ($$type === TYPE_VD) {
         if (tagName === 'div' || tagName === 'span') {
           vd = new Dom(tagName, props);
-          children = relation(vd, build(children, root, owner, host));
-          vd.__children = children;
         } else if (tagName === 'img') {
           vd = new Img(tagName, props);
         }
+
+        if (Array.isArray(children)) {
+          children = relation(vd, build(children, root, owner, host));
+        } else {
+          children = [];
+        }
+
+        vd.__children = children;
       } else if ($$type === TYPE_GM) {
         var _klass = Geom.getRegister(tagName);
 
@@ -15863,7 +15869,7 @@
     repaint: repaint
   };
 
-  var version = "0.35.0";
+  var version = "0.35.1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

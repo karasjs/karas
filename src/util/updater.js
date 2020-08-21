@@ -197,13 +197,11 @@ function diffChildren(vd, oj, nj, replaceKeyHash) {
     // 其中一个是key对比过了调整索引和长度
     else if(o.key === KEY_FLAG) {
       of++;
-      ol--;
       i--;
       len = Math.min(ol, nl);
     }
     else if(n.key === KEY_FLAG) {
       nf++;
-      nl--;
       i--;
       len = Math.min(ol, nl);
     }
@@ -211,6 +209,7 @@ function diffChildren(vd, oj, nj, replaceKeyHash) {
       diffChild(children[i], o, n, replaceKeyHash);
     }
   }
+  // TODO 长度不同增减的
 }
 
 /**
@@ -272,7 +271,7 @@ function removeCpFromOldTree(vd) {
   if(parent) {
     let i = parent.children.indexOf(vd);
     if(i > -1) {
-      parent.children.splice(i, 1);
+      parent.children[i] = null;
     }
     else {
       throw new Error('Can not find child: ' + vd.tagName);

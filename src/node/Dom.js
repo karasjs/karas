@@ -1057,7 +1057,10 @@ class Dom extends Xom {
       return;
     }
     this.children.forEach(child => {
-      child.__destroy();
+      // 有可能为空，因为diff过程中相同的cp被移到新的vd中，老的防止destroy设null
+      if(child) {
+        child.__destroy();
+      }
     });
     super.__destroy();
     this.children.splice(0);

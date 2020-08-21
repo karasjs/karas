@@ -10559,18 +10559,17 @@
       if (o.key === KEY_FLAG && n.key === KEY_FLAG) ; // 其中一个是key对比过了调整索引和长度
       else if (o.key === KEY_FLAG) {
           of++;
-          ol--;
           i--;
           len = Math.min(ol, nl);
         } else if (n.key === KEY_FLAG) {
           nf++;
-          nl--;
           i--;
           len = Math.min(ol, nl);
         } else {
           diffChild(children[i], o, n);
         }
-    }
+    } // TODO 长度不同增减的
+
   }
   /**
    * 根据json对比看cp如何更新
@@ -10643,7 +10642,7 @@
       var i = parent.children.indexOf(vd);
 
       if (i > -1) {
-        parent.children.splice(i, 1);
+        parent.children[i] = null;
       } else {
         throw new Error('Can not find child: ' + vd.tagName);
       }
@@ -10781,7 +10780,10 @@
         var sr = builder.initCp(cd, root, this, this);
         this.__cd = cd;
 
-        if (sr instanceof Text) ; else if (sr instanceof Node) {
+        if (sr instanceof Text) {
+          // 文字视作为父节点的直接文字子节点，在builder里做
+          console.warn('Component render() return a text, should not inherit style/event');
+        } else if (sr instanceof Node) {
           var style = css.normalize(this.props.style || {});
           var keys = Object.keys(style);
           extend$2(sr.style, style, keys);
@@ -12140,7 +12142,10 @@
         }
 
         this.children.forEach(function (child) {
-          child.__destroy();
+          // 有可能为空，因为diff过程中相同的cp被移到新的vd中，老的防止destroy设null
+          if (child) {
+            child.__destroy();
+          }
         });
 
         _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);

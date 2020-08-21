@@ -10560,15 +10560,17 @@
       else if (o.key === KEY_FLAG) {
           of++;
           i--;
+          ol--;
           len = Math.min(ol, nl);
         } else if (n.key === KEY_FLAG) {
           nf++;
           i--;
+          nl--;
           len = Math.min(ol, nl);
         } else {
-          diffChild(children[i], o, n);
+          diffChild(children[i + of], o, n);
         }
-    } // TODO 长度不同增减的
+    } // 长度不同增减的无需关注，新json创建cp有didMount，老vd会调用cp的destroy
 
   }
   /**

@@ -715,9 +715,9 @@ class Xom extends Node {
       transformOrigin,
       transform,
     } = computedStyle;
+    let p = parent || this.host && this.host.parent;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
-      let p = parent || this.host && this.host.parent;
       if(p) {
         opacity *= p.__opacity;
       }
@@ -743,12 +743,12 @@ class Xom extends Node {
     }
     let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
-    if(parent) {
+    if(p) {
       if(equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-        matrix = parent.matrixEvent;
+        matrix = p.matrixEvent;
       }
       else {
-        matrix = mx.multiply(parent.matrixEvent, matrix);
+        matrix = mx.multiply(p.matrixEvent, matrix);
       }
     }
     this.__matrixEvent = matrix;

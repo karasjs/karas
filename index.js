@@ -9014,11 +9014,10 @@
             filter = computedStyle.filter,
             backgroundSize = computedStyle.backgroundSize,
             transformOrigin = computedStyle.transformOrigin,
-            transform = computedStyle.transform; // 先设置透明度，canvas可以向上累积
+            transform = computedStyle.transform;
+        var p = parent || this.host && this.host.parent; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
-          var p = parent || this.host && this.host.parent;
-
           if (p) {
             opacity *= p.__opacity;
           }
@@ -9047,11 +9046,11 @@
 
         var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
 
-        if (parent) {
+        if (p) {
           if (equalArr$2(matrix$1, [1, 0, 0, 1, 0, 0])) {
-            matrix$1 = parent.matrixEvent;
+            matrix$1 = p.matrixEvent;
           } else {
-            matrix$1 = matrix.multiply(parent.matrixEvent, matrix$1);
+            matrix$1 = matrix.multiply(p.matrixEvent, matrix$1);
           }
         }
 

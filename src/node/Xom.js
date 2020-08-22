@@ -168,31 +168,25 @@ function calBackgroundPosition(position, container, size) {
 function empty() {}
 
 class Xom extends Node {
-  constructor(tagName, props = []) {
+  constructor(tagName, props = {}) {
     super();
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
-      this.__props = props;
     }
     else {
       this.props = props;
-      this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
     this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
     this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
-    this.__props.forEach(item => {
-      let k = item[0];
-      let v = item[1];
+    Object.keys(this.props).forEach(k => {
+      let v = this.props[k];
       if(/^on[a-zA-Z]/.test(k)) {
         k = k.slice(2).toLowerCase();
-        let arr = this.__listener[k] = this.__listener[k] || [];
-        if(arr.indexOf(v) === -1) {
-          arr.push(v);
-        }
+        this.listener[k] = v;
       }
     });
     this.__animationList = [];
@@ -1215,23 +1209,15 @@ class Xom extends Node {
     // touchmove之类强制的直接由Root通知即可
     if(force) {
       e.target = this;
-      if(cb) {
-        cb.forEach(item => {
-          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-            item(e);
-          }
-        });
+      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+        cb(e);
       }
       return true;
     }
     // 非force的判断事件坐标是否在节点内
     if(this.willResponseEvent(e)) {
-      if(cb) {
-        cb.forEach(item => {
-          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-            item(e);
-          }
-        });
+      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+        cb(e);
       }
       return true;
     }

@@ -1091,12 +1091,8 @@ class Dom extends Xom {
           if(e.__stopPropagation) {
             return;
           }
-          if(cb) {
-            cb.forEach(item => {
-              if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-                item(e);
-              }
-            });
+          if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+            cb(e);
           }
           return true;
         }

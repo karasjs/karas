@@ -89,14 +89,13 @@ class Root extends Dom {
   __genHtml() {
     let res = `<${this.tagName}`;
     // 拼接处理属性
-    for(let i = 0, len = this.__props.length; i < len; i++) {
-      let item = this.__props[i];
-      let [k, v] = item;
+    Object.keys(this.props).forEach(i => {
+      let [k, v] = this.props[i];
       // 忽略事件
       if(!/^on[a-zA-Z]/.test(k)) {
         res += renderProp(k, v);
       }
-    }
+    });
     res += `></${this.tagName}>`;
     return res;
   }

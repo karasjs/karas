@@ -8551,7 +8551,7 @@
     function Xom(tagName) {
       var _this;
 
-      var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+      var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
       _classCallCheck(this, Xom);
 
@@ -8559,10 +8559,8 @@
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
-        _this.__props = props;
       } else {
         _this.props = props;
-        _this.__props = util.hash2arr(props);
       }
 
       _this.__tagName = tagName;
@@ -8573,21 +8571,14 @@
       _this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
 
       _this.__listener = {};
-
-      _this.__props.forEach(function (item) {
-        var k = item[0];
-        var v = item[1];
+      Object.keys(_this.props).forEach(function (k) {
+        var v = _this.props[k];
 
         if (/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
-          var arr = _this.__listener[k] = _this.__listener[k] || [];
-
-          if (arr.indexOf(v) === -1) {
-            arr.push(v);
-          }
+          _this.listener[k] = v;
         }
       });
-
       _this.__animationList = [];
       _this.__loadBgi = {
         // 刷新回调函数，用以destroy取消用
@@ -9642,12 +9633,8 @@
         if (force) {
           e.target = this;
 
-          if (cb) {
-            cb.forEach(function (item) {
-              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
-                item(e);
-              }
-            });
+          if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+            cb(e);
           }
 
           return true;
@@ -9655,12 +9642,8 @@
 
 
         if (this.willResponseEvent(e)) {
-          if (cb) {
-            cb.forEach(function (item) {
-              if (util.isFunction(item) && !e.__stopImmediatePropagation) {
-                item(e);
-              }
-            });
+          if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+            cb(e);
           }
 
           return true;
@@ -10373,327 +10356,6 @@
     build: build
   };
 
-  var TYPE_PL$2 = $$type.TYPE_PL,
-      TYPE_VD$2 = $$type.TYPE_VD,
-      TYPE_GM$2 = $$type.TYPE_GM,
-      TYPE_CP$2 = $$type.TYPE_CP;
-  var Xom$2, Dom$1, Img$1, Geom$1, Component$1;
-  var updateList = [];
-  var removeList = [];
-  var KEY_FLAG = {};
-  /**
-   * setState后刷新前先根遍历检查组件开始进行shouldComponentUpdate判断
-   */
-
-  function check(vd) {
-    if (vd instanceof Dom$1) {
-      vd.children.forEach(function (child) {
-        if (child instanceof Dom$1) {
-          check(child);
-        } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
-        else if (child instanceof Component$1 && child.__hasUpdate) {
-            child.__hasUpdate = false;
-            checkCp(child, child.props);
-          }
-      });
-    }
-  }
-  /**
-   * 检查cp是否有state变更
-   * @param cp
-   * @param nextProps
-   * @param forceCheckUpdate
-   */
-
-
-  function checkCp(cp, nextProps, forceCheckUpdate) {
-    if (cp.__nextState || forceCheckUpdate) {
-      var shouldUpdate;
-
-      if (util.isFunction(cp.shouldComponentUpdate)) {
-        shouldUpdate = cp.shouldComponentUpdate(nextProps, cp.__nextState || cp.state);
-      } else {
-        // 没有默认更新
-        shouldUpdate = true;
-      }
-
-      if (shouldUpdate) {
-        updateCp(cp, nextProps, cp.__nextState || cp.state);
-      } // 不更新则递归检查子tree的cp
-      else {
-          check(cp.shadowRoot);
-        }
-    } else {
-      check(cp.shadowRoot);
-    }
-  }
-  /**
-   * 更新组件的props和state，清空__nextState
-   * @param cp
-   * @param props
-   * @param state
-   */
-
-
-  function updateCp(cp, props, state) {
-    cp.props = props;
-    cp.__props = util.hash2arr(cp.props);
-    cp.__state = state;
-    cp.__nextState = null;
-    var oldSr = cp.shadowRoot;
-    var oldJson = cp.__cd;
-    var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
-
-    diffSr(cp.shadowRoot, oldJson, json);
-
-    cp.__init(json);
-
-    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
-
-    if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
-      removeList.push(oldSr);
-    }
-  }
-  /**
-   * 非一级组件sr进行对比，key相同的无需重新生成且继承动画
-   * @param vd
-   * @param oj oldJson
-   * @param nj
-   */
-
-
-  function diffSr(vd, oj, nj) {
-    // 先遍历检查key相同的，将没有变化的key暂存下来，深度优先，这样叶子节点出现在前面，当key的叶子也有key时，确保叶子先对比
-    var ojk = getKeyHash(oj, {}, vd);
-    var njk = getKeyHash(nj, {});
-    var keyList = [];
-    var cpList = []; // 先对比key对应的节点
-
-    Object.keys(njk).forEach(function (k) {
-      var o = ojk[k]; // 有可能老的没有这个key
-
-      if (!o) {
-        return;
-      }
-
-      var n = njk[k];
-      var oj = o.json;
-      var nj = n.json;
-      var vd = o.vd; // 相同class的组件进行对比替换
-
-      if (oj.$$type === TYPE_CP$2 && nj.$$type === TYPE_CP$2) {
-        if (oj.klass === nj.klass) {
-
-          diffCp(oj, nj, vd); // 标识对比过了
-
-          oj.key = nj.key = KEY_FLAG; // 老的sr里需删除这个vd，因为老sr会回收
-
-          cpList.push(vd);
-        }
-      } // 相同类型的vd进行对比继承动画
-      else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
-          nj.inherit = vd;
-          oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
-
-          if (nj.$$type === TYPE_VD$2) {
-            keyList.push({
-              vd: vd,
-              oj: oj,
-              nj: nj
-            });
-          }
-        }
-    }); // key相同的dom对比children，下面非key逻辑就不做了
-
-    keyList.forEach(function (item) {
-      diffChildren(item.vd, item.oj, item.nj);
-    }); // 整体tree进行对比
-
-    diffChild(vd, oj, nj); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收，这里处理key的
-
-    cpList.forEach(function (vd) {
-      removeCpFromOldTree(vd);
-    });
-  }
-  /**
-   * 递归检查dom的children，相同的无需重新生成，用PL类型占位符代替直接返回老vd
-   * @param vd
-   * @param oj
-   * @param nj
-   * @param replaceKeyHash
-   */
-
-
-  function diffChild(vd, oj, nj, replaceKeyHash) {
-    if (util.isObject(nj)) {
-      if (nj.$$type === TYPE_CP$2) {
-        // key对比过了忽略
-        if (nj.key === KEY_FLAG) {
-          return;
-        } // 相同class的组件处理
-
-
-        if (oj.$$type === nj.$$type && oj.klass === nj.klass) {
-          diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
-
-          removeCpFromOldTree(vd);
-        }
-      } // dom类型递归children
-      else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
-          if (oj.tagName === nj.tagName) {
-            nj.inherit = vd;
-          }
-
-          diffChildren(vd, oj, nj);
-        }
-    }
-  }
-  /**
-   * dom类型的vd对比children
-   * @param vd
-   * @param oj
-   * @param nj
-   * @param replaceKeyHash
-   */
-
-
-  function diffChildren(vd, oj, nj, replaceKeyHash) {
-    var oc = oj.children;
-    var nc = nj.children;
-    var ol = oc.length;
-    var nl = nc.length;
-    var children = vd.children;
-
-    for (var i = 0, of = 0, nf = 0, len = Math.min(ol, nl); i < len; i++) {
-      var o = oc[i + of];
-      var n = nc[i + nf]; // 新老都是key直接跳过
-
-      if (o.key === KEY_FLAG && n.key === KEY_FLAG) ; // 其中一个是key对比过了调整索引和长度
-      else if (o.key === KEY_FLAG) {
-          of++;
-          i--;
-          ol--;
-          len = Math.min(ol, nl);
-        } else if (n.key === KEY_FLAG) {
-          nf++;
-          i--;
-          nl--;
-          len = Math.min(ol, nl);
-        } else {
-          diffChild(children[i + of], o, n);
-        }
-    } // 长度不同增减的无需关注，新json创建cp有didMount，老vd会调用cp的destroy
-
-  }
-  /**
-   * 根据json对比看cp如何更新
-   * @param oj
-   * @param nj
-   * @param vd
-   */
-
-
-  function diffCp(oj, nj, vd) {
-    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
-    // 否则需要强制触发组件更新，包含setState内容
-    nj.$$type = TYPE_PL$2;
-    nj.value = vd;
-    checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
-  }
-  /**
-   * 深度优先遍历json，将有key的记录在hash中，如果传入根vd，同步递归保存对应位置的vd
-   * @param json
-   * @param hash
-   * @param vd
-   * @returns {*}
-   */
-
-
-  function getKeyHash(json, hash, vd) {
-    if (Array.isArray(json)) {
-      json.forEach(function (item, i) {
-        return getKeyHash(item, hash, vd && vd[i]);
-      });
-    } else if (util.isObject(json)) {
-      if (json.$$type === TYPE_VD$2 || json.$$type === TYPE_GM$2 || json.$$type === TYPE_CP$2) {
-        // 深度优先
-        if (json.$$type === TYPE_VD$2) {
-          getKeyHash(json.children, hash, vd && vd.children);
-        }
-
-        var key = json.props.key;
-
-        if (!util.isNil(key) && key !== '') {
-          // 重复key错误警告
-          if (hash.hasOwnProperty(key)) {
-            console.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
-          }
-
-          hash[key] = {
-            json: json,
-            vd: vd
-          };
-        }
-      }
-    }
-
-    return hash;
-  }
-  /**
-   * 非一级组件diff发生更新时，其需要从sr的tree中移除，因为sr会销毁
-   */
-
-
-  function removeCpFromOldTree(vd) {
-    // root下的一级组件不会发生回收情况，忽略
-    if (!vd.host) {
-      return;
-    }
-
-    var parent = vd.parent;
-
-    if (parent) {
-      var i = parent.children.indexOf(vd);
-
-      if (i > -1) {
-        parent.children[i] = null;
-      } else {
-        throw new Error('Can not find child: ' + vd.tagName);
-      }
-    }
-  }
-  /**
-   * 执行componentDidUpdate/destroy
-   */
-
-
-  function did() {
-    updateList.forEach(function (item) {
-      if (util.isFunction(item.componentDidUpdate)) {
-        item.componentDidUpdate();
-      }
-    });
-    updateList = [];
-    removeList.forEach(function (item) {
-      item.__destroy();
-    });
-    removeList = [];
-  }
-
-  var updater = {
-    ref: function ref(o) {
-      Xom$2 = o.Xom;
-      Dom$1 = o.Dom;
-      Img$1 = o.Img;
-      Geom$1 = o.Geom;
-      Component$1 = o.Component;
-    },
-    updateList: updateList,
-    check: check,
-    checkCp: checkCp,
-    did: did
-  };
-
   var isNil$4 = util.isNil,
       isFunction$4 = util.isFunction,
       clone$3 = util.clone,
@@ -10712,25 +10374,24 @@
     }
   }
 
-  var Component$2 = /*#__PURE__*/function (_Event) {
+  var Component$1 = /*#__PURE__*/function (_Event) {
     _inherits(Component, _Event);
 
     var _super = _createSuper(Component);
 
-    function Component(props) {
+    function Component() {
       var _this;
+
+      var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
       _classCallCheck(this, Component);
 
-      _this = _super.call(this);
-      props = props || []; // 构建工具中都是arr，手写可能出现hash情况
+      _this = _super.call(this); // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
-        _this.__props = props;
       } else {
         _this.props = props;
-        _this.__props = util.hash2arr(props);
       }
 
       _this.__parent = null;
@@ -10803,24 +10464,16 @@
           extend$2(sr.style, style, keys);
           extend$2(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
 
-          this.__props.forEach(function (item) {
-            var _item = _slicedToArray(item, 2),
-                k = _item[0],
-                v = _item[1];
+          Object.keys(this.props).forEach(function (k) {
+            var v = _this3.props[k];
 
             if (/^on[a-zA-Z]/.test(k)) {
               k = k.slice(2).toLowerCase();
-              var arr = sr.listener[k] = sr.listener[k] || [];
-
-              if (arr.indexOf(v) === -1) {
-                arr.push(v);
-              }
+              sr.listener[k] = v;
             } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
               k = k.slice(3);
 
-              _this3.on(k, function () {
-                v.apply(void 0, arguments);
-              });
+              _this3.on(k, v);
             }
           });
         } else if (sr instanceof Component) {
@@ -10947,7 +10600,7 @@
   }(Event);
 
   Object.keys(repaint.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
-    Object.defineProperty(Component$2.prototype, fn, {
+    Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
 
@@ -10958,7 +10611,7 @@
     });
   });
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle'].forEach(function (fn) {
-    Component$2.prototype[fn] = function () {
+    Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
       if (sr && isFunction$4(sr[fn])) {
@@ -10986,7 +10639,7 @@
     return position === 'relative' || position === 'absolute';
   }
 
-  var Dom$2 = /*#__PURE__*/function (_Xom) {
+  var Dom$1 = /*#__PURE__*/function (_Xom) {
     _inherits(Dom, _Xom);
 
     var _super = _createSuper(Dom);
@@ -11043,7 +10696,7 @@
 
           var item = flowChildren[i];
 
-          if (item instanceof Xom || item instanceof Component$2) {
+          if (item instanceof Xom || item instanceof Component$1) {
             w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;
@@ -11111,7 +10764,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
                 b2 = _item$__calAutoBasis.b,
                 min2 = _item$__calAutoBasis.min,
@@ -11206,7 +10859,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (item.currentStyle.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -11426,7 +11079,7 @@
         var basisSum = 0;
         var maxSum = 0;
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             // abs虚拟布局计算时纵向也是看横向宽度
             var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
@@ -11529,7 +11182,7 @@
 
           main = Math.max(main, minList[i]);
 
-          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             var _currentStyle2 = item.currentStyle,
                 computedStyle = item.computedStyle;
             var display = _currentStyle2.display,
@@ -11741,7 +11394,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$2 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (item.computedStyle.display !== 'inline') {
               item.currentStyle.display = item.computedStyle.display = 'inline';
               console.error('Inline can not contain block/flex');
@@ -12085,7 +11738,7 @@
         children.forEach(function (item) {
           if (item instanceof Dom) {
             item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
-          } else if (item instanceof Component$2) {
+          } else if (item instanceof Component$1) {
             var sr = item.shadowRoot;
 
             if (sr instanceof Dom) {
@@ -12194,19 +11847,15 @@
         for (var i = zIndexChildren.length - 1; i >= 0; i--) {
           var child = zIndexChildren[i];
 
-          if (child instanceof Xom || child instanceof Component$2 && child.shadowRoot instanceof Xom) {
+          if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
             if (child.__emitEvent(e)) {
               // 孩子阻止冒泡
               if (e.__stopPropagation) {
                 return;
               }
 
-              if (cb) {
-                cb.forEach(function (item) {
-                  if (util.isFunction(item) && !e.__stopImmediatePropagation) {
-                    item(e);
-                  }
-                });
+              if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
+                cb(e);
               }
 
               return true;
@@ -12226,7 +11875,7 @@
       key: "flowChildren",
       get: function get() {
         return this.children.filter(function (item) {
-          if (item instanceof Component$2) {
+          if (item instanceof Component$1) {
             item = item.shadowRoot;
           }
 
@@ -12237,7 +11886,7 @@
       key: "absChildren",
       get: function get() {
         return this.children.filter(function (item) {
-          if (item instanceof Component$2) {
+          if (item instanceof Component$1) {
             item = item.shadowRoot;
           }
 
@@ -12254,7 +11903,7 @@
         this.children.forEach(function (item, i) {
           var child = item;
 
-          if (item instanceof Component$2) {
+          if (item instanceof Component$1) {
             item = item.shadowRoot;
           } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
 
@@ -12324,7 +11973,7 @@
   var genCanvasPolygon$2 = painter.genCanvasPolygon,
       genSvgPolygon$2 = painter.genSvgPolygon;
 
-  var Img$2 = /*#__PURE__*/function (_Dom) {
+  var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
 
     var _super = _createSuper(Img);
@@ -12647,7 +12296,391 @@
     }]);
 
     return Img;
-  }(Dom$2);
+  }(Dom$1);
+
+  var TYPE_PL$2 = $$type.TYPE_PL,
+      TYPE_VD$2 = $$type.TYPE_VD,
+      TYPE_GM$2 = $$type.TYPE_GM,
+      TYPE_CP$2 = $$type.TYPE_CP;
+  var Xom$2, Dom$2, Img$2, Geom$1, Component$2;
+  var updateList = [];
+  var removeList = [];
+  var KEY_FLAG = {};
+  /**
+   * setState后刷新前先根遍历检查组件开始进行shouldComponentUpdate判断
+   */
+
+  function check(vd) {
+    if (vd instanceof Dom$2) {
+      vd.children.forEach(function (child) {
+        if (child instanceof Dom$2) {
+          check(child);
+        } // 当组件有setState更新时，从叶子到根链路会标识__hasUpdate，以便节约遍历成本忽略那些没变化的链路
+        else if (child instanceof Component$2 && child.__hasUpdate) {
+            child.__hasUpdate = false;
+            checkCp(child, child.props);
+          }
+      });
+    }
+  }
+  /**
+   * 检查cp是否有state变更
+   * @param cp
+   * @param nextProps
+   * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制更新
+   */
+
+
+  function checkCp(cp, nextProps, forceCheckUpdate) {
+    if (cp.__nextState || forceCheckUpdate) {
+      var shouldUpdate;
+
+      if (util.isFunction(cp.shouldComponentUpdate)) {
+        shouldUpdate = cp.shouldComponentUpdate(nextProps, cp.__nextState || cp.state);
+      } else {
+        // 没有默认更新
+        shouldUpdate = true;
+      }
+
+      if (shouldUpdate) {
+        updateCp(cp, nextProps, cp.__nextState || cp.state);
+      } // 不更新则递归检查子tree的cp
+      else {
+          check(cp.shadowRoot);
+        }
+    } else {
+      check(cp.shadowRoot);
+    }
+  }
+  /**
+   * 更新组件的props和state，清空__nextState
+   * @param cp
+   * @param props
+   * @param state
+   */
+
+
+  function updateCp(cp, props, state) {
+    cp.props = props;
+    cp.__state = state;
+    cp.__nextState = null;
+    var oldSr = cp.shadowRoot;
+    var oldJson = cp.__cd;
+    var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
+
+    diffSr(cp.shadowRoot, oldJson, json);
+
+    cp.__init(json);
+
+    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
+
+    if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
+      removeList.push(oldSr);
+    }
+  }
+  /**
+   * 非一级组件sr进行对比，key相同的无需重新生成且继承动画
+   * @param vd
+   * @param oj oldJson
+   * @param nj
+   */
+
+
+  function diffSr(vd, oj, nj) {
+    // 先遍历检查key相同的，将没有变化的key暂存下来，深度优先，这样叶子节点出现在前面，当key的叶子也有key时，确保叶子先对比
+    var ojk = getKeyHash(oj, {}, vd);
+    var njk = getKeyHash(nj, {});
+    var keyList = [];
+    var cpList = []; // 先对比key对应的节点，如果新老有一方对不上则落空
+
+    Object.keys(ojk).forEach(function (k) {
+      var o = ojk[k];
+      var n = njk[k];
+
+      if (!n) {
+        o.json.key = KEY_FLAG;
+      }
+    });
+    Object.keys(njk).forEach(function (k) {
+      var o = ojk[k];
+      var n = njk[k]; // 有可能老的没有这个key，新key落空
+
+      if (!o) {
+        n.json.key = KEY_FLAG;
+        return;
+      }
+
+      var oj = o.json;
+      var nj = n.json;
+      var vd = o.vd; // 相同class的组件进行对比替换
+
+      if (oj.$$type === TYPE_CP$2 && nj.$$type === TYPE_CP$2) {
+        if (oj.klass === nj.klass) {
+
+          diffCp(oj, nj, vd); // 标识对比过了
+
+          oj.key = nj.key = KEY_FLAG; // 老的sr里需删除这个vd，因为老sr会回收
+
+          cpList.push(vd);
+        }
+      } // 相同类型的vd进行对比继承动画
+      else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
+          nj.inherit = vd;
+          oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
+
+          if (nj.$$type === TYPE_VD$2) {
+            keyList.push({
+              vd: vd,
+              oj: oj,
+              nj: nj
+            });
+          }
+        }
+    }); // key相同的dom对比children，下面非key逻辑就不做了
+
+    keyList.forEach(function (item) {
+      diffChildren(item.vd, item.oj, item.nj);
+    }); // 整体tree进行对比
+
+    diffChild(vd, oj, nj); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收，这里处理key的
+
+    cpList.forEach(function (vd) {
+      removeCpFromOldTree(vd);
+    });
+  }
+  /**
+   * 递归检查dom的children，相同的无需重新生成，用PL类型占位符代替直接返回老vd
+   * @param vd
+   * @param oj
+   * @param nj
+   * @param replaceKeyHash
+   */
+
+
+  function diffChild(vd, oj, nj, replaceKeyHash) {
+    if (util.isObject(nj)) {
+      if (nj.$$type === TYPE_CP$2) {
+        // key对比过了忽略
+        if (nj.key === KEY_FLAG) {
+          return;
+        } // 相同class的组件处理
+
+
+        if (oj.$$type === nj.$$type && oj.klass === nj.klass) {
+          diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
+
+          removeCpFromOldTree(vd);
+        }
+      } // dom类型递归children
+      else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
+          if (oj.tagName === nj.tagName) {
+            nj.inherit = vd;
+          }
+
+          diffChildren(vd, oj, nj);
+        }
+    }
+  }
+  /**
+   * dom类型的vd对比children
+   * @param vd
+   * @param oj
+   * @param nj
+   * @param replaceKeyHash
+   */
+
+
+  function diffChildren(vd, oj, nj, replaceKeyHash) {
+    var oc = oj.children;
+    var nc = nj.children;
+    var ol = oc.length;
+    var nl = nc.length;
+    var children = vd.children;
+
+    for (var i = 0, of = 0, nf = 0, len = Math.min(ol, nl); i < len; i++) {
+      var o = oc[i + of];
+      var n = nc[i + nf]; // 新老都是key直接跳过
+
+      if (o.key === KEY_FLAG && n.key === KEY_FLAG) ; // 其中一个是key对比过了调整索引和长度
+      else if (o.key === KEY_FLAG) {
+          of++;
+          i--;
+          ol--;
+          len = Math.min(ol, nl);
+        } else if (n.key === KEY_FLAG) {
+          nf++;
+          i--;
+          nl--;
+          len = Math.min(ol, nl);
+        } else {
+          diffChild(children[i + of], o, n);
+        }
+    } // 长度不同增减的无需关注，新json创建cp有didMount，老vd会调用cp的destroy
+
+  }
+  /**
+   * 根据json对比看cp如何更新，被render()后的json的二级组件对比才会出现
+   * @param oj
+   * @param nj
+   * @param vd
+   */
+
+
+  function diffCp(oj, nj, vd) {
+    // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
+    // 否则需要强制触发组件更新，包含setState内容
+    nj.$$type = TYPE_PL$2;
+    nj.value = vd;
+    var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
+
+    var exist = {};
+    Object.keys(oj.props).forEach(function (k) {
+      var v = oj.props[k];
+      exist[k] = v;
+    });
+    Object.keys(nj.props).forEach(function (k) {
+      var v = nj.props[k];
+
+      if (/^on[a-zA-Z]/.test(k)) {
+        oj.props[k] = v;
+
+        if (exist[k]) {
+          if (exist[k] !== v) {
+            k = k.slice(2).toLowerCase();
+            sr.listener[k] = v;
+          }
+
+          delete exist[k];
+        } else {
+          k = k.slice(2).toLowerCase();
+          sr.listener[k] = v;
+        }
+      } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+        oj.props[k] = v;
+
+        if (exist[k]) {
+          if (exist[k] !== v) {
+            k = k.slice(2).toLowerCase();
+            vd.off(k, exist[k]);
+            vd.on(k, v);
+          }
+
+          delete exist[k];
+        } else {
+          k = k.slice(2).toLowerCase();
+          vd.on(k, v);
+        }
+      }
+    }); // 新的少的事件取消
+
+    Object.keys(exist).forEach(function (k) {
+      var v = exist[k];
+
+      if (/^on[a-zA-Z]/.test(k)) {
+        nj.props[k] = v;
+        k = k.slice(2).toLowerCase();
+        delete sr.listener[k];
+      } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+        nj.props[k] = v;
+        k = k.slice(2).toLowerCase();
+        vd.off(k, v);
+      }
+    });
+    checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
+  }
+  /**
+   * 深度优先遍历json，将有key的记录在hash中，如果传入根vd，同步递归保存对应位置的vd
+   * @param json
+   * @param hash
+   * @param vd
+   * @returns {*}
+   */
+
+
+  function getKeyHash(json, hash, vd) {
+    if (Array.isArray(json)) {
+      json.forEach(function (item, i) {
+        return getKeyHash(item, hash, vd && vd[i]);
+      });
+    } else if (util.isObject(json)) {
+      if (json.$$type === TYPE_VD$2 || json.$$type === TYPE_GM$2 || json.$$type === TYPE_CP$2) {
+        // 深度优先
+        if (json.$$type === TYPE_VD$2) {
+          getKeyHash(json.children, hash, vd && vd.children);
+        }
+
+        var key = json.props.key;
+
+        if (!util.isNil(key) && key !== '') {
+          // 重复key错误警告
+          if (hash.hasOwnProperty(key)) {
+            console.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+          }
+
+          hash[key] = {
+            json: json,
+            vd: vd
+          };
+        }
+      }
+    }
+
+    return hash;
+  }
+  /**
+   * 非一级组件diff发生更新时，其需要从sr的tree中移除，因为sr会销毁
+   */
+
+
+  function removeCpFromOldTree(vd) {
+    // root下的一级组件不会发生回收情况，忽略
+    if (!vd.host) {
+      return;
+    }
+
+    var parent = vd.parent;
+
+    if (parent) {
+      var i = parent.children.indexOf(vd);
+
+      if (i > -1) {
+        parent.children[i] = null;
+      } else {
+        throw new Error('Can not find child: ' + vd.tagName);
+      }
+    }
+  }
+  /**
+   * 执行componentDidUpdate/destroy
+   */
+
+
+  function did() {
+    updateList.forEach(function (item) {
+      if (util.isFunction(item.componentDidUpdate)) {
+        item.componentDidUpdate();
+      }
+    });
+    updateList = [];
+    removeList.forEach(function (item) {
+      item.__destroy();
+    });
+    removeList = [];
+  }
+
+  var updater = {
+    ref: function ref(o) {
+      Xom$2 = o.Xom;
+      Dom$2 = o.Dom;
+      Img$2 = o.Img;
+      Geom$1 = o.Geom;
+      Component$2 = o.Component;
+    },
+    updateList: updateList,
+    check: check,
+    checkCp: checkCp,
+    did: did
+  };
 
   var joinVd$1 = util.joinVd,
       joinDef$1 = util.joinDef;
@@ -13480,21 +13513,20 @@
     }, {
       key: "__genHtml",
       value: function __genHtml() {
+        var _this2 = this;
+
         var res = "<".concat(this.tagName); // 拼接处理属性
 
-        for (var i = 0, len = this.__props.length; i < len; i++) {
-          var item = this.__props[i];
-
-          var _item = _slicedToArray(item, 2),
-              k = _item[0],
-              v = _item[1]; // 忽略事件
+        Object.keys(this.props).forEach(function (i) {
+          var _this2$props$i = _slicedToArray(_this2.props[i], 2),
+              k = _this2$props$i[0],
+              v = _this2$props$i[1]; // 忽略事件
 
 
           if (!/^on[a-zA-Z]/.test(k)) {
             res += renderProp(k, v);
           }
-        }
-
+        });
         res += "></".concat(this.tagName, ">");
         return res;
       }
@@ -13636,7 +13668,7 @@
     }, {
       key: "refresh",
       value: function refresh(cb) {
-        var _this2 = this;
+        var _this3 = this;
 
         var isDestroyed = this.isDestroyed,
             renderMode = this.renderMode,
@@ -13683,40 +13715,40 @@
           // 第一次默认REFLOW以及样式涉及变更等需要布局
           if (lv >= level.REFLOW) {
             // 布局分为两步，普通流和定位流，互相递归
-            _this2.__layout({
+            _this3.__layout({
               x: 0,
               y: 0,
-              w: _this2.width,
-              h: _this2.height
+              w: _this3.width,
+              h: _this3.height
             }); // 绝对布局需要从根开始保存相对坐标系的容器引用，并根据relative/absolute情况变更
 
 
-            _this2.__layoutAbs(_this2, {
+            _this3.__layoutAbs(_this3, {
               x: 0,
               y: 0,
-              w: _this2.width,
-              h: _this2.height
+              w: _this3.width,
+              h: _this3.height
             });
           }
 
           if (renderMode === mode.CANVAS) {
-            _this2.__clear();
+            _this3.__clear();
           }
 
-          _this2.render(renderMode, ctx, defs);
+          _this3.render(renderMode, ctx, defs);
 
           if (renderMode === mode.SVG) {
-            var nvd = _this2.virtualDom;
+            var nvd = _this3.virtualDom;
             nvd.defs = defs.value;
 
-            if (_this2.node.__root) {
-              diff(_this2.node, _this2.node.__vd, nvd);
+            if (_this3.node.__root) {
+              diff(_this3.node, _this3.node.__vd, nvd);
             } else {
-              _this2.node.innerHTML = util.joinVirtualDom(nvd);
+              _this3.node.innerHTML = util.joinVirtualDom(nvd);
             }
 
-            _this2.node.__vd = nvd;
-            _this2.node.__defs = defs;
+            _this3.node.__vd = nvd;
+            _this3.node.__defs = defs;
           } // 特殊cb，供小程序绘制完回调使用
 
 
@@ -13724,7 +13756,7 @@
             cb();
           }
 
-          _this2.emit(Event.REFRESH, lv);
+          _this3.emit(Event.REFRESH, lv);
         });
       }
     }, {
@@ -13750,7 +13782,7 @@
     }, {
       key: "addRefreshTask",
       value: function addRefreshTask(cb) {
-        var _this3 = this;
+        var _this4 = this;
 
         if (!cb) {
           return;
@@ -13781,23 +13813,23 @@
                 }); // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
 
                 if (setStateList.length) {
-                  updater.check(_this3);
+                  updater.check(_this4);
                 } // 有组件更新，则需要重新布局
 
 
                 var len = updater.updateList.length;
 
                 if (len) {
-                  _this3.setRefreshLevel(level.REFLOW);
+                  _this4.setRefreshLevel(level.REFLOW);
 
-                  _this3.refresh();
+                  _this4.refresh();
                 } // 有可能组件都不需要更新，且没有其它触发的渲染更新
                 else if (clone.length > setStateList.length) {
-                    _this3.refresh();
+                    _this4.refresh();
                   } // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
 
 
-                var r = _this3.__hookTask;
+                var r = _this4.__hookTask;
 
                 if (r) {
                   var hookTask = frame.__hookTask;
@@ -13858,12 +13890,12 @@
     }, {
       key: "__frameHook",
       value: function __frameHook() {
-        var _this4 = this;
+        var _this5 = this;
 
         // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
         // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
         var r = this.__hookTask = this.__hookTask || function () {
-          _this4.refresh();
+          _this5.refresh();
         };
 
         if (frame.__hookTask.indexOf(r) === -1) {
@@ -13919,7 +13951,7 @@
     }]);
 
     return Root;
-  }(Dom$2);
+  }(Dom$1);
 
   var AUTO$5 = unit.AUTO,
       PX$7 = unit.PX,
@@ -15928,7 +15960,7 @@
         return new Root(tagName, props, children);
       }
 
-      if (Dom$2.isValid(tagName)) {
+      if (Dom$1.isValid(tagName)) {
         return {
           tagName: tagName,
           props: props,
@@ -15959,7 +15991,7 @@
       return parser.parse(this, json, dom, options);
     },
     mode: mode,
-    Component: Component$2,
+    Component: Component$1,
     Event: Event,
     util: util,
     inject: inject,
@@ -15970,17 +16002,17 @@
   };
   builder.ref({
     Xom: Xom,
-    Dom: Dom$2,
-    Img: Img$2,
+    Dom: Dom$1,
+    Img: Img$1,
     Geom: Geom$2,
-    Component: Component$2
+    Component: Component$1
   });
   updater.ref({
     Xom: Xom,
-    Dom: Dom$2,
-    Img: Img$2,
+    Dom: Dom$1,
+    Img: Img$1,
     Geom: Geom$2,
-    Component: Component$2
+    Component: Component$1
   });
 
   if (typeof window !== 'undefined') {

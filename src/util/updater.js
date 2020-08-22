@@ -33,7 +33,7 @@ function check(vd) {
  * 检查cp是否有state变更
  * @param cp
  * @param nextProps
- * @param forceCheckUpdate
+ * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制更新
  */
 function checkCp(cp, nextProps, forceCheckUpdate) {
   if(cp.__nextState || forceCheckUpdate) {
@@ -66,7 +66,6 @@ function checkCp(cp, nextProps, forceCheckUpdate) {
  */
 function updateCp(cp, props, state) {
   cp.props = props;
-  cp.__props = util.hash2arr(cp.props);
   cp.__state = state;
   cp.__nextState = null;
   let oldSr = cp.shadowRoot;
@@ -95,14 +94,22 @@ function diffSr(vd, oj, nj) {
   let replaceKeyHash = {};
   let keyList = [];
   let cpList = [];
-  // 先对比key对应的节点
+  // 先对比key对应的节点，如果新老有一方对不上则落空
+  Object.keys(ojk).forEach(k => {
+    let o = ojk[k];
+    let n = njk[k];
+    if(!n) {
+      o.json.key = KEY_FLAG;
+    }
+  });
   Object.keys(njk).forEach(k => {
     let o = ojk[k];
-    // 有可能老的没有这个key
+    let n = njk[k];
+    // 有可能老的没有这个key，新key落空
     if(!o) {
+      n.json.key = KEY_FLAG;
       return;
     }
-    let n = njk[k];
     let oj = o.json;
     let nj = n.json;
     let vd = o.vd;
@@ -216,7 +223,7 @@ function diffChildren(vd, oj, nj, replaceKeyHash) {
 }
 
 /**
- * 根据json对比看cp如何更新
+ * 根据json对比看cp如何更新，被render()后的json的二级组件对比才会出现
  * @param oj
  * @param nj
  * @param vd
@@ -226,6 +233,59 @@ function diffCp(oj, nj, vd) {
   // 否则需要强制触发组件更新，包含setState内容
   nj.$$type = TYPE_PL;
   nj.value = vd;
+  let sr = vd.shadowRoot;
+  // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
+  let exist = {};
+  Object.keys(oj.props).forEach(k => {
+    let v = oj.props[k];
+    exist[k] = v;
+  });
+  Object.keys(nj.props).forEach(k => {
+    let v = nj.props[k];
+    if(/^on[a-zA-Z]/.test(k)) {
+      oj.props[k] = v;
+      if(exist[k]) {
+        if(exist[k] !== v) {
+          k = k.slice(2).toLowerCase();
+          sr.listener[k] = v;
+        }
+        delete exist[k];
+      }
+      else {
+        k = k.slice(2).toLowerCase();
+        sr.listener[k] = v;
+      }
+    }
+    else if(/^on-[a-zA-Z\d_$]/.test(k)) {
+      oj.props[k] = v;
+      if(exist[k]) {
+        if(exist[k] !== v) {
+          k = k.slice(2).toLowerCase();
+          vd.off(k, exist[k]);
+          vd.on(k, v);
+        }
+        delete exist[k];
+      }
+      else {
+        k = k.slice(2).toLowerCase();
+        vd.on(k, v);
+      }
+    }
+  });
+  // 新的少的事件取消
+  Object.keys(exist).forEach(k => {
+    let v = exist[k];
+    if(/^on[a-zA-Z]/.test(k)) {
+      nj.props[k] = v;
+      k = k.slice(2).toLowerCase();
+      delete sr.listener[k];
+    }
+    else if(/^on-[a-zA-Z\d_$]/.test(k)) {
+      nj.props[k] = v;
+      k = k.slice(2).toLowerCase();
+      vd.off(k, v);
+    }
+  });
   checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
 }
 

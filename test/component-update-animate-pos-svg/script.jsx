@@ -5,16 +5,8 @@ class Component extends karas.Component {
     super();
     this.state = { a: 1 };
   }
-  render() {
-    return <div>
-      <Child key="k" a={this.state.a}/>
-    </div>;
-  }
-}
-
-class Child extends karas.Component {
   componentDidMount() {
-    this.shadowRoot.animate([
+    this.ref.b.animate([
       {
         color: '#F00',
       },
@@ -27,10 +19,15 @@ class Child extends karas.Component {
     });
   }
   render() {
-    if(this.props.a === 1) {
-      return <span key="k2" test="1">{this.props.a}</span>;
+    if(this.state.a === 1) {
+      return <div>
+        <span ref="b">2</span>
+      </div>;
     }
-    return <span key="k2" test="2">{this.props.a}</span>;
+    return <div>
+      <span key="a">1</span>
+      <span ref="b">2</span>
+    </div>;
   }
 }
 

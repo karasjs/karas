@@ -48,4 +48,4 @@ o.animateController.play(function() {
 });
 setTimeout(function() {
   input.value = n;
-}, 300);
+}, 250);

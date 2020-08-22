@@ -1,7 +1,6 @@
 import Node from './Node';
 import Text from './Text';
 import builder from '../util/builder';
-import updater from '../util/updater';
 import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
@@ -22,17 +21,14 @@ function setUpdateFlag(cp) {
 }
 
 class Component extends Event {
-  constructor(props) {
+  constructor(props = {}) {
     super();
-    props = props || [];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
-      this.__props = props;
     }
     else {
       this.props = props;
-      this.__props = util.hash2arr(props);
     }
     this.__parent = null;
     this.__host = null;
@@ -94,20 +90,15 @@ class Component extends Event {
       extend(sr.style, style, keys);
       extend(sr.currentStyle, style, keys);
       // 事件添加到sr，以及自定义事件
-      this.__props.forEach(item => {
-        let [k, v] = item;
+      Object.keys(this.props).forEach(k => {
+        let v = this.props[k];
         if(/^on[a-zA-Z]/.test(k)) {
           k = k.slice(2).toLowerCase();
-          let arr = sr.listener[k] = sr.listener[k] || [];
-          if(arr.indexOf(v) === -1) {
-            arr.push(v);
-          }
+          sr.listener[k] = v;
         }
         else if(/^on-[a-zA-Z\d_$]/.test(k)) {
           k = k.slice(3);
-          this.on(k, function(...args) {
-            v(...args);
-          });
+          this.on(k, v);
         }
       });
     }

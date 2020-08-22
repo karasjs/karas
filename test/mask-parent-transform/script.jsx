@@ -3,6 +3,9 @@ let o = karas.render(
     <div style={{
       translateX: 50,
     }}>
+      <div
+        ref="t"
+        style={{position:'absolute',left:0,top:0,width:'100%',height:'100%',background:'#F00'}}>123</div>
       <$polygon
         mask="true"
         rx={0.1}
@@ -13,9 +16,6 @@ let o = karas.render(
           [0, 1]
         ]}
         style={{position:'absolute',left:50,top:50,width:50,height:50,fill:'#fff',translateY:50}}/>
-      <div
-        ref="t"
-        style={{position:'absolute',left:0,top:0,width:'100%',height:'100%',background:'#F00'}}>123</div>
     </div>
   </canvas>,
   '#test'

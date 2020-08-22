@@ -1092,9 +1092,9 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode, ctx, defs) {
-    let { prev, root } = this;
-    let hasMask = prev && prev.isMask;
-    let hasClip = prev && prev.isClip;
+    let { next, root } = this;
+    let hasMask = next && next.isMask;
+    let hasClip = next && next.isClip;
     if(!hasMask && !hasClip) {
       this.render(renderMode, ctx, defs);
       return;
@@ -1107,15 +1107,15 @@ class Xom extends Node {
         this.render(renderMode, c.ctx);
         // 收集之前的mask列表
         let list = [];
-        while(prev && prev.isMask) {
-          list.unshift(prev);
-          prev = prev.prev;
+        while(next && next.isMask) {
+          list.push(next);
+          next = next.prev;
         }
         // 当mask只有1个时，无需生成m，直接在c上即可
         if(list.length === 1) {
-          prev = list[0];
+          next = list[0];
           c.ctx.globalCompositeOperation = 'destination-in';
-          prev.render(renderMode, c.ctx);
+          next.render(renderMode, c.ctx);
           // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
           c.draw(c.ctx);
           ctx.drawImage(c.canvas, 0, 0);
@@ -1151,9 +1151,9 @@ class Xom extends Node {
         let beginPath = ctx.beginPath;
         let closePath = ctx.closePath;
         ctx.fill = ctx.beginPath = ctx.closePath = empty;
-        while(prev && prev.isClip) {
-          prev.render(renderMode, ctx);
-          prev = prev.prev;
+        while(next && next.isClip) {
+          next.render(renderMode, ctx);
+          next = next.next;
         }
         ctx.fill = fill;
         ctx.beginPath = beginPath;
@@ -1168,10 +1168,10 @@ class Xom extends Node {
       this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
-        this.virtualDom.mask = prev.maskId;
+        this.virtualDom.mask = next.maskId;
       }
       else if(hasClip) {
-        this.virtualDom.clip = prev.clipId;
+        this.virtualDom.clip = next.clipId;
       }
     }
   }

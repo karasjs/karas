@@ -9495,10 +9495,10 @@
     }, {
       key: "__renderByMask",
       value: function __renderByMask(renderMode, ctx, defs) {
-        var prev = this.prev,
+        var next = this.next,
             root = this.root;
-        var hasMask = prev && prev.isMask;
-        var hasClip = prev && prev.isClip;
+        var hasMask = next && next.isMask;
+        var hasClip = next && next.isClip;
 
         if (!hasMask && !hasClip) {
           this.render(renderMode, ctx, defs);
@@ -9515,16 +9515,16 @@
 
             var list = [];
 
-            while (prev && prev.isMask) {
-              list.unshift(prev);
-              prev = prev.prev;
+            while (next && next.isMask) {
+              list.push(next);
+              next = next.prev;
             } // 当mask只有1个时，无需生成m，直接在c上即可
 
 
             if (list.length === 1) {
-              prev = list[0];
+              next = list[0];
               c.ctx.globalCompositeOperation = 'destination-in';
-              prev.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+              next.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
 
               c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
@@ -9560,9 +9560,9 @@
               var closePath = ctx.closePath;
               ctx.fill = ctx.beginPath = ctx.closePath = empty;
 
-              while (prev && prev.isClip) {
-                prev.render(renderMode, ctx);
-                prev = prev.prev;
+              while (next && next.isClip) {
+                next.render(renderMode, ctx);
+                next = next.next;
               }
 
               ctx.fill = fill;
@@ -9577,9 +9577,9 @@
           this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
           if (hasMask) {
-            this.virtualDom.mask = prev.maskId;
+            this.virtualDom.mask = next.maskId;
           } else if (hasClip) {
-            this.virtualDom.clip = prev.clipId;
+            this.virtualDom.clip = next.clipId;
           }
         }
       }
@@ -14365,13 +14365,6 @@
             var last = defs.value;
             last = last[last.length - 1];
             last.children = last.children.concat(children);
-
-            if (isClip) {
-              this.__clipId = prev.clipId;
-            } else {
-              this.__maskId = prev.maskId;
-            }
-
             return;
           }
 

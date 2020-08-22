@@ -342,12 +342,6 @@ class Geom extends Xom {
         let last = defs.value;
         last = last[last.length - 1];
         last.children = last.children.concat(children);
-        if(isClip) {
-          this.__clipId = prev.clipId;
-        }
-        else {
-          this.__maskId = prev.maskId;
-        }
         return;
       }
       let id = defs.add({

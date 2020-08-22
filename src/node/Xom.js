@@ -1109,7 +1109,7 @@ class Xom extends Node {
         let list = [];
         while(next && next.isMask) {
           list.push(next);
-          next = next.prev;
+          next = next.next;
         }
         // 当mask只有1个时，无需生成m，直接在c上即可
         if(list.length === 1) {

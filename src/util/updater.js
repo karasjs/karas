@@ -244,12 +244,13 @@ function diffCp(oj, nj, vd) {
     let v = nj.props[k];
     if(/^on[a-zA-Z]/.test(k)) {
       oj.props[k] = v;
-      if(exist[k]) {
-        if(exist[k] !== v) {
+      let ex = exist[k];
+      if(ex) {
+        delete exist[k];
+        if(ex !== v) {
           k = k.slice(2).toLowerCase();
           sr.listener[k] = v;
         }
-        delete exist[k];
       }
       else {
         k = k.slice(2).toLowerCase();
@@ -258,8 +259,10 @@ function diffCp(oj, nj, vd) {
     }
     else if(/^on-[a-zA-Z\d_$]/.test(k)) {
       oj.props[k] = v;
-      if(exist[k]) {
-        if(exist[k] !== v) {
+      let ex = exist[k];
+      if(ex) {
+        delete exist[k];
+        if(ex !== v) {
           k = k.slice(2).toLowerCase();
           vd.off(k, exist[k]);
           vd.on(k, v);

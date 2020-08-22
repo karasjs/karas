@@ -12543,23 +12543,27 @@
 
       if (/^on[a-zA-Z]/.test(k)) {
         oj.props[k] = v;
+        var ex = exist[k];
 
-        if (exist[k]) {
-          if (exist[k] !== v) {
+        if (ex) {
+          delete exist[k];
+
+          if (ex !== v) {
             k = k.slice(2).toLowerCase();
             sr.listener[k] = v;
           }
-
-          delete exist[k];
         } else {
           k = k.slice(2).toLowerCase();
           sr.listener[k] = v;
         }
       } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
         oj.props[k] = v;
+        var _ex = exist[k];
 
-        if (exist[k]) {
-          if (exist[k] !== v) {
+        if (_ex) {
+          delete exist[k];
+
+          if (_ex !== v) {
             k = k.slice(2).toLowerCase();
             vd.off(k, exist[k]);
             vd.on(k, v);

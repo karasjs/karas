@@ -1,10 +1,12 @@
 import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
+import util from '../util/util';
 import Controller from '../animate/Controller';
 
 export default {
   parse(karas, json, dom, options = {}) {
+    json = util.clone(json);
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};

@@ -1,3 +1,5 @@
+import $$type from './$$type';
+
 let toString = {}.toString;
 function isType(type) {
   return function(obj) {
@@ -242,6 +244,13 @@ function hash2arr(hash) {
 
 function clone(obj) {
   if(isNil(obj) || typeof obj !== 'object') {
+    return obj;
+  }
+  // parse递归会出现内部先返回解析好的json，外部parse不能clone
+  if(obj.$$type === $$type.TYPE_PL
+    || obj.$$type === $$type.TYPE_VD
+    || obj.$$type === $$type.TYPE_GM
+    || obj.$$type === $$type.TYPE_CP) {
     return obj;
   }
   if(util.isDate(obj)) {

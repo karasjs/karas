@@ -41,5 +41,5 @@ let o = karas.render(
 o.ref.c.setState({ a: 2 }, function() {
   setTimeout(function() {
     input.value += JSON.stringify(o.virtualDom);
-  }, 200);
+  }, 300);
 });

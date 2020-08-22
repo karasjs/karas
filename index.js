@@ -920,6 +920,26 @@
     geom: geom
   };
 
+  // 类型为引用防止json仿造
+  var TYPE_PL = {
+    _: 0
+  };
+  var TYPE_VD = {
+    _: 1
+  };
+  var TYPE_GM = {
+    _: 2
+  };
+  var TYPE_CP = {
+    _: 3
+  };
+  var $$type = {
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP,
+    TYPE_PL: TYPE_PL
+  };
+
   var toString = {}.toString;
 
   function isType(type) {
@@ -1179,6 +1199,11 @@
 
   function clone(obj) {
     if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
+
+
+    if (obj.$$type === $$type.TYPE_PL || obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
       return obj;
     }
 
@@ -10119,20 +10144,11 @@
     geom: geom$2
   };
 
-  var Xom$1, Dom, Img, Geom, Component; // 类型为引用防止json仿造
-
-  var TYPE_PL = {
-    _: 0
-  };
-  var TYPE_VD = {
-    _: 1
-  };
-  var TYPE_GM = {
-    _: 2
-  };
-  var TYPE_CP = {
-    _: 3
-  };
+  var TYPE_PL$1 = $$type.TYPE_PL,
+      TYPE_VD$1 = $$type.TYPE_VD,
+      TYPE_GM$1 = $$type.TYPE_GM,
+      TYPE_CP$1 = $$type.TYPE_CP;
+  var Xom$1, Dom, Img, Geom, Component;
 
   function initRoot(cd, root) {
     var children = build(flattenJson(cd), root, root);
@@ -10177,15 +10193,15 @@
           props = json.props,
           children = json.children,
           klass = json.klass,
-          $$type = json.$$type,
+          _$$type = json.$$type,
           inherit = json.inherit,
           __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
-      if ($$type === TYPE_PL) {
+      if (_$$type === TYPE_PL$1) {
         return json.value;
       }
 
-      if ($$type === TYPE_VD) {
+      if (_$$type === TYPE_VD$1) {
         if (tagName === 'div' || tagName === 'span') {
           vd = new Dom(tagName, props);
         } else if (tagName === 'img') {
@@ -10199,11 +10215,11 @@
         }
 
         vd.__children = children;
-      } else if ($$type === TYPE_GM) {
+      } else if (_$$type === TYPE_GM$1) {
         var _klass = Geom.getRegister(tagName);
 
         vd = new _klass(tagName, props);
-      } else if ($$type === TYPE_CP) {
+      } else if (_$$type === TYPE_CP$1) {
         vd = new klass(props);
         vd.__tagName = tagName;
       } else {
@@ -10232,7 +10248,7 @@
         vd.__host = host;
       }
 
-      if ($$type === TYPE_CP) {
+      if (_$$type === TYPE_CP$1) {
         vd.__init();
       }
 
@@ -10260,7 +10276,7 @@
       return parent.map(function (item) {
         return flattenJson(item);
       });
-    } else if (!parent || [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+    } else if (!parent || [TYPE_VD$1, TYPE_GM$1, TYPE_CP$1].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
       return parent;
     }
 
@@ -10277,18 +10293,18 @@
       children.forEach(function (item) {
         traverseJson(list, item, options);
       });
-    } else if (children && (children.$$type === TYPE_VD || children.$$type === TYPE_GM)) {
+    } else if (children && (children.$$type === TYPE_VD$1 || children.$$type === TYPE_GM$1)) {
       if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
         throw new Error('Can not nest canvas/svg');
       }
 
-      if (children.$$type === TYPE_VD) {
+      if (children.$$type === TYPE_VD$1) {
         flattenJson(children.children);
       }
 
       list.push(children);
       options.lastText = null;
-    } else if (children && (children.$$type === TYPE_CP || children.$$type === TYPE_PL)) {
+    } else if (children && (children.$$type === TYPE_CP$1 || children.$$type === TYPE_PL$1)) {
       list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
 
       options.lastText = null;
@@ -10350,10 +10366,6 @@
       Geom = o.Geom;
       Component = o.Component;
     },
-    TYPE_VD: TYPE_VD,
-    TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP,
-    TYPE_PL: TYPE_PL,
     initRoot: initRoot,
     initCp: initCp,
     flattenJson: flattenJson,
@@ -10361,10 +10373,10 @@
     build: build
   };
 
-  var TYPE_PL$1 = builder.TYPE_PL,
-      TYPE_VD$1 = builder.TYPE_VD,
-      TYPE_GM$1 = builder.TYPE_GM,
-      TYPE_CP$1 = builder.TYPE_CP;
+  var TYPE_PL$2 = $$type.TYPE_PL,
+      TYPE_VD$2 = $$type.TYPE_VD,
+      TYPE_GM$2 = $$type.TYPE_GM,
+      TYPE_CP$2 = $$type.TYPE_CP;
   var Xom$2, Dom$1, Img$1, Geom$1, Component$1;
   var updateList = [];
   var removeList = [];
@@ -10438,7 +10450,7 @@
 
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
-    if (!util.isObject(json) || json.$$type !== TYPE_PL$1) {
+    if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
       removeList.push(oldSr);
     }
   }
@@ -10469,7 +10481,7 @@
       var nj = n.json;
       var vd = o.vd; // 相同class的组件进行对比替换
 
-      if (oj.$$type === TYPE_CP$1 && nj.$$type === TYPE_CP$1) {
+      if (oj.$$type === TYPE_CP$2 && nj.$$type === TYPE_CP$2) {
         if (oj.klass === nj.klass) {
 
           diffCp(oj, nj, vd); // 标识对比过了
@@ -10483,7 +10495,7 @@
           nj.inherit = vd;
           oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
 
-          if (nj.$$type === TYPE_VD$1) {
+          if (nj.$$type === TYPE_VD$2) {
             keyList.push({
               vd: vd,
               oj: oj,
@@ -10514,7 +10526,7 @@
 
   function diffChild(vd, oj, nj, replaceKeyHash) {
     if (util.isObject(nj)) {
-      if (nj.$$type === TYPE_CP$1) {
+      if (nj.$$type === TYPE_CP$2) {
         // key对比过了忽略
         if (nj.key === KEY_FLAG) {
           return;
@@ -10527,7 +10539,7 @@
           removeCpFromOldTree(vd);
         }
       } // dom类型递归children
-      else if (nj.$$type === TYPE_VD$1 && oj.$$type === TYPE_VD$1) {
+      else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
           if (oj.tagName === nj.tagName) {
             nj.inherit = vd;
           }
@@ -10584,7 +10596,7 @@
   function diffCp(oj, nj, vd) {
     // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
     // 否则需要强制触发组件更新，包含setState内容
-    nj.$$type = TYPE_PL$1;
+    nj.$$type = TYPE_PL$2;
     nj.value = vd;
     checkCp(vd, nj.props, !util.equal(oj.props, nj.props));
   }
@@ -10603,9 +10615,9 @@
         return getKeyHash(item, hash, vd && vd[i]);
       });
     } else if (util.isObject(json)) {
-      if (json.$$type === TYPE_VD$1 || json.$$type === TYPE_GM$1 || json.$$type === TYPE_CP$1) {
+      if (json.$$type === TYPE_VD$2 || json.$$type === TYPE_GM$2 || json.$$type === TYPE_CP$2) {
         // 深度优先
-        if (json.$$type === TYPE_VD$1) {
+        if (json.$$type === TYPE_VD$2) {
           getKeyHash(json.children, hash, vd && vd.children);
         }
 
@@ -15523,6 +15535,10 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
+  var TYPE_PL$3 = $$type.TYPE_PL,
+      TYPE_VD$3 = $$type.TYPE_VD,
+      TYPE_GM$3 = $$type.TYPE_GM,
+      TYPE_CP$3 = $$type.TYPE_CP;
   var isNil$7 = util.isNil,
       isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
@@ -15740,7 +15756,11 @@
     if (tagName.charAt(0) === '$') {
       vd = karas.createGm(tagName, props);
     } else {
-      vd = karas.createVd(tagName, props, children.map(function (item) {
+      vd = karas.createVd(tagName, props, children.map(function (item, i) {
+        if (item && [TYPE_PL$3, TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
+          return item;
+        }
+
         return parse(karas, item, animateRecords, vars, hash);
       }));
     }
@@ -15813,8 +15833,8 @@
   var parser = {
     parse: function parse$1(karas, json, dom) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+      json = util.clone(json); // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
 
-      // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
       if (!inject.isDom(dom)) {
         options = dom || {};
         dom = null;
@@ -15827,7 +15847,8 @@
 
 
       if (dom) {
-        var tagName = json.tagName;
+        var _json = json,
+            tagName = _json.tagName;
 
         if (['canvas', 'svg'].indexOf(tagName) === -1) {
           throw new Error('Parse dom must be canvas/svg');
@@ -15912,11 +15933,8 @@
           tagName: tagName,
           props: props,
           children: children,
-          $$type: builder.TYPE_VD
-        }; // if(tagName === 'img') {
-        //   return new Img(tagName, props);
-        // }
-        // return new Dom(tagName, props, children);
+          $$type: $$type.TYPE_VD
+        };
       }
 
       throw new Error("Can not use <".concat(tagName, ">"));
@@ -15925,9 +15943,8 @@
       return {
         tagName: tagName,
         props: props,
-        $$type: builder.TYPE_GM
-      }; // let klass = Geom.getRegister(tagName);
-      // return new klass(tagName, props);
+        $$type: $$type.TYPE_GM
+      };
     },
     createCp: function createCp(klass, props, children, tagName) {
       props.children = children;
@@ -15935,8 +15952,8 @@
         klass: klass,
         tagName: tagName,
         props: props,
-        $$type: builder.TYPE_CP
-      }; // return new cp(props, children);
+        $$type: $$type.TYPE_CP
+      };
     },
     parse: function parse(json, dom, options) {
       return parser.parse(this, json, dom, options);

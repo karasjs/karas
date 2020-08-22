@@ -1,13 +1,10 @@
 import Text from '../node/Text';
 import util from './util';
+import $$type from './$$type';
+
+const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
-
-// 类型为引用防止json仿造
-const TYPE_PL = { _: 0 };
-const TYPE_VD = { _: 1 };
-const TYPE_GM = { _: 2 };
-const TYPE_CP = { _: 3 };
 
 function initRoot(cd, root) {
   let children = build(flattenJson(cd), root, root);
@@ -199,10 +196,6 @@ export default {
     Geom = o.Geom;
     Component = o.Component;
   },
-  TYPE_VD,
-  TYPE_GM,
-  TYPE_CP,
-  TYPE_PL,
   initRoot,
   initCp,
   flattenJson,

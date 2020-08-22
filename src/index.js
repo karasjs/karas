@@ -2,6 +2,7 @@ import Xom from './node/Xom';
 import Dom from './node/Dom';
 import Img from './node/Img';
 import Root from './node/Root';
+import $$type from './util/$$type';
 import builder from './util/builder';
 import updater from './util/updater';
 import mode from './util/mode';
@@ -51,12 +52,8 @@ let karas = {
         tagName,
         props,
         children,
-        $$type: builder.TYPE_VD,
+        $$type: $$type.TYPE_VD,
       };
-      // if(tagName === 'img') {
-      //   return new Img(tagName, props);
-      // }
-      // return new Dom(tagName, props, children);
     }
     throw new Error(`Can not use <${tagName}>`);
   },
@@ -64,10 +61,8 @@ let karas = {
     return {
       tagName,
       props,
-      $$type: builder.TYPE_GM,
+      $$type: $$type.TYPE_GM,
     };
-    // let klass = Geom.getRegister(tagName);
-    // return new klass(tagName, props);
   },
   createCp(klass, props, children, tagName) {
     props.children = children;
@@ -75,9 +70,8 @@ let karas = {
       klass,
       tagName,
       props,
-      $$type: builder.TYPE_CP,
+      $$type: $$type.TYPE_CP,
     };
-    // return new cp(props, children);
   },
   parse(json, dom, options) {
     return parser.parse(this, json, dom, options);

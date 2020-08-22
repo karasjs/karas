@@ -1,7 +1,8 @@
 import util from './util';
 import builder from './builder';
+import $$type from './$$type';
 
-const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = builder;
+const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
 

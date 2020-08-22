@@ -13517,11 +13517,8 @@
 
         var res = "<".concat(this.tagName); // 拼接处理属性
 
-        Object.keys(this.props).forEach(function (i) {
-          var _this2$props$i = _slicedToArray(_this2.props[i], 2),
-              k = _this2$props$i[0],
-              v = _this2$props$i[1]; // 忽略事件
-
+        Object.keys(this.props).forEach(function (k) {
+          var v = _this2.props[k]; // 忽略事件
 
           if (!/^on[a-zA-Z]/.test(k)) {
             res += renderProp(k, v);

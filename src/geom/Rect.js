@@ -2,23 +2,56 @@ import Geom from './Geom';
 import mode from '../util/mode';
 import painter from '../util/painter';
 import geom from '../math/geom';
+import util from "../util/util";
+
+let { isNil } = util;
+
+function genVertex(x, y, width, height, rx = 0, ry = 0) {
+  let ox = rx * geom.H;
+  let oy = ry * geom.H;
+  return [
+    [x + rx, y],
+    [x + width - rx, y],
+    [x + width + ox - rx, y, x + width, y + ry - oy, x + width, y + ry],
+    [x + width, y + height - ry],
+    [x + width, y + height + oy - ry, x + width + ox - rx, y + height, x + width - rx, y + height],
+    [x + rx, y + height],
+    [x + rx - ox, y + height, x, y + height + oy - ry, x, y + height - ry],
+    [x, y + ry],
+    [x, y + ry - oy, x + rx - ox, y, x + rx, y]
+  ];
+}
+
+
+function getR(v) {
+  v = parseFloat(v);
+  if(isNaN(v)) {
+    v = 0;
+  }
+  return v;
+}
 
 class Rect extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 圆角
-    this.__rx = 0;
-    if(this.props.rx) {
-      this.__rx = parseFloat(this.props.rx);
-      if(isNaN(this.rx)) {
-        this.__rx = 0;
+    if(this.isMulti) {
+      this.__rx = [];
+      this.__ry = [];
+      if(Array.isArray(props.rx)) {
+        this.__rx = props.rx.map(i => getR(i));
+      }
+      if(Array.isArray(props.ry)) {
+        this.__ry = props.ry.map(i => getR(i));
       }
     }
-    this.__ry = 0;
-    if(this.props.ry) {
-      this.__ry = parseFloat(this.props.ry);
-      if(isNaN(this.ry)) {
-        this.__ry = 0;
+    else {
+      this.__rx = this.__ry = 0;
+      if(!isNil(props.rx)) {
+        this.__rx = getR(props.rx);
+      }
+      if(!isNil(props.ry)) {
+        this.__ry = getR(props.ry);
       }
     }
   }
@@ -34,7 +67,6 @@ class Rect extends Geom {
       fill,
       stroke,
       strokeWidth,
-      strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
@@ -43,79 +75,72 @@ class Rect extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
-    let { width, height, rx, ry, __cacheProps } = this;
-    if(__cacheProps.rx === undefined) {
-      rx = Math.min(rx, 0.5);
-      rx *= width;
-      __cacheProps.rx = rx;
-      if(rx) {
-        __cacheProps.ox = rx * geom.H;
+    let { width, height, rx, ry, __cacheProps, isMulti } = this;
+    let rebuild;
+    if(isNil(__cacheProps.rx)) {
+      if(isMulti) {
+        __cacheProps.rx = rx.map(rx => Math.min(rx, 0.5) * width);
+      }
+      else {
+        __cacheProps.rx = Math.min(rx, 0.5) * width;
       }
     }
-    if(__cacheProps.ry === undefined) {
-      ry = Math.min(ry, 0.5);
-      ry *= height;
-      __cacheProps.ry = ry;
-      if(ry) {
-        __cacheProps.oy = ry * geom.H;
+    if(isNil(__cacheProps.ry)) {
+      if(isMulti) {
+        __cacheProps.ry = rx.map(ry => Math.min(ry, 0.5) * height);
+      }
+      else {
+        __cacheProps.ry = Math.min(ry, 0.5) * height;
+      }
+    }
+    // rx/ry有变化需重建顶点
+    if(rebuild) {
+      let { rx, ry } = __cacheProps;
+      if(isMulti) {
+        let list = rx.map((rx, i) => genVertex(originX, originY, width, height, rx, ry[i]));
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          let d = '';
+          rx.forEach((rx, i) => d += genVertex(originX, originY, width, height, rx, ry[i]));
+          __cacheProps.d = d;
+        }
+      }
+      else {
+        let list = genVertex(originX, originY, width, height, rx, ry);
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = painter.svgPolygon(list);
+        }
       }
     }
     if(renderMode === mode.CANVAS) {
+      let list = __cacheProps.list;
       ctx.beginPath();
-      if(__cacheProps.rx === 0 && __cacheProps.ry === 0) {
-        ctx.rect(originX, originY, width, height);
-        ctx.closePath();
-        ctx.fill();
+      if(isMulti) {
+        list.forEach(item => painter.canvasPolygon(ctx, item));
       }
       else {
-        let ox = __cacheProps.ox;
-        let oy = __cacheProps.oy;
-        let list = [
-          [originX + rx, originY],
-          [originX + width - rx, originY],
-          [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry],
-          [originX + width, originY + height - ry],
-          [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height],
-          [originX + rx, originY + height],
-          [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry],
-          [originX, originY + ry],
-          [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]
-        ];
-        painter.genCanvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.fill();
+      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
-        ['x', originX],
-        ['y', originY],
-        ['width', width],
-        ['height', height],
+        ['d', __cacheProps.d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      if(rx) {
-        props.push(['rx', rx]);
-      }
-      if(ry) {
-        props.push(['ry', ry]);
-      }
-      if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharrayStr]);
-      }
-      if(strokeLinecap !== 'butt') {
-        props.push(['stroke-linecap', strokeLinecap]);
-      }
-      if(strokeLinejoin !== 'miter') {
-        props.push(['stroke-linejoin', strokeLinejoin]);
-      }
-      if(strokeMiterlimit !== 4) {
-        props.push(['stroke-miterlimit', strokeMiterlimit]);
-      }
-      this.addGeom('rect', props);
+      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+      this.addGeom('path', props);
     }
   }
 

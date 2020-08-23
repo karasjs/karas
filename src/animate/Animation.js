@@ -234,27 +234,29 @@ function equalStyle(k, a, b) {
     }
     return true;
   }
+  // 都是纯值数组，mutil只是多了一维，equalArr本身即递归
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(k === 'points' || k === 'controls') {
-      if(a.length !== b.length) {
-        return false;
-      }
-      for(let i = 0, len = a.length; i < len; i++) {
-        if(a[i] === b[i]) {
-          continue;
-        }
-        if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
-          return false;
-        }
-      }
-      return true;
-    }
-    else if(k === 'controlA' || k === 'controlB') {
-      if(a.length !== b.length) {
-        return false;
-      }
-      return a[0] === b[0] && a[1] === b[1];
-    }
+    return equalArr(a, b);
+    // if(k === 'points' || k === 'controls') {
+    //   if(a.length !== b.length) {
+    //     return false;
+    //   }
+    //   for(let i = 0, len = a.length; i < len; i++) {
+    //     if(a[i] === b[i]) {
+    //       continue;
+    //     }
+    //     if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
+    //       return false;
+    //     }
+    //   }
+    //   return true;
+    // }
+    // else if(k === 'controlA' || k === 'controlB') {
+    //   if(a.length !== b.length) {
+    //     return false;
+    //   }
+    //   return a[0] === b[0] && a[1] === b[1];
+    // }
   }
   return a === b;
 }
@@ -496,6 +498,7 @@ function calDiff(prev, next, k, target) {
         res.v.push(v - pi.value);
       }
       else {
+        return;
         res.n = p;
         return res;
       }
@@ -507,6 +510,7 @@ function calDiff(prev, next, k, target) {
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     if(p.k !== n.k) {
+      return;
       res.n = p;
     }
     // 渐变
@@ -631,13 +635,13 @@ function calDiff(prev, next, k, target) {
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     // auto不做动画
-    if(p.unit === AUTO && n.unit === AUTO) {
+    if(p.unit === AUTO || n.unit === AUTO) {
       return;
     }
-    if(p.unit === AUTO || n.unit === AUTO) {
-      res.n = p;
-      return res;
-    }
+    // if(p.unit === AUTO || n.unit === AUTO) {
+    //   res.n = p;
+    //   return res;
+    // }
     let computedStyle = target.computedStyle;
     let parentComputedStyle = (target.parent || target).computedStyle;
     let diff = 0;
@@ -692,13 +696,88 @@ function calDiff(prev, next, k, target) {
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(isNil(p)) {
+      return;
       res.n = null;
     }
-    else if(k === 'points' || k === 'controls') {
-      if(isNil(n) || isNil(p)) {
-        return p;
+    // 特殊处理multi
+    else if(target.isMulti) {
+      if(k === 'points' || k === 'controls') {
+        if(isNil(n) || isNil(p) || equalArr(p, n)) {
+          return;
+        }
+        res.v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            res.v.push(null);
+          }
+          else {
+            let v2 = [];
+            for(let j = 0, len2 = Math.min(pv.length, nv.length); j < len2; j++) {
+              let pv2 = pv[j];
+              let nv2 = nv[j];
+              if(isNil(pv2) || isNil(nv2)) {
+                v2.push(null);
+              }
+              else {
+                let v3 = [];
+                for(let k = 0, len3 = Math.max(pv2.length, nv2.length); k < len3; k++) {
+                  let pv3 = pv2[k];
+                  let nv3 = nv2[k];
+                  // control由4点变2点
+                  if(isNil(pv3) || isNil(nv3)) {
+                    v3.push(0);
+                  }
+                  else {
+                    v3.push(nv3[j] - pv3[j]);
+                  }
+                }
+                v2.push(v3);
+              }
+            }
+            res.v.push(v2);
+          }
+        }
       }
-      if(equalArr(p, n)) {
+      else if(k === 'controlA' || k === 'controlB') {
+        if(isNil(n) || isNil(p) || equalArr(p, n)) {
+          return;
+        }
+        res.v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            res.v.push(null);
+          }
+          else {
+            res.v.push([
+              nv[0] - pv[0],
+              nv[1] - pv[1],
+            ]);
+          }
+        }
+      }
+      else {
+        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure') {
+          return;
+        }
+        let v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            v.push(0);
+          }
+          v.push(nv - pv);
+        }
+        res.v = v;
+      }
+    }
+    // 非multi特殊处理这几类数组类型数据
+    else if(k === 'points' || k === 'controls') {
+      if(isNil(n) || isNil(p) || equalArr(p, n)) {
         return;
       }
       res.v = [];
@@ -706,39 +785,45 @@ function calDiff(prev, next, k, target) {
         let pv = p[i];
         let nv = n[i];
         if(isNil(pv) || isNil(nv)) {
-          res.v.push(nv);
+          res.v.push(null);
         }
         else {
-          let v = [];
+          let v2 = [];
           for(let j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
-            if(isNil(pv[j]) || isNil(nv[j])) {
-              v.push(nv[j]);
+            let pv2 = pv[j];
+            let nv2 = nv[j];
+            // control由4点变2点
+            if(isNil(pv2) || isNil(nv2)) {
+              v2.push(0);
             }
             else {
-              v.push(nv[j] - pv[j]);
+              v2.push(nv2 - pv2);
             }
           }
-          res.v.push(v);
+          res.v.push(v2);
         }
       }
     }
     else if(k === 'controlA' || k === 'controlB') {
-      if(isNil(n) || isNil(p)) {
-        return p;
-      }
-      if(equalArr(p, n)) {
+      if(isNil(n) || isNil(p) || equalArr(p, n)) {
         return;
       }
       res.v = [
         n[0] - p[0],
-        n[1] - p[1]
+        n[1] - p[1],
       ];
     }
+    // 其它简单数据，除了edge/closure没有增量
     else {
-      if(n === p) {
+      if(n === p || k === 'edge' || k === 'closure') {
         return;
       }
-      res.v = n - p;
+      // if(k === 'edge' || k === 'closure') {
+      //   res.n = p;
+      // }
+      else {
+        res.v = n - p;
+      }
     }
   }
   else if(k === 'opacity' || k === 'zIndex') {
@@ -748,12 +833,12 @@ function calDiff(prev, next, k, target) {
     res.v = n - p;
   }
   // display等不能有增量过程的
-  else {
-    if(n === p) {
-      return;
-    }
-    res.n = p;
-  }
+  // else {
+  //   if(n === p) {
+  //     return;
+  //   }
+  //   res.n = p;
+  // }
   return res;
 }
 
@@ -822,9 +907,10 @@ function getEasing(ea) {
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
  * @param percent 到下一帧时间的百分比
+ * @param target vd
  * @returns {*}
  */
-function calIntermediateStyle(frame, percent) {
+function calIntermediateStyle(frame, percent, target) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
   if(timingFunction !== linear) {
@@ -911,24 +997,75 @@ function calIntermediateStyle(frame, percent) {
     }
     else if(repaint.GEOM.hasOwnProperty(k)) {
       let st = style[k];
-      if(k === 'points' || k === 'controls') {
-        for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-          if(isNil(st[i]) || !st[i].length) {
-            continue;
-          }
-          for(let j = 0, len2 = Math.min(st[i].length, v[i].length); j < len2; j++) {
-            if(!isNil(st[i][j]) && !isNil(v[i][j])) {
-              st[i][j] += v[i][j] * percent;
+      if(target.isMulti) {
+        if(k === 'points' || k === 'controls') {
+          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+            let o = st[i];
+            let n = v[i];
+            if(!isNil(o) && !isNil(n)) {
+              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                let o2 = o[j];
+                let n2 = n[j];
+                if(!isNil(o2) && !isNil(n2)) {
+                  for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
+                    if(!isNil(o2[k]) && !isNil(n2[k])) {
+                      o2[k] += n2[k] * percent;
+                    }
+                  }
+                }
+              }
             }
           }
         }
-      }
-      else if(k === 'controlA' || k === 'controlB') {
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
+        else if(k === 'controlA' || k === 'controlB') {
+          v.forEach((item, i) => {
+            let st2 = st[i];
+            if(!isNil(item) && !isNil(st2)) {
+              for(let i = 0, len = Math.min(st2.length, item.length); i < len; i++) {
+                let o = st2[i];
+                let n = item[i];
+                if(!isNil(o) && !isNil(n)) {
+                  st2[i] += n * percent;
+                }
+              }
+            }
+          });
+        }
+        else {
+          v.forEach((item, i) => {
+            if(!isNil(item) && !isNil(st[i])) {
+              st[i] += item * percent;
+            }
+          });
+        }
       }
       else {
-        style[k] += v * percent;
+        if(k === 'points' || k === 'controls') {
+          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+            let o = st[i];
+            let n = v[i];
+            if(!isNil(o) && !isNil(n)) {
+              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                if(!isNil(o[j]) && !isNil(n[j])) {
+                  o[j] += n[j] * percent;
+                }
+              }
+            }
+          }
+        }
+        else if(k === 'controlA' || k === 'controlB') {
+          if(!isNil(st[0]) && !isNil(v[0])) {
+            st[0] += v[0] * percent;
+          }
+          if(!isNil(st[1]) && !isNil(v[1])) {
+            st[1] += v[1] * percent;
+          }
+        }
+        else {
+          if(!isNil(st) && !isNil(v)) {
+            style[k] += v * percent;
+          }
+        }
       }
     }
     else if(k === 'opacity' || k === 'zIndex') {
@@ -1352,7 +1489,7 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent);
+            current = calIntermediateStyle(current, percent, this.target);
             [needRefresh, lv] = calRefresh(current, style, keys);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style

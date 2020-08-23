@@ -1,22 +1,42 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import util from '../util/util';
+import painter from '../util/painter';
+
+let { isNil } = util;
+
+function concatPointAndControl(point, control) {
+  if(Array.isArray(control) && control.length) {
+    return point.concat(control);
+  }
+  return point;
+}
 
 class Polyline extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 所有点的列表
-    this.__points = [];
-    if(Array.isArray(this.props.points)) {
-      this.__points = this.props.points;
+    if(this.isMulti) {
+      this.__points = [[]];
+      this.__controls = [[]];
     }
-    // 控制点
-    this.__controls = [];
-    if(Array.isArray(this.props.controls)) {
-      this.__controls = this.props.controls;
+    else {
+      this.__points = [];
+      // 控制点
+      this.__controls = [];
+    }
+    if(Array.isArray(props.controls)) {
+      this.__controls = props.controls;
+    }
+    if(Array.isArray(props.points)) {
+      this.__points = props.points;
     }
   }
 
-  __getPoints(originX, originY, width, height, points, len) {
+  __getPoints(originX, originY, width, height, points, len, isControl) {
+    if(!isControl && !Array.isArray(points) && points.length < 2) {
+      throw new Error('Points must have at lease 2 item: ' + points);
+    }
     return points.map(item => {
       let res = [];
       for(let i = 0; i < item.length; i++) {
@@ -42,7 +62,6 @@ class Polyline extends Geom {
       fill,
       stroke,
       strokeWidth,
-      strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
@@ -51,87 +70,77 @@ class Polyline extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
-    let { width, height, points, controls, __cacheProps } = this;
-    if(__cacheProps.points === undefined) {
-      __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
-      __cacheProps.d = null;
+    let { width, height, points, controls, __cacheProps, isMulti } = this;
+    let rebuild = true;
+    if(isNil(__cacheProps.points)) {
+      if(isMulti) {
+        __cacheProps.points = points.map(item => this.__getPoints(originX, originY, width, height, item));
+      }
+      else {
+        __cacheProps.points = this.__getPoints(originX, originY, width, height, points, true);
+      }
     }
-    if(__cacheProps.controls === undefined) {
-      __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
-      __cacheProps.d = null;
-    }
-    if(__cacheProps.points.length < 2) {
-      console.error('Points must have at lease 2 item: ' + points);
-      return;
-    }
-    for(let i = 0, len = __cacheProps.points.length; i < len; i++) {
-      let item = __cacheProps.points[i];
-      if(!Array.isArray(item) || item.length < 2) {
-        console.error('Each Point must have a coords: ' + item);
-        return;
+    if(isNil(__cacheProps.controls)) {
+      if(isMulti) {
+        __cacheProps.controls = controls.map(item => this.__getPoints(originX, originY, width, height, item));
+      }
+      else {
+        __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls, true);
       }
     }
     let pts = __cacheProps.points;
     let cls = __cacheProps.controls;
-    if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      for(let i = 1, len = pts.length; i < len; i++) {
-        let point = pts[i];
-        let cl = cls[i - 1];
-        if(!cl || !cl.length) {
-          ctx.lineTo(point[0], point[1]);
+    // points/controls有变化就需要重建顶点
+    if(rebuild && renderMode === mode.SVG) {
+      if(isMulti) {
+        let list = pts.map((item, i) => {
+          let cl = cls[i];
+          return item.map((point, j) => {
+            return concatPointAndControl(point, cl && cl[j]);
+          });
+        });
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
         }
-        else if(cl.length === 4) {
-          ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
-        }
-        else {
-          ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
+        else if(renderMode === mode.SVG) {
+          let d = '';
+          list.forEach(item => d += painter.svgPolygon(item));
+          __cacheProps.d = d;
         }
       }
-      ctx.fill();
+      else {
+        let list = pts.map((point, i) => concatPointAndControl(point, controls[i]));
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = painter.svgPolygon(list);
+        }
+      }
+    }
+    if(renderMode === mode.CANVAS) {
+      ctx.beginPath();
+      let list = __cacheProps.list;
+      if(isMulti) {
+        list.forEach(item => painter.canvasPolygon(ctx, item));
+      }
+      else {
+        painter.canvasPolygon(ctx, list);
+      }
       if(strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.fill();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
+        ['d', __cacheProps.d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      // 矢量坐标不变时无需重复计算
-      if(!__cacheProps.d) {
-        let d = 'M' + pts[0][0] + ',' + pts[0][1];
-        for(let i = 1, len = pts.length; i < len; i++) {
-          let point = pts[i];
-          let cl = cls[i - 1];
-          if(!cl || !cl.length) {
-            d += 'L' + point[0] + ',' + point[1];
-          }
-          else if(cl.length === 4) {
-            d += 'C' + cl[0] + ',' + cl[1] + ' ' + cl[2] + ',' + cl[3] + ' ' + point[0] + ',' + point[1];
-          }
-          else {
-            d += 'Q' + cl[0] + ',' + cl[1] + ' ' + point[0] + ',' + point[1];
-          }
-        }
-        __cacheProps.d = d;
-      }
-      props.push(['d', __cacheProps.d]);
-      if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharrayStr]);
-      }
-      if(strokeLinecap !== 'butt') {
-        props.push(['stroke-linecap', strokeLinecap]);
-      }
-      if(strokeLinejoin !== 'miter') {
-        props.push(['stroke-linejoin', strokeLinejoin]);
-      }
-      if(strokeMiterlimit !== 4) {
-        props.push(['stroke-miterlimit', strokeMiterlimit]);
-      }
+      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
   }

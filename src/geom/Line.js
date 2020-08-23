@@ -1,31 +1,120 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import painter from '../util/painter';
+import util from '../util/util';
+
+let { isNil } = util;
+
+function reBuild(target, origin, base, isMulti) {
+  if(isMulti) {
+    return target.map(item => origin + item * base);
+  }
+  else {
+    return origin + target * base;
+  }
+}
+
+function reBuildC(target, originX, originY, width, height, isMulti) {
+  if(isMulti) {
+    if(target) {
+      return target.map(item => reBuildC(item, originX, originY, width, height));
+    }
+  }
+  else {
+    if(target && target.length === 2) {
+      return [
+        originX + target[0] * width,
+        originY + target[1] * height,
+      ];
+    }
+  }
+  return [];
+}
+
+function curveNum(controlA, controlB) {
+  let num = 0;
+  if(controlA.length === 2) {
+    num++;
+  }
+  if(controlB.length === 2) {
+    num += 2;
+  }
+  return num;
+}
 
 class Line extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // x1,y1和x2,y2表明线段的首尾坐标，control表明控制点坐标
-    this.__x1 = this.__y1 = 0;
-    this.__x2 = this.__y2 = 1;
-    this.__controlA = [];
-    this.__controlB = [];
-    if(this.props.x1 !== undefined) {
-      this.__x1 = parseFloat(this.props.x1) || 0;
+    if(this.isMulti) {
+      this.__x1 = [0];
+      this.__y1 = [0];
+      this.__x2 = [1];
+      this.__y2 = [1];
+      this.__controlA = [[]];
+      this.__controlB = [[]];
+      if(Array.isArray(props.x1)) {
+        this.__x1 = props.x1.map(i => parseFloat(i) || 0);
+      }
+      else if(!isNil(props.x1)) {
+        this.__x1 = [parseFloat(props.x1) || 0];
+      }
+      if(Array.isArray(props.y1)) {
+        this.__y1 = props.y1.map(i => parseFloat(i) || 0);
+      }
+      else if(!isNil(props.y1)) {
+        this.__y1 = [parseFloat(props.y1) || 0];
+      }
+      if(Array.isArray(props.x2)) {
+        this.__x2 = props.x2.map(i => parseFloat(i) || 0);
+      }
+      else if(!isNil(props.x2)) {
+        this.__x2 = [parseFloat(props.x2) || 0];
+      }
+      if(Array.isArray(props.y2)) {
+        this.__y2 = props.y2.map(i => parseFloat(i) || 0);
+      }
+      else if(!isNil(props.y2)) {
+        this.__y2 = [parseFloat(props.y2) || 0];
+      }
+      if(Array.isArray(props.controlA)) {
+        this.__controlA = props.controlA.map(item => {
+          if(Array.isArray(item)) {
+            return item;
+          }
+          return [];
+        });
+      }
+      if(Array.isArray(props.controlB)) {
+        this.__controlB = props.controlB.map(item => {
+          if(Array.isArray(item)) {
+            return item;
+          }
+          return [];
+        });
+      }
     }
-    if(this.props.y1 !== undefined) {
-      this.__y1 = parseFloat(this.props.y1) || 0;
-    }
-    if(this.props.x2 !== undefined) {
-      this.__x2 = parseFloat(this.props.x2) || 0;
-    }
-    if(this.props.y2 !== undefined) {
-      this.__y2 = parseFloat(this.props.y2) || 0;
-    }
-    if(Array.isArray(this.props.controlA)) {
-      this.__controlA = this.props.controlA;
-    }
-    if(Array.isArray(this.props.controlB)) {
-      this.__controlB = this.props.controlB;
+    else {
+      this.__x1 = this.__y1 = 0;
+      this.__x2 = this.__y2 = 1;
+      if(!isNil(props.x1)) {
+        this.__x1 = parseFloat(props.x1) || 0;
+      }
+      if(!isNil(props.y1)) {
+        this.__y1 = parseFloat(props.y1) || 0;
+      }
+      if(!isNil(props.x2)) {
+        this.__x2 = parseFloat(props.x2) || 0;
+      }
+      if(!isNil(props.y2)) {
+        this.__y2 = parseFloat(props.y2) || 0;
+      }
+      if(Array.isArray(props.controlA)) {
+        this.__controlA = props.controlA;
+      }
+      if(Array.isArray(props.controlB)) {
+        this.__controlB = props.controlB;
+      }
     }
   }
 
@@ -39,7 +128,6 @@ class Line extends Geom {
       originY,
       stroke,
       strokeWidth,
-      strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
@@ -48,106 +136,83 @@ class Line extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
-    let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps } = this;
-    if(__cacheProps.x1 === undefined) {
-      x1 = originX + x1 * width;
+    let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps, isMulti } = this;
+    let rebuild;
+    if(isNil(__cacheProps.x1)) {
+      rebuild = true;
+      __cacheProps.x1 = reBuild(x1, originX, width, isMulti);
     }
-    if(__cacheProps.x2 === undefined) {
-      x2 = originX + x2 * width;
+    if(isNil(__cacheProps.x2)) {
+      rebuild = true;
+      __cacheProps.x2 = reBuild(x2, originX, width, isMulti);
     }
-    if(__cacheProps.y1 === undefined) {
-      y1 = originY + y1 * height;
+    if(isNil(__cacheProps.y1)) {
+      rebuild = true;
+      __cacheProps.y1 = reBuild(y1, originY, height, isMulti);
     }
-    if(__cacheProps.y2 === undefined) {
-      y2 = originY + y2 * height;
+    if(isNil(__cacheProps.y2)) {
+      rebuild = true;
+      __cacheProps.y2 = reBuild(y2, originY, height, isMulti);
     }
-    if(__cacheProps.controlA === undefined) {
-      if(controlA.length === 2) {
-        __cacheProps.controlA = [
-          originX + controlA[0] * width,
-          originY + controlA[1] * height
-        ];
+    if(isNil(__cacheProps.controlA)) {
+      rebuild = true;
+      __cacheProps.controlA = reBuildC(controlA, originX, originY, width, height, isMulti);
+    }
+    if(isNil(__cacheProps.controlB)) {
+      rebuild = true;
+      __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
+    }
+    if(rebuild && renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        __cacheProps.x1.forEach((xa, i) => {
+          let xb = __cacheProps.x2[i];
+          let ya = __cacheProps.y1[i];
+          let yb = __cacheProps.y2[i];
+          let ca = __cacheProps.controlA[i];
+          let cb = __cacheProps.controlB[i];
+          let curve = curveNum(ca, cb);
+          d += painter.canvasLine(xa, ya, xb, yb, ca, cb, curve);
+        });
       }
       else {
-        __cacheProps.controlA = [];
+        let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+        d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2,
+          __cacheProps.controlA, __cacheProps.controlB, curve);
       }
-    }
-    if(__cacheProps.controlB === undefined) {
-      if(controlB.length === 2) {
-        __cacheProps.controlB = [
-          originX + controlB[0] * width,
-          originY + controlB[1] * height
-        ];
-      }
-      else {
-        __cacheProps.controlB = [];
-      }
-    }
-    let curve = 0;
-    // 控制点，曲线
-    let cx1, cy1, cx2, cy2;
-    if(__cacheProps.controlA.length === 2) {
-      curve++;
-      cx1 = __cacheProps.controlA[0];
-      cy1 = __cacheProps.controlA[1];
-    }
-    if(__cacheProps.controlB.length === 2) {
-      curve += 2;
-      cx2 = __cacheProps.controlB[0];
-      cy2 = __cacheProps.controlB[1];
+      __cacheProps.d = d;
     }
     if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      if(curve === 3) {
-        ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2);
-      }
-      else if(curve === 2) {
-        ctx.quadraticCurveTo(cx2, cy2, x2, y2);
-      }
-      else if(curve === 1) {
-        ctx.quadraticCurveTo(cx1, cy1, x2, y2);
-      }
-      else {
-        ctx.lineTo(x2, y2);
-      }
       if(strokeWidth > 0) {
+        ctx.beginPath();
+        if(isMulti) {
+          __cacheProps.x1.forEach((xa, i) => {
+            let xb = __cacheProps.x2[i];
+            let ya = __cacheProps.y1[i];
+            let yb = __cacheProps.y2[i];
+            let ca = __cacheProps.controlA[i];
+            let cb = __cacheProps.controlB[i];
+            let curve = curveNum(ca, cb);
+            painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+          });
+        }
+        else {
+          let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+          painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2,
+            __cacheProps.controlA, __cacheProps.controlB, curve);
+        }
         ctx.stroke();
+        ctx.closePath();
       }
-      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
-      let d;
-      if(curve === 3) {
-        d = 'M' + x1 + ',' + y1 + ' C' + cx1 + ',' + cy1 + ' ' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
-      }
-      else if(curve === 2) {
-        d = 'M' + x1 + ',' + y1 + ' Q' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
-      }
-      else if(curve === 1) {
-        d = 'M' + x1 + ',' + y1 + ' Q' + cx1 + ',' + cy1 + ' ' + x2 + ',' + y2;
-      }
-      else {
-        d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
-      }
       let props = [
-        ['d', d],
+        ['d', __cacheProps.d],
         ['fill', 'none'],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharrayStr]);
-      }
-      if(strokeLinecap !== 'butt') {
-        props.push(['stroke-linecap', strokeLinecap]);
-      }
-      if(strokeLinejoin !== 'miter') {
-        props.push(['stroke-linejoin', strokeLinejoin]);
-      }
-      if(strokeMiterlimit !== 4) {
-        props.push(['stroke-miterlimit', strokeMiterlimit]);
-      }
+      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
   }

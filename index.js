@@ -378,9 +378,7 @@
     return Node;
   }();
 
-  function genCanvasPolygon(ctx, list) {
-    var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'fill';
-    ctx.beginPath();
+  function canvasPolygon(ctx, list) {
     ctx.moveTo(list[0][0], list[0][1]);
 
     for (var i = 1, len = list.length; i < len; i++) {
@@ -394,12 +392,9 @@
         ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
       }
     }
-
-    ctx[method]();
-    ctx.closePath();
   }
 
-  function genSvgPolygon(list) {
+  function svgPolygon(list) {
     var s = 'M' + list[0][0] + ',' + list[0][1];
 
     for (var i = 1, len = list.length; i < len; i++) {
@@ -417,9 +412,78 @@
     return s;
   }
 
+  function canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, num) {
+    ctx.moveTo(x1, y1);
+
+    if (num === 3) {
+      ctx.bezierCurveTo(controlA[0], controlA[1], controlB[0], controlB[1], x2, y2);
+    } else if (num === 2) {
+      ctx.quadraticCurveTo(controlB[0], controlB[1], x2, y2);
+    } else if (num === 1) {
+      ctx.quadraticCurveTo(controlA[0], controlA[1], x2, y2);
+    } else {
+      ctx.lineTo(x2, y2);
+    }
+  }
+
+  function svgLine(x1, y1, x2, y2, controlA, controlB, num) {
+    if (num === 3) {
+      return 'M' + x1 + ',' + y1 + 'C' + controlA[0] + ',' + controlA[1] + ' ' + controlB[0] + ',' + controlB[1] + ' ' + x2 + ',' + y2;
+    } else if (num === 2) {
+      return 'M' + x1 + ',' + y1 + 'Q' + controlB[0] + ',' + controlB[1] + ' ' + x2 + ',' + y2;
+    } else if (num === 1) {
+      return 'M' + x1 + ',' + y1 + 'Q' + controlA[0] + ',' + controlA[1] + ' ' + x2 + ',' + y2;
+    } else {
+      return 'M' + x1 + ',' + y1 + 'L' + x2 + ',' + y2;
+    }
+  }
+
+  var OFFSET = Math.PI * 0.5;
+
+  function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure) {
+    ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
+
+    if (edge) {
+      if (!large || !closure) {
+        ctx.lineTo(cx, cy);
+      }
+
+      ctx.lineTo(x1, y1);
+
+      if (strokeWidth > 0) {
+        ctx.stroke();
+      }
+    } else {
+      if (strokeWidth > 0) {
+        ctx.stroke();
+      }
+
+      if (!large || !closure) {
+        ctx.lineTo(cx, cy);
+      }
+
+      ctx.lineTo(x1, y1);
+    }
+  }
+
+  function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
+    var d = closure ? 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z' : 'M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z';
+    var d2;
+
+    if (!edge || strokeWidth > 0) {
+      d2 = 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2;
+    }
+
+    return [d, d2];
+  }
+
   var painter = {
-    genCanvasPolygon: genCanvasPolygon,
-    genSvgPolygon: genSvgPolygon
+    canvasPolygon: canvasPolygon,
+    svgPolygon: svgPolygon,
+    canvasLine: canvasLine,
+    svgLine: svgLine,
+    canvasSector: canvasSector,
+    svgSector: svgSector
   };
 
   var mode = {
@@ -462,7 +526,8 @@
     calPoint: calPoint
   };
 
-  // 向量积
+  var H = 4 * (Math.sqrt(2) - 1) / 3; // 向量积
+
   function vectorProduct(x1, y1, x2, y2) {
     return x1 * y2 - x2 * y1;
   }
@@ -564,6 +629,17 @@
     var c = pointsDistance(x1, y1, x2, y2);
     return [(a * x1 + b * x2 + c * x3) / (a + b + c), (a * y1 + b * y2 + c * y3) / (a + b + c)];
   }
+  /**
+   * 椭圆圆心和长短轴生成4个端点和控制点
+   */
+
+
+  function ellipsePoints(x, y, a) {
+    var b = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : a;
+    var ox = a * H;
+    var oy = b === a ? ox : b * H;
+    return [[x - a, y], [x - a, y - ox, x - ox, y - b, x, y - b], [x + ox, y - b, x + a, y - oy, x + a, y], [x + a, y + oy, x + ox, y + b, x, y + b], [x - ox, y + b, x - a, y + oy, x - a, y]];
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -576,7 +652,7 @@
       return n * 180 / Math.PI;
     },
     // 贝塞尔曲线模拟1/4圆弧比例
-    H: 4 * (Math.sqrt(2) - 1) / 3,
+    H: H,
     // <90任意角度贝塞尔曲线拟合圆弧的比例公式
     h: function h(deg) {
       deg *= 0.5;
@@ -584,7 +660,8 @@
     },
     angleBySide: angleBySide,
     pointsDistance: pointsDistance,
-    triangleIncentre: triangleIncentre
+    triangleIncentre: triangleIncentre,
+    ellipsePoints: ellipsePoints
   };
 
   function calDeg(x1, y1, x2, y2) {
@@ -2126,7 +2203,7 @@
     getRadial: getRadial
   };
 
-  var H = geom.H;
+  var H$1 = geom.H;
 
   function calFitDashed(total, bs, be, w, smin, smax, dmin, dmax) {
     var n = 1;
@@ -4054,28 +4131,28 @@
 
       if (btlx > 0 && btly > 0) {
         list.push([x, y + btly]);
-        list.push([x, y + btly * (1 - H), x + btlx * (1 - H), y, x + btlx, y]);
+        list.push([x, y + btly * (1 - H$1), x + btlx * (1 - H$1), y, x + btlx, y]);
       } else {
         list.push([x, y]);
       }
 
       if (btrx > 0 && btry > 0) {
         list.push([x + w - btrx, y]);
-        list.push([x + w - btrx * (1 - H), y, x + w, y + btry * (1 - H), x + w, y + btry]);
+        list.push([x + w - btrx * (1 - H$1), y, x + w, y + btry * (1 - H$1), x + w, y + btry]);
       } else {
         list.push([x + w, y]);
       }
 
       if (bbrx > 0 && bbry > 0) {
         list.push([x + w, y + h - bbry]);
-        list.push([x + w, y + h - bbry * (1 - H), x + w - bbrx * (1 - H), y + h, x + w - bbrx, y + h]);
+        list.push([x + w, y + h - bbry * (1 - H$1), x + w - bbrx * (1 - H$1), y + h, x + w - bbrx, y + h]);
       } else {
         list.push([x + w, y + h]);
       }
 
       if (bblx > 0 && bbly > 0) {
         list.push([x + bblx, y + h]);
-        list.push([x + bblx * (1 - H), y + h, x, y + h - bbly * (1 - H), x, y + h - bbly]);
+        list.push([x + bblx * (1 - H$1), y + h, x, y + h - bbly * (1 - H$1), x, y + h - bbly]);
       } else {
         list.push([x, y + h]);
       }
@@ -6361,7 +6438,9 @@
       begin: true,
       end: true,
       points: true,
-      controls: true
+      controls: true,
+      edge: true,
+      closure: true
     },
     STYLE: {
       transform: true,
@@ -6573,31 +6652,29 @@
       }
 
       return true;
-    } else if (repaint.GEOM.hasOwnProperty(k)) {
-      if (k === 'points' || k === 'controls') {
-        if (a.length !== b.length) {
-          return false;
-        }
-
-        for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-          if (a[_i2] === b[_i2]) {
-            continue;
-          }
-
-          if (a[_i2][0] !== b[_i2][0] || a[_i2][1] !== b[_i2][1]) {
-            return false;
-          }
-        }
-
-        return true;
-      } else if (k === 'controlA' || k === 'controlB') {
-        if (a.length !== b.length) {
-          return false;
-        }
-
-        return a[0] === b[0] && a[1] === b[1];
+    } // 都是纯值数组，mutil只是多了一维，equalArr本身即递归
+    else if (repaint.GEOM.hasOwnProperty(k)) {
+        return equalArr$1(a, b); // if(k === 'points' || k === 'controls') {
+        //   if(a.length !== b.length) {
+        //     return false;
+        //   }
+        //   for(let i = 0, len = a.length; i < len; i++) {
+        //     if(a[i] === b[i]) {
+        //       continue;
+        //     }
+        //     if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
+        //       return false;
+        //     }
+        //   }
+        //   return true;
+        // }
+        // else if(k === 'controlA' || k === 'controlB') {
+        //   if(a.length !== b.length) {
+        //     return false;
+        //   }
+        //   return a[0] === b[0] && a[1] === b[1];
+        // }
       }
-    }
 
     return a === b;
   }
@@ -6834,23 +6911,22 @@
     } else if (k === 'backgroundSize') {
       res.v = [];
 
-      for (var _i3 = 0; _i3 < 2; _i3++) {
-        var _pi = p[_i3];
-        var _ni = n[_i3];
+      for (var _i2 = 0; _i2 < 2; _i2++) {
+        var _pi = p[_i2];
+        var _ni = n[_i2];
 
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
-          var _v8 = _ni.value * 0.01 * target[_i3 ? 'innerWidth' : 'innerHeight'];
+          var _v8 = _ni.value * 0.01 * target[_i2 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v8 - _pi.value);
         } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v9 = _ni.value * 100 / target[_i3 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni.value * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v9 - _pi.value);
         } else {
-          res.n = p;
-          return res;
+          return;
         }
       }
 
@@ -6860,7 +6936,7 @@
     } else if (GRADIENT_HASH.hasOwnProperty(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       if (p.k !== n.k) {
-        res.n = p;
+        return;
       } // 渐变
       else if (p.k === 'linear' || p.k === 'radial') {
           var pv = p.v;
@@ -6874,9 +6950,9 @@
           var innerWidth = target.innerWidth;
           var eq;
 
-          for (var _i4 = 0, len = Math.min(pv.length, nv.length); _i4 < len; _i4++) {
-            var a = pv[_i4];
-            var b = nv[_i4];
+          for (var _i3 = 0, len = Math.min(pv.length, nv.length); _i3 < len; _i3++) {
+            var a = pv[_i3];
+            var b = nv[_i3];
             var t = [];
             t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
             eq = equalArr$1(t, [0, 0, 0, 0]);
@@ -6913,18 +6989,18 @@
           else {
               res.p = [];
 
-              for (var _i5 = 0; _i5 < 2; _i5++) {
-                var pp = p.p[_i5];
-                var np = n.p[_i5];
+              for (var _i4 = 0; _i4 < 2; _i4++) {
+                var pp = p.p[_i4];
+                var np = n.p[_i4];
 
                 if (pp.unit === np.unit) {
                   res.p.push(np.value - pp.value);
                 } else if (pp.unit === PX$3 && np.unit === PERCENT$4) {
-                  var _v11 = np.value * 0.01 * target[_i5 ? 'innerWidth' : 'innerHeight'];
+                  var _v11 = np.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v11 - pp.value);
                 } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
-                  var _v12 = np.value * 100 / target[_i5 ? 'innerWidth' : 'innerHeight'];
+                  var _v12 = np.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v12 - pp.value);
                 }
@@ -6960,27 +7036,26 @@
       var computedStyle = target.computedStyle;
       res.v = [];
 
-      for (var _i6 = 0; _i6 < 2; _i6++) {
-        if (n[_i6].unit === p[_i6].unit) {
-          res.v.push(n[_i6].value - p[_i6].value);
-        } else if (p[_i6].unit === PX$3 && n[_i6].unit === PERCENT$4) {
-          res.v.push(n[_i6].value * 0.01 * target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
-        } else if (p[_i6].unit === PERCENT$4 && n[_i6].unit === PX$3) {
-          res.v.push(n[_i6].value * 100 / target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
+      for (var _i5 = 0; _i5 < 2; _i5++) {
+        if (n[_i5].unit === p[_i5].unit) {
+          res.v.push(n[_i5].value - p[_i5].value);
+        } else if (p[_i5].unit === PX$3 && n[_i5].unit === PERCENT$4) {
+          res.v.push(n[_i5].value * 0.01 * target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
+        } else if (p[_i5].unit === PERCENT$4 && n[_i5].unit === PX$3) {
+          res.v.push(n[_i5].value * 100 / target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
         } else {
           res.v.push(0);
         }
       }
     } else if (LENGTH_HASH.hasOwnProperty(k)) {
       // auto不做动画
-      if (p.unit === AUTO$1 && n.unit === AUTO$1) {
-        return;
-      }
-
       if (p.unit === AUTO$1 || n.unit === AUTO$1) {
-        res.n = p;
-        return res;
-      }
+        return;
+      } // if(p.unit === AUTO || n.unit === AUTO) {
+      //   res.n = p;
+      //   return res;
+      // }
+
 
       var _computedStyle = target.computedStyle;
       var parentComputedStyle = (target.parent || target).computedStyle;
@@ -7030,55 +7105,137 @@
       res.v = diff;
     } else if (repaint.GEOM.hasOwnProperty(k)) {
       if (isNil$3(p)) {
-        res.n = null;
-      } else if (k === 'points' || k === 'controls') {
-        if (isNil$3(n) || isNil$3(p)) {
-          return p;
-        }
-
-        if (equalArr$1(p, n)) {
-          return;
-        }
-
-        res.v = [];
-
-        for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
-          var _pv = p[_i7];
-          var _nv = n[_i7];
-
-          if (isNil$3(_pv) || isNil$3(_nv)) {
-            res.v.push(_nv);
-          } else {
-            var _v15 = [];
-
-            for (var j = 0, len2 = Math.max(_pv.length, _nv.length); j < len2; j++) {
-              if (isNil$3(_pv[j]) || isNil$3(_nv[j])) {
-                _v15.push(_nv[j]);
-              } else {
-                _v15.push(_nv[j] - _pv[j]);
-              }
+        return;
+      } // 特殊处理multi
+      else if (target.isMulti) {
+          if (k === 'points' || k === 'controls') {
+            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+              return;
             }
 
-            res.v.push(_v15);
+            res.v = [];
+
+            for (var _i6 = 0, _len2 = Math.min(p.length, n.length); _i6 < _len2; _i6++) {
+              var _pv = p[_i6];
+              var _nv = n[_i6];
+
+              if (isNil$3(_pv) || isNil$3(_nv)) {
+                res.v.push(null);
+              } else {
+                var v2 = [];
+
+                for (var j = 0, len2 = Math.min(_pv.length, _nv.length); j < len2; j++) {
+                  var pv2 = _pv[j];
+                  var nv2 = _nv[j];
+
+                  if (isNil$3(pv2) || isNil$3(nv2)) {
+                    v2.push(null);
+                  } else {
+                    var v3 = [];
+
+                    for (var _k = 0, len3 = Math.max(pv2.length, nv2.length); _k < len3; _k++) {
+                      var pv3 = pv2[_k];
+                      var nv3 = nv2[_k]; // control由4点变2点
+
+                      if (isNil$3(pv3) || isNil$3(nv3)) {
+                        v3.push(0);
+                      } else {
+                        v3.push(nv3[j] - pv3[j]);
+                      }
+                    }
+
+                    v2.push(v3);
+                  }
+                }
+
+                res.v.push(v2);
+              }
+            }
+          } else if (k === 'controlA' || k === 'controlB') {
+            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+              return;
+            }
+
+            res.v = [];
+
+            for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
+              var _pv2 = p[_i7];
+              var _nv2 = n[_i7];
+
+              if (isNil$3(_pv2) || isNil$3(_nv2)) {
+                res.v.push(null);
+              } else {
+                res.v.push([_nv2[0] - _pv2[0], _nv2[1] - _pv2[1]]);
+              }
+            }
+          } else {
+            if (n === p || equalArr$1(n, p) || k === 'edge' || k === 'closure') {
+              return;
+            }
+
+            var _v15 = [];
+
+            for (var _i8 = 0, _len4 = Math.min(p.length, n.length); _i8 < _len4; _i8++) {
+              var _pv3 = p[_i8];
+              var _nv3 = n[_i8];
+
+              if (isNil$3(_pv3) || isNil$3(_nv3)) {
+                _v15.push(0);
+              }
+
+              _v15.push(_nv3 - _pv3);
+            }
+
+            res.v = _v15;
           }
-        }
-      } else if (k === 'controlA' || k === 'controlB') {
-        if (isNil$3(n) || isNil$3(p)) {
-          return p;
-        }
+        } // 非multi特殊处理这几类数组类型数据
+        else if (k === 'points' || k === 'controls') {
+            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+              return;
+            }
 
-        if (equalArr$1(p, n)) {
-          return;
-        }
+            res.v = [];
 
-        res.v = [n[0] - p[0], n[1] - p[1]];
-      } else {
-        if (n === p) {
-          return;
-        }
+            for (var _i9 = 0, _len5 = Math.min(p.length, n.length); _i9 < _len5; _i9++) {
+              var _pv4 = p[_i9];
+              var _nv4 = n[_i9];
 
-        res.v = n - p;
-      }
+              if (isNil$3(_pv4) || isNil$3(_nv4)) {
+                res.v.push(null);
+              } else {
+                var _v16 = [];
+
+                for (var _j = 0, _len6 = Math.max(_pv4.length, _nv4.length); _j < _len6; _j++) {
+                  var _pv5 = _pv4[_j];
+                  var _nv5 = _nv4[_j]; // control由4点变2点
+
+                  if (isNil$3(_pv5) || isNil$3(_nv5)) {
+                    _v16.push(0);
+                  } else {
+                    _v16.push(_nv5 - _pv5);
+                  }
+                }
+
+                res.v.push(_v16);
+              }
+            }
+          } else if (k === 'controlA' || k === 'controlB') {
+            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+              return;
+            }
+
+            res.v = [n[0] - p[0], n[1] - p[1]];
+          } // 其它简单数据，除了edge/closure没有增量
+          else {
+              if (n === p || k === 'edge' || k === 'closure') {
+                return;
+              } // if(k === 'edge' || k === 'closure') {
+              //   res.n = p;
+              // }
+              else {
+                  res.v = n - p;
+                }
+            }
     } else if (k === 'opacity' || k === 'zIndex') {
       if (n === p) {
         return;
@@ -7086,13 +7243,13 @@
 
       res.v = n - p;
     } // display等不能有增量过程的
-    else {
-        if (n === p) {
-          return;
-        }
+    // else {
+    //   if(n === p) {
+    //     return;
+    //   }
+    //   res.n = p;
+    // }
 
-        res.n = p;
-      }
 
     return res;
   } // 计算两帧之间不相同的变化，存入transition，相同的忽略
@@ -7163,11 +7320,12 @@
    * 当easing定义为steps时，优先计算
    * @param frame 当前帧
    * @param percent 到下一帧时间的百分比
+   * @param target vd
    * @returns {*}
    */
 
 
-  function calIntermediateStyle(frame, percent) {
+  function calIntermediateStyle(frame, percent, target) {
     var style = clone$1(frame.style);
     var timingFunction = getEasing(frame.easing);
 
@@ -7202,8 +7360,8 @@
 
           st[0][1] += v * percent;
         } else if (RADIUS_HASH.hasOwnProperty(k)) {
-          for (var _i8 = 0; _i8 < 2; _i8++) {
-            st[_i8].value += v[_i8] * percent;
+          for (var _i10 = 0; _i10 < 2; _i10++) {
+            st[_i10].value += v[_i10] * percent;
           }
         } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
           if (v !== 0) {
@@ -7219,9 +7377,9 @@
           }
         } else if (GRADIENT_HASH.hasOwnProperty(k)) {
           if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-            for (var _i9 = 0, len = Math.min(st.v.length, v.length); _i9 < len; _i9++) {
-              var a = st.v[_i9];
-              var b = v[_i9];
+            for (var _i11 = 0, len = Math.min(st.v.length, v.length); _i11 < len; _i11++) {
+              var a = st.v[_i11];
+              var b = v[_i11];
               a[0][0] += b[0][0] * percent;
               a[0][1] += b[0][1] * percent;
               a[0][2] += b[0][2] * percent;
@@ -7257,23 +7415,76 @@
           } else if (repaint.GEOM.hasOwnProperty(k)) {
             var _st = style[k];
 
-            if (k === 'points' || k === 'controls') {
-              for (var _i10 = 0, _len4 = Math.min(_st.length, v.length); _i10 < _len4; _i10++) {
-                if (isNil$3(_st[_i10]) || !_st[_i10].length) {
-                  continue;
-                }
+            if (target.isMulti) {
+              if (k === 'points' || k === 'controls') {
+                for (var _i12 = 0, _len7 = Math.min(_st.length, v.length); _i12 < _len7; _i12++) {
+                  var o = _st[_i12];
+                  var _n = v[_i12];
 
-                for (var j = 0, len2 = Math.min(_st[_i10].length, v[_i10].length); j < len2; j++) {
-                  if (!isNil$3(_st[_i10][j]) && !isNil$3(v[_i10][j])) {
-                    _st[_i10][j] += v[_i10][j] * percent;
+                  if (!isNil$3(o) && !isNil$3(_n)) {
+                    for (var j = 0, len2 = Math.min(o.length, _n.length); j < len2; j++) {
+                      var o2 = o[j];
+                      var n2 = _n[j];
+
+                      if (!isNil$3(o2) && !isNil$3(n2)) {
+                        for (var _k2 = 0, len3 = Math.min(o2.length, n2.length); _k2 < len3; _k2++) {
+                          if (!isNil$3(o2[_k2]) && !isNil$3(n2[_k2])) {
+                            o2[_k2] += n2[_k2] * percent;
+                          }
+                        }
+                      }
+                    }
                   }
                 }
+              } else if (k === 'controlA' || k === 'controlB') {
+                v.forEach(function (item, i) {
+                  var st2 = _st[i];
+
+                  if (!isNil$3(item) && !isNil$3(st2)) {
+                    for (var _i13 = 0, _len8 = Math.min(st2.length, item.length); _i13 < _len8; _i13++) {
+                      var _o = st2[_i13];
+                      var _n2 = item[_i13];
+
+                      if (!isNil$3(_o) && !isNil$3(_n2)) {
+                        st2[_i13] += _n2 * percent;
+                      }
+                    }
+                  }
+                });
+              } else {
+                v.forEach(function (item, i) {
+                  if (!isNil$3(item) && !isNil$3(_st[i])) {
+                    _st[i] += item * percent;
+                  }
+                });
               }
-            } else if (k === 'controlA' || k === 'controlB') {
-              _st[0] += v[0] * percent;
-              _st[1] += v[1] * percent;
             } else {
-              style[k] += v * percent;
+              if (k === 'points' || k === 'controls') {
+                for (var _i14 = 0, _len9 = Math.min(_st.length, v.length); _i14 < _len9; _i14++) {
+                  var _o2 = _st[_i14];
+                  var _n3 = v[_i14];
+
+                  if (!isNil$3(_o2) && !isNil$3(_n3)) {
+                    for (var _j2 = 0, _len10 = Math.min(_o2.length, _n3.length); _j2 < _len10; _j2++) {
+                      if (!isNil$3(_o2[_j2]) && !isNil$3(_n3[_j2])) {
+                        _o2[_j2] += _n3[_j2] * percent;
+                      }
+                    }
+                  }
+                }
+              } else if (k === 'controlA' || k === 'controlB') {
+                if (!isNil$3(_st[0]) && !isNil$3(v[0])) {
+                  _st[0] += v[0] * percent;
+                }
+
+                if (!isNil$3(_st[1]) && !isNil$3(v[1])) {
+                  _st[1] += v[1] * percent;
+                }
+              } else {
+                if (!isNil$3(_st) && !isNil$3(v)) {
+                  style[k] += v * percent;
+                }
+              }
             }
           } else if (k === 'opacity' || k === 'zIndex') {
             style[k] += v * percent;
@@ -7454,14 +7665,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i11 = 1, _len5 = list.length; _i11 < _len5; _i11++) {
-          var start = list[_i11]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i15 = 1, _len11 = list.length; _i15 < _len11; _i15++) {
+          var start = list[_i15]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i11 + 1;
+            var j = _i15 + 1;
 
-            for (; j < _len5; j++) {
+            for (; j < _len11; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -7469,16 +7680,16 @@
               }
             }
 
-            var num = j - _i11 + 1;
-            start = list[_i11 - 1];
+            var num = j - _i15 + 1;
+            start = list[_i15 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i11; k < j; k++) {
+            for (var k = _i15; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i11);
+              item.offset = start.offset + per * (k + 1 - _i15);
             }
 
-            _i11 = j;
+            _i15 = j;
           }
         }
 
@@ -7495,8 +7706,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i12 = 1; _i12 < length; _i12++) {
-          var next = frames[_i12];
+        for (var _i16 = 1; _i16 < length; _i16++) {
+          var next = frames[_i16];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -7508,8 +7719,8 @@
         });
         prev = framesR[0];
 
-        for (var _i13 = 1; _i13 < length; _i13++) {
-          var _next = framesR[_i13];
+        for (var _i17 = 1; _i17 < length; _i17++) {
+          var _next = framesR[_i17];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -7795,7 +8006,7 @@
               else {
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
-                  current = calIntermediateStyle(current, percent);
+                  current = calIntermediateStyle(current, percent, _this3.target);
 
                   var _calRefresh5 = calRefresh(current, style, keys);
 
@@ -8408,22 +8619,26 @@
   var normalize$2 = css.normalize,
       calRelative$1 = css.calRelative,
       compute$1 = css.compute;
-  var genCanvasPolygon$1 = painter.genCanvasPolygon,
-      genSvgPolygon$1 = painter.genSvgPolygon;
+  var canvasPolygon$1 = painter.canvasPolygon,
+      svgPolygon$1 = painter.svgPolygon;
 
   function renderBorder(renderMode, points, color, ctx, xom) {
     if (renderMode === mode.CANVAS) {
+      ctx.beginPath();
+
       if (ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
 
       points.forEach(function (point) {
-        genCanvasPolygon$1(ctx, point);
+        canvasPolygon$1(ctx, point);
       });
+      ctx.fill();
+      ctx.closePath();
     } else if (renderMode === mode.SVG) {
       var s = '';
       points.forEach(function (point) {
-        s += genSvgPolygon$1(point);
+        s += svgPolygon$1(point);
       });
       xom.virtualDom.bb.push({
         type: 'item',
@@ -8439,21 +8654,23 @@
     var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
 
     if (renderMode === mode.CANVAS) {
+      ctx.beginPath();
+
       if (ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
 
       if (list) {
-        genCanvasPolygon$1(ctx, list, method);
+        canvasPolygon$1(ctx, list, method);
       } else {
-        ctx.beginPath();
         ctx.rect(x, y, w, h);
-        ctx[method]();
-        ctx.closePath();
       }
+
+      ctx.fill();
+      ctx.closePath();
     } else if (renderMode === mode.SVG) {
       if (list) {
-        var d = genSvgPolygon$1(list);
+        var d = svgPolygon$1(list);
         xom.virtualDom.bb.push({
           type: 'item',
           tagName: 'path',
@@ -11970,8 +12187,8 @@
   }(Xom);
 
   var AUTO$4 = unit.AUTO;
-  var genCanvasPolygon$2 = painter.genCanvasPolygon,
-      genSvgPolygon$2 = painter.genSvgPolygon;
+  var canvasPolygon$2 = painter.canvasPolygon,
+      svgPolygon$2 = painter.svgPolygon;
 
   var Img$1 = /*#__PURE__*/function (_Dom) {
     _inherits(Img, _Dom);
@@ -12180,7 +12397,10 @@
               // 有border-radius需模拟遮罩裁剪
               if (list) {
                 ctx.save();
-                genCanvasPolygon$2(ctx, list, 'clip');
+                ctx.beginPath();
+                canvasPolygon$2(ctx, list);
+                ctx.clip();
+                ctx.closePath();
                 ctx.drawImage(source, originX, originY, width, height);
                 ctx.restore();
               } else {
@@ -12193,7 +12413,7 @@
                 this.virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
                 if (!this.virtualDom.cache && list) {
-                  var d = genSvgPolygon$2(list);
+                  var d = svgPolygon$2(list);
                   var id = defs.add({
                     tagName: 'clipPath',
                     props: [],
@@ -12219,7 +12439,7 @@
               var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
-                var _d = genSvgPolygon$2(list);
+                var _d = svgPolygon$2(list);
 
                 var _id = defs.add({
                   tagName: 'clipPath',
@@ -12425,7 +12645,11 @@
         }
       } // 相同类型的vd进行对比继承动画
       else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
-          nj.inherit = vd;
+
+          if (nj.$$type !== TYPE_GM$2 || oj.props.multi === nj.props.multi) {
+            nj.inherit = vd;
+          }
+
           oj.key = nj.key = KEY_FLAG; // key相同的dom暂存下来
 
           if (nj.$$type === TYPE_VD$2) {
@@ -12470,6 +12694,11 @@
           diffCp(oj, nj, vd); // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
 
           removeCpFromOldTree(vd);
+        }
+      } else if (nj.$$type === TYPE_GM$2 && oj.$$type === TYPE_GM$2) {
+        // $geom的multi必须一致
+        if (oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
+          nj.inherit = vd;
         }
       } // dom类型递归children
       else if (nj.$$type === TYPE_VD$2 && oj.$$type === TYPE_VD$2) {
@@ -13974,6 +14203,7 @@
       _classCallCheck(this, Geom);
 
       _this = _super.call(this, tagName, props);
+      _this.__isMulti = !!_this.props.multi;
       _this.__isMask = !!_this.props.mask;
       _this.__isClip = !!_this.props.clip;
 
@@ -14288,69 +14518,58 @@
           var children = clone$4(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
-            var xi = 0;
-            var yi = 1;
-            var x, y;
-            var props = child.props;
+            var props = child.props; // if(child.tagName === 'rect') {
+            //   for(let i = 0, len = props.length; i < len; i++) {
+            //     let [k, v] = props[i];
+            //     if(k === 'x') {
+            //       xi = i;
+            //       x = v;
+            //     }
+            //     else if(k === 'y') {
+            //       yi = i;
+            //       y = v;
+            //     }
+            //   }
+            //   let point = matrix.calPoint([x, y], m);
+            //   props[xi][1] = point[0];
+            //   props[yi][1] = point[1];
+            // }
+            // else if(child.tagName === 'circle' || child.tagName === 'ellipse') {
+            //   for(let i = 0, len = props.length; i < len; i++) {
+            //     let [k, v] = props[i];
+            //     if(k === 'cx') {
+            //       xi = i;
+            //       x = v;
+            //     }
+            //     else if(k === 'cy') {
+            //       yi = i;
+            //       y = v;
+            //     }
+            //   }
+            //   let point = matrix.calPoint([x, y], m);
+            //   props[xi][1] = point[0];
+            //   props[yi][1] = point[1];
+            // }
+            // else if(child.tagName === 'polyline') {
+            //   for(let i = 0, len = props.length; i < len; i++) {
+            //     let [k, v] = props[i];
+            //     if(k === 'points') {
+            //       props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
+            //         return joinArr(matrix.calPoint([$1, $2], m), ',');
+            //       });
+            //       break;
+            //     }
+            //   }
+            // }
 
-            if (child.tagName === 'rect') {
+            if (child.tagName === 'path') {
               for (var i = 0, len = props.length; i < len; i++) {
                 var _props$i = _slicedToArray(props[i], 2),
                     k = _props$i[0],
                     v = _props$i[1];
 
-                if (k === 'x') {
-                  xi = i;
-                  x = v;
-                } else if (k === 'y') {
-                  yi = i;
-                  y = v;
-                }
-              }
-
-              var point = matrix.calPoint([x, y], m);
-              props[xi][1] = point[0];
-              props[yi][1] = point[1];
-            } else if (child.tagName === 'circle' || child.tagName === 'ellipse') {
-              for (var _i = 0, _len = props.length; _i < _len; _i++) {
-                var _props$_i = _slicedToArray(props[_i], 2),
-                    _k = _props$_i[0],
-                    _v = _props$_i[1];
-
-                if (_k === 'cx') {
-                  xi = _i;
-                  x = _v;
-                } else if (_k === 'cy') {
-                  yi = _i;
-                  y = _v;
-                }
-              }
-
-              var _point = matrix.calPoint([x, y], m);
-
-              props[xi][1] = _point[0];
-              props[yi][1] = _point[1];
-            } else if (child.tagName === 'polyline') {
-              for (var _i2 = 0, _len2 = props.length; _i2 < _len2; _i2++) {
-                var _props$_i2 = _slicedToArray(props[_i2], 2),
-                    _k2 = _props$_i2[0],
-                    _v2 = _props$_i2[1];
-
-                if (_k2 === 'points') {
-                  props[_i2][1] = _v2.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return joinArr$2(matrix.calPoint([$1, $2], m), ',');
-                  });
-                  break;
-                }
-              }
-            } else if (child.tagName === 'path') {
-              for (var _i3 = 0, _len3 = props.length; _i3 < _len3; _i3++) {
-                var _props$_i3 = _slicedToArray(props[_i3], 2),
-                    _k3 = _props$_i3[0],
-                    _v3 = _props$_i3[1];
-
-                if (_k3 === 'd') {
-                  props[_i3][1] = _v3.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
+                if (k === 'd') {
+                  props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
                     return joinArr$2(matrix.calPoint([$1, $2], m), ',');
                   });
                   break;
@@ -14382,6 +14601,25 @@
         }
       }
     }, {
+      key: "__propsStrokeStyle",
+      value: function __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
+        if (strokeDasharrayStr) {
+          props.push(['stroke-dasharray', strokeDasharrayStr]);
+        }
+
+        if (strokeLinecap !== 'butt') {
+          props.push(['stroke-linecap', strokeLinecap]);
+        }
+
+        if (strokeLinejoin !== 'miter') {
+          props.push(['stroke-linejoin', strokeLinejoin]);
+        }
+
+        if (strokeMiterlimit !== 4) {
+          props.push(['stroke-miterlimit', strokeMiterlimit]);
+        }
+      }
+    }, {
       key: "addGeom",
       value: function addGeom(tagName, props) {
         props = util.hash2arr(props);
@@ -14406,6 +14644,11 @@
       key: "baseLine",
       get: function get() {
         return this.__height;
+      }
+    }, {
+      key: "isMulti",
+      get: function get() {
+        return this.__isMulti;
       }
     }, {
       key: "isMask",
@@ -14460,6 +14703,48 @@
     return Geom;
   }(Xom);
 
+  var isNil$7 = util.isNil;
+
+  function reBuild(target, origin, base, isMulti) {
+    if (isMulti) {
+      return target.map(function (item) {
+        return origin + item * base;
+      });
+    } else {
+      return origin + target * base;
+    }
+  }
+
+  function reBuildC(target, originX, originY, width, height, isMulti) {
+    if (isMulti) {
+      if (target) {
+        return target.map(function (item) {
+          return reBuildC(item, originX, originY, width, height);
+        });
+      }
+    } else {
+      if (target && target.length === 2) {
+        return [originX + target[0] * width, originY + target[1] * height];
+      }
+    }
+
+    return [];
+  }
+
+  function curveNum(controlA, controlB) {
+    var num = 0;
+
+    if (controlA.length === 2) {
+      num++;
+    }
+
+    if (controlB.length === 2) {
+      num += 2;
+    }
+
+    return num;
+  }
+
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
@@ -14472,33 +14757,92 @@
 
       _this = _super.call(this, tagName, props); // x1,y1和x2,y2表明线段的首尾坐标，control表明控制点坐标
 
-      _this.__x1 = _this.__y1 = 0;
-      _this.__x2 = _this.__y2 = 1;
-      _this.__controlA = [];
-      _this.__controlB = [];
+      if (_this.isMulti) {
+        _this.__x1 = [0];
+        _this.__y1 = [0];
+        _this.__x2 = [1];
+        _this.__y2 = [1];
+        _this.__controlA = [[]];
+        _this.__controlB = [[]];
 
-      if (_this.props.x1 !== undefined) {
-        _this.__x1 = parseFloat(_this.props.x1) || 0;
-      }
+        if (Array.isArray(props.x1)) {
+          _this.__x1 = props.x1.map(function (i) {
+            return parseFloat(i) || 0;
+          });
+        } else if (!isNil$7(props.x1)) {
+          _this.__x1 = [parseFloat(props.x1) || 0];
+        }
 
-      if (_this.props.y1 !== undefined) {
-        _this.__y1 = parseFloat(_this.props.y1) || 0;
-      }
+        if (Array.isArray(props.y1)) {
+          _this.__y1 = props.y1.map(function (i) {
+            return parseFloat(i) || 0;
+          });
+        } else if (!isNil$7(props.y1)) {
+          _this.__y1 = [parseFloat(props.y1) || 0];
+        }
 
-      if (_this.props.x2 !== undefined) {
-        _this.__x2 = parseFloat(_this.props.x2) || 0;
-      }
+        if (Array.isArray(props.x2)) {
+          _this.__x2 = props.x2.map(function (i) {
+            return parseFloat(i) || 0;
+          });
+        } else if (!isNil$7(props.x2)) {
+          _this.__x2 = [parseFloat(props.x2) || 0];
+        }
 
-      if (_this.props.y2 !== undefined) {
-        _this.__y2 = parseFloat(_this.props.y2) || 0;
-      }
+        if (Array.isArray(props.y2)) {
+          _this.__y2 = props.y2.map(function (i) {
+            return parseFloat(i) || 0;
+          });
+        } else if (!isNil$7(props.y2)) {
+          _this.__y2 = [parseFloat(props.y2) || 0];
+        }
 
-      if (Array.isArray(_this.props.controlA)) {
-        _this.__controlA = _this.props.controlA;
-      }
+        if (Array.isArray(props.controlA)) {
+          _this.__controlA = props.controlA.map(function (item) {
+            if (Array.isArray(item)) {
+              return item;
+            }
 
-      if (Array.isArray(_this.props.controlB)) {
-        _this.__controlB = _this.props.controlB;
+            return [];
+          });
+        }
+
+        if (Array.isArray(props.controlB)) {
+          _this.__controlB = props.controlB.map(function (item) {
+            if (Array.isArray(item)) {
+              return item;
+            }
+
+            return [];
+          });
+        }
+      } else {
+        _this.__x1 = _this.__y1 = 0;
+        _this.__x2 = _this.__y2 = 1;
+
+        if (!isNil$7(props.x1)) {
+          _this.__x1 = parseFloat(props.x1) || 0;
+        }
+
+        if (!isNil$7(props.y1)) {
+          _this.__y1 = parseFloat(props.y1) || 0;
+        }
+
+        if (!isNil$7(props.x2)) {
+          _this.__x2 = parseFloat(props.x2) || 0;
+        }
+
+        if (!isNil$7(props.y2)) {
+          _this.__y2 = parseFloat(props.y2) || 0;
+        }
+
+        if (Array.isArray(props.controlA)) {
+          _this.__controlA = props.controlA;
+        }
+
+        if (Array.isArray(props.controlB)) {
+          _this.__controlB = props.controlB;
+        }
       }
 
       return _this;
@@ -14516,7 +14860,6 @@
             originY = _get$call.originY,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -14534,105 +14877,88 @@
             y2 = this.y2,
             controlA = this.controlA,
             controlB = this.controlB,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        var rebuild;
 
-        if (__cacheProps.x1 === undefined) {
-          x1 = originX + x1 * width;
+        if (isNil$7(__cacheProps.x1)) {
+          rebuild = true;
+          __cacheProps.x1 = reBuild(x1, originX, width, isMulti);
         }
 
-        if (__cacheProps.x2 === undefined) {
-          x2 = originX + x2 * width;
+        if (isNil$7(__cacheProps.x2)) {
+          rebuild = true;
+          __cacheProps.x2 = reBuild(x2, originX, width, isMulti);
         }
 
-        if (__cacheProps.y1 === undefined) {
-          y1 = originY + y1 * height;
+        if (isNil$7(__cacheProps.y1)) {
+          rebuild = true;
+          __cacheProps.y1 = reBuild(y1, originY, height, isMulti);
         }
 
-        if (__cacheProps.y2 === undefined) {
-          y2 = originY + y2 * height;
+        if (isNil$7(__cacheProps.y2)) {
+          rebuild = true;
+          __cacheProps.y2 = reBuild(y2, originY, height, isMulti);
         }
 
-        if (__cacheProps.controlA === undefined) {
-          if (controlA.length === 2) {
-            __cacheProps.controlA = [originX + controlA[0] * width, originY + controlA[1] * height];
+        if (isNil$7(__cacheProps.controlA)) {
+          rebuild = true;
+          __cacheProps.controlA = reBuildC(controlA, originX, originY, width, height, isMulti);
+        }
+
+        if (isNil$7(__cacheProps.controlB)) {
+          rebuild = true;
+          __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
+        }
+
+        if (rebuild && renderMode === mode.SVG) {
+          var d = '';
+
+          if (isMulti) {
+            __cacheProps.x1.forEach(function (xa, i) {
+              var xb = __cacheProps.x2[i];
+              var ya = __cacheProps.y1[i];
+              var yb = __cacheProps.y2[i];
+              var ca = __cacheProps.controlA[i];
+              var cb = __cacheProps.controlB[i];
+              var curve = curveNum(ca, cb);
+              d += painter.canvasLine(xa, ya, xb, yb, ca, cb, curve);
+            });
           } else {
-            __cacheProps.controlA = [];
+            var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+            d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, curve);
           }
-        }
 
-        if (__cacheProps.controlB === undefined) {
-          if (controlB.length === 2) {
-            __cacheProps.controlB = [originX + controlB[0] * width, originY + controlB[1] * height];
-          } else {
-            __cacheProps.controlB = [];
-          }
-        }
-
-        var curve = 0; // 控制点，曲线
-
-        var cx1, cy1, cx2, cy2;
-
-        if (__cacheProps.controlA.length === 2) {
-          curve++;
-          cx1 = __cacheProps.controlA[0];
-          cy1 = __cacheProps.controlA[1];
-        }
-
-        if (__cacheProps.controlB.length === 2) {
-          curve += 2;
-          cx2 = __cacheProps.controlB[0];
-          cy2 = __cacheProps.controlB[1];
+          __cacheProps.d = d;
         }
 
         if (renderMode === mode.CANVAS) {
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-
-          if (curve === 3) {
-            ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2);
-          } else if (curve === 2) {
-            ctx.quadraticCurveTo(cx2, cy2, x2, y2);
-          } else if (curve === 1) {
-            ctx.quadraticCurveTo(cx1, cy1, x2, y2);
-          } else {
-            ctx.lineTo(x2, y2);
-          }
-
           if (strokeWidth > 0) {
+            ctx.beginPath();
+
+            if (isMulti) {
+              __cacheProps.x1.forEach(function (xa, i) {
+                var xb = __cacheProps.x2[i];
+                var ya = __cacheProps.y1[i];
+                var yb = __cacheProps.y2[i];
+                var ca = __cacheProps.controlA[i];
+                var cb = __cacheProps.controlB[i];
+                var curve = curveNum(ca, cb);
+                painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+              });
+            } else {
+              var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
+
+              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve);
+            }
+
             ctx.stroke();
+            ctx.closePath();
           }
-
-          ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var d;
+          var props = [['d', __cacheProps.d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (curve === 3) {
-            d = 'M' + x1 + ',' + y1 + ' C' + cx1 + ',' + cy1 + ' ' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
-          } else if (curve === 2) {
-            d = 'M' + x1 + ',' + y1 + ' Q' + cx2 + ',' + cy2 + ' ' + x2 + ',' + y2;
-          } else if (curve === 1) {
-            d = 'M' + x1 + ',' + y1 + ' Q' + cx1 + ',' + cy1 + ' ' + x2 + ',' + y2;
-          } else {
-            d = 'M' + x1 + ',' + y1 + ' L' + x2 + ',' + y2;
-          }
-
-          var props = [['d', d], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
-
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
-
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          if (strokeLinejoin !== 'miter') {
-            props.push(['stroke-linejoin', strokeLinejoin]);
-          }
-
-          if (strokeMiterlimit !== 4) {
-            props.push(['stroke-miterlimit', strokeMiterlimit]);
-          }
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
           this.addGeom('path', props);
         }
@@ -14672,6 +14998,16 @@
     return Line;
   }(Geom$2);
 
+  var isNil$8 = util.isNil;
+
+  function concatPointAndControl(point, control) {
+    if (Array.isArray(control) && control.length) {
+      return point.concat(control);
+    }
+
+    return point;
+  }
+
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
@@ -14684,17 +15020,21 @@
 
       _this = _super.call(this, tagName, props); // 所有点的列表
 
-      _this.__points = [];
+      if (_this.isMulti) {
+        _this.__points = [[]];
+        _this.__controls = [[]];
+      } else {
+        _this.__points = []; // 控制点
 
-      if (Array.isArray(_this.props.points)) {
-        _this.__points = _this.props.points;
-      } // 控制点
+        _this.__controls = [];
+      }
 
+      if (Array.isArray(props.controls)) {
+        _this.__controls = props.controls;
+      }
 
-      _this.__controls = [];
-
-      if (Array.isArray(_this.props.controls)) {
-        _this.__controls = _this.props.controls;
+      if (Array.isArray(props.points)) {
+        _this.__points = props.points;
       }
 
       return _this;
@@ -14702,7 +15042,11 @@
 
     _createClass(Polyline, [{
       key: "__getPoints",
-      value: function __getPoints(originX, originY, width, height, points, len) {
+      value: function __getPoints(originX, originY, width, height, points, len, isControl) {
+        if (!isControl && !Array.isArray(points) && points.length < 2) {
+          throw new Error('Points must have at lease 2 item: ' + points);
+        }
+
         return points.map(function (item) {
           var res = [];
 
@@ -14720,6 +15064,8 @@
     }, {
       key: "render",
       value: function render(renderMode, ctx, defs) {
+        var _this2 = this;
+
         var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
@@ -14730,7 +15076,6 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -14744,98 +15089,85 @@
             height = this.height,
             points = this.points,
             controls = this.controls,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
 
-        if (__cacheProps.points === undefined) {
-          __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
-          __cacheProps.d = null;
+        if (isNil$8(__cacheProps.points)) {
+          if (isMulti) {
+            __cacheProps.points = points.map(function (item) {
+              return _this2.__getPoints(originX, originY, width, height, item);
+            });
+          } else {
+            __cacheProps.points = this.__getPoints(originX, originY, width, height, points, true);
+          }
         }
 
-        if (__cacheProps.controls === undefined) {
-          __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls);
-          __cacheProps.d = null;
-        }
-
-        if (__cacheProps.points.length < 2) {
-          console.error('Points must have at lease 2 item: ' + points);
-          return;
-        }
-
-        for (var i = 0, len = __cacheProps.points.length; i < len; i++) {
-          var item = __cacheProps.points[i];
-
-          if (!Array.isArray(item) || item.length < 2) {
-            console.error('Each Point must have a coords: ' + item);
-            return;
+        if (isNil$8(__cacheProps.controls)) {
+          if (isMulti) {
+            __cacheProps.controls = controls.map(function (item) {
+              return _this2.__getPoints(originX, originY, width, height, item);
+            });
+          } else {
+            __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls, true);
           }
         }
 
         var pts = __cacheProps.points;
-        var cls = __cacheProps.controls;
+        var cls = __cacheProps.controls; // points/controls有变化就需要重建顶点
+
+        if ( renderMode === mode.SVG) {
+          if (isMulti) {
+            var list = pts.map(function (item, i) {
+              var cl = cls[i];
+              return item.map(function (point, j) {
+                return concatPointAndControl(point, cl && cl[j]);
+              });
+            });
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = list;
+            } else if (renderMode === mode.SVG) {
+              var d = '';
+              list.forEach(function (item) {
+                return d += painter.svgPolygon(item);
+              });
+              __cacheProps.d = d;
+            }
+          } else {
+            var _list = pts.map(function (point, i) {
+              return concatPointAndControl(point, controls[i]);
+            });
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = _list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = painter.svgPolygon(_list);
+            }
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
-          ctx.moveTo(pts[0][0], pts[0][1]);
+          var _list2 = __cacheProps.list;
 
-          for (var _i = 1, _len = pts.length; _i < _len; _i++) {
-            var point = pts[_i];
-            var cl = cls[_i - 1];
-
-            if (!cl || !cl.length) {
-              ctx.lineTo(point[0], point[1]);
-            } else if (cl.length === 4) {
-              ctx.bezierCurveTo(cl[0], cl[1], cl[2], cl[3], point[0], point[1]);
-            } else {
-              ctx.quadraticCurveTo(cl[0], cl[1], point[0], point[1]);
-            }
+          if (isMulti) {
+            _list2.forEach(function (item) {
+              return painter.canvasPolygon(ctx, item);
+            });
+          } else {
+            painter.canvasPolygon(ctx, _list2);
           }
-
-          ctx.fill();
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
+          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]]; // 矢量坐标不变时无需重复计算
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (!__cacheProps.d) {
-            var d = 'M' + pts[0][0] + ',' + pts[0][1];
-
-            for (var _i2 = 1, _len2 = pts.length; _i2 < _len2; _i2++) {
-              var _point = pts[_i2];
-              var _cl = cls[_i2 - 1];
-
-              if (!_cl || !_cl.length) {
-                d += 'L' + _point[0] + ',' + _point[1];
-              } else if (_cl.length === 4) {
-                d += 'C' + _cl[0] + ',' + _cl[1] + ' ' + _cl[2] + ',' + _cl[3] + ' ' + _point[0] + ',' + _point[1];
-              } else {
-                d += 'Q' + _cl[0] + ',' + _cl[1] + ' ' + _point[0] + ',' + _point[1];
-              }
-            }
-
-            __cacheProps.d = d;
-          }
-
-          props.push(['d', __cacheProps.d]);
-
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
-
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          if (strokeLinejoin !== 'miter') {
-            props.push(['stroke-linejoin', strokeLinejoin]);
-          }
-
-          if (strokeMiterlimit !== 4) {
-            props.push(['stroke-miterlimit', strokeMiterlimit]);
-          }
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
           this.addGeom('path', props);
         }
@@ -14879,7 +15211,7 @@
     return Polygon;
   }(Polyline);
 
-  var OFFSET = Math.PI * 0.5;
+  var isNil$9 = util.isNil;
 
   function getCoordsByDegree(x, y, r, d) {
     d = d % 360;
@@ -14895,6 +15227,16 @@
     }
   }
 
+  function getR(v, dft) {
+    v = parseFloat(v);
+
+    if (isNaN(v)) {
+      v = dft;
+    }
+
+    return v;
+  }
+
   var Sector = /*#__PURE__*/function (_Geom) {
     _inherits(Sector, _Geom);
 
@@ -14907,48 +15249,68 @@
 
       _this = _super.call(this, tagName, props); // 角度
 
-      _this.__begin = 0;
-      _this.__end = 0;
+      if (_this.isMulti) {
+        _this.__begin = [];
+        _this.__end = [];
+        _this.__r = [];
 
-      if (_this.props.begin) {
-        _this.__begin = parseFloat(_this.props.begin);
-
-        if (isNaN(_this.begin)) {
-          _this.__begin = 0;
+        if (Array.isArray(props.begin)) {
+          _this.__begin = props.begin(function (i) {
+            return getR(i, 0);
+          });
         }
-      }
 
-      if (_this.props.end) {
-        _this.__end = parseFloat(_this.props.end);
-
-        if (isNaN(_this.end)) {
-          _this.__end = 0;
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end(function (i) {
+            return getR(i, 0);
+          });
         }
-      } // 半径0~1，默认1
 
-
-      _this.__r = 1;
-
-      if (_this.props.r) {
-        _this.__r = parseFloat(_this.props.r);
-
-        if (isNaN(_this.r)) {
-          _this.__r = 1;
+        if (Array.isArray(props.r)) {
+          _this.__r = props.r(function (i) {
+            return getR(i, 1);
+          });
         }
-      } // 扇形两侧是否有边
 
+        if (Array.isArray(props.edge)) {
+          _this.__edge = props.edge(function (i) {
+            return !!i;
+          });
+        }
 
-      _this.__edge = false;
+        if (Array.isArray(props.closure)) {
+          _this.__closure = props.closure(function (i) {
+            return !!i;
+          });
+        }
+      } else {
+        _this.__begin = _this.__end = 0; // 半径[0, ∞)，默认1
 
-      if (_this.props.edge !== undefined) {
-        _this.__edge = !!_this.props.edge;
-      } // 扇形大于180°时，是否闭合两端
+        _this.__r = 1; // 扇形两侧是否有边
 
+        _this.__edge = false; // 扇形大于180°时，是否闭合两端
 
-      _this.__closure = false;
+        _this.__closure = false;
 
-      if (_this.props.closure !== undefined) {
-        _this.__closure = !!_this.props.closure;
+        if (!isNil$9(props.begin)) {
+          _this.__begin = getR(props.begin, 0);
+        }
+
+        if (!isNil$9(props.end)) {
+          _this.__end = getR(props.end, 0);
+        }
+
+        if (!isNil$9(props.r)) {
+          _this.__r = getR(props.r, 1);
+        }
+
+        if (!isNil$9(props.edge)) {
+          _this.__edge = !!props.edge;
+        }
+
+        if (!isNil$9(props.closure)) {
+          _this.__closure = !!props.closure;
+        }
       }
 
       return _this;
@@ -14957,6 +15319,8 @@
     _createClass(Sector, [{
       key: "render",
       value: function render(renderMode, ctx, defs) {
+        var _this2 = this;
+
         var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
@@ -14967,7 +15331,6 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -14978,118 +15341,166 @@
         }
 
         var width = this.width,
-            height = this.height,
             begin = this.begin,
             end = this.end,
             r = this.r,
             edge = this.edge,
             closure = this.closure,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        var rebuild;
 
-        if (begin === end) {
-          return;
+        if (isNil$9(__cacheProps.begin)) {
+          rebuild = true;
+          __cacheProps.begin = begin;
         }
 
-        if (__cacheProps.r === undefined || __cacheProps.begin === undefined || __cacheProps.end === undefined) {
-          __cacheProps.begin = __cacheProps.end = true;
-          __cacheProps.r = r *= Math.min(width, height) * 0.5;
-
-          var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
-              _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
-              _x = _getCoordsByDegree2[0],
-              _y = _getCoordsByDegree2[1];
-
-          var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end),
-              _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
-              _x2 = _getCoordsByDegree4[0],
-              _y2 = _getCoordsByDegree4[1];
-
-          __cacheProps.x1 = _x;
-          __cacheProps.x2 = _x2;
-          __cacheProps.y1 = _y;
-          __cacheProps.y2 = _y2;
+        if (isNil$9(__cacheProps.end)) {
+          rebuild = true;
+          __cacheProps.end = end;
         }
 
-        r = __cacheProps.r;
-        var x1 = __cacheProps.x1,
-            y1 = __cacheProps.y1,
-            x2 = __cacheProps.x2,
-            y2 = __cacheProps.y2;
-        var large = end - begin > 180 ? 1 : 0;
+        if (isNil$9(__cacheProps.r)) {
+          rebuild = true;
+
+          if (isMulti) {
+            __cacheProps.r = r.map(function (r) {
+              return r * width * 0.5;
+            });
+          } else {
+            __cacheProps.r = r * width * 0.5;
+          }
+        }
+
+        if (isNil$9(__cacheProps.edge)) {
+          rebuild = true;
+          __cacheProps.edge = edge;
+        }
+
+        if (isNil$9(__cacheProps.closure)) {
+          rebuild = true;
+          __cacheProps.closure = closure;
+        } // begin/end/r/edge/closure有变化就重建
+
+
+        if (rebuild) {
+          var _begin = __cacheProps.begin,
+              _end = __cacheProps.end,
+              _r = __cacheProps.r,
+              _closure = __cacheProps.closure;
+
+          if (isMulti) {
+            __cacheProps.x1 = [];
+            __cacheProps.x2 = [];
+            __cacheProps.y1 = [];
+            __cacheProps.y2 = [];
+            __cacheProps.large = [];
+            var d = '';
+
+            _begin.forEach(function (begin, i) {
+              var _getCoordsByDegree = getCoordsByDegree(cx, cy, _r[i], begin),
+                  _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
+                  x1 = _getCoordsByDegree2[0],
+                  y1 = _getCoordsByDegree2[1];
+
+              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, _r[i], _end[i]),
+                  _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
+                  x2 = _getCoordsByDegree4[0],
+                  y2 = _getCoordsByDegree4[1];
+
+              var large = _end[i] - begin > 180 ? 1 : 0;
+
+              __cacheProps.x1.push(x1);
+
+              __cacheProps.x2.push(x2);
+
+              __cacheProps.y1.push(y1);
+
+              __cacheProps.y2.push(y2);
+
+              __cacheProps.large.push(large);
+
+              if (renderMode === mode.SVG) {
+                d += painter.svgSector(cx, cy, _r[i], x1, y1, x2, y2, strokeWidth, large, edge[i], _closure[i]);
+              }
+            });
+
+            __cacheProps.d = d;
+          } else {
+            var _getCoordsByDegree5 = getCoordsByDegree(cx, cy, _r, _begin),
+                _getCoordsByDegree6 = _slicedToArray(_getCoordsByDegree5, 2),
+                x1 = _getCoordsByDegree6[0],
+                y1 = _getCoordsByDegree6[1];
+
+            var _getCoordsByDegree7 = getCoordsByDegree(cx, cy, _r, _end),
+                _getCoordsByDegree8 = _slicedToArray(_getCoordsByDegree7, 2),
+                x2 = _getCoordsByDegree8[0],
+                y2 = _getCoordsByDegree8[1];
+
+            var large = _end - _begin > 180 ? 1 : 0;
+            __cacheProps.x1 = x1;
+            __cacheProps.x2 = x2;
+            __cacheProps.y1 = y1;
+            __cacheProps.y2 = y2;
+            __cacheProps.large = large;
+
+            if (renderMode === mode.SVG) {
+              __cacheProps.d = painter.svgSector(cx, cy, _r, x1, y1, x2, y2, strokeWidth, large, edge, _closure);
+            }
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
+          var _begin2 = __cacheProps.begin,
+              _end2 = __cacheProps.end,
+              _r2 = __cacheProps.r,
+              _x = __cacheProps.x1,
+              _y = __cacheProps.y1,
+              _x2 = __cacheProps.x2,
+              _y2 = __cacheProps.y2,
+              _edge = __cacheProps.edge,
+              _large = __cacheProps.large,
+              _closure2 = __cacheProps.closure;
           ctx.beginPath();
-          ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
-          if (edge) {
-            if (!large || !closure) {
-              ctx.lineTo(cx, cy);
-            }
-
-            ctx.lineTo(x1, y1);
-
-            if (strokeWidth > 0) {
-              ctx.stroke();
-            }
+          if (isMulti) {
+            _begin2.forEach(function (begin, i) {
+              return painter.canvasSector(ctx, cx, cy, _r2[i], _x[i], _y[i], _x2[i], _y2[i], strokeWidth, begin[i], _end2[i], _large[i], _edge[i], _closure2[i]);
+            });
           } else {
-            if (strokeWidth > 0) {
-              ctx.stroke();
-            }
-
-            if (!large || !closure) {
-              ctx.lineTo(cx, cy);
-            }
-
-            ctx.lineTo(x1, y1);
+            painter.canvasSector(ctx, cx, cy, _r2, _x, _y, _x2, _y2, strokeWidth, _begin2, _end2, _large, _edge, _closure2);
           }
 
           ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          if (edge) {
-            var props = [['d', closure ? 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z' : 'M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z'], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
-
-            if (strokeDasharray.length) {
-              props.push(['stroke-dasharray', strokeDasharrayStr]);
-            }
-
-            if (strokeLinecap !== 'butt') {
-              props.push(['stroke-linecap', strokeLinecap]);
-            }
-
-            if (strokeLinejoin !== 'miter') {
-              props.push(['stroke-linejoin', strokeLinejoin]);
-            }
-
-            if (strokeMiterlimit !== 4) {
-              props.push(['stroke-miterlimit', strokeMiterlimit]);
-            }
-
-            this.addGeom('path', props);
+          if (isMulti) {
+            __cacheProps.d.map(function (item, i) {
+              return _this2.__genSector(edge[i], item, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            });
           } else {
-            this.addGeom('path', [['d', closure ? 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z' : 'M' + cx + ',' + cy + ' L' + x1 + ',' + y1 + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z'], ['fill', fill]]);
+            this.__genSector(edge, __cacheProps.d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+          }
+        }
+      }
+    }, {
+      key: "__genSector",
+      value: function __genSector(edge, d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
+        if (edge) {
+          var props = [['d', d[0]], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-            if (strokeWidth > 0) {
-              var _props = [['d', 'M' + x1 + ',' + y1 + ' A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2], ['fill', 'rgba(0,0,0,0)'], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
-              if (strokeDasharray.length) {
-                _props.push(['stroke-dasharray', strokeDasharrayStr]);
-              }
+          this.addGeom('path', props);
+        } else {
+          this.addGeom('path', [['d', d[0]], ['fill', fill]]);
 
-              if (strokeLinecap !== 'butt') {
-                _props.push(['stroke-linecap', strokeLinecap]);
-              }
+          if (strokeWidth > 0) {
+            var _props = [['d', d[1]], ['fill', 'none'], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-              if (strokeLinejoin !== 'miter') {
-                _props.push(['stroke-linejoin', strokeLinejoin]);
-              }
+            this.__propsStrokeStyle(_props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
-              if (strokeMiterlimit !== 4) {
-                _props.push(['stroke-miterlimit', strokeMiterlimit]);
-              }
-
-              this.addGeom('path', _props);
-            }
+            this.addGeom('path', _props);
           }
         }
       }
@@ -15123,6 +15534,18 @@
     return Sector;
   }(Geom$2);
 
+  var isNil$a = util.isNil;
+
+  function getR$1(v) {
+    v = parseFloat(v);
+
+    if (isNaN(v)) {
+      v = 0;
+    }
+
+    return v;
+  }
+
   var Rect = /*#__PURE__*/function (_Geom) {
     _inherits(Rect, _Geom);
 
@@ -15135,23 +15558,30 @@
 
       _this = _super.call(this, tagName, props); // 圆角
 
-      _this.__rx = 0;
+      if (_this.isMulti) {
+        _this.__rx = [];
+        _this.__ry = [];
 
-      if (_this.props.rx) {
-        _this.__rx = parseFloat(_this.props.rx);
-
-        if (isNaN(_this.rx)) {
-          _this.__rx = 0;
+        if (Array.isArray(props.rx)) {
+          _this.__rx = props.rx.map(function (i) {
+            return getR$1(i);
+          });
         }
-      }
 
-      _this.__ry = 0;
+        if (Array.isArray(props.ry)) {
+          _this.__ry = props.ry.map(function (i) {
+            return getR$1(i);
+          });
+        }
+      } else {
+        _this.__rx = _this.__ry = 0;
 
-      if (_this.props.ry) {
-        _this.__ry = parseFloat(_this.props.ry);
+        if (!isNil$a(props.rx)) {
+          _this.__rx = getR$1(props.rx);
+        }
 
-        if (isNaN(_this.ry)) {
-          _this.__ry = 0;
+        if (!isNil$a(props.ry)) {
+          _this.__ry = getR$1(props.ry);
         }
       }
 
@@ -15171,7 +15601,6 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -15185,73 +15614,53 @@
             height = this.height,
             rx = this.rx,
             ry = this.ry,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
 
-        if (__cacheProps.rx === undefined) {
-          rx = Math.min(rx, 0.5);
-          rx *= width;
-          __cacheProps.rx = rx;
-
-          if (rx) {
-            __cacheProps.ox = rx * geom.H;
+        if (isNil$a(__cacheProps.rx)) {
+          if (isMulti) {
+            __cacheProps.rx = rx.map(function (rx) {
+              return Math.min(rx, 0.5) * width;
+            });
+          } else {
+            __cacheProps.rx = Math.min(rx, 0.5) * width;
           }
         }
 
-        if (__cacheProps.ry === undefined) {
-          ry = Math.min(ry, 0.5);
-          ry *= height;
-          __cacheProps.ry = ry;
-
-          if (ry) {
-            __cacheProps.oy = ry * geom.H;
+        if (isNil$a(__cacheProps.ry)) {
+          if (isMulti) {
+            __cacheProps.ry = rx.map(function (ry) {
+              return Math.min(ry, 0.5) * height;
+            });
+          } else {
+            __cacheProps.ry = Math.min(ry, 0.5) * height;
           }
-        }
+        } // rx/ry有变化需重建顶点
 
         if (renderMode === mode.CANVAS) {
+          var _list2 = __cacheProps.list;
           ctx.beginPath();
 
-          if (__cacheProps.rx === 0 && __cacheProps.ry === 0) {
-            ctx.rect(originX, originY, width, height);
-            ctx.closePath();
-            ctx.fill();
+          if (isMulti) {
+            _list2.forEach(function (item) {
+              return painter.canvasPolygon(ctx, item);
+            });
           } else {
-            var ox = __cacheProps.ox;
-            var oy = __cacheProps.oy;
-            var list = [[originX + rx, originY], [originX + width - rx, originY], [originX + width + ox - rx, originY, originX + width, originY + ry - oy, originX + width, originY + ry], [originX + width, originY + height - ry], [originX + width, originY + height + oy - ry, originX + width + ox - rx, originY + height, originX + width - rx, originY + height], [originX + rx, originY + height], [originX + rx - ox, originY + height, originX, originY + height + oy - ry, originX, originY + height - ry], [originX, originY + ry], [originX, originY + ry - oy, originX + rx - ox, originY, originX + rx, originY]];
-            painter.genCanvasPolygon(ctx, list);
+            painter.canvasPolygon(ctx, _list2);
           }
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
+
+          ctx.fill();
+          ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['x', originX], ['y', originY], ['width', width], ['height', height], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (rx) {
-            props.push(['rx', rx]);
-          }
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
-          if (ry) {
-            props.push(['ry', ry]);
-          }
-
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
-
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          if (strokeLinejoin !== 'miter') {
-            props.push(['stroke-linejoin', strokeLinejoin]);
-          }
-
-          if (strokeMiterlimit !== 4) {
-            props.push(['stroke-miterlimit', strokeMiterlimit]);
-          }
-
-          this.addGeom('rect', props);
+          this.addGeom('path', props);
         }
       }
     }, {
@@ -15269,6 +15678,18 @@
     return Rect;
   }(Geom$2);
 
+  var isNil$b = util.isNil;
+
+  function getR$2(v) {
+    v = parseFloat(v);
+
+    if (isNaN(v)) {
+      v = 1;
+    }
+
+    return v;
+  }
+
   var Circle = /*#__PURE__*/function (_Geom) {
     _inherits(Circle, _Geom);
 
@@ -15281,13 +15702,21 @@
 
       _this = _super.call(this, tagName, props); // 半径[0, ∞)，默认1
 
-      _this.__r = 1;
+      if (_this.isMulti) {
+        _this.__r = [1];
 
-      if (_this.props.r) {
-        _this.__r = parseFloat(_this.props.r);
+        if (Array.isArray(props.r)) {
+          _this.__r = props.r.map(function (i) {
+            return getR$2(i);
+          });
+        } else if (!isNil$b(props.r)) {
+          _this.__r = getR$2(props.r);
+        }
+      } else {
+        _this.__r = 1;
 
-        if (isNaN(_this.r)) {
-          _this.__r = 1;
+        if (!isNil$b(props.r)) {
+          _this.__r = getR$2(props.r);
         }
       }
 
@@ -15307,7 +15736,6 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -15318,45 +15746,65 @@
         }
 
         var width = this.width,
-            height = this.height,
             r = this.r,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
 
-        if (__cacheProps.r === undefined) {
-          r *= Math.min(width, height) * 0.5;
-          __cacheProps.r = r;
+        if (isNil$b(__cacheProps.r)) {
+          if (isMulti) {
+            __cacheProps.r = r.map(function (i) {
+              return i * width * 0.5;
+            });
+
+            var list = __cacheProps.r.map(function (r) {
+              return geom.ellipsePoints(cx, cy, r);
+            });
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = '';
+              list.forEach(function (item) {
+                return __cacheProps.d += painter.svgPolygon(item);
+              });
+            }
+          } else {
+            __cacheProps.r *= width * 0.5;
+
+            var _list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = _list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = painter.svgPolygon(_list);
+            }
+          }
         }
 
         if (renderMode === mode.CANVAS) {
+          var _list2 = __cacheProps.list;
           ctx.beginPath();
-          ctx.arc(cx, cy, __cacheProps.r, 0, 2 * Math.PI);
-          ctx.fill();
+
+          if (isMulti) {
+            _list2.forEach(function (item) {
+              return painter.canvasPolygon(ctx, item);
+            });
+          } else {
+            painter.canvasPolygon(ctx, _list2);
+          }
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
+          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['cx', cx], ['cy', cy], ['r', __cacheProps.r], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          if (strokeLinejoin !== 'miter') {
-            props.push(['stroke-linejoin', strokeLinejoin]);
-          }
-
-          if (strokeMiterlimit !== 4) {
-            props.push(['stroke-miterlimit', strokeMiterlimit]);
-          }
-
-          this.addGeom('circle', props);
+          this.addGeom('path', props);
         }
       }
     }, {
@@ -15368,6 +15816,18 @@
 
     return Circle;
   }(Geom$2);
+
+  var isNil$c = util.isNil;
+
+  function getR$3(v) {
+    v = parseFloat(v);
+
+    if (isNaN(v)) {
+      v = 1;
+    }
+
+    return v;
+  }
 
   var Ellipse = /*#__PURE__*/function (_Geom) {
     _inherits(Ellipse, _Geom);
@@ -15381,23 +15841,36 @@
 
       _this = _super.call(this, tagName, props); // 半径[0, ∞)，默认1
 
-      _this.__rx = 1;
+      if (_this.isMulti) {
+        _this.__rx = [1];
+        _this.__ry = [1];
 
-      if (_this.props.rx) {
-        _this.__rx = parseFloat(_this.props.rx);
-
-        if (isNaN(_this.rx)) {
-          _this.__rx = 1;
+        if (Array.isArray(props.rx)) {
+          _this.__rx = props.rx.map(function (i) {
+            return getR$3(i);
+          });
+        } else if (!isNil$c(props.rx)) {
+          _this.__rx = [getR$3(props.rx)];
         }
-      }
 
-      _this.__ry = 1;
+        if (Array.isArray(props.ry)) {
+          _this.__ry = props.ry.map(function (i) {
+            return getR$3(i);
+          });
+        } else if (!isNil$c(props.ry)) {
+          _this.__ry = [getR$3(props.ry)];
+        }
+      } else {
+        _this.__rx = 1;
 
-      if (_this.props.ry) {
-        _this.__ry = parseFloat(_this.props.ry);
+        if (!isNil$c(props.rx)) {
+          _this.__rx = getR$3(props.rx);
+        }
 
-        if (isNaN(_this.ry)) {
-          _this.__ry = 1;
+        _this.__ry = 1;
+
+        if (!isNil$c(props.ry)) {
+          _this.__ry = getR$3(props.ry);
         }
       }
 
@@ -15417,7 +15890,6 @@
             fill = _get$call.fill,
             stroke = _get$call.stroke,
             strokeWidth = _get$call.strokeWidth,
-            strokeDasharray = _get$call.strokeDasharray,
             strokeDasharrayStr = _get$call.strokeDasharrayStr,
             strokeLinecap = _get$call.strokeLinecap,
             strokeLinejoin = _get$call.strokeLinejoin,
@@ -15431,63 +15903,87 @@
             height = this.height,
             rx = this.rx,
             ry = this.ry,
-            __cacheProps = this.__cacheProps;
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        var rebuild;
 
-        if (__cacheProps.rx === undefined) {
-          rx *= width * 0.5;
-          __cacheProps.rx = rx;
+        if (isNil$c(__cacheProps.rx)) {
+          rebuild = true;
 
-          if (rx) {
-            __cacheProps.ox = rx * geom.H;
+          if (isMulti) {
+            __cacheProps.rx = rx.map(function (i) {
+              return i * width * 0.5;
+            });
+          } else {
+            __cacheProps.rx = rx * width * 0.5;
           }
         }
 
-        if (__cacheProps.ry === undefined) {
-          ry *= height * 0.5;
-          __cacheProps.ry = ry;
+        if (isNil$c(__cacheProps.ry)) {
+          rebuild = true;
 
-          if (ry) {
-            __cacheProps.oy = ry * geom.H;
+          if (isMulti) {
+            __cacheProps.ry = ry.map(function (i) {
+              return i * height * 0.5;
+            });
+          } else {
+            __cacheProps.ry = ry * height * 0.5;
+          }
+        } // rx/ry有一个变了重新计算顶点
+
+
+        if (rebuild) {
+          var _rx = __cacheProps.rx,
+              _ry = __cacheProps.ry;
+
+          if (isMulti) {
+            var list = _rx.map(function (rx, i) {
+              return geom.ellipsePoints(cx, cy, rx, _ry[i]);
+            });
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = '';
+              list.forEach(function (item) {
+                return __cacheProps.d += painter.svgPolygon(item);
+              });
+            }
+          } else {
+            var _list = geom.ellipsePoints(cx, cy, _rx, _ry);
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = _list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = painter.svgPolygon(_list);
+            }
           }
         }
 
         if (renderMode === mode.CANVAS) {
+          var _list2 = __cacheProps.list;
           ctx.beginPath();
 
-          if (ctx.ellipse) {
-            ctx.ellipse(cx, cy, __cacheProps.rx, __cacheProps.ry, 0, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.fill();
+          if (isMulti) {
+            _list2.forEach(function (item) {
+              return painter.canvasPolygon(ctx, item);
+            });
           } else {
-            var ox = __cacheProps.ox;
-            var oy = __cacheProps.oy;
-            var list = [[cx - rx, cy], [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry], [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy], [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry], [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]];
-            painter.genCanvasPolygon(ctx, list);
+            painter.canvasPolygon(ctx, _list2);
           }
 
           if (strokeWidth > 0) {
             ctx.stroke();
           }
+
+          ctx.fill();
+          ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['cx', cx], ['cy', cy], ['rx', rx], ['ry', ry], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (strokeDasharray.length) {
-            props.push(['stroke-dasharray', strokeDasharrayStr]);
-          }
+          this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
-          if (strokeLinecap !== 'butt') {
-            props.push(['stroke-linecap', strokeLinecap]);
-          }
-
-          if (strokeLinejoin !== 'miter') {
-            props.push(['stroke-linejoin', strokeLinejoin]);
-          }
-
-          if (strokeMiterlimit !== 4) {
-            props.push(['stroke-miterlimit', strokeMiterlimit]);
-          }
-
-          this.addGeom('ellipse', props);
+          this.addGeom('path', props);
         }
       }
     }, {
@@ -15565,7 +16061,7 @@
       TYPE_VD$3 = $$type.TYPE_VD,
       TYPE_GM$3 = $$type.TYPE_GM,
       TYPE_CP$3 = $$type.TYPE_CP;
-  var isNil$7 = util.isNil,
+  var isNil$d = util.isNil,
       isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$5 = util.clone,
@@ -15612,7 +16108,7 @@
           if (v.id && vars.hasOwnProperty(v.id)) {
             var value = vars[v.id];
 
-            if (isNil$7(v)) {
+            if (isNil$d(v)) {
               return;
             } // 如果有.则特殊处理子属性
 
@@ -15665,7 +16161,7 @@
         if (!isPrimitive(child)) {
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
-          if (isNil$7(libraryId)) {
+          if (isNil$d(libraryId)) {
             return;
           }
 
@@ -15681,7 +16177,7 @@
     } // library中一定有id，因为是一级，二级+特殊需求才会出现放开
 
 
-    if (isNil$7(id)) {
+    if (isNil$d(id)) {
       throw new Error('Library item miss id: ' + id);
     } else {
       hash[id] = item;
@@ -15746,7 +16242,7 @@
       json.library = null;
       json.libraryId = null;
     } // ide中库文件的child一定有libraryId，有library时一定不会有libraryId
-    else if (!isNil$7(libraryId) && hash) {
+    else if (!isNil$d(libraryId) && hash) {
         var libraryItem = hash[libraryId]; // 规定图层child只有init和动画，tagName和属性和子图层来自库
 
         if (libraryItem) {

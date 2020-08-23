@@ -1,15 +1,36 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import util from '../util/util';
+import painter from '../util/painter';
+import geom from '../math/geom';
+
+let { isNil } = util;
+
+function getR(v) {
+  v = parseFloat(v);
+  if(isNaN(v)) {
+    v = 1;
+  }
+  return v;
+}
 
 class Circle extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 半径[0, ∞)，默认1
-    this.__r = 1;
-    if(this.props.r) {
-      this.__r = parseFloat(this.props.r);
-      if(isNaN(this.r)) {
-        this.__r = 1;
+    if(this.isMulti) {
+      this.__r = [1];
+      if(Array.isArray(props.r)) {
+        this.__r = props.r.map(i => getR(i));
+      }
+      else if(!isNil(props.r)) {
+        this.__r = getR(props.r);
+      }
+    }
+    else {
+      this.__r = 1;
+      if(!isNil(props.r)) {
+        this.__r = getR(props.r);
       }
     }
   }
@@ -25,7 +46,6 @@ class Circle extends Geom {
       fill,
       stroke,
       strokeWidth,
-      strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
@@ -34,42 +54,54 @@ class Circle extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
-    let { width, height, r, __cacheProps } = this;
-    if(__cacheProps.r === undefined) {
-      r *= Math.min(width, height) * 0.5;
-      __cacheProps.r = r;
+    let { width, r, __cacheProps, isMulti } = this;
+    if(isNil(__cacheProps.r)) {
+      if(isMulti) {
+        __cacheProps.r = r.map(i => i * width * 0.5);
+        let list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r));
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = '';
+          list.forEach(item => __cacheProps.d += painter.svgPolygon(item));
+        }
+      }
+      else {
+        __cacheProps.r *= width * 0.5;
+        let list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = painter.svgPolygon(list);
+        }
+      }
     }
     if(renderMode === mode.CANVAS) {
+      let list = __cacheProps.list;
       ctx.beginPath();
-      ctx.arc(cx, cy, __cacheProps.r, 0, 2 * Math.PI);
-      ctx.fill();
+      if(isMulti) {
+        list.forEach(item => painter.canvasPolygon(ctx, item));
+      }
+      else {
+        painter.canvasPolygon(ctx, list);
+      }
       if(strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.fill();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
-        ['cx', cx],
-        ['cy', cy],
-        ['r', __cacheProps.r],
+        ['d', __cacheProps.d],
         ['fill', fill],
         ['stroke', stroke],
-        ['stroke-width', strokeWidth]
+        ['stroke-width', strokeWidth],
       ];
-      if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharrayStr]);
-      }
-      if(strokeLinecap !== 'butt') {
-        props.push(['stroke-linecap', strokeLinecap]);
-      }
-      if(strokeLinejoin !== 'miter') {
-        props.push(['stroke-linejoin', strokeLinejoin]);
-      }
-      if(strokeMiterlimit !== 4) {
-        props.push(['stroke-miterlimit', strokeMiterlimit]);
-      }
-      this.addGeom('circle', props);
+      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+      this.addGeom('path', props);
     }
   }
 

@@ -1,24 +1,47 @@
 import Geom from './Geom';
 import mode from '../util/mode';
+import util from '../util/util';
 import painter from '../util/painter';
 import geom from '../math/geom';
+
+let { isNil } = util;
+
+function getR(v) {
+  v = parseFloat(v);
+  if(isNaN(v)) {
+    v = 1;
+  }
+  return v;
+}
 
 class Ellipse extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
     // 半径[0, ∞)，默认1
-    this.__rx = 1;
-    if(this.props.rx) {
-      this.__rx = parseFloat(this.props.rx);
-      if(isNaN(this.rx)) {
-        this.__rx = 1;
+    if(this.isMulti) {
+      this.__rx = [1];
+      this.__ry = [1];
+      if(Array.isArray(props.rx)) {
+        this.__rx = props.rx.map(i => getR(i));
+      }
+      else if(!isNil(props.rx)) {
+        this.__rx = [getR(props.rx)];
+      }
+      if(Array.isArray(props.ry)) {
+        this.__ry = props.ry.map(i => getR(i));
+      }
+      else if(!isNil(props.ry)) {
+        this.__ry = [getR(props.ry)];
       }
     }
-    this.__ry = 1;
-    if(this.props.ry) {
-      this.__ry = parseFloat(this.props.ry);
-      if(isNaN(this.ry)) {
-        this.__ry = 1;
+    else {
+      this.__rx = 1;
+      if(!isNil(props.rx)) {
+        this.__rx = getR(props.rx);
+      }
+      this.__ry = 1;
+      if(!isNil(props.ry)) {
+        this.__ry = getR(props.ry);
       }
     }
   }
@@ -34,7 +57,6 @@ class Ellipse extends Geom {
       fill,
       stroke,
       strokeWidth,
-      strokeDasharray,
       strokeDasharrayStr,
       strokeLinecap,
       strokeLinejoin,
@@ -43,67 +65,73 @@ class Ellipse extends Geom {
     if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
       return;
     }
-    let { width, height, rx, ry, __cacheProps } = this;
-    if(__cacheProps.rx === undefined) {
-      rx *= width * 0.5;
-      __cacheProps.rx = rx;
-      if(rx) {
-        __cacheProps.ox = rx * geom.H;
+    let { width, height, rx, ry, __cacheProps, isMulti } = this;
+    let rebuild;
+    if(isNil(__cacheProps.rx)) {
+      rebuild = true;
+      if(isMulti) {
+        __cacheProps.rx = rx.map(i => i * width * 0.5);
+      }
+      else {
+        __cacheProps.rx = rx * width * 0.5;
       }
     }
-    if(__cacheProps.ry === undefined) {
-      ry *= height * 0.5;
-      __cacheProps.ry = ry;
-      if(ry) {
-        __cacheProps.oy = ry * geom.H;
+    if(isNil(__cacheProps.ry)) {
+      rebuild = true;
+      if(isMulti) {
+        __cacheProps.ry = ry.map(i => i * height * 0.5);
+      }
+      else {
+        __cacheProps.ry = ry * height * 0.5;
+      }
+    }
+    // rx/ry有一个变了重新计算顶点
+    if(rebuild) {
+      let { rx, ry } = __cacheProps;
+      if(isMulti) {
+        let list = rx.map((rx, i) => geom.ellipsePoints(cx, cy, rx, ry[i]));
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = '';
+          list.forEach(item => __cacheProps.d += painter.svgPolygon(item));
+        }
+      }
+      else {
+        let list = geom.ellipsePoints(cx, cy, rx, ry);
+        if(renderMode === mode.CANVAS) {
+          __cacheProps.list = list;
+        }
+        else if(renderMode === mode.SVG) {
+          __cacheProps.d = painter.svgPolygon(list);
+        }
       }
     }
     if(renderMode === mode.CANVAS) {
+      let list = __cacheProps.list;
       ctx.beginPath();
-      if(ctx.ellipse) {
-        ctx.ellipse(cx, cy, __cacheProps.rx, __cacheProps.ry, 0, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
+      if(isMulti) {
+        list.forEach(item => painter.canvasPolygon(ctx, item));
       }
       else {
-        let ox = __cacheProps.ox;
-        let oy = __cacheProps.oy;
-        let list = [
-          [cx - rx, cy],
-          [cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry],
-          [cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy],
-          [cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry],
-          [cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy]
-        ];
-        painter.genCanvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list);
       }
       if(strokeWidth > 0) {
         ctx.stroke();
       }
+      ctx.fill();
+      ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       let props = [
-        ['cx', cx],
-        ['cy', cy],
-        ['rx', rx],
-        ['ry', ry],
+        ['d', __cacheProps.d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
-      if(strokeDasharray.length) {
-        props.push(['stroke-dasharray', strokeDasharrayStr]);
-      }
-      if(strokeLinecap !== 'butt') {
-        props.push(['stroke-linecap', strokeLinecap]);
-      }
-      if(strokeLinejoin !== 'miter') {
-        props.push(['stroke-linejoin', strokeLinejoin]);
-      }
-      if(strokeMiterlimit !== 4) {
-        props.push(['stroke-miterlimit', strokeMiterlimit]);
-      }
-      this.addGeom('ellipse', props);
+      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+      this.addGeom('path', props);
     }
   }
 

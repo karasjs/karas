@@ -17,21 +17,24 @@ import mx from '../math/matrix';
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { normalize, calRelative, compute } = css;
-const { genCanvasPolygon, genSvgPolygon } = painter;
+const { canvasPolygon, svgPolygon } = painter;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
     points.forEach(point => {
-      genCanvasPolygon(ctx, point);
+      canvasPolygon(ctx, point);
     });
+    ctx.fill();
+    ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
     let s = '';
     points.forEach(point => {
-      s += genSvgPolygon(point);
+      s += svgPolygon(point);
     });
     xom.virtualDom.bb.push({
       type: 'item',
@@ -48,22 +51,22 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
     if(list) {
-      genCanvasPolygon(ctx, list, method);
+      canvasPolygon(ctx, list, method);
     }
     else {
-      ctx.beginPath();
       ctx.rect(x, y, w, h);
-      ctx[method]();
-      ctx.closePath();
     }
+    ctx.fill();
+    ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
     if(list) {
-      let d = genSvgPolygon(list);
+      let d = svgPolygon(list);
       xom.virtualDom.bb.push({
         type: 'item',
         tagName: 'path',

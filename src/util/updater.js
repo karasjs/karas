@@ -128,7 +128,10 @@ function diffSr(vd, oj, nj) {
     // 相同类型的vd进行对比继承动画
     else if(oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
       replaceKeyHash[k] = true;
-      nj.inherit = vd;
+      // 需判断矢量标签mutil是否相等
+      if(nj.$$type !== TYPE_GM || oj.props.multi === nj.props.multi) {
+        nj.inherit = vd;
+      }
       oj.key = nj.key = KEY_FLAG;
       // key相同的dom暂存下来
       if(nj.$$type === TYPE_VD) {
@@ -171,6 +174,12 @@ function diffChild(vd, oj, nj, replaceKeyHash) {
         diffCp(oj, nj, vd);
         // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收
         removeCpFromOldTree(vd);
+      }
+    }
+    else if(nj.$$type === TYPE_GM && oj.$$type === TYPE_GM) {
+      // $geom的multi必须一致
+      if(oj.tagName === nj.tagName && oj.props.multi === nj.props.multi) {
+        nj.inherit = vd;
       }
     }
     // dom类型递归children

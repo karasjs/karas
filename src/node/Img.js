@@ -10,7 +10,7 @@ import border from '../style/border';
 import level from '../animate/level';
 
 const { AUTO } = unit;
-const { genCanvasPolygon, genSvgPolygon } = painter;
+const { canvasPolygon, svgPolygon } = painter;
 
 class Img extends Dom {
   constructor(tagName, props) {
@@ -214,7 +214,10 @@ class Img extends Dom {
           // 有border-radius需模拟遮罩裁剪
           if(list) {
             ctx.save();
-            genCanvasPolygon(ctx, list, 'clip');
+            ctx.beginPath();
+            canvasPolygon(ctx, list);
+            ctx.clip();
+            ctx.closePath();
             ctx.drawImage(source, originX, originY, width, height);
             ctx.restore();
           }
@@ -229,7 +232,7 @@ class Img extends Dom {
             this.virtualDom.children = [loadImg.cache];
             // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
             if(!this.virtualDom.cache && list) {
-              let d = genSvgPolygon(list);
+              let d = svgPolygon(list);
               let id = defs.add({
                 tagName: 'clipPath',
                 props: [],
@@ -261,7 +264,7 @@ class Img extends Dom {
             ['height', loadImg.height]
           ];
           if(list) {
-            let d = genSvgPolygon(list);
+            let d = svgPolygon(list);
             let id = defs.add({
               tagName: 'clipPath',
               props: [],

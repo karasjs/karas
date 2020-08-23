@@ -13,6 +13,8 @@ export default {
     end: true,
     points: true,
     controls: true,
+    edge: true,
+    closure: true,
   },
   STYLE: {
     transform: true,

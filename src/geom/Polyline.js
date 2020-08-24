@@ -117,7 +117,10 @@ class Polyline extends Geom {
         let list = pts.map((item, i) => {
           let cl = cls[i];
           return item.map((point, j) => {
-            return concatPointAndControl(point, cl && cl[j]);
+            if(j) {
+              return concatPointAndControl(point, cl && cl[j - 1]);
+            }
+            return point;
           });
         });
         if(renderMode === mode.CANVAS) {

@@ -46,23 +46,23 @@ class Sector extends Geom {
     super(tagName, props);
     // 角度
     if(this.isMulti) {
-      this.__begin = [];
-      this.__end = [];
-      this.__r = [];
+      this.__begin = [0];
+      this.__end = [0];
+      this.__r = [1];
       if(Array.isArray(props.begin)) {
-        this.__begin = props.begin(i => getR(i, 0));
+        this.__begin = props.begin.map(i => getR(i, 0));
       }
       if(Array.isArray(props.end)) {
-        this.__end = props.end(i => getR(i, 0));
+        this.__end = props.end.map(i => getR(i, 0));
       }
       if(Array.isArray(props.r)) {
-        this.__r = props.r(i => getR(i, 1));
+        this.__r = props.r.map(i => getR(i, 1));
       }
       if(Array.isArray(props.edge)) {
-        this.__edge = props.edge(i => !!i);
+        this.__edge = props.edge.map(i => !!i);
       }
       if(Array.isArray(props.closure)) {
-        this.__closure = props.closure(i => !!i);
+        this.__closure = props.closure.map(i => !!i);
       }
     }
     else {
@@ -146,21 +146,21 @@ class Sector extends Geom {
         __cacheProps.y1 = [];
         __cacheProps.y2 = [];
         __cacheProps.large = [];
-        let d = '';
+        __cacheProps.d = [];
         begin.forEach((begin, i) => {
-          let [x1, y1] = getCoordsByDegree(cx, cy, r[i], begin);
-          let [x2, y2] = getCoordsByDegree(cx, cy, r[i], end[i]);
-          let large = (end[i] - begin) > 180 ? 1 : 0;
+          let r = isNil(r) ? width * 0.5 : r;
+          let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
+          let [x2, y2] = getCoordsByDegree(cx, cy, r, end[i] || 0);
+          let large = ((end[i] || 0) - begin) > 180 ? 1 : 0;
           __cacheProps.x1.push(x1);
           __cacheProps.x2.push(x2);
           __cacheProps.y1.push(y1);
           __cacheProps.y2.push(y2);
           __cacheProps.large.push(large);
           if(renderMode === mode.SVG) {
-            d += painter.svgSector(cx, cy, r[i], x1, y1, x2, y2, strokeWidth, large, edge[i], closure[i]);
+            __cacheProps.d.push(painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge[i] || 0, closure[i]));
           }
         });
-        __cacheProps.d = d;
       }
       else {
         let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
@@ -191,11 +191,11 @@ class Sector extends Geom {
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {
-        __cacheProps.d.map((item, i) => this.__genSector(edge[i], item, fill, stroke, strokeWidth,
+        __cacheProps.d.map((item, i) => this.__genSector(__cacheProps.edge[i], item, fill, stroke, strokeWidth,
           strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit));
       }
       else {
-        this.__genSector(edge, __cacheProps.d, fill, stroke, strokeWidth,
+        this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth,
           strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       }
     }

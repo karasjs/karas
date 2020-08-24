@@ -64,6 +64,7 @@ class Circle extends Geom {
         }
         else if(renderMode === mode.SVG) {
           __cacheProps.d = '';
+          console.log(list);
           list.forEach(item => __cacheProps.d += painter.svgPolygon(item));
         }
       }

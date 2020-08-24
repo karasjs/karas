@@ -22,10 +22,10 @@ function svgPolygon(list) {
       s += 'L' + item[0] + ',' + item[1];
     }
     else if(item.length === 4) {
-      s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
+      s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
     }
     else if(item.length === 6) {
-      s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
+      s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
     }
   }
   return s;
@@ -93,9 +93,9 @@ function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, l
 }
 
 function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
-  let d = closure
+  let d = closure && large
     ? ('M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z')
-    : ('M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z');
+    : ('M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z');
   let d2;
   if(!edge || strokeWidth > 0) {
     d2 = 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2;

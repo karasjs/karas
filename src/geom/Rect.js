@@ -36,8 +36,8 @@ class Rect extends Geom {
     super(tagName, props);
     // 圆角
     if(this.isMulti) {
-      this.__rx = [];
-      this.__ry = [];
+      this.__rx = [0];
+      this.__ry = [0];
       if(Array.isArray(props.rx)) {
         this.__rx = props.rx.map(i => getR(i));
       }
@@ -105,7 +105,7 @@ class Rect extends Geom {
         }
         else if(renderMode === mode.SVG) {
           let d = '';
-          rx.forEach((rx, i) => d += genVertex(originX, originY, width, height, rx, ry[i]));
+          list.forEach(item => d += painter.svgPolygon(item));
           __cacheProps.d = d;
         }
       }

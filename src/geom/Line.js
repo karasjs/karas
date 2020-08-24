@@ -174,7 +174,7 @@ class Line extends Geom {
           let ca = __cacheProps.controlA[i];
           let cb = __cacheProps.controlB[i];
           let curve = curveNum(ca, cb);
-          d += painter.canvasLine(xa, ya, xb, yb, ca, cb, curve);
+          d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
         });
       }
       else {

@@ -403,9 +403,9 @@
       if (item.length === 2) {
         s += 'L' + item[0] + ',' + item[1];
       } else if (item.length === 4) {
-        s += 'Q' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3];
+        s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
       } else if (item.length === 6) {
-        s += 'C' + item[0] + ',' + item[1] + ',' + item[2] + ',' + item[3] + ',' + item[4] + ',' + item[5];
+        s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
       }
     }
 
@@ -467,7 +467,7 @@
   }
 
   function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
-    var d = closure ? 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z' : 'M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z';
+    var d = closure && large ? 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z' : 'M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z';
     var d2;
 
     if (!edge || strokeWidth > 0) {
@@ -14872,7 +14872,7 @@
               var ca = __cacheProps.controlA[i];
               var cb = __cacheProps.controlB[i];
               var curve = curveNum(ca, cb);
-              d += painter.canvasLine(xa, ya, xb, yb, ca, cb, curve);
+              d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
@@ -15090,7 +15090,11 @@
             var list = pts.map(function (item, i) {
               var cl = cls[i];
               return item.map(function (point, j) {
-                return concatPointAndControl(point, cl && cl[j]);
+                if (j) {
+                  return concatPointAndControl(point, cl && cl[j - 1]);
+                }
+
+                return point;
               });
             });
 
@@ -15224,36 +15228,36 @@
       _this = _super.call(this, tagName, props); // 角度
 
       if (_this.isMulti) {
-        _this.__begin = [];
-        _this.__end = [];
-        _this.__r = [];
+        _this.__begin = [0];
+        _this.__end = [0];
+        _this.__r = [1];
 
         if (Array.isArray(props.begin)) {
-          _this.__begin = props.begin(function (i) {
+          _this.__begin = props.begin.map(function (i) {
             return getR(i, 0);
           });
         }
 
         if (Array.isArray(props.end)) {
-          _this.__end = props.end(function (i) {
+          _this.__end = props.end.map(function (i) {
             return getR(i, 0);
           });
         }
 
         if (Array.isArray(props.r)) {
-          _this.__r = props.r(function (i) {
+          _this.__r = props.r.map(function (i) {
             return getR(i, 1);
           });
         }
 
         if (Array.isArray(props.edge)) {
-          _this.__edge = props.edge(function (i) {
+          _this.__edge = props.edge.map(function (i) {
             return !!i;
           });
         }
 
         if (Array.isArray(props.closure)) {
-          _this.__closure = props.closure(function (i) {
+          _this.__closure = props.closure.map(function (i) {
             return !!i;
           });
         }
@@ -15369,20 +15373,22 @@
             __cacheProps.y1 = [];
             __cacheProps.y2 = [];
             __cacheProps.large = [];
-            var d = '';
+            __cacheProps.d = [];
 
             _begin.forEach(function (begin, i) {
-              var _getCoordsByDegree = getCoordsByDegree(cx, cy, _r[i], begin),
+              var r = isNil$9(r) ? width * 0.5 : r;
+
+              var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
                   _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
                   x1 = _getCoordsByDegree2[0],
                   y1 = _getCoordsByDegree2[1];
 
-              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, _r[i], _end[i]),
+              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, _end[i] || 0),
                   _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
                   x2 = _getCoordsByDegree4[0],
                   y2 = _getCoordsByDegree4[1];
 
-              var large = _end[i] - begin > 180 ? 1 : 0;
+              var large = (_end[i] || 0) - begin > 180 ? 1 : 0;
 
               __cacheProps.x1.push(x1);
 
@@ -15395,11 +15401,9 @@
               __cacheProps.large.push(large);
 
               if (renderMode === mode.SVG) {
-                d += painter.svgSector(cx, cy, _r[i], x1, y1, x2, y2, strokeWidth, large, edge[i], _closure[i]);
+                __cacheProps.d.push(painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge[i] || 0, _closure[i]));
               }
             });
-
-            __cacheProps.d = d;
           } else {
             var _getCoordsByDegree5 = getCoordsByDegree(cx, cy, _r, _begin),
                 _getCoordsByDegree6 = _slicedToArray(_getCoordsByDegree5, 2),
@@ -15450,10 +15454,10 @@
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
             __cacheProps.d.map(function (item, i) {
-              return _this2.__genSector(edge[i], item, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+              return _this2.__genSector(__cacheProps.edge[i], item, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
             });
           } else {
-            this.__genSector(edge, __cacheProps.d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           }
         }
       }
@@ -15541,8 +15545,8 @@
       _this = _super.call(this, tagName, props); // 圆角
 
       if (_this.isMulti) {
-        _this.__rx = [];
-        _this.__ry = [];
+        _this.__rx = [0];
+        _this.__ry = [0];
 
         if (Array.isArray(props.rx)) {
           _this.__rx = props.rx.map(function (i) {
@@ -15638,11 +15642,9 @@
               __cacheProps.list = list;
             } else if (renderMode === mode.SVG) {
               var d = '';
-
-              _rx.forEach(function (rx, i) {
-                return d += genVertex(originX, originY, width, height, rx, _ry[i]);
+              list.forEach(function (item) {
+                return d += painter.svgPolygon(item);
               });
-
               __cacheProps.d = d;
             }
           } else {
@@ -15783,6 +15785,7 @@
               __cacheProps.list = list;
             } else if (renderMode === mode.SVG) {
               __cacheProps.d = '';
+              console.log(list);
               list.forEach(function (item) {
                 return __cacheProps.d += painter.svgPolygon(item);
               });

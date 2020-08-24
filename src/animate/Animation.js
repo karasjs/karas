@@ -708,7 +708,7 @@ function calDiff(prev, next, k, target) {
                     v3.push(0);
                   }
                   else {
-                    v3.push(nv3[j] - pv3[j]);
+                    v3.push(nv3 - pv3);
                   }
                 }
                 v2.push(v3);

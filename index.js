@@ -7127,7 +7127,7 @@
                       if (isNil$3(pv3) || isNil$3(nv3)) {
                         v3.push(0);
                       } else {
-                        v3.push(nv3[j] - pv3[j]);
+                        v3.push(nv3 - pv3);
                       }
                     }
 
@@ -15178,10 +15178,13 @@
 
     _createClass(Polygon, [{
       key: "__getPoints",
-      value: function __getPoints(originX, originY, width, height, points, len) {
-        var res = _get(_getPrototypeOf(Polygon.prototype), "__getPoints", this).call(this, originX, originY, width, height, points, len);
+      value: function __getPoints(originX, originY, width, height, points, isControl) {
+        var res = _get(_getPrototypeOf(Polygon.prototype), "__getPoints", this).call(this, originX, originY, width, height, points, isControl);
 
-        res.push(res[0]);
+        if (!isControl) {
+          res.push(res[0]);
+        }
+
         return res;
       }
     }]);
@@ -15785,7 +15788,6 @@
               __cacheProps.list = list;
             } else if (renderMode === mode.SVG) {
               __cacheProps.d = '';
-              console.log(list);
               list.forEach(function (item) {
                 return __cacheProps.d += painter.svgPolygon(item);
               });

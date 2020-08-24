@@ -365,6 +365,10 @@ function extendAnimate(ovd, nvd) {
   let list = nvd.__animationList = ovd.animationList.splice(0);
   list.forEach(item => {
     item.__target = nvd;
+    // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍
+    if(item.assigning) {
+      item.assignCurrentStyle();
+    }
   });
 }
 

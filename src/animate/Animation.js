@@ -239,25 +239,6 @@ function equalStyle(k, a, b, target) {
     if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
       return equalArr(a, b);
     }
-    //   if(a.length !== b.length) {
-    //     return false;
-    //   }
-    //   for(let i = 0, len = a.length; i < len; i++) {
-    //     if(a[i] === b[i]) {
-    //       continue;
-    //     }
-    //     if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
-    //       return false;
-    //     }
-    //   }
-    //   return true;
-    // }
-    // else if(k === 'controlA' || k === 'controlB') {
-    //   if(a.length !== b.length) {
-    //     return false;
-    //   }
-    //   return a[0] === b[0] && a[1] === b[1];
-    // }
   }
   return a === b;
 }
@@ -308,11 +289,17 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
-  let style = {};
+  let style = assignStyle(frameStyle, animation);
+  animation.__style = style;
+  animation.__assigning = true;
+}
+
+function assignStyle(style, animation) {
+  let res = {};
   let target = animation.target;
   animation.keys.forEach(i => {
-    let v = frameStyle[i];
-    style[i] = v;
+    let v = style[i];
+    res[i] = v;
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
       target.currentProps[i] = v;
@@ -326,8 +313,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     }
   });
   target.__cacheSvg = false;
-  window.test = target;
-  animation.__style = style;
+  return res;
 }
 
 /**
@@ -500,8 +486,6 @@ function calDiff(prev, next, k, target) {
       }
       else {
         return;
-        res.n = p;
-        return res;
       }
     }
     if(equalArr(res.v, [0, 0])) {
@@ -512,7 +496,6 @@ function calDiff(prev, next, k, target) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     if(p.k !== n.k) {
       return;
-      res.n = p;
     }
     // 渐变
     else if(p.k === 'linear' || p.k === 'radial') {
@@ -638,10 +621,6 @@ function calDiff(prev, next, k, target) {
     if(p.unit === AUTO || n.unit === AUTO) {
       return;
     }
-    // if(p.unit === AUTO || n.unit === AUTO) {
-    //   res.n = p;
-    //   return res;
-    // }
     let computedStyle = target.computedStyle;
     let parentComputedStyle = (target.parent || target).computedStyle;
     let diff = 0;
@@ -697,7 +676,6 @@ function calDiff(prev, next, k, target) {
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(isNil(p)) {
       return;
-      res.n = null;
     }
     // 特殊处理multi
     else if(target.isMulti) {
@@ -818,9 +796,6 @@ function calDiff(prev, next, k, target) {
       if(n === p || k === 'edge' || k === 'closure') {
         return;
       }
-      // if(k === 'edge' || k === 'closure') {
-      //   res.n = p;
-      // }
       else {
         res.v = n - p;
       }
@@ -833,12 +808,9 @@ function calDiff(prev, next, k, target) {
     res.v = n - p;
   }
   // display等不能有增量过程的
-  // else {
-  //   if(n === p) {
-  //     return;
-  //   }
-  //   res.n = p;
-  // }
+  else {
+    return;
+  }
   return res;
 }
 
@@ -917,14 +889,10 @@ function calIntermediateStyle(frame, percent, target) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
-    let { k, v, n, d, p } = item;
+    let { k, v, d, p } = item;
     let st = style[k];
-    // 没有中间态的如display
-    if(item.hasOwnProperty('n')) {
-      // style[k] = n;
-    }
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
-    else if(k === 'transform') {
+    if(k === 'transform') {
       if(!st) {
         st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
       }
@@ -1140,6 +1108,7 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__isDestroyed = false;
     this.__style = {};
+    this.__assigning = false; // 本帧动画是否正在影响赋值style，即在事件的before之后after之前
     this.__init();
   }
 
@@ -1507,6 +1476,7 @@ class Animation extends Event {
           }
         },
         after: diff => {
+          this.__assigning = false;
           if(this.__inFps) {
             this.__inFps = false;
             return;
@@ -1583,6 +1553,7 @@ class Animation extends Event {
             __clean(true);
           },
           after: diff => {
+            this.__assigning = false;
             __frameCb(diff);
             __fin(cb);
           },
@@ -1621,6 +1592,7 @@ class Animation extends Event {
             __clean();
           },
           after: diff => {
+            this.__assigning = false;
             __frameCb(diff);
             task();
           },
@@ -1667,6 +1639,10 @@ class Animation extends Event {
         cb(diff);
       }
     });
+  }
+
+  assignCurrentStyle() {
+    assignStyle(this.style, this);
   }
 
   __goto(v, isFrame, excludeDelay) {
@@ -1922,6 +1898,10 @@ class Animation extends Event {
     else {
       this.__spfLimit = !!v;
     }
+  }
+
+  get assigning() {
+    return this.__assigning;
   }
 }
 

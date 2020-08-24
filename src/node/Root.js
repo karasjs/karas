@@ -311,10 +311,7 @@ class Root extends Dom {
               if(isObject(item) && isFunction(item.before)) {
                 // 收集组件setState的更新，特殊处理
                 if(item.__state) {
-                  setStateList.push({
-                    i,
-                    o: item,
-                  });
+                  setStateList.push(i);
                 }
                 item.before(diff);
               }

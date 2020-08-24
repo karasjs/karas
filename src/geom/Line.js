@@ -97,6 +97,8 @@ class Line extends Geom {
     else {
       this.__x1 = this.__y1 = 0;
       this.__x2 = this.__y2 = 1;
+      this.__controlA = [];
+      this.__controlB = [];
       if(!isNil(props.x1)) {
         this.__x1 = parseFloat(props.x1) || 0;
       }

@@ -78,6 +78,7 @@ class Rect extends Geom {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx)) {
+      rebuild = true;
       if(isMulti) {
         __cacheProps.rx = rx.map(rx => Math.min(rx, 0.5) * width);
       }
@@ -86,6 +87,7 @@ class Rect extends Geom {
       }
     }
     if(isNil(__cacheProps.ry)) {
+      rebuild = true;
       if(isMulti) {
         __cacheProps.ry = rx.map(ry => Math.min(ry, 0.5) * height);
       }

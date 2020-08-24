@@ -6601,7 +6601,7 @@
   } // 对比两个样式的某个值是否相等
 
 
-  function equalStyle(k, a, b) {
+  function equalStyle(k, a, b, target) {
     if (k === 'transform') {
       return equalArr$1(a[0][1], b[0][1]);
     } else if (k === 'filter') {
@@ -6652,10 +6652,11 @@
       }
 
       return true;
-    } // 都是纯值数组，mutil只是多了一维，equalArr本身即递归
+    } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
     else if (repaint.GEOM.hasOwnProperty(k)) {
-        return equalArr$1(a, b); // if(k === 'points' || k === 'controls') {
-        //   if(a.length !== b.length) {
+        if (target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+          return equalArr$1(a, b);
+        } //   if(a.length !== b.length) {
         //     return false;
         //   }
         //   for(let i = 0, len = a.length; i < len; i++) {
@@ -6674,6 +6675,7 @@
         //   }
         //   return a[0] === b[0] && a[1] === b[1];
         // }
+
       }
 
     return a === b;
@@ -6684,7 +6686,7 @@
   } // 计算是否需要刷新和刷新等级，新样式和之前样式对比
 
 
-  function calRefresh(frameStyle, lastStyle, keys) {
+  function calRefresh(frameStyle, lastStyle, keys, target) {
     var res = false;
     var lv = level.REPAINT;
 
@@ -6694,7 +6696,7 @@
       var p = lastStyle[k]; // 前后均非空对比
 
       if (!isNil$3(n) && !isNil$3(p)) {
-        if (!equalStyle(k, n, p)) {
+        if (!equalStyle(k, n, p, target)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
           if (lv === level.REPAINT) {
@@ -7033,7 +7035,6 @@
         return;
       }
 
-      var computedStyle = target.computedStyle;
       res.v = [];
 
       for (var _i5 = 0; _i5 < 2; _i5++) {
@@ -7057,7 +7058,7 @@
       // }
 
 
-      var _computedStyle = target.computedStyle;
+      var computedStyle = target.computedStyle;
       var parentComputedStyle = (target.parent || target).computedStyle;
       var diff = 0;
 
@@ -7069,7 +7070,7 @@
 
           if (k === 'fontSize') {
             _v13 = n.value * parentComputedStyle[k] * 0.01;
-          } else if (k === 'flexBasis' && _computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
             _v13 = n.value * parentComputedStyle.width * 0.01;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
             _v13 = n.value * parentComputedStyle.height * 0.01;
@@ -7081,7 +7082,7 @@
 
           if (k === 'fontSize') {
             _v14 = n.value * 100 / parentComputedStyle[k];
-          } else if (k === 'flexBasis' && _computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
             _v14 = n.value * 100 / parentComputedStyle.width;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
             _v14 = n.value * 100 / parentComputedStyle.height;
@@ -7091,9 +7092,9 @@
         } // lineHeight奇怪的单位变化
         else if (k === 'lineHeight') {
             if (p.unit === PX$3 && n.unit === NUMBER$2) {
-              diff = n.value * _computedStyle.fontSize - p.value;
+              diff = n.value * computedStyle.fontSize - p.value;
             } else if (p.unit === NUMBER$2 && n.unit === PX$3) {
-              diff = n.value / _computedStyle.fontSize - p.value;
+              diff = n.value / computedStyle.fontSize - p.value;
             }
           } // 兜底NaN非法
 
@@ -7341,9 +7342,7 @@
           p = item.p;
       var st = style[k]; // 没有中间态的如display
 
-      if (item.hasOwnProperty('n')) {
-        style[k] = n;
-      } // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
+      if (item.hasOwnProperty('n')) ; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
       else if (k === 'transform') {
           if (!st) {
             st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
@@ -7854,7 +7853,8 @@
               endDelay = this.endDelay,
               keys = this.keys,
               __clean = this.__clean,
-              __fin = this.__fin; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
+              __fin = this.__fin,
+              target = this.target; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
 
           var stayEnd = this.__stayEnd();
 
@@ -7904,7 +7904,7 @@
                 if (stayBegin) {
                   var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
 
-                  var _calRefresh = calRefresh(_current, style, keys);
+                  var _calRefresh = calRefresh(_current, style, keys, target);
 
                   var _calRefresh2 = _slicedToArray(_calRefresh, 2);
 
@@ -7981,7 +7981,7 @@
                     current = {};
                   }
 
-                var _calRefresh3 = calRefresh(current, style, keys);
+                var _calRefresh3 = calRefresh(current, style, keys, target);
 
                 var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
 
@@ -8006,9 +8006,9 @@
               else {
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
-                  current = calIntermediateStyle(current, percent, _this3.target);
+                  current = calIntermediateStyle(current, percent, target);
 
-                  var _calRefresh5 = calRefresh(current, style, keys);
+                  var _calRefresh5 = calRefresh(current, style, keys, target);
 
                   var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
 
@@ -8109,34 +8109,34 @@
       value: function finish(cb) {
         var _this4 = this;
 
-        var self = this;
-        var isDestroyed = self.isDestroyed,
-            duration = self.duration,
-            playState = self.playState,
-            list = self.list;
+        var isDestroyed = this.isDestroyed,
+            duration = this.duration,
+            playState = this.playState,
+            list = this.list;
 
         if (isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
-          return self;
+          return this;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
 
-        self.__cancelTask();
+        this.__cancelTask();
 
-        var root = self.root,
-            style = self.style,
-            keys = self.keys,
-            frames = self.frames,
-            __frameCb = self.__frameCb,
-            __clean = self.__clean,
-            __fin = self.__fin;
+        var root = this.root,
+            style = this.style,
+            keys = this.keys,
+            frames = this.frames,
+            __frameCb = this.__frameCb,
+            __clean = this.__clean,
+            __fin = this.__fin,
+            target = this.target;
 
         if (root) {
           var needRefresh, lv, current; // 停留在最后一帧
 
-          if (self.__stayEnd()) {
+          if (this.__stayEnd()) {
             current = frames[frames.length - 1].style;
 
-            var _calRefresh7 = calRefresh(current, style, keys);
+            var _calRefresh7 = calRefresh(current, style, keys, target);
 
             var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
 
@@ -8145,7 +8145,7 @@
           } else {
             current = {};
 
-            var _calRefresh9 = calRefresh(current, style, keys);
+            var _calRefresh9 = calRefresh(current, style, keys, target);
 
             var _calRefresh10 = _slicedToArray(_calRefresh9, 2);
 
@@ -8174,7 +8174,7 @@
             }
         }
 
-        return self;
+        return this;
       }
     }, {
       key: "cancel",
@@ -8196,10 +8196,11 @@
             style = this.style,
             keys = this.keys,
             __frameCb = this.__frameCb,
-            __clean = this.__clean;
+            __clean = this.__clean,
+            target = this.target;
 
         if (root) {
-          var _calRefresh11 = calRefresh({}, style, keys),
+          var _calRefresh11 = calRefresh({}, style, keys, target),
               _calRefresh12 = _slicedToArray(_calRefresh11, 2),
               needRefresh = _calRefresh12[0],
               lv = _calRefresh12[1];
@@ -14817,6 +14818,8 @@
       } else {
         _this.__x1 = _this.__y1 = 0;
         _this.__x2 = _this.__y2 = 1;
+        _this.__controlA = [];
+        _this.__controlB = [];
 
         if (!isNil$7(props.x1)) {
           _this.__x1 = parseFloat(props.x1) || 0;
@@ -15534,6 +15537,14 @@
 
   var isNil$a = util.isNil;
 
+  function genVertex(x, y, width, height) {
+    var rx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+    var ry = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+    var ox = rx * geom.H;
+    var oy = ry * geom.H;
+    return [[x + rx, y], [x + width - rx, y], [x + width + ox - rx, y, x + width, y + ry - oy, x + width, y + ry], [x + width, y + height - ry], [x + width, y + height + oy - ry, x + width + ox - rx, y + height, x + width - rx, y + height], [x + rx, y + height], [x + rx - ox, y + height, x, y + height + oy - ry, x, y + height - ry], [x, y + ry], [x, y + ry - oy, x + rx - ox, y, x + rx, y]];
+  }
+
   function getR$1(v) {
     v = parseFloat(v);
 
@@ -15614,8 +15625,11 @@
             ry = this.ry,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
+        var rebuild;
 
         if (isNil$a(__cacheProps.rx)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.rx = rx.map(function (rx) {
               return Math.min(rx, 0.5) * width;
@@ -15626,6 +15640,8 @@
         }
 
         if (isNil$a(__cacheProps.ry)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.ry = rx.map(function (ry) {
               return Math.min(ry, 0.5) * height;
@@ -15634,6 +15650,38 @@
             __cacheProps.ry = Math.min(ry, 0.5) * height;
           }
         } // rx/ry有变化需重建顶点
+
+
+        if (rebuild) {
+          var _rx = __cacheProps.rx,
+              _ry = __cacheProps.ry;
+
+          if (isMulti) {
+            var list = _rx.map(function (rx, i) {
+              return genVertex(originX, originY, width, height, rx, _ry[i]);
+            });
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = list;
+            } else if (renderMode === mode.SVG) {
+              var d = '';
+
+              _rx.forEach(function (rx, i) {
+                return d += genVertex(originX, originY, width, height, rx, _ry[i]);
+              });
+
+              __cacheProps.d = d;
+            }
+          } else {
+            var _list = genVertex(originX, originY, width, height, _rx, _ry);
+
+            if (renderMode === mode.CANVAS) {
+              __cacheProps.list = _list;
+            } else if (renderMode === mode.SVG) {
+              __cacheProps.d = painter.svgPolygon(_list);
+            }
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
           var _list2 = __cacheProps.list;

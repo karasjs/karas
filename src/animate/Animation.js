@@ -180,7 +180,7 @@ function inherit(frames, keys, target) {
 }
 
 // 对比两个样式的某个值是否相等
-function equalStyle(k, a, b) {
+function equalStyle(k, a, b, target) {
   if(k === 'transform') {
     return equalArr(a[0][1], b[0][1]);
   }
@@ -234,10 +234,11 @@ function equalStyle(k, a, b) {
     }
     return true;
   }
-  // 都是纯值数组，mutil只是多了一维，equalArr本身即递归
+  // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    return equalArr(a, b);
-    // if(k === 'points' || k === 'controls') {
+    if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+      return equalArr(a, b);
+    }
     //   if(a.length !== b.length) {
     //     return false;
     //   }
@@ -266,7 +267,7 @@ function isStyleReflow(k) {
 }
 
 // 计算是否需要刷新和刷新等级，新样式和之前样式对比
-function calRefresh(frameStyle, lastStyle, keys) {
+function calRefresh(frameStyle, lastStyle, keys, target) {
   let res = false;
   let lv = level.REPAINT;
   for(let i = 0, len = keys.length; i < len; i++) {
@@ -275,7 +276,7 @@ function calRefresh(frameStyle, lastStyle, keys) {
     let p = lastStyle[k];
     // 前后均非空对比
     if(!isNil(n) && !isNil(p)) {
-      if(!equalStyle(k, n, p)) {
+      if(!equalStyle(k, n, p, target)) {
         res = true;
         // 不相等且刷新等级是重新布局时可以提前跳出
         if(lv === level.REPAINT) {
@@ -616,7 +617,6 @@ function calDiff(prev, next, k, target) {
       && n[1].value === p[1].value && n[1].unit === p[1].unit) {
       return;
     }
-    let computedStyle = target.computedStyle;
     res.v = [];
     for(let i = 0; i < 2; i++) {
       if(n[i].unit === p[i].unit) {
@@ -921,7 +921,7 @@ function calIntermediateStyle(frame, percent, target) {
     let st = style[k];
     // 没有中间态的如display
     if(item.hasOwnProperty('n')) {
-      style[k] = n;
+      // style[k] = n;
     }
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     else if(k === 'transform') {
@@ -1369,6 +1369,7 @@ class Animation extends Event {
         keys,
         __clean,
         __fin,
+        target,
       } = this;
       // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
@@ -1406,7 +1407,7 @@ class Animation extends Event {
             if(stayBegin) {
               let current = frames[0].style;
               // 对比第一帧，以及和第一帧同key的当前样式
-              [needRefresh, lv] = calRefresh(current, style, keys);
+              [needRefresh, lv] = calRefresh(current, style, keys, target);
               if(needRefresh) {
                 genBeforeRefresh(current, this, root, lv);
               }
@@ -1468,7 +1469,7 @@ class Animation extends Event {
             else {
               current = {};
             }
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            [needRefresh, lv] = calRefresh(current, style, keys, target);
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {
               this.__nextTime = currentTime - duration;
@@ -1489,8 +1490,8 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent, this.target);
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            current = calIntermediateStyle(current, percent, target);
+            [needRefresh, lv] = calRefresh(current, style, keys, target);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
           if(needRefresh) {
@@ -1557,24 +1558,23 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let self = this;
-    let { isDestroyed, duration, playState, list } = self;
+    let { isDestroyed, duration, playState, list } = this;
     if(isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
-      return self;
+      return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    self.__cancelTask();
-    let { root, style, keys, frames, __frameCb, __clean, __fin } = self;
+    this.__cancelTask();
+    let { root, style, keys, frames, __frameCb, __clean, __fin, target } = this;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
-      if(self.__stayEnd()) {
+      if(this.__stayEnd()) {
         current = frames[frames.length - 1].style;
-        [needRefresh, lv] = calRefresh(current, style, keys);
+        [needRefresh, lv] = calRefresh(current, style, keys, target);
       }
       else {
         current = {};
-        [needRefresh, lv] = calRefresh(current, style, keys);
+        [needRefresh, lv] = calRefresh(current, style, keys, target);
       }
       if(needRefresh) {
         frame.nextFrame(this.__enterFrame = {
@@ -1594,7 +1594,7 @@ class Animation extends Event {
         __fin(cb);
       }
     }
-    return self;
+    return this;
   }
 
   cancel(cb) {
@@ -1603,9 +1603,9 @@ class Animation extends Event {
       return this;
     }
     this.__cancelTask();
-    let { root, style, keys, __frameCb, __clean } = this;
+    let { root, style, keys, __frameCb, __clean, target } = this;
     if(root) {
-      let [needRefresh, lv] = calRefresh({}, style, keys);
+      let [needRefresh, lv] = calRefresh({}, style, keys, target);
       let task = () => {
         this.__cancelTask();
         this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;

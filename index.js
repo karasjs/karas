@@ -14517,49 +14517,7 @@
           var children = clone$4(vd.children);
           var m = this.matrixEvent;
           children.forEach(function (child) {
-            var props = child.props; // if(child.tagName === 'rect') {
-            //   for(let i = 0, len = props.length; i < len; i++) {
-            //     let [k, v] = props[i];
-            //     if(k === 'x') {
-            //       xi = i;
-            //       x = v;
-            //     }
-            //     else if(k === 'y') {
-            //       yi = i;
-            //       y = v;
-            //     }
-            //   }
-            //   let point = matrix.calPoint([x, y], m);
-            //   props[xi][1] = point[0];
-            //   props[yi][1] = point[1];
-            // }
-            // else if(child.tagName === 'circle' || child.tagName === 'ellipse') {
-            //   for(let i = 0, len = props.length; i < len; i++) {
-            //     let [k, v] = props[i];
-            //     if(k === 'cx') {
-            //       xi = i;
-            //       x = v;
-            //     }
-            //     else if(k === 'cy') {
-            //       yi = i;
-            //       y = v;
-            //     }
-            //   }
-            //   let point = matrix.calPoint([x, y], m);
-            //   props[xi][1] = point[0];
-            //   props[yi][1] = point[1];
-            // }
-            // else if(child.tagName === 'polyline') {
-            //   for(let i = 0, len = props.length; i < len; i++) {
-            //     let [k, v] = props[i];
-            //     if(k === 'points') {
-            //       props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-            //         return joinArr(matrix.calPoint([$1, $2], m), ',');
-            //       });
-            //       break;
-            //     }
-            //   }
-            // }
+            var props = child.props;
 
             if (child.tagName === 'path') {
               for (var i = 0, len = props.length; i < len; i++) {

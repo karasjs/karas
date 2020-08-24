@@ -68,7 +68,7 @@ class Circle extends Geom {
         }
       }
       else {
-        __cacheProps.r *= width * 0.5;
+        __cacheProps.r = r * width * 0.5;
         let list = geom.ellipsePoints(cx, cy, __cacheProps.r);
         if(renderMode === mode.CANVAS) {
           __cacheProps.list = list;

@@ -91,7 +91,6 @@ function diffSr(vd, oj, nj) {
   // 先遍历检查key相同的，将没有变化的key暂存下来，深度优先，这样叶子节点出现在前面，当key的叶子也有key时，确保叶子先对比
   let ojk = getKeyHash(oj, {}, vd);
   let njk = getKeyHash(nj, {});
-  let replaceKeyHash = {};
   let keyList = [];
   let cpList = [];
   // 先对比key对应的节点，如果新老有一方对不上则落空
@@ -116,7 +115,6 @@ function diffSr(vd, oj, nj) {
     // 相同class的组件进行对比替换
     if(oj.$$type === TYPE_CP && nj.$$type === TYPE_CP) {
       if(oj.klass === nj.klass) {
-        replaceKeyHash[k] = true;
         // 对比props和children看是否全等，是则直接替换新json类型为占位符，引用老vd，否则强制更新
         diffCp(oj, nj, vd);
         // 标识对比过了
@@ -127,7 +125,6 @@ function diffSr(vd, oj, nj) {
     }
     // 相同类型的vd进行对比继承动画
     else if(oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
-      replaceKeyHash[k] = true;
       // 需判断矢量标签mutil是否相等
       if(nj.$$type !== TYPE_GM || oj.props.multi === nj.props.multi) {
         nj.inherit = vd;
@@ -145,10 +142,10 @@ function diffSr(vd, oj, nj) {
   });
   // key相同的dom对比children，下面非key逻辑就不做了
   keyList.forEach(item => {
-    diffChildren(item.vd, item.oj, item.nj, replaceKeyHash);
+    diffChildren(item.vd, item.oj, item.nj);
   });
   // 整体tree进行对比
-  diffChild(vd, oj, nj, replaceKeyHash);
+  diffChild(vd, oj, nj);
   // 已更新的cp需被老sr删除，因为老sr会回收，而此cp继续存在于新sr中不能回收，这里处理key的
   cpList.forEach(vd => {
     removeCpFromOldTree(vd);
@@ -160,9 +157,8 @@ function diffSr(vd, oj, nj) {
  * @param vd
  * @param oj
  * @param nj
- * @param replaceKeyHash
  */
-function diffChild(vd, oj, nj, replaceKeyHash) {
+function diffChild(vd, oj, nj) {
   if(util.isObject(nj)) {
     if(nj.$$type === TYPE_CP) {
       // key对比过了忽略
@@ -187,7 +183,7 @@ function diffChild(vd, oj, nj, replaceKeyHash) {
       if(oj.tagName === nj.tagName) {
         nj.inherit = vd;
       }
-      diffChildren(vd, oj, nj, replaceKeyHash);
+      diffChildren(vd, oj, nj);
     }
   }
 }
@@ -197,9 +193,8 @@ function diffChild(vd, oj, nj, replaceKeyHash) {
  * @param vd
  * @param oj
  * @param nj
- * @param replaceKeyHash
  */
-function diffChildren(vd, oj, nj, replaceKeyHash) {
+function diffChildren(vd, oj, nj) {
   let oc = oj.children;
   let nc = nj.children;
   let ol = oc.length;
@@ -225,7 +220,7 @@ function diffChildren(vd, oj, nj, replaceKeyHash) {
       len = Math.min(ol, nl);
     }
     else {
-      diffChild(children[i + of], o, n, replaceKeyHash);
+      diffChild(children[i + of], o, n);
     }
   }
   // 长度不同增减的无需关注，新json创建cp有didMount，老vd会调用cp的destroy

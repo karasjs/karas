@@ -91,7 +91,7 @@ class Polyline extends Geom {
     let pts = __cacheProps.points;
     let cls = __cacheProps.controls;
     // points/controls有变化就需要重建顶点
-    if(rebuild && renderMode === mode.SVG) {
+    if(rebuild) {
       if(isMulti) {
         let list = pts.map((item, i) => {
           let cl = cls[i];

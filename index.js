@@ -12636,7 +12636,7 @@
 
       if (oj.$$type === TYPE_CP$2 && nj.$$type === TYPE_CP$2) {
         if (oj.klass === nj.klass) {
-
+          // 对比props和children看是否全等，是则直接替换新json类型为占位符，引用老vd，否则强制更新
           diffCp(oj, nj, vd); // 标识对比过了
 
           oj.key = nj.key = KEY_FLAG; // 老的sr里需删除这个vd，因为老sr会回收
@@ -12645,7 +12645,7 @@
         }
       } // 相同类型的vd进行对比继承动画
       else if (oj.$$type === nj.$$type && oj.tagName === nj.tagName) {
-
+          // 需判断矢量标签mutil是否相等
           if (nj.$$type !== TYPE_GM$2 || oj.props.multi === nj.props.multi) {
             nj.inherit = vd;
           }
@@ -12677,11 +12677,10 @@
    * @param vd
    * @param oj
    * @param nj
-   * @param replaceKeyHash
    */
 
 
-  function diffChild(vd, oj, nj, replaceKeyHash) {
+  function diffChild(vd, oj, nj) {
     if (util.isObject(nj)) {
       if (nj.$$type === TYPE_CP$2) {
         // key对比过了忽略
@@ -12715,11 +12714,10 @@
    * @param vd
    * @param oj
    * @param nj
-   * @param replaceKeyHash
    */
 
 
-  function diffChildren(vd, oj, nj, replaceKeyHash) {
+  function diffChildren(vd, oj, nj) {
     var oc = oj.children;
     var nc = nj.children;
     var ol = oc.length;
@@ -15115,7 +15113,7 @@
         var pts = __cacheProps.points;
         var cls = __cacheProps.controls; // points/controls有变化就需要重建顶点
 
-        if ( renderMode === mode.SVG) {
+        {
           if (isMulti) {
             var list = pts.map(function (item, i) {
               var cl = cls[i];
@@ -15769,7 +15767,7 @@
               });
             }
           } else {
-            __cacheProps.r *= width * 0.5;
+            __cacheProps.r = r * width * 0.5;
 
             var _list = geom.ellipsePoints(cx, cy, __cacheProps.r);
 

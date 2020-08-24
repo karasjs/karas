@@ -7,7 +7,7 @@ let { isNil } = util;
 
 function concatPointAndControl(point, control) {
   if(Array.isArray(control) && control.length) {
-    return point.concat(control);
+    return control.concat(point);
   }
   return point;
 }
@@ -33,14 +33,25 @@ class Polyline extends Geom {
     }
   }
 
-  __getPoints(originX, originY, width, height, points, len, isControl) {
-    if(!isControl && !Array.isArray(points) && points.length < 2) {
-      throw new Error('Points must have at lease 2 item: ' + points);
-    }
-    return points.map(item => {
+  __getPoints(originX, originY, width, height, points, isControl) {
+    return points.map((item, i) => {
+      if(!Array.isArray(item)) {
+        return null;
+      }
+      let len = item.length;
+      if(isControl) {
+        if(len !== 0 && len !== 2 && len !== 4) {
+          throw new Error('Control must have 0/2/4 coords: ' + points);
+        }
+      }
+      else {
+        if(len !== 0 && len !== 2) {
+          throw new Error('Point must have 0/2 coords: ' + points);
+        }
+      }
       let res = [];
-      for(let i = 0; i < item.length; i++) {
-        if(i === 0 || i === 2) {
+      for(let i = 0; i < len; i++) {
+        if(i % 2 === 0) {
           res.push(originX + item[i] * width);
         }
         else {
@@ -74,15 +85,25 @@ class Polyline extends Geom {
     let rebuild = true;
     if(isNil(__cacheProps.points)) {
       if(isMulti) {
-        __cacheProps.points = points.map(item => this.__getPoints(originX, originY, width, height, item));
+        __cacheProps.points = points.map(item => {
+          if(Array.isArray(item)) {
+            return this.__getPoints(originX, originY, width, height, item);
+          }
+          return null;
+        });
       }
       else {
-        __cacheProps.points = this.__getPoints(originX, originY, width, height, points, true);
+        __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
       }
     }
     if(isNil(__cacheProps.controls)) {
       if(isMulti) {
-        __cacheProps.controls = controls.map(item => this.__getPoints(originX, originY, width, height, item));
+        __cacheProps.controls = controls.map(item => {
+          if(Array.isArray(item)) {
+            return this.__getPoints(originX, originY, width, height, item, true);
+          }
+          return item;
+        });
       }
       else {
         __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls, true);
@@ -109,7 +130,12 @@ class Polyline extends Geom {
         }
       }
       else {
-        let list = pts.map((point, i) => concatPointAndControl(point, controls[i]));
+        let list = pts.map((point, i) => {
+          if(i) {
+            return concatPointAndControl(point, cls[i - 1]);
+          }
+          return point;
+        });
         if(renderMode === mode.CANVAS) {
           __cacheProps.list = list;
         }

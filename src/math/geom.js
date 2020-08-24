@@ -85,7 +85,7 @@ function ellipsePoints(x, y, a, b = a) {
   let oy = b === a ? ox : b * H;
   return [
     [x - a, y],
-    [x - a, y - ox, x - ox, y - b, x, y - b],
+    [x - a, y - oy, x - ox, y - b, x, y - b],
     [x + ox, y - b, x + a, y - oy, x + a, y],
     [x + a, y + oy, x + ox, y + b, x, y + b],
     [x - ox, y + b, x - a, y + oy, x - a, y]

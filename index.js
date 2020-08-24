@@ -467,7 +467,7 @@
   }
 
   function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
-    var d = closure ? 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z' : 'M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z';
+    var d = closure ? 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z' : 'M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z';
     var d2;
 
     if (!edge || strokeWidth > 0) {
@@ -638,7 +638,7 @@
     var b = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : a;
     var ox = a * H;
     var oy = b === a ? ox : b * H;
-    return [[x - a, y], [x - a, y - ox, x - ox, y - b, x, y - b], [x + ox, y - b, x + a, y - oy, x + a, y], [x + a, y + oy, x + ox, y + b, x, y + b], [x - ox, y + b, x - a, y + oy, x - a, y]];
+    return [[x - a, y], [x - a, y - oy, x - ox, y - b, x, y - b], [x + ox, y - b, x + a, y - oy, x + a, y], [x + a, y + oy, x + ox, y + b, x, y + b], [x - ox, y + b, x - a, y + oy, x - a, y]];
   }
 
   var geom = {
@@ -8667,7 +8667,7 @@
         ctx.rect(x, y, w, h);
       }
 
-      ctx.fill();
+      ctx[method]();
       ctx.closePath();
     } else if (renderMode === mode.SVG) {
       if (list) {
@@ -15003,7 +15003,7 @@
 
   function concatPointAndControl(point, control) {
     if (Array.isArray(control) && control.length) {
-      return point.concat(control);
+      return control.concat(point);
     }
 
     return point;
@@ -15043,19 +15043,31 @@
 
     _createClass(Polyline, [{
       key: "__getPoints",
-      value: function __getPoints(originX, originY, width, height, points, len, isControl) {
-        if (!isControl && !Array.isArray(points) && points.length < 2) {
-          throw new Error('Points must have at lease 2 item: ' + points);
-        }
+      value: function __getPoints(originX, originY, width, height, points, isControl) {
+        return points.map(function (item, i) {
+          if (!Array.isArray(item)) {
+            return null;
+          }
 
-        return points.map(function (item) {
+          var len = item.length;
+
+          if (isControl) {
+            if (len !== 0 && len !== 2 && len !== 4) {
+              throw new Error('Control must have 0/2/4 coords: ' + points);
+            }
+          } else {
+            if (len !== 0 && len !== 2) {
+              throw new Error('Point must have 0/2 coords: ' + points);
+            }
+          }
+
           var res = [];
 
-          for (var i = 0; i < item.length; i++) {
-            if (i === 0 || i === 2) {
-              res.push(originX + item[i] * width);
+          for (var _i = 0; _i < len; _i++) {
+            if (_i % 2 === 0) {
+              res.push(originX + item[_i] * width);
             } else {
-              res.push(originY + item[i] * height);
+              res.push(originY + item[_i] * height);
             }
           }
 
@@ -15096,17 +15108,25 @@
         if (isNil$8(__cacheProps.points)) {
           if (isMulti) {
             __cacheProps.points = points.map(function (item) {
-              return _this2.__getPoints(originX, originY, width, height, item);
+              if (Array.isArray(item)) {
+                return _this2.__getPoints(originX, originY, width, height, item);
+              }
+
+              return null;
             });
           } else {
-            __cacheProps.points = this.__getPoints(originX, originY, width, height, points, true);
+            __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
           }
         }
 
         if (isNil$8(__cacheProps.controls)) {
           if (isMulti) {
             __cacheProps.controls = controls.map(function (item) {
-              return _this2.__getPoints(originX, originY, width, height, item);
+              if (Array.isArray(item)) {
+                return _this2.__getPoints(originX, originY, width, height, item, true);
+              }
+
+              return item;
             });
           } else {
             __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls, true);
@@ -15136,7 +15156,11 @@
             }
           } else {
             var _list = pts.map(function (point, i) {
-              return concatPointAndControl(point, controls[i]);
+              if (i) {
+                return concatPointAndControl(point, cls[i - 1]);
+              }
+
+              return point;
             });
 
             if (renderMode === mode.CANVAS) {

@@ -1,11 +1,9 @@
 import Geom from './Geom';
 import mode from '../util/mode';
 import painter from '../util/painter';
-import util from "../util/util";
+import util from '../util/util';
 
 let { isNil } = util;
-
-const OFFSET = Math.PI * 0.5;
 
 function getCoordsByDegree(x, y, r, d) {
   d = d % 360;

@@ -61,7 +61,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
     else {
       ctx.rect(x, y, w, h);
     }
-    ctx.fill();
+    ctx[method]();
     ctx.closePath();
   }
   else if(renderMode === mode.SVG) {

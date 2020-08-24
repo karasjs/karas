@@ -95,7 +95,7 @@ function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, l
 function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
   let d = closure
     ? ('M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z')
-    : ('M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z');
+    : ('M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + ' z');
   let d2;
   if(!edge || strokeWidth > 0) {
     d2 = 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2;

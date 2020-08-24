@@ -180,7 +180,7 @@ function inherit(frames, keys, target) {
 }
 
 // 对比两个样式的某个值是否相等
-function equalStyle(k, a, b) {
+function equalStyle(k, a, b, target) {
   if(k === 'transform') {
     return equalArr(a[0][1], b[0][1]);
   }
@@ -234,26 +234,10 @@ function equalStyle(k, a, b) {
     }
     return true;
   }
+  // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
   else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(k === 'points' || k === 'controls') {
-      if(a.length !== b.length) {
-        return false;
-      }
-      for(let i = 0, len = a.length; i < len; i++) {
-        if(a[i] === b[i]) {
-          continue;
-        }
-        if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) {
-          return false;
-        }
-      }
-      return true;
-    }
-    else if(k === 'controlA' || k === 'controlB') {
-      if(a.length !== b.length) {
-        return false;
-      }
-      return a[0] === b[0] && a[1] === b[1];
+    if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+      return equalArr(a, b);
     }
   }
   return a === b;
@@ -264,7 +248,7 @@ function isStyleReflow(k) {
 }
 
 // 计算是否需要刷新和刷新等级，新样式和之前样式对比
-function calRefresh(frameStyle, lastStyle, keys) {
+function calRefresh(frameStyle, lastStyle, keys, target) {
   let res = false;
   let lv = level.REPAINT;
   for(let i = 0, len = keys.length; i < len; i++) {
@@ -273,7 +257,7 @@ function calRefresh(frameStyle, lastStyle, keys) {
     let p = lastStyle[k];
     // 前后均非空对比
     if(!isNil(n) && !isNil(p)) {
-      if(!equalStyle(k, n, p)) {
+      if(!equalStyle(k, n, p, target)) {
         res = true;
         // 不相等且刷新等级是重新布局时可以提前跳出
         if(lv === level.REPAINT) {
@@ -305,11 +289,17 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
-  let style = {};
+  let style = assignStyle(frameStyle, animation);
+  animation.__style = style;
+  animation.__assigning = true;
+}
+
+function assignStyle(style, animation) {
+  let res = {};
   let target = animation.target;
   animation.keys.forEach(i => {
-    let v = frameStyle[i];
-    style[i] = v;
+    let v = style[i];
+    res[i] = v;
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
       target.currentProps[i] = v;
@@ -323,7 +313,7 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     }
   });
   target.__cacheSvg = false;
-  animation.__style = style;
+  return res;
 }
 
 /**
@@ -495,8 +485,7 @@ function calDiff(prev, next, k, target) {
         res.v.push(v - pi.value);
       }
       else {
-        res.n = p;
-        return res;
+        return;
       }
     }
     if(equalArr(res.v, [0, 0])) {
@@ -506,7 +495,7 @@ function calDiff(prev, next, k, target) {
   else if(GRADIENT_HASH.hasOwnProperty(k)) {
     // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
     if(p.k !== n.k) {
-      res.n = p;
+      return;
     }
     // 渐变
     else if(p.k === 'linear' || p.k === 'radial') {
@@ -611,7 +600,6 @@ function calDiff(prev, next, k, target) {
       && n[1].value === p[1].value && n[1].unit === p[1].unit) {
       return;
     }
-    let computedStyle = target.computedStyle;
     res.v = [];
     for(let i = 0; i < 2; i++) {
       if(n[i].unit === p[i].unit) {
@@ -630,12 +618,8 @@ function calDiff(prev, next, k, target) {
   }
   else if(LENGTH_HASH.hasOwnProperty(k)) {
     // auto不做动画
-    if(p.unit === AUTO && n.unit === AUTO) {
-      return;
-    }
     if(p.unit === AUTO || n.unit === AUTO) {
-      res.n = p;
-      return res;
+      return;
     }
     let computedStyle = target.computedStyle;
     let parentComputedStyle = (target.parent || target).computedStyle;
@@ -691,13 +675,87 @@ function calDiff(prev, next, k, target) {
   }
   else if(repaint.GEOM.hasOwnProperty(k)) {
     if(isNil(p)) {
-      res.n = null;
+      return;
     }
-    else if(k === 'points' || k === 'controls') {
-      if(isNil(n) || isNil(p)) {
-        return p;
+    // 特殊处理multi
+    else if(target.isMulti) {
+      if(k === 'points' || k === 'controls') {
+        if(isNil(n) || isNil(p) || equalArr(p, n)) {
+          return;
+        }
+        res.v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            res.v.push(null);
+          }
+          else {
+            let v2 = [];
+            for(let j = 0, len2 = Math.min(pv.length, nv.length); j < len2; j++) {
+              let pv2 = pv[j];
+              let nv2 = nv[j];
+              if(isNil(pv2) || isNil(nv2)) {
+                v2.push(null);
+              }
+              else {
+                let v3 = [];
+                for(let k = 0, len3 = Math.max(pv2.length, nv2.length); k < len3; k++) {
+                  let pv3 = pv2[k];
+                  let nv3 = nv2[k];
+                  // control由4点变2点
+                  if(isNil(pv3) || isNil(nv3)) {
+                    v3.push(0);
+                  }
+                  else {
+                    v3.push(nv3 - pv3);
+                  }
+                }
+                v2.push(v3);
+              }
+            }
+            res.v.push(v2);
+          }
+        }
       }
-      if(equalArr(p, n)) {
+      else if(k === 'controlA' || k === 'controlB') {
+        if(isNil(n) || isNil(p) || equalArr(p, n)) {
+          return;
+        }
+        res.v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            res.v.push(null);
+          }
+          else {
+            res.v.push([
+              nv[0] - pv[0],
+              nv[1] - pv[1],
+            ]);
+          }
+        }
+      }
+      else {
+        if(n === p || equalArr(n, p) || k === 'edge' || k === 'closure') {
+          return;
+        }
+        let v = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          let pv = p[i];
+          let nv = n[i];
+          if(isNil(pv) || isNil(nv)) {
+            v.push(0);
+          }
+          v.push(nv - pv);
+        }
+        res.v = v;
+      }
+    }
+    // 非multi特殊处理这几类数组类型数据
+    else if(k === 'points' || k === 'controls') {
+      if(isNil(n) || isNil(p) || equalArr(p, n)) {
         return;
       }
       res.v = [];
@@ -705,39 +763,42 @@ function calDiff(prev, next, k, target) {
         let pv = p[i];
         let nv = n[i];
         if(isNil(pv) || isNil(nv)) {
-          res.v.push(nv);
+          res.v.push(null);
         }
         else {
-          let v = [];
+          let v2 = [];
           for(let j = 0, len2 = Math.max(pv.length, nv.length); j < len2; j++) {
-            if(isNil(pv[j]) || isNil(nv[j])) {
-              v.push(nv[j]);
+            let pv2 = pv[j];
+            let nv2 = nv[j];
+            // control由4点变2点
+            if(isNil(pv2) || isNil(nv2)) {
+              v2.push(0);
             }
             else {
-              v.push(nv[j] - pv[j]);
+              v2.push(nv2 - pv2);
             }
           }
-          res.v.push(v);
+          res.v.push(v2);
         }
       }
     }
     else if(k === 'controlA' || k === 'controlB') {
-      if(isNil(n) || isNil(p)) {
-        return p;
-      }
-      if(equalArr(p, n)) {
+      if(isNil(n) || isNil(p) || equalArr(p, n)) {
         return;
       }
       res.v = [
         n[0] - p[0],
-        n[1] - p[1]
+        n[1] - p[1],
       ];
     }
+    // 其它简单数据，除了edge/closure没有增量
     else {
-      if(n === p) {
+      if(n === p || k === 'edge' || k === 'closure') {
         return;
       }
-      res.v = n - p;
+      else {
+        res.v = n - p;
+      }
     }
   }
   else if(k === 'opacity' || k === 'zIndex') {
@@ -748,10 +809,7 @@ function calDiff(prev, next, k, target) {
   }
   // display等不能有增量过程的
   else {
-    if(n === p) {
-      return;
-    }
-    res.n = p;
+    return;
   }
   return res;
 }
@@ -821,23 +879,20 @@ function getEasing(ea) {
  * 当easing定义为steps时，优先计算
  * @param frame 当前帧
  * @param percent 到下一帧时间的百分比
+ * @param target vd
  * @returns {*}
  */
-function calIntermediateStyle(frame, percent) {
+function calIntermediateStyle(frame, percent, target) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
   if(timingFunction !== linear) {
     percent = timingFunction(percent);
   }
   frame.transition.forEach(item => {
-    let { k, v, n, d, p } = item;
+    let { k, v, d, p } = item;
     let st = style[k];
-    // 没有中间态的如display
-    if(item.hasOwnProperty('n')) {
-      style[k] = n;
-    }
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
-    else if(k === 'transform') {
+    if(k === 'transform') {
       if(!st) {
         st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
       }
@@ -910,24 +965,75 @@ function calIntermediateStyle(frame, percent) {
     }
     else if(repaint.GEOM.hasOwnProperty(k)) {
       let st = style[k];
-      if(k === 'points' || k === 'controls') {
-        for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
-          if(isNil(st[i]) || !st[i].length) {
-            continue;
-          }
-          for(let j = 0, len2 = Math.min(st[i].length, v[i].length); j < len2; j++) {
-            if(!isNil(st[i][j]) && !isNil(v[i][j])) {
-              st[i][j] += v[i][j] * percent;
+      if(target.isMulti) {
+        if(k === 'points' || k === 'controls') {
+          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+            let o = st[i];
+            let n = v[i];
+            if(!isNil(o) && !isNil(n)) {
+              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                let o2 = o[j];
+                let n2 = n[j];
+                if(!isNil(o2) && !isNil(n2)) {
+                  for(let k = 0, len3 = Math.min(o2.length, n2.length); k < len3; k++) {
+                    if(!isNil(o2[k]) && !isNil(n2[k])) {
+                      o2[k] += n2[k] * percent;
+                    }
+                  }
+                }
+              }
             }
           }
         }
-      }
-      else if(k === 'controlA' || k === 'controlB') {
-        st[0] += v[0] * percent;
-        st[1] += v[1] * percent;
+        else if(k === 'controlA' || k === 'controlB') {
+          v.forEach((item, i) => {
+            let st2 = st[i];
+            if(!isNil(item) && !isNil(st2)) {
+              for(let i = 0, len = Math.min(st2.length, item.length); i < len; i++) {
+                let o = st2[i];
+                let n = item[i];
+                if(!isNil(o) && !isNil(n)) {
+                  st2[i] += n * percent;
+                }
+              }
+            }
+          });
+        }
+        else {
+          v.forEach((item, i) => {
+            if(!isNil(item) && !isNil(st[i])) {
+              st[i] += item * percent;
+            }
+          });
+        }
       }
       else {
-        style[k] += v * percent;
+        if(k === 'points' || k === 'controls') {
+          for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+            let o = st[i];
+            let n = v[i];
+            if(!isNil(o) && !isNil(n)) {
+              for(let j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
+                if(!isNil(o[j]) && !isNil(n[j])) {
+                  o[j] += n[j] * percent;
+                }
+              }
+            }
+          }
+        }
+        else if(k === 'controlA' || k === 'controlB') {
+          if(!isNil(st[0]) && !isNil(v[0])) {
+            st[0] += v[0] * percent;
+          }
+          if(!isNil(st[1]) && !isNil(v[1])) {
+            st[1] += v[1] * percent;
+          }
+        }
+        else {
+          if(!isNil(st) && !isNil(v)) {
+            style[k] += v * percent;
+          }
+        }
       }
     }
     else if(k === 'opacity' || k === 'zIndex') {
@@ -1002,6 +1108,7 @@ class Animation extends Event {
     this.__playState = 'idle';
     this.__isDestroyed = false;
     this.__style = {};
+    this.__assigning = false; // 本帧动画是否正在影响赋值style，即在事件的before之后after之前
     this.__init();
   }
 
@@ -1231,6 +1338,7 @@ class Animation extends Event {
         keys,
         __clean,
         __fin,
+        target,
       } = this;
       // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
@@ -1268,7 +1376,7 @@ class Animation extends Event {
             if(stayBegin) {
               let current = frames[0].style;
               // 对比第一帧，以及和第一帧同key的当前样式
-              [needRefresh, lv] = calRefresh(current, style, keys);
+              [needRefresh, lv] = calRefresh(current, style, keys, target);
               if(needRefresh) {
                 genBeforeRefresh(current, this, root, lv);
               }
@@ -1330,7 +1438,7 @@ class Animation extends Event {
             else {
               current = {};
             }
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            [needRefresh, lv] = calRefresh(current, style, keys, target);
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {
               this.__nextTime = currentTime - duration;
@@ -1351,8 +1459,8 @@ class Animation extends Event {
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent);
-            [needRefresh, lv] = calRefresh(current, style, keys);
+            current = calIntermediateStyle(current, percent, target);
+            [needRefresh, lv] = calRefresh(current, style, keys, target);
           }
           // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
           if(needRefresh) {
@@ -1368,6 +1476,7 @@ class Animation extends Event {
           }
         },
         after: diff => {
+          this.__assigning = false;
           if(this.__inFps) {
             this.__inFps = false;
             return;
@@ -1419,24 +1528,23 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let self = this;
-    let { isDestroyed, duration, playState, list } = self;
+    let { isDestroyed, duration, playState, list } = this;
     if(isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
-      return self;
+      return this;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    self.__cancelTask();
-    let { root, style, keys, frames, __frameCb, __clean, __fin } = self;
+    this.__cancelTask();
+    let { root, style, keys, frames, __frameCb, __clean, __fin, target } = this;
     if(root) {
       let needRefresh, lv, current;
       // 停留在最后一帧
-      if(self.__stayEnd()) {
+      if(this.__stayEnd()) {
         current = frames[frames.length - 1].style;
-        [needRefresh, lv] = calRefresh(current, style, keys);
+        [needRefresh, lv] = calRefresh(current, style, keys, target);
       }
       else {
         current = {};
-        [needRefresh, lv] = calRefresh(current, style, keys);
+        [needRefresh, lv] = calRefresh(current, style, keys, target);
       }
       if(needRefresh) {
         frame.nextFrame(this.__enterFrame = {
@@ -1445,6 +1553,7 @@ class Animation extends Event {
             __clean(true);
           },
           after: diff => {
+            this.__assigning = false;
             __frameCb(diff);
             __fin(cb);
           },
@@ -1456,7 +1565,7 @@ class Animation extends Event {
         __fin(cb);
       }
     }
-    return self;
+    return this;
   }
 
   cancel(cb) {
@@ -1465,9 +1574,9 @@ class Animation extends Event {
       return this;
     }
     this.__cancelTask();
-    let { root, style, keys, __frameCb, __clean } = this;
+    let { root, style, keys, __frameCb, __clean, target } = this;
     if(root) {
-      let [needRefresh, lv] = calRefresh({}, style, keys);
+      let [needRefresh, lv] = calRefresh({}, style, keys, target);
       let task = () => {
         this.__cancelTask();
         this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
@@ -1483,6 +1592,7 @@ class Animation extends Event {
             __clean();
           },
           after: diff => {
+            this.__assigning = false;
             __frameCb(diff);
             task();
           },
@@ -1529,6 +1639,10 @@ class Animation extends Event {
         cb(diff);
       }
     });
+  }
+
+  assignCurrentStyle() {
+    assignStyle(this.style, this);
   }
 
   __goto(v, isFrame, excludeDelay) {
@@ -1784,6 +1898,10 @@ class Animation extends Event {
     else {
       this.__spfLimit = !!v;
     }
+  }
+
+  get assigning() {
+    return this.__assigning;
   }
 }
 

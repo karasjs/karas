@@ -1,4 +1,6 @@
 import Dom from '../node/Dom';
+import builder from '../util/builder';
+import updater from '../util/updater';
 import util from '../util/util';
 import mode from '../util/mode';
 import diff from '../util/diff';
@@ -54,7 +56,8 @@ let uuid = 0;
 
 class Root extends Dom {
   constructor(tagName, props, children) {
-    super(tagName, props, children);
+    super(tagName, props);
+    this.__cd = children || []; // 原始children，再初始化过程中生成真正的dom
     this.__node = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
@@ -63,7 +66,6 @@ class Root extends Dom {
     this.__task = [];
     this.__ref = {};
     this.__animateController = new Controller();
-    this.__init(this, this);
     Event.mix(this);
   }
 
@@ -87,14 +89,13 @@ class Root extends Dom {
   __genHtml() {
     let res = `<${this.tagName}`;
     // 拼接处理属性
-    for(let i = 0, len = this.__props.length; i < len; i++) {
-      let item = this.__props[i];
-      let [k, v] = item;
+    Object.keys(this.props).forEach(k => {
+      let v = this.props[k];
       // 忽略事件
       if(!/^on[a-zA-Z]/.test(k)) {
         res += renderProp(k, v);
       }
-    }
+    });
     res += `></${this.tagName}>`;
     return res;
   }
@@ -150,7 +151,9 @@ class Root extends Dom {
 
   appendTo(dom) {
     dom = getDom(dom);
+    this.__children = builder.initRoot(this.__cd, this);
     this.__initProps();
+    this.__root = this;
     this.__refreshLevel = level.REFLOW;
     // 已有root节点
     if(dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
@@ -227,15 +230,16 @@ class Root extends Dom {
       value: this.height,
       unit: PX,
     };
-    // 计算css继承，获取所有字体和大小并准备测量文字
+    // 目前3个等级：组件state变更的STATE、dom变化布局的REFLOW、动画渲染的REPAINT
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
-    if(lv === level.REFLOW) {
+    if(lv >= level.REFLOW) {
       this.__measure(renderMode, ctx, true);
     }
+    // 计算css继承，获取所有字体和大小并准备测量文字
     inject.measureText(() => {
       // 第一次默认REFLOW以及样式涉及变更等需要布局
-      if(lv === level.REFLOW) {
+      if(lv >= level.REFLOW) {
         // 布局分为两步，普通流和定位流，互相递归
         this.__layout({
           x: 0,
@@ -302,12 +306,30 @@ class Root extends Dom {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
-            clone.forEach(item => {
+            let setStateList = [];
+            clone.forEach((item, i) => {
               if(isObject(item) && isFunction(item.before)) {
+                // 收集组件setState的更新，特殊处理
+                if(item.__state) {
+                  setStateList.push(i);
+                }
                 item.before(diff);
               }
             });
-            this.refresh();
+            // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
+            if(setStateList.length) {
+              updater.check(this);
+            }
+            // 有组件更新，则需要重新布局
+            let len = updater.updateList.length;
+            if(len) {
+              this.setRefreshLevel(level.REFLOW);
+              this.refresh();
+            }
+            // 有可能组件都不需要更新，且没有其它触发的渲染更新
+            else if(clone.length > setStateList.length) {
+              this.refresh();
+            }
             // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
             let r = this.__hookTask;
             if(r) {
@@ -317,6 +339,8 @@ class Root extends Dom {
                 hookTask.splice(i, 1);
               }
             }
+            // 触发didUpdate
+            updater.did();
           }
         },
         after: diff => {

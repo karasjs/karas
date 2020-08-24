@@ -1,6 +1,9 @@
-import util from '../util/util';
 import abbr from './abbr';
 import Node from '../node/Node';
+import $$type from '../util/$$type';
+import util from '../util/util';
+
+const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let { isNil, isFunction, isPrimitive, clone, extend } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
@@ -174,7 +177,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
       throw new Error('Link library miss id: ' + libraryId);
     }
   }
-  let { tagName, props = {}, children = [], animate = [] } = json;
+  let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
   if(!tagName) {
     throw new Error('Dom must have a tagName: ' + json);
   }
@@ -191,9 +194,15 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
     vd = karas.createGm(tagName, props);
   }
   else {
-    vd = karas.createVd(tagName, props, children.map(item => {
+    vd = karas.createVd(tagName, props, children.map((item, i) => {
+      if(item && [TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
+        return item;
+      }
       return parse(karas, item, animateRecords, vars, hash);
     }));
+  }
+  if(__animateRecords) {
+    vd.__animateRecords = __animateRecords;
   }
   let animationRecord;
   if(animate) {

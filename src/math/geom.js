@@ -1,3 +1,5 @@
+const H = 4 * (Math.sqrt(2) - 1) / 3;
+
 // 向量积
 function vectorProduct(x1, y1, x2, y2) {
   return x1 * y2 - x2 * y1;
@@ -75,6 +77,21 @@ function triangleIncentre(x1, y1, x2, y2, x3, y3) {
   ];
 }
 
+/**
+ * 椭圆圆心和长短轴生成4个端点和控制点
+ */
+function ellipsePoints(x, y, a, b = a) {
+  let ox = a * H;
+  let oy = b === a ? ox : b * H;
+  return [
+    [x - a, y],
+    [x - a, y - oy, x - ox, y - b, x, y - b],
+    [x + ox, y - b, x + a, y - oy, x + a, y],
+    [x + a, y + oy, x + ox, y + b, x, y + b],
+    [x - ox, y + b, x - a, y + oy, x - a, y]
+  ];
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
@@ -86,7 +103,7 @@ export default {
     return n * 180 / Math.PI;
   },
   // 贝塞尔曲线模拟1/4圆弧比例
-  H: 4 * (Math.sqrt(2) - 1) / 3,
+  H,
   // <90任意角度贝塞尔曲线拟合圆弧的比例公式
   h(deg) {
     deg *= 0.5;
@@ -95,4 +112,5 @@ export default {
   angleBySide,
   pointsDistance,
   triangleIncentre,
+  ellipsePoints,
 };

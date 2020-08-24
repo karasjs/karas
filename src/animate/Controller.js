@@ -34,11 +34,11 @@ class Controller {
     });
   }
 
-  init(target = this.__records) {
+  init(list = this.__records) {
     // 检查尚未初始化的record，并初始化，后面才能调用各种控制方法
-    if(target.length) {
+    if(list.length) {
       // 清除防止重复调用，并且新的json还会进入整体逻辑
-      target.splice(0).forEach(item => {
+      list.splice(0).forEach(item => {
         let { target, animate } = item;
         if(Array.isArray(animate)) {
           animate.forEach(animate => {
@@ -58,7 +58,7 @@ class Controller {
     }
   }
 
-  __playAuto(cb) {
+  __playAuto() {
     this.init(this.__auto);
     this.__action('play');
   }

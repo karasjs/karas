@@ -5,9 +5,11 @@ class Polygon extends Polyline {
     super(tagName, props);
   }
 
-  __getPoints(originX, originY, width, height, points, len) {
-    let res = super.__getPoints(originX, originY, width, height, points, len);
-    res.push(res[0]);
+  __getPoints(originX, originY, width, height, points, isControl) {
+    let res = super.__getPoints(originX, originY, width, height, points, isControl);
+    if(!isControl) {
+      res.push(res[0]);
+    }
     return res;
   }
 }

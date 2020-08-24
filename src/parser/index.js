@@ -1,10 +1,12 @@
 import parse from './parse';
 import abbr from './abbr';
 import inject from '../util/inject';
+import util from '../util/util';
 import Controller from '../animate/Controller';
 
 export default {
   parse(karas, json, dom, options = {}) {
+    json = util.clone(json);
     // 重载，在确定dom传入选择器字符串或html节点对象时作为渲染功能，否则仅创建vd返回
     if(!inject.isDom(dom)) {
       options = dom || {};
@@ -23,6 +25,10 @@ export default {
       let ac = options.controller instanceof Controller ? options.controller : vd.animateController;
       // 第一次render，收集递归json里面的animateRecords，它在xom的__layout最后生成
       karas.render(vd, dom);
+      // 由于vd首先生成的都是json，根parse要特殊处理将target指向真正的vd引用，json的vd在builder中赋值
+      animateRecords.forEach(item => {
+        item.target = item.target.vd;
+      });
       // 直接的json里的animateRecords，再加上递归的parse的json的（第一次render布局时处理）动画一并播放
       if(options.autoPlay !== false) {
         ac.__auto = ac.__auto.concat(animateRecords);

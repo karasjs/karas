@@ -17,7 +17,7 @@ class Component extends karas.Component {
 karas.render(
   <canvas width="360" height="360">
     <div style={{width:100,height:100,background:'#F00'}}>
-      <Component onClick={()=>{cb(count++)}}/>
+      <Component onClick={()=>{cb(count+=2)}}/>
     </div>
   </canvas>,
   '#test'

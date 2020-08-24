@@ -14,6 +14,7 @@ const REGISTER = {};
 class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
+    this.__isMulti = !!this.props.multi;
     this.__isMask = !!this.props.mask;
     this.__isClip = !!this.props.clip;
     let { style, isMask, isClip } = this;
@@ -277,54 +278,8 @@ class Geom extends Xom {
       let children = clone(vd.children);
       let m = this.matrixEvent;
       children.forEach(child => {
-        let xi = 0;
-        let yi = 1;
-        let x, y;
         let props = child.props;
-        if(child.tagName === 'rect') {
-          for(let i = 0, len = props.length; i < len; i++) {
-            let [k, v] = props[i];
-            if(k === 'x') {
-              xi = i;
-              x = v;
-            }
-            else if(k === 'y') {
-              yi = i;
-              y = v;
-            }
-          }
-          let point = matrix.calPoint([x, y], m);
-          props[xi][1] = point[0];
-          props[yi][1] = point[1];
-        }
-        else if(child.tagName === 'circle' || child.tagName === 'ellipse') {
-          for(let i = 0, len = props.length; i < len; i++) {
-            let [k, v] = props[i];
-            if(k === 'cx') {
-              xi = i;
-              x = v;
-            }
-            else if(k === 'cy') {
-              yi = i;
-              y = v;
-            }
-          }
-          let point = matrix.calPoint([x, y], m);
-          props[xi][1] = point[0];
-          props[yi][1] = point[1];
-        }
-        else if(child.tagName === 'polyline') {
-          for(let i = 0, len = props.length; i < len; i++) {
-            let [k, v] = props[i];
-            if(k === 'points') {
-              props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return joinArr(matrix.calPoint([$1, $2], m), ',');
-              });
-              break;
-            }
-          }
-        }
-        else if(child.tagName === 'path') {
+        if(child.tagName === 'path') {
           for(let i = 0, len = props.length; i < len; i++) {
             let [k, v] = props[i];
             if(k === 'd') {
@@ -342,12 +297,6 @@ class Geom extends Xom {
         let last = defs.value;
         last = last[last.length - 1];
         last.children = last.children.concat(children);
-        if(isClip) {
-          this.__clipId = prev.clipId;
-        }
-        else {
-          this.__maskId = prev.maskId;
-        }
         return;
       }
       let id = defs.add({
@@ -361,6 +310,21 @@ class Geom extends Xom {
       else {
         this.__maskId = 'url(#' + id + ')';
       }
+    }
+  }
+
+  __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
+    if(strokeDasharrayStr) {
+      props.push(['stroke-dasharray', strokeDasharrayStr]);
+    }
+    if(strokeLinecap !== 'butt') {
+      props.push(['stroke-linecap', strokeLinecap]);
+    }
+    if(strokeLinejoin !== 'miter') {
+      props.push(['stroke-linejoin', strokeLinejoin]);
+    }
+    if(strokeMiterlimit !== 4) {
+      props.push(['stroke-miterlimit', strokeMiterlimit]);
     }
   }
 
@@ -383,6 +347,10 @@ class Geom extends Xom {
 
   get baseLine() {
     return this.__height;
+  }
+
+  get isMulti() {
+    return this.__isMulti;
   }
 
   get isMask() {

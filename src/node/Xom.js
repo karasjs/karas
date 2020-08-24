@@ -1,5 +1,5 @@
 import Node from './Node';
-import tool from './tool';
+import painter from '../util/painter';
 import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
@@ -17,21 +17,24 @@ import mx from '../math/matrix';
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { normalize, calRelative, compute } = css;
-const { genCanvasPolygon, genSvgPolygon } = tool;
+const { canvasPolygon, svgPolygon } = painter;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
   if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
     points.forEach(point => {
-      genCanvasPolygon(ctx, point);
+      canvasPolygon(ctx, point);
     });
+    ctx.fill();
+    ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
     let s = '';
     points.forEach(point => {
-      s += genSvgPolygon(point);
+      s += svgPolygon(point);
     });
     xom.virtualDom.bb.push({
       type: 'item',
@@ -48,22 +51,22 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
+    ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
     if(list) {
-      genCanvasPolygon(ctx, list, method);
+      canvasPolygon(ctx, list, method);
     }
     else {
-      ctx.beginPath();
       ctx.rect(x, y, w, h);
-      ctx[method]();
-      ctx.closePath();
     }
+    ctx[method]();
+    ctx.closePath();
   }
   else if(renderMode === mode.SVG) {
     if(list) {
-      let d = genSvgPolygon(list);
+      let d = svgPolygon(list);
       xom.virtualDom.bb.push({
         type: 'item',
         tagName: 'path',
@@ -168,31 +171,25 @@ function calBackgroundPosition(position, container, size) {
 function empty() {}
 
 class Xom extends Node {
-  constructor(tagName, props = []) {
+  constructor(tagName, props = {}) {
     super();
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
-      this.__props = props;
     }
     else {
       this.props = props;
-      this.__props = util.hash2arr(props);
     }
     this.__tagName = tagName;
     this.__style = this.props.style || {}; // style被解析后的k-v形式
     this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
     this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
-    this.__props.forEach(item => {
-      let k = item[0];
-      let v = item[1];
+    Object.keys(this.props).forEach(k => {
+      let v = this.props[k];
       if(/^on[a-zA-Z]/.test(k)) {
         k = k.slice(2).toLowerCase();
-        let arr = this.__listener[k] = this.__listener[k] || [];
-        if(arr.indexOf(v) === -1) {
-          arr.push(v);
-        }
+        this.listener[k] = v;
       }
     });
     this.__animationList = [];
@@ -432,10 +429,7 @@ class Xom extends Node {
   render(renderMode, ctx, defs) {
     if(renderMode === mode.SVG) {
       if(this.__cacheSvg) {
-        let n = {};
-        Object.keys(this.__virtualDom).forEach(k => {
-          n[k] = this.__virtualDom[k];
-        });
+        let n = extend({}, this.__virtualDom);
         n.cache = true;
         this.__virtualDom = n;
         return;
@@ -1101,9 +1095,9 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode, ctx, defs) {
-    let { prev, root } = this;
-    let hasMask = prev && prev.isMask;
-    let hasClip = prev && prev.isClip;
+    let { next, root } = this;
+    let hasMask = next && next.isMask;
+    let hasClip = next && next.isClip;
     if(!hasMask && !hasClip) {
       this.render(renderMode, ctx, defs);
       return;
@@ -1116,15 +1110,15 @@ class Xom extends Node {
         this.render(renderMode, c.ctx);
         // 收集之前的mask列表
         let list = [];
-        while(prev && prev.isMask) {
-          list.unshift(prev);
-          prev = prev.prev;
+        while(next && next.isMask) {
+          list.push(next);
+          next = next.next;
         }
         // 当mask只有1个时，无需生成m，直接在c上即可
         if(list.length === 1) {
-          prev = list[0];
+          next = list[0];
           c.ctx.globalCompositeOperation = 'destination-in';
-          prev.render(renderMode, c.ctx);
+          next.render(renderMode, c.ctx);
           // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
           c.draw(c.ctx);
           ctx.drawImage(c.canvas, 0, 0);
@@ -1160,9 +1154,9 @@ class Xom extends Node {
         let beginPath = ctx.beginPath;
         let closePath = ctx.closePath;
         ctx.fill = ctx.beginPath = ctx.closePath = empty;
-        while(prev && prev.isClip) {
-          prev.render(renderMode, ctx);
-          prev = prev.prev;
+        while(next && next.isClip) {
+          next.render(renderMode, ctx);
+          next = next.next;
         }
         ctx.fill = fill;
         ctx.beginPath = beginPath;
@@ -1177,15 +1171,18 @@ class Xom extends Node {
       this.render(renderMode, ctx, defs);
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
-        this.virtualDom.mask = prev.maskId;
+        this.virtualDom.mask = next.maskId;
       }
       else if(hasClip) {
-        this.virtualDom.clip = prev.clipId;
+        this.virtualDom.clip = next.clipId;
       }
     }
   }
 
   __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
     let ref = this.props.ref;
     if(ref) {
       let owner = this.host || this.root;
@@ -1215,23 +1212,15 @@ class Xom extends Node {
     // touchmove之类强制的直接由Root通知即可
     if(force) {
       e.target = this;
-      if(cb) {
-        cb.forEach(item => {
-          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-            item(e);
-          }
-        });
+      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+        cb(e);
       }
       return true;
     }
     // 非force的判断事件坐标是否在节点内
     if(this.willResponseEvent(e)) {
-      if(cb) {
-        cb.forEach(item => {
-          if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-            item(e);
-          }
-        });
+      if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+        cb(e);
       }
       return true;
     }
@@ -1390,10 +1379,6 @@ class Xom extends Node {
       o.cancel();
       o.__destroy();
     });
-  }
-
-  __init(root, host) {
-    tool.init(this, root, host);
   }
 
   __measure(renderMode, ctx, isRoot) {

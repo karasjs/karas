@@ -1,8 +1,21 @@
+import $$type from './$$type';
+
 let toString = {}.toString;
 function isType(type) {
   return function(obj) {
     return toString.call(obj) === '[object ' + type + ']';
   }
+}
+
+let isObject = isType('Object');
+let isString = isType('String');
+let isFunction = isType('Function');
+let isNumber = isType('Number');
+let isBoolean = isType('Boolean');
+let isDate = isType('Date');
+
+function isNil(v) {
+  return v === undefined || v === null;
 }
 
 function joinSourceArray(arr) {
@@ -31,10 +44,6 @@ function encodeHtml(s, prop) {
     return s.replace(/"/g, '&quot;');
   }
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-}
-
-function isNil(v) {
-  return v === undefined || v === null;
 }
 
 // 根元素专用
@@ -237,6 +246,13 @@ function clone(obj) {
   if(isNil(obj) || typeof obj !== 'object') {
     return obj;
   }
+  // parse递归会出现内部先返回解析好的json，外部parse不能clone
+  if(obj.$$type === $$type.TYPE_PL
+    || obj.$$type === $$type.TYPE_VD
+    || obj.$$type === $$type.TYPE_GM
+    || obj.$$type === $$type.TYPE_CP) {
+    return obj;
+  }
   if(util.isDate(obj)) {
     return new Date(obj);
   }
@@ -247,6 +263,12 @@ function clone(obj) {
   return n;
 }
 
+/**
+ * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+ * @param a
+ * @param b
+ * @returns {boolean}
+ */
 function equalArr(a, b) {
   if(a.length !== b.length) {
     return false;
@@ -271,6 +293,49 @@ function equalArr(a, b) {
   return true;
 }
 
+/**
+ * 深度对比对象
+ * @param a
+ * @param b
+ * @returns {boolean}
+ */
+function equal(a, b) {
+  if(a === b) {
+    return true;
+  }
+  if(isObject(a) && isObject(b)) {
+    let hash = {};
+    for(let i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+      let k = arr[i];
+      if(!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+        return false;
+      }
+      hash[k] = true;
+    }
+    // a没有b有则false
+    for(let i = 0, arr = Object.keys(b), len = arr.length; i < len; i++) {
+      let k = arr[i];
+      if(!hash.hasOwnProperty(k)) {
+        return false;
+      }
+    }
+  }
+  else if(Array.isArray(a) && Array.isArray(b)) {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      if(!equal(a[i], b[i])) {
+        return false;
+      }
+    }
+  }
+  else {
+    return a === b;
+  }
+  return true;
+}
+
 function extend(target, source, keys) {
   if(source === null || typeof source !== 'object') {
     return target;
@@ -278,10 +343,12 @@ function extend(target, source, keys) {
   if(!keys) {
     keys = Object.keys(source);
   }
-  let i = keys.length;
-  while(i--) {
+  let i = 0;
+  let len = keys.length;
+  while(i < len) {
     let k = keys[i];
     target[k] = source[k];
+    i++;
   }
   return target;
 }
@@ -294,13 +361,24 @@ function joinArr(arr, split) {
   return s;
 }
 
+function extendAnimate(ovd, nvd) {
+  let list = nvd.__animationList = ovd.animationList.splice(0);
+  list.forEach(item => {
+    item.__target = nvd;
+    // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍
+    if(item.assigning) {
+      item.assignCurrentStyle();
+    }
+  });
+}
+
 let util = {
-  isObject: isType('Object'),
-  isString: isType('String'),
-  isFunction: isType('Function'),
-  isNumber: isType('Number'),
-  isBoolean: isType('Boolean'),
-  isDate: isType('Date'),
+  isObject,
+  isString,
+  isFunction,
+  isNumber,
+  isBoolean,
+  isDate,
   isNil,
   isPrimitive(v) {
     return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
@@ -319,8 +397,10 @@ let util = {
   hash2arr,
   clone,
   equalArr,
+  equal,
   extend,
   joinArr,
+  extendAnimate,
 };
 
 export default util;

@@ -7,6 +7,22 @@ let o = karas.parse(
     },
     children: [
       {
+        "tagName":"div",
+        "props":{
+          "style":{
+            "position":"absolute",
+            "left":5,
+            "top":10,
+            "width":100,
+            "height":100,
+            "background":"#F00"
+          }
+        },
+        "children":[
+          "123"
+        ]
+      },
+      {
         "tagName":"$polygon",
         "props":{
           "mask":true,
@@ -76,22 +92,6 @@ let o = karas.parse(
               "fill": "both"
             }
           }
-        ]
-      },
-      {
-        "tagName":"div",
-        "props":{
-          "style":{
-            "position":"absolute",
-            "left":5,
-            "top":10,
-            "width":100,
-            "height":100,
-            "background":"#F00"
-          }
-        },
-        "children":[
-          "123"
         ]
       }
     ]

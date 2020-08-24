@@ -23,69 +23,8 @@ const INLINE = {
 };
 
 function isRelativeOrAbsolute(node) {
-  return ['relative', 'absolute'].indexOf(node.computedStyle.position) > -1;
-}
-
-/**
- * 1. 封装string为Text节点
- * 2. 打平children中的数组，变成一维
- * 3. 合并相连的Text节点
- */
-function flatten(parent, children) {
-  let list = [];
-  traverse(parent, list, children, {
-    lastText: null,
-    prev: null,
-  });
-  return list;
-}
-
-function traverse(parent, list, children, options) {
-  if(Array.isArray(children)) {
-    children.forEach(item => {
-      traverse(parent, list, item, options);
-    });
-  }
-  else if(children instanceof Xom) {
-    if(['canvas', 'svg'].indexOf(children.tagName) > -1) {
-      throw new Error('Can not nest canvas/svg');
-    }
-    list.push(children);
-    children.__parent = parent;
-    options.lastText = null;
-    if(options.prev) {
-      options.prev.__next = children;
-      children.__prev = options.prev;
-    }
-    options.prev = children;
-  }
-  else if(children instanceof Component) {
-    list.push(children);
-    children.__parent = parent;
-    // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-    options.lastText = null;
-    if(options.prev) {
-      options.prev.__next = children;
-      children.__prev = options.prev;
-    }
-    options.prev = children;
-  }
-  // 排除掉空的文本，连续的text合并
-  else if(!util.isNil(children) && children !== '') {
-    if(options.lastText) {
-      options.lastText.content += children;
-    }
-    else {
-      let text = options.lastText = new Text(children);
-      list.push(text);
-      text.__parent = parent;
-      if(options.prev) {
-        options.prev.__next = text;
-        text.__prev = options.prev;
-      }
-      options.prev = text;
-    }
-  }
+  let position = node.computedStyle.position;
+  return position === 'relative' || position === 'absolute';
 }
 
 class Dom extends Xom {
@@ -1105,16 +1044,6 @@ class Dom extends Xom {
     }
   }
 
-  __init(root, host) {
-    super.__init(root, host);
-    (this.__children = flatten(this, this.children))
-      .forEach(item => {
-        if(item instanceof Xom || item instanceof Component) {
-          item.__init(root, host);
-        }
-      });
-  }
-
   __measure(renderMode, ctx, isRoot) {
     super.__measure(renderMode, ctx, isRoot);
     // 即便自己不需要计算，但children还要继续递归检查
@@ -1124,8 +1053,14 @@ class Dom extends Xom {
   }
 
   __destroy() {
+    if(this.isDestroyed) {
+      return;
+    }
     this.children.forEach(child => {
-      child.__destroy();
+      // 有可能为空，因为diff过程中相同的cp被移到新的vd中，老的防止destroy设null
+      if(child) {
+        child.__destroy();
+      }
     });
     super.__destroy();
     this.children.splice(0);
@@ -1156,12 +1091,8 @@ class Dom extends Xom {
           if(e.__stopPropagation) {
             return;
           }
-          if(cb) {
-            cb.forEach(item => {
-              if(util.isFunction(item) && !e.__stopImmediatePropagation) {
-                item(e);
-              }
-            });
+          if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
+            cb(e);
           }
           return true;
         }

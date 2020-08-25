@@ -16447,7 +16447,7 @@
     repaint: repaint
   };
 
-  var version = "0.36.0";
+  var version = "0.36.1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);
@@ -16512,7 +16512,9 @@
     style: style,
     parser: parser,
     animate: animate,
-    math: math
+    math: math,
+    builder: builder,
+    updater: updater
   };
   builder.ref({
     Xom: Xom,

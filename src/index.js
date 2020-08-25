@@ -85,6 +85,8 @@ let karas = {
   parser,
   animate,
   math,
+  builder,
+  updater,
 };
 
 builder.ref({

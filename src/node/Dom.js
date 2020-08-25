@@ -1092,7 +1092,7 @@ class Dom extends Xom {
             return;
           }
           if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
-            cb(e);
+            cb.call(this, e);
           }
           return true;
         }

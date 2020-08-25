@@ -1213,14 +1213,14 @@ class Xom extends Node {
     if(force) {
       e.target = this;
       if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
-        cb(e);
+        cb.call(this, e);
       }
       return true;
     }
     // 非force的判断事件坐标是否在节点内
     if(this.willResponseEvent(e)) {
       if(util.isFunction(cb) && !e.__stopImmediatePropagation) {
-        cb(e);
+        cb.call(this, e);
       }
       return true;
     }

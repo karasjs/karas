@@ -379,6 +379,10 @@
   }();
 
   function canvasPolygon(ctx, list) {
+    if (!list.length) {
+      return;
+    }
+
     ctx.moveTo(list[0][0], list[0][1]);
 
     for (var i = 1, len = list.length; i < len; i++) {
@@ -395,6 +399,10 @@
   }
 
   function svgPolygon(list) {
+    if (!list.length) {
+      return '';
+    }
+
     var s = 'M' + list[0][0] + ',' + list[0][1];
 
     for (var i = 1, len = list.length; i < len; i++) {
@@ -9846,7 +9854,7 @@
           e.target = this;
 
           if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
-            cb(e);
+            cb.call(this, e);
           }
 
           return true;
@@ -9855,7 +9863,7 @@
 
         if (this.willResponseEvent(e)) {
           if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
-            cb(e);
+            cb.call(this, e);
           }
 
           return true;
@@ -12067,7 +12075,7 @@
               }
 
               if (util.isFunction(cb) && !e.__stopImmediatePropagation) {
-                cb(e);
+                cb.call(this, e);
               }
 
               return true;

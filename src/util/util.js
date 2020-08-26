@@ -320,6 +320,9 @@ function equal(a, b) {
       }
     }
   }
+  else if(isDate(a) && isDate(b)) {
+    return a.getTime() === b.getTime();
+  }
   else if(Array.isArray(a) && Array.isArray(b)) {
     if(a.length !== b.length) {
       return false;

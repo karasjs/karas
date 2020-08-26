@@ -388,6 +388,10 @@
     for (var i = 1, len = list.length; i < len; i++) {
       var item = list[i];
 
+      if (!Array.isArray(item)) {
+        continue;
+      }
+
       if (item.length === 2) {
         ctx.lineTo(item[0], item[1]);
       } else if (item.length === 4) {
@@ -407,6 +411,10 @@
 
     for (var i = 1, len = list.length; i < len; i++) {
       var item = list[i];
+
+      if (!Array.isArray(item)) {
+        continue;
+      }
 
       if (item.length === 2) {
         s += 'L' + item[0] + ',' + item[1];
@@ -5921,7 +5929,6 @@
       o.style.visibility = 'hidden';
       o.style.left = '9999px';
       o.style.top = '-9999px';
-      document.body.append(o);
     }
 
     o = CANVAS[key];
@@ -6122,11 +6129,8 @@
       return Date.now();
     },
     getCacheCanvas: function getCacheCanvas(width, height) {
-      var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '__cache__';
+      var key = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '__$$cache$$__';
       return cacheCanvas(key, width, height);
-    },
-    getMaskCanvas: function getMaskCanvas(width, height) {
-      return cacheCanvas('__mask__', width, height);
     },
     isDom: function isDom(o) {
       if (o) {
@@ -9730,7 +9734,7 @@
           if (hasMask) {
             var width = root.width,
                 height = root.height;
-            var c = inject.getCacheCanvas(width, height);
+            var c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
             this.render(renderMode, c.ctx); // 收集之前的mask列表
 
             var list = [];
@@ -9751,7 +9755,7 @@
               c.draw(ctx);
             } // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
             else {
-                var m = inject.getMaskCanvas(width, height);
+                var m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
                 list.forEach(function (item) {
                   item.render(renderMode, m.ctx);
                 });

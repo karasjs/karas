@@ -1106,7 +1106,7 @@ class Xom extends Node {
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
       if(hasMask) {
         let { width, height } = root;
-        let c = inject.getCacheCanvas(width, height);
+        let c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
         this.render(renderMode, c.ctx);
         // 收集之前的mask列表
         let list = [];
@@ -1126,7 +1126,7 @@ class Xom extends Node {
         }
         // 多个借用m绘制mask，用c结合mask获取结果，最终结果再到当前画布
         else {
-          let m = inject.getMaskCanvas(width, height);
+          let m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
           list.forEach(item => {
             item.render(renderMode, m.ctx);
           });

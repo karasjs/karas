@@ -5,6 +5,9 @@ function canvasPolygon(ctx, list) {
   ctx.moveTo(list[0][0], list[0][1]);
   for(let i = 1, len = list.length; i < len; i++) {
     let item = list[i];
+    if(!Array.isArray(item)) {
+      continue;
+    }
     if(item.length === 2) {
       ctx.lineTo(item[0], item[1]);
     }
@@ -24,6 +27,9 @@ function svgPolygon(list) {
   let s = 'M' + list[0][0] + ',' + list[0][1];
   for(let i = 1, len = list.length; i < len; i++) {
     let item = list[i];
+    if(!Array.isArray(item)) {
+      continue;
+    }
     if(item.length === 2) {
       s += 'L' + item[0] + ',' + item[1];
     }

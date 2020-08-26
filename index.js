@@ -5917,10 +5917,7 @@
   Text.prototype.__renderByMask = Text.prototype.render;
 
   var SPF = 1000 / 60;
-  var CANVAS = {
-    cache: null,
-    mask: null
-  };
+  var CANVAS = {};
 
   function cacheCanvas(key, width, height) {
     var o;

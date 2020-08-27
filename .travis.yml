@@ -20,6 +20,3 @@ services:
   - xvfb
 
 sudo: required
-
-addons:
-  chrome: stable

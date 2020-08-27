@@ -518,7 +518,463 @@
     RGBA: 7
   };
 
-  // 生成3*3单位矩阵，css表达方法一维6位
+  // 类型为引用防止json仿造
+  var TYPE_PL = {
+    _: 0
+  };
+  var TYPE_VD = {
+    _: 1
+  };
+  var TYPE_GM = {
+    _: 2
+  };
+  var TYPE_CP = {
+    _: 3
+  };
+  var $$type = {
+    TYPE_VD: TYPE_VD,
+    TYPE_GM: TYPE_GM,
+    TYPE_CP: TYPE_CP,
+    TYPE_PL: TYPE_PL
+  };
+
+  var toString = {}.toString;
+
+  function isType(type) {
+    return function (obj) {
+      return toString.call(obj) === '[object ' + type + ']';
+    };
+  }
+
+  var isObject = isType('Object');
+  var isString = isType('String');
+  var isFunction = isType('Function');
+  var isNumber = isType('Number');
+  var isBoolean = isType('Boolean');
+  var isDate = isType('Date');
+
+  function isNil(v) {
+    return v === undefined || v === null;
+  }
+
+  function _joinSourceArray(arr) {
+    var res = '';
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        res += _joinSourceArray(item);
+      } else {
+        res += stringify(item);
+      }
+    }
+
+    return res;
+  }
+
+  function stringify(s) {
+    if (isNil(s)) {
+      return '';
+    }
+
+    return s.toString();
+  }
+
+  function encodeHtml(s, prop) {
+    if (prop) {
+      return s.replace(/"/g, '&quot;');
+    }
+
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
+  } // 根元素专用
+
+
+  function joinVirtualDom(vd) {
+    var s = '<defs>';
+    vd.defs.forEach(function (item) {
+      s += joinDef(item);
+    });
+    s += '</defs><g';
+
+    if (vd.bbClip) {
+      s += ' clip-path="' + vd.bbClip + '"';
+    }
+
+    s += '>';
+    vd.bb.forEach(function (item) {
+      s += joinVd(item);
+    });
+    s += '</g><g';
+
+    if (vd.conClip) {
+      s += ' clip-path="' + vd.conClip + '"';
+    }
+
+    s += '>';
+    vd.children.forEach(function (item) {
+      if (item.isMask || item.isClip) {
+        return;
+      }
+
+      s += joinVd(item);
+    });
+    s += '</g>';
+    return s;
+  } // 普通元素
+
+
+  function joinVd(vd) {
+    if (vd.type === 'item' || vd.type === 'img') {
+      var s = '';
+      vd.props.forEach(function (item) {
+        s += ' ' + item[0] + '="' + item[1] + '"';
+      });
+
+      if (vd.tagName === 'text') {
+        return '<text' + s + '>' + vd.content + '</text>';
+      }
+
+      return '<' + vd.tagName + s + '/>';
+    } else if (vd.type === 'text') {
+      var _s = ""; // text有许多lineBox
+
+      vd.children.forEach(function (item) {
+        _s += joinVd(item);
+      });
+      return '<g>' + _s + '</g>';
+    } else if (vd.type === 'dom' || vd.type === 'geom') {
+      var _s2 = '<g';
+
+      if (vd.bbClip) {
+        _s2 += ' clip-path="' + vd.bbClip + '"';
+      }
+
+      _s2 += '>';
+      vd.bb.forEach(function (item) {
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g><g';
+
+      if (vd.conClip) {
+        _s2 += ' clip-path="' + vd.conClip + '"';
+      }
+
+      _s2 += '>';
+      vd.children.forEach(function (item) {
+        if (item.isMask || item.isClip) {
+          return;
+        }
+
+        _s2 += joinVd(item);
+      });
+      _s2 += '</g>';
+      var opacity = vd.opacity,
+          transform = vd.transform,
+          mask = vd.mask,
+          clip = vd.clip,
+          filter = vd.filter;
+      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+    }
+  }
+
+  function joinDef(def) {
+    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
+
+    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
+      s += ' gradientUnits="userSpaceOnUse"';
+    }
+
+    def.props.forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '>';
+    def.children.forEach(function (item) {
+      s += joinItem(item);
+    });
+    s += '</' + def.tagName + '>';
+    return s;
+  }
+
+  function joinItem(item) {
+    var s = '<' + item.tagName;
+    item.props.forEach(function (item) {
+      s += ' ' + item[0] + '="' + item[1] + '"';
+    });
+    s += '></' + item.tagName + '>';
+    return s;
+  }
+
+  function rgba2int(color) {
+    if (Array.isArray(color)) {
+      return color;
+    }
+
+    var res = [];
+
+    if (!color || color === 'transparent') {
+      res = [0, 0, 0, 0];
+    } else if (color.charAt(0) === '#') {
+      color = color.slice(1);
+
+      if (color.length === 3) {
+        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
+        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
+        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+      } else if (color.length === 6) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4), 16));
+      } else {
+        res[0] = res[1] = res[2] = 0;
+      }
+
+      res[3] = 1;
+    } else {
+      var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
+
+      if (c) {
+        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
+
+        if (!isNil(c[4])) {
+          res[3] = parseFloat(c[4]);
+        } else {
+          res[3] = 1;
+        }
+      } else {
+        res = [0, 0, 0, 0];
+      }
+    }
+
+    return res;
+  }
+
+  function int2rgba(color) {
+    if (Array.isArray(color)) {
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return color || 'rgba(0,0,0,0)';
+  }
+
+  function arr2hash(arr) {
+    var hash = {};
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+      var item = arr[i];
+
+      if (Array.isArray(item)) {
+        hash[item[0]] = item[1];
+      } else {
+        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
+          var k = list[j];
+          hash[k] = item[k];
+        }
+      }
+    }
+
+    return hash;
+  }
+
+  function hash2arr(hash) {
+    if (Array.isArray(hash)) {
+      return hash;
+    }
+
+    var arr = [];
+
+    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
+      var k = list[i];
+      arr.push([k, hash[k]]);
+    }
+
+    return arr;
+  }
+
+  function clone(obj) {
+    if (isNil(obj) || _typeof(obj) !== 'object') {
+      return obj;
+    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
+
+
+    if (obj.$$type === $$type.TYPE_PL || obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
+      return obj;
+    }
+
+    if (util.isDate(obj)) {
+      return new Date(obj);
+    }
+
+    var n = Array.isArray(obj) ? [] : {};
+    Object.keys(obj).forEach(function (i) {
+      n[i] = clone(obj[i]);
+    });
+    return n;
+  }
+  /**
+   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equalArr(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0, len = a.length; i < len; i++) {
+      var ai = a[i];
+      var bi = b[i];
+      var isArrayA = Array.isArray(ai);
+      var isArrayB = Array.isArray(bi);
+
+      if (isArrayA && isArrayB) {
+        if (!equalArr(ai, bi)) {
+          return false;
+        }
+      } else if (isArrayA || isArrayB) {
+        return false;
+      }
+
+      if (ai !== bi) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+  /**
+   * 深度对比对象
+   * @param a
+   * @param b
+   * @returns {boolean}
+   */
+
+
+  function equal(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (isObject(a) && isObject(b)) {
+      var hash = {};
+
+      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
+        var k = arr[i];
+
+        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
+          return false;
+        }
+
+        hash[k] = true;
+      } // a没有b有则false
+
+
+      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
+        var _k = _arr[_i];
+
+        if (!hash.hasOwnProperty(_k)) {
+          return false;
+        }
+      }
+    } else if (isDate(a) && isDate(b)) {
+      return a.getTime() === b.getTime();
+    } else if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
+        if (!equal(a[_i2], b[_i2])) {
+          return false;
+        }
+      }
+    } else {
+      return a === b;
+    }
+
+    return true;
+  }
+
+  function extend(target, source, keys) {
+    if (source === null || _typeof(source) !== 'object') {
+      return target;
+    }
+
+    if (!keys) {
+      keys = Object.keys(source);
+    }
+
+    var i = 0;
+    var len = keys.length;
+
+    while (i < len) {
+      var k = keys[i];
+      target[k] = source[k];
+      i++;
+    }
+
+    return target;
+  }
+
+  function joinArr(arr, split) {
+    var s = arr.length ? arr[0] : '';
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+      s += split + arr[i];
+    }
+
+    return s;
+  }
+
+  function extendAnimate(ovd, nvd) {
+    var list = nvd.__animationList = ovd.animationList.splice(0);
+    list.forEach(function (item) {
+      item.__target = nvd; // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍
+
+      if (item.assigning) {
+        item.assignCurrentStyle();
+      }
+    });
+  }
+
+  var util = {
+    isObject: isObject,
+    isString: isString,
+    isFunction: isFunction,
+    isNumber: isNumber,
+    isBoolean: isBoolean,
+    isDate: isDate,
+    isNil: isNil,
+    isPrimitive: function isPrimitive(v) {
+      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
+    },
+    stringify: stringify,
+    joinSourceArray: function joinSourceArray(arr) {
+      return _joinSourceArray(arr);
+    },
+    encodeHtml: encodeHtml,
+    joinVirtualDom: joinVirtualDom,
+    joinVd: joinVd,
+    joinDef: joinDef,
+    rgba2int: rgba2int,
+    int2rgba: int2rgba,
+    arr2hash: arr2hash,
+    hash2arr: hash2arr,
+    clone: clone,
+    equalArr: equalArr,
+    equal: equal,
+    extend: extend,
+    joinArr: joinArr,
+    extendAnimate: extendAnimate
+  };
+
   function identity() {
     return [1, 0, 0, 1, 0, 0];
   } // 矩阵a*b，固定两个matrix都是长度6
@@ -532,9 +988,13 @@
       }
 
       a = a.slice(0);
-      a[4] += b[4];
-      a[5] += b[5];
+      a[4] = a[0] * b[4] + a[2] * b[5] + a[4];
+      a[5] = a[1] * b[4] + a[3] * b[5] + a[5];
       return a;
+    }
+
+    if (a[0] === 1 && a[1] === 0 && a[2] === 0 && a[3] === 1 && a[4] === 0 && a[5] === 0) {
+      return b;
     }
 
     return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
@@ -1023,463 +1483,6 @@
     matrix: matrix,
     tar: tar,
     geom: geom
-  };
-
-  // 类型为引用防止json仿造
-  var TYPE_PL = {
-    _: 0
-  };
-  var TYPE_VD = {
-    _: 1
-  };
-  var TYPE_GM = {
-    _: 2
-  };
-  var TYPE_CP = {
-    _: 3
-  };
-  var $$type = {
-    TYPE_VD: TYPE_VD,
-    TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP,
-    TYPE_PL: TYPE_PL
-  };
-
-  var toString = {}.toString;
-
-  function isType(type) {
-    return function (obj) {
-      return toString.call(obj) === '[object ' + type + ']';
-    };
-  }
-
-  var isObject = isType('Object');
-  var isString = isType('String');
-  var isFunction = isType('Function');
-  var isNumber = isType('Number');
-  var isBoolean = isType('Boolean');
-  var isDate = isType('Date');
-
-  function isNil(v) {
-    return v === undefined || v === null;
-  }
-
-  function _joinSourceArray(arr) {
-    var res = '';
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        res += _joinSourceArray(item);
-      } else {
-        res += stringify(item);
-      }
-    }
-
-    return res;
-  }
-
-  function stringify(s) {
-    if (isNil(s)) {
-      return '';
-    }
-
-    return s.toString();
-  }
-
-  function encodeHtml(s, prop) {
-    if (prop) {
-      return s.replace(/"/g, '&quot;');
-    }
-
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/ /g, '&nbsp;');
-  } // 根元素专用
-
-
-  function joinVirtualDom(vd) {
-    var s = '<defs>';
-    vd.defs.forEach(function (item) {
-      s += joinDef(item);
-    });
-    s += '</defs><g';
-
-    if (vd.bbClip) {
-      s += ' clip-path="' + vd.bbClip + '"';
-    }
-
-    s += '>';
-    vd.bb.forEach(function (item) {
-      s += joinVd(item);
-    });
-    s += '</g><g';
-
-    if (vd.conClip) {
-      s += ' clip-path="' + vd.conClip + '"';
-    }
-
-    s += '>';
-    vd.children.forEach(function (item) {
-      if (item.isMask || item.isClip) {
-        return;
-      }
-
-      s += joinVd(item);
-    });
-    s += '</g>';
-    return s;
-  } // 普通元素
-
-
-  function joinVd(vd) {
-    if (vd.type === 'item' || vd.type === 'img') {
-      var s = '';
-      vd.props.forEach(function (item) {
-        s += ' ' + item[0] + '="' + item[1] + '"';
-      });
-
-      if (vd.tagName === 'text') {
-        return '<text' + s + '>' + vd.content + '</text>';
-      }
-
-      return '<' + vd.tagName + s + '/>';
-    } else if (vd.type === 'text') {
-      var _s = ""; // text有许多lineBox
-
-      vd.children.forEach(function (item) {
-        _s += joinVd(item);
-      });
-      return '<g>' + _s + '</g>';
-    } else if (vd.type === 'dom' || vd.type === 'geom') {
-      var _s2 = '<g';
-
-      if (vd.bbClip) {
-        _s2 += ' clip-path="' + vd.bbClip + '"';
-      }
-
-      _s2 += '>';
-      vd.bb.forEach(function (item) {
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g><g';
-
-      if (vd.conClip) {
-        _s2 += ' clip-path="' + vd.conClip + '"';
-      }
-
-      _s2 += '>';
-      vd.children.forEach(function (item) {
-        if (item.isMask || item.isClip) {
-          return;
-        }
-
-        _s2 += joinVd(item);
-      });
-      _s2 += '</g>';
-      var opacity = vd.opacity,
-          transform = vd.transform,
-          mask = vd.mask,
-          clip = vd.clip,
-          filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
-    }
-  }
-
-  function joinDef(def) {
-    var s = '<' + def.tagName + ' id="' + def.uuid + '"';
-
-    if (def.tagName === 'mask' || def.tagName === 'clipPath') ; else if (def.tagName === 'filter') ; else {
-      s += ' gradientUnits="userSpaceOnUse"';
-    }
-
-    def.props.forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '>';
-    def.children.forEach(function (item) {
-      s += joinItem(item);
-    });
-    s += '</' + def.tagName + '>';
-    return s;
-  }
-
-  function joinItem(item) {
-    var s = '<' + item.tagName;
-    item.props.forEach(function (item) {
-      s += ' ' + item[0] + '="' + item[1] + '"';
-    });
-    s += '></' + item.tagName + '>';
-    return s;
-  }
-
-  function rgba2int(color) {
-    if (Array.isArray(color)) {
-      return color;
-    }
-
-    var res = [];
-
-    if (!color || color === 'transparent') {
-      res = [0, 0, 0, 0];
-    } else if (color.charAt(0) === '#') {
-      color = color.slice(1);
-
-      if (color.length === 3) {
-        res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
-        res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
-        res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
-      } else if (color.length === 6) {
-        res.push(parseInt(color.slice(0, 2), 16));
-        res.push(parseInt(color.slice(2, 4), 16));
-        res.push(parseInt(color.slice(4), 16));
-      } else {
-        res[0] = res[1] = res[2] = 0;
-      }
-
-      res[3] = 1;
-    } else {
-      var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
-
-      if (c) {
-        res = [parseInt(c[1]), parseInt(c[2]), parseInt(c[3])];
-
-        if (!isNil(c[4])) {
-          res[3] = parseFloat(c[4]);
-        } else {
-          res[3] = 1;
-        }
-      } else {
-        res = [0, 0, 0, 0];
-      }
-    }
-
-    return res;
-  }
-
-  function int2rgba(color) {
-    if (Array.isArray(color)) {
-      if (color.length === 4) {
-        return 'rgba(' + joinArr(color, ',') + ')';
-      } else if (color.length === 3) {
-        return 'rgba(' + joinArr(color, ',') + ',1)';
-      }
-    }
-
-    return color || 'rgba(0,0,0,0)';
-  }
-
-  function arr2hash(arr) {
-    var hash = {};
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-      var item = arr[i];
-
-      if (Array.isArray(item)) {
-        hash[item[0]] = item[1];
-      } else {
-        for (var list = Object.keys(item), j = list.length - 1; j >= 0; j--) {
-          var k = list[j];
-          hash[k] = item[k];
-        }
-      }
-    }
-
-    return hash;
-  }
-
-  function hash2arr(hash) {
-    if (Array.isArray(hash)) {
-      return hash;
-    }
-
-    var arr = [];
-
-    for (var list = Object.keys(hash), i = 0, len = list.length; i < len; i++) {
-      var k = list[i];
-      arr.push([k, hash[k]]);
-    }
-
-    return arr;
-  }
-
-  function clone(obj) {
-    if (isNil(obj) || _typeof(obj) !== 'object') {
-      return obj;
-    } // parse递归会出现内部先返回解析好的json，外部parse不能clone
-
-
-    if (obj.$$type === $$type.TYPE_PL || obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
-      return obj;
-    }
-
-    if (util.isDate(obj)) {
-      return new Date(obj);
-    }
-
-    var n = Array.isArray(obj) ? [] : {};
-    Object.keys(obj).forEach(function (i) {
-      n[i] = clone(obj[i]);
-    });
-    return n;
-  }
-  /**
-   * 简化的arr对比，arr中只有arr和其它类型，其它类型对比值或引用，arr递归
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equalArr(a, b) {
-    if (a.length !== b.length) {
-      return false;
-    }
-
-    for (var i = 0, len = a.length; i < len; i++) {
-      var ai = a[i];
-      var bi = b[i];
-      var isArrayA = Array.isArray(ai);
-      var isArrayB = Array.isArray(bi);
-
-      if (isArrayA && isArrayB) {
-        if (!equalArr(ai, bi)) {
-          return false;
-        }
-      } else if (isArrayA || isArrayB) {
-        return false;
-      }
-
-      if (ai !== bi) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-  /**
-   * 深度对比对象
-   * @param a
-   * @param b
-   * @returns {boolean}
-   */
-
-
-  function equal(a, b) {
-    if (a === b) {
-      return true;
-    }
-
-    if (isObject(a) && isObject(b)) {
-      var hash = {};
-
-      for (var i = 0, arr = Object.keys(a), len = arr.length; i < len; i++) {
-        var k = arr[i];
-
-        if (!b.hasOwnProperty(k) || !equal(a[k], b[k])) {
-          return false;
-        }
-
-        hash[k] = true;
-      } // a没有b有则false
-
-
-      for (var _i = 0, _arr = Object.keys(b), _len = _arr.length; _i < _len; _i++) {
-        var _k = _arr[_i];
-
-        if (!hash.hasOwnProperty(_k)) {
-          return false;
-        }
-      }
-    } else if (isDate(a) && isDate(b)) {
-      return a.getTime() === b.getTime();
-    } else if (Array.isArray(a) && Array.isArray(b)) {
-      if (a.length !== b.length) {
-        return false;
-      }
-
-      for (var _i2 = 0, _len2 = a.length; _i2 < _len2; _i2++) {
-        if (!equal(a[_i2], b[_i2])) {
-          return false;
-        }
-      }
-    } else {
-      return a === b;
-    }
-
-    return true;
-  }
-
-  function extend(target, source, keys) {
-    if (source === null || _typeof(source) !== 'object') {
-      return target;
-    }
-
-    if (!keys) {
-      keys = Object.keys(source);
-    }
-
-    var i = 0;
-    var len = keys.length;
-
-    while (i < len) {
-      var k = keys[i];
-      target[k] = source[k];
-      i++;
-    }
-
-    return target;
-  }
-
-  function joinArr(arr, split) {
-    var s = arr.length ? arr[0] : '';
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-      s += split + arr[i];
-    }
-
-    return s;
-  }
-
-  function extendAnimate(ovd, nvd) {
-    var list = nvd.__animationList = ovd.animationList.splice(0);
-    list.forEach(function (item) {
-      item.__target = nvd; // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍
-
-      if (item.assigning) {
-        item.assignCurrentStyle();
-      }
-    });
-  }
-
-  var util = {
-    isObject: isObject,
-    isString: isString,
-    isFunction: isFunction,
-    isNumber: isNumber,
-    isBoolean: isBoolean,
-    isDate: isDate,
-    isNil: isNil,
-    isPrimitive: function isPrimitive(v) {
-      return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
-    },
-    stringify: stringify,
-    joinSourceArray: function joinSourceArray(arr) {
-      return _joinSourceArray(arr);
-    },
-    encodeHtml: encodeHtml,
-    joinVirtualDom: joinVirtualDom,
-    joinVd: joinVd,
-    joinDef: joinDef,
-    rgba2int: rgba2int,
-    int2rgba: int2rgba,
-    arr2hash: arr2hash,
-    hash2arr: hash2arr,
-    clone: clone,
-    equalArr: equalArr,
-    equal: equal,
-    extend: extend,
-    joinArr: joinArr,
-    extendAnimate: extendAnimate
   };
 
   var PX = unit.PX,

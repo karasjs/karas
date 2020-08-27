@@ -1333,7 +1333,7 @@ class Xom extends Node {
           // repaint置空，如果reflow会重新生成空的
           __cacheStyle[i] = undefined;
           this.__cacheSvg = false;
-          if(rp.STYLE.hasOwnProperty(i)) {
+          if(!rp.STYLE.hasOwnProperty(i)) {
             lv = level.REFLOW;
             break;
           }

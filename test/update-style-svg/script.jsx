@@ -4,9 +4,12 @@ let o = karas.render(
   </svg>,
   '#test'
 );
+let input = document.querySelector('#base64');
+o.on('refresh', function(lv) {
+  input.value += lv;
+});
 o.ref.div.updateStyle({
   color: '#00F'
 }, function() {
-  let input = document.querySelector('#base64');
-  input.value = o.ref.div.computedStyle.color;
+  input.value += '/' + o.ref.div.computedStyle.color;
 });

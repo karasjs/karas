@@ -9983,7 +9983,7 @@
               __cacheStyle[i] = undefined;
               this.__cacheSvg = false;
 
-              if (repaint.STYLE.hasOwnProperty(i)) {
+              if (!repaint.STYLE.hasOwnProperty(i)) {
                 lv = level.REFLOW;
                 break;
               }

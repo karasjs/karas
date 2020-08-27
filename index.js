@@ -10464,7 +10464,7 @@
 
       var ref = props.ref;
 
-      if (util.isString(ref) && ref) {
+      if (util.isString(ref) && ref || util.isNumber(ref)) {
         owner.ref[ref] = vd;
       } else if (util.isFunction(ref)) {
         ref(vd);

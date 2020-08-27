@@ -96,7 +96,7 @@ function build(json, root, owner, host) {
       vd.__init();
     }
     let ref = props.ref;
-    if(util.isString(ref) && ref) {
+    if(util.isString(ref) && ref || util.isNumber(ref)) {
       owner.ref[ref] = vd;
     }
     else if(util.isFunction(ref)) {

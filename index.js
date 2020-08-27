@@ -10357,7 +10357,11 @@
   var Xom$1, Dom, Img, Geom, Component;
 
   function initRoot(cd, root) {
-    var children = build(flattenJson(cd), root, root);
+    var c = flattenJson({
+      children: cd,
+      $$type: TYPE_VD$1
+    });
+    var children = build(c.children, root, root);
     return relation(root, children);
   }
 
@@ -16458,7 +16462,7 @@
     repaint: repaint
   };
 
-  var version = "0.36.3";
+  var version = "0.36.4";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

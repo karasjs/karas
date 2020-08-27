@@ -7,7 +7,11 @@ const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 let Xom, Dom, Img, Geom, Component;
 
 function initRoot(cd, root) {
-  let children = build(flattenJson(cd), root, root);
+  let c = flattenJson({
+    children: cd,
+    $$type: TYPE_VD,
+  });
+  let children = build(c.children, root, root);
   return relation(root, children);
 }
 

@@ -525,6 +525,18 @@
 
 
   function multiply(a, b) {
+    // 特殊情况优化
+    if (b[0] === 1 && b[1] === 0 && b[2] === 0 && b[3] === 1) {
+      if (b[4] === 0 && b[5] === 0) {
+        return a;
+      }
+
+      a = a.slice(0);
+      a[4] += b[4];
+      a[5] += b[5];
+      return a;
+    }
+
     return [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
   }
 
@@ -9346,11 +9358,7 @@
         var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
 
         if (p) {
-          if (equalArr$2(matrix$1, [1, 0, 0, 1, 0, 0])) {
-            matrix$1 = p.matrixEvent;
-          } else {
-            matrix$1 = matrix.multiply(p.matrixEvent, matrix$1);
-          }
+          matrix$1 = matrix.multiply(p.matrixEvent, matrix$1);
         }
 
         this.__matrixEvent = matrix$1;

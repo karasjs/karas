@@ -5,6 +5,16 @@ function identity() {
 
 // 矩阵a*b，固定两个matrix都是长度6
 function multiply(a, b) {
+  // 特殊情况优化
+  if(b[0] === 1 && b[1] === 0 && b[2] === 0 && b[3] === 1) {
+    if(b[4] === 0 && b[5] === 0) {
+      return a;
+    }
+    a = a.slice(0);
+    a[4] += b[4];
+    a[5] += b[5];
+    return a;
+  }
   return [
     a[0] * b[0] + a[2] * b[1],
     a[1] * b[0] + a[3] * b[1],

@@ -738,12 +738,7 @@ class Xom extends Node {
     let renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(p) {
-      if(equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-        matrix = p.matrixEvent;
-      }
-      else {
-        matrix = mx.multiply(p.matrixEvent, matrix);
-      }
+      matrix = mx.multiply(p.matrixEvent, matrix);
     }
     this.__matrixEvent = matrix;
     if(renderMode === mode.CANVAS) {

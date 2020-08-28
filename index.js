@@ -10737,9 +10737,9 @@
             }
           });
         } else if (sr instanceof Component) {
-          console.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
+          console.warn('Component render() return a component: ' + this + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
-          throw new Error('Component render() must return a dom/text: ' + this.tagName);
+          throw new Error('Component render() must return a dom/text: ' + this);
         }
 
         sr.__host = this;
@@ -10810,11 +10810,6 @@
         else {
             sr.__measure(renderMode, ctx, true);
           }
-      }
-    }, {
-      key: "tagName",
-      get: function get() {
-        return this.__tagName;
       }
     }, {
       key: "shadowRoot",

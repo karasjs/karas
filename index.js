@@ -13761,6 +13761,8 @@
             this.__height = _value;
           }
         }
+
+        this.__offScreen = !!this.props.offScreen;
       }
     }, {
       key: "__genHtml",
@@ -13925,7 +13927,10 @@
             defs = this.defs,
             style = this.style,
             currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            width = this.width,
+            height = this.height,
+            offScreen = this.offScreen;
 
         if (isDestroyed) {
           return;
@@ -13944,13 +13949,29 @@
 
 
         currentStyle.width = style.width = {
-          value: this.width,
+          value: width,
           unit: PX$6
         };
         currentStyle.height = style.height = {
-          value: this.height,
+          value: height,
           unit: PX$6
-        }; // 目前3个等级：组件state变更的STATE、dom变化布局的REFLOW、动画渲染的REPAINT
+        }; // 是否开启离屏模式
+
+        var offCanvas;
+        var sourceCtx;
+
+        if (offScreen) {
+          offCanvas = inject.getCacheCanvas(width, height, '__$$offScreen$$__');
+
+          if (offCanvas) {
+            sourceCtx = ctx;
+            ctx = offCanvas.ctx;
+          } else {
+            this.__offScreen = offScreen = false;
+            console.error('Can not use offScreen mode, inject.getCacheCanvas() return null');
+          }
+        } // 目前2个等级：dom变化布局的REFLOW、动画渲染的REPAINT
+
 
         var lv = this.__refreshLevel;
         this.__refreshLevel = level.REPAINT;
@@ -13981,7 +14002,7 @@
           }
 
           if (renderMode === mode.CANVAS) {
-            _this3.__clear();
+            _this3.__clear(ctx);
           }
 
           _this3.render(renderMode, ctx, defs);
@@ -13998,6 +14019,12 @@
 
             _this3.node.__vd = nvd;
             _this3.node.__defs = defs;
+          }
+
+          if (offScreen) {
+            _this3.__clear(sourceCtx);
+
+            sourceCtx.drawImage(offCanvas.canvas, 0, 0);
           } // 特殊cb，供小程序绘制完回调使用
 
 
@@ -14150,14 +14177,13 @@
       }
     }, {
       key: "__clear",
-      value: function __clear() {
+      value: function __clear(ctx) {
         // 可能会调整宽高，所以每次清除用最大值
         this.__mw = Math.max(this.__mw, this.width);
         this.__mh = Math.max(this.__mh, this.height); // 清除前得恢复默认matrix，防止每次布局改变了属性
 
-        this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-        this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, this.__mw, this.__mh);
       }
     }, {
       key: "node",
@@ -14173,6 +14199,11 @@
       key: "ctx",
       get: function get() {
         return this.__ctx;
+      }
+    }, {
+      key: "offScreen",
+      get: function get() {
+        return this.__offScreen;
       }
     }, {
       key: "defs",

@@ -84,6 +84,7 @@ class Root extends Dom {
         this.__height = value;
       }
     }
+    this.__offScreen = !!this.props.offScreen;
   }
 
   __genHtml() {
@@ -208,7 +209,7 @@ class Root extends Dom {
   }
 
   refresh(cb) {
-    let { isDestroyed, renderMode, ctx, defs, style, currentStyle, computedStyle } = this;
+    let { isDestroyed, renderMode, ctx, defs, style, currentStyle, computedStyle, width, height, offScreen } = this;
     if(isDestroyed) {
       return;
     }
@@ -223,14 +224,28 @@ class Root extends Dom {
     }
     // 根节点满宽高
     currentStyle.width = style.width = {
-      value: this.width,
+      value: width,
       unit: PX,
     };
     currentStyle.height = style.height = {
-      value: this.height,
+      value: height,
       unit: PX,
     };
-    // 目前3个等级：组件state变更的STATE、dom变化布局的REFLOW、动画渲染的REPAINT
+    // 是否开启离屏模式
+    let offCanvas;
+    let sourceCtx;
+    if(offScreen) {
+      offCanvas = inject.getCacheCanvas(width, height, '__$$offScreen$$__');
+      if(offCanvas) {
+        sourceCtx = ctx;
+        ctx = offCanvas.ctx;
+      }
+      else {
+        this.__offScreen = offScreen = false;
+        console.error('Can not use offScreen mode, inject.getCacheCanvas() return null');
+      }
+    }
+    // 目前2个等级：dom变化布局的REFLOW、动画渲染的REPAINT
     let lv = this.__refreshLevel;
     this.__refreshLevel = level.REPAINT;
     if(lv >= level.REFLOW) {
@@ -256,7 +271,7 @@ class Root extends Dom {
         });
       }
       if(renderMode === mode.CANVAS) {
-        this.__clear();
+        this.__clear(ctx);
       }
       this.render(renderMode, ctx, defs);
       if(renderMode === mode.SVG) {
@@ -270,6 +285,10 @@ class Root extends Dom {
         }
         this.node.__vd = nvd;
         this.node.__defs = defs;
+      }
+      if(offScreen) {
+        this.__clear(sourceCtx);
+        sourceCtx.drawImage(offCanvas.canvas, 0, 0);
       }
       // 特殊cb，供小程序绘制完回调使用
       if(isFunction(cb)) {
@@ -393,13 +412,13 @@ class Root extends Dom {
     }
   }
 
-  __clear() {
+  __clear(ctx) {
     // 可能会调整宽高，所以每次清除用最大值
     this.__mw = Math.max(this.__mw, this.width);
     this.__mh = Math.max(this.__mh, this.height);
     // 清除前得恢复默认matrix，防止每次布局改变了属性
-    this.__ctx.setTransform(1, 0, 0, 1, 0, 0);
-    this.__ctx.clearRect(0, 0, this.__mw, this.__mh);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, this.__mw, this.__mh);
   }
 
   get node() {
@@ -412,6 +431,10 @@ class Root extends Dom {
 
   get ctx() {
     return this.__ctx;
+  }
+
+  get offScreen() {
+    return this.__offScreen;
   }
 
   get defs() {

@@ -254,7 +254,8 @@ Object.keys(repaint.GEOM).concat([
   'animate',
   'removeAnimate',
   'clearAnimate',
-  'updateStyle'
+  'updateStyle',
+  '__cancelCacheSvg',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

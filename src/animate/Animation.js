@@ -7,6 +7,8 @@ import frame from './frame';
 import easing from './easing';
 import level from './level';
 import repaint from './repaint';
+import Xom from '../node/Xom';
+import Component from '../node/Component';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
@@ -297,7 +299,11 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
 function assignStyle(style, animation) {
   let res = {};
   let target = animation.target;
+  let hasZ;
   animation.keys.forEach(i => {
+    if(i === 'zIndex') {
+      hasZ = true;
+    }
     let v = style[i];
     res[i] = v;
     // geom的属性变化
@@ -313,6 +319,10 @@ function assignStyle(style, animation) {
     }
   });
   target.__cacheSvg = false;
+  // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
+  if(hasZ && /svg/i.test(target.root.tagName)) {
+    target.__cancelCacheSvg();
+  }
   return res;
 }
 

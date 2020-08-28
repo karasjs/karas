@@ -6564,6 +6564,498 @@
     }
   };
 
+  var TYPE_PL$1 = $$type.TYPE_PL,
+      TYPE_VD$1 = $$type.TYPE_VD,
+      TYPE_GM$1 = $$type.TYPE_GM,
+      TYPE_CP$1 = $$type.TYPE_CP;
+  var Xom, Dom, Img, Geom, Component;
+
+  function initRoot(cd, root) {
+    var c = flattenJson({
+      children: cd,
+      $$type: TYPE_VD$1
+    });
+    var children = build(c.children, root, root);
+    return relation(root, children);
+  }
+
+  function initCp(json, root, owner) {
+    if (util.isObject(json)) {
+      // cp的flatten在__init中自己做
+      var vd = build(json, root, owner, owner);
+
+      if (Array.isArray(vd)) {
+        relation(owner, vd);
+      }
+
+      return vd;
+    } else {
+      return new Text(json);
+    }
+  }
+  /**
+   * 将初始json文件生成virtualDom
+   * @param json
+   * @param root
+   * @param owner
+   * @param host
+   * @returns vd
+   */
+
+
+  function build(json, root, owner, host) {
+    if (Array.isArray(json)) {
+      return json.map(function (item) {
+        return build(item, root, owner, host);
+      });
+    }
+
+    var vd;
+
+    if (util.isObject(json) && json.$$type) {
+      var tagName = json.tagName,
+          props = json.props,
+          children = json.children,
+          klass = json.klass,
+          _$$type = json.$$type,
+          inherit = json.inherit,
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
+
+      if (_$$type === TYPE_PL$1) {
+        return json.value;
+      }
+
+      if (_$$type === TYPE_VD$1) {
+        if (tagName === 'div' || tagName === 'span') {
+          vd = new Dom(tagName, props);
+        } else if (tagName === 'img') {
+          vd = new Img(tagName, props);
+        }
+
+        if (Array.isArray(children)) {
+          children = relation(vd, build(children, root, owner, host));
+        } else {
+          children = [];
+        }
+
+        vd.__children = children;
+      } else if (_$$type === TYPE_GM$1) {
+        var _klass = Geom.getRegister(tagName);
+
+        vd = new _klass(tagName, props);
+      } else if (_$$type === TYPE_CP$1) {
+        vd = new klass(props);
+        vd.__tagName = tagName;
+      } else {
+        return new Text(json);
+      } // 根parse需要用到真正的vd引用
+
+
+      json.vd = vd; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
+
+      if (__animateRecords) {
+        vd.__animateRecords = __animateRecords;
+
+        __animateRecords.list.forEach(function (item) {
+          item.target = vd;
+        });
+      } // 更新过程中key相同的vd继承动画
+
+
+      if (inherit) {
+        util.extendAnimate(inherit, vd);
+      }
+
+      vd.__root = root;
+
+      if (host) {
+        vd.__host = host;
+      }
+
+      if (_$$type === TYPE_CP$1) {
+        vd.__init();
+      }
+
+      var ref = props.ref;
+
+      if (util.isString(ref) && ref || util.isNumber(ref)) {
+        owner.ref[ref] = vd;
+      } else if (util.isFunction(ref)) {
+        ref(vd);
+      }
+
+      return vd;
+    }
+
+    return new Text(json);
+  }
+  /**
+   * 2. 打平children中的数组，变成一维
+   * 3. 合并相连的Text节点，即string内容
+   */
+
+
+  function flattenJson(parent) {
+    if (Array.isArray(parent)) {
+      return parent.map(function (item) {
+        return flattenJson(item);
+      });
+    } else if (!parent || [TYPE_VD$1, TYPE_GM$1, TYPE_CP$1].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
+      return parent;
+    }
+
+    var list = [];
+    traverseJson(list, parent.children, {
+      lastText: null
+    });
+    parent.children = list;
+    return parent;
+  }
+
+  function traverseJson(list, children, options) {
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        traverseJson(list, item, options);
+      });
+    } else if (children && (children.$$type === TYPE_VD$1 || children.$$type === TYPE_GM$1)) {
+      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
+        throw new Error('Can not nest canvas/svg');
+      }
+
+      if (children.$$type === TYPE_VD$1) {
+        flattenJson(children.children);
+      }
+
+      list.push(children);
+      options.lastText = null;
+    } else if (children && (children.$$type === TYPE_CP$1 || children.$$type === TYPE_PL$1)) {
+      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
+
+      options.lastText = null;
+    } // 排除掉空的文本，连续的text合并
+    else if (!util.isNil(children) && children !== '') {
+        if (options.lastText !== null) {
+          list[list.length - 1] = options.lastText += children;
+        } else {
+          list.push(children);
+        }
+      }
+  }
+  /**
+   * 设置关系，父子和兄弟
+   * @param parent
+   * @param children
+   * @param options
+   * @returns {Xom|Text|Component}
+   */
+
+
+  function relation(parent, children) {
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+    if (Array.isArray(children)) {
+      children.forEach(function (item) {
+        relation(parent, item, options);
+      });
+    } else if (children instanceof Xom || children instanceof Component || children instanceof Text) {
+      children.__parent = parent;
+
+      if (options.prev) {
+        options.prev.__next = children;
+        children.__prev = options.prev;
+      }
+
+      options.prev = children;
+
+      if (children instanceof Dom) {
+        relation(children, children.children);
+      } // 文字视作为父节点的直接文字子节点
+      else if (children instanceof Component) {
+          var sr = children.shadowRoot;
+
+          if (sr instanceof Text) {
+            sr.__parent = parent;
+          }
+        }
+    }
+
+    return children;
+  }
+
+  var builder = {
+    ref: function ref(o) {
+      Xom = o.Xom;
+      Dom = o.Dom;
+      Img = o.Img;
+      Geom = o.Geom;
+      Component = o.Component;
+    },
+    initRoot: initRoot,
+    initCp: initCp,
+    flattenJson: flattenJson,
+    relation: relation,
+    build: build
+  };
+
+  var isNil$3 = util.isNil,
+      isFunction$3 = util.isFunction,
+      clone$1 = util.clone,
+      extend$1 = util.extend;
+  /**
+   * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
+   * @param cp
+   */
+
+  function setUpdateFlag(cp) {
+    cp.__hasUpdate = true;
+    var host = cp.host;
+
+    if (host) {
+      setUpdateFlag(host);
+    }
+  }
+
+  var Component$1 = /*#__PURE__*/function (_Event) {
+    _inherits(Component, _Event);
+
+    var _super = _createSuper(Component);
+
+    function Component() {
+      var _this;
+
+      var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      _classCallCheck(this, Component);
+
+      _this = _super.call(this); // 构建工具中都是arr，手写可能出现hash情况
+
+      if (Array.isArray(props)) {
+        _this.props = util.arr2hash(props);
+      } else {
+        _this.props = props;
+      }
+
+      _this.__parent = null;
+      _this.__host = null;
+      _this.__ref = {};
+      _this.__state = {};
+      _this.__isMounted = false;
+      return _this;
+    }
+
+    _createClass(Component, [{
+      key: "setState",
+      value: function setState(n, cb) {
+        var _this2 = this;
+
+        if (isNil$3(n)) {
+          n = {};
+        } else {
+          var state = clone$1(this.state);
+          n = extend$1(state, n);
+        }
+
+        var root = this.root;
+
+        if (root && this.__isMounted) {
+          root.delRefreshTask(this.__task);
+          this.__task = {
+            before: function before() {
+              // 标识更新
+              _this2.__nextState = n;
+              setUpdateFlag(_this2);
+            },
+            after: function after() {
+              if (isFunction$3(cb)) {
+                cb();
+              }
+            },
+            __state: true // 特殊标识来源让root刷新时识别
+
+          };
+          root.addRefreshTask(this.__task);
+        } // 构造函数中调用还未render，
+        else if (isFunction$3(cb)) {
+            this.__state = n;
+            cb();
+          }
+      }
+      /**
+       * build中调用初始化，json有值时是update过程才有，且处理过flatten
+       * @param json
+       * @private
+       */
+
+    }, {
+      key: "__init",
+      value: function __init(json) {
+        var _this3 = this;
+
+        var root = this.root;
+        var cd = json || builder.flattenJson(this.render());
+        var sr = builder.initCp(cd, root, this, this);
+        this.__cd = cd;
+
+        if (sr instanceof Text) {
+          // 文字视作为父节点的直接文字子节点，在builder里做
+          console.warn('Component render() return a text, should not inherit style/event');
+        } else if (sr instanceof Node) {
+          var style = css.normalize(this.props.style || {});
+          var keys = Object.keys(style);
+          extend$1(sr.style, style, keys);
+          extend$1(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
+
+          Object.keys(this.props).forEach(function (k) {
+            var v = _this3.props[k];
+
+            if (/^on[a-zA-Z]/.test(k)) {
+              k = k.slice(2).toLowerCase();
+              sr.listener[k] = v;
+            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
+              k = k.slice(3);
+
+              _this3.on(k, v);
+            }
+          });
+        } else if (sr instanceof Component) {
+          console.warn('Component render() return a component: ' + this + ' -> ' + sr.tagName + ', should not inherit style/event');
+        } else {
+          throw new Error('Component render() must return a dom/text: ' + this);
+        }
+
+        sr.__host = this;
+        this.__shadowRoot = sr;
+
+        if (!this.__isMounted) {
+          this.__isMounted = true;
+          var componentDidMount = this.componentDidMount;
+
+          if (isFunction$3(componentDidMount)) {
+            root.once(Event.REFRESH, function () {
+              componentDidMount.call(_this3);
+            });
+          }
+        }
+      }
+    }, {
+      key: "render",
+      value: function render() {}
+    }, {
+      key: "__destroy",
+      value: function __destroy() {
+        if (this.isDestroyed) {
+          return;
+        }
+
+        this.__isDestroyed = true;
+        var componentWillUnmount = this.componentWillUnmount;
+
+        if (isFunction$3(componentWillUnmount)) {
+          componentWillUnmount.call(this);
+          this.__isMounted = false;
+        }
+
+        this.root.delRefreshTask(this.__task);
+
+        if (this.shadowRoot) {
+          this.shadowRoot.__destroy();
+        }
+
+        this.__shadowRoot = null;
+        this.__parent = null;
+      }
+    }, {
+      key: "__emitEvent",
+      value: function __emitEvent(e) {
+        var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          return;
+        }
+
+        var res = sr.__emitEvent(e);
+
+        if (res) {
+          e.target = this;
+          return true;
+        }
+      }
+    }, {
+      key: "__measure",
+      value: function __measure(renderMode, ctx) {
+        var sr = this.shadowRoot;
+
+        if (sr instanceof Text) {
+          sr.__measure(renderMode, ctx);
+        } // 其它类型为Xom或Component
+        else {
+            sr.__measure(renderMode, ctx, true);
+          }
+      }
+    }, {
+      key: "shadowRoot",
+      get: function get() {
+        return this.__shadowRoot;
+      }
+    }, {
+      key: "root",
+      get: function get() {
+        return this.__root;
+      }
+    }, {
+      key: "host",
+      get: function get() {
+        return this.__host;
+      }
+    }, {
+      key: "parent",
+      get: function get() {
+        return this.__parent;
+      }
+    }, {
+      key: "ref",
+      get: function get() {
+        return this.__ref;
+      }
+    }, {
+      key: "state",
+      get: function get() {
+        return this.__state;
+      },
+      set: function set(v) {
+        this.__state = v;
+      }
+    }, {
+      key: "isDestroyed",
+      get: function get() {
+        return this.__isDestroyed;
+      }
+    }]);
+
+    return Component;
+  }(Event);
+
+  Object.keys(repaint.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+    Object.defineProperty(Component$1.prototype, fn, {
+      get: function get() {
+        var sr = this.shadowRoot;
+
+        if (sr) {
+          return sr[fn];
+        }
+      }
+    });
+  });
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', '__cancelCacheSvg'].forEach(function (fn) {
+    Component$1.prototype[fn] = function () {
+      var sr = this.shadowRoot;
+
+      if (sr && isFunction$3(sr[fn])) {
+        return sr[fn].apply(sr, arguments);
+      }
+    };
+  });
+
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -6571,11 +7063,11 @@
       RGBA$1 = unit.RGBA,
       STRING$1 = unit.STRING,
       NUMBER$2 = unit.NUMBER;
-  var isNil$3 = util.isNil,
-      isFunction$3 = util.isFunction,
+  var isNil$4 = util.isNil,
+      isFunction$4 = util.isFunction,
       isNumber$1 = util.isNumber,
       isObject$2 = util.isObject,
-      clone$1 = util.clone,
+      clone$2 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
@@ -6617,7 +7109,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!isNil$3(v) && !hash.hasOwnProperty(k)) {
+        if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
           keys.push(k);
         }
@@ -6647,7 +7139,7 @@
       keys.forEach(function (k) {
         var v = style[k]; // geom的属性可能在帧中没有
 
-        if (isNil$3(v)) {
+        if (isNil$4(v)) {
           return;
         }
 
@@ -6759,7 +7251,7 @@
       var n = frameStyle[k];
       var p = lastStyle[k]; // 前后均非空对比
 
-      if (!isNil$3(n) && !isNil$3(p)) {
+      if (!isNil$4(n) && !isNil$4(p)) {
         if (!equalStyle(k, n, p, target)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
@@ -6773,7 +7265,7 @@
           }
         }
       } // 有一个为空时即不等
-      else if (!isNil$3(n) || !isNil$3(p)) {
+      else if (!isNil$4(n) || !isNil$4(p)) {
           res = true;
 
           if (isStyleReflow(k)) {
@@ -6801,7 +7293,12 @@
   function assignStyle(style, animation) {
     var res = {};
     var target = animation.target;
+    var hasZ;
     animation.keys.forEach(function (i) {
+      if (i === 'zIndex') {
+        hasZ = true;
+      }
+
       var v = style[i];
       res[i] = v; // geom的属性变化
 
@@ -6815,7 +7312,12 @@
           target.__cacheStyle[i] = undefined;
         }
     });
-    target.__cacheSvg = false;
+    target.__cacheSvg = false; // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
+
+    if (hasZ && /svg/i.test(target.root.tagName)) {
+      target.__cancelCacheSvg();
+    }
+
     return res;
   }
   /**
@@ -7170,12 +7672,12 @@
 
       res.v = diff;
     } else if (repaint.GEOM.hasOwnProperty(k)) {
-      if (isNil$3(p)) {
+      if (isNil$4(p)) {
         return;
       } // 特殊处理multi
       else if (target.isMulti) {
           if (k === 'points' || k === 'controls') {
-            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+            if (isNil$4(n) || isNil$4(p) || equalArr$1(p, n)) {
               return;
             }
 
@@ -7185,7 +7687,7 @@
               var _pv = p[_i6];
               var _nv = n[_i6];
 
-              if (isNil$3(_pv) || isNil$3(_nv)) {
+              if (isNil$4(_pv) || isNil$4(_nv)) {
                 res.v.push(null);
               } else {
                 var v2 = [];
@@ -7194,7 +7696,7 @@
                   var pv2 = _pv[j];
                   var nv2 = _nv[j];
 
-                  if (isNil$3(pv2) || isNil$3(nv2)) {
+                  if (isNil$4(pv2) || isNil$4(nv2)) {
                     v2.push(null);
                   } else {
                     var v3 = [];
@@ -7203,7 +7705,7 @@
                       var pv3 = pv2[_k];
                       var nv3 = nv2[_k]; // control由4点变2点
 
-                      if (isNil$3(pv3) || isNil$3(nv3)) {
+                      if (isNil$4(pv3) || isNil$4(nv3)) {
                         v3.push(0);
                       } else {
                         v3.push(nv3 - pv3);
@@ -7218,7 +7720,7 @@
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
-            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+            if (isNil$4(n) || isNil$4(p) || equalArr$1(p, n)) {
               return;
             }
 
@@ -7228,7 +7730,7 @@
               var _pv2 = p[_i7];
               var _nv2 = n[_i7];
 
-              if (isNil$3(_pv2) || isNil$3(_nv2)) {
+              if (isNil$4(_pv2) || isNil$4(_nv2)) {
                 res.v.push(null);
               } else {
                 res.v.push([_nv2[0] - _pv2[0], _nv2[1] - _pv2[1]]);
@@ -7245,7 +7747,7 @@
               var _pv3 = p[_i8];
               var _nv3 = n[_i8];
 
-              if (isNil$3(_pv3) || isNil$3(_nv3)) {
+              if (isNil$4(_pv3) || isNil$4(_nv3)) {
                 _v15.push(0);
               }
 
@@ -7256,7 +7758,7 @@
           }
         } // 非multi特殊处理这几类数组类型数据
         else if (k === 'points' || k === 'controls') {
-            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+            if (isNil$4(n) || isNil$4(p) || equalArr$1(p, n)) {
               return;
             }
 
@@ -7266,7 +7768,7 @@
               var _pv4 = p[_i9];
               var _nv4 = n[_i9];
 
-              if (isNil$3(_pv4) || isNil$3(_nv4)) {
+              if (isNil$4(_pv4) || isNil$4(_nv4)) {
                 res.v.push(null);
               } else {
                 var _v16 = [];
@@ -7275,7 +7777,7 @@
                   var _pv5 = _pv4[_j];
                   var _nv5 = _nv4[_j]; // control由4点变2点
 
-                  if (isNil$3(_pv5) || isNil$3(_nv5)) {
+                  if (isNil$4(_pv5) || isNil$4(_nv5)) {
                     _v16.push(0);
                   } else {
                     _v16.push(_nv5 - _pv5);
@@ -7286,7 +7788,7 @@
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
-            if (isNil$3(n) || isNil$3(p) || equalArr$1(p, n)) {
+            if (isNil$4(n) || isNil$4(p) || equalArr$1(p, n)) {
               return;
             }
 
@@ -7385,7 +7887,7 @@
 
 
   function calIntermediateStyle(frame, percent, target) {
-    var style = clone$1(frame.style);
+    var style = clone$2(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction !== linear) {
@@ -7476,14 +7978,14 @@
                 var o = _st[_i12];
                 var n = v[_i12];
 
-                if (!isNil$3(o) && !isNil$3(n)) {
+                if (!isNil$4(o) && !isNil$4(n)) {
                   for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
                     var o2 = o[j];
                     var n2 = n[j];
 
-                    if (!isNil$3(o2) && !isNil$3(n2)) {
+                    if (!isNil$4(o2) && !isNil$4(n2)) {
                       for (var _k2 = 0, len3 = Math.min(o2.length, n2.length); _k2 < len3; _k2++) {
-                        if (!isNil$3(o2[_k2]) && !isNil$3(n2[_k2])) {
+                        if (!isNil$4(o2[_k2]) && !isNil$4(n2[_k2])) {
                           o2[_k2] += n2[_k2] * percent;
                         }
                       }
@@ -7495,12 +7997,12 @@
               v.forEach(function (item, i) {
                 var st2 = _st[i];
 
-                if (!isNil$3(item) && !isNil$3(st2)) {
+                if (!isNil$4(item) && !isNil$4(st2)) {
                   for (var _i13 = 0, _len8 = Math.min(st2.length, item.length); _i13 < _len8; _i13++) {
                     var _o = st2[_i13];
                     var _n = item[_i13];
 
-                    if (!isNil$3(_o) && !isNil$3(_n)) {
+                    if (!isNil$4(_o) && !isNil$4(_n)) {
                       st2[_i13] += _n * percent;
                     }
                   }
@@ -7508,7 +8010,7 @@
               });
             } else {
               v.forEach(function (item, i) {
-                if (!isNil$3(item) && !isNil$3(_st[i])) {
+                if (!isNil$4(item) && !isNil$4(_st[i])) {
                   _st[i] += item * percent;
                 }
               });
@@ -7519,24 +8021,24 @@
                 var _o2 = _st[_i14];
                 var _n2 = v[_i14];
 
-                if (!isNil$3(_o2) && !isNil$3(_n2)) {
+                if (!isNil$4(_o2) && !isNil$4(_n2)) {
                   for (var _j2 = 0, _len10 = Math.min(_o2.length, _n2.length); _j2 < _len10; _j2++) {
-                    if (!isNil$3(_o2[_j2]) && !isNil$3(_n2[_j2])) {
+                    if (!isNil$4(_o2[_j2]) && !isNil$4(_n2[_j2])) {
                       _o2[_j2] += _n2[_j2] * percent;
                     }
                   }
                 }
               }
             } else if (k === 'controlA' || k === 'controlB') {
-              if (!isNil$3(_st[0]) && !isNil$3(v[0])) {
+              if (!isNil$4(_st[0]) && !isNil$4(v[0])) {
                 _st[0] += v[0] * percent;
               }
 
-              if (!isNil$3(_st[1]) && !isNil$3(v[1])) {
+              if (!isNil$4(_st[1]) && !isNil$4(v[1])) {
                 _st[1] += v[1] * percent;
               }
             } else {
-              if (!isNil$3(_st) && !isNil$3(v)) {
+              if (!isNil$4(_st) && !isNil$4(v)) {
                 style[k] += v * percent;
               }
             }
@@ -7549,7 +8051,7 @@
   }
 
   function gotoOverload(options, cb) {
-    if (isFunction$3(options)) {
+    if (isFunction$4(options)) {
       cb = options;
       options = {};
     }
@@ -7572,7 +8074,7 @@
       _this = _super.call(this);
       _this.__id = uuid++;
       _this.__target = target;
-      list = clone$1(list || []);
+      list = clone$2(list || []);
 
       if (Array.isArray(list)) {
         _this.__list = list.filter(function (item) {
@@ -7679,21 +8181,21 @@
 
 
         if (list.length === 1) {
-          list[0] = clone$1(list[0]);
+          list[0] = clone$2(list[0]);
 
           if (list[0].offset === 1) {
             list.unshift({
               offset: 0
             });
           } else {
-            var copy = clone$1(list[0]);
+            var copy = clone$2(list[0]);
             copy.offset = 1;
             list.push(copy);
           }
         } // 强制clone防止同引用
         else {
             list.forEach(function (item, i) {
-              list[i] = clone$1(item);
+              list[i] = clone$2(item);
             });
           } // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
@@ -7768,7 +8270,7 @@
         } // 反向存储帧的倒排结果
 
 
-        var framesR = clone$1(frames).reverse();
+        var framesR = clone$2(frames).reverse();
         framesR.forEach(function (item) {
           item.time = duration - item.time;
           item.transition = [];
@@ -7829,7 +8331,7 @@
 
           _this2.emit(Event.FINISH);
 
-          if (isFunction$3(cb)) {
+          if (isFunction$4(cb)) {
             cb();
           }
         }; // 同步执行，用在finish()这种主动调用
@@ -7844,7 +8346,7 @@
             _this2.emit(Event.PLAY);
           }
 
-          if (isFunction$3(_this2.__playCb)) {
+          if (isFunction$4(_this2.__playCb)) {
             _this2.__playCb(diff, isDelay);
 
             _this2.__playCb = null;
@@ -8273,7 +8775,7 @@
 
             _this5.emit(Event.CANCEL);
 
-            if (isFunction$3(cb)) {
+            if (isFunction$4(cb)) {
               cb();
             }
           };
@@ -8363,7 +8865,7 @@
 
           _this6.__cancelTask();
 
-          if (isFunction$3(cb)) {
+          if (isFunction$4(cb)) {
             cb(diff);
           }
         });
@@ -8685,10 +9187,10 @@
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING,
       INHERIT$2 = unit.INHERIT;
-  var clone$2 = util.clone,
+  var clone$3 = util.clone,
       int2rgba$2 = util.int2rgba,
       equalArr$2 = util.equalArr,
-      extend$1 = util.extend,
+      extend$2 = util.extend,
       joinArr$1 = util.joinArr;
   var normalize$2 = css.normalize,
       calRelative$1 = css.calRelative,
@@ -8903,7 +9405,7 @@
 
   function empty() {}
 
-  var Xom = /*#__PURE__*/function (_Node) {
+  var Xom$1 = /*#__PURE__*/function (_Node) {
     _inherits(Xom, _Node);
 
     var _super = _createSuper(Xom);
@@ -9207,7 +9709,7 @@
 
         if (renderMode === mode.SVG) {
           if (this.__cacheSvg) {
-            var n = extend$1({}, this.__virtualDom);
+            var n = extend$2({}, this.__virtualDom);
             n.cache = true;
             this.__virtualDom = n;
             return;
@@ -9777,7 +10279,7 @@
                   }); // 再画重复的十字和4角象限
 
                   repeat.forEach(function (item) {
-                    var copy = clone$2(props);
+                    var copy = clone$3(props);
 
                     if (needResize) {
                       var _matrix3 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -10107,6 +10609,11 @@
         }
       }
     }, {
+      key: "__cancelCacheSvg",
+      value: function __cancelCacheSvg() {
+        this.__cacheSvg = false;
+      }
+    }, {
       key: "__getRg",
       value: function __getRg(renderMode, ctx, defs, gd) {
         if (renderMode === mode.CANVAS) {
@@ -10139,6 +10646,7 @@
 
         if (root) {
           var lv = level.REPAINT;
+          var hasZ;
 
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
@@ -10150,14 +10658,23 @@
                 lv = level.REFLOW;
                 break;
               }
+
+              if (i === 'zIndex') {
+                hasZ = true;
+              }
             }
+          } // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
+
+
+          if (lv === level.REPAINT && hasZ && /svg/i.test(root.tagName)) {
+            this.__cancelCacheSvg();
           }
 
           root.addRefreshTask(this.__task = {
             before: function before() {
               var format = normalize$2(style);
-              extend$1(__style, format);
-              extend$1(__currentStyle, format);
+              extend$2(__style, format);
+              extend$2(__currentStyle, format);
               root.setRefreshLevel(lv);
             },
             after: cb
@@ -10514,498 +11031,6 @@
     geom: geom$2
   };
 
-  var TYPE_PL$1 = $$type.TYPE_PL,
-      TYPE_VD$1 = $$type.TYPE_VD,
-      TYPE_GM$1 = $$type.TYPE_GM,
-      TYPE_CP$1 = $$type.TYPE_CP;
-  var Xom$1, Dom, Img, Geom, Component;
-
-  function initRoot(cd, root) {
-    var c = flattenJson({
-      children: cd,
-      $$type: TYPE_VD$1
-    });
-    var children = build(c.children, root, root);
-    return relation(root, children);
-  }
-
-  function initCp(json, root, owner) {
-    if (util.isObject(json)) {
-      // cp的flatten在__init中自己做
-      var vd = build(json, root, owner, owner);
-
-      if (Array.isArray(vd)) {
-        relation(owner, vd);
-      }
-
-      return vd;
-    } else {
-      return new Text(json);
-    }
-  }
-  /**
-   * 将初始json文件生成virtualDom
-   * @param json
-   * @param root
-   * @param owner
-   * @param host
-   * @returns vd
-   */
-
-
-  function build(json, root, owner, host) {
-    if (Array.isArray(json)) {
-      return json.map(function (item) {
-        return build(item, root, owner, host);
-      });
-    }
-
-    var vd;
-
-    if (util.isObject(json) && json.$$type) {
-      var tagName = json.tagName,
-          props = json.props,
-          children = json.children,
-          klass = json.klass,
-          _$$type = json.$$type,
-          inherit = json.inherit,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
-
-      if (_$$type === TYPE_PL$1) {
-        return json.value;
-      }
-
-      if (_$$type === TYPE_VD$1) {
-        if (tagName === 'div' || tagName === 'span') {
-          vd = new Dom(tagName, props);
-        } else if (tagName === 'img') {
-          vd = new Img(tagName, props);
-        }
-
-        if (Array.isArray(children)) {
-          children = relation(vd, build(children, root, owner, host));
-        } else {
-          children = [];
-        }
-
-        vd.__children = children;
-      } else if (_$$type === TYPE_GM$1) {
-        var _klass = Geom.getRegister(tagName);
-
-        vd = new _klass(tagName, props);
-      } else if (_$$type === TYPE_CP$1) {
-        vd = new klass(props);
-        vd.__tagName = tagName;
-      } else {
-        return new Text(json);
-      } // 根parse需要用到真正的vd引用
-
-
-      json.vd = vd; // 递归parse中的动画记录需特殊处理，将target改为真正的vd引用
-
-      if (__animateRecords) {
-        vd.__animateRecords = __animateRecords;
-
-        __animateRecords.list.forEach(function (item) {
-          item.target = vd;
-        });
-      } // 更新过程中key相同的vd继承动画
-
-
-      if (inherit) {
-        util.extendAnimate(inherit, vd);
-      }
-
-      vd.__root = root;
-
-      if (host) {
-        vd.__host = host;
-      }
-
-      if (_$$type === TYPE_CP$1) {
-        vd.__init();
-      }
-
-      var ref = props.ref;
-
-      if (util.isString(ref) && ref || util.isNumber(ref)) {
-        owner.ref[ref] = vd;
-      } else if (util.isFunction(ref)) {
-        ref(vd);
-      }
-
-      return vd;
-    }
-
-    return new Text(json);
-  }
-  /**
-   * 2. 打平children中的数组，变成一维
-   * 3. 合并相连的Text节点，即string内容
-   */
-
-
-  function flattenJson(parent) {
-    if (Array.isArray(parent)) {
-      return parent.map(function (item) {
-        return flattenJson(item);
-      });
-    } else if (!parent || [TYPE_VD$1, TYPE_GM$1, TYPE_CP$1].indexOf(parent.$$type) === -1 || !Array.isArray(parent.children)) {
-      return parent;
-    }
-
-    var list = [];
-    traverseJson(list, parent.children, {
-      lastText: null
-    });
-    parent.children = list;
-    return parent;
-  }
-
-  function traverseJson(list, children, options) {
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        traverseJson(list, item, options);
-      });
-    } else if (children && (children.$$type === TYPE_VD$1 || children.$$type === TYPE_GM$1)) {
-      if (['canvas', 'svg'].indexOf(children.tagName) > -1) {
-        throw new Error('Can not nest canvas/svg');
-      }
-
-      if (children.$$type === TYPE_VD$1) {
-        flattenJson(children.children);
-      }
-
-      list.push(children);
-      options.lastText = null;
-    } else if (children && (children.$$type === TYPE_CP$1 || children.$$type === TYPE_PL$1)) {
-      list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
-
-      options.lastText = null;
-    } // 排除掉空的文本，连续的text合并
-    else if (!util.isNil(children) && children !== '') {
-        if (options.lastText !== null) {
-          list[list.length - 1] = options.lastText += children;
-        } else {
-          list.push(children);
-        }
-      }
-  }
-  /**
-   * 设置关系，父子和兄弟
-   * @param parent
-   * @param children
-   * @param options
-   * @returns {Xom|Text|Component}
-   */
-
-
-  function relation(parent, children) {
-    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-    if (Array.isArray(children)) {
-      children.forEach(function (item) {
-        relation(parent, item, options);
-      });
-    } else if (children instanceof Xom$1 || children instanceof Component || children instanceof Text) {
-      children.__parent = parent;
-
-      if (options.prev) {
-        options.prev.__next = children;
-        children.__prev = options.prev;
-      }
-
-      options.prev = children;
-
-      if (children instanceof Dom) {
-        relation(children, children.children);
-      } // 文字视作为父节点的直接文字子节点
-      else if (children instanceof Component) {
-          var sr = children.shadowRoot;
-
-          if (sr instanceof Text) {
-            sr.__parent = parent;
-          }
-        }
-    }
-
-    return children;
-  }
-
-  var builder = {
-    ref: function ref(o) {
-      Xom$1 = o.Xom;
-      Dom = o.Dom;
-      Img = o.Img;
-      Geom = o.Geom;
-      Component = o.Component;
-    },
-    initRoot: initRoot,
-    initCp: initCp,
-    flattenJson: flattenJson,
-    relation: relation,
-    build: build
-  };
-
-  var isNil$4 = util.isNil,
-      isFunction$4 = util.isFunction,
-      clone$3 = util.clone,
-      extend$2 = util.extend;
-  /**
-   * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
-   * @param cp
-   */
-
-  function setUpdateFlag(cp) {
-    cp.__hasUpdate = true;
-    var host = cp.host;
-
-    if (host) {
-      setUpdateFlag(host);
-    }
-  }
-
-  var Component$1 = /*#__PURE__*/function (_Event) {
-    _inherits(Component, _Event);
-
-    var _super = _createSuper(Component);
-
-    function Component() {
-      var _this;
-
-      var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-      _classCallCheck(this, Component);
-
-      _this = _super.call(this); // 构建工具中都是arr，手写可能出现hash情况
-
-      if (Array.isArray(props)) {
-        _this.props = util.arr2hash(props);
-      } else {
-        _this.props = props;
-      }
-
-      _this.__parent = null;
-      _this.__host = null;
-      _this.__ref = {};
-      _this.__state = {};
-      _this.__isMounted = false;
-      return _this;
-    }
-
-    _createClass(Component, [{
-      key: "setState",
-      value: function setState(n, cb) {
-        var _this2 = this;
-
-        if (isNil$4(n)) {
-          n = {};
-        } else {
-          var state = clone$3(this.state);
-          n = extend$2(state, n);
-        }
-
-        var root = this.root;
-
-        if (root && this.__isMounted) {
-          root.delRefreshTask(this.__task);
-          this.__task = {
-            before: function before() {
-              // 标识更新
-              _this2.__nextState = n;
-              setUpdateFlag(_this2);
-            },
-            after: function after() {
-              if (isFunction$4(cb)) {
-                cb();
-              }
-            },
-            __state: true // 特殊标识来源让root刷新时识别
-
-          };
-          root.addRefreshTask(this.__task);
-        } // 构造函数中调用还未render，
-        else if (isFunction$4(cb)) {
-            this.__state = n;
-            cb();
-          }
-      }
-      /**
-       * build中调用初始化，json有值时是update过程才有，且处理过flatten
-       * @param json
-       * @private
-       */
-
-    }, {
-      key: "__init",
-      value: function __init(json) {
-        var _this3 = this;
-
-        var root = this.root;
-        var cd = json || builder.flattenJson(this.render());
-        var sr = builder.initCp(cd, root, this, this);
-        this.__cd = cd;
-
-        if (sr instanceof Text) {
-          // 文字视作为父节点的直接文字子节点，在builder里做
-          console.warn('Component render() return a text, should not inherit style/event');
-        } else if (sr instanceof Node) {
-          var style = css.normalize(this.props.style || {});
-          var keys = Object.keys(style);
-          extend$2(sr.style, style, keys);
-          extend$2(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
-
-          Object.keys(this.props).forEach(function (k) {
-            var v = _this3.props[k];
-
-            if (/^on[a-zA-Z]/.test(k)) {
-              k = k.slice(2).toLowerCase();
-              sr.listener[k] = v;
-            } else if (/^on-[a-zA-Z\d_$]/.test(k)) {
-              k = k.slice(3);
-
-              _this3.on(k, v);
-            }
-          });
-        } else if (sr instanceof Component) {
-          console.warn('Component render() return a component: ' + this + ' -> ' + sr.tagName + ', should not inherit style/event');
-        } else {
-          throw new Error('Component render() must return a dom/text: ' + this);
-        }
-
-        sr.__host = this;
-        this.__shadowRoot = sr;
-
-        if (!this.__isMounted) {
-          this.__isMounted = true;
-          var componentDidMount = this.componentDidMount;
-
-          if (isFunction$4(componentDidMount)) {
-            root.once(Event.REFRESH, function () {
-              componentDidMount.call(_this3);
-            });
-          }
-        }
-      }
-    }, {
-      key: "render",
-      value: function render() {}
-    }, {
-      key: "__destroy",
-      value: function __destroy() {
-        if (this.isDestroyed) {
-          return;
-        }
-
-        this.__isDestroyed = true;
-        var componentWillUnmount = this.componentWillUnmount;
-
-        if (isFunction$4(componentWillUnmount)) {
-          componentWillUnmount.call(this);
-          this.__isMounted = false;
-        }
-
-        this.root.delRefreshTask(this.__task);
-
-        if (this.shadowRoot) {
-          this.shadowRoot.__destroy();
-        }
-
-        this.__shadowRoot = null;
-        this.__parent = null;
-      }
-    }, {
-      key: "__emitEvent",
-      value: function __emitEvent(e) {
-        var sr = this.shadowRoot;
-
-        if (sr instanceof Text) {
-          return;
-        }
-
-        var res = sr.__emitEvent(e);
-
-        if (res) {
-          e.target = this;
-          return true;
-        }
-      }
-    }, {
-      key: "__measure",
-      value: function __measure(renderMode, ctx) {
-        var sr = this.shadowRoot;
-
-        if (sr instanceof Text) {
-          sr.__measure(renderMode, ctx);
-        } // 其它类型为Xom或Component
-        else {
-            sr.__measure(renderMode, ctx, true);
-          }
-      }
-    }, {
-      key: "shadowRoot",
-      get: function get() {
-        return this.__shadowRoot;
-      }
-    }, {
-      key: "root",
-      get: function get() {
-        return this.__root;
-      }
-    }, {
-      key: "host",
-      get: function get() {
-        return this.__host;
-      }
-    }, {
-      key: "parent",
-      get: function get() {
-        return this.__parent;
-      }
-    }, {
-      key: "ref",
-      get: function get() {
-        return this.__ref;
-      }
-    }, {
-      key: "state",
-      get: function get() {
-        return this.__state;
-      },
-      set: function set(v) {
-        this.__state = v;
-      }
-    }, {
-      key: "isDestroyed",
-      get: function get() {
-        return this.__isDestroyed;
-      }
-    }]);
-
-    return Component;
-  }(Event);
-
-  Object.keys(repaint.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
-    Object.defineProperty(Component$1.prototype, fn, {
-      get: function get() {
-        var sr = this.shadowRoot;
-
-        if (sr) {
-          return sr[fn];
-        }
-      }
-    });
-  });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle'].forEach(function (fn) {
-    Component$1.prototype[fn] = function () {
-      var sr = this.shadowRoot;
-
-      if (sr && isFunction$4(sr[fn])) {
-        return sr[fn].apply(sr, arguments);
-      }
-    };
-  });
-
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
@@ -11082,7 +11107,7 @@
 
           var item = flowChildren[i];
 
-          if (item instanceof Xom || item instanceof Component$1) {
+          if (item instanceof Xom$1 || item instanceof Component$1) {
             w -= item.__tryLayInline(w, total);
           } else {
             w -= item.textWidth;
@@ -11150,7 +11175,7 @@
 
 
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _item$__calAutoBasis = item.__calAutoBasis(isDirectionRow, w, h, true),
                 b2 = _item$__calAutoBasis.b,
                 min2 = _item$__calAutoBasis.min,
@@ -11245,7 +11270,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             if (item.currentStyle.display === 'inline') {
               // inline开头，不用考虑是否放得下直接放
               if (x === data.x) {
@@ -11465,7 +11490,7 @@
         var basisSum = 0;
         var maxSum = 0;
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             // abs虚拟布局计算时纵向也是看横向宽度
             var _item$__calAutoBasis2 = item.__calAutoBasis(isVirtual ? true : isDirectionRow, w, h),
                 b = _item$__calAutoBasis2.b,
@@ -11568,7 +11593,7 @@
 
           main = Math.max(main, minList[i]);
 
-          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             var _currentStyle2 = item.currentStyle,
                 computedStyle = item.computedStyle;
             var display = _currentStyle2.display,
@@ -11780,7 +11805,7 @@
 
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
-          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+          if (item instanceof Xom$1 || item instanceof Component$1 && item.shadowRoot instanceof Xom$1) {
             if (item.computedStyle.display !== 'inline') {
               item.currentStyle.display = item.computedStyle.display = 'inline';
               console.error('Inline can not contain block/flex');
@@ -12233,7 +12258,7 @@
         for (var i = zIndexChildren.length - 1; i >= 0; i--) {
           var child = zIndexChildren[i];
 
-          if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
+          if (child instanceof Xom$1 || child instanceof Component$1 && child.shadowRoot instanceof Xom$1) {
             if (child.__emitEvent(e)) {
               // 孩子阻止冒泡
               if (e.__stopPropagation) {
@@ -12251,6 +12276,17 @@
 
 
         return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e);
+      }
+    }, {
+      key: "__cancelCacheSvg",
+      value: function __cancelCacheSvg() {
+        _get(_getPrototypeOf(Dom.prototype), "__cancelCacheSvg", this).call(this);
+
+        this.children.forEach(function (child) {
+          if (child instanceof Xom$1 || child instanceof Component$1 && child.shadowRoot instanceof Xom$1) {
+            child.__cancelCacheSvg();
+          }
+        });
       }
     }, {
       key: "children",
@@ -12276,7 +12312,7 @@
             item = item.shadowRoot;
           }
 
-          return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
+          return item instanceof Xom$1 && item.computedStyle && item.computedStyle.position === 'absolute';
         });
       }
     }, {
@@ -12295,7 +12331,7 @@
 
 
           if (!item.isMask && !item.isClip && item.computedStyle) {
-            if (item instanceof Xom) {
+            if (item instanceof Xom$1) {
               if (isRelativeOrAbsolute(item)) {
                 // 临时变量为排序使用
                 child.__iIndex = i;
@@ -12353,7 +12389,7 @@
     }]);
 
     return Dom;
-  }(Xom);
+  }(Xom$1);
 
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
@@ -14854,7 +14890,7 @@
     }]);
 
     return Geom;
-  }(Xom);
+  }(Xom$1);
 
   var isNil$7 = util.isNil;
 
@@ -16742,14 +16778,14 @@
     updater: updater
   };
   builder.ref({
-    Xom: Xom,
+    Xom: Xom$1,
     Dom: Dom$1,
     Img: Img$1,
     Geom: Geom$2,
     Component: Component$1
   });
   updater.ref({
-    Xom: Xom,
+    Xom: Xom$1,
     Dom: Dom$1,
     Img: Img$1,
     Geom: Geom$2,

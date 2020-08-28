@@ -1102,6 +1102,15 @@ class Dom extends Xom {
     return super.__emitEvent(e);
   }
 
+  __cancelCacheSvg() {
+    super.__cancelCacheSvg();
+    this.children.forEach(child => {
+      if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+        child.__cancelCacheSvg();
+      }
+    });
+  }
+
   get children() {
     return this.__children;
   }

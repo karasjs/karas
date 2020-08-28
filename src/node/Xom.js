@@ -1402,6 +1402,10 @@ class Xom extends Node {
     }
   }
 
+  __cancelCacheSvg() {
+    this.__cacheSvg = false;
+  }
+
   __getRg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
       let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
@@ -1436,6 +1440,7 @@ class Xom extends Node {
     let { root, __style, __currentStyle, __cacheStyle } = this;
     if(root) {
       let lv = level.REPAINT;
+      let hasZ;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
           // repaint置空，如果reflow会重新生成空的
@@ -1445,7 +1450,14 @@ class Xom extends Node {
             lv = level.REFLOW;
             break;
           }
+          if(i === 'zIndex') {
+            hasZ = true;
+          }
         }
+      }
+      // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
+      if(lv === level.REPAINT && hasZ && /svg/i.test(root.tagName)) {
+        this.__cancelCacheSvg();
       }
       root.addRefreshTask(this.__task = {
         before() {

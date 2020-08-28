@@ -4354,13 +4354,13 @@
         value: v,
         unit: PERCENT$2
       };
-    } else if (/px$/.test(v)) {
+    } else if (/px$/i.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
         unit: PX$2
       };
-    } else if (/deg$/.test(v)) {
+    } else if (/deg$/i.test(v)) {
       v = parseFloat(v) || 0;
       obj[k] = {
         value: v,
@@ -4578,7 +4578,7 @@
         parseFlex(style, 1, 1, 'auto');
       } else if (/^[\d.]+$/.test(temp)) {
         parseFlex(style, Math.max(0, parseFloat(temp)), 1, 0);
-      } else if (/^[\d.]+px$/.test(temp)) {
+      } else if (/^[\d.]+px$/i.test(temp)) {
         parseFlex(style, 1, 1, 0);
       } else if (/^[\d.]+%$/.test(temp)) {
         parseFlex(style, 1, 1, temp);
@@ -4651,7 +4651,7 @@
       temp = style[k];
 
       if (!isNil$2(temp)) {
-        if (/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
+        if (/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
           calUnit(style, k, temp);
           temp = style[k];
 
@@ -4691,7 +4691,7 @@
         for (var _i = 0; _i < 2; _i++) {
           var _item = match[_i];
 
-          if (/%$/.test(_item) || /px$/.test(_item) || /^-?[\d.]+$/.test(_item)) {
+          if (/%$/.test(_item) || /px$/i.test(_item) || /^-?[\d.]+$/.test(_item)) {
             calUnit(bc, _i, _item);
 
             if (bc[_i].unit === NUMBER) {
@@ -4748,7 +4748,7 @@
         for (var _i2 = 0; _i2 < 2; _i2++) {
           var _item2 = _arr2[_i2];
 
-          if (/%$/.test(_item2) || /px$/.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
+          if (/%$/.test(_item2) || /px$/i.test(_item2) || /^-?[\d.]+$/.test(_item2)) {
             calUnit(_arr2, _i2, _item2);
 
             if (_arr2[_i2].unit === NUMBER) {
@@ -4847,7 +4847,7 @@
         for (var _i3 = 0; _i3 < 2; _i3++) {
           var _item3 = _match2[_i3];
 
-          if (/%$/.test(_item3) || /px$/.test(_item3) || /^-?[\d.]+$/.test(_item3)) {
+          if (/%$/.test(_item3) || /px$/i.test(_item3) || /^-?[\d.]+$/.test(_item3)) {
             calUnit(tfo, _i3, _item3);
 
             if (tfo[_i3].unit === NUMBER) {
@@ -5080,7 +5080,7 @@
           unit: AUTO
         };
       } // lineHeight默认数字，想要px必须强制带单位
-      else if (/px$/.test(temp)) {
+      else if (/px$/i.test(temp)) {
           style.lineHeight = {
             value: parseFloat(temp),
             unit: PX$2
@@ -5146,7 +5146,7 @@
 
     if (temp) {
       style.filter = [];
-      var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/.exec(temp);
+      var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp);
 
       if (blur) {
         var _v = parseFloat(blur[1]) || 0;
@@ -5170,6 +5170,36 @@
           unit: STRING
         };
       }
+    }
+
+    temp = style.boxShadow;
+
+    if (temp) {
+      style.boxShadow = [];
+
+      var _match4 = temp.match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+\)))\s*)?(inset|outset)?\s*,?/ig);
+
+      _match4.forEach(function (item) {
+        var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+
+        if (boxShadow) {
+          var res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
+
+          for (var _i4 = 0; _i4 < 4; _i4++) {
+            calUnit(res, _i4, res[_i4]);
+
+            if (res[_i4].unit === NUMBER) {
+              res[_i4].unit = PX$2;
+            }
+          }
+
+          res[4] = {
+            value: rgba2int$2(res[4]),
+            unit: RGBA
+          };
+          style.boxShadow.push(res);
+        }
+      });
     }
 
     return style;
@@ -6529,7 +6559,8 @@
       visibility: true,
       opacity: true,
       zIndex: true,
-      filter: true
+      filter: true,
+      boxShadow: true
     }
   };
 
@@ -8704,7 +8735,7 @@
       }
 
       if (list) {
-        canvasPolygon$1(ctx, list, method);
+        canvasPolygon$1(ctx, list);
       } else {
         ctx.rect(x, y, w, h);
       }
@@ -8799,6 +8830,75 @@
     }
 
     return 0;
+  }
+
+  function renderBoxShadow(renderMode, ctx, defs, data, x1, y1, x2, y2, x3, y3, x4, y4) {
+    var _data = _slicedToArray(data, 6),
+        x = _data[0],
+        y = _data[1],
+        blur = _data[2],
+        spread = _data[3],
+        color = _data[4],
+        inset = _data[5];
+
+    var c = int2rgba$2(color); // fill强制为1，防止影响boxShadow透明度
+
+    color[3] = 1;
+    var fill = int2rgba$2(color);
+    var n = blur + Math.abs(spread) + Math.abs(x) + Math.abs(y) + 1;
+    var spread2 = Math.abs(spread) + Math.abs(blur) + 1;
+    var box = [[x1, y1], [x4, y1], [x4, y4], [x1, y4], [x1, y1]];
+    var xa = x1 - spread;
+    var ya = y1 - spread;
+    var xb = x4 + spread;
+    var yb = y4 + spread;
+    var coords = [[xa, ya], [xb, ya], [xb, yb], [xa, yb]];
+
+    if (color[3] > 0 && (blur > 0 || spread > 0)) {
+      if (renderMode === mode.CANVAS) {
+        ctx.save();
+        ctx.beginPath(); // inset裁剪box外面
+
+        if (inset === 'inset') {
+          canvasPolygon$1(ctx, box);
+          ctx.clip();
+          ctx.closePath();
+          ctx.beginPath();
+
+          if (ctx.fillStyle !== fill) {
+            ctx.fillStyle = fill;
+          }
+
+          ctx.shadowOffsetX = x;
+          ctx.shadowOffsetY = y;
+          ctx.shadowColor = c;
+          ctx.shadowBlur = blur; // 画在外围的空心矩形，宽度要比blur大
+
+          canvasPolygon$1(ctx, [[x1 + spread, y1 + spread], [x4 - spread, y1 + spread], [x4 - spread, y4 - spread], [x1 - spread2, y4 - spread], [x1 - spread2, y4 + spread2], [x4 + spread2, y4 + spread2], [x4 + spread2, y1 - spread2], [x1 - spread2, y1 - spread2], [x1 - spread2, y4 - spread], [x1 + spread, y4 - spread], [x1 + spread, y1 + spread]]);
+        } // outset需裁减掉box本身的内容，clip()非零环绕显示box外的阴影内容，fill()绘制在内无效
+        else {
+            canvasPolygon$1(ctx, box);
+            canvasPolygon$1(ctx, [[x1 - n, y1 - n], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n]]);
+            ctx.clip();
+            ctx.closePath();
+            ctx.beginPath();
+
+            if (ctx.fillStyle !== fill) {
+              ctx.fillStyle = fill;
+            }
+
+            ctx.shadowOffsetX = x;
+            ctx.shadowOffsetY = y;
+            ctx.shadowColor = c;
+            ctx.shadowBlur = blur;
+            canvasPolygon$1(ctx, coords);
+          }
+
+        ctx.fill();
+        ctx.closePath();
+        ctx.restore();
+      }
+    }
   }
 
   function empty() {}
@@ -9269,6 +9369,28 @@
           } else if (_backgroundImage && _backgroundImage.k) {
             __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, _backgroundImage);
           }
+        }
+
+        if (__cacheStyle.boxShadow === undefined) {
+          __cacheStyle.boxShadow = true;
+          computedStyle.boxShadow = [];
+          (currentStyle.boxShadow || []).forEach(function (item) {
+            var temp = [];
+
+            for (var i = 0; i < 4; i++) {
+              var o = item[i];
+
+              if (!o) {
+                temp.push(0);
+              } else {
+                temp.push(o.value);
+              }
+            }
+
+            temp.push(item[4].value);
+            temp.push(item[5]);
+            computedStyle.boxShadow.push(temp);
+          });
         } // 这些直接赋值的不需要再算缓存
 
 
@@ -9350,7 +9472,8 @@
             filter = computedStyle.filter,
             backgroundSize = computedStyle.backgroundSize,
             transformOrigin = computedStyle.transformOrigin,
-            transform = computedStyle.transform;
+            transform = computedStyle.transform,
+            boxShadow = computedStyle.boxShadow;
         var p = parent || this.host && this.host.parent; // 先设置透明度，canvas可以向上累积
 
         if (renderMode === mode.CANVAS) {
@@ -9679,6 +9802,13 @@
           } else if (backgroundImage.k) {
             renderBgc(renderMode, __cacheStyle.backgroundImage, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
+        } // boxShadow可能会有多个
+
+
+        if (boxShadow) {
+          boxShadow.forEach(function (item) {
+            renderBoxShadow(renderMode, ctx, defs, item, x1, y1, x2, y2, x3, y3, x4, y4);
+          });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
 
@@ -10343,7 +10473,8 @@
     skewX: 0,
     skewY: 0,
     rotateZ: 0,
-    filter: null
+    filter: null,
+    boxShadow: null
   };
   var GEOM = {
     fill: 'transparent',

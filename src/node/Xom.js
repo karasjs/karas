@@ -56,7 +56,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
       ctx.fillStyle = color;
     }
     if(list) {
-      canvasPolygon(ctx, list, method);
+      canvasPolygon(ctx, list);
     }
     else {
       ctx.rect(x, y, w, h);
@@ -166,6 +166,93 @@ function calBackgroundPosition(position, container, size) {
     return (container - size) * position.value * 0.01;
   }
   return 0;
+}
+
+function renderBoxShadow(renderMode, ctx, defs, data, x1, y1, x2, y2, x3, y3, x4, y4) {
+  let [x, y, blur, spread, color, inset] = data;
+  let c = int2rgba(color);
+  // fill强制为1，防止影响boxShadow透明度
+  color[3] = 1;
+  let fill = int2rgba(color);
+  let n = blur + Math.abs(spread) + Math.abs(x) + Math.abs(y) + 1;
+  let spread2 = Math.abs(spread) + Math.abs(blur) + 1;
+  let box = [
+    [x1, y1],
+    [x4, y1],
+    [x4, y4],
+    [x1, y4],
+    [x1, y1],
+  ];
+  let xa = x1 - spread;
+  let ya = y1 - spread;
+  let xb = x4 + spread;
+  let yb = y4 + spread;
+  let coords = [
+    [xa, ya],
+    [xb, ya],
+    [xb, yb],
+    [xa, yb],
+  ];
+  if(color[3] > 0 && (blur > 0 || spread > 0)) {
+    if(renderMode === mode.CANVAS) {
+      ctx.save();
+      ctx.beginPath();
+      // inset裁剪box外面
+      if(inset === 'inset') {
+        canvasPolygon(ctx, box);
+        ctx.clip();
+        ctx.closePath();
+        ctx.beginPath();
+        if(ctx.fillStyle !== fill) {
+          ctx.fillStyle = fill;
+        }
+        ctx.shadowOffsetX = x;
+        ctx.shadowOffsetY = y;
+        ctx.shadowColor = c;
+        ctx.shadowBlur = blur;
+        // 画在外围的空心矩形，宽度要比blur大
+        canvasPolygon(ctx, [
+          [x1 + spread, y1 + spread],
+          [x4 - spread, y1 + spread],
+          [x4 - spread, y4 - spread],
+          [x1 - spread2, y4 - spread],
+          [x1 - spread2, y4 + spread2],
+          [x4 + spread2, y4 + spread2],
+          [x4 + spread2, y1 - spread2],
+          [x1 - spread2, y1 - spread2],
+          [x1 - spread2, y4 - spread],
+          [x1 + spread, y4 - spread],
+          [x1 + spread, y1 + spread],
+        ]);
+      }
+      // outset需裁减掉box本身的内容，clip()非零环绕显示box外的阴影内容，fill()绘制在内无效
+      else {
+        canvasPolygon(ctx, box);
+        canvasPolygon(ctx, [
+          [x1 - n, y1 - n],
+          [x1 - n, y4 + n],
+          [x4 + n, y4 + n],
+          [x4 + n, y1 - n],
+          [x1 - n, y1 - n],
+        ]);
+        ctx.clip();
+        ctx.closePath();
+        ctx.beginPath();
+        if(ctx.fillStyle !== fill) {
+          ctx.fillStyle = fill;
+        }
+        ctx.shadowOffsetX = x;
+        ctx.shadowOffsetY = y;
+        ctx.shadowColor = c;
+        ctx.shadowBlur = blur;
+        canvasPolygon(ctx, coords);
+      }
+      ctx.fill();
+      ctx.closePath();
+      ctx.restore();
+    }
+    else if(renderMode === mode.SVG) {}
+  }
 }
 
 function empty() {}
@@ -603,6 +690,25 @@ class Xom extends Node {
         __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
       }
     }
+    if(__cacheStyle.boxShadow === undefined) {
+      __cacheStyle.boxShadow = true;
+      computedStyle.boxShadow = [];
+      (currentStyle.boxShadow || []).forEach(item => {
+        let temp = [];
+        for(let i = 0; i < 4; i++) {
+          let o = item[i];
+          if(!o) {
+            temp.push(0);
+          }
+          else {
+            temp.push(o.value);
+          }
+        }
+        temp.push(item[4].value);
+        temp.push(item[5]);
+        computedStyle.boxShadow.push(temp);
+      });
+    }
     // 这些直接赋值的不需要再算缓存
     [
       'opacity',
@@ -708,6 +814,7 @@ class Xom extends Node {
       backgroundSize,
       transformOrigin,
       transform,
+      boxShadow,
     } = computedStyle;
     let p = parent || this.host && this.host.parent;
     // 先设置透明度，canvas可以向上累积
@@ -1022,6 +1129,12 @@ class Xom extends Node {
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
           borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       }
+    }
+    // boxShadow可能会有多个
+    if(boxShadow) {
+      boxShadow.forEach(item => {
+        renderBoxShadow(renderMode, ctx, defs, item, x1, y1, x2, y2, x3, y3, x4, y4);
+      });
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {

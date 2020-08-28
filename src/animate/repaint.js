@@ -52,5 +52,6 @@ export default {
     opacity: true,
     zIndex: true,
     filter: true,
+    boxShadow: true,
   },
 };

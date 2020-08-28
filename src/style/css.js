@@ -102,14 +102,14 @@ function calUnit(obj, k, v) {
       unit: PERCENT,
     };
   }
-  else if(/px$/.test(v)) {
+  else if(/px$/i.test(v)) {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
       unit: PX,
     };
   }
-  else if(/deg$/.test(v)) {
+  else if(/deg$/i.test(v)) {
     v = parseFloat(v) || 0;
     obj[k] = {
       value: v,
@@ -295,7 +295,7 @@ function normalize(style, reset = []) {
     else if(/^[\d.]+$/.test(temp)) {
       parseFlex(style, Math.max(0, parseFloat(temp)), 1, 0);
     }
-    else if(/^[\d.]+px$/.test(temp)) {
+    else if(/^[\d.]+px$/i.test(temp)) {
       parseFlex(style, 1, 1, 0);
     }
     else if(/^[\d.]+%$/.test(temp)) {
@@ -371,7 +371,7 @@ function normalize(style, reset = []) {
   ['backgroundPositionX', 'backgroundPositionY'].forEach(k => {
     temp = style[k];
     if(!isNil(temp)) {
-      if(/%$/.test(temp) || /px$/.test(temp) || /^-?[\d.]+$/.test(temp)) {
+      if(/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
         calUnit(style, k, temp);
         temp = style[k];
         if(temp.unit === NUMBER) {
@@ -408,7 +408,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
+        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
           calUnit(bc, i, item);
           if(bc[i].unit === NUMBER) {
             bc[i].unit = PX;
@@ -462,7 +462,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = arr[i];
-        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
+        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
           calUnit(arr, i, item);
           if(arr[i].unit === NUMBER) {
             arr[i].unit = PX;
@@ -539,7 +539,7 @@ function normalize(style, reset = []) {
       }
       for(let i = 0; i < 2; i++) {
         let item = match[i];
-        if(/%$/.test(item) || /px$/.test(item) || /^-?[\d.]+$/.test(item)) {
+        if(/%$/.test(item) || /px$/i.test(item) || /^-?[\d.]+$/.test(item)) {
           calUnit(tfo, i, item);
           if(tfo[i].unit === NUMBER) {
             tfo[i].unit = PX;
@@ -788,7 +788,7 @@ function normalize(style, reset = []) {
       };
     }
     // lineHeight默认数字，想要px必须强制带单位
-    else if(/px$/.test(temp)) {
+    else if(/px$/i.test(temp)) {
       style.lineHeight = {
         value: parseFloat(temp),
         unit: PX,
@@ -846,7 +846,7 @@ function normalize(style, reset = []) {
   temp = style.filter;
   if(temp) {
     style.filter = [];
-    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/.exec(temp);
+    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp);
     if(blur) {
       let v = parseFloat(blur[1]) || 0;
       if(v) {
@@ -867,6 +867,28 @@ function normalize(style, reset = []) {
         unit: STRING,
       };
     }
+  }
+  temp = style.boxShadow;
+  if(temp) {
+    style.boxShadow = [];
+    let match = temp.match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+\)))\s*)?(inset|outset)?\s*,?/ig);
+    match.forEach(item => {
+      let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+      if(boxShadow) {
+        let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
+        for(let i = 0; i < 4; i++) {
+          calUnit(res, i, res[i]);
+          if(res[i].unit === NUMBER) {
+            res[i].unit = PX;
+          }
+        }
+        res[4] = {
+          value: rgba2int(res[4]),
+          unit: RGBA,
+        };
+        style.boxShadow.push(res);
+      }
+    });
   }
   return style;
 }

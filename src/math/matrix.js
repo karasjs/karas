@@ -23,7 +23,7 @@ function multiply(a, b) {
     return a;
   }
   else if(isPreIdA || isPreIdB) {
-    let c = identity();
+    let c = isPreIdA ? b.slice(0) : a.slice(0);
     c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
     c[5] = a[1] * b[4] + a[3] * b[5] + a[5];
     return c;

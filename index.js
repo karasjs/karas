@@ -545,7 +545,7 @@
       a[5] += b[5];
       return a;
     } else if (isPreIdA || isPreIdB) {
-      var _c = identity();
+      var _c = isPreIdA ? b.slice(0) : a.slice(0);
 
       _c[4] = a[0] * b[4] + a[2] * b[5] + a[4];
       _c[5] = a[1] * b[4] + a[3] * b[5] + a[5];

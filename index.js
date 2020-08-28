@@ -16548,7 +16548,27 @@
 
       return root;
     },
-    createVd: function createVd(tagName, props, children) {
+    createElement: function createElement(tagName, props, children) {
+      if (Array.isArray(props)) {
+        children = props;
+        props = {};
+      }
+
+      props = props || {};
+
+      if (util.isString(tagName)) {
+        if (tagName.charAt(0) === '$') {
+          return this.createGm(tagName, props);
+        } else {
+          return this.createVd(tagName, props, children);
+        }
+      } else if (tagName) {
+        return this.createCp(tagName, props, children);
+      }
+    },
+    createVd: function createVd(tagName, props) {
+      var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
       if (['canvas', 'svg'].indexOf(tagName) > -1) {
         return new Root(tagName, props, children);
       }
@@ -16571,11 +16591,11 @@
         $$type: $$type.TYPE_GM
       };
     },
-    createCp: function createCp(klass, props, children, tagName) {
+    createCp: function createCp(klass, props) {
+      var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
       props.children = children;
       return {
         klass: klass,
-        tagName: tagName,
         props: props,
         $$type: $$type.TYPE_CP
       };

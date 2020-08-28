@@ -43,7 +43,25 @@ let karas = {
     }
     return root;
   },
-  createVd(tagName, props, children) {
+  createElement(tagName, props, children) {
+    if(Array.isArray(props)) {
+      children = props;
+      props = {};
+    }
+    props = props || {};
+    if(util.isString(tagName)) {
+      if(tagName.charAt(0) === '$') {
+        return this.createGm(tagName, props);
+      }
+      else {
+        return this.createVd(tagName, props, children);
+      }
+    }
+    else if(tagName) {
+      return this.createCp(tagName, props, children);
+    }
+  },
+  createVd(tagName, props, children = []) {
     if(['canvas', 'svg'].indexOf(tagName) > -1) {
       return new Root(tagName, props, children);
     }
@@ -64,11 +82,10 @@ let karas = {
       $$type: $$type.TYPE_GM,
     };
   },
-  createCp(klass, props, children, tagName) {
+  createCp(klass, props, children = []) {
     props.children = children;
     return {
       klass,
-      tagName,
       props,
       $$type: $$type.TYPE_CP,
     };

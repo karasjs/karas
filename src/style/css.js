@@ -871,13 +871,17 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp) {
     style.boxShadow = [];
-    let match = temp.match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = temp.match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     match.forEach(item => {
       let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
       if(boxShadow) {
         let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
         for(let i = 0; i < 4; i++) {
           calUnit(res, i, res[i]);
+          // x/y可以负，blur和spread不行
+          if(i > 1 && res[i].value < 0) {
+            res[i].value = 0;
+          }
           if(res[i].unit === NUMBER) {
             res[i].unit = PX;
           }

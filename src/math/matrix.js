@@ -57,8 +57,18 @@ function calPoint(point, m) {
   ];
 }
 
+function int2convolution(v) {
+  let d = Math.floor(v * 3 * Math.sqrt(2 * Math.PI) / 4 + 0.5);
+  d *= 3;
+  if(d % 2 === 0) {
+    d++;
+  }
+  return d;
+}
+
 export default {
   identity,
   multiply,
   calPoint,
+  int2convolution,
 };

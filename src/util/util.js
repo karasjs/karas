@@ -65,7 +65,7 @@ function joinVirtualDom(vd) {
     s += ' clip-path="' + vd.conClip + '"';
   }
   s += '>';
-  vd.children.forEach(item => {
+  (vd.children || []).forEach(item => {
     if(item.isMask || item.isClip) {
       return;
     }
@@ -79,7 +79,7 @@ function joinVirtualDom(vd) {
 function joinVd(vd) {
   if(vd.type === 'item' || vd.type === 'img') {
     let s = '';
-    vd.props.forEach(item => {
+    (vd.props || []).forEach(item => {
       s += ' ' + item[0] + '="' + item[1] + '"';
     });
     if(vd.tagName === 'text') {
@@ -90,7 +90,7 @@ function joinVd(vd) {
   else if(vd.type === 'text') {
     let s = ``;
     // text有许多lineBox
-    vd.children.forEach(item => {
+    (vd.children || []).forEach(item => {
       s += joinVd(item);
     });
     return '<g>' + s + '</g>';
@@ -109,7 +109,7 @@ function joinVd(vd) {
       s += ' clip-path="' + vd.conClip + '"';
     }
     s += '>';
-    vd.children.forEach(item => {
+    (vd.children || []).forEach(item => {
       if(item.isMask || item.isClip) {
         return;
       }
@@ -138,11 +138,11 @@ function joinDef(def) {
   else {
     s += ' gradientUnits="userSpaceOnUse"';
   }
-  def.props.forEach(item => {
+  (def.props || []).forEach(item => {
     s += ' ' + item[0] + '="' + item[1] + '"';
   });
   s += '>';
-  def.children.forEach(item => {
+  (def.children || []).forEach(item => {
     s += joinItem(item);
   });
   s += '</' + def.tagName + '>';
@@ -151,7 +151,7 @@ function joinDef(def) {
 
 function joinItem(item) {
   let s = '<' + item.tagName;
-  item.props.forEach(item => {
+  (item.props || []).forEach(item => {
     s += ' ' + item[0] + '="' + item[1] + '"';
   });
   s += '></' + item.tagName + '>';

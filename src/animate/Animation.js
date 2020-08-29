@@ -7,8 +7,6 @@ import frame from './frame';
 import easing from './easing';
 import level from './level';
 import repaint from './repaint';
-import Xom from '../node/Xom';
-import Component from '../node/Component';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;

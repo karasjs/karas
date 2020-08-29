@@ -92,6 +92,52 @@ function ellipsePoints(x, y, a, b = a) {
   ];
 }
 
+/**
+ * 获取2个矩形重叠区域，如不重叠返回null
+ * @param a
+ * @param b
+ */
+function getRectsIntersection(a, b) {
+  if(!isRectsOverlap(a, b)) {
+    return null;
+  }
+  let [ax1, ay1, ax4, ay4] = a;
+  let [bx1, by1, bx4, by4] = b;
+  return [
+    Math.max(ax1, bx1),
+    Math.max(ay1, by1),
+    Math.min(ax4, bx4),
+    Math.min(ay4, by4),
+  ];
+}
+
+/**
+ * 2个矩形是否重叠
+ * @param a
+ * @param b
+ */
+function isRectsOverlap(a, b) {
+  let [ax1, ay1, ax4, ay4] = a;
+  let [bx1, by1, bx4, by4] = b;
+  if(ax1 >= bx4 || ay1 >= by4 || bx1 >= ax4 || by1 >= ay4) {
+    return false;
+  }
+  return true;
+}
+/**
+ * 2个矩形是否包含，a包含b
+ * @param a
+ * @param b
+ */
+function isRectsInside(a, b) {
+  let [ax1, ay1, ax4, ay4] = a;
+  let [bx1, by1, bx4, by4] = b;
+  if(ax1 <= bx1 && ay1 <= by1 && ax4 >= bx4 && ay4 >= by4) {
+    return true;
+  }
+  return false;
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
@@ -113,4 +159,7 @@ export default {
   pointsDistance,
   triangleIncentre,
   ellipsePoints,
+  getRectsIntersection,
+  isRectsOverlap,
+  isRectsInside,
 };

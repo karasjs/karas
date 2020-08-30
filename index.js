@@ -5279,21 +5279,18 @@
           var res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
 
           for (var _i4 = 0; _i4 < 4; _i4++) {
-            calUnit(res, _i4, res[_i4]); // x/y可以负，blur和spread不行
+            calUnit(res, _i4, res[_i4]); // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
 
             if (_i4 > 1 && res[_i4].value < 0) {
-              res[_i4].value = 0;
+              res[_i4] = 0;
             }
 
             if (res[_i4].unit === NUMBER) {
-              res[_i4].unit = PX$2;
+              res[_i4] = res[_i4].value;
             }
           }
 
-          res[4] = {
-            value: rgba2int$2(res[4]),
-            unit: RGBA
-          };
+          res[4] = rgba2int$2(res[4]);
           style.boxShadow.push(res);
         }
       });
@@ -6798,6 +6795,12 @@
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
       return a.value === b.value && a.unit === b.unit;
+    } else if (k === 'boxShadow') {
+      if (a === null) {
+        return a === b;
+      }
+
+      return equalArr$1(a, b);
     } else if (RADIUS_HASH.hasOwnProperty(k)) {
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
     } else if (COLOR_HASH.hasOwnProperty(k)) {
@@ -7056,27 +7059,40 @@
 
         res.v = _v4;
       }
-    } else if (EXPAND_HASH.hasOwnProperty(k)) {
-      if (p.unit === n.unit) {
-        var _v5 = n.value - p.value;
+    } else if (k === 'boxShadow') {
+      res.v = [];
 
-        if (_v5 === 0) {
-          return;
+      for (var _i2 = 0, len = Math.min(p.length, n.length); _i2 < len; _i2++) {
+        var a = p[_i2];
+        var b = n[_i2];
+        var _v5 = []; // x/y/blur/spread
+
+        for (var j = 0; j < 4; j++) {
+          _v5.push(b[j] - a[j]);
+        } // rgba
+
+
+        var c = [];
+
+        for (var _j = 0; _j < 4; _j++) {
+          c.push(b[4][_j] - a[4][_j]);
         }
 
-        res.v = _v5;
-      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-        var _v6 = n.value * 0.01 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+        _v5.push(c);
 
-        _v6 = _v6 - p.value;
+        res.v.push(_v5);
+      }
+    } else if (EXPAND_HASH.hasOwnProperty(k)) {
+      if (p.unit === n.unit) {
+        var _v6 = n.value - p.value;
 
         if (_v6 === 0) {
           return;
         }
 
         res.v = _v6;
-      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
-        var _v7 = n.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+      } else if (p.unit === PX$3 && n.unit === PERCENT$4) {
+        var _v7 = n.value * 0.01 * target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
 
         _v7 = _v7 - p.value;
 
@@ -7085,24 +7101,34 @@
         }
 
         res.v = _v7;
+      } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
+        var _v8 = n.value * 100 / target[/\w+X$/.test(k) ? 'outerWidth' : 'outerHeight'];
+
+        _v8 = _v8 - p.value;
+
+        if (_v8 === 0) {
+          return;
+        }
+
+        res.v = _v8;
       }
     } else if (k === 'backgroundSize') {
       res.v = [];
 
-      for (var _i2 = 0; _i2 < 2; _i2++) {
-        var _pi = p[_i2];
-        var _ni = n[_i2];
+      for (var _i3 = 0; _i3 < 2; _i3++) {
+        var _pi = p[_i3];
+        var _ni = n[_i3];
 
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
-          var _v8 = _ni.value * 0.01 * target[_i2 ? 'innerWidth' : 'innerHeight'];
-
-          res.v.push(_v8 - _pi.value);
-        } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v9 = _ni.value * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni.value * 0.01 * target[_i3 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v9 - _pi.value);
+        } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
+          var _v10 = _ni.value * 100 / target[_i3 ? 'innerWidth' : 'innerHeight'];
+
+          res.v.push(_v10 - _pi.value);
         } else {
           return;
         }
@@ -7128,26 +7154,26 @@
           var innerWidth = target.innerWidth;
           var eq;
 
-          for (var _i3 = 0, len = Math.min(pv.length, nv.length); _i3 < len; _i3++) {
-            var a = pv[_i3];
-            var b = nv[_i3];
+          for (var _i4 = 0, _len2 = Math.min(pv.length, nv.length); _i4 < _len2; _i4++) {
+            var _a = pv[_i4];
+            var _b = nv[_i4];
             var t = [];
-            t.push([b[0][0] - a[0][0], b[0][1] - a[0][1], b[0][2] - a[0][2], b[0][3] - a[0][3]]);
+            t.push([_b[0][0] - _a[0][0], _b[0][1] - _a[0][1], _b[0][2] - _a[0][2], _b[0][3] - _a[0][3]]);
             eq = equalArr$1(t, [0, 0, 0, 0]);
 
-            if (a[1] && b[1]) {
-              if (a[1].unit === b[1].unit) {
-                t.push(b[1].value - a[1].value);
-              } else if (a[1].unit === PX$3 && b[1].unit === PERCENT$4) {
-                t.push(b[1].value * innerWidth * 0.01 - a[1].value);
-              } else if (a[1].unit === PERCENT$4 && b[1].unit === PX$3) {
-                t.push(b[1].value * 100 / innerWidth - a[1].value);
+            if (_a[1] && _b[1]) {
+              if (_a[1].unit === _b[1].unit) {
+                t.push(_b[1].value - _a[1].value);
+              } else if (_a[1].unit === PX$3 && _b[1].unit === PERCENT$4) {
+                t.push(_b[1].value * innerWidth * 0.01 - _a[1].value);
+              } else if (_a[1].unit === PERCENT$4 && _b[1].unit === PX$3) {
+                t.push(_b[1].value * 100 / innerWidth - _a[1].value);
               }
 
               if (eq) {
                 eq = t[4] === 0;
               }
-            } else if (a[1] || b[1]) {
+            } else if (_a[1] || _b[1]) {
               eq = false;
             }
 
@@ -7156,31 +7182,31 @@
 
 
           if (p.k === 'linear') {
-            var _v10 = n.d - p.d;
+            var _v11 = n.d - p.d;
 
-            if (eq && _v10 === 0) {
+            if (eq && _v11 === 0) {
               return;
             }
 
-            res.d = _v10;
+            res.d = _v11;
           } // 径向渐变的位置
           else {
               res.p = [];
 
-              for (var _i4 = 0; _i4 < 2; _i4++) {
-                var pp = p.p[_i4];
-                var np = n.p[_i4];
+              for (var _i5 = 0; _i5 < 2; _i5++) {
+                var pp = p.p[_i5];
+                var np = n.p[_i5];
 
                 if (pp.unit === np.unit) {
                   res.p.push(np.value - pp.value);
                 } else if (pp.unit === PX$3 && np.unit === PERCENT$4) {
-                  var _v11 = np.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
-
-                  res.p.push(_v11 - pp.value);
-                } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
-                  var _v12 = np.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+                  var _v12 = np.value * 0.01 * target[_i5 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v12 - pp.value);
+                } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
+                  var _v13 = np.value * 100 / target[_i5 ? 'innerWidth' : 'innerHeight'];
+
+                  res.p.push(_v13 - pp.value);
                 }
               }
 
@@ -7213,13 +7239,13 @@
 
       res.v = [];
 
-      for (var _i5 = 0; _i5 < 2; _i5++) {
-        if (n[_i5].unit === p[_i5].unit) {
-          res.v.push(n[_i5].value - p[_i5].value);
-        } else if (p[_i5].unit === PX$3 && n[_i5].unit === PERCENT$4) {
-          res.v.push(n[_i5].value * 0.01 * target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
-        } else if (p[_i5].unit === PERCENT$4 && n[_i5].unit === PX$3) {
-          res.v.push(n[_i5].value * 100 / target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
+      for (var _i6 = 0; _i6 < 2; _i6++) {
+        if (n[_i6].unit === p[_i6].unit) {
+          res.v.push(n[_i6].value - p[_i6].value);
+        } else if (p[_i6].unit === PX$3 && n[_i6].unit === PERCENT$4) {
+          res.v.push(n[_i6].value * 0.01 * target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
+        } else if (p[_i6].unit === PERCENT$4 && n[_i6].unit === PX$3) {
+          res.v.push(n[_i6].value * 100 / target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
         } else {
           res.v.push(0);
         }
@@ -7238,29 +7264,29 @@
         diff = n.value - p.value;
       } // 长度单位变化特殊计算，根据父元素computedStyle
       else if (p.unit === PX$3 && n.unit === PERCENT$4) {
-          var _v13;
-
-          if (k === 'fontSize') {
-            _v13 = n.value * parentComputedStyle[k] * 0.01;
-          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
-            _v13 = n.value * parentComputedStyle.width * 0.01;
-          } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
-            _v13 = n.value * parentComputedStyle.height * 0.01;
-          }
-
-          diff = _v13 - p.value;
-        } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
           var _v14;
 
           if (k === 'fontSize') {
-            _v14 = n.value * 100 / parentComputedStyle[k];
+            _v14 = n.value * parentComputedStyle[k] * 0.01;
           } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
-            _v14 = n.value * 100 / parentComputedStyle.width;
+            _v14 = n.value * parentComputedStyle.width * 0.01;
           } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
-            _v14 = n.value * 100 / parentComputedStyle.height;
+            _v14 = n.value * parentComputedStyle.height * 0.01;
           }
 
           diff = _v14 - p.value;
+        } else if (p.unit === PERCENT$4 && n.unit === PX$3) {
+          var _v15;
+
+          if (k === 'fontSize') {
+            _v15 = n.value * 100 / parentComputedStyle[k];
+          } else if (k === 'flexBasis' && computedStyle.flexDirection === 'row' || k === 'width' || /margin/.test(k) || /padding/.test(k) || ['left', 'right'].indexOf(k) > -1) {
+            _v15 = n.value * 100 / parentComputedStyle.width;
+          } else if (k === 'flexBasis' || k === 'height' || ['top', 'bottom'].indexOf(k) > -1) {
+            _v15 = n.value * 100 / parentComputedStyle.height;
+          }
+
+          diff = _v15 - p.value;
         } // lineHeight奇怪的单位变化
         else if (k === 'lineHeight') {
             if (p.unit === PX$3 && n.unit === NUMBER$2) {
@@ -7288,18 +7314,18 @@
 
             res.v = [];
 
-            for (var _i6 = 0, _len2 = Math.min(p.length, n.length); _i6 < _len2; _i6++) {
-              var _pv = p[_i6];
-              var _nv = n[_i6];
+            for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
+              var _pv = p[_i7];
+              var _nv = n[_i7];
 
               if (isNil$3(_pv) || isNil$3(_nv)) {
                 res.v.push(null);
               } else {
                 var v2 = [];
 
-                for (var j = 0, len2 = Math.min(_pv.length, _nv.length); j < len2; j++) {
-                  var pv2 = _pv[j];
-                  var nv2 = _nv[j];
+                for (var _j2 = 0, len2 = Math.min(_pv.length, _nv.length); _j2 < len2; _j2++) {
+                  var pv2 = _pv[_j2];
+                  var nv2 = _nv[_j2];
 
                   if (isNil$3(pv2) || isNil$3(nv2)) {
                     v2.push(null);
@@ -7331,9 +7357,9 @@
 
             res.v = [];
 
-            for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
-              var _pv2 = p[_i7];
-              var _nv2 = n[_i7];
+            for (var _i8 = 0, _len4 = Math.min(p.length, n.length); _i8 < _len4; _i8++) {
+              var _pv2 = p[_i8];
+              var _nv2 = n[_i8];
 
               if (isNil$3(_pv2) || isNil$3(_nv2)) {
                 res.v.push(null);
@@ -7346,20 +7372,20 @@
               return;
             }
 
-            var _v15 = [];
+            var _v16 = [];
 
-            for (var _i8 = 0, _len4 = Math.min(p.length, n.length); _i8 < _len4; _i8++) {
-              var _pv3 = p[_i8];
-              var _nv3 = n[_i8];
+            for (var _i9 = 0, _len5 = Math.min(p.length, n.length); _i9 < _len5; _i9++) {
+              var _pv3 = p[_i9];
+              var _nv3 = n[_i9];
 
               if (isNil$3(_pv3) || isNil$3(_nv3)) {
-                _v15.push(0);
+                _v16.push(0);
               }
 
-              _v15.push(_nv3 - _pv3);
+              _v16.push(_nv3 - _pv3);
             }
 
-            res.v = _v15;
+            res.v = _v16;
           }
         } // 非multi特殊处理这几类数组类型数据
         else if (k === 'points' || k === 'controls') {
@@ -7369,27 +7395,27 @@
 
             res.v = [];
 
-            for (var _i9 = 0, _len5 = Math.min(p.length, n.length); _i9 < _len5; _i9++) {
-              var _pv4 = p[_i9];
-              var _nv4 = n[_i9];
+            for (var _i10 = 0, _len6 = Math.min(p.length, n.length); _i10 < _len6; _i10++) {
+              var _pv4 = p[_i10];
+              var _nv4 = n[_i10];
 
               if (isNil$3(_pv4) || isNil$3(_nv4)) {
                 res.v.push(null);
               } else {
-                var _v16 = [];
+                var _v17 = [];
 
-                for (var _j = 0, _len6 = Math.max(_pv4.length, _nv4.length); _j < _len6; _j++) {
-                  var _pv5 = _pv4[_j];
-                  var _nv5 = _nv4[_j]; // control由4点变2点
+                for (var _j3 = 0, _len7 = Math.max(_pv4.length, _nv4.length); _j3 < _len7; _j3++) {
+                  var _pv5 = _pv4[_j3];
+                  var _nv5 = _nv4[_j3]; // control由4点变2点
 
                   if (isNil$3(_pv5) || isNil$3(_nv5)) {
-                    _v16.push(0);
+                    _v17.push(0);
                   } else {
-                    _v16.push(_nv5 - _pv5);
+                    _v17.push(_nv5 - _pv5);
                   }
                 }
 
-                res.v.push(_v16);
+                res.v.push(_v17);
               }
             }
           } else if (k === 'controlA' || k === 'controlB') {
@@ -7522,8 +7548,8 @@
 
         st[0][1] += v * percent;
       } else if (RADIUS_HASH.hasOwnProperty(k)) {
-        for (var _i10 = 0; _i10 < 2; _i10++) {
-          st[_i10].value += v[_i10] * percent;
+        for (var _i11 = 0; _i11 < 2; _i11++) {
+          st[_i11].value += v[_i11] * percent;
         }
       } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
         if (v !== 0) {
@@ -7537,11 +7563,23 @@
         if (v[1] !== 0) {
           st[1].value += v[1] * percent;
         }
+      } else if (k === 'boxShadow') {
+        for (var _i12 = 0, len = Math.min(st.length, v.length); _i12 < len; _i12++) {
+          // x/y/blur/spread
+          for (var j = 0; j < 4; j++) {
+            st[_i12][j] += v[_i12][j] * percent;
+          } // rgba
+
+
+          for (var _j4 = 0; _j4 < 4; _j4++) {
+            st[_i12][4][_j4] += v[_i12][4][_j4] * percent;
+          }
+        }
       } else if (GRADIENT_HASH.hasOwnProperty(k)) {
         if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-          for (var _i11 = 0, len = Math.min(st.v.length, v.length); _i11 < len; _i11++) {
-            var a = st.v[_i11];
-            var b = v[_i11];
+          for (var _i13 = 0, _len8 = Math.min(st.v.length, v.length); _i13 < _len8; _i13++) {
+            var a = st.v[_i13];
+            var b = v[_i13];
             a[0][0] += b[0][0] * percent;
             a[0][1] += b[0][1] * percent;
             a[0][2] += b[0][2] * percent;
@@ -7579,14 +7617,14 @@
 
           if (target.isMulti) {
             if (k === 'points' || k === 'controls') {
-              for (var _i12 = 0, _len7 = Math.min(_st.length, v.length); _i12 < _len7; _i12++) {
-                var o = _st[_i12];
-                var n = v[_i12];
+              for (var _i14 = 0, _len9 = Math.min(_st.length, v.length); _i14 < _len9; _i14++) {
+                var o = _st[_i14];
+                var n = v[_i14];
 
                 if (!isNil$3(o) && !isNil$3(n)) {
-                  for (var j = 0, len2 = Math.min(o.length, n.length); j < len2; j++) {
-                    var o2 = o[j];
-                    var n2 = n[j];
+                  for (var _j5 = 0, len2 = Math.min(o.length, n.length); _j5 < len2; _j5++) {
+                    var o2 = o[_j5];
+                    var n2 = n[_j5];
 
                     if (!isNil$3(o2) && !isNil$3(n2)) {
                       for (var _k2 = 0, len3 = Math.min(o2.length, n2.length); _k2 < len3; _k2++) {
@@ -7603,12 +7641,12 @@
                 var st2 = _st[i];
 
                 if (!isNil$3(item) && !isNil$3(st2)) {
-                  for (var _i13 = 0, _len8 = Math.min(st2.length, item.length); _i13 < _len8; _i13++) {
-                    var _o = st2[_i13];
-                    var _n = item[_i13];
+                  for (var _i15 = 0, _len10 = Math.min(st2.length, item.length); _i15 < _len10; _i15++) {
+                    var _o = st2[_i15];
+                    var _n = item[_i15];
 
                     if (!isNil$3(_o) && !isNil$3(_n)) {
-                      st2[_i13] += _n * percent;
+                      st2[_i15] += _n * percent;
                     }
                   }
                 }
@@ -7622,14 +7660,14 @@
             }
           } else {
             if (k === 'points' || k === 'controls') {
-              for (var _i14 = 0, _len9 = Math.min(_st.length, v.length); _i14 < _len9; _i14++) {
-                var _o2 = _st[_i14];
-                var _n2 = v[_i14];
+              for (var _i16 = 0, _len11 = Math.min(_st.length, v.length); _i16 < _len11; _i16++) {
+                var _o2 = _st[_i16];
+                var _n2 = v[_i16];
 
                 if (!isNil$3(_o2) && !isNil$3(_n2)) {
-                  for (var _j2 = 0, _len10 = Math.min(_o2.length, _n2.length); _j2 < _len10; _j2++) {
-                    if (!isNil$3(_o2[_j2]) && !isNil$3(_n2[_j2])) {
-                      _o2[_j2] += _n2[_j2] * percent;
+                  for (var _j6 = 0, _len12 = Math.min(_o2.length, _n2.length); _j6 < _len12; _j6++) {
+                    if (!isNil$3(_o2[_j6]) && !isNil$3(_n2[_j6])) {
+                      _o2[_j6] += _n2[_j6] * percent;
                     }
                   }
                 }
@@ -7828,14 +7866,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i15 = 1, _len11 = list.length; _i15 < _len11; _i15++) {
-          var start = list[_i15]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i17 = 1, _len13 = list.length; _i17 < _len13; _i17++) {
+          var start = list[_i17]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i15 + 1;
+            var j = _i17 + 1;
 
-            for (; j < _len11; j++) {
+            for (; j < _len13; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -7843,16 +7881,16 @@
               }
             }
 
-            var num = j - _i15 + 1;
-            start = list[_i15 - 1];
+            var num = j - _i17 + 1;
+            start = list[_i17 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i15; k < j; k++) {
+            for (var k = _i17; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i15);
+              item.offset = start.offset + per * (k + 1 - _i17);
             }
 
-            _i15 = j;
+            _i17 = j;
           }
         }
 
@@ -7869,8 +7907,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i16 = 1; _i16 < length; _i16++) {
-          var next = frames[_i16];
+        for (var _i18 = 1; _i18 < length; _i18++) {
+          var next = frames[_i18];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -7882,8 +7920,8 @@
         });
         prev = framesR[0];
 
-        for (var _i17 = 1; _i17 < length; _i17++) {
-          var _next = framesR[_i17];
+        for (var _i19 = 1; _i19 < length; _i19++) {
+          var _next = framesR[_i19];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -9723,24 +9761,7 @@
 
         if (__cacheStyle.boxShadow === undefined) {
           __cacheStyle.boxShadow = true;
-          computedStyle.boxShadow = [];
-          (currentStyle.boxShadow || []).forEach(function (item) {
-            var temp = [];
-
-            for (var i = 0; i < 4; i++) {
-              var o = item[i];
-
-              if (!o) {
-                temp.push(0);
-              } else {
-                temp.push(o.value);
-              }
-            }
-
-            temp.push(item[4].value);
-            temp.push(item[5]);
-            computedStyle.boxShadow.push(temp);
-          });
+          computedStyle.boxShadow = currentStyle.boxShadow;
         } // 这些直接赋值的不需要再算缓存
 
 
@@ -10763,6 +10784,24 @@
       get: function get() {
         return this.__list.length;
       }
+    }, {
+      key: "marginTop",
+      get: function get() {
+        var n = 0;
+        this.list.forEach(function (item) {
+          n = Math.max(n, item.computedStyle.marginTop);
+        });
+        return n;
+      }
+    }, {
+      key: "marginBottom",
+      get: function get() {
+        var n = 0;
+        this.list.forEach(function (item) {
+          n = Math.max(n, item.computedStyle.marginBottom);
+        });
+        return n;
+      }
     }]);
 
     return LineGroup;
@@ -11644,7 +11683,7 @@
                     }
 
                     x = data.x;
-                    y += lineGroup.height;
+                    y += lineGroup.height + lineGroup.marginBottom;
 
                     item.__layout({
                       x: data.x,
@@ -11673,7 +11712,7 @@
               if (lineGroup.size) {
                 lineGroups.push(lineGroup);
                 lineGroup.verticalAlign();
-                y += lineGroup.height;
+                y += lineGroup.height + lineGroup.marginBottom;
                 lineGroup = new LineGroup(data.x, y);
 
                 if (isVirtual) {
@@ -11733,7 +11772,7 @@
                     lineGroups.push(lineGroup);
                     lineGroup.verticalAlign();
                     x = data.x;
-                    y += lineGroup.height;
+                    y += lineGroup.height + lineGroup.marginBottom;
 
                     item.__layout({
                       x: data.x,
@@ -11769,7 +11808,7 @@
             maxW = Math.max(maxW, cw);
           }
 
-          y += lineGroup.height;
+          y += lineGroup.height + lineGroup.marginBottom;
         }
 
         this.__width = fixedWidth || !isVirtual ? w : maxW;
@@ -13495,7 +13534,7 @@
 
       var op = {};
 
-      for (var _i = 0, len = od.props.length; _i < len; _i++) {
+      for (var _i = 0, len = (od.props || []).length; _i < len; _i++) {
         var prop = od.props[_i];
 
         var _prop = _slicedToArray(prop, 2),
@@ -13505,7 +13544,7 @@
         op[k] = v;
       }
 
-      for (var _i2 = 0, _len = nd.props.length; _i2 < _len; _i2++) {
+      for (var _i2 = 0, _len = (nd.props || []).length; _i2 < _len; _i2++) {
         var _prop2 = nd.props[_i2];
 
         var _prop3 = _slicedToArray(_prop2, 2),
@@ -13810,7 +13849,7 @@
 
     var op = {};
 
-    for (var i = 0, len = ovd.props.length; i < len; i++) {
+    for (var i = 0, len = (ovd.props || []).length; i < len; i++) {
       var prop = ovd.props[i];
 
       var _prop4 = _slicedToArray(prop, 2),
@@ -13820,7 +13859,7 @@
       op[k] = v;
     }
 
-    for (var _i3 = 0, _len2 = nvd.props.length; _i3 < _len2; _i3++) {
+    for (var _i3 = 0, _len2 = (nvd.props || []).length; _i3 < _len2; _i3++) {
       var _prop5 = nvd.props[_i3];
 
       var _prop6 = _slicedToArray(_prop5, 2),

@@ -244,7 +244,7 @@ class Dom extends Xom {
                 lineGroup.verticalAlign();
               }
               x = data.x;
-              y += lineGroup.height;
+              y += lineGroup.height + lineGroup.marginBottom;
               item.__layout({
                 x: data.x,
                 y,
@@ -269,7 +269,7 @@ class Dom extends Xom {
           if(lineGroup.size) {
             lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
-            y += lineGroup.height;
+            y += lineGroup.height + lineGroup.marginBottom;
             lineGroup = new LineGroup(data.x, y);
             if(isVirtual) {
               maxW = Math.max(maxW, cw);
@@ -324,7 +324,7 @@ class Dom extends Xom {
             lineGroups.push(lineGroup);
             lineGroup.verticalAlign();
             x = data.x;
-            y += lineGroup.height;
+            y += lineGroup.height + lineGroup.marginBottom;
             item.__layout({
               x: data.x,
               y,
@@ -355,7 +355,7 @@ class Dom extends Xom {
       else {
         maxW = Math.max(maxW, cw);
       }
-      y += lineGroup.height;
+      y += lineGroup.height + lineGroup.marginBottom;
     }
     this.__width = fixedWidth || !isVirtual ? w : maxW;
     this.__height = fixedHeight ? h : y - data.y;

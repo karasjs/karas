@@ -878,18 +878,15 @@ function normalize(style, reset = []) {
         let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
         for(let i = 0; i < 4; i++) {
           calUnit(res, i, res[i]);
-          // x/y可以负，blur和spread不行
+          // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
           if(i > 1 && res[i].value < 0) {
-            res[i].value = 0;
+            res[i] = 0;
           }
           if(res[i].unit === NUMBER) {
-            res[i].unit = PX;
+            res[i] = res[i].value;
           }
         }
-        res[4] = {
-          value: rgba2int(res[4]),
-          unit: RGBA,
-        };
+        res[4] = rgba2int(res[4]);
         style.boxShadow.push(res);
       }
     });

@@ -1081,22 +1081,7 @@ class Xom extends Node {
     }
     if(__cacheStyle.boxShadow === undefined) {
       __cacheStyle.boxShadow = true;
-      computedStyle.boxShadow = [];
-      (currentStyle.boxShadow || []).forEach(item => {
-        let temp = [];
-        for(let i = 0; i < 4; i++) {
-          let o = item[i];
-          if(!o) {
-            temp.push(0);
-          }
-          else {
-            temp.push(o.value);
-          }
-        }
-        temp.push(item[4].value);
-        temp.push(item[5]);
-        computedStyle.boxShadow.push(temp);
-      });
+      computedStyle.boxShadow = currentStyle.boxShadow;
     }
     // 这些直接赋值的不需要再算缓存
     [

@@ -40,12 +40,12 @@ function diffDef(elem, od, nd) {
       elem.setAttribute('id', nd.uuid);
     }
     let op = {};
-    for(let i = 0, len = od.props.length; i < len; i++) {
+    for(let i = 0, len = (od.props || []).length; i < len; i++) {
       let prop = od.props[i];
       let [k, v] = prop;
       op[k] = v;
     }
-    for(let i = 0, len = nd.props.length; i < len; i++) {
+    for(let i = 0, len = (nd.props || []).length; i < len; i++) {
       let prop = nd.props[i];
       let [k, v] = prop;
       // 已有不等更新，没有添加
@@ -331,12 +331,12 @@ function diffItemSelf(elem, ovd, nvd) {
     return;
   }
   let op = {};
-  for(let i = 0, len = ovd.props.length; i < len; i++) {
+  for(let i = 0, len = (ovd.props || []).length; i < len; i++) {
     let prop = ovd.props[i];
     let [k, v] = prop;
     op[k] = v;
   }
-  for(let i = 0, len = nvd.props.length; i < len; i++) {
+  for(let i = 0, len = (nvd.props || []).length; i < len; i++) {
     let prop = nvd.props[i];
     let [k, v] = prop;
     // 已有不等更新，没有添加

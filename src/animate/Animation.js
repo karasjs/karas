@@ -202,6 +202,12 @@ function equalStyle(k, a, b, target) {
     || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
+  else if(k === 'boxShadow') {
+    if(a === null) {
+      return a === b;
+    }
+    return equalArr(a, b);
+  }
   else if(RADIUS_HASH.hasOwnProperty(k)) {
     return a[0].value === b[0].value && a[0].unit === b[0].unit
       && a[1].value === b[1].value && a[1].unit === b[1].unit;
@@ -449,6 +455,25 @@ function calDiff(prev, next, k, target) {
         return;
       }
       res.v = v;
+    }
+  }
+  else if(k === 'boxShadow') {
+    res.v = [];
+    for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+      let a = p[i];
+      let b = n[i];
+      let v = [];
+      // x/y/blur/spread
+      for(let j = 0; j < 4; j++) {
+        v.push(b[j] - a[j]);
+      }
+      // rgba
+      let c = [];
+      for(let j = 0; j < 4; j++) {
+        c.push(b[4][j] - a[4][j]);
+      }
+      v.push(c);
+      res.v.push(v);
     }
   }
   else if(EXPAND_HASH.hasOwnProperty(k)) {
@@ -932,6 +957,18 @@ function calIntermediateStyle(frame, percent, target) {
       }
       if(v[1] !== 0) {
         st[1].value += v[1] * percent;
+      }
+    }
+    else if(k === 'boxShadow') {
+      for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
+        // x/y/blur/spread
+        for(let j = 0; j < 4; j++) {
+          st[i][j] += v[i][j] * percent;
+        }
+        // rgba
+        for(let j = 0; j < 4; j++) {
+          st[i][4][j] += v[i][4][j] * percent;
+        }
       }
     }
     else if(GRADIENT_HASH.hasOwnProperty(k)) {

@@ -72,6 +72,22 @@ class LineGroup {
   get size() {
     return this.__list.length;
   }
+
+  get marginTop() {
+    let n = 0;
+    this.list.forEach(item => {
+      n = Math.max(n, item.computedStyle.marginTop);
+    });
+    return n;
+  }
+
+  get marginBottom() {
+    let n = 0;
+    this.list.forEach(item => {
+      n = Math.max(n, item.computedStyle.marginBottom);
+    });
+    return n;
+  }
 }
 
 export default LineGroup;

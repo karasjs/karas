@@ -8939,7 +8939,7 @@
     return 0;
   }
 
-  function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y3, x4, y4) {
+  function renderBoxShadow(renderMode, ctx, defs, data, xom, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight) {
     var _data = _slicedToArray(data, 6),
         x = _data[0],
         y = _data[1],
@@ -8948,10 +8948,7 @@
         color = _data[4],
         inset = _data[5];
 
-    var c = int2rgba$2(color); // fill强制为1，防止影响boxShadow透明度
-
-    color[3] = 1;
-    var fill = int2rgba$2(color);
+    var c = int2rgba$2(color);
     var n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2; // box本身坐标顺时针
 
     var box = [[x1, y1], [x4, y1], [x4, y4], [x1, y4], [x1, y1]]; // 算上各种偏移/扩散的最外层坐标，且逆时针
@@ -9000,8 +8997,8 @@
             ctx.closePath();
             ctx.beginPath();
 
-            if (ctx.fillStyle !== fill) {
-              ctx.fillStyle = fill;
+            if (ctx.fillStyle !== '#FFF') {
+              ctx.fillStyle = '#FFF';
             }
 
             ctx.shadowColor = c;
@@ -9014,8 +9011,8 @@
             ctx.closePath();
             ctx.beginPath();
 
-            if (ctx.fillStyle !== fill) {
-              ctx.fillStyle = fill;
+            if (ctx.fillStyle !== '#FFF') {
+              ctx.fillStyle = '#FFF';
             }
 
             ctx.shadowOffsetX = x;
@@ -9069,8 +9066,8 @@
               ctx.closePath();
               ctx.beginPath();
 
-              if (ctx.fillStyle !== fill) {
-                ctx.fillStyle = fill;
+              if (ctx.fillStyle !== '#FFF') {
+                ctx.fillStyle = '#FFF';
               }
 
               ctx.shadowColor = c;
@@ -9083,8 +9080,8 @@
               ctx.closePath();
               ctx.beginPath();
 
-              if (ctx.fillStyle !== fill) {
-                ctx.fillStyle = fill;
+              if (ctx.fillStyle !== '#FFF') {
+                ctx.fillStyle = '#FFF';
               }
 
               ctx.shadowOffsetX = x;
@@ -9099,116 +9096,156 @@
         ctx.closePath();
         ctx.restore();
       } else if (renderMode === mode.SVG) {
-        var filter = defs.add({
-          tagName: 'filter',
-          props: [],
-          children: [{
-            tagName: 'feDropShadow',
-            props: [['dx', x / (x4 - x1)], ['dy', y / (y4 - y1)], ['stdDeviation', blur], ['flood-color', c]]
-          }]
-        });
+        var d = matrix.int2convolution(blur);
 
         if (inset === 'inset') {
-          var coordsWithBox = [[Math.max(x1, x1 + x + spread), Math.max(y1, y1 + y + spread)], [Math.min(x4, x4 + x - spread), Math.max(y1, y1 + y + spread)], [Math.min(x4, x4 + x - spread), Math.min(y4, y4 + y - spread)], [Math.max(x1, x1 + x + spread), Math.min(y4, y4 + y - spread)], [Math.max(x1, x1 + x + spread), Math.max(y1, y1 + y + spread)]]; // 扩散出当前box的地方要先填充
+          var _xa2 = x1 + x + spread;
 
-          if (x || y || spread) {
-            var _clip = defs.add({
-              tagName: 'clipPath',
-              children: [{
-                tagName: 'path',
-                props: [['d', svgPolygon$1(coordsWithBox) + svgPolygon$1(box.slice(0).reverse())], ['fill', '#FFF']]
-              }]
-            });
+          var _ya2 = y1 + y + spread;
 
-            xom.virtualDom.bb.push({
-              type: 'item',
-              tagName: 'path',
-              props: [['d', svgPolygon$1(box)], ['fill', c], ['clip-path', 'url(#' + _clip + ')']]
-            });
+          var _xb2 = x4 + x - spread;
+
+          var _yb2 = y4 + y - spread;
+
+          var _spreadBox = [[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [_xa2, _yb2]];
+
+          var _cross2 = geom.getRectsIntersection([box[0][0], box[0][1], box[2][0], box[2][1]], [_spreadBox[0][0], _spreadBox[0][1], _spreadBox[2][0], _spreadBox[2][1]]);
+
+          if (!_cross2) {
+            return;
           }
 
-          var clip = defs.add({
-            tagName: 'clipPath',
-            children: [{
-              tagName: 'path',
-              props: [['d', svgPolygon$1(coordsWithBox)], ['fill', '#FFF']]
-            }]
-          });
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [['d', svgPolygon$1([coordsWithBox[0], coordsWithBox[1], coordsWithBox[2], [outer[1][0], coordsWithBox[3][1]], outer[1], outer[2], outer[3], outer[0], [outer[1][0], coordsWithBox[3][1]], coordsWithBox[3], coordsWithBox[0]])], ['fill', fill], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
-          });
-        } else {
-          var coords = [[x1 + x - spread, y1 + y - spread], [x4 + x + spread, y1 + y - spread], [x4 + x + spread, y4 + y + spread], [x1 + x - spread, y4 + y + spread], [x1 + x - spread, y1 + y - spread]];
-          var _cross2 = [];
-          var cross2 = [];
+          _cross2 = [[_cross2[0], _cross2[1]], [_cross2[2], _cross2[1]], [_cross2[2], _cross2[3]], [_cross2[0], _cross2[3]], [_cross2[0], _cross2[1]]];
 
-          if (x && y) ; else if (x) ; else if (y) {
-            _cross2 = [[x1, y1], [x4, y1], [x4, y1 + y - spread], [x1, y1 + y - spread], [x1, y1]];
-            cross2 = [[x1, y4 + y - spread], [x4, y4 + y - spread], [x4, y4 + y], [x1, y4 + y], [x1, y4]];
-          } // 扩散出当前box的地方要先填充
-
-
-          if (x || y || spread) {
-            var _clip3 = defs.add({
+          if (spread) {
+            var filter = defs.add({
+              tagName: 'filter',
+              props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
+              children: [{
+                tagName: 'feDropShadow',
+                props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+              }]
+            });
+            var clip = defs.add({
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(box) + svgPolygon$1(coords.slice(0).reverse()) + svgPolygon$1(cross2)], ['fill', '#FFF']]
+                props: [['d', svgPolygon$1(_cross2) + svgPolygon$1(box.slice(0).reverse())], ['fill', '#FFF']]
               }]
             });
-
             xom.virtualDom.bb.push({
               type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(coords)], ['fill', c], // ['filter', 'url(#' + filter + ')'],
-              ['clip-path', 'url(#' + _clip3 + ')']]
+              props: [['d', svgPolygon$1(box)], ['fill', c], ['clip-path', 'url(#' + clip + ')']]
             });
-            var clip2 = defs.add({
+            clip = defs.add({
               tagName: 'clipPath',
               children: [{
                 tagName: 'path',
-                props: [['d', svgPolygon$1(box) + svgPolygon$1(coords.slice(0).reverse()) + svgPolygon$1(_cross2.slice(0).reverse())], ['fill', '#FFF']]
+                props: [['d', svgPolygon$1(_cross2)], ['fill', '#FFF']]
               }]
             });
-            var d = matrix.int2convolution(blur);
-            var outerWidth = x4 - x1;
-            var outerHeight = y4 - y1;
-
+            xom.virtualDom.bb.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', svgPolygon$1([[_xa2, _ya2], [_xb2, _ya2], [_xb2, _yb2], [x1 - n, _yb2], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, _yb2], [_xa2, _yb2], [_xa2, _ya2]])], ['fill', '#FFF'], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + clip + ')']]
+            });
+          } else {
             var _filter = defs.add({
               tagName: 'filter',
               props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
               children: [{
-                tagName: 'feGaussianBlur',
-                props: [['stdDeviation', blur]]
+                tagName: 'feDropShadow',
+                props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
               }]
-            }); // xom.virtualDom.bb.push({
-            //   type: 'item',
-            //   tagName: 'path',
-            //   props: [
-            //     ['d', svgPolygon(coords)],
-            //     ['fill', c],
-            //     ['filter', 'url(#' + filter + ')'],
-            //     ['clip-path', 'url(#' + clip2 + ')'],
-            //   ],
-            // });
+            });
 
-          }
+            var _clip = defs.add({
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', svgPolygon$1(box)], ['fill', '#FFF']]
+              }]
+            });
 
-          var _clip2 = defs.add({
-            tagName: 'clipPath',
-            children: [{
+            xom.virtualDom.bb.push({
+              type: 'item',
               tagName: 'path',
-              props: [['d', svgPolygon$1(coords) + svgPolygon$1(outer) + svgPolygon$1(_cross2)], ['fill', '#FFF']]
-            }]
-          });
+              props: [['d', svgPolygon$1([[x1, y1], [x4, y1], [x4, y4], [x1 - n, y4], [x1 - n, y4 + n], [x4 + n, y4 + n], [x4 + n, y1 - n], [x1 - n, y1 - n], [x1 - n, y4], [x1, y4], [x1, y1]])], ['fill', '#FFF'], ['filter', 'url(#' + _filter + ')'], ['clip-path', 'url(#' + _clip + ')']]
+            });
+          }
+        } else {
+          var _xa3 = x1 + x - spread;
 
-          xom.virtualDom.bb.push({
-            type: 'item',
-            tagName: 'path',
-            props: [['d', svgPolygon$1(coords)], ['fill', fill], ['filter', 'url(#' + filter + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
-          });
+          var _ya3 = y1 + y - spread;
+
+          var _xb3 = x4 + x + spread;
+
+          var _yb3 = y4 + y + spread;
+
+          var _blurBox = [[_xa3, _ya3], [_xb3, _ya3], [_xb3, _yb3], [_xa3, _yb3]];
+
+          var _cross3 = geom.getRectsIntersection([box[0][0], box[0][1], box[2][0], box[2][1]], [_blurBox[0][0], _blurBox[0][1], _blurBox[2][0], _blurBox[2][1]]);
+
+          if (spread) {
+            var _filter2 = defs.add({
+              tagName: 'filter',
+              props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
+              children: [{
+                tagName: 'feDropShadow',
+                props: [['dx', 0], ['dy', 0], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+              }]
+            });
+
+            var _clip2 = defs.add({
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', svgPolygon$1(box) + svgPolygon$1(_blurBox.slice(0).reverse())], ['fill', '#FFF']]
+              }]
+            });
+
+            xom.virtualDom.bb.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', svgPolygon$1(_blurBox)], ['fill', c], ['clip-path', 'url(#' + _clip2 + ')']]
+            });
+            _clip2 = defs.add({
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', (_cross3 ? svgPolygon$1([[_cross3[0], _cross3[1]], [_cross3[2], _cross3[1]], [_cross3[2], _cross3[3]], [_cross3[0], _cross3[3]], [_cross3[0], _cross3[1]]].reverse()) : '') + svgPolygon$1(box) + svgPolygon$1(_blurBox) + svgPolygon$1(outer)], ['fill', '#FFF']]
+              }]
+            });
+            xom.virtualDom.bb.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', svgPolygon$1(_blurBox)], ['fill', '#FFF'], ['filter', 'url(#' + _filter2 + ')'], ['clip-path', 'url(#' + _clip2 + ')']]
+            });
+          } else {
+            var _filter3 = defs.add({
+              tagName: 'filter',
+              props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
+              children: [{
+                tagName: 'feDropShadow',
+                props: [['dx', x], ['dy', y], ['stdDeviation', blur * 0.5], ['flood-color', c]]
+              }]
+            });
+
+            var _clip3 = defs.add({
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', svgPolygon$1(box) + svgPolygon$1(outer)], ['fill', '#FFF']]
+              }]
+            });
+
+            xom.virtualDom.bb.push({
+              type: 'item',
+              tagName: 'path',
+              props: [['d', svgPolygon$1(box)], ['fill', '#FFF'], ['filter', 'url(#' + _filter3 + ')'], ['clip-path', 'url(#' + _clip3 + ')']]
+            });
+          }
         }
       }
     }
@@ -10119,7 +10156,7 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            renderBoxShadow(renderMode, ctx, defs, item, _this3, x1, y1, x2, y2, x3, y3, x4, y4);
+            renderBoxShadow(renderMode, ctx, defs, item, _this3, x1, y1, x2, y2, x3, y3, x4, y4, outerWidth, outerHeight);
           });
         } // 边框需考虑尖角，两条相交边平分45°夹角
 
@@ -10176,7 +10213,7 @@
                 props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
                 children: [{
                   tagName: 'feGaussianBlur',
-                  props: [['stdDeviation', v]]
+                  props: [['stdDeviation', v * 0.5]]
                 }]
               });
 

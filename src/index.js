@@ -43,12 +43,12 @@ let karas = {
     }
     return root;
   },
-  createElement(tagName, props, children) {
-    if(Array.isArray(props)) {
-      children = props;
-      props = {};
-    }
+  createElement(tagName, props) {
     props = props || {};
+    let children = [];
+    for(let i = 2, len = arguments.length; i < len; i++) {
+      children.push(arguments[i]);
+    }
     if(util.isString(tagName)) {
       if(tagName.charAt(0) === '$') {
         return this.createGm(tagName, props);

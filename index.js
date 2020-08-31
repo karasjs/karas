@@ -17313,7 +17313,7 @@
     repaint: repaint
   };
 
-  var version = "0.37.0";
+  var version = "0.37.1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);
@@ -17335,13 +17335,13 @@
 
       return root;
     },
-    createElement: function createElement(tagName, props, children) {
-      if (Array.isArray(props)) {
-        children = props;
-        props = {};
-      }
-
+    createElement: function createElement(tagName, props) {
       props = props || {};
+      var children = [];
+
+      for (var i = 2, len = arguments.length; i < len; i++) {
+        children.push(arguments[i]);
+      }
 
       if (util.isString(tagName)) {
         if (tagName.charAt(0) === '$') {

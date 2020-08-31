@@ -20,7 +20,10 @@ https://github.com/karasjs/karas/wiki/API
 
 ## Demo
 * demo目录下是一个web端的演示教程示例，可直接本地预览
-* 依赖的`csx`翻译工具来自于`yurine`：https://github.com/karasjs/yurine [![NPM version](https://img.shields.io/npm/v/yurine.svg)](https://npmjs.org/package/yurine)
+* `csx`预编译工具建议使用`babel-preset-karas`：https://github.com/karasjs/babel-preset-karas [![NPM version](https://img.shields.io/npm/v/babel-preset-karas.svg)](https://npmjs.org/package/babel-preset-karas)
+* 过时的`csx`预编译工具`yurine`：https://github.com/karasjs/yurine [![NPM version](https://img.shields.io/npm/v/yurine.svg)](https://npmjs.org/package/yurine)
+* 过时的`csx`预编译工具`csx-loader`：https://github.com/karasjs/csx-loader [![NPM version](https://img.shields.io/npm/v/csx-loader.svg)](https://npmjs.org/package/csx-loader)
+* 过时的`csx`预编译工具`rollup-plugin-csx`：https://github.com/karasjs/rollup-plugin-csx [![NPM version](https://img.shields.io/npm/v/rollup-plugin-csx.svg)](https://npmjs.org/package/rollup-plugin-csx)
 * 在线预览：http://army8735.me/karasjs/karas/demo/
 
 # License

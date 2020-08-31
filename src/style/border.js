@@ -485,8 +485,8 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
           }
           // 整个和borderRight重叠
           else if(main1 >= x3) {
-            cross1 = y4 - (main1 - x4) * Math.tan(deg2);
-            cross2 = y4 - (main2 - x4) * Math.tan(deg2);
+            cross1 = y4 - (x4 - main1) * Math.tan(deg2);
+            cross2 = y4 - (x4 - main2) * Math.tan(deg2);
             if(isLast) {
               points.push([
                 [main1, cross1],
@@ -532,7 +532,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
               else {
                 // 下部分和borderRight重叠
                 if(main2 > x3) {
-                  cross2 = y4 - (main2 - x1) * Math.tan(deg2);
+                  cross2 = y4 - (main2 - x3) * Math.tan(deg2);
                   points.push([
                     [x2, y3],
                     [x3, y3],
@@ -562,7 +562,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
               cross1 = y4 - (x4 - main2) * Math.tan(deg2);
               // 上部分和borderLeft重叠
               if(main1 < x2) {
-                cross2 = y4 - (main1 - x1) * Math.tan(deg1);
+                cross2 = y4 - (main1 - x3) * Math.tan(deg1);
                 points.push([
                   [main1, cross2],
                   [x2, y3],

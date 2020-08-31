@@ -2370,6 +2370,8 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
       cb = calBezierLeftTop(beginList[0][1], beginList[0][2], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
       [xb, yb] = cb[cb.length - 1];
     }
+    console.log(JSON.stringify(ca));
+    console.log(JSON.stringify(cb));
     beginList.forEach((points, i) => {
       let controls1;
       let controls2;
@@ -2386,11 +2388,11 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
         }
       }
       for(let i = 0, len = controls1.length; i < len; i++) {
-        limit(controls1[i], xa, ya, 6);
+        // limit(controls1[i], xa, ya, 6);
       }
       if(needInner) {
         for(let i = 0, len = controls2.length; i < len; i++) {
-          limit(controls2[i], xb, yb, 6);
+          // limit(controls2[i], xb, yb, 6);
         }
         if(controls2.length === 1) {
           points[2] = controls2[0];

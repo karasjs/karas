@@ -107,7 +107,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
         main2 = main1 + ps;
         if(direction === 0) {
           // 整个和borderLeft重叠
-          if(main2 < x2) {
+          if(main2 <= x2) {
             if(isLast) {
               points.push([
                 [x1, y1],
@@ -128,7 +128,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
             }
           }
           // 整个和borderRight重叠
-          else if(main1 > x3) {
+          else if(main1 >= x3) {
             cross1 = y1 + (x4 - main1) * Math.tan(deg2);
             cross2 = y1 + (x4 - main2) * Math.tan(deg2);
             if(isLast) {
@@ -285,7 +285,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
         }
         else if(direction === 1) {
           // 整个和borderTop重叠
-          if(main2 < y2) {
+          if(main2 <= y2) {
             if(isLast) {
               points.push([
                 [x3, y2],
@@ -306,7 +306,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
             }
           }
           // 整个和borderBottom重叠
-          else if(main1 > y3) {
+          else if(main1 >= y3) {
             cross1 = x3 + (main1 - y3) * Math.tan(deg2);
             cross2 = x3 + (main2 - y3) * Math.tan(deg2);
             if(isLast) {
@@ -463,7 +463,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
         }
         else if(direction === 2) {
           // 整个和borderLeft重叠
-          if(main2 < x2) {
+          if(main2 <= x2) {
             if(isLast) {
               points.push([
                 [x1, y4],
@@ -484,9 +484,9 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
             }
           }
           // 整个和borderRight重叠
-          else if(main1 > x3) {
-            cross1 = y4 - (main1 - x1) * Math.tan(deg2);
-            cross2 = y4 - (main2 - x1) * Math.tan(deg2);
+          else if(main1 >= x3) {
+            cross1 = y4 - (main1 - x4) * Math.tan(deg2);
+            cross2 = y4 - (main2 - x4) * Math.tan(deg2);
             if(isLast) {
               points.push([
                 [main1, cross1],
@@ -641,7 +641,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
         }
         else if(direction === 3) {
           // 整个和borderTop重叠
-          if(main2 < y2) {
+          if(main2 <= y2) {
             if(isLast) {
               points.push([
                 [x1, y1],
@@ -662,7 +662,7 @@ function calPoints(borderWidth, borderStyle, deg1, deg2, x1, x2, x3, x4, y1, y2,
             }
           }
           // 整个和borderBottom重叠
-          else if(main1 > y3) {
+          else if(main1 >= y3) {
             cross1 = x1 + (y4 - main1) * Math.tan(deg2);
             cross2 = x1 + (y4 - main2) * Math.tan(deg2);
             if(isLast) {
@@ -1085,13 +1085,22 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
     let rx2 = brx - (x2 - x1);
     let ry2 = bry - (y2 - y1);
     let sx2 = ry2 / rx2;
+    // 先计算第一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierTopLeft(beginList[0][0], beginList[0][1], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[0];
+    let cb;
+    if(needInner) {
+      cb = calBezierTopLeft(beginList[0][3], beginList[0][2], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[0];
+    }
     beginList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === 0) {
-        controls1 = calBezierTopLeft(points[0], points[1], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierTopLeft(points[3], points[2], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1100,9 +1109,15 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
           controls2 = calBezierTopLeft(points[3], points[2], oxl, oyl, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 0);
+      }
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 0);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -1127,13 +1142,22 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
     let rx2 = erx - (x4 - x3);
     let ry2 = ery - (y2 - y1);
     let sx2 = ry2 / rx2;
+    // 先计算最后一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierTopRight(endList[endLength - 1][0], endList[endLength - 1][1], oxr, oyr, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[ca.length - 1];
+    let cb;
+    if(needInner) {
+      cb = calBezierTopRight(endList[endLength - 1][3], endList[endLength - 1][2], oxr, oyr, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[cb.length - 1];
+    }
     endList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === endLength - 1) {
-        controls1 = calBezierTopRight(points[0], points[1], oxr, oyr, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierTopRight(points[3], points[2], oxr, oyr, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1142,9 +1166,15 @@ function calTopRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3,
           controls2 = calBezierTopRight(points[3], points[2], oxr, oyr, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 1);
+      }
       points[0] = controls1[0];
       points[1] = controls1[1].concat(controls1[2]).concat(controls1[3]);
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 1);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -1475,13 +1505,22 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
     let rx2 = brx - (x4 - x3);
     let ry2 = bry - (y2 - y1);
     let sx2 = ry2 / rx2;
+    // 先计算第一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierRightTop(beginList[0][1], beginList[0][2], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[ca.length - 1];
+    let cb;
+    if(needInner) {
+      cb = calBezierRightTop(beginList[0][0], beginList[0][3], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[cb.length - 1];
+    }
     beginList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === 0) {
-        controls1 = calBezierRightTop(points[1], points[2], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierRightTop(points[0], points[3], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1490,7 +1529,13 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
           controls2 = calBezierRightTop(points[0], points[3], oxt, oyt, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 2);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 2);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -1519,13 +1564,22 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
     let rx2 = erx - (x4 - x3);
     let ry2 = ery - (y4 - y3);
     let sx2 = ry2 / rx2;
+    // 先计算最后一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierRightBottom(endList[endLength - 1][1], endList[endLength - 1][2], oxb, oyb, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[0];
+    let cb;
+    if(needInner) {
+      cb = calBezierRightBottom(endList[endLength - 1][0], endList[endLength - 1][3], oxb, oyb, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[0];
+    }
     endList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === endLength - 1) {
-        controls1 = calBezierRightBottom(points[1], points[2], oxb, oyb, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierRightBottom(points[0], points[3], oxb, oyb, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1534,7 +1588,13 @@ function calRightRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y
           controls2 = calBezierRightBottom(points[0], points[3], oxb, oyb, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 3);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 3);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -1873,13 +1933,22 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
     let rx2 = brx - (x2 - x1);
     let ry2 = bry - (y4 - y3);
     let sx2 = ry2 / rx2;
+    // 先计算第一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierBottomLeft(beginList[0][3], beginList[0][2], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[0];
+    let cb;
+    if(needInner) {
+      cb = calBezierBottomLeft(beginList[0][0], beginList[0][1], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[0];
+    }
     beginList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === 0) {
-        controls1 = calBezierBottomLeft(points[3], points[2], oxl, oyl, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierBottomLeft(points[0], points[1], oxl, oyl, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1888,7 +1957,13 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
           controls2 = calBezierBottomLeft(points[0], points[1], oxl, oyl, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 4);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 4);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -1919,13 +1994,22 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
     let rx2 = erx - (x4 - x3);
     let ry2 = ery - (y4 - y3);
     let sx2 = ry2 / rx2;
+    // 先计算最后一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierBottomRight(endList[endLength - 1][3], endList[endLength - 1][2], oxr, oyr, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[ca.length - 1];
+    let cb;
+    if(needInner) {
+      cb = calBezierBottomRight(endList[endLength - 1][0], endList[endLength - 1][1], oxr, oyr, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[cb.length - 1];
+    }
     endList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === endLength - 1) {
-        controls1 = calBezierBottomRight(points[3], points[2], oxr, oyr, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierBottomRight(points[0], points[1], oxr, oyr, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -1934,7 +2018,13 @@ function calBottomRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, 
           controls2 = calBezierBottomRight(points[0], points[1], oxr, oyr, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 5);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 5);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -2271,13 +2361,22 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
     let rx2 = brx - (x2 - x1);
     let ry2 = bry - (y2 - y1);
     let sx2 = ry2 / rx2;
+    // 先计算第一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierLeftTop(beginList[0][0], beginList[0][3], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[ca.length - 1];
+    let cb;
+    if(needInner) {
+      cb = calBezierLeftTop(beginList[0][1], beginList[0][2], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[cb.length - 1];
+    }
     beginList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === 0) {
-        controls1 = calBezierLeftTop(points[0], points[3], oxt, oyt, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierLeftTop(points[1], points[2], oxt, oyt, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -2286,7 +2385,13 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
           controls2 = calBezierLeftTop(points[1], points[2], oxt, oyt, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 6);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 6);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -2314,13 +2419,22 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
     let rx2 = erx - (x2 - x1);
     let ry2 = ery - (y4 - y3);
     let sx2 = ry2 / rx2;
+    // 先计算最后一个块，确定x/y边界，防止因为划分原因导致出现超过边界情况交叉
+    let xa, ya, xb, yb;
+    let ca = calBezierLeftBottom(endList[endLength - 1][0], endList[endLength - 1][3], oxb, oyb, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+    [xa, ya] = ca[0];
+    let cb;
+    if(needInner) {
+      cb = calBezierLeftBottom(endList[endLength - 1][1], endList[endLength - 1][2], oxb, oyb, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+      [xb, yb] = cb[0];
+    }
     endList.forEach((points, i) => {
       let controls1;
       let controls2;
       if(i === endLength - 1) {
-        controls1 = calBezierLeftBottom(points[0], points[3], oxb, oyb, sx1, ry1, true, Math.tan(crossDeg) * ry1);
+        controls1 = ca;
         if(needInner) {
-          controls2 = calBezierLeftBottom(points[1], points[2], oxb, oyb, sx2, ry2, true, Math.tan(crossDeg) * ry2);
+          controls2 = cb;
         }
       }
       else {
@@ -2329,7 +2443,13 @@ function calLeftRadiusPoints(borderWidth, deg1, deg2, x1, x2, x3, x4, y1, y2, y3
           controls2 = calBezierLeftBottom(points[1], points[2], oxb, oyb, sx2, ry2);
         }
       }
+      for(let i = 0, len = controls1.length; i < len; i++) {
+        limit(controls1[i], xa, ya, 7);
+      }
       if(needInner) {
+        for(let i = 0, len = controls2.length; i < len; i++) {
+          limit(controls2[i], xb, yb, 7);
+        }
         if(controls2.length === 1) {
           points[2] = controls2[0];
           points.pop();
@@ -2583,6 +2703,41 @@ function calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
       list.push([x, y + h]);
     }
     return list;
+  }
+}
+
+function limit(points, x, y, direction) {
+  if(direction === 0) {
+    points[0] = Math.max(points[0], x);
+    points[1] = Math.min(points[1], y);
+  }
+  else if(direction === 1) {
+    points[0] = Math.min(points[0], x);
+    points[1] = Math.min(points[1], y);
+  }
+  else if(direction === 2) {
+    points[0] = Math.max(points[0], x);
+    points[1] = Math.max(points[1], y);
+  }
+  else if(direction === 3) {
+    points[0] = Math.max(points[0], x);
+    points[1] = Math.min(points[1], y);
+  }
+  else if(direction === 4) {
+    points[0] = Math.max(points[0], x);
+    points[1] = Math.max(points[1], y);
+  }
+  else if(direction === 5) {
+    points[0] = Math.min(points[0], x);
+    points[1] = Math.max(points[1], y);
+  }
+  else if(direction === 6) {
+    points[0] = Math.min(points[0], x);
+    points[1] = Math.max(points[1], y);
+  }
+  else if(direction === 7) {
+    points[0] = Math.min(points[0], x);
+    points[1] = Math.min(points[1], y);
   }
 }
 

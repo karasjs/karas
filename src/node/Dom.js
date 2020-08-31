@@ -355,10 +355,13 @@ class Dom extends Xom {
       else {
         maxW = Math.max(maxW, cw);
       }
-      y += lineGroup.height + lineGroup.marginBottom;
+      y += lineGroup.height;
     }
     this.__width = fixedWidth || !isVirtual ? w : maxW;
     this.__height = fixedHeight ? h : y - data.y;
+    if(lineGroup.size) {
+      y += lineGroup.marginBottom;
+    }
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {

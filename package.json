@@ -18,8 +18,6 @@
     "url": "git://github.com/karasjs/karas.git"
   },
   "dependencies": {
-    "babel-preset-karas": "^7.10.0",
-    "yurine": "~0.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.8.7",

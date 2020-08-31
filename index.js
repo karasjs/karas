@@ -2559,9 +2559,9 @@
               if (isLast) {
                 points.push([[x3, y2], [x4, y1], [x4, y4], [x3, y3]]);
               } else {
-                cross1 = x4 - (main2 - y1) * Math.tan(deg1);
-                cross2 = x4 - (main1 - y1) * Math.tan(deg1);
-                points.push([[cross1, main2], [cross2, main1], [x4, main1], [x4, main2]]);
+                cross1 = x4 - (main1 - y1) * Math.tan(deg1);
+                cross2 = x4 - (main2 - y1) * Math.tan(deg1);
+                points.push([[cross1, main1], [x4, main1], [x4, main2], [cross2, main2]]);
               }
             } // 整个和borderBottom重叠
             else if (main1 >= y3) {
@@ -4156,8 +4156,6 @@
         yb = _cb7[1];
       }
 
-      console.log(JSON.stringify(ca));
-      console.log(JSON.stringify(cb));
       beginList.forEach(function (points, i) {
         var controls1;
         var controls2;
@@ -4176,11 +4174,13 @@
           }
         }
 
-        for (var _i13 = 0, _len13 = controls1.length; _i13 < _len13; _i13++) {// limit(controls1[i], xa, ya, 6);
+        for (var _i13 = 0, _len13 = controls1.length; _i13 < _len13; _i13++) {
+          limit(controls1[_i13], _xa5, ya, 6);
         }
 
         if (needInner) {
-          for (var _i14 = 0, _len14 = controls2.length; _i14 < _len14; _i14++) {// limit(controls2[i], xb, yb, 6);
+          for (var _i14 = 0, _len14 = controls2.length; _i14 < _len14; _i14++) {
+            limit(controls2[_i14], _xb5, yb, 6);
           }
 
           if (controls2.length === 1) {

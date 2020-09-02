@@ -8853,8 +8853,8 @@
 
         frame.nextFrame({
           before: function before() {
-            self.__clean();
-
+            // 尚未初始化的清除
+            self.__clean && self.__clean();
             self.__target = null;
           }
         });

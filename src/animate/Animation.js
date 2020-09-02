@@ -1751,7 +1751,8 @@ class Animation extends Event {
     // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
     frame.nextFrame({
       before() {
-        self.__clean();
+        // 尚未初始化的清除
+        self.__clean && self.__clean();
         self.__target = null;
       },
     });

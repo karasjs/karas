@@ -16002,11 +16002,12 @@
             painter.canvasPolygon(ctx, _list2);
           }
 
+          ctx.fill();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
-          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
@@ -16544,11 +16545,12 @@
             painter.canvasPolygon(ctx, _list2);
           }
 
+          ctx.fill();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
-          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
@@ -16688,11 +16690,12 @@
             painter.canvasPolygon(ctx, _list2);
           }
 
+          ctx.fill();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
-          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
@@ -16867,11 +16870,12 @@
             painter.canvasPolygon(ctx, _list2);
           }
 
+          ctx.fill();
+
           if (strokeWidth > 0) {
             ctx.stroke();
           }
 
-          ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];

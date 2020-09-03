@@ -137,10 +137,10 @@ class Rect extends Geom {
       else {
         painter.canvasPolygon(ctx, list);
       }
+      ctx.fill();
       if(strokeWidth > 0) {
         ctx.stroke();
       }
-      ctx.fill();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {

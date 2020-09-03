@@ -11,8 +11,8 @@ function genVertex(x, y, width, height, rx = 0, ry = 0) {
     return [
       [x, y],
       [x + width, y],
-      [x + width, y + width],
-      [x, y + width],
+      [x + width, y + height],
+      [x, y + height],
       [x, y],
     ];
   }

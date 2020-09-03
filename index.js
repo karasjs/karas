@@ -16389,7 +16389,7 @@
     var ry = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
 
     if (rx === 0 || ry === 0) {
-      return [[x, y], [x + width, y], [x + width, y + width], [x, y + width], [x, y]];
+      return [[x, y], [x + width, y], [x + width, y + height], [x, y + height], [x, y]];
     }
 
     var ox = rx * geom.H;

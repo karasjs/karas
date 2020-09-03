@@ -1591,6 +1591,8 @@ class Xom extends Node {
           list.push(next);
           next = next.next;
         }
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         // 当mask只有1个时，无需生成m，直接在c上即可
         if(list.length === 1) {
           next = list[0];
@@ -1618,6 +1620,7 @@ class Xom extends Node {
           m.ctx.clearRect(0, 0, width, height);
           m.draw(m.ctx);
         }
+        ctx.restore();
         // 清除
         c.ctx.globalCompositeOperation = 'source-over';
         c.ctx.clearRect(0, 0, width, height);

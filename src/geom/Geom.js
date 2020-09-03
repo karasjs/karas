@@ -276,7 +276,7 @@ class Geom extends Xom {
       }
       // svg的mask没有transform，需手动计算变换后的坐标应用
       let children = clone(vd.children);
-      let m = this.matrixEvent;
+      let m = this.matrix;
       children.forEach(child => {
         let props = child.props;
         if(child.tagName === 'path') {

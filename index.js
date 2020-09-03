@@ -6341,13 +6341,10 @@
 
     if (!CANVAS[key]) {
       o = CANVAS[key] = document.createElement('canvas');
-      o.style.position = 'absolute';
-      o.style.visibility = 'hidden';
-      o.style.left = '9999px';
-      o.style.top = '-9999px';
+    } else {
+      o = CANVAS[key];
     }
 
-    o = CANVAS[key];
     o.setAttribute('width', width);
     o.setAttribute('height', height);
     o.style.width = width + 'px';
@@ -10525,8 +10522,10 @@
             while (next && next.isMask) {
               list.push(next);
               next = next.next;
-            } // 当mask只有1个时，无需生成m，直接在c上即可
+            }
 
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // 当mask只有1个时，无需生成m，直接在c上即可
 
             if (list.length === 1) {
               next = list[0];
@@ -10552,8 +10551,9 @@
                 m.ctx.globalCompositeOperation = 'source-over';
                 m.ctx.clearRect(0, 0, width, height);
                 m.draw(m.ctx);
-              } // 清除
+              }
 
+            ctx.restore(); // 清除
 
             c.ctx.globalCompositeOperation = 'source-over';
             c.ctx.clearRect(0, 0, width, height);
@@ -15372,7 +15372,7 @@
 
 
           var children = clone$4(vd.children);
-          var m = this.matrixEvent;
+          var m = this.matrix;
           children.forEach(function (child) {
             var props = child.props;
 
@@ -17313,7 +17313,7 @@
     repaint: repaint
   };
 
-  var version = "0.37.1";
+  var version = "0.37.2";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

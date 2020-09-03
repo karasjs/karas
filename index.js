@@ -16386,6 +16386,11 @@
   function genVertex(x, y, width, height) {
     var rx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
     var ry = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+
+    if (rx === 0 || ry === 0) {
+      return [[x, y], [x + width, y], [x + width, y + width], [x, y + width], [x, y]];
+    }
+
     var ox = rx * geom.H;
     var oy = ry * geom.H;
     return [[x + rx, y], [x + width - rx, y], [x + width + ox - rx, y, x + width, y + ry - oy, x + width, y + ry], [x + width, y + height - ry], [x + width, y + height + oy - ry, x + width + ox - rx, y + height, x + width - rx, y + height], [x + rx, y + height], [x + rx - ox, y + height, x, y + height + oy - ry, x, y + height - ry], [x, y + ry], [x, y + ry - oy, x + rx - ox, y, x + rx, y]];

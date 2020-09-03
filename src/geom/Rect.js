@@ -7,6 +7,15 @@ import util from "../util/util";
 let { isNil } = util;
 
 function genVertex(x, y, width, height, rx = 0, ry = 0) {
+  if(rx === 0 || ry === 0) {
+    return [
+      [x, y],
+      [x + width, y],
+      [x + width, y + width],
+      [x, y + width],
+      [x, y],
+    ];
+  }
   let ox = rx * geom.H;
   let oy = ry * geom.H;
   return [

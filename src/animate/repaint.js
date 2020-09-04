@@ -54,4 +54,7 @@ export default {
     filter: true,
     boxShadow: true,
   },
+  isRepaint(k) {
+    return this.STYLE.hasOwnProperty(k) || this.GEOM.hasOwnProperty(k);
+  },
 };

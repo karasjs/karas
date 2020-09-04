@@ -1465,9 +1465,7 @@
         }
       } else if (isArrayA || isArrayB) {
         return false;
-      }
-
-      if (ai !== bi) {
+      } else if (ai !== bi) {
         return false;
       }
     }
@@ -4592,6 +4590,110 @@
 
   };
 
+  var repaint = {
+    GEOM: {
+      x1: true,
+      y1: true,
+      x2: true,
+      y2: true,
+      controlA: true,
+      controlB: true,
+      r: true,
+      rx: true,
+      ry: true,
+      begin: true,
+      end: true,
+      points: true,
+      controls: true,
+      edge: true,
+      closure: true
+    },
+    STYLE: {
+      transform: true,
+      translateX: true,
+      translateY: true,
+      skewX: true,
+      skewY: true,
+      scaleX: true,
+      scaleY: true,
+      rotateZ: true,
+      color: true,
+      fontStyle: true,
+      strokeWidth: true,
+      fill: true,
+      strokeDasharray: true,
+      strokeLinecap: true,
+      strokeLinejoin: true,
+      strokeMiterlimit: true,
+      backgroundColor: true,
+      backgroundImage: true,
+      backgroundPositionX: true,
+      backgroundPositionY: true,
+      backgroundRepeat: true,
+      backgroundSize: true,
+      stroke: true,
+      borderBottomColor: true,
+      borderLeftColor: true,
+      borderRightColor: true,
+      borderTopColor: true,
+      borderTopLeftRadius: true,
+      borderTopRightRadius: true,
+      borderBottomRightRadius: true,
+      borderBottomLeftRadius: true,
+      visibility: true,
+      opacity: true,
+      zIndex: true,
+      filter: true,
+      boxShadow: true
+    },
+    isRepaint: function isRepaint(k) {
+      return this.STYLE.hasOwnProperty(k) || this.GEOM.hasOwnProperty(k);
+    }
+  };
+
+  var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
+  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth', 'strokeMiterlimit'];
+  var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
+  var KEY_RADIUS = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'];
+  var COLOR_HASH = {};
+  KEY_COLOR.forEach(function (k) {
+    COLOR_HASH[k] = true;
+  });
+  var LENGTH_HASH = {};
+  KEY_LENGTH.forEach(function (k) {
+    LENGTH_HASH[k] = true;
+  });
+  var RADIUS_HASH = {};
+  KEY_RADIUS.forEach(function (k) {
+    RADIUS_HASH[k] = true;
+  });
+  var GRADIENT_HASH = {};
+  KEY_GRADIENT.forEach(function (k) {
+    GRADIENT_HASH[k] = true;
+  });
+  var GRADIENT_TYPE = {
+    linear: true,
+    radial: true
+  };
+  var KEY_EXPAND = ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ', 'skewX', 'skewY'];
+  var EXPAND_HASH = {};
+  KEY_EXPAND.forEach(function (k) {
+    EXPAND_HASH[k] = true;
+  });
+  var key = {
+    KEY_COLOR: KEY_COLOR,
+    KEY_EXPAND: KEY_EXPAND,
+    KEY_GRADIENT: KEY_GRADIENT,
+    KEY_LENGTH: KEY_LENGTH,
+    KEY_RADIUS: KEY_RADIUS,
+    COLOR_HASH: COLOR_HASH,
+    EXPAND_HASH: EXPAND_HASH,
+    GRADIENT_HASH: GRADIENT_HASH,
+    LENGTH_HASH: LENGTH_HASH,
+    RADIUS_HASH: RADIUS_HASH,
+    GRADIENT_TYPE: GRADIENT_TYPE
+  };
+
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
       PERCENT$2 = unit.PERCENT,
@@ -4603,6 +4705,12 @@
   var isNil$2 = util.isNil,
       rgba2int$2 = util.rgba2int;
   var DEFAULT_FONT_SIZE = 16;
+  var COLOR_HASH$1 = key.COLOR_HASH,
+      LENGTH_HASH$1 = key.LENGTH_HASH,
+      RADIUS_HASH$1 = key.RADIUS_HASH,
+      GRADIENT_HASH$1 = key.GRADIENT_HASH,
+      EXPAND_HASH$1 = key.EXPAND_HASH,
+      GRADIENT_TYPE$1 = key.GRADIENT_TYPE;
 
   function parserOneBorder(style, direction) {
     var k = 'border' + direction;
@@ -5690,13 +5798,81 @@
     return v;
   }
 
+  function equalStyle(k, a, b, target) {
+    if (k === 'transform') {
+      return util.equalArr(a[0][1], b[0][1]);
+    } else if (k === 'filter') {
+      if (a.length !== b.length) {
+        return false;
+      }
+
+      for (var i = 0, len = a.length; i < len; i++) {
+        if (!util.equalArr(a[i], b[i])) {
+          return false;
+        }
+      }
+    } else if (k === 'transformOrigin' || k === 'backgroundSize') {
+      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
+    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH$1.hasOwnProperty(k) || EXPAND_HASH$1.hasOwnProperty(k)) {
+      return a.value === b.value && a.unit === b.unit;
+    } else if (k === 'boxShadow') {
+      if (a === null) {
+        return a === b;
+      }
+
+      return util.equalArr(a, b);
+    } else if (RADIUS_HASH$1.hasOwnProperty(k)) {
+      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
+    } else if (COLOR_HASH$1.hasOwnProperty(k)) {
+      return a.unit === b.unit && util.equalArr(a.value, b.value);
+    } else if (GRADIENT_HASH$1.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE$1.hasOwnProperty(a.k)) {
+      var av = a.v;
+      var bv = b.v;
+
+      if (a.d !== b.d || av.length !== bv.length) {
+        return false;
+      }
+
+      for (var _i5 = 0, _len = av.length; _i5 < _len; _i5++) {
+        var ai = av[_i5];
+        var bi = bv[_i5];
+
+        if (ai.length !== bi.length) {
+          return false;
+        }
+
+        for (var j = 0; j < 4; j++) {
+          if (ai[0][j] !== bi[0][j]) {
+            return false;
+          }
+        }
+
+        if (ai.length > 1) {
+          if (ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
+    else if (repaint.GEOM.hasOwnProperty(k)) {
+        if (target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+          return util.equalArr(a, b);
+        }
+      }
+
+    return a === b;
+  }
+
   var css = {
     normalize: normalize$1,
     compute: compute,
     setFontStyle: setFontStyle,
     getBaseLine: getBaseLine,
     calRelative: calRelative,
-    calAbsolute: calAbsolute
+    calAbsolute: calAbsolute,
+    equalStyle: equalStyle
   };
 
   var PERCENT$3 = unit.PERCENT,
@@ -5728,6 +5904,111 @@
 
   var image = {
     matrixResize: matrixResize
+  };
+
+  var DOM = {
+    position: 'static',
+    display: 'block',
+    top: 'auto',
+    right: 'auto',
+    bottom: 'auto',
+    left: 'auto',
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    fontSize: 'inherit',
+    fontFamily: 'inherit',
+    color: 'inherit',
+    fontStyle: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'normal',
+    backgroundImage: null,
+    backgroundColor: 'transparent',
+    backgroundSize: 'auto',
+    backgroundRepeat: 'repeat',
+    backgroundPositionX: 0,
+    backgroundPositionY: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    borderTopColor: '#000',
+    borderRightColor: '#000',
+    borderBottomColor: '#000',
+    borderLeftColor: '#000',
+    borderTopStyle: 'solid',
+    borderRightStyle: 'solid',
+    borderBottomStyle: 'solid',
+    borderLeftStyle: 'solid',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 0,
+    width: 'auto',
+    height: 'auto',
+    flexGrow: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    textAlign: 'inherit',
+    transformOrigin: 'center',
+    visibility: 'inherit',
+    opacity: 1,
+    zIndex: 0,
+    transform: null,
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    skewX: 0,
+    skewY: 0,
+    rotateZ: 0,
+    filter: null,
+    boxShadow: null
+  };
+  var GEOM = {
+    fill: 'transparent',
+    stroke: '#000',
+    strokeWidth: 1,
+    strokeDasharray: '',
+    strokeLinecap: 'butt',
+    strokeLinejoin: 'miter',
+    strokeMiterlimit: 4
+  };
+  var dom = [];
+  var domKey = [];
+  Object.keys(DOM).forEach(function (k) {
+    domKey.push(k);
+    var v = DOM[k];
+    dom.push({
+      k: k,
+      v: v
+    });
+  });
+  var geom$2 = [];
+  var geomKey = [];
+  Object.keys(GEOM).forEach(function (k) {
+    geomKey.push(k);
+    var v = GEOM[k];
+    geom$2.push({
+      k: k,
+      v: v
+    });
+  });
+  var reset = {
+    DOM: DOM,
+    GEOM: GEOM,
+    domKey: domKey,
+    geomKey: geomKey,
+    dom: dom,
+    geom: geom$2
   };
 
   var isFunction$1 = util.isFunction;
@@ -6853,64 +7134,6 @@
     REFLOW: 1
   };
 
-  var repaint = {
-    GEOM: {
-      x1: true,
-      y1: true,
-      x2: true,
-      y2: true,
-      controlA: true,
-      controlB: true,
-      r: true,
-      rx: true,
-      ry: true,
-      begin: true,
-      end: true,
-      points: true,
-      controls: true,
-      edge: true,
-      closure: true
-    },
-    STYLE: {
-      transform: true,
-      translateX: true,
-      translateY: true,
-      skewX: true,
-      skewY: true,
-      scaleX: true,
-      scaleY: true,
-      rotateZ: true,
-      color: true,
-      fontStyle: true,
-      strokeWidth: true,
-      fill: true,
-      strokeDasharray: true,
-      strokeLinecap: true,
-      strokeLinejoin: true,
-      strokeMiterlimit: true,
-      backgroundColor: true,
-      backgroundImage: true,
-      backgroundPositionX: true,
-      backgroundPositionY: true,
-      backgroundRepeat: true,
-      backgroundSize: true,
-      stroke: true,
-      borderBottomColor: true,
-      borderLeftColor: true,
-      borderRightColor: true,
-      borderTopColor: true,
-      borderTopLeftRadius: true,
-      borderTopRightRadius: true,
-      borderBottomRightRadius: true,
-      borderBottomLeftRadius: true,
-      visibility: true,
-      opacity: true,
-      zIndex: true,
-      filter: true,
-      boxShadow: true
-    }
-  };
-
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -6925,35 +7148,12 @@
       clone$1 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
-  var KEY_COLOR = ['backgroundColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor', 'borderTopColor', 'color'];
-  var KEY_LENGTH = ['fontSize', 'borderBottomWidth', 'borderLeftWidth', 'borderRightWidth', 'borderTopWidth', 'bottom', 'left', 'right', 'top', 'flexBasis', 'width', 'height', 'lineHeight', 'marginBottom', 'marginLeft', 'marginRight', 'marginTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'paddingTop', 'strokeWidth', 'strokeMiterlimit'];
-  var KEY_GRADIENT = ['backgroundImage', 'fill', 'stroke'];
-  var KEY_RADIUS = ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'];
-  var COLOR_HASH = {};
-  KEY_COLOR.forEach(function (k) {
-    COLOR_HASH[k] = true;
-  });
-  var LENGTH_HASH = {};
-  KEY_LENGTH.forEach(function (k) {
-    LENGTH_HASH[k] = true;
-  });
-  var RADIUS_HASH = {};
-  KEY_RADIUS.forEach(function (k) {
-    RADIUS_HASH[k] = true;
-  });
-  var GRADIENT_HASH = {};
-  KEY_GRADIENT.forEach(function (k) {
-    GRADIENT_HASH[k] = true;
-  });
-  var GRADIENT_TYPE = {
-    linear: true,
-    radial: true
-  };
-  var KEY_EXPAND = ['translateX', 'translateY', 'scaleX', 'scaleY', 'rotateZ', 'skewX', 'skewY'];
-  var EXPAND_HASH = {};
-  KEY_EXPAND.forEach(function (k) {
-    EXPAND_HASH[k] = true;
-  });
+  var COLOR_HASH$2 = key.COLOR_HASH,
+      LENGTH_HASH$2 = key.LENGTH_HASH,
+      RADIUS_HASH$2 = key.RADIUS_HASH,
+      GRADIENT_HASH$2 = key.GRADIENT_HASH,
+      EXPAND_HASH$2 = key.EXPAND_HASH,
+      GRADIENT_TYPE$2 = key.GRADIENT_TYPE;
 
   function unify(frames, target) {
     var hash = {};
@@ -6974,7 +7174,7 @@
     frames.forEach(function (item) {
       var style = item.style;
       keys.forEach(function (k) {
-        if (!style.hasOwnProperty(k)) {
+        if (!style.hasOwnProperty(k) || isNil$3(style[k])) {
           if (repaint.GEOM.hasOwnProperty(k)) {
             style[k] = target.currentProps[k];
           } else {
@@ -7009,7 +7209,7 @@
               value: util.rgba2int(computedStyle[k]),
               unit: RGBA$1
             };
-          } else if (LENGTH_HASH.hasOwnProperty(k)) {
+          } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
             style[k] = {
               value: computedStyle[k],
               unit: PX$3
@@ -7028,78 +7228,6 @@
         }
       });
     });
-  } // 对比两个样式的某个值是否相等
-
-
-  function equalStyle(k, a, b, target) {
-    if (k === 'transform') {
-      return equalArr$1(a[0][1], b[0][1]);
-    } else if (k === 'filter') {
-      if (a.length !== b.length) {
-        return false;
-      }
-
-      for (var i = 0, len = a.length; i < len; i++) {
-        if (!equalArr$1(a[i], b[i])) {
-          return false;
-        }
-      }
-    } else if (k === 'transformOrigin' || k === 'backgroundSize') {
-      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
-    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-      return a.value === b.value && a.unit === b.unit;
-    } else if (k === 'boxShadow') {
-      if (a === null) {
-        return a === b;
-      }
-
-      return equalArr$1(a, b);
-    } else if (RADIUS_HASH.hasOwnProperty(k)) {
-      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
-    } else if (COLOR_HASH.hasOwnProperty(k)) {
-      return a.unit === b.unit && equalArr$1(a.value, b.value);
-    } else if (GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
-      var av = a.v;
-      var bv = b.v;
-
-      if (a.d !== b.d || av.length !== bv.length) {
-        return false;
-      }
-
-      for (var _i = 0, _len = av.length; _i < _len; _i++) {
-        var ai = av[_i];
-        var bi = bv[_i];
-
-        if (ai.length !== bi.length) {
-          return false;
-        }
-
-        for (var j = 0; j < 4; j++) {
-          if (ai[0][j] !== bi[0][j]) {
-            return false;
-          }
-        }
-
-        if (ai.length > 1) {
-          if (ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-    else if (repaint.GEOM.hasOwnProperty(k)) {
-        if (target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
-          return equalArr$1(a, b);
-        }
-      }
-
-    return a === b;
-  }
-
-  function isStyleReflow(k) {
-    return !repaint.STYLE.hasOwnProperty(k) && !repaint.GEOM.hasOwnProperty(k);
   } // 计算是否需要刷新和刷新等级，新样式和之前样式对比
 
 
@@ -7113,11 +7241,11 @@
       var p = lastStyle[k]; // 前后均非空对比
 
       if (!isNil$3(n) && !isNil$3(p)) {
-        if (!equalStyle(k, n, p, target)) {
+        if (!css.equalStyle(k, n, p, target)) {
           res = true; // 不相等且刷新等级是重新布局时可以提前跳出
 
           if (lv === level.REPAINT) {
-            if (isStyleReflow(k)) {
+            if (!repaint.isRepaint(k)) {
               lv = level.REFLOW;
               break;
             }
@@ -7129,7 +7257,7 @@
       else if (!isNil$3(n) || !isNil$3(p)) {
           res = true;
 
-          if (isStyleReflow(k)) {
+          if (!repaint.isRepaint(k)) {
             lv = level.REFLOW;
             break;
           }
@@ -7315,9 +7443,9 @@
     } else if (k === 'boxShadow') {
       res.v = [];
 
-      for (var _i2 = 0, len = Math.min(p.length, n.length); _i2 < len; _i2++) {
-        var a = p[_i2];
-        var b = n[_i2];
+      for (var _i = 0, len = Math.min(p.length, n.length); _i < len; _i++) {
+        var a = p[_i];
+        var b = n[_i];
         var _v5 = []; // x/y/blur/spread
 
         for (var j = 0; j < 4; j++) {
@@ -7335,7 +7463,7 @@
 
         res.v.push(_v5);
       }
-    } else if (EXPAND_HASH.hasOwnProperty(k)) {
+    } else if (EXPAND_HASH$2.hasOwnProperty(k)) {
       if (p.unit === n.unit) {
         var _v6 = n.value - p.value;
 
@@ -7368,18 +7496,18 @@
     } else if (k === 'backgroundSize') {
       res.v = [];
 
-      for (var _i3 = 0; _i3 < 2; _i3++) {
-        var _pi = p[_i3];
-        var _ni = n[_i3];
+      for (var _i2 = 0; _i2 < 2; _i2++) {
+        var _pi = p[_i2];
+        var _ni = n[_i2];
 
         if (_pi.unit === _ni.unit && [PX$3, PERCENT$4].indexOf(_pi.unit) > -1) {
           res.v.push(_ni.value - _pi.value);
         } else if (_pi.unit === PX$3 && _ni.unit === PERCENT$4) {
-          var _v9 = _ni.value * 0.01 * target[_i3 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni.value * 0.01 * target[_i2 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v9 - _pi.value);
         } else if (_pi.unit === PERCENT$4 && _ni.unit === PX$3) {
-          var _v10 = _ni.value * 100 / target[_i3 ? 'innerWidth' : 'innerHeight'];
+          var _v10 = _ni.value * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
 
           res.v.push(_v10 - _pi.value);
         } else {
@@ -7390,7 +7518,7 @@
       if (equalArr$1(res.v, [0, 0])) {
         return;
       }
-    } else if (GRADIENT_HASH.hasOwnProperty(k)) {
+    } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       if (p.k !== n.k) {
         return;
@@ -7407,9 +7535,9 @@
           var innerWidth = target.innerWidth;
           var eq;
 
-          for (var _i4 = 0, _len2 = Math.min(pv.length, nv.length); _i4 < _len2; _i4++) {
-            var _a = pv[_i4];
-            var _b = nv[_i4];
+          for (var _i3 = 0, _len = Math.min(pv.length, nv.length); _i3 < _len; _i3++) {
+            var _a = pv[_i3];
+            var _b = nv[_i3];
             var t = [];
             t.push([_b[0][0] - _a[0][0], _b[0][1] - _a[0][1], _b[0][2] - _a[0][2], _b[0][3] - _a[0][3]]);
             eq = equalArr$1(t, [0, 0, 0, 0]);
@@ -7446,18 +7574,18 @@
           else {
               res.p = [];
 
-              for (var _i5 = 0; _i5 < 2; _i5++) {
-                var pp = p.p[_i5];
-                var np = n.p[_i5];
+              for (var _i4 = 0; _i4 < 2; _i4++) {
+                var pp = p.p[_i4];
+                var np = n.p[_i4];
 
                 if (pp.unit === np.unit) {
                   res.p.push(np.value - pp.value);
                 } else if (pp.unit === PX$3 && np.unit === PERCENT$4) {
-                  var _v12 = np.value * 0.01 * target[_i5 ? 'innerWidth' : 'innerHeight'];
+                  var _v12 = np.value * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v12 - pp.value);
                 } else if (pp.unit === PERCENT$4 && np.unit === PX$3) {
-                  var _v13 = np.value * 100 / target[_i5 ? 'innerWidth' : 'innerHeight'];
+                  var _v13 = np.value * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
 
                   res.p.push(_v13 - pp.value);
                 }
@@ -7475,7 +7603,7 @@
 
             res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
           }
-    } else if (COLOR_HASH.hasOwnProperty(k)) {
+    } else if (COLOR_HASH$2.hasOwnProperty(k)) {
       n = n.value;
       p = p.value;
 
@@ -7484,7 +7612,7 @@
       }
 
       res.v = [n[0] - p[0], n[1] - p[1], n[2] - p[2], n[3] - p[3]];
-    } else if (RADIUS_HASH.hasOwnProperty(k)) {
+    } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
       // x/y都相等无需
       if (n[0].value === p[0].value && n[0].unit === p[0].unit && n[1].value === p[1].value && n[1].unit === p[1].unit) {
         return;
@@ -7492,18 +7620,18 @@
 
       res.v = [];
 
-      for (var _i6 = 0; _i6 < 2; _i6++) {
-        if (n[_i6].unit === p[_i6].unit) {
-          res.v.push(n[_i6].value - p[_i6].value);
-        } else if (p[_i6].unit === PX$3 && n[_i6].unit === PERCENT$4) {
-          res.v.push(n[_i6].value * 0.01 * target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
-        } else if (p[_i6].unit === PERCENT$4 && n[_i6].unit === PX$3) {
-          res.v.push(n[_i6].value * 100 / target[_i6 ? 'outerHeight' : 'outerWidth'] - p[_i6].value);
+      for (var _i5 = 0; _i5 < 2; _i5++) {
+        if (n[_i5].unit === p[_i5].unit) {
+          res.v.push(n[_i5].value - p[_i5].value);
+        } else if (p[_i5].unit === PX$3 && n[_i5].unit === PERCENT$4) {
+          res.v.push(n[_i5].value * 0.01 * target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
+        } else if (p[_i5].unit === PERCENT$4 && n[_i5].unit === PX$3) {
+          res.v.push(n[_i5].value * 100 / target[_i5 ? 'outerHeight' : 'outerWidth'] - p[_i5].value);
         } else {
           res.v.push(0);
         }
       }
-    } else if (LENGTH_HASH.hasOwnProperty(k)) {
+    } else if (LENGTH_HASH$2.hasOwnProperty(k)) {
       // auto不做动画
       if (p.unit === AUTO$1 || n.unit === AUTO$1) {
         return;
@@ -7567,9 +7695,9 @@
 
             res.v = [];
 
-            for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
-              var _pv = p[_i7];
-              var _nv = n[_i7];
+            for (var _i6 = 0, _len2 = Math.min(p.length, n.length); _i6 < _len2; _i6++) {
+              var _pv = p[_i6];
+              var _nv = n[_i6];
 
               if (isNil$3(_pv) || isNil$3(_nv)) {
                 res.v.push(null);
@@ -7610,9 +7738,9 @@
 
             res.v = [];
 
-            for (var _i8 = 0, _len4 = Math.min(p.length, n.length); _i8 < _len4; _i8++) {
-              var _pv2 = p[_i8];
-              var _nv2 = n[_i8];
+            for (var _i7 = 0, _len3 = Math.min(p.length, n.length); _i7 < _len3; _i7++) {
+              var _pv2 = p[_i7];
+              var _nv2 = n[_i7];
 
               if (isNil$3(_pv2) || isNil$3(_nv2)) {
                 res.v.push(null);
@@ -7627,9 +7755,9 @@
 
             var _v16 = [];
 
-            for (var _i9 = 0, _len5 = Math.min(p.length, n.length); _i9 < _len5; _i9++) {
-              var _pv3 = p[_i9];
-              var _nv3 = n[_i9];
+            for (var _i8 = 0, _len4 = Math.min(p.length, n.length); _i8 < _len4; _i8++) {
+              var _pv3 = p[_i8];
+              var _nv3 = n[_i8];
 
               if (isNil$3(_pv3) || isNil$3(_nv3)) {
                 _v16.push(0);
@@ -7648,16 +7776,16 @@
 
             res.v = [];
 
-            for (var _i10 = 0, _len6 = Math.min(p.length, n.length); _i10 < _len6; _i10++) {
-              var _pv4 = p[_i10];
-              var _nv4 = n[_i10];
+            for (var _i9 = 0, _len5 = Math.min(p.length, n.length); _i9 < _len5; _i9++) {
+              var _pv4 = p[_i9];
+              var _nv4 = n[_i9];
 
               if (isNil$3(_pv4) || isNil$3(_nv4)) {
                 res.v.push(null);
               } else {
                 var _v17 = [];
 
-                for (var _j3 = 0, _len7 = Math.max(_pv4.length, _nv4.length); _j3 < _len7; _j3++) {
+                for (var _j3 = 0, _len6 = Math.max(_pv4.length, _nv4.length); _j3 < _len6; _j3++) {
                   var _pv5 = _pv4[_j3];
                   var _nv5 = _nv4[_j3]; // control由4点变2点
 
@@ -7800,11 +7928,11 @@
         }
 
         st[0][1] += v * percent;
-      } else if (RADIUS_HASH.hasOwnProperty(k)) {
-        for (var _i11 = 0; _i11 < 2; _i11++) {
-          st[_i11].value += v[_i11] * percent;
+      } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
+        for (var _i10 = 0; _i10 < 2; _i10++) {
+          st[_i10].value += v[_i10] * percent;
         }
-      } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+      } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH$2.hasOwnProperty(k) || EXPAND_HASH$2.hasOwnProperty(k)) {
         if (v !== 0) {
           st.value += v * percent;
         }
@@ -7817,22 +7945,22 @@
           st[1].value += v[1] * percent;
         }
       } else if (k === 'boxShadow') {
-        for (var _i12 = 0, len = Math.min(st.length, v.length); _i12 < len; _i12++) {
+        for (var _i11 = 0, len = Math.min(st.length, v.length); _i11 < len; _i11++) {
           // x/y/blur/spread
           for (var j = 0; j < 4; j++) {
-            st[_i12][j] += v[_i12][j] * percent;
+            st[_i11][j] += v[_i11][j] * percent;
           } // rgba
 
 
           for (var _j4 = 0; _j4 < 4; _j4++) {
-            st[_i12][4][_j4] += v[_i12][4][_j4] * percent;
+            st[_i11][4][_j4] += v[_i11][4][_j4] * percent;
           }
         }
-      } else if (GRADIENT_HASH.hasOwnProperty(k)) {
-        if (GRADIENT_TYPE.hasOwnProperty(st.k)) {
-          for (var _i13 = 0, _len8 = Math.min(st.v.length, v.length); _i13 < _len8; _i13++) {
-            var a = st.v[_i13];
-            var b = v[_i13];
+      } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
+        if (GRADIENT_TYPE$2.hasOwnProperty(st.k)) {
+          for (var _i12 = 0, _len7 = Math.min(st.v.length, v.length); _i12 < _len7; _i12++) {
+            var a = st.v[_i12];
+            var b = v[_i12];
             a[0][0] += b[0][0] * percent;
             a[0][1] += b[0][1] * percent;
             a[0][2] += b[0][2] * percent;
@@ -7859,7 +7987,7 @@
             st[3] += v[3] * percent;
           }
       } // color可能超限[0,255]，但浏览器已经做了限制，无需关心
-      else if (COLOR_HASH.hasOwnProperty(k)) {
+      else if (COLOR_HASH$2.hasOwnProperty(k)) {
           st = st.value;
           st[0] += v[0] * percent;
           st[1] += v[1] * percent;
@@ -7870,9 +7998,9 @@
 
           if (target.isMulti) {
             if (k === 'points' || k === 'controls') {
-              for (var _i14 = 0, _len9 = Math.min(_st.length, v.length); _i14 < _len9; _i14++) {
-                var o = _st[_i14];
-                var n = v[_i14];
+              for (var _i13 = 0, _len8 = Math.min(_st.length, v.length); _i13 < _len8; _i13++) {
+                var o = _st[_i13];
+                var n = v[_i13];
 
                 if (!isNil$3(o) && !isNil$3(n)) {
                   for (var _j5 = 0, len2 = Math.min(o.length, n.length); _j5 < len2; _j5++) {
@@ -7894,12 +8022,12 @@
                 var st2 = _st[i];
 
                 if (!isNil$3(item) && !isNil$3(st2)) {
-                  for (var _i15 = 0, _len10 = Math.min(st2.length, item.length); _i15 < _len10; _i15++) {
-                    var _o = st2[_i15];
-                    var _n = item[_i15];
+                  for (var _i14 = 0, _len9 = Math.min(st2.length, item.length); _i14 < _len9; _i14++) {
+                    var _o = st2[_i14];
+                    var _n = item[_i14];
 
                     if (!isNil$3(_o) && !isNil$3(_n)) {
-                      st2[_i15] += _n * percent;
+                      st2[_i14] += _n * percent;
                     }
                   }
                 }
@@ -7913,12 +8041,12 @@
             }
           } else {
             if (k === 'points' || k === 'controls') {
-              for (var _i16 = 0, _len11 = Math.min(_st.length, v.length); _i16 < _len11; _i16++) {
-                var _o2 = _st[_i16];
-                var _n2 = v[_i16];
+              for (var _i15 = 0, _len10 = Math.min(_st.length, v.length); _i15 < _len10; _i15++) {
+                var _o2 = _st[_i15];
+                var _n2 = v[_i15];
 
                 if (!isNil$3(_o2) && !isNil$3(_n2)) {
-                  for (var _j6 = 0, _len12 = Math.min(_o2.length, _n2.length); _j6 < _len12; _j6++) {
+                  for (var _j6 = 0, _len11 = Math.min(_o2.length, _n2.length); _j6 < _len11; _j6++) {
                     if (!isNil$3(_o2[_j6]) && !isNil$3(_n2[_j6])) {
                       _o2[_j6] += _n2[_j6] * percent;
                     }
@@ -8119,14 +8247,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i17 = 1, _len13 = list.length; _i17 < _len13; _i17++) {
-          var start = list[_i17]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i16 = 1, _len12 = list.length; _i16 < _len12; _i16++) {
+          var start = list[_i16]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i17 + 1;
+            var j = _i16 + 1;
 
-            for (; j < _len13; j++) {
+            for (; j < _len12; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -8134,16 +8262,16 @@
               }
             }
 
-            var num = j - _i17 + 1;
-            start = list[_i17 - 1];
+            var num = j - _i16 + 1;
+            start = list[_i16 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i17; k < j; k++) {
+            for (var k = _i16; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i17);
+              item.offset = start.offset + per * (k + 1 - _i16);
             }
 
-            _i17 = j;
+            _i16 = j;
           }
         }
 
@@ -8160,8 +8288,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i18 = 1; _i18 < length; _i18++) {
-          var next = frames[_i18];
+        for (var _i17 = 1; _i17 < length; _i17++) {
+          var next = frames[_i17];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -8173,8 +8301,8 @@
         });
         prev = framesR[0];
 
-        for (var _i19 = 1; _i19 < length; _i19++) {
-          var _next = framesR[_i19];
+        for (var _i18 = 1; _i18 < length; _i18++) {
+          var _next = framesR[_i18];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -8222,13 +8350,13 @@
         }; // 生成finish的任务事件
 
 
-        this.__fin = function (cb) {
+        this.__fin = function (cb, diff) {
           _this2.__begin = _this2.__end = _this2.__isDelay = _this2.__finish = _this2.__inFps = _this2.__enterFrame = null;
 
           _this2.emit(Event.FINISH);
 
           if (isFunction$3(cb)) {
-            cb();
+            cb(diff);
           }
         }; // 同步执行，用在finish()这种主动调用
 
@@ -8622,14 +8750,14 @@
 
                 __frameCb(diff);
 
-                __fin(cb);
+                __fin(cb, diff);
               }
             });
           } // 无刷新同步进行
           else {
               __clean(true);
 
-              __fin(cb);
+              __fin(cb, 0);
             }
         }
 
@@ -8664,7 +8792,7 @@
               needRefresh = _calRefresh12[0],
               lv = _calRefresh12[1];
 
-          var task = function task() {
+          var task = function task(diff) {
             _this5.__cancelTask();
 
             _this5.__begin = _this5.__end = _this5.__isDelay = _this5.__finish = _this5.__inFps = _this5.__enterFrame = null;
@@ -8672,7 +8800,7 @@
             _this5.emit(Event.CANCEL);
 
             if (isFunction$3(cb)) {
-              cb();
+              cb(diff);
             }
           };
 
@@ -8688,14 +8816,14 @@
 
                 __frameCb(diff);
 
-                task();
+                task(diff);
               }
             });
           } // 无刷新同步进行
           else {
               __clean();
 
-              task();
+              task(0);
             }
         }
 
@@ -8845,19 +8973,25 @@
       }
     }, {
       key: "__destroy",
-      value: function __destroy() {
-        var self = this; // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
+      value: function __destroy(sync) {
+        var self = this;
+        self.removeControl(); // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
 
-        frame.nextFrame({
-          before: function before() {
-            // 尚未初始化的清除
-            self.__clean && self.__clean();
-            self.__target = null;
-          }
-        });
+        if (sync) {
+          self.__clean && self.__clean();
+          self.__target = null;
+        } else {
+          frame.nextFrame({
+            before: function before() {
+              // 尚未初始化的清除
+              self.__clean && self.__clean();
+              self.__target = null;
+            }
+          });
+        }
+
         self.__startTime = null;
         self.__isDestroyed = true;
-        self.removeControl();
       }
     }, {
       key: "id",
@@ -10761,31 +10895,62 @@
         var root = this.root,
             __style = this.__style,
             __currentStyle = this.__currentStyle,
-            __cacheStyle = this.__cacheStyle;
+            __cacheStyle = this.__cacheStyle,
+            props = this.props,
+            __currentProps = this.__currentProps,
+            _this$__cacheProps = this.__cacheProps,
+            __cacheProps = _this$__cacheProps === void 0 ? {} : _this$__cacheProps;
 
         if (root) {
           var lv = level.REPAINT;
-          var hasZ;
+          var hasUpdate, hasZIndex;
+          var p;
 
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
-              // repaint置空，如果reflow会重新生成空的
-              __cacheStyle[i] = undefined;
-              this.__cacheSvg = false;
+              if (repaint.GEOM.hasOwnProperty(i)) {
+                console.log(style, props);
 
-              if (!repaint.STYLE.hasOwnProperty(i)) {
-                lv = level.REFLOW;
-                break;
-              }
+                if (!css.equalStyle(i, style[i], props[i], this)) {
+                  hasUpdate = true;
+                  this.__cacheSvg = false;
+                  p = p || {};
+                  p[i] = style[i];
+                  __cacheProps[i] = undefined;
+                }
+              } else if (reset.DOM.hasOwnProperty(i) || reset.GEOM.hasOwnProperty(i)) {
+                if (!css.equalStyle(i, style[i], __style[i], this)) {
+                  hasUpdate = true;
+                  this.__cacheSvg = false;
 
-              if (i === 'zIndex') {
-                hasZ = true;
+                  if (!repaint.isRepaint(i)) {
+                    lv = level.REFLOW;
+                    break;
+                  } else {
+                    // repaint置空，如果reflow会重新生成空的
+                    __cacheStyle[i] = undefined;
+                  }
+
+                  if (i === 'zIndex') {
+                    hasZIndex = true;
+                  }
+                }
               }
             }
+          }
+
+          console.log(hasUpdate, p);
+
+          if (!hasUpdate) {
+            if (util.isFunction(cb)) {
+              cb(0);
+            }
+
+            return;
           } // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
 
 
-          if (lv === level.REPAINT && hasZ && /svg/i.test(root.tagName)) {
+          if (lv === level.REPAINT && hasZIndex && /svg/i.test(root.tagName)) {
             this.__cancelCacheSvg();
           }
 
@@ -10794,6 +10959,12 @@
               var format = normalize$2(style);
               extend$1(__style, format);
               extend$1(__currentStyle, format);
+
+              if (p && __currentProps) {
+                extend$1(props, p);
+                extend$1(__currentProps, p);
+              }
+
               root.setRefreshLevel(lv);
             },
             after: cb
@@ -11053,111 +11224,6 @@
 
     return LineGroup;
   }();
-
-  var DOM = {
-    position: 'static',
-    display: 'block',
-    top: 'auto',
-    right: 'auto',
-    bottom: 'auto',
-    left: 'auto',
-    marginTop: 0,
-    marginRight: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    paddingTop: 0,
-    paddingRight: 0,
-    paddingBottom: 0,
-    paddingLeft: 0,
-    fontSize: 'inherit',
-    fontFamily: 'inherit',
-    color: 'inherit',
-    fontStyle: 'inherit',
-    fontWeight: 'inherit',
-    lineHeight: 'normal',
-    backgroundImage: null,
-    backgroundColor: 'transparent',
-    backgroundSize: 'auto',
-    backgroundRepeat: 'repeat',
-    backgroundPositionX: 0,
-    backgroundPositionY: 0,
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
-    borderLeftWidth: 0,
-    borderTopColor: '#000',
-    borderRightColor: '#000',
-    borderBottomColor: '#000',
-    borderLeftColor: '#000',
-    borderTopStyle: 'solid',
-    borderRightStyle: 'solid',
-    borderBottomStyle: 'solid',
-    borderLeftStyle: 'solid',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    borderBottomLeftRadius: 0,
-    width: 'auto',
-    height: 'auto',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    textAlign: 'inherit',
-    transformOrigin: 'center',
-    visibility: 'inherit',
-    opacity: 1,
-    zIndex: 0,
-    transform: null,
-    translateX: 0,
-    translateY: 0,
-    scaleX: 1,
-    scaleY: 1,
-    skewX: 0,
-    skewY: 0,
-    rotateZ: 0,
-    filter: null,
-    boxShadow: null
-  };
-  var GEOM = {
-    fill: 'transparent',
-    stroke: '#000',
-    strokeWidth: 1,
-    strokeDasharray: '',
-    strokeLinecap: 'butt',
-    strokeLinejoin: 'miter',
-    strokeMiterlimit: 4
-  };
-  var dom = [];
-  var domKey = [];
-  Object.keys(DOM).forEach(function (k) {
-    domKey.push(k);
-    var v = DOM[k];
-    dom.push({
-      k: k,
-      v: v
-    });
-  });
-  var geom$2 = [];
-  var geomKey = [];
-  Object.keys(GEOM).forEach(function (k) {
-    geomKey.push(k);
-    var v = GEOM[k];
-    geom$2.push({
-      k: k,
-      v: v
-    });
-  });
-  var reset = {
-    DOM: DOM,
-    GEOM: GEOM,
-    domKey: domKey,
-    geomKey: geomKey,
-    dom: dom,
-    geom: geom$2
-  };
 
   var TYPE_PL$1 = $$type.TYPE_PL,
       TYPE_VD$1 = $$type.TYPE_VD,

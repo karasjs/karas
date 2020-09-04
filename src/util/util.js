@@ -286,7 +286,7 @@ function equalArr(a, b) {
     else if(isArrayA || isArrayB) {
       return false;
     }
-    if(ai !== bi) {
+    else if(ai !== bi) {
       return false;
     }
   }

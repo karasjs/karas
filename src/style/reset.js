@@ -1,5 +1,3 @@
-import util from '../util/util';
-
 const DOM = {
   position: 'static',
   display: 'block',

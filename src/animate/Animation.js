@@ -7,98 +7,20 @@ import frame from './frame';
 import easing from './easing';
 import level from './level';
 import repaint from './repaint';
+import key from './key';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
 
-const KEY_COLOR = [
-  'backgroundColor',
-  'borderBottomColor',
-  'borderLeftColor',
-  'borderRightColor',
-  'borderTopColor',
-  'color',
-];
-
-const KEY_LENGTH = [
-  'fontSize',
-  'borderBottomWidth',
-  'borderLeftWidth',
-  'borderRightWidth',
-  'borderTopWidth',
-  'bottom',
-  'left',
-  'right',
-  'top',
-  'flexBasis',
-  'width',
-  'height',
-  'lineHeight',
-  'marginBottom',
-  'marginLeft',
-  'marginRight',
-  'marginTop',
-  'paddingBottom',
-  'paddingLeft',
-  'paddingRight',
-  'paddingTop',
-  'strokeWidth',
-  'strokeMiterlimit',
-];
-
-const KEY_GRADIENT = [
-  'backgroundImage',
-  'fill',
-  'stroke',
-];
-
-const KEY_RADIUS = [
-'borderTopLeftRadius',
-'borderTopRightRadius',
-'borderBottomRightRadius',
-'borderBottomLeftRadius',
-];
-
-const COLOR_HASH = {};
-KEY_COLOR.forEach(k => {
-  COLOR_HASH[k] = true;
-});
-
-const LENGTH_HASH = {};
-KEY_LENGTH.forEach(k => {
-  LENGTH_HASH[k] = true;
-});
-
-const RADIUS_HASH = {};
-KEY_RADIUS.forEach(k => {
-  RADIUS_HASH[k] = true;
-});
-
-const GRADIENT_HASH = {};
-KEY_GRADIENT.forEach(k => {
-  GRADIENT_HASH[k] = true;
-});
-
-const GRADIENT_TYPE = {
-  linear: true,
-  radial: true,
-};
-
-const KEY_EXPAND = [
-  'translateX',
-  'translateY',
-  'scaleX',
-  'scaleY',
-  'rotateZ',
-  'skewX',
-  'skewY'
-];
-
-const EXPAND_HASH = {};
-KEY_EXPAND.forEach(k => {
-  EXPAND_HASH[k] = true;
-});
+const {
+  COLOR_HASH,
+  LENGTH_HASH,
+  RADIUS_HASH,
+  GRADIENT_HASH,
+  EXPAND_HASH,
+  GRADIENT_TYPE,
+} = key;
 
 function unify(frames, target) {
   let hash = {};
@@ -119,7 +41,7 @@ function unify(frames, target) {
   frames.forEach(item => {
     let style = item.style;
     keys.forEach(k => {
-      if(!style.hasOwnProperty(k)) {
+      if(!style.hasOwnProperty(k) || isNil(style[k])) {
         if(repaint.GEOM.hasOwnProperty(k)) {
           style[k] = target.currentProps[k];
         }
@@ -179,80 +101,6 @@ function inherit(frames, keys, target) {
   });
 }
 
-// 对比两个样式的某个值是否相等
-function equalStyle(k, a, b, target) {
-  if(k === 'transform') {
-    return equalArr(a[0][1], b[0][1]);
-  }
-  else if(k === 'filter') {
-    if(a.length !== b.length) {
-      return false;
-    }
-    for(let i = 0, len = a.length; i < len; i++) {
-      if(!equalArr(a[i], b[i])) {
-        return false;
-      }
-    }
-  }
-  else if(k === 'transformOrigin' || k === 'backgroundSize') {
-    return a[0].value === b[0].value && a[0].unit === b[0].unit
-      && a[1].value === b[1].value && a[1].unit === b[1].unit;
-  }
-  else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
-    || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-    return a.value === b.value && a.unit === b.unit;
-  }
-  else if(k === 'boxShadow') {
-    if(a === null) {
-      return a === b;
-    }
-    return equalArr(a, b);
-  }
-  else if(RADIUS_HASH.hasOwnProperty(k)) {
-    return a[0].value === b[0].value && a[0].unit === b[0].unit
-      && a[1].value === b[1].value && a[1].unit === b[1].unit;
-  }
-  else if(COLOR_HASH.hasOwnProperty(k)) {
-    return a.unit === b.unit && equalArr(a.value, b.value);
-  }
-  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
-    let av = a.v;
-    let bv = b.v;
-    if(a.d !== b.d || av.length !== bv.length) {
-      return false;
-    }
-    for(let i = 0, len = av.length; i < len; i++) {
-      let ai = av[i];
-      let bi = bv[i];
-      if(ai.length !== bi.length) {
-        return false;
-      }
-      for(let j = 0; j < 4; j++) {
-        if(ai[0][j] !== bi[0][j]) {
-          return false;
-        }
-      }
-      if(ai.length > 1) {
-        if(ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-  else if(repaint.GEOM.hasOwnProperty(k)) {
-    if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
-      return equalArr(a, b);
-    }
-  }
-  return a === b;
-}
-
-function isStyleReflow(k) {
-  return !repaint.STYLE.hasOwnProperty(k) && !repaint.GEOM.hasOwnProperty(k);
-}
-
 // 计算是否需要刷新和刷新等级，新样式和之前样式对比
 function calRefresh(frameStyle, lastStyle, keys, target) {
   let res = false;
@@ -263,11 +111,11 @@ function calRefresh(frameStyle, lastStyle, keys, target) {
     let p = lastStyle[k];
     // 前后均非空对比
     if(!isNil(n) && !isNil(p)) {
-      if(!equalStyle(k, n, p, target)) {
+      if(!css.equalStyle(k, n, p, target)) {
         res = true;
         // 不相等且刷新等级是重新布局时可以提前跳出
         if(lv === level.REPAINT) {
-          if(isStyleReflow(k)) {
+          if(!repaint.isRepaint(k)) {
             lv = level.REFLOW;
             break;
           }
@@ -280,7 +128,7 @@ function calRefresh(frameStyle, lastStyle, keys, target) {
     // 有一个为空时即不等
     else if(!isNil(n) || !isNil(p)) {
       res = true;
-      if(isStyleReflow(k)) {
+      if(!repaint.isRepaint(k)) {
         lv = level.REFLOW;
         break;
       }
@@ -1317,11 +1165,11 @@ class Animation extends Event {
       }
     };
     // 生成finish的任务事件
-    this.__fin = (cb) => {
+    this.__fin = (cb, diff) => {
       this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
       this.emit(Event.FINISH);
       if(isFunction(cb)) {
-        cb();
+        cb(diff);
       }
     };
     // 同步执行，用在finish()这种主动调用
@@ -1600,14 +1448,14 @@ class Animation extends Event {
           after: diff => {
             this.__assigning = false;
             __frameCb(diff);
-            __fin(cb);
+            __fin(cb, diff);
           },
         });
       }
       // 无刷新同步进行
       else {
         __clean(true);
-        __fin(cb);
+        __fin(cb, 0);
       }
     }
     return this;
@@ -1622,12 +1470,12 @@ class Animation extends Event {
     let { root, style, keys, __frameCb, __clean, target } = this;
     if(root) {
       let [needRefresh, lv] = calRefresh({}, style, keys, target);
-      let task = () => {
+      let task = (diff) => {
         this.__cancelTask();
         this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
         this.emit(Event.CANCEL);
         if(isFunction(cb)) {
-          cb();
+          cb(diff);
         }
       };
       if(needRefresh) {
@@ -1639,14 +1487,14 @@ class Animation extends Event {
           after: diff => {
             this.__assigning = false;
             __frameCb(diff);
-            task();
+            task(diff);
           },
         });
       }
       // 无刷新同步进行
       else {
         __clean();
-        task();
+        task(0);
       }
     }
     return this;
@@ -1746,19 +1594,25 @@ class Animation extends Event {
     this.__playCb = null;
   }
 
-  __destroy() {
+  __destroy(sync) {
     let self = this;
+    self.removeControl();
     // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
-    frame.nextFrame({
-      before() {
-        // 尚未初始化的清除
-        self.__clean && self.__clean();
-        self.__target = null;
-      },
-    });
+    if(sync) {
+      self.__clean && self.__clean();
+      self.__target = null;
+    }
+    else {
+      frame.nextFrame({
+        before() {
+          // 尚未初始化的清除
+          self.__clean && self.__clean();
+          self.__target = null;
+        },
+      });
+    }
     self.__startTime = null;
     self.__isDestroyed = true;
-    self.removeControl();
   }
 
   get id() {

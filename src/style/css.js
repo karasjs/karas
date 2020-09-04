@@ -3,11 +3,22 @@ import font from './font';
 import gradient from './gradient';
 import reg from './reg';
 import util from '../util/util';
+import repaint from '../animate/repaint';
+import key from '../animate/key';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int } = util;
 
 const DEFAULT_FONT_SIZE = 16;
+
+const {
+  COLOR_HASH,
+  LENGTH_HASH,
+  RADIUS_HASH,
+  GRADIENT_HASH,
+  EXPAND_HASH,
+  GRADIENT_TYPE,
+} = key;
 
 function parserOneBorder(style, direction) {
   let k = 'border' + direction;
@@ -1039,6 +1050,75 @@ function calAbsolute(currentStyle, k, v, size) {
   return v;
 }
 
+function equalStyle(k, a, b, target) {
+  if(k === 'transform') {
+    return util.equalArr(a[0][1], b[0][1]);
+  }
+  else if(k === 'filter') {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      if(!util.equalArr(a[i], b[i])) {
+        return false;
+      }
+    }
+  }
+  else if(k === 'transformOrigin' || k === 'backgroundSize') {
+    return a[0].value === b[0].value && a[0].unit === b[0].unit
+      && a[1].value === b[1].value && a[1].unit === b[1].unit;
+  }
+  else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
+    || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+    return a.value === b.value && a.unit === b.unit;
+  }
+  else if(k === 'boxShadow') {
+    if(a === null) {
+      return a === b;
+    }
+    return util.equalArr(a, b);
+  }
+  else if(RADIUS_HASH.hasOwnProperty(k)) {
+    return a[0].value === b[0].value && a[0].unit === b[0].unit
+      && a[1].value === b[1].value && a[1].unit === b[1].unit;
+  }
+  else if(COLOR_HASH.hasOwnProperty(k)) {
+    return a.unit === b.unit && util.equalArr(a.value, b.value);
+  }
+  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
+    let av = a.v;
+    let bv = b.v;
+    if(a.d !== b.d || av.length !== bv.length) {
+      return false;
+    }
+    for(let i = 0, len = av.length; i < len; i++) {
+      let ai = av[i];
+      let bi = bv[i];
+      if(ai.length !== bi.length) {
+        return false;
+      }
+      for(let j = 0; j < 4; j++) {
+        if(ai[0][j] !== bi[0][j]) {
+          return false;
+        }
+      }
+      if(ai.length > 1) {
+        if(ai[1].value !== bi[1].value || ai[1].unit !== bi[1].unit) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
+  else if(repaint.GEOM.hasOwnProperty(k)) {
+    if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+      return util.equalArr(a, b);
+    }
+  }
+  return a === b;
+}
+
 export default {
   normalize,
   compute,
@@ -1046,4 +1126,5 @@ export default {
   getBaseLine,
   calRelative,
   calAbsolute,
+  equalStyle,
 };

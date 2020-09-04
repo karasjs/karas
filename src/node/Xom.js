@@ -7,6 +7,7 @@ import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
+import reset from '../style/reset';
 import util from '../util/util';
 import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
@@ -1809,26 +1810,51 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { root, __style, __currentStyle, __cacheStyle } = this;
+    let { root, __style, __currentStyle, __cacheStyle, props, __currentProps, __cacheProps = {} } = this;
     if(root) {
       let lv = level.REPAINT;
-      let hasZ;
+      let hasUpdate, hasZIndex;
+      let p;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          // repaint置空，如果reflow会重新生成空的
-          __cacheStyle[i] = undefined;
-          this.__cacheSvg = false;
-          if(!rp.STYLE.hasOwnProperty(i)) {
-            lv = level.REFLOW;
-            break;
+          if(rp.GEOM.hasOwnProperty(i)) {
+            console.log(style, props);
+            if(!css.equalStyle(i, style[i], props[i], this)) {
+              hasUpdate = true;
+              this.__cacheSvg = false;
+              p = p || {};
+              p[i] = style[i];
+              __cacheProps[i] = undefined;
+            }
           }
-          if(i === 'zIndex') {
-            hasZ = true;
+          else if(reset.DOM.hasOwnProperty(i) || reset.GEOM.hasOwnProperty(i)) {
+            if(!css.equalStyle(i, style[i], __style[i], this)) {
+              hasUpdate = true;
+              this.__cacheSvg = false;
+              if(!rp.isRepaint(i)) {
+                lv = level.REFLOW;
+                break;
+              }
+              else {
+                // repaint置空，如果reflow会重新生成空的
+                __cacheStyle[i] = undefined;
+              }
+              if(i === 'zIndex') {
+                hasZIndex = true;
+              }
+            }
           }
         }
       }
+      console.log(hasUpdate, p);
+      if(!hasUpdate) {
+        if(util.isFunction(cb)) {
+          cb(0);
+        }
+        return;
+      }
       // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
-      if(lv === level.REPAINT && hasZ && /svg/i.test(root.tagName)) {
+      if(lv === level.REPAINT && hasZIndex && /svg/i.test(root.tagName)) {
         this.__cancelCacheSvg();
       }
       root.addRefreshTask(this.__task = {
@@ -1836,6 +1862,10 @@ class Xom extends Node {
           let format = normalize(style);
           extend(__style, format);
           extend(__currentStyle, format);
+          if(p && __currentProps) {
+            extend(props, p);
+            extend(__currentProps, p);
+          }
           root.setRefreshLevel(lv);
         },
         after: cb,

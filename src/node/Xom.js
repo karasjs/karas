@@ -1818,7 +1818,6 @@ class Xom extends Node {
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
           if(rp.GEOM.hasOwnProperty(i)) {
-            console.log(style, props);
             if(!css.equalStyle(i, style[i], props[i], this)) {
               hasUpdate = true;
               this.__cacheSvg = false;
@@ -1846,7 +1845,6 @@ class Xom extends Node {
           }
         }
       }
-      console.log(hasUpdate, p);
       if(!hasUpdate) {
         if(util.isFunction(cb)) {
           cb(0);

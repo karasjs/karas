@@ -1051,10 +1051,31 @@ function calAbsolute(currentStyle, k, v, size) {
 }
 
 function equalStyle(k, a, b, target) {
-  if(k === 'transform') {
-    return util.equalArr(a[0][1], b[0][1]);
+  if(!a || !b) {
+    return a === b;
   }
-  else if(k === 'filter') {
+  if(k === 'transform') {
+    if(a.length !== b.length) {
+      return false;
+    }
+    for(let i = 0, len = a.length; i < len; i++) {
+      let oa = a[i];
+      let ob = b[i];
+      if(oa[0] !== ob[0]) {
+        return false;
+      }
+      if(oa === 'matrix') {
+        if(!util.equalArr(oa[1], ob[1])) {
+          return false;
+        }
+      }
+      else if(!util.equal(oa[1], ob[1])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if(k === 'filter') {
     if(a.length !== b.length) {
       return false;
     }
@@ -1064,28 +1085,25 @@ function equalStyle(k, a, b, target) {
       }
     }
   }
-  else if(k === 'transformOrigin' || k === 'backgroundSize') {
+  if(k === 'transformOrigin' || k === 'backgroundSize') {
     return a[0].value === b[0].value && a[0].unit === b[0].unit
       && a[1].value === b[1].value && a[1].unit === b[1].unit;
   }
-  else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
+  if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
     || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     return a.value === b.value && a.unit === b.unit;
   }
-  else if(k === 'boxShadow') {
-    if(a === null) {
-      return a === b;
-    }
+  if(k === 'boxShadow') {
     return util.equalArr(a, b);
   }
-  else if(RADIUS_HASH.hasOwnProperty(k)) {
+  if(RADIUS_HASH.hasOwnProperty(k)) {
     return a[0].value === b[0].value && a[0].unit === b[0].unit
       && a[1].value === b[1].value && a[1].unit === b[1].unit;
   }
-  else if(COLOR_HASH.hasOwnProperty(k)) {
+  if(COLOR_HASH.hasOwnProperty(k)) {
     return a.unit === b.unit && util.equalArr(a.value, b.value);
   }
-  else if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
+  if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
     let av = a.v;
     let bv = b.v;
     if(a.d !== b.d || av.length !== bv.length) {
@@ -1111,7 +1129,7 @@ function equalStyle(k, a, b, target) {
     return true;
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-  else if(repaint.GEOM.hasOwnProperty(k)) {
+  if(repaint.GEOM.hasOwnProperty(k)) {
     if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
       return util.equalArr(a, b);
     }

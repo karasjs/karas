@@ -270,6 +270,9 @@ function clone(obj) {
  * @returns {boolean}
  */
 function equalArr(a, b) {
+  if(!a || !b) {
+    return a === b;
+  }
   if(a.length !== b.length) {
     return false;
   }

@@ -1449,6 +1449,10 @@
 
 
   function equalArr(a, b) {
+    if (!a || !b) {
+      return a === b;
+    }
+
     if (a.length !== b.length) {
       return false;
     }
@@ -5799,33 +5803,68 @@
   }
 
   function equalStyle(k, a, b, target) {
+    if (!a || !b) {
+      return a === b;
+    }
+
     if (k === 'transform') {
-      return util.equalArr(a[0][1], b[0][1]);
-    } else if (k === 'filter') {
       if (a.length !== b.length) {
         return false;
       }
 
       for (var i = 0, len = a.length; i < len; i++) {
-        if (!util.equalArr(a[i], b[i])) {
+        var oa = a[i];
+        var ob = b[i];
+
+        if (oa[0] !== ob[0]) {
+          return false;
+        }
+
+        if (oa === 'matrix') {
+          if (!util.equalArr(oa[1], ob[1])) {
+            return false;
+          }
+        } else if (!util.equal(oa[1], ob[1])) {
           return false;
         }
       }
-    } else if (k === 'transformOrigin' || k === 'backgroundSize') {
-      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
-    } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH$1.hasOwnProperty(k) || EXPAND_HASH$1.hasOwnProperty(k)) {
-      return a.value === b.value && a.unit === b.unit;
-    } else if (k === 'boxShadow') {
-      if (a === null) {
-        return a === b;
+
+      return true;
+    }
+
+    if (k === 'filter') {
+      if (a.length !== b.length) {
+        return false;
       }
 
-      return util.equalArr(a, b);
-    } else if (RADIUS_HASH$1.hasOwnProperty(k)) {
+      for (var _i5 = 0, _len = a.length; _i5 < _len; _i5++) {
+        if (!util.equalArr(a[_i5], b[_i5])) {
+          return false;
+        }
+      }
+    }
+
+    if (k === 'transformOrigin' || k === 'backgroundSize') {
       return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
-    } else if (COLOR_HASH$1.hasOwnProperty(k)) {
+    }
+
+    if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH$1.hasOwnProperty(k) || EXPAND_HASH$1.hasOwnProperty(k)) {
+      return a.value === b.value && a.unit === b.unit;
+    }
+
+    if (k === 'boxShadow') {
+      return util.equalArr(a, b);
+    }
+
+    if (RADIUS_HASH$1.hasOwnProperty(k)) {
+      return a[0].value === b[0].value && a[0].unit === b[0].unit && a[1].value === b[1].value && a[1].unit === b[1].unit;
+    }
+
+    if (COLOR_HASH$1.hasOwnProperty(k)) {
       return a.unit === b.unit && util.equalArr(a.value, b.value);
-    } else if (GRADIENT_HASH$1.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE$1.hasOwnProperty(a.k)) {
+    }
+
+    if (GRADIENT_HASH$1.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE$1.hasOwnProperty(a.k)) {
       var av = a.v;
       var bv = b.v;
 
@@ -5833,9 +5872,9 @@
         return false;
       }
 
-      for (var _i5 = 0, _len = av.length; _i5 < _len; _i5++) {
-        var ai = av[_i5];
-        var bi = bv[_i5];
+      for (var _i6 = 0, _len2 = av.length; _i6 < _len2; _i6++) {
+        var ai = av[_i6];
+        var bi = bv[_i6];
 
         if (ai.length !== bi.length) {
           return false;
@@ -5856,11 +5895,13 @@
 
       return true;
     } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-    else if (repaint.GEOM.hasOwnProperty(k)) {
-        if (target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
-          return util.equalArr(a, b);
-        }
+
+
+    if (repaint.GEOM.hasOwnProperty(k)) {
+      if (target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
+        return util.equalArr(a, b);
       }
+    }
 
     return a === b;
   }
@@ -10909,8 +10950,6 @@
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
               if (repaint.GEOM.hasOwnProperty(i)) {
-                console.log(style, props);
-
                 if (!css.equalStyle(i, style[i], props[i], this)) {
                   hasUpdate = true;
                   this.__cacheSvg = false;
@@ -10938,8 +10977,6 @@
               }
             }
           }
-
-          console.log(hasUpdate, p);
 
           if (!hasUpdate) {
             if (util.isFunction(cb)) {

@@ -17105,15 +17105,15 @@
       Object.keys(target).forEach(function (k) {
         if (k.indexOf('var-') === 0) {
           var v = target[k];
-          var k2 = k.slice(4); // 有id且变量里面传入了替换的值
+
+          if (!v) {
+            return;
+          }
+
+          var k2 = k.slice(4); // 有id且变量里面传入了替换的值，值可为空，因为某些情况下空为自动
 
           if (v.id && vars.hasOwnProperty(v.id)) {
-            var value = vars[v.id];
-
-            if (isNil$d(v)) {
-              return;
-            } // 如果有.则特殊处理子属性
-
+            var value = vars[v.id]; // 如果有.则特殊处理子属性
 
             if (k2.indexOf('.') > -1) {
               var list = k2.split('.');

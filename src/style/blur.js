@@ -19,22 +19,23 @@ varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
 
 uniform vec2 uOffset;
+uniform vec4 filterClamp;
 
 void main(void)
 {
   vec4 color = vec4(0.0);
 
   // Sample top left pixel
-  color += texture2D(uSampler, vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y + uOffset.y));
+  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));
 
   // Sample top right pixel
-  color += texture2D(uSampler, vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y + uOffset.y));
+  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));
 
   // Sample bottom right pixel
-  color += texture2D(uSampler, vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y - uOffset.y));
+  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));
 
   // Sample bottom left pixel
-  color += texture2D(uSampler, vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y - uOffset.y));
+  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));
 
   // Average
   color *= 0.25;
@@ -147,7 +148,6 @@ function initLocation(gl) {
 }
 
 function createAndSetupTexture(gl) {
-
   let texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -194,10 +194,11 @@ class KawaseBlurFilter {
   }
 
   draw(image, uOffsetArray, clear) {
-    let { uOffset } = this.textureLocations;
+    let { uOffset, uClamp } = this.textureLocations;
     let { gl } = this;
     gl.uniform2f(uOffset, uOffsetArray[0], uOffsetArray[1]);
     gl.viewport(0, 0, image.width, image.height);
+    gl.uniform4f(uClamp, 0, 0, image.width, image.height);
     if (clear) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }

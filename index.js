@@ -6053,7 +6053,7 @@
   };
 
   var VERTEX = "\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nvarying vec2 vTextureCoord;\nuniform mat3 projectionMatrix;\n\nvoid main(void)\n{\n  gl_Position = vec4((projectionMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);\n  vTextureCoord = aTextureCoord;\n}";
-  var FRAGMENT = "\n#ifdef GL_ES\nprecision mediump float;\n#endif\nvarying vec2 vTextureCoord;\nuniform sampler2D uSampler;\n\nuniform vec2 uOffset;\n\nvoid main(void)\n{\n  vec4 color = vec4(0.0);\n\n  // Sample top left pixel\n  color += texture2D(uSampler, vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y + uOffset.y));\n\n  // Sample top right pixel\n  color += texture2D(uSampler, vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y + uOffset.y));\n\n  // Sample bottom right pixel\n  color += texture2D(uSampler, vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y - uOffset.y));\n\n  // Sample bottom left pixel\n  color += texture2D(uSampler, vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y - uOffset.y));\n\n  // Average\n  color *= 0.25;\n\n  gl_FragColor = color;\n}";
+  var FRAGMENT = "\n#ifdef GL_ES\nprecision mediump float;\n#endif\nvarying vec2 vTextureCoord;\nuniform sampler2D uSampler;\n\nuniform vec2 uOffset;\nuniform vec4 filterClamp;\n\nvoid main(void)\n{\n  vec4 color = vec4(0.0);\n\n  // Sample top left pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample top right pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample bottom right pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample bottom left pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Average\n  color *= 0.25;\n\n  gl_FragColor = color;\n}";
 
   function initShaders(gl, vshader, fshader) {
     var program = createProgram(gl, vshader, fshader);
@@ -6207,10 +6207,13 @@
     }, {
       key: "draw",
       value: function draw(image, uOffsetArray, clear) {
-        var uOffset = this.textureLocations.uOffset;
+        var _this$textureLocation = this.textureLocations,
+            uOffset = _this$textureLocation.uOffset,
+            uClamp = _this$textureLocation.uClamp;
         var gl = this.gl;
         gl.uniform2f(uOffset, uOffsetArray[0], uOffsetArray[1]);
         gl.viewport(0, 0, image.width, image.height);
+        gl.uniform4f(uClamp, 0, 0, image.width, image.height);
 
         if (clear) {
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);

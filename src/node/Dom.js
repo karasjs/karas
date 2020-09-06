@@ -1,12 +1,14 @@
 import Xom from './Xom';
 import Text from './Text';
 import LineGroup from './LineGroup';
+import Component from './Component';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
+import blur from '../style/blur';
 import mode from '../util/mode';
-import Component from './Component';
 import util from '../util/util';
+import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
@@ -1013,7 +1015,10 @@ class Dom extends Xom {
   }
 
   render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+    let offScreen = super.render(renderMode, ctx, defs);
+    if(offScreen) {
+      ctx = offScreen.target.ctx;
+    }
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
@@ -1033,8 +1038,17 @@ class Dom extends Xom {
     zIndex.forEach(item => {
       item.__renderByMask(renderMode, ctx, defs);
     });
+    // 模糊滤镜写回
+    if(renderMode === mode.CANVAS && offScreen) {
+      let { width, height } = this.root;
+      let webgl = inject.getCacheWebgl(width, height);
+      let res = blur.gaussBlur(offScreen.target.canvas, webgl, offScreen.blur, width, height);
+      offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+      offScreen.target.draw();
+      res.clear();
+    }
     // img的children在子类特殊处理
-    if(renderMode === mode.SVG && this.tagName !== 'img') {
+    else if(renderMode === mode.SVG && this.tagName !== 'img') {
       this.virtualDom.children = zIndex.map(item => item.virtualDom);
       // 没变化则将text孩子设置cache
       if(this.virtualDom.cache) {

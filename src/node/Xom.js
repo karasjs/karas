@@ -8,6 +8,7 @@ import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
 import reset from '../style/reset';
+import blur from '../style/blur';
 import util from '../util/util';
 import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
@@ -1235,6 +1236,24 @@ class Xom extends Node {
     if(visibility === 'hidden') {
       return;
     }
+    // canvas的blur需绘制到离屏上应用后反向绘制回来
+    let offScreen;
+    if(filter && renderMode === mode.CANVAS) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          let { width, height } = this.root;
+          let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+          if(c.ctx) {
+            offScreen = {
+              ctx,
+            };
+            offScreen.target = c;
+            ctx = c.ctx;
+          }
+        }
+      });
+    }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
       renderBgc(renderMode, __cacheStyle.backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
@@ -1546,30 +1565,36 @@ class Xom extends Node {
     if(filter) {
       filter.forEach(item => {
         let [k, v] = item;
-        if(k === 'blur' && v > 0 && renderMode === mode.SVG) {
-          // 模糊框卷积尺寸 #66
-          let d = mx.int2convolution(v);
-          let id = defs.add({
-            tagName: 'filter',
-            props: [
-              ['x', -d / outerWidth],
-              ['y', -d / outerHeight],
-              ['width', 1 + d * 2 / outerWidth],
-              ['height', 1 + d * 2 / outerHeight],
-            ],
-            children: [
-              {
-                tagName: 'feGaussianBlur',
-                props: [
-                  ['stdDeviation', v * 0.5],
-                ],
-              }
-            ],
-          });
-          this.virtualDom.filter = 'url(#' + id + ')';
+        if(k === 'blur' && v > 0) {
+          if(renderMode === mode.CANVAS) {
+            offScreen.blur = v;
+          }
+          else if(renderMode === mode.SVG) {
+            // 模糊框卷积尺寸 #66
+            let d = mx.int2convolution(v);
+            let id = defs.add({
+              tagName: 'filter',
+              props: [
+                ['x', -d / outerWidth],
+                ['y', -d / outerHeight],
+                ['width', 1 + d * 2 / outerWidth],
+                ['height', 1 + d * 2 / outerHeight],
+              ],
+              children: [
+                {
+                  tagName: 'feGaussianBlur',
+                  props: [
+                    ['stdDeviation', v],
+                  ],
+                }
+              ],
+            });
+            this.virtualDom.filter = 'url(#' + id + ')';
+          }
         }
       });
     }
+    return offScreen;
   }
 
   __renderByMask(renderMode, ctx, defs) {

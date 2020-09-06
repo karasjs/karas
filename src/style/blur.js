@@ -169,7 +169,7 @@ class KawaseBlurFilter {
     this.vertexLocations = initVertexBuffers(gl);
     this.textureLocations = initLocation(gl);
     this._pixelSize = { x: 0, y: 0 };
-    this.pixelSize = 0.5;
+    this.pixelSize = 1;
     this._kernels = null;
     this._blur = blur;
     this.quality = quality;

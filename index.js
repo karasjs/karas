@@ -6223,13 +6223,13 @@
       }
     }, {
       key: "apply",
-      value: function apply(canvas, width, height) {
+      value: function apply(target, width, height) {
         var gl = this.gl;
         this.initBuffers(gl, width, height);
         var uSampler = this.textureLocations.uSampler;
         gl.uniform1i(uSampler, 0);
         var originalImageTexture = createAndSetupTexture(gl);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, target.canvas);
         var uvX = this._pixelSize.x / width;
         var uvY = this._pixelSize.y / height;
         var offset;
@@ -6243,17 +6243,17 @@
 
           var _uOffsetArray = new Float32Array([offset * uvX, offset * uvY]);
 
-          this.draw(canvas, _uOffsetArray, false);
+          this.draw(target.canvas, _uOffsetArray, false);
           gl.bindTexture(gl.TEXTURE_2D, this.textures[i % 2]);
         }
 
         offset = this._kernels[last] + 0.5;
         var uOffsetArray = new Float32Array([offset * uvX, offset * uvY]);
-        this.draw(canvas, uOffsetArray, true);
+        this.draw(target.canvas, uOffsetArray, true);
         this.webgl.draw();
-        var ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(gl.canvas, 0, 0);
+        target.ctx.clearRect(0, 0, width, height);
+        target.ctx.drawImage(gl.canvas, 0, 0);
+        target.draw();
         return this;
       }
       /**
@@ -6374,8 +6374,8 @@
     return KawaseBlurFilter;
   }();
 
-  function gaussBlur(canvas, webgl, blur, width, height) {
-    return new KawaseBlurFilter(webgl, blur).apply(canvas, width, height);
+  function gaussBlur(target, webgl, blur, width, height) {
+    return new KawaseBlurFilter(webgl, blur).apply(target, width, height);
   }
 
   var blur = {
@@ -13281,9 +13281,12 @@
       value: function render(renderMode, ctx, defs) {
         var offScreen = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs);
 
-        if (offScreen) {
+        if (offScreen && offScreen.target && offScreen.target.ctx) {
           ctx = offScreen.target.ctx;
-        } // 不显示的为了diff也要根据type生成
+        } // 降级
+        else {
+            offScreen = null;
+          } // 不显示的为了diff也要根据type生成
 
 
         if (renderMode === mode.SVG) {
@@ -13315,7 +13318,7 @@
               width = _this$root.width,
               height = _this$root.height;
           var webgl = inject.getCacheWebgl(width, height);
-          var res = blur.gaussBlur(offScreen.target.canvas, webgl, offScreen.blur, width, height);
+          var res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
           offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
           offScreen.target.draw();
           res.clear();
@@ -17829,7 +17832,7 @@
     repaint: repaint
   };
 
-  var version = "0.37.3";
+  var version = "0.37.4";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

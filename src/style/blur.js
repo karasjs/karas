@@ -205,13 +205,13 @@ class KawaseBlurFilter {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
-  apply(canvas, width, height) {
+  apply(target, width, height) {
     let { gl } = this;
     this.initBuffers(gl, width, height);
     let { uSampler } = this.textureLocations;
     gl.uniform1i(uSampler, 0);
     let originalImageTexture = createAndSetupTexture(gl);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, target.canvas);
 
     let uvX = this._pixelSize.x / width;
     let uvY = this._pixelSize.y / height;
@@ -223,16 +223,16 @@ class KawaseBlurFilter {
       offset = this._kernels[i] + 0.5;
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[i % 2]);
       let uOffsetArray = new Float32Array([ offset * uvX, offset * uvY ]);
-      this.draw(canvas, uOffsetArray, false);
+      this.draw(target.canvas, uOffsetArray, false);
       gl.bindTexture(gl.TEXTURE_2D, this.textures[i % 2]);
     }
     offset = this._kernels[last] + 0.5;
     let uOffsetArray = new Float32Array([ offset * uvX, offset * uvY ]);
-    this.draw(canvas, uOffsetArray, true);
+    this.draw(target.canvas, uOffsetArray, true);
     this.webgl.draw();
-    let ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(gl.canvas, 0, 0);
+    target.ctx.clearRect(0, 0, width, height);
+    target.ctx.drawImage(gl.canvas, 0, 0);
+    target.draw();
     return this;
   }
 
@@ -341,8 +341,8 @@ class KawaseBlurFilter {
   }
 }
 
-function gaussBlur(canvas, webgl, blur, width, height) {
-  return new KawaseBlurFilter(webgl, blur).apply(canvas, width, height);
+function gaussBlur(target, webgl, blur, width, height) {
+  return new KawaseBlurFilter(webgl, blur).apply(target, width, height);
 }
 
 export default {

@@ -1016,8 +1016,12 @@ class Dom extends Xom {
 
   render(renderMode, ctx, defs) {
     let offScreen = super.render(renderMode, ctx, defs);
-    if(offScreen) {
+    if(offScreen && offScreen.target && offScreen.target.ctx) {
       ctx = offScreen.target.ctx;
+    }
+    // 降级
+    else {
+      offScreen = null;
     }
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
@@ -1042,7 +1046,7 @@ class Dom extends Xom {
     if(renderMode === mode.CANVAS && offScreen) {
       let { width, height } = this.root;
       let webgl = inject.getCacheWebgl(width, height);
-      let res = blur.gaussBlur(offScreen.target.canvas, webgl, offScreen.blur, width, height);
+      let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
       offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
       offScreen.target.draw();
       res.clear();

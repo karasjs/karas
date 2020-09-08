@@ -570,7 +570,15 @@
         x = _point[0],
         y = _point[1];
 
-    return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+    var _m = _slicedToArray(m, 6),
+        a = _m[0],
+        b = _m[1],
+        c = _m[2],
+        d = _m[3],
+        e = _m[4],
+        f = _m[5];
+
+    return [a * x + c * y + e, b * x + d * y + f];
   }
 
   function int2convolution(v) {
@@ -640,18 +648,6 @@
     }
 
     return true;
-  }
-
-  function transformPoint(matrix, x, y) {
-    var _matrix = _slicedToArray(matrix, 6),
-        a = _matrix[0],
-        b = _matrix[1],
-        c = _matrix[2],
-        d = _matrix[3],
-        e = _matrix[4],
-        f = _matrix[5];
-
-    return [a * x + c * y + e, b * x + d * y + f];
   }
   /**
    * 余弦定理3边长求夹角
@@ -784,16 +780,134 @@
     return false;
   }
 
+  function calCoordsInNode(px, py, node) {
+    var _node$matrix = node.matrix,
+        matrix$1 = _node$matrix === void 0 ? [1, 0, 0, 1, 0, 0] : _node$matrix,
+        _node$computedStyle = node.computedStyle,
+        computedStyle = _node$computedStyle === void 0 ? {} : _node$computedStyle;
+    var width = computedStyle.width,
+        height = computedStyle.height,
+        _computedStyle$transf = computedStyle.transformOrigin;
+    _computedStyle$transf = _computedStyle$transf === void 0 ? [width * 0.5, height * 0.5] : _computedStyle$transf;
+
+    var _computedStyle$transf2 = _slicedToArray(_computedStyle$transf, 2),
+        ox = _computedStyle$transf2[0],
+        oy = _computedStyle$transf2[1];
+
+    var _mx$calPoint = matrix.calPoint([px * width - ox, py * height - oy], matrix$1);
+
+    var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+
+    px = _mx$calPoint2[0];
+    py = _mx$calPoint2[1];
+    return [px + ox, py + oy];
+  }
+
+  function calPercentInNode(x, y, node) {
+    var _node$computedStyle2 = node.computedStyle,
+        width = _node$computedStyle2.width,
+        height = _node$computedStyle2.height,
+        _node$computedStyle2$ = _slicedToArray(_node$computedStyle2.transformOrigin, 2),
+        ox = _node$computedStyle2$[0],
+        oy = _node$computedStyle2$[1]; // let [x1, y1] = calCoordsInNode(0, 0, node);
+    // let [x0, y0] = calCoordsInNode(ox / width, oy / height, node);
+    // 先求无旋转时右下角相对于原点的角度ds
+
+
+    var ds = Math.atan((height - oy) / (width - ox));
+
+    var _calCoordsInNode = calCoordsInNode(1, 1, node),
+        _calCoordsInNode2 = _slicedToArray(_calCoordsInNode, 2),
+        x1 = _calCoordsInNode2[0],
+        y1 = _calCoordsInNode2[1];
+
+    var d1;
+    var deg; // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
+
+    if (x1 >= ox && y1 >= oy) {
+      d1 = Math.atan((y1 - oy) / (x1 - ox));
+      deg = d1 - ds;
+    } else if (x1 >= ox && y1 < oy) {
+      d1 = Math.atan((oy - y1) / (x1 - ox));
+      deg = d1 + ds;
+    } else if (x1 < ox && y1 >= oy) {
+      d1 = Math.atan((y1 - oy) / (ox - x1));
+      deg = d1 - ds;
+    } else if (x1 < ox && y1 < oy) {
+      d1 = Math.atan((y1 - oy) / (x1 - ox));
+
+      if (ds >= d1) {
+        deg = d1 + Math.PI - ds;
+      } else {
+        deg = Math.PI - d1 + ds;
+        deg = -deg;
+      }
+    } else {
+      deg = 0;
+    }
+
+    if (deg === 0) {
+      return [ox / width, oy / width];
+    } // 目标点到原点的边长不会变
+
+
+    var dt = Math.sqrt(Math.pow(x - ox, 2) + Math.pow(y - oy, 2)); // 分4个象限，先求目标点到原点的角度d2，再偏移deg后求得原始坐标
+
+    var d2;
+
+    if (x >= ox && y >= oy) {
+      d2 = Math.atan((y - oy) / (x - ox));
+    } else if (x >= ox && y < oy) {
+      d2 = -Math.atan((y - oy) / (ox - x));
+    } else if (x < ox && y >= oy) {
+      d2 = Math.PI - Math.atan((y - oy) / (ox - x));
+    } else {
+      d2 = Math.atan((y - oy) / (x - ox)) - Math.PI;
+    }
+
+    d2 -= deg;
+
+    if (d2 > Math.PI) {
+      d2 -= Math.PI;
+      return [(ox - dt * Math.cos(d2)) / width, (oy - dt * Math.sin(d2)) / height];
+    }
+
+    if (d2 > Math.PI * 0.5) {
+      d2 = Math.PI - d2;
+      return [(ox - dt * Math.cos(d2)) / width, (oy + dt * Math.sin(d2)) / height];
+    }
+
+    if (d2 >= 0) {
+      return [(ox + dt * Math.cos(d2)) / width, (oy + dt * Math.sin(d2)) / height];
+    }
+
+    if (d2 >= -Math.PI * 0.5) {
+      d2 = -d2;
+      return [(ox + dt * Math.cos(d2)) / width, (oy - dt * Math.sin(d2)) / height];
+    }
+
+    if (d2 >= -Math.PI) {
+      d2 = Math.PI + d2;
+      return [(ox - dt * Math.cos(d2)) / width, (oy - dt * Math.sin(d2)) / height];
+    }
+
+    d2 = -Math.PI - d2;
+    return [(ox - dt * Math.cos(d2)) / width, (oy + dt * Math.sin(d2)) / height];
+  }
+
+  function d2r(n) {
+    return n * Math.PI / 180;
+  }
+
+  function r2d(n) {
+    return n * 180 / Math.PI;
+  }
+
   var geom = {
     vectorProduct: vectorProduct,
     pointInPolygon: pointInPolygon,
-    transformPoint: transformPoint,
-    d2r: function d2r(n) {
-      return n * Math.PI / 180;
-    },
-    r2d: function r2d(n) {
-      return n * 180 / Math.PI;
-    },
+    d2r: d2r,
+    r2d: r2d,
     // 贝塞尔曲线模拟1/4圆弧比例
     H: H,
     // <90任意角度贝塞尔曲线拟合圆弧的比例公式
@@ -807,7 +921,9 @@
     ellipsePoints: ellipsePoints,
     getRectsIntersection: getRectsIntersection,
     isRectsOverlap: isRectsOverlap,
-    isRectsInside: isRectsInside
+    isRectsInside: isRectsInside,
+    calCoordsInNode: calCoordsInNode,
+    calPercentInNode: calPercentInNode
   };
 
   function calDeg(x1, y1, x2, y2) {
@@ -1606,8 +1722,11 @@
       PERCENT = unit.PERCENT;
   var matrix$1 = math.matrix,
       geom$1 = math.geom;
-  var d2r = geom$1.d2r,
-      transformPoint$1 = geom$1.transformPoint;
+  var identity$1 = matrix$1.identity,
+      calPoint$1 = matrix$1.calPoint,
+      multiply$1 = matrix$1.multiply;
+  var d2r$1 = geom$1.d2r,
+      pointInPolygon$1 = geom$1.pointInPolygon;
 
   function calSingle(t, k, v) {
     if (k === 'translateX') {
@@ -1619,13 +1738,13 @@
     } else if (k === 'scaleY') {
       t[3] = v;
     } else if (k === 'skewX') {
-      v = d2r(v);
+      v = d2r$1(v);
       t[2] = Math.tan(v);
     } else if (k === 'skewY') {
-      v = d2r(v);
+      v = d2r$1(v);
       t[1] = Math.tan(v);
     } else if (k === 'rotateZ') {
-      v = d2r(v);
+      v = d2r$1(v);
       var sin = Math.sin(v);
       var cos = Math.cos(v);
       t[0] = t[3] = cos;
@@ -1643,15 +1762,15 @@
 
   function calMatrix(transform, ow, oh) {
     var list = normalize(transform, ow, oh);
-    var m = matrix$1.identity();
+    var m = identity$1();
     list.forEach(function (item) {
       var _item = _slicedToArray(item, 2),
           k = _item[0],
           v = _item[1];
 
-      var t = matrix$1.identity();
+      var t = identity$1();
       calSingle(t, k, v);
-      m = matrix$1.multiply(m, t);
+      m = multiply$1(m, t);
     });
     return m;
   }
@@ -1665,14 +1784,14 @@
       return m;
     }
 
-    var t = matrix$1.identity();
+    var t = identity$1();
     t[4] = ox;
     t[5] = oy;
-    var res = matrix$1.multiply(t, m);
-    var t2 = matrix$1.identity();
+    var res = multiply$1(t, m);
+    var t2 = identity$1();
     t2[4] = -ox;
     t2[5] = -oy;
-    res = matrix$1.multiply(res, t2);
+    res = multiply$1(res, t2);
     return res;
   }
 
@@ -1684,34 +1803,34 @@
 
   function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
     if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-      var _transformPoint = transformPoint$1(matrix, x1, y1);
+      var _calPoint = calPoint$1([x1, y1], matrix);
 
-      var _transformPoint2 = _slicedToArray(_transformPoint, 2);
+      var _calPoint2 = _slicedToArray(_calPoint, 2);
 
-      x1 = _transformPoint2[0];
-      y1 = _transformPoint2[1];
+      x1 = _calPoint2[0];
+      y1 = _calPoint2[1];
 
-      var _transformPoint3 = transformPoint$1(matrix, x2, y2);
+      var _calPoint3 = calPoint$1([x2, y2], matrix);
 
-      var _transformPoint4 = _slicedToArray(_transformPoint3, 2);
+      var _calPoint4 = _slicedToArray(_calPoint3, 2);
 
-      x2 = _transformPoint4[0];
-      y2 = _transformPoint4[1];
+      x2 = _calPoint4[0];
+      y2 = _calPoint4[1];
 
-      var _transformPoint5 = transformPoint$1(matrix, x4, y4);
+      var _calPoint5 = calPoint$1([x3, y3], matrix);
 
-      var _transformPoint6 = _slicedToArray(_transformPoint5, 2);
+      var _calPoint6 = _slicedToArray(_calPoint5, 2);
 
-      x4 = _transformPoint6[0];
-      y4 = _transformPoint6[1];
+      x3 = _calPoint6[0];
+      y3 = _calPoint6[1];
 
-      var _transformPoint7 = transformPoint$1(matrix, x3, y3);
+      var _calPoint7 = calPoint$1([x4, y4], matrix);
 
-      var _transformPoint8 = _slicedToArray(_transformPoint7, 2);
+      var _calPoint8 = _slicedToArray(_calPoint7, 2);
 
-      x3 = _transformPoint8[0];
-      y3 = _transformPoint8[1];
-      return geom$1.pointInPolygon(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
+      x4 = _calPoint8[0];
+      y4 = _calPoint8[1];
+      return pointInPolygon$1(x, y, [[x1, y1], [x2, y2], [x4, y4], [x3, y3]]);
     } else {
       return x >= x1 && y >= y1 && x <= x4 && y <= y4;
     }
@@ -1777,7 +1896,7 @@
       isNil$1 = util.isNil;
   var PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT;
-  var d2r$1 = geom.d2r;
+  var d2r$2 = geom.d2r;
 
   function getLinearDeg(v) {
     var deg = 180;
@@ -2017,27 +2136,27 @@
     var y1;
 
     if (deg >= 270) {
-      var r = d2r$1(360 - deg);
+      var r = d2r$2(360 - deg);
       x0 = cx + Math.sin(r) * length;
       y0 = cy + Math.cos(r) * length;
       x1 = cx - Math.sin(r) * length;
       y1 = cy - Math.cos(r) * length;
     } else if (deg >= 180) {
-      var _r = d2r$1(deg - 180);
+      var _r = d2r$2(deg - 180);
 
       x0 = cx + Math.sin(_r) * length;
       y0 = cy - Math.cos(_r) * length;
       x1 = cx - Math.sin(_r) * length;
       y1 = cy + Math.cos(_r) * length;
     } else if (deg >= 90) {
-      var _r2 = d2r$1(180 - deg);
+      var _r2 = d2r$2(180 - deg);
 
       x0 = cx - Math.sin(_r2) * length;
       y0 = cy - Math.cos(_r2) * length;
       x1 = cx + Math.sin(_r2) * length;
       y1 = cy + Math.cos(_r2) * length;
     } else {
-      var _r3 = d2r$1(deg);
+      var _r3 = d2r$2(deg);
 
       x0 = cx - Math.sin(_r3) * length;
       y0 = cy + Math.cos(_r3) * length;
@@ -2301,7 +2420,7 @@
   }
 
   function getLinear(v, d, cx, cy, w, h) {
-    var theta = d2r$1(d);
+    var theta = d2r$2(d);
     var length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
 
     var _calLinearCoords = calLinearCoords(d, length * 0.5, cx, cy),

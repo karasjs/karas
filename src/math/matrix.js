@@ -51,10 +51,8 @@ function multiply(a, b) {
 
 function calPoint(point, m) {
   let [x, y] = point;
-  return [
-    m[0] * x + m[2] * y + m[4],
-    m[1] * x + m[3] * y + m[5],
-  ];
+  let [a, b, c, d, e, f] = m;
+  return [a * x + c * y + e, b * x + d * y + f];
 }
 
 function int2convolution(v) {

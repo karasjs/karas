@@ -1735,12 +1735,14 @@ class Xom extends Node {
   willResponseEvent(e) {
     let { x, y } = e;
     let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
-    let inThis = tf.pointInQuadrilateral(x, y,
+    let inThis = tf.pointInQuadrilateral(
+      x, y,
       sx, sy,
       sx + outerWidth, sy,
       sx + outerWidth, sy + outerHeight,
       sx, sy + outerHeight,
-      matrixEvent);
+      matrixEvent
+    );
     if(inThis) {
       if(!e.target) {
         e.target = this;

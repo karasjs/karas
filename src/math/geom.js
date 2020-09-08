@@ -1,3 +1,5 @@
+import mx from './matrix';
+
 const H = 4 * (Math.sqrt(2) - 1) / 3;
 
 // 向量积
@@ -29,11 +31,6 @@ function pointInPolygon(x, y, vertexes) {
     }
   }
   return true;
-}
-
-function transformPoint(matrix, x, y) {
-  let [a, b, c, d, e, f] = matrix;
-  return [a * x + c * y + e, b * x + d * y + f];
 }
 
 /**
@@ -138,16 +135,122 @@ function isRectsInside(a, b) {
   return false;
 }
 
+function calCoordsInNode(px, py, node) {
+  let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = {} } = node;
+  let { width, height, transformOrigin: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
+  [px, py] = mx.calPoint([px * width - ox, py * height - oy], matrix);
+  return [px + ox, py + oy];
+}
+
+function calPercentInNode(x, y, node) {
+  let { computedStyle: { width, height, transformOrigin: [ox, oy] } } = node;
+  // let [x1, y1] = calCoordsInNode(0, 0, node);
+  // let [x0, y0] = calCoordsInNode(ox / width, oy / height, node);
+  // 先求无旋转时右下角相对于原点的角度ds
+  let ds = Math.atan((height - oy) / (width - ox));
+  let [x1, y1] = calCoordsInNode(1, 1, node);
+  let d1;
+  let deg;
+  // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
+  if(x1 >= ox && y1 >= oy) {
+    d1 = Math.atan((y1 - oy) / (x1 - ox));
+    deg = d1 - ds;
+  }
+  else if(x1 >= ox && y1 < oy) {
+    d1 = Math.atan((oy - y1) / (x1 - ox));
+    deg = d1 + ds;
+  }
+  else if(x1 < ox && y1 >= oy) {
+    d1 = Math.atan((y1 - oy) / (ox - x1));
+    deg = d1 - ds;
+  }
+  else if(x1 < ox && y1 < oy) {
+    d1 = Math.atan((y1 - oy) / (x1 - ox));
+    if(ds >= d1) {
+      deg = d1 + Math.PI - ds;
+    }
+    else {
+      deg = Math.PI - d1 + ds;
+      deg = -deg;
+    }
+  }
+  else {
+    deg = 0;
+  }
+  if(deg === 0) {
+    return [ox / width, oy / width];
+  }
+  // 目标点到原点的边长不会变
+  let dt = Math.sqrt(Math.pow(x - ox, 2) + Math.pow(y - oy, 2));
+  // 分4个象限，先求目标点到原点的角度d2，再偏移deg后求得原始坐标
+  let d2;
+  if(x >= ox && y >= oy) {
+    d2 = Math.atan((y - oy) / (x - ox));
+  }
+  else if(x >= ox && y < oy) {
+    d2 = -Math.atan((y - oy) / (ox - x));
+  }
+  else if(x < ox && y >= oy) {
+    d2 = Math.PI - Math.atan((y - oy) / (ox - x));
+  }
+  else {
+    d2 = Math.atan((y - oy) / (x - ox)) - Math.PI;
+  }
+  d2 -= deg;
+  if(d2 > Math.PI) {
+    d2 -= Math.PI;
+    return [
+      (ox - dt * Math.cos(d2)) / width,
+      (oy - dt * Math.sin(d2)) / height,
+    ];
+  }
+  if(d2 > Math.PI * 0.5) {
+    d2 = Math.PI  - d2;
+    return [
+      (ox - dt * Math.cos(d2)) / width,
+      (oy + dt * Math.sin(d2)) / height,
+    ];
+  }
+  if(d2 >= 0) {
+    return [
+      (ox + dt * Math.cos(d2)) / width,
+      (oy + dt * Math.sin(d2)) / height,
+    ];
+  }
+  if(d2 >= -Math.PI * 0.5) {
+    d2 = -d2;
+    return [
+      (ox + dt * Math.cos(d2)) / width,
+      (oy - dt * Math.sin(d2)) / height,
+    ];
+  }
+  if(d2 >= -Math.PI) {
+    d2 = Math.PI + d2;
+    return [
+      (ox - dt * Math.cos(d2)) / width,
+      (oy - dt * Math.sin(d2)) / height,
+    ];
+  }
+  d2 = -Math.PI - d2;
+  return [
+    (ox - dt * Math.cos(d2)) / width,
+    (oy + dt * Math.sin(d2)) / height,
+  ];
+}
+
+function d2r(n) {
+  return n * Math.PI / 180;
+}
+
+function r2d(n) {
+  return n * 180 / Math.PI;
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
-  transformPoint,
-  d2r(n) {
-    return n * Math.PI / 180;
-  },
-  r2d(n) {
-    return n * 180 / Math.PI;
-  },
+  d2r,
+  r2d,
   // 贝塞尔曲线模拟1/4圆弧比例
   H,
   // <90任意角度贝塞尔曲线拟合圆弧的比例公式
@@ -162,4 +265,6 @@ export default {
   getRectsIntersection,
   isRectsOverlap,
   isRectsInside,
+  calCoordsInNode,
+  calPercentInNode,
 };

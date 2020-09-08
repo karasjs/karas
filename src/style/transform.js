@@ -4,7 +4,8 @@ import util from '../util/util';
 
 const { PX, PERCENT } = unit;
 const { matrix, geom } = math;
-const { d2r, transformPoint } = geom;
+const { identity, calPoint, multiply } = matrix;
+const { d2r, pointInPolygon } = geom;
 
 function calSingle(t, k, v) {
   if(k === 'translateX') {
@@ -47,12 +48,12 @@ function calSingle(t, k, v) {
 
 function calMatrix(transform, ow, oh) {
   let list = normalize(transform, ow, oh);
-  let m = matrix.identity();
+  let m = identity();
   list.forEach(item => {
     let [k, v] = item;
-    let t = matrix.identity();
+    let t = identity();
     calSingle(t, k, v);
-    m = matrix.multiply(m, t);
+    m = multiply(m, t);
   });
   return m;
 }
@@ -62,14 +63,14 @@ function calMatrixByOrigin(m, transformOrigin) {
   if(ox === 0 && oy === 0) {
     return m;
   }
-  let t = matrix.identity();
+  let t = identity();
   t[4] = ox;
   t[5] = oy;
-  let res = matrix.multiply(t, m);
-  let t2 = matrix.identity();
+  let res = multiply(t, m);
+  let t2 = identity();
   t2[4] = -ox;
   t2[5] = -oy;
-  res = matrix.multiply(res, t2);
+  res = multiply(res, t2);
   return res;
 }
 
@@ -81,11 +82,11 @@ function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
 // 判断点是否在一个矩形内，比如事件发生是否在节点上
 function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
   if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-    [x1, y1] = transformPoint(matrix, x1, y1);
-    [x2, y2] = transformPoint(matrix, x2, y2);
-    [x4, y4] = transformPoint(matrix, x4, y4);
-    [x3, y3] = transformPoint(matrix, x3, y3);
-    return geom.pointInPolygon(x, y, [
+    [x1, y1] = calPoint([x1, y1], matrix);
+    [x2, y2] = calPoint([x2, y2], matrix);
+    [x3, y3] = calPoint([x3, y3], matrix);
+    [x4, y4] = calPoint([x4, y4], matrix);
+    return pointInPolygon(x, y, [
       [x1, y1],
       [x2, y2],
       [x4, y4],

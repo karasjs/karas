@@ -7,11 +7,15 @@ let fullCssProperty = {
   fontSize: 'fz',
   offset: 'os',
   easing: 'e',
+  filter: 'ft',
+  boxShadow: 'bd',
 };
 
 let abbrCssProperty = {
   os: 'offset',
   e: 'easing',
+  ft: 'filter',
+  bd: 'boxShadow',
 };
 
 let fullAnimate = {

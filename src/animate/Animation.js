@@ -1329,7 +1329,7 @@ class Animation extends Event {
             }
             // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
             else {
-              current = {};
+              current = target.style;
             }
             [needRefresh, lv] = calRefresh(current, style, keys, target);
             // 非尾每轮次放完增加次数和计算下轮准备

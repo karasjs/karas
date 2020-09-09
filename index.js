@@ -9077,7 +9077,7 @@
                   current = current.style;
                 } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
                 else {
-                    current = {};
+                    current = target.style;
                   }
 
                 var _calRefresh3 = calRefresh(current, style, keys, target);
@@ -17535,11 +17535,15 @@
     transform: 'tf',
     fontSize: 'fz',
     offset: 'os',
-    easing: 'e'
+    easing: 'e',
+    filter: 'ft',
+    boxShadow: 'bd'
   };
   var abbrCssProperty = {
     os: 'offset',
-    e: 'easing'
+    e: 'easing',
+    ft: 'filter',
+    bd: 'boxShadow'
   };
   var fullAnimate = {
     value: 'v',
@@ -18030,6 +18034,7 @@
     },
     mode: mode,
     Component: Component$1,
+    Geom: Geom$2,
     Event: Event,
     util: util,
     inject: inject,

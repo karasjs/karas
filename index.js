@@ -7804,7 +7804,7 @@
       } // 结束还原时样式为空，需填上默认样式
 
 
-      var v = style[i] || target.style[i]; // geom的属性变化
+      var v = style.hasOwnProperty(i) ? style[i] : target.style[i]; // geom的属性变化
 
       if (repaint.GEOM.hasOwnProperty(i)) {
         target.currentProps[i] = v;
@@ -17952,7 +17952,7 @@
     repaint: repaint
   };
 
-  var version = "0.37.5";
+  var version = "0.37.6";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

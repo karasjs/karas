@@ -156,7 +156,7 @@ function assignStyle(style, animation) {
       hasZ = true;
     }
     // 结束还原时样式为空，需填上默认样式
-    let v = style[i] || target.style[i];
+    let v = style.hasOwnProperty(i) ? style[i] : target.style[i];
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
       target.currentProps[i] = v;

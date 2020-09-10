@@ -143,21 +143,20 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
-  let style = assignStyle(frameStyle, animation);
-  animation.__style = style;
+  assignStyle(frameStyle, animation);
+  animation.__style = frameStyle;
   animation.__assigning = true;
 }
 
 function assignStyle(style, animation) {
-  let res = {};
   let target = animation.target;
   let hasZ;
   animation.keys.forEach(i => {
     if(i === 'zIndex') {
       hasZ = true;
     }
-    let v = style[i];
-    res[i] = v;
+    // 结束还原时样式为空，需填上默认样式
+    let v = style[i] || target.style[i];
     // geom的属性变化
     if(repaint.GEOM.hasOwnProperty(i)) {
       target.currentProps[i] = v;
@@ -175,7 +174,6 @@ function assignStyle(style, animation) {
   if(hasZ && /svg/i.test(target.root.tagName)) {
     target.__cancelCacheSvg();
   }
-  return res;
 }
 
 /**
@@ -1329,7 +1327,7 @@ class Animation extends Event {
             }
             // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
             else {
-              current = target.style;
+              current = {};
             }
             [needRefresh, lv] = calRefresh(current, style, keys, target);
             // 非尾每轮次放完增加次数和计算下轮准备

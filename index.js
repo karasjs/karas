@@ -7790,22 +7790,21 @@
 
     root.__frameHook();
 
-    var style = assignStyle(frameStyle, animation);
-    animation.__style = style;
+    assignStyle(frameStyle, animation);
+    animation.__style = frameStyle;
     animation.__assigning = true;
   }
 
   function assignStyle(style, animation) {
-    var res = {};
     var target = animation.target;
     var hasZ;
     animation.keys.forEach(function (i) {
       if (i === 'zIndex') {
         hasZ = true;
-      }
+      } // 结束还原时样式为空，需填上默认样式
 
-      var v = style[i];
-      res[i] = v; // geom的属性变化
+
+      var v = style[i] || target.style[i]; // geom的属性变化
 
       if (repaint.GEOM.hasOwnProperty(i)) {
         target.currentProps[i] = v;
@@ -7822,8 +7821,6 @@
     if (hasZ && /svg/i.test(target.root.tagName)) {
       target.__cancelCacheSvg();
     }
-
-    return res;
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -9077,7 +9074,7 @@
                   current = current.style;
                 } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
                 else {
-                    current = target.style;
+                    current = {};
                   }
 
                 var _calRefresh3 = calRefresh(current, style, keys, target);

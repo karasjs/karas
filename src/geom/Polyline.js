@@ -6,7 +6,8 @@ import painter from '../util/painter';
 let { isNil } = util;
 
 function concatPointAndControl(point, control) {
-  if(Array.isArray(control) && control.length) {
+  if(Array.isArray(control) && (control.length === 2 || control.length === 4)
+    && Array.isArray(point) && point.length === 2) {
     return control.concat(point);
   }
   return point;
@@ -36,17 +37,17 @@ class Polyline extends Geom {
   __getPoints(originX, originY, width, height, points, isControl) {
     return points.map((item, i) => {
       if(!Array.isArray(item)) {
-        return null;
+        return;
       }
       let len = item.length;
       if(isControl) {
         if(len !== 0 && len !== 2 && len !== 4) {
-          throw new Error('Control must have 0/2/4 coords: ' + points);
+          return;
         }
       }
       else {
         if(len !== 0 && len !== 2) {
-          throw new Error('Point must have 0/2 coords: ' + points);
+          return;
         }
       }
       let res = [];
@@ -89,7 +90,6 @@ class Polyline extends Geom {
           if(Array.isArray(item)) {
             return this.__getPoints(originX, originY, width, height, item);
           }
-          return null;
         });
       }
       else {
@@ -116,12 +116,14 @@ class Polyline extends Geom {
       if(isMulti) {
         let list = pts.map((item, i) => {
           let cl = cls[i];
-          return item.map((point, j) => {
-            if(j) {
-              return concatPointAndControl(point, cl && cl[j - 1]);
-            }
-            return point;
-          });
+          if(Array.isArray(item)) {
+            return item.map((point, j) => {
+              if(j) {
+                return concatPointAndControl(point, cl && cl[j - 1]);
+              }
+              return point;
+            });
+          }
         });
         if(renderMode === mode.CANVAS) {
           __cacheProps.list = list;

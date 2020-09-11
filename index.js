@@ -15107,14 +15107,14 @@
       var o = document.querySelector(dom);
 
       if (!o) {
-        throw new Error('can not find dom of selector: ' + dom);
+        throw new Error('Can not find dom of selector: ' + dom);
       }
 
       return o;
     }
 
     if (!dom) {
-      throw new Error('can not find dom: ' + dom);
+      throw new Error('Can not find dom: ' + dom);
     }
 
     return dom;
@@ -16443,7 +16443,7 @@
   var isNil$8 = util.isNil;
 
   function concatPointAndControl(point, control) {
-    if (Array.isArray(control) && control.length) {
+    if (Array.isArray(control) && (control.length === 2 || control.length === 4) && Array.isArray(point) && point.length === 2) {
       return control.concat(point);
     }
 
@@ -16487,18 +16487,18 @@
       value: function __getPoints(originX, originY, width, height, points, isControl) {
         return points.map(function (item, i) {
           if (!Array.isArray(item)) {
-            return null;
+            return;
           }
 
           var len = item.length;
 
           if (isControl) {
             if (len !== 0 && len !== 2 && len !== 4) {
-              throw new Error('Control must have 0/2/4 coords: ' + points);
+              return;
             }
           } else {
             if (len !== 0 && len !== 2) {
-              throw new Error('Point must have 0/2 coords: ' + points);
+              return;
             }
           }
 
@@ -16552,8 +16552,6 @@
               if (Array.isArray(item)) {
                 return _this2.__getPoints(originX, originY, width, height, item);
               }
-
-              return null;
             });
           } else {
             __cacheProps.points = this.__getPoints(originX, originY, width, height, points);
@@ -16581,13 +16579,16 @@
           if (isMulti) {
             var list = pts.map(function (item, i) {
               var cl = cls[i];
-              return item.map(function (point, j) {
-                if (j) {
-                  return concatPointAndControl(point, cl && cl[j - 1]);
-                }
 
-                return point;
-              });
+              if (Array.isArray(item)) {
+                return item.map(function (point, j) {
+                  if (j) {
+                    return concatPointAndControl(point, cl && cl[j - 1]);
+                  }
+
+                  return point;
+                });
+              }
             });
 
             if (renderMode === mode.CANVAS) {

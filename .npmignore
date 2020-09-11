@@ -19,3 +19,4 @@ reports/
 .travis.yml
 selenium-debug.log
 src/
+index.min.js*

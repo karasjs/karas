@@ -20,12 +20,12 @@ function getDom(dom) {
   if(util.isString(dom) && dom) {
     let o = document.querySelector(dom);
     if(!o) {
-      throw new Error('can not find dom of selector: ' + dom);
+      throw new Error('Can not find dom of selector: ' + dom);
     }
     return o;
   }
   if(!dom) {
-    throw new Error('can not find dom: ' + dom);
+    throw new Error('Can not find dom: ' + dom);
   }
   return dom;
 }

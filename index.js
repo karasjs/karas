@@ -17951,7 +17951,7 @@
     repaint: repaint
   };
 
-  var version = "0.37.6";
+  var version = "0.37.7";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

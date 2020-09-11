@@ -809,9 +809,7 @@
         height = _node$computedStyle2.height,
         _node$computedStyle2$ = _slicedToArray(_node$computedStyle2.transformOrigin, 2),
         ox = _node$computedStyle2$[0],
-        oy = _node$computedStyle2$[1]; // let [x1, y1] = calCoordsInNode(0, 0, node);
-    // let [x0, y0] = calCoordsInNode(ox / width, oy / height, node);
-    // 先求无旋转时右下角相对于原点的角度ds
+        oy = _node$computedStyle2$[1]; // 先求无旋转时右下角相对于原点的角度ds
 
 
     var ds = Math.atan((height - oy) / (width - ox));
@@ -844,10 +842,6 @@
       }
     } else {
       deg = 0;
-    }
-
-    if (deg === 0) {
-      return [ox / width, oy / width];
     } // 目标点到原点的边长不会变
 
 
@@ -858,7 +852,11 @@
     if (x >= ox && y >= oy) {
       d2 = Math.atan((y - oy) / (x - ox));
     } else if (x >= ox && y < oy) {
-      d2 = -Math.atan((y - oy) / (ox - x));
+      if (ox === x) {
+        d2 = -Math.atan(Infinity);
+      } else {
+        d2 = -Math.atan((y - oy) / (ox - x));
+      }
     } else if (x < ox && y >= oy) {
       d2 = Math.PI - Math.atan((y - oy) / (ox - x));
     } else {

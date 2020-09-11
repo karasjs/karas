@@ -144,8 +144,6 @@ function calCoordsInNode(px, py, node) {
 
 function calPercentInNode(x, y, node) {
   let { computedStyle: { width, height, transformOrigin: [ox, oy] } } = node;
-  // let [x1, y1] = calCoordsInNode(0, 0, node);
-  // let [x0, y0] = calCoordsInNode(ox / width, oy / height, node);
   // 先求无旋转时右下角相对于原点的角度ds
   let ds = Math.atan((height - oy) / (width - ox));
   let [x1, y1] = calCoordsInNode(1, 1, node);
@@ -177,9 +175,6 @@ function calPercentInNode(x, y, node) {
   else {
     deg = 0;
   }
-  if(deg === 0) {
-    return [ox / width, oy / width];
-  }
   // 目标点到原点的边长不会变
   let dt = Math.sqrt(Math.pow(x - ox, 2) + Math.pow(y - oy, 2));
   // 分4个象限，先求目标点到原点的角度d2，再偏移deg后求得原始坐标
@@ -188,7 +183,12 @@ function calPercentInNode(x, y, node) {
     d2 = Math.atan((y - oy) / (x - ox));
   }
   else if(x >= ox && y < oy) {
-    d2 = -Math.atan((y - oy) / (ox - x));
+    if(ox === x) {
+      d2 = -Math.atan(Infinity);
+    }
+    else {
+      d2 = -Math.atan((y - oy) / (ox - x));
+    }
   }
   else if(x < ox && y >= oy) {
     d2 = Math.PI - Math.atan((y - oy) / (ox - x));

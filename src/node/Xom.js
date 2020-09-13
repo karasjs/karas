@@ -12,6 +12,7 @@ import blur from '../style/blur';
 import util from '../util/util';
 import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
+import invalid from '../animate/invalid';
 import level from '../animate/level';
 import inject from '../util/inject';
 import mx from '../math/matrix';
@@ -1115,7 +1116,8 @@ class Xom extends Node {
       [
         'fontStyle',
         'color',
-        'visibility'
+        'visibility',
+        'pointerEvents',
       ].forEach(k => {
         if(currentStyle[k].unit === INHERIT) {
           computedStyle[k] = parentComputedStyle[k];
@@ -1133,7 +1135,8 @@ class Xom extends Node {
       [
         'fontStyle',
         'color',
-        'visibility'
+        'visibility',
+        'pointerEvents',
       ].forEach(k => {
         if(currentStyle[k].unit !== INHERIT) {
           computedStyle[k] = currentStyle[k].value;
@@ -1142,18 +1145,21 @@ class Xom extends Node {
           }
         }
       });
-      if(currentStyle.fontStyle.unit === 4) {
+      if(currentStyle.fontStyle.unit === INHERIT) {
         computedStyle.fontStyle = 'normal';
       }
-      if(currentStyle.fontWeight.unit === 4) {
+      if(currentStyle.fontWeight.unit === INHERIT) {
         computedStyle.fontWeight = 400;
       }
-      if(currentStyle.color.unit === 4) {
+      if(currentStyle.color.unit === INHERIT) {
         computedStyle.color = [0, 0, 0, 1];
         __cacheStyle.color = 'rgba(0,0,0,1)';
       }
-      if(currentStyle.visibility.unit === 4) {
+      if(currentStyle.visibility.unit === INHERIT) {
         computedStyle.visibility = 'visible';
+      }
+      if(currentStyle.pointerEvents.unit === INHERIT) {
+        computedStyle.pointerEvents = 'auto';
       }
     }
     // 圆角边计算
@@ -1733,8 +1739,12 @@ class Xom extends Node {
   }
 
   willResponseEvent(e) {
-    let { x, y } = e;
-    let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
+    let { x, y, event } = e;
+    let { sx, sy, outerWidth, outerHeight, matrixEvent,
+      computedStyle: { pointerEvents } } = this;
+    if(pointerEvents === 'none') {
+      return;
+    }
     let inThis = tf.pointInQuadrilateral(
       x, y,
       sx, sy,
@@ -1844,7 +1854,10 @@ class Xom extends Node {
       let p;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          if(rp.GEOM.hasOwnProperty(i)) {
+          if(invalid.hasOwnProperty(i)) {
+            // pointerEvents这种无关的
+          }
+          else if(rp.GEOM.hasOwnProperty(i)) {
             if(!css.equalStyle(i, style[i], props[i], this)) {
               hasUpdate = true;
               this.__cacheSvg = false;

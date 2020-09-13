@@ -5750,6 +5750,21 @@
       }
     }
 
+    temp = style.pointerEvents;
+
+    if (temp) {
+      if (temp === 'inherit') {
+        style.pointerEvents = {
+          unit: INHERIT
+        };
+      } else {
+        style.pointerEvents = {
+          value: temp,
+          unit: STRING
+        };
+      }
+    }
+
     temp = style.boxShadow;
 
     if (temp) {
@@ -6129,7 +6144,8 @@
     skewY: 0,
     rotateZ: 0,
     filter: null,
-    boxShadow: null
+    boxShadow: null,
+    pointerEvents: 'inherit'
   };
   var GEOM = {
     fill: 'transparent',
@@ -7648,6 +7664,10 @@
     REFLOW: 1
   };
 
+  var invalid = {
+    pointerEvents: true
+  };
+
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -7750,7 +7770,12 @@
     var lv = level.REPAINT;
 
     for (var i = 0, len = keys.length; i < len; i++) {
-      var k = keys[i];
+      var k = keys[i]; // 无需刷新的
+
+      if (invalid.hasOwnProperty(k)) {
+        continue;
+      }
+
       var n = frameStyle[k];
       var p = lastStyle[k]; // 前后均非空对比
 
@@ -10674,7 +10699,7 @@
 
         if (parent) {
           var parentComputedStyle = parent.computedStyle;
-          ['fontStyle', 'color', 'visibility'].forEach(function (k) {
+          ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
             if (currentStyle[k].unit === INHERIT$2) {
               computedStyle[k] = parentComputedStyle[k];
             } else {
@@ -10687,7 +10712,7 @@
           });
         } // root和component的根节点不能是inherit
         else {
-            ['fontStyle', 'color', 'visibility'].forEach(function (k) {
+            ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
               if (currentStyle[k].unit !== INHERIT$2) {
                 computedStyle[k] = currentStyle[k].value;
 
@@ -10697,21 +10722,25 @@
               }
             });
 
-            if (currentStyle.fontStyle.unit === 4) {
+            if (currentStyle.fontStyle.unit === INHERIT$2) {
               computedStyle.fontStyle = 'normal';
             }
 
-            if (currentStyle.fontWeight.unit === 4) {
+            if (currentStyle.fontWeight.unit === INHERIT$2) {
               computedStyle.fontWeight = 400;
             }
 
-            if (currentStyle.color.unit === 4) {
+            if (currentStyle.color.unit === INHERIT$2) {
               computedStyle.color = [0, 0, 0, 1];
               __cacheStyle.color = 'rgba(0,0,0,1)';
             }
 
-            if (currentStyle.visibility.unit === 4) {
+            if (currentStyle.visibility.unit === INHERIT$2) {
               computedStyle.visibility = 'visible';
+            }
+
+            if (currentStyle.pointerEvents.unit === INHERIT$2) {
+              computedStyle.pointerEvents = 'auto';
             }
           } // 圆角边计算
 
@@ -11339,12 +11368,19 @@
       key: "willResponseEvent",
       value: function willResponseEvent(e) {
         var x = e.x,
-            y = e.y;
+            y = e.y,
+            event = e.event;
         var sx = this.sx,
             sy = this.sy,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
-            matrixEvent = this.matrixEvent;
+            matrixEvent = this.matrixEvent,
+            pointerEvents = this.computedStyle.pointerEvents;
+
+        if (pointerEvents === 'none') {
+          return;
+        }
+
         var inThis = tf.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
 
         if (inThis) {
@@ -11453,7 +11489,7 @@
 
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
-              if (repaint.GEOM.hasOwnProperty(i)) {
+              if (invalid.hasOwnProperty(i)) ; else if (repaint.GEOM.hasOwnProperty(i)) {
                 if (!css.equalStyle(i, style[i], props[i], this)) {
                   hasUpdate = true;
                   this.__cacheSvg = false;
@@ -17948,10 +17984,11 @@
     easing: easing,
     frame: frame,
     level: level,
-    repaint: repaint
+    repaint: repaint,
+    invalid: invalid
   };
 
-  var version = "0.37.8";
+  var version = "0.38.0";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

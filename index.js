@@ -11260,7 +11260,56 @@
               ctx.restore();
             }
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode, ctx, defs); // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+          this.render(renderMode, ctx, defs); // 检查后续mask是否是空，空遮罩不生效
+
+          var isEmpty = true;
+          var sibling = next;
+
+          outer: while (sibling) {
+            var children = sibling.virtualDom.children;
+
+            for (var i = 0, len = children.length; i < len; i++) {
+              var _children$i = children[i],
+                  tagName = _children$i.tagName,
+                  props = _children$i.props;
+
+              if (tagName === 'path') {
+                for (var j = 0, _len = props.length; j < _len; j++) {
+                  var _props$i = _slicedToArray(props[i], 2),
+                      k = _props$i[0],
+                      v = _props$i[1];
+
+                  if (k === 'd') {
+                    if (v) {
+                      isEmpty = false;
+                      break outer;
+                    }
+                  }
+                }
+              }
+            }
+
+            sibling = sibling.next;
+
+            if (!sibling) {
+              break;
+            }
+
+            if (hasMask) {
+              if (!sibling.isMask) {
+                break;
+              }
+            } else if (hasClip) {
+              if (!sibling.isClip) {
+                break;
+              }
+            }
+          }
+
+          if (isEmpty) {
+            return;
+          } // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+
 
           if (hasMask) {
             this.virtualDom.mask = next.maskId;

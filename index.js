@@ -11368,8 +11368,7 @@
       key: "willResponseEvent",
       value: function willResponseEvent(e) {
         var x = e.x,
-            y = e.y,
-            event = e.event;
+            y = e.y;
         var sx = this.sx,
             sy = this.sy,
             outerWidth = this.outerWidth,
@@ -12294,19 +12293,34 @@
     };
   });
 
+  var TAG_NAME = {
+    'div': true,
+    'p': true,
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var INLINE = {
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var BOLD = {
+    'b': true,
+    'strong': true
+  };
+  var tag = {
+    TAG_NAME: TAG_NAME,
+    INLINE: INLINE,
+    BOLD: BOLD
+  };
+
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
   var calAbsolute$1 = css.calAbsolute;
-  var TAG_NAME = {
-    'div': true,
-    'span': true,
-    'img': true
-  };
-  var INLINE = {
-    'span': true,
-    'img': true
-  };
 
   function isRelativeOrAbsolute(node) {
     var position = node.computedStyle.position;
@@ -12335,11 +12349,15 @@
         inline: true,
         none: true
       }.hasOwnProperty(style.display)) {
-        if (INLINE.hasOwnProperty(_this.tagName)) {
+        if (tag.INLINE.hasOwnProperty(_this.tagName)) {
           style.display = 'inline';
         } else {
           style.display = 'block';
         }
+      }
+
+      if (!style.fontWeight && tag.BOLD.hasOwnProperty(tagName)) {
+        style.fontWeight = 700;
       }
 
       _this.__style = css.normalize(style, reset.dom); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
@@ -13665,11 +13683,6 @@
         }
 
         return this.y;
-      }
-    }], [{
-      key: "isValid",
-      value: function isValid(s) {
-        return TAG_NAME.hasOwnProperty(s);
       }
     }]);
 
@@ -18035,7 +18048,7 @@
         return new Root(tagName, props, children);
       }
 
-      if (Dom$1.isValid(tagName)) {
+      if (tag.TAG_NAME.hasOwnProperty(tagName)) {
         return {
           tagName: tagName,
           props: props,

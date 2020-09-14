@@ -1739,7 +1739,7 @@ class Xom extends Node {
   }
 
   willResponseEvent(e) {
-    let { x, y, event } = e;
+    let { x, y } = e;
     let { sx, sy, outerWidth, outerHeight, matrixEvent,
       computedStyle: { pointerEvents } } = this;
     if(pointerEvents === 'none') {

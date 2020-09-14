@@ -2,6 +2,7 @@ import Xom from './Xom';
 import Text from './Text';
 import LineGroup from './LineGroup';
 import Component from './Component';
+import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
@@ -12,17 +13,6 @@ import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute } = css;
-
-const TAG_NAME = {
-  'div': true,
-  'span': true,
-  'img': true,
-};
-
-const INLINE = {
-  'span': true,
-  'img': true,
-};
 
 function isRelativeOrAbsolute(node) {
   let position = node.computedStyle.position;
@@ -40,12 +30,15 @@ class Dom extends Xom {
       inline: true,
       none: true,
     }.hasOwnProperty(style.display)) {
-      if(INLINE.hasOwnProperty(this.tagName)) {
+      if(tag.INLINE.hasOwnProperty(this.tagName)) {
         style.display = 'inline';
       }
       else {
         style.display = 'block';
       }
+    }
+    if(!style.fontWeight && tag.BOLD.hasOwnProperty(tagName)) {
+      style.fontWeight = 700;
     }
     this.__style = css.normalize(style, reset.dom);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
@@ -1211,10 +1204,6 @@ class Dom extends Xom {
       return last.y - this.y + last.baseLine;
     }
     return this.y;
-  }
-
-  static isValid(s) {
-    return TAG_NAME.hasOwnProperty(s);
   }
 }
 

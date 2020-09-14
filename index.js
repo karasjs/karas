@@ -7342,7 +7342,7 @@
     now: function now() {
       if (typeof performance !== 'undefined') {
         inject.now = performance.now.bind(performance);
-        return performance.now();
+        return Math.floor(performance.now());
       }
 
       inject.now = Date.now.bind(Date);

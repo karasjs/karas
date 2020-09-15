@@ -18064,7 +18064,8 @@
   var style = {
     css: css,
     reset: reset,
-    unit: unit
+    unit: unit,
+    font: font
   };
 
   var animate = {

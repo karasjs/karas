@@ -1681,6 +1681,44 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
+      // 检查后续mask是否是空，空遮罩不生效
+      let isEmpty = true;
+      let sibling = next;
+      outer:
+      while(sibling) {
+        let { children } = sibling.virtualDom;
+        for(let i = 0, len = children.length; i < len; i++) {
+          let { tagName, props } = children[i];
+          if(tagName === 'path') {
+            for(let j = 0, len = props.length; j < len; j++) {
+              let [k, v] = props[i];
+              if(k === 'd') {
+                if(v) {
+                  isEmpty = false;
+                  break outer;
+                }
+              }
+            }
+          }
+        }
+        sibling = sibling.next;
+        if(!sibling) {
+          break;
+        }
+        if(hasMask) {
+          if(!sibling.isMask) {
+            break;
+          }
+        }
+        else if(hasClip) {
+          if(!sibling.isClip) {
+            break;
+          }
+        }
+      }
+      if(isEmpty) {
+        return;
+      }
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
         this.virtualDom.mask = next.maskId;

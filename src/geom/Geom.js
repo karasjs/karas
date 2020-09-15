@@ -5,6 +5,7 @@ import unit from '../style/unit';
 import mode from '../util/mode';
 import util from '../util/util';
 import matrix from '../math/matrix';
+// import geom from '../math/geom';
 
 const { AUTO, PX, PERCENT } = unit;
 const { clone, int2rgba, isNil, joinArr } = util;
@@ -277,6 +278,9 @@ class Geom extends Xom {
       // svg的mask没有transform，需手动计算变换后的坐标应用
       let children = clone(vd.children);
       let m = this.matrix;
+      // let { sx, sy, computedStyle: { marginLeft, borderLeftWidth, marginTop, borderTopWidth, transformOrigin: [ox, oy] } } = this;
+      // let offsetX = sx + marginLeft + borderLeftWidth + ox;
+      // let offsetY = sy + marginTop + borderTopWidth + oy;
       children.forEach(child => {
         let props = child.props;
         if(child.tagName === 'path') {
@@ -285,6 +289,12 @@ class Geom extends Xom {
             if(k === 'd') {
               props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
                 return joinArr(matrix.calPoint([$1, $2], m), ',');
+                // let dx = parseFloat($1) - offsetX;
+                // let dy = parseFloat($2) - offsetY;
+                // let p = matrix.calPoint([dx, dy], m);
+                // p[0] += offsetX;
+                // p[1] += offsetY;
+                // return joinArr(p, ',');
               });
               break;
             }

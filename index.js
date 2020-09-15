@@ -823,10 +823,20 @@
     var deg; // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
 
     if (x1 >= ox && y1 >= oy) {
-      d1 = Math.atan((y1 - oy) / (x1 - ox));
+      if (ox === x1) {
+        d1 = -Math.atan(Infinity);
+      } else {
+        d1 = Math.atan((y1 - oy) / (x1 - ox));
+      }
+
       deg = d1 - ds;
     } else if (x1 >= ox && y1 < oy) {
-      d1 = Math.atan((oy - y1) / (x1 - ox));
+      if (ox === x1) {
+        d1 = -Math.atan(Infinity);
+      } else {
+        d1 = Math.atan((oy - y1) / (x1 - ox));
+      }
+
       deg = d1 + ds;
     } else if (x1 < ox && y1 >= oy) {
       d1 = Math.atan((y1 - oy) / (ox - x1));
@@ -850,7 +860,11 @@
     var d2;
 
     if (x >= ox && y >= oy) {
-      d2 = Math.atan((y - oy) / (x - ox));
+      if (ox === x) {
+        d2 = -Math.atan(Infinity);
+      } else {
+        d2 = Math.atan((y - oy) / (x - ox));
+      }
     } else if (x >= ox && y < oy) {
       if (ox === x) {
         d2 = -Math.atan(Infinity);
@@ -16045,7 +16059,10 @@
 
 
           var children = clone$4(vd.children);
-          var m = this.matrix;
+          var m = this.matrix; // let { sx, sy, computedStyle: { marginLeft, borderLeftWidth, marginTop, borderTopWidth, transformOrigin: [ox, oy] } } = this;
+          // let offsetX = sx + marginLeft + borderLeftWidth + ox;
+          // let offsetY = sy + marginTop + borderTopWidth + oy;
+
           children.forEach(function (child) {
             var props = child.props;
 
@@ -16057,7 +16074,12 @@
 
                 if (k === 'd') {
                   props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return joinArr$2(matrix.calPoint([$1, $2], m), ',');
+                    return joinArr$2(matrix.calPoint([$1, $2], m), ','); // let dx = parseFloat($1) - offsetX;
+                    // let dy = parseFloat($2) - offsetY;
+                    // let p = matrix.calPoint([dx, dy], m);
+                    // p[0] += offsetX;
+                    // p[1] += offsetY;
+                    // return joinArr(p, ',');
                   });
                   break;
                 }

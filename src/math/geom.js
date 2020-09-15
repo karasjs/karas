@@ -151,11 +151,21 @@ function calPercentInNode(x, y, node) {
   let deg;
   // 根据旋转后的坐标，分4个象限，求旋转后的右下角相对于原点的角度d1，得出偏移角度deg，分顺逆时针[-180, 180]
   if(x1 >= ox && y1 >= oy) {
-    d1 = Math.atan((y1 - oy) / (x1 - ox));
+    if(ox === x1) {
+      d1 = -Math.atan(Infinity);
+    }
+    else {
+      d1 = Math.atan((y1 - oy) / (x1 - ox));
+    }
     deg = d1 - ds;
   }
   else if(x1 >= ox && y1 < oy) {
-    d1 = Math.atan((oy - y1) / (x1 - ox));
+    if(ox === x1) {
+      d1 = -Math.atan(Infinity);
+    }
+    else {
+      d1 = Math.atan((oy - y1) / (x1 - ox));
+    }
     deg = d1 + ds;
   }
   else if(x1 < ox && y1 >= oy) {
@@ -180,7 +190,12 @@ function calPercentInNode(x, y, node) {
   // 分4个象限，先求目标点到原点的角度d2，再偏移deg后求得原始坐标
   let d2;
   if(x >= ox && y >= oy) {
-    d2 = Math.atan((y - oy) / (x - ox));
+    if(ox === x) {
+      d2 = -Math.atan(Infinity);
+    }
+    else {
+      d2 = Math.atan((y - oy) / (x - ox));
+    }
   }
   else if(x >= ox && y < oy) {
     if(ox === x) {

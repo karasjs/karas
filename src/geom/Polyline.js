@@ -114,7 +114,7 @@ class Polyline extends Geom {
     // points/controls有变化就需要重建顶点
     if(rebuild) {
       if(isMulti) {
-        let list = pts.map((item, i) => {
+        let list = pts.filter(item => Array.isArray(item)).map((item, i) => {
           let cl = cls[i];
           if(Array.isArray(item)) {
             return item.map((point, j) => {
@@ -135,7 +135,7 @@ class Polyline extends Geom {
         }
       }
       else {
-        let list = pts.map((point, i) => {
+        let list = pts.filter(item => Array.isArray(item)).map((point, i) => {
           if(i) {
             return concatPointAndControl(point, cls[i - 1]);
           }

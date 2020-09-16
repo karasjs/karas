@@ -1224,7 +1224,7 @@ class Xom extends Node {
       matrix = transform;
       matrix = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix, tfo);
     }
-    let renderMatrix = matrix;
+    let renderMatrix = this.__svgMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
@@ -1719,12 +1719,55 @@ class Xom extends Node {
       if(isEmpty) {
         return;
       }
+      // 应用mask本身的matrix，以及被遮罩对象的matrix逆
+      sibling = next;
+      let mChildren = [];
+      while(sibling) {
+        let { children } = sibling.virtualDom;
+        mChildren = mChildren.concat(children);
+        for(let i = 0, len = children.length; i < len; i++) {
+          let { tagName, props } = children[i];
+          if(tagName === 'path') {
+            let matrix = sibling.__svgMatrix;
+            let inverse = mx.inverse(this.matrix);
+            matrix = mx.multiply(matrix, inverse);
+            // transform属性放在最后一个省去循环
+            let len = props.length;
+            if(!len || props[len - 1][0] !== 'transform') {
+              props.push(['transform', `matrix(${matrix})`]);
+            }
+            else {
+              props[len - 1][1] = `matrix(${matrix})`;
+            }
+          }
+        }
+        sibling = sibling.next;
+        if(!sibling) {
+          break;
+        }
+        if(hasMask) {
+          if(!sibling.isMask) {
+            break;
+          }
+        }
+        else if(hasClip) {
+          if(!sibling.isClip) {
+            break;
+          }
+        }
+      }
+      let id = defs.add({
+        tagName: hasClip ? 'clipPath' : 'mask',
+        props: [],
+        children: mChildren,
+      });
+      id = 'url(#' + id + ')';
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
-        this.virtualDom.mask = next.maskId;
+        this.virtualDom.mask = id;
       }
       else if(hasClip) {
-        this.virtualDom.clip = next.clipId;
+        this.virtualDom.clip = id;
       }
     }
   }

@@ -97,6 +97,7 @@ function linkLibrary(item, hash) {
         let { libraryId } = child;
         // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
         if(isNil(libraryId)) {
+          console.warn('Library item should have a libraryId: ' + JSON.stringify(child));
           return;
         }
         let libraryItem = hash[libraryId];
@@ -105,14 +106,14 @@ function linkLibrary(item, hash) {
           linkChild(child, libraryItem);
         }
         else {
-          throw new Error('Link library item miss id: ' + libraryId);
+          throw new Error('Link library item miss libraryId: ' + libraryId);
         }
       }
     });
   }
   // library中一定有id，因为是一级，二级+特殊需求才会出现放开
   if(isNil(id)) {
-    throw new Error('Library item miss id: ' + id);
+    throw new Error('Library item miss id: ' + JSON.stringify(item));
   }
   else {
     hash[id] = item;
@@ -183,7 +184,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
   }
   let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
   if(!tagName) {
-    throw new Error('Dom must have a tagName: ' + json);
+    throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
   let style = props.style;
   abbr2full(style, abbrCssProperty);

@@ -64,9 +64,86 @@ function int2convolution(v) {
   return d;
 }
 
+/**
+ * 初等行变换求3*3特定css的matrix方阵，一维6长度
+ * @param m
+ */
+function inverse(m) {
+  let [a, b, c, d, e, f] = m;
+  let ar = 1;
+  let br = 0;
+  let cr = 0;
+  let dr = 1;
+  let er = 0;
+  let fr = 0;
+  // 先检查a是否为0，强制a为1
+  if(a === 0) {
+    a = 1;
+    c += 1;
+    e += 1;
+    ar = 2;
+    cr = 1;
+    er = 1;
+  }
+  // b/a=x，R2-R1*x，b为0可优化
+  if(b !== 0) {
+    let x = b / a;
+    b = 0;
+    d -= c * x;
+    f -= e * x;
+    br = -x;
+    dr -= cr * x;
+    fr -= er * x;
+  }
+  // R1/a，a为1可优化
+  if(a !== 1) {
+    a = 1;
+    c /= a;
+    ar /= a;
+    cr /= a;
+    er /= a;
+  }
+  // c/e=y，R1-R2*y，c为0可优化
+  if(c !== 0) {
+    let y = c / e;
+    c = 0;
+    e -= f * y;
+    ar -= br * y;
+    cr -= dr * y;
+    er -= fr * y;
+  }
+  // 检查d是否为0，如果为0转成1，R2+1-R1
+  if(d === 0) {
+    d = 1;
+    f += 1 - e;
+    br += 1 - ar;
+    dr += 1 - cr;
+    fr += 1 - er;
+  }
+  // R2/d，d为1可优化
+  else if(d !== 1) {
+    f /= d;
+    br /= d;
+    dr /= d;
+    fr /= d;
+    d = 1;
+  }
+  // R1-R3*e，R2-R3*f，e/f为0可优化
+  if(e !== 0) {
+    er -= e;
+    e = 0;
+  }
+  if(f !== 0) {
+    fr -= f;
+    f = 0;
+  }
+  return [ar, br, cr, dr, er, fr];
+}
+
 export default {
   identity,
   multiply,
   calPoint,
   int2convolution,
+  inverse,
 };

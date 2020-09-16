@@ -591,12 +591,103 @@
 
     return d;
   }
+  /**
+   * 初等行变换求3*3特定css的matrix方阵，一维6长度
+   * @param m
+   */
 
-  var matrix = {
+
+  function inverse(m) {
+    var _m2 = _slicedToArray(m, 6),
+        a = _m2[0],
+        b = _m2[1],
+        c = _m2[2],
+        d = _m2[3],
+        e = _m2[4],
+        f = _m2[5];
+
+    var ar = 1;
+    var br = 0;
+    var cr = 0;
+    var dr = 1;
+    var er = 0;
+    var fr = 0; // 先检查a是否为0，强制a为1
+
+    if (a === 0) {
+      a = 1;
+      c += 1;
+      e += 1;
+      ar = 2;
+      cr = 1;
+      er = 1;
+    } // b/a=x，R2-R1*x，b为0可优化
+
+
+    if (b !== 0) {
+      var x = b / a;
+      b = 0;
+      d -= c * x;
+      f -= e * x;
+      br = -x;
+      dr -= cr * x;
+      fr -= er * x;
+    } // R1/a，a为1可优化
+
+
+    if (a !== 1) {
+      a = 1;
+      c /= a;
+      ar /= a;
+      cr /= a;
+      er /= a;
+    } // c/e=y，R1-R2*y，c为0可优化
+
+
+    if (c !== 0) {
+      var y = c / e;
+      c = 0;
+      e -= f * y;
+      ar -= br * y;
+      cr -= dr * y;
+      er -= fr * y;
+    } // 检查d是否为0，如果为0转成1，R2+1-R1
+
+
+    if (d === 0) {
+      d = 1;
+      f += 1 - e;
+      br += 1 - ar;
+      dr += 1 - cr;
+      fr += 1 - er;
+    } // R2/d，d为1可优化
+    else if (d !== 1) {
+        f /= d;
+        br /= d;
+        dr /= d;
+        fr /= d;
+        d = 1;
+      } // R1-R3*e，R2-R3*f，e/f为0可优化
+
+
+    if (e !== 0) {
+      er -= e;
+      e = 0;
+    }
+
+    if (f !== 0) {
+      fr -= f;
+      f = 0;
+    }
+
+    return [ar, br, cr, dr, er, fr];
+  }
+
+  var mx = {
     identity: identity,
     multiply: multiply,
     calPoint: calPoint,
-    int2convolution: int2convolution
+    int2convolution: int2convolution,
+    inverse: inverse
   };
 
   var H = 4 * (Math.sqrt(2) - 1) / 3; // 向量积
@@ -782,7 +873,7 @@
 
   function calCoordsInNode(px, py, node) {
     var _node$matrix = node.matrix,
-        matrix$1 = _node$matrix === void 0 ? [1, 0, 0, 1, 0, 0] : _node$matrix,
+        matrix = _node$matrix === void 0 ? [1, 0, 0, 1, 0, 0] : _node$matrix,
         _node$computedStyle = node.computedStyle,
         computedStyle = _node$computedStyle === void 0 ? {} : _node$computedStyle;
     var width = computedStyle.width,
@@ -794,7 +885,7 @@
         ox = _computedStyle$transf2[0],
         oy = _computedStyle$transf2[1];
 
-    var _mx$calPoint = matrix.calPoint([px * width - ox, py * height - oy], matrix$1);
+    var _mx$calPoint = mx.calPoint([px * width - ox, py * height - oy], matrix);
 
     var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
 
@@ -964,7 +1055,7 @@
   function rotate(theta) {
     var sin = Math.sin(theta);
     var cos = Math.cos(theta);
-    var t = matrix.identity();
+    var t = mx.identity();
     t[0] = t[3] = cos;
     t[1] = sin;
     t[2] = -sin;
@@ -1145,7 +1236,7 @@
 
     var overflow = isOverflow(source, target); // 第0步，将源三角第1个a点移到原点
 
-    var m = matrix.identity();
+    var m = mx.identity();
     m[4] = -sx1;
     m[5] = -sy1;
     var t; // 第1步，以第1条边ab为基准，将其贴合x轴上，为后续倾斜不干扰做准备
@@ -1154,7 +1245,7 @@
 
     if (theta !== 0) {
       t = rotate(-theta);
-      m = matrix.multiply(t, m);
+      m = mx.multiply(t, m);
     } // 第2步，以第1条边AB为基准，缩放x轴ab至目标相同长度，可与4步合并
 
 
@@ -1167,7 +1258,7 @@
     // }
     // 第3步，缩放y，先将目标三角形旋转到x轴平行，再变换坐标计算
 
-    var n = matrix.identity();
+    var n = mx.identity();
     n[4] = -tx1;
     n[5] = -ty1;
     theta = calDeg(tx1, ty1, tx2, ty2); // 记录下这个旋转角度，后面源三角形要反向旋转
@@ -1176,13 +1267,13 @@
 
     if (theta !== 0) {
       t = rotate(-theta);
-      n = matrix.multiply(t, n);
+      n = mx.multiply(t, n);
     } // 目标三角反向旋转至x轴后的坐标
     // 源三角目前的第3点坐标y值即为长度，因为a点在原点0无需减去
 
 
-    var ls2 = Math.abs(matrix.calPoint([sx3, sy3], m)[1]);
-    var lt2 = Math.abs(matrix.calPoint([tx3, ty3], n)[1]); // 缩放y
+    var ls2 = Math.abs(mx.calPoint([sx3, sy3], m)[1]);
+    var lt2 = Math.abs(mx.calPoint([tx3, ty3], n)[1]); // 缩放y
     // if(ls2 !== lt2) {
     // let scale = lt / ls;
     // t = matrix.identity();
@@ -1191,7 +1282,7 @@
     // }
 
     if (ls !== lt || ls2 !== lt2) {
-      t = matrix.identity();
+      t = mx.identity();
 
       if (ls !== lt) {
         t[0] = lt / ls;
@@ -1201,23 +1292,23 @@
         t[3] = lt2 / ls2;
       }
 
-      m = matrix.multiply(t, m);
+      m = mx.multiply(t, m);
     } // 第4步，x轴倾斜，用余弦定理求目前a和A的夹角
 
 
     n = m;
 
-    var _matrix$calPoint = matrix.calPoint([sx1, sy1], n),
+    var _matrix$calPoint = mx.calPoint([sx1, sy1], n),
         _matrix$calPoint2 = _slicedToArray(_matrix$calPoint, 2),
         ax1 = _matrix$calPoint2[0],
         ay1 = _matrix$calPoint2[1];
 
-    var _matrix$calPoint3 = matrix.calPoint([sx2, sy2], n),
+    var _matrix$calPoint3 = mx.calPoint([sx2, sy2], n),
         _matrix$calPoint4 = _slicedToArray(_matrix$calPoint3, 2),
         ax2 = _matrix$calPoint4[0],
         ay2 = _matrix$calPoint4[1];
 
-    var _matrix$calPoint5 = matrix.calPoint([sx3, sy3], n),
+    var _matrix$calPoint5 = mx.calPoint([sx3, sy3], n),
         _matrix$calPoint6 = _slicedToArray(_matrix$calPoint5, 2),
         ax3 = _matrix$calPoint6[0],
         ay3 = _matrix$calPoint6[1];
@@ -1232,9 +1323,9 @@
     var A = geom.angleBySide(BC, AB, AC); // 先至90°，再旋转至目标角，可以合并成tan相加，不知道为什么不能直接tan倾斜差值角度
 
     if (a !== A) {
-      t = matrix.identity();
+      t = mx.identity();
       t[2] = Math.tan(a - Math.PI * 0.5) + Math.tan(Math.PI * 0.5 - A);
-      m = matrix.multiply(t, m);
+      m = mx.multiply(t, m);
     } // 发生翻转时特殊处理按x轴垂直翻转
 
 
@@ -1248,14 +1339,14 @@
     if (alpha !== 0) {
       t = rotate(alpha); // m = matrix.multiply(t, m);
     } else {
-      t = matrix.identity();
+      t = mx.identity();
     } // 第6步，移动第一个点的差值
     // t = matrix.identity();
 
 
     t[4] = tx1;
     t[5] = ty1;
-    m = matrix.multiply(t, m);
+    m = mx.multiply(t, m);
     return m;
   }
 
@@ -1266,7 +1357,7 @@
   };
 
   var math = {
-    matrix: matrix,
+    matrix: mx,
     tar: tar,
     geom: geom
   };
@@ -1732,11 +1823,11 @@
 
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
-  var matrix$1 = math.matrix,
+  var matrix = math.matrix,
       geom$1 = math.geom;
-  var identity$1 = matrix$1.identity,
-      calPoint$1 = matrix$1.calPoint,
-      multiply$1 = matrix$1.multiply;
+  var identity$1 = matrix.identity,
+      calPoint$1 = matrix.calPoint,
+      multiply$1 = matrix.multiply;
   var d2r$1 = geom$1.d2r,
       pointInPolygon$1 = geom$1.pointInPolygon;
 
@@ -10071,7 +10162,7 @@
         ctx.closePath();
         ctx.restore();
       } else if (renderMode === mode.SVG) {
-        var d = matrix.int2convolution(blur);
+        var d = mx.int2convolution(blur);
 
         if (inset === 'inset') {
           var _xa2 = x1 + x + spread;
@@ -10803,30 +10894,30 @@
         } // 省略计算
 
 
-        var matrix$1;
+        var matrix;
 
         if (matrixCache) {
-          matrix$1 = matrixCache;
+          matrix = matrixCache;
         } else {
           var tfo = transformOrigin.slice(0);
           tfo[0] += x;
           tfo[1] += y;
-          matrix$1 = transform;
-          matrix$1 = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix$1, tfo);
+          matrix = transform;
+          matrix = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix, tfo);
         }
 
-        var renderMatrix = matrix$1; // 变换对事件影响，canvas要设置渲染
+        var renderMatrix = this.__svgMatrix = matrix; // 变换对事件影响，canvas要设置渲染
 
         if (p) {
-          matrix$1 = matrix.multiply(p.matrixEvent, matrix$1);
+          matrix = mx.multiply(p.matrixEvent, matrix);
         }
 
-        this.__matrixEvent = matrix$1;
+        this.__matrixEvent = matrix;
 
         if (renderMode === mode.CANVAS) {
           var _ctx;
 
-          (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix$1));
+          (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
         } else if (renderMode === mode.SVG) {
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
@@ -11199,7 +11290,7 @@
                 offScreen.blur = v;
               } else if (renderMode === mode.SVG) {
                 // 模糊框卷积尺寸 #66
-                var d = matrix.int2convolution(v);
+                var d = mx.int2convolution(v);
 
                 var _id = defs.add({
                   tagName: 'filter',
@@ -11351,13 +11442,64 @@
 
           if (isEmpty) {
             return;
-          } // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
+          } // 应用mask本身的matrix，以及被遮罩对象的matrix逆
 
+
+          sibling = next;
+          var mChildren = [];
+
+          while (sibling) {
+            var _children = sibling.virtualDom.children;
+            mChildren = mChildren.concat(_children);
+
+            for (var _i8 = 0, _len2 = _children.length; _i8 < _len2; _i8++) {
+              var _children$_i = _children[_i8],
+                  _tagName = _children$_i.tagName,
+                  _props = _children$_i.props;
+
+              if (_tagName === 'path') {
+                var matrix = sibling.__svgMatrix;
+                var inverse = mx.inverse(this.matrix);
+                matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
+
+                var _len3 = _props.length;
+
+                if (!_len3 || _props[_len3 - 1][0] !== 'transform') {
+                  _props.push(['transform', "matrix(".concat(matrix, ")")]);
+                } else {
+                  _props[_len3 - 1][1] = "matrix(".concat(matrix, ")");
+                }
+              }
+            }
+
+            sibling = sibling.next;
+
+            if (!sibling) {
+              break;
+            }
+
+            if (hasMask) {
+              if (!sibling.isMask) {
+                break;
+              }
+            } else if (hasClip) {
+              if (!sibling.isClip) {
+                break;
+              }
+            }
+          }
+
+          var id = defs.add({
+            tagName: hasClip ? 'clipPath' : 'mask',
+            props: [],
+            children: mChildren
+          });
+          id = 'url(#' + id + ')'; // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
           if (hasMask) {
-            this.virtualDom.mask = next.maskId;
+            this.virtualDom.mask = id;
           } else if (hasClip) {
-            this.virtualDom.clip = next.clipId;
+            this.virtualDom.clip = id;
           }
         }
       }
@@ -15778,10 +15920,8 @@
   var AUTO$5 = unit.AUTO,
       PX$7 = unit.PX,
       PERCENT$7 = unit.PERCENT;
-  var clone$4 = util.clone,
-      int2rgba$3 = util.int2rgba,
-      isNil$6 = util.isNil,
-      joinArr$2 = util.joinArr;
+  var int2rgba$3 = util.int2rgba,
+      isNil$6 = util.isNil;
   var REGISTER = {};
 
   var Geom$2 = /*#__PURE__*/function (_Xom) {
@@ -16097,6 +16237,9 @@
       value: function __renderAsMask(renderMode, ctx, defs, isClip) {
         // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
+          // 强制不缓存，防止引用mask的matrix变化不生效
+          this.__cancelCacheSvg();
+
           this.render(renderMode, ctx, defs);
           var vd = this.virtualDom;
 
@@ -16104,57 +16247,6 @@
             vd.isClip = true;
           } else {
             vd.isMask = true;
-          } // svg的mask没有transform，需手动计算变换后的坐标应用
-
-
-          var children = clone$4(vd.children);
-          var m = this.matrix; // let { sx, sy, computedStyle: { marginLeft, borderLeftWidth, marginTop, borderTopWidth, transformOrigin: [ox, oy] } } = this;
-          // let offsetX = sx + marginLeft + borderLeftWidth + ox;
-          // let offsetY = sy + marginTop + borderTopWidth + oy;
-
-          children.forEach(function (child) {
-            var props = child.props;
-
-            if (child.tagName === 'path') {
-              for (var i = 0, len = props.length; i < len; i++) {
-                var _props$i = _slicedToArray(props[i], 2),
-                    k = _props$i[0],
-                    v = _props$i[1];
-
-                if (k === 'd') {
-                  props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, function ($0, $1, $2) {
-                    return joinArr$2(matrix.calPoint([$1, $2], m), ','); // let dx = parseFloat($1) - offsetX;
-                    // let dy = parseFloat($2) - offsetY;
-                    // let p = matrix.calPoint([dx, dy], m);
-                    // p[0] += offsetX;
-                    // p[1] += offsetY;
-                    // return joinArr(p, ',');
-                  });
-                  break;
-                }
-              }
-            }
-          }); // 连续多个mask需要合并
-
-          var prev = this.prev;
-
-          if (prev && (isClip ? prev.isClip : prev.isMask)) {
-            var last = defs.value;
-            last = last[last.length - 1];
-            last.children = last.children.concat(children);
-            return;
-          }
-
-          var id = defs.add({
-            tagName: isClip ? 'clipPath' : 'mask',
-            props: [],
-            children: children
-          });
-
-          if (isClip) {
-            this.__clipId = 'url(#' + id + ')';
-          } else {
-            this.__maskId = 'url(#' + id + ')';
           }
         }
       }
@@ -16217,16 +16309,6 @@
       key: "isClip",
       get: function get() {
         return this.__isClip;
-      }
-    }, {
-      key: "maskId",
-      get: function get() {
-        return this.__maskId;
-      }
-    }, {
-      key: "clipId",
-      get: function get() {
-        return this.__clipId;
       }
     }, {
       key: "currentProps",
@@ -16695,7 +16777,9 @@
 
         {
           if (isMulti) {
-            var list = pts.map(function (item, i) {
+            var list = pts.filter(function (item) {
+              return Array.isArray(item);
+            }).map(function (item, i) {
               var cl = cls[i];
 
               if (Array.isArray(item)) {
@@ -16719,7 +16803,9 @@
               __cacheProps.d = d;
             }
           } else {
-            var _list = pts.map(function (point, i) {
+            var _list = pts.filter(function (item) {
+              return Array.isArray(item);
+            }).map(function (point, i) {
               if (i) {
                 return concatPointAndControl(point, cls[i - 1]);
               }
@@ -17712,7 +17798,7 @@
   var isNil$d = util.isNil,
       isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
-      clone$5 = util.clone,
+      clone$4 = util.clone,
       extend$3 = util.extend;
   var abbrCssProperty$1 = abbr.abbrCssProperty,
       abbrAnimateOption$1 = abbr.abbrAnimateOption,
@@ -17815,6 +17901,7 @@
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
           if (isNil$d(libraryId)) {
+            console.warn('Library item should have a libraryId: ' + JSON.stringify(child));
             return;
           }
 
@@ -17823,7 +17910,7 @@
           if (libraryItem) {
             linkChild(child, libraryItem);
           } else {
-            throw new Error('Link library item miss id: ' + libraryId);
+            throw new Error('Link library item miss libraryId: ' + libraryId);
           }
         }
       });
@@ -17831,7 +17918,7 @@
 
 
     if (isNil$d(id)) {
-      throw new Error('Library item miss id: ' + id);
+      throw new Error('Library item miss id: ' + JSON.stringify(item));
     } else {
       hash[id] = item;
     }
@@ -17840,7 +17927,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
     child.tagName = libraryItem.tagName;
-    child.props = clone$5(libraryItem.props);
+    child.props = clone$4(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {
@@ -17915,7 +18002,7 @@
         __animateRecords = json.__animateRecords;
 
     if (!tagName) {
-      throw new Error('Dom must have a tagName: ' + json);
+      throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
     }
 
     var style = props.style;

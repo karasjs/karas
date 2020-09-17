@@ -1801,6 +1801,10 @@
     isPrimitive: function isPrimitive(v) {
       return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
     },
+    // css中常用undefined/null表示auto本身
+    isAuto: function isAuto(v) {
+      return isNil(v) || v === 'auto';
+    },
     stringify: stringify,
     joinSourceArray: function joinSourceArray(arr) {
       return _joinSourceArray(arr);
@@ -7501,6 +7505,8 @@
     }
   }
 
+  var isPause;
+
   var Frame = /*#__PURE__*/function () {
     function Frame() {
       _classCallCheck(this, Frame);
@@ -7523,7 +7529,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (!task.length) {
+            if (isPause || !task.length) {
               return;
             }
 
@@ -7613,6 +7619,20 @@
         };
         cb.__karasFramecb = handle;
         this.onFrame(cb);
+      }
+    }, {
+      key: "pause",
+      value: function pause() {
+        isPause = true;
+      }
+    }, {
+      key: "resume",
+      value: function resume() {
+        if (isPause) {
+          this.__init();
+
+          isPause = false;
+        }
       }
     }, {
       key: "task",

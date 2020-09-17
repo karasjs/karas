@@ -23,6 +23,8 @@ function traversal(list, diff, step) {
   }
 }
 
+let isPause;
+
 class Frame {
   constructor() {
     this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
@@ -39,7 +41,7 @@ class Frame {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        if(!task.length) {
+        if(isPause || !task.length) {
           return;
         }
         let now = self.__now = inject.now();
@@ -110,6 +112,17 @@ class Frame {
     };
     cb.__karasFramecb = handle;
     this.onFrame(cb);
+  }
+
+  pause() {
+    isPause = true;
+  }
+
+  resume() {
+    if(isPause) {
+      this.__init();
+      isPause = false;
+    }
   }
 
   get task() {

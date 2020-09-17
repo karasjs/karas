@@ -11459,7 +11459,7 @@
 
               if (_tagName === 'path') {
                 var matrix = sibling.__svgMatrix;
-                var inverse = mx.inverse(this.matrix);
+                var inverse = mx.inverse(this.__svgMatrix);
                 matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
 
                 var _len3 = _props.length;

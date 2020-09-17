@@ -1729,7 +1729,7 @@ class Xom extends Node {
           let { tagName, props } = children[i];
           if(tagName === 'path') {
             let matrix = sibling.__svgMatrix;
-            let inverse = mx.inverse(this.matrix);
+            let inverse = mx.inverse(this.__svgMatrix);
             matrix = mx.multiply(matrix, inverse);
             // transform属性放在最后一个省去循环
             let len = props.length;

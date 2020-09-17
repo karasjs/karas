@@ -17901,7 +17901,6 @@
           var libraryId = child.libraryId; // ide中库文件的child来自于库一定有libraryId，但是为了编程特殊需求，放开允许存入自定义数据
 
           if (isNil$d(libraryId)) {
-            console.warn('Library item should have a libraryId: ' + JSON.stringify(child));
             return;
           }
 

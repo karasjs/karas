@@ -1,5 +1,5 @@
-var path = require('path');
-var fs = require('fs');
+let path = require('path');
+let fs = require('fs');
 
 module.exports = {
   'init': function(browser) {

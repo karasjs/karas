@@ -64,6 +64,7 @@ const DOM = {
   rotateZ: 0,
   filter: null,
   boxShadow: null,
+  pointerEvents: 'inherit',
 };
 
 const GEOM = {

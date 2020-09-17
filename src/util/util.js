@@ -389,6 +389,10 @@ let util = {
   isPrimitive(v) {
     return util.isNil(v) || util.isBoolean(v) || util.isString(v) || util.isNumber(v);
   },
+  // css中常用undefined/null表示auto本身
+  isAuto(v) {
+    return isNil(v) || v === 'auto';
+  },
   stringify,
   joinSourceArray(arr) {
     return joinSourceArray(arr);

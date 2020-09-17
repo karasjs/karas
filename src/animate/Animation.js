@@ -7,6 +7,7 @@ import frame from './frame';
 import easing from './easing';
 import level from './level';
 import repaint from './repaint';
+import invalid from './invalid';
 import key from './key';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
@@ -107,6 +108,10 @@ function calRefresh(frameStyle, lastStyle, keys, target) {
   let lv = level.REPAINT;
   for(let i = 0, len = keys.length; i < len; i++) {
     let k = keys[i];
+    // 无需刷新的
+    if(invalid.hasOwnProperty(k)) {
+      continue;
+    }
     let n = frameStyle[k];
     let p = lastStyle[k];
     // 前后均非空对比

@@ -46,9 +46,13 @@ function replaceVars(target, vars) {
           return;
         }
         let k2 = k.slice(4);
-        // 有id且变量里面传入了替换的值，值可为空，因为某些情况下空为自动
+        // 有id且变量里面传入了替换的值，值可为null，因为某些情况下空为自动
         if(v.id && vars.hasOwnProperty(v.id)) {
           let value = vars[v.id];
+          // undefined和null意义不同
+          if(value === undefined) {
+            return;
+          }
           // 如果有.则特殊处理子属性
           if(k2.indexOf('.') > -1) {
             let list = k2.split('.');
@@ -101,14 +105,14 @@ function linkLibrary(item, hash) {
           linkChild(child, libraryItem);
         }
         else {
-          throw new Error('Link library item miss id: ' + libraryId);
+          throw new Error('Link library item miss libraryId: ' + libraryId);
         }
       }
     });
   }
   // library中一定有id，因为是一级，二级+特殊需求才会出现放开
   if(isNil(id)) {
-    throw new Error('Library item miss id: ' + id);
+    throw new Error('Library item miss id: ' + JSON.stringify(item));
   }
   else {
     hash[id] = item;
@@ -179,7 +183,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
   }
   let { tagName, props = {}, children = [], animate = [], __animateRecords } = json;
   if(!tagName) {
-    throw new Error('Dom must have a tagName: ' + json);
+    throw new Error('Dom must have a tagName: ' + JSON.stringify(json));
   }
   let style = props.style;
   abbr2full(style, abbrCssProperty);

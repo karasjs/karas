@@ -4,10 +4,9 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../util/mode';
 import util from '../util/util';
-import matrix from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
-const { clone, int2rgba, isNil, joinArr } = util;
+const { int2rgba, isNil } = util;
 
 const REGISTER = {};
 
@@ -266,6 +265,8 @@ class Geom extends Xom {
   __renderAsMask(renderMode, ctx, defs, isClip) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
+      // 强制不缓存，防止引用mask的matrix变化不生效
+      this.__cancelCacheSvg();
       this.render(renderMode, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {
@@ -273,42 +274,6 @@ class Geom extends Xom {
       }
       else {
         vd.isMask = true;
-      }
-      // svg的mask没有transform，需手动计算变换后的坐标应用
-      let children = clone(vd.children);
-      let m = this.matrix;
-      children.forEach(child => {
-        let props = child.props;
-        if(child.tagName === 'path') {
-          for(let i = 0, len = props.length; i < len; i++) {
-            let [k, v] = props[i];
-            if(k === 'd') {
-              props[i][1] = v.replace(/([\d.]+),([\d.]+)/g, ($0, $1, $2) => {
-                return joinArr(matrix.calPoint([$1, $2], m), ',');
-              });
-              break;
-            }
-          }
-        }
-      });
-      // 连续多个mask需要合并
-      let { prev } = this;
-      if(prev && (isClip ? prev.isClip : prev.isMask)) {
-        let last = defs.value;
-        last = last[last.length - 1];
-        last.children = last.children.concat(children);
-        return;
-      }
-      let id = defs.add({
-        tagName: isClip ? 'clipPath' : 'mask',
-        props: [],
-        children,
-      });
-      if(isClip) {
-        this.__clipId = 'url(#' + id + ')';
-      }
-      else {
-        this.__maskId = 'url(#' + id + ')';
       }
     }
   }
@@ -359,14 +324,6 @@ class Geom extends Xom {
 
   get isClip() {
     return this.__isClip;
-  }
-
-  get maskId() {
-    return this.__maskId;
-  }
-
-  get clipId() {
-    return this.__clipId;
   }
 
   get currentProps() {

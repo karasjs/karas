@@ -1,10 +1,10 @@
-var expect = require('expect.js');
-var karas = require('../index');
+let expect = require('expect.js');
+let karas = require('../index');
 
 describe('Event', function() {
   it('on && emit', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -12,8 +12,8 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('on data', function() {
-    var event = new karas.Event();
-    var count = [];
+    let event = new karas.Event();
+    let count = [];
     event.on('name', function(a, b) {
       count = [a, b];
     });
@@ -21,8 +21,8 @@ describe('Event', function() {
     expect(count).to.eql([1, 2]);
   });
   it('emit count', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -35,8 +35,8 @@ describe('Event', function() {
     expect(count).to.eql(4);
   });
   it('off', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     function cb() {
       count++;
     }
@@ -46,8 +46,8 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('off no ref', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -58,8 +58,8 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('off no param', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -68,8 +68,8 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('off arguments', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     function cb() {
       count++;
       event.off('name', cb);
@@ -82,8 +82,8 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('callback list is not altered during trigger', function() {
-    var event = new karas.Event();
-    var count = [0, 0, 0];
+    let event = new karas.Event();
+    let count = [0, 0, 0];
     function cb1() {
       count[1]++;
     }
@@ -100,16 +100,16 @@ describe('Event', function() {
     expect(count).to.eql([1, 1, 1]);
   });
   it('return self', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     }).emit('name').off('name').emit('name');
     expect(count).to.eql(1);
   });
   it('on array', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on(['name', 'name2'], function() {
       count++;
     });
@@ -118,8 +118,8 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
   it('emit array', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -130,8 +130,8 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
   it('off array', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.on('name', function() {
       count++;
     });
@@ -143,8 +143,8 @@ describe('Event', function() {
     expect(count).to.eql(0);
   });
   it('once', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.once('name', function() {
       count++;
     });
@@ -154,8 +154,8 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('once array but emit only 1', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.once(['name', 'name2'], function() {
       count++;
     });
@@ -165,8 +165,8 @@ describe('Event', function() {
     expect(count).to.eql(1);
   });
   it('once array', function() {
-    var event = new karas.Event();
-    var count = 0;
+    let event = new karas.Event();
+    let count = 0;
     event.once(['name', 'name2'], function() {
       count++;
     });
@@ -177,9 +177,9 @@ describe('Event', function() {
     expect(count).to.eql(2);
   });
   it('mix', function() {
-    var event = {};
+    let event = {};
     karas.Event.mix(event);
-    var count = 0;
+    let count = 0;
     event.on('name', function() {
       count++;
     });

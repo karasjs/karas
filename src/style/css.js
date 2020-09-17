@@ -879,6 +879,20 @@ function normalize(style, reset = []) {
       };
     }
   }
+  temp = style.pointerEvents;
+  if(temp) {
+    if(temp === 'inherit') {
+      style.pointerEvents = {
+        unit: INHERIT,
+      };
+    }
+    else {
+      style.pointerEvents = {
+        value: temp,
+        unit: STRING,
+      };
+    }
+  }
   temp = style.boxShadow;
   if(temp) {
     style.boxShadow = [];

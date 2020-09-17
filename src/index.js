@@ -2,6 +2,7 @@ import Xom from './node/Xom';
 import Dom from './node/Dom';
 import Img from './node/Img';
 import Root from './node/Root';
+import tag from './node/tag';
 import $$type from './util/$$type';
 import builder from './util/builder';
 import updater from './util/updater';
@@ -65,7 +66,7 @@ let karas = {
     if(['canvas', 'svg'].indexOf(tagName) > -1) {
       return new Root(tagName, props, children);
     }
-    if(Dom.isValid(tagName)) {
+    if(tag.TAG_NAME.hasOwnProperty(tagName)) {
       return {
         tagName,
         props,

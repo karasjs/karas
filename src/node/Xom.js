@@ -12,6 +12,7 @@ import blur from '../style/blur';
 import util from '../util/util';
 import Animation from '../animate/Animation';
 import rp from '../animate/repaint';
+import invalid from '../animate/invalid';
 import level from '../animate/level';
 import inject from '../util/inject';
 import mx from '../math/matrix';
@@ -1115,7 +1116,8 @@ class Xom extends Node {
       [
         'fontStyle',
         'color',
-        'visibility'
+        'visibility',
+        'pointerEvents',
       ].forEach(k => {
         if(currentStyle[k].unit === INHERIT) {
           computedStyle[k] = parentComputedStyle[k];
@@ -1133,7 +1135,8 @@ class Xom extends Node {
       [
         'fontStyle',
         'color',
-        'visibility'
+        'visibility',
+        'pointerEvents',
       ].forEach(k => {
         if(currentStyle[k].unit !== INHERIT) {
           computedStyle[k] = currentStyle[k].value;
@@ -1142,18 +1145,21 @@ class Xom extends Node {
           }
         }
       });
-      if(currentStyle.fontStyle.unit === 4) {
+      if(currentStyle.fontStyle.unit === INHERIT) {
         computedStyle.fontStyle = 'normal';
       }
-      if(currentStyle.fontWeight.unit === 4) {
+      if(currentStyle.fontWeight.unit === INHERIT) {
         computedStyle.fontWeight = 400;
       }
-      if(currentStyle.color.unit === 4) {
+      if(currentStyle.color.unit === INHERIT) {
         computedStyle.color = [0, 0, 0, 1];
         __cacheStyle.color = 'rgba(0,0,0,1)';
       }
-      if(currentStyle.visibility.unit === 4) {
+      if(currentStyle.visibility.unit === INHERIT) {
         computedStyle.visibility = 'visible';
+      }
+      if(currentStyle.pointerEvents.unit === INHERIT) {
+        computedStyle.pointerEvents = 'auto';
       }
     }
     // 圆角边计算
@@ -1218,7 +1224,7 @@ class Xom extends Node {
       matrix = transform;
       matrix = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix, tfo);
     }
-    let renderMatrix = matrix;
+    let renderMatrix = this.__svgMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
@@ -1675,12 +1681,93 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode, ctx, defs);
+      // 检查后续mask是否是空，空遮罩不生效
+      let isEmpty = true;
+      let sibling = next;
+      outer:
+      while(sibling) {
+        let { children } = sibling.virtualDom;
+        for(let i = 0, len = children.length; i < len; i++) {
+          let { tagName, props } = children[i];
+          if(tagName === 'path') {
+            for(let j = 0, len = props.length; j < len; j++) {
+              let [k, v] = props[i];
+              if(k === 'd') {
+                if(v) {
+                  isEmpty = false;
+                  break outer;
+                }
+              }
+            }
+          }
+        }
+        sibling = sibling.next;
+        if(!sibling) {
+          break;
+        }
+        if(hasMask) {
+          if(!sibling.isMask) {
+            break;
+          }
+        }
+        else if(hasClip) {
+          if(!sibling.isClip) {
+            break;
+          }
+        }
+      }
+      if(isEmpty) {
+        return;
+      }
+      // 应用mask本身的matrix，以及被遮罩对象的matrix逆
+      sibling = next;
+      let mChildren = [];
+      while(sibling) {
+        let { children } = sibling.virtualDom;
+        mChildren = mChildren.concat(children);
+        for(let i = 0, len = children.length; i < len; i++) {
+          let { tagName, props } = children[i];
+          if(tagName === 'path') {
+            let matrix = sibling.__svgMatrix;
+            let inverse = mx.inverse(this.__svgMatrix);
+            matrix = mx.multiply(matrix, inverse);
+            // transform属性放在最后一个省去循环
+            let len = props.length;
+            if(!len || props[len - 1][0] !== 'transform') {
+              props.push(['transform', `matrix(${matrix})`]);
+            }
+            else {
+              props[len - 1][1] = `matrix(${matrix})`;
+            }
+          }
+        }
+        sibling = sibling.next;
+        if(!sibling) {
+          break;
+        }
+        if(hasMask) {
+          if(!sibling.isMask) {
+            break;
+          }
+        }
+        else if(hasClip) {
+          if(!sibling.isClip) {
+            break;
+          }
+        }
+      }
+      let id = defs.add({
+        tagName: hasClip ? 'clipPath' : 'mask',
+        props: [],
+        children: mChildren,
+      });
+      id = 'url(#' + id + ')';
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
       if(hasMask) {
-        this.virtualDom.mask = next.maskId;
+        this.virtualDom.mask = id;
       }
       else if(hasClip) {
-        this.virtualDom.clip = next.clipId;
+        this.virtualDom.clip = id;
       }
     }
   }
@@ -1734,7 +1821,11 @@ class Xom extends Node {
 
   willResponseEvent(e) {
     let { x, y } = e;
-    let { sx, sy, outerWidth, outerHeight, matrixEvent } = this;
+    let { sx, sy, outerWidth, outerHeight, matrixEvent,
+      computedStyle: { pointerEvents } } = this;
+    if(pointerEvents === 'none') {
+      return;
+    }
     let inThis = tf.pointInQuadrilateral(
       x, y,
       sx, sy,
@@ -1844,7 +1935,10 @@ class Xom extends Node {
       let p;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          if(rp.GEOM.hasOwnProperty(i)) {
+          if(invalid.hasOwnProperty(i)) {
+            // pointerEvents这种无关的
+          }
+          else if(rp.GEOM.hasOwnProperty(i)) {
             if(!css.equalStyle(i, style[i], props[i], this)) {
               hasUpdate = true;
               this.__cacheSvg = false;

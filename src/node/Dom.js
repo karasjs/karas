@@ -648,7 +648,7 @@ class Dom extends Xom {
       else if(alignItems === 'center') {
         flowChildren.forEach(item => {
           let diff = maxCross - item.outerHeight;
-          if(diff > 0) {
+          if(diff !== 0) {
             item.__offsetY(diff * 0.5, true);
           }
         });
@@ -656,7 +656,7 @@ class Dom extends Xom {
       else if(alignItems === 'flex-end') {
         flowChildren.forEach(item => {
           let diff = maxCross - item.outerHeight;
-          if(diff > 0) {
+          if(diff !== 0) {
             item.__offsetY(diff, true);
           }
         });

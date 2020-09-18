@@ -40,7 +40,7 @@ class Dom extends Xom {
     if(!style.fontWeight && tag.BOLD.hasOwnProperty(tagName)) {
       style.fontWeight = 700;
     }
-    this.__style = css.normalize(style, reset.dom);
+    this.__style = css.normalize(style, reset.DOM_ENTRY_SET);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];

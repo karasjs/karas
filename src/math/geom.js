@@ -261,6 +261,102 @@ function r2d(n) {
   return n * 180 / Math.PI;
 }
 
+/**
+ * 二阶贝塞尔曲线范围框
+ * @param x0
+ * @param y0
+ * @param x1
+ * @param y1
+ * @param x2
+ * @param y2
+ * @returns {number[]}
+ * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
+ */
+function bboxBezier2(x0, y0, x1, y1, x2, y2) {
+  let minX = Math.min(x0, x2);
+  let minY = Math.min(y0, y2);
+  let maxX = Math.max(x0, x2);
+  let maxY = Math.max(y0, y2);
+  // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
+  if(x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
+    let tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+    let ty = (y0 - y1) / (y0 - x * y1 + y2);
+    let sx = 1 - tx;
+    let sy = 1 - ty;
+    let qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
+    let qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
+    minX = Math.min(minX, qx);
+    minY = Math.min(minY, qy);
+    maxX = Math.min(maxX, qx);
+    maxY = Math.min(maxY, qy);
+  }
+  return [minX, minY, maxX, maxY];
+}
+
+/**
+ * 同上三阶的
+ */
+function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
+  let minX = Math.min(x0, x3);
+  let minY = Math.min(y0, y3);
+  let maxX = Math.max(x0, x3);
+  let maxY = Math.max(y0, y3);
+  if(x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
+    let cx = -x0 + x1;
+    let cy = -y0 + y1;
+    let bx = x0 - 2 * x1 + x2;
+    let by = y0 - 2 * y1 + y2;
+    let ax = -x0 + 3 * x1 - 3 * x2 + x3;
+    let ay = -y0 + 3 * y1 - 3 * y2 + y3;
+    let hx = bx * bx - ax * cx;
+    let hy = by * by - ay * cy;
+    if(hx > 0) {
+      hx = Math.sqrt(hx);
+      let t = (-bx - hx) / ax;
+      if(t > 0 && t < 1) {
+        let s = 1 - t;
+        let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+        minX = Math.min(minX, q);
+        maxX = Math.max(maxX, q);
+      }
+      t = (-bx + hx) / ax;
+      if(t > 0 && t < 1) {
+        let s = 1 - t;
+        let q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+        minX = Math.min(minX, q);
+        maxX = Math.max(maxX, q);
+      }
+    }
+    if(hy > 0) {
+      hy = Math.sqrt(hy);
+      let t = (-by - hy) / ay;
+      if(t > 0 && t < 1) {
+        let s = 1 - t;
+        let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+        minY = Math.min(minY, q);
+        maxY = Math.max(maxY, q);
+      }
+      t = (-by + hy) / ay;
+      if(t > 0 && t < 1) {
+        let s = 1 - t;
+        let q = s * s * s * y0 + 3 * s * s * t * y1 + 3 * s * t * t * y2 + t * t * t * y3;
+        minY = Math.min(minY, q);
+        maxY = Math.max(maxY, q);
+      }
+    }
+  }
+  return [minX, minY, maxX, maxY];
+}
+
+function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+  if(arguments.length === 4) {
+    return bboxBezier2(x0, y0, x1, y1, x2, y2);
+  }
+  else if(arguments.length === 6) {
+    return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
+  }
+}
+
 export default {
   vectorProduct,
   pointInPolygon,
@@ -282,4 +378,5 @@ export default {
   isRectsInside,
   calCoordsInNode,
   calPercentInNode,
+  bboxBezier,
 };

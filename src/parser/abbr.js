@@ -39,7 +39,7 @@ let fullAnimateOption = {
 
 let abbrAnimateOption = {};
 
-reset.dom.concat(reset.geom).forEach(item => {
+reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET).forEach(item => {
   let k = item.k;
   if(fullCssProperty.hasOwnProperty(k)) {
     abbrCssProperty[fullCssProperty[k]] = k;

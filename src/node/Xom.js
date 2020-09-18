@@ -1728,8 +1728,8 @@ class Xom extends Node {
         for(let i = 0, len = children.length; i < len; i++) {
           let { tagName, props } = children[i];
           if(tagName === 'path') {
-            let matrix = sibling.__svgMatrix;
-            let inverse = mx.inverse(this.__svgMatrix);
+            let matrix = sibling.svgMatrix;
+            let inverse = mx.inverse(this.svgMatrix);
             matrix = mx.multiply(matrix, inverse);
             // transform属性放在最后一个省去循环
             let len = props.length;
@@ -1947,7 +1947,7 @@ class Xom extends Node {
               __cacheProps[i] = undefined;
             }
           }
-          else if(reset.DOM.hasOwnProperty(i) || reset.GEOM.hasOwnProperty(i)) {
+          else if(reset.isReset(i)) {
             if(!css.equalStyle(i, style[i], __style[i], this)) {
               hasUpdate = true;
               this.__cacheSvg = false;
@@ -2112,6 +2112,10 @@ class Xom extends Node {
 
   get matrixEvent() {
     return this.__matrixEvent;
+  }
+
+  get svgMatrix() {
+    return this.__svgMatrix;
   }
 
   get style() {

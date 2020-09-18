@@ -28,7 +28,7 @@ class Geom extends Xom {
         style.opacity = 1;
       }
     }
-    this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
+    this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
     this.__cacheProps = {};

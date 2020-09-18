@@ -1005,6 +1005,121 @@
   function r2d(n) {
     return n * 180 / Math.PI;
   }
+  /**
+   * 二阶贝塞尔曲线范围框
+   * @param x0
+   * @param y0
+   * @param x1
+   * @param y1
+   * @param x2
+   * @param y2
+   * @returns {number[]}
+   * https://www.iquilezles.org/www/articles/bezierbbox/bezierbbox.htm
+   */
+
+
+  function bboxBezier2(x0, y0, x1, y1, x2, y2) {
+    var minX = Math.min(x0, x2);
+    var minY = Math.min(y0, y2);
+    var maxX = Math.max(x0, x2);
+    var maxY = Math.max(y0, y2); // 控制点位于边界内部时，边界就是范围框，否则计算导数获取极值
+
+    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY) {
+      var tx = (x0 - x1) / (x0 - 2 * x1 + x2);
+      var ty = (y0 - y1) / (y0 - x * y1 + y2);
+      var sx = 1 - tx;
+      var sy = 1 - ty;
+      var qx = sx * sx * x0 + 2 * sx * tx * x1 + tx * tx * x2;
+      var qy = sy * sy * y0 + 2 * sy * ty * y1 + ty * ty * y2;
+      minX = Math.min(minX, qx);
+      minY = Math.min(minY, qy);
+      maxX = Math.min(maxX, qx);
+      maxY = Math.min(maxY, qy);
+    }
+
+    return [minX, minY, maxX, maxY];
+  }
+  /**
+   * 同上三阶的
+   */
+
+
+  function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
+    var minX = Math.min(x0, x3);
+    var minY = Math.min(y0, y3);
+    var maxX = Math.max(x0, x3);
+    var maxY = Math.max(y0, y3);
+
+    if (x1 < minX || y1 < minY || x1 > maxX || y1 > maxY || x2 < minX || y2 < minY || x2 > maxX || y2 > maxY) {
+      var cx = -x0 + x1;
+      var cy = -y0 + y1;
+      var bx = x0 - 2 * x1 + x2;
+      var by = y0 - 2 * y1 + y2;
+      var ax = -x0 + 3 * x1 - 3 * x2 + x3;
+      var ay = -y0 + 3 * y1 - 3 * y2 + y3;
+      var hx = bx * bx - ax * cx;
+      var hy = by * by - ay * cy;
+
+      if (hx > 0) {
+        hx = Math.sqrt(hx);
+        var t = (-bx - hx) / ax;
+
+        if (t > 0 && t < 1) {
+          var s = 1 - t;
+          var q = s * s * s * x0 + 3 * s * s * t * x1 + 3 * s * t * t * x2 + t * t * t * x3;
+          minX = Math.min(minX, q);
+          maxX = Math.max(maxX, q);
+        }
+
+        t = (-bx + hx) / ax;
+
+        if (t > 0 && t < 1) {
+          var _s = 1 - t;
+
+          var _q = _s * _s * _s * x0 + 3 * _s * _s * t * x1 + 3 * _s * t * t * x2 + t * t * t * x3;
+
+          minX = Math.min(minX, _q);
+          maxX = Math.max(maxX, _q);
+        }
+      }
+
+      if (hy > 0) {
+        hy = Math.sqrt(hy);
+
+        var _t = (-by - hy) / ay;
+
+        if (_t > 0 && _t < 1) {
+          var _s2 = 1 - _t;
+
+          var _q2 = _s2 * _s2 * _s2 * y0 + 3 * _s2 * _s2 * _t * y1 + 3 * _s2 * _t * _t * y2 + _t * _t * _t * y3;
+
+          minY = Math.min(minY, _q2);
+          maxY = Math.max(maxY, _q2);
+        }
+
+        _t = (-by + hy) / ay;
+
+        if (_t > 0 && _t < 1) {
+          var _s3 = 1 - _t;
+
+          var _q3 = _s3 * _s3 * _s3 * y0 + 3 * _s3 * _s3 * _t * y1 + 3 * _s3 * _t * _t * y2 + _t * _t * _t * y3;
+
+          minY = Math.min(minY, _q3);
+          maxY = Math.max(maxY, _q3);
+        }
+      }
+    }
+
+    return [minX, minY, maxX, maxY];
+  }
+
+  function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+    if (arguments.length === 4) {
+      return bboxBezier2(x0, y0, x1, y1, x2, y2);
+    } else if (arguments.length === 6) {
+      return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
+    }
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -1026,7 +1141,8 @@
     isRectsOverlap: isRectsOverlap,
     isRectsInside: isRectsInside,
     calCoordsInNode: calCoordsInNode,
-    calPercentInNode: calPercentInNode
+    calPercentInNode: calPercentInNode,
+    bboxBezier: bboxBezier
   };
 
   function calDeg(x1, y1, x2, y2) {
@@ -6265,22 +6381,22 @@
     strokeLinejoin: 'miter',
     strokeMiterlimit: 4
   };
-  var dom = [];
-  var domKey = [];
+  var DOM_ENTRY_SET = [];
+  var DOM_KEY_SET = [];
   Object.keys(DOM).forEach(function (k) {
-    domKey.push(k);
+    DOM_KEY_SET.push(k);
     var v = DOM[k];
-    dom.push({
+    DOM_ENTRY_SET.push({
       k: k,
       v: v
     });
   });
-  var geom$2 = [];
-  var geomKey = [];
+  var GEOM_ENTRY_SET = [];
+  var GEOM_KEY_SET = [];
   Object.keys(GEOM).forEach(function (k) {
-    geomKey.push(k);
+    GEOM_KEY_SET.push(k);
     var v = GEOM[k];
-    geom$2.push({
+    GEOM_ENTRY_SET.push({
       k: k,
       v: v
     });
@@ -6288,10 +6404,13 @@
   var reset = {
     DOM: DOM,
     GEOM: GEOM,
-    domKey: domKey,
-    geomKey: geomKey,
-    dom: dom,
-    geom: geom$2
+    isReset: function isReset(i) {
+      return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
+    },
+    DOM_KEY_SET: DOM_KEY_SET,
+    GEOM_KEY_SET: GEOM_KEY_SET,
+    DOM_ENTRY_SET: DOM_ENTRY_SET,
+    GEOM_ENTRY_SET: GEOM_ENTRY_SET
   };
 
   var VERTEX = "\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nvarying vec2 vTextureCoord;\nuniform mat3 projectionMatrix;\n\nvoid main(void)\n{\n  gl_Position = vec4((projectionMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);\n  vTextureCoord = aTextureCoord;\n}";
@@ -11478,8 +11597,8 @@
                   _props = _children$_i.props;
 
               if (_tagName === 'path') {
-                var matrix = sibling.__svgMatrix;
-                var inverse = mx.inverse(this.__svgMatrix);
+                var matrix = sibling.svgMatrix;
+                var inverse = mx.inverse(this.svgMatrix);
                 matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
 
                 var _len3 = _props.length;
@@ -11721,7 +11840,7 @@
                   p[i] = style[i];
                   __cacheProps[i] = undefined;
                 }
-              } else if (reset.DOM.hasOwnProperty(i) || reset.GEOM.hasOwnProperty(i)) {
+              } else if (reset.isReset(i)) {
                 if (!css.equalStyle(i, style[i], __style[i], this)) {
                   hasUpdate = true;
                   this.__cacheSvg = false;
@@ -11896,6 +12015,11 @@
       key: "matrixEvent",
       get: function get() {
         return this.__matrixEvent;
+      }
+    }, {
+      key: "svgMatrix",
+      get: function get() {
+        return this.__svgMatrix;
       }
     }, {
       key: "style",
@@ -12585,7 +12709,7 @@
         style.fontWeight = 700;
       }
 
-      _this.__style = css.normalize(style, reset.dom); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
+      _this.__style = css.normalize(style, reset.DOM_ENTRY_SET); // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
 
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__children = children || [];
@@ -15977,7 +16101,7 @@
         }
       }
 
-      _this.__style = css.normalize(_this.style, reset.dom.concat(reset.geom));
+      _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__currentProps = util.clone(_this.props);
       _this.__cacheProps = {};
@@ -17784,7 +17908,7 @@
     spfLimit: 'sl'
   };
   var abbrAnimateOption = {};
-  reset.dom.concat(reset.geom).forEach(function (item) {
+  reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET).forEach(function (item) {
     var k = item.k;
 
     if (fullCssProperty.hasOwnProperty(k)) {

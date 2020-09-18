@@ -18184,7 +18184,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.0";
+  var version = "0.38.1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

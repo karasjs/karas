@@ -13265,7 +13265,7 @@
             flowChildren.forEach(function (item) {
               var diff = maxCross - item.outerHeight;
 
-              if (diff > 0) {
+              if (diff !== 0) {
                 item.__offsetY(diff * 0.5, true);
               }
             });
@@ -13273,7 +13273,7 @@
             flowChildren.forEach(function (item) {
               var diff = maxCross - item.outerHeight;
 
-              if (diff > 0) {
+              if (diff !== 0) {
                 item.__offsetY(diff, true);
               }
             });

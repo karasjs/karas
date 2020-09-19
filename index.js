@@ -7292,7 +7292,7 @@
             s = _data$i.s;
 
         if (s) {
-          var inline = "position:absolute;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px");
+          var inline = "position:absolute;font-family:".concat(style.fontFamily, ";font-size:").concat(style.fontSize, "px;font-weight:").concat(style.fontWeight);
 
           for (var j = 0, len = s.length; j < len; j++) {
             keys.push(key);
@@ -18184,7 +18184,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.1";
+  var version = "0.38.2";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

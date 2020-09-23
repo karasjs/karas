@@ -52,7 +52,7 @@ class LineGroup {
   get width() {
     let width = 0;
     this.list.forEach(item => {
-      width += item.width;
+      width += item.outerWidth;
     });
     return width;
   }
@@ -60,7 +60,7 @@ class LineGroup {
   get height() {
     let height = 0;
     this.list.forEach(item => {
-      height = Math.max(height, item.height);
+      height = Math.max(height, item.outerHeight);
     });
     return height;
   }

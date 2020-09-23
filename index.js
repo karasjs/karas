@@ -12113,7 +12113,7 @@
       get: function get() {
         var width = 0;
         this.list.forEach(function (item) {
-          width += item.width;
+          width += item.outerWidth;
         });
         return width;
       }
@@ -12122,7 +12122,7 @@
       get: function get() {
         var height = 0;
         this.list.forEach(function (item) {
-          height = Math.max(height, item.height);
+          height = Math.max(height, item.outerHeight);
         });
         return height;
       }

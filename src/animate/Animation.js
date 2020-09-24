@@ -994,7 +994,7 @@ class Animation extends Event {
       });
       // 检查key合法性
       Object.keys(current).forEach(k => {
-        if(!change.isValid(tagName, k)) {
+        if(k !== 'easing' && k !== 'offset' && !change.isValid(tagName, k)) {
           delete current[k];
         }
       });

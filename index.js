@@ -8037,67 +8037,6 @@
     cubicBezier: bezier
   };
 
-  var repaint = {
-    GEOM: {
-      x1: true,
-      y1: true,
-      x2: true,
-      y2: true,
-      controlA: true,
-      controlB: true,
-      r: true,
-      rx: true,
-      ry: true,
-      begin: true,
-      end: true,
-      points: true,
-      controls: true,
-      edge: true,
-      closure: true
-    },
-    STYLE: {
-      transform: true,
-      translateX: true,
-      translateY: true,
-      skewX: true,
-      skewY: true,
-      scaleX: true,
-      scaleY: true,
-      rotateZ: true,
-      color: true,
-      fontStyle: true,
-      strokeWidth: true,
-      fill: true,
-      strokeDasharray: true,
-      strokeLinecap: true,
-      strokeLinejoin: true,
-      strokeMiterlimit: true,
-      backgroundColor: true,
-      backgroundImage: true,
-      backgroundPositionX: true,
-      backgroundPositionY: true,
-      backgroundRepeat: true,
-      backgroundSize: true,
-      stroke: true,
-      borderBottomColor: true,
-      borderLeftColor: true,
-      borderRightColor: true,
-      borderTopColor: true,
-      borderTopLeftRadius: true,
-      borderTopRightRadius: true,
-      borderBottomRightRadius: true,
-      borderBottomLeftRadius: true,
-      visibility: true,
-      opacity: true,
-      zIndex: true,
-      filter: true,
-      boxShadow: true
-    },
-    isRepaint: function isRepaint(k) {
-      return this.STYLE.hasOwnProperty(k) || this.GEOM.hasOwnProperty(k);
-    }
-  };
-
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -8139,7 +8078,7 @@
       var style = item.style;
       keys.forEach(function (k) {
         if (!style.hasOwnProperty(k) || isNil$4(style[k])) {
-          if (repaint.GEOM.hasOwnProperty(k)) {
+          if (o.GEOM.hasOwnProperty(k)) {
             style[k] = target.currentProps[k];
           } else {
             style[k] = target.currentStyle[k];
@@ -8589,7 +8528,7 @@
       }
 
       res.v = diff;
-    } else if (repaint.GEOM.hasOwnProperty(k)) {
+    } else if (o.GEOM.hasOwnProperty(k)) {
       if (isNil$4(p)) {
         return;
       } // 特殊处理multi
@@ -8899,18 +8838,18 @@
           st[1] += v[1] * percent;
           st[2] += v[2] * percent;
           st[3] += v[3] * percent;
-        } else if (repaint.GEOM.hasOwnProperty(k)) {
+        } else if (o.GEOM.hasOwnProperty(k)) {
           var _st = style[k];
 
           if (target.isMulti) {
             if (k === 'points' || k === 'controls') {
               for (var _i13 = 0, _len8 = Math.min(_st.length, v.length); _i13 < _len8; _i13++) {
-                var o = _st[_i13];
+                var o$1 = _st[_i13];
                 var n = v[_i13];
 
-                if (!isNil$4(o) && !isNil$4(n)) {
-                  for (var _j5 = 0, len2 = Math.min(o.length, n.length); _j5 < len2; _j5++) {
-                    var o2 = o[_j5];
+                if (!isNil$4(o$1) && !isNil$4(n)) {
+                  for (var _j5 = 0, len2 = Math.min(o$1.length, n.length); _j5 < len2; _j5++) {
+                    var o2 = o$1[_j5];
                     var n2 = n[_j5];
 
                     if (!isNil$4(o2) && !isNil$4(n2)) {
@@ -9122,7 +9061,7 @@
           }); // 检查key合法性
 
           Object.keys(current).forEach(function (k) {
-            if (!o.isValid(tagName, k)) {
+            if (k !== 'easing' && k !== 'offset' && !o.isValid(tagName, k)) {
               delete current[k];
             }
           });
@@ -9278,7 +9217,7 @@
 
           if (restore) {
             keys.forEach(function (k) {
-              if (repaint.GEOM.hasOwnProperty(k)) {
+              if (o.GEOM.hasOwnProperty(k)) {
                 if (target.__currentProps[k] === style[k]) {
                   target.__currentProps[k] = target.props[k];
                 }
@@ -9780,7 +9719,7 @@
           if (style.hasOwnProperty(i)) {
             var v = style[i]; // geom的属性变化
 
-            if (repaint.GEOM.hasOwnProperty(i)) {
+            if (o.GEOM.hasOwnProperty(i)) {
               target.currentProps[i] = v;
             } // 样式
             else {
@@ -12868,7 +12807,7 @@
     return Component;
   }(Event);
 
-  Object.keys(repaint.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -16361,7 +16300,6 @@
       key: "__checkUpdate",
       value: function __checkUpdate(renderMode, ctx, width, height) {
         var updateList = this.__updateList;
-        console.log(updateList);
         var hasUpdate; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
 
         var totalList = [];
@@ -19402,18 +19340,11 @@
     font: font
   };
 
-  var level = {
-    REPAINT: 0,
-    REFLOW: 1
-  };
-
   var animate = {
     Animation: Animation,
     Controller: Controller,
     easing: easing,
-    frame: frame,
-    level: level,
-    repaint: repaint
+    frame: frame
   };
 
   var version = "0.38.3";

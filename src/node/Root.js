@@ -465,14 +465,16 @@ class Root extends Dom {
         totalList.push(node);
       }
       // updateStyle()这样的调用还要计算normalize
-      if(origin) {
+      if(origin && style) {
         style = css.normalize(style);
       }
       // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
-      if(overwrite) {
+      if(overwrite && style) {
         Object.assign(node.__style, style);
       }
-      Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+      if(style) {
+        Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+      }
     });
     // 此时做root检查，防止root出现继承等无效样式
     this.__checkRoot(width, height);
@@ -531,10 +533,12 @@ class Root extends Dom {
       if(p) {
         Object.assign(currentProps, p);
       }
-      Object.assign(currentStyle, style);
+      if(style) {
+        Object.assign(currentStyle, style);
+      }
       if(focus) {
         hasUpdate = true;
-        lv = level.REFLOW;
+        lv = level.focus;
       }
       // 无需任何改变处理的去除记录，如pointerEvents
       if(lv === level.NONE) {

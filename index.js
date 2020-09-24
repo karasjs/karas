@@ -11130,11 +11130,20 @@
                   loadBgi.source = data.source;
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
-                  _this3.__cacheSvg = false;
+                  var node = _this3;
 
-                  _this3.root.delRefreshTask(loadBgi.cb);
+                  node.__cancelCacheSvg();
 
-                  _this3.root.addRefreshTask(loadBgi.cb);
+                  var root = node.root;
+                  root.delRefreshTask(loadBgi.cb);
+                  root.addRefreshTask(loadBgi.cb = {
+                    before: function before() {
+                      root.__addUpdate({
+                        node: node,
+                        focus: o$1.REPAINT
+                      });
+                    }
+                  });
                 }
               }, {
                 width: innerWidth,
@@ -14651,7 +14660,7 @@
 
                     root.__addUpdate({
                       node: self,
-                      focus: true // 没有样式变化但内容尺寸发生了变化强制执行
+                      focus: level.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
 
                     });
                   }
@@ -16375,16 +16384,18 @@
           } // updateStyle()这样的调用还要计算normalize
 
 
-          if (origin) {
+          if (origin && style) {
             style = css.normalize(style);
           } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
 
 
-          if (overwrite) {
+          if (overwrite && style) {
             Object.assign(node.__style, style);
           }
 
-          Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+          if (style) {
+            Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+          }
         }); // 此时做root检查，防止root出现继承等无效样式
 
         this.__checkRoot(width, height); // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
@@ -16460,11 +16471,13 @@
             Object.assign(currentProps, p);
           }
 
-          Object.assign(currentStyle, style);
+          if (style) {
+            Object.assign(currentStyle, style);
+          }
 
           if (focus) {
             hasUpdate = true;
-            lv = o$1.REFLOW;
+            lv = o$1.focus;
           } // 无需任何改变处理的去除记录，如pointerEvents
 
 

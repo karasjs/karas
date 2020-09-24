@@ -328,7 +328,7 @@ class Img extends Dom {
                 // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
                 root.__addUpdate({
                   node: self,
-                  focus: true, // 没有样式变化但内容尺寸发生了变化强制执行
+                  focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
                 });
               },
             });

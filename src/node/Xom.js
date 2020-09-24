@@ -1070,9 +1070,18 @@ class Xom extends Node {
               loadBgi.source = data.source;
               loadBgi.width = data.width;
               loadBgi.height = data.height;
-              this.__cacheSvg = false;
-              this.root.delRefreshTask(loadBgi.cb);
-              this.root.addRefreshTask(loadBgi.cb);
+              let node = this;
+              node.__cancelCacheSvg();
+              let root = node.root;
+              root.delRefreshTask(loadBgi.cb);
+              root.addRefreshTask(loadBgi.cb = {
+                before() {
+                  root.__addUpdate({
+                    node,
+                    focus: level.REPAINT,
+                  });
+                },
+              });
             }
           }, {
             width: innerWidth,

@@ -8,6 +8,7 @@ import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
 import blur from '../style/blur';
+import abbr from '../style/abbr';
 import util from '../util/util';
 import inject from '../util/inject';
 import Animation from '../animate/Animation';
@@ -15,7 +16,6 @@ import mx from '../math/matrix';
 import geom from '../math/geom';
 import change from '../refresh/change';
 import level from '../refresh/level';
-import abbr from '../style/abbr';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
@@ -1935,7 +1935,7 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { tagName, root } = this;
+    let { tagName, root, props, style: os } = this;
     if(root) {
       let hasChange;
       // 先去掉缩写
@@ -1951,14 +1951,21 @@ class Xom extends Node {
         if(style.hasOwnProperty(i)) {
           // 是规定内的合法样式
           if(change.isValid(tagName, i)) {
-            hasChange = true;
+            if(change.isGeom(tagName, i)) {
+              if(!css.equalStyle(i, style[i], props[i], this)) {
+                hasChange = true;
+              }
+            }
+            else if(!css.equalStyle(i, style[i]. cs[i], this)) {
+              hasChange = true;
+            }
           }
           else {
             delete style[i];
           }
         }
       }
-      // 空样式或非法直接返回
+      // 空样式或非法或无改变直接返回
       if(!hasChange) {
         if(util.isFunction(cb)) {
           cb(0);

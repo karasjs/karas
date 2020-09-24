@@ -973,7 +973,7 @@ function equalStyle(k, a, b, target) {
     return true;
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-  if(change.GEOM.hasOwnProperty(k) && target.isMulti && Array.isArray(a) && Array.isArray(b)) {
+  if(change.isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
     return util.equalArr(a, b);
   }
   return a === b;

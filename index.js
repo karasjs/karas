@@ -5414,8 +5414,8 @@
         o.GEOM[ks] = tagName;
       }
     },
-    isGeom: function isGeom(k) {
-      return this.GEOM.hasOwnProperty(k);
+    isGeom: function isGeom(tagName, k) {
+      return this.GEOM.hasOwnProperty(k) && this.GEOM[k] === tagName;
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -6490,7 +6490,7 @@
     } // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
 
 
-    if (o.GEOM.hasOwnProperty(k) && target.isMulti && Array.isArray(a) && Array.isArray(b)) {
+    if (o.isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
       return util.equalArr(a, b);
     }
 
@@ -12167,7 +12167,9 @@
       key: "updateStyle",
       value: function updateStyle(style, cb) {
         var tagName = this.tagName,
-            root = this.root;
+            root = this.root,
+            props = this.props,
+            os = this.style;
 
         if (root) {
           var hasChange; // 先去掉缩写
@@ -12184,12 +12186,18 @@
             if (style.hasOwnProperty(i)) {
               // 是规定内的合法样式
               if (o.isValid(tagName, i)) {
-                hasChange = true;
+                if (o.isGeom(tagName, i)) {
+                  if (!css.equalStyle(i, style[i], props[i], this)) {
+                    hasChange = true;
+                  }
+                } else if (!css.equalStyle(i, style[i].cs[i], this)) {
+                  hasChange = true;
+                }
               } else {
                 delete style[i];
               }
             }
-          } // 空样式或非法直接返回
+          } // 空样式或非法或无改变直接返回
 
 
           if (!hasChange) {

@@ -69,8 +69,8 @@ let o = {
       o.GEOM[ks] = tagName;
     }
   },
-  isGeom(k) {
-    return this.GEOM.hasOwnProperty(k);
+  isGeom(tagName, k) {
+    return this.GEOM.hasOwnProperty(k) && this.GEOM[k] === tagName;
   },
   isValid(tagName, k) {
     if(!k) {

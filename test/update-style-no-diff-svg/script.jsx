@@ -10,8 +10,8 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-o.on('refresh', function(lv) {
-  input.value += lv;
+o.on('refresh', function() {
+  input.value += 1;
 });
 o.children[0].updateStyle({
   points: [

@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
 

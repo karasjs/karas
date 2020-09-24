@@ -1,7 +1,7 @@
 import Node from './Node';
 import LineBox from './LineBox';
+import mode from './mode';
 import css from '../style/css';
-import mode from '../util/mode';
 import util from '../util/util';
 
 class Text extends Node {
@@ -21,7 +21,7 @@ class Text extends Node {
   };
 
   // 预先计算每个字的宽度
-  __measure(renderMode, ctx) {
+  __computeMeasure(renderMode, ctx) {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
@@ -225,6 +225,10 @@ class Text extends Node {
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);
     }
+  }
+
+  deepScan(cb) {
+    cb(this);
   }
 
   get content() {

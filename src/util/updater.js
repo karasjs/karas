@@ -73,6 +73,7 @@ function updateCp(cp, props, state) {
   let json = builder.flattenJson(cp.render());
   // 对比新老render()返回的内容，更新后重新生成sr
   diffSr(cp.shadowRoot, oldJson, json);
+  cp.shadowRoot.__computedStyle = oldSr.computedStyle; // 为了局部dom布局需要知道老的css信息
   cp.__init(json);
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp

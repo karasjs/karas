@@ -1,26 +1,25 @@
 import Node from './Node';
+import mode from './mode';
 import painter from '../util/painter';
-import mode from '../util/mode';
 import unit from '../style/unit';
 import tf from '../style/transform';
 import gradient from '../style/gradient';
 import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
-import reset from '../style/reset';
 import blur from '../style/blur';
 import util from '../util/util';
-import Animation from '../animate/Animation';
-import rp from '../animate/repaint';
-import invalid from '../animate/invalid';
-import level from '../animate/level';
 import inject from '../util/inject';
+import Animation from '../animate/Animation';
 import mx from '../math/matrix';
 import geom from '../math/geom';
+import change from '../refresh/change';
+import level from '../refresh/level';
+import abbr from '../style/abbr';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
-const { normalize, calRelative, compute } = css;
+const { calRelative } = css;
 const { canvasPolygon, svgPolygon } = painter;
 
 function renderBorder(renderMode, points, color, ctx, xom) {
@@ -664,6 +663,7 @@ class Xom extends Node {
     this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
     this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
+    this.__refreshLevel = level.REFLOW;
     Object.keys(this.props).forEach(k => {
       let v = this.props[k];
       if(/^on[a-zA-Z]/.test(k)) {
@@ -705,7 +705,7 @@ class Xom extends Node {
     return 0;
   }
 
-  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸
+  // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
   __layout(data, isVirtual, fromAbs) {
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
@@ -718,6 +718,8 @@ class Xom extends Node {
       computedStyle.width = computedStyle.height = 0;
       return;
     }
+    this.__layoutData = clone(data);
+    css.computeReflow(this, !this.parent);
     // margin/padding在abs前已经计算过了，无需二次计算
     if(!fromAbs) {
       this.__mp(currentStyle, computedStyle, w);
@@ -1897,6 +1899,11 @@ class Xom extends Node {
     this.__cacheSvg = false;
   }
 
+  __cancelCache() {
+    this.__cancelCacheSvg();
+    this.__cacheStyle = {};
+  }
+
   __getRg(renderMode, ctx, defs, gd) {
     if(renderMode === mode.CANVAS) {
       let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
@@ -1928,66 +1935,60 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { root, __style, __currentStyle, __cacheStyle, props, __currentProps, __cacheProps = {} } = this;
+    let { tagName, root } = this;
     if(root) {
-      let lv = level.REPAINT;
-      let hasUpdate, hasZIndex;
-      let p;
+      let hasChange;
+      // 先去掉缩写
+      let ks = Object.keys(style);
+      ks.forEach(k => {
+        if(abbr.hasOwnProperty(k)) {
+          abbr.toFull(style, k);
+          delete style[k];
+        }
+      });
+      // 此处仅检测样式是否有效
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          if(invalid.hasOwnProperty(i)) {
-            // pointerEvents这种无关的
+          // 是规定内的合法样式
+          if(change.isValid(tagName, i)) {
+            hasChange = true;
           }
-          else if(rp.GEOM.hasOwnProperty(i)) {
-            if(!css.equalStyle(i, style[i], props[i], this)) {
-              hasUpdate = true;
-              this.__cacheSvg = false;
-              p = p || {};
-              p[i] = style[i];
-              __cacheProps[i] = undefined;
-            }
-          }
-          else if(reset.isReset(i)) {
-            if(!css.equalStyle(i, style[i], __style[i], this)) {
-              hasUpdate = true;
-              this.__cacheSvg = false;
-              if(!rp.isRepaint(i)) {
-                lv = level.REFLOW;
-                break;
-              }
-              else {
-                // repaint置空，如果reflow会重新生成空的
-                __cacheStyle[i] = undefined;
-              }
-              if(i === 'zIndex') {
-                hasZIndex = true;
-              }
-            }
+          else {
+            delete style[i];
           }
         }
       }
-      if(!hasUpdate) {
+      // 空样式或非法直接返回
+      if(!hasChange) {
         if(util.isFunction(cb)) {
           cb(0);
         }
         return;
       }
-      // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
-      if(lv === level.REPAINT && hasZIndex && /svg/i.test(root.tagName)) {
-        this.__cancelCacheSvg();
-      }
-      root.addRefreshTask(this.__task = {
+      let node = this;
+      root.addRefreshTask(node.__task = {
         before() {
-          let format = normalize(style);
-          extend(__style, format);
-          extend(__currentStyle, format);
-          if(p && __currentProps) {
-            extend(props, p);
-            extend(__currentProps, p);
+          if(node.isDestroyed) {
+            return;
           }
-          root.setRefreshLevel(lv);
+          // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+          root.__addUpdate({
+            node,
+            style,
+            origin: true, // 标识样式未经过normalize，不同于animate
+            overwrite: true, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+          });
         },
-        after: cb,
+        after(diff) {
+          if(util.isFunction(cb)) {
+            if(node.isDestroyed) {
+              cb(diff, false);
+            }
+            else {
+              cb(diff, true); // TODO: 第2个参数表示是否在应用中未被覆盖
+            }
+          }
+        },
       });
     }
   }
@@ -2022,8 +2023,23 @@ class Xom extends Node {
     });
   }
 
-  __measure(renderMode, ctx, isRoot) {
-    compute(this, isRoot, this.currentStyle, this.computedStyle);
+  __computeMeasure(renderMode, ctx, isHost, cb) {
+    css.computeMeasure(this, isHost);
+    if(util.isFunction(cb)) {
+      cb(this);
+    }
+  }
+
+  deepScan(cb, options) {
+    return cb(this, options);
+  }
+
+  __resizeX(dx) {
+    this.computedStyle.width = this.__width += dx;
+  }
+
+  __resizeY(dy) {
+    this.computedStyle.height = this.__height += dy;
   }
 
   get tagName() {

@@ -2,7 +2,7 @@ class Node {
   constructor() {
     this.__x = 0;
     this.__y = 0;
-    this.__ox = 0; // relative/margin:auto/text-align等造成的偏移量
+    this.__ox = 0; // relative造成的偏移量
     this.__oy = 0;
     this.__width = 0;
     this.__height = 0;

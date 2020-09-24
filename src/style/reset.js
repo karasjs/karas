@@ -99,14 +99,32 @@ Object.keys(GEOM).forEach(k => {
   });
 });
 
+let INHERIT = {
+  fontFamily: 'arial',
+  fontSize: 16,
+  fontWeight: 400,
+  fontStyle: 'normal',
+  color: '#000',
+  textAlign: 'left',
+  visibility: 'visible',
+  pointerEvents: 'auto',
+};
+
+let INHERIT_KEY_SET = [];
+Object.keys(INHERIT).forEach(k => {
+  INHERIT_KEY_SET.push(k);
+});
+
 export default {
   DOM,
   GEOM,
-  isReset(i) {
+  isValid(i) {
     return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
   },
   DOM_KEY_SET,
   GEOM_KEY_SET,
   DOM_ENTRY_SET,
   GEOM_ENTRY_SET,
+  INHERIT,
+  INHERIT_KEY_SET,
 };

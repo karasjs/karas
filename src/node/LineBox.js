@@ -1,6 +1,6 @@
+import mode from './mode';
 import css from '../style/css';
 import util from '../util/util';
-import mode from '../util/mode';
 
 class LineBox {
   constructor(parent, x, y, w, content) {

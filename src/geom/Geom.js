@@ -2,7 +2,7 @@ import Xom from '../node/Xom';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT } = unit;
@@ -291,6 +291,11 @@ class Geom extends Xom {
     if(strokeMiterlimit !== 4) {
       props.push(['stroke-miterlimit', strokeMiterlimit]);
     }
+  }
+
+  __cancelCache() {
+    super.__cancelCache();
+    this.__cacheProps = {};
   }
 
   addGeom(tagName, props) {

@@ -156,14 +156,14 @@ class Component extends Event {
     }
   }
 
-  __measure(renderMode, ctx) {
+  __computeMeasure(renderMode, ctx, isHost, cb) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      sr.__measure(renderMode, ctx);
+      sr.__computeMeasure(renderMode, ctx);
     }
     // 其它类型为Xom或Component
     else {
-      sr.__measure(renderMode, ctx, true);
+      sr.__computeMeasure(renderMode, ctx, true, cb);
     }
   }
 
@@ -256,6 +256,7 @@ Object.keys(repaint.GEOM).concat([
   'clearAnimate',
   'updateStyle',
   '__cancelCacheSvg',
+  'deepScan',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

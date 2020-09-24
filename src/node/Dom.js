@@ -1,5 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
+import mode from './mode';
 import LineGroup from './LineGroup';
 import Component from './Component';
 import tag from './tag';
@@ -7,7 +8,6 @@ import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import blur from '../style/blur';
-import mode from '../util/mode';
 import util from '../util/util';
 import inject from '../util/inject';
 
@@ -1058,11 +1058,20 @@ class Dom extends Xom {
     }
   }
 
-  __measure(renderMode, ctx, isRoot) {
-    super.__measure(renderMode, ctx, isRoot);
+  /**
+   * 布局前检查继承的样式以及统计字体测量信息
+   * 首次检查为整树遍历，后续检查是节点自发局部检查，不再进入
+   * @param renderMode
+   * @param ctx
+   * @param isHost
+   * @param cb
+   * @private
+   */
+  __computeMeasure(renderMode, ctx, isHost, cb) {
+    super.__computeMeasure(renderMode, ctx, isHost, cb);
     // 即便自己不需要计算，但children还要继续递归检查
     this.children.forEach(item => {
-      item.__measure(renderMode, ctx);
+      item.__computeMeasure(renderMode, ctx, false, cb);
     });
   }
 
@@ -1116,12 +1125,35 @@ class Dom extends Xom {
     return super.__emitEvent(e);
   }
 
-  __cancelCacheSvg() {
+  __cancelCacheSvg(recursion) {
     super.__cancelCacheSvg();
-    this.children.forEach(child => {
-      if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-        child.__cancelCacheSvg();
-      }
+    if(recursion) {
+      this.children.forEach(child => {
+        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+          child.__cancelCacheSvg(recursion);
+        }
+      });
+    }
+  }
+
+  __cancelCache(recursion) {
+    super.__cancelCache();
+    if(recursion) {
+      this.children.forEach(child => {
+        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+          child.__cancelCache(recursion);
+        }
+      });
+    }
+  }
+
+  // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
+  deepScan(cb, options) {
+    if(super.deepScan(cb, options)) {
+      return;
+    }
+    this.children.forEach(node => {
+      node.deepScan(cb, options);
     });
   }
 

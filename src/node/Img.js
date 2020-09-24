@@ -1,6 +1,6 @@
 import Dom from './Dom';
+import mode from './mode';
 import painter from '../util/painter';
-import mode from '../util/mode';
 import inject from '../util/inject';
 import util from '../util/util';
 import unit from '../style/unit';
@@ -319,10 +319,9 @@ class Img extends Dom {
             root.addRefreshTask(loadImg.cb);
           }
           else {
-            root.addRefreshTask(this.__task = {
-              before() {
-                root.setRefreshLevel(level.REFLOW);
-              },
+            root.__addUpdate({
+              node: this,
+              focus: true, // 没有样式变化但内容尺寸发生了变化强制执行
             });
           }
         }

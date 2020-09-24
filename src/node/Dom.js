@@ -130,6 +130,7 @@ class Dom extends Xom {
       }
       // 文本垂直
       else {
+        css.computeReflow(item);
         item.__layout({
           x: 0,
           y: 0,

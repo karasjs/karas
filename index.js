@@ -8250,7 +8250,6 @@
 
 
   function genBeforeRefresh(frameStyle, animation, root, lv) {
-    // root.setRefreshLevel(lv);
     // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
     // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
     root.__frameHook();
@@ -8258,55 +8257,11 @@
     root.__addUpdate({
       node: animation.target,
       style: frameStyle
-    }); // let hasZ;
-    // keys.forEach(i => {
-    //   if(i === 'zIndex') {
-    //     hasZ = true;
-    //   }
-    //   // 结束还原时样式为空，需填上默认样式
-    //   let v = frameStyle.hasOwnProperty(i) ? frameStyle[i] : target.style[i];
-    //   // geom的属性变化
-    //   if(repaint.GEOM.hasOwnProperty(i)) {
-    //     target.currentProps[i] = v;
-    //     target.__cacheProps[i] = undefined;
-    //   }
-    //   // 样式
-    //   else {
-    //     // 将动画样式直接赋给currentStyle
-    //     target.currentStyle[i] = v;
-    //     target.__cacheStyle[i] = undefined;
-    //   }
-    // });
-    // // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
-    // target.__cancelCacheSvg(hasZ);
-
+    });
 
     animation.__style = frameStyle;
     animation.__assigning = true;
-  } // function assignStyle(style, animation) {
-  //   let target = animation.target;
-  //   let hasZ = false;
-  //   animation.keys.forEach(i => {
-  //     if(i === 'zIndex') {
-  //       hasZ = true;
-  //     }
-  //     // 结束还原时样式为空，需填上默认样式
-  //     let v = style.hasOwnProperty(i) ? style[i] : target.style[i];
-  //     // geom的属性变化
-  //     if(repaint.GEOM.hasOwnProperty(i)) {
-  //       target.currentProps[i] = v;
-  //       target.__cacheProps[i] = undefined;
-  //     }
-  //     // 样式
-  //     else {
-  //       // 将动画样式直接赋给currentStyle
-  //       target.currentStyle[i] = v;
-  //       target.__cacheStyle[i] = undefined;
-  //     }
-  //   });
-  //   return hasZ;
-  // }
-
+  }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
    * @param style 关键帧样式
@@ -9179,9 +9134,10 @@
 
 
         var offset = -1;
+        var tagName = target.tagName;
 
-        for (var i = 0, len = list.length; i < len; i++) {
-          var current = list[i];
+        var _loop = function _loop(_i16, _len12) {
+          var current = list[_i16];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset) || 0;
@@ -9189,16 +9145,37 @@
             current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(i, 1);
-              i--;
-              len--;
+              list.splice(_i16, 1);
+              _i16--;
+              _len12--;
+              i = _i16;
+              len = _len12;
+              return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
-                list.splice(i, 1);
-                i--;
-                len--;
+                list.splice(_i16, 1);
+                _i16--;
+                _len12--;
+                i = _i16;
+                len = _len12;
+                return "continue";
               }
-          }
+          } // 检查key合法性
+
+
+          Object.keys(current).forEach(function (k) {
+            if (!o.isValid(tagName, k)) {
+              delete current[k];
+            }
+          });
+          i = _i16;
+          len = _len12;
+        };
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          var _ret = _loop(i, len);
+
+          if (_ret === "continue") continue;
         } // 只有1帧复制出来变成2帧方便运行
 
 
@@ -9245,14 +9222,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i16 = 1, _len12 = list.length; _i16 < _len12; _i16++) {
-          var start = list[_i16]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i17 = 1, _len13 = list.length; _i17 < _len13; _i17++) {
+          var start = list[_i17]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i16 + 1;
+            var j = _i17 + 1;
 
-            for (; j < _len12; j++) {
+            for (; j < _len13; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -9260,16 +9237,16 @@
               }
             }
 
-            var num = j - _i16 + 1;
-            start = list[_i16 - 1];
+            var num = j - _i17 + 1;
+            start = list[_i17 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i16; k < j; k++) {
+            for (var k = _i17; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i16);
+              item.offset = start.offset + per * (k + 1 - _i17);
             }
 
-            _i16 = j;
+            _i17 = j;
           }
         }
 
@@ -9286,8 +9263,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i17 = 1; _i17 < length; _i17++) {
-          var next = frames[_i17];
+        for (var _i18 = 1; _i18 < length; _i18++) {
+          var next = frames[_i18];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -9299,8 +9276,8 @@
         });
         prev = framesR[0];
 
-        for (var _i18 = 1; _i18 < length; _i18++) {
-          var _next = framesR[_i18];
+        for (var _i19 = 1; _i19 < length; _i19++) {
+          var _next = framesR[_i19];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -13181,6 +13158,8 @@
               max = Math.max(item.textWidth, max);
             } // 文本垂直
             else {
+                css.computeReflow(item);
+
                 item.__layout({
                   x: 0,
                   y: 0,
@@ -16513,8 +16492,10 @@
         for (var i = 0, len = totalList.length; i < len; i++) {
           var node = totalList[i];
 
-          var __uniqueUpdateId = node.__uniqueUpdateId,
+          var tagName = node.tagName,
+              __uniqueUpdateId = node.__uniqueUpdateId,
               currentStyle = node.currentStyle,
+              currentProps = node.currentProps,
               _node$__cacheStyle = node.__cacheStyle,
               __cacheStyle = _node$__cacheStyle === void 0 ? {} : _node$__cacheStyle,
               _node$__cacheProps = node.__cacheProps,
@@ -16534,21 +16515,25 @@
 
               if (k === 'zIndex') {
                 hasZ = true;
-              } // 需和现在不等，且不是pointerEvents这种无关的
+              } // 只有geom的props和style2种可能
 
 
-              if (!css.equalStyle(k, v, currentStyle[k], node)) {
-                this.renderMode === mode.SVG && node.__cancelCacheSvg(); // pointerEvents这种无关的只需更新
+              if (o.isGeom(tagName, k)) {
+                if (!css.equalStyle(k, v, currentProps[k], node)) {
+                  this.renderMode === mode.SVG && node.__cancelCacheSvg();
+                  p = p || {};
+                  p[k] = style[k];
+                  lv |= o$1.REPAINT;
+                  __cacheProps[k] = undefined;
+                }
+              } else {
+                // 需和现在不等，且不是pointerEvents这种无关的
+                if (!css.equalStyle(k, v, currentStyle[k], node)) {
+                  this.renderMode === mode.SVG && node.__cancelCacheSvg(); // pointerEvents这种无关的只需更新
 
-                if (o.isIgnore(k)) {
-                  __cacheStyle[k] = undefined;
-                  currentStyle[k] = v;
-                } // geom属性只会引发重绘，清空缓存
-                else if (o.isGeom(k)) {
-                    p = p || {};
-                    p[k] = style[k];
-                    lv |= o$1.REPAINT;
-                    __cacheProps[k] = undefined;
+                  if (o.isIgnore(k)) {
+                    __cacheStyle[k] = undefined;
+                    currentStyle[k] = v;
                   } else {
                     // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
                     lv |= o$1.getLevel(k);
@@ -16561,11 +16546,17 @@
                     __cacheStyle[k] = undefined;
                     currentStyle[k] = v;
                   }
+                }
               }
             }
           }
 
           delete node.__uniqueUpdateId;
+
+          if (p) {
+            Object.assign(currentProps, p);
+          }
+
           Object.assign(currentStyle, style);
 
           if (focus) {
@@ -16606,8 +16597,7 @@
         }
 
         this.__updateList = [];
-        this.__reflowList = this.__reflowList.concat(reflowList); // 可能component会插入
-
+        this.__reflowList = reflowList;
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

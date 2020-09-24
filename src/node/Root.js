@@ -479,7 +479,7 @@ class Root extends Dom {
     let reflowList = [];
     for(let i = 0, len = totalList.length; i < len; i++) {
       let node = totalList[i];
-      let { __uniqueUpdateId, currentStyle, __cacheStyle = {}, __cacheProps = {} } = node;
+      let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
       let lv = level.NONE;
       let hasMeasure;
       let p;
@@ -491,35 +491,43 @@ class Root extends Dom {
           if(k === 'zIndex') {
             hasZ = true;
           }
-          // 需和现在不等，且不是pointerEvents这种无关的
-          if(!css.equalStyle(k, v, currentStyle[k], node)) {
-            this.renderMode === mode.SVG && node.__cancelCacheSvg();
-            // pointerEvents这种无关的只需更新
-            if(change.isIgnore(k)) {
-              __cacheStyle[k] = undefined;
-              currentStyle[k] = v;
-            }
-            // geom属性只会引发重绘，清空缓存
-            else if(change.isGeom(k)) {
+          // 只有geom的props和style2种可能
+          if(change.isGeom(tagName, k)) {
+            if(!css.equalStyle(k, v, currentProps[k], node)) {
+              this.renderMode === mode.SVG && node.__cancelCacheSvg();
               p = p || {};
               p[k] = style[k];
               lv |= level.REPAINT;
               __cacheProps[k] = undefined;
             }
-            else {
-              // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
-              lv |= level.getLevel(k);
-              if(change.isMeasure(k)) {
-                hasMeasure = true;
+          }
+          else {
+            // 需和现在不等，且不是pointerEvents这种无关的
+            if(!css.equalStyle(k, v, currentStyle[k], node)) {
+              this.renderMode === mode.SVG && node.__cancelCacheSvg();
+              // pointerEvents这种无关的只需更新
+              if(change.isIgnore(k)) {
+                __cacheStyle[k] = undefined;
+                currentStyle[k] = v;
               }
-              // repaint置空，如果reflow会重新生成空的
-              __cacheStyle[k] = undefined;
-              currentStyle[k] = v;
+              else {
+                // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
+                lv |= level.getLevel(k);
+                if(change.isMeasure(k)) {
+                  hasMeasure = true;
+                }
+                // repaint置空，如果reflow会重新生成空的
+                __cacheStyle[k] = undefined;
+                currentStyle[k] = v;
+              }
             }
           }
         }
       }
       delete node.__uniqueUpdateId;
+      if(p) {
+        Object.assign(currentProps, p);
+      }
       Object.assign(currentStyle, style);
       if(focus) {
         lv = level.REFLOW;
@@ -556,7 +564,7 @@ class Root extends Dom {
       }
     }
     this.__updateList = [];
-    this.__reflowList = this.__reflowList.concat(reflowList); // 可能component会插入
+    this.__reflowList = reflowList;
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

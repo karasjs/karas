@@ -8,6 +8,7 @@ import easing from './easing';
 import level from './level';
 import repaint from './repaint';
 import invalid from '../refresh/invalid';
+import change from '../refresh/change';
 import key from './key';
 
 const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
@@ -144,7 +145,6 @@ function calRefresh(frameStyle, lastStyle, keys, target) {
 
 // 将当前frame的style赋值给动画style，xom绘制时获取
 function genBeforeRefresh(frameStyle, animation, root, lv) {
-  // root.setRefreshLevel(lv);
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
@@ -152,54 +152,9 @@ function genBeforeRefresh(frameStyle, animation, root, lv) {
     node: animation.target,
     style: frameStyle,
   });
-  // let hasZ;
-  // keys.forEach(i => {
-  //   if(i === 'zIndex') {
-  //     hasZ = true;
-  //   }
-  //   // 结束还原时样式为空，需填上默认样式
-  //   let v = frameStyle.hasOwnProperty(i) ? frameStyle[i] : target.style[i];
-  //   // geom的属性变化
-  //   if(repaint.GEOM.hasOwnProperty(i)) {
-  //     target.currentProps[i] = v;
-  //     target.__cacheProps[i] = undefined;
-  //   }
-  //   // 样式
-  //   else {
-  //     // 将动画样式直接赋给currentStyle
-  //     target.currentStyle[i] = v;
-  //     target.__cacheStyle[i] = undefined;
-  //   }
-  // });
-  // // 有zIndex时，svg父级开始到叶子节点取消cache，因为dom节点顺序可能发生变化，不能直接忽略
-  // target.__cancelCacheSvg(hasZ);
   animation.__style = frameStyle;
   animation.__assigning = true;
 }
-
-// function assignStyle(style, animation) {
-//   let target = animation.target;
-//   let hasZ = false;
-//   animation.keys.forEach(i => {
-//     if(i === 'zIndex') {
-//       hasZ = true;
-//     }
-//     // 结束还原时样式为空，需填上默认样式
-//     let v = style.hasOwnProperty(i) ? style[i] : target.style[i];
-//     // geom的属性变化
-//     if(repaint.GEOM.hasOwnProperty(i)) {
-//       target.currentProps[i] = v;
-//       target.__cacheProps[i] = undefined;
-//     }
-//     // 样式
-//     else {
-//       // 将动画样式直接赋给currentStyle
-//       target.currentStyle[i] = v;
-//       target.__cacheStyle[i] = undefined;
-//     }
-//   });
-//   return hasZ;
-// }
 
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -1036,6 +991,7 @@ class Animation extends Event {
     }
     // 过滤时间非法的，过滤后续offset<=前面的
     let offset = -1;
+    let tagName = target.tagName;
     for(let i = 0, len = list.length; i < len; i++) {
       let current = list[i];
       if(current.hasOwnProperty('offset')) {
@@ -1047,14 +1003,22 @@ class Animation extends Event {
           list.splice(i, 1);
           i--;
           len--;
+          continue;
         }
         // <=前面的
         else if(current.offset <= offset) {
           list.splice(i, 1);
           i--;
           len--;
+          continue;
         }
       }
+      // 检查key合法性
+      Object.keys(current).forEach(k => {
+        if(!change.isValid(tagName, k)) {
+          delete current[k];
+        }
+      });
     }
     // 只有1帧复制出来变成2帧方便运行
     if(list.length === 1) {

@@ -388,6 +388,7 @@
       return;
     }
 
+    var n = 0;
     ctx.moveTo(list[0][0], list[0][1]);
 
     for (var i = 1, len = list.length; i < len; i++) {
@@ -399,12 +400,17 @@
 
       if (item.length === 2) {
         ctx.lineTo(item[0], item[1]);
+        n++;
       } else if (item.length === 4) {
         ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
+        n += 2;
       } else if (item.length === 6) {
         ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
+        n += 2;
       }
     }
+
+    return n;
   }
 
   function svgPolygon(list) {
@@ -438,12 +444,16 @@
 
     if (num === 3) {
       ctx.bezierCurveTo(controlA[0], controlA[1], controlB[0], controlB[1], x2, y2);
+      return 2;
     } else if (num === 2) {
       ctx.quadraticCurveTo(controlB[0], controlB[1], x2, y2);
+      return 2;
     } else if (num === 1) {
       ctx.quadraticCurveTo(controlA[0], controlA[1], x2, y2);
+      return 2;
     } else {
       ctx.lineTo(x2, y2);
+      return 1;
     }
   }
 
@@ -462,14 +472,17 @@
   var OFFSET = Math.PI * 0.5;
 
   function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure) {
+    var n = 2;
     ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
     if (edge) {
       if (!large || !closure) {
         ctx.lineTo(cx, cy);
+        n++;
       }
 
       ctx.lineTo(x1, y1);
+      n++;
 
       if (strokeWidth > 0) {
         ctx.stroke();
@@ -481,10 +494,14 @@
 
       if (!large || !closure) {
         ctx.lineTo(cx, cy);
+        n++;
       }
 
       ctx.lineTo(x1, y1);
+      n++;
     }
+
+    return n;
   }
 
   function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
@@ -14324,7 +14341,7 @@
             item = item.shadowRoot;
           }
 
-          return item instanceof Text || item.computedStyle && item.computedStyle.position !== 'absolute';
+          return item instanceof Text || item.currentStyle.position !== 'absolute';
         });
       }
     }, {
@@ -14335,7 +14352,7 @@
             item = item.shadowRoot;
           }
 
-          return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
+          return item instanceof Xom && item.currentStyle.position === 'absolute';
         });
       }
     }, {
@@ -19389,8 +19406,7 @@
     easing: easing,
     frame: frame,
     level: level,
-    repaint: repaint,
-    invalid: invalid
+    repaint: repaint
   };
 
   var version = "0.38.3";

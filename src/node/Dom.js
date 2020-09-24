@@ -1166,7 +1166,7 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Text || item.computedStyle && item.computedStyle.position !== 'absolute';
+      return item instanceof Text || item.currentStyle.position !== 'absolute';
     });
   }
 
@@ -1175,7 +1175,7 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
+      return item instanceof Xom && item.currentStyle.position === 'absolute';
     });
   }
 

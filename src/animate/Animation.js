@@ -1,13 +1,12 @@
 import css from '../style/css';
 import unit from '../style/unit';
 import tf from '../style/transform';
+import abbr from '../style/abbr';
 import util from '../util/util';
 import Event from '../util/Event';
 import frame from './frame';
 import easing from './easing';
-import level from './level';
 import repaint from './repaint';
-import invalid from '../refresh/invalid';
 import change from '../refresh/change';
 import key from './key';
 
@@ -989,6 +988,11 @@ class Animation extends Event {
           continue;
         }
       }
+      Object.keys(current).forEach(k => {
+        if(abbr.hasOwnProperty(k)) {
+          abbr.toFull(current, k);
+        }
+      });
       // 检查key合法性
       Object.keys(current).forEach(k => {
         if(!change.isValid(tagName, k)) {

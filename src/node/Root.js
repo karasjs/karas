@@ -538,6 +538,7 @@ class Root extends Dom {
       }
       // 无需任何改变处理的去除记录，如pointerEvents
       if(lv === level.NONE) {
+        delete node.__uniqueUpdateId;
         totalList.splice(i, 1);
         i--;
         len--;
@@ -570,6 +571,9 @@ class Root extends Dom {
     this.__updateList = [];
     // 没有更新的内容返回true
     if(!hasUpdate) {
+      totalList.forEach(node => {
+        delete node.__uniqueUpdateId;
+      });
       return true;
     }
     this.__reflowList = reflowList;

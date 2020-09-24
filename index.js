@@ -8037,11 +8037,6 @@
     cubicBezier: bezier
   };
 
-  var level = {
-    REPAINT: 0,
-    REFLOW: 1
-  };
-
   var repaint = {
     GEOM: {
       x1: true,
@@ -9118,8 +9113,13 @@
                 len = _len12;
                 return "continue";
               }
-          } // 检查key合法性
+          }
 
+          Object.keys(current).forEach(function (k) {
+            if (abbr.hasOwnProperty(k)) {
+              abbr.toFull(current, k);
+            }
+          }); // 检查key合法性
 
           Object.keys(current).forEach(function (k) {
             if (!o.isValid(tagName, k)) {
@@ -14327,6 +14327,11 @@
     return Dom;
   }(Xom);
 
+  var level = {
+    REPAINT: 0,
+    REFLOW: 1
+  };
+
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -16464,6 +16469,7 @@
 
 
           if (lv === o$1.NONE) {
+            delete node.__uniqueUpdateId;
             totalList.splice(i, 1);
             i--;
             len--;
@@ -16498,6 +16504,9 @@
         this.__updateList = []; // 没有更新的内容返回true
 
         if (!hasUpdate) {
+          totalList.forEach(function (node) {
+            delete node.__uniqueUpdateId;
+          });
           return true;
         }
 

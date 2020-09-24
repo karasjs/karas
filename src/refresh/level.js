@@ -13,40 +13,7 @@ const ENUM = {
   REPAINT: 8, // 整体需要重绘 1000
 
   // 高位表示reflow
-  XY: 16, // 仅自身位置变化 10000
-  SIZE: 32, // 仅自身尺寸变化 100000
-  REFLOW: 64, // 整体需要重排 1000000
-};
-
-let hash = {
-  transform: ENUM.TRANSFORM,
-  opacity: ENUM.OPACITY,
-  filter: ENUM.FILTER,
-  left: ENUM.XY,
-  top: ENUM.XY,
-  right: ENUM.XY,
-  bottom: ENUM.XY,
-  width: ENUM.SIZE,
-  height: ENUM.SIZE,
-  marginLeft: ENUM.XY,
-  marginTop: ENUM.XY,
-  marginRight: ENUM.XY,
-  marginBottom: ENUM.XY,
-  paddingLeft: ENUM.SIZE,
-  paddingTop: ENUM.SIZE,
-  paddingRight: ENUM.SIZE,
-  paddingBottom: ENUM.SIZE,
-  fontSize: ENUM.SIZE,
-  fontWeight: ENUM.SIZE,
-  fontFamily: ENUM.SIZE,
-  lineHeight: ENUM.SIZE,
-  borderLeftWidth: ENUM.SIZE,
-  borderTopWidth: ENUM.SIZE,
-  borderRightWidth: ENUM.SIZE,
-  borderBottomWidth: ENUM.SIZE,
-  justifyContent: ENUM.XY,
-  alignItems: ENUM.XY,
-  textAlign: ENUM.XY,
+  REFLOW: 16, // 整体需要重排 1000000
 };
 
 const TRANSFORM = {
@@ -124,7 +91,7 @@ let o = Object.assign({
     return !this.isRepaint(lv);
   },
   isRepaint(lv) {
-    return lv < ENUM.XY;
+    return lv < ENUM.REFLOW;
   },
 }, ENUM);
 

@@ -10067,11 +10067,7 @@
     REPAINT: 8,
     // 整体需要重绘 1000
     // 高位表示reflow
-    XY: 16,
-    // 仅自身位置变化 10000
-    SIZE: 32,
-    // 仅自身尺寸变化 100000
-    REFLOW: 64 // 整体需要重排 1000000
+    REFLOW: 16 // 整体需要重排 1000000
 
   };
   var TRANSFORM = {
@@ -10150,7 +10146,7 @@
       return !this.isRepaint(lv);
     },
     isRepaint: function isRepaint(lv) {
-      return lv < ENUM.XY;
+      return lv < ENUM.REFLOW;
     }
   }, ENUM);
 
@@ -16192,7 +16188,7 @@
                     _this4.__addUpdate({
                       node: sr,
                       style: sr.currentStyle,
-                      focus: true
+                      focus: o$1.REFLOW
                     });
                   });
 
@@ -16422,7 +16418,7 @@
             Object.assign(currentStyle, style);
           }
 
-          if (focus) {
+          if (focus !== undefined) {
             hasUpdate = true;
             lv = o$1.focus;
           } // 无需任何改变处理的去除记录，如pointerEvents
@@ -16580,7 +16576,7 @@
           var target = node; // inline新老都影响，节点变为最近的父非inline
 
           if (node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
-            var _parent2 = node.parent;
+            var _parent2 = node.parent || node.host.parent;
 
             do {
               target = _parent2; // 父到root提前跳出
@@ -19351,6 +19347,16 @@
     frame: frame
   };
 
+  var invalid = {
+    pointerEvents: true
+  };
+
+  var refresh = {
+    invalid: invalid,
+    level: o$1,
+    change: o
+  };
+
   var version = "0.38.3";
 
   Geom$2.register('$line', Line);
@@ -19439,7 +19445,8 @@
     animate: animate,
     math: math,
     builder: builder,
-    updater: updater
+    updater: updater,
+    refresh: refresh
   };
   builder.ref({
     Xom: Xom,

@@ -23,6 +23,7 @@ import parser from './parser/index';
 import style from './style/index';
 import animate from './animate/index';
 import math from './math/index';
+import refresh from './refresh/index';
 import { version } from '../package.json';
 
 Geom.register('$line', Line);
@@ -106,6 +107,7 @@ let karas = {
   math,
   builder,
   updater,
+  refresh,
 };
 
 builder.ref({

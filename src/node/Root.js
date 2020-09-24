@@ -348,7 +348,7 @@ class Root extends Dom {
                 this.__addUpdate({
                   node: sr,
                   style: sr.currentStyle,
-                  focus: true,
+                  focus: level.REFLOW,
                 });
               });
               this.refresh();
@@ -536,7 +536,7 @@ class Root extends Dom {
       if(style) {
         Object.assign(currentStyle, style);
       }
-      if(focus) {
+      if(focus !== undefined) {
         hasUpdate = true;
         lv = level.focus;
       }
@@ -673,7 +673,7 @@ class Root extends Dom {
       let target = node;
       // inline新老都影响，节点变为最近的父非inline
       if(node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
-        let parent = node.parent;
+        let parent = node.parent || node.host.parent;
         do {
           target = parent;
           // 父到root提前跳出

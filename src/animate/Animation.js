@@ -6,7 +6,6 @@ import util from '../util/util';
 import Event from '../util/Event';
 import frame from './frame';
 import easing from './easing';
-import repaint from './repaint';
 import change from '../refresh/change';
 import key from './key';
 
@@ -43,7 +42,7 @@ function unify(frames, target) {
     let style = item.style;
     keys.forEach(k => {
       if(!style.hasOwnProperty(k) || isNil(style[k])) {
-        if(repaint.GEOM.hasOwnProperty(k)) {
+        if(change.GEOM.hasOwnProperty(k)) {
           style[k] = target.currentProps[k];
         }
         else {
@@ -507,7 +506,7 @@ function calDiff(prev, next, k, target) {
     }
     res.v = diff;
   }
-  else if(repaint.GEOM.hasOwnProperty(k)) {
+  else if(change.GEOM.hasOwnProperty(k)) {
     if(isNil(p)) {
       return;
     }
@@ -809,7 +808,7 @@ function calIntermediateStyle(frame, percent, target) {
       st[2] += v[2] * percent;
       st[3] += v[3] * percent;
     }
-    else if(repaint.GEOM.hasOwnProperty(k)) {
+    else if(change.GEOM.hasOwnProperty(k)) {
       let st = style[k];
       if(target.isMulti) {
         if(k === 'points' || k === 'controls') {
@@ -1126,7 +1125,7 @@ class Animation extends Event {
       // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
       if(restore) {
         keys.forEach(k => {
-          if(repaint.GEOM.hasOwnProperty(k)) {
+          if(change.GEOM.hasOwnProperty(k)) {
             if(target.__currentProps[k] === style[k]) {
               target.__currentProps[k] = target.props[k];
             }
@@ -1493,7 +1492,7 @@ class Animation extends Event {
       if(style.hasOwnProperty(i)) {
         let v = style[i];
         // geom的属性变化
-        if(repaint.GEOM.hasOwnProperty(i)) {
+        if(change.GEOM.hasOwnProperty(i)) {
           target.currentProps[i] = v;
         }
         // 样式

@@ -4,7 +4,7 @@ import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
-import change from '../animate/change';
+import change from '../refresh/change';
 
 const { isNil, isFunction, clone, extend } = util;
 

@@ -5426,6 +5426,10 @@
         return true;
       }
 
+      if (tagName.charAt(0) === '$' && reset.GEOM.hasOwnProperty(k)) {
+        return true;
+      }
+
       if (this.GEOM.hasOwnProperty(k)) {
         return this.GEOM[k] === tagName;
       }

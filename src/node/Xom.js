@@ -1956,7 +1956,7 @@ class Xom extends Node {
                 hasChange = true;
               }
             }
-            else if(!css.equalStyle(i, style[i]. cs[i], this)) {
+            else if(!css.equalStyle(i, style[i], os[i], this)) {
               hasChange = true;
             }
           }

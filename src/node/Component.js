@@ -4,7 +4,7 @@ import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
-import repaint from '../animate/repaint';
+import change from '../animate/change';
 
 const { isNil, isFunction, clone, extend } = util;
 
@@ -200,7 +200,7 @@ class Component extends Event {
   }
 }
 
-Object.keys(repaint.GEOM).concat([
+Object.keys(change.GEOM).concat([
   'x',
   'y',
   'ox',

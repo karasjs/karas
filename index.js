@@ -14336,11 +14336,6 @@
     return Dom;
   }(Xom);
 
-  var level = {
-    REPAINT: 0,
-    REFLOW: 1
-  };
-
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -14357,10 +14352,7 @@
 
       _this = _super.call(this, tagName, props);
       var src = _this.props.src;
-      var loadImg = _this.__loadImg = {
-        // 刷新回调函数，用以destroy取消用
-        cb: function cb() {}
-      }; // 空url用错误图代替
+      var loadImg = _this.__loadImg = {}; // 空url用错误图代替
 
       if (!src) {
         loadImg.error = true;
@@ -14630,8 +14622,9 @@
           _loadImg.error = null;
           _loadImg.cache = false;
           inject.measureImg(src, function (data) {
-            // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-            if (data.url === _loadImg.url && !_this2.__isDestroyed) {
+            var self = _this2; // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+
+            if (data.url === _loadImg.url && !self.__isDestroyed) {
               if (data.success) {
                 _loadImg.source = data.source;
                 _loadImg.width = data.width;
@@ -14640,17 +14633,13 @@
                 _loadImg.error = true;
               }
 
-              var root = _this2.root,
-                  _this2$currentStyle = _this2.currentStyle,
-                  _width = _this2$currentStyle.width,
-                  _height = _this2$currentStyle.height;
-              root.delRefreshTask(_loadImg.cb);
-              root.delRefreshTask(_this2.__task);
+              var root = self.root,
+                  _self$currentStyle = self.currentStyle,
+                  _width = _self$currentStyle.width,
+                  _height = _self$currentStyle.height;
+              root.delRefreshTask(self.__task);
 
               if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
-                root.addRefreshTask(_loadImg.cb);
-              } else {
-                var self = _this2;
                 root.addRefreshTask(self.__task = {
                   before: function before() {
                     if (self.isDestroyed) {
@@ -14660,7 +14649,22 @@
 
                     root.__addUpdate({
                       node: self,
-                      focus: level.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
+                      focus: o$1.REPAINT // 没有样式变化但内容尺寸发生了变化强制执行
+
+                    });
+                  }
+                });
+              } else {
+                root.addRefreshTask(self.__task = {
+                  before: function before() {
+                    if (self.isDestroyed) {
+                      return;
+                    } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+                    root.__addUpdate({
+                      node: self,
+                      focus: o$1.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
 
                     });
                   }
@@ -16357,6 +16361,7 @@
       key: "__checkUpdate",
       value: function __checkUpdate(renderMode, ctx, width, height) {
         var updateList = this.__updateList;
+        console.log(updateList);
         var hasUpdate; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
 
         var totalList = [];
@@ -19395,6 +19400,11 @@
     reset: reset,
     unit: unit,
     font: font
+  };
+
+  var level = {
+    REPAINT: 0,
+    REFLOW: 1
   };
 
   var animate = {

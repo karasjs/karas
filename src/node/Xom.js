@@ -2161,6 +2161,10 @@ class Xom extends Node {
     return this.__currentStyle;
   }
 
+  get layoutData() {
+    return this.__layoutData;
+  }
+
 }
 
 export default Xom;

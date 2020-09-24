@@ -1,5 +1,6 @@
 import Dom from './Dom';
 import Text from './Text';
+import Component from './Component';
 import Defs from './Defs';
 import mode from './mode';
 import builder from '../util/builder';
@@ -63,13 +64,23 @@ function isFixedWidthOrHeight(node, k) {
     return c.value === v;
   }
   if(c.unit === PERCENT) {
-    let s = node.parent.__layoutData[k === 'width' ? 'w' : 'h'];
+    let s = node.parent.layoutData[k === 'width' ? 'w' : 'h'];
     return c.value * s * 0.01 === v;
   }
   return false;
 }
 function isFixedSize(node) {
   return isFixedWidthOrHeight(node, 'width') && isFixedWidthOrHeight(node, 'height');
+}
+
+function findParentNotComponent(node, root) {
+  if(node === root || !node) {
+    return node;
+  }
+  if(node.host) {
+    return findParentNotComponent(node.host, root);
+  }
+  return node.parent;
 }
 
 const OFFSET = 0;
@@ -337,18 +348,12 @@ class Root extends Dom {
             // 有组件更新，则需要重新布局
             let len = updater.updateList.length;
             if(len) {
-              updater.updateList.forEach(cp => {
-                let sr = cp.shadowRoot;
-                if(sr instanceof Text) {
-                  sr.__computeMeasure(renderMode, ctx);
-                }
-                else {
-                  sr.__computeMeasure(renderMode, ctx, true);
-                }
+              updater.updateList.forEach(sr => {
                 this.__addUpdate({
                   node: sr,
                   style: sr.currentStyle,
                   focus: level.REFLOW,
+                  measure: true, // 未知强制measure
                 });
               });
               this.refresh();
@@ -450,7 +455,7 @@ class Root extends Dom {
     let totalHash = {};
     let uniqueUpdateId = 0;
     updateList.forEach(item => {
-      let { node, style, origin, overwrite, focus } = item;
+      let { node, style, origin, overwrite, focus, measure } = item;
       // 事件队列和setState等原因，可能node已经销毁
       if(node.isDestroyed) {
         return;
@@ -461,6 +466,7 @@ class Root extends Dom {
           node,
           style: {},
           focus,
+          measure,
         };
         totalList.push(node);
       }
@@ -485,9 +491,9 @@ class Root extends Dom {
       let node = totalList[i];
       let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
       let lv = level.NONE;
-      let hasMeasure;
       let p;
-      let { style, focus } = totalHash[__uniqueUpdateId];
+      let { style, focus, measure } = totalHash[__uniqueUpdateId];
+      let hasMeasure = measure;
       let hasZ;
       for(let k in style) {
         if(style.hasOwnProperty(k)) {
@@ -622,12 +628,7 @@ class Root extends Dom {
             break;
           }
           // 考虑component下的继续往上继承，一定不会有root，因为root已前置checkRoot()
-          if(!parent.parent && parent.host) {
-            parent = parent.host.parent;
-          }
-          else {
-            parent = parent.parent;
-          }
+          parent = findParentNotComponent(parent, this);
         }
       }
       // 自顶向下查找inherit的，利用已有的方法+回调
@@ -670,10 +671,14 @@ class Root extends Dom {
       if(isFixedSize(node)) {
         return;
       }
+      // cp强制刷新
+      if(node instanceof Component) {
+        return;
+      }
       let target = node;
       // inline新老都影响，节点变为最近的父非inline
       if(node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
-        let parent = node.parent || node.host.parent;
+        let parent = findParentNotComponent(node, root);
         do {
           target = parent;
           // 父到root提前跳出
@@ -695,12 +700,7 @@ class Root extends Dom {
             return;
           }
           // 继续向上
-          if(!parent.parent && parent.host) {
-            parent = parent.host.parent;
-          }
-          else {
-            parent = parent.parent;
-          }
+          parent = findParentNotComponent(parent, root);
         }
         while(parent && (parent.currentStyle.display === 'inline' || parent.computedStyle.display === 'inline'));
         // target至少是node的parent，如果固定尺寸提前跳出
@@ -733,12 +733,7 @@ class Root extends Dom {
             setLAYOUT(parent, reflowHash);
             return;
           }
-          if(!parent.parent && parent.host) {
-            parent = parent.host.parent;
-          }
-          else {
-            parent = parent.parent;
-          }
+          parent = findParentNotComponent(parent, root);
         }
         while(parent && (parent.computedStyle.display === 'flex' || parent.currentStyle.display === 'flex'));
         // target至少是node的parent，如果固定尺寸提前跳出
@@ -782,7 +777,7 @@ class Root extends Dom {
         o.lv = LAYOUT;
       }
       // absolute和非absolute互换
-      else if(currentStyle.positoin !== computedStyle.position) {
+      else if(currentStyle.position !== computedStyle.position) {
         o.lv = LAYOUT;
         if(checkInfluence(node)) {
           hasRoot = true;
@@ -874,15 +869,15 @@ class Root extends Dom {
         if(lv >= LAYOUT) {
           let isLastAbs = node.computedStyle.position === 'absolute';
           let isNowAbs = node.currentStyle.position === 'absolute';
-          let parent = node.parent || node.host.parent;
-          let { __layoutData: { x, y, w, h }, width, ox, oy, computedStyle } = parent;
+          let parent = findParentNotComponent(node, root);
+          let { layoutData: { x, y, w, h }, width, ox, oy, computedStyle } = parent;
           let ref;
-          if(ref = (node.prev || node.host && node.host.prev)) {
+          if(ref = node.prev) {
             y = ref.y;
             y += ref.outerHeight;
           }
-          else if(ref = (node.parent || node.host && node.host.parent)) {
-            y = ref.y;
+          else {
+            y = parent.y;
             y += computedStyle.marginTop + computedStyle.borderTopWidth + computedStyle.paddingTop;
           }
           x += computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.paddingLeft;
@@ -894,7 +889,7 @@ class Root extends Dom {
               if(isRelativeOrAbsolute) {
                 break;
               }
-              container = container.parent;
+              container = container.parent; // TODO
             }
             if(!container) {
               container = root;
@@ -956,12 +951,7 @@ class Root extends Dom {
               if(currentStyle.positoin === 'absolute') {
                 break;
               }
-              if(!parent.parent && parent.host) {
-                parent = parent.host.parent;
-              }
-              else {
-                parent = parent.parent;
-              }
+              parent = findParentNotComponent(parent);
             }
             while(parent);
           }
@@ -973,7 +963,7 @@ class Root extends Dom {
                 || !next.hasOwnProperty('____uniqueReflowId')
                 || reflowHash[next.____uniqueReflowId].lv < LAYOUT) {
                 next.__offsetY(dy, true);
-                next.__layoutData.y += dy;
+                next.layoutData.y += dy;
                 next.__cancelCache(true);
               }
               next = next.next;
@@ -991,7 +981,7 @@ class Root extends Dom {
             parent = node;
           }
           else {
-            parent = node.parent || node.host.parent;
+            parent = findParentNotComponent(node, root); console.log('c');
           }
           let newY = 0;
           if(top.unit !== AUTO) {

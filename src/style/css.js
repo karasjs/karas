@@ -95,9 +95,12 @@ function compatibleTransform(k, v) {
  * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
  * @param style 手写的style样式
  * @param reset 默认样式
- * @returns 标准化的样式
+ * @returns Object 标准化的样式
  */
 function normalize(style, reset = []) {
+  if(!util.isObject(style)) {
+    return {};
+  }
   // style只有单层无需深度clone
   style = util.extend({}, style);
   // 缩写提前处理，因为reset里没有缩写

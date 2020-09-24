@@ -23,6 +23,7 @@ function setUpdateFlag(cp) {
 class Component extends Event {
   constructor(props = {}) {
     super();
+    this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
@@ -85,7 +86,7 @@ class Component extends Event {
       console.warn('Component render() return a text, should not inherit style/event');
     }
     else if(sr instanceof Node) {
-      let style = css.normalize(this.props.style || {});
+      let style = css.normalize(this.props.style);
       let keys = Object.keys(style);
       extend(sr.style, style, keys);
       extend(sr.currentStyle, style, keys);
@@ -103,8 +104,9 @@ class Component extends Event {
       });
     }
     else if(sr instanceof Component) {
+      // 本身build是递归的，子cp已经初始化了
       console.warn('Component render() return a component: '
-        + this + ' -> ' + sr.tagName
+        + this.tagName + ' -> ' + sr.tagName
         + ', should not inherit style/event');
     }
     else {
@@ -165,6 +167,10 @@ class Component extends Event {
     else {
       sr.__computeMeasure(renderMode, ctx, true, cb);
     }
+  }
+
+  get tagName() {
+    return this.__tagName;
   }
 
   get shadowRoot() {
@@ -228,6 +234,7 @@ Object.keys(change.GEOM).concat([
   'lineBoxes',
   'charWidthList',
   'charWidth',
+  'layoutData',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

@@ -70,7 +70,7 @@ function build(json, root, owner, host) {
     }
     else if($$type === TYPE_CP) {
       vd = new klass(props);
-      vd.__tagName = tagName;
+      vd.__tagName = vd.__tagName || tagName;
     }
     else {
       return new Text(json);

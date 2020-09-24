@@ -5559,13 +5559,18 @@
    * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
    * @param style 手写的style样式
    * @param reset 默认样式
-   * @returns 标准化的样式
+   * @returns Object 标准化的样式
    */
 
 
   function normalize$1(style) {
     var reset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-    // style只有单层无需深度clone
+
+    if (!util.isObject(style)) {
+      return {};
+    } // style只有单层无需深度clone
+
+
     style = util.extend({}, style); // 缩写提前处理，因为reset里没有缩写
 
     var temp = style.border;
@@ -12227,6 +12232,11 @@
       get: function get() {
         return this.__currentStyle;
       }
+    }, {
+      key: "layoutData",
+      get: function get() {
+        return this.__layoutData;
+      }
     }]);
 
     return Xom;
@@ -12417,7 +12427,7 @@
         vd = new _klass(tagName, props);
       } else if (_$$type === TYPE_CP$1) {
         vd = new klass(props);
-        vd.__tagName = tagName;
+        vd.__tagName = vd.__tagName || tagName;
       } else {
         return new Text(json);
       } // 根parse需要用到真正的vd引用
@@ -12599,7 +12609,8 @@
 
       _classCallCheck(this, Component);
 
-      _this = _super.call(this); // 构建工具中都是arr，手写可能出现hash情况
+      _this = _super.call(this);
+      _this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(_this.constructor.toString())[1]; // 构建工具中都是arr，手写可能出现hash情况
 
       if (Array.isArray(props)) {
         _this.props = util.arr2hash(props);
@@ -12672,7 +12683,7 @@
           // 文字视作为父节点的直接文字子节点，在builder里做
           console.warn('Component render() return a text, should not inherit style/event');
         } else if (sr instanceof Node) {
-          var style = css.normalize(this.props.style || {});
+          var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
           extend$2(sr.style, style, keys);
           extend$2(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
@@ -12690,7 +12701,8 @@
             }
           });
         } else if (sr instanceof Component) {
-          console.warn('Component render() return a component: ' + this + ' -> ' + sr.tagName + ', should not inherit style/event');
+          // 本身build是递归的，子cp已经初始化了
+          console.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
           throw new Error('Component render() must return a dom/text: ' + this);
         }
@@ -12765,6 +12777,11 @@
           }
       }
     }, {
+      key: "tagName",
+      get: function get() {
+        return this.__tagName;
+      }
+    }, {
       key: "shadowRoot",
       get: function get() {
         return this.__shadowRoot;
@@ -12807,7 +12824,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -14733,12 +14750,22 @@
     var oldJson = cp.__cd;
     var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
 
-    diffSr(cp.shadowRoot, oldJson, json);
-    cp.shadowRoot.__computedStyle = oldSr.computedStyle; // 为了局部dom布局需要知道老的css信息
+    diffSr(oldSr, oldJson, json);
 
-    cp.__init(json);
+    cp.__init(json); // 为了局部dom布局需要知道老的css信息
 
-    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
+
+    var sr = cp.shadowRoot;
+
+    while (sr instanceof Component$2) {
+      sr = sr.shadowRoot;
+    }
+
+    sr.__width = oldSr.width;
+    sr.__height = oldSr.height;
+    sr.__computedStyle = oldSr.computedStyle;
+    sr.__layoutData = oldSr.layoutData;
+    updateList.push(sr); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
       removeList.push(oldSr);
@@ -15811,7 +15838,7 @@
     }
 
     if (c.unit === PERCENT$7) {
-      var s = node.parent.__layoutData[k === 'width' ? 'w' : 'h'];
+      var s = node.parent.layoutData[k === 'width' ? 'w' : 'h'];
       return c.value * s * 0.01 === v;
     }
 
@@ -15820,6 +15847,18 @@
 
   function isFixedSize(node) {
     return isFixedWidthOrHeight(node, 'width') && isFixedWidthOrHeight(node, 'height');
+  }
+
+  function findParentNotComponent(node, root) {
+    if (node === root || !node) {
+      return node;
+    }
+
+    if (node.host) {
+      return findParentNotComponent(node.host, root);
+    }
+
+    return node.parent;
   }
 
   var OFFSET$1 = 0;
@@ -16176,19 +16215,13 @@
                 var len = updater.updateList.length;
 
                 if (len) {
-                  updater.updateList.forEach(function (cp) {
-                    var sr = cp.shadowRoot;
-
-                    if (sr instanceof Text) {
-                      sr.__computeMeasure(renderMode, ctx);
-                    } else {
-                      sr.__computeMeasure(renderMode, ctx, true);
-                    }
-
+                  updater.updateList.forEach(function (sr) {
                     _this4.__addUpdate({
                       node: sr,
                       style: sr.currentStyle,
-                      focus: o$1.REFLOW
+                      focus: o$1.REFLOW,
+                      measure: true // 未知强制measure
+
                     });
                   });
 
@@ -16299,6 +16332,8 @@
     }, {
       key: "__checkUpdate",
       value: function __checkUpdate(renderMode, ctx, width, height) {
+        var _this5 = this;
+
         var updateList = this.__updateList;
         var hasUpdate; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
 
@@ -16310,7 +16345,8 @@
               style = item.style,
               origin = item.origin,
               overwrite = item.overwrite,
-              focus = item.focus; // 事件队列和setState等原因，可能node已经销毁
+              focus = item.focus,
+              measure = item.measure; // 事件队列和setState等原因，可能node已经销毁
 
           if (node.isDestroyed) {
             return;
@@ -16321,7 +16357,8 @@
             totalHash[uniqueUpdateId++] = {
               node: node,
               style: {},
-              focus: focus
+              focus: focus,
+              measure: measure
             };
             totalList.push(node);
           } // updateStyle()这样的调用还要计算normalize
@@ -16360,11 +16397,12 @@
               __cacheProps = _node$__cacheProps === void 0 ? {} : _node$__cacheProps;
 
           var lv = o$1.NONE;
-          var hasMeasure = void 0;
           var p = void 0;
           var _totalHash$__uniqueUp = totalHash[__uniqueUpdateId],
               style = _totalHash$__uniqueUp.style,
-              focus = _totalHash$__uniqueUp.focus;
+              focus = _totalHash$__uniqueUp.focus,
+              measure = _totalHash$__uniqueUp.measure;
+          var hasMeasure = measure;
           var hasZ = void 0;
 
           for (var k in style) {
@@ -16515,11 +16553,7 @@
               } // 考虑component下的继续往上继承，一定不会有root，因为root已前置checkRoot()
 
 
-              if (!parent.parent && parent.host) {
-                parent = parent.host.parent;
-              } else {
-                parent = parent.parent;
-              }
+              parent = findParentNotComponent(parent, _this5);
             };
 
             while (parent) {
@@ -16559,7 +16593,7 @@
     }, {
       key: "__checkReflow",
       value: function __checkReflow(width, height) {
-        var _this5 = this;
+        var _this6 = this;
 
         var reflowList = this.__reflowList;
         var root = this;
@@ -16571,12 +16605,17 @@
           // 自身尺寸固定且无变化，无需向上查找
           if (isFixedSize(node)) {
             return;
+          } // cp强制刷新
+
+
+          if (node instanceof Component$1) {
+            return;
           }
 
           var target = node; // inline新老都影响，节点变为最近的父非inline
 
           if (node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
-            var _parent2 = node.parent || node.host.parent;
+            var _parent2 = findParentNotComponent(node, root);
 
             do {
               target = _parent2; // 父到root提前跳出
@@ -16603,11 +16642,7 @@
               } // 继续向上
 
 
-              if (!_parent2.parent && _parent2.host) {
-                _parent2 = _parent2.host.parent;
-              } else {
-                _parent2 = _parent2.parent;
-              }
+              _parent2 = findParentNotComponent(_parent2, root);
             } while (_parent2 && (_parent2.currentStyle.display === 'inline' || _parent2.computedStyle.display === 'inline')); // target至少是node的parent，如果固定尺寸提前跳出
 
 
@@ -16647,11 +16682,7 @@
                 return;
               }
 
-              if (!parent.parent && parent.host) {
-                parent = parent.host.parent;
-              } else {
-                parent = parent.parent;
-              }
+              parent = findParentNotComponent(parent, root);
             } while (parent && (parent.computedStyle.display === 'flex' || parent.currentStyle.display === 'flex')); // target至少是node的parent，如果固定尺寸提前跳出
 
 
@@ -16701,7 +16732,7 @@
           if (currentStyle.position === 'absolute' && computedStyle.position === 'absolute') {
             o.lv = LAYOUT;
           } // absolute和非absolute互换
-          else if (currentStyle.positoin !== computedStyle.position) {
+          else if (currentStyle.position !== computedStyle.position) {
               o.lv = LAYOUT;
 
               if (checkInfluence(node)) {
@@ -16808,24 +16839,24 @@
               if (lv >= LAYOUT) {
                 var isLastAbs = node.computedStyle.position === 'absolute';
                 var isNowAbs = node.currentStyle.position === 'absolute';
-                var parent = node.parent || node.host.parent;
+                var parent = findParentNotComponent(node, root);
                 var _parent3 = parent,
-                    _parent3$__layoutData = _parent3.__layoutData,
-                    _x = _parent3$__layoutData.x,
-                    y = _parent3$__layoutData.y,
-                    w = _parent3$__layoutData.w,
-                    h = _parent3$__layoutData.h,
+                    _parent3$layoutData = _parent3.layoutData,
+                    _x = _parent3$layoutData.x,
+                    y = _parent3$layoutData.y,
+                    w = _parent3$layoutData.w,
+                    h = _parent3$layoutData.h,
                     _width = _parent3.width,
                     ox = _parent3.ox,
                     oy = _parent3.oy,
                     _computedStyle = _parent3.computedStyle;
                 var ref;
 
-                if (ref = node.prev || node.host && node.host.prev) {
+                if (ref = node.prev) {
                   y = ref.y;
                   y += ref.outerHeight;
-                } else if (ref = node.parent || node.host && node.host.parent) {
-                  y = ref.y;
+                } else {
+                  y = parent.y;
                   y += _computedStyle.marginTop + _computedStyle.borderTopWidth + _computedStyle.paddingTop;
                 }
 
@@ -16842,7 +16873,7 @@
                       break;
                     }
 
-                    container = container.parent;
+                    container = container.parent; // TODO
                   }
 
                   if (!container) {
@@ -16911,11 +16942,7 @@
                       break;
                     }
 
-                    if (!parent.parent && parent.host) {
-                      parent = parent.host.parent;
-                    } else {
-                      parent = parent.parent;
-                    }
+                    parent = findParentNotComponent(parent);
                   } while (parent);
                 }
 
@@ -16927,7 +16954,7 @@
                     if (next.currentStyle.position !== 'absolute' || !next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId].lv < LAYOUT) {
                       next.__offsetY(dy, true);
 
-                      next.__layoutData.y += dy;
+                      next.layoutData.y += dy;
 
                       next.__cancelCache(true);
                     }
@@ -16952,10 +16979,11 @@
 
                   var _parent5;
 
-                  if (node === _this5) {
+                  if (node === _this6) {
                     _parent5 = node;
                   } else {
-                    _parent5 = node.parent || node.host.parent;
+                    _parent5 = findParentNotComponent(node, root);
+                    console.log('c');
                   }
 
                   var newY = 0;
@@ -17029,12 +17057,12 @@
     }, {
       key: "__frameHook",
       value: function __frameHook() {
-        var _this6 = this;
+        var _this7 = this;
 
         // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
         // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
         var r = this.__hookTask = this.__hookTask || function () {
-          _this6.refresh();
+          _this7.refresh();
         };
 
         if (frame.__hookTask.indexOf(r) === -1) {

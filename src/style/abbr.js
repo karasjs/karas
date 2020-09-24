@@ -191,9 +191,9 @@ export default {
       if(v.length === 1) {
         v[1] = '50%';
       }
-      this[k].forEach(k => {
+      this[k].forEach((k, i) => {
         if(isNil(style[k])) {
-          style[k] = v;
+          style[k] = v[i];
         }
       });
     }

@@ -289,7 +289,7 @@ function diffBb(elem, obb, nbb, oClip, nClip) {
   let ol = obb.length;
   let nl = nbb.length;
   if(oClip !== nClip) {
-    if(!nMask) {
+    if(!nClip) {
       elem.removeAttribute('clip-path');
     }
     else {

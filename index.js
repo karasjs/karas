@@ -5274,9 +5274,9 @@
           v[1] = '50%';
         }
 
-        this[k].forEach(function (k) {
+        this[k].forEach(function (k, i) {
           if (isNil$2(style[k])) {
-            style[k] = v;
+            style[k] = v[i];
           }
         });
       } else if (['translate', 'scale', 'skew'].indexOf(k) > -1) {
@@ -15516,7 +15516,7 @@
     var nl = nbb.length;
 
     if (oClip !== nClip) {
-      if (!nMask) {
+      if (!nClip) {
         elem.removeAttribute('clip-path');
       } else {
         elem.setAttribute('clip-path', nClip);

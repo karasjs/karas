@@ -686,7 +686,7 @@ class Dom extends Xom {
         }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
-          lineGroup.add(item);
+          lineGroup.add(item); console.log('inline');
           item.__layout({
             x,
             y,

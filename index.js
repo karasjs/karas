@@ -13650,6 +13650,7 @@
 
             if (x === data.x) {
               lineGroup.add(item);
+              console.log('inline');
 
               item.__layout({
                 x: x,
@@ -14605,8 +14606,8 @@
 
                     root.__addUpdate({
                       node: self,
-                      focus: o$1.REPAINT // 没有样式变化但内容尺寸发生了变化强制执行
-
+                      focus: o$1.REPAINT,
+                      img: true
                     });
                   }
                 });
@@ -14620,7 +14621,9 @@
 
                     root.__addUpdate({
                       node: self,
-                      focus: o$1.REFLOW // 没有样式变化但内容尺寸发生了变化强制执行
+                      focus: o$1.REFLOW,
+                      // 没有样式变化但内容尺寸发生了变化强制执行
+                      img: true // 特殊标识强制布局即便没有style变化
 
                     });
                   }
@@ -16346,6 +16349,7 @@
               origin = item.origin,
               overwrite = item.overwrite,
               focus = item.focus,
+              img = item.img,
               measure = item.measure; // 事件队列和setState等原因，可能node已经销毁
 
           if (node.isDestroyed) {
@@ -16358,6 +16362,7 @@
               node: node,
               style: {},
               focus: focus,
+              img: img,
               measure: measure
             };
             totalList.push(node);
@@ -16401,7 +16406,13 @@
           var _totalHash$__uniqueUp = totalHash[__uniqueUpdateId],
               style = _totalHash$__uniqueUp.style,
               focus = _totalHash$__uniqueUp.focus,
+              img = _totalHash$__uniqueUp.img,
               measure = _totalHash$__uniqueUp.measure;
+
+          if (img) {
+            lv |= o$1.REPAINT;
+          }
+
           var hasMeasure = measure;
           var hasZ = void 0;
 
@@ -16474,9 +16485,12 @@
           var isRepaint = o$1.isRepaint(lv);
 
           if (isRepaint) {
-            // zIndex变化需清空svg缓存
+            console.log(node.tagName); // zIndex变化需清空svg缓存
+
             if (hasZ && renderMode === mode.SVG) {
               node.__cancelCacheSvg(true);
+            } else {
+              node.__cancelCacheSvg();
             } // TODO: repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
             // if(node.__cache) {
             //   node.__cache.lv = level.getDetailLevel(style, lv);
@@ -16486,7 +16500,8 @@
           else {
               reflowList.push({
                 node: node,
-                style: style
+                style: style,
+                img: img
               }); // measure需要提前先处理
 
               if (hasMeasure) {
@@ -16709,7 +16724,8 @@
         for (var i = 0, len = reflowList.length; i < len; i++) {
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
-              style = _reflowList$i.style; // root提前跳出，完全重新布局
+              style = _reflowList$i.style,
+              img = _reflowList$i.img; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -16754,7 +16770,7 @@
                 } // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
 
 
-                if (onlyXY) {
+                if (onlyXY && !img) {
                   if (computedStyle.position === 'relative') {
                     o.lv |= OFFSET$1;
                   }
@@ -16983,7 +16999,6 @@
                     _parent5 = node;
                   } else {
                     _parent5 = findParentNotComponent(node, root);
-                    console.log('c');
                   }
 
                   var newY = 0;

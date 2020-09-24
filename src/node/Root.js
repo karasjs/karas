@@ -455,7 +455,7 @@ class Root extends Dom {
     let totalHash = {};
     let uniqueUpdateId = 0;
     updateList.forEach(item => {
-      let { node, style, origin, overwrite, focus, measure } = item;
+      let { node, style, origin, overwrite, focus, img, measure } = item;
       // 事件队列和setState等原因，可能node已经销毁
       if(node.isDestroyed) {
         return;
@@ -466,6 +466,7 @@ class Root extends Dom {
           node,
           style: {},
           focus,
+          img,
           measure,
         };
         totalList.push(node);
@@ -492,7 +493,10 @@ class Root extends Dom {
       let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
       let lv = level.NONE;
       let p;
-      let { style, focus, measure } = totalHash[__uniqueUpdateId];
+      let { style, focus, img, measure } = totalHash[__uniqueUpdateId];
+      if(img) {
+        lv |= level.REPAINT;
+      }
       let hasMeasure = measure;
       let hasZ;
       for(let k in style) {
@@ -556,10 +560,13 @@ class Root extends Dom {
       }
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
-      if(isRepaint) {
+      if(isRepaint) { console.log(node.tagName);
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
           node.__cancelCacheSvg(true);
+        }
+        else {
+          node.__cancelCacheSvg();
         }
         // TODO: repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
         // if(node.__cache) {
@@ -571,6 +578,7 @@ class Root extends Dom {
         reflowList.push({
           node,
           style,
+          img,
         });
         // measure需要提前先处理
         if(hasMeasure) {
@@ -756,7 +764,7 @@ class Root extends Dom {
 
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, style } = reflowList[i];
+      let { node, style, img } = reflowList[i];
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -796,7 +804,7 @@ class Root extends Dom {
           }
         }
         // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
-        if(onlyXY) {
+        if(onlyXY && !img) {
           if(computedStyle.position === 'relative') {
             o.lv |= OFFSET;
           }
@@ -981,7 +989,7 @@ class Root extends Dom {
             parent = node;
           }
           else {
-            parent = findParentNotComponent(node, root); console.log('c');
+            parent = findParentNotComponent(node, root);
           }
           let newY = 0;
           if(top.unit !== AUTO) {

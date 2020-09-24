@@ -974,8 +974,8 @@ class Root extends Dom {
           if(t !== 'auto') {
             oldY = t;
           }
-          else if(n !== 'auto') {
-            oldY = -n;
+          else if(b !== 'auto') {
+            oldY = -b;
           }
           if(newY !== oldY) {
             node.__offsetY(newY - oldY);

@@ -14752,10 +14752,20 @@
               if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
                 root.addRefreshTask(_loadImg.cb);
               } else {
-                root.__addUpdate({
-                  node: _this2,
-                  focus: true // 没有样式变化但内容尺寸发生了变化强制执行
+                var self = _this2;
+                root.addRefreshTask(self.__task = {
+                  before: function before() {
+                    if (self.isDestroyed) {
+                      return;
+                    } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
+
+                    root.__addUpdate({
+                      node: self,
+                      focus: true // 没有样式变化但内容尺寸发生了变化强制执行
+
+                    });
+                  }
                 });
               }
             }
@@ -17083,8 +17093,8 @@
 
                   if (t !== 'auto') {
                     oldY = t;
-                  } else if (n !== 'auto') {
-                    oldY = -n;
+                  } else if (b !== 'auto') {
+                    oldY = -b;
                   }
 
                   if (newY !== oldY) {

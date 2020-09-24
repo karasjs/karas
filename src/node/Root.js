@@ -16,7 +16,7 @@ import level from '../refresh/level';
 
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT } = unit;
-const { calRelative } = css;
+const { calRelative, isRelativeOrAbsolute } = css;
 
 function getDom(dom) {
   if(util.isString(dom) && dom) {
@@ -480,15 +480,17 @@ class Root extends Dom {
       let hasZ;
       for(let k in style) {
         if(style.hasOwnProperty(k)) {
+          let v = style[k];
           if(k === 'zIndex') {
             hasZ = true;
           }
           // 需和现在不等，且不是pointerEvents这种无关的
-          if(!css.equalStyle(k, style[k], currentStyle[k], node)) {
+          if(!css.equalStyle(k, v, currentStyle[k], node)) {
             this.renderMode === mode.SVG && node.__cancelCacheSvg();
             // pointerEvents这种无关的只需更新
             if(change.isIgnore(k)) {
               __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
             }
             // geom属性只会引发重绘，清空缓存
             else if(change.isGeom(k)) {
@@ -505,17 +507,18 @@ class Root extends Dom {
               }
               // repaint置空，如果reflow会重新生成空的
               __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
             }
           }
         }
       }
+      delete node.__uniqueUpdateId;
       Object.assign(currentStyle, style);
       if(focus) {
         lv = level.REFLOW;
       }
       // 无需任何改变处理的去除记录，如pointerEvents
       if(lv === level.NONE) {
-        delete node.__uniqueUpdateId;
         totalList.splice(i, 1);
         i--;
         len--;
@@ -528,11 +531,10 @@ class Root extends Dom {
         if(hasZ && renderMode === mode.SVG) {
           node.__cancelCacheSvg(true);
         }
-        // repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
+        // TODO: repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
         // if(node.__cache) {
         //   node.__cache.lv = level.getDetailLevel(style, lv);
         // }
-        delete node.__uniqueUpdateId;
       }
       // reflow在root的refresh中做
       else {
@@ -546,7 +548,8 @@ class Root extends Dom {
         }
       }
     }
-    this.__reflowList = this.__reflowList.concat(reflowList);
+    this.__updateList = [];
+    this.__reflowList = this.__reflowList.concat(reflowList); // 可能component会插入
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -602,9 +605,6 @@ class Root extends Dom {
           measureHash[target.__uniqueUpdateId] = true;
         }
       });
-    });
-    reflowList.forEach(node => {
-      delete node.__uniqueUpdateId;
     });
   }
 
@@ -833,9 +833,10 @@ class Root extends Dom {
       // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
       uniqueList.forEach(item => {
         let { node, lv } = item;
-        console.log(node.props.ref, lv);
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
+          let isLastAbs = node.computedStyle.position === 'absolute';
+          let isNowAbs = node.currentStyle.position === 'absolute';
           let parent = node.parent || node.host.parent;
           let { __layoutData: { x, y, w, h }, width, ox, oy, computedStyle } = parent;
           let ref;
@@ -849,12 +850,32 @@ class Root extends Dom {
           }
           x += computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.paddingLeft;
           let { outerWidth, outerHeight } = node;
-          node.__layout({
-            x,
-            y,
-            w: width,
-            h,
-          });
+          if(isNowAbs) {
+            // 找到最上层容器
+            let container = parent;
+            while(container) {
+              if(isRelativeOrAbsolute) {
+                break;
+              }
+              container = container.parent;
+            }
+            if(!container) {
+              container = root;
+            }
+            parent.__layoutAbs(container, null, node);
+            // 一直abs无需偏移后面兄弟
+            if(isLastAbs) {
+              return;
+            }
+          }
+          else {
+            node.__layout({
+              x,
+              y,
+              w: width,
+              h,
+            });
+          }
           // 记录重新布局引发的差值w/h
           let { outerWidth: ow, outerHeight: oh } = node;
           let dx = ow - outerWidth;

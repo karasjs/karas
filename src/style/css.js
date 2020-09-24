@@ -979,6 +979,11 @@ function equalStyle(k, a, b, target) {
   return a === b;
 }
 
+function isRelativeOrAbsolute(node) {
+  let position = node.currentStyle.position;
+  return position === 'relative' || position === 'absolute';
+}
+
 export default {
   normalize,
   computeMeasure,
@@ -988,4 +993,5 @@ export default {
   calRelative,
   calAbsolute,
   equalStyle,
+  isRelativeOrAbsolute,
 };

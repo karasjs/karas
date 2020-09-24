@@ -12,12 +12,7 @@ import util from '../util/util';
 import inject from '../util/inject';
 
 const { AUTO, PX, PERCENT } = unit;
-const { calAbsolute } = css;
-
-function isRelativeOrAbsolute(node) {
-  let position = node.computedStyle.position;
-  return position === 'relative' || position === 'absolute';
-}
+const { calAbsolute, isRelativeOrAbsolute } = css;
 
 class Dom extends Xom {
   constructor(tagName, props, children) {
@@ -810,8 +805,13 @@ class Dom extends Xom {
     }
   }
 
-  // 只针对绝对定位children布局
-  __layoutAbs(container, data) {
+  /**
+   * 只针对绝对定位children布局
+   * @param container
+   * @param target 可选，只针对某个abs的child特定布局，在局部更新时用
+   * @private
+   */
+  __layoutAbs(container, data, target) {
     let { sx: x, sy: y, innerWidth, innerHeight, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
@@ -829,6 +829,9 @@ class Dom extends Xom {
     y += marginTop + borderTopWidth;
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
+      if(target && target !== item) {
+        return;
+      }
       let { currentStyle, computedStyle } = item;
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, innerWidth);
@@ -993,10 +996,13 @@ class Dom extends Xom {
         item.__offsetY(-item.outerHeight, true);
       }
     });
+    if(target) {
+      return;
+    }
     // 递归进行，遇到absolute/relative的设置新容器
     children.forEach(item => {
       if(item instanceof Dom) {
-        item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
+        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);
       }
       else if(item instanceof Component) {
         let sr = item.shadowRoot;

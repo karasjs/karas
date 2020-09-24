@@ -6497,6 +6497,11 @@
     return a === b;
   }
 
+  function isRelativeOrAbsolute(node) {
+    var position = node.currentStyle.position;
+    return position === 'relative' || position === 'absolute';
+  }
+
   var css = {
     normalize: normalize$1,
     computeMeasure: computeMeasure,
@@ -6505,7 +6510,8 @@
     getBaseLine: getBaseLine,
     calRelative: calRelative,
     calAbsolute: calAbsolute,
-    equalStyle: equalStyle
+    equalStyle: equalStyle,
+    isRelativeOrAbsolute: isRelativeOrAbsolute
   };
 
   var PERCENT$3 = unit.PERCENT,
@@ -13020,12 +13026,8 @@
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
       PERCENT$6 = unit.PERCENT;
-  var calAbsolute$1 = css.calAbsolute;
-
-  function isRelativeOrAbsolute(node) {
-    var position = node.computedStyle.position;
-    return position === 'relative' || position === 'absolute';
-  }
+  var calAbsolute$1 = css.calAbsolute,
+      isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
   var Dom$1 = /*#__PURE__*/function (_Xom) {
     _inherits(Dom, _Xom);
@@ -13927,11 +13929,17 @@
             }
           });
         }
-      } // 只针对绝对定位children布局
+      }
+      /**
+       * 只针对绝对定位children布局
+       * @param container
+       * @param target 可选，只针对某个abs的child特定布局，在局部更新时用
+       * @private
+       */
 
     }, {
       key: "__layoutAbs",
-      value: function __layoutAbs(container, data) {
+      value: function __layoutAbs(container, data, target) {
         var x = container.sx,
             y = container.sy,
             innerWidth = container.innerWidth,
@@ -13955,6 +13963,10 @@
         y += marginTop + borderTopWidth; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
+          if (target && target !== item) {
+            return;
+          }
+
           var currentStyle = item.currentStyle,
               computedStyle = item.computedStyle; // 先根据容器宽度计算margin/padding
 
@@ -14130,11 +14142,16 @@
           if (onlyBottom) {
             item.__offsetY(-item.outerHeight, true);
           }
-        }); // 递归进行，遇到absolute/relative的设置新容器
+        });
+
+        if (target) {
+          return;
+        } // 递归进行，遇到absolute/relative的设置新容器
+
 
         children.forEach(function (item) {
           if (item instanceof Dom) {
-            item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
+            item.__layoutAbs(isRelativeOrAbsolute$1(item) ? item : container, data);
           } else if (item instanceof Component$1) {
             var sr = item.shadowRoot;
 
@@ -14372,7 +14389,7 @@
 
           if (!item.isMask && !item.isClip && item.computedStyle) {
             if (item instanceof Xom) {
-              if (isRelativeOrAbsolute(item)) {
+              if (isRelativeOrAbsolute$1(item)) {
                 // 临时变量为排序使用
                 child.__iIndex = i;
                 var z = child.__zIndex = item.currentStyle.zIndex;
@@ -15888,7 +15905,8 @@
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
-  var calRelative$2 = css.calRelative;
+  var calRelative$2 = css.calRelative,
+      isRelativeOrAbsolute$2 = css.isRelativeOrAbsolute;
 
   function getDom(dom) {
     if (util.isString(dom) && dom) {
@@ -16486,16 +16504,19 @@
 
           for (var k in style) {
             if (style.hasOwnProperty(k)) {
+              var v = style[k];
+
               if (k === 'zIndex') {
                 hasZ = true;
               } // 需和现在不等，且不是pointerEvents这种无关的
 
 
-              if (!css.equalStyle(k, style[k], currentStyle[k], node)) {
+              if (!css.equalStyle(k, v, currentStyle[k], node)) {
                 this.renderMode === mode.SVG && node.__cancelCacheSvg(); // pointerEvents这种无关的只需更新
 
                 if (o.isIgnore(k)) {
                   __cacheStyle[k] = undefined;
+                  currentStyle[k] = v;
                 } // geom属性只会引发重绘，清空缓存
                 else if (o.isGeom(k)) {
                     p = p || {};
@@ -16512,11 +16533,13 @@
 
 
                     __cacheStyle[k] = undefined;
+                    currentStyle[k] = v;
                   }
               }
             }
           }
 
+          delete node.__uniqueUpdateId;
           Object.assign(currentStyle, style);
 
           if (focus) {
@@ -16525,7 +16548,6 @@
 
 
           if (lv === o$1.NONE) {
-            delete node.__uniqueUpdateId;
             totalList.splice(i, 1);
             i--;
             len--;
@@ -16539,13 +16561,11 @@
             // zIndex变化需清空svg缓存
             if (hasZ && renderMode === mode.SVG) {
               node.__cancelCacheSvg(true);
-            } // repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
+            } // TODO: repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
             // if(node.__cache) {
             //   node.__cache.lv = level.getDetailLevel(style, lv);
             // }
 
-
-            delete node.__uniqueUpdateId;
           } // reflow在root的refresh中做
           else {
               reflowList.push({
@@ -16559,7 +16579,9 @@
             }
         }
 
-        this.__reflowList = this.__reflowList.concat(reflowList);
+        this.__updateList = [];
+        this.__reflowList = this.__reflowList.concat(reflowList); // 可能component会插入
+
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -16628,9 +16650,6 @@
               measureHash[target.__uniqueUpdateId] = true;
             }
           });
-        });
-        reflowList.forEach(function (node) {
-          delete node.__uniqueUpdateId;
         });
       }
       /**
@@ -16891,10 +16910,11 @@
 
             uniqueList.forEach(function (item) {
               var node = item.node,
-                  lv = item.lv;
-              console.log(node.props.ref, lv); // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  lv = item.lv; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
+                var isLastAbs = node.computedStyle.position === 'absolute';
+                var isNowAbs = node.currentStyle.position === 'absolute';
                 var parent = node.parent || node.host.parent;
                 var _parent3 = parent,
                     _parent3$__layoutData = _parent3.__layoutData,
@@ -16920,12 +16940,36 @@
                 var outerWidth = node.outerWidth,
                     outerHeight = node.outerHeight;
 
-                node.__layout({
-                  x: _x,
-                  y: y,
-                  w: _width,
-                  h: h
-                }); // 记录重新布局引发的差值w/h
+                if (isNowAbs) {
+                  // 找到最上层容器
+                  var container = parent;
+
+                  while (container) {
+                    if (isRelativeOrAbsolute$2) {
+                      break;
+                    }
+
+                    container = container.parent;
+                  }
+
+                  if (!container) {
+                    container = root;
+                  }
+
+                  parent.__layoutAbs(container, null, node); // 一直abs无需偏移后面兄弟
+
+
+                  if (isLastAbs) {
+                    return;
+                  }
+                } else {
+                  node.__layout({
+                    x: _x,
+                    y: y,
+                    w: _width,
+                    h: h
+                  });
+                } // 记录重新布局引发的差值w/h
 
 
                 var ow = node.outerWidth,

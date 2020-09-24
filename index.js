@@ -10750,6 +10750,7 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual, fromAbs) {
+        css.computeReflow(this, !this.parent);
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -10759,12 +10760,11 @@
             position = currentStyle.position;
 
         if (isDestroyed || display === 'none') {
-          computedStyle.width = computedStyle.height = 0;
+          this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
           return;
         }
 
-        this.__layoutData = clone$2(data);
-        css.computeReflow(this, !this.parent); // margin/padding在abs前已经计算过了，无需二次计算
+        this.__layoutData = clone$2(data); // margin/padding在abs前已经计算过了，无需二次计算
 
         if (!fromAbs) {
           this.__mp(currentStyle, computedStyle, w);

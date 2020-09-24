@@ -707,6 +707,7 @@ class Xom extends Node {
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
   __layout(data, isVirtual, fromAbs) {
+    css.computeReflow(this, !this.parent);
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {
@@ -715,11 +716,10 @@ class Xom extends Node {
       position,
     } = currentStyle;
     if(isDestroyed || display === 'none') {
-      computedStyle.width = computedStyle.height = 0;
+      this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
       return;
     }
     this.__layoutData = clone(data);
-    css.computeReflow(this, !this.parent);
     // margin/padding在abs前已经计算过了，无需二次计算
     if(!fromAbs) {
       this.__mp(currentStyle, computedStyle, w);

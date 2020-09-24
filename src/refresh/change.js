@@ -90,7 +90,8 @@ let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(o.MEASURE);
 let len = MEASURE_KEY_SET.length;
 o.isMeasureInherit = function(target) {
   for(let i = 0; i < len; i++) {
-    if(target[MEASURE_KEY_SET[i]].unit === unit.INHERIT) {
+    let k = MEASURE_KEY_SET[i];
+    if(target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
       return true;
     }
   }
@@ -100,7 +101,7 @@ o.measureInheritList = function(target) {
   let list = [];
   for(let i = 0; i < len; i++) {
     let k = MEASURE_KEY_SET[i];
-    if(target[k].unit === unit.INHERIT) {
+    if(target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
       list.push(k);
     }
   }

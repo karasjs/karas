@@ -128,10 +128,6 @@ class Frame {
   get task() {
     return this.__task;
   }
-
-  get aTask() {
-    return this.__aTask;
-  }
 }
 
 export default new Frame();

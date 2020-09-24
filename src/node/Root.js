@@ -262,8 +262,9 @@ class Root extends Dom {
       this.__checkRoot(width, height);
       this.__computeMeasure(renderMode, ctx);
     }
-    else {
-      this.__checkUpdate(renderMode, ctx, width, height);
+    // 非首次刷新如果没有更新则无需继续
+    else if(this.__checkUpdate(renderMode, ctx, width, height)) {
+      return;
     }
     // 获取所有字体和大小测量，一般是同步，为了防止外部因素inject是异步写成了cb形式
     inject.measureText(() => {
@@ -443,6 +444,7 @@ class Root extends Dom {
    */
   __checkUpdate(renderMode, ctx, width, height) {
     let { __updateList: updateList } = this;
+    let hasUpdate;
     // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
     let totalList = [];
     let totalHash = {};
@@ -462,13 +464,13 @@ class Root extends Dom {
         };
         totalList.push(node);
       }
-      // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
-      if(overwrite) {
-        Object.assign(node.__style, style);
-      }
       // updateStyle()这样的调用还要计算normalize
       if(origin) {
         style = css.normalize(style);
+      }
+      // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
+      if(overwrite) {
+        Object.assign(node.__style, style);
       }
       Object.assign(totalHash[node.__uniqueUpdateId].style, style);
     });
@@ -488,12 +490,10 @@ class Root extends Dom {
       for(let k in style) {
         if(style.hasOwnProperty(k)) {
           let v = style[k];
-          if(k === 'zIndex') {
-            hasZ = true;
-          }
           // 只有geom的props和style2种可能
           if(change.isGeom(tagName, k)) {
             if(!css.equalStyle(k, v, currentProps[k], node)) {
+              hasUpdate = true;
               this.renderMode === mode.SVG && node.__cancelCacheSvg();
               p = p || {};
               p[k] = style[k];
@@ -502,6 +502,9 @@ class Root extends Dom {
             }
           }
           else {
+            if(k === 'zIndex') {
+              hasZ = true;
+            }
             // 需和现在不等，且不是pointerEvents这种无关的
             if(!css.equalStyle(k, v, currentStyle[k], node)) {
               this.renderMode === mode.SVG && node.__cancelCacheSvg();
@@ -511,6 +514,7 @@ class Root extends Dom {
                 currentStyle[k] = v;
               }
               else {
+                hasUpdate = true;
                 // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
                 lv |= level.getLevel(k);
                 if(change.isMeasure(k)) {
@@ -524,12 +528,12 @@ class Root extends Dom {
           }
         }
       }
-      delete node.__uniqueUpdateId;
       if(p) {
         Object.assign(currentProps, p);
       }
       Object.assign(currentStyle, style);
       if(focus) {
+        hasUpdate = true;
         lv = level.REFLOW;
       }
       // 无需任何改变处理的去除记录，如pointerEvents
@@ -564,6 +568,10 @@ class Root extends Dom {
       }
     }
     this.__updateList = [];
+    // 没有更新的内容返回true
+    if(!hasUpdate) {
+      return true;
+    }
     this.__reflowList = reflowList;
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
@@ -620,6 +628,9 @@ class Root extends Dom {
           measureHash[target.__uniqueUpdateId] = true;
         }
       });
+    });
+    totalList.forEach(node => {
+      delete node.__uniqueUpdateId;
     });
   }
 
@@ -754,16 +765,17 @@ class Root extends Dom {
         node.__uniqueReflowId = __uniqueReflowId;
         reflowHash[__uniqueReflowId++] = {
           node,
+          lv: OFFSET,
         };
       }
       let o = reflowHash[node.__uniqueReflowId];
       // absolute无变化，只影响自己
       if(currentStyle.position === 'absolute' && computedStyle.position === 'absolute') {
-        o.lv |= LAYOUT;
+        o.lv = LAYOUT;
       }
       // absolute和非absolute互换
       else if(currentStyle.positoin !== computedStyle.position) {
-        o.lv |= LAYOUT;
+        o.lv = LAYOUT;
         if(checkInfluence(node)) {
           hasRoot = true;
           break;
@@ -788,7 +800,7 @@ class Root extends Dom {
         }
         // 剩余的其它变化
         else {
-          o.lv |= LAYOUT;
+          o.lv = LAYOUT;
           if(checkInfluence(node)) {
             hasRoot = true;
             break;
@@ -796,9 +808,11 @@ class Root extends Dom {
         }
       }
     }
+    __uniqueReflowId = 0;
     this.__reflowList = [];
     // 有root提前跳出
     if(hasRoot) {
+      reflowList.forEach(item => delete item.node.__uniqueReflowId);
       // 布局分为两步，普通流和定位流，互相递归
       this.__layout({
         x: 0,
@@ -1021,6 +1035,7 @@ class Root extends Dom {
           }
         }
       });
+      reflowList.forEach(item => delete item.node.__uniqueReflowId);
       return [reflowList, uniqueList];
     }
   }

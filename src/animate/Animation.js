@@ -56,7 +56,7 @@ function unify(frames, target) {
   return keys;
 }
 
-// 每次播放时处理继承值，以及转换transform为单matrix矩阵
+// 每次初始化时处理继承值，以及转换transform为单matrix矩阵
 function inherit(frames, keys, target) {
   let computedStyle = target.computedStyle;
   frames.forEach(item => {
@@ -103,51 +103,27 @@ function inherit(frames, keys, target) {
   });
 }
 
-// 计算是否需要刷新和刷新等级，新样式和之前样式对比
-function calRefresh(frameStyle, lastStyle, keys, target) {
-  let res = false;
-  let lv = level.REPAINT;
-  for(let i = 0, len = keys.length; i < len; i++) {
-    let k = keys[i];
-    // 无需刷新的
-    if(invalid.hasOwnProperty(k)) {
-      continue;
-    }
-    let n = frameStyle[k];
-    let p = lastStyle[k];
-    // 前后均非空对比
-    if(!isNil(n) && !isNil(p)) {
-      if(!css.equalStyle(k, n, p, target)) {
-        res = true;
-        // 不相等且刷新等级是重新布局时可以提前跳出
-        if(lv === level.REPAINT) {
-          if(!repaint.isRepaint(k)) {
-            lv = level.REFLOW;
-            break;
-          }
-        }
-        else {
-          break;
-        }
-      }
-    }
-    // 有一个为空时即不等
-    else if(!isNil(n) || !isNil(p)) {
-      res = true;
-      if(!repaint.isRepaint(k)) {
-        lv = level.REFLOW;
-        break;
-      }
-    }
-  }
-  return [res, lv];
-}
-
-// 将当前frame的style赋值给动画style，xom绘制时获取
-function genBeforeRefresh(frameStyle, animation, root, lv) {
+/**
+ * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
+ * 在异步时，因为动画本身是异步，需要addRefreshTask
+ * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
+ * @param frameStyle
+ * @param animation
+ * @param root
+ */
+function genBeforeRefresh(frameStyle, animation, root) {
+  root.__addUpdate({
+    node: animation.target,
+    style: frameStyle,
+  });
+  animation.__style = frameStyle;
+  animation.__assigning = true;
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
   root.__frameHook();
+}
+
+function gen(frameStyle, animation, root) {
   root.__addUpdate({
     node: animation.target,
     style: frameStyle,
@@ -1093,6 +1069,15 @@ class Animation extends Event {
     // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
     let keys = this.__keys = unify(frames, target);
     inherit(frames, keys, target);
+    // 存储原本样式以便恢复用
+    let { style, props } = target;
+    let o = this.__originStyle = {};
+    keys.forEach(k => {
+      if(change.isGeom(tagName, k)) {
+        o[k] = props[k];
+      }
+      o[k] = style[k];
+    });
     // 再计算两帧之间的变化，存入transition属性
     let length = frames.length;
     let prev = frames[0];
@@ -1147,7 +1132,7 @@ class Animation extends Event {
               target.__currentStyle[k] = target.style[k];
             }
           }
-          target.__cacheSvg = false;
+          target.__cancelCacheSvg();
         });
       }
     };
@@ -1156,7 +1141,7 @@ class Animation extends Event {
       this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
       this.emit(Event.FINISH);
       if(isFunction(cb)) {
-        cb(diff);
+        cb.call(this, diff);
       }
     };
     // 同步执行，用在finish()这种主动调用
@@ -1215,7 +1200,6 @@ class Animation extends Event {
         direction,
         delay,
         endDelay,
-        keys,
         __clean,
         __fin,
         target,
@@ -1230,7 +1214,7 @@ class Animation extends Event {
       // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {
-          let { root, style, fps, playCount, iterations } = this;
+          let { root, fps, playCount, iterations } = this;
           if(!root) {
             return;
           }
@@ -1250,16 +1234,11 @@ class Animation extends Event {
           if(playCount > 0) {
             delay = 0;
           }
-          let needRefresh, lv;
           // 还没过前置delay
           if(currentTime < delay) {
             if(stayBegin) {
               let current = frames[0].style;
-              // 对比第一帧，以及和第一帧同key的当前样式
-              [needRefresh, lv] = calRefresh(current, style, keys, target);
-              if(needRefresh) {
-                genBeforeRefresh(current, this, root, lv);
-              }
+              genBeforeRefresh(current, this, root);
             }
             // 即便不刷新，依旧执行begin和帧回调
             if(currentTime === 0) {
@@ -1316,9 +1295,8 @@ class Animation extends Event {
             }
             // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
             else {
-              current = {};
+              current = this.__originStyle;
             }
-            [needRefresh, lv] = calRefresh(current, style, keys, target);
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {
               this.__nextTime = currentTime - duration;
@@ -1340,12 +1318,9 @@ class Animation extends Event {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
             current = calIntermediateStyle(current, percent, target);
-            [needRefresh, lv] = calRefresh(current, style, keys, target);
           }
-          // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
-          if(needRefresh) {
-            genBeforeRefresh(current, this, root, lv);
-          }
+          // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
+          genBeforeRefresh(current, this, root);
           // 每次循环完触发end事件，最后一次循环触发finish
           if(isLastFrame && (!inEndDelay || isLastCount)) {
             this.__end = true;
@@ -1383,6 +1358,7 @@ class Animation extends Event {
       };
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
+    frame.offFrame(this.__enterFrame);
     frame.onFrame(this.__enterFrame);
     this.__startTime = frame.__now;
     return this;
@@ -1408,83 +1384,68 @@ class Animation extends Event {
   }
 
   finish(cb) {
-    let { isDestroyed, duration, playState, list } = this;
+    let self = this;
+    let { isDestroyed, duration, playState, list } = self;
     if(isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
-      return this;
+      return self;
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
-    this.__cancelTask();
-    let { root, style, keys, frames, __frameCb, __clean, __fin, target } = this;
+    self.__cancelTask();
+    let { root, frames, __frameCb, __clean, __fin, __originStyle } = self;
     if(root) {
-      let needRefresh, lv, current;
+      let current;
       // 停留在最后一帧
-      if(this.__stayEnd()) {
+      if(self.__stayEnd()) {
         current = frames[frames.length - 1].style;
-        [needRefresh, lv] = calRefresh(current, style, keys, target);
       }
       else {
-        current = {};
-        [needRefresh, lv] = calRefresh(current, style, keys, target);
+        current = __originStyle;
       }
-      if(needRefresh) {
-        frame.nextFrame(this.__enterFrame = {
-          before: () => {
-            genBeforeRefresh(current, this, root, lv);
-            __clean(true);
-          },
-          after: diff => {
-            this.__assigning = false;
-            __frameCb(diff);
-            __fin(cb, diff);
-          },
-        });
-      }
-      // 无刷新同步进行
-      else {
-        __clean(true);
-        __fin(cb, 0);
-      }
+      root.addRefreshTask({
+        before() {
+          genBeforeRefresh(current, self, root);
+          __clean(true);
+        },
+        after(diff) {
+          self.__assigning = false;
+          __frameCb(diff);
+          __fin(cb, diff);
+        },
+      });
     }
-    return this;
+    return self;
   }
 
   cancel(cb) {
-    let { isDestroyed, duration, playState, list } = this;
+    let self = this;
+    let { isDestroyed, duration, playState, list } = self;
     if(isDestroyed || duration <= 0 || playState === 'idle' || list.length < 1) {
-      return this;
+      return self;
     }
-    this.__cancelTask();
-    let { root, style, keys, __frameCb, __clean, target } = this;
+    self.__cancelTask();
+    let { root, __frameCb, __clean, __originStyle } = self;
     if(root) {
-      let [needRefresh, lv] = calRefresh({}, style, keys, target);
       let task = (diff) => {
-        this.__cancelTask();
-        this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
-        this.emit(Event.CANCEL);
+        self.__cancelTask();
+        self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
+        self.emit(Event.CANCEL);
         if(isFunction(cb)) {
-          cb(diff);
+          cb.call(self, diff);
         }
       };
-      if(needRefresh) {
-        frame.nextFrame(this.__enterFrame = {
-          before: () => {
-            genBeforeRefresh({}, this, root, lv);
-            __clean();
-          },
-          after: diff => {
-            this.__assigning = false;
-            __frameCb(diff);
-            task(diff);
-          },
-        });
-      }
-      // 无刷新同步进行
-      else {
-        __clean();
-        task(0);
-      }
+      root.addRefreshTask({
+        before() {
+          genBeforeRefresh(__originStyle, self, root);
+          __clean();
+        },
+        after(diff) {
+          self.__assigning = false;
+          __frameCb(diff);
+          task(diff);
+        },
+      });
     }
-    return this;
+    return self;
   }
 
   gotoAndPlay(v, options, cb) {

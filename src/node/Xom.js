@@ -1988,12 +1988,7 @@ class Xom extends Node {
         },
         after(diff) {
           if(util.isFunction(cb)) {
-            if(node.isDestroyed) {
-              cb(diff, false);
-            }
-            else {
-              cb(diff, true); // TODO: 第2个参数表示是否在应用中未被覆盖
-            }
+            cb.call(node, diff);
           }
         },
       });

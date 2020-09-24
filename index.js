@@ -5438,7 +5438,9 @@
 
   o.isMeasureInherit = function (target) {
     for (var i = 0; i < len; i++) {
-      if (target[MEASURE_KEY_SET[i]].unit === unit.INHERIT) {
+      var k = MEASURE_KEY_SET[i];
+
+      if (target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
         return true;
       }
     }
@@ -5452,7 +5454,7 @@
     for (var i = 0; i < len; i++) {
       var k = MEASURE_KEY_SET[i];
 
-      if (target[k].unit === unit.INHERIT) {
+      if (target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
         list.push(k);
       }
     }
@@ -7895,11 +7897,6 @@
       get: function get() {
         return this.__task;
       }
-    }, {
-      key: "aTask",
-      get: function get() {
-        return this.__aTask;
-      }
     }]);
 
     return Frame;
@@ -8106,10 +8103,6 @@
     }
   };
 
-  var invalid = {
-    pointerEvents: true
-  };
-
   var AUTO$1 = unit.AUTO,
       PX$3 = unit.PX,
       PERCENT$4 = unit.PERCENT,
@@ -8160,7 +8153,7 @@
       });
     });
     return keys;
-  } // 每次播放时处理继承值，以及转换transform为单matrix矩阵
+  } // 每次初始化时处理继承值，以及转换transform为单matrix矩阵
 
 
   function inherit(frames, keys, target) {
@@ -8204,63 +8197,28 @@
         }
       });
     });
-  } // 计算是否需要刷新和刷新等级，新样式和之前样式对比
+  }
+  /**
+   * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
+   * 在异步时，因为动画本身是异步，需要addRefreshTask
+   * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
+   * @param frameStyle
+   * @param animation
+   * @param root
+   */
 
 
-  function calRefresh(frameStyle, lastStyle, keys, target) {
-    var res = false;
-    var lv = level.REPAINT;
-
-    for (var i = 0, len = keys.length; i < len; i++) {
-      var k = keys[i]; // 无需刷新的
-
-      if (invalid.hasOwnProperty(k)) {
-        continue;
-      }
-
-      var n = frameStyle[k];
-      var p = lastStyle[k]; // 前后均非空对比
-
-      if (!isNil$4(n) && !isNil$4(p)) {
-        if (!css.equalStyle(k, n, p, target)) {
-          res = true; // 不相等且刷新等级是重新布局时可以提前跳出
-
-          if (lv === level.REPAINT) {
-            if (!repaint.isRepaint(k)) {
-              lv = level.REFLOW;
-              break;
-            }
-          } else {
-            break;
-          }
-        }
-      } // 有一个为空时即不等
-      else if (!isNil$4(n) || !isNil$4(p)) {
-          res = true;
-
-          if (!repaint.isRepaint(k)) {
-            lv = level.REFLOW;
-            break;
-          }
-        }
-    }
-
-    return [res, lv];
-  } // 将当前frame的style赋值给动画style，xom绘制时获取
-
-
-  function genBeforeRefresh(frameStyle, animation, root, lv) {
-    // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
-    // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
-    root.__frameHook();
-
+  function genBeforeRefresh(frameStyle, animation, root) {
     root.__addUpdate({
       node: animation.target,
       style: frameStyle
     });
 
     animation.__style = frameStyle;
-    animation.__assigning = true;
+    animation.__assigning = true; // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
+    // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
+
+    root.__frameHook();
   }
   /**
    * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
@@ -9258,7 +9216,18 @@
         this.__frames = frames; // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
 
         var keys = this.__keys = unify(frames, target);
-        inherit(frames, keys, target); // 再计算两帧之间的变化，存入transition属性
+        inherit(frames, keys, target); // 存储原本样式以便恢复用
+
+        var style = target.style,
+            props = target.props;
+        var o$1 = this.__originStyle = {};
+        keys.forEach(function (k) {
+          if (o.isGeom(tagName, k)) {
+            o$1[k] = props[k];
+          }
+
+          o$1[k] = style[k];
+        }); // 再计算两帧之间的变化，存入transition属性
 
         var length = frames.length;
         var prev = frames[0];
@@ -9319,7 +9288,7 @@
                 }
               }
 
-              target.__cacheSvg = false;
+              target.__cancelCacheSvg();
             });
           }
         }; // 生成finish的任务事件
@@ -9331,7 +9300,7 @@
           _this2.emit(Event.FINISH);
 
           if (isFunction$3(cb)) {
-            cb(diff);
+            cb.call(_this2, diff);
           }
         }; // 同步执行，用在finish()这种主动调用
 
@@ -9409,7 +9378,6 @@
               direction = this.direction,
               delay = this.delay,
               endDelay = this.endDelay,
-              keys = this.keys,
               __clean = this.__clean,
               __fin = this.__fin,
               target = this.target; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
@@ -9426,7 +9394,6 @@
           var enterFrame = this.__enterFrame = {
             before: function before(diff) {
               var root = _this3.root,
-                  style = _this3.style,
                   fps = _this3.fps,
                   playCount = _this3.playCount,
                   iterations = _this3.iterations;
@@ -9454,24 +9421,13 @@
 
               if (playCount > 0) {
                 delay = 0;
-              }
+              } // 还没过前置delay
 
-              var needRefresh, lv; // 还没过前置delay
 
               if (currentTime < delay) {
                 if (stayBegin) {
-                  var _current = frames[0].style; // 对比第一帧，以及和第一帧同key的当前样式
-
-                  var _calRefresh = calRefresh(_current, style, keys, target);
-
-                  var _calRefresh2 = _slicedToArray(_calRefresh, 2);
-
-                  needRefresh = _calRefresh2[0];
-                  lv = _calRefresh2[1];
-
-                  if (needRefresh) {
-                    genBeforeRefresh(_current, _this3, root);
-                  }
+                  var _current = frames[0].style;
+                  genBeforeRefresh(_current, _this3, root);
                 } // 即便不刷新，依旧执行begin和帧回调
 
 
@@ -9536,17 +9492,10 @@
                   current = current.style;
                 } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
                 else {
-                    current = {};
-                  }
+                    current = _this3.__originStyle;
+                  } // 非尾每轮次放完增加次数和计算下轮准备
 
-                var _calRefresh3 = calRefresh(current, style, keys, target);
 
-                var _calRefresh4 = _slicedToArray(_calRefresh3, 2);
-
-                needRefresh = _calRefresh4[0];
-                lv = _calRefresh4[1];
-
-                // 非尾每轮次放完增加次数和计算下轮准备
                 if (!isLastCount) {
                   _this3.__nextTime = currentTime - duration;
                   playCount = ++_this3.__playCount;
@@ -9565,20 +9514,10 @@
                   var total = currentFrames[i + 1].time - current.time;
                   var percent = (currentTime - current.time) / total;
                   current = calIntermediateStyle(current, percent, target);
-
-                  var _calRefresh5 = calRefresh(current, style, keys, target);
-
-                  var _calRefresh6 = _slicedToArray(_calRefresh5, 2);
-
-                  needRefresh = _calRefresh6[0];
-                  lv = _calRefresh6[1];
-                } // 两帧之间没有变化，不触发刷新仅触发frame事件，有变化生成计算结果赋给style
+                } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-              if (needRefresh) {
-                genBeforeRefresh(current, _this3, root);
-              } // 每次循环完触发end事件，最后一次循环触发finish
-
+              genBeforeRefresh(current, _this3, root); // 每次循环完触发end事件，最后一次循环触发finish
 
               if (isLastFrame && (!inEndDelay || isLastCount)) {
                 _this3.__end = true;
@@ -9629,6 +9568,7 @@
         } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
 
+        frame.offFrame(this.__enterFrame);
         frame.onFrame(this.__enterFrame);
         this.__startTime = frame.__now;
         return this;
@@ -9667,142 +9607,102 @@
     }, {
       key: "finish",
       value: function finish(cb) {
-        var _this4 = this;
-
-        var isDestroyed = this.isDestroyed,
-            duration = this.duration,
-            playState = this.playState,
-            list = this.list;
+        var self = this;
+        var isDestroyed = self.isDestroyed,
+            duration = self.duration,
+            playState = self.playState,
+            list = self.list;
 
         if (isDestroyed || duration <= 0 || list.length < 1 || playState === 'finished' || playState === 'idle') {
-          return this;
+          return self;
         } // 先清除所有回调任务，多次调用finish也会清除只留最后一次
 
 
-        this.__cancelTask();
+        self.__cancelTask();
 
-        var root = this.root,
-            style = this.style,
-            keys = this.keys,
-            frames = this.frames,
-            __frameCb = this.__frameCb,
-            __clean = this.__clean,
-            __fin = this.__fin,
-            target = this.target;
+        var root = self.root,
+            frames = self.frames,
+            __frameCb = self.__frameCb,
+            __clean = self.__clean,
+            __fin = self.__fin,
+            __originStyle = self.__originStyle;
 
         if (root) {
-          var needRefresh, lv, current; // 停留在最后一帧
+          var current; // 停留在最后一帧
 
-          if (this.__stayEnd()) {
+          if (self.__stayEnd()) {
             current = frames[frames.length - 1].style;
-
-            var _calRefresh7 = calRefresh(current, style, keys, target);
-
-            var _calRefresh8 = _slicedToArray(_calRefresh7, 2);
-
-            needRefresh = _calRefresh8[0];
-            lv = _calRefresh8[1];
           } else {
-            current = {};
-
-            var _calRefresh9 = calRefresh(current, style, keys, target);
-
-            var _calRefresh10 = _slicedToArray(_calRefresh9, 2);
-
-            needRefresh = _calRefresh10[0];
-            lv = _calRefresh10[1];
+            current = __originStyle;
           }
 
-          if (needRefresh) {
-            frame.nextFrame(this.__enterFrame = {
-              before: function before() {
-                genBeforeRefresh(current, _this4, root);
+          root.addRefreshTask({
+            before: function before() {
+              genBeforeRefresh(current, self, root);
 
-                __clean(true);
-              },
-              after: function after(diff) {
-                _this4.__assigning = false;
-
-                __frameCb(diff);
-
-                __fin(cb, diff);
-              }
-            });
-          } // 无刷新同步进行
-          else {
               __clean(true);
+            },
+            after: function after(diff) {
+              self.__assigning = false;
 
-              __fin(cb, 0);
+              __frameCb(diff);
+
+              __fin(cb, diff);
             }
+          });
         }
 
-        return this;
+        return self;
       }
     }, {
       key: "cancel",
       value: function cancel(cb) {
-        var _this5 = this;
-
-        var isDestroyed = this.isDestroyed,
-            duration = this.duration,
-            playState = this.playState,
-            list = this.list;
+        var self = this;
+        var isDestroyed = self.isDestroyed,
+            duration = self.duration,
+            playState = self.playState,
+            list = self.list;
 
         if (isDestroyed || duration <= 0 || playState === 'idle' || list.length < 1) {
-          return this;
+          return self;
         }
 
-        this.__cancelTask();
+        self.__cancelTask();
 
-        var root = this.root,
-            style = this.style,
-            keys = this.keys,
-            __frameCb = this.__frameCb,
-            __clean = this.__clean,
-            target = this.target;
+        var root = self.root,
+            __frameCb = self.__frameCb,
+            __clean = self.__clean,
+            __originStyle = self.__originStyle;
 
         if (root) {
-          var _calRefresh11 = calRefresh({}, style, keys, target),
-              _calRefresh12 = _slicedToArray(_calRefresh11, 2),
-              needRefresh = _calRefresh12[0],
-              lv = _calRefresh12[1];
-
           var task = function task(diff) {
-            _this5.__cancelTask();
+            self.__cancelTask();
 
-            _this5.__begin = _this5.__end = _this5.__isDelay = _this5.__finish = _this5.__inFps = _this5.__enterFrame = null;
-
-            _this5.emit(Event.CANCEL);
+            self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
+            self.emit(Event.CANCEL);
 
             if (isFunction$3(cb)) {
-              cb(diff);
+              cb.call(self, diff);
             }
           };
 
-          if (needRefresh) {
-            frame.nextFrame(this.__enterFrame = {
-              before: function before() {
-                genBeforeRefresh({}, _this5, root);
+          root.addRefreshTask({
+            before: function before() {
+              genBeforeRefresh(__originStyle, self, root);
 
-                __clean();
-              },
-              after: function after(diff) {
-                _this5.__assigning = false;
-
-                __frameCb(diff);
-
-                task(diff);
-              }
-            });
-          } // 无刷新同步进行
-          else {
               __clean();
+            },
+            after: function after(diff) {
+              self.__assigning = false;
 
-              task(0);
+              __frameCb(diff);
+
+              task(diff);
             }
+          });
         }
 
-        return this;
+        return self;
       }
     }, {
       key: "gotoAndPlay",
@@ -9835,7 +9735,7 @@
     }, {
       key: "gotoAndStop",
       value: function gotoAndStop(v, options, cb) {
-        var _this6 = this;
+        var _this4 = this;
 
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
@@ -9860,9 +9760,9 @@
 
 
         return this.play(function (diff) {
-          _this6.__playState = 'paused';
+          _this4.__playState = 'paused';
 
-          _this6.__cancelTask();
+          _this4.__cancelTask();
 
           if (isFunction$3(cb)) {
             cb(diff);
@@ -12204,11 +12104,7 @@
             },
             after: function after(diff) {
               if (util.isFunction(cb)) {
-                if (node.isDestroyed) {
-                  cb(diff, false);
-                } else {
-                  cb(diff, true); // TODO: 第2个参数表示是否在应用中未被覆盖
-                }
+                cb.call(node, diff);
               }
             }
           });
@@ -16225,9 +16121,10 @@
           this.__checkRoot(width, height);
 
           this.__computeMeasure(renderMode, ctx);
-        } else {
-          this.__checkUpdate(renderMode, ctx, width, height);
-        } // 获取所有字体和大小测量，一般是同步，为了防止外部因素inject是异步写成了cb形式
+        } // 非首次刷新如果没有更新则无需继续
+        else if (this.__checkUpdate(renderMode, ctx, width, height)) {
+            return;
+          } // 获取所有字体和大小测量，一般是同步，为了防止外部因素inject是异步写成了cb形式
 
 
         inject.measureText(function () {
@@ -16444,7 +16341,8 @@
     }, {
       key: "__checkUpdate",
       value: function __checkUpdate(renderMode, ctx, width, height) {
-        var updateList = this.__updateList; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
+        var updateList = this.__updateList;
+        var hasUpdate; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
 
         var totalList = [];
         var totalHash = {};
@@ -16468,16 +16366,16 @@
               focus: focus
             };
             totalList.push(node);
-          } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
-
-
-          if (overwrite) {
-            Object.assign(node.__style, style);
           } // updateStyle()这样的调用还要计算normalize
 
 
           if (origin) {
             style = css.normalize(style);
+          } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
+
+
+          if (overwrite) {
+            Object.assign(node.__style, style);
           }
 
           Object.assign(totalHash[node.__uniqueUpdateId].style, style);
@@ -16511,15 +16409,11 @@
 
           for (var k in style) {
             if (style.hasOwnProperty(k)) {
-              var v = style[k];
-
-              if (k === 'zIndex') {
-                hasZ = true;
-              } // 只有geom的props和style2种可能
-
+              var v = style[k]; // 只有geom的props和style2种可能
 
               if (o.isGeom(tagName, k)) {
                 if (!css.equalStyle(k, v, currentProps[k], node)) {
+                  hasUpdate = true;
                   this.renderMode === mode.SVG && node.__cancelCacheSvg();
                   p = p || {};
                   p[k] = style[k];
@@ -16527,7 +16421,11 @@
                   __cacheProps[k] = undefined;
                 }
               } else {
-                // 需和现在不等，且不是pointerEvents这种无关的
+                if (k === 'zIndex') {
+                  hasZ = true;
+                } // 需和现在不等，且不是pointerEvents这种无关的
+
+
                 if (!css.equalStyle(k, v, currentStyle[k], node)) {
                   this.renderMode === mode.SVG && node.__cancelCacheSvg(); // pointerEvents这种无关的只需更新
 
@@ -16535,7 +16433,8 @@
                     __cacheStyle[k] = undefined;
                     currentStyle[k] = v;
                   } else {
-                    // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
+                    hasUpdate = true; // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
+
                     lv |= o$1.getLevel(k);
 
                     if (o.isMeasure(k)) {
@@ -16551,8 +16450,6 @@
             }
           }
 
-          delete node.__uniqueUpdateId;
-
           if (p) {
             Object.assign(currentProps, p);
           }
@@ -16560,6 +16457,7 @@
           Object.assign(currentStyle, style);
 
           if (focus) {
+            hasUpdate = true;
             lv = o$1.REFLOW;
           } // 无需任何改变处理的去除记录，如pointerEvents
 
@@ -16596,7 +16494,12 @@
             }
         }
 
-        this.__updateList = [];
+        this.__updateList = []; // 没有更新的内容返回true
+
+        if (!hasUpdate) {
+          return true;
+        }
+
         this.__reflowList = reflowList;
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
@@ -16666,6 +16569,9 @@
               measureHash[target.__uniqueUpdateId] = true;
             }
           });
+        });
+        totalList.forEach(function (node) {
+          delete node.__uniqueUpdateId;
         });
       }
       /**
@@ -16819,17 +16725,18 @@
           if (!node.hasOwnProperty('__uniqueReflowId')) {
             node.__uniqueReflowId = __uniqueReflowId;
             reflowHash[__uniqueReflowId++] = {
-              node: node
+              node: node,
+              lv: OFFSET$1
             };
           }
 
           var o = reflowHash[node.__uniqueReflowId]; // absolute无变化，只影响自己
 
           if (currentStyle.position === 'absolute' && computedStyle.position === 'absolute') {
-            o.lv |= LAYOUT;
+            o.lv = LAYOUT;
           } // absolute和非absolute互换
           else if (currentStyle.positoin !== computedStyle.position) {
-              o.lv |= LAYOUT;
+              o.lv = LAYOUT;
 
               if (checkInfluence(node)) {
                 hasRoot = true;
@@ -16856,7 +16763,7 @@
                   }
                 } // 剩余的其它变化
                 else {
-                    o.lv |= LAYOUT;
+                    o.lv = LAYOUT;
 
                     if (checkInfluence(node)) {
                       hasRoot = true;
@@ -16866,10 +16773,14 @@
               }
         }
 
+        __uniqueReflowId = 0;
         this.__reflowList = []; // 有root提前跳出
 
         if (hasRoot) {
-          // 布局分为两步，普通流和定位流，互相递归
+          reflowList.forEach(function (item) {
+            return delete item.node.__uniqueReflowId;
+          }); // 布局分为两步，普通流和定位流，互相递归
+
           this.__layout({
             x: 0,
             y: 0,
@@ -17133,6 +17044,9 @@
                     node.__offsetX(newX - oldX);
                   }
                 }
+            });
+            reflowList.forEach(function (item) {
+              return delete item.node.__uniqueReflowId;
             });
             return [reflowList, uniqueList];
           }

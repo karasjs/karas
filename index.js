@@ -13149,11 +13149,11 @@
             paddingLeft = currentStyle.paddingLeft,
             paddingTop = currentStyle.paddingTop,
             paddingRight = currentStyle.paddingRight,
-            paddingBottom = currentStyle.paddingBottom;
-        var borderTopWidth = computedStyle.borderTopWidth,
-            borderRightWidth = computedStyle.borderRightWidth,
-            borderBottomWidth = computedStyle.borderBottomWidth,
-            borderLeftWidth = computedStyle.borderLeftWidth;
+            paddingBottom = currentStyle.paddingBottom,
+            borderTopWidth = currentStyle.borderTopWidth,
+            borderRightWidth = currentStyle.borderRightWidth,
+            borderBottomWidth = currentStyle.borderBottomWidth,
+            borderLeftWidth = currentStyle.borderLeftWidth;
         var main = isDirectionRow ? width : height;
 
         if (main.unit === PX$5) {
@@ -13196,14 +13196,14 @@
         if (isDirectionRow) {
           var mp = this.__calMp(marginLeft, w) + this.__calMp(marginRight, w) + this.__calMp(paddingLeft, w) + this.__calMp(paddingRight, w);
 
-          var w2 = borderRightWidth + borderLeftWidth + mp;
+          var w2 = borderLeftWidth.value + borderRightWidth.value + mp;
           b += w2;
           max += w2;
           min += w2;
         } else {
           var _mp = this.__calMp(marginTop, w) + this.__calMp(marginBottom, w) + this.__calMp(paddingTop, w) + this.__calMp(paddingBottom, w);
 
-          var h2 = borderTopWidth + borderBottomWidth + _mp;
+          var h2 = borderTopWidth.value + borderBottomWidth.value + _mp;
           b += h2;
           max += h2;
           min += h2;
@@ -16312,7 +16312,8 @@
         }
 
         var task = this.task,
-            __reflowList = this.__reflowList; // 第一个添加延迟侦听，后续放队列等待一并执行
+            renderMode = this.renderMode,
+            ctx = this.ctx; // 第一个添加延迟侦听，后续放队列等待一并执行
 
         if (!task.length) {
           var clone;
@@ -16342,12 +16343,19 @@
 
                 if (len) {
                   updater.updateList.forEach(function (cp) {
-                    if (cp.shadowRoot) {
-                      __reflowList.push({
-                        node: cp.shadowRoot,
-                        lv: LAYOUT
-                      });
+                    var sr = cp.shadowRoot;
+
+                    if (sr instanceof Text) {
+                      sr.__computeMeasure(renderMode, ctx);
+                    } else {
+                      sr.__computeMeasure(renderMode, ctx, true);
                     }
+
+                    _this4.__addUpdate({
+                      node: sr,
+                      style: sr.currentStyle,
+                      focus: true
+                    });
                   });
 
                   _this4.refresh();

@@ -102,13 +102,11 @@ class Dom extends Xom {
       paddingTop,
       paddingRight,
       paddingBottom,
-    } = currentStyle;
-    let {
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = computedStyle;
+    } = currentStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit === PX) {
       b = max = main.value;
@@ -148,7 +146,7 @@ class Dom extends Xom {
         + this.__calMp(marginRight, w)
         + this.__calMp(paddingLeft, w)
         + this.__calMp(paddingRight, w);
-      let w2 = borderRightWidth + borderLeftWidth + mp;
+      let w2 = borderLeftWidth.value + borderRightWidth.value + mp;
       b += w2;
       max += w2;
       min += w2;
@@ -158,7 +156,7 @@ class Dom extends Xom {
         + this.__calMp(marginBottom, w)
         + this.__calMp(paddingTop, w)
         + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth + borderBottomWidth + mp;
+      let h2 = borderTopWidth.value + borderBottomWidth.value + mp;
       b += h2;
       max += h2;
       min += h2;

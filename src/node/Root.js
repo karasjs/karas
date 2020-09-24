@@ -1,4 +1,5 @@
 import Dom from './Dom';
+import Text from './Text';
 import Defs from './Defs';
 import mode from './mode';
 import builder from '../util/builder';
@@ -309,7 +310,7 @@ class Root extends Dom {
     if(!cb) {
       return;
     }
-    let { task, __reflowList } = this;
+    let { task, renderMode, ctx } = this;
     // 第一个添加延迟侦听，后续放队列等待一并执行
     if(!task.length) {
       let clone;
@@ -336,12 +337,18 @@ class Root extends Dom {
             let len = updater.updateList.length;
             if(len) {
               updater.updateList.forEach(cp => {
-                if(cp.shadowRoot) {
-                  __reflowList.push({
-                    node: cp.shadowRoot,
-                    lv: LAYOUT,
-                  });
+                let sr = cp.shadowRoot;
+                if(sr instanceof Text) {
+                  sr.__computeMeasure(renderMode, ctx);
                 }
+                else {
+                  sr.__computeMeasure(renderMode, ctx, true);
+                }
+                this.__addUpdate({
+                  node: sr,
+                  style: sr.currentStyle,
+                  focus: true,
+                });
               });
               this.refresh();
             }

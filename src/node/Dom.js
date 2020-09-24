@@ -807,6 +807,7 @@ class Dom extends Xom {
   /**
    * 只针对绝对定位children布局
    * @param container
+   * @param data
    * @param target 可选，只针对某个abs的child特定布局，在局部更新时用
    * @private
    */
@@ -891,8 +892,8 @@ class Dom extends Xom {
         x2 -= computedStyle.marginRight;
         x2 -= computedStyle.paddingLeft;
         x2 -= computedStyle.paddingRight;
-        x2 -= computedStyle.borderLeftWidth;
-        x2 -= computedStyle.borderRightWidth;
+        x2 -= currentStyle.borderLeftWidth.value;
+        x2 -= currentStyle.borderRightWidth.value;
       }
       else if(fixedLeft) {
         x2 = x + computedStyle.left;
@@ -924,8 +925,8 @@ class Dom extends Xom {
         y2 -= computedStyle.marginBottom;
         y2 -= computedStyle.paddingTop;
         y2 -= computedStyle.paddingBottom;
-        y2 -= computedStyle.borderTopWidth;
-        y2 -= computedStyle.borderBottomWidth;
+        y2 -= currentStyle.borderTopWidth.value;
+        y2 -= currentStyle.borderBottomWidth.value;
       }
       else if(fixedTop) {
         y2 = y + computedStyle.top;

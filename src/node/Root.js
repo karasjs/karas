@@ -899,8 +899,12 @@ class Root extends Dom {
           }
           x += computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.paddingLeft;
           let { outerWidth, outerHeight } = node;
-          // 找到最上层容器
+          // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
           let container = node;
+          while(!container.parent && container.host) {
+            container = container.host; // 先把可能递归嵌套的组件循环完
+          }
+          container = container.parent;
           while(container && container !== root) {
             if(isRelativeOrAbsolute) {
               break;
@@ -929,12 +933,14 @@ class Root extends Dom {
               w: width,
               h,
             });
-            node.__layoutAbs(container, {
-              x,
-              y,
-              w: width,
-              h,
-            });
+            if(node instanceof Dom) {
+              node.__layoutAbs(container, {
+                x,
+                y,
+                w: width,
+                h,
+              });
+            }
           }
           // 记录重新布局引发的差值w/h
           let { outerWidth: ow, outerHeight: oh } = node;

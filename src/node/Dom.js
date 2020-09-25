@@ -999,7 +999,7 @@ class Dom extends Xom {
     if(target) {
       return;
     }
-    // 递归进行，遇到absolute/relative的设置新容器
+    // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
       if(item instanceof Dom) {
         item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);

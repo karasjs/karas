@@ -1496,9 +1496,6 @@
   };
 
   // 类型为引用防止json仿造
-  var TYPE_PL = {
-    _: 0
-  };
   var TYPE_VD = {
     _: 1
   };
@@ -1511,8 +1508,7 @@
   var $$type = {
     TYPE_VD: TYPE_VD,
     TYPE_GM: TYPE_GM,
-    TYPE_CP: TYPE_CP,
-    TYPE_PL: TYPE_PL
+    TYPE_CP: TYPE_CP
   };
 
   var toString = {}.toString;
@@ -1778,7 +1774,7 @@
     } // parse递归会出现内部先返回解析好的json，外部parse不能clone
 
 
-    if (obj.$$type === $$type.TYPE_PL || obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
+    if (obj.$$type === $$type.TYPE_VD || obj.$$type === $$type.TYPE_GM || obj.$$type === $$type.TYPE_CP) {
       return obj;
     }
 
@@ -12374,8 +12370,7 @@
     return LineGroup;
   }();
 
-  var TYPE_PL$1 = $$type.TYPE_PL,
-      TYPE_VD$1 = $$type.TYPE_VD,
+  var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
   var Xom$1, Dom, Img, Geom, Component;
@@ -12431,8 +12426,8 @@
           inherit = json.inherit,
           __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的，同时还原
 
-      if (_$$type === TYPE_PL$1) {
-        json.$$type = TYPE_CP$1;
+      if (_$$type === TYPE_CP$1 && json.placeholder) {
+        delete json.placeholder;
         return json.value;
       }
 
@@ -12539,7 +12534,7 @@
 
       list.push(children);
       options.lastText = null;
-    } else if (children && (children.$$type === TYPE_CP$1 || children.$$type === TYPE_PL$1)) {
+    } else if (children && children.$$type === TYPE_CP$1) {
       list.push(children); // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
 
       options.lastText = null;
@@ -14025,7 +14020,7 @@
 
         if (target) {
           return;
-        } // 递归进行，遇到absolute/relative的设置新容器
+        } // 递归进行，遇到absolute/relative/component的设置新容器
 
 
         children.forEach(function (item) {
@@ -14712,8 +14707,7 @@
     return Defs;
   }();
 
-  var TYPE_PL$2 = $$type.TYPE_PL,
-      TYPE_VD$2 = $$type.TYPE_VD,
+  var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
   var Xom$2, Dom$2, Img$2, Geom$1, Component$2;
@@ -14799,7 +14793,7 @@
     sr.__layoutData = oldSr.layoutData;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
-    if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
+    if (!util.isObject(json) || !json.placeholder) {
       removeList.push(oldSr);
     }
   }
@@ -14961,7 +14955,7 @@
   function diffCp(oj, nj, vd) {
     // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
     // 否则需要强制触发组件更新，包含setState内容
-    nj.$$type = TYPE_PL$2;
+    nj.placeholder = true;
     nj.value = vd;
     var sr = vd.shadowRoot; // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新
 
@@ -16916,9 +16910,15 @@
 
                 _x += _computedStyle.marginLeft + _computedStyle.borderLeftWidth + _computedStyle.paddingLeft;
                 var outerWidth = node.outerWidth,
-                    outerHeight = node.outerHeight; // 找到最上层容器
+                    outerHeight = node.outerHeight; // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
 
                 var container = node;
+
+                while (!container.parent && container.host) {
+                  container = container.host; // 先把可能递归嵌套的组件循环完
+                }
+
+                container = container.parent;
 
                 while (container && container !== root) {
                   if (isRelativeOrAbsolute$2) {
@@ -16951,12 +16951,14 @@
                     h: h
                   });
 
-                  node.__layoutAbs(container, {
-                    x: _x,
-                    y: y,
-                    w: _width,
-                    h: h
-                  });
+                  if (node instanceof Dom$1) {
+                    node.__layoutAbs(container, {
+                      x: _x,
+                      y: y,
+                      w: _width,
+                      h: h
+                    });
+                  }
                 } // 记录重新布局引发的差值w/h
 
 
@@ -19068,8 +19070,7 @@
     abbrAnimateOption: abbrAnimateOption
   };
 
-  var TYPE_PL$3 = $$type.TYPE_PL,
-      TYPE_VD$3 = $$type.TYPE_VD,
+  var TYPE_VD$3 = $$type.TYPE_VD,
       TYPE_GM$3 = $$type.TYPE_GM,
       TYPE_CP$3 = $$type.TYPE_CP;
   var isNil$e = util.isNil,
@@ -19295,7 +19296,7 @@
       vd = karas.createGm(tagName, props);
     } else {
       vd = karas.createVd(tagName, props, children.map(function (item, i) {
-        if (item && [TYPE_PL$3, TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
+        if (item && [TYPE_VD$3, TYPE_GM$3, TYPE_CP$3].indexOf(item.$$type) > -1) {
           return item;
         }
 

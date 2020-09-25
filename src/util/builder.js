@@ -2,7 +2,7 @@ import Text from '../node/Text';
 import util from './util';
 import $$type from './$$type';
 
-const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
+const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
 
@@ -46,8 +46,8 @@ function build(json, root, owner, host) {
   if(util.isObject(json) && json.$$type) {
     let { tagName, props, children, klass, $$type, inherit, __animateRecords } = json;
     // 更新过程中无变化的cp直接使用原来生成的，同时还原
-    if($$type === TYPE_PL) {
-      json.$$type = TYPE_CP;
+    if($$type === TYPE_CP && json.placeholder) {
+      delete json.placeholder;
       return json.value;
     }
     if($$type === TYPE_VD) {
@@ -143,7 +143,7 @@ function traverseJson(list, children, options) {
     list.push(children);
     options.lastText = null;
   }
-  else if(children && (children.$$type === TYPE_CP || children.$$type === TYPE_PL)) {
+  else if(children && children.$$type === TYPE_CP) {
     list.push(children);
     // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
     options.lastText = null;

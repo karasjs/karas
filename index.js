@@ -16205,9 +16205,14 @@
 
           if (ctx.miterLimit !== strokeMiterlimit) {
             ctx.miterLimit = strokeMiterlimit;
-          }
+          } // 小程序没这个方法
 
-          if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+
+          if (util.isFunction(ctx.getLineDash)) {
+            if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+              ctx.setLineDash(strokeDasharray);
+            }
+          } else {
             ctx.setLineDash(strokeDasharray);
           }
         }
@@ -18190,7 +18195,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.5";
+  var version = "0.38.6";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

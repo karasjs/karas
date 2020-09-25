@@ -218,7 +218,13 @@ class Geom extends Xom {
       if(ctx.miterLimit !== strokeMiterlimit) {
         ctx.miterLimit = strokeMiterlimit;
       }
-      if(!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+      // 小程序没这个方法
+      if(util.isFunction(ctx.getLineDash)) {
+        if(!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+          ctx.setLineDash(strokeDasharray);
+        }
+      }
+      else {
         ctx.setLineDash(strokeDasharray);
       }
     }

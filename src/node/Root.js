@@ -901,25 +901,25 @@ class Root extends Dom {
           let { outerWidth, outerHeight } = node;
           // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
           let container = node;
-          while(!container.parent && container.host) {
-            container = container.host; // 先把可能递归嵌套的组件循环完
-          }
-          container = container.parent;
-          while(container && container !== root) {
-            if(isRelativeOrAbsolute) {
-              break;
-            }
-            if(container.parent) {
-              container = container.parent;
-            }
-            else if(container.host) {
-              break;
-            }
-          }
-          if(!container) {
-            container = root;
-          }
           if(isNowAbs) {
+            while(!container.parent && container.host) {
+              container = container.host; // 先把可能递归嵌套的组件循环完
+            }
+            container = container.parent;
+            while(container && container !== root) {
+              if(isRelativeOrAbsolute) {
+                break;
+              }
+              if(container.parent) {
+                container = container.parent;
+              }
+              else if(container.host) {
+                break;
+              }
+            }
+            if(!container) {
+              container = root;
+            }
             parent.__layoutAbs(container, null, node);
             // 一直abs无需偏移后面兄弟
             if(isLastAbs) {
@@ -934,6 +934,9 @@ class Root extends Dom {
               h,
             });
             if(node instanceof Dom) {
+              if(!node.parent && node.host) {
+                container = node; // 特殊判断component的sr为container
+              }
               node.__layoutAbs(container, {
                 x,
                 y,

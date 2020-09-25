@@ -16914,29 +16914,29 @@
 
                 var container = node;
 
-                while (!container.parent && container.host) {
-                  container = container.host; // 先把可能递归嵌套的组件循环完
-                }
-
-                container = container.parent;
-
-                while (container && container !== root) {
-                  if (isRelativeOrAbsolute$2) {
-                    break;
-                  }
-
-                  if (container.parent) {
-                    container = container.parent;
-                  } else if (container.host) {
-                    break;
-                  }
-                }
-
-                if (!container) {
-                  container = root;
-                }
-
                 if (isNowAbs) {
+                  while (!container.parent && container.host) {
+                    container = container.host; // 先把可能递归嵌套的组件循环完
+                  }
+
+                  container = container.parent;
+
+                  while (container && container !== root) {
+                    if (isRelativeOrAbsolute$2) {
+                      break;
+                    }
+
+                    if (container.parent) {
+                      container = container.parent;
+                    } else if (container.host) {
+                      break;
+                    }
+                  }
+
+                  if (!container) {
+                    container = root;
+                  }
+
                   parent.__layoutAbs(container, null, node); // 一直abs无需偏移后面兄弟
 
 
@@ -16952,6 +16952,10 @@
                   });
 
                   if (node instanceof Dom$1) {
+                    if (!node.parent && node.host) {
+                      container = node; // 特殊判断component的sr为container
+                    }
+
                     node.__layoutAbs(container, {
                       x: _x,
                       y: y,

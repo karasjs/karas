@@ -97,6 +97,7 @@ let karas = {
   mode,
   Component,
   Geom,
+  Root,
   Event,
   util,
   inject,

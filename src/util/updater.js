@@ -33,7 +33,7 @@ function check(vd) {
  * 检查cp是否有state变更
  * @param cp
  * @param nextProps
- * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制更新
+ * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
  */
 function checkCp(cp, nextProps, forceCheckUpdate) {
   if(cp.__nextState || forceCheckUpdate) {

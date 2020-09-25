@@ -57,20 +57,21 @@ function initEvent(dom) {
 }
 
 // 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
-function isFixedWidthOrHeight(node, k) {
+function isFixedWidthOrHeight(node, root, k) {
   let c = node.currentStyle[k];
   let v = node.computedStyle[k];
   if(c.unit === PX) {
     return c.value === v;
   }
   if(c.unit === PERCENT) {
-    let s = node.parent.layoutData[k === 'width' ? 'w' : 'h'];
+    let parent = findParentNotComponent(node, root);
+    let s = parent.layoutData[k === 'width' ? 'w' : 'h'];
     return c.value * s * 0.01 === v;
   }
   return false;
 }
-function isFixedSize(node) {
-  return isFixedWidthOrHeight(node, 'width') && isFixedWidthOrHeight(node, 'height');
+function isFixedSize(node, root) {
+  return isFixedWidthOrHeight(node, root, 'width') && isFixedWidthOrHeight(node, root, 'height');
 }
 
 function findParentNotComponent(node, root) {
@@ -680,7 +681,7 @@ class Root extends Dom {
     // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
     function checkInfluence(node) {
       // 自身尺寸固定且无变化，无需向上查找
-      if(isFixedSize(node)) {
+      if(isFixedSize(node, root)) {
         return;
       }
       // cp强制刷新
@@ -898,18 +899,23 @@ class Root extends Dom {
           }
           x += computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.paddingLeft;
           let { outerWidth, outerHeight } = node;
+          // 找到最上层容器
+          let container = node;
+          while(container && container !== root) {
+            if(isRelativeOrAbsolute) {
+              break;
+            }
+            if(container.parent) {
+              container = container.parent;
+            }
+            else if(container.host) {
+              break;
+            }
+          }
+          if(!container) {
+            container = root;
+          }
           if(isNowAbs) {
-            // 找到最上层容器
-            let container = parent;
-            while(container) {
-              if(isRelativeOrAbsolute) {
-                break;
-              }
-              container = container.parent; // TODO
-            }
-            if(!container) {
-              container = root;
-            }
             parent.__layoutAbs(container, null, node);
             // 一直abs无需偏移后面兄弟
             if(isLastAbs) {
@@ -918,6 +924,12 @@ class Root extends Dom {
           }
           else {
             node.__layout({
+              x,
+              y,
+              w: width,
+              h,
+            });
+            node.__layoutAbs(container, {
               x,
               y,
               w: width,

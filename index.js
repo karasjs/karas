@@ -5411,11 +5411,12 @@
           o.addGeom(tagName, k);
         });
       } else if (ks) {
-        o.GEOM[ks] = tagName;
+        var list = o.GEOM[ks] = o.GEOM[ks] || {};
+        list[tagName] = true;
       }
     },
     isGeom: function isGeom(tagName, k) {
-      return this.GEOM.hasOwnProperty(k) && this.GEOM[k] === tagName;
+      return this.GEOM.hasOwnProperty(k) && this.GEOM[k].hasOwnProperty(tagName);
     },
     isValid: function isValid(tagName, k) {
       if (!k) {
@@ -5424,14 +5425,15 @@
 
       if (reset.DOM.hasOwnProperty(k)) {
         return true;
-      }
+      } // geom的fill等矢量才有的样式
+
 
       if (tagName.charAt(0) === '$' && reset.GEOM.hasOwnProperty(k)) {
         return true;
       }
 
       if (this.GEOM.hasOwnProperty(k)) {
-        return this.GEOM[k] === tagName;
+        return this.GEOM[k].hasOwnProperty(tagName);
       }
 
       return false;
@@ -9243,9 +9245,13 @@
 
 
         this.__fin = function (cb, diff) {
-          _this2.__begin = _this2.__end = _this2.__isDelay = _this2.__finish = _this2.__inFps = _this2.__enterFrame = null;
+          // 防止重复触发
+          if (!_this2.__hasFin) {
+            _this2.__hasFin = true;
+            _this2.__begin = _this2.__end = _this2.__isDelay = _this2.__finish = _this2.__inFps = _this2.__enterFrame = null;
 
-          _this2.emit(Event.FINISH);
+            _this2.emit(Event.FINISH);
+          }
 
           if (isFunction$3(cb)) {
             cb.call(_this2, diff);
@@ -9263,7 +9269,7 @@
           }
 
           if (isFunction$3(_this2.__playCb)) {
-            _this2.__playCb(diff, isDelay);
+            _this2.__playCb.call(_this2, diff, isDelay);
 
             _this2.__playCb = null;
           }
@@ -9317,7 +9323,10 @@
         this.__playCb = cb;
         this.__playState = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
-        this.__firstPlay = true;
+        this.__firstPlay = true; // 防止finish/cancel事件重复触发，每次播放重置
+
+        this.__hasFin = false;
+        this.__hasCancel = false;
         var firstEnter = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!this.__enterFrame) {
@@ -9576,7 +9585,14 @@
             __originStyle = self.__originStyle;
 
         if (root) {
-          var current; // 停留在最后一帧
+          var current;
+
+          if (self.__hasFin) {
+            __fin(cb, 0);
+
+            return self;
+          } // 停留在最后一帧
+
 
           if (self.__stayEnd()) {
             current = frames[frames.length - 1].style;
@@ -9623,11 +9639,23 @@
             __originStyle = self.__originStyle;
 
         if (root) {
-          var task = function task(diff) {
-            self.__cancelTask();
+          if (self.__hasCancel) {
+            if (isFunction$3(cb)) {
+              cb.call(self, 0);
+            }
 
-            self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
-            self.emit(Event.CANCEL);
+            return self;
+          }
+
+          var task = function task(diff) {
+            if (!self.__hasCancel) {
+              self.__hasCancel = true;
+
+              self.__cancelTask();
+
+              self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
+              self.emit(Event.CANCEL);
+            }
 
             if (isFunction$3(cb)) {
               cb.call(self, diff);
@@ -9713,7 +9741,7 @@
           _this4.__cancelTask();
 
           if (isFunction$3(cb)) {
-            cb(diff);
+            cb.call(_this4, diff);
           }
         });
       } // 同步赋予，用在extendAnimate
@@ -12401,9 +12429,10 @@
           klass = json.klass,
           _$$type = json.$$type,
           inherit = json.inherit,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的，同时还原
 
       if (_$$type === TYPE_PL$1) {
+        json.$$type = TYPE_CP$1;
         return json.value;
       }
 
@@ -14712,7 +14741,7 @@
    * 检查cp是否有state变更
    * @param cp
    * @param nextProps
-   * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制更新
+   * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
    */
 
 
@@ -15832,7 +15861,7 @@
   } // 提取出对比节点尺寸是否修改，用currentStyle的对比computedStyle的
 
 
-  function isFixedWidthOrHeight(node, k) {
+  function isFixedWidthOrHeight(node, root, k) {
     var c = node.currentStyle[k];
     var v = node.computedStyle[k];
 
@@ -15841,15 +15870,16 @@
     }
 
     if (c.unit === PERCENT$7) {
-      var s = node.parent.layoutData[k === 'width' ? 'w' : 'h'];
+      var parent = findParentNotComponent(node, root);
+      var s = parent.layoutData[k === 'width' ? 'w' : 'h'];
       return c.value * s * 0.01 === v;
     }
 
     return false;
   }
 
-  function isFixedSize(node) {
-    return isFixedWidthOrHeight(node, 'width') && isFixedWidthOrHeight(node, 'height');
+  function isFixedSize(node, root) {
+    return isFixedWidthOrHeight(node, root, 'width') && isFixedWidthOrHeight(node, root, 'height');
   }
 
   function findParentNotComponent(node, root) {
@@ -16623,7 +16653,7 @@
 
         function checkInfluence(node) {
           // 自身尺寸固定且无变化，无需向上查找
-          if (isFixedSize(node)) {
+          if (isFixedSize(node, root)) {
             return;
           } // cp强制刷新
 
@@ -16886,24 +16916,27 @@
 
                 _x += _computedStyle.marginLeft + _computedStyle.borderLeftWidth + _computedStyle.paddingLeft;
                 var outerWidth = node.outerWidth,
-                    outerHeight = node.outerHeight;
+                    outerHeight = node.outerHeight; // 找到最上层容器
+
+                var container = node;
+
+                while (container && container !== root) {
+                  if (isRelativeOrAbsolute$2) {
+                    break;
+                  }
+
+                  if (container.parent) {
+                    container = container.parent;
+                  } else if (container.host) {
+                    break;
+                  }
+                }
+
+                if (!container) {
+                  container = root;
+                }
 
                 if (isNowAbs) {
-                  // 找到最上层容器
-                  var container = parent;
-
-                  while (container) {
-                    if (isRelativeOrAbsolute$2) {
-                      break;
-                    }
-
-                    container = container.parent; // TODO
-                  }
-
-                  if (!container) {
-                    container = root;
-                  }
-
                   parent.__layoutAbs(container, null, node); // 一直abs无需偏移后面兄弟
 
 
@@ -16912,6 +16945,13 @@
                   }
                 } else {
                   node.__layout({
+                    x: _x,
+                    y: y,
+                    w: _width,
+                    h: h
+                  });
+
+                  node.__layoutAbs(container, {
                     x: _x,
                     y: y,
                     w: _width,

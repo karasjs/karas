@@ -121,15 +121,6 @@ function genBeforeRefresh(frameStyle, animation, root) {
   root.__frameHook();
 }
 
-function gen(frameStyle, animation, root) {
-  root.__addUpdate({
-    node: animation.target,
-    style: frameStyle,
-  });
-  animation.__style = frameStyle;
-  animation.__assigning = true;
-}
-
 /**
  * 将每帧的样式格式化，提取出offset属性并转化为时间，提取出缓动曲线easing
  * @param style 关键帧样式
@@ -1141,8 +1132,12 @@ class Animation extends Event {
     };
     // 生成finish的任务事件
     this.__fin = (cb, diff) => {
-      this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
-      this.emit(Event.FINISH);
+      // 防止重复触发
+      if(!this.__hasFin) {
+        this.__hasFin = true;
+        this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
+        this.emit(Event.FINISH);
+      }
       if(isFunction(cb)) {
         cb.call(this, diff);
       }
@@ -1155,7 +1150,7 @@ class Animation extends Event {
         this.emit(Event.PLAY);
       }
       if(isFunction(this.__playCb)) {
-        this.__playCb(diff, isDelay);
+        this.__playCb.call(this, diff, isDelay);
         this.__playCb = null;
       }
     };
@@ -1194,6 +1189,9 @@ class Animation extends Event {
     this.__playState = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
     this.__firstPlay = true;
+    // 防止finish/cancel事件重复触发，每次播放重置
+    this.__hasFin = false;
+    this.__hasCancel = false;
     let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
@@ -1397,6 +1395,10 @@ class Animation extends Event {
     let { root, frames, __frameCb, __clean, __fin, __originStyle } = self;
     if(root) {
       let current;
+      if(self.__hasFin) {
+        __fin(cb, 0);
+        return self;
+      }
       // 停留在最后一帧
       if(self.__stayEnd()) {
         current = frames[frames.length - 1].style;
@@ -1428,10 +1430,19 @@ class Animation extends Event {
     self.__cancelTask();
     let { root, __frameCb, __clean, __originStyle } = self;
     if(root) {
+      if(self.__hasCancel) {
+        if(isFunction(cb)) {
+          cb.call(self, 0);
+        }
+        return self;
+      }
       let task = (diff) => {
-        self.__cancelTask();
-        self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
-        self.emit(Event.CANCEL);
+        if(!self.__hasCancel) {
+          self.__hasCancel = true;
+          self.__cancelTask();
+          self.__begin = self.__end = self.__isDelay = self.__finish = self.__inFps = self.__enterFrame = null;
+          self.emit(Event.CANCEL);
+        }
         if(isFunction(cb)) {
           cb.call(self, diff);
         }
@@ -1480,7 +1491,7 @@ class Animation extends Event {
       this.__playState = 'paused';
       this.__cancelTask();
       if(isFunction(cb)) {
-        cb(diff);
+        cb.call(this, diff);
       }
     });
   }

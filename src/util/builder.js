@@ -45,8 +45,9 @@ function build(json, root, owner, host) {
   let vd;
   if(util.isObject(json) && json.$$type) {
     let { tagName, props, children, klass, $$type, inherit, __animateRecords } = json;
-    // 更新过程中无变化的cp直接使用原来生成的
+    // 更新过程中无变化的cp直接使用原来生成的，同时还原
     if($$type === TYPE_PL) {
+      json.$$type = TYPE_CP;
       return json.value;
     }
     if($$type === TYPE_VD) {

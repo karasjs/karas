@@ -66,11 +66,12 @@ let o = {
       });
     }
     else if(ks) {
-      o.GEOM[ks] = tagName;
+      let list = o.GEOM[ks] = o.GEOM[ks] || {};
+      list[tagName] = true;
     }
   },
   isGeom(tagName, k) {
-    return this.GEOM.hasOwnProperty(k) && this.GEOM[k] === tagName;
+    return this.GEOM.hasOwnProperty(k) && this.GEOM[k].hasOwnProperty(tagName);
   },
   isValid(tagName, k) {
     if(!k) {
@@ -79,11 +80,12 @@ let o = {
     if(reset.DOM.hasOwnProperty(k)) {
       return true;
     }
+    // geom的fill等矢量才有的样式
     if(tagName.charAt(0) === '$' && reset.GEOM.hasOwnProperty(k)) {
       return true;
     }
     if(this.GEOM.hasOwnProperty(k)) {
-      return this.GEOM[k] === tagName;
+      return this.GEOM[k].hasOwnProperty(tagName);
     }
     return false;
   },

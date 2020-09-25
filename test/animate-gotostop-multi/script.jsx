@@ -23,6 +23,7 @@ let animation2 = t.animate([
     left: 200,
   }
 ], {
+  fill: 'forwards',
   duration: 2,
   endDelay: 166.66666666666666,
 });

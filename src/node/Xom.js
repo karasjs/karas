@@ -793,6 +793,12 @@ class Xom extends Node {
     let ar = this.__animateRecords;
     if(ar) {
       this.__animateRecords = null;
+      // parse没有dom时，animate的target引用都是json，vd后生成需重新赋值
+      ar.list.forEach(item => {
+        if(item.target.vd instanceof Xom) {
+          item.target = item.target.vd;
+        }
+      });
       let ac = ar.controller || this.root.animateController;
       // 不自动播放进入记录列表，等待手动调用
       if(ar.options && ar.options.autoPlay === false) {

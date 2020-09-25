@@ -14623,7 +14623,7 @@
                       node: self,
                       focus: o$1.REFLOW,
                       // 没有样式变化但内容尺寸发生了变化强制执行
-                      img: true // 特殊标识强制布局即便没有style变化
+                      img: true // 特殊标识强制布局即便没有style变化 TODO
 
                     });
                   }
@@ -16491,8 +16491,7 @@
           var isRepaint = o$1.isRepaint(lv);
 
           if (isRepaint) {
-            console.log(node.tagName); // zIndex变化需清空svg缓存
-
+            // zIndex变化需清空svg缓存
             if (hasZ && renderMode === mode.SVG) {
               node.__cancelCacheSvg(true);
             } else {
@@ -16842,9 +16841,11 @@
                     uniqueList: _uniqueList
                   });
 
-                  _uniqueList.push(_o);
+                  _uniqueList.forEach(function (item) {
+                    options.uniqueList.push(item);
+                  });
 
-                  options.uniqueList = options.uniqueList.concat(_uniqueList);
+                  options.uniqueList.push(_o);
                 } // 返回true即可提前结束深度遍历，在reflowHash有记录时提前跳出，子节点交由上面逻辑执行
 
 

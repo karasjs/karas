@@ -564,7 +564,7 @@ class Root extends Dom {
       }
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
-      if(isRepaint) { console.log(node.tagName);
+      if(isRepaint) {
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
           node.__cancelCacheSvg(true);
@@ -867,8 +867,10 @@ class Root extends Dom {
             // OFFSET的话先递归看子节点，本身改变放在最后
             let uniqueList = [];
             node.deepScan(function(child, uniqueList) {}, { uniqueList });
-            uniqueList.push(o);
-            options.uniqueList = options.uniqueList.concat(uniqueList);
+            uniqueList.forEach(item => {
+              options.uniqueList.push(item);
+            });
+            options.uniqueList.push(o);
 
           }
           // 返回true即可提前结束深度遍历，在reflowHash有记录时提前跳出，子节点交由上面逻辑执行

@@ -88,6 +88,10 @@ function updateCp(cp, props, state) {
   if(!util.isObject(json) || !json.placeholder) {
     removeList.push(oldSr);
   }
+  // 子组件使用老的json时标识，更新后删除
+  if(json.placeholder) {
+    delete json.placeholder;
+  }
 }
 
 /**

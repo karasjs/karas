@@ -12430,10 +12430,9 @@
           klass = json.klass,
           _$$type = json.$$type,
           inherit = json.inherit,
-          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的，同时还原
+          __animateRecords = json.__animateRecords; // 更新过程中无变化的cp直接使用原来生成的
 
       if (_$$type === TYPE_CP$1 && json.placeholder) {
-        delete json.placeholder;
         return json.value;
       }
 
@@ -14801,6 +14800,11 @@
 
     if (!util.isObject(json) || !json.placeholder) {
       removeList.push(oldSr);
+    } // 子组件使用老的json时标识，更新后删除
+
+
+    if (json.placeholder) {
+      delete json.placeholder;
     }
   }
   /**
@@ -17461,9 +17465,14 @@
 
           if (ctx.miterLimit !== strokeMiterlimit) {
             ctx.miterLimit = strokeMiterlimit;
-          }
+          } // 小程序没这个方法
 
-          if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+
+          if (util.isFunction(ctx.getLineDash)) {
+            if (!util.equalArr(ctx.getLineDash(), strokeDasharray)) {
+              ctx.setLineDash(strokeDasharray);
+            }
+          } else {
             ctx.setLineDash(strokeDasharray);
           }
         }

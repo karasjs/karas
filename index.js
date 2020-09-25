@@ -10510,7 +10510,13 @@
         var ar = this.__animateRecords;
 
         if (ar) {
-          this.__animateRecords = null;
+          this.__animateRecords = null; // parse没有dom时，animate的target引用都是json，vd后生成需重新赋值
+
+          ar.list.forEach(function (item) {
+            if (item.target.vd instanceof Xom) {
+              item.target = item.target.vd;
+            }
+          });
           var ac = ar.controller || this.root.animateController; // 不自动播放进入记录列表，等待手动调用
 
           if (ar.options && ar.options.autoPlay === false) {
@@ -18184,7 +18190,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.4";
+  var version = "0.38.5";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

@@ -14768,7 +14768,7 @@
     sr.__height = oldSr.height;
     sr.__computedStyle = oldSr.computedStyle;
     sr.__layoutData = oldSr.layoutData;
-    updateList.push(sr); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
+    updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || json.$$type !== TYPE_PL$2) {
       removeList.push(oldSr);
@@ -16218,7 +16218,13 @@
                 var len = updater.updateList.length;
 
                 if (len) {
-                  updater.updateList.forEach(function (sr) {
+                  updater.updateList.forEach(function (cp) {
+                    var sr = cp.shadowRoot;
+
+                    while (sr instanceof Component$1) {
+                      sr = sr.shadowRoot;
+                    }
+
                     _this4.__addUpdate({
                       node: sr,
                       style: sr.currentStyle,
@@ -16718,7 +16724,8 @@
           if (target !== node) {
             setLAYOUT(target, reflowHash);
           }
-        } // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
+        } // TODO text变parent dom
+        // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
 
 
         for (var i = 0, len = reflowList.length; i < len; i++) {

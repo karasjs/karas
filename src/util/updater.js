@@ -83,7 +83,7 @@ function updateCp(cp, props, state) {
   sr.__height = oldSr.height;
   sr.__computedStyle = oldSr.computedStyle;
   sr.__layoutData = oldSr.layoutData;
-  updateList.push(sr);
+  updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || json.$$type !== TYPE_PL) {
     removeList.push(oldSr);

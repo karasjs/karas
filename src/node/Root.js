@@ -348,7 +348,11 @@ class Root extends Dom {
             // 有组件更新，则需要重新布局
             let len = updater.updateList.length;
             if(len) {
-              updater.updateList.forEach(sr => {
+              updater.updateList.forEach(cp => {
+                let sr = cp.shadowRoot;
+                while(sr instanceof Component) {
+                  sr = sr.shadowRoot;
+                }
                 this.__addUpdate({
                   node: sr,
                   style: sr.currentStyle,
@@ -761,6 +765,8 @@ class Root extends Dom {
         setLAYOUT(target, reflowHash);
       }
     }
+
+    // TODO text变parent dom
 
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {

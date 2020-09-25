@@ -5209,7 +5209,7 @@
           var position = v.match(reg.position);
 
           if (position) {
-            style.backgroundPosition = position[0];
+            style.backgroundPosition = position.join(' ');
             this.toFull(style, 'backgroundPosition');
           }
         }

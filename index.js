@@ -15414,7 +15414,7 @@
         var root = node.__root;
 
         if (['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-          root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+          root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
         } else {
           root.__cb(e);
         }
@@ -18195,7 +18195,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.6";
+  var version = "0.38.7";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

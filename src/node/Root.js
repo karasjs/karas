@@ -47,7 +47,7 @@ function initEvent(dom) {
     dom.addEventListener(type, e => {
       let root = dom.__root;
       if(['touchend', 'touchcancel', 'touchmove'].indexOf(type) > -1) {
-        root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
+        root.__touchstartTarget && root.__touchstartTarget.__emitEvent(root.__wrapEvent(e), true);
       }
       else {
         root.__cb(e);

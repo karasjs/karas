@@ -96,8 +96,8 @@ class Img extends Dom {
     super.__destroy();
   }
 
-  render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+  render(renderMode, lv, ctx, defs) {
+    super.render(renderMode, lv, ctx, defs);
     let {
       sx: x, sy: y, width, height, isDestroyed,
       props: {

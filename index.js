@@ -7213,7 +7213,7 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx) {
+      value: function render(renderMode, lv, ctx) {
         if (renderMode === mode.SVG) {
           this.__virtualDom = {
             type: 'text',
@@ -14476,10 +14476,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, ctx, defs);
+        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         var x = this.sx,
             y = this.sy,

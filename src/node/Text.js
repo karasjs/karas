@@ -198,7 +198,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, ctx) {
+  render(renderMode, lv, ctx) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',

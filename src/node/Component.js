@@ -39,35 +39,46 @@ class Component extends Event {
   }
 
   setState(n, cb) {
+    let self = this;
     if(isNil(n)) {
       n = {};
     }
+    else if(isFunction(n)) {
+      cb.call(self);
+      return;
+    }
     else {
-      let state = clone(this.state);
+      if(Object.keys(n).length === 0) {
+        if(isFunction(cb)) {
+          cb.call(self);
+        }
+        return;
+      }
+      let state = clone(self.state);
       n = extend(state, n);
     }
-    let root = this.root;
-    if(root && this.__isMounted) {
-      root.delRefreshTask(this.__task);
+    let root = self.root;
+    if(root && self.__isMounted) {
+      root.delRefreshTask(self.__task);
       this.__task = {
         before: () => {
           // 标识更新
-          this.__nextState = n;
+          self.__nextState = n;
           setUpdateFlag(this);
         },
         after: () => {
           if(isFunction(cb)) {
-            cb();
+            cb.call(self);
           }
         },
         __state: true, // 特殊标识来源让root刷新时识别
       };
-      root.addRefreshTask(this.__task);
+      root.addRefreshTask(self.__task);
     }
     // 构造函数中调用还未render，
     else if(isFunction(cb)) {
-      this.__state = n;
-      cb();
+      self.__state = n;
+      cb.call(self);
     }
   }
 
@@ -189,6 +200,14 @@ class Component extends Event {
     return this.__parent;
   }
 
+  get prev() {
+    return this.__prev;
+  }
+
+  get next() {
+    return this.__next;
+  }
+
   get ref() {
     return this.__ref;
   }
@@ -264,6 +283,7 @@ Object.keys(change.GEOM).concat([
   'updateStyle',
   '__cancelCacheSvg',
   'deepScan',
+  '__cancelCache',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

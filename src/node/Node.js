@@ -7,11 +7,12 @@ class Node {
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;
-    this.__prev = null;
-    this.__next = null;
-    this.__parent = null;
-    this.__root = null;
-    this.__host = null;
+    // 默认undefined
+    // this.__prev = null;
+    // this.__next = null;
+    // this.__parent = null;
+    // this.__root = null;
+    // this.__host = null;
   }
 
   __offsetX(diff, isLayout) {

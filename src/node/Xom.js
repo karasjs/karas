@@ -2051,12 +2051,28 @@ class Xom extends Node {
     return cb(this, options);
   }
 
-  __resizeX(dx) {
-    this.computedStyle.width = this.__width += dx;
+  __offsetX(diff, isLayout) {
+    super.__offsetX(diff, isLayout);
+    if(isLayout) {
+      this.layoutData.x += diff;
+    }
   }
 
-  __resizeY(dy) {
-    this.computedStyle.height = this.__height += dy;
+  __offsetY(diff, isLayout) {
+    super.__offsetY(diff, isLayout);
+    if(isLayout) {
+      this.layoutData.y += diff;
+    }
+  }
+
+  __resizeX(diff) {
+    this.computedStyle.width = this.__width += diff;
+    this.layoutData.w += dx;
+  }
+
+  __resizeY(diff) {
+    this.computedStyle.height = this.__height += diff;
+    this.layoutData.h += diff;
   }
 
   get tagName() {

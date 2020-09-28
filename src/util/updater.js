@@ -79,17 +79,22 @@ function updateCp(cp, props, state) {
   while(sr instanceof Component) {
     sr = sr.shadowRoot;
   }
-  sr.__width = oldSr.width;
-  sr.__height = oldSr.height;
-  sr.__computedStyle = oldSr.computedStyle;
-  sr.__layoutData = oldSr.layoutData;
+  if(sr instanceof Xom) {
+    sr.__width = oldSr.width;
+    sr.__height = oldSr.height;
+    sr.__computedStyle = oldSr.computedStyle;
+    sr.__layoutData = oldSr.layoutData;
+  }
+  else {
+    sr.__parent = oldSr.parent;
+  }
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {
     removeList.push(oldSr);
   }
-  // 子组件使用老的json时标识，更新后删除
-  if(json.placeholder) {
+  // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
+  if(json && json.placeholder) {
     delete json.placeholder;
   }
 }

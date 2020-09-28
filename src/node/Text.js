@@ -28,7 +28,7 @@ class Text extends Node {
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
     }
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
       style: computedStyle,
@@ -71,7 +71,7 @@ class Text extends Node {
 
   __measureCb() {
     let { content, computedStyle, charWidthList } = this;
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {

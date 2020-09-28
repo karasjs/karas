@@ -78,7 +78,7 @@ function findParentNotComponent(node, root) {
   if(node === root || !node) {
     return node;
   }
-  if(node.host) {
+  if(!node.parent) {
     return findParentNotComponent(node.host, root);
   }
   return node.parent;
@@ -354,11 +354,16 @@ class Root extends Dom {
                 while(sr instanceof Component) {
                   sr = sr.shadowRoot;
                 }
+                // 可能返回text，需视为其parentNode
+                if(sr instanceof Text) {
+                  sr = findParentNotComponent(sr, this);
+                }
                 this.__addUpdate({
                   node: sr,
                   style: sr.currentStyle,
                   focus: level.REFLOW,
                   measure: true, // 未知强制measure
+                  component: true,
                 });
               });
               this.refresh();
@@ -460,7 +465,7 @@ class Root extends Dom {
     let totalHash = {};
     let uniqueUpdateId = 0;
     updateList.forEach(item => {
-      let { node, style, origin, overwrite, focus, img, measure } = item;
+      let { node, style, origin, overwrite, focus, img, measure, component } = item;
       // 事件队列和setState等原因，可能node已经销毁
       if(node.isDestroyed) {
         return;
@@ -473,6 +478,7 @@ class Root extends Dom {
           focus,
           img,
           measure,
+          component,
         };
         totalList.push(node);
       }
@@ -498,7 +504,7 @@ class Root extends Dom {
       let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
       let lv = level.NONE;
       let p;
-      let { style, focus, img, measure } = totalHash[__uniqueUpdateId];
+      let { style, focus, img, measure, component } = totalHash[__uniqueUpdateId];
       if(img) {
         lv |= level.REPAINT;
       }
@@ -524,13 +530,20 @@ class Root extends Dom {
             }
             // 需和现在不等，且不是pointerEvents这种无关的
             if(!css.equalStyle(k, v, currentStyle[k], node)) {
-              this.renderMode === mode.SVG && node.__cancelCacheSvg();
               // pointerEvents这种无关的只需更新
               if(change.isIgnore(k)) {
                 __cacheStyle[k] = undefined;
                 currentStyle[k] = v;
               }
               else {
+                // TRBL变化只对relative/absolute起作用，其它忽视
+                if({ top: true, right: true, bottom: true, left:true }.hasOwnProperty(k)) {
+                  if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute'
+                    && style.position !== 'relative' && style.position !== 'absolute') {
+                    delete style[k];
+                    continue;
+                  }
+                }
                 hasUpdate = true;
                 // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
                 lv |= level.getLevel(k);
@@ -553,7 +566,7 @@ class Root extends Dom {
       }
       if(focus !== undefined) {
         hasUpdate = true;
-        lv = level.focus;
+        lv = level.REFLOW;
       }
       // 无需任何改变处理的去除记录，如pointerEvents
       if(lv === level.NONE) {
@@ -563,6 +576,7 @@ class Root extends Dom {
         len--;
         continue;
       }
+      this.renderMode === mode.SVG && node.__cancelCacheSvg();
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
       if(isRepaint) {
@@ -584,6 +598,7 @@ class Root extends Dom {
           node,
           style,
           img,
+          component,
         });
         // measure需要提前先处理
         if(hasMeasure) {
@@ -616,7 +631,7 @@ class Root extends Dom {
       let isInherit = change.isMeasureInherit(totalHash[__uniqueUpdateId].style);
       // 是inherit，需要向上查找，从顶部向下递归计算继承信息
       if(isInherit) {
-        while(parent) {
+        while(parent && parent !== this) {
           let { __uniqueUpdateId, currentStyle } = parent;
           let style = totalHash[__uniqueUpdateId];
           let isInherit;
@@ -640,7 +655,7 @@ class Root extends Dom {
           else {
             break;
           }
-          // 考虑component下的继续往上继承，一定不会有root，因为root已前置checkRoot()
+          // 考虑component下的继续往上继承
           parent = findParentNotComponent(parent, this);
         }
       }
@@ -679,9 +694,9 @@ class Root extends Dom {
     let reflowHash = {};
 
     // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
-    function checkInfluence(node) {
-      // 自身尺寸固定且无变化，无需向上查找
-      if(isFixedSize(node, root)) {
+    function checkInfluence(node, focus) {
+      // 自身尺寸固定且无变化，无需向上查找，但position发生变化的除外
+      if(isFixedSize(node, root) && !focus) {
         return;
       }
       // cp强制刷新
@@ -767,11 +782,9 @@ class Root extends Dom {
       }
     }
 
-    // TODO text变parent dom
-
     // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
     for(let i = 0, len = reflowList.length; i < len; i++) {
-      let { node, style, img } = reflowList[i];
+      let { node, style, img, component } = reflowList[i];
       // root提前跳出，完全重新布局
       if(node === this) {
         hasRoot = true;
@@ -784,6 +797,8 @@ class Root extends Dom {
         reflowHash[__uniqueReflowId++] = {
           node,
           lv: OFFSET,
+          img,
+          component,
         };
       }
       let o = reflowHash[node.__uniqueReflowId];
@@ -794,7 +809,7 @@ class Root extends Dom {
       // absolute和非absolute互换
       else if(currentStyle.position !== computedStyle.position) {
         o.lv = LAYOUT;
-        if(checkInfluence(node)) {
+        if(checkInfluence(node, focus)) {
           hasRoot = true;
           break;
         }
@@ -887,7 +902,7 @@ class Root extends Dom {
           let isLastAbs = node.computedStyle.position === 'absolute';
           let isNowAbs = node.currentStyle.position === 'absolute';
           let parent = findParentNotComponent(node, root);
-          let { layoutData: { x, y, w, h }, width, ox, oy, computedStyle } = parent;
+          let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let ref;
           if(ref = node.prev) {
             y = ref.y;
@@ -899,6 +914,7 @@ class Root extends Dom {
           }
           x += computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.paddingLeft;
           let { outerWidth, outerHeight } = node;
+          let change2Abs;
           // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
           let container = node;
           if(isNowAbs) {
@@ -925,6 +941,7 @@ class Root extends Dom {
             if(isLastAbs) {
               return;
             }
+            change2Abs = true;
           }
           else {
             node.__layout({
@@ -945,32 +962,84 @@ class Root extends Dom {
               });
             }
           }
-          // 记录重新布局引发的差值w/h
-          let { outerWidth: ow, outerHeight: oh } = node;
-          let dx = ow - outerWidth;
-          let dy = oh - outerHeight;
-          // 如果parent是relative，需再次累加ox/oy，无需向上递归，因为parent已经包含了
-          if(computedStyle.position === 'relative') {
-            ox && node.__offsetX(ox);
-            oy && node.__offsetY(oy);
+          // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
+          let fromAbs = node.computedStyle.position === 'absolute';
+          let dx, dy;
+          if(change2Abs) {
+            dx = -outerWidth;
+            dy = -outerHeight;
           }
-          // 如果有差值，递归向上所有parent需要扩充，直到absolute的中止
+          else {
+            let { outerWidth: ow, outerHeight: oh } = node;
+            if(fromAbs) {
+              dx = ow;
+              dy = oh;
+            }
+            else {
+              dx = ow - outerWidth;
+              dy = oh - outerHeight;
+            }
+          }
+          // 向上查找最近的parent是relative，需再次累加ox/oy，无需递归，因为已经包含了
+          let p = node;
+          while(p && p !== root) {
+            p = findParentNotComponent(p, root);
+            computedStyle = p.computedStyle;
+            if(computedStyle.position === 'relative') {
+              let { ox, oy } = p;
+              ox && node.__offsetX(ox);
+              oy && node.__offsetY(oy);
+              break;
+            }
+          }
+          // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
           if(dx || dy) {
+            let p = node;
             do {
-              let { currentStyle } = parent;
+              // component的sr没有next兄弟，视为component的next
+              while(!p.parent && p.host) {
+                p = p.host;
+              }
+              // 先偏移next，忽略有定位的absolute或LAYOUT
+              let next = p.next;
+              while(next) {
+                if(next.currentStyle.position === 'absolute') {
+                  if(next.currentStyle.top.unit === AUTO && next.currentStyle.bottom.unit === AUTO) {
+                    next.__offsetY(dy, true);
+                    next.__cancelCache(true);
+                  }
+                }
+                else if(next.hasOwnProperty('____uniqueReflowId') && reflowHash[next.____uniqueReflowId] < LAYOUT) {
+                  next.__offsetY(dy, true);
+                  next.__cancelCache(true);
+                }
+                next = next.next;
+              }
+              // 要么一定有parent，因为上面向上循环排除了cp返回cp的情况；要么就是root本身
+              p = p.parent;
+              if(p === root) {
+                break;
+              }
+              // parent判断是否要resize
+              let { currentStyle } = p;
+              let isAbs = currentStyle.positoin === 'absolute';
               if(dx) {
                 let need;
                 // width在block不需要，parent一定不会是flex/inline
-                if(currentStyle.positoin === 'absolute') {
+                if(isAbs) {
                   if(currentStyle.width.unit === AUTO
                     && (currentStyle.left.unit === AUTO || currentStyle.right.unit === AUTO)) {
                     need = true;
                   }
                 }
+                if(need) {
+                  p.__resizeX(dx);
+                  p.__cancelCache(true);
+                }
               }
               if(dy) {
                 let need;
-                if(currentStyle.positoin === 'absolute') {
+                if(isAbs) {
                   if(currentStyle.height.unit === AUTO
                     && (currentStyle.top.unit === AUTO || currentStyle.bottom.unit === AUTO)) {
                     need = true;
@@ -981,30 +1050,16 @@ class Root extends Dom {
                   need = true;
                 }
                 if(need) {
-                  parent.__resizeY(dy);
-                  parent.__cancelCache(true);
+                  p.__resizeY(dy);
+                  p.__cancelCache(true);
+                }
+                // 高度不需要调整提前跳出
+                else {
+                  break;
                 }
               }
-              if(currentStyle.positoin === 'absolute') {
-                break;
-              }
-              parent = findParentNotComponent(parent);
             }
-            while(parent);
-          }
-          if(dy) {
-            // 后面兄弟如果非absolute或非LAYOUT则offsetY
-            let next = node.next;
-            while(next) {
-              if(next.currentStyle.position !== 'absolute'
-                || !next.hasOwnProperty('____uniqueReflowId')
-                || reflowHash[next.____uniqueReflowId].lv < LAYOUT) {
-                next.__offsetY(dy, true);
-                next.layoutData.y += dy;
-                next.__cancelCache(true);
-              }
-              next = next.next;
-            }
+            while(true);
           }
         }
         // OFFSET操作的节点都是relative，要考虑auto变化

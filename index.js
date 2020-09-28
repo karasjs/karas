@@ -17491,7 +17491,7 @@
       }
     }, {
       key: "__preRender",
-      value: function __preRender(renderMode, ctx, defs) {
+      value: function __preRender(renderMode, lv, ctx, defs) {
         var x = this.sx,
             y = this.sy,
             width = this.width,
@@ -17639,8 +17639,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, ctx, defs);
+      value: function render(renderMode, lv, ctx, defs) {
+        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         if (renderMode === mode.SVG) {
           if (this.virtualDom.cache) {
@@ -17662,7 +17662,7 @@
           };
         }
 
-        return this.__preRender(renderMode, ctx, defs);
+        return this.__preRender(renderMode, lv, ctx, defs);
       }
     }, {
       key: "__renderAsMask",
@@ -17931,8 +17931,8 @@
 
     _createClass(Line, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, lv, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             display = _get$call.display,
@@ -18156,10 +18156,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, ctx, defs),
+        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             originX = _get$call.originX,
@@ -18436,10 +18436,10 @@
 
     _createClass(Sector, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, ctx, defs),
+        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             cx = _get$call.cx,
@@ -18721,8 +18721,8 @@
 
     _createClass(Rect, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, lv, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             originX = _get$call.originX,
@@ -18892,8 +18892,8 @@
 
     _createClass(Circle, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, lv, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             cx = _get$call.cx,
@@ -19047,8 +19047,8 @@
 
     _createClass(Ellipse, [{
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, ctx, defs),
+      value: function render(renderMode, lv, ctx, defs) {
+        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
             isDestroyed = _get$call.isDestroyed,
             cache = _get$call.cache,
             cx = _get$call.cx,

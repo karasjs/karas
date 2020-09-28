@@ -107,7 +107,7 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __preRender(renderMode, ctx, defs) {
+  __preRender(renderMode, lv, ctx, defs) {
     let { sx: x, sy: y, width, height, __cacheStyle, currentStyle, computedStyle } = this;
     let {
       borderTopWidth,
@@ -248,8 +248,8 @@ class Geom extends Xom {
     };
   }
 
-  render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+  render(renderMode, lv, ctx, defs) {
+    super.render(renderMode, lv, ctx, defs);
     if(renderMode === mode.SVG) {
       if(this.virtualDom.cache) {
         return {
@@ -265,7 +265,7 @@ class Geom extends Xom {
         display,
       };
     }
-    return this.__preRender(renderMode, ctx, defs);
+    return this.__preRender(renderMode, lv, ctx, defs);
   }
 
   __renderAsMask(renderMode, lv, ctx, defs, isClip) {

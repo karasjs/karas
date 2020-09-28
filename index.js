@@ -5980,7 +5980,7 @@
         fontWeight = style.fontWeight,
         fontSize = style.fontSize,
         fontFamily = style.fontFamily;
-    return (fontStyle || '') + ' ' + (fontWeight || '') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || '');
+    return (fontStyle || 'normal') + ' ' + (fontWeight || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || 'arial');
   }
 
   function getBaseLine(style) {

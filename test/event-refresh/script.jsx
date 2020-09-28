@@ -1,7 +1,7 @@
 class Component extends karas.Component {
   constructor(props) {
     super(props);
-    this.state.a = 0;
+    this.state.a = 'a';
   }
   click() {
     this.setState({

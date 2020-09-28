@@ -1013,8 +1013,8 @@ class Dom extends Xom {
     });
   }
 
-  render(renderMode, ctx, defs) {
-    let offScreen = super.render(renderMode, ctx, defs);
+  render(renderMode, lv, ctx, defs) {
+    let offScreen = super.render(renderMode, lv, ctx, defs);
     if(offScreen && offScreen.target && offScreen.target.ctx) {
       ctx = offScreen.target.ctx;
     }
@@ -1033,13 +1033,13 @@ class Dom extends Xom {
     // 先渲染过滤mask
     children.forEach(item => {
       if(item.isMask || item.isClip) {
-        item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
+        item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
       }
     });
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndex = this.zIndexChildren;
     zIndex.forEach(item => {
-      item.__renderByMask(renderMode, ctx, defs);
+      item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
     });
     // 模糊滤镜写回
     if(renderMode === mode.CANVAS && offScreen) {

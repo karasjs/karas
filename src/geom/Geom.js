@@ -268,12 +268,12 @@ class Geom extends Xom {
     return this.__preRender(renderMode, ctx, defs);
   }
 
-  __renderAsMask(renderMode, ctx, defs, isClip) {
+  __renderAsMask(renderMode, lv, ctx, defs, isClip) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
       // 强制不缓存，防止引用mask的matrix变化不生效
       this.__cancelCacheSvg();
-      this.render(renderMode, ctx, defs);
+      this.render(renderMode, lv, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {
         vd.isClip = true;

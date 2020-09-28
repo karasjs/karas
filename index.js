@@ -10096,7 +10096,11 @@
     REPAINT: 8,
     // 整体需要重绘 1000
     // 高位表示reflow
-    REFLOW: 16 // 整体需要重排 1000000
+    REFLOW: 16,
+    // 整体需要重排 1000000
+    OFFSET: 32,
+    // reflow中是因为offset引起的情况 10000000
+    RESIZE: 64 // reflow中是因为resize引起的情况 100000000
 
   };
   var TRANSFORM = {
@@ -10726,6 +10730,7 @@
         var display = currentStyle.display,
             width = currentStyle.width,
             position = currentStyle.position;
+        this.__refreshLevel = o$1.REFLOW;
 
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
@@ -10945,13 +10950,14 @@
       /**
        * 渲染基础方法，Dom/Geom公用
        * @param renderMode
+       * @param lv
        * @param ctx
        * @param defs
        */
 
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
+      value: function render(renderMode, lv, ctx, defs) {
         var _this3 = this;
 
         if (renderMode === mode.SVG) {
@@ -11653,14 +11659,14 @@
       }
     }, {
       key: "__renderByMask",
-      value: function __renderByMask(renderMode, ctx, defs) {
+      value: function __renderByMask(renderMode, lv, ctx, defs) {
         var next = this.next,
             root = this.root;
         var hasMask = next && next.isMask;
         var hasClip = next && next.isClip;
 
         if (!hasMask && !hasClip) {
-          this.render(renderMode, ctx, defs);
+          this.render(renderMode, lv, ctx, defs);
           return;
         }
 
@@ -11670,7 +11676,7 @@
             var width = root.width,
                 height = root.height;
             var c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-            this.render(renderMode, c.ctx); // 收集之前的mask列表
+            this.render(renderMode, lv, c.ctx); // 收集之前的mask列表
 
             var list = [];
 
@@ -11685,7 +11691,7 @@
             if (list.length === 1) {
               next = list[0];
               c.ctx.globalCompositeOperation = 'destination-in';
-              next.render(renderMode, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+              next.render(renderMode, lv, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
 
               c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
@@ -11694,7 +11700,7 @@
             else {
                 var m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
                 list.forEach(function (item) {
-                  item.render(renderMode, m.ctx);
+                  item.render(renderMode, lv, m.ctx);
                 });
                 m.draw(m.ctx);
                 c.ctx.globalCompositeOperation = 'destination-in';
@@ -11723,7 +11729,7 @@
               ctx.fill = ctx.beginPath = ctx.closePath = empty;
 
               while (next && next.isClip) {
-                next.render(renderMode, ctx);
+                next.render(renderMode, lv, ctx);
                 next = next.next;
               }
 
@@ -11732,11 +11738,11 @@
               ctx.closePath = closePath;
               ctx.clip();
               ctx.closePath();
-              this.render(renderMode, ctx);
+              this.render(renderMode, lv, ctx);
               ctx.restore();
             }
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode, ctx, defs); // 检查后续mask是否是空，空遮罩不生效
+          this.render(renderMode, lv, ctx, defs); // 检查后续mask是否是空，空遮罩不生效
 
           var isEmpty = true;
           var sibling = next;
@@ -12169,7 +12175,7 @@
       key: "__resizeX",
       value: function __resizeX(diff) {
         this.computedStyle.width = this.__width += diff;
-        this.layoutData.w += dx;
+        this.layoutData.w += diff;
       }
     }, {
       key: "__resizeY",
@@ -14085,8 +14091,8 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, ctx, defs) {
-        var offScreen = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, ctx, defs);
+      value: function render(renderMode, lv, ctx, defs) {
+        var offScreen = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
           ctx = offScreen.target.ctx;
@@ -14111,13 +14117,13 @@
 
         children.forEach(function (item) {
           if (item.isMask || item.isClip) {
-            item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
+            item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
           }
         }); // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndex = this.zIndexChildren;
         zIndex.forEach(function (item) {
-          item.__renderByMask(renderMode, ctx, defs);
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
         }); // 模糊滤镜写回
 
         if (renderMode === mode.CANVAS && offScreen) {
@@ -16216,7 +16222,7 @@
             _this3.__clear(ctx);
           }
 
-          _this3.render(renderMode, ctx, defs);
+          _this3.render(renderMode, _this3.__refreshLevel, ctx, defs);
 
           if (renderMode === mode.SVG) {
             var nvd = _this3.virtualDom;
@@ -17104,11 +17110,15 @@
                           next.__offsetY(dy, true);
 
                           next.__cancelCache(true);
+
+                          next.__refreshLevel |= o$1.OFFSET | o$1.REFLOW;
                         }
                       } else if (!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
                         next.__offsetY(dy, true);
 
                         next.__cancelCache(true);
+
+                        next.__refreshLevel |= o$1.OFFSET | o$1.REFLOW;
                       }
 
                       next = next.next;
@@ -17139,6 +17149,8 @@
                         _p2.__resizeX(dx);
 
                         _p2.__cancelCache(true);
+
+                        _p2.__refreshLevel |= o$1.RESIZE | o$1.REFLOW;
                       }
                     }
 
@@ -17158,6 +17170,8 @@
                         _p2.__resizeY(dy);
 
                         _p2.__cancelCache(true);
+
+                        _p2.__refreshLevel |= o$1.RESIZE | o$1.REFLOW;
                       } // 高度不需要调整提前跳出
                       else {
                           break;
@@ -17212,6 +17226,8 @@
 
                   if (newY !== oldY) {
                     node.__offsetY(newY - oldY);
+
+                    node.__refreshLevel |= o$1.OFFSET | o$1.REFLOW;
                   }
 
                   var newX = 0;
@@ -17238,6 +17254,8 @@
 
                   if (newX !== oldX) {
                     node.__offsetX(newX - oldX);
+
+                    node.__refreshLevel |= o$1.OFFSET | o$1.REFLOW;
                   }
                 }
             });
@@ -17648,13 +17666,13 @@
       }
     }, {
       key: "__renderAsMask",
-      value: function __renderAsMask(renderMode, ctx, defs, isClip) {
+      value: function __renderAsMask(renderMode, lv, ctx, defs, isClip) {
         // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
           // 强制不缓存，防止引用mask的matrix变化不生效
           this.__cancelCacheSvg();
 
-          this.render(renderMode, ctx, defs);
+          this.render(renderMode, lv, ctx, defs);
           var vd = this.virtualDom;
 
           if (isClip) {

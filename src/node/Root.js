@@ -284,7 +284,7 @@ class Root extends Dom {
       if(renderMode === mode.CANVAS) {
         this.__clear(ctx);
       }
-      this.render(renderMode, ctx, defs);
+      this.render(renderMode, this.__refreshLevel, ctx, defs);
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
         nvd.defs = defs.value;
@@ -1007,11 +1007,13 @@ class Root extends Dom {
                   if(next.currentStyle.top.unit === AUTO && next.currentStyle.bottom.unit === AUTO) {
                     next.__offsetY(dy, true);
                     next.__cancelCache(true);
+                    next.__refreshLevel |= level.OFFSET | level.REFLOW;
                   }
                 }
                 else if(!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
                   next.__offsetY(dy, true);
                   next.__cancelCache(true);
+                  next.__refreshLevel |= level.OFFSET | level.REFLOW;
                 }
                 next = next.next;
               }
@@ -1035,6 +1037,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeX(dx);
                   p.__cancelCache(true);
+                  p.__refreshLevel |= level.RESIZE | level.REFLOW;
                 }
               }
               if(dy) {
@@ -1052,6 +1055,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeY(dy);
                   p.__cancelCache(true);
+                  p.__refreshLevel |= level.RESIZE | level.REFLOW;
                 }
                 // 高度不需要调整提前跳出
                 else {
@@ -1098,6 +1102,7 @@ class Root extends Dom {
           }
           if(newY !== oldY) {
             node.__offsetY(newY - oldY);
+            node.__refreshLevel |= level.OFFSET | level.REFLOW;
           }
           let newX = 0;
           if(left.unit !== AUTO) {
@@ -1122,6 +1127,7 @@ class Root extends Dom {
           }
           if(newX !== oldX) {
             node.__offsetX(newX - oldX);
+            node.__refreshLevel |= level.OFFSET | level.REFLOW;
           }
         }
       });

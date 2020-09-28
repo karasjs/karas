@@ -715,6 +715,7 @@ class Xom extends Node {
       width,
       position,
     } = currentStyle;
+    this.__refreshLevel = level.REFLOW;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
       return;
@@ -910,10 +911,11 @@ class Xom extends Node {
   /**
    * 渲染基础方法，Dom/Geom公用
    * @param renderMode
+   * @param lv
    * @param ctx
    * @param defs
    */
-  render(renderMode, ctx, defs) {
+  render(renderMode, lv, ctx, defs) {
     if(renderMode === mode.SVG) {
       if(this.__cacheSvg) {
         let n = extend({}, this.__virtualDom);
@@ -1620,12 +1622,12 @@ class Xom extends Node {
     return offScreen;
   }
 
-  __renderByMask(renderMode, ctx, defs) {
+  __renderByMask(renderMode, lv, ctx, defs) {
     let { next, root } = this;
     let hasMask = next && next.isMask;
     let hasClip = next && next.isClip;
     if(!hasMask && !hasClip) {
-      this.render(renderMode, ctx, defs);
+      this.render(renderMode, lv, ctx, defs);
       return;
     }
     if(renderMode === mode.CANVAS) {
@@ -1633,7 +1635,7 @@ class Xom extends Node {
       if(hasMask) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-        this.render(renderMode, c.ctx);
+        this.render(renderMode, lv, c.ctx);
         // 收集之前的mask列表
         let list = [];
         while(next && next.isMask) {
@@ -1646,7 +1648,7 @@ class Xom extends Node {
         if(list.length === 1) {
           next = list[0];
           c.ctx.globalCompositeOperation = 'destination-in';
-          next.render(renderMode, c.ctx);
+          next.render(renderMode, lv, c.ctx);
           // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
           c.draw(c.ctx);
           ctx.drawImage(c.canvas, 0, 0);
@@ -1656,7 +1658,7 @@ class Xom extends Node {
         else {
           let m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
           list.forEach(item => {
-            item.render(renderMode, m.ctx);
+            item.render(renderMode, lv, m.ctx);
           });
           m.draw(m.ctx);
           c.ctx.globalCompositeOperation = 'destination-in';
@@ -1684,7 +1686,7 @@ class Xom extends Node {
         let closePath = ctx.closePath;
         ctx.fill = ctx.beginPath = ctx.closePath = empty;
         while(next && next.isClip) {
-          next.render(renderMode, ctx);
+          next.render(renderMode, lv, ctx);
           next = next.next;
         }
         ctx.fill = fill;
@@ -1692,12 +1694,12 @@ class Xom extends Node {
         ctx.closePath = closePath;
         ctx.clip();
         ctx.closePath();
-        this.render(renderMode, ctx);
+        this.render(renderMode, lv, ctx);
         ctx.restore();
       }
     }
     else if(renderMode === mode.SVG) {
-      this.render(renderMode, ctx, defs);
+      this.render(renderMode, lv, ctx, defs);
       // 检查后续mask是否是空，空遮罩不生效
       let isEmpty = true;
       let sibling = next;
@@ -2067,7 +2069,7 @@ class Xom extends Node {
 
   __resizeX(diff) {
     this.computedStyle.width = this.__width += diff;
-    this.layoutData.w += dx;
+    this.layoutData.w += diff;
   }
 
   __resizeY(diff) {

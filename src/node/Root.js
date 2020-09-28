@@ -1009,7 +1009,7 @@ class Root extends Dom {
                     next.__cancelCache(true);
                   }
                 }
-                else if(next.hasOwnProperty('____uniqueReflowId') && reflowHash[next.____uniqueReflowId] < LAYOUT) {
+                else if(!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
                   next.__offsetY(dy, true);
                   next.__cancelCache(true);
                 }

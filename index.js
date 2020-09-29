@@ -6341,7 +6341,7 @@
         fontWeight = style.fontWeight,
         fontSize = style.fontSize,
         fontFamily = style.fontFamily;
-    return (fontStyle || '') + ' ' + (fontWeight || '') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || '');
+    return (fontStyle || 'normal') + ' ' + (fontWeight || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || 'arial');
   }
 
   function getBaseLine(style) {
@@ -19609,7 +19609,7 @@
     change: o
   };
 
-  var version = "0.38.7";
+  var version = "0.38.8";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

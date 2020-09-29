@@ -831,7 +831,7 @@ function computeReflow(node, isHost) {
 
 function setFontStyle(style) {
   let { fontStyle, fontWeight, fontSize, fontFamily } = style;
-  return (fontStyle || '') + ' ' + (fontWeight || '') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || '');
+  return (fontStyle || 'normal') + ' ' + (fontWeight || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (fontFamily || 'arial');
 }
 
 function getBaseLine(style) {

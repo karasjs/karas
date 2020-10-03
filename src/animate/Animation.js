@@ -1060,7 +1060,7 @@ class Animation extends Event {
       frames.push(framing(item, duration, easing));
     });
     this.__frames = frames;
-    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的默认样式
+    // 为方便两帧之间计算变化，强制统一所有帧的css属性相同，没有写的为节点的当前样式currentStyle
     let keys = this.__keys = unify(frames, target);
     inherit(frames, keys, target);
     // 存储原本样式以便恢复用
@@ -1115,6 +1115,8 @@ class Animation extends Event {
       }
       // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
       if(restore) {
+        this.__currentFrames = undefined;
+        this.__currentFrame = undefined;
         keys.forEach(k => {
           if(change.GEOM.hasOwnProperty(k)) {
             if(target.__currentProps[k] === style[k]) {
@@ -1126,8 +1128,8 @@ class Animation extends Event {
               target.__currentStyle[k] = target.style[k];
             }
           }
-          target.__cancelCacheSvg();
         });
+        target.__cancelCacheSvg();
       }
     };
     // 生成finish的任务事件
@@ -1265,13 +1267,14 @@ class Animation extends Event {
           else {
             currentFrames = frames;
           }
+          this.__currentFrames = frames;
           // 减去delay，计算在哪一帧
           currentTime -= delay;
           if(currentTime === 0) {
             this.__begin = true;
           }
           let i = binarySearch(0, length - 1, currentTime, currentFrames);
-          let current = currentFrames[i];
+          let current = this.__currentFrame = currentFrames[i];
           // 最后一帧结束动画
           let isLastFrame = i === length - 1;
           let isLastCount = playCount >= iterations - 1;
@@ -1779,6 +1782,14 @@ class Animation extends Event {
 
   get assigning() {
     return this.__assigning;
+  }
+
+  get currentFrames() {
+    return this.__currentFrames;
+  }
+
+  get currentFrame() {
+    return this.__currentFrame;
   }
 }
 

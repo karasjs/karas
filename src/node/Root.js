@@ -64,7 +64,7 @@ function isFixedWidthOrHeight(node, root, k) {
     return c.value === v;
   }
   if(c.unit === PERCENT) {
-    let parent = findParentNotComponent(node, root);
+    let parent = node.domParent;
     let s = parent.layoutData[k === 'width' ? 'w' : 'h'];
     return c.value * s * 0.01 === v;
   }
@@ -72,16 +72,6 @@ function isFixedWidthOrHeight(node, root, k) {
 }
 function isFixedSize(node, root) {
   return isFixedWidthOrHeight(node, root, 'width') && isFixedWidthOrHeight(node, root, 'height');
-}
-
-function findParentNotComponent(node, root) {
-  if(node === root || !node) {
-    return node;
-  }
-  if(!node.parent) {
-    return findParentNotComponent(node.host, root);
-  }
-  return node.parent;
 }
 
 const OFFSET = 0;
@@ -356,7 +346,7 @@ class Root extends Dom {
                 }
                 // 可能返回text，需视为其parentNode
                 if(sr instanceof Text) {
-                  sr = findParentNotComponent(sr, this);
+                  sr = sr.domParent;
                 }
                 this.__addUpdate({
                   node: sr,
@@ -499,6 +489,7 @@ class Root extends Dom {
     // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
     let measureList = [];
     let reflowList = [];
+    let repaintList = [];
     for(let i = 0, len = totalList.length; i < len; i++) {
       let node = totalList[i];
       let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
@@ -580,6 +571,12 @@ class Root extends Dom {
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
       if(isRepaint) {
+        repaintList.push({
+          node,
+          style,
+          img,
+          component,
+        });
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
           node.__cancelCacheSvg(true);
@@ -587,13 +584,11 @@ class Root extends Dom {
         else {
           node.__cancelCacheSvg();
         }
-        // TODO: repaint级别在node有缓存对象时赋予它，没有说明无缓存无作用
-        // if(node.__cache) {
-        //   node.__cache.lv = level.getDetailLevel(style, lv);
-        // }
+        node.__refreshLevel = level.getDetailRepaintByLv(style, lv);
       }
       // reflow在root的refresh中做
       else {
+        node.__refreshLevel = level.REFLOW;
         reflowList.push({
           node,
           style,
@@ -616,12 +611,35 @@ class Root extends Dom {
     }
     this.__reflowList = reflowList;
     /**
+     * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
+     * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
+     */
+    let cacheHash = {};
+    repaintList.concat(reflowList).forEach(node => {
+      let parent = node;
+      // 向上查找，出现重复跳出
+      while(parent) {
+        if(parent.hasOwnProperty('__uniqueUpdateId')) {
+          let uniqueUpdateId = parent.__uniqueUpdateId;
+          if(cacheHash.hasOwnProperty(uniqueUpdateId)) {
+            return;
+          }
+          cacheHash[uniqueUpdateId] = true;
+          if(level.gte(parent.__refreshLevel, level.REPAINT) && parent.__cacheTotal) {
+            parent.__cacheTotal.release();
+            parent.__cacheTotal = null;
+          }
+        }
+        parent = parent.domParent;
+      }
+    });
+    /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
      */
     let measureHash = {};
     measureList.forEach(node => {
-      let { __uniqueUpdateId, parent } = node;
+      let { __uniqueUpdateId, domParent: parent } = node;
       if(measureHash.hasOwnProperty(__uniqueUpdateId)) {
         return;
       }
@@ -629,7 +647,7 @@ class Root extends Dom {
       let last = node;
       // 检查measure的属性是否是inherit
       let isInherit = change.isMeasureInherit(totalHash[__uniqueUpdateId].style);
-      // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+      // 是inherit，需要向上查找，从顶部向下递归计算继承信息 TODO
       if(isInherit) {
         while(parent && parent !== this) {
           let { __uniqueUpdateId, currentStyle } = parent;
@@ -656,7 +674,7 @@ class Root extends Dom {
             break;
           }
           // 考虑component下的继续往上继承
-          parent = findParentNotComponent(parent, this);
+          parent = parent.domParent;
         }
       }
       // 自顶向下查找inherit的，利用已有的方法+回调
@@ -706,7 +724,7 @@ class Root extends Dom {
       let target = node;
       // inline新老都影响，节点变为最近的父非inline
       if(node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
-        let parent = findParentNotComponent(node, root);
+        let parent = node.domParent;
         do {
           target = parent;
           // 父到root提前跳出
@@ -728,7 +746,7 @@ class Root extends Dom {
             return;
           }
           // 继续向上
-          parent = findParentNotComponent(parent, root);
+          parent = parent.domParent;
         }
         while(parent && (parent.currentStyle.display === 'inline' || parent.computedStyle.display === 'inline'));
         // target至少是node的parent，如果固定尺寸提前跳出
@@ -738,7 +756,7 @@ class Root extends Dom {
         }
       }
       // 此时target指向node，如果原本是inline则是其非inline父
-      let parent = target.parent;
+      let parent = target.domParent;
       // parent有LAYOUT跳出，已被包含
       if(parent && isLAYOUT(parent, reflowHash)) {
         return;
@@ -761,7 +779,7 @@ class Root extends Dom {
             setLAYOUT(parent, reflowHash);
             return;
           }
-          parent = findParentNotComponent(parent, root);
+          parent = parent.domParent;
         }
         while(parent && (parent.computedStyle.display === 'flex' || parent.currentStyle.display === 'flex'));
         // target至少是node的parent，如果固定尺寸提前跳出
@@ -771,7 +789,7 @@ class Root extends Dom {
         }
       }
       // 此时target指向node，如果父原本是flex则是其最上flex父
-      parent = target.parent;
+      parent = target.domParent;
       // parent有LAYOUT跳出，已被包含
       if(parent && isLAYOUT(parent, reflowHash)) {
         return;
@@ -901,7 +919,7 @@ class Root extends Dom {
         if(lv >= LAYOUT) {
           let isLastAbs = node.computedStyle.position === 'absolute';
           let isNowAbs = node.currentStyle.position === 'absolute';
-          let parent = findParentNotComponent(node, root);
+          let parent = node.domParent;
           let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let ref;
           if(ref = node.prev) {
@@ -983,7 +1001,7 @@ class Root extends Dom {
           // 向上查找最近的parent是relative，需再次累加ox/oy，无需递归，因为已经包含了
           let p = node;
           while(p && p !== root) {
-            p = findParentNotComponent(p, root);
+            p = p.domParent;
             computedStyle = p.computedStyle;
             if(computedStyle.position === 'relative') {
               let { ox, oy } = p;
@@ -1005,15 +1023,15 @@ class Root extends Dom {
               while(next) {
                 if(next.currentStyle.position === 'absolute') {
                   if(next.currentStyle.top.unit === AUTO && next.currentStyle.bottom.unit === AUTO) {
-                    next.__offsetY(dy, true);
+                    next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
                     next.__cancelCache(true);
-                    next.__refreshLevel |= level.OFFSET | level.REFLOW;
+                    // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                   }
                 }
                 else if(!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
-                  next.__offsetY(dy, true);
+                  next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
                   next.__cancelCache(true);
-                  next.__refreshLevel |= level.OFFSET | level.REFLOW;
+                  // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                 }
                 next = next.next;
               }
@@ -1037,7 +1055,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeX(dx);
                   p.__cancelCache(true);
-                  p.__refreshLevel |= level.RESIZE | level.REFLOW;
+                  p.__refreshLevel |= level.REFLOW;
                 }
               }
               if(dy) {
@@ -1055,7 +1073,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeY(dy);
                   p.__cancelCache(true);
-                  p.__refreshLevel |= level.RESIZE | level.REFLOW;
+                  p.__refreshLevel |= level.REFLOW;
                 }
                 // 高度不需要调整提前跳出
                 else {
@@ -1077,7 +1095,7 @@ class Root extends Dom {
             parent = node;
           }
           else {
-            parent = findParentNotComponent(node, root);
+            parent = node.domParent;
           }
           let newY = 0;
           if(top.unit !== AUTO) {
@@ -1101,8 +1119,8 @@ class Root extends Dom {
             oldY = -b;
           }
           if(newY !== oldY) {
-            node.__offsetY(newY - oldY);
-            node.__refreshLevel |= level.OFFSET | level.REFLOW;
+            node.__offsetY(newY - oldY, false, level.OFFSET | level.REFLOW);
+            // node.__refreshLevel |= level.OFFSET | level.REFLOW;
           }
           let newX = 0;
           if(left.unit !== AUTO) {
@@ -1126,8 +1144,8 @@ class Root extends Dom {
             oldX = -r;
           }
           if(newX !== oldX) {
-            node.__offsetX(newX - oldX);
-            node.__refreshLevel |= level.OFFSET | level.REFLOW;
+            node.__offsetX(newX - oldX, false, level.OFFSET | level.REFLOW);
+            // node.__refreshLevel |= level.OFFSET | level.REFLOW;
           }
         }
       });

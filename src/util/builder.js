@@ -1,4 +1,5 @@
 import Text from '../node/Text';
+import tag from '../node/tag';
 import util from './util';
 import $$type from './$$type';
 
@@ -50,11 +51,14 @@ function build(json, root, owner, host) {
       return json.value;
     }
     if($$type === TYPE_VD) {
-      if(tagName === 'div' || tagName === 'span') {
-        vd = new Dom(tagName, props);
-      }
-      else if(tagName === 'img') {
+      if(tagName === 'img') {
         vd = new Img(tagName, props);
+        if(Array.isArray(children) && children.length) {
+          throw new Error('Img can not contain children');
+        }
+      }
+      else {
+        vd = new Dom(tagName, props);
       }
       if(Array.isArray(children)) {
         children = relation(vd, build(children, root, owner, host));
@@ -63,6 +67,17 @@ function build(json, root, owner, host) {
         children = [];
       }
       vd.__children = children;
+      // 检查p不能包含div，inline不能包含block
+      if(tag.INLINE.hasOwnProperty(tagName)) {
+        children.forEach(item => {
+          if(item.tagName === 'div' || item.tagName === 'p') {
+            throw new Error('Inline can not contain div/p');
+          }
+        });
+      }
+      else if(tagName === 'p') {
+        throw new Error('p can not contain div');
+      }
     }
     else if($$type === TYPE_GM) {
       let klass = Geom.getRegister(tagName);

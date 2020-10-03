@@ -50,6 +50,7 @@ let o = {
     fontWeight: true,
     fontFamily: true,
   },
+  NUMBER: 5,
   isIgnore(k) {
     return this.IGNORE.hasOwnProperty(k);
   },

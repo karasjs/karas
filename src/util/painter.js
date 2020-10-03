@@ -1,28 +1,23 @@
-function canvasPolygon(ctx, list) {
+function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(!list || !list.length) {
     return;
   }
-  let n = 0;
-  ctx.moveTo(list[0][0], list[0][1]);
+  ctx.moveTo(list[0][0] + dx, list[0][1] + dy);
   for(let i = 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {
       continue;
     }
     if(item.length === 2) {
-      ctx.lineTo(item[0], item[1]);
-      n++;
+      ctx.lineTo(item[0] + dx, item[1] + dy);
     }
     else if(item.length === 4) {
-      ctx.quadraticCurveTo(item[0], item[1], item[2], item[3]);
-      n += 2;
+      ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
     }
     else if(item.length === 6) {
-      ctx.bezierCurveTo(item[0], item[1], item[2], item[3], item[4], item[5]);
-      n += 2;
+      ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
     }
   }
-  return n;
 }
 
 function svgPolygon(list) {
@@ -92,15 +87,12 @@ function svgLine(x1, y1, x2, y2, controlA, controlB, num) {
 const OFFSET = Math.PI * 0.5;
 
 function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure) {
-  let n = 2;
   ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
   if(edge) {
     if(!large || !closure) {
       ctx.lineTo(cx, cy);
-      n++;
     }
     ctx.lineTo(x1, y1);
-    n++;
     if(strokeWidth > 0) {
       ctx.stroke();
     }
@@ -111,12 +103,9 @@ function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, l
     }
     if(!large || !closure) {
       ctx.lineTo(cx, cy);
-      n++;
     }
     ctx.lineTo(x1, y1);
-    n++;
   }
-  return n;
 }
 
 function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {

@@ -161,19 +161,6 @@ class Geom extends Xom {
         computedStyle.strokeWidth = 0;
       }
     }
-    if(__cacheStyle.strokeWidth === undefined) {
-      __cacheStyle.strokeWidth = true;
-      let strokeWidth = currentStyle.strokeWidth;
-      if(strokeWidth.unit === PX) {
-        computedStyle.strokeWidth = strokeWidth.value;
-      }
-      else if(strokeWidth.unit === PERCENT) {
-        computedStyle.strokeWidth = strokeWidth.value * width * 0.01;
-      }
-      else {
-        computedStyle.strokeWidth = 0;
-      }
-    }
     if(__cacheStyle.strokeDasharray === undefined) {
       __cacheStyle.strokeDasharray = true;
       computedStyle.strokeDasharray = currentStyle.strokeDasharray;
@@ -299,8 +286,8 @@ class Geom extends Xom {
     }
   }
 
-  __cancelCache() {
-    super.__cancelCache();
+  __cancelCache(recursion) {
+    super.__cancelCache(recursion);
     this.__cacheProps = {};
   }
 

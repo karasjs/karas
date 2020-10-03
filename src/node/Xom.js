@@ -16,20 +16,21 @@ import mx from '../math/matrix';
 import geom from '../math/geom';
 import change from '../refresh/change';
 import level from '../refresh/level';
+import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative } = css;
 const { canvasPolygon, svgPolygon } = painter;
 
-function renderBorder(renderMode, points, color, ctx, xom) {
+function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
   if(renderMode === mode.CANVAS) {
     ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
     points.forEach(point => {
-      canvasPolygon(ctx, point);
+      canvasPolygon(ctx, point, dx, dy);
     });
     ctx.fill();
     ctx.closePath();
@@ -716,6 +717,7 @@ class Xom extends Node {
       position,
     } = currentStyle;
     this.__refreshLevel = level.REFLOW;
+    this.__cancelCache();
     if(isDestroyed || display === 'none') {
       this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
       return;
@@ -787,9 +789,6 @@ class Xom extends Node {
     // 计算结果存入computedStyle
     computedStyle.width = this.width;
     computedStyle.height = this.height;
-    // 设置缓存hash，render时计算
-    this.__cacheStyle = {};
-    this.__cacheSvg = false;
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;
     if(ar) {
@@ -908,66 +907,11 @@ class Xom extends Node {
     }
   }
 
-  /**
-   * 渲染基础方法，Dom/Geom公用
-   * @param renderMode
-   * @param lv
-   * @param ctx
-   * @param defs
-   */
-  render(renderMode, lv, ctx, defs) {
-    if(renderMode === mode.SVG) {
-      if(this.__cacheSvg) {
-        let n = extend({}, this.__virtualDom);
-        n.cache = true;
-        this.__virtualDom = n;
-        return;
-      }
-      this.__cacheSvg = true;
-      this.__virtualDom = {
-        bb: [],
-        children: [],
-        opacity: 1,
-      };
-    }
-    let {
-      isDestroyed,
-      currentStyle,
-      computedStyle,
-      width,
-      height,
-      innerWidth,
-      innerHeight,
-      outerWidth,
-      outerHeight,
-      __cacheStyle,
-      parent,
-    } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
-      return;
-    }
-    // 使用sx和sy渲染位置，考虑了relative和translate影响
-    let { sx: x, sy: y } = this;
-    let {
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
-      borderLeftWidth,
-      borderRightWidth,
-      borderTopWidth,
-      borderBottomWidth,
-    } = computedStyle;
-    let x1 = x + marginLeft;
-    let x2 = x1 + borderLeftWidth;
-    let x3 = x2 + width + paddingLeft + paddingRight;
-    let x4 = x3 + borderRightWidth;
-    let y1 = y + marginTop;
-    let y2 = y1 + borderTopWidth;
-    let y3 = y2 + height + paddingTop + paddingBottom;
-    let y4 = y3 + borderBottomWidth;
+  __calCache(renderMode, ctx, defs, parent,
+             innerWidth, innerHeight, outerWidth, outerHeight,
+             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+             x1, x2, x3, x4, y1, y2, y3, y4) {
+    let { sx, sy, __cacheStyle, currentStyle, computedStyle } = this;
     let {
       backgroundPositionX,
       backgroundPositionY,
@@ -976,7 +920,7 @@ class Xom extends Node {
     // 先根据cache计算需要重新计算的computedStyle
     if(__cacheStyle.transformOrigin === undefined) {
       __cacheStyle.transformOrigin = true;
-      matrixCache = false;
+      matrixCache = null;
       computedStyle.transformOrigin = tf.calOrigin(currentStyle.transformOrigin, outerWidth, outerHeight);
     }
     if(__cacheStyle.transform === undefined
@@ -996,7 +940,7 @@ class Xom extends Node {
         = __cacheStyle.skewX
         = __cacheStyle.skewY
         = true;
-      matrixCache = false;
+      matrixCache = null;
       let matrix;
       // transform相对于自身
       if(currentStyle.transform) {
@@ -1044,12 +988,12 @@ class Xom extends Node {
     if(__cacheStyle.backgroundPositionX === undefined) {
       __cacheStyle.backgroundPositionX = true;
       computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
-        ? backgroundPositionX.value : backgroundPositionX.value * innerWidth;
+        ? backgroundPositionX.value : backgroundPositionX.value * innerWidth + '%';
     }
     if(__cacheStyle.backgroundPositionY === undefined) {
       __cacheStyle.backgroundPositionY = true;
       computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
-        ? backgroundPositionY.value : backgroundPositionY.value * innerWidth;
+        ? backgroundPositionY.value : backgroundPositionY.value * innerWidth + '%';
     }
     if(__cacheStyle.backgroundSize === undefined) {
       __cacheStyle.backgroundSize = true;
@@ -1101,6 +1045,7 @@ class Xom extends Node {
         __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
       }
     }
+    let backgroundImage = __cacheStyle.backgroundImage;
     if(__cacheStyle.boxShadow === undefined) {
       __cacheStyle.boxShadow = true;
       computedStyle.boxShadow = currentStyle.boxShadow;
@@ -1192,17 +1137,181 @@ class Xom extends Node {
         = __cacheStyle.borderBottomLeftRadius
         = true;
       calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+      ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+        __cacheStyle['border' + k] = undefined;
+      });
     }
+    let {
+      borderTopLeftRadius,
+      borderTopRightRadius,
+      borderBottomRightRadius,
+      borderBottomLeftRadius,
+    } = computedStyle;
+    // width/style/radius影响border，color不影响渲染缓存
+    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
+      let k2 = 'border' + k;
+      let kw = k2 + 'Width';
+      let ks = k2 + 'Style';
+      if(__cacheStyle[kw] === undefined) {
+        __cacheStyle[kw] = true;
+        __cacheStyle[k2] = undefined;
+      }
+      if(__cacheStyle[ks] === undefined) {
+        __cacheStyle[ks] = true;
+        __cacheStyle[k2] = undefined;
+      }
+      if(__cacheStyle[k2] === undefined) {
+        if(k === 'Top') {
+          let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+          let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+          __cacheStyle[k2] = border.calPoints(borderTopWidth, ks, deg1, deg2,
+            x1, x2, x3, x4, y1, y2, y3, y4, 0,
+            borderTopLeftRadius, borderTopRightRadius);
+        }
+        else if(k === 'Right') {
+          let deg1 = Math.atan(borderRightWidth / borderTopWidth);
+          let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+          __cacheStyle[k2] = border.calPoints(borderRightWidth, ks, deg1, deg2,
+            x1, x2, x3, x4, y1, y2, y3, y4, 1,
+            borderTopRightRadius, borderBottomRightRadius);
+        }
+        else if(k === 'Bottom') {
+          let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+          let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+          __cacheStyle[k2] = border.calPoints(borderBottomWidth, ks, deg1, deg2,
+            x1, x2, x3, x4, y1, y2, y3, y4, 2,
+            borderBottomLeftRadius, borderBottomRightRadius);
+        }
+        else if(k === 'Left') {
+          let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+          let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+          __cacheStyle[k2] = border.calPoints(borderLeftWidth, ks, deg1, deg2,
+            x1, x2, x3, x4, y1, y2, y3, y4, 3,
+            borderTopLeftRadius, borderBottomLeftRadius);
+        }
+      }
+    });
+    if(!matrixCache) {
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += sx;
+      tfo[1] += sy;
+      __cacheStyle.matrix = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+    }
+    // 决定是否缓存位图的指数，有内容就缓存，空容器无内容
+    let hasContent;
+    if(renderMode === mode.CANVAS) {
+      if(util.isString(backgroundImage)) {
+        hasContent = true;
+      }
+      if(computedStyle.backgroundColor[3] > 0) {
+        hasContent = true;
+      }
+      else if(backgroundImage && backgroundImage.k) {
+        hasContent = true;
+      }
+      if(!hasContent) {
+        ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'].forEach(k => {
+          if(computedStyle[k + 'Width'] > 0 && computedStyle[k + 'Color'][3] > 0) {
+            hasContent = true;
+          }
+        });
+      }
+      let boxShadow = computedStyle.boxShadow;
+      if(!hasContent && Array.isArray(boxShadow)) {
+        for(let i = 0, len = boxShadow.length; i < len; i++) {
+          let item = boxShadow[i];
+          if(item && (item[2] > 0 || item[3] > 0)) {
+            hasContent = true;
+            break;
+          }
+        }
+      }
+      // borderRadius用5，只要有bgc或border就会超过
+      for(let i = 0, len = borderRadiusKs.length; i < len && !hasContent; i++) {
+        let v = computedStyle[borderRadiusKs[i]];
+        if(v[0] > 0 && v[1] > 0) {
+          hasContent = true;
+          break;
+        }
+      }
+    }
+    return hasContent;
+  }
+
+  /**
+   * 渲染基础方法，Dom/Geom公用
+   * @param renderMode
+   * @param lv
+   * @param ctx
+   * @param defs
+   */
+  render(renderMode, lv, ctx, defs) {
+    if(renderMode === mode.SVG) {
+      if(this.__cacheSvg) {
+        let n = extend({}, this.__virtualDom);
+        n.cache = true;
+        this.__virtualDom = n;
+        return;
+      }
+      this.__cacheSvg = true;
+      this.__virtualDom = {
+        bb: [],
+        children: [],
+        opacity: 1,
+      };
+    }
+    let {
+      isDestroyed,
+      currentStyle,
+      computedStyle,
+      width,
+      height,
+      innerWidth,
+      innerHeight,
+      outerWidth,
+      outerHeight,
+      __cacheStyle,
+      root,
+    } = this;
+    if(isDestroyed || computedStyle.display === 'none') {
+      return;
+    }
+    // 使用sx和sy渲染位置，考虑了relative和translate影响
+    let { sx: x, sy: y } = this;
+    let {
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingRight,
+      paddingBottom,
+      paddingLeft,
+      borderLeftWidth,
+      borderRightWidth,
+      borderTopWidth,
+      borderBottomWidth,
+    } = computedStyle;
+    let x1 = x + marginLeft;
+    let x2 = x1 + borderLeftWidth;
+    let x3 = x2 + width + paddingLeft + paddingRight;
+    let x4 = x3 + borderRightWidth;
+    let y1 = y + marginTop;
+    let y2 = y1 + borderTopWidth;
+    let y3 = y2 + height + paddingTop + paddingBottom;
+    let y4 = y3 + borderBottomWidth;
+    // 防止cp直接返回cp嵌套，拿到真实dom的parent
+    let p = this.domParent;
+    // 计算好cacheStyle的内容，以及位图缓存指数
+    let hasContent = this.__calCache(renderMode, ctx, defs, p,
+      innerWidth, innerHeight, outerWidth, outerHeight,
+      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+      x1, x2, x3, x4, y1, y2, y3, y4
+    );
     let {
       backgroundColor,
       borderTopColor,
-      borderTopStyle,
       borderRightColor,
-      borderRightStyle,
       borderBottomColor,
-      borderBottomStyle,
       borderLeftColor,
-      borderLeftStyle,
       borderTopLeftRadius,
       borderTopRightRadius,
       borderBottomRightRadius,
@@ -1213,36 +1322,23 @@ class Xom extends Node {
       opacity,
       filter,
       backgroundSize,
-      transformOrigin,
-      transform,
       boxShadow,
     } = computedStyle;
-    let p = parent || this.host && this.host.parent;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
       if(p) {
         opacity *= p.__opacity;
       }
       this.__opacity = opacity;
-      if(ctx.globalAlpha !== opacity) {
-        ctx.globalAlpha = opacity;
-      }
+      // if(ctx.globalAlpha !== opacity) {
+      //   ctx.globalAlpha = opacity;
+      // }
     }
-    else {
+    else if(renderMode === mode.SVG) {
       this.__virtualDom.opacity = opacity;
     }
     // 省略计算
-    let matrix;
-    if(matrixCache) {
-      matrix = matrixCache;
-    }
-    else {
-      let tfo = transformOrigin.slice(0);
-      tfo[0] += x;
-      tfo[1] += y;
-      matrix = transform;
-      matrix = __cacheStyle.matrix = tf.calMatrixByOrigin(matrix, tfo);
-    }
+    let matrix = __cacheStyle.matrix;
     let renderMatrix = this.__svgMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(p) {
@@ -1250,35 +1346,83 @@ class Xom extends Node {
     }
     this.__matrixEvent = matrix;
     if(renderMode === mode.CANVAS) {
-      ctx.setTransform(...matrix);
+      // ctx.setTransform(...matrix);
     }
     else if(renderMode === mode.SVG) {
       if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
-    // 隐藏不渲染，但要加载背景图
+    // 隐藏不渲染
     if(visibility === 'hidden') {
       return;
     }
-    // canvas的blur需绘制到离屏上应用后反向绘制回来
-    let offScreen;
-    if(filter && renderMode === mode.CANVAS) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          let { width, height } = this.root;
-          let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
-          if(c.ctx) {
-            offScreen = {
-              ctx,
-            };
-            offScreen.target = c;
-            ctx = c.ctx;
+    // 无缓存重新渲染时是否使用缓存
+    let cache = this.__cache, origin, dx = 0, dy = 0;
+    // 有缓存情况快速使用位图缓存不再继续
+    if(cache && cache.available && level.lt(lv, level.REPAINT)) {
+      return;
+    }
+    if(hasContent && root.props.cache) {
+      if(renderMode === mode.CANVAS) {
+        // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
+        if(!cache) {
+          let bbox = this.bbox;
+          cache = Cache.getInstance(bbox);
+          // 有可能超过最大尺寸限制不使用缓存
+          if(cache) {
+            this.__cache = cache;
+            origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
+            // 还要判断有无离屏功能开启可用
+            if(cache.enabled) {
+              ctx = cache.ctx;
+              let [x, y] = cache.coords;
+              dx = cache.dx = x - x1;
+              dy = cache.dy = y - y1;
+              cache.x = x;
+              cache.y = y;
+              cache.x1 = x1;
+              cache.y1 = y1;
+              x1 = x;
+              y1 = y;
+              if(dx) {
+                x2 += dx;
+                x3 += dx;
+                x4 += dx;
+              }
+              if(dy) {
+                y2 += dy;
+                y3 += dy;
+                y4 += dy;
+              }
+            }
           }
         }
-      });
+      }
     }
+    // 无法使用缓存时主画布直接绘制需设置
+    if(renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
+      ctx.globalAlpha = opacity;
+      ctx.setTransform(...matrix);
+    }
+    // canvas的blur需绘制到离屏上应用后反向绘制回来
+    // let offScreen;
+    // if(filter && renderMode === mode.CANVAS) {
+    //   filter.forEach(item => {
+    //     let [k, v] = item;
+    //     if(k === 'blur' && v > 0) {
+    //       let { width, height } = this.root;
+    //       let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+    //       if(c.ctx) {
+    //         offScreen = {
+    //           ctx,
+    //         };
+    //         offScreen.target = c;
+    //         ctx = c.ctx;
+    //       }
+    //     }
+    //   });
+    // }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
       renderBgc(renderMode, __cacheStyle.backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
@@ -1366,8 +1510,8 @@ class Xom extends Node {
             else if(h === -1) {
               h = w * height / width;
             }
-            let bgX = x2 + calBackgroundPosition(backgroundPositionX, innerWidth, w);
-            let bgY = y2 + calBackgroundPosition(backgroundPositionY, innerHeight, h);
+            let bgX = x2 + calBackgroundPosition(currentStyle.backgroundPositionX, innerWidth, w);
+            let bgY = y2 + calBackgroundPosition(currentStyle.backgroundPositionY, innerHeight, h);
             // 超出尺寸模拟mask截取
             let needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
@@ -1556,70 +1700,58 @@ class Xom extends Node {
     }
     // 边框需考虑尖角，两条相交边平分45°夹角
     if(borderTopWidth > 0 && borderTopColor[3] > 0) {
-      let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-      let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-      let points = border.calPoints(borderTopWidth, borderTopStyle, deg1, deg2,
-        x1, x2, x3, x4, y1, y2, y3, y4, 0,
-        borderTopLeftRadius, borderTopRightRadius);
-      renderBorder(renderMode, points, __cacheStyle.borderTopColor, ctx, this);
+      renderBorder(renderMode, __cacheStyle.borderTop, __cacheStyle.borderTopColor, ctx, this, dx, dy);
     }
     if(borderRightWidth > 0 && borderRightColor[3] > 0) {
-      let deg1 = Math.atan(borderRightWidth / borderTopWidth);
-      let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-      let points = border.calPoints(borderRightWidth, borderRightStyle, deg1, deg2,
-        x1, x2, x3, x4, y1, y2, y3, y4, 1,
-        borderTopRightRadius, borderBottomRightRadius);
-      renderBorder(renderMode, points, __cacheStyle.borderRightColor, ctx, this);
+      renderBorder(renderMode, __cacheStyle.borderRight, __cacheStyle.borderRightColor, ctx, this, dx, dy);
     }
     if(borderBottomWidth > 0 && borderBottomColor[3] > 0) {
-      let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
-      let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-      let points = border.calPoints(borderBottomWidth, borderBottomStyle, deg1, deg2,
-        x1, x2, x3, x4, y1, y2, y3, y4, 2,
-        borderBottomLeftRadius, borderBottomRightRadius);
-      renderBorder(renderMode, points, __cacheStyle.borderBottomColor, ctx, this);
+      renderBorder(renderMode, __cacheStyle.borderBottom, __cacheStyle.borderBottomColor, ctx, this, dx, dy);
     }
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
-      let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
-      let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-      let points = border.calPoints(borderLeftWidth, borderLeftStyle, deg1, deg2,
-        x1, x2, x3, x4, y1, y2, y3, y4, 3,
-        borderTopLeftRadius, borderBottomLeftRadius);
-      renderBorder(renderMode, points, __cacheStyle.borderLeftColor, ctx, this);
+      renderBorder(renderMode, __cacheStyle.borderLeft, __cacheStyle.borderLeftColor, ctx, this, dx, dy);
     }
-    if(filter) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          if(renderMode === mode.CANVAS) {
-            offScreen.blur = v;
-          }
-          else if(renderMode === mode.SVG) {
-            // 模糊框卷积尺寸 #66
-            let d = mx.int2convolution(v);
-            let id = defs.add({
-              tagName: 'filter',
-              props: [
-                ['x', -d / outerWidth],
-                ['y', -d / outerHeight],
-                ['width', 1 + d * 2 / outerWidth],
-                ['height', 1 + d * 2 / outerHeight],
-              ],
-              children: [
-                {
-                  tagName: 'feGaussianBlur',
-                  props: [
-                    ['stdDeviation', v],
-                  ],
-                }
-              ],
-            });
-            this.virtualDom.filter = 'url(#' + id + ')';
-          }
-        }
-      });
+    // 渲染完认为完全无变更，等布局/动画/更新重置
+    this.__refreshLevel = level.NONE;
+    if(cache) {
+      cache.__available = true;
+      // cache.hasContent = hasContent;
+      // cache.filter = filter;
     }
-    return offScreen;
+    return { cache, origin, hasContent, filter };
+    // if(filter) {
+    //   filter.forEach(item => {
+    //     let [k, v] = item;
+    //     if(k === 'blur' && v > 0) {
+    //       if(renderMode === mode.CANVAS) {
+    //         offScreen.blur = v;
+    //       }
+    //       else if(renderMode === mode.SVG) {
+    //         // 模糊框卷积尺寸 #66
+    //         let d = mx.int2convolution(v);
+    //         let id = defs.add({
+    //           tagName: 'filter',
+    //           props: [
+    //             ['x', -d / outerWidth],
+    //             ['y', -d / outerHeight],
+    //             ['width', 1 + d * 2 / outerWidth],
+    //             ['height', 1 + d * 2 / outerHeight],
+    //           ],
+    //           children: [
+    //             {
+    //               tagName: 'feGaussianBlur',
+    //               props: [
+    //                 ['stdDeviation', v],
+    //               ],
+    //             }
+    //           ],
+    //         });
+    //         this.virtualDom.filter = 'url(#' + id + ')';
+    //       }
+    //     }
+    //   });
+    // }
+    // return offScreen;
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {
@@ -1627,15 +1759,15 @@ class Xom extends Node {
     let hasMask = next && next.isMask;
     let hasClip = next && next.isClip;
     if(!hasMask && !hasClip) {
-      this.render(renderMode, lv, ctx, defs);
-      return;
+      return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {
+      let res;
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
       if(hasMask) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-        this.render(renderMode, lv, c.ctx);
+        res = this.render(renderMode, lv, c.ctx);
         // 收集之前的mask列表
         let list = [];
         while(next && next.isMask) {
@@ -1694,9 +1826,10 @@ class Xom extends Node {
         ctx.closePath = closePath;
         ctx.clip();
         ctx.closePath();
-        this.render(renderMode, lv, ctx);
+        res = this.render(renderMode, lv, ctx);
         ctx.restore();
       }
+      return res;
     }
     else if(renderMode === mode.SVG) {
       this.render(renderMode, lv, ctx, defs);
@@ -1789,6 +1922,16 @@ class Xom extends Node {
         this.virtualDom.clip = id;
       }
     }
+  }
+
+  __applyCache(renderMode, lv, ctx, isTop, tx, ty) {
+    let { coords, canvas, size } = this.__cache;
+    let [x, y] = coords;
+    ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+  }
+
+  __mergeBbox() {
+    return this.__cache.bbox;
   }
 
   __destroy() {
@@ -1916,9 +2059,33 @@ class Xom extends Node {
     this.__cacheSvg = false;
   }
 
-  __cancelCache() {
+  __cancelCache(recursion) {
     this.__cancelCacheSvg();
     this.__cacheStyle = {};
+    if(this.__cache) {
+      this.__cache.clear();
+    }
+    // 向上清空孩子缓存，遇到已清空跳出
+    if(recursion) {
+      let p = this.domParent;
+      let root = this.root;
+      while(p) {
+        if(p.__cache && p.__cache.children) {
+          p.__cache.children = false;
+          // svg专用vd
+          if(p.virtualDom && p.virtualDom.cacheChildren) {
+            p.virtualDom.cacheChildren = false;
+          }
+        }
+        else {
+          break;
+        }
+        p = p.domParent;
+        if(p && p === root) {
+          break;
+        }
+      }
+    }
   }
 
   __getRg(renderMode, ctx, defs, gd) {
@@ -2053,17 +2220,23 @@ class Xom extends Node {
     return cb(this, options);
   }
 
-  __offsetX(diff, isLayout) {
+  __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.layoutData.x += diff;
     }
+    if(lv !== undefined) {
+      this.__refreshLevel |= lv;
+    }
   }
 
-  __offsetY(diff, isLayout) {
+  __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout);
     if(isLayout) {
       this.layoutData.y += diff;
+    }
+    if(lv !== undefined) {
+      this.__refreshLevel |= lv;
     }
   }
 
@@ -2087,7 +2260,7 @@ class Xom extends Node {
         display,
         paddingRight,
         paddingLeft,
-      }
+      },
     } = this;
     if(display === 'none') {
       return 0;
@@ -2103,7 +2276,7 @@ class Xom extends Node {
         display,
         paddingTop,
         paddingBottom,
-      }
+      },
     } = this;
     if(display === 'none') {
       return 0;
@@ -2121,7 +2294,7 @@ class Xom extends Node {
         borderRightWidth,
         marginRight,
         marginLeft,
-      }
+      },
     } = this;
     if(display === 'none') {
       return 0;
@@ -2141,7 +2314,7 @@ class Xom extends Node {
         borderBottomWidth,
         marginTop,
         marginBottom,
-      }
+      },
     } = this;
     if(display === 'none') {
       return 0;
@@ -2151,6 +2324,61 @@ class Xom extends Node {
       + borderBottomWidth
       + marginTop
       + marginBottom;
+  }
+
+  // 不考虑margin的范围
+  get bbox() {
+    let {
+      sx,
+      sy,
+      width,
+      height,
+      computedStyle: {
+        display,
+        borderTopWidth,
+        borderRightWidth,
+        borderBottomWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingRight,
+        paddingBottom,
+        paddingLeft,
+        boxShadow,
+        filter,
+      },
+    } = this;
+    if(display === 'none') {
+      return [sx, sy, 0, 0];
+    }
+    let ox = 0, oy = 0;
+    if(boxShadow) {
+      boxShadow.forEach(item => {
+        let [x, y, blur, spread, , inset] = item;
+        if(inset !== 'inset') {
+          let d = mx.int2convolution(blur);
+          d += spread;
+          ox = Math.max(ox, x + d);
+          oy = Math.max(oy, y + d);
+        }
+      });
+    }
+    if(filter) {
+      for(let i = 0, len = filter.length; i < len; i++) {
+        let [k, v] = filter[i];
+        if(k === 'blur') {
+          let d = mx.int2convolution(v);
+          ox = Math.max(ox, d);
+          oy = Math.max(oy, d);
+        }
+      }
+    }
+    sx += marginLeft;
+    sy += marginTop;
+    width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;
+    height += borderTopWidth + paddingTop + borderBottomWidth + paddingBottom;
+    return [sx - ox, sy - oy, sx + width + ox, sy + height + oy];
   }
 
   get listener() {

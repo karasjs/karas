@@ -10,9 +10,58 @@ import unit from '../style/unit';
 import blur from '../style/blur';
 import util from '../util/util';
 import inject from '../util/inject';
+import level from '../refresh/level';
+import change from '../refresh/change';
+import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
+
+function genZIndexChildren(dom) {
+  let flow = [];
+  let abs = [];
+  let needSort = false;
+  let lastIndex;
+  dom.children.forEach((item, i) => {
+    let child = item;
+    if(item instanceof Component) {
+      item = item.shadowRoot;
+    }
+    // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+    if(!item.isMask && !item.isClip && item.computedStyle) {
+      if(item instanceof Xom) {
+        if(isRelativeOrAbsolute(item)) {
+          // 临时变量为排序使用
+          child.__iIndex = i;
+          let z = child.__zIndex = item.currentStyle.zIndex;
+          abs.push(child);
+          if(lastIndex === undefined) {
+            lastIndex = z;
+          }
+          else if(!needSort) {
+            if(z < lastIndex) {
+              needSort = true;
+            }
+            lastIndex = z;
+          }
+        }
+        else {
+          flow.push(child);
+        }
+      }
+      else {
+        flow.push(child);
+      }
+    }
+  });
+  needSort && abs.sort(function(a, b) {
+    if(a.__zIndex !== b.__zIndex) {
+      return a.__zIndex - b.__zIndex;
+    }
+    return a.__iIndex - b.__iIndex;
+  });
+  return flow.concat(abs);
+}
 
 class Dom extends Xom {
   constructor(tagName, props, children) {
@@ -67,20 +116,20 @@ class Dom extends Xom {
   }
 
   // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
-  __offsetX(diff, isLayout) {
-    super.__offsetX(diff, isLayout);
+  __offsetX(diff, isLayout, lv) {
+    super.__offsetX(diff, isLayout, lv);
     this.flowChildren.forEach(item => {
       if(item) {
-        item.__offsetX(diff, isLayout);
+        item.__offsetX(diff, isLayout, lv);
       }
     });
   }
 
-  __offsetY(diff, isLayout) {
-    super.__offsetY(diff, isLayout);
+  __offsetY(diff, isLayout, lv) {
+    super.__offsetY(diff, isLayout, lv);
     this.flowChildren.forEach(item => {
       if(item) {
-        item.__offsetY(diff, isLayout);
+        item.__offsetY(diff, isLayout, lv);
       }
     });
   }
@@ -686,7 +735,7 @@ class Dom extends Xom {
         }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {
-          lineGroup.add(item); console.log('inline');
+          lineGroup.add(item);
           item.__layout({
             x,
             y,
@@ -1014,54 +1063,224 @@ class Dom extends Xom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    let offScreen = super.render(renderMode, lv, ctx, defs);
-    if(offScreen && offScreen.target && offScreen.target.ctx) {
-      ctx = offScreen.target.ctx;
-    }
-    // 降级
-    else {
-      offScreen = null;
-    }
+    // let offScreen = super.render(renderMode, lv, ctx, defs);
+    // if(offScreen && offScreen.target && offScreen.target.ctx) {
+    //   ctx = offScreen.target.ctx;
+    // }
+    // // 降级
+    // else {
+    //   offScreen = null;
+    // }
+    // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
+    let res = super.render(renderMode, lv, ctx, defs);
+    // canvas检查filter
+    // if(renderMode === mode.CANVAS && res.filter) {}
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       this.virtualDom.type = 'dom';
     }
-    let { isDestroyed, computedStyle: { display }, children } = this;
+    let { root, isDestroyed, computedStyle: { display }, children } = this;
     if(isDestroyed || display === 'none' || !children.length) {
-      return;
+      return res;
     }
-    // 先渲染过滤mask
+    // canvas先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
+    if(renderMode === mode.CANVAS) {
+      let cacheTotal = this.__cacheTotal;
+      if(level.lt(lv, level.REPAINT)
+        && cacheTotal && cacheTotal.available) {
+        this.__applyCache(renderMode, lv, ctx, true);
+        return;
+      }
+    }
+    // 先渲染过滤mask，仅svg进入，canvas在下面自身做
     children.forEach(item => {
       if(item.isMask || item.isClip) {
         item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
       }
     });
+    // 查找所有非文本children是否都有缓存，比如有的超尺寸或离屏功能不可用
+    let cacheChildren = true;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndex = this.zIndexChildren;
-    zIndex.forEach(item => {
-      item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    zIndexChildren.forEach(item => {
+      let draw = !root.props.cache || renderMode === mode.SVG;
+      // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
+      if(item instanceof Component) {
+        if(item.shadowRoot instanceof Text) {
+          if(draw) {
+            item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+          }
+        }
+        else {
+          let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+          if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled) {
+            cacheChildren = false;
+          }
+        }
+      }
+      else if(item instanceof Text) {
+        cacheChildren = true;
+        if(draw) {
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+        }
+      }
+      else {
+        let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+        if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled) {
+          cacheChildren = false;
+        }
+      }
     });
-    // 模糊滤镜写回
-    if(renderMode === mode.CANVAS && offScreen) {
-      let { width, height } = this.root;
-      let webgl = inject.getCacheWebgl(width, height);
-      let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-      offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-      offScreen.target.draw();
-      res.clear();
+    // 当opacity/transform/filter且不为none时自身作为局部根节点缓存
+    let canCacheSelf = cacheChildren
+      && !level.eq(lv, level.NONE) && level.lte(lv, level.TRANSFORM_OPACITY_FILTER);
+    // 需考虑缓存和滤镜
+    if(renderMode === mode.CANVAS) {
+      if(root.props.cache) {
+        // 自身动画恰好且孩子可缓存，直接作为局部根节点缓存
+        if(canCacheSelf) {
+          this.__applyCache(renderMode, lv, ctx, true);
+        }
+        // 自身动画影响且且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root/component，各自作为局部根节点应用自身缓存位图到主画布
+        else if(cacheChildren && !level.eq(lv, level.NONE) || !cacheChildren || this === root || !this.parent) {
+          zIndexChildren.forEach(item => {
+            if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+              item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+            }
+            else {
+              item.__applyCache(renderMode, lv, ctx, true);
+            }
+          });
+        }
+        // 其它情况继续等待上级调用
+      }
+
+      // let { width, height } = this.root;
+      // let webgl = inject.getCacheWebgl(width, height);
+      // let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+      // offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+      // offScreen.target.draw();
+      // res.clear();
     }
     // img的children在子类特殊处理
     else if(renderMode === mode.SVG && this.tagName !== 'img') {
-      this.virtualDom.children = zIndex.map(item => item.virtualDom);
+      this.virtualDom.children = zIndexChildren.map(item => item.virtualDom);
+      // if(cacheChildren && this.availableAnimating) {
+      //   cacheChildren = false;
+      //   delete this.virtualDom.cacheChildren;
+      //   this.virtualDom.children.forEach(item => item.cacheChildren = true);
+      // }
       // 没变化则将text孩子设置cache
-      if(this.virtualDom.cache) {
-        this.virtualDom.children.forEach(item => {
-          if(item.type === 'text') {
-            item.cache = true;
+      // if(this.virtualDom.cache) {
+      //   this.virtualDom.children.forEach(item => {
+      //     if(item.type === 'text') {
+      //       item.cache = true;
+      //     }
+      //   });
+      // }
+    }
+    res && (res.cacheChildren = cacheChildren);
+    return res;
+  }
+
+  /**
+   * canvas下，可以缓存的局部树的顶点调用，包含可能存在的所有children或文字节点
+   * 递归传递给children一个新的离屏ctx，各自绘制完后，将这个整体绘制到主画布上
+   * 有可能子节点没超限但整体超限，此时要考虑降级分别绘制
+   * @param renderMode
+   * @param lv
+   * @param ctx
+   * @param isTop
+   * @param tx 汇总离屏canvas的目标x
+   * @param ty 汇总离屏canvas的目标y
+   * @param x1
+   * @param y1
+   */
+  __applyCache(renderMode, lv, ctx, isTop, tx, ty, x1, y1) {
+    let cacheTotal = this.__cacheTotal;
+    if(isTop) {
+      let bboxTotal = this.__mergeBbox();
+      // 第一次初始化进行bbox合集计算
+      if(!cacheTotal) {
+        cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
+      }
+      // 后续如果超过可缓存的lv重设，否则直接用已有内容
+      else if(level.gte(lv, level.REPAINT)) {
+        cacheTotal.reset();
+      }
+      if(cacheTotal && cacheTotal.enabled) {
+        let { coords: [tx, ty], size, canvas } = cacheTotal;
+        let { dx, dy, x1, y1 } = this.__cache;
+        if(!cacheTotal.available || level.lt(lv, level.REPAINT)) {
+          cacheTotal.__available = true;
+          cacheTotal.x1 = x1;
+          cacheTotal.y1 = y1;
+          dx += tx;
+          dy += ty;
+          super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, tx, ty);
+          this.zIndexChildren.forEach(item => {
+            if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+              item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
+            }
+            else {
+              item.__applyCache(renderMode, lv, cacheTotal.ctx, false, tx, ty, x1, y1);
+            }
+          });
+        }
+        // 写回主画布
+        ctx.globalAlpha = this.__opacity;
+        ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
+      }
+      // 超尺寸无法进行，降级各自作为顶点渲染
+      else {
+        this.zIndexChildren.forEach(item => {
+          if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+            item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+          }
+          else {
+            item.__applyCache(renderMode, lv, ctx, true);
           }
         });
       }
     }
+    // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
+    else {
+      let { dx, dy, coords } = this.__cache;
+      // 被当做总缓存下的子元素也有总缓存需释放清空
+      if(cacheTotal && cacheTotal.available) {
+        cacheTotal.release();
+        this.__cacheTotal = null;
+      }
+      let ox = this.sx - x1;
+      let oy = this.sy - y1;
+      dx += tx - coords[0] + ox;
+      dy += ty - coords[1] + oy;
+      ctx.globalAlpha = this.__opacity;
+      super.__applyCache(renderMode, lv, ctx, isTop, tx + ox, ty + oy);
+      this.zIndexChildren.forEach(item => {
+        if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx, dy);
+        }
+        else {
+          item.__applyCache(renderMode, lv, ctx, false, tx, ty, x1, y1);
+        }
+      });
+    }
+  }
+
+  __mergeBbox() {
+    // 一定有
+    let bbox = super.__mergeBbox().slice(0);
+    this.zIndexChildren.forEach(item => {
+      if(!(item instanceof Text) && !(item instanceof Component) && !(item.shadowRoot instanceof Text)) {
+        let t = item.__mergeBbox();
+        bbox[0] = Math.min(bbox[0], t[0]);
+        bbox[1] = Math.max(bbox[1], t[1]);
+        bbox[2] = Math.min(bbox[2], t[2]);
+        bbox[3] = Math.max(bbox[3], t[3]);
+      }
+    });
+    return bbox;
   }
 
   /**
@@ -1143,7 +1362,7 @@ class Dom extends Xom {
   }
 
   __cancelCache(recursion) {
-    super.__cancelCache();
+    super.__cancelCache(recursion);
     if(recursion) {
       this.children.forEach(child => {
         if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
@@ -1186,49 +1405,7 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    let flow = [];
-    let abs = [];
-    let needSort = false;
-    let lastIndex;
-    this.children.forEach((item, i) => {
-      let child = item;
-      if(item instanceof Component) {
-        item = item.shadowRoot;
-      }
-      // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      if(!item.isMask && !item.isClip && item.computedStyle) {
-        if(item instanceof Xom) {
-          if(isRelativeOrAbsolute(item)) {
-            // 临时变量为排序使用
-            child.__iIndex = i;
-            let z = child.__zIndex = item.currentStyle.zIndex;
-            abs.push(child);
-            if(lastIndex === undefined) {
-              lastIndex = z;
-            }
-            else if(!needSort) {
-              if(z < lastIndex) {
-                needSort = true;
-              }
-              lastIndex = z;
-            }
-          }
-          else {
-            flow.push(child);
-          }
-        }
-        else {
-          flow.push(child);
-        }
-      }
-    });
-    needSort && abs.sort(function(a, b) {
-      if(a.__zIndex !== b.__zIndex) {
-        return a.__zIndex - b.__zIndex;
-      }
-      return a.__iIndex - b.__iIndex;
-    });
-    return flow.concat(abs);
+    return this.__zIndexChildren;
   }
 
   get lineGroups() {

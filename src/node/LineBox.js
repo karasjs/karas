@@ -12,12 +12,12 @@ class LineBox {
     this.__virtualDom = {};
   }
 
-  render(renderMode, ctx, computedStyle, cacheStyle) {
+  render(renderMode, ctx, computedStyle, cacheStyle, dx, dy) {
     let { content, x, y, parent } = this;
     let { ox, oy } = parent;
     y += css.getBaseLine(computedStyle);
-    x += ox;
-    y += oy;
+    x += ox + dx;
+    y += oy + dy;
     if(renderMode === mode.CANVAS) {
       ctx.fillText(content, x, y);
     }

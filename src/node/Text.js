@@ -198,7 +198,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, lv, ctx) {
+  render(renderMode, lv, ctx, defs, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -220,7 +220,7 @@ class Text extends Node {
       }
     }
     lineBoxes.forEach(item => {
-      item.render(renderMode, ctx, computedStyle, cacheStyle);
+      item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);

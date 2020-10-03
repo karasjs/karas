@@ -35,7 +35,7 @@ class Node {
 
   __destroy() {
     this.__isDestroyed = true;
-    this.__parent = null;
+    // this.__parent = null;
   }
 
   get x() {
@@ -88,6 +88,24 @@ class Node {
 
   get parent() {
     return this.__parent;
+  }
+
+  get domParent() {
+    let p = this;
+    let root = this.root;
+    while(p) {
+      if(p === root) {
+        p = undefined;
+        break;
+      }
+      if(p.parent) {
+        p = p.parent;
+        break;
+      }
+      if(p.host) {
+        p = p.host;
+      }
+    }
   }
 
   // canvas/svg根节点

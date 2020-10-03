@@ -10043,6 +10043,38 @@
           pos: pos
         };
       }
+    }, {
+      key: "MAX",
+      set: function set(v) {
+        var n = v;
+
+        while (n > 2) {
+          n = n % 2;
+        }
+
+        if (n !== 0) {
+          console.error('Page max-size must be a multiple of 2');
+          return;
+        }
+
+        if (v < 8) {
+          console.error('Page max-size must >= 8');
+          return;
+        }
+
+        MAX = v;
+        n = 8;
+        SIZE = [];
+
+        while (n <= v) {
+          SIZE.push(n);
+          NUMBER$3.push(Math.min(8, n / 8));
+          n *= 2;
+        }
+      },
+      get: function get() {
+        return MAX;
+      }
     }]);
 
     return Page;

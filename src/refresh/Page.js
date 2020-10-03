@@ -1,8 +1,8 @@
 import inject from '../util/inject';
 
-const SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-const NUMBER = [8,  8,  8,  8,   8,   8,   8,    4,    2,    1];
-const MAX = 4096;
+let SIZE   = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+let NUMBER = [8,  8,  8,  8,   8,   8,   8,    4,    2,    1];
+let MAX = 4096;
 const HASH = {};
 
 class Page {
@@ -117,6 +117,33 @@ class Page {
     }
     let pos = page.add();
     return { page, pos };
+  }
+
+  static set MAX(v) {
+    let n = v;
+    while(n > 2) {
+      n = n % 2;
+    }
+    if(n !== 0) {
+      console.error('Page max-size must be a multiple of 2');
+      return;
+    }
+    if(v < 8) {
+      console.error('Page max-size must >= 8');
+      return;
+    }
+    MAX = v;
+    n = 8;
+    SIZE = [];
+    while(n <= v) {
+      SIZE.push(n);
+      NUMBER.push(Math.min(8, n / 8));
+      n *= 2;
+    }
+  }
+
+  static get MAX() {
+    return MAX;
   }
 }
 

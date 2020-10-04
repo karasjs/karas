@@ -11379,9 +11379,7 @@
             opacity *= p.__opacity;
           }
 
-          this.__opacity = opacity; // if(ctx.globalAlpha !== opacity) {
-          //   ctx.globalAlpha = opacity;
-          // }
+          this.__opacity = opacity;
         } else if (renderMode === mode.SVG) {
           this.__virtualDom.opacity = opacity;
         } // 省略计算
@@ -11396,7 +11394,7 @@
 
         this.__matrixEvent = matrix;
 
-        if (renderMode === mode.CANVAS) ; else if (renderMode === mode.SVG) {
+        if (renderMode === mode.SVG) {
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           }
@@ -12062,8 +12060,36 @@
       }
     }, {
       key: "__mergeBbox",
-      value: function __mergeBbox() {
-        return this.__cache.bbox;
+      value: function __mergeBbox(matrix, isTop) {
+        var bbox = this.__cache.bbox.slice(0);
+
+        if (!isTop && !equalArr$2(matrix, [1, 0, 0, 1, 0, 0])) {
+          var _bbox = _slicedToArray(bbox, 4),
+              x0 = _bbox[0],
+              y0 = _bbox[1],
+              x1 = _bbox[2],
+              y1 = _bbox[3];
+
+          var _mx$calPoint = mx.calPoint([x0, y0], matrix);
+
+          var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+
+          x0 = _mx$calPoint2[0];
+          y0 = _mx$calPoint2[1];
+
+          var _mx$calPoint3 = mx.calPoint([x1, y1], matrix);
+
+          var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+
+          x1 = _mx$calPoint4[0];
+          y1 = _mx$calPoint4[1];
+          bbox[0] = Math.min(x0, x1);
+          bbox[1] = Math.min(y0, y1);
+          bbox[2] = Math.max(x0, x1);
+          bbox[3] = Math.max(y0, y1);
+        }
+
+        return bbox;
       }
     }, {
       key: "__destroy",
@@ -14482,17 +14508,17 @@
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs); // canvas检查filter
         // if(renderMode === mode.CANVAS && res.filter) {}
-        // 不显示的为了diff也要根据type生成
 
-
-        if (renderMode === mode.SVG) {
-          this.virtualDom.type = 'dom';
-        }
 
         var root = this.root,
             isDestroyed = this.isDestroyed,
-            display = this.computedStyle.display,
-            children = this.children;
+            virtualDom = this.virtualDom,
+            children = this.children,
+            display = this.computedStyle.display; // 不显示的为了diff也要根据type生成
+
+        if (renderMode === mode.SVG) {
+          virtualDom.type = 'dom';
+        }
 
         if (isDestroyed || display === 'none' || !children.length) {
           return res;
@@ -14503,7 +14529,7 @@
 
         if (o$1.lt(lv, o$1.REPAINT) && cacheTotal && cacheTotal.available) {
           if (renderMode === mode.CANVAS) {
-            this.__applyCache(renderMode, lv, ctx, true);
+            this.__applyCache(renderMode, lv, ctx, true, null, null);
           } // svg啥也不用干
 
 
@@ -14556,14 +14582,14 @@
           if (root.props.cache) {
             // 自身动画恰好且孩子可缓存，直接作为局部根节点缓存
             if (canCacheSelf) {
-              this.__applyCache(renderMode, lv, ctx, true);
+              this.__applyCache(renderMode, lv, ctx, true, null, null);
             } // 自身动画影响且且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root/component，各自作为局部根节点应用自身缓存位图到主画布
             else if (cacheChildren && !o$1.eq(lv, o$1.NONE) || !cacheChildren || this === root || !this.parent) {
                 zIndexChildren.forEach(function (item) {
                   if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                     item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                   } else {
-                    item.__applyCache(renderMode, lv, ctx, true);
+                    item.__applyCache(renderMode, lv, ctx, true, null, null);
                   }
                 });
               } // 其它情况继续等待上级调用
@@ -14605,6 +14631,8 @@
        * @param lv
        * @param ctx
        * @param isTop
+       * @param opacity 以top为基点
+       * @param matrix 以top为基点
        * @param tx 汇总离屏canvas的目标x
        * @param ty 汇总离屏canvas的目标y
        * @param x1
@@ -14613,11 +14641,11 @@
 
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, isTop, tx, ty, x1, y1) {
+      value: function __applyCache(renderMode, lv, ctx, isTop, opacity, matrix, tx, ty, x1, y1) {
         var cacheTotal = this.__cacheTotal;
 
         if (isTop) {
-          var bboxTotal = this.__mergeBbox(); // 第一次初始化进行bbox合集计算
+          var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 第一次初始化进行bbox合集计算
 
 
           if (!cacheTotal) {
@@ -14625,7 +14653,13 @@
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容
           else if (o$1.gte(lv, o$1.REPAINT)) {
               cacheTotal.reset();
-            }
+            } // 写回主画布前设置
+
+
+          var __opacity = this.__opacity,
+              matrixEvent = this.matrixEvent;
+          ctx.globalAlpha = __opacity;
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 缓存可用时各children依次执行
 
           if (cacheTotal && cacheTotal.enabled) {
             var _cacheTotal = cacheTotal,
@@ -14648,22 +14682,22 @@
               dx += _tx;
               dy += _ty;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, _tx, _ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, null, null, _tx, _ty);
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
                 } else {
-                  item.__applyCache(renderMode, lv, cacheTotal.ctx, false, _tx, _ty, _x, _y);
+                  item.__applyCache(renderMode, lv, cacheTotal.ctx, false, 1, [1, 0, 0, 1, 0, 0], _tx, _ty, _x, _y);
                 }
               });
-            } // 写回主画布
+            }
 
-
-            ctx.globalAlpha = this.__opacity;
             ctx.drawImage(canvas, _tx - 1, _ty - 1, size, size, _x, _y, size, size);
           } // 超尺寸无法进行，降级各自作为顶点渲染
           else {
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
+
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -14687,9 +14721,12 @@
             var ox = this.sx - x1;
             var oy = this.sy - y1;
             _dx += tx - coords[0] + ox;
-            _dy += ty - coords[1] + oy;
-            ctx.setTransform.apply(ctx, _toConsumableArray(this.matrixEvent));
-            ctx.globalAlpha = this.__opacity;
+            _dy += ty - coords[1] + oy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+
+            matrix = mx.multiply(matrix, this.matrix);
+            opacity *= this.computedStyle.opacity;
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+            ctx.globalAlpha = opacity;
 
             _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, isTop, tx + ox, ty + oy);
 
@@ -14697,20 +14734,25 @@
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                 item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx, _dy);
               } else {
-                item.__applyCache(renderMode, lv, ctx, false, tx, ty, x1, y1);
+                item.__applyCache(renderMode, lv, ctx, false, opacity, matrix, tx, ty, x1, y1);
               }
             });
           }
       }
     }, {
       key: "__mergeBbox",
-      value: function __mergeBbox() {
-        // 一定有，和bbox不同，要考虑matrix的影响
-        var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this).slice(0);
+      value: function __mergeBbox(matrix, isTop) {
+        // 这里以top的matrix状态为起点单位矩阵
+        if (!isTop) {
+          matrix = mx.multiply(this.matrix, matrix);
+        } // 一定有，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
+
+
+        var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
 
         this.zIndexChildren.forEach(function (item) {
           if (!(item instanceof Text) && !(item instanceof Component$1) && !(item.shadowRoot instanceof Text)) {
-            var t = item.__mergeBbox();
+            var t = item.__mergeBbox(matrix);
 
             bbox[0] = Math.min(bbox[0], t[0]);
             bbox[1] = Math.max(bbox[1], t[1]);

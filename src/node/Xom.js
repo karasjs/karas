@@ -1330,9 +1330,6 @@ class Xom extends Node {
         opacity *= p.__opacity;
       }
       this.__opacity = opacity;
-      // if(ctx.globalAlpha !== opacity) {
-      //   ctx.globalAlpha = opacity;
-      // }
     }
     else if(renderMode === mode.SVG) {
       this.__virtualDom.opacity = opacity;
@@ -1345,10 +1342,7 @@ class Xom extends Node {
       matrix = mx.multiply(p.matrixEvent, matrix);
     }
     this.__matrixEvent = matrix;
-    if(renderMode === mode.CANVAS) {
-      // ctx.setTransform(...matrix);
-    }
-    else if(renderMode === mode.SVG) {
+    if(renderMode === mode.SVG) {
       if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
@@ -1930,8 +1924,18 @@ class Xom extends Node {
     ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
   }
 
-  __mergeBbox() {
-    return this.__cache.bbox;
+  __mergeBbox(matrix, isTop) {
+    let bbox = this.__cache.bbox.slice(0);
+    if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+      let [x0, y0, x1, y1] = bbox;
+      [x0, y0] = mx.calPoint([x0, y0], matrix);
+      [x1, y1] = mx.calPoint([x1, y1], matrix);
+      bbox[0] = Math.min(x0, x1);
+      bbox[1] = Math.min(y0, y1);
+      bbox[2] = Math.max(x0, x1);
+      bbox[3] = Math.max(y0, y1);
+    }
+    return bbox;
   }
 
   __destroy() {

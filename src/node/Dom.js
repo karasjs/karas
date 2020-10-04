@@ -13,6 +13,7 @@ import inject from '../util/inject';
 import level from '../refresh/level';
 import change from '../refresh/change';
 import Cache from '../refresh/Cache';
+import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
@@ -1077,11 +1078,12 @@ class Dom extends Xom {
     let res = super.render(renderMode, lv, ctx, defs);
     // canvas检查filter
     // if(renderMode === mode.CANVAS && res.filter) {}
+    let { root, isDestroyed, virtualDom, children,
+      computedStyle: { display } } = this;
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
-      this.virtualDom.type = 'dom';
+      virtualDom.type = 'dom';
     }
-    let { root, isDestroyed, computedStyle: { display }, children } = this;
     if(isDestroyed || display === 'none' || !children.length) {
       return res;
     }
@@ -1090,7 +1092,7 @@ class Dom extends Xom {
     if(level.lt(lv, level.REPAINT)
       && cacheTotal && cacheTotal.available) {
       if(renderMode === mode.CANVAS) {
-        this.__applyCache(renderMode, lv, ctx, true);
+        this.__applyCache(renderMode, lv, ctx, true, null, null);
       }
       // svg啥也不用干
       return;
@@ -1142,7 +1144,7 @@ class Dom extends Xom {
       if(root.props.cache) {
         // 自身动画恰好且孩子可缓存，直接作为局部根节点缓存
         if(canCacheSelf) {
-          this.__applyCache(renderMode, lv, ctx, true);
+          this.__applyCache(renderMode, lv, ctx, true, null, null);
         }
         // 自身动画影响且且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root/component，各自作为局部根节点应用自身缓存位图到主画布
         else if(cacheChildren && !level.eq(lv, level.NONE) || !cacheChildren || this === root || !this.parent) {
@@ -1151,7 +1153,7 @@ class Dom extends Xom {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
             }
             else {
-              item.__applyCache(renderMode, lv, ctx, true);
+              item.__applyCache(renderMode, lv, ctx, true, null, null);
             }
           });
         }
@@ -1194,15 +1196,17 @@ class Dom extends Xom {
    * @param lv
    * @param ctx
    * @param isTop
+   * @param opacity 以top为基点
+   * @param matrix 以top为基点
    * @param tx 汇总离屏canvas的目标x
    * @param ty 汇总离屏canvas的目标y
    * @param x1
    * @param y1
    */
-  __applyCache(renderMode, lv, ctx, isTop, tx, ty, x1, y1) {
+  __applyCache(renderMode, lv, ctx, isTop, opacity, matrix, tx, ty, x1, y1) {
     let cacheTotal = this.__cacheTotal;
     if(isTop) {
-      let bboxTotal = this.__mergeBbox();
+      let bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
       // 第一次初始化进行bbox合集计算
       if(!cacheTotal) {
         cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
@@ -1211,6 +1215,11 @@ class Dom extends Xom {
       else if(level.gte(lv, level.REPAINT)) {
         cacheTotal.reset();
       }
+      // 写回主画布前设置
+      let { __opacity, matrixEvent } = this;
+      ctx.globalAlpha = __opacity;
+      ctx.setTransform(...matrixEvent);
+      // 缓存可用时各children依次执行
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty], size, canvas } = cacheTotal;
         let { dx, dy, x1, y1 } = this.__cache;
@@ -1220,22 +1229,21 @@ class Dom extends Xom {
           cacheTotal.y1 = y1;
           dx += tx;
           dy += ty;
-          super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, tx, ty);
+          super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
           this.zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
             }
             else {
-              item.__applyCache(renderMode, lv, cacheTotal.ctx, false, tx, ty, x1, y1);
+              item.__applyCache(renderMode, lv, cacheTotal.ctx, false, 1, [1, 0, 0, 1, 0, 0], tx, ty, x1, y1);
             }
           });
         }
-        // 写回主画布
-        ctx.globalAlpha = this.__opacity;
         ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
       }
       // 超尺寸无法进行，降级各自作为顶点渲染
       else {
+        super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
         this.zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
             item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -1258,26 +1266,33 @@ class Dom extends Xom {
       let oy = this.sy - y1;
       dx += tx - coords[0] + ox;
       dy += ty - coords[1] + oy;
-      ctx.setTransform(...this.matrixEvent);
-      ctx.globalAlpha = this.__opacity;
+      // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+      matrix = mx.multiply(matrix, this.matrix);
+      opacity *= this.computedStyle.opacity;
+      ctx.setTransform(...matrix);
+      ctx.globalAlpha = opacity;
       super.__applyCache(renderMode, lv, ctx, isTop, tx + ox, ty + oy);
       this.zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
           item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx, dy);
         }
         else {
-          item.__applyCache(renderMode, lv, ctx, false, tx, ty, x1, y1);
+          item.__applyCache(renderMode, lv, ctx, false, opacity, matrix, tx, ty, x1, y1);
         }
       });
     }
   }
 
-  __mergeBbox() {
-    // 一定有，和bbox不同，要考虑matrix的影响
-    let bbox = super.__mergeBbox().slice(0);
+  __mergeBbox(matrix, isTop) {
+    // 这里以top的matrix状态为起点单位矩阵
+    if(!isTop) {
+      matrix = mx.multiply(this.matrix, matrix);
+    }
+    // 一定有，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
+    let bbox = super.__mergeBbox(matrix, isTop);
     this.zIndexChildren.forEach(item => {
       if(!(item instanceof Text) && !(item instanceof Component) && !(item.shadowRoot instanceof Text)) {
-        let t = item.__mergeBbox();
+        let t = item.__mergeBbox(matrix);
         bbox[0] = Math.min(bbox[0], t[0]);
         bbox[1] = Math.max(bbox[1], t[1]);
         bbox[2] = Math.min(bbox[2], t[2]);

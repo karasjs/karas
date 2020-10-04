@@ -6566,6 +6566,336 @@
     matrixResize: matrixResize
   };
 
+  var VERTEX = "\nattribute vec2 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nvarying vec2 vTextureCoord;\nuniform mat3 projectionMatrix;\n\nvoid main(void)\n{\n  gl_Position = vec4((projectionMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);\n  vTextureCoord = aTextureCoord;\n}";
+  var FRAGMENT = "\n#ifdef GL_ES\nprecision mediump float;\n#endif\nvarying vec2 vTextureCoord;\nuniform sampler2D uSampler;\n\nuniform vec2 uOffset;\nuniform vec4 filterClamp;\n\nvoid main(void)\n{\n  vec4 color = vec4(0.0);\n\n  // Sample top left pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample top right pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y + uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample bottom right pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x + uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Sample bottom left pixel\n  color += texture2D(uSampler, clamp(vec2(vTextureCoord.x - uOffset.x, vTextureCoord.y - uOffset.y), filterClamp.xy, filterClamp.zw));\n\n  // Average\n  color *= 0.25;\n\n  gl_FragColor = color;\n}";
+
+  function initShaders(gl, vshader, fshader) {
+    var program = createProgram(gl, vshader, fshader);
+
+    if (!program) {
+      console.error('Failed to create program');
+      return false;
+    }
+
+    gl.useProgram(program);
+    gl.program = program;
+    return true;
+  }
+
+  function createProgram(gl, vshader, fshader) {
+    var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
+    var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
+
+    if (!vertexShader || !fragmentShader) {
+      return null;
+    }
+
+    var program = gl.createProgram();
+
+    if (!program) {
+      return null;
+    }
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+
+    if (!linked) {
+      var error = gl.getProgramInfoLog(program);
+      console.error('Failed to link program: ' + error);
+      gl.deleteProgram(program);
+      gl.deleteShader(fragmentShader);
+      gl.deleteShader(vertexShader);
+      return null;
+    }
+
+    return program;
+  }
+
+  function loadShader(gl, type, source) {
+    var shader = gl.createShader(type);
+
+    if (shader == null) {
+      console.error('unable to create shader');
+      return null;
+    }
+
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+
+    if (!compiled) {
+      var error = gl.getShaderInfoLog(shader);
+      console.error('Failed to compile shader: ' + error);
+      gl.deleteShader(shader);
+      return null;
+    }
+
+    return shader;
+  }
+
+  function initVertexBuffers(gl) {
+    var vertices = new Float32Array([-1, 1, 0.0, 1.0, -1, -1, 0.0, 0.0, 1, 1, 1.0, 1.0, 1, -1, 1.0, 0.0]);
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    var FSIZE = Float32Array.BYTES_PER_ELEMENT;
+    var aPosition = gl.getAttribLocation(gl.program, 'aVertexPosition');
+    gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, FSIZE * 4, 0);
+    gl.enableVertexAttribArray(aPosition);
+    var aTexCoord = gl.getAttribLocation(gl.program, 'aTextureCoord');
+    gl.vertexAttribPointer(aTexCoord, 2, gl.FLOAT, false, FSIZE * 4, FSIZE * 2);
+    var projectionMatrix = gl.getUniformLocation(gl.program, 'projectionMatrix');
+    gl.uniformMatrix3fv(projectionMatrix, false, new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]));
+    gl.enableVertexAttribArray(aTexCoord);
+    return {
+      aPosition: aPosition,
+      aTexCoord: aTexCoord
+    };
+  }
+
+  function initLocation(gl) {
+    var uSampler = gl.getUniformLocation(gl.program, 'uSampler');
+    var uOffset = gl.getUniformLocation(gl.program, 'uOffset');
+    var uClamp = gl.getUniformLocation(gl.program, 'filterClamp');
+    return {
+      uSampler: uSampler,
+      uOffset: uOffset,
+      uClamp: uClamp
+    };
+  }
+
+  function createAndSetupTexture(gl) {
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture); // 设置材质，这样我们可以对任意大小的图像进行像素操作
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    return texture;
+  }
+
+  var KawaseBlurFilter = /*#__PURE__*/function () {
+    function KawaseBlurFilter(webgl) {
+      var blur = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+      var quality = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 4;
+
+      _classCallCheck(this, KawaseBlurFilter);
+
+      this.webgl = webgl;
+      var gl = this.gl = webgl.ctx;
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, -1);
+      initShaders(gl, VERTEX, FRAGMENT);
+      this.vertexLocations = initVertexBuffers(gl);
+      this.textureLocations = initLocation(gl);
+      this._pixelSize = {
+        x: 0,
+        y: 0
+      };
+      this.pixelSize = 1;
+      this._kernels = null;
+      this._blur = blur;
+      this.quality = quality; // 创建两个纹理绑定到帧缓冲
+
+      this.textures = [];
+      this.framebuffers = [];
+    }
+
+    _createClass(KawaseBlurFilter, [{
+      key: "initBuffers",
+      value: function initBuffers(gl, width, height) {
+        for (var i = 0; i < 2; i++) {
+          var texture = createAndSetupTexture(gl);
+          this.textures.push(texture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null); // 创建一个帧缓冲
+
+          var fbo = gl.createFramebuffer();
+          this.framebuffers.push(fbo);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); // 绑定纹理到帧缓冲
+
+          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        }
+      }
+    }, {
+      key: "draw",
+      value: function draw(image, uOffsetArray, clear) {
+        var _this$textureLocation = this.textureLocations,
+            uOffset = _this$textureLocation.uOffset,
+            uClamp = _this$textureLocation.uClamp;
+        var gl = this.gl;
+        gl.uniform2f(uOffset, uOffsetArray[0], uOffsetArray[1]);
+        gl.viewport(0, 0, image.width, image.height);
+        gl.uniform4f(uClamp, 0, 0, image.width, image.height);
+
+        if (clear) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+    }, {
+      key: "apply",
+      value: function apply(target, width, height) {
+        var gl = this.gl;
+        this.initBuffers(gl, width, height);
+        var uSampler = this.textureLocations.uSampler;
+        gl.uniform1i(uSampler, 0);
+        var originalImageTexture = createAndSetupTexture(gl);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, target.canvas);
+        var uvX = this._pixelSize.x / width;
+        var uvY = this._pixelSize.y / height;
+        var offset;
+        var last = this._quality - 1; // 从原始图像开始
+
+        gl.bindTexture(gl.TEXTURE_2D, originalImageTexture);
+
+        for (var i = 0; i < last; i++) {
+          offset = this._kernels[i] + 0.5;
+          gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffers[i % 2]);
+
+          var _uOffsetArray = new Float32Array([offset * uvX, offset * uvY]);
+
+          this.draw(target.canvas, _uOffsetArray, false);
+          gl.bindTexture(gl.TEXTURE_2D, this.textures[i % 2]);
+        }
+
+        offset = this._kernels[last] + 0.5;
+        var uOffsetArray = new Float32Array([offset * uvX, offset * uvY]);
+        this.draw(target.canvas, uOffsetArray, true);
+        this.webgl.draw();
+        target.ctx.clearRect(0, 0, width, height);
+        target.ctx.drawImage(gl.canvas, 0, 0);
+        target.draw();
+        return this;
+      }
+      /**
+       * Auto generate kernels by blur & quality
+       * @private
+       */
+
+    }, {
+      key: "_generateKernels",
+      value: function _generateKernels() {
+        var blur = this._blur;
+        var quality = this._quality;
+        var kernels = [blur];
+
+        if (blur > 0) {
+          var k = blur;
+          var step = blur / quality;
+
+          for (var i = 1; i < quality; i++) {
+            k -= step;
+            kernels.push(k);
+          }
+        }
+
+        this._kernels = kernels;
+      }
+      /**
+       * The kernel size of the blur filter, for advanced usage.
+       *
+       * @member {number[]}
+       * @default [0]
+       */
+
+    }, {
+      key: "clear",
+      value: function clear() {
+        var gl = this.gl;
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    }, {
+      key: "kernels",
+      get: function get() {
+        return this._kernels;
+      },
+      set: function set(value) {
+        if (Array.isArray(value) && value.length > 0) {
+          this._kernels = value;
+          this._quality = value.length;
+          this._blur = Math.max.apply(Math, value);
+        } else {
+          // if value is invalid , set default value
+          this._kernels = [0];
+          this._quality = 1;
+        }
+      }
+      /**
+       * Sets the pixel size of the filter. Large size is blurrier. For advanced usage.
+       *
+       * @member {PIXI.Point|number[]}
+       * @default [1, 1]
+       */
+
+    }, {
+      key: "pixelSize",
+      set: function set(value) {
+        if (typeof value === 'number') {
+          this._pixelSize.x = value;
+          this._pixelSize.y = value;
+        } else if (Array.isArray(value)) {
+          this._pixelSize.x = value[0];
+          this._pixelSize.y = value[1];
+        } else {
+          // if value is invalid , set default value
+          this._pixelSize.x = 1;
+          this._pixelSize.y = 1;
+        }
+      },
+      get: function get() {
+        return this._pixelSize;
+      }
+      /**
+       * The quality of the filter, integer greater than `1`.
+       *
+       * @member {number}
+       * @default 3
+       */
+
+    }, {
+      key: "quality",
+      get: function get() {
+        return this._quality;
+      },
+      set: function set(value) {
+        this._quality = Math.max(1, Math.round(value));
+
+        this._generateKernels();
+      }
+      /**
+       * The amount of blur, value greater than `0`.
+       *
+       * @member {number}
+       * @default 4
+       */
+
+    }, {
+      key: "blur",
+      get: function get() {
+        return this._blur;
+      },
+      set: function set(value) {
+        this._blur = value;
+
+        this._generateKernels();
+      }
+    }]);
+
+    return KawaseBlurFilter;
+  }();
+
+  function gaussBlur(target, webgl, blur, width, height) {
+    return new KawaseBlurFilter(webgl, blur).apply(target, width, height);
+  }
+
+  var blur = {
+    gaussBlur: gaussBlur
+  };
+
   var LineBox = /*#__PURE__*/function () {
     function LineBox(parent, x, y, w, content) {
       _classCallCheck(this, LineBox);
@@ -7030,10 +7360,14 @@
 
     o.setAttribute('width', width);
     o.setAttribute('height', height);
-    o.style.width = width + 'px';
-    o.style.height = height + 'px';
-    o.style.backgroundColor = '#CCC';
-    document.body.appendChild(o);
+
+    if (karas.debug) {
+      o.style.width = width + 'px';
+      o.style.height = height + 'px';
+      o.style.backgroundColor = '#CCC';
+      document.body.appendChild(o);
+    }
+
     return {
       canvas: o,
       ctx: o.getContext('2d'),
@@ -11478,25 +11812,32 @@
           ctx.globalAlpha = opacity;
 
           (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
-        } // canvas的blur需绘制到离屏上应用后反向绘制回来
-        // let offScreen;
-        // if(filter && renderMode === mode.CANVAS) {
-        //   filter.forEach(item => {
-        //     let [k, v] = item;
-        //     if(k === 'blur' && v > 0) {
-        //       let { width, height } = this.root;
-        //       let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
-        //       if(c.ctx) {
-        //         offScreen = {
-        //           ctx,
-        //         };
-        //         offScreen.target = c;
-        //         ctx = c.ctx;
-        //       }
-        //     }
-        //   });
-        // }
-        // 背景色垫底
+        } // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
+
+
+        var offScreen;
+
+        if (Array.isArray(filter) && renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
+          filter.forEach(function (item) {
+            var _item = _slicedToArray(item, 2),
+                k = _item[0],
+                v = _item[1];
+
+            if (k === 'blur' && v > 0) {
+              var _width = root.width,
+                  _height = root.height;
+              var c = inject.getCacheCanvas(_width, _height, '__$$blur$$__');
+
+              if (c.ctx) {
+                offScreen = {
+                  ctx: ctx
+                };
+                offScreen.target = c;
+                ctx = c.ctx;
+              }
+            }
+          });
+        } // 背景色垫底
 
 
         if (backgroundColor[3] > 0) {
@@ -11512,8 +11853,8 @@
               var source = loadBgi.source; // 无source不绘制
 
               if (source) {
-                var _width = loadBgi.width,
-                    _height = loadBgi.height;
+                var _width2 = loadBgi.width,
+                    _height2 = loadBgi.height;
 
                 var _backgroundSize = _slicedToArray(backgroundSize, 2),
                     w = _backgroundSize[0],
@@ -11521,64 +11862,64 @@
 
 
                 if (w === -1 && h === -1) {
-                  w = _width;
-                  h = _height;
+                  w = _width2;
+                  h = _height2;
                 } else if (w === -2) {
-                  if (_width > innerWidth && _height > innerHeight) {
-                    w = _width / innerWidth;
-                    h = _height / innerHeight;
+                  if (_width2 > innerWidth && _height2 > innerHeight) {
+                    w = _width2 / innerWidth;
+                    h = _height2 / innerHeight;
 
                     if (w >= h) {
                       w = innerWidth;
-                      h = w * _height / _width;
+                      h = w * _height2 / _width2;
                     } else {
                       h = innerHeight;
-                      w = h * _width / _height;
+                      w = h * _width2 / _height2;
                     }
-                  } else if (_width > innerWidth) {
+                  } else if (_width2 > innerWidth) {
                     w = innerWidth;
-                    h = w * _height / _width;
-                  } else if (_height > innerHeight) {
+                    h = w * _height2 / _width2;
+                  } else if (_height2 > innerHeight) {
                     h = innerHeight;
-                    w = h * _width / _height;
+                    w = h * _width2 / _height2;
                   } else {
-                    w = _width;
-                    h = _height;
+                    w = _width2;
+                    h = _height2;
                   }
                 } else if (w === -3) {
-                  if (innerWidth > _width && innerHeight > _height) {
-                    w = _width / innerWidth;
-                    h = _height / innerHeight;
+                  if (innerWidth > _width2 && innerHeight > _height2) {
+                    w = _width2 / innerWidth;
+                    h = _height2 / innerHeight;
 
                     if (w <= h) {
                       w = innerWidth;
-                      h = w * _height / _width;
+                      h = w * _height2 / _width2;
                     } else {
                       h = innerHeight;
-                      w = h * _width / _height;
+                      w = h * _width2 / _height2;
                     }
-                  } else if (innerWidth > _width) {
+                  } else if (innerWidth > _width2) {
                     w = innerWidth;
-                    h = w * _height / _width;
-                  } else if (innerHeight > _height) {
+                    h = w * _height2 / _width2;
+                  } else if (innerHeight > _height2) {
                     h = innerHeight;
-                    w = h * _width / _height;
+                    w = h * _width2 / _height2;
                   } else {
-                    w = _width / innerWidth;
-                    h = _height / innerHeight;
+                    w = _width2 / innerWidth;
+                    h = _height2 / innerHeight;
 
                     if (w <= h) {
                       w = innerWidth;
-                      h = w * _height / _width;
+                      h = w * _height2 / _width2;
                     } else {
                       h = innerHeight;
-                      w = h * _width / _height;
+                      w = h * _width2 / _height2;
                     }
                   }
                 } else if (w === -1) {
-                  w = h * _width / _height;
+                  w = h * _width2 / _height2;
                 } else if (h === -1) {
-                  h = w * _height / _width;
+                  h = w * _height2 / _width2;
                 }
 
                 var bgX = x2 + calBackgroundPosition(currentStyle.backgroundPositionX, innerWidth, w);
@@ -11721,9 +12062,9 @@
                     ctx.restore();
                   }
                 } else if (renderMode === mode.SVG) {
-                  var _matrix = image.matrixResize(_width, _height, w, h, bgX, bgY, innerWidth, innerHeight);
+                  var _matrix = image.matrixResize(_width2, _height2, w, h, bgX, bgY, innerWidth, innerHeight);
 
-                  var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width], ['height', _height]];
+                  var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width2], ['height', _height2]];
                   var needResize;
 
                   if (_matrix && !equalArr$2(_matrix, [1, 0, 0, 1, 0, 0])) {
@@ -11753,7 +12094,7 @@
                     var copy = clone$2(props);
 
                     if (needResize) {
-                      var _matrix2 = image.matrixResize(_width, _height, w, h, item[0], item[1], innerWidth, innerHeight);
+                      var _matrix2 = image.matrixResize(_width2, _height2, w, h, item[0], item[1], innerWidth, innerHeight);
 
                       if (_matrix2 && !equalArr$2(_matrix2, [1, 0, 0, 1, 0, 0])) {
                         copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
@@ -11804,49 +12145,45 @@
 
         this.__refreshLevel = o$1.NONE;
 
-        if (cache) {
-          cache.__available = true; // cache.hasContent = hasContent;
-          // cache.filter = filter;
+        if (cache && cache.enabled) {
+          cache.__available = true;
+        }
+
+        if (Array.isArray(filter)) {
+          filter.forEach(function (item) {
+            var _item2 = _slicedToArray(item, 2),
+                k = _item2[0],
+                v = _item2[1];
+
+            if (k === 'blur' && v > 0) {
+              if (renderMode === mode.CANVAS) {
+                offScreen && (offScreen.blur = v);
+              } else if (renderMode === mode.SVG) {
+                // 模糊框卷积尺寸 #66
+                var d = mx.int2convolution(v);
+
+                var _id = defs.add({
+                  tagName: 'filter',
+                  props: [['x', -d / outerWidth], ['y', -d / outerHeight], ['width', 1 + d * 2 / outerWidth], ['height', 1 + d * 2 / outerHeight]],
+                  children: [{
+                    tagName: 'feGaussianBlur',
+                    props: [['stdDeviation', v]]
+                  }]
+                });
+
+                _this4.virtualDom.filter = 'url(#' + _id + ')';
+              }
+            }
+          });
         }
 
         return {
           cache: cache,
           origin: origin,
           hasContent: hasContent,
+          offScreen: offScreen,
           filter: filter
-        }; // if(filter) {
-        //   filter.forEach(item => {
-        //     let [k, v] = item;
-        //     if(k === 'blur' && v > 0) {
-        //       if(renderMode === mode.CANVAS) {
-        //         offScreen.blur = v;
-        //       }
-        //       else if(renderMode === mode.SVG) {
-        //         // 模糊框卷积尺寸 #66
-        //         let d = mx.int2convolution(v);
-        //         let id = defs.add({
-        //           tagName: 'filter',
-        //           props: [
-        //             ['x', -d / outerWidth],
-        //             ['y', -d / outerHeight],
-        //             ['width', 1 + d * 2 / outerWidth],
-        //             ['height', 1 + d * 2 / outerHeight],
-        //           ],
-        //           children: [
-        //             {
-        //               tagName: 'feGaussianBlur',
-        //               props: [
-        //                 ['stdDeviation', v],
-        //               ],
-        //             }
-        //           ],
-        //         });
-        //         this.virtualDom.filter = 'url(#' + id + ')';
-        //       }
-        //     }
-        //   });
-        // }
-        // return offScreen;
+        };
       }
     }, {
       key: "__renderByMask",
@@ -12556,12 +12893,12 @@
 
         if (boxShadow) {
           boxShadow.forEach(function (item) {
-            var _item = _slicedToArray(item, 6),
-                x = _item[0],
-                y = _item[1],
-                blur = _item[2],
-                spread = _item[3],
-                inset = _item[5];
+            var _item3 = _slicedToArray(item, 6),
+                x = _item3[0],
+                y = _item3[1],
+                blur = _item3[2],
+                spread = _item3[3],
+                inset = _item3[5];
 
             if (inset !== 'inset') {
               var d = mx.int2convolution(blur);
@@ -14497,18 +14834,17 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        // let offScreen = super.render(renderMode, lv, ctx, defs);
-        // if(offScreen && offScreen.target && offScreen.target.ctx) {
-        //   ctx = offScreen.target.ctx;
-        // }
-        // // 降级
-        // else {
-        //   offScreen = null;
-        // }
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
-        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs); // canvas检查filter
-        // if(renderMode === mode.CANVAS && res.filter) {}
+        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
+        var offScreen = res.offScreen; // canvas检查filter，无缓存时的绘制
+
+        if (offScreen && offScreen.target && offScreen.target.ctx) {
+          ctx = offScreen.target.ctx;
+        } // 降级，有offScreen但没离屏canvas功能，舍弃blur
+        else {
+            offScreen = null;
+          }
 
         var root = this.root,
             isDestroyed = this.isDestroyed,
@@ -14557,7 +14893,7 @@
             } else {
               var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
 
-              if (!cacheChildren || !temp || !temp.cache || !temp.cache.enabled) {
+              if (!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
                 cacheChildren = false;
               }
             }
@@ -14570,7 +14906,7 @@
           } else {
             var _temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
 
-            if (!cacheChildren || !_temp || !_temp.cache || !_temp.cache.enabled) {
+            if (!cacheChildren || !_temp || !_temp.cache || !_temp.cache.enabled || !_temp.cacheChildren) {
               cacheChildren = false;
             }
           }
@@ -14594,13 +14930,21 @@
                 });
               } // 其它情况继续等待上级调用
 
-          } // let { width, height } = this.root;
-          // let webgl = inject.getCacheWebgl(width, height);
-          // let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-          // offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-          // offScreen.target.draw();
-          // res.clear();
+          } // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
 
+
+          if (offScreen) {
+            var width = root.width,
+                height = root.height;
+            var webgl = inject.getCacheWebgl(width, height);
+
+            var _res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+
+            offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+            offScreen.target.draw();
+
+            _res.clear();
+          }
         } // img的children在子类特殊处理
         else if (renderMode === mode.SVG && this.tagName !== 'img') {
             this.virtualDom.children = zIndexChildren.map(function (item) {
@@ -20187,7 +20531,7 @@
   Geom$2.register('$rect', Rect);
   Geom$2.register('$circle', Circle);
   Geom$2.register('$ellipse', Ellipse);
-  var karas = {
+  var karas$1 = {
     version: version,
     render: function render(root, dom) {
       if (!(root instanceof Root)) {
@@ -20286,10 +20630,10 @@
   });
 
   if (typeof window !== 'undefined') {
-    window.karas = karas;
+    window.karas = karas$1;
   }
 
-  return karas;
+  return karas$1;
 
 })));
 //# sourceMappingURL=index.js.map

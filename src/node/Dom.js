@@ -1066,18 +1066,17 @@ class Dom extends Xom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    // let offScreen = super.render(renderMode, lv, ctx, defs);
-    // if(offScreen && offScreen.target && offScreen.target.ctx) {
-    //   ctx = offScreen.target.ctx;
-    // }
-    // // 降级
-    // else {
-    //   offScreen = null;
-    // }
     // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
     let res = super.render(renderMode, lv, ctx, defs);
-    // canvas检查filter
-    // if(renderMode === mode.CANVAS && res.filter) {}
+    let offScreen = res.offScreen;
+    // canvas检查filter，无缓存时的绘制
+    if(offScreen && offScreen.target && offScreen.target.ctx) {
+      ctx = offScreen.target.ctx;
+    }
+    // 降级，有offScreen但没离屏canvas功能，舍弃blur
+    else {
+      offScreen = null;
+    }
     let { root, isDestroyed, virtualDom, children,
       computedStyle: { display } } = this;
     // 不显示的为了diff也要根据type生成
@@ -1118,7 +1117,7 @@ class Dom extends Xom {
         }
         else {
           let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-          if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled) {
+          if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
             cacheChildren = false;
           }
         }
@@ -1131,7 +1130,7 @@ class Dom extends Xom {
       }
       else {
         let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-        if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled) {
+        if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
           cacheChildren = false;
         }
       }
@@ -1159,13 +1158,15 @@ class Dom extends Xom {
         }
         // 其它情况继续等待上级调用
       }
-
-      // let { width, height } = this.root;
-      // let webgl = inject.getCacheWebgl(width, height);
-      // let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-      // offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-      // offScreen.target.draw();
-      // res.clear();
+      // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
+      if(offScreen) {
+        let { width, height } = root;
+        let webgl = inject.getCacheWebgl(width, height);
+        let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+        offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+        offScreen.target.draw();
+        res.clear();
+      }
     }
     // img的children在子类特殊处理
     else if(renderMode === mode.SVG && this.tagName !== 'img') {

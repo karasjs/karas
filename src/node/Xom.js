@@ -1399,24 +1399,24 @@ class Xom extends Node {
       ctx.globalAlpha = opacity;
       ctx.setTransform(...matrix);
     }
-    // canvas的blur需绘制到离屏上应用后反向绘制回来
-    // let offScreen;
-    // if(filter && renderMode === mode.CANVAS) {
-    //   filter.forEach(item => {
-    //     let [k, v] = item;
-    //     if(k === 'blur' && v > 0) {
-    //       let { width, height } = this.root;
-    //       let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
-    //       if(c.ctx) {
-    //         offScreen = {
-    //           ctx,
-    //         };
-    //         offScreen.target = c;
-    //         ctx = c.ctx;
-    //       }
-    //     }
-    //   });
-    // }
+    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
+    let offScreen;
+    if(Array.isArray(filter) && renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          let { width, height } = root;
+          let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+          if(c.ctx) {
+            offScreen = {
+              ctx,
+            };
+            offScreen.target = c;
+            ctx = c.ctx;
+          }
+        }
+      });
+    }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
       renderBgc(renderMode, __cacheStyle.backgroundColor, x2, y2, innerWidth, innerHeight, ctx, this,
@@ -1707,45 +1707,42 @@ class Xom extends Node {
     }
     // 渲染完认为完全无变更，等布局/动画/更新重置
     this.__refreshLevel = level.NONE;
-    if(cache) {
+    if(cache && cache.enabled) {
       cache.__available = true;
-      // cache.hasContent = hasContent;
-      // cache.filter = filter;
     }
-    return { cache, origin, hasContent, filter };
-    // if(filter) {
-    //   filter.forEach(item => {
-    //     let [k, v] = item;
-    //     if(k === 'blur' && v > 0) {
-    //       if(renderMode === mode.CANVAS) {
-    //         offScreen.blur = v;
-    //       }
-    //       else if(renderMode === mode.SVG) {
-    //         // 模糊框卷积尺寸 #66
-    //         let d = mx.int2convolution(v);
-    //         let id = defs.add({
-    //           tagName: 'filter',
-    //           props: [
-    //             ['x', -d / outerWidth],
-    //             ['y', -d / outerHeight],
-    //             ['width', 1 + d * 2 / outerWidth],
-    //             ['height', 1 + d * 2 / outerHeight],
-    //           ],
-    //           children: [
-    //             {
-    //               tagName: 'feGaussianBlur',
-    //               props: [
-    //                 ['stdDeviation', v],
-    //               ],
-    //             }
-    //           ],
-    //         });
-    //         this.virtualDom.filter = 'url(#' + id + ')';
-    //       }
-    //     }
-    //   });
-    // }
-    // return offScreen;
+    if(Array.isArray(filter)) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          if(renderMode === mode.CANVAS) {
+            offScreen && (offScreen.blur = v);
+          }
+          else if(renderMode === mode.SVG) {
+            // 模糊框卷积尺寸 #66
+            let d = mx.int2convolution(v);
+            let id = defs.add({
+              tagName: 'filter',
+              props: [
+                ['x', -d / outerWidth],
+                ['y', -d / outerHeight],
+                ['width', 1 + d * 2 / outerWidth],
+                ['height', 1 + d * 2 / outerHeight],
+              ],
+              children: [
+                {
+                  tagName: 'feGaussianBlur',
+                  props: [
+                    ['stdDeviation', v],
+                  ],
+                }
+              ],
+            });
+            this.virtualDom.filter = 'url(#' + id + ')';
+          }
+        }
+      });
+    }
+    return { cache, origin, hasContent, offScreen, filter };
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {

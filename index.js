@@ -7255,11 +7255,17 @@
     getCacheCanvas: function getCacheCanvas(width, height, key) {
       return cacheCanvas(key, width, height);
     },
+    delCacheCanvas: function delCacheCanvas(key) {
+      key && delete CANVAS[key];
+    },
     hasCacheWebgl: function hasCacheWebgl(key) {
       return key && WEBGL.hasOwnProperty(key);
     },
     getCacheWebgl: function getCacheWebgl(width, height, key) {
       return cacheWebgl(key, width, height);
+    },
+    delCacheWebgl: function delCacheWebgl(key) {
+      key && delete WEBGL[key];
     },
     isDom: function isDom(o) {
       if (o) {
@@ -14490,17 +14496,18 @@
 
         if (isDestroyed || display === 'none' || !children.length) {
           return res;
-        } // canvas先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
+        } // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
 
 
-        if (renderMode === mode.CANVAS) {
-          var cacheTotal = this.__cacheTotal;
+        var cacheTotal = this.__cacheTotal;
 
-          if (o$1.lt(lv, o$1.REPAINT) && cacheTotal && cacheTotal.available) {
+        if (o$1.lt(lv, o$1.REPAINT) && cacheTotal && cacheTotal.available) {
+          if (renderMode === mode.CANVAS) {
             this.__applyCache(renderMode, lv, ctx, true);
+          } // svg啥也不用干
 
-            return;
-          }
+
+          return;
         } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
 
 
@@ -14681,6 +14688,7 @@
             var oy = this.sy - y1;
             _dx += tx - coords[0] + ox;
             _dy += ty - coords[1] + oy;
+            ctx.setTransform.apply(ctx, _toConsumableArray(this.matrixEvent));
             ctx.globalAlpha = this.__opacity;
 
             _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, isTop, tx + ox, ty + oy);
@@ -14697,7 +14705,7 @@
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox() {
-        // 一定有
+        // 一定有，和bbox不同，要考虑matrix的影响
         var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this).slice(0);
 
         this.zIndexChildren.forEach(function (item) {

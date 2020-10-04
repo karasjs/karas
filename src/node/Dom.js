@@ -63,6 +63,8 @@ function genZIndexChildren(dom) {
   return flow.concat(abs);
 }
 
+function getMatrixBbox(bbox, matrix) {}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
@@ -1083,14 +1085,15 @@ class Dom extends Xom {
     if(isDestroyed || display === 'none' || !children.length) {
       return res;
     }
-    // canvas先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
-    if(renderMode === mode.CANVAS) {
-      let cacheTotal = this.__cacheTotal;
-      if(level.lt(lv, level.REPAINT)
-        && cacheTotal && cacheTotal.available) {
+    // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
+    let cacheTotal = this.__cacheTotal;
+    if(level.lt(lv, level.REPAINT)
+      && cacheTotal && cacheTotal.available) {
+      if(renderMode === mode.CANVAS) {
         this.__applyCache(renderMode, lv, ctx, true);
-        return;
       }
+      // svg啥也不用干
+      return;
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
     children.forEach(item => {
@@ -1255,6 +1258,7 @@ class Dom extends Xom {
       let oy = this.sy - y1;
       dx += tx - coords[0] + ox;
       dy += ty - coords[1] + oy;
+      ctx.setTransform(...this.matrixEvent);
       ctx.globalAlpha = this.__opacity;
       super.__applyCache(renderMode, lv, ctx, isTop, tx + ox, ty + oy);
       this.zIndexChildren.forEach(item => {
@@ -1269,7 +1273,7 @@ class Dom extends Xom {
   }
 
   __mergeBbox() {
-    // 一定有
+    // 一定有，和bbox不同，要考虑matrix的影响
     let bbox = super.__mergeBbox().slice(0);
     this.zIndexChildren.forEach(item => {
       if(!(item instanceof Text) && !(item instanceof Component) && !(item.shadowRoot instanceof Text)) {

@@ -1068,6 +1068,7 @@ class Dom extends Xom {
   render(renderMode, lv, ctx, defs) {
     // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
     let res = super.render(renderMode, lv, ctx, defs);
+    res = res || {};
     let offScreen = res.offScreen;
     // canvas检查filter，无缓存时的绘制
     if(offScreen && offScreen.target && offScreen.target.ctx) {

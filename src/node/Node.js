@@ -106,6 +106,7 @@ class Node {
         p = p.host;
       }
     }
+    return p;
   }
 
   // canvas/svg根节点

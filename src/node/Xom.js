@@ -1347,14 +1347,14 @@ class Xom extends Node {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
-    // 隐藏不渲染
-    if(visibility === 'hidden') {
-      return;
-    }
     // 无缓存重新渲染时是否使用缓存
     let cache = this.__cache, origin, dx = 0, dy = 0;
     // 有缓存情况快速使用位图缓存不再继续
     if(cache && cache.available && level.lt(lv, level.REPAINT)) {
+      return { cache, origin, hasContent, offScreen, filter };
+    }
+    // 隐藏不渲染
+    if(visibility === 'hidden') {
       return;
     }
     if(hasContent && root.props.cache) {
@@ -1366,7 +1366,7 @@ class Xom extends Node {
           // 有可能超过最大尺寸限制不使用缓存
           if(cache) {
             this.__cache = cache;
-            origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
+            // origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
             // 还要判断有无离屏功能开启可用
             if(cache.enabled) {
               ctx = cache.ctx;

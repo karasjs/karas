@@ -573,9 +573,6 @@ class Root extends Dom {
       if(isRepaint) {
         repaintList.push({
           node,
-          style,
-          img,
-          component,
         });
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
@@ -615,7 +612,8 @@ class Root extends Dom {
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
      */
     let cacheHash = {};
-    repaintList.concat(reflowList).forEach(node => {
+    repaintList.concat(reflowList).forEach(item => {
+      let node = item.node;
       let parent = node;
       // 向上查找，出现重复跳出
       while(parent) {
@@ -625,7 +623,9 @@ class Root extends Dom {
             return;
           }
           cacheHash[uniqueUpdateId] = true;
-          if(level.gte(parent.__refreshLevel, level.REPAINT) && parent.__cacheTotal) {
+          // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
+          let need = parent !== node || level.gte(parent.__refreshLevel, level.REPAINT);
+          if(need) {
             parent.__cacheTotal.release();
             parent.__cacheTotal = null;
           }

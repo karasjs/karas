@@ -366,6 +366,8 @@
             p = p.host;
           }
         }
+
+        return p;
       } // canvas/svg根节点
 
     }, {
@@ -11732,11 +11734,6 @@
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           }
-        } // 隐藏不渲染
-
-
-        if (visibility === 'hidden') {
-          return;
         } // 无缓存重新渲染时是否使用缓存
 
 
@@ -11746,6 +11743,17 @@
             dy = 0; // 有缓存情况快速使用位图缓存不再继续
 
         if (cache && cache.available && o$1.lt(lv, o$1.REPAINT)) {
+          return {
+            cache: cache,
+            origin: origin,
+            hasContent: hasContent,
+            offScreen: offScreen,
+            filter: filter
+          };
+        } // 隐藏不渲染
+
+
+        if (visibility === 'hidden') {
           return;
         }
 
@@ -11757,20 +11765,8 @@
               cache = Cache.getInstance(bbox); // 有可能超过最大尺寸限制不使用缓存
 
               if (cache) {
-                this.__cache = cache;
-                origin = {
-                  ctx: ctx,
-                  x: x,
-                  y: y,
-                  x1: x1,
-                  y1: y1,
-                  x2: x2,
-                  y2: y2,
-                  x3: x3,
-                  y3: y3,
-                  x4: x4,
-                  y4: y4
-                }; // 还要判断有无离屏功能开启可用
+                this.__cache = cache; // origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
+                // 还要判断有无离屏功能开启可用
 
                 if (cache.enabled) {
                   ctx = cache.ctx;
@@ -14837,6 +14833,7 @@
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
+        res = res || {};
         var offScreen = res.offScreen; // canvas检查filter，无缓存时的绘制
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
@@ -17503,10 +17500,7 @@
 
           if (isRepaint) {
             repaintList.push({
-              node: node,
-              style: style,
-              img: img,
-              component: component
+              node: node
             }); // zIndex变化需清空svg缓存
 
             if (hasZ && renderMode === mode.SVG) {
@@ -17548,7 +17542,8 @@
          */
 
         var cacheHash = {};
-        repaintList.concat(reflowList).forEach(function (node) {
+        repaintList.concat(reflowList).forEach(function (item) {
+          var node = item.node;
           var parent = node; // 向上查找，出现重复跳出
 
           while (parent) {
@@ -17559,9 +17554,11 @@
                 return;
               }
 
-              cacheHash[_uniqueUpdateId] = true;
+              cacheHash[_uniqueUpdateId] = true; // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
 
-              if (o$1.gte(parent.__refreshLevel, o$1.REPAINT) && parent.__cacheTotal) {
+              var need = parent !== node || o$1.gte(parent.__refreshLevel, o$1.REPAINT);
+
+              if (need) {
                 parent.__cacheTotal.release();
 
                 parent.__cacheTotal = null;

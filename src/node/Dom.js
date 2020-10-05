@@ -1261,7 +1261,7 @@ class Dom extends Xom {
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else {
       let { dx, dy, coords } = this.__cache;
-      // 被当做总缓存下的子元素也有总缓存需释放清空
+      // 被当做总缓存下的子元素也有总缓存时需释放清空
       if(cacheTotal && cacheTotal.available) {
         cacheTotal.release();
         this.__cacheTotal = null;

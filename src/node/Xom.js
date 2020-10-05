@@ -2064,25 +2064,21 @@ class Xom extends Node {
     this.__cancelCacheSvg();
     this.__cacheStyle = {};
     if(this.__cache) {
-      this.__cache.clear();
+      this.__cache.release();
+      this.__cache = null;
+    }
+    if(this.__cacheTotal) {
+      this.__cacheTotal.release();
+      this.__cacheTotal = null;
     }
     // 向上清空孩子缓存，遇到已清空跳出
     if(recursion) {
       let p = this.domParent;
       let root = this.root;
       while(p) {
-        if(p.__cache && p.__cache.children) {
-          p.__cache.children = false;
-          // svg专用vd
-          if(p.virtualDom && p.virtualDom.cacheChildren) {
-            p.virtualDom.cacheChildren = false;
-          }
-        }
-        else {
-          break;
-        }
+        p.__cancelCache();
         p = p.domParent;
-        if(p && p === root) {
+        if(p === root) {
           break;
         }
       }

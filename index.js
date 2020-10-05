@@ -12564,7 +12564,15 @@
         this.__cacheStyle = {};
 
         if (this.__cache) {
-          this.__cache.clear();
+          this.__cache.release();
+
+          this.__cache = null;
+        }
+
+        if (this.__cacheTotal) {
+          this.__cacheTotal.release();
+
+          this.__cacheTotal = null;
         } // 向上清空孩子缓存，遇到已清空跳出
 
 
@@ -12573,19 +12581,11 @@
           var root = this.root;
 
           while (p) {
-            if (p.__cache && p.__cache.children) {
-              p.__cache.children = false; // svg专用vd
-
-              if (p.virtualDom && p.virtualDom.cacheChildren) {
-                p.virtualDom.cacheChildren = false;
-              }
-            } else {
-              break;
-            }
+            p.__cancelCache();
 
             p = p.domParent;
 
-            if (p && p === root) {
+            if (p === root) {
               break;
             }
           }
@@ -15035,7 +15035,7 @@
             var _this$__cache2 = this.__cache,
                 _dx = _this$__cache2.dx,
                 _dy = _this$__cache2.dy,
-                coords = _this$__cache2.coords; // 被当做总缓存下的子元素也有总缓存需释放清空
+                coords = _this$__cache2.coords; // 被当做总缓存下的子元素也有总缓存时需释放清空
 
             if (cacheTotal && cacheTotal.available) {
               cacheTotal.release();
@@ -17568,7 +17568,7 @@
           measureHash[__uniqueUpdateId] = true;
           var last = node; // 检查measure的属性是否是inherit
 
-          var isInherit = o.isMeasureInherit(totalHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息 TODO
+          var isInherit = o.isMeasureInherit(totalHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             var _loop = function _loop() {
@@ -18009,13 +18009,15 @@
 
                 if (dx || dy) {
                   var _p2 = node;
+                  var last;
 
                   do {
                     // component的sr没有next兄弟，视为component的next
                     while (!_p2.parent && _p2.host) {
                       _p2 = _p2.host;
-                    } // 先偏移next，忽略有定位的absolute或LAYOUT
+                    }
 
+                    last = _p2; // 先偏移next，忽略有定位的absolute或LAYOUT
 
                     var next = _p2.next;
 
@@ -18024,13 +18026,13 @@
                         if (next.currentStyle.top.unit === AUTO$5 && next.currentStyle.bottom.unit === AUTO$5) {
                           next.__offsetY(dy, true, o$1.OFFSET | o$1.REFLOW);
 
-                          next.__cancelCache(true); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
+                          next.__cancelCache(); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
 
                         }
                       } else if (!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
                         next.__offsetY(dy, true, o$1.OFFSET | o$1.REFLOW);
 
-                        next.__cancelCache(true); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
+                        next.__cancelCache(); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
 
                       }
 
@@ -18061,7 +18063,7 @@
                       if (need) {
                         _p2.__resizeX(dx);
 
-                        _p2.__cancelCache(true);
+                        _p2.__cancelCache();
 
                         _p2.__refreshLevel |= o$1.REFLOW;
                       }
@@ -18082,7 +18084,7 @@
                       if (_need) {
                         _p2.__resizeY(dy);
 
-                        _p2.__cancelCache(true);
+                        _p2.__cancelCache();
 
                         _p2.__refreshLevel |= o$1.REFLOW;
                       } // 高度不需要调整提前跳出
@@ -18090,7 +18092,10 @@
                           break;
                         }
                     }
-                  } while (true);
+                  } while (true); // 最后一个递归向上取消缓存，防止过程中重复多次无用递归
+
+
+                  last && last.__cancelCache(true);
                 }
               } // OFFSET操作的节点都是relative，要考虑auto变化
               else {

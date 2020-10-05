@@ -647,7 +647,7 @@ class Root extends Dom {
       let last = node;
       // 检查measure的属性是否是inherit
       let isInherit = change.isMeasureInherit(totalHash[__uniqueUpdateId].style);
-      // 是inherit，需要向上查找，从顶部向下递归计算继承信息 TODO
+      // 是inherit，需要向上查找，从顶部向下递归计算继承信息
       if(isInherit) {
         while(parent && parent !== this) {
           let { __uniqueUpdateId, currentStyle } = parent;
@@ -1013,24 +1013,26 @@ class Root extends Dom {
           // 如果有差值，偏移next兄弟，同时递归向上所有parent扩充和next偏移，直到absolute的中止
           if(dx || dy) {
             let p = node;
+            let last;
             do {
               // component的sr没有next兄弟，视为component的next
               while(!p.parent && p.host) {
                 p = p.host;
               }
+              last = p;
               // 先偏移next，忽略有定位的absolute或LAYOUT
               let next = p.next;
               while(next) {
                 if(next.currentStyle.position === 'absolute') {
                   if(next.currentStyle.top.unit === AUTO && next.currentStyle.bottom.unit === AUTO) {
                     next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
-                    next.__cancelCache(true);
+                    next.__cancelCache();
                     // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                   }
                 }
                 else if(!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
                   next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
-                  next.__cancelCache(true);
+                  next.__cancelCache();
                   // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                 }
                 next = next.next;
@@ -1054,7 +1056,7 @@ class Root extends Dom {
                 }
                 if(need) {
                   p.__resizeX(dx);
-                  p.__cancelCache(true);
+                  p.__cancelCache();
                   p.__refreshLevel |= level.REFLOW;
                 }
               }
@@ -1072,7 +1074,7 @@ class Root extends Dom {
                 }
                 if(need) {
                   p.__resizeY(dy);
-                  p.__cancelCache(true);
+                  p.__cancelCache();
                   p.__refreshLevel |= level.REFLOW;
                 }
                 // 高度不需要调整提前跳出
@@ -1082,6 +1084,8 @@ class Root extends Dom {
               }
             }
             while(true);
+            // 最后一个递归向上取消缓存，防止过程中重复多次无用递归
+            last && last.__cancelCache(true);
           }
         }
         // OFFSET操作的节点都是relative，要考虑auto变化

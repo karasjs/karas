@@ -7366,7 +7366,6 @@
     if (karas.debug) {
       o.style.width = width + 'px';
       o.style.height = height + 'px';
-      o.style.backgroundColor = '#CCC';
       document.body.appendChild(o);
     }
 
@@ -10208,21 +10207,6 @@
         return ENUM.REFLOW;
       }
     },
-    eq: function eq(lv, value) {
-      return (lv & value) === value;
-    },
-    gt: function gt(lv, value) {
-      return (lv & value) > value;
-    },
-    gte: function gte(lv, value) {
-      return (lv & value) >= value;
-    },
-    lt: function lt(lv, value) {
-      return (lv & value) < value;
-    },
-    lte: function lte(lv, value) {
-      return (lv & value) <= value;
-    },
     isReflow: function isReflow(lv) {
       return !this.isRepaint(lv);
     },
@@ -11742,7 +11726,7 @@
             dx = 0,
             dy = 0; // 有缓存情况快速使用位图缓存不再继续
 
-        if (cache && cache.available && o$1.lt(lv, o$1.REPAINT)) {
+        if (cache && cache.available && lv < o$1.REPAINT) {
           return {
             cache: cache,
             origin: origin,
@@ -14860,7 +14844,7 @@
 
         var cacheTotal = this.__cacheTotal;
 
-        if (o$1.lt(lv, o$1.REPAINT) && cacheTotal && cacheTotal.available) {
+        if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
           if (renderMode === mode.CANVAS) {
             this.__applyCache(renderMode, lv, ctx, true, null, null);
           } // svg啥也不用干
@@ -14880,6 +14864,7 @@
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
+          // TODO text也缓存进位图cache
           var draw = !root.props.cache || renderMode === mode.SVG; // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
 
           if (item instanceof Component$1) {
@@ -14895,8 +14880,6 @@
               }
             }
           } else if (item instanceof Text) {
-            cacheChildren = true;
-
             if (draw) {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
             }
@@ -14909,15 +14892,15 @@
           }
         }); // 当opacity/transform/filter且不为none时自身作为局部根节点缓存
 
-        var canCacheSelf = cacheChildren && !o$1.eq(lv, o$1.NONE) && o$1.lte(lv, o$1.TRANSFORM_OPACITY_FILTER); // 需考虑缓存和滤镜
+        var canCacheSelf = cacheChildren && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
 
         if (renderMode === mode.CANVAS) {
           if (root.props.cache) {
             // 自身动画恰好且孩子可缓存，直接作为局部根节点缓存
             if (canCacheSelf) {
               this.__applyCache(renderMode, lv, ctx, true, null, null);
-            } // 自身动画影响且且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root/component，各自作为局部根节点应用自身缓存位图到主画布
-            else if (cacheChildren && !o$1.eq(lv, o$1.NONE) || !cacheChildren || this === root || !this.parent) {
+            } // 自身动画影响且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root，各自作为局部根节点应用自身缓存位图到主画布
+            else if (cacheChildren && lv !== o$1.NONE && lv < o$1.REPAINT || !cacheChildren || this === root) {
                 zIndexChildren.forEach(function (item) {
                   if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                     item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -14992,7 +14975,7 @@
           if (!cacheTotal) {
             cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容
-          else if (o$1.gte(lv, o$1.REPAINT)) {
+          else if (lv >= o$1.REPAINT) {
               cacheTotal.reset();
             } // 写回主画布前设置
 
@@ -15016,7 +14999,7 @@
                 _x = _this$__cache.x1,
                 _y = _this$__cache.y1;
 
-            if (!cacheTotal.available || o$1.lt(lv, o$1.REPAINT)) {
+            if (!cacheTotal.available || lv < o$1.REPAINT) {
               cacheTotal.__available = true;
               cacheTotal.x1 = _x;
               cacheTotal.y1 = _y;
@@ -17556,9 +17539,9 @@
 
               cacheHash[_uniqueUpdateId] = true; // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
 
-              var need = parent !== node || o$1.gte(parent.__refreshLevel, o$1.REPAINT);
+              var need = parent !== node || parent.__refreshLevel >= o$1.REPAINT;
 
-              if (need) {
+              if (need && parent.__cacheTotal) {
                 parent.__cacheTotal.release();
 
                 parent.__cacheTotal = null;

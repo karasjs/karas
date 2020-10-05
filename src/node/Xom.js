@@ -1350,7 +1350,7 @@ class Xom extends Node {
     // 无缓存重新渲染时是否使用缓存
     let cache = this.__cache, origin, dx = 0, dy = 0;
     // 有缓存情况快速使用位图缓存不再继续
-    if(cache && cache.available && level.lt(lv, level.REPAINT)) {
+    if(cache && cache.available && lv < level.REPAINT) {
       return { cache, origin, hasContent, offScreen, filter };
     }
     // 隐藏不渲染

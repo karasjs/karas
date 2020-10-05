@@ -1089,7 +1089,7 @@ class Dom extends Xom {
     }
     // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
     let cacheTotal = this.__cacheTotal;
-    if(level.lt(lv, level.REPAINT)
+    if(lv < level.REPAINT
       && cacheTotal && cacheTotal.available) {
       if(renderMode === mode.CANVAS) {
         this.__applyCache(renderMode, lv, ctx, true, null, null);
@@ -1108,6 +1108,7 @@ class Dom extends Xom {
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     zIndexChildren.forEach(item => {
+      // TODO text也缓存进位图cache
       let draw = !root.props.cache || renderMode === mode.SVG;
       // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
       if(item instanceof Component) {
@@ -1124,7 +1125,6 @@ class Dom extends Xom {
         }
       }
       else if(item instanceof Text) {
-        cacheChildren = true;
         if(draw) {
           item.__renderByMask(renderMode, item.__refreshLevel, ctx);
         }
@@ -1138,7 +1138,8 @@ class Dom extends Xom {
     });
     // 当opacity/transform/filter且不为none时自身作为局部根节点缓存
     let canCacheSelf = cacheChildren
-      && !level.eq(lv, level.NONE) && level.lte(lv, level.TRANSFORM_OPACITY_FILTER);
+      && lv !== level.NONE
+      && lv <= level.TRANSFORM_OPACITY_FILTER;
     // 需考虑缓存和滤镜
     if(renderMode === mode.CANVAS) {
       if(root.props.cache) {
@@ -1146,8 +1147,9 @@ class Dom extends Xom {
         if(canCacheSelf) {
           this.__applyCache(renderMode, lv, ctx, true, null, null);
         }
-        // 自身动画影响且且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root/component，各自作为局部根节点应用自身缓存位图到主画布
-        else if(cacheChildren && !level.eq(lv, level.NONE) || !cacheChildren || this === root || !this.parent) {
+        // 自身动画影响且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root，各自作为局部根节点应用自身缓存位图到主画布
+        else if(cacheChildren && lv !== level.NONE && lv < level.REPAINT
+          || !cacheChildren || this === root) {
           zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -1214,7 +1216,7 @@ class Dom extends Xom {
         cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
       }
       // 后续如果超过可缓存的lv重设，否则直接用已有内容
-      else if(level.gte(lv, level.REPAINT)) {
+      else if(lv >= level.REPAINT) {
         cacheTotal.reset();
       }
       // 写回主画布前设置
@@ -1225,7 +1227,7 @@ class Dom extends Xom {
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty], size, canvas } = cacheTotal;
         let { dx, dy, x1, y1 } = this.__cache;
-        if(!cacheTotal.available || level.lt(lv, level.REPAINT)) {
+        if(!cacheTotal.available || lv < level.REPAINT) {
           cacheTotal.__available = true;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;

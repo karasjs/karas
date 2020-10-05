@@ -624,8 +624,8 @@ class Root extends Dom {
           }
           cacheHash[uniqueUpdateId] = true;
           // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
-          let need = parent !== node || level.gte(parent.__refreshLevel, level.REPAINT);
-          if(need) {
+          let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
+          if(need && parent.__cacheTotal) {
             parent.__cacheTotal.release();
             parent.__cacheTotal = null;
           }

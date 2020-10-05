@@ -73,21 +73,6 @@ let o = Object.assign({
       return ENUM.REFLOW;
     }
   },
-  eq(lv, value) {
-    return (lv & value) === value;
-  },
-  gt(lv, value) {
-    return (lv & value) > value;
-  },
-  gte(lv, value) {
-    return (lv & value) >= value;
-  },
-  lt(lv, value) {
-    return (lv & value) < value;
-  },
-  lte(lv, value) {
-    return (lv & value) <= value;
-  },
   isReflow(lv) {
     return !this.isRepaint(lv);
   },

@@ -1108,7 +1108,6 @@ class Dom extends Xom {
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     zIndexChildren.forEach(item => {
-      // TODO text也缓存进位图cache
       let draw = !root.props.cache || renderMode === mode.SVG;
       // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
       if(item instanceof Component) {
@@ -1136,8 +1135,8 @@ class Dom extends Xom {
         }
       }
     });
-    // 当opacity/transform/filter且不为none时自身作为局部根节点缓存
-    let canCacheSelf = cacheChildren
+    // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
+    let canCacheSelf = cacheChildren && this !== root
       && lv !== level.NONE
       && lv <= level.TRANSFORM_OPACITY_FILTER;
     // 需考虑缓存和滤镜

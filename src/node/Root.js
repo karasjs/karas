@@ -489,7 +489,6 @@ class Root extends Dom {
     // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
     let measureList = [];
     let reflowList = [];
-    let repaintList = [];
     for(let i = 0, len = totalList.length; i < len; i++) {
       let node = totalList[i];
       let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
@@ -571,9 +570,6 @@ class Root extends Dom {
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
       if(isRepaint) {
-        repaintList.push({
-          node,
-        });
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
           node.__cancelCacheSvg(true);
@@ -598,21 +594,12 @@ class Root extends Dom {
         }
       }
     }
-    this.__updateList = [];
-    // 没有更新的内容返回true
-    if(!hasUpdate) {
-      totalList.forEach(node => {
-        delete node.__uniqueUpdateId;
-      });
-      return true;
-    }
-    this.__reflowList = reflowList;
     /**
      * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
      */
     let cacheHash = {};
-    repaintList.concat(reflowList).forEach(item => {
+    updateList.forEach(item => {
       let node = item.node;
       let parent = node;
       // 向上查找，出现重复跳出
@@ -623,16 +610,25 @@ class Root extends Dom {
             return;
           }
           cacheHash[uniqueUpdateId] = true;
-          // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
-          let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
-          if(need && parent.__cacheTotal) {
-            parent.__cacheTotal.release();
-            parent.__cacheTotal = null;
-          }
+        }
+        // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
+        let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
+        if(need && parent.__cacheTotal) {
+          parent.__cacheTotal.release();
+          parent.__cacheTotal = null;
         }
         parent = parent.domParent;
       }
     });
+    this.__updateList = [];
+    // 没有更新的内容返回true
+    if(!hasUpdate) {
+      totalList.forEach(node => {
+        delete node.__uniqueUpdateId;
+      });
+      return true;
+    }
+    this.__reflowList = reflowList;
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

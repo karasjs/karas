@@ -14864,7 +14864,6 @@
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          // TODO text也缓存进位图cache
           var draw = !root.props.cache || renderMode === mode.SVG; // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
 
           if (item instanceof Component$1) {
@@ -14890,9 +14889,9 @@
               cacheChildren = false;
             }
           }
-        }); // 当opacity/transform/filter且不为none时自身作为局部根节点缓存
+        }); // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
 
-        var canCacheSelf = cacheChildren && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
+        var canCacheSelf = cacheChildren && this !== root && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
 
         if (renderMode === mode.CANVAS) {
           if (root.props.cache) {
@@ -17370,7 +17369,6 @@
 
         var measureList = [];
         var reflowList = [];
-        var repaintList = [];
 
         for (var i = 0, len = totalList.length; i < len; i++) {
           var node = totalList[i];
@@ -17482,10 +17480,7 @@
           var isRepaint = o$1.isRepaint(lv);
 
           if (isRepaint) {
-            repaintList.push({
-              node: node
-            }); // zIndex变化需清空svg缓存
-
+            // zIndex变化需清空svg缓存
             if (hasZ && renderMode === mode.SVG) {
               node.__cancelCacheSvg(true);
             } else {
@@ -17508,24 +17503,14 @@
               }
             }
         }
-
-        this.__updateList = []; // 没有更新的内容返回true
-
-        if (!hasUpdate) {
-          totalList.forEach(function (node) {
-            delete node.__uniqueUpdateId;
-          });
-          return true;
-        }
-
-        this.__reflowList = reflowList;
         /**
          * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
          */
 
+
         var cacheHash = {};
-        repaintList.concat(reflowList).forEach(function (item) {
+        updateList.forEach(function (item) {
           var node = item.node;
           var parent = node; // 向上查找，出现重复跳出
 
@@ -17537,20 +17522,31 @@
                 return;
               }
 
-              cacheHash[_uniqueUpdateId] = true; // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
+              cacheHash[_uniqueUpdateId] = true;
+            } // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
 
-              var need = parent !== node || parent.__refreshLevel >= o$1.REPAINT;
 
-              if (need && parent.__cacheTotal) {
-                parent.__cacheTotal.release();
+            var need = parent !== node || parent.__refreshLevel >= o$1.REPAINT;
 
-                parent.__cacheTotal = null;
-              }
+            if (need && parent.__cacheTotal) {
+              parent.__cacheTotal.release();
+
+              parent.__cacheTotal = null;
             }
 
             parent = parent.domParent;
           }
         });
+        this.__updateList = []; // 没有更新的内容返回true
+
+        if (!hasUpdate) {
+          totalList.forEach(function (node) {
+            delete node.__uniqueUpdateId;
+          });
+          return true;
+        }
+
+        this.__reflowList = reflowList;
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

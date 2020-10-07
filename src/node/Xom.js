@@ -1274,7 +1274,7 @@ class Xom extends Node {
       root,
     } = this;
     if(isDestroyed || computedStyle.display === 'none') {
-      return;
+      return { canCache: !this.displayAnimating, hasContent: false };
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
@@ -1347,36 +1347,42 @@ class Xom extends Node {
         this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }
     }
-    // 无缓存重新渲染时是否使用缓存
-    let cache = this.__cache, origin, dx = 0, dy = 0;
-    // 有缓存情况快速使用位图缓存不再继续
-    if(cache && cache.available && lv < level.REPAINT) {
-      return { cache, origin, hasContent, offScreen, filter };
-    }
     // 隐藏不渲染
     if(visibility === 'hidden') {
-      return;
+      return { canCache: !this.visibilityAnimating, hasContent: false };
     }
-    if(hasContent && root.props.cache) {
+    // 无内容或者无影响动画视为可缓存本身
+    let canCache = !hasContent || !this.availableAnimating;
+    // 无缓存重新渲染时是否使用缓存
+    let cache = this.__cache, dx = 0, dy = 0;
+    if(root.cache) {
       if(renderMode === mode.CANVAS) {
+        if(!hasContent) {
+          return { canCache, hasContent };
+        }
+        // 有缓存情况快速使用位图缓存不再继续
+        if(cache && cache.available && lv < level.REPAINT) {
+          return { canCache, cache, hasContent, filter };
+        }
         // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
-        if(!cache) {
+        if(!cache && canCache) {
           let bbox = this.bbox;
           cache = Cache.getInstance(bbox);
           // 有可能超过最大尺寸限制不使用缓存
           if(cache) {
             this.__cache = cache;
-            // origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
+            cache.ox = x - x1;
+            cache.oy = y - y1;
+            cache.x1 = x1;
+            cache.y1 = y1;
             // 还要判断有无离屏功能开启可用
             if(cache.enabled) {
               ctx = cache.ctx;
               let [x, y] = cache.coords;
+              // cache上记录一些偏移信息
               dx = cache.dx = x - x1;
               dy = cache.dy = y - y1;
-              cache.x = x;
-              cache.y = y;
-              cache.x1 = x1;
-              cache.y1 = y1;
+              // 重置ctx为cache的，以及绘制坐标为cache的区域
               x1 = x;
               y1 = y;
               if(dx) {
@@ -1392,7 +1398,12 @@ class Xom extends Node {
             }
           }
         }
+        // 无离屏功能视为不可缓存本身
+        if(!cache) {
+          canCache = false;
+        }
       }
+      // TODO: svg
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
@@ -1742,7 +1753,7 @@ class Xom extends Node {
         }
       });
     }
-    return { cache, origin, hasContent, offScreen, filter };
+    return { canCache, cache, hasContent, offScreen, filter };
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {
@@ -1915,7 +1926,7 @@ class Xom extends Node {
     }
   }
 
-  __applyCache(renderMode, lv, ctx, isTop, tx, ty) {
+  __applyCache(renderMode, lv, ctx, tx, ty) {
     let { coords, canvas, size } = this.__cache;
     let [x, y] = coords;
     ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
@@ -2404,6 +2415,78 @@ class Xom extends Node {
 
   get animationList() {
     return this.__animationList;
+  }
+
+  // 除IGNORE外的动画为有效的
+  get availableAnimating() {
+    let list = this.animationList;
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item.animating) {
+        let { transition } = item.currentFrame;
+        for(let i = 0, len = transition.length; i < len; i++) {
+          if(!change.isIgnore(transition[i].k)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  // 除IGNORE/opacity/transform/filter/visibility外的动画为有影响的
+  get effectiveAnimating() {
+    let list = this.animationList;
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item.animating) {
+        let { transition } = item.currentFrame;
+        for(let i = 0, len = transition.length; i < len; i++) {
+          let k = transition[i].k;
+          if(!change.isIgnore(k) || level.TRANSFORMS.hasOwnProperty(k)
+            || k === 'opacity' || k === 'transform' || k === 'filter' || k === 'visibility') {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  // 是否有display的动画，在none时执行其它的都可视为无效，影响缓存
+  get displayAnimating() {
+    let list = this.animationList;
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item.animating) {
+        let { transition } = item.currentFrame;
+        for(let i = 0, len = transition.length; i < len; i++) {
+          let k = transition[i].k;
+          if(k === 'display') {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  // 是否有visibility的动画，在为hidden时执行其它的都可视为无效，影响缓存
+  get visibilityAnimating() {
+    let list = this.animationList;
+    for(let i = 0, len = list.length; i < len; i++) {
+      let item = list[i];
+      if(item.animating) {
+        let { transition } = item.currentFrame;
+        for(let i = 0, len = transition.length; i < len; i++) {
+          let k = transition[i].k;
+          if(k === 'visibility') {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   get currentStyle() {

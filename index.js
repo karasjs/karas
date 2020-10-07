@@ -10132,25 +10132,26 @@
     //                                     1
     OPACITY: 2,
     //                                      10
-    FILTER: 4,
-    //                                      100
-    TRANSFORM_OPACITY: 3,
-    //                            11
-    TRANSFORM_FILTER: 5,
-    //                            101
-    OPACITY_FILTER: 6,
-    //                              110
-    TRANSFORM_OPACITY_FILTER: 7,
-    //                    111
-    REPAINT: 8,
-    //                                    1000
+    VISIBILITY: 4,
+    //                                  100
+    FILTER: 8,
+    //                                     1000
+    // TRANSFORM_OPACITY: 3, //                            11
+    // TRANSFORM_VISIBILITY: 5, //                        101
+    // TRANSFORM_FILTER: 9, //                           1001
+    // OPACITY_VISIBILITY: 6, //                          110
+    // OPACITY_FILTER: 10, //                            1010
+    // VISIBILITY_FILTER: 12, //                         1100
+    // TRANSFORM_OPACITY_FILTER: 7, //                    111
+    REPAINT: 16,
+    //                                   10000
     // 高位表示reflow
-    REFLOW: 16,
+    REFLOW: 32,
     // 整体需要重排                        10000
-    OFFSET: 32 // reflow中是因为offset引起的情况      100000
+    OFFSET: 64 // reflow中是因为offset引起的情况      100000
 
   };
-  var TRANSFORM = {
+  var TRANSFORMS = {
     translateX: true,
     translateY: true,
     scaleX: true,
@@ -10158,6 +10159,10 @@
     rotateZ: true
   };
   var o$1 = Object.assign({
+    contain: function contain(lv, value) {
+      return (lv & value) === value;
+    },
+
     /**
      * 仅得出大概等级none/repaint/reflow
      * @param k
@@ -10190,7 +10195,7 @@
 
         for (var i in style) {
           if (style.hasOwnProperty(i)) {
-            if (TRANSFORM.hasOwnProperty(i)) {
+            if (TRANSFORMS.hasOwnProperty(i)) {
               _lv |= ENUM.TRANSFORM;
             } else if (i === 'opacity') {
               _lv |= ENUM.OPACITY;
@@ -10213,7 +10218,8 @@
     isRepaint: function isRepaint(lv) {
       return lv < ENUM.REFLOW;
     }
-  }, ENUM, TRANSFORM);
+  }, ENUM);
+  o$1.TRANSFORMS = TRANSFORMS;
 
   var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
   var NUMBER$3 = [8, 8, 8, 8, 8, 8, 8, 4, 2, 1];
@@ -10537,7 +10543,7 @@
     return Cache;
   }();
 
-  _defineProperty(Cache, "SCORE", 5);
+  _defineProperty(Cache, "COUNT", 5);
 
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
@@ -11649,7 +11655,10 @@
             root = this.root;
 
         if (isDestroyed || computedStyle.display === 'none') {
-          return;
+          return {
+            canCache: !this.displayAnimating,
+            hasContent: false
+          };
         } // 使用sx和sy渲染位置，考虑了relative和translate影响
 
 
@@ -11719,53 +11728,65 @@
           if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             this.virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           }
-        } // 无缓存重新渲染时是否使用缓存
-
-
-        var cache = this.__cache,
-            origin,
-            dx = 0,
-            dy = 0; // 有缓存情况快速使用位图缓存不再继续
-
-        if (cache && cache.available && lv < o$1.REPAINT) {
-          return {
-            cache: cache,
-            origin: origin,
-            hasContent: hasContent,
-            offScreen: offScreen,
-            filter: filter
-          };
         } // 隐藏不渲染
 
 
         if (visibility === 'hidden') {
-          return;
-        }
+          return {
+            canCache: !this.visibilityAnimating,
+            hasContent: false
+          };
+        } // 无内容或者无影响动画视为可缓存本身
 
-        if (hasContent && root.props.cache) {
+
+        var canCache = !hasContent || !this.availableAnimating; // 无缓存重新渲染时是否使用缓存
+
+        var cache = this.__cache,
+            dx = 0,
+            dy = 0;
+
+        if (root.cache) {
           if (renderMode === mode.CANVAS) {
-            // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
-            if (!cache) {
+            if (!hasContent) {
+              return {
+                canCache: canCache,
+                hasContent: hasContent
+              };
+            } // 有缓存情况快速使用位图缓存不再继续
+
+
+            if (cache && cache.available && lv < o$1.REPAINT) {
+              return {
+                canCache: canCache,
+                cache: cache,
+                hasContent: hasContent,
+                filter: filter
+              };
+            } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
+
+
+            if (!cache && canCache) {
               var bbox = this.bbox;
               cache = Cache.getInstance(bbox); // 有可能超过最大尺寸限制不使用缓存
 
               if (cache) {
-                this.__cache = cache; // origin = { ctx, x, y, x1, y1, x2, y2, x3, y3, x4, y4 };
-                // 还要判断有无离屏功能开启可用
+                this.__cache = cache;
+                cache.ox = x - x1;
+                cache.oy = y - y1;
+                cache.x1 = x1;
+                cache.y1 = y1; // 还要判断有无离屏功能开启可用
 
                 if (cache.enabled) {
                   ctx = cache.ctx;
 
                   var _cache$coords = _slicedToArray(cache.coords, 2),
                       _x = _cache$coords[0],
-                      _y = _cache$coords[1];
+                      _y = _cache$coords[1]; // cache上记录一些偏移信息
+
 
                   dx = cache.dx = _x - x1;
-                  dy = cache.dy = _y - y1;
-                  cache.x = _x;
-                  cache.y = _y;
-                  cache.x1 = x1;
-                  cache.y1 = y1;
+                  dy = cache.dy = _y - y1; // 重置ctx为cache的，以及绘制坐标为cache的区域
+
                   x1 = _x;
                   y1 = _y;
 
@@ -11782,8 +11803,14 @@
                   }
                 }
               }
+            } // 无离屏功能视为不可缓存本身
+
+
+            if (!cache) {
+              canCache = false;
             }
-          }
+          } // TODO: svg
+
         } // 无法使用缓存时主画布直接绘制需设置
 
 
@@ -12159,8 +12186,8 @@
         }
 
         return {
+          canCache: canCache,
           cache: cache,
-          origin: origin,
           hasContent: hasContent,
           offScreen: offScreen,
           filter: filter
@@ -12364,7 +12391,7 @@
       }
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, isTop, tx, ty) {
+      value: function __applyCache(renderMode, lv, ctx, tx, ty) {
         var _this$__cache = this.__cache,
             coords = _this$__cache.coords,
             canvas = _this$__cache.canvas,
@@ -12944,6 +12971,100 @@
       key: "animationList",
       get: function get() {
         return this.__animationList;
+      } // 除IGNORE外的动画为有效的
+
+    }, {
+      key: "availableAnimating",
+      get: function get() {
+        var list = this.animationList;
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          var item = list[i];
+
+          if (item.animating) {
+            var transition = item.currentFrame.transition;
+
+            for (var _i10 = 0, _len5 = transition.length; _i10 < _len5; _i10++) {
+              if (!o.isIgnore(transition[_i10].k)) {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      } // 除IGNORE/opacity/transform/filter/visibility外的动画为有影响的
+
+    }, {
+      key: "effectiveAnimating",
+      get: function get() {
+        var list = this.animationList;
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          var item = list[i];
+
+          if (item.animating) {
+            var transition = item.currentFrame.transition;
+
+            for (var _i11 = 0, _len6 = transition.length; _i11 < _len6; _i11++) {
+              var k = transition[_i11].k;
+
+              if (!o.isIgnore(k) || o$1.TRANSFORMS.hasOwnProperty(k) || k === 'opacity' || k === 'transform' || k === 'filter' || k === 'visibility') {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      } // 是否有display的动画，在none时执行其它的都可视为无效，影响缓存
+
+    }, {
+      key: "displayAnimating",
+      get: function get() {
+        var list = this.animationList;
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          var item = list[i];
+
+          if (item.animating) {
+            var transition = item.currentFrame.transition;
+
+            for (var _i12 = 0, _len7 = transition.length; _i12 < _len7; _i12++) {
+              var k = transition[_i12].k;
+
+              if (k === 'display') {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      } // 是否有visibility的动画，在为hidden时执行其它的都可视为无效，影响缓存
+
+    }, {
+      key: "visibilityAnimating",
+      get: function get() {
+        var list = this.animationList;
+
+        for (var i = 0, len = list.length; i < len; i++) {
+          var item = list[i];
+
+          if (item.animating) {
+            var transition = item.currentFrame.transition;
+
+            for (var _i13 = 0, _len8 = transition.length; _i13 < _len8; _i13++) {
+              var k = transition[_i13].k;
+
+              if (k === 'visibility') {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
       }
     }, {
       key: "currentStyle",
@@ -13628,6 +13749,14 @@
       PERCENT$6 = unit.PERCENT;
   var calAbsolute$1 = css.calAbsolute,
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
+  var MODE = {
+    TOP: 0,
+    // 局部根节点
+    CHILD: 1,
+    // 根节点的子节点
+    NONE: 2 // 无根节点的子节点
+
+  };
 
   function genZIndexChildren(dom) {
     var flow = [];
@@ -14823,7 +14952,7 @@
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
           ctx = offScreen.target.ctx;
-        } // 降级，有offScreen但没离屏canvas功能，舍弃blur
+        } // 降级，有offScreen但没离屏canvas/webgl功能，舍弃blur
         else {
             offScreen = null;
           }
@@ -14832,13 +14961,16 @@
             isDestroyed = this.isDestroyed,
             virtualDom = this.virtualDom,
             children = this.children,
-            display = this.computedStyle.display; // 不显示的为了diff也要根据type生成
+            _this$computedStyle = this.computedStyle,
+            display = _this$computedStyle.display,
+            visibility = _this$computedStyle.visibility,
+            opacity = _this$computedStyle.opacity; // 不显示的为了diff也要根据type生成
 
         if (renderMode === mode.SVG) {
           virtualDom.type = 'dom';
         }
 
-        if (isDestroyed || display === 'none' || !children.length) {
+        if (isDestroyed) {
           return res;
         } // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
 
@@ -14847,11 +14979,13 @@
 
         if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
           if (renderMode === mode.CANVAS) {
-            this.__applyCache(renderMode, lv, ctx, true, null, null);
-          } // svg啥也不用干
+            if (res.hasContent && display !== 'none' && visibility !== 'hidden' && opacity > 0) {
+              this.__applyCache(renderMode, lv, ctx, MODE.TOP);
+            }
+          }
 
-
-          return;
+          res.canCache && (res.canCache = false);
+          return res;
         } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
 
 
@@ -14859,53 +14993,61 @@
           if (item.isMask || item.isClip) {
             item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
           }
-        }); // 查找所有非文本children是否都可以缓存，比如有的超尺寸或离屏功能不可用
+        }); // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
 
-        var canCacheChildren = true; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+        var canCacheChildren = true;
+        var count = 0; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          var draw = !root.props.cache || renderMode === mode.SVG; // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
+          var draw = !root.cache || renderMode === mode.SVG; // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
 
-          if (item instanceof Component$1) {
-            if (item.shadowRoot instanceof Text) {
-              if (draw) {
-                item.__renderByMask(renderMode, item.__refreshLevel, ctx);
-              }
-            } else {
-              var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-
-              if (!canCacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.canCacheChildren) {
-                canCacheChildren = false;
-              }
-            }
-          } else if (item instanceof Text) {
+          if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+
+              count++;
             }
           } else {
-            var _temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // 叶子节点无count设为1
 
-            if (!canCacheChildren || !_temp || !_temp.cache || !_temp.cache.enabled || !_temp.canCacheChildren) {
+
+            if (item.hasContent) {
+              count += temp.count || 1;
+            } // Xom类型为无有效动画方可被父亲缓存
+
+
+            if (!canCacheChildren || !temp.canCache || item.availableAnimating) {
               canCacheChildren = false;
             }
           }
-        }); // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
+        });
+        /**
+         * 决定是否作为一个局部整体是否缓存的因素
+         * 首先本身无有影响的动画
+         * 然后节点数递归积累一定的children数量后，且children无有效的动画
+         */
+        // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
 
-        var canCacheSelf = canCacheChildren && this !== root && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
+        var canCacheSelf = canCacheChildren && this !== root && !this.effectiveAnimating;
+
+        if (canCacheSelf && count < Cache.COUNT) {
+          canCacheSelf = false;
+        } // 需考虑缓存和滤镜
+
 
         if (renderMode === mode.CANVAS) {
-          if (root.props.cache) {
-            // 自身动画恰好且孩子可缓存，直接作为局部根节点缓存
+          if (root.cache) {
+            // 作为局部根节点整体进行绘制并缓存
             if (canCacheSelf) {
-              this.__applyCache(renderMode, lv, ctx, true, null, null);
-            } // 自身动画影响且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root，各自作为局部根节点应用自身缓存位图到主画布
-            else if (canCacheChildren && lv !== o$1.NONE && lv < o$1.REPAINT || !canCacheChildren || this === root) {
+              this.__applyCache(renderMode, lv, ctx, MODE.TOP);
+            } // 自身动画影响，或孩子中有无法缓存的存在，或到了root，children直接使用自身缓存
+            else if (!canCacheChildren || this === root) {
                 zIndexChildren.forEach(function (item) {
                   if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                     item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                   } else {
-                    item.__applyCache(renderMode, lv, ctx, true, null, null);
+                    item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
                   }
                 });
               } // 其它情况继续等待上级调用
@@ -14944,7 +15086,14 @@
             // }
           }
 
-        res && (res.canCacheChildren = canCacheChildren);
+        res.count = res.count || 0;
+        res.count += count; // 向上回溯传值，要考虑children
+
+        if (res.canCache && !canCacheChildren) {
+          res.canCache = false;
+        } // res && (res.canCacheChildren = canCacheChildren);
+
+
         return res;
       }
       /**
@@ -14954,22 +15103,22 @@
        * @param renderMode
        * @param lv
        * @param ctx
-       * @param isTop
-       * @param opacity 以top为基点
-       * @param matrix 以top为基点
+       * @param mode 局部根节点总缓存、子节点、无根节点的子节点
        * @param tx 汇总离屏canvas的目标x
        * @param ty 汇总离屏canvas的目标y
-       * @param x1
+       * @param x1 从border算起的坐标，除去margin
        * @param y1
+       * @param opacity 以top为基点
+       * @param matrix 以top为基点
        */
 
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, isTop, opacity, matrix, tx, ty, x1, y1) {
+      value: function __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
         var cacheTotal = this.__cacheTotal;
-        console.log(this.tagName, isTop);
+        var cache = this.__cache;
 
-        if (isTop) {
+        if (mode === MODE.TOP) {
           var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 第一次初始化进行bbox合集计算
 
 
@@ -14994,11 +15143,10 @@
                 size = _cacheTotal.size,
                 canvas = _cacheTotal.canvas;
 
-            var _this$__cache = this.__cache,
-                dx = _this$__cache.dx,
-                dy = _this$__cache.dy,
-                _x = _this$__cache.x1,
-                _y = _this$__cache.y1; // 首次进入时执行，后续无变更可省略计算
+            var dx = cache.dx,
+                dy = cache.dy,
+                _x = cache.x1,
+                _y = cache.y1; // 首次进入时执行，后续无变更可省略计算
 
             if (!cacheTotal.available || lv >= o$1.REPAINT) {
               cacheTotal.__available = true;
@@ -15007,40 +15155,37 @@
               dx += _tx;
               dy += _ty;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, _tx, _ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, _tx, _ty);
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
                 } else {
-                  item.__applyCache(renderMode, lv, cacheTotal.ctx, false, 1, [1, 0, 0, 1, 0, 0], _tx, _ty, _x, _y);
+                  item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, _tx, _ty, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
                 }
               });
             }
 
             ctx.drawImage(canvas, _tx - 1, _ty - 1, size, size, _x, _y, size, size);
-          } // 超尺寸无法进行，降级各自作为顶点渲染
+          } // 超尺寸无法进行，降级渲染
           else {
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, isTop, tx, ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx, ty);
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                 } else {
-                  item.__applyCache(renderMode, lv, ctx, true);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
                 }
               });
             }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
-        else {
-            var _this$__cache2 = this.__cache,
-                _dx = _this$__cache2.dx,
-                _dy = _this$__cache2.dy,
-                coords = _this$__cache2.coords; // 被当做总缓存下的子元素也有总缓存时需释放清空
+        else if (mode === MODE.CHILD) {
+            var _dx = cache.dx,
+                _dy = cache.dy,
+                coords = cache.coords; // 被当做总缓存下的子元素也有总缓存时需释放清空
 
-            if (cacheTotal && cacheTotal.available) {
-              cacheTotal.release(); // this.__cacheTotal = null;
-            }
+            if (cacheTotal && cacheTotal.available) ;
 
             var ox = this.sx - x1;
             var oy = this.sy - y1;
@@ -15052,16 +15197,38 @@
             ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
             ctx.globalAlpha = opacity;
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, isTop, tx + ox, ty + oy);
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx + ox, ty + oy);
 
             this.zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                 item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx, _dy);
               } else {
-                item.__applyCache(renderMode, lv, ctx, false, opacity, matrix, tx, ty, x1, y1);
+                item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
               }
             });
-          }
+          } // 直接绘入主画布
+          else {
+              if (cacheTotal && cacheTotal.available) ;
+
+              var _ox = cache.ox,
+                  _oy = cache.oy;
+              var sx = this.sx,
+                  sy = this.sy,
+                  _matrixEvent = this.matrixEvent,
+                  _opacity = this.__opacity;
+              ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
+              ctx.globalAlpha = _opacity;
+
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, sx - _ox, sy - _oy);
+
+              this.zIndexChildren.forEach(function (item) {
+                if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
+                  item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+                } else {
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
+                }
+              });
+            }
       }
     }, {
       key: "__mergeBbox",
@@ -17009,7 +17176,8 @@
 
         this.__initProps();
 
-        this.__root = this; // 已有root节点
+        this.__root = this;
+        this.cache = !!this.props.cache; // 已有root节点
 
         if (dom.nodeName.toUpperCase() === this.tagName.toUpperCase()) {
           this.__dom = dom;

@@ -82,7 +82,7 @@ class Cache {
     return this.__coords;
   }
 
-  static SCORE = 5;
+  static COUNT = 5;
 
   static getInstance(bbox) {
     let w = Math.ceil(bbox[2] - bbox[0]);

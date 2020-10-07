@@ -5,19 +5,23 @@ const ENUM = {
   NONE: 0, //                                          0
   TRANSFORM: 1, //                                     1
   OPACITY: 2, //                                      10
-  FILTER: 4, //                                      100
-  TRANSFORM_OPACITY: 3, //                            11
-  TRANSFORM_FILTER: 5, //                            101
-  OPACITY_FILTER: 6, //                              110
-  TRANSFORM_OPACITY_FILTER: 7, //                    111
-  REPAINT: 8, //                                    1000
+  VISIBILITY: 4, //                                  100
+  FILTER: 8, //                                     1000
+  // TRANSFORM_OPACITY: 3, //                            11
+  // TRANSFORM_VISIBILITY: 5, //                        101
+  // TRANSFORM_FILTER: 9, //                           1001
+  // OPACITY_VISIBILITY: 6, //                          110
+  // OPACITY_FILTER: 10, //                            1010
+  // VISIBILITY_FILTER: 12, //                         1100
+  // TRANSFORM_OPACITY_FILTER: 7, //                    111
+  REPAINT: 16, //                                   10000
 
   // 高位表示reflow
-  REFLOW: 16, // 整体需要重排                        10000
-  OFFSET: 32, // reflow中是因为offset引起的情况      100000
+  REFLOW: 32, // 整体需要重排                        10000
+  OFFSET: 64, // reflow中是因为offset引起的情况      100000
 };
 
-const TRANSFORM = {
+const TRANSFORMS = {
   translateX: true,
   translateY: true,
   scaleX: true,
@@ -26,6 +30,9 @@ const TRANSFORM = {
 };
 
 let o = Object.assign({
+  contain(lv, value) {
+    return (lv & value) === value;
+  },
   /**
    * 仅得出大概等级none/repaint/reflow
    * @param k
@@ -53,7 +60,7 @@ let o = Object.assign({
       let lv = ENUM.NONE;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          if(TRANSFORM.hasOwnProperty(i)) {
+          if(TRANSFORMS.hasOwnProperty(i)) {
             lv |= ENUM.TRANSFORM;
           }
           else if(i === 'opacity') {
@@ -79,6 +86,7 @@ let o = Object.assign({
   isRepaint(lv) {
     return lv < ENUM.REFLOW;
   },
-}, ENUM, TRANSFORM);
+}, ENUM);
+o.TRANSFORMS = TRANSFORMS;
 
 export default o;

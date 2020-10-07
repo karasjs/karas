@@ -10448,6 +10448,7 @@
         this.clear();
         this.page.del(this.pos);
         this.__page = null;
+        this.__enabled = false;
       }
     }, {
       key: "reset",
@@ -14858,9 +14859,9 @@
           if (item.isMask || item.isClip) {
             item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
           }
-        }); // 查找所有非文本children是否都有缓存，比如有的超尺寸或离屏功能不可用
+        }); // 查找所有非文本children是否都可以缓存，比如有的超尺寸或离屏功能不可用
 
-        var cacheChildren = true; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+        var canCacheChildren = true; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
@@ -14874,8 +14875,8 @@
             } else {
               var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
 
-              if (!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
-                cacheChildren = false;
+              if (!canCacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.canCacheChildren) {
+                canCacheChildren = false;
               }
             }
           } else if (item instanceof Text) {
@@ -14885,13 +14886,13 @@
           } else {
             var _temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
 
-            if (!cacheChildren || !_temp || !_temp.cache || !_temp.cache.enabled || !_temp.cacheChildren) {
-              cacheChildren = false;
+            if (!canCacheChildren || !_temp || !_temp.cache || !_temp.cache.enabled || !_temp.canCacheChildren) {
+              canCacheChildren = false;
             }
           }
         }); // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
 
-        var canCacheSelf = cacheChildren && this !== root && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
+        var canCacheSelf = canCacheChildren && this !== root && lv !== o$1.NONE && lv <= o$1.TRANSFORM_OPACITY_FILTER; // 需考虑缓存和滤镜
 
         if (renderMode === mode.CANVAS) {
           if (root.props.cache) {
@@ -14899,7 +14900,7 @@
             if (canCacheSelf) {
               this.__applyCache(renderMode, lv, ctx, true, null, null);
             } // 自身动画影响且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root，各自作为局部根节点应用自身缓存位图到主画布
-            else if (cacheChildren && lv !== o$1.NONE && lv < o$1.REPAINT || !cacheChildren || this === root) {
+            else if (canCacheChildren && lv !== o$1.NONE && lv < o$1.REPAINT || !canCacheChildren || this === root) {
                 zIndexChildren.forEach(function (item) {
                   if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                     item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -14928,10 +14929,10 @@
         else if (renderMode === mode.SVG && this.tagName !== 'img') {
             this.virtualDom.children = zIndexChildren.map(function (item) {
               return item.virtualDom;
-            }); // if(cacheChildren && this.availableAnimating) {
-            //   cacheChildren = false;
-            //   delete this.virtualDom.cacheChildren;
-            //   this.virtualDom.children.forEach(item => item.cacheChildren = true);
+            }); // if(canCacheChildren && this.availableAnimating) {
+            //   canCacheChildren = false;
+            //   delete this.virtualDom.canCacheChildren;
+            //   this.virtualDom.children.forEach(item => item.canCacheChildren = true);
             // }
             // 没变化则将text孩子设置cache
             // if(this.virtualDom.cache) {
@@ -14943,7 +14944,7 @@
             // }
           }
 
-        res && (res.cacheChildren = cacheChildren);
+        res && (res.canCacheChildren = canCacheChildren);
         return res;
       }
       /**
@@ -14966,6 +14967,7 @@
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, isTop, opacity, matrix, tx, ty, x1, y1) {
         var cacheTotal = this.__cacheTotal;
+        console.log(this.tagName, isTop);
 
         if (isTop) {
           var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 第一次初始化进行bbox合集计算
@@ -14975,7 +14977,7 @@
             cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容
           else if (lv >= o$1.REPAINT) {
-              cacheTotal.reset();
+              cacheTotal.reset(bboxTotal);
             } // 写回主画布前设置
 
 
@@ -14996,16 +14998,16 @@
                 dx = _this$__cache.dx,
                 dy = _this$__cache.dy,
                 _x = _this$__cache.x1,
-                _y = _this$__cache.y1;
+                _y = _this$__cache.y1; // 首次进入时执行，后续无变更可省略计算
 
-            if (!cacheTotal.available || lv < o$1.REPAINT) {
+            if (!cacheTotal.available || lv >= o$1.REPAINT) {
               cacheTotal.__available = true;
               cacheTotal.x1 = _x;
               cacheTotal.y1 = _y;
               dx += _tx;
               dy += _ty;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, null, null, _tx, _ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, _tx, _ty);
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
@@ -15019,7 +15021,7 @@
             ctx.drawImage(canvas, _tx - 1, _ty - 1, size, size, _x, _y, size, size);
           } // 超尺寸无法进行，降级各自作为顶点渲染
           else {
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, isTop, tx, ty);
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
@@ -15037,8 +15039,7 @@
                 coords = _this$__cache2.coords; // 被当做总缓存下的子元素也有总缓存时需释放清空
 
             if (cacheTotal && cacheTotal.available) {
-              cacheTotal.release();
-              this.__cacheTotal = null;
+              cacheTotal.release(); // this.__cacheTotal = null;
             }
 
             var ox = this.sx - x1;
@@ -17529,9 +17530,8 @@
             var need = parent !== node || parent.__refreshLevel >= o$1.REPAINT;
 
             if (need && parent.__cacheTotal) {
-              parent.__cacheTotal.release();
+              parent.__cacheTotal.release(); // parent.__cacheTotal = null;
 
-              parent.__cacheTotal = null;
             }
 
             parent = parent.domParent;

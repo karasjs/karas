@@ -1103,8 +1103,8 @@ class Dom extends Xom {
         item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
       }
     });
-    // 查找所有非文本children是否都有缓存，比如有的超尺寸或离屏功能不可用
-    let cacheChildren = true;
+    // 查找所有非文本children是否都可以缓存，比如有的超尺寸或离屏功能不可用
+    let canCacheChildren = true;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     zIndexChildren.forEach(item => {
@@ -1118,8 +1118,8 @@ class Dom extends Xom {
         }
         else {
           let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-          if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
-            cacheChildren = false;
+          if(!canCacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.canCacheChildren) {
+            canCacheChildren = false;
           }
         }
       }
@@ -1130,13 +1130,13 @@ class Dom extends Xom {
       }
       else {
         let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-        if(!cacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.cacheChildren) {
-          cacheChildren = false;
+        if(!canCacheChildren || !temp || !temp.cache || !temp.cache.enabled || !temp.canCacheChildren) {
+          canCacheChildren = false;
         }
       }
     });
     // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
-    let canCacheSelf = cacheChildren && this !== root
+    let canCacheSelf = canCacheChildren && this !== root
       && lv !== level.NONE
       && lv <= level.TRANSFORM_OPACITY_FILTER;
     // 需考虑缓存和滤镜
@@ -1147,8 +1147,8 @@ class Dom extends Xom {
           this.__applyCache(renderMode, lv, ctx, true, null, null);
         }
         // 自身动画影响且孩子可缓存，或者孩子中有无法缓存的存在，或者到了root，各自作为局部根节点应用自身缓存位图到主画布
-        else if(cacheChildren && lv !== level.NONE && lv < level.REPAINT
-          || !cacheChildren || this === root) {
+        else if(canCacheChildren && lv !== level.NONE && lv < level.REPAINT
+          || !canCacheChildren || this === root) {
           zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -1173,10 +1173,10 @@ class Dom extends Xom {
     // img的children在子类特殊处理
     else if(renderMode === mode.SVG && this.tagName !== 'img') {
       this.virtualDom.children = zIndexChildren.map(item => item.virtualDom);
-      // if(cacheChildren && this.availableAnimating) {
-      //   cacheChildren = false;
-      //   delete this.virtualDom.cacheChildren;
-      //   this.virtualDom.children.forEach(item => item.cacheChildren = true);
+      // if(canCacheChildren && this.availableAnimating) {
+      //   canCacheChildren = false;
+      //   delete this.virtualDom.canCacheChildren;
+      //   this.virtualDom.children.forEach(item => item.canCacheChildren = true);
       // }
       // 没变化则将text孩子设置cache
       // if(this.virtualDom.cache) {
@@ -1187,7 +1187,7 @@ class Dom extends Xom {
       //   });
       // }
     }
-    res && (res.cacheChildren = cacheChildren);
+    res && (res.canCacheChildren = canCacheChildren);
     return res;
   }
 
@@ -1207,7 +1207,7 @@ class Dom extends Xom {
    * @param y1
    */
   __applyCache(renderMode, lv, ctx, isTop, opacity, matrix, tx, ty, x1, y1) {
-    let cacheTotal = this.__cacheTotal;
+    let cacheTotal = this.__cacheTotal; console.log(this.tagName, isTop);
     if(isTop) {
       let bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
       // 第一次初始化进行bbox合集计算
@@ -1216,7 +1216,7 @@ class Dom extends Xom {
       }
       // 后续如果超过可缓存的lv重设，否则直接用已有内容
       else if(lv >= level.REPAINT) {
-        cacheTotal.reset();
+        cacheTotal.reset(bboxTotal);
       }
       // 写回主画布前设置
       let { __opacity, matrixEvent } = this;
@@ -1226,13 +1226,14 @@ class Dom extends Xom {
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty], size, canvas } = cacheTotal;
         let { dx, dy, x1, y1 } = this.__cache;
-        if(!cacheTotal.available || lv < level.REPAINT) {
+        // 首次进入时执行，后续无变更可省略计算
+        if(!cacheTotal.available || lv >= level.REPAINT) {
           cacheTotal.__available = true;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
           dx += tx;
           dy += ty;
-          super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
+          super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, tx, ty);
           this.zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
@@ -1246,7 +1247,7 @@ class Dom extends Xom {
       }
       // 超尺寸无法进行，降级各自作为顶点渲染
       else {
-        super.__applyCache(renderMode, lv, cacheTotal.ctx, isTop, null, null, tx, ty);
+        super.__applyCache(renderMode, lv, ctx, isTop, tx, ty);
         this.zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
             item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -1263,7 +1264,7 @@ class Dom extends Xom {
       // 被当做总缓存下的子元素也有总缓存时需释放清空
       if(cacheTotal && cacheTotal.available) {
         cacheTotal.release();
-        this.__cacheTotal = null;
+        // this.__cacheTotal = null;
       }
       let ox = this.sx - x1;
       let oy = this.sy - y1;

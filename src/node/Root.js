@@ -615,7 +615,7 @@ class Root extends Dom {
         let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
         if(need && parent.__cacheTotal) {
           parent.__cacheTotal.release();
-          parent.__cacheTotal = null;
+          // parent.__cacheTotal = null;
         }
         parent = parent.domParent;
       }

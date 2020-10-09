@@ -1927,9 +1927,12 @@ class Xom extends Node {
   }
 
   __applyCache(renderMode, lv, ctx, tx, ty) {
-    let { coords, canvas, size } = this.__cache;
-    let [x, y] = coords;
-    ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+    let cache = this.__cache;
+    if(cache) {
+      let { coords, canvas, size } = cache;
+      let [x, y] = coords;
+      ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+    }
   }
 
   __mergeBbox(matrix, isTop) {
@@ -2076,11 +2079,11 @@ class Xom extends Node {
     this.__cacheStyle = {};
     if(this.__cache) {
       this.__cache.release();
-      this.__cache = null;
+      // this.__cache = null;
     }
     if(this.__cacheTotal) {
       this.__cacheTotal.release();
-      this.__cacheTotal = null;
+      // this.__cacheTotal = null;
     }
     // 向上清空孩子缓存，遇到已清空跳出
     if(recursion) {

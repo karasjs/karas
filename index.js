@@ -12392,16 +12392,19 @@
     }, {
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, tx, ty) {
-        var _this$__cache = this.__cache,
-            coords = _this$__cache.coords,
-            canvas = _this$__cache.canvas,
-            size = _this$__cache.size;
+        var cache = this.__cache;
 
-        var _coords = _slicedToArray(coords, 2),
-            x = _coords[0],
-            y = _coords[1];
+        if (cache) {
+          var coords = cache.coords,
+              canvas = cache.canvas,
+              size = cache.size;
 
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+          var _coords = _slicedToArray(coords, 2),
+              x = _coords[0],
+              y = _coords[1];
+
+          ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+        }
       }
     }, {
       key: "__mergeBbox",
@@ -12592,15 +12595,13 @@
         this.__cacheStyle = {};
 
         if (this.__cache) {
-          this.__cache.release();
+          this.__cache.release(); // this.__cache = null;
 
-          this.__cache = null;
         }
 
         if (this.__cacheTotal) {
-          this.__cacheTotal.release();
+          this.__cacheTotal.release(); // this.__cacheTotal = null;
 
-          this.__cacheTotal = null;
         } // 向上清空孩子缓存，遇到已清空跳出
 
 
@@ -13750,11 +13751,11 @@
   var calAbsolute$1 = css.calAbsolute,
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
   var MODE = {
-    TOP: 0,
-    // 局部根节点
-    CHILD: 1,
-    // 根节点的子节点
-    NONE: 2 // 无根节点的子节点
+    ROOT: 0,
+    // 普通主屏递归渲染
+    TOP: 1,
+    // 局部根节点离屏汇总渲染
+    CHILD: 2 // 局部根节点的子节点汇总渲染
 
   };
 
@@ -14962,6 +14963,7 @@
             virtualDom = this.virtualDom,
             children = this.children,
             _this$computedStyle = this.computedStyle,
+            position = _this$computedStyle.position,
             display = _this$computedStyle.display,
             visibility = _this$computedStyle.visibility,
             opacity = _this$computedStyle.opacity; // 不显示的为了diff也要根据type生成
@@ -14984,7 +14986,6 @@
             }
           }
 
-          res.canCache && (res.canCache = false);
           return res;
         } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
 
@@ -14996,25 +14997,17 @@
         }); // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
 
         var canCacheChildren = true;
-        var count = 0; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
+        var draw = !root.cache || renderMode === mode.SVG; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          var draw = !root.cache || renderMode === mode.SVG; // canvas开启缓存text先不渲染，孩子有整体缓存时也不渲染
-
+          // canvas开启缓存text先不渲染，节点先绘制到自身cache上
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
-
-              count++;
             }
           } else {
-            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // 叶子节点无count设为1
-
-
-            if (item.hasContent) {
-              count += temp.count || 1;
-            } // Xom类型为无有效动画方可被父亲缓存
+            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // Xom类型为无有效动画方可被父亲缓存
 
 
             if (!canCacheChildren || !temp.canCache || item.availableAnimating) {
@@ -15024,33 +15017,42 @@
         });
         /**
          * 决定是否作为一个局部整体是否缓存的因素
-         * 首先本身无有影响的动画
-         * 然后节点数递归积累一定的children数量后，且children无有效的动画
+         * 首先本身无有影响的动画，且children无有效的动画
+         * 然后本身是relative/absolute
+         * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
+         * 目前处于递归的回溯阶段，即冒泡阶段，
+         * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
          */
-        // 当opacity/transform/filter且不为none时（root除外整体缓存没有意义）自身作为局部根节点缓存
 
-        var canCacheSelf = canCacheChildren && this !== root && !this.effectiveAnimating;
+        var canCacheSelf = canCacheChildren && !this.effectiveAnimating; // console.log(1, this.tagName, canCacheSelf, canCacheChildren);
 
-        if (canCacheSelf && count < Cache.COUNT) {
+        if (canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1) {
           canCacheSelf = false;
         } // 需考虑缓存和滤镜
 
 
         if (renderMode === mode.CANVAS) {
+          // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
           if (root.cache) {
-            // 作为局部根节点整体进行绘制并缓存
+            // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
             if (canCacheSelf) {
               this.__applyCache(renderMode, lv, ctx, MODE.TOP);
-            } // 自身动画影响，或孩子中有无法缓存的存在，或到了root，children直接使用自身缓存
-            else if (!canCacheChildren || this === root) {
-                zIndexChildren.forEach(function (item) {
-                  if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                    item.__renderByMask(renderMode, item.__refreshLevel, ctx);
-                  } else {
-                    item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
-                  }
-                });
-              } // 其它情况继续等待上级调用
+            } // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
+            else if (this === root) {
+                this.__applyCache(renderMode, lv, ctx, MODE.ROOT);
+              } // 非局部缓存的节点等待root调用
+            // 自身动画影响，或孩子中有无法缓存的存在，children直接使用自身缓存，向上节点一定不会有局部根节点，root兜底需判断避免重复递归
+            // else if(!canCacheChildren) {
+            //   zIndexChildren.forEach(item => {
+            //     if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+            //       item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+            //     }
+            //     else {
+            //       item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
+            //     }
+            //   });
+            // }
+            // 其它情况继续等待上级调用，直到局部根节点调用或者root兜底
 
           } // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
 
@@ -15084,10 +15086,8 @@
             //     }
             //   });
             // }
-          }
+          } // 向上回溯传值，要考虑children
 
-        res.count = res.count || 0;
-        res.count += count; // 向上回溯传值，要考虑children
 
         if (res.canCache && !canCacheChildren) {
           res.canCache = false;
@@ -15097,13 +15097,12 @@
         return res;
       }
       /**
-       * canvas下，可以缓存的局部树的顶点调用，包含可能存在的所有children或文字节点
-       * 递归传递给children一个新的离屏ctx，各自绘制完后，将这个整体绘制到主画布上
+       * canvas下，应用离屏内容缓存到主屏或者局部根节点上
        * 有可能子节点没超限但整体超限，此时要考虑降级分别绘制
        * @param renderMode
        * @param lv
        * @param ctx
-       * @param mode 局部根节点总缓存、子节点、无根节点的子节点
+       * @param mode 局部根节点总缓存、及其子节点、最后root发起的无局部整体的节点自身缓存应用
        * @param tx 汇总离屏canvas的目标x
        * @param ty 汇总离屏canvas的目标y
        * @param x1 从border算起的坐标，除去margin
@@ -15116,7 +15115,7 @@
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
         var cacheTotal = this.__cacheTotal;
-        var cache = this.__cache;
+        var cache = this.__cache; // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
 
         if (mode === MODE.TOP) {
           var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 第一次初始化进行bbox合集计算
@@ -15133,22 +15132,20 @@
           var __opacity = this.__opacity,
               matrixEvent = this.matrixEvent;
           ctx.globalAlpha = __opacity;
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 缓存可用时各children依次执行
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 缓存可用时各children依次执行进行离屏汇总
 
           if (cacheTotal && cacheTotal.enabled) {
             var _cacheTotal = cacheTotal,
                 _cacheTotal$coords = _slicedToArray(_cacheTotal.coords, 2),
                 _tx = _cacheTotal$coords[0],
-                _ty = _cacheTotal$coords[1],
-                size = _cacheTotal.size,
-                canvas = _cacheTotal.canvas;
+                _ty = _cacheTotal$coords[1];
 
             var dx = cache.dx,
                 dy = cache.dy,
                 _x = cache.x1,
-                _y = cache.y1; // 首次进入时执行，后续无变更可省略计算
+                _y = cache.y1; // 首次生成
 
-            if (!cacheTotal.available || lv >= o$1.REPAINT) {
+            if (!cacheTotal.available) {
               cacheTotal.__available = true;
               cacheTotal.x1 = _x;
               cacheTotal.y1 = _y;
@@ -15164,9 +15161,8 @@
                   item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, _tx, _ty, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
                 }
               });
-            }
+            } // ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
 
-            ctx.drawImage(canvas, _tx - 1, _ty - 1, size, size, _x, _y, size, size);
           } // 超尺寸无法进行，降级渲染
           else {
               _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx, ty);
@@ -15175,7 +15171,7 @@
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
                 }
               });
             }
@@ -15206,20 +15202,41 @@
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
               }
             });
-          } // 直接绘入主画布
-          else {
-              if (cacheTotal && cacheTotal.available) ;
+          } // root调用局部整体缓存或单个节点缓存绘入主画布
+          else if (mode === MODE.ROOT) {
+              if (cacheTotal && cacheTotal.available) {
+                // 写回主画布前设置
+                var _opacity = this.__opacity,
+                    _matrixEvent = this.matrixEvent;
+                ctx.globalAlpha = _opacity;
+                ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
 
-              var _ox = cache.ox,
-                  _oy = cache.oy;
-              var sx = this.sx,
-                  sy = this.sy,
-                  _matrixEvent = this.matrixEvent,
-                  _opacity = this.__opacity;
-              ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
-              ctx.globalAlpha = _opacity;
+                var _cacheTotal2 = cacheTotal,
+                    _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
+                    _tx2 = _cacheTotal2$coords[0],
+                    _ty2 = _cacheTotal2$coords[1],
+                    size = _cacheTotal2.size,
+                    canvas = _cacheTotal2.canvas;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, sx - _ox, sy - _oy);
+                var _x2 = cache.x1,
+                    _y2 = cache.y1;
+                ctx.drawImage(canvas, _tx2 - 1, _ty2 - 1, size, size, _x2, _y2, size, size);
+                return;
+              } // 无内容就没有cache，继续看children
+
+
+              if (cache) {
+                var _ox = cache.ox,
+                    _oy = cache.oy;
+                var sx = this.sx,
+                    sy = this.sy,
+                    _matrixEvent2 = this.matrixEvent,
+                    _opacity2 = this.__opacity;
+                ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent2));
+                ctx.globalAlpha = _opacity2;
+
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, sx - _ox, sy - _oy);
+              }
 
               this.zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {

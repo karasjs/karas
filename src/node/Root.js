@@ -1013,7 +1013,7 @@ class Root extends Dom {
             let last;
             do {
               // component的sr没有next兄弟，视为component的next
-              while(!p.parent && p.host) {
+              while(p.isShadowRoot) {
                 p = p.host;
               }
               last = p;
@@ -1081,8 +1081,11 @@ class Root extends Dom {
               }
             }
             while(true);
-            // 最后一个递归向上取消缓存，防止过程中重复多次无用递归
-            last && last.__cancelCache(true);
+            // 最后一个递归向上取消缓存，防止过程中重复next多次无用递归
+            while(last) {
+              last.__cancelCache();
+              last = last.domParent;
+            }
           }
         }
         // OFFSET操作的节点都是relative，要考虑auto变化

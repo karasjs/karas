@@ -1099,8 +1099,9 @@ class Dom extends Xom {
           this.__applyCache(renderMode, lv, ctx, MODE.TOP);
         }
       }
-      // svg TODO
-      else if(renderMode === mode.SVG) {}
+      else if(renderMode === mode.SVG) {
+        virtualDom.cache = true;
+      }
       return res;
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
@@ -1123,50 +1124,37 @@ class Dom extends Xom {
       }
       else {
         let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
-        // Xom类型为无有效动画方可被父亲缓存
+        // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
         if(!canCacheChildren || !temp.canCache || item.availableAnimating) {
           canCacheChildren = false;
         }
       }
     });
     /**
-     * 决定是否作为一个局部整体是否缓存的因素
+     * canvas决定是否作为一个局部整体是否缓存的因素
      * 首先本身无有影响的动画，且children无有效的动画
-     * 然后本身是relative/absolute
+     * 然后本身是relative/absolute/Component
      * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
      * 目前处于递归的回溯阶段，即冒泡阶段，
      * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
      */
     let canCacheSelf = canCacheChildren && !this.effectiveAnimating;
-    // console.log(1, this.tagName, canCacheSelf, canCacheChildren);
-    if(canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1) {
+    if(renderMode === mode.CANVAS && canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
       canCacheSelf = false;
     }
     // 需考虑缓存和滤镜
     if(renderMode === mode.CANVAS) {
       // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
       if(root.cache) {
-        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
-        if(canCacheSelf) {
-          this.__applyCache(renderMode, lv, ctx, MODE.TOP);
-        }
         // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
-        else if(this === root) {
+        if(this === root) {
           this.__applyCache(renderMode, lv, ctx, MODE.ROOT);
         }
+        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
+        else if(canCacheSelf) {
+          this.__applyCache(renderMode, lv, ctx, MODE.TOP);
+        }
         // 非局部缓存的节点等待root调用
-        // 自身动画影响，或孩子中有无法缓存的存在，children直接使用自身缓存，向上节点一定不会有局部根节点，root兜底需判断避免重复递归
-        // else if(!canCacheChildren) {
-        //   zIndexChildren.forEach(item => {
-        //     if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-        //       item.__renderByMask(renderMode, item.__refreshLevel, ctx);
-        //     }
-        //     else {
-        //       item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.NONE);
-        //     }
-        //   });
-        // }
-        // 其它情况继续等待上级调用，直到局部根节点调用或者root兜底
       }
       // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
       if(offScreen) {
@@ -1178,9 +1166,18 @@ class Dom extends Xom {
         res.clear();
       }
     }
-    // img的children在子类特殊处理
-    else if(renderMode === mode.SVG && this.tagName !== 'img') {
-      this.virtualDom.children = zIndexChildren.map(item => item.virtualDom);
+    else if(renderMode === mode.SVG) {
+      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
+      this.__cacheTotal = {
+        available: true,
+        release() { console.log(this);
+          this.available = false;
+        },
+      };
+      // img的children在子类特殊处理
+      if(this.tagName !== 'img') {
+        this.virtualDom.children = zIndexChildren.map(item => item.virtualDom);
+      }
       // if(canCacheChildren && this.availableAnimating) {
       //   canCacheChildren = false;
       //   delete this.virtualDom.canCacheChildren;
@@ -1199,7 +1196,6 @@ class Dom extends Xom {
     if(res.canCache && !canCacheChildren) {
       res.canCache = false;
     }
-    // res && (res.canCacheChildren = canCacheChildren);
     return res;
   }
 
@@ -1256,7 +1252,6 @@ class Dom extends Xom {
             }
           });
         }
-        // ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
       }
       // 超尺寸无法进行，降级渲染
       else {
@@ -1276,8 +1271,7 @@ class Dom extends Xom {
       let { dx, dy, coords } = cache;
       // 被当做总缓存下的子元素也有总缓存时需释放清空
       if(cacheTotal && cacheTotal.available) {
-        // cacheTotal.release();
-        // this.__cacheTotal = null;
+        cacheTotal.release();
       }
       let ox = this.sx - x1;
       let oy = this.sy - y1;

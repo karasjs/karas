@@ -1246,20 +1246,20 @@ class Xom extends Node {
    * @param defs
    */
   render(renderMode, lv, ctx, defs) {
-    if(renderMode === mode.SVG) {
-      if(this.__cacheSvg) {
-        let n = extend({}, this.__virtualDom);
-        n.cache = true;
-        this.__virtualDom = n;
-        return;
-      }
-      this.__cacheSvg = true;
-      this.__virtualDom = {
-        bb: [],
-        children: [],
-        opacity: 1,
-      };
-    }
+    // if(renderMode === mode.SVG) {
+    //   if(this.__cacheSvg) {
+    //     let n = extend({}, this.__virtualDom);
+    //     n.cache = true;
+    //     this.__virtualDom = n;
+    //     return;
+    //   }
+    //   this.__cacheSvg = true;
+    //   this.__virtualDom = {
+    //     bb: [],
+    //     children: [],
+    //     opacity: 1,
+    //   };
+    // }
     let {
       isDestroyed,
       currentStyle,
@@ -1273,8 +1273,35 @@ class Xom extends Node {
       __cacheStyle,
       root,
     } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
-      return { canCache: !this.displayAnimating, hasContent: false };
+    if(isDestroyed) {
+      return;
+    }
+    let virtualDom;
+    // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
+    if(renderMode === mode.SVG) {
+      if(lv < level.REPAINT && this.__virtualDom) {
+        virtualDom = this.__virtualDom;
+        virtualDom.lv = lv;
+      }
+      else {
+        virtualDom = this.__virtualDom = {
+          bb: [],
+          children: [],
+          opacity: 1,
+        };
+      }
+    }
+    // canvas返回信息，canCache是指下次渲染是否可以使用这次的缓存
+    // svg已经初始化好了vd，canCache是指本次渲染是否和上次有变化即NONE
+    if(computedStyle.display === 'none') {
+      if(renderMode === mode.CANVAS) {
+        return { canCache: !this.displayAnimating, hasContent: false };
+      }
+      else if(renderMode === mode.SVG) {
+        let canCache = this.__lastDisplay === 'none';
+        this.__lastDisplay = 'none';
+        return { canCache };
+      }
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
@@ -1332,9 +1359,9 @@ class Xom extends Node {
       this.__opacity = opacity;
     }
     else if(renderMode === mode.SVG) {
-      this.__virtualDom.opacity = opacity;
+      virtualDom.opacity = opacity;
     }
-    // 省略计算
+    // canvas/svg/事件需要3种不同的matrix
     let matrix = __cacheStyle.matrix;
     let renderMatrix = this.__svgMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
@@ -1343,13 +1370,25 @@ class Xom extends Node {
     }
     this.__matrixEvent = matrix;
     if(renderMode === mode.SVG) {
-      if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
-        this.virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
+      // svg可以没变化省略计算，因为只相对于自身
+      if(!level.contain(lv, level.TRANSFORM)) {}
+      else if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+        virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
+      }
+      else {
+        delete virtualDom.transform;
       }
     }
-    // 隐藏不渲染
+    // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
     if(visibility === 'hidden') {
-      return { canCache: !this.visibilityAnimating, hasContent: false };
+      if(renderMode === mode.CANVAS) {
+        return { canCache: !this.visibilityAnimating, hasContent: false };
+      }
+      else if(renderMode === mode.SVG) {
+        let canCache = this.__lastVisibility === 'hidden';
+        this.__lastVisibility = 'hidden';
+        return { canCache };
+      }
     }
     // 无内容或者无影响动画视为可缓存本身
     let canCache = !hasContent || !this.availableAnimating;
@@ -1403,30 +1442,59 @@ class Xom extends Node {
           canCache = false;
         }
       }
-      // TODO: svg
+    }
+    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
+    let offScreen;
+    if(Array.isArray(filter)
+      && (renderMode === mode.CANVAS && (!cache || !cache.enabled)
+        || renderMode === mode.SVG)) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          if(renderMode === mode.CANVAS) {
+            let { width, height } = root;
+            let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+            if(c.ctx) {
+              offScreen = {
+                ctx,
+              };
+              offScreen.target = c;
+              ctx = c.ctx;
+            }
+          }
+          else if(renderMode === mode.SVG && !level.contain(lv, level.FILTER)) {
+            // 模糊框卷积尺寸 #66
+            let d = mx.int2convolution(v);
+            let id = defs.add({
+              tagName: 'filter',
+              props: [
+                ['x', -d / outerWidth],
+                ['y', -d / outerHeight],
+                ['width', 1 + d * 2 / outerWidth],
+                ['height', 1 + d * 2 / outerHeight],
+              ],
+              children: [
+                {
+                  tagName: 'feGaussianBlur',
+                  props: [
+                    ['stdDeviation', v],
+                  ],
+                }
+              ],
+            });
+            this.virtualDom.filter = 'url(#' + id + ')';
+          }
+        }
+      });
+    }
+    // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
+    if(renderMode === mode.SVG && virtualDom.hasOwnProperty('lv') && lv < level.REPAINT) {
+      return { canCache: lv === level.NONE };
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
       ctx.globalAlpha = opacity;
       ctx.setTransform(...matrix);
-    }
-    // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let offScreen;
-    if(Array.isArray(filter) && renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          let { width, height } = root;
-          let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
-          if(c.ctx) {
-            offScreen = {
-              ctx,
-            };
-            offScreen.target = c;
-            ctx = c.ctx;
-          }
-        }
-      });
     }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
@@ -1728,32 +1796,16 @@ class Xom extends Node {
           if(renderMode === mode.CANVAS) {
             offScreen && (offScreen.blur = v);
           }
-          else if(renderMode === mode.SVG) {
-            // 模糊框卷积尺寸 #66
-            let d = mx.int2convolution(v);
-            let id = defs.add({
-              tagName: 'filter',
-              props: [
-                ['x', -d / outerWidth],
-                ['y', -d / outerHeight],
-                ['width', 1 + d * 2 / outerWidth],
-                ['height', 1 + d * 2 / outerHeight],
-              ],
-              children: [
-                {
-                  tagName: 'feGaussianBlur',
-                  props: [
-                    ['stdDeviation', v],
-                  ],
-                }
-              ],
-            });
-            this.virtualDom.filter = 'url(#' + id + ')';
-          }
         }
       });
     }
-    return { canCache, cache, hasContent, offScreen, filter };
+    if(renderMode === mode.CANVAS) {
+      return { canCache, cache, hasContent, offScreen, filter };
+    }
+    // svg前面提前跳出，到这一定是>=REPAINT的变化
+    else if(renderMode === mode.SVG) {
+      return { canCache: false };
+    }
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {
@@ -2074,29 +2126,30 @@ class Xom extends Node {
     this.__cacheSvg = false;
   }
 
-  __cancelCache(recursion) {
+  // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
+  __cancelCache() {
     this.__cancelCacheSvg();
     this.__cacheStyle = {};
     if(this.__cache) {
       this.__cache.release();
       // this.__cache = null;
     }
-    if(this.__cacheTotal) {
-      this.__cacheTotal.release();
-      // this.__cacheTotal = null;
-    }
+    // if(this.__cacheTotal) {
+    //   this.__cacheTotal.release();
+    //   // this.__cacheTotal = null;
+    // }
     // 向上清空孩子缓存，遇到已清空跳出
-    if(recursion) {
-      let p = this.domParent;
-      let root = this.root;
-      while(p) {
-        p.__cancelCache();
-        p = p.domParent;
-        if(p === root) {
-          break;
-        }
-      }
-    }
+    // if(recursion) {
+    //   let p = this.domParent;
+    //   let root = this.root;
+    //   while(p) {
+    //     p.__cancelCache();
+    //     p = p.domParent;
+    //     if(p === root) {
+    //       break;
+    //     }
+    //   }
+    // }
   }
 
   __getRg(renderMode, ctx, defs, gd) {
@@ -2498,6 +2551,10 @@ class Xom extends Node {
 
   get layoutData() {
     return this.__layoutData;
+  }
+
+  get isShadowRoot() {
+    return !this.parent && this.host && this.host !== this.root;
   }
 
 }

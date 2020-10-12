@@ -65,13 +65,13 @@ class Polyline extends Geom {
   }
 
   render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       originX,
       originY,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -79,10 +79,7 @@ class Polyline extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, lv, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, height, points, controls, __cacheProps, isMulti } = this;
     let rebuild = true;
     if(isNil(__cacheProps.points)) {
@@ -175,6 +172,7 @@ class Polyline extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get points() {

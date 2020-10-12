@@ -1260,7 +1260,7 @@ class Xom extends Node {
       root,
     } = this;
     if(isDestroyed) {
-      return;
+      return { break: true };
     }
     let virtualDom;
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
@@ -1268,6 +1268,7 @@ class Xom extends Node {
       if(lv < level.REPAINT && this.__virtualDom) {
         virtualDom = this.__virtualDom = extend({}, this.__virtualDom);
         virtualDom.lv = lv;
+        delete virtualDom.cache;
       }
       else {
         virtualDom = this.__virtualDom = {
@@ -1280,12 +1281,12 @@ class Xom extends Node {
     // svg已经初始化好了vd，canCache是指本次渲染是否和上次有变化即NONE
     if(computedStyle.display === 'none') {
       if(renderMode === mode.CANVAS) {
-        return { canCache: !this.displayAnimating, hasContent: false };
+        return { break: true, canCache: !this.displayAnimating, hasContent: false };
       }
       else if(renderMode === mode.SVG) {
         let canCache = this.__lastDisplay === 'none';
         this.__lastDisplay = 'none';
-        return { canCache };
+        return { break: true, canCache };
       }
     }
     else if(renderMode === mode.SVG) {
@@ -1375,17 +1376,13 @@ class Xom extends Node {
     // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
     if(visibility === 'hidden') {
       if(renderMode === mode.CANVAS) {
-        return { canCache: !this.visibilityAnimating, hasContent: false };
+        return { break: true, canCache: !this.visibilityAnimating, hasContent: false };
       }
       else if(renderMode === mode.SVG) {
-        let canCache = this.__lastVisibility === 'hidden';
-        this.__lastVisibility = visibility;
         virtualDom.visibility = 'hidden';
-        return { canCache };
       }
     }
     else if(renderMode === mode.SVG) {
-      this.__lastVisibility = visibility;
       delete virtualDom.visibility;
     }
     // 无内容或者无影响动画视为可缓存本身
@@ -1395,11 +1392,11 @@ class Xom extends Node {
     if(root.cache) {
       if(renderMode === mode.CANVAS) {
         if(!hasContent) {
-          return { canCache, hasContent };
+          return { break: true, canCache, hasContent };
         }
         // 有缓存情况快速使用位图缓存不再继续
         if(cache && cache.available && lv < level.REPAINT) {
-          return { canCache, cache, hasContent, filter };
+          return { break: true, canCache, cache, hasContent, filter };
         }
         // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
         if(!cache && canCache) {
@@ -1486,8 +1483,8 @@ class Xom extends Node {
       });
     }
     // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
-    if(renderMode === mode.SVG && virtualDom.hasOwnProperty('lv') && lv < level.REPAINT) {
-      return { canCache: lv === level.NONE };
+    if(renderMode === mode.SVG && virtualDom.hasOwnProperty('lv')) {
+      return { break: true, canCache: lv === level.NONE };
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && (!cache || !cache.enabled)) {

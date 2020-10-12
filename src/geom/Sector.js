@@ -92,13 +92,13 @@ class Sector extends Geom {
   }
 
   render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       cx,
       cy,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -106,10 +106,7 @@ class Sector extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, lv, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.begin)) {

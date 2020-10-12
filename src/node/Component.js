@@ -254,6 +254,10 @@ Object.keys(change.GEOM).concat([
   'charWidthList',
   'charWidth',
   'layoutData',
+  'availableAnimating',
+  'effectiveAnimating',
+  'displayAnimating',
+  'visibilityAnimating',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

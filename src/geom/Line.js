@@ -122,11 +122,11 @@ class Line extends Geom {
   }
 
   render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
-      display,
-      visibility,
       originX,
       originY,
       stroke,
@@ -135,10 +135,7 @@ class Line extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, lv, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.x1)) {

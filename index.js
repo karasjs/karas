@@ -11640,7 +11640,9 @@
             root = this.root;
 
         if (isDestroyed) {
-          return;
+          return {
+            "break": true
+          };
         }
 
         var virtualDom; // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
@@ -11649,6 +11651,7 @@
           if (lv < o$1.REPAINT && this.__virtualDom) {
             virtualDom = this.__virtualDom = extend$1({}, this.__virtualDom);
             virtualDom.lv = lv;
+            delete virtualDom.cache;
           } else {
             virtualDom = this.__virtualDom = {
               bb: [],
@@ -11662,6 +11665,7 @@
         if (computedStyle.display === 'none') {
           if (renderMode === mode.CANVAS) {
             return {
+              "break": true,
               canCache: !this.displayAnimating,
               hasContent: false
             };
@@ -11670,6 +11674,7 @@
 
             this.__lastDisplay = 'none';
             return {
+              "break": true,
               canCache: _canCache
             };
           }
@@ -11757,20 +11762,14 @@
         if (visibility === 'hidden') {
           if (renderMode === mode.CANVAS) {
             return {
+              "break": true,
               canCache: !this.visibilityAnimating,
               hasContent: false
             };
           } else if (renderMode === mode.SVG) {
-            var _canCache2 = this.__lastVisibility === 'hidden';
-
-            this.__lastVisibility = visibility;
             virtualDom.visibility = 'hidden';
-            return {
-              canCache: _canCache2
-            };
           }
         } else if (renderMode === mode.SVG) {
-          this.__lastVisibility = visibility;
           delete virtualDom.visibility;
         } // 无内容或者无影响动画视为可缓存本身
 
@@ -11785,6 +11784,7 @@
           if (renderMode === mode.CANVAS) {
             if (!hasContent) {
               return {
+                "break": true,
                 canCache: canCache,
                 hasContent: hasContent
               };
@@ -11793,6 +11793,7 @@
 
             if (cache && cache.available && lv < o$1.REPAINT) {
               return {
+                "break": true,
                 canCache: canCache,
                 cache: cache,
                 hasContent: hasContent,
@@ -11888,8 +11889,9 @@
         } // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
 
 
-        if (renderMode === mode.SVG && virtualDom.hasOwnProperty('lv') && lv < o$1.REPAINT) {
+        if (renderMode === mode.SVG && virtualDom.hasOwnProperty('lv')) {
           return {
+            "break": true,
             canCache: lv === o$1.NONE
           };
         } // 无法使用缓存时主画布直接绘制需设置
@@ -13775,7 +13777,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -14999,7 +15001,6 @@
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        res = res || {};
         var offScreen = res.offScreen; // canvas检查filter，无缓存时的绘制
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
@@ -15054,13 +15055,19 @@
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          // canvas开启缓存text先不渲染，节点先绘制到自身cache上
+          var target = item;
+
+          while (target instanceof Component$1) {
+            target = target.shadowRoot;
+          } // canvas开启缓存text先不渲染，节点先绘制到自身cache上
+
+
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
-              item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+              item.__renderByMask(renderMode, target.__refreshLevel, ctx);
             }
           } else {
-            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
+            var temp = item.__renderByMask(renderMode, target.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
 
 
             if (!canCacheChildren || !temp.canCache || item.availableAnimating) {
@@ -18864,29 +18871,19 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         if (renderMode === mode.SVG) {
-          if (this.virtualDom.cache) {
-            return {
-              cache: true
-            };
+          if (res["break"]) {
+            return res;
           }
 
           this.virtualDom.type = 'geom';
         }
 
-        var isDestroyed = this.isDestroyed,
-            display = this.computedStyle.display;
+        var res2 = this.__preRender(renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none') {
-          return {
-            isDestroyed: isDestroyed,
-            display: display
-          };
-        }
-
-        return this.__preRender(renderMode, lv, ctx, defs);
+        return Object.assign(res, res2);
       }
     }, {
       key: "__renderAsMask",
@@ -19156,24 +19153,20 @@
     _createClass(Line, [{
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            originX = _get$call.originX,
-            originY = _get$call.originY,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var originX = res.originX,
+            originY = res.originY,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             height = this.height,
             x1 = this.x1,
@@ -19445,25 +19438,21 @@
       value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        var _get$call = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            originX = _get$call.originX,
-            originY = _get$call.originY,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Polyline.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var originX = res.originX,
+            originY = res.originY,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             height = this.height,
             points = this.points,
@@ -19572,6 +19561,8 @@
 
           this.addGeom('path', props);
         }
+
+        return res;
       }
     }, {
       key: "points",
@@ -19787,25 +19778,21 @@
       value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        var _get$call = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            cx = _get$call.cx,
-            cy = _get$call.cy,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var cx = res.cx,
+            cy = res.cy,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             begin = this.begin,
             end = this.end,
@@ -20110,25 +20097,21 @@
     _createClass(Rect, [{
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            originX = _get$call.originX,
-            originY = _get$call.originY,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var originX = res.originX,
+            originY = res.originY,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -20302,25 +20285,21 @@
     _createClass(Circle, [{
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            cx = _get$call.cx,
-            cy = _get$call.cy,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var cx = res.cx,
+            cy = res.cy,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             r = this.r,
             __cacheProps = this.__cacheProps,
@@ -20383,6 +20362,8 @@
 
           this.addGeom('path', props);
         }
+
+        return res;
       }
     }, {
       key: "r",
@@ -20496,25 +20477,21 @@
     _createClass(Ellipse, [{
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var _get$call = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs),
-            isDestroyed = _get$call.isDestroyed,
-            cache = _get$call.cache,
-            cx = _get$call.cx,
-            cy = _get$call.cy,
-            display = _get$call.display,
-            visibility = _get$call.visibility,
-            fill = _get$call.fill,
-            stroke = _get$call.stroke,
-            strokeWidth = _get$call.strokeWidth,
-            strokeDasharrayStr = _get$call.strokeDasharrayStr,
-            strokeLinecap = _get$call.strokeLinecap,
-            strokeLinejoin = _get$call.strokeLinejoin,
-            strokeMiterlimit = _get$call.strokeMiterlimit;
+        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-          return;
+        if (res["break"]) {
+          return res;
         }
 
+        var cx = res.cx,
+            cy = res.cy,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit;
         var width = this.width,
             height = this.height,
             rx = this.rx,

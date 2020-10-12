@@ -14,6 +14,7 @@ import level from '../refresh/level';
 import change from '../refresh/change';
 import Cache from '../refresh/Cache';
 import mx from '../math/matrix';
+import tar from '../math/tar';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
@@ -1072,7 +1073,6 @@ class Dom extends Xom {
   render(renderMode, lv, ctx, defs) {
     // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
     let res = super.render(renderMode, lv, ctx, defs);
-    res = res || {};
     let offScreen = res.offScreen;
     // canvas检查filter，无缓存时的绘制
     if(offScreen && offScreen.target && offScreen.target.ctx) {
@@ -1116,14 +1116,18 @@ class Dom extends Xom {
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     zIndexChildren.forEach(item => {
+      let target = item;
+      while(target instanceof Component) {
+        target = target.shadowRoot;
+      }
       // canvas开启缓存text先不渲染，节点先绘制到自身cache上
       if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
         if(draw) {
-          item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+          item.__renderByMask(renderMode, target.__refreshLevel, ctx);
         }
       }
       else {
-        let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+        let temp = item.__renderByMask(renderMode, target.__refreshLevel, ctx, defs);
         // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
         if(!canCacheChildren || !temp.canCache || item.availableAnimating) {
           canCacheChildren = false;

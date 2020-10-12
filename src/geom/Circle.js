@@ -36,13 +36,13 @@ class Circle extends Geom {
   }
 
   render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       cx,
       cy,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -50,10 +50,7 @@ class Circle extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, lv, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, r, __cacheProps, isMulti } = this;
     if(isNil(__cacheProps.r)) {
       if(isMulti) {
@@ -103,6 +100,7 @@ class Circle extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get r() {

@@ -236,23 +236,15 @@ class Geom extends Xom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    super.render(renderMode, lv, ctx, defs);
+    let res = super.render(renderMode, lv, ctx, defs);
     if(renderMode === mode.SVG) {
-      if(this.virtualDom.cache) {
-        return {
-          cache: true,
-        };
+      if(res.break) {
+        return res;
       }
       this.virtualDom.type = 'geom';
     }
-    let { isDestroyed, computedStyle: { display } } = this;
-    if(isDestroyed || display === 'none') {
-      return {
-        isDestroyed,
-        display,
-      };
-    }
-    return this.__preRender(renderMode, lv, ctx, defs);
+    let res2 = this.__preRender(renderMode, lv, ctx, defs);
+    return Object.assign(res, res2);
   }
 
   __renderAsMask(renderMode, lv, ctx, defs, isClip) {

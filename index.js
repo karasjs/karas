@@ -11529,27 +11529,43 @@
 
           if (__cacheStyle[k2] === undefined) {
             if (k === 'Top') {
-              var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-              var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-              __cacheStyle[k2] = border.calPoints(borderTopWidth, ks, deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
+              if (borderTopWidth > 0) {
+                var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+                var deg2 = Math.atan(borderTopWidth / borderRightWidth);
+                __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
+              } else {
+                __cacheStyle[k2] = [];
+              }
             } else if (k === 'Right') {
-              var _deg = Math.atan(borderRightWidth / borderTopWidth);
+              if (borderRightWidth > 0) {
+                var _deg = Math.atan(borderRightWidth / borderTopWidth);
 
-              var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+                var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
 
-              __cacheStyle[k2] = border.calPoints(borderRightWidth, ks, _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
+                __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
+              } else {
+                __cacheStyle[k2] = [];
+              }
             } else if (k === 'Bottom') {
-              var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
+              if (borderBottomWidth > 0) {
+                var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
 
-              var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
+                var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
 
-              __cacheStyle[k2] = border.calPoints(borderBottomWidth, ks, _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
+                __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
+              } else {
+                __cacheStyle[k2] = [];
+              }
             } else if (k === 'Left') {
-              var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
+              if (borderLeftWidth > 0) {
+                var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
 
-              var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
+                var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
 
-              __cacheStyle[k2] = border.calPoints(borderLeftWidth, ks, _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
+                __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
+              } else {
+                __cacheStyle[k2] = [];
+              }
             }
           }
         });

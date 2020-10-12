@@ -794,7 +794,7 @@ function computeReflow(node, isHost) {
     'borderLeftWidth',
   ].forEach(k => {
     // border-width不支持百分比
-    computedStyle[k] = currentStyle[k].unit === PX ? Math.max(0, currentStyle[k].value) : 0;
+    computedStyle[k] = (currentStyle[k].unit === PX) ? Math.max(0, currentStyle[k].value) : 0;
   });
   [
     'position',

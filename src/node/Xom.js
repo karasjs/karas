@@ -1161,32 +1161,52 @@ class Xom extends Node {
       }
       if(__cacheStyle[k2] === undefined) {
         if(k === 'Top') {
-          let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-          let deg2 = Math.atan(borderTopWidth / borderRightWidth);
-          __cacheStyle[k2] = border.calPoints(borderTopWidth, ks, deg1, deg2,
-            x1, x2, x3, x4, y1, y2, y3, y4, 0,
-            borderTopLeftRadius, borderTopRightRadius);
+          if(borderTopWidth > 0) {
+            let deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+            let deg2 = Math.atan(borderTopWidth / borderRightWidth);
+            __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2,
+              x1, x2, x3, x4, y1, y2, y3, y4, 0,
+              borderTopLeftRadius, borderTopRightRadius);
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
         }
         else if(k === 'Right') {
-          let deg1 = Math.atan(borderRightWidth / borderTopWidth);
-          let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-          __cacheStyle[k2] = border.calPoints(borderRightWidth, ks, deg1, deg2,
-            x1, x2, x3, x4, y1, y2, y3, y4, 1,
-            borderTopRightRadius, borderBottomRightRadius);
+          if(borderRightWidth > 0) {
+            let deg1 = Math.atan(borderRightWidth / borderTopWidth);
+            let deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+            __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], deg1, deg2,
+              x1, x2, x3, x4, y1, y2, y3, y4, 1,
+              borderTopRightRadius, borderBottomRightRadius);
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
         }
         else if(k === 'Bottom') {
-          let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
-          let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
-          __cacheStyle[k2] = border.calPoints(borderBottomWidth, ks, deg1, deg2,
-            x1, x2, x3, x4, y1, y2, y3, y4, 2,
-            borderBottomLeftRadius, borderBottomRightRadius);
+          if(borderBottomWidth > 0) {
+            let deg1 = Math.atan(borderBottomWidth / borderLeftWidth);
+            let deg2 = Math.atan(borderBottomWidth / borderRightWidth);
+            __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], deg1, deg2,
+              x1, x2, x3, x4, y1, y2, y3, y4, 2,
+              borderBottomLeftRadius, borderBottomRightRadius);
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
         }
         else if(k === 'Left') {
-          let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
-          let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
-          __cacheStyle[k2] = border.calPoints(borderLeftWidth, ks, deg1, deg2,
-            x1, x2, x3, x4, y1, y2, y3, y4, 3,
-            borderTopLeftRadius, borderBottomLeftRadius);
+          if(borderLeftWidth > 0) {
+            let deg1 = Math.atan(borderLeftWidth / borderTopWidth);
+            let deg2 = Math.atan(borderLeftWidth / borderBottomWidth);
+            __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], deg1, deg2,
+              x1, x2, x3, x4, y1, y2, y3, y4, 3,
+              borderTopLeftRadius, borderBottomLeftRadius);
+          }
+          else {
+            __cacheStyle[k2] = [];
+          }
         }
       }
     });

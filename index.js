@@ -19328,7 +19328,9 @@
             x2 = _this$__cacheProps.x2,
             y2 = _this$__cacheProps.y2,
             controlA = _this$__cacheProps.controlA,
-            controlB = _this$__cacheProps.controlB;
+            controlB = _this$__cacheProps.controlB,
+            strokeWidth = this.computedStyle.strokeWidth;
+        var sw = strokeWidth * 0.5;
 
         if (!isMulti) {
           x1 = [x1];
@@ -19347,30 +19349,30 @@
           var cb = controlB[i];
 
           if ((isNil$8(ca) || ca.length < 2) && (isNil$8(cb) || cb.length < 2)) {
-            bbox[0] = Math.min(bbox[0], xa);
-            bbox[1] = Math.min(bbox[0], xb);
-            bbox[2] = Math.max(bbox[0], xa);
-            bbox[3] = Math.max(bbox[0], xb);
+            bbox[0] = Math.min(bbox[0], xa - sw);
+            bbox[1] = Math.min(bbox[0], xb - sw);
+            bbox[2] = Math.max(bbox[0], xa + sw);
+            bbox[3] = Math.max(bbox[0], xb + sw);
           } else if (isNil$8(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0]);
-            bbox[1] = Math.min(bbox[0], bezierBox[1]);
-            bbox[2] = Math.max(bbox[0], bezierBox[2]);
-            bbox[3] = Math.max(bbox[0], bezierBox[3]);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
+            bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
+            bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
+            bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
           } else if (isNil$8(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0]);
-            bbox[1] = Math.min(bbox[0], _bezierBox[1]);
-            bbox[2] = Math.max(bbox[0], _bezierBox[2]);
-            bbox[3] = Math.max(bbox[0], _bezierBox[3]);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] - sw);
+            bbox[1] = Math.min(bbox[0], _bezierBox[1] - sw);
+            bbox[2] = Math.max(bbox[0], _bezierBox[2] + sw);
+            bbox[3] = Math.max(bbox[0], _bezierBox[3] + sw);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0]);
-            bbox[1] = Math.min(bbox[0], _bezierBox2[1]);
-            bbox[2] = Math.max(bbox[0], _bezierBox2[2]);
-            bbox[3] = Math.max(bbox[0], _bezierBox2[3]);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - sw);
+            bbox[1] = Math.min(bbox[0], _bezierBox2[1] - sw);
+            bbox[2] = Math.max(bbox[0], _bezierBox2[2] + sw);
+            bbox[3] = Math.max(bbox[0], _bezierBox2[3] + sw);
           }
         });
         return bbox;
@@ -19605,7 +19607,9 @@
             isMulti = this.isMulti,
             _this$__cacheProps = this.__cacheProps,
             points = _this$__cacheProps.points,
-            controls = _this$__cacheProps.controls;
+            controls = _this$__cacheProps.controls,
+            strokeWidth = this.computedStyle.strokeWidth;
+        var sw = strokeWidth * 0.5;
 
         if (!isMulti) {
           points = [points];
@@ -19632,22 +19636,22 @@
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-              bbox[0] = Math.min(bbox[0], bezierBox[0]);
-              bbox[1] = Math.min(bbox[0], bezierBox[1]);
-              bbox[2] = Math.max(bbox[0], bezierBox[2]);
-              bbox[3] = Math.max(bbox[0], bezierBox[3]);
+              bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
+              bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
+              bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
+              bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
             } else if (c && c.length === 2) {
               var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
-              bbox[0] = Math.min(bbox[0], _bezierBox[0]);
-              bbox[1] = Math.min(bbox[0], _bezierBox[1]);
-              bbox[2] = Math.max(bbox[0], _bezierBox[2]);
-              bbox[3] = Math.max(bbox[0], _bezierBox[3]);
+              bbox[0] = Math.min(bbox[0], _bezierBox[0] - sw);
+              bbox[1] = Math.min(bbox[0], _bezierBox[1] - sw);
+              bbox[2] = Math.max(bbox[0], _bezierBox[2] + sw);
+              bbox[3] = Math.max(bbox[0], _bezierBox[3] + sw);
             } else {
-              bbox[0] = Math.min(bbox[0], xa);
-              bbox[1] = Math.min(bbox[0], xb);
-              bbox[2] = Math.max(bbox[0], xa);
-              bbox[3] = Math.max(bbox[0], xb);
+              bbox[0] = Math.min(bbox[0], xa - sw);
+              bbox[1] = Math.min(bbox[0], xb - sw);
+              bbox[2] = Math.max(bbox[0], xa + sw);
+              bbox[3] = Math.max(bbox[0], xb + sw);
             }
 
             xa = xb;

@@ -186,7 +186,8 @@ class Polyline extends Geom {
   }
 
   get bbox() {
-    let { bbox, isMulti, __cacheProps: { points, controls } } = this;
+    let { bbox, isMulti, __cacheProps: { points, controls }, computedStyle: { strokeWidth } } = this;
+    let sw = strokeWidth * 0.5;
     if(!isMulti) {
       points = [points];
       controls = [controls];
@@ -202,23 +203,23 @@ class Polyline extends Geom {
         let c = controlList[i - 1];
         if(c && c.length === 4) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0]);
-          bbox[1] = Math.min(bbox[0], bezierBox[1]);
-          bbox[2] = Math.max(bbox[0], bezierBox[2]);
-          bbox[3] = Math.max(bbox[0], bezierBox[3]);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
         }
         else if(c && c.length === 2) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0]);
-          bbox[1] = Math.min(bbox[0], bezierBox[1]);
-          bbox[2] = Math.max(bbox[0], bezierBox[2]);
-          bbox[3] = Math.max(bbox[0], bezierBox[3]);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
         }
         else {
-          bbox[0] = Math.min(bbox[0], xa);
-          bbox[1] = Math.min(bbox[0], xb);
-          bbox[2] = Math.max(bbox[0], xa);
-          bbox[3] = Math.max(bbox[0], xb);
+          bbox[0] = Math.min(bbox[0], xa - sw);
+          bbox[1] = Math.min(bbox[0], xb - sw);
+          bbox[2] = Math.max(bbox[0], xa + sw);
+          bbox[3] = Math.max(bbox[0], xb + sw);
         }
         xa = xb;
         ya = yb;

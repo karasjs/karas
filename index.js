@@ -13310,11 +13310,12 @@
    * @param root
    * @param owner
    * @param host
+   * @param hasP 出现过p标签
    * @returns vd
    */
 
 
-  function build(json, root, owner, host) {
+  function build(json, root, owner, host, hasP) {
     if (Array.isArray(json)) {
       return json.map(function (item) {
         return build(item, root, owner, host);
@@ -13345,25 +13346,22 @@
           }
         } else {
           vd = new Dom(tagName, props);
+        } // 检查p不能包含div
+
+
+        if (tagName === 'p') {
+          hasP = true;
+        } else if (tagName === 'div' && hasP) {
+          throw new Error('Markup p can not contain div');
         }
 
         if (Array.isArray(children)) {
-          children = relation(vd, build(children, root, owner, host));
+          children = relation(vd, build(children, root, owner, host, hasP));
         } else {
           children = [];
         }
 
-        vd.__children = children; // 检查p不能包含div，inline不能包含block
-
-        if (tag.INLINE.hasOwnProperty(tagName)) {
-          children.forEach(function (item) {
-            if (item.tagName === 'div' || item.tagName === 'p') {
-              throw new Error('Inline can not contain div/p');
-            }
-          });
-        } else if (tagName === 'p') {
-          throw new Error('p can not contain div');
-        }
+        vd.__children = children;
       } else if (_$$type === TYPE_GM$1) {
         var _klass = Geom.getRegister(tagName);
 

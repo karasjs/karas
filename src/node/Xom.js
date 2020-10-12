@@ -1722,28 +1722,31 @@ class Xom extends Node {
           }
         }
       }
-      if(isEmpty) {
+      if(isEmpty || this.computedStyle.display === 'none') {
         return;
       }
       // 应用mask本身的matrix，以及被遮罩对象的matrix逆
       sibling = next;
       let mChildren = [];
       while(sibling) {
-        let { children } = sibling.virtualDom;
-        mChildren = mChildren.concat(children);
-        for(let i = 0, len = children.length; i < len; i++) {
-          let { tagName, props } = children[i];
-          if(tagName === 'path') {
-            let matrix = sibling.__svgMatrix;
-            let inverse = mx.inverse(this.__svgMatrix);
-            matrix = mx.multiply(matrix, inverse);
-            // transform属性放在最后一个省去循环
-            let len = props.length;
-            if(!len || props[len - 1][0] !== 'transform') {
-              props.push(['transform', `matrix(${matrix})`]);
-            }
-            else {
-              props[len - 1][1] = `matrix(${matrix})`;
+        let { computedStyle: { display, visibility } } = sibling;
+        if(display !== 'none' && visibility !== 'hidden') {
+          let { children } = sibling.virtualDom;
+          mChildren = mChildren.concat(children);
+          for(let i = 0, len = children.length; i < len; i++) {
+            let { tagName, props } = children[i];
+            if(tagName === 'path') {
+              let matrix = sibling.__svgMatrix;
+              let inverse = mx.inverse(this.__svgMatrix);
+              matrix = mx.multiply(matrix, inverse);
+              // transform属性放在最后一个省去循环
+              let len = props.length;
+              if(!len || props[len - 1][0] !== 'transform') {
+                props.push(['transform', `matrix(${matrix})`]);
+              }
+              else {
+                props[len - 1][1] = `matrix(${matrix})`;
+              }
             }
           }
         }

@@ -11466,7 +11466,7 @@
             }
           }
 
-          if (isEmpty) {
+          if (isEmpty || this.computedStyle.display === 'none') {
             return;
           } // 应用mask本身的matrix，以及被遮罩对象的matrix逆
 
@@ -11475,25 +11475,32 @@
           var mChildren = [];
 
           while (sibling) {
-            var _children = sibling.virtualDom.children;
-            mChildren = mChildren.concat(_children);
+            var _sibling = sibling,
+                _sibling$computedStyl = _sibling.computedStyle,
+                display = _sibling$computedStyl.display,
+                visibility = _sibling$computedStyl.visibility;
 
-            for (var _i8 = 0, _len2 = _children.length; _i8 < _len2; _i8++) {
-              var _children$_i = _children[_i8],
-                  _tagName = _children$_i.tagName,
-                  _props = _children$_i.props;
+            if (display !== 'none' && visibility !== 'hidden') {
+              var _children = sibling.virtualDom.children;
+              mChildren = mChildren.concat(_children);
 
-              if (_tagName === 'path') {
-                var matrix = sibling.__svgMatrix;
-                var inverse = mx.inverse(this.__svgMatrix);
-                matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
+              for (var _i8 = 0, _len2 = _children.length; _i8 < _len2; _i8++) {
+                var _children$_i = _children[_i8],
+                    _tagName = _children$_i.tagName,
+                    _props = _children$_i.props;
 
-                var _len3 = _props.length;
+                if (_tagName === 'path') {
+                  var matrix = sibling.__svgMatrix;
+                  var inverse = mx.inverse(this.__svgMatrix);
+                  matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
 
-                if (!_len3 || _props[_len3 - 1][0] !== 'transform') {
-                  _props.push(['transform', "matrix(".concat(matrix, ")")]);
-                } else {
-                  _props[_len3 - 1][1] = "matrix(".concat(matrix, ")");
+                  var _len3 = _props.length;
+
+                  if (!_len3 || _props[_len3 - 1][0] !== 'transform') {
+                    _props.push(['transform', "matrix(".concat(matrix, ")")]);
+                  } else {
+                    _props[_len3 - 1][1] = "matrix(".concat(matrix, ")");
+                  }
                 }
               }
             }
@@ -18195,7 +18202,7 @@
     invalid: invalid
   };
 
-  var version = "0.38.8";
+  var version = "0.38.9";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

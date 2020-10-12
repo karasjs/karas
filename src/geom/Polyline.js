@@ -2,6 +2,7 @@ import Geom from './Geom';
 import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
+import geom from '../math/geom';
 
 let { isNil } = util;
 
@@ -179,8 +180,51 @@ class Polyline extends Geom {
   get points() {
     return this.getProps('points');
   }
+
   get controls() {
     return this.getProps('controls');
+  }
+
+  get bbox() {
+    let { bbox, isMulti, __cacheProps: { points, controls } } = this;
+    if(!isMulti) {
+      points = [points];
+      controls = [controls];
+    }
+    points.forEach((pointList, i) => {
+      if(!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+        return;
+      }
+      let controlList = controls[i];
+      let [xa, ya] = pointList[0];
+      for(let i = 1, len = pointList.length; i < len; i++) {
+        let [xb, yb] = pointList[i];
+        let c = controlList[i - 1];
+        if(c && c.length === 4) {
+          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+          bbox[0] = Math.min(bbox[0], bezierBox[0]);
+          bbox[1] = Math.min(bbox[0], bezierBox[1]);
+          bbox[2] = Math.max(bbox[0], bezierBox[2]);
+          bbox[3] = Math.max(bbox[0], bezierBox[3]);
+        }
+        else if(c && c.length === 2) {
+          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+          bbox[0] = Math.min(bbox[0], bezierBox[0]);
+          bbox[1] = Math.min(bbox[0], bezierBox[1]);
+          bbox[2] = Math.max(bbox[0], bezierBox[2]);
+          bbox[3] = Math.max(bbox[0], bezierBox[3]);
+        }
+        else {
+          bbox[0] = Math.min(bbox[0], xa);
+          bbox[1] = Math.min(bbox[0], xb);
+          bbox[2] = Math.max(bbox[0], xa);
+          bbox[3] = Math.max(bbox[0], xb);
+        }
+        xa = xb;
+        ya = yb;
+      }
+    });
+    return bbox;
   }
 }
 

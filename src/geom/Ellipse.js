@@ -138,8 +138,44 @@ class Ellipse extends Geom {
   get rx() {
     return this.getProps('rx');
   }
+
   get ry() {
     return this.getProps('ry');
+  }
+
+  get bbox() {
+    let { bbox, isMulti, __cacheProps: { rx, ry }, computedStyle: { strokeWidth } } = this;
+    let w = bbox[2] - bbox[0];
+    let h = bbox[3] - bbox[1];
+    if(isMulti) {
+      let max = 0;
+      rx.forEach(rx => {
+        max = Math.max(rx, max);
+      });
+      rx = max;
+      max = 0;
+      ry.forEach(ry => {
+        max = Math.max(ry, max);
+      });
+      ry = max;
+    }
+    let dx = rx + strokeWidth;
+    let dy = ry + strokeWidth;
+    let diffX = dx - w;
+    let diffY = dy - h;
+    if(diffX > 0 || diffY > 0) {
+      if(diffX > 0) {
+        let half = diffX * 0.5;
+        bbox[0] -= half;
+        bbox[2] += half;
+      }
+      if(diffY > 0) {
+        let half = diffY * 0.5;
+        bbox[1] -= half;
+        bbox[3] += half;
+      }
+    }
+    return bbox;
   }
 }
 

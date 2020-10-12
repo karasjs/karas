@@ -2,6 +2,7 @@ import Geom from './Geom';
 import mode from '../node/mode';
 import painter from '../util/painter';
 import util from '../util/util';
+import geom from '../math/geom';
 
 let { isNil } = util;
 
@@ -21,7 +22,7 @@ function reBuildC(target, originX, originY, width, height, isMulti) {
     }
   }
   else {
-    if(target && target.length === 2) {
+    if(target && target.length >= 2) {
       return [
         originX + target[0] * width,
         originY + target[1] * height,
@@ -33,10 +34,10 @@ function reBuildC(target, originX, originY, width, height, isMulti) {
 
 function curveNum(controlA, controlB) {
   let num = 0;
-  if(controlA.length === 2) {
+  if(controlA.length >= 2) {
     num++;
   }
-  if(controlB.length === 2) {
+  if(controlB.length >= 2) {
     num += 2;
   }
   return num;
@@ -222,20 +223,72 @@ class Line extends Geom {
   get x1() {
     return this.getProps('x1');
   }
+
   get y1() {
     return this.getProps('y1');
   }
+
   get x2() {
     return this.getProps('x2');
   }
+
   get y2() {
     return this.getProps('y2');
   }
+
   get controlA() {
     return this.getProps('controlA');
   }
+
   get controlB() {
     return this.getProps('controlB');
+  }
+
+  get bbox() {
+    let { bbox, isMulti, __cacheProps: { x1, y1, x2, y2, controlA, controlB } } = this;
+    if(!isMulti) {
+      x1 = [x1];
+      x2 = [x2];
+      y1 = [y1];
+      y2 = [y2];
+      controlA = [controlA];
+      controlB = [controlB];
+    }
+    x1.forEach((xa, i) => {
+      let ya = y1[i];
+      let xb = x2[i];
+      let yb = y2[i];
+      let ca = controlA[i];
+      let cb = controlB[i];
+      if((isNil(ca) || ca.length < 2) && (isNil(cb) || cb.length < 2)) {
+        bbox[0] = Math.min(bbox[0], xa);
+        bbox[1] = Math.min(bbox[0], xb);
+        bbox[2] = Math.max(bbox[0], xa);
+        bbox[3] = Math.max(bbox[0], xb);
+      }
+      else if(isNil(ca) || ca.length < 2) {
+        let bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
+        bbox[0] = Math.min(bbox[0], bezierBox[0]);
+        bbox[1] = Math.min(bbox[0], bezierBox[1]);
+        bbox[2] = Math.max(bbox[0], bezierBox[2]);
+        bbox[3] = Math.max(bbox[0], bezierBox[3]);
+      }
+      else if(isNil(cb) || cb.length < 2) {
+        let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
+        bbox[0] = Math.min(bbox[0], bezierBox[0]);
+        bbox[1] = Math.min(bbox[0], bezierBox[1]);
+        bbox[2] = Math.max(bbox[0], bezierBox[2]);
+        bbox[3] = Math.max(bbox[0], bezierBox[3]);
+      }
+      else {
+        let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
+        bbox[0] = Math.min(bbox[0], bezierBox[0]);
+        bbox[1] = Math.min(bbox[0], bezierBox[1]);
+        bbox[2] = Math.max(bbox[0], bezierBox[2]);
+        bbox[3] = Math.max(bbox[0], bezierBox[3]);
+      }
+    });
+    return bbox;
   }
 }
 

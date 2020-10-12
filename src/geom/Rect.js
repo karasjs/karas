@@ -158,6 +158,7 @@ class Rect extends Geom {
   get rx() {
     return this.getProps('rx');
   }
+
   get ry() {
     return this.getProps('ry');
   }

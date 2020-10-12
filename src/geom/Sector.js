@@ -233,17 +233,49 @@ class Sector extends Geom {
   get begin() {
     return this.getProps('begin');
   }
+
   get end() {
     return this.getProps('end');
   }
+
   get r() {
     return this.getProps('r');
   }
+
   get edge() {
     return this.getProps('edge');
   }
+
+  // >180°时是否链接端点
   get closure() {
     return this.getProps('closure');
+  }
+
+  get bbox() {
+    let { bbox, isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
+    let w = bbox[2] - bbox[0];
+    let h = bbox[3] - bbox[1];
+    if(isMulti) {
+      let max = 0;
+      r.forEach(r => {
+        max = Math.max(r, max);
+      });
+      r = max;
+    }
+    let d = r + strokeWidth;
+    let diff = d - Math.min(w, h);
+    if(diff > 0) {
+      let half = diff * 0.5;
+      if(d > w) {
+        bbox[0] -= half;
+        bbox[2] += half;
+      }
+      if(d > h) {
+        bbox[1] -= half;
+        bbox[3] += half;
+      }
+    }
+    return bbox;
   }
 }
 

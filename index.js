@@ -11686,9 +11686,10 @@
               canCache: _canCache
             };
           }
-        }
+        } else if (renderMode === mode.SVG) {
+          this.__lastDisplay = computedStyle.display;
+        } // 使用sx和sy渲染位置，考虑了relative和translate影响
 
-        this.__lastDisplay = computedStyle.display; // 使用sx和sy渲染位置，考虑了relative和translate影响
 
         var x = this.sx,
             y = this.sy;
@@ -11781,10 +11782,11 @@
               canCache: _canCache2
             };
           }
-        }
+        } else if (renderMode === mode.SVG) {
+          this.__lastVisibility = visibility;
+          delete virtualDom.visibility;
+        } // 无内容或者无影响动画视为可缓存本身
 
-        this.__lastVisibility = visibility;
-        delete virtualDom.visibility; // 无内容或者无影响动画视为可缓存本身
 
         var canCache = !hasContent || !this.availableAnimating; // 无缓存重新渲染时是否使用缓存
 
@@ -17447,7 +17449,6 @@
             nvd.defs = defs.value;
 
             if (_this3.dom.__root) {
-              console.log(nvd);
               diff(_this3.dom, _this3.dom.__vd, nvd);
             } else {
               _this3.dom.innerHTML = util.joinVirtualDom(nvd);
@@ -19044,7 +19045,7 @@
         });
       }
     } else {
-      if (target && target.length === 2) {
+      if (target && target.length >= 2) {
         return [originX + target[0] * width, originY + target[1] * height];
       }
     }
@@ -19055,11 +19056,11 @@
   function curveNum(controlA, controlB) {
     var num = 0;
 
-    if (controlA.length === 2) {
+    if (controlA.length >= 2) {
       num++;
     }
 
-    if (controlB.length === 2) {
+    if (controlB.length >= 2) {
       num += 2;
     }
 
@@ -19316,6 +19317,64 @@
       get: function get() {
         return this.getProps('controlB');
       }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var bbox = this.bbox,
+            isMulti = this.isMulti,
+            _this$__cacheProps = this.__cacheProps,
+            x1 = _this$__cacheProps.x1,
+            y1 = _this$__cacheProps.y1,
+            x2 = _this$__cacheProps.x2,
+            y2 = _this$__cacheProps.y2,
+            controlA = _this$__cacheProps.controlA,
+            controlB = _this$__cacheProps.controlB;
+
+        if (!isMulti) {
+          x1 = [x1];
+          x2 = [x2];
+          y1 = [y1];
+          y2 = [y2];
+          controlA = [controlA];
+          controlB = [controlB];
+        }
+
+        x1.forEach(function (xa, i) {
+          var ya = y1[i];
+          var xb = x2[i];
+          var yb = y2[i];
+          var ca = controlA[i];
+          var cb = controlB[i];
+
+          if ((isNil$8(ca) || ca.length < 2) && (isNil$8(cb) || cb.length < 2)) {
+            bbox[0] = Math.min(bbox[0], xa);
+            bbox[1] = Math.min(bbox[0], xb);
+            bbox[2] = Math.max(bbox[0], xa);
+            bbox[3] = Math.max(bbox[0], xb);
+          } else if (isNil$8(ca) || ca.length < 2) {
+            var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
+            bbox[0] = Math.min(bbox[0], bezierBox[0]);
+            bbox[1] = Math.min(bbox[0], bezierBox[1]);
+            bbox[2] = Math.max(bbox[0], bezierBox[2]);
+            bbox[3] = Math.max(bbox[0], bezierBox[3]);
+          } else if (isNil$8(cb) || cb.length < 2) {
+            var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
+
+            bbox[0] = Math.min(bbox[0], _bezierBox[0]);
+            bbox[1] = Math.min(bbox[0], _bezierBox[1]);
+            bbox[2] = Math.max(bbox[0], _bezierBox[2]);
+            bbox[3] = Math.max(bbox[0], _bezierBox[3]);
+          } else {
+            var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
+
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0]);
+            bbox[1] = Math.min(bbox[0], _bezierBox2[1]);
+            bbox[2] = Math.max(bbox[0], _bezierBox2[2]);
+            bbox[3] = Math.max(bbox[0], _bezierBox2[3]);
+          }
+        });
+        return bbox;
+      }
     }]);
 
     return Line;
@@ -19538,6 +19597,64 @@
       key: "controls",
       get: function get() {
         return this.getProps('controls');
+      }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var bbox = this.bbox,
+            isMulti = this.isMulti,
+            _this$__cacheProps = this.__cacheProps,
+            points = _this$__cacheProps.points,
+            controls = _this$__cacheProps.controls;
+
+        if (!isMulti) {
+          points = [points];
+          controls = [controls];
+        }
+
+        points.forEach(function (pointList, i) {
+          if (!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+            return;
+          }
+
+          var controlList = controls[i];
+
+          var _pointList$ = _slicedToArray(pointList[0], 2),
+              xa = _pointList$[0],
+              ya = _pointList$[1];
+
+          for (var _i2 = 1, len = pointList.length; _i2 < len; _i2++) {
+            var _pointList$_i = _slicedToArray(pointList[_i2], 2),
+                xb = _pointList$_i[0],
+                yb = _pointList$_i[1];
+
+            var c = controlList[_i2 - 1];
+
+            if (c && c.length === 4) {
+              var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+              bbox[0] = Math.min(bbox[0], bezierBox[0]);
+              bbox[1] = Math.min(bbox[0], bezierBox[1]);
+              bbox[2] = Math.max(bbox[0], bezierBox[2]);
+              bbox[3] = Math.max(bbox[0], bezierBox[3]);
+            } else if (c && c.length === 2) {
+              var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+
+              bbox[0] = Math.min(bbox[0], _bezierBox[0]);
+              bbox[1] = Math.min(bbox[0], _bezierBox[1]);
+              bbox[2] = Math.max(bbox[0], _bezierBox[2]);
+              bbox[3] = Math.max(bbox[0], _bezierBox[3]);
+            } else {
+              bbox[0] = Math.min(bbox[0], xa);
+              bbox[1] = Math.min(bbox[0], xb);
+              bbox[2] = Math.max(bbox[0], xa);
+              bbox[3] = Math.max(bbox[0], xb);
+            }
+
+            xa = xb;
+            ya = yb;
+          }
+        });
+        return bbox;
       }
     }]);
 
@@ -19883,11 +20000,49 @@
       key: "edge",
       get: function get() {
         return this.getProps('edge');
-      }
+      } // >180°时是否链接端点
+
     }, {
       key: "closure",
       get: function get() {
         return this.getProps('closure');
+      }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var bbox = this.bbox,
+            isMulti = this.isMulti,
+            r = this.__cacheProps.r,
+            strokeWidth = this.computedStyle.strokeWidth;
+        var w = bbox[2] - bbox[0];
+        var h = bbox[3] - bbox[1];
+
+        if (isMulti) {
+          var max = 0;
+          r.forEach(function (r) {
+            max = Math.max(r, max);
+          });
+          r = max;
+        }
+
+        var d = r + strokeWidth;
+        var diff = d - Math.min(w, h);
+
+        if (diff > 0) {
+          var half = diff * 0.5;
+
+          if (d > w) {
+            bbox[0] -= half;
+            bbox[2] += half;
+          }
+
+          if (d > h) {
+            bbox[1] -= half;
+            bbox[3] += half;
+          }
+        }
+
+        return bbox;
       }
     }]);
 
@@ -20222,6 +20377,43 @@
       get: function get() {
         return this.getProps('r');
       }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var bbox = this.bbox,
+            isMulti = this.isMulti,
+            r = this.__cacheProps.r,
+            strokeWidth = this.computedStyle.strokeWidth;
+        var w = bbox[2] - bbox[0];
+        var h = bbox[3] - bbox[1];
+
+        if (isMulti) {
+          var max = 0;
+          r.forEach(function (r) {
+            max = Math.max(r, max);
+          });
+          r = max;
+        }
+
+        var d = r + strokeWidth;
+        var diff = d - Math.min(w, h);
+
+        if (diff > 0) {
+          var half = diff * 0.5;
+
+          if (d > w) {
+            bbox[0] -= half;
+            bbox[2] += half;
+          }
+
+          if (d > h) {
+            bbox[1] -= half;
+            bbox[3] += half;
+          }
+        }
+
+        return bbox;
+      }
     }]);
 
     return Circle;
@@ -20406,6 +20598,53 @@
       key: "ry",
       get: function get() {
         return this.getProps('ry');
+      }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var bbox = this.bbox,
+            isMulti = this.isMulti,
+            _this$__cacheProps = this.__cacheProps,
+            rx = _this$__cacheProps.rx,
+            ry = _this$__cacheProps.ry,
+            strokeWidth = this.computedStyle.strokeWidth;
+        var w = bbox[2] - bbox[0];
+        var h = bbox[3] - bbox[1];
+
+        if (isMulti) {
+          var max = 0;
+          rx.forEach(function (rx) {
+            max = Math.max(rx, max);
+          });
+          rx = max;
+          max = 0;
+          ry.forEach(function (ry) {
+            max = Math.max(ry, max);
+          });
+          ry = max;
+        }
+
+        var dx = rx + strokeWidth;
+        var dy = ry + strokeWidth;
+        var diffX = dx - w;
+        var diffY = dy - h;
+
+        if (diffX > 0 || diffY > 0) {
+          if (diffX > 0) {
+            var half = diffX * 0.5;
+            bbox[0] -= half;
+            bbox[2] += half;
+          }
+
+          if (diffY > 0) {
+            var _half = diffY * 0.5;
+
+            bbox[1] -= _half;
+            bbox[3] += _half;
+          }
+        }
+
+        return bbox;
       }
     }]);
 

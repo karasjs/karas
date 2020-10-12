@@ -279,7 +279,7 @@ class Root extends Dom {
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
         nvd.defs = defs.value;
-        if(this.dom.__root) {console.log(nvd);
+        if(this.dom.__root) {
           diff(this.dom, this.dom.__vd, nvd);
         }
         else {

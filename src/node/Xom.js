@@ -1302,7 +1302,9 @@ class Xom extends Node {
         return { canCache };
       }
     }
-    this.__lastDisplay = computedStyle.display;
+    else if(renderMode === mode.SVG) {
+      this.__lastDisplay = computedStyle.display;
+    }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
     let {
@@ -1396,8 +1398,10 @@ class Xom extends Node {
         return { canCache };
       }
     }
-    this.__lastVisibility = visibility;
-    delete virtualDom.visibility;
+    else if(renderMode === mode.SVG) {
+      this.__lastVisibility = visibility;
+      delete virtualDom.visibility;
+    }
     // 无内容或者无影响动画视为可缓存本身
     let canCache = !hasContent || !this.availableAnimating;
     // 无缓存重新渲染时是否使用缓存

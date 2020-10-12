@@ -283,6 +283,12 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
+  // geom强制有内容
+  __calCache() {
+    super.__calCache.apply(this, arguments);
+    return true;
+  }
+
   addGeom(tagName, props) {
     props = util.hash2arr(props);
     this.virtualDom.children.push({

@@ -1144,7 +1144,7 @@ class Dom extends Xom {
       canCacheSelf = false;
     }
     // 需考虑缓存和滤镜
-    if(renderMode === mode.CANVAS) { console.log(this.tagName, canCacheSelf)
+    if(renderMode === mode.CANVAS) {
       // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
       if(root.cache) {
         // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上

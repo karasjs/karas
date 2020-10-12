@@ -12373,7 +12373,7 @@
             }
           }
 
-          if (isEmpty) {
+          if (isEmpty || this.computedStyle.display === 'none') {
             return _res;
           } // 应用mask本身的matrix，以及被遮罩对象的matrix逆
 
@@ -12382,25 +12382,32 @@
           var mChildren = [];
 
           while (sibling) {
-            var _children = sibling.virtualDom.children;
-            mChildren = mChildren.concat(_children);
+            var _sibling = sibling,
+                _sibling$computedStyl = _sibling.computedStyle,
+                display = _sibling$computedStyl.display,
+                visibility = _sibling$computedStyl.visibility;
 
-            for (var _i9 = 0, _len3 = _children.length; _i9 < _len3; _i9++) {
-              var _children$_i = _children[_i9],
-                  _tagName = _children$_i.tagName,
-                  _props = _children$_i.props;
+            if (display !== 'none' && visibility !== 'hidden') {
+              var _children = sibling.virtualDom.children;
+              mChildren = mChildren.concat(_children);
 
-              if (_tagName === 'path') {
-                var matrix = sibling.svgMatrix;
-                var inverse = mx.inverse(this.svgMatrix);
-                matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
+              for (var _i9 = 0, _len3 = _children.length; _i9 < _len3; _i9++) {
+                var _children$_i = _children[_i9],
+                    _tagName = _children$_i.tagName,
+                    _props = _children$_i.props;
 
-                var _len4 = _props.length;
+                if (_tagName === 'path') {
+                  var matrix = sibling.__svgMatrix;
+                  var inverse = mx.inverse(this.__svgMatrix);
+                  matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
 
-                if (!_len4 || _props[_len4 - 1][0] !== 'transform') {
-                  _props.push(['transform', "matrix(".concat(matrix, ")")]);
-                } else {
-                  _props[_len4 - 1][1] = "matrix(".concat(matrix, ")");
+                  var _len4 = _props.length;
+
+                  if (!_len4 || _props[_len4 - 1][0] !== 'transform') {
+                    _props.push(['transform', "matrix(".concat(matrix, ")")]);
+                  } else {
+                    _props[_len4 - 1][1] = "matrix(".concat(matrix, ")");
+                  }
                 }
               }
             }
@@ -15062,8 +15069,7 @@
 
 
         if (renderMode === mode.CANVAS) {
-          console.log(this.tagName, canCacheSelf); // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
-
+          // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
           if (root.cache) {
             // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
             if (this === root) {
@@ -18910,6 +18916,14 @@
         _get(_getPrototypeOf(Geom.prototype), "__cancelCache", this).call(this, recursion);
 
         this.__cacheProps = {};
+      } // geom强制有内容
+
+    }, {
+      key: "__calCache",
+      value: function __calCache() {
+        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).apply(this, arguments);
+
+        return true;
       }
     }, {
       key: "addGeom",
@@ -21060,7 +21074,7 @@
     change: o
   };
 
-  var version = "0.38.8";
+  var version = "0.38.9";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

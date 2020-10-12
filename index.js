@@ -14983,6 +14983,7 @@
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
+        res = res || {};
         var offScreen = res.offScreen; // canvas检查filter，无缓存时的绘制
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
@@ -15046,7 +15047,7 @@
             var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
 
 
-            if (!canCacheChildren || !temp.canCache || item.availableAnimating) {
+            if (!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
               canCacheChildren = false;
             }
           }
@@ -19931,6 +19932,8 @@
             this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           }
         }
+
+        return res;
       }
     }, {
       key: "__genSector",

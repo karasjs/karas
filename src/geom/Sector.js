@@ -196,6 +196,7 @@ class Sector extends Geom {
           strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       }
     }
+    return res;
   }
 
   __genSector(edge, d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {

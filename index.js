@@ -11751,7 +11751,7 @@
 
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
-          if (!o$1.contain(lv, o$1.TRANSFORM)) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+          if (!o$1.contain(lv, o$1.TRANSFORM) && lv < o$1.REFLOW) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           } else {
             delete virtualDom.transform;

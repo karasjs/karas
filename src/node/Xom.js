@@ -1365,7 +1365,7 @@ class Xom extends Node {
     this.__matrixEvent = matrix;
     if(renderMode === mode.SVG) {
       // svg可以没变化省略计算，因为只相对于自身
-      if(!level.contain(lv, level.TRANSFORM)) {}
+      if(!level.contain(lv, level.TRANSFORM) && lv < level.REFLOW) {}
       else if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
         virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }

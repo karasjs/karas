@@ -10554,6 +10554,7 @@
   var clone$2 = util.clone,
       int2rgba$2 = util.int2rgba,
       equalArr$2 = util.equalArr,
+      extend$1 = util.extend,
       joinArr$1 = util.joinArr;
   var calRelative$1 = css.calRelative;
   var canvasPolygon$1 = painter.canvasPolygon,
@@ -11626,20 +11627,6 @@
       value: function render(renderMode, lv, ctx, defs) {
         var _this4 = this;
 
-        // if(renderMode === mode.SVG) {
-        //   if(this.__cacheSvg) {
-        //     let n = extend({}, this.__virtualDom);
-        //     n.cache = true;
-        //     this.__virtualDom = n;
-        //     return;
-        //   }
-        //   this.__cacheSvg = true;
-        //   this.__virtualDom = {
-        //     bb: [],
-        //     children: [],
-        //     opacity: 1,
-        //   };
-        // }
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -11660,7 +11647,7 @@
 
         if (renderMode === mode.SVG) {
           if (lv < o$1.REPAINT && this.__virtualDom) {
-            virtualDom = this.__virtualDom;
+            virtualDom = this.__virtualDom = extend$1({}, this.__virtualDom);
             virtualDom.lv = lv;
           } else {
             virtualDom = this.__virtualDom = {
@@ -13043,7 +13030,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating) {
+          if (item.animating && item.currentFrames) {
             var transition = item.currentFrame.transition;
 
             for (var _i10 = 0, _len5 = transition.length; _i10 < _len5; _i10++) {
@@ -13065,7 +13052,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating) {
+          if (item.animating && item.currentFrames) {
             var transition = item.currentFrame.transition;
 
             for (var _i11 = 0, _len6 = transition.length; _i11 < _len6; _i11++) {
@@ -13089,7 +13076,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating) {
+          if (item.animating && item.currentFrames) {
             var transition = item.currentFrame.transition;
 
             for (var _i12 = 0, _len7 = transition.length; _i12 < _len7; _i12++) {
@@ -13113,7 +13100,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating) {
+          if (item.animating && item.currentFrames) {
             var transition = item.currentFrame.transition;
 
             for (var _i13 = 0, _len8 = transition.length; _i13 < _len8; _i13++) {
@@ -13523,7 +13510,7 @@
   var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction,
       clone$3 = util.clone,
-      extend$1 = util.extend;
+      extend$2 = util.extend;
   /**
    * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
    * @param cp
@@ -13589,7 +13576,7 @@
           }
 
           var state = clone$3(self.state);
-          n = extend$1(state, n);
+          n = extend$2(state, n);
         }
 
         var root = self.root;
@@ -13639,8 +13626,8 @@
         } else if (sr instanceof Node) {
           var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
-          extend$1(sr.style, style, keys);
-          extend$1(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
+          extend$2(sr.style, style, keys);
+          extend$2(sr.currentStyle, style, keys); // 事件添加到sr，以及自定义事件
 
           Object.keys(this.props).forEach(function (k) {
             var v = _this3.props[k];
@@ -15135,23 +15122,19 @@
           }; // img的children在子类特殊处理
 
           if (this.tagName !== 'img') {
-            this.virtualDom.children = zIndexChildren.map(function (item) {
+            virtualDom.children = zIndexChildren.map(function (item) {
               return item.virtualDom;
             });
-          } // if(canCacheChildren && this.availableAnimating) {
-          //   canCacheChildren = false;
-          //   delete this.virtualDom.canCacheChildren;
-          //   this.virtualDom.children.forEach(item => item.canCacheChildren = true);
-          // }
-          // 没变化则将text孩子设置cache
-          // if(this.virtualDom.cache) {
-          //   this.virtualDom.children.forEach(item => {
-          //     if(item.type === 'text') {
-          //       item.cache = true;
-          //     }
-          //   });
-          // }
+          } // 没变化则将text孩子设置cache
 
+
+          if (virtualDom.hasOwnProperty('lv')) {
+            this.virtualDom.children.forEach(function (item) {
+              if (item.type === 'text') {
+                item.cache = true;
+              }
+            });
+          }
         } // 向上回溯传值，要考虑children
 
 
@@ -19318,8 +19301,7 @@
     }, {
       key: "bbox",
       get: function get() {
-        var bbox = this.bbox,
-            isMulti = this.isMulti,
+        var isMulti = this.isMulti,
             _this$__cacheProps = this.__cacheProps,
             x1 = _this$__cacheProps.x1,
             y1 = _this$__cacheProps.y1,
@@ -19328,7 +19310,10 @@
             controlA = _this$__cacheProps.controlA,
             controlB = _this$__cacheProps.controlB,
             strokeWidth = this.computedStyle.strokeWidth;
-        var sw = strokeWidth * 0.5;
+
+        var bbox = _get(_getPrototypeOf(Line.prototype), "bbox", this);
+
+        var half = strokeWidth * 0.5;
 
         if (!isMulti) {
           x1 = [x1];
@@ -19347,30 +19332,30 @@
           var cb = controlB[i];
 
           if ((isNil$8(ca) || ca.length < 2) && (isNil$8(cb) || cb.length < 2)) {
-            bbox[0] = Math.min(bbox[0], xa - sw);
-            bbox[1] = Math.min(bbox[0], xb - sw);
-            bbox[2] = Math.max(bbox[0], xa + sw);
-            bbox[3] = Math.max(bbox[0], xb + sw);
+            bbox[0] = Math.min(bbox[0], xa - half);
+            bbox[1] = Math.min(bbox[0], xb - half);
+            bbox[2] = Math.max(bbox[0], xa + half);
+            bbox[3] = Math.max(bbox[0], xb + half);
           } else if (isNil$8(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
-            bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
-            bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
-            bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+            bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
+            bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
+            bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
           } else if (isNil$8(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0] - sw);
-            bbox[1] = Math.min(bbox[0], _bezierBox[1] - sw);
-            bbox[2] = Math.max(bbox[0], _bezierBox[2] + sw);
-            bbox[3] = Math.max(bbox[0], _bezierBox[3] + sw);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
+            bbox[1] = Math.min(bbox[0], _bezierBox[1] - half);
+            bbox[2] = Math.max(bbox[0], _bezierBox[2] + half);
+            bbox[3] = Math.max(bbox[0], _bezierBox[3] + half);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - sw);
-            bbox[1] = Math.min(bbox[0], _bezierBox2[1] - sw);
-            bbox[2] = Math.max(bbox[0], _bezierBox2[2] + sw);
-            bbox[3] = Math.max(bbox[0], _bezierBox2[3] + sw);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - half);
+            bbox[1] = Math.min(bbox[0], _bezierBox2[1] - half);
+            bbox[2] = Math.max(bbox[0], _bezierBox2[2] + half);
+            bbox[3] = Math.max(bbox[0], _bezierBox2[3] + half);
           }
         });
         return bbox;
@@ -19601,13 +19586,15 @@
     }, {
       key: "bbox",
       get: function get() {
-        var bbox = this.bbox,
-            isMulti = this.isMulti,
+        var isMulti = this.isMulti,
             _this$__cacheProps = this.__cacheProps,
             points = _this$__cacheProps.points,
             controls = _this$__cacheProps.controls,
             strokeWidth = this.computedStyle.strokeWidth;
-        var sw = strokeWidth * 0.5;
+
+        var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
+
+        var half = strokeWidth * 0.5;
 
         if (!isMulti) {
           points = [points];
@@ -19634,22 +19621,22 @@
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-              bbox[0] = Math.min(bbox[0], bezierBox[0] - sw);
-              bbox[1] = Math.min(bbox[0], bezierBox[1] - sw);
-              bbox[2] = Math.max(bbox[0], bezierBox[2] + sw);
-              bbox[3] = Math.max(bbox[0], bezierBox[3] + sw);
+              bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+              bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
+              bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
+              bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
             } else if (c && c.length === 2) {
               var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
-              bbox[0] = Math.min(bbox[0], _bezierBox[0] - sw);
-              bbox[1] = Math.min(bbox[0], _bezierBox[1] - sw);
-              bbox[2] = Math.max(bbox[0], _bezierBox[2] + sw);
-              bbox[3] = Math.max(bbox[0], _bezierBox[3] + sw);
+              bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
+              bbox[1] = Math.min(bbox[0], _bezierBox[1] - half);
+              bbox[2] = Math.max(bbox[0], _bezierBox[2] + half);
+              bbox[3] = Math.max(bbox[0], _bezierBox[3] + half);
             } else {
-              bbox[0] = Math.min(bbox[0], xa - sw);
-              bbox[1] = Math.min(bbox[0], xb - sw);
-              bbox[2] = Math.max(bbox[0], xa + sw);
-              bbox[3] = Math.max(bbox[0], xb + sw);
+              bbox[0] = Math.min(bbox[0], xa - half);
+              bbox[1] = Math.min(bbox[0], xb - half);
+              bbox[2] = Math.max(bbox[0], xa + half);
+              bbox[3] = Math.max(bbox[0], xb + half);
             }
 
             xa = xb;
@@ -20012,10 +19999,12 @@
     }, {
       key: "bbox",
       get: function get() {
-        var bbox = this.bbox,
-            isMulti = this.isMulti,
+        var isMulti = this.isMulti,
             r = this.__cacheProps.r,
             strokeWidth = this.computedStyle.strokeWidth;
+
+        var bbox = _get(_getPrototypeOf(Sector.prototype), "bbox", this);
+
         var w = bbox[2] - bbox[0];
         var h = bbox[3] - bbox[1];
 
@@ -20170,8 +20159,10 @@
           } else {
             __cacheProps.ry = Math.min(ry, 0.5) * height;
           }
-        } // rx/ry有变化需重建顶点
+        }
 
+        __cacheProps.originX = originX;
+        __cacheProps.originY = originY; // rx/ry有变化需重建顶点
 
         if (rebuild) {
           var _rx = __cacheProps.rx,
@@ -20238,6 +20229,25 @@
       key: "ry",
       get: function get() {
         return this.getProps('ry');
+      }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var width = this.width,
+            height = this.height,
+            _this$__cacheProps = this.__cacheProps,
+            originX = _this$__cacheProps.originX,
+            originY = _this$__cacheProps.originY,
+            strokeWidth = this.computedStyle.strokeWidth;
+
+        var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
+
+        var half = strokeWidth * 0.5;
+        bbox[0] = Math.min(bbox[0], originX - half);
+        bbox[1] = Math.min(bbox[1], originY - half);
+        bbox[2] = Math.min(bbox[2], originX + width + half);
+        bbox[3] = Math.min(bbox[3], originY + height + half);
+        return bbox;
       }
     }]);
 
@@ -20382,10 +20392,12 @@
     }, {
       key: "bbox",
       get: function get() {
-        var bbox = this.bbox,
-            isMulti = this.isMulti,
+        var isMulti = this.isMulti,
             r = this.__cacheProps.r,
             strokeWidth = this.computedStyle.strokeWidth;
+
+        var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
+
         var w = bbox[2] - bbox[0];
         var h = bbox[3] - bbox[1];
 
@@ -20604,12 +20616,14 @@
     }, {
       key: "bbox",
       get: function get() {
-        var bbox = this.bbox,
-            isMulti = this.isMulti,
+        var isMulti = this.isMulti,
             _this$__cacheProps = this.__cacheProps,
             rx = _this$__cacheProps.rx,
             ry = _this$__cacheProps.ry,
             strokeWidth = this.computedStyle.strokeWidth;
+
+        var bbox = _get(_getPrototypeOf(Ellipse.prototype), "bbox", this);
+
         var w = bbox[2] - bbox[0];
         var h = bbox[3] - bbox[1];
 
@@ -20720,7 +20734,7 @@
       isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
       clone$4 = util.clone,
-      extend$2 = util.extend;
+      extend$3 = util.extend;
   var abbrCssProperty$1 = abbr$1.abbrCssProperty,
       abbrAnimateOption$1 = abbr$1.abbrAnimateOption,
       abbrAnimate$1 = abbr$1.abbrAnimate;
@@ -20863,10 +20877,10 @@
     if (init) {
       var props = child.props = child.props || {};
       var style = props.style;
-      extend$2(props, init); // style特殊处理，防止被上面覆盖丢失原始值
+      extend$3(props, init); // style特殊处理，防止被上面覆盖丢失原始值
 
       if (style) {
-        extend$2(style, init.style);
+        extend$3(style, init.style);
         props.style = style;
       } // 删除以免二次解析
 

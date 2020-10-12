@@ -1246,20 +1246,6 @@ class Xom extends Node {
    * @param defs
    */
   render(renderMode, lv, ctx, defs) {
-    // if(renderMode === mode.SVG) {
-    //   if(this.__cacheSvg) {
-    //     let n = extend({}, this.__virtualDom);
-    //     n.cache = true;
-    //     this.__virtualDom = n;
-    //     return;
-    //   }
-    //   this.__cacheSvg = true;
-    //   this.__virtualDom = {
-    //     bb: [],
-    //     children: [],
-    //     opacity: 1,
-    //   };
-    // }
     let {
       isDestroyed,
       currentStyle,
@@ -1280,7 +1266,7 @@ class Xom extends Node {
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
     if(renderMode === mode.SVG) {
       if(lv < level.REPAINT && this.__virtualDom) {
-        virtualDom = this.__virtualDom;
+        virtualDom = this.__virtualDom = extend({}, this.__virtualDom);
         virtualDom.lv = lv;
       }
       else {
@@ -2491,7 +2477,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating) {
+      if(item.animating && item.currentFrames) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           if(!change.isIgnore(transition[i].k)) {
@@ -2508,7 +2494,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating) {
+      if(item.animating && item.currentFrames) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;
@@ -2527,7 +2513,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating) {
+      if(item.animating && item.currentFrames) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;
@@ -2545,7 +2531,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating) {
+      if(item.animating && item.currentFrames) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;

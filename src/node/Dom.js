@@ -1178,21 +1178,16 @@ class Dom extends Xom {
       };
       // img的children在子类特殊处理
       if(this.tagName !== 'img') {
-        this.virtualDom.children = zIndexChildren.map(item => item.virtualDom);
+        virtualDom.children = zIndexChildren.map(item => item.virtualDom);
       }
-      // if(canCacheChildren && this.availableAnimating) {
-      //   canCacheChildren = false;
-      //   delete this.virtualDom.canCacheChildren;
-      //   this.virtualDom.children.forEach(item => item.canCacheChildren = true);
-      // }
       // 没变化则将text孩子设置cache
-      // if(this.virtualDom.cache) {
-      //   this.virtualDom.children.forEach(item => {
-      //     if(item.type === 'text') {
-      //       item.cache = true;
-      //     }
-      //   });
-      // }
+      if(virtualDom.hasOwnProperty('lv')) {
+        this.virtualDom.children.forEach(item => {
+          if(item.type === 'text') {
+            item.cache = true;
+          }
+        });
+      }
     }
     // 向上回溯传值，要考虑children
     if(res.canCache && !canCacheChildren) {

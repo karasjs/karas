@@ -104,6 +104,8 @@ class Rect extends Geom {
         __cacheProps.ry = Math.min(ry, 0.5) * height;
       }
     }
+    __cacheProps.originX = originX;
+    __cacheProps.originY = originY;
     // rx/ry有变化需重建顶点
     if(rebuild) {
       let { rx, ry } = __cacheProps;
@@ -161,6 +163,17 @@ class Rect extends Geom {
 
   get ry() {
     return this.getProps('ry');
+  }
+
+  get bbox() {
+    let { width, height, __cacheProps: { originX, originY }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    bbox[0] = Math.min(bbox[0], originX - half);
+    bbox[1] = Math.min(bbox[1], originY - half);
+    bbox[2] = Math.min(bbox[2], originX + width + half);
+    bbox[3] = Math.min(bbox[3], originY + height + half);
+    return bbox;
   }
 }
 

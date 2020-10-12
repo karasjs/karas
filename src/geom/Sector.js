@@ -252,7 +252,8 @@ class Sector extends Geom {
   }
 
   get bbox() {
-    let { bbox, isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
+    let { isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
     let w = bbox[2] - bbox[0];
     let h = bbox[3] - bbox[1];
     if(isMulti) {

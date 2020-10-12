@@ -1287,7 +1287,6 @@ class Xom extends Node {
         virtualDom = this.__virtualDom = {
           bb: [],
           children: [],
-          opacity: 1,
         };
       }
     }
@@ -1303,6 +1302,7 @@ class Xom extends Node {
         return { canCache };
       }
     }
+    this.__lastDisplay = computedStyle.display;
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let { sx: x, sy: y } = this;
     let {
@@ -1359,7 +1359,12 @@ class Xom extends Node {
       this.__opacity = opacity;
     }
     else if(renderMode === mode.SVG) {
-      virtualDom.opacity = opacity;
+      if(opacity === 1) {
+        delete virtualDom.opacity;
+      }
+      else {
+        virtualDom.opacity = opacity;
+      }
     }
     // canvas/svg/事件需要3种不同的matrix
     let matrix = __cacheStyle.matrix;
@@ -1386,10 +1391,13 @@ class Xom extends Node {
       }
       else if(renderMode === mode.SVG) {
         let canCache = this.__lastVisibility === 'hidden';
-        this.__lastVisibility = 'hidden';
+        this.__lastVisibility = visibility;
+        virtualDom.visibility = 'hidden';
         return { canCache };
       }
     }
+    this.__lastVisibility = visibility;
+    delete virtualDom.visibility;
     // 无内容或者无影响动画视为可缓存本身
     let canCache = !hasContent || !this.availableAnimating;
     // 无缓存重新渲染时是否使用缓存
@@ -1886,7 +1894,7 @@ class Xom extends Node {
       return res;
     }
     else if(renderMode === mode.SVG) {
-      this.render(renderMode, lv, ctx, defs);
+      let res = this.render(renderMode, lv, ctx, defs);
       // 检查后续mask是否是空，空遮罩不生效
       let isEmpty = true;
       let sibling = next;
@@ -1923,7 +1931,7 @@ class Xom extends Node {
         }
       }
       if(isEmpty) {
-        return;
+        return res;
       }
       // 应用mask本身的matrix，以及被遮罩对象的matrix逆
       sibling = next;
@@ -1975,6 +1983,7 @@ class Xom extends Node {
       else if(hasClip) {
         this.virtualDom.clip = id;
       }
+      return res;
     }
   }
 

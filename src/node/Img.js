@@ -97,7 +97,7 @@ class Img extends Dom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    super.render(renderMode, lv, ctx, defs);
+    let res = super.render(renderMode, lv, ctx, defs);
     let {
       sx: x, sy: y, width, height, isDestroyed,
       props: {
@@ -118,10 +118,11 @@ class Img extends Dom {
         borderBottomRightRadius,
         borderBottomLeftRadius,
         visibility,
-      }
+      },
+      virtualDom,
     } = this;
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
-      return;
+      return res;
     }
     let originX = x + marginLeft + borderLeftWidth + paddingLeft;
     let originY = y + marginTop + borderTopWidth + paddingTop;
@@ -168,7 +169,7 @@ class Img extends Dom {
         ctx.closePath();
       }
       else if(renderMode === mode.SVG) {
-        this.virtualDom.children = [];
+        // virtualDom.children = [];
         this.__addGeom('rect', [
           ['x', originX],
           ['y', originY],
@@ -225,9 +226,9 @@ class Img extends Dom {
           // img没有变化无需diff，直接用上次的vd
           if(loadImg.cache) {
             loadImg.cache.cache = true;
-            this.virtualDom.children = [loadImg.cache];
+            virtualDom.children = [loadImg.cache];
             // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
-            if(!this.virtualDom.cache && list) {
+            if(!virtualDom.cache && list) {
               let d = svgPolygon(list);
               let id = defs.add({
                 tagName: 'clipPath',
@@ -243,7 +244,7 @@ class Img extends Dom {
                   }
                 ],
               });
-              this.virtualDom.conClip = 'url(#' + id + ')';
+              virtualDom.conClip = 'url(#' + id + ')';
             }
             return;
           }
@@ -275,8 +276,8 @@ class Img extends Dom {
                 }
               ],
             });
-            this.virtualDom.conClip = 'url(#' + id + ')';
-            delete this.virtualDom.cache;
+            virtualDom.conClip = 'url(#' + id + ')';
+            delete virtualDom.cache;
           }
           if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
             props.push(['transform', 'matrix(' + util.joinArr(matrix, ',') + ')']);
@@ -286,7 +287,7 @@ class Img extends Dom {
             tagName: 'image',
             props,
           };
-          this.virtualDom.children = [vd];
+          virtualDom.children = [vd];
           loadImg.cache = vd;
         }
       }

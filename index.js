@@ -1657,10 +1657,11 @@
       _s2 += '</g>';
       var opacity = vd.opacity,
           transform = vd.transform,
+          visibility = vd.visibility,
           mask = vd.mask,
           clip = vd.clip,
           filter = vd.filter;
-      return '<g' + (opacity !== 1 ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
+      return '<g' + (opacity !== 1 && opacity !== undefined ? ' opacity="' + opacity + '"' : '') + (transform ? ' transform="' + transform + '"' : '') + (visibility === 'hidden' ? ' visibility="hidden"' : '') + (mask ? ' mask="' + mask + '"' : '') + (clip ? ' clip-path="' + clip + '"' : '') + (filter ? ' filter="' + filter + '"' : '') + '>' + _s2 + '</g>';
     }
   }
 
@@ -10132,10 +10133,10 @@
     //                                     1
     OPACITY: 2,
     //                                      10
-    VISIBILITY: 4,
-    //                                  100
-    FILTER: 8,
-    //                                     1000
+    FILTER: 4,
+    //                                      100
+    VISIBILITY: 8,
+    //                                 1000
     // TRANSFORM_OPACITY: 3, //                            11
     // TRANSFORM_VISIBILITY: 5, //                        101
     // TRANSFORM_FILTER: 9, //                           1001
@@ -11664,8 +11665,7 @@
           } else {
             virtualDom = this.__virtualDom = {
               bb: [],
-              children: [],
-              opacity: 1
+              children: []
             };
           }
         } // canvas返回信息，canCache是指下次渲染是否可以使用这次的缓存
@@ -11686,8 +11686,9 @@
               canCache: _canCache
             };
           }
-        } // 使用sx和sy渲染位置，考虑了relative和translate影响
+        }
 
+        this.__lastDisplay = computedStyle.display; // 使用sx和sy渲染位置，考虑了relative和translate影响
 
         var x = this.sx,
             y = this.sy;
@@ -11738,7 +11739,11 @@
 
           this.__opacity = opacity;
         } else if (renderMode === mode.SVG) {
-          virtualDom.opacity = opacity;
+          if (opacity === 1) {
+            delete virtualDom.opacity;
+          } else {
+            virtualDom.opacity = opacity;
+          }
         } // canvas/svg/事件需要3种不同的matrix
 
 
@@ -11770,13 +11775,16 @@
           } else if (renderMode === mode.SVG) {
             var _canCache2 = this.__lastVisibility === 'hidden';
 
-            this.__lastVisibility = 'hidden';
+            this.__lastVisibility = visibility;
+            virtualDom.visibility = 'hidden';
             return {
               canCache: _canCache2
             };
           }
-        } // 无内容或者无影响动画视为可缓存本身
+        }
 
+        this.__lastVisibility = visibility;
+        delete virtualDom.visibility; // 无内容或者无影响动画视为可缓存本身
 
         var canCache = !hasContent || !this.availableAnimating; // 无缓存重新渲染时是否使用缓存
 
@@ -12332,7 +12340,8 @@
 
           return res;
         } else if (renderMode === mode.SVG) {
-          this.render(renderMode, lv, ctx, defs); // 检查后续mask是否是空，空遮罩不生效
+          var _res = this.render(renderMode, lv, ctx, defs); // 检查后续mask是否是空，空遮罩不生效
+
 
           var isEmpty = true;
           var sibling = next;
@@ -12379,7 +12388,7 @@
           }
 
           if (isEmpty) {
-            return;
+            return _res;
           } // 应用mask本身的matrix，以及被遮罩对象的matrix逆
 
 
@@ -12439,6 +12448,8 @@
           } else if (hasClip) {
             this.virtualDom.clip = id;
           }
+
+          return _res;
         }
       }
     }, {
@@ -15077,11 +15088,12 @@
          * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
          * 目前处于递归的回溯阶段，即冒泡阶段，
          * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
+         * svg则不需要这些，vd上cache标明整体缓存无需递归diff
          */
 
-        var canCacheSelf = canCacheChildren && !this.effectiveAnimating;
+        var canCacheSelf = renderMode === mode.CANVAS && canCacheChildren && !this.effectiveAnimating;
 
-        if (renderMode === mode.CANVAS && canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
+        if (canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
           canCacheSelf = false;
         } // 需考虑缓存和滤镜
 
@@ -15097,7 +15109,7 @@
                 this.__applyCache(renderMode, lv, ctx, MODE.TOP);
               } // 非局部缓存的节点等待root调用
 
-          } // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
+          } // 无缓存时有offScreen对象，尝试使用webgl的blur，对象生成条件在Xom初始化做
 
 
           if (offScreen) {
@@ -15117,8 +15129,8 @@
           this.__cacheTotal = {
             available: true,
             release: function release() {
-              console.log(this);
               this.available = false;
+              delete virtualDom.cache;
             }
           }; // img的children在子类特殊处理
 
@@ -15609,7 +15621,7 @@
       value: function render(renderMode, lv, ctx, defs) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         var x = this.sx,
             y = this.sy,
@@ -15631,10 +15643,11 @@
             borderTopRightRadius = _this$computedStyle.borderTopRightRadius,
             borderBottomRightRadius = _this$computedStyle.borderBottomRightRadius,
             borderBottomLeftRadius = _this$computedStyle.borderBottomLeftRadius,
-            visibility = _this$computedStyle.visibility;
+            visibility = _this$computedStyle.visibility,
+            virtualDom = this.virtualDom;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
-          return;
+          return res;
         }
 
         var originX = x + marginLeft + borderLeftWidth + paddingLeft;
@@ -15678,8 +15691,7 @@
             ctx.fill();
             ctx.closePath();
           } else if (renderMode === mode.SVG) {
-            this.virtualDom.children = [];
-
+            // virtualDom.children = [];
             this.__addGeom('rect', [['x', originX], ['y', originY], ['width', width], ['height', height], ['stroke', stroke], ['stroke-width', strokeWidth], ['fill', 'rgba(0,0,0,0)']]);
 
             this.__addGeom('circle', [['cx', cx], ['cy', cy], ['r', r], ['fill', fill]]);
@@ -15722,9 +15734,9 @@
               // img没有变化无需diff，直接用上次的vd
               if (loadImg.cache) {
                 loadImg.cache.cache = true;
-                this.virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
+                virtualDom.children = [loadImg.cache]; // 但是还是要校验是否有borderRadius变化，引发img的圆角遮罩
 
-                if (!this.virtualDom.cache && list) {
+                if (!virtualDom.cache && list) {
                   var d = svgPolygon$2(list);
                   var id = defs.add({
                     tagName: 'clipPath',
@@ -15735,7 +15747,7 @@
                       props: [['d', d], ['fill', '#FFF']]
                     }]
                   });
-                  this.virtualDom.conClip = 'url(#' + id + ')';
+                  virtualDom.conClip = 'url(#' + id + ')';
                 }
 
                 return;
@@ -15763,8 +15775,8 @@
                   }]
                 });
 
-                this.virtualDom.conClip = 'url(#' + _id + ')';
-                delete this.virtualDom.cache;
+                virtualDom.conClip = 'url(#' + _id + ')';
+                delete virtualDom.cache;
               }
 
               if (matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -15776,7 +15788,7 @@
                 tagName: 'image',
                 props: props
               };
-              this.virtualDom.children = [vd];
+              virtualDom.children = [vd];
               loadImg.cache = vd;
             }
           }
@@ -16311,8 +16323,12 @@
 
   function diff(elem, ovd, nvd) {
     var cns = elem.childNodes;
-    diffDefs(cns[0], ovd.defs, nvd.defs);
-    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    diffDefs(cns[0], ovd.defs, nvd.defs); // <REPAINT不会有lv属性，无需对比
+
+    if (!nvd.hasOwnProperty('lv')) {
+      diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+    }
+
     diffD2D(elem, ovd, nvd, true);
   }
 
@@ -16438,6 +16454,7 @@
   function diffX2X(elem, ovd, nvd) {
     var transform = nvd.transform,
         opacity = nvd.opacity,
+        visibility = nvd.visibility,
         mask = nvd.mask,
         clip = nvd.clip,
         filter = nvd.filter,
@@ -16452,10 +16469,18 @@
     }
 
     if (ovd.opacity !== opacity) {
-      if (opacity !== 1) {
+      if (opacity !== 1 && opacity !== undefined) {
         elem.setAttribute('opacity', opacity);
       } else {
         elem.removeAttribute('opacity');
+      }
+    }
+
+    if (ovd.visibility !== visibility) {
+      if (visibility === 'hidden') {
+        elem.setAttribute('visibility', visibility);
+      } else {
+        elem.removeAttribute('visibility');
       }
     }
 
@@ -16500,8 +16525,82 @@
     }
   }
 
+  function diffByLessLv(elem, ovd, nvd, lv) {
+    if (lv === o$1.NONE) {
+      return;
+    }
+
+    var transform = nvd.transform,
+        opacity = nvd.opacity,
+        visibility = nvd.visibility,
+        mask = nvd.mask,
+        clip = nvd.clip,
+        filter = nvd.filter;
+
+    if (o$1.contain(lv, o$1.TRANSFORM)) {
+      if (transform) {
+        elem.setAttribute('transform', transform);
+      } else {
+        elem.removeAttribute('transform');
+      }
+    }
+
+    if (o$1.contain(lv, o$1.OPACITY)) {
+      if (opacity !== 1) {
+        elem.setAttribute('opacity', opacity);
+      } else {
+        elem.removeAttribute('opacity');
+      }
+    }
+
+    if (o$1.contain(lv, o$1.VISIBILITY)) {
+      if (visibility === 'hidden') {
+        elem.setAttribute('visibility', visibility);
+      } else {
+        elem.removeAttribute('visibility');
+      }
+    }
+
+    if (o$1.contain(lv, o$1.FILTER)) {
+      if (filter) {
+        elem.setAttribute('filter', filter);
+      } else {
+        elem.removeAttribute('filter');
+      }
+    }
+
+    if (mask) {
+      elem.setAttribute('mask', mask);
+    } else {
+      elem.removeAttribute('mask');
+    }
+
+    if (ovd.clip) {
+      elem.removeAttribute('clip-path');
+    }
+
+    if (clip) {
+      elem.setAttribute('clip-path', clip);
+    } else {
+      elem.removeAttribute('clip-path');
+    }
+
+    if (ovd.mask) {
+      elem.removeAttribute('mask');
+    }
+  }
+
   function diffD2D(elem, ovd, nvd, root) {
-    if (!nvd.cache) {
+    // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+    if (nvd.cache) {
+      diffByLessLv(elem, ovd, nvd, nvd.lv);
+      return;
+    } // 无cache且<REPAINT的情况快速对比且继续对比children
+
+
+    if (nvd.hasOwnProperty('lv')) {
+      diffByLessLv(elem, ovd, nvd, nvd.lv);
+    } else {
       diffX2X(elem, ovd, nvd);
 
       if (!root) {
@@ -17348,6 +17447,7 @@
             nvd.defs = defs.value;
 
             if (_this3.dom.__root) {
+              console.log(nvd);
               diff(_this3.dom, _this3.dom.__vd, nvd);
             } else {
               _this3.dom.innerHTML = util.joinVirtualDom(nvd);

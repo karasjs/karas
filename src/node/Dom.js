@@ -1137,9 +1137,10 @@ class Dom extends Xom {
      * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
      * 目前处于递归的回溯阶段，即冒泡阶段，
      * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
+     * svg则不需要这些，vd上cache标明整体缓存无需递归diff
      */
-    let canCacheSelf = canCacheChildren && !this.effectiveAnimating;
-    if(renderMode === mode.CANVAS && canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
+    let canCacheSelf = renderMode === mode.CANVAS && canCacheChildren && !this.effectiveAnimating;
+    if(canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
       canCacheSelf = false;
     }
     // 需考虑缓存和滤镜
@@ -1156,7 +1157,7 @@ class Dom extends Xom {
         }
         // 非局部缓存的节点等待root调用
       }
-      // 无缓存时尝试使用webgl的blur，对象生成条件在Xom初始化做
+      // 无缓存时有offScreen对象，尝试使用webgl的blur，对象生成条件在Xom初始化做
       if(offScreen) {
         let { width, height } = root;
         let webgl = inject.getCacheWebgl(width, height);
@@ -1170,8 +1171,9 @@ class Dom extends Xom {
       // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
       this.__cacheTotal = {
         available: true,
-        release() { console.log(this);
+        release() {
           this.available = false;
+          delete virtualDom.cache;
         },
       };
       // img的children在子类特殊处理

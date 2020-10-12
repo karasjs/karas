@@ -116,10 +116,11 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, mask, clip, filter } = vd;
+    let { opacity, transform, visibility, mask, clip, filter } = vd;
     return '<g'
-      + (opacity !== 1 ? (' opacity="' + opacity + '"') : '')
+      + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
+      + (visibility === 'hidden' ? ' visibility="hidden"' : '')
       + (mask ? (' mask="' + mask + '"') : '')
       + (clip ? (' clip-path="' + clip + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')

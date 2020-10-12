@@ -5,8 +5,8 @@ const ENUM = {
   NONE: 0, //                                          0
   TRANSFORM: 1, //                                     1
   OPACITY: 2, //                                      10
-  VISIBILITY: 4, //                                  100
-  FILTER: 8, //                                     1000
+  FILTER: 4, //                                      100
+  VISIBILITY: 8, //                                 1000
   // TRANSFORM_OPACITY: 3, //                            11
   // TRANSFORM_VISIBILITY: 5, //                        101
   // TRANSFORM_FILTER: 9, //                           1001

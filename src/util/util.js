@@ -120,7 +120,7 @@ function joinVd(vd) {
     return '<g'
       + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
-      + (visibility === 'hidden' ? ' visibility="hidden"' : '')
+      + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
       + (clip ? (' clip-path="' + clip + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')

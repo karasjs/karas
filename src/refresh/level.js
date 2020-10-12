@@ -7,13 +7,6 @@ const ENUM = {
   OPACITY: 2, //                                      10
   FILTER: 4, //                                      100
   VISIBILITY: 8, //                                 1000
-  // TRANSFORM_OPACITY: 3, //                            11
-  // TRANSFORM_VISIBILITY: 5, //                        101
-  // TRANSFORM_FILTER: 9, //                           1001
-  // OPACITY_VISIBILITY: 6, //                          110
-  // OPACITY_FILTER: 10, //                            1010
-  // VISIBILITY_FILTER: 12, //                         1100
-  // TRANSFORM_OPACITY_FILTER: 7, //                    111
   REPAINT: 16, //                                   10000
 
   // 高位表示reflow

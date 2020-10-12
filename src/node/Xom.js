@@ -1402,7 +1402,7 @@ class Xom extends Node {
       }
     }
     else if(renderMode === mode.SVG) {
-      delete virtualDom.visibility;
+      virtualDom.visibility = visibility;
     }
     // 无内容或者无影响动画视为可缓存本身
     let canCache = !hasContent || !this.availableAnimating;

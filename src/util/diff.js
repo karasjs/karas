@@ -147,12 +147,7 @@ function diffX2X(elem, ovd, nvd) {
     }
   }
   if(ovd.visibility !== visibility) {
-    if(visibility === 'hidden') {
-      elem.setAttribute('visibility', visibility);
-    }
-    else {
-      elem.removeAttribute('visibility');
-    }
+    elem.setAttribute('visibility', visibility);
   }
   if(ovd.mask !== mask) {
     if(mask) {
@@ -216,12 +211,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
     }
   }
   if(level.contain(lv, level.VISIBILITY)) {
-    if(visibility === 'hidden') {
-      elem.setAttribute('visibility', visibility);
-    }
-    else {
-      elem.removeAttribute('visibility');
-    }
+    elem.setAttribute('visibility', visibility);
   }
   if(level.contain(lv, level.FILTER)) {
     if(filter) {

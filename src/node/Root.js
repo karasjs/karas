@@ -558,7 +558,7 @@ class Root extends Dom {
         hasUpdate = true;
         lv = level.REFLOW;
       }
-      // 无需任何改变处理的去除记录，如pointerEvents
+      // 无任何改变处理的去除记录，如pointerEvents、无效的left
       if(lv === level.NONE) {
         delete node.__uniqueUpdateId;
         totalList.splice(i, 1);
@@ -611,7 +611,6 @@ class Root extends Dom {
         let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
         if(need && parent.__cacheTotal) {
           parent.__cacheTotal.release();
-          // parent.__cacheTotal = null;
         }
         parent = parent.domParent;
       }
@@ -1017,15 +1016,13 @@ class Root extends Dom {
               while(next) {
                 if(next.currentStyle.position === 'absolute') {
                   if(next.currentStyle.top.unit === AUTO && next.currentStyle.bottom.unit === AUTO) {
-                    next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
+                    next.__offsetY(dy, true, level.REFLOW);
                     next.__cancelCache();
-                    // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                   }
                 }
                 else if(!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
-                  next.__offsetY(dy, true, level.OFFSET | level.REFLOW);
+                  next.__offsetY(dy, true, level.REFLOW);
                   next.__cancelCache();
-                  // next.__refreshLevel |= level.OFFSET | level.REFLOW;
                 }
                 next = next.next;
               }
@@ -1118,8 +1115,7 @@ class Root extends Dom {
             oldY = -b;
           }
           if(newY !== oldY) {
-            node.__offsetY(newY - oldY, false, level.OFFSET | level.REFLOW);
-            // node.__refreshLevel |= level.OFFSET | level.REFLOW;
+            node.__offsetY(newY - oldY, false, level.REFLOW);
           }
           let newX = 0;
           if(left.unit !== AUTO) {
@@ -1143,8 +1139,7 @@ class Root extends Dom {
             oldX = -r;
           }
           if(newX !== oldX) {
-            node.__offsetX(newX - oldX, false, level.OFFSET | level.REFLOW);
-            // node.__refreshLevel |= level.OFFSET | level.REFLOW;
+            node.__offsetX(newX - oldX, false, level.REFLOW);
           }
         }
       });

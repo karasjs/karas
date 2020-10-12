@@ -11,7 +11,6 @@ const ENUM = {
 
   // 高位表示reflow
   REFLOW: 32, // 整体需要重排                        10000
-  OFFSET: 64, // reflow中是因为offset引起的情况      100000
 };
 
 const TRANSFORMS = {

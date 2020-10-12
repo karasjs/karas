@@ -6,7 +6,7 @@ module.exports = {
     browser
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
-      .assert.value('input', '/br16/or112/mr16/ir16/n1r48/n2r48/rr48')
+      .assert.value('input', '/br32/or32/mr32/ir32/n1r32/n2r32/rr32')
       .end();
   }
 };

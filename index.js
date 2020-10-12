@@ -10138,9 +10138,7 @@
     REPAINT: 16,
     //                                   10000
     // 高位表示reflow
-    REFLOW: 32,
-    // 整体需要重排                        10000
-    OFFSET: 64 // reflow中是因为offset引起的情况      100000
+    REFLOW: 32 // 整体需要重排                        10000
 
   };
   var TRANSFORMS = {
@@ -11659,7 +11657,8 @@
           } else {
             virtualDom = this.__virtualDom = {
               bb: [],
-              children: []
+              children: [],
+              visibility: 'visible'
             };
           }
         } // canvas返回信息，canCache是指下次渲染是否可以使用这次的缓存
@@ -11710,7 +11709,7 @@
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var hasContent = this.__calCache(renderMode, ctx, defs, p, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+        var hasContent = this.__calCache(renderMode, ctx, defs, this.parent, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
 
         var backgroundColor = computedStyle.backgroundColor,
             borderTopColor = computedStyle.borderTopColor,
@@ -11770,10 +11769,10 @@
               canCache: !this.visibilityAnimating,
               hasContent: false
             };
-          } else if (renderMode === mode.SVG) {
-            virtualDom.visibility = 'hidden';
           }
-        } else if (renderMode === mode.SVG) {
+        }
+
+        if (renderMode === mode.SVG) {
           virtualDom.visibility = visibility;
         } // 无内容或者无影响动画视为可缓存本身
 
@@ -15127,6 +15126,12 @@
                 item.cache = true;
               }
             });
+          } else {
+            this.virtualDom.children.forEach(function (item) {
+              if (item.type === 'text') {
+                delete item.cache;
+              }
+            });
           }
         } // 向上回溯传值，要考虑children
 
@@ -17786,7 +17791,7 @@
           if (_focus !== undefined) {
             hasUpdate = true;
             lv = o$1.REFLOW;
-          } // 无需任何改变处理的去除记录，如pointerEvents
+          } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
           if (lv === o$1.NONE) {
@@ -17848,8 +17853,7 @@
             var need = parent !== node || parent.__refreshLevel >= o$1.REPAINT;
 
             if (need && parent.__cacheTotal) {
-              parent.__cacheTotal.release(); // parent.__cacheTotal = null;
-
+              parent.__cacheTotal.release();
             }
 
             parent = parent.domParent;
@@ -18338,16 +18342,14 @@
                     while (next) {
                       if (next.currentStyle.position === 'absolute') {
                         if (next.currentStyle.top.unit === AUTO$5 && next.currentStyle.bottom.unit === AUTO$5) {
-                          next.__offsetY(dy, true, o$1.OFFSET | o$1.REFLOW);
+                          next.__offsetY(dy, true, o$1.REFLOW);
 
-                          next.__cancelCache(); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
-
+                          next.__cancelCache();
                         }
                       } else if (!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
-                        next.__offsetY(dy, true, o$1.OFFSET | o$1.REFLOW);
+                        next.__offsetY(dy, true, o$1.REFLOW);
 
-                        next.__cancelCache(); // next.__refreshLevel |= level.OFFSET | level.REFLOW;
-
+                        next.__cancelCache();
                       }
 
                       next = next.next;
@@ -18461,8 +18463,7 @@
                   }
 
                   if (newY !== oldY) {
-                    node.__offsetY(newY - oldY, false, o$1.OFFSET | o$1.REFLOW); // node.__refreshLevel |= level.OFFSET | level.REFLOW;
-
+                    node.__offsetY(newY - oldY, false, o$1.REFLOW);
                   }
 
                   var newX = 0;
@@ -18488,8 +18489,7 @@
                   }
 
                   if (newX !== oldX) {
-                    node.__offsetX(newX - oldX, false, o$1.OFFSET | o$1.REFLOW); // node.__refreshLevel |= level.OFFSET | level.REFLOW;
-
+                    node.__offsetX(newX - oldX, false, o$1.REFLOW);
                   }
                 }
             });

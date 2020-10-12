@@ -1189,6 +1189,13 @@ class Dom extends Xom {
           }
         });
       }
+      else {
+        this.virtualDom.children.forEach(item => {
+          if(item.type === 'text') {
+            delete item.cache;
+          }
+        });
+      }
     }
     // 向上回溯传值，要考虑children
     if(res.canCache && !canCacheChildren) {

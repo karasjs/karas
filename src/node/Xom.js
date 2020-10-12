@@ -1293,6 +1293,7 @@ class Xom extends Node {
         virtualDom = this.__virtualDom = {
           bb: [],
           children: [],
+          visibility: 'visible',
         };
       }
     }
@@ -1336,7 +1337,7 @@ class Xom extends Node {
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = this.domParent;
     // 计算好cacheStyle的内容，以及位图缓存指数
-    let hasContent = this.__calCache(renderMode, ctx, defs, p,
+    let hasContent = this.__calCache(renderMode, ctx, defs, this.parent,
       innerWidth, innerHeight, outerWidth, outerHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       x1, x2, x3, x4, y1, y2, y3, y4
@@ -1397,11 +1398,8 @@ class Xom extends Node {
       if(renderMode === mode.CANVAS) {
         return { break: true, canCache: !this.visibilityAnimating, hasContent: false };
       }
-      else if(renderMode === mode.SVG) {
-        virtualDom.visibility = 'hidden';
-      }
     }
-    else if(renderMode === mode.SVG) {
+    if(renderMode === mode.SVG) {
       virtualDom.visibility = visibility;
     }
     // 无内容或者无影响动画视为可缓存本身

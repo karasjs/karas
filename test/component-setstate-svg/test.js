@@ -10,7 +10,7 @@ module.exports = {
       .moveToElement('svg', 10, 10)
       .mouseButtonClick(0)
       .pause(100)
-      .assert.value('input', '{"bb":[],"children":[{"bb":[],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",0],["y",14.484375],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","16px"]],"content":"456"}]}],"type":"dom"}],"type":"dom","defs":[],"cache":true}')
+      .assert.value('input', '{"bb":[],"children":[{"bb":[],"children":[{"type":"text","children":[{"type":"item","tagName":"text","props":[["x",0],["y",14.484375],["fill","rgba(0,0,0,1)"],["font-family","arial"],["font-weight",400],["font-style","normal"],["font-size","16px"]],"content":"456"}]}],"type":"dom"}],"type":"dom","defs":[],"lv":0}')
       .end();
   }
 };

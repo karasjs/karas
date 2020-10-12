@@ -508,7 +508,6 @@ class Root extends Dom {
           if(change.isGeom(tagName, k)) {
             if(!css.equalStyle(k, v, currentProps[k], node)) {
               hasUpdate = true;
-              this.renderMode === mode.SVG && node.__cancelCacheSvg();
               p = p || {};
               p[k] = style[k];
               lv |= level.REPAINT;
@@ -567,16 +566,12 @@ class Root extends Dom {
         len--;
         continue;
       }
-      this.renderMode === mode.SVG && node.__cancelCacheSvg();
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
       if(isRepaint) {
         // zIndex变化需清空svg缓存
         if(hasZ && renderMode === mode.SVG) {
-          node.__cancelCacheSvg(true);
-        }
-        else {
-          node.__cancelCacheSvg();
+          lv |= level.REPAINT;
         }
         node.__refreshLevel = level.getDetailRepaintByLv(style, lv);
       }

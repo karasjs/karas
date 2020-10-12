@@ -1023,7 +1023,6 @@ class Xom extends Node {
               loadBgi.width = data.width;
               loadBgi.height = data.height;
               let node = this;
-              node.__cancelCacheSvg();
               let root = node.root;
               root.delRefreshTask(loadBgi.cb);
               root.addRefreshTask(loadBgi.cb = {
@@ -1984,6 +1983,9 @@ class Xom extends Node {
   }
 
   __mergeBbox(matrix, isTop) {
+    if(!this.__cache) {
+      return;
+    }
     let bbox = this.__cache.bbox.slice(0);
     if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
       let [x0, y0, x1, y1] = bbox;
@@ -2118,34 +2120,12 @@ class Xom extends Node {
     }
   }
 
-  __cancelCacheSvg() {
-    this.__cacheSvg = false;
-  }
-
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
   __cancelCache() {
-    this.__cancelCacheSvg();
     this.__cacheStyle = {};
     if(this.__cache) {
       this.__cache.release();
-      // this.__cache = null;
     }
-    // if(this.__cacheTotal) {
-    //   this.__cacheTotal.release();
-    //   // this.__cacheTotal = null;
-    // }
-    // 向上清空孩子缓存，遇到已清空跳出
-    // if(recursion) {
-    //   let p = this.domParent;
-    //   let root = this.root;
-    //   while(p) {
-    //     p.__cancelCache();
-    //     p = p.domParent;
-    //     if(p === root) {
-    //       break;
-    //     }
-    //   }
-    // }
   }
 
   __getRg(renderMode, ctx, defs, gd) {

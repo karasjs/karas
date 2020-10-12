@@ -9273,8 +9273,6 @@
                 }
               }
             });
-
-            target.__cancelCacheSvg();
           }
         }; // 生成finish的任务事件
 
@@ -11415,9 +11413,6 @@
                   loadBgi.width = data.width;
                   loadBgi.height = data.height;
                   var node = _this3;
-
-                  node.__cancelCacheSvg();
-
                   var root = node.root;
                   root.delRefreshTask(loadBgi.cb);
                   root.addRefreshTask(loadBgi.cb = {
@@ -12463,6 +12458,10 @@
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop) {
+        if (!this.__cache) {
+          return;
+        }
+
         var bbox = this.__cache.bbox.slice(0);
 
         if (!isTop && !equalArr$2(matrix, [1, 0, 0, 1, 0, 0])) {
@@ -12635,40 +12634,16 @@
           });
           return 'url(#' + uuid + ')';
         }
-      }
-    }, {
-      key: "__cancelCacheSvg",
-      value: function __cancelCacheSvg() {
-        this.__cacheSvg = false;
       } // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
 
     }, {
       key: "__cancelCache",
       value: function __cancelCache() {
-        this.__cancelCacheSvg();
-
         this.__cacheStyle = {};
 
         if (this.__cache) {
-          this.__cache.release(); // this.__cache = null;
-
-        } // if(this.__cacheTotal) {
-        //   this.__cacheTotal.release();
-        //   // this.__cacheTotal = null;
-        // }
-        // 向上清空孩子缓存，遇到已清空跳出
-        // if(recursion) {
-        //   let p = this.domParent;
-        //   let root = this.root;
-        //   while(p) {
-        //     p.__cancelCache();
-        //     p = p.domParent;
-        //     if(p === root) {
-        //       break;
-        //     }
-        //   }
-        // }
-
+          this.__cache.release();
+        }
       }
     }, {
       key: "__getRg",
@@ -13777,7 +13752,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -13788,7 +13763,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', '__cancelCacheSvg', 'deepScan', '__cancelCache'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -15045,7 +15020,7 @@
 
 
         children.forEach(function (item) {
-          if (item.isMask || item.isClip) {
+          if (!(item instanceof Component$1) && (item.isMask || item.isClip)) {
             item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
           }
         }); // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
@@ -15055,19 +15030,13 @@
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          var target = item;
-
-          while (target instanceof Component$1) {
-            target = target.shadowRoot;
-          } // canvas开启缓存text先不渲染，节点先绘制到自身cache上
-
-
+          // canvas开启缓存text先不渲染，节点先绘制到自身cache上
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
-              item.__renderByMask(renderMode, target.__refreshLevel, ctx);
+              item.__renderByMask(renderMode, item.__refreshLevel, ctx);
             }
           } else {
-            var temp = item.__renderByMask(renderMode, target.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
+            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
 
 
             if (!canCacheChildren || !temp.canCache || item.availableAnimating) {
@@ -15093,7 +15062,8 @@
 
 
         if (renderMode === mode.CANVAS) {
-          // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
+          console.log(this.tagName, canCacheSelf); // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
+
           if (root.cache) {
             // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
             if (this === root) {
@@ -15173,7 +15143,12 @@
         var cache = this.__cache; // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
 
         if (mode === MODE.TOP) {
-          var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 第一次初始化进行bbox合集计算
+          var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 空内容
+
+
+          if (!bboxTotal) {
+            return;
+          } // 第一次初始化进行bbox合集计算
 
 
           if (!cacheTotal) {
@@ -15195,10 +15170,17 @@
                 _tx = _cacheTotal$coords[0],
                 _ty = _cacheTotal$coords[1];
 
-            var dx = cache.dx,
-                dy = cache.dy,
-                _x = cache.x1,
-                _y = cache.y1; // 首次生成
+            var _ref = cache || {
+              dx: 0,
+              dy: 0,
+              x1: this.sx,
+              y1: this.sy
+            },
+                dx = _ref.dx,
+                dy = _ref.dy,
+                _x = _ref.x1,
+                _y = _ref.y1; // 首次生成
+
 
             if (!cacheTotal.available) {
               cacheTotal.__available = true;
@@ -15274,8 +15256,13 @@
                     size = _cacheTotal2.size,
                     canvas = _cacheTotal2.canvas;
 
-                var _x2 = cache.x1,
-                    _y2 = cache.y1;
+                var _ref2 = cache || {
+                  x1: this.sx,
+                  y1: this.sy
+                },
+                    _x2 = _ref2.x1,
+                    _y2 = _ref2.y1;
+
                 ctx.drawImage(canvas, _tx2 - 1, _ty2 - 1, size, size, _x2, _y2, size, size);
                 return;
               } // 无内容就没有cache，继续看children
@@ -15309,15 +15296,27 @@
         // 这里以top的matrix状态为起点单位矩阵
         if (!isTop) {
           matrix = mx.multiply(this.matrix, matrix);
-        } // 一定有，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
+        } // 不一定有，空层内容，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
 
 
         var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
 
         this.zIndexChildren.forEach(function (item) {
-          if (!(item instanceof Text) && !(item instanceof Component$1) && !(item.shadowRoot instanceof Text)) {
-            var t = item.__mergeBbox(matrix);
+          var t;
 
+          if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
+            if (item instanceof Component$1) {
+              item = item.shadowRoot;
+            }
+
+            t = [item.sx, item.sy, item.sx + item.width, item.sy + item.height];
+          } else {
+            t = item.__mergeBbox(matrix);
+          }
+
+          if (!bbox) {
+            bbox = t;
+          } else {
             bbox[0] = Math.min(bbox[0], t[0]);
             bbox[1] = Math.max(bbox[1], t[1]);
             bbox[2] = Math.min(bbox[2], t[2]);
@@ -15410,19 +15409,6 @@
 
 
         return _get(_getPrototypeOf(Dom.prototype), "__emitEvent", this).call(this, e);
-      }
-    }, {
-      key: "__cancelCacheSvg",
-      value: function __cancelCacheSvg(recursion) {
-        _get(_getPrototypeOf(Dom.prototype), "__cancelCacheSvg", this).call(this);
-
-        if (recursion) {
-          this.children.forEach(function (child) {
-            if (child instanceof Xom || child instanceof Component$1 && child.shadowRoot instanceof Xom) {
-              child.__cancelCacheSvg(recursion);
-            }
-          });
-        }
       }
     }, {
       key: "__cancelCache",
@@ -17734,7 +17720,6 @@
               if (o.isGeom(tagName, k)) {
                 if (!css.equalStyle(k, v, currentProps[k], node)) {
                   hasUpdate = true;
-                  this.renderMode === mode.SVG && node.__cancelCacheSvg();
                   p = p || {};
                   p[k] = style[k];
                   lv |= o$1.REPAINT;
@@ -17802,18 +17787,15 @@
             i--;
             len--;
             continue;
-          }
+          } // reflow/repaint/measure相关的记录下来
 
-          this.renderMode === mode.SVG && node.__cancelCacheSvg(); // reflow/repaint/measure相关的记录下来
 
           var isRepaint = o$1.isRepaint(lv);
 
           if (isRepaint) {
             // zIndex变化需清空svg缓存
             if (hasZ && renderMode === mode.SVG) {
-              node.__cancelCacheSvg(true);
-            } else {
-              node.__cancelCacheSvg();
+              lv |= o$1.REPAINT;
             }
 
             node.__refreshLevel = o$1.getDetailRepaintByLv(style, lv);
@@ -18890,9 +18872,6 @@
       value: function __renderAsMask(renderMode, lv, ctx, defs, isClip) {
         // mask渲染在canvas等被遮罩层调用，svg生成maskId
         if (renderMode === mode.SVG) {
-          // 强制不缓存，防止引用mask的matrix变化不生效
-          this.__cancelCacheSvg();
-
           this.render(renderMode, lv, ctx, defs);
           var vd = this.virtualDom;
 
@@ -18900,7 +18879,10 @@
             vd.isClip = true;
           } else {
             vd.isMask = true;
-          }
+          } // 强制不缓存，防止引用mask的matrix变化不生效
+
+
+          delete vd.lv;
         }
       }
     }, {

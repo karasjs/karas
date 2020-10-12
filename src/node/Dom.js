@@ -1106,7 +1106,7 @@ class Dom extends Xom {
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
     children.forEach(item => {
-      if(item.isMask || item.isClip) {
+      if(!(item instanceof Component) && (item.isMask || item.isClip)) {
         item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
       }
     });
@@ -1116,18 +1116,14 @@ class Dom extends Xom {
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     zIndexChildren.forEach(item => {
-      let target = item;
-      while(target instanceof Component) {
-        target = target.shadowRoot;
-      }
       // canvas开启缓存text先不渲染，节点先绘制到自身cache上
       if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
         if(draw) {
-          item.__renderByMask(renderMode, target.__refreshLevel, ctx);
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx);
         }
       }
       else {
-        let temp = item.__renderByMask(renderMode, target.__refreshLevel, ctx, defs);
+        let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
         // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
         if(!canCacheChildren || !temp.canCache || item.availableAnimating) {
           canCacheChildren = false;
@@ -1148,7 +1144,7 @@ class Dom extends Xom {
       canCacheSelf = false;
     }
     // 需考虑缓存和滤镜
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS) { console.log(this.tagName, canCacheSelf)
       // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
       if(root.cache) {
         // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
@@ -1220,6 +1216,10 @@ class Dom extends Xom {
     // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
     if(mode === MODE.TOP) {
       let bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
+      // 空内容
+      if(!bboxTotal) {
+        return;
+      }
       // 第一次初始化进行bbox合集计算
       if(!cacheTotal) {
         cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
@@ -1235,7 +1235,7 @@ class Dom extends Xom {
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty] } = cacheTotal;
-        let { dx, dy, x1, y1 } = cache;
+        let { dx, dy, x1, y1 } = cache || { dx: 0, dy: 0, x1: this.sx, y1: this.sy };
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
@@ -1301,7 +1301,7 @@ class Dom extends Xom {
         ctx.globalAlpha = __opacity;
         ctx.setTransform(...matrixEvent);
         let { coords: [tx, ty], size, canvas } = cacheTotal;
-        let { x1, y1 } = cache;
+        let { x1, y1 } = cache || { x1: this.sx, y1: this.sy };
         ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
         return;
       }
@@ -1329,11 +1329,23 @@ class Dom extends Xom {
     if(!isTop) {
       matrix = mx.multiply(this.matrix, matrix);
     }
-    // 一定有，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
+    // 不一定有，空层内容，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
     let bbox = super.__mergeBbox(matrix, isTop);
     this.zIndexChildren.forEach(item => {
-      if(!(item instanceof Text) && !(item instanceof Component) && !(item.shadowRoot instanceof Text)) {
-        let t = item.__mergeBbox(matrix);
+      let t;
+      if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+        if(item instanceof Component) {
+          item = item.shadowRoot;
+        }
+        t = [item.sx, item.sy, item.sx + item.width, item.sy + item.height];
+      }
+      else {
+        t = item.__mergeBbox(matrix);
+      }
+      if(!bbox) {
+        bbox = t;
+      }
+      else {
         bbox[0] = Math.min(bbox[0], t[0]);
         bbox[1] = Math.max(bbox[1], t[1]);
         bbox[2] = Math.min(bbox[2], t[2]);
@@ -1408,17 +1420,6 @@ class Dom extends Xom {
     }
     // child不触发再看自己
     return super.__emitEvent(e);
-  }
-
-  __cancelCacheSvg(recursion) {
-    super.__cancelCacheSvg();
-    if(recursion) {
-      this.children.forEach(child => {
-        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-          child.__cancelCacheSvg(recursion);
-        }
-      });
-    }
   }
 
   __cancelCache(recursion) {

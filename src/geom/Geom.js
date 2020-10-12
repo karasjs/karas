@@ -250,8 +250,6 @@ class Geom extends Xom {
   __renderAsMask(renderMode, lv, ctx, defs, isClip) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
-      // 强制不缓存，防止引用mask的matrix变化不生效
-      this.__cancelCacheSvg();
       this.render(renderMode, lv, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {
@@ -260,6 +258,8 @@ class Geom extends Xom {
       else {
         vd.isMask = true;
       }
+      // 强制不缓存，防止引用mask的matrix变化不生效
+      delete vd.lv;
     }
   }
 

@@ -258,6 +258,9 @@ Object.keys(change.GEOM).concat([
   'effectiveAnimating',
   'displayAnimating',
   'visibilityAnimating',
+  '__refreshLevel',
+  '__cacheTotal',
+  '__cache',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {
@@ -285,9 +288,9 @@ Object.keys(change.GEOM).concat([
   'removeAnimate',
   'clearAnimate',
   'updateStyle',
-  '__cancelCacheSvg',
   'deepScan',
   '__cancelCache',
+  '__applyCache',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

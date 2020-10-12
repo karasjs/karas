@@ -1129,7 +1129,6 @@ class Animation extends Event {
             }
           }
         });
-        target.__cancelCacheSvg();
       }
     };
     // 生成finish的任务事件

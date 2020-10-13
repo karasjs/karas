@@ -1280,7 +1280,10 @@ class Dom extends Xom {
       }
       // 超尺寸无法进行，降级渲染
       else {
-        super.__applyCache(renderMode, lv, ctx, tx, ty);
+        let { sx, sy, computedStyle } = this;
+        tx = sx + computedStyle.marginLeft;
+        ty = sy + computedStyle.marginTop;
+        super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
         zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
             item.__renderByMask(renderMode, item.__refreshLevel, ctx);
@@ -1355,7 +1358,7 @@ class Dom extends Xom {
         let { sx, sy, matrixEvent, __opacity } = this;
         ctx.setTransform(...matrixEvent);
         ctx.globalAlpha = __opacity;
-        super.__applyCache(renderMode, lv, ctx, sx - ox, sy - oy);
+        super.__applyCache(renderMode, lv, ctx, sx - ox - 1, sy - oy - 1);
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {

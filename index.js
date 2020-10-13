@@ -15241,7 +15241,13 @@
             }
           } // 超尺寸无法进行，降级渲染
           else {
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx, ty);
+              var _sx = this.sx,
+                  _sy = this.sy,
+                  _computedStyle = this.computedStyle;
+              tx = _sx + _computedStyle.marginLeft;
+              ty = _sy + _computedStyle.marginTop;
+
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
@@ -15279,15 +15285,15 @@
 
             var _dx, _dy, ox, oy;
 
-            var _sx = this.sx,
-                _sy = this.sy;
+            var _sx2 = this.sx,
+                _sy2 = this.sy;
 
             if (cache) {
               _dx = cache.dx;
               _dy = cache.dy;
               var _coords = cache.coords;
-              ox = _sx - x1;
-              oy = _sy - y1;
+              ox = _sx2 - x1;
+              oy = _sy2 - y1;
               _dx += tx - _coords[0] + ox;
               _dy += ty - _coords[1] + oy;
             } else {
@@ -15337,14 +15343,14 @@
               if (cache) {
                 var _ox = cache.ox,
                     _oy = cache.oy;
-                var _sx2 = this.sx,
-                    _sy2 = this.sy,
+                var _sx3 = this.sx,
+                    _sy3 = this.sy,
                     _matrixEvent = this.matrixEvent,
                     _opacity = this.__opacity;
                 ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
                 ctx.globalAlpha = _opacity;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox, _sy2 - _oy);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx3 - _ox - 1, _sy3 - _oy - 1);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -21120,7 +21126,9 @@
 
   var refresh = {
     level: o$1,
-    change: o
+    change: o,
+    Page: Page,
+    Cache: Cache
   };
 
   var version = "0.38.9";

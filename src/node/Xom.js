@@ -1409,6 +1409,9 @@ class Xom extends Node {
     if(root.cache) {
       if(renderMode === mode.CANVAS) {
         if(!hasContent) {
+          if(cache && cache.available) {
+            cache.release();
+          }
           return { break: true, canCache, hasContent };
         }
         // 有缓存情况快速使用位图缓存不再继续

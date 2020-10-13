@@ -1141,7 +1141,7 @@ class Dom extends Xom {
      * svg则不需要这些，vd上cache标明整体缓存无需递归diff
      */
     let canCacheSelf = renderMode === mode.CANVAS && canCacheChildren && !this.effectiveAnimating;
-    if(canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
+    if(canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && !this.isShadowRoot) {
       canCacheSelf = false;
     }
     // 需考虑缓存和滤镜
@@ -1221,6 +1221,7 @@ class Dom extends Xom {
   __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
     let cacheTotal = this.__cacheTotal;
     let cache = this.__cache;
+    let zIndexChildren = this.zIndexChildren;
     // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
     if(mode === MODE.TOP) {
       let bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
@@ -1236,14 +1237,10 @@ class Dom extends Xom {
       else if(lv >= level.REPAINT) {
         cacheTotal.reset(bboxTotal);
       }
-      // 写回主画布前设置
-      let { __opacity, matrixEvent } = this;
-      ctx.globalAlpha = __opacity;
-      ctx.setTransform(...matrixEvent);
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty] } = cacheTotal;
-        let { dx, dy, x1, y1 } = cache || { dx: 0, dy: 0, x1: this.sx, y1: this.sy };
+        let { dx, dy, x1, y1, coords } = cache || { dx: 0, dy: 0, x1: this.sx, y1: this.sy };
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
@@ -1251,8 +1248,12 @@ class Dom extends Xom {
           cacheTotal.y1 = y1;
           dx += tx;
           dy += ty;
-          super.__applyCache(renderMode, lv, cacheTotal.ctx, tx, ty);
-          this.zIndexChildren.forEach(item => {
+          dx -= coords[0];
+          dy -= coords[1];
+          cacheTotal.dx = dx;
+          cacheTotal.dy = dy;
+          super.__applyCache(renderMode, lv, cacheTotal.ctx, tx - 1, ty - 1);
+          zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
             }
@@ -1265,7 +1266,7 @@ class Dom extends Xom {
       // 超尺寸无法进行，降级渲染
       else {
         super.__applyCache(renderMode, lv, ctx, tx, ty);
-        this.zIndexChildren.forEach(item => {
+        zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
             item.__renderByMask(renderMode, item.__refreshLevel, ctx);
           }
@@ -1277,11 +1278,21 @@ class Dom extends Xom {
     }
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === MODE.CHILD) {
-      let { dx, dy, coords } = cache;
       // 被当做总缓存下的子元素也有总缓存时需释放清空
       if(cacheTotal && cacheTotal.available) {
-        cacheTotal.release();
+        let { coords: [x, y], canvas, size } = cacheTotal;
+        // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+        matrix = mx.multiply(matrix, this.matrix);
+        opacity *= this.computedStyle.opacity;
+        ctx.setTransform(...matrix);
+        ctx.globalAlpha = opacity;
+        let parent = this.domParent;
+        let dx = this.sx - parent.sx;
+        let dy = this.sy - parent.sy;
+        ctx.drawImage(canvas, x, y, size, size, tx + dx, ty + dy, size, size);
+        return;
       }
+      let { dx, dy, coords } = cache;
       let ox = this.sx - x1;
       let oy = this.sy - y1;
       dx += tx - coords[0] + ox;
@@ -1291,8 +1302,8 @@ class Dom extends Xom {
       opacity *= this.computedStyle.opacity;
       ctx.setTransform(...matrix);
       ctx.globalAlpha = opacity;
-      super.__applyCache(renderMode, lv, ctx,tx + ox, ty + oy);
-      this.zIndexChildren.forEach(item => {
+      super.__applyCache(renderMode, lv, ctx, tx + ox - 1, ty + oy - 1);
+      zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
           item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx, dy);
         }
@@ -1310,7 +1321,7 @@ class Dom extends Xom {
         ctx.setTransform(...matrixEvent);
         let { coords: [tx, ty], size, canvas } = cacheTotal;
         let { x1, y1 } = cache || { x1: this.sx, y1: this.sy };
-        ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1, y1, size, size);
+        ctx.drawImage(canvas, tx, ty, size, size, x1, y1, size, size);
         return;
       }
       // 无内容就没有cache，继续看children
@@ -1321,7 +1332,7 @@ class Dom extends Xom {
         ctx.globalAlpha = __opacity;
         super.__applyCache(renderMode, lv, ctx, sx - ox, sy - oy);
       }
-      this.zIndexChildren.forEach(item => {
+      zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
           item.__renderByMask(renderMode, item.__refreshLevel, ctx);
         }
@@ -1355,8 +1366,8 @@ class Dom extends Xom {
       }
       else {
         bbox[0] = Math.min(bbox[0], t[0]);
-        bbox[1] = Math.max(bbox[1], t[1]);
-        bbox[2] = Math.min(bbox[2], t[2]);
+        bbox[1] = Math.min(bbox[1], t[1]);
+        bbox[2] = Math.max(bbox[2], t[2]);
         bbox[3] = Math.max(bbox[3], t[3]);
       }
     });

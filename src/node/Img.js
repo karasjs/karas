@@ -337,7 +337,7 @@ class Img extends Dom {
                 root.__addUpdate({
                   node: self,
                   focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
-                  img: true, // 特殊标识强制布局即便没有style变化 TODO
+                  img: true, // 特殊标识强制布局即便没有style变化
                 });
               },
             });

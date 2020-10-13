@@ -1,14 +1,14 @@
 import inject from '../util/inject';
 
-let SIZE   = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-let NUMBER = [8,  8,  8,  8,   8,   8,   8,    4,    2,    1];
+let SIZE   = [8,    16,  32, 64, 128, 256, 512, 1024, 2048, 4096];
+let NUMBER = [512, 256, 128, 64,  32,  16,   8,    4,    2,    1];
 let MAX = 4096;
 const HASH = {};
 
 class Page {
   constructor(size, number) {
     this.__size = size;
-    this.__number = number; // 256及以下是8，以上递减直到1
+    this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
     let offScreen = this.__canvas = inject.getCacheCanvas(size, size);
@@ -96,7 +96,6 @@ class Page {
         break;
       }
     }
-    // console.error(size, s, n);
     let list = HASH[s] = HASH[s] || [];
     // 从hash列表中尝试取可用的一页，找不到就生成新的页
     let page;
@@ -133,12 +132,17 @@ class Page {
       return;
     }
     MAX = v;
-    n = 8;
+    n = 1;
     SIZE = [];
-    while(n <= v) {
-      SIZE.push(n);
-      NUMBER.push(Math.min(8, n / 8));
-      n *= 2;
+    NUMBER = [];
+    while(true) {
+      SIZE.unshift(v);
+      NUMBER.unshift(n);
+      v >>= 1;
+      n <<= 1;
+      if(v < 8) {
+        break;
+      }
     }
   }
 

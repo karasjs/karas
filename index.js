@@ -10212,7 +10212,7 @@
   o$1.TRANSFORMS = TRANSFORMS;
 
   var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
-  var NUMBER$3 = [8, 8, 8, 8, 8, 8, 8, 4, 2, 1];
+  var NUMBER$3 = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1];
   var MAX = 4096;
   var HASH = {};
 
@@ -10221,8 +10221,7 @@
       _classCallCheck(this, Page);
 
       this.__size = size;
-      this.__number = number; // 256及以下是8，以上递减直到1
-
+      this.__number = number;
       this.__free = this.__total = number * number;
       size *= number;
       var offScreen = this.__canvas = inject.getCacheCanvas(size, size);
@@ -10332,8 +10331,7 @@
           if (SIZE[i] >= size) {
             break;
           }
-        } // console.error(size, s, n);
-
+        }
 
         var list = HASH[s] = HASH[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
 
@@ -10385,13 +10383,19 @@
         }
 
         MAX = v;
-        n = 8;
+        n = 1;
         SIZE = [];
+        NUMBER$3 = [];
 
-        while (n <= v) {
-          SIZE.push(n);
-          NUMBER$3.push(Math.min(8, n / 8));
-          n *= 2;
+        while (true) {
+          SIZE.unshift(v);
+          NUMBER$3.unshift(n);
+          v >>= 1;
+          n <<= 1;
+
+          if (v < 8) {
+            break;
+          }
         }
       },
       get: function get() {
@@ -11786,6 +11790,10 @@
         if (root.cache) {
           if (renderMode === mode.CANVAS) {
             if (!hasContent) {
+              if (cache && cache.available) {
+                cache.release();
+              }
+
               return {
                 "break": true,
                 canCache: canCache,
@@ -15072,7 +15080,7 @@
 
         var canCacheSelf = renderMode === mode.CANVAS && canCacheChildren && !this.effectiveAnimating;
 
-        if (canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && this.isShadowRoot) {
+        if (canCacheSelf && ['relative', 'absolute'].indexOf(position) === -1 && !this.isShadowRoot) {
           canCacheSelf = false;
         } // 需考虑缓存和滤镜
 
@@ -15161,7 +15169,8 @@
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
         var cacheTotal = this.__cacheTotal;
-        var cache = this.__cache; // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
+        var cache = this.__cache;
+        var zIndexChildren = this.zIndexChildren; // 能进入局部根节点的要么是第一次初始化，要么是后续lv<REPAINT的
 
         if (mode === MODE.TOP) {
           var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 空内容
@@ -15177,13 +15186,8 @@
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容
           else if (lv >= o$1.REPAINT) {
               cacheTotal.reset(bboxTotal);
-            } // 写回主画布前设置
+            } // 缓存可用时各children依次执行进行离屏汇总
 
-
-          var __opacity = this.__opacity,
-              matrixEvent = this.matrixEvent;
-          ctx.globalAlpha = __opacity;
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 缓存可用时各children依次执行进行离屏汇总
 
           if (cacheTotal && cacheTotal.enabled) {
             var _cacheTotal = cacheTotal,
@@ -15200,7 +15204,8 @@
                 dx = _ref.dx,
                 dy = _ref.dy,
                 _x = _ref.x1,
-                _y = _ref.y1; // 首次生成
+                _y = _ref.y1,
+                coords = _ref.coords; // 首次生成
 
 
             if (!cacheTotal.available) {
@@ -15209,10 +15214,14 @@
               cacheTotal.y1 = _y;
               dx += _tx;
               dy += _ty;
+              dx -= coords[0];
+              dy -= coords[1];
+              cacheTotal.dx = dx;
+              cacheTotal.dy = dy;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, _tx, _ty);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, _tx - 1, _ty - 1);
 
-              this.zIndexChildren.forEach(function (item) {
+              zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
                 } else {
@@ -15224,7 +15233,7 @@
           else {
               _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx, ty);
 
-              this.zIndexChildren.forEach(function (item) {
+              zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                 } else {
@@ -15234,27 +15243,46 @@
             }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
         else if (mode === MODE.CHILD) {
-            var _dx = cache.dx,
-                _dy = cache.dy,
-                coords = cache.coords; // 被当做总缓存下的子元素也有总缓存时需释放清空
-
+            // 被当做总缓存下的子元素也有总缓存时需释放清空
             if (cacheTotal && cacheTotal.available) {
-              cacheTotal.release();
+              var _cacheTotal2 = cacheTotal,
+                  _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
+                  x = _cacheTotal2$coords[0],
+                  y = _cacheTotal2$coords[1],
+                  canvas = _cacheTotal2.canvas,
+                  size = _cacheTotal2.size; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+
+
+              matrix = mx.multiply(matrix, this.matrix);
+              opacity *= this.computedStyle.opacity;
+              ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+              ctx.globalAlpha = opacity;
+              var parent = this.domParent;
+
+              var _dx2 = this.sx - parent.sx;
+
+              var _dy2 = this.sy - parent.sy;
+
+              ctx.drawImage(canvas, x, y, size, size, tx + _dx2, ty + _dy2, size, size);
+              return;
             }
 
+            var _dx = cache.dx,
+                _dy = cache.dy,
+                _coords = cache.coords;
             var ox = this.sx - x1;
             var oy = this.sy - y1;
-            _dx += tx - coords[0] + ox;
-            _dy += ty - coords[1] + oy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+            _dx += tx - _coords[0] + ox;
+            _dy += ty - _coords[1] + oy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
 
             matrix = mx.multiply(matrix, this.matrix);
             opacity *= this.computedStyle.opacity;
             ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
             ctx.globalAlpha = opacity;
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx + ox, ty + oy);
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx + ox - 1, ty + oy - 1);
 
-            this.zIndexChildren.forEach(function (item) {
+            zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                 item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx, _dy);
               } else {
@@ -15265,17 +15293,17 @@
           else if (mode === MODE.ROOT) {
               if (cacheTotal && cacheTotal.available) {
                 // 写回主画布前设置
-                var _opacity = this.__opacity,
-                    _matrixEvent = this.matrixEvent;
-                ctx.globalAlpha = _opacity;
-                ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
+                var __opacity = this.__opacity,
+                    matrixEvent = this.matrixEvent;
+                ctx.globalAlpha = __opacity;
+                ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent));
 
-                var _cacheTotal2 = cacheTotal,
-                    _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
-                    _tx2 = _cacheTotal2$coords[0],
-                    _ty2 = _cacheTotal2$coords[1],
-                    size = _cacheTotal2.size,
-                    canvas = _cacheTotal2.canvas;
+                var _cacheTotal3 = cacheTotal,
+                    _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
+                    _tx2 = _cacheTotal3$coords[0],
+                    _ty2 = _cacheTotal3$coords[1],
+                    _size = _cacheTotal3.size,
+                    _canvas = _cacheTotal3.canvas;
 
                 var _ref2 = cache || {
                   x1: this.sx,
@@ -15284,7 +15312,7 @@
                     _x2 = _ref2.x1,
                     _y2 = _ref2.y1;
 
-                ctx.drawImage(canvas, _tx2 - 1, _ty2 - 1, size, size, _x2, _y2, size, size);
+                ctx.drawImage(_canvas, _tx2, _ty2, _size, _size, _x2, _y2, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -15294,15 +15322,15 @@
                     _oy = cache.oy;
                 var sx = this.sx,
                     sy = this.sy,
-                    _matrixEvent2 = this.matrixEvent,
-                    _opacity2 = this.__opacity;
-                ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent2));
-                ctx.globalAlpha = _opacity2;
+                    _matrixEvent = this.matrixEvent,
+                    _opacity = this.__opacity;
+                ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
+                ctx.globalAlpha = _opacity;
 
                 _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, sx - _ox, sy - _oy);
               }
 
-              this.zIndexChildren.forEach(function (item) {
+              zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, item.__refreshLevel, ctx);
                 } else {
@@ -15339,8 +15367,8 @@
             bbox = t;
           } else {
             bbox[0] = Math.min(bbox[0], t[0]);
-            bbox[1] = Math.max(bbox[1], t[1]);
-            bbox[2] = Math.min(bbox[2], t[2]);
+            bbox[1] = Math.min(bbox[1], t[1]);
+            bbox[2] = Math.max(bbox[2], t[2]);
             bbox[3] = Math.max(bbox[3], t[3]);
           }
         });
@@ -15840,7 +15868,7 @@
                       node: self,
                       focus: o$1.REFLOW,
                       // 没有样式变化但内容尺寸发生了变化强制执行
-                      img: true // 特殊标识强制布局即便没有style变化 TODO
+                      img: true // 特殊标识强制布局即便没有style变化
 
                     });
                   }

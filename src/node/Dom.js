@@ -1240,7 +1240,22 @@ class Dom extends Xom {
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
         let { coords: [tx, ty] } = cacheTotal;
-        let { dx, dy, x1, y1, coords } = cache || { dx: 0, dy: 0, x1: this.sx, y1: this.sy };
+        let dx, dy, x1, y1, coords;
+        if(cache) {
+          dx = cache.dx;
+          dy = cache.dy;
+          x1 = cache.x1;
+          y1 = cache.y1;
+          coords = cache.coords;
+        }
+        else {
+          let { sx, sy, computedStyle } = this;
+          x1 = sx + computedStyle.marginLeft;
+          y1 = sy + computedStyle.marginTop;
+          dx = tx - x1;
+          dy = ty - y1;
+          coords = [tx, ty];
+        }
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
@@ -1292,11 +1307,21 @@ class Dom extends Xom {
         ctx.drawImage(canvas, x, y, size, size, tx + dx, ty + dy, size, size);
         return;
       }
-      let { dx, dy, coords } = cache;
-      let ox = this.sx - x1;
-      let oy = this.sy - y1;
-      dx += tx - coords[0] + ox;
-      dy += ty - coords[1] + oy;
+      let dx, dy, ox, oy, coords;
+      let { sx, sy } = this;
+      if(cache) {
+        dx = cache.dx;
+        dy = cache.dy;
+        coords = cache.coords;
+        ox = sx - x1;
+        oy = sy - y1;
+        dx += tx - coords[0] + ox;
+        dy += ty - coords[1] + oy;
+      }
+      else {
+        dx = tx - x1;
+        dy = ty - y1;
+      }
       // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
       matrix = mx.multiply(matrix, this.matrix);
       opacity *= this.computedStyle.opacity;

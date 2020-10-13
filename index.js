@@ -15198,17 +15198,24 @@
                 _tx = _cacheTotal$coords[0],
                 _ty = _cacheTotal$coords[1];
 
-            var _ref = cache || {
-              dx: 0,
-              dy: 0,
-              x1: this.sx,
-              y1: this.sy
-            },
-                dx = _ref.dx,
-                dy = _ref.dy,
-                _x = _ref.x1,
-                _y = _ref.y1,
-                coords = _ref.coords; // 首次生成
+            var dx, dy, _x, _y, coords;
+
+            if (cache) {
+              dx = cache.dx;
+              dy = cache.dy;
+              _x = cache.x1;
+              _y = cache.y1;
+              coords = cache.coords;
+            } else {
+              var sx = this.sx,
+                  sy = this.sy,
+                  computedStyle = this.computedStyle;
+              _x = sx + computedStyle.marginLeft;
+              _y = sy + computedStyle.marginTop;
+              dx = _tx - _x;
+              dy = _ty - _y;
+              coords = [_tx, _ty];
+            } // 首次生成
 
 
             if (!cacheTotal.available) {
@@ -15270,13 +15277,24 @@
               return;
             }
 
-            var _dx = cache.dx,
-                _dy = cache.dy,
-                _coords = cache.coords;
-            var ox = this.sx - x1;
-            var oy = this.sy - y1;
-            _dx += tx - _coords[0] + ox;
-            _dy += ty - _coords[1] + oy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+            var _dx, _dy, ox, oy, _coords;
+
+            var _sx = this.sx,
+                _sy = this.sy;
+
+            if (cache) {
+              _dx = cache.dx;
+              _dy = cache.dy;
+              _coords = cache.coords;
+              ox = _sx - x1;
+              oy = _sy - y1;
+              _dx += tx - _coords[0] + ox;
+              _dy += ty - _coords[1] + oy;
+            } else {
+              _dx = tx - x1;
+              _dy = ty - y1;
+            } // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+
 
             matrix = mx.multiply(matrix, this.matrix);
             opacity *= this.computedStyle.opacity;
@@ -15318,14 +15336,14 @@
               if (cache) {
                 var _ox = cache.ox,
                     _oy = cache.oy;
-                var sx = this.sx,
-                    sy = this.sy,
+                var _sx2 = this.sx,
+                    _sy2 = this.sy,
                     _matrixEvent = this.matrixEvent,
                     _opacity = this.__opacity;
                 ctx.setTransform.apply(ctx, _toConsumableArray(_matrixEvent));
                 ctx.globalAlpha = _opacity;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, sx - _ox, sy - _oy);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox, _sy2 - _oy);
               }
 
               zIndexChildren.forEach(function (item) {

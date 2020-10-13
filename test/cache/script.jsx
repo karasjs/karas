@@ -1,6 +1,7 @@
 let json = {
   tagName: 'canvas',
   props: {
+    cache: true,
     width: 360,
     height: 360,
   },
@@ -75,13 +76,3 @@ let json = {
 };
 
 karas.parse(json, '#test');
-
-let d1 = document.querySelector('canvas').toDataURL();
-
-json.props.cache = true;
-karas.parse(json, '#test');
-
-let d2 = document.querySelector('canvas').toDataURL();
-
-let input = document.querySelector('input');
-input.value = (d1 + ' ' + d2);

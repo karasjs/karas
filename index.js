@@ -14628,7 +14628,7 @@
         var lineGroup = new LineGroup(x, y);
         flowChildren.forEach(function (item) {
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
-            if (item.computedStyle.display !== 'inline') {
+            if (item.currentStyle.display !== 'inline') {
               item.currentStyle.display = item.computedStyle.display = 'inline';
               console.error('Inline can not contain block/flex');
             } // inline开头，不用考虑是否放得下直接放

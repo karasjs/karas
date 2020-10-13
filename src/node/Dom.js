@@ -737,7 +737,7 @@ class Dom extends Xom {
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        if(item.computedStyle.display !== 'inline') {
+        if(item.currentStyle.display !== 'inline') {
           item.currentStyle.display = item.computedStyle.display = 'inline';
           console.error('Inline can not contain block/flex');
         }

@@ -1,7 +1,7 @@
 import inject from '../util/inject';
 
-let SIZE   = [8,    16,  32, 64, 128, 256, 512, 1024, 2048, 4096];
-let NUMBER = [512, 256, 128, 64,  32,  16,   8,    4,    2,    1];
+let SIZE   = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+let NUMBER = [8,  8,  8,  8,   8,   8,   8,    4,    2,    1];
 let MAX = 4096;
 const HASH = {};
 
@@ -139,7 +139,10 @@ class Page {
       SIZE.unshift(v);
       NUMBER.unshift(n);
       v >>= 1;
-      n <<= 1;
+      // canvas太大初始化会卡，这里限制8个
+      if(n < 8) {
+        n <<= 1;
+      }
       if(v < 8) {
         break;
       }

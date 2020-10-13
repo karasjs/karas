@@ -15300,19 +15300,14 @@
 
                 var _cacheTotal3 = cacheTotal,
                     _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _tx2 = _cacheTotal3$coords[0],
-                    _ty2 = _cacheTotal3$coords[1],
+                    _x3 = _cacheTotal3$coords[0],
+                    _y3 = _cacheTotal3$coords[1],
                     _size = _cacheTotal3.size,
-                    _canvas = _cacheTotal3.canvas;
+                    _canvas = _cacheTotal3.canvas,
+                    _x2 = _cacheTotal3.x1,
+                    _y2 = _cacheTotal3.y1;
 
-                var _ref2 = cache || {
-                  x1: this.sx,
-                  y1: this.sy
-                },
-                    _x2 = _ref2.x1,
-                    _y2 = _ref2.y1;
-
-                ctx.drawImage(_canvas, _tx2, _ty2, _size, _size, _x2, _y2, _size, _size);
+                ctx.drawImage(_canvas, _x3 - 1, _y3 - 1, _size, _size, _x2 - 1, _y2 - 1, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 

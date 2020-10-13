@@ -1319,9 +1319,8 @@ class Dom extends Xom {
         let { __opacity, matrixEvent } = this;
         ctx.globalAlpha = __opacity;
         ctx.setTransform(...matrixEvent);
-        let { coords: [tx, ty], size, canvas } = cacheTotal;
-        let { x1, y1 } = cache || { x1: this.sx, y1: this.sy };
-        ctx.drawImage(canvas, tx, ty, size, size, x1, y1, size, size);
+        let { coords: [x, y], size, canvas, x1, y1 } = cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1, y1 - 1, size, size);
         return;
       }
       // 无内容就没有cache，继续看children

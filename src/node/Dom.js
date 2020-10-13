@@ -1304,21 +1304,22 @@ class Dom extends Xom {
         let parent = this.domParent;
         let dx = this.sx - parent.sx;
         let dy = this.sy - parent.sy;
-        ctx.drawImage(canvas, x, y, size, size, tx + dx, ty + dy, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, tx + dx - 1, ty + dy - 1, size, size);
         return;
       }
-      let dx, dy, ox, oy, coords;
+      let dx, dy, ox, oy;
       let { sx, sy } = this;
       if(cache) {
         dx = cache.dx;
         dy = cache.dy;
-        coords = cache.coords;
+        let coords = cache.coords;
         ox = sx - x1;
         oy = sy - y1;
         dx += tx - coords[0] + ox;
         dy += ty - coords[1] + oy;
       }
       else {
+        ox = oy = 0;
         dx = tx - x1;
         dy = ty - y1;
       }

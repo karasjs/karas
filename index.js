@@ -15273,11 +15273,11 @@
 
               var _dy2 = this.sy - parent.sy;
 
-              ctx.drawImage(canvas, x, y, size, size, tx + _dx2, ty + _dy2, size, size);
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, tx + _dx2 - 1, ty + _dy2 - 1, size, size);
               return;
             }
 
-            var _dx, _dy, ox, oy, _coords;
+            var _dx, _dy, ox, oy;
 
             var _sx = this.sx,
                 _sy = this.sy;
@@ -15285,12 +15285,13 @@
             if (cache) {
               _dx = cache.dx;
               _dy = cache.dy;
-              _coords = cache.coords;
+              var _coords = cache.coords;
               ox = _sx - x1;
               oy = _sy - y1;
               _dx += tx - _coords[0] + ox;
               _dy += ty - _coords[1] + oy;
             } else {
+              ox = oy = 0;
               _dx = tx - x1;
               _dy = ty - y1;
             } // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是

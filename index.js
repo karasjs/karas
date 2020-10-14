@@ -11905,6 +11905,8 @@
               }
             }
           });
+        } else if (!filter && renderMode === mode.SVG && virtualDom.filter) {
+          delete virtualDom.filter;
         } // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
 
 
@@ -18115,7 +18117,17 @@
         updateList.forEach(function (item) {
           var parent = item.node;
           var lv = parent.__refreshLevel;
-          var need = lv >= o$1.REPAINT; // 向上查找，出现重复跳出
+          var need = lv >= o$1.REPAINT;
+
+          if (need && parent.__cacheTotal) {
+            parent.__cacheTotal.release();
+          }
+
+          if ((need || o$1.contain(lv, o$1.FILTER)) && parent.__cacheFilter) {
+            parent.__cacheFilter = null;
+          }
+
+          parent = parent.domParent; // 向上查找，出现重复跳出
 
           while (parent) {
             if (parent.hasOwnProperty('__uniqueUpdateId')) {
@@ -18126,14 +18138,14 @@
               }
 
               cacheHash[_uniqueUpdateId] = true;
-            } // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
+            } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
 
 
-            if (need && parent.__cacheTotal) {
+            if (parent.__cacheTotal) {
               parent.__cacheTotal.release();
             }
 
-            if ((need || o$1.contain(lv, o$1.FILTER)) && parent.__cacheFilter) {
+            if (parent.__cacheFilter) {
               parent.__cacheFilter = null;
             }
 

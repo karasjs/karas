@@ -1514,6 +1514,9 @@ class Xom extends Node {
         }
       });
     }
+    else if(!filter && renderMode === mode.SVG && virtualDom.filter) {
+      delete virtualDom.filter;
+    }
     // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
     if(renderMode === mode.SVG && virtualDom.hasOwnProperty('lv')) {
       return { break: true, canCache: lv === level.NONE };

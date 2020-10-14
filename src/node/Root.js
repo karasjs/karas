@@ -599,6 +599,13 @@ class Root extends Dom {
       let parent = item.node;
       let lv = parent.__refreshLevel;
       let need = lv >= level.REPAINT;
+      if(need && parent.__cacheTotal) {
+        parent.__cacheTotal.release();
+      }
+      if((need || level.contain(lv, level.FILTER)) && parent.__cacheFilter) {
+        parent.__cacheFilter = null;
+      }
+      parent = parent.domParent;
       // 向上查找，出现重复跳出
       while(parent) {
         if(parent.hasOwnProperty('__uniqueUpdateId')) {
@@ -608,11 +615,11 @@ class Root extends Dom {
           }
           cacheHash[uniqueUpdateId] = true;
         }
-        // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
-        if(need && parent.__cacheTotal) {
+        // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
+        if(parent.__cacheTotal) {
           parent.__cacheTotal.release();
         }
-        if((need || level.contain(lv, level.FILTER)) && parent.__cacheFilter) {
+        if(parent.__cacheFilter) {
           parent.__cacheFilter = null;
         }
         parent = parent.domParent;

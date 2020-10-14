@@ -152,6 +152,7 @@ class Rect extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get rx() {

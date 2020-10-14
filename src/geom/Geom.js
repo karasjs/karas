@@ -243,6 +243,7 @@ class Geom extends Xom {
       }
       this.virtualDom.type = 'geom';
     }
+    this.__offScreen = res.offScreen;
     let res2 = this.__preRender(renderMode, lv, ctx, defs);
     return Object.assign(res, res2);
   }
@@ -260,6 +261,22 @@ class Geom extends Xom {
       }
       // 强制不缓存，防止引用mask的matrix变化不生效
       delete vd.lv;
+    }
+  }
+
+  __applyCache(renderMode, lv, ctx, mode) {
+    let { __opacity, matrixEvent } = this;
+    // 写回主画布前设置
+    ctx.globalAlpha = __opacity;
+    ctx.setTransform(...matrixEvent);
+    // 优先filter，然后total
+    let cacheFilter = this.__cacheFilter;
+    let cacheTotal = this.__cacheTotal;
+    if(cacheFilter) {
+      ctx.drawImage(cacheFilter.canvas, 0, 0);
+    }
+    else if(cacheTotal) {
+      ctx.drawImage(cacheTotal.canvas, 0, 0);
     }
   }
 

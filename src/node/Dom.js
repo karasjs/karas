@@ -28,7 +28,7 @@ function genOffScreenBlur(cache, v, bboxTotal) {
   let dx = x1 - bboxTotal[0];
   let dy = y1 - bboxTotal[1];
   let offScreen = inject.getCacheCanvas(size, size);
-  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx, dy, size, size);
+  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
@@ -1140,7 +1140,7 @@ class Dom extends Xom {
         }
       }
       else if(renderMode === mode.SVG) {
-        virtualDom.cache = true;
+        virtualDom.cache = true; // 标识vd整体缓存无需深度diff
       }
       return res;
     }
@@ -1163,7 +1163,83 @@ class Dom extends Xom {
         }
       }
       else {
-        let temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs);
+        // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
+        let offScreen;
+        let blurValue;
+        let newCtx = ctx;
+        let isGeom = item.tagName.charAt(0) === '$';
+        let cache;
+        if(renderMode === mode.CANVAS && isGeom) {
+          let filter = item.currentStyle.filter;
+          if(Array.isArray(filter)) {
+            filter.forEach(item => {
+              let [k, v] = item;
+              if(k === 'blur' && v > 0) {
+                if(root.cache) {
+                  blurValue = v;
+                }
+                else {
+                  let { width, height } = root;
+                  let c = inject.getCacheCanvas(width, height, '__$$geom$$__');
+                  if(c.ctx) {
+                    newCtx = c.ctx;
+                    offScreen = {
+                      ctx,
+                    };
+                    offScreen.target = c;
+                    ctx = c.ctx;
+                  }
+                }
+              }
+            });
+          }
+          // geom特殊处理生成cacheTotal代替cache，因为没children，但可能有cacheFilter
+          if(root.cache) {
+            if(item.__cache && item.__cache.ctx) {
+              if(item.__refreshLevel >= level.REPAINT) {
+                item.__cache.ctx.clearRect(0, 0, root.width, root.height);
+              }
+              cache = item.__cacheTotal = item.__cache;
+              newCtx = cache.ctx;
+            }
+            else {
+              item.__cache = item.__cacheTotal = null; // 需置空，geom>=REPAINT的重绘不会置空干扰xom逻辑
+              cache = inject.getCacheCanvas(root.width, root.height);
+              if(cache && cache.ctx) {
+                newCtx = cache.ctx;
+              }
+            }
+          }
+        }
+        let temp = item.__renderByMask(renderMode, item.__refreshLevel, newCtx, defs);
+        // geom且root无cache才有offScreen
+        if(offScreen) {
+          let { width, height } = root;
+          let webgl = inject.getCacheWebgl(width, height, '__$$geom-blur$$__');
+          let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+          offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+          offScreen.target.draw();
+          res.clear();
+        }
+        // geom生成cacheFilter
+        else if(blurValue && cache) {
+          let { width, height } = root;
+          let f = item.__cacheFilter = item.__cacheFilter || inject.getCacheCanvas(width, height);
+          f.ctx.clearRect(0, 0, width, height);
+          f.draw();
+          f.ctx.drawImage(cache.canvas, 0, 0);
+          let webgl = inject.getCacheWebgl(width, height, '__$$geom-cache-blur$$__');
+          let res = blur.gaussBlur(f, webgl, blurValue, width, height);
+          f.draw();
+          res.clear();
+        }
+        else if(isGeom && item.__cacheFilter) {
+          item.__cacheFilter = null;
+        }
+        // 后赋值给geom，这样初次运行时没有这个属性防止缓存，geom子类会在render中判断break使用缓存
+        if(cache && cache.ctx) {
+          item.__cache = item.__cacheTotal = cache;
+        }
         // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
         if(!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
           canCacheChildren = false;

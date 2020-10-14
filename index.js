@@ -7367,6 +7367,12 @@
     if (karas.debug) {
       o.style.width = width + 'px';
       o.style.height = height + 'px';
+      o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
+
+      if (key) {
+        o.setAttribute('key', key);
+      }
+
       document.body.appendChild(o);
     }
 
@@ -7374,6 +7380,11 @@
       canvas: o,
       ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
       draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
+      },
+      available: true,
+      release: function release() {
+        this.canvas = null;
+        this.ctx = null;
       }
     };
   }
@@ -10318,7 +10329,7 @@
           }
         }
 
-        var list = HASH[s] = HASH[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页 TODO: 索引缓存
+        var list = HASH[s] = HASH[s] || []; // 从hash列表中尝试取可用的一页，找不到就生成新的页
 
         var page;
 
@@ -11634,7 +11645,9 @@
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             __cacheStyle = this.__cacheStyle,
-            root = this.root;
+            root = this.root; // 渲染完认为完全无变更，等布局/动画/更新重置
+
+        this.__refreshLevel = o$1.NONE;
 
         if (isDestroyed) {
           return {
@@ -11786,11 +11799,12 @@
               "break": true,
               canCache: canCache
             };
-          } // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围
+          }
 
+          var isGeom = this.tagName.charAt(0) === '$'; // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
 
           if (cache && cache.available && lv < o$1.REPAINT) {
-            if (o$1.contain(lv, o$1.FILTER)) {
+            if (o$1.contain(lv, o$1.FILTER) && !isGeom) {
               cache.__bbox = this.bbox;
             }
 
@@ -11800,10 +11814,10 @@
               cache: cache,
               filter: filter
             };
-          } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
+          } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
 
-          if (!cache && canCache) {
+          if (!cache && !isGeom) {
             var bbox = this.bbox;
             cache = Cache.getInstance(bbox); // 有可能超过最大尺寸限制不使用缓存
 
@@ -11859,7 +11873,8 @@
                 v = _item[1];
 
             if (k === 'blur') {
-              if (renderMode === mode.CANVAS && v > 0) {
+              // geom由dom看管，做了替换工作，以便自定义geom时render()不感知离屏过程
+              if (renderMode === mode.CANVAS && v > 0 && _this4.tagName.charAt(0) !== '$') {
                 var _width = root.width,
                     _height = root.height;
                 var c = inject.getCacheCanvas(_width, _height, '__$$blur$$__');
@@ -12210,10 +12225,7 @@
 
         if (borderLeftWidth > 0 && borderLeftColor[3] > 0) {
           renderBorder(renderMode, __cacheStyle.borderLeft, __cacheStyle.borderLeftColor, ctx, this, dx, dy);
-        } // 渲染完认为完全无变更，等布局/动画/更新重置
-
-
-        this.__refreshLevel = o$1.NONE;
+        }
 
         if (cache && cache.enabled) {
           cache.__available = true;
@@ -12533,6 +12545,24 @@
         _get(_getPrototypeOf(Xom.prototype), "__destroy", this).call(this);
 
         this.__matrix = this.__matrixEvent = this.__root = null;
+
+        if (this.__cache) {
+          this.__cache.release();
+
+          this.__cache = null;
+        }
+
+        if (this.__cacheTotal) {
+          this.__cacheTotal.release();
+
+          this.__cacheTotal = null;
+        }
+
+        if (this.__cacheFilter) {
+          this.__cacheFilter.release();
+
+          this.__cacheFilter = null;
+        }
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -13834,7 +13864,7 @@
     var dx = x1 - bboxTotal[0];
     var dy = y1 - bboxTotal[1];
     var offScreen = inject.getCacheCanvas(size, size);
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx, dy, size, size);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
     blur.gaussBlur(offScreen, cacheFilter, v, size, size);
@@ -15102,7 +15132,7 @@
               this.__cacheFilter = null;
             }
           } else if (renderMode === mode.SVG) {
-            virtualDom.cache = true;
+            virtualDom.cache = true; // 标识vd整体缓存无需深度diff
           }
 
           return res;
@@ -15126,7 +15156,105 @@
               item.__renderByMask(renderMode, item.__refreshLevel, ctx);
             }
           } else {
-            var temp = item.__renderByMask(renderMode, item.__refreshLevel, ctx, defs); // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
+            // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
+            var _offScreen;
+
+            var _blurValue;
+
+            var newCtx = ctx;
+            var isGeom = item.tagName.charAt(0) === '$';
+            var cache;
+
+            if (renderMode === mode.CANVAS && isGeom) {
+              var _filter = item.currentStyle.filter;
+
+              if (Array.isArray(_filter)) {
+                _filter.forEach(function (item) {
+                  var _item2 = _slicedToArray(item, 2),
+                      k = _item2[0],
+                      v = _item2[1];
+
+                  if (k === 'blur' && v > 0) {
+                    if (root.cache) {
+                      _blurValue = v;
+                    } else {
+                      var width = root.width,
+                          height = root.height;
+                      var c = inject.getCacheCanvas(width, height, '__$$geom$$__');
+
+                      if (c.ctx) {
+                        newCtx = c.ctx;
+                        _offScreen = {
+                          ctx: ctx
+                        };
+                        _offScreen.target = c;
+                        ctx = c.ctx;
+                      }
+                    }
+                  }
+                });
+              } // geom特殊处理生成cacheTotal代替cache，因为没children，但可能有cacheFilter
+
+
+              if (root.cache) {
+                if (item.__cache && item.__cache.ctx) {
+                  if (item.__refreshLevel >= o$1.REPAINT) {
+                    item.__cache.ctx.clearRect(0, 0, root.width, root.height);
+                  }
+
+                  cache = item.__cacheTotal = item.__cache;
+                  newCtx = cache.ctx;
+                } else {
+                  item.__cache = item.__cacheTotal = null; // 需置空，geom>=REPAINT的重绘不会置空干扰xom逻辑
+
+                  cache = inject.getCacheCanvas(root.width, root.height);
+
+                  if (cache && cache.ctx) {
+                    newCtx = cache.ctx;
+                  }
+                }
+              }
+            }
+
+            var temp = item.__renderByMask(renderMode, item.__refreshLevel, newCtx, defs); // geom且root无cache才有offScreen
+
+
+            if (_offScreen) {
+              var width = root.width,
+                  height = root.height;
+              var webgl = inject.getCacheWebgl(width, height, '__$$geom-blur$$__');
+
+              var _res2 = blur.gaussBlur(_offScreen.target, webgl, _offScreen.blur, width, height);
+
+              _offScreen.ctx.drawImage(_offScreen.target.canvas, 0, 0);
+
+              _offScreen.target.draw();
+
+              _res2.clear();
+            } // geom生成cacheFilter
+            else if (_blurValue && cache) {
+                var _width = root.width,
+                    _height = root.height;
+                var f = item.__cacheFilter = item.__cacheFilter || inject.getCacheCanvas(_width, _height);
+                f.ctx.clearRect(0, 0, _width, _height);
+                f.draw();
+                f.ctx.drawImage(cache.canvas, 0, 0);
+
+                var _webgl = inject.getCacheWebgl(_width, _height, '__$$geom-cache-blur$$__');
+
+                var _res3 = blur.gaussBlur(f, _webgl, _blurValue, _width, _height);
+
+                f.draw();
+
+                _res3.clear();
+              } else if (isGeom && item.__cacheFilter) {
+                item.__cacheFilter = null;
+              } // 后赋值给geom，这样初次运行时没有这个属性防止缓存，geom子类会在render中判断break使用缓存
+
+
+            if (cache && cache.ctx) {
+              item.__cache = item.__cacheTotal = cache;
+            } // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
 
 
             if (!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
@@ -15169,12 +15297,12 @@
                   height = root.height;
               var webgl = inject.getCacheWebgl(width, height);
 
-              var _res2 = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+              var _res4 = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
 
               offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
               offScreen.target.draw();
 
-              _res2.clear();
+              _res4.clear();
             }
         } else if (renderMode === mode.SVG) {
           // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
@@ -15242,9 +15370,9 @@
 
         if (Array.isArray(computedStyle.filter)) {
           computedStyle.filter.forEach(function (item) {
-            var _item2 = _slicedToArray(item, 2),
-                k = _item2[0],
-                v = _item2[1];
+            var _item3 = _slicedToArray(item, 2),
+                k = _item3[0],
+                v = _item3[1];
 
             if (k === 'blur' && v > 0) {
               blurValue = v;
@@ -17985,8 +18113,7 @@
 
         var cacheHash = {};
         updateList.forEach(function (item) {
-          var node = item.node;
-          var parent = node;
+          var parent = item.node;
           var lv = parent.__refreshLevel;
           var need = lv >= o$1.REPAINT; // 向上查找，出现重复跳出
 
@@ -19025,6 +19152,8 @@
           this.virtualDom.type = 'geom';
         }
 
+        this.__offScreen = res.offScreen;
+
         var res2 = this.__preRender(renderMode, lv, ctx, defs);
 
         return Object.assign(res, res2);
@@ -19045,6 +19174,24 @@
 
 
           delete vd.lv;
+        }
+      }
+    }, {
+      key: "__applyCache",
+      value: function __applyCache(renderMode, lv, ctx, mode) {
+        var __opacity = this.__opacity,
+            matrixEvent = this.matrixEvent; // 写回主画布前设置
+
+        ctx.globalAlpha = __opacity;
+        ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 优先filter，然后total
+
+        var cacheFilter = this.__cacheFilter;
+        var cacheTotal = this.__cacheTotal;
+
+        if (cacheFilter) {
+          ctx.drawImage(cacheFilter.canvas, 0, 0);
+        } else if (cacheTotal) {
+          ctx.drawImage(cacheTotal.canvas, 0, 0);
         }
       }
     }, {
@@ -19412,6 +19559,8 @@
 
           this.addGeom('path', props);
         }
+
+        return res;
       }
     }, {
       key: "x1",
@@ -20356,6 +20505,8 @@
 
           this.addGeom('path', props);
         }
+
+        return res;
       }
     }, {
       key: "rx",
@@ -20733,6 +20884,8 @@
 
           this.addGeom('path', props);
         }
+
+        return res;
       }
     }, {
       key: "rx",

@@ -1279,6 +1279,8 @@ class Xom extends Node {
       __cacheStyle,
       root,
     } = this;
+    // 渲染完认为完全无变更，等布局/动画/更新重置
+    this.__refreshLevel = level.NONE;
     if(isDestroyed) {
       return { break: true };
     }
@@ -1414,15 +1416,16 @@ class Xom extends Node {
         }
         return { break: true, canCache };
       }
-      // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围
+      let isGeom = this.tagName.charAt(0) === '$';
+      // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
       if(cache && cache.available && lv < level.REPAINT) {
-        if(level.contain(lv, level.FILTER)) {
+        if(level.contain(lv, level.FILTER) && !isGeom) {
           cache.__bbox = this.bbox;
         }
         return { break: true, canCache, cache, filter };
       }
-      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
-      if(!cache && canCache) {
+      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
+      if(!cache && !isGeom) {
         let bbox = this.bbox;
         cache = Cache.getInstance(bbox);
         // 有可能超过最大尺寸限制不使用缓存
@@ -1468,7 +1471,8 @@ class Xom extends Node {
       filter.forEach(item => {
         let [k, v] = item;
         if(k === 'blur') {
-          if(renderMode === mode.CANVAS && v > 0) {
+          // geom由dom看管，做了替换工作，以便自定义geom时render()不感知离屏过程
+          if(renderMode === mode.CANVAS && v > 0 && this.tagName.charAt(0) !== '$') {
             let { width, height } = root;
             let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
             if(c.ctx) {
@@ -1807,8 +1811,6 @@ class Xom extends Node {
     if(borderLeftWidth > 0 && borderLeftColor[3] > 0) {
       renderBorder(renderMode, __cacheStyle.borderLeft, __cacheStyle.borderLeftColor, ctx, this, dx, dy);
     }
-    // 渲染完认为完全无变更，等布局/动画/更新重置
-    this.__refreshLevel = level.NONE;
     if(cache && cache.enabled) {
       cache.__available = true;
     }
@@ -2047,6 +2049,18 @@ class Xom extends Node {
     this.root.delRefreshTask(this.__task);
     super.__destroy();
     this.__matrix = this.__matrixEvent = this.__root = null;
+    if(this.__cache) {
+      this.__cache.release();
+      this.__cache = null;
+    }
+    if(this.__cacheTotal) {
+      this.__cacheTotal.release();
+      this.__cacheTotal = null;
+    }
+    if(this.__cacheFilter) {
+      this.__cacheFilter.release();
+      this.__cacheFilter = null;
+    }
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能

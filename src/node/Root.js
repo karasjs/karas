@@ -596,8 +596,7 @@ class Root extends Dom {
      */
     let cacheHash = {};
     updateList.forEach(item => {
-      let node = item.node;
-      let parent = node;
+      let parent = item.node;
       let lv = parent.__refreshLevel;
       let need = lv >= level.REPAINT;
       // 向上查找，出现重复跳出

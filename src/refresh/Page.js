@@ -97,7 +97,7 @@ class Page {
       }
     }
     let list = HASH[s] = HASH[s] || [];
-    // 从hash列表中尝试取可用的一页，找不到就生成新的页
+    // 从hash列表中尝试取可用的一页，找不到就生成新的页 TODO: 索引缓存
     let page;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];

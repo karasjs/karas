@@ -24,10 +24,12 @@ class Cache {
   }
 
   release() {
-    this.clear();
-    this.page.del(this.pos);
-    this.__page = null;
-    this.__enabled = false;
+    if(this.enabled) {
+      this.clear();
+      this.page.del(this.pos);
+      this.__page = null;
+      this.__enabled = false;
+    }
   }
 
   reset(bbox) {

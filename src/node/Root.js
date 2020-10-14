@@ -598,6 +598,8 @@ class Root extends Dom {
     updateList.forEach(item => {
       let node = item.node;
       let parent = node;
+      let lv = parent.__refreshLevel;
+      let need = lv >= level.REPAINT;
       // 向上查找，出现重复跳出
       while(parent) {
         if(parent.hasOwnProperty('__uniqueUpdateId')) {
@@ -608,9 +610,11 @@ class Root extends Dom {
           cacheHash[uniqueUpdateId] = true;
         }
         // 前面已经过滤了无改变NONE的，只要孩子有任何改变或自身>=REPAINT就要清除
-        let need = parent !== node || parent.__refreshLevel >= level.REPAINT;
         if(need && parent.__cacheTotal) {
           parent.__cacheTotal.release();
+        }
+        if((need || level.contain(lv, level.FILTER)) && parent.__cacheFilter) {
+          parent.__cacheFilter = null;
         }
         parent = parent.domParent;
       }

@@ -1220,41 +1220,42 @@ class Xom extends Node {
     let hasContent;
     if(renderMode === mode.CANVAS) {
       if(util.isString(backgroundImage)) {
-        hasContent = true;
+        return true;
       }
       if(computedStyle.backgroundColor[3] > 0) {
-        hasContent = true;
+        return true;
       }
       else if(backgroundImage && backgroundImage.k) {
-        hasContent = true;
+        return true;
       }
-      if(!hasContent) {
-        ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'].forEach(k => {
-          if(computedStyle[k + 'Width'] > 0 && computedStyle[k + 'Color'][3] > 0) {
-            hasContent = true;
-          }
-        });
+      for(let list = ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'], i = 0, len = list.length; i < len; i++) {
+        let k = list[i];
+        if(computedStyle[k + 'Width'] > 0 && computedStyle[k + 'Color'][3] > 0) {
+          return true;
+        }
       }
       let boxShadow = computedStyle.boxShadow;
-      if(!hasContent && Array.isArray(boxShadow)) {
+      if(Array.isArray(boxShadow)) {
         for(let i = 0, len = boxShadow.length; i < len; i++) {
           let item = boxShadow[i];
           if(item && (item[2] > 0 || item[3] > 0)) {
-            hasContent = true;
-            break;
+            return true;
           }
         }
       }
       // borderRadius用5，只要有bgc或border就会超过
-      for(let i = 0, len = borderRadiusKs.length; i < len && !hasContent; i++) {
+      for(let i = 0, len = borderRadiusKs.length; i < len; i++) {
         let v = computedStyle[borderRadiusKs[i]];
         if(v[0] > 0 && v[1] > 0) {
-          hasContent = true;
-          break;
+          return true;
         }
       }
+      let filter = computedStyle.filter;
+      if(Array.isArray(filter) && filter.length) {
+        return true;
+      }
     }
-    return hasContent;
+    return false;
   }
 
   /**
@@ -1301,7 +1302,7 @@ class Xom extends Node {
     // svg已经初始化好了vd，canCache是指本次渲染是否和上次有变化即NONE
     if(computedStyle.display === 'none') {
       if(renderMode === mode.CANVAS) {
-        return { break: true, canCache: !this.displayAnimating, hasContent: false };
+        return { break: true, canCache: !this.displayAnimating };
       }
       else if(renderMode === mode.SVG) {
         let canCache = this.__lastDisplay === 'none';
@@ -1396,7 +1397,7 @@ class Xom extends Node {
     // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
     if(visibility === 'hidden') {
       if(renderMode === mode.CANVAS) {
-        return { break: true, canCache: !this.visibilityAnimating, hasContent: false };
+        return { break: true, canCache: !this.visibilityAnimating };
       }
     }
     if(renderMode === mode.SVG) {
@@ -1406,56 +1407,57 @@ class Xom extends Node {
     let canCache = !hasContent || !this.availableAnimating;
     // 无缓存重新渲染时是否使用缓存
     let cache = this.__cache, dx = 0, dy = 0;
-    if(root.cache) {
-      if(renderMode === mode.CANVAS) {
-        if(!hasContent) {
-          if(cache && cache.available) {
-            cache.release();
-          }
-          return { break: true, canCache, hasContent };
+    if(root.cache && renderMode === mode.CANVAS) {
+      if(!hasContent) {
+        if(cache && cache.available) {
+          cache.release();
         }
-        // 有缓存情况快速使用位图缓存不再继续
-        if(cache && cache.available && lv < level.REPAINT) {
-          return { break: true, canCache, cache, hasContent, filter };
+        return { break: true, canCache };
+      }
+      // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围
+      if(cache && cache.available && lv < level.REPAINT) {
+        if(level.contain(lv, level.FILTER)) {
+          cache.__bbox = this.bbox;
         }
-        // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
-        if(!cache && canCache) {
-          let bbox = this.bbox;
-          cache = Cache.getInstance(bbox);
-          // 有可能超过最大尺寸限制不使用缓存
-          if(cache) {
-            this.__cache = cache;
-            cache.ox = x - x1;
-            cache.oy = y - y1;
-            cache.x1 = x1;
-            cache.y1 = y1;
-            // 还要判断有无离屏功能开启可用
-            if(cache.enabled) {
-              ctx = cache.ctx;
-              let [x, y] = cache.coords;
-              // cache上记录一些偏移信息
-              dx = cache.dx = x - x1;
-              dy = cache.dy = y - y1;
-              // 重置ctx为cache的，以及绘制坐标为cache的区域
-              x1 = x;
-              y1 = y;
-              if(dx) {
-                x2 += dx;
-                x3 += dx;
-                x4 += dx;
-              }
-              if(dy) {
-                y2 += dy;
-                y3 += dy;
-                y4 += dy;
-              }
+        return { break: true, canCache, cache, filter };
+      }
+      // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等
+      if(!cache && canCache) {
+        let bbox = this.bbox;
+        cache = Cache.getInstance(bbox);
+        // 有可能超过最大尺寸限制不使用缓存
+        if(cache) {
+          this.__cache = cache;
+          cache.ox = x - x1;
+          cache.oy = y - y1;
+          cache.x1 = x1;
+          cache.y1 = y1;
+          // 还要判断有无离屏功能开启可用
+          if(cache.enabled) {
+            ctx = cache.ctx;
+            let [x, y] = cache.coords;
+            // cache上记录一些偏移信息
+            dx = cache.dx = x - x1;
+            dy = cache.dy = y - y1;
+            // 重置ctx为cache的，以及绘制坐标为cache的区域
+            x1 = x;
+            y1 = y;
+            if(dx) {
+              x2 += dx;
+              x3 += dx;
+              x4 += dx;
+            }
+            if(dy) {
+              y2 += dy;
+              y3 += dy;
+              y4 += dy;
             }
           }
         }
-        // 无离屏功能视为不可缓存本身
-        if(!cache) {
-          canCache = false;
-        }
+      }
+      // 无离屏功能视为不可缓存本身
+      if(!cache) {
+        canCache = false;
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
@@ -1465,8 +1467,8 @@ class Xom extends Node {
         || renderMode === mode.SVG)) {
       filter.forEach(item => {
         let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          if(renderMode === mode.CANVAS) {
+        if(k === 'blur') {
+          if(renderMode === mode.CANVAS && v > 0) {
             let { width, height } = root;
             let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
             if(c.ctx) {
@@ -1477,27 +1479,33 @@ class Xom extends Node {
               ctx = c.ctx;
             }
           }
-          else if(renderMode === mode.SVG && !level.contain(lv, level.FILTER)) {
+          else if(renderMode === mode.SVG
+            && (lv >= level.REFLOW || level.contain(lv, level.FILTER))) {
             // 模糊框卷积尺寸 #66
-            let d = mx.int2convolution(v);
-            let id = defs.add({
-              tagName: 'filter',
-              props: [
-                ['x', -d / outerWidth],
-                ['y', -d / outerHeight],
-                ['width', 1 + d * 2 / outerWidth],
-                ['height', 1 + d * 2 / outerHeight],
-              ],
-              children: [
-                {
-                  tagName: 'feGaussianBlur',
-                  props: [
-                    ['stdDeviation', v],
-                  ],
-                }
-              ],
-            });
-            this.virtualDom.filter = 'url(#' + id + ')';
+            if(v > 0) {
+              let d = mx.int2convolution(v);
+              let id = defs.add({
+                tagName: 'filter',
+                props: [
+                  ['x', -d / outerWidth],
+                  ['y', -d / outerHeight],
+                  ['width', 1 + d * 2 / outerWidth],
+                  ['height', 1 + d * 2 / outerHeight],
+                ],
+                children: [
+                  {
+                    tagName: 'feGaussianBlur',
+                    props: [
+                      ['stdDeviation', v],
+                    ],
+                  }
+                ],
+              });
+              virtualDom.filter = 'url(#' + id + ')';
+            }
+            else {
+              delete virtualDom.filter;
+            }
           }
         }
       });
@@ -1815,7 +1823,7 @@ class Xom extends Node {
       });
     }
     if(renderMode === mode.CANVAS) {
-      return { canCache, cache, hasContent, offScreen, filter };
+      return { canCache, cache, offScreen, filter };
     }
     // svg前面提前跳出，到这一定是>=REPAINT的变化
     else if(renderMode === mode.SVG) {
@@ -2149,6 +2157,9 @@ class Xom extends Node {
     this.__cacheStyle = {};
     if(this.__cache) {
       this.__cache.release();
+    }
+    if(this.__cacheTotal) {
+      this.__cacheTotal.release();
     }
   }
 
@@ -2544,6 +2555,23 @@ class Xom extends Node {
     }
     return false;
   }
+
+  // get filterAnimating() {
+  //   let list = this.animationList;
+  //   for(let i = 0, len = list.length; i < len; i++) {
+  //     let item = list[i];
+  //     if(item.animating && item.currentFrames) {
+  //       let { transition } = item.currentFrame;
+  //       for(let i = 0, len = transition.length; i < len; i++) {
+  //         let k = transition[i].k;
+  //         if(k === 'filter') {
+  //           return true;
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return false;
+  // }
 
   get currentStyle() {
     return this.__currentStyle;

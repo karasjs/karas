@@ -14,9 +14,11 @@ class Cache {
     this.__coords = [x + 1, y + 1];
     if(page.canvas) {
       this.__enabled = true;
+      let ctx = page.ctx;
+      ctx.setTransform([1, 0, 0, 1, 0, 0]);
+      ctx.globalAlpha = 1;
       if(typeof karas !== 'undefined' && karas.debug) {
         page.canvas.setAttribute('size', page.size);
-        let ctx = page.ctx;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.beginPath();
         ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);

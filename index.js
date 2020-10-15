@@ -7332,6 +7332,15 @@
       get: function get() {
         return this.parent.__cacheStyle;
       }
+    }, {
+      key: "bbox",
+      get: function get() {
+        var sx = this.sx,
+            sy = this.sy,
+            width = this.width,
+            height = this.height;
+        return [sx, sy, sx + width, sy + height];
+      }
     }]);
 
     return Text;
@@ -10429,10 +10438,12 @@
 
         if (page.canvas) {
           this.__enabled = true;
+          var ctx = page.ctx;
+          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.globalAlpha = 1;
 
           if (typeof karas !== 'undefined' && karas.debug) {
             page.canvas.setAttribute('size', page.size);
-            var ctx = page.ctx;
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.beginPath();
             ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
@@ -12523,8 +12534,9 @@
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop) {
+        // 空内容用默认bbox
         if (!this.__cache) {
-          return;
+          return this.bbox;
         }
 
         var bbox = this.__cache.bbox.slice(0);
@@ -13855,7 +13867,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -15484,10 +15496,10 @@
               _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1 + bx, _ty - 1 + by);
 
               zIndexChildren.forEach(function (item) {
-                if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  ctx.setTransform([1, 0, 0, 1, 0, 0]);
-                  ctx.globalAlpha = 1;
+                ctx.setTransform([1, 0, 0, 1, 0, 0]);
+                ctx.globalAlpha = 1;
 
+                if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, _tx + bx, _ty + by, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
@@ -15548,16 +15560,17 @@
                 tox = _computedStyle$transf[0],
                 toy = _computedStyle$transf[1];
 
-            var tfx = tox + tx - 1;
-            var tfy = toy + ty - 1;
+            var tfx = tox + tx;
+            var tfy = toy + ty;
+            var m = matrix.slice(0);
 
             if (tfx || tfy) {
-              matrix = mx.multiply([1, 0, 0, 1, tfx, tfy], matrix);
+              m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
             }
 
-            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix));
+            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(m));
 
-            ctx.globalAlpha = opacity; // 被当做总缓存下的子元素也有总缓存时需释放清空
+            ctx.globalAlpha = opacity; // 被当做总缓存下的子元素也有总缓存时
 
             if (cacheTotal && cacheTotal.available) {
               var _cacheTotal2 = cacheTotal,
@@ -15573,12 +15586,14 @@
 
               var _dy3 = this.sy - _parent.sy;
 
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, _dx3 - tox, _dy3 - toy, size, size);
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, _dx3 - tox - 1, _dy3 - toy - 1, size, size);
               return;
             }
 
-            var _dx, _dy, ox, oy;
-
+            var _dx = 0,
+                _dy = 0,
+                ox = 0,
+                oy = 0;
             var _sx2 = this.sx,
                 _sy2 = this.sy; // 可能会无内容没cache，跳过自身继续看children
 
@@ -15595,18 +15610,23 @@
               _dx += ox - _x2;
               _dy += oy - _y2;
             } else {
-              ox = oy = 0;
-              _dx = -x1;
-              _dy = -y1;
+              var _this$bbox = _slicedToArray(this.bbox, 2),
+                  _x3 = _this$bbox[0],
+                  _y3 = _this$bbox[1];
+
+              ox = _sx2 - x1;
+              oy = _sy2 - y1;
+              _dx += ox - _x3;
+              _dy += oy - _y3;
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox, oy - toy); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - 1, oy - toy - 1); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx + 1 - tox, _dy + 1 - toy);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - tox, _dy - toy);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
               }
@@ -15623,25 +15643,25 @@
               (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrixEvent));
 
               if (cacheFilter) {
-                var _x3 = cacheFilter.x1,
-                    _y3 = cacheFilter.y1,
+                var _x4 = cacheFilter.x1,
+                    _y4 = cacheFilter.y1,
                     _dx4 = cacheFilter.dx,
                     _dy4 = cacheFilter.dy;
-                ctx.drawImage(cacheFilter.canvas, _x3 - _dx4, _y3 - _dy4);
+                ctx.drawImage(cacheFilter.canvas, _x4 - _dx4, _y4 - _dy4);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
                 var _cacheTotal3 = cacheTotal,
                     _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _x5 = _cacheTotal3$coords[0],
-                    _y5 = _cacheTotal3$coords[1],
+                    _x6 = _cacheTotal3$coords[0],
+                    _y6 = _cacheTotal3$coords[1],
                     _size = _cacheTotal3.size,
                     _canvas = _cacheTotal3.canvas,
-                    _x4 = _cacheTotal3.x1,
-                    _y4 = _cacheTotal3.y1;
+                    _x5 = _cacheTotal3.x1,
+                    _y5 = _cacheTotal3.y1;
 
-                ctx.drawImage(_canvas, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1, _y4 - 1, _size, _size);
+                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - 1, _y5 - 1, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -15679,11 +15699,7 @@
           var t;
 
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-            if (item instanceof Component$1) {
-              item = item.shadowRoot;
-            }
-
-            t = [item.sx, item.sy, item.sx + item.width, item.sy + item.height];
+            t = item.bbox;
           } else {
             t = item.__mergeBbox(matrix);
           }

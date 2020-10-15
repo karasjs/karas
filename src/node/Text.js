@@ -275,6 +275,11 @@ class Text extends Node {
   get cacheStyle() {
     return this.parent.__cacheStyle;
   }
+
+  get bbox() {
+    let { sx, sy, width, height } = this;
+    return [sx, sy, sx + width, sy + height];
+  }
 }
 
 Text.prototype.__renderByMask = Text.prototype.render;

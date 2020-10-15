@@ -1403,9 +1403,9 @@ class Dom extends Xom {
           ctx.globalAlpha = 1;
           super.__applyCache(renderMode, lv, ctx, tx - 1 + bx, ty - 1 + by);
           zIndexChildren.forEach(item => {
+            ctx.setTransform([1, 0, 0, 1, 0, 0]);
+            ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              ctx.setTransform([1, 0, 0, 1, 0, 0]);
-              ctx.globalAlpha = 1;
               item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
             }
             else {
@@ -1455,23 +1455,24 @@ class Dom extends Xom {
       opacity *= computedStyle.opacity;
       // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
       let [tox, toy] = computedStyle.transformOrigin;
-      let tfx = tox + tx - 1;
-      let tfy = toy + ty - 1;
+      let tfx = tox + tx;
+      let tfy = toy + ty;
+      let m = matrix.slice(0);
       if(tfx || tfy) {
-        matrix = mx.multiply([1, 0, 0, 1, tfx, tfy], matrix);
+        m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
       }
-      ctx.setTransform(...matrix);
+      ctx.setTransform(...m);
       ctx.globalAlpha = opacity;
-      // 被当做总缓存下的子元素也有总缓存时需释放清空
+      // 被当做总缓存下的子元素也有总缓存时
       if(cacheTotal && cacheTotal.available) {
         let { coords: [x, y], canvas, size } = cacheTotal;
         let parent = this.domParent;
         let dx = this.sx - parent.sx;
         let dy = this.sy - parent.sy;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - tox, dy - toy, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - tox - 1, dy - toy - 1, size, size);
         return;
       }
-      let dx, dy, ox, oy;
+      let dx = 0, dy = 0, ox = 0, oy = 0;
       let { sx, sy } = this;
       // 可能会无内容没cache，跳过自身继续看children
       if(cache && cache.available) {
@@ -1484,16 +1485,18 @@ class Dom extends Xom {
         dy += oy - y;
       }
       else {
-        ox = oy = 0;
-        dx = - x1;
-        dy = - y1;
+        let [x, y] = this.bbox;
+        ox = sx - x1;
+        oy = sy - y1;
+        dx += ox - x;
+        dy += oy - y;
       }
       // 即便无内容也只是空执行
-      super.__applyCache(renderMode, lv, ctx, ox - tox, oy - toy);
+      super.__applyCache(renderMode, lv, ctx, ox - tox - 1, oy - toy - 1);
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx + 1 - tox, dy + 1 - toy);
+          item.__renderByMask(renderMode, null, ctx, null, dx - tox, dy - toy);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
@@ -1543,10 +1546,7 @@ class Dom extends Xom {
     this.zIndexChildren.forEach(item => {
       let t;
       if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-        if(item instanceof Component) {
-          item = item.shadowRoot;
-        }
-        t = [item.sx, item.sy, item.sx + item.width, item.sy + item.height];
+        t = item.bbox;
       }
       else {
         t = item.__mergeBbox(matrix);

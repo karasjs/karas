@@ -2039,8 +2039,9 @@ class Xom extends Node {
   }
 
   __mergeBbox(matrix, isTop) {
+    // 空内容用默认bbox
     if(!this.__cache) {
-      return;
+      return this.bbox;
     }
     let bbox = this.__cache.bbox.slice(0);
     if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {

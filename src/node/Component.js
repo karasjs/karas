@@ -261,6 +261,7 @@ Object.keys(change.GEOM).concat([
   '__refreshLevel',
   '__cacheTotal',
   '__cache',
+  'bbox',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {

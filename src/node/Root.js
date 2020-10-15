@@ -485,6 +485,7 @@ class Root extends Dom {
         Object.assign(totalHash[node.__uniqueUpdateId].style, style);
       }
     });
+    this.__updateList = [];
     // 此时做root检查，防止root出现继承等无效样式
     this.__checkRoot(width, height);
     // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
@@ -595,9 +596,10 @@ class Root extends Dom {
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
      */
     let cacheHash = {};
-    updateList.forEach(item => {
-      let parent = item.node;
-      let lv = parent.__refreshLevel;
+    let plusList = [];
+    totalList.forEach(item => {
+      let parent = item;
+      let lv = parent.__refreshLevel || 0;
       let need = lv >= level.REPAINT;
       if(need) {
         if(parent.__cache) {
@@ -623,6 +625,7 @@ class Root extends Dom {
         // 没有的需要设置一个标识
         else {
           parent.__uniqueUpdateId = uniqueUpdateId++;
+          plusList.push(parent);
         }
         let lv = parent.__refreshLevel;
         let need = lv >= level.REPAINT;
@@ -639,7 +642,10 @@ class Root extends Dom {
         parent = parent.domParent;
       }
     });
-    this.__updateList = [];
+    // 附加的清除
+    plusList.forEach(node => {
+      delete node.__uniqueUpdateId;
+    });
     // 没有更新的内容返回true
     if(!hasUpdate) {
       totalList.forEach(node => {

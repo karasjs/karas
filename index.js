@@ -15529,10 +15529,17 @@
             }
 
             matrix = mx.multiply(matrix, this.matrix);
-            opacity *= computedStyle.opacity; // 因为cache坐标不一定在原点，需要考虑已有matrix，左乘模拟偏移到对应位置而不是用绘制坐标的方式
+            opacity *= computedStyle.opacity; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
 
-            if (tx !== 1 || ty !== 1) {
-              matrix = mx.multiply([1, 0, 0, 1, tx - 1, ty - 1], matrix);
+            var _computedStyle$transf = _slicedToArray(computedStyle.transformOrigin, 2),
+                tox = _computedStyle$transf[0],
+                toy = _computedStyle$transf[1];
+
+            var tfx = tox + tx - 1;
+            var tfy = toy + ty - 1;
+
+            if (tfx || tfy) {
+              matrix = mx.multiply([1, 0, 0, 1, tfx, tfy], matrix);
             }
 
             ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
@@ -15552,7 +15559,7 @@
 
               var _dy3 = this.sy - _parent.sy;
 
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, _dx3, _dy3, size, size);
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, _dx3 - tox, _dy3 - toy, size, size);
               return;
             }
 
@@ -15580,12 +15587,12 @@
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox, oy); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox, oy - toy); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx + 1, _dy + 1);
+                item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx + 1 - tox, _dy + 1 - toy);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
               }
@@ -18019,7 +18026,8 @@
           if (style) {
             Object.assign(totalHash[node.__uniqueUpdateId].style, style);
           }
-        }); // 此时做root检查，防止root出现继承等无效样式
+        });
+        this.__updateList = []; // 此时做root检查，防止root出现继承等无效样式
 
         this.__checkRoot(width, height); // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
 
@@ -18163,9 +18171,10 @@
 
 
         var cacheHash = {};
-        updateList.forEach(function (item) {
-          var parent = item.node;
-          var lv = parent.__refreshLevel;
+        var plusList = [];
+        totalList.forEach(function (item) {
+          var parent = item;
+          var lv = parent.__refreshLevel || 0;
           var need = lv >= o$1.REPAINT;
 
           if (need) {
@@ -18196,6 +18205,7 @@
             } // 没有的需要设置一个标识
             else {
                 parent.__uniqueUpdateId = uniqueUpdateId++;
+                plusList.push(parent);
               }
 
             var _lv = parent.__refreshLevel;
@@ -18217,8 +18227,11 @@
 
             parent = parent.domParent;
           }
-        });
-        this.__updateList = []; // 没有更新的内容返回true
+        }); // 附加的清除
+
+        plusList.forEach(function (node) {
+          delete node.__uniqueUpdateId;
+        }); // 没有更新的内容返回true
 
         if (!hasUpdate) {
           totalList.forEach(function (node) {

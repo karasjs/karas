@@ -599,8 +599,13 @@ class Root extends Dom {
       let parent = item.node;
       let lv = parent.__refreshLevel;
       let need = lv >= level.REPAINT;
-      if(need && parent.__cacheTotal) {
-        parent.__cacheTotal.release();
+      if(need) {
+        if(parent.__cache) {
+          parent.__cache.release();
+        }
+        if(parent.__cacheTotal) {
+          parent.__cacheTotal.release();
+        }
       }
       if((need || level.contain(lv, level.FILTER)) && parent.__cacheFilter) {
         parent.__cacheFilter = null;
@@ -614,6 +619,15 @@ class Root extends Dom {
             return;
           }
           cacheHash[uniqueUpdateId] = true;
+        }
+        // 没有的需要设置一个标识
+        else {
+          parent.__uniqueUpdateId = uniqueUpdateId++;
+        }
+        let lv = parent.__refreshLevel;
+        let need = lv >= level.REPAINT;
+        if(need && parent.__cache) {
+          parent.__cache.release();
         }
         // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
         if(parent.__cacheTotal) {

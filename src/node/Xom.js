@@ -1288,9 +1288,17 @@ class Xom extends Node {
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
     if(renderMode === mode.SVG) {
       if(lv < level.REPAINT && this.__virtualDom) {
-        virtualDom = this.__virtualDom = extend({}, this.__virtualDom);
-        virtualDom.lv = lv;
-        delete virtualDom.cache;
+        // 局部根还在说明孩子节点无变化，可直接用老的
+        if(this.__cacheTotal) {
+          virtualDom = this.__virtualDom;
+          virtualDom.lv = lv;
+        }
+        // 否则extend老的，设置lv变化，等dom调用便跟children
+        else {
+          virtualDom = this.__virtualDom = extend({}, this.__virtualDom);
+          virtualDom.lv = lv;
+          delete virtualDom.cache;
+        }
       }
       else {
         virtualDom = this.__virtualDom = {
@@ -1425,21 +1433,28 @@ class Xom extends Node {
         return { break: true, canCache, cache, filter };
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      if(!cache && !isGeom) {
+      if((!cache || !cache.available) && !isGeom) {
         let bbox = this.bbox;
-        cache = Cache.getInstance(bbox);
+        if(cache) {
+          cache.reset(bbox);
+        }
+        else {
+          cache = Cache.getInstance(bbox);
+        }
         // 有可能超过最大尺寸限制不使用缓存
         if(cache) {
           this.__cache = cache;
-          cache.ox = x - x1;
+          // cache.bx = x - bbox[0]; // dom原点和bbox原点的差值
+          // cache.by = y - bbox[1];
+          cache.ox = x - x1; // padding原点和dom原点的差值
           cache.oy = y - y1;
-          cache.x1 = x1;
+          cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
           // 还要判断有无离屏功能开启可用
           if(cache.enabled) {
             ctx = cache.ctx;
             let [x, y] = cache.coords;
-            // cache上记录一些偏移信息
+            // cache上记录一些偏移信息，cache坐标和padding原点的差值
             dx = cache.dx = x - x1;
             dy = cache.dy = y - y1;
             // 重置ctx为cache的，以及绘制坐标为cache的区域
@@ -1456,6 +1471,10 @@ class Xom extends Node {
               y4 += dy;
             }
           }
+        }
+        // 更新后可能超了需重置
+        else if(this.__cache) {
+          this.__cache = null;
         }
       }
       // 无离屏功能视为不可缓存本身
@@ -1514,7 +1533,7 @@ class Xom extends Node {
         }
       });
     }
-    else if(!filter && renderMode === mode.SVG && virtualDom.filter) {
+    else if(virtualDom && virtualDom.filter && (!filter || !filter.length)) {
       delete virtualDom.filter;
     }
     // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
@@ -2012,7 +2031,7 @@ class Xom extends Node {
 
   __applyCache(renderMode, lv, ctx, tx, ty) {
     let cache = this.__cache;
-    if(cache) {
+    if(cache && cache.available) {
       let { coords, canvas, size } = cache;
       let [x, y] = coords;
       ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);

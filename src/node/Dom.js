@@ -1365,8 +1365,11 @@ class Dom extends Xom {
       else if(!cacheTotal.enabled) {
         cacheTotal.reset(bboxTotal);
       }
+      let { sx, sy } = this;
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
+        let bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
+        let by = sy - bboxTotal[1];
         let { coords: [tx, ty] } = cacheTotal;
         let dx, dy, x1, y1, coords;
         if(cache) {
@@ -1387,28 +1390,27 @@ class Dom extends Xom {
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
-          cacheTotal.x1 = x1;
-          cacheTotal.y1 = y1;
+          cacheTotal.x1 = x1 - bx;
+          cacheTotal.y1 = y1 - by;
           dx += tx;
           dy += ty;
           dx -= coords[0];
           dy -= coords[1];
           cacheTotal.dx = dx;
           cacheTotal.dy = dy;
-          super.__applyCache(renderMode, lv, cacheTotal.ctx, tx - 1, ty - 1);
+          super.__applyCache(renderMode, lv, cacheTotal.ctx, tx - 1 + bx, ty - 1 + by);
           zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx, dy);
+              item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx + bx, dy + by);
             }
             else {
-              item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, tx, ty, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
+              item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, tx + bx, ty + by, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
             }
           });
         }
       }
       // 超尺寸无法进行，降级渲染
       else {
-        let { sx, sy } = this;
         tx = sx + computedStyle.marginLeft;
         ty = sy + computedStyle.marginTop;
         super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
@@ -1431,25 +1433,34 @@ class Dom extends Xom {
     }
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === MODE.CHILD) {
+      // 优先filter
       if(cacheFilter) {
         let parent = this.domParent;
         let dx = this.sx - parent.sx;
         let dy = this.sy - parent.sy;
-        ctx.drawImage(cacheFilter.canvas, tx + dx + cacheFilter.dx, ty + dy + cacheFilter.dy);
-        return;
-      }
-      // 被当做总缓存下的子元素也有总缓存时需释放清空
-      if(cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], canvas, size } = cacheTotal;
         // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
         matrix = mx.multiply(matrix, this.matrix);
         opacity *= computedStyle.opacity;
         ctx.setTransform(...matrix);
         ctx.globalAlpha = opacity;
+        ctx.drawImage(cacheFilter.canvas, tx + dx + cacheFilter.dx, ty + dy + cacheFilter.dy);
+        return;
+      }
+      matrix = mx.multiply(matrix, this.matrix);
+      opacity *= computedStyle.opacity;
+      // 因为cache坐标不一定在原点，需要考虑已有matrix，左乘模拟偏移到对应位置而不是用绘制坐标的方式
+      if(tx !== 1 || ty !== 1) {
+        matrix = mx.multiply([1, 0, 0, 1, tx - 1, ty - 1], matrix);
+      }
+      ctx.setTransform(...matrix);
+      ctx.globalAlpha = opacity;
+      // 被当做总缓存下的子元素也有总缓存时需释放清空
+      if(cacheTotal && cacheTotal.available) {
+        let { coords: [x, y], canvas, size } = cacheTotal;
         let parent = this.domParent;
         let dx = this.sx - parent.sx;
         let dy = this.sy - parent.sy;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, tx + dx - 1, ty + dy - 1, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx, dy, size, size);
         return;
       }
       let dx, dy, ox, oy;
@@ -1458,27 +1469,23 @@ class Dom extends Xom {
       if(cache && cache.available) {
         dx = cache.dx;
         dy = cache.dy;
-        let coords = cache.coords;
+        let [x, y] = cache.coords;
         ox = sx - x1;
         oy = sy - y1;
-        dx += tx - coords[0] + ox;
-        dy += ty - coords[1] + oy;
+        dx += ox - x;
+        dy += oy - y;
       }
       else {
         ox = oy = 0;
-        dx = tx - x1;
-        dy = ty - y1;
+        dx = - x1;
+        dy = - y1;
       }
-      // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
-      matrix = mx.multiply(matrix, this.matrix);
-      opacity *= computedStyle.opacity;
-      ctx.setTransform(...matrix);
-      ctx.globalAlpha = opacity;
-      // 无内容空执行
-      super.__applyCache(renderMode, lv, ctx, tx + ox - 1, ty + oy - 1);
+      // 即便无内容也只是空执行
+      super.__applyCache(renderMode, lv, ctx, ox, oy);
+      // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx, dy);
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx + 1, dy + 1);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);

@@ -12,14 +12,26 @@ class Cache {
     let [x, y] = page.getCoords(pos);
     // 四周各+1px的扩展
     this.__coords = [x + 1, y + 1];
-    page.canvas && (this.__enabled = true);
+    if(page.canvas) {
+      this.__enabled = true;
+      if(typeof karas !== 'undefined' && karas.debug) {
+        let ctx = this.ctx;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.beginPath();
+        ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
   }
 
   clear() {
     this.__available = false;
     if(this.enabled && this.ctx) {
+      this.ctx.setTransform([1, 0, 0, 1, 0, 0]);
       let [x, y] = this.coords;
-      this.ctx.clearRect(x - 1, y - 1, this.page.size, this.page.size);
+      let size = this.page.size;
+      this.ctx.clearRect(x - 1, y - 1, size, size);
     }
   }
 

@@ -1217,7 +1217,6 @@ class Xom extends Node {
       __cacheStyle.matrix = tf.calMatrixByOrigin(computedStyle.transform, tfo);
     }
     // 决定是否缓存位图的指数，有内容就缓存，空容器无内容
-    let hasContent;
     if(renderMode === mode.CANVAS) {
       if(util.isString(backgroundImage)) {
         return true;
@@ -1249,10 +1248,6 @@ class Xom extends Node {
         if(v[0] > 0 && v[1] > 0) {
           return true;
         }
-      }
-      let filter = computedStyle.filter;
-      if(Array.isArray(filter) && filter.length) {
-        return true;
       }
     }
     return false;
@@ -1422,7 +1417,7 @@ class Xom extends Node {
         if(cache && cache.available) {
           cache.release();
         }
-        return { break: true, canCache };
+        return { break: true, canCache, filter };
       }
       let isGeom = this.tagName.charAt(0) === '$';
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
@@ -1444,8 +1439,7 @@ class Xom extends Node {
         // 有可能超过最大尺寸限制不使用缓存
         if(cache) {
           this.__cache = cache;
-          // cache.bx = x - bbox[0]; // dom原点和bbox原点的差值
-          // cache.by = y - bbox[1];
+          cache.__bbox = bbox;
           cache.ox = x - x1; // padding原点和dom原点的差值
           cache.oy = y - y1;
           cache.x1 = x1; // padding原点坐标

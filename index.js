@@ -11600,6 +11600,7 @@
           __cacheStyle.matrix = tf.calMatrixByOrigin(computedStyle.transform, tfo);
         } // 决定是否缓存位图的指数，有内容就缓存，空容器无内容
 
+
         if (renderMode === mode.CANVAS) {
           if (util.isString(backgroundImage)) {
             return true;
@@ -11638,12 +11639,6 @@
             if (v[0] > 0 && v[1] > 0) {
               return true;
             }
-          }
-
-          var filter = computedStyle.filter;
-
-          if (Array.isArray(filter) && filter.length) {
-            return true;
           }
         }
 
@@ -11831,7 +11826,8 @@
 
             return {
               "break": true,
-              canCache: canCache
+              canCache: canCache,
+              filter: filter
             };
           }
 
@@ -11862,9 +11858,8 @@
 
 
             if (cache) {
-              this.__cache = cache; // cache.bx = x - bbox[0]; // dom原点和bbox原点的差值
-              // cache.by = y - bbox[1];
-
+              this.__cache = cache;
+              cache.__bbox = bbox;
               cache.ox = x - x1; // padding原点和dom原点的差值
 
               cache.oy = y - y1;
@@ -13901,31 +13896,29 @@
     CHILD: 2 // 局部根节点的子节点汇总渲染
 
   };
+  /**
+   * 复制cacheTotal的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+   * @param cacheTotal
+   * @param v
+   * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
+   */
 
-  function genOffScreenBlur(cacheTotal, v, bboxTotal) {
+  function genOffScreenBlur(cacheTotal, v) {
     var _cacheTotal$coords = _slicedToArray(cacheTotal.coords, 2),
         x = _cacheTotal$coords[0],
         y = _cacheTotal$coords[1],
         size = cacheTotal.size,
         canvas = cacheTotal.canvas,
         x1 = cacheTotal.x1,
-        y1 = cacheTotal.y1,
-        bx = cacheTotal.bx,
-        by = cacheTotal.by;
+        y1 = cacheTotal.y1;
 
-    var dx = x1 - bboxTotal[0];
-    var dy = y1 - bboxTotal[1];
     var offScreen = inject.getCacheCanvas(size, size);
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 + bx, dy - 1 + by, size, size);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
     blur.gaussBlur(offScreen, cacheFilter, v, size, size);
     cacheFilter.x1 = x1;
     cacheFilter.y1 = y1;
-    cacheFilter.dx = dx;
-    cacheFilter.dy = dy;
-    cacheFilter.bx = bx;
-    cacheFilter.by = by;
     return cacheFilter;
   }
 
@@ -15165,7 +15158,6 @@
         }
 
         if (renderMode === mode.CANVAS && cacheFilter && blurValue && lv < o$1.REPAINT && !o$1.contain(lv, o$1.FILTER)) {
-          //
           return res;
         }
 
@@ -15176,11 +15168,40 @@
         if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
           if (renderMode === mode.CANVAS) {
             if (blurValue) {
-              // blur变化更新cacheFilter，用新的bbox
+              // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
               if (o$1.contain(lv, o$1.FILTER)) {
                 var bbox = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
 
-                this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue, bbox);
+                var old = cacheTotal.bbox; // bbox没变化省略更新total
+
+                if (util.equalArr(bbox, old)) {
+                  this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+                } else {
+                  var dx = bbox[0] - old[0];
+                  var dy = bbox[1] - old[1];
+                  var newTotal = Cache.getInstance(bbox);
+
+                  if (newTotal && newTotal.available) {
+                    var _cacheTotal = cacheTotal,
+                        _cacheTotal$coords2 = _slicedToArray(_cacheTotal.coords, 2),
+                        ox = _cacheTotal$coords2[0],
+                        oy = _cacheTotal$coords2[1],
+                        size = _cacheTotal.size;
+
+                    var _newTotal$coords = _slicedToArray(newTotal.coords, 2),
+                        nx = _newTotal$coords[0],
+                        ny = _newTotal$coords[1],
+                        size2 = newTotal.size;
+
+                    newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+                    cacheTotal.release();
+                    cacheTotal = this.__cacheTotal = newTotal;
+                    this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+                  } // 更新后超限，丢掉blur降级
+                  else {
+                      this.__cacheFilter = null;
+                    }
+                }
               }
             } else {
               this.__cacheFilter = null;
@@ -15404,17 +15425,14 @@
        * @param lv
        * @param ctx
        * @param mode 局部根节点总缓存、及其子节点、最后root发起的无局部整体的节点自身缓存应用
-       * @param tx 汇总离屏canvas的目标x
-       * @param ty 汇总离屏canvas的目标y
-       * @param x1 从border算起的坐标，除去margin
-       * @param y1
+       * @param cacheTop 汇总离屏canvas的目标
        * @param opacity 以top为基点
        * @param matrix 以top为基点
        */
 
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
+      value: function __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
         var cacheFilter = this.__cacheFilter;
         var cacheTotal = this.__cacheTotal;
         var cache = this.__cache;
@@ -15455,40 +15473,38 @@
               sy = this.sy; // 缓存可用时各children依次执行进行离屏汇总
 
           if (cacheTotal && cacheTotal.enabled) {
-            var bx = cacheTotal.bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
+            cacheTotal.__bbox = bboxTotal;
 
-            var by = cacheTotal.by = sy - bboxTotal[1];
+            var _cacheTotal2 = cacheTotal,
+                _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
+                tx = _cacheTotal2$coords[0],
+                ty = _cacheTotal2$coords[1];
 
-            var _cacheTotal = cacheTotal,
-                _cacheTotal$coords2 = _slicedToArray(_cacheTotal.coords, 2),
-                _tx = _cacheTotal$coords2[0],
-                _ty = _cacheTotal$coords2[1];
-
-            var dx, dy, _x, _y, coords;
+            var dx, dy, x1, y1, coords;
 
             if (cache) {
               dx = cache.dx;
               dy = cache.dy;
-              _x = cache.x1;
-              _y = cache.y1;
+              x1 = cache.x1;
+              y1 = cache.y1;
               coords = cache.coords;
             } else {
               var _sx = this.sx,
                   _sy = this.sy;
-              _x = _sx + computedStyle.marginLeft;
-              _y = _sy + computedStyle.marginTop;
-              dx = _tx - _x;
-              dy = _ty - _y;
-              coords = [_tx, _ty];
+              x1 = _sx + computedStyle.marginLeft;
+              y1 = _sy + computedStyle.marginTop;
+              dx = tx - x1;
+              dy = ty - y1;
+              coords = [tx, ty];
             } // 首次生成
 
 
             if (!cacheTotal.available) {
               cacheTotal.__available = true;
-              cacheTotal.x1 = _x - bx;
-              cacheTotal.y1 = _y - by;
-              dx += _tx;
-              dy += _ty;
+              cacheTotal.x1 = x1;
+              cacheTotal.y1 = y1;
+              dx += tx;
+              dy += ty;
               dx -= coords[0];
               dy -= coords[1];
               cacheTotal.dx = dx;
@@ -15497,7 +15513,7 @@
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1, _ty - 1);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
@@ -15506,16 +15522,17 @@
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, null, ctx, null, dx, dy);
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, _tx + bx, _ty + by, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }
               });
             }
           } // 超尺寸无法进行，降级渲染
           else {
-              tx = sx + computedStyle.marginLeft;
-              ty = sy + computedStyle.marginTop;
+              var _tx = sx + computedStyle.marginLeft;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
+              var _ty = sy + computedStyle.marginTop;
+
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1, _ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
@@ -15528,35 +15545,13 @@
 
 
           if (blurValue && cacheTotal && cacheTotal.available) {
-            this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue, bboxTotal);
+            this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
           } else if (cacheFilter) {
             this.__cacheFilter = null;
           }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
         else if (mode === MODE.CHILD) {
-            var _ctx2;
-
-            // 优先filter
-            if (cacheFilter) {
-              var _ctx;
-
-              var parent = this.domParent;
-
-              var _dx2 = this.sx - parent.sx + cacheFilter.dx;
-
-              var _dy2 = this.sy - parent.sy + cacheFilter.dy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
-
-
-              matrix = mx.multiply(matrix, this.matrix);
-              opacity *= computedStyle.opacity;
-
-              (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
-
-              ctx.globalAlpha = opacity;
-              console.log(_dx2, _dy2, cacheFilter);
-              ctx.drawImage(cacheFilter.canvas, tx + _dx2 - cacheFilter.bx * 2, ty + _dy2 - cacheFilter.by * 2);
-              return;
-            }
+            var _ctx;
 
             matrix = mx.multiply(matrix, this.matrix);
             opacity *= computedStyle.opacity; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
@@ -15565,40 +15560,47 @@
                 tox = _computedStyle$transf[0],
                 toy = _computedStyle$transf[1];
 
-            var tfx = tox + tx;
-            var tfy = toy + ty;
             var m = matrix.slice(0);
+
+            var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
+                _tx2 = _cacheTop$coords[0],
+                _ty2 = _cacheTop$coords[1],
+                _x = cacheTop.x1,
+                _y = cacheTop.y1;
+
+            var tfx = tox + _tx2;
+            var tfy = toy + _ty2;
 
             if (tfx || tfy) {
               m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
             }
 
-            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(m));
+            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(m));
 
-            ctx.globalAlpha = opacity; // 被当做总缓存下的子元素也有总缓存时
+            ctx.globalAlpha = opacity; // 优先filter
+
+            if (cacheFilter) {
+              ctx.drawImage(cacheFilter.canvas, -tox - 1, -toy - 1);
+              return;
+            } // 被当做总缓存下的子元素也有总缓存时
+
 
             if (cacheTotal && cacheTotal.available) {
-              var _cacheTotal2 = cacheTotal,
-                  _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
-                  x = _cacheTotal2$coords[0],
-                  y = _cacheTotal2$coords[1],
-                  canvas = _cacheTotal2.canvas,
-                  size = _cacheTotal2.size;
+              var _cacheTotal3 = cacheTotal,
+                  _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
+                  x = _cacheTotal3$coords[0],
+                  y = _cacheTotal3$coords[1],
+                  canvas = _cacheTotal3.canvas,
+                  size = _cacheTotal3.size;
 
-              var _parent = this.domParent;
-
-              var _dx3 = this.sx - _parent.sx;
-
-              var _dy3 = this.sy - _parent.sy;
-
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, _dx3 - tox - 1, _dy3 - toy - 1, size, size);
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, -tox - 1, -toy - 1, size, size);
               return;
             }
 
             var _dx = 0,
                 _dy = 0,
-                ox = 0,
-                oy = 0;
+                ox,
+                oy;
             var _sx2 = this.sx,
                 _sy2 = this.sy; // 可能会无内容没cache，跳过自身继续看children
 
@@ -15610,8 +15612,8 @@
                   _x2 = _cache$coords[0],
                   _y2 = _cache$coords[1];
 
-              ox = _sx2 - x1;
-              oy = _sy2 - y1;
+              ox = _sx2 - _x;
+              oy = _sy2 - _y;
               _dx += ox - _x2;
               _dy += oy - _y2;
             } else {
@@ -15619,8 +15621,8 @@
                   _x3 = _this$bbox[0],
                   _y3 = _this$bbox[1];
 
-              ox = _sx2 - x1;
-              oy = _sy2 - y1;
+              ox = _sx2 - _x;
+              oy = _sy2 - _y;
               _dx += ox - _x3;
               _dy += oy - _y3;
             } // 即便无内容也只是空执行
@@ -15633,38 +15635,36 @@
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                 item.__renderByMask(renderMode, null, ctx, null, _dx - tox, _dy - toy);
               } else {
-                item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
+                item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }
             });
           } // root调用局部整体缓存或单个节点缓存绘入主画布
           else if (mode === MODE.ROOT) {
-              var _ctx3;
+              var _ctx2;
 
               var __opacity = this.__opacity,
                   matrixEvent = this.matrixEvent; // 写回主画布前设置
 
               ctx.globalAlpha = __opacity;
 
-              (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrixEvent));
+              (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
 
               if (cacheFilter) {
                 var _x4 = cacheFilter.x1,
-                    _y4 = cacheFilter.y1,
-                    _dx4 = cacheFilter.dx,
-                    _dy4 = cacheFilter.dy;
-                ctx.drawImage(cacheFilter.canvas, _x4 - _dx4, _y4 - _dy4);
+                    _y4 = cacheFilter.y1;
+                ctx.drawImage(cacheFilter.canvas, _x4 - 1, _y4 - 1);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
-                var _cacheTotal3 = cacheTotal,
-                    _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _x6 = _cacheTotal3$coords[0],
-                    _y6 = _cacheTotal3$coords[1],
-                    _size = _cacheTotal3.size,
-                    _canvas = _cacheTotal3.canvas,
-                    _x5 = _cacheTotal3.x1,
-                    _y5 = _cacheTotal3.y1;
+                var _cacheTotal4 = cacheTotal,
+                    _cacheTotal4$coords = _slicedToArray(_cacheTotal4.coords, 2),
+                    _x6 = _cacheTotal4$coords[0],
+                    _y6 = _cacheTotal4$coords[1],
+                    _size = _cacheTotal4.size,
+                    _canvas = _cacheTotal4.canvas,
+                    _x5 = _cacheTotal4.x1,
+                    _y5 = _cacheTotal4.y1;
 
                 ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - 1, _y5 - 1, _size, _size);
                 return;

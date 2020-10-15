@@ -23,21 +23,21 @@ const MODE = {
   CHILD: 2, // 局部根节点的子节点汇总渲染
 };
 
-function genOffScreenBlur(cacheTotal, v, bboxTotal) {
-  let { coords: [x, y], size, canvas, x1, y1, bx, by } = cacheTotal;
-  let dx = x1 - bboxTotal[0];
-  let dy = y1 - bboxTotal[1];
+/**
+ * 复制cacheTotal的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+ * @param cacheTotal
+ * @param v
+ * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
+ */
+function genOffScreenBlur(cacheTotal, v) {
+  let { coords: [x, y], size, canvas, x1, y1 } = cacheTotal;
   let offScreen = inject.getCacheCanvas(size, size);
-  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 + bx, dy - 1 + by, size, size);
+  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
   cacheFilter.x1 = x1;
   cacheFilter.y1 = y1;
-  cacheFilter.dx = dx;
-  cacheFilter.dy = dy;
-  cacheFilter.bx = bx;
-  cacheFilter.by = by;
   return cacheFilter;
 }
 
@@ -1122,7 +1122,6 @@ class Dom extends Xom {
     }
     if(renderMode === mode.CANVAS && cacheFilter && blurValue
       && lv < level.REPAINT && !level.contain(lv, level.FILTER)) {
-      //
       return res;
     }
     this.__cacheFilter = null;
@@ -1131,10 +1130,31 @@ class Dom extends Xom {
     if(lv < level.REPAINT && cacheTotal && cacheTotal.available) {
       if(renderMode === mode.CANVAS) {
         if(blurValue) {
-          // blur变化更新cacheFilter，用新的bbox
+          // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
           if(level.contain(lv, level.FILTER)) {
             let bbox = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
-            this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue, bbox);
+            let old = cacheTotal.bbox;
+            // bbox没变化省略更新total
+            if(util.equalArr(bbox, old)) {
+              this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+            }
+            else {
+              let dx = bbox[0] - old[0];
+              let dy = bbox[1] - old[1];
+              let newTotal = Cache.getInstance(bbox);
+              if(newTotal && newTotal.available) {
+                let { coords: [ox, oy], size } = cacheTotal;
+                let { coords: [nx, ny], size: size2 } = newTotal;
+                newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+                cacheTotal.release();
+                cacheTotal = this.__cacheTotal = newTotal;
+                this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+              }
+              // 更新后超限，丢掉blur降级
+              else {
+                this.__cacheFilter = null;
+              }
+            }
           }
         }
         else {
@@ -1330,14 +1350,11 @@ class Dom extends Xom {
    * @param lv
    * @param ctx
    * @param mode 局部根节点总缓存、及其子节点、最后root发起的无局部整体的节点自身缓存应用
-   * @param tx 汇总离屏canvas的目标x
-   * @param ty 汇总离屏canvas的目标y
-   * @param x1 从border算起的坐标，除去margin
-   * @param y1
+   * @param cacheTop 汇总离屏canvas的目标
    * @param opacity 以top为基点
    * @param matrix 以top为基点
    */
-  __applyCache(renderMode, lv, ctx, mode, tx, ty, x1, y1, opacity, matrix) {
+  __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
     let cacheFilter = this.__cacheFilter;
     let cacheTotal = this.__cacheTotal;
     let cache = this.__cache;
@@ -1370,8 +1387,7 @@ class Dom extends Xom {
       let { sx, sy } = this;
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
-        let bx = cacheTotal.bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
-        let by = cacheTotal.by = sy - bboxTotal[1];
+        cacheTotal.__bbox = bboxTotal;
         let { coords: [tx, ty] } = cacheTotal;
         let dx, dy, x1, y1, coords;
         if(cache) {
@@ -1392,8 +1408,8 @@ class Dom extends Xom {
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
-          cacheTotal.x1 = x1 - bx;
-          cacheTotal.y1 = y1 - by;
+          cacheTotal.x1 = x1;
+          cacheTotal.y1 = y1;
           dx += tx;
           dy += ty;
           dx -= coords[0];
@@ -1411,15 +1427,15 @@ class Dom extends Xom {
               item.__renderByMask(renderMode, null, ctx, null, dx, dy);
             }
             else {
-              item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, tx + bx, ty + by, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
+              item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
             }
           });
         }
       }
       // 超尺寸无法进行，降级渲染
       else {
-        tx = sx + computedStyle.marginLeft;
-        ty = sy + computedStyle.marginTop;
+        let tx = sx + computedStyle.marginLeft;
+        let ty = sy + computedStyle.marginTop;
         super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
         zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
@@ -1432,7 +1448,7 @@ class Dom extends Xom {
       }
       // 生成filter缓存
       if(blurValue && cacheTotal && cacheTotal.available) {
-        this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue, bboxTotal);
+        this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
       }
       else if(cacheFilter) {
         this.__cacheFilter = null;
@@ -1440,41 +1456,31 @@ class Dom extends Xom {
     }
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === MODE.CHILD) {
-      // 优先filter
-      if(cacheFilter) {
-        let parent = this.domParent;
-        let dx = this.sx - parent.sx + cacheFilter.dx;
-        let dy = this.sy - parent.sy + cacheFilter.dy;
-        // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
-        matrix = mx.multiply(matrix, this.matrix);
-        opacity *= computedStyle.opacity;
-        ctx.setTransform(...matrix);
-        ctx.globalAlpha = opacity; console.log(dx,dy,cacheFilter)
-        ctx.drawImage(cacheFilter.canvas, tx + dx - cacheFilter.bx * 2, ty + dy - cacheFilter.by * 2);
-        return;
-      }
       matrix = mx.multiply(matrix, this.matrix);
       opacity *= computedStyle.opacity;
       // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
       let [tox, toy] = computedStyle.transformOrigin;
+      let m = matrix.slice(0);
+      let { coords: [tx, ty], x1, y1 } = cacheTop;
       let tfx = tox + tx;
       let tfy = toy + ty;
-      let m = matrix.slice(0);
       if(tfx || tfy) {
         m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
       }
       ctx.setTransform(...m);
       ctx.globalAlpha = opacity;
+      // 优先filter
+      if(cacheFilter) {
+        ctx.drawImage(cacheFilter.canvas, - tox - 1, - toy - 1);
+        return;
+      }
       // 被当做总缓存下的子元素也有总缓存时
       if(cacheTotal && cacheTotal.available) {
         let { coords: [x, y], canvas, size } = cacheTotal;
-        let parent = this.domParent;
-        let dx = this.sx - parent.sx;
-        let dy = this.sy - parent.sy;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - tox - 1, dy - toy - 1, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, - tox - 1, - toy - 1, size, size);
         return;
       }
-      let dx = 0, dy = 0, ox = 0, oy = 0;
+      let dx = 0, dy = 0, ox, oy;
       let { sx, sy } = this;
       // 可能会无内容没cache，跳过自身继续看children
       if(cache && cache.available) {
@@ -1501,7 +1507,7 @@ class Dom extends Xom {
           item.__renderByMask(renderMode, null, ctx, null, dx - tox, dy - toy);
         }
         else {
-          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
+          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
         }
       });
     }
@@ -1512,8 +1518,8 @@ class Dom extends Xom {
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
       if(cacheFilter) {
-        let { x1, y1, dx, dy } = cacheFilter;
-        ctx.drawImage(cacheFilter.canvas, x1 - dx, y1 - dy);
+        let { x1, y1 } = cacheFilter;
+        ctx.drawImage(cacheFilter.canvas, x1 - 1, y1 - 1);
         return;
       }
       if(cacheTotal && cacheTotal.available) {

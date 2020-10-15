@@ -11676,7 +11676,7 @@
         if (renderMode === mode.SVG) {
           if (lv < o$1.REPAINT && this.__virtualDom) {
             // 局部根还在说明孩子节点无变化，可直接用老的
-            if (this.__cacheTotal) {
+            if (this.__cacheTotal && this.__cacheTotal.available) {
               virtualDom = this.__virtualDom;
               virtualDom.lv = lv;
             } // 否则extend老的，设置lv变化，等dom调用便跟children

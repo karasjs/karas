@@ -1289,7 +1289,7 @@ class Xom extends Node {
     if(renderMode === mode.SVG) {
       if(lv < level.REPAINT && this.__virtualDom) {
         // 局部根还在说明孩子节点无变化，可直接用老的
-        if(this.__cacheTotal) {
+        if(this.__cacheTotal && this.__cacheTotal.available) {
           virtualDom = this.__virtualDom;
           virtualDom.lv = lv;
         }

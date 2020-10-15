@@ -13902,19 +13902,21 @@
 
   };
 
-  function genOffScreenBlur(cache, v, bboxTotal) {
-    var _cache$coords = _slicedToArray(cache.coords, 2),
-        x = _cache$coords[0],
-        y = _cache$coords[1],
-        size = cache.size,
-        canvas = cache.canvas,
-        x1 = cache.x1,
-        y1 = cache.y1;
+  function genOffScreenBlur(cacheTotal, v, bboxTotal) {
+    var _cacheTotal$coords = _slicedToArray(cacheTotal.coords, 2),
+        x = _cacheTotal$coords[0],
+        y = _cacheTotal$coords[1],
+        size = cacheTotal.size,
+        canvas = cacheTotal.canvas,
+        x1 = cacheTotal.x1,
+        y1 = cacheTotal.y1,
+        bx = cacheTotal.bx,
+        by = cacheTotal.by;
 
     var dx = x1 - bboxTotal[0];
     var dy = y1 - bboxTotal[1];
     var offScreen = inject.getCacheCanvas(size, size);
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 + bx, dy - 1 + by, size, size);
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
     blur.gaussBlur(offScreen, cacheFilter, v, size, size);
@@ -13922,6 +13924,8 @@
     cacheFilter.y1 = y1;
     cacheFilter.dx = dx;
     cacheFilter.dy = dy;
+    cacheFilter.bx = bx;
+    cacheFilter.by = by;
     return cacheFilter;
   }
 
@@ -15451,14 +15455,14 @@
               sy = this.sy; // 缓存可用时各children依次执行进行离屏汇总
 
           if (cacheTotal && cacheTotal.enabled) {
-            var bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
+            var bx = cacheTotal.bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
 
-            var by = sy - bboxTotal[1];
+            var by = cacheTotal.by = sy - bboxTotal[1];
 
             var _cacheTotal = cacheTotal,
-                _cacheTotal$coords = _slicedToArray(_cacheTotal.coords, 2),
-                _tx = _cacheTotal$coords[0],
-                _ty = _cacheTotal$coords[1];
+                _cacheTotal$coords2 = _slicedToArray(_cacheTotal.coords, 2),
+                _tx = _cacheTotal$coords2[0],
+                _ty = _cacheTotal$coords2[1];
 
             var dx, dy, _x, _y, coords;
 
@@ -15493,14 +15497,14 @@
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1 + bx, _ty - 1 + by);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1, _ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
+                  item.__renderByMask(renderMode, null, ctx, null, dx, dy);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, _tx + bx, _ty + by, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
                 }
@@ -15538,9 +15542,9 @@
 
               var parent = this.domParent;
 
-              var _dx2 = this.sx - parent.sx;
+              var _dx2 = this.sx - parent.sx + cacheFilter.dx;
 
-              var _dy2 = this.sy - parent.sy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
+              var _dy2 = this.sy - parent.sy + cacheFilter.dy; // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
 
 
               matrix = mx.multiply(matrix, this.matrix);
@@ -15549,7 +15553,8 @@
               (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
 
               ctx.globalAlpha = opacity;
-              ctx.drawImage(cacheFilter.canvas, tx + _dx2 + cacheFilter.dx, ty + _dy2 + cacheFilter.dy);
+              console.log(_dx2, _dy2, cacheFilter);
+              ctx.drawImage(cacheFilter.canvas, tx + _dx2 - cacheFilter.bx * 2, ty + _dy2 - cacheFilter.by * 2);
               return;
             }
 
@@ -15601,9 +15606,9 @@
               _dx = cache.dx;
               _dy = cache.dy;
 
-              var _cache$coords2 = _slicedToArray(cache.coords, 2),
-                  _x2 = _cache$coords2[0],
-                  _y2 = _cache$coords2[1];
+              var _cache$coords = _slicedToArray(cache.coords, 2),
+                  _x2 = _cache$coords[0],
+                  _y2 = _cache$coords[1];
 
               ox = _sx2 - x1;
               oy = _sy2 - y1;

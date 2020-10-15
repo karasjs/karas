@@ -23,12 +23,12 @@ const MODE = {
   CHILD: 2, // 局部根节点的子节点汇总渲染
 };
 
-function genOffScreenBlur(cache, v, bboxTotal) {
-  let { coords: [x, y], size, canvas, x1, y1 } = cache;
+function genOffScreenBlur(cacheTotal, v, bboxTotal) {
+  let { coords: [x, y], size, canvas, x1, y1, bx, by } = cacheTotal;
   let dx = x1 - bboxTotal[0];
   let dy = y1 - bboxTotal[1];
   let offScreen = inject.getCacheCanvas(size, size);
-  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
+  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 + bx, dy - 1 + by, size, size);
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
@@ -36,6 +36,8 @@ function genOffScreenBlur(cache, v, bboxTotal) {
   cacheFilter.y1 = y1;
   cacheFilter.dx = dx;
   cacheFilter.dy = dy;
+  cacheFilter.bx = bx;
+  cacheFilter.by = by;
   return cacheFilter;
 }
 
@@ -1368,8 +1370,8 @@ class Dom extends Xom {
       let { sx, sy } = this;
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
-        let bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
-        let by = sy - bboxTotal[1];
+        let bx = cacheTotal.bx = sx - bboxTotal[0]; // dom原点和bbox原点的差值
+        let by = cacheTotal.by = sy - bboxTotal[1];
         let { coords: [tx, ty] } = cacheTotal;
         let dx, dy, x1, y1, coords;
         if(cache) {
@@ -1401,12 +1403,12 @@ class Dom extends Xom {
           ctx = cacheTotal.ctx;
           ctx.setTransform([1, 0, 0, 1, 0, 0]);
           ctx.globalAlpha = 1;
-          super.__applyCache(renderMode, lv, ctx, tx - 1 + bx, ty - 1 + by);
+          super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
           zIndexChildren.forEach(item => {
             ctx.setTransform([1, 0, 0, 1, 0, 0]);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
+              item.__renderByMask(renderMode, null, ctx, null, dx, dy);
             }
             else {
               item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, tx + bx, ty + by, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
@@ -1441,14 +1443,14 @@ class Dom extends Xom {
       // 优先filter
       if(cacheFilter) {
         let parent = this.domParent;
-        let dx = this.sx - parent.sx;
-        let dy = this.sy - parent.sy;
+        let dx = this.sx - parent.sx + cacheFilter.dx;
+        let dy = this.sy - parent.sy + cacheFilter.dy;
         // 非top的缓存以top为起点matrix单位，top会设置总的matrixEvent，opacity也是
         matrix = mx.multiply(matrix, this.matrix);
         opacity *= computedStyle.opacity;
         ctx.setTransform(...matrix);
-        ctx.globalAlpha = opacity;
-        ctx.drawImage(cacheFilter.canvas, tx + dx + cacheFilter.dx, ty + dy + cacheFilter.dy);
+        ctx.globalAlpha = opacity; console.log(dx,dy,cacheFilter)
+        ctx.drawImage(cacheFilter.canvas, tx + dx - cacheFilter.bx * 2, ty + dy - cacheFilter.by * 2);
         return;
       }
       matrix = mx.multiply(matrix, this.matrix);

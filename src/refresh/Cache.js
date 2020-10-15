@@ -15,7 +15,8 @@ class Cache {
     if(page.canvas) {
       this.__enabled = true;
       if(typeof karas !== 'undefined' && karas.debug) {
-        let ctx = this.ctx;
+        page.canvas.setAttribute('size', page.size);
+        let ctx = page.ctx;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.beginPath();
         ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);

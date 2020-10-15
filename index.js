@@ -10431,7 +10431,8 @@
           this.__enabled = true;
 
           if (typeof karas !== 'undefined' && karas.debug) {
-            var ctx = this.ctx;
+            page.canvas.setAttribute('size', page.size);
+            var ctx = page.ctx;
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.beginPath();
             ctx.rect(x + 1, y + 1, page.size - 2, page.size - 2);
@@ -15476,14 +15477,20 @@
               dy -= coords[1];
               cacheTotal.dx = dx;
               cacheTotal.dy = dy;
+              ctx = cacheTotal.ctx;
+              ctx.setTransform([1, 0, 0, 1, 0, 0]);
+              ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, cacheTotal.ctx, _tx - 1 + bx, _ty - 1 + by);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1 + bx, _ty - 1 + by);
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx + bx, dy + by);
+                  ctx.setTransform([1, 0, 0, 1, 0, 0]);
+                  ctx.globalAlpha = 1;
+
+                  item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, _tx + bx, _ty + by, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, _tx + bx, _ty + by, _x, _y, 1, [1, 0, 0, 1, 0, 0]);
                 }
               });
             }
@@ -15496,7 +15503,7 @@
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+                  item.__renderByMask(renderMode, null, ctx);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
                 }
@@ -15511,8 +15518,12 @@
           }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
         else if (mode === MODE.CHILD) {
+            var _ctx2;
+
             // 优先filter
             if (cacheFilter) {
+              var _ctx;
+
               var parent = this.domParent;
 
               var _dx2 = this.sx - parent.sx;
@@ -15522,7 +15533,9 @@
 
               matrix = mx.multiply(matrix, this.matrix);
               opacity *= computedStyle.opacity;
-              ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+
+              (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
+
               ctx.globalAlpha = opacity;
               ctx.drawImage(cacheFilter.canvas, tx + _dx2 + cacheFilter.dx, ty + _dy2 + cacheFilter.dy);
               return;
@@ -15542,7 +15555,8 @@
               matrix = mx.multiply([1, 0, 0, 1, tfx, tfy], matrix);
             }
 
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix));
+
             ctx.globalAlpha = opacity; // 被当做总缓存下的子元素也有总缓存时需释放清空
 
             if (cacheTotal && cacheTotal.available) {
@@ -15592,18 +15606,21 @@
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, _dx + 1 - tox, _dy + 1 - toy);
+                item.__renderByMask(renderMode, null, ctx, null, _dx + 1 - tox, _dy + 1 - toy);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
               }
             });
           } // root调用局部整体缓存或单个节点缓存绘入主画布
           else if (mode === MODE.ROOT) {
+              var _ctx3;
+
               var __opacity = this.__opacity,
                   matrixEvent = this.matrixEvent; // 写回主画布前设置
 
               ctx.globalAlpha = __opacity;
-              ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent));
+
+              (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrixEvent));
 
               if (cacheFilter) {
                 var _x3 = cacheFilter.x1,
@@ -15640,7 +15657,7 @@
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+                  item.__renderByMask(renderMode, null, ctx);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
                 }

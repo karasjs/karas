@@ -1398,13 +1398,18 @@ class Dom extends Xom {
           dy -= coords[1];
           cacheTotal.dx = dx;
           cacheTotal.dy = dy;
-          super.__applyCache(renderMode, lv, cacheTotal.ctx, tx - 1 + bx, ty - 1 + by);
+          ctx = cacheTotal.ctx;
+          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.globalAlpha = 1;
+          super.__applyCache(renderMode, lv, ctx, tx - 1 + bx, ty - 1 + by);
           zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, item.__refreshLevel, cacheTotal.ctx, null, dx + bx, dy + by);
+              ctx.setTransform([1, 0, 0, 1, 0, 0]);
+              ctx.globalAlpha = 1;
+              item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
             }
             else {
-              item.__applyCache(renderMode, item.__refreshLevel, cacheTotal.ctx, MODE.CHILD, tx + bx, ty + by, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
+              item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, tx + bx, ty + by, x1, y1, 1, [1, 0, 0, 1, 0, 0]);
             }
           });
         }
@@ -1416,7 +1421,7 @@ class Dom extends Xom {
         super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
         zIndexChildren.forEach(item => {
           if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-            item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+            item.__renderByMask(renderMode, null, ctx);
           }
           else {
             item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
@@ -1488,7 +1493,7 @@ class Dom extends Xom {
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, item.__refreshLevel, ctx, null, dx + 1 - tox, dy + 1 - toy);
+          item.__renderByMask(renderMode, null, ctx, null, dx + 1 - tox, dy + 1 - toy);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, tx, ty, x1, y1, opacity, matrix);
@@ -1519,7 +1524,7 @@ class Dom extends Xom {
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+          item.__renderByMask(renderMode, null, ctx);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);

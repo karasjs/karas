@@ -1415,8 +1415,8 @@ class Dom extends Xom {
           cacheTotal.__available = true;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
-          let bx = cacheTotal.bx = x1 - bboxTotal[0];
-          let by = cacheTotal.by = y1 - bboxTotal[1];
+          cacheTotal.bx = x1 - bboxTotal[0];
+          cacheTotal.by = y1 - bboxTotal[1];
           dx += tx;
           dy += ty;
           dx -= coords[0];
@@ -1426,12 +1426,12 @@ class Dom extends Xom {
           ctx = cacheTotal.ctx;
           ctx.setTransform([1, 0, 0, 1, 0, 0]);
           ctx.globalAlpha = 1;
-          super.__applyCache(renderMode, lv, ctx, tx + bx - 1, ty + by - 1);
+          super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
           zIndexChildren.forEach(item => {
             ctx.setTransform([1, 0, 0, 1, 0, 0]);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
+              item.__renderByMask(renderMode, null, ctx, null, dx, dy);
             }
             else {
               item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
@@ -1496,7 +1496,7 @@ class Dom extends Xom {
       if(cache && cache.available) {
         dx = cache.dx;
         dy = cache.dy;
-        let [x, y] = cache.coords;
+        let { coords: [x, y] } = cache; console.log(cache); console.log(cacheTop)
         ox = sx - x1;
         oy = sy - y1;
         dx += ox - x;

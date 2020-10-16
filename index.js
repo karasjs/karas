@@ -15511,8 +15511,8 @@
               cacheTotal.__available = true;
               cacheTotal.x1 = x1;
               cacheTotal.y1 = y1;
-              var bx = cacheTotal.bx = x1 - bboxTotal[0];
-              var by = cacheTotal.by = y1 - bboxTotal[1];
+              cacheTotal.bx = x1 - bboxTotal[0];
+              cacheTotal.by = y1 - bboxTotal[1];
               dx += tx;
               dy += ty;
               dx -= coords[0];
@@ -15523,14 +15523,14 @@
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx + bx - 1, ty + by - 1);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx + bx, dy + by);
+                  item.__renderByMask(renderMode, null, ctx, null, dx, dy);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }
@@ -15583,12 +15583,12 @@
                 _ty2 = _cacheTop$coords[1],
                 _x = cacheTop.x1,
                 _y = cacheTop.y1,
-                _bx = cacheTop.bx,
-                _by = cacheTop.by;
+                bx = cacheTop.bx,
+                by = cacheTop.by;
 
             var m = matrix.slice(0);
-            var tfx = tox + _tx2 + _bx - 1;
-            var tfy = toy + _ty2 + _by - 1;
+            var tfx = tox + _tx2 + bx - 1;
+            var tfy = toy + _ty2 + by - 1;
             var px = _sx - domParent.sx;
             var py = _sy - domParent.sy;
             tfx += px;
@@ -15628,6 +15628,8 @@
                   _x2 = _cache$coords[0],
                   _y2 = _cache$coords[1];
 
+              console.log(cache);
+              console.log(cacheTop);
               ox = _sx - _x;
               oy = _sy - _y;
               _dx += ox - _x2;
@@ -15668,9 +15670,9 @@
               if (cacheFilter) {
                 var _x4 = cacheFilter.x1,
                     _y4 = cacheFilter.y1,
-                    _bx2 = cacheFilter.bx,
-                    _by2 = cacheFilter.by;
-                ctx.drawImage(cacheFilter.canvas, _x4 - _bx2 - 1, _y4 - _by2 - 1);
+                    _bx = cacheFilter.bx,
+                    _by = cacheFilter.by;
+                ctx.drawImage(cacheFilter.canvas, _x4 - _bx - 1, _y4 - _by - 1);
                 return;
               }
 
@@ -15683,10 +15685,10 @@
                     _canvas = _cacheTotal3.canvas,
                     _x5 = _cacheTotal3.x1,
                     _y5 = _cacheTotal3.y1,
-                    _bx3 = _cacheTotal3.bx,
-                    _by3 = _cacheTotal3.by;
+                    _bx2 = _cacheTotal3.bx,
+                    _by2 = _cacheTotal3.by;
 
-                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx3 - 1, _y5 - _by3 - 1, _size, _size);
+                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx2 - 1, _y5 - _by2 - 1, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -15694,12 +15696,12 @@
               if (cache && cache.available) {
                 var _ox = cache.ox,
                     _oy = cache.oy,
-                    _bx4 = cache.bx,
-                    _by4 = cache.by;
+                    _bx3 = cache.bx,
+                    _by3 = cache.by;
                 var _sx2 = this.sx,
                     _sy2 = this.sy;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx4 - 1, _sy2 - _oy - _by4 - 1);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx3 - 1, _sy2 - _oy - _by3 - 1);
               }
 
               zIndexChildren.forEach(function (item) {

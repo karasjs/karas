@@ -1437,37 +1437,38 @@ class Xom extends Node {
           cache = Cache.getInstance(bbox);
         }
         // 有可能超过最大尺寸限制不使用缓存
-        if(cache) {
+        if(cache && cache.enabled) {
           this.__cache = cache;
           cache.__bbox = bbox;
+          cache.sx = x;
+          cache.sy = y;
+          cache.bx = x1 - bbox[0]; // padding原点和box原点的差值
+          cache.by = y1 - bbox[1];
           cache.ox = x - x1; // padding原点和dom原点的差值
           cache.oy = y - y1;
           cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
-          // 还要判断有无离屏功能开启可用
-          if(cache.enabled) {
-            ctx = cache.ctx;
-            let [x, y] = cache.coords;
-            // cache上记录一些偏移信息，cache坐标和padding原点的差值
-            dx = cache.dx = x - x1;
-            dy = cache.dy = y - y1;
-            // 重置ctx为cache的，以及绘制坐标为cache的区域
-            x1 = x;
-            y1 = y;
-            if(dx) {
-              x2 += dx;
-              x3 += dx;
-              x4 += dx;
-            }
-            if(dy) {
-              y2 += dy;
-              y3 += dy;
-              y4 += dy;
-            }
+          ctx = cache.ctx;
+          let [xc, yc] = cache.coords;
+          dx = cache.dx = xc - bbox[0]; // cache坐标和padding原点的差值
+          dy = cache.dy = yc - bbox[1];
+          // 重置ctx为cache的，以及绘制坐标为cache的区域
+          x1 = xc;
+          y1 = yc;
+          if(dx) {
+            x2 += dx;
+            x3 += dx;
+            x4 += dx;
+          }
+          if(dy) {
+            y2 += dy;
+            y3 += dy;
+            y4 += dy;
           }
         }
         // 更新后可能超了需重置
         else if(this.__cache) {
+          this.__cache.release();
           this.__cache = null;
         }
       }

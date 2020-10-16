@@ -11857,44 +11857,48 @@
             } // 有可能超过最大尺寸限制不使用缓存
 
 
-            if (cache) {
+            if (cache && cache.enabled) {
               this.__cache = cache;
               cache.__bbox = bbox;
+              cache.sx = x;
+              cache.sy = y;
+              cache.bx = x1 - bbox[0]; // padding原点和box原点的差值
+
+              cache.by = y1 - bbox[1];
               cache.ox = x - x1; // padding原点和dom原点的差值
 
               cache.oy = y - y1;
               cache.x1 = x1; // padding原点坐标
 
-              cache.y1 = y1; // 还要判断有无离屏功能开启可用
+              cache.y1 = y1;
+              ctx = cache.ctx;
 
-              if (cache.enabled) {
-                ctx = cache.ctx;
+              var _cache$coords = _slicedToArray(cache.coords, 2),
+                  xc = _cache$coords[0],
+                  yc = _cache$coords[1];
 
-                var _cache$coords = _slicedToArray(cache.coords, 2),
-                    _x = _cache$coords[0],
-                    _y = _cache$coords[1]; // cache上记录一些偏移信息，cache坐标和padding原点的差值
+              dx = cache.dx = xc - bbox[0]; // cache坐标和padding原点的差值
 
+              dy = cache.dy = yc - bbox[1]; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
-                dx = cache.dx = _x - x1;
-                dy = cache.dy = _y - y1; // 重置ctx为cache的，以及绘制坐标为cache的区域
+              x1 = xc;
+              y1 = yc;
 
-                x1 = _x;
-                y1 = _y;
+              if (dx) {
+                x2 += dx;
+                x3 += dx;
+                x4 += dx;
+              }
 
-                if (dx) {
-                  x2 += dx;
-                  x3 += dx;
-                  x4 += dx;
-                }
-
-                if (dy) {
-                  y2 += dy;
-                  y3 += dy;
-                  y4 += dy;
-                }
+              if (dy) {
+                y2 += dy;
+                y3 += dy;
+                y4 += dy;
               }
             } // 更新后可能超了需重置
             else if (this.__cache) {
+                this.__cache.release();
+
                 this.__cache = null;
               }
           } // 无离屏功能视为不可缓存本身
@@ -12095,11 +12099,11 @@
 
                 if (xnl > 0) {
                   for (var i = 0; i < xnl; i++) {
-                    var _x2 = bgX - (i + 1) * w;
+                    var _x = bgX - (i + 1) * w;
 
-                    repeat.push([_x2, bgY]); // 看最左边超过没有
+                    repeat.push([_x, bgY]); // 看最左边超过没有
 
-                    if (!needMask && i === 0 && _x2 < x2) {
+                    if (!needMask && i === 0 && _x < x2) {
                       needMask = true;
                     }
                   }
@@ -12107,11 +12111,11 @@
 
                 if (xnr > 0) {
                   for (var _i3 = 0; _i3 < xnr; _i3++) {
-                    var _x3 = bgX + (_i3 + 1) * w;
+                    var _x2 = bgX + (_i3 + 1) * w;
 
-                    repeat.push([_x3, bgY]); // 看最右边超过没有
+                    repeat.push([_x2, bgY]); // 看最右边超过没有
 
-                    if (!needMask && _i3 === xnr - 1 && _x3 + w > x2 + innerWidth) {
+                    if (!needMask && _i3 === xnr - 1 && _x2 + w > x2 + innerWidth) {
                       needMask = true;
                     }
                   }
@@ -12119,11 +12123,11 @@
 
                 if (ynt > 0) {
                   for (var _i4 = 0; _i4 < ynt; _i4++) {
-                    var _y2 = bgY - (_i4 + 1) * h;
+                    var _y = bgY - (_i4 + 1) * h;
 
-                    repeat.push([bgX, _y2]); // 看最上边超过没有
+                    repeat.push([bgX, _y]); // 看最上边超过没有
 
-                    if (!needMask && _i4 === 0 && _y2 < y2) {
+                    if (!needMask && _i4 === 0 && _y < y2) {
                       needMask = true;
                     }
                   }
@@ -12131,11 +12135,11 @@
 
                 if (ynb > 0) {
                   for (var _i5 = 0; _i5 < ynb; _i5++) {
-                    var _y3 = bgY + (_i5 + 1) * h;
+                    var _y2 = bgY + (_i5 + 1) * h;
 
-                    repeat.push([bgX, _y3]); // 看最下边超过没有
+                    repeat.push([bgX, _y2]); // 看最下边超过没有
 
-                    if (!needMask && _i5 === ynb - 1 && _y3 + w > y2 + innerHeight) {
+                    if (!needMask && _i5 === ynb - 1 && _y2 + w > y2 + innerHeight) {
                       needMask = true;
                     }
                   }
@@ -13910,7 +13914,8 @@
         size = cacheTotal.size,
         canvas = cacheTotal.canvas,
         x1 = cacheTotal.x1,
-        y1 = cacheTotal.y1;
+        y1 = cacheTotal.y1,
+        bbox = cacheTotal.bbox;
 
     var offScreen = inject.getCacheCanvas(size, size);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
@@ -13921,7 +13926,10 @@
     cacheFilter.dy = cacheTotal.dy;
     cacheFilter.coords = cacheTotal.coords;
     cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1;
+    cacheFilter.y1 = y1; // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
+
+    cacheFilter.bx = cacheTotal.bx;
+    cacheFilter.by = cacheTotal.by;
     return cacheFilter;
   }
 
@@ -15492,10 +15500,8 @@
               y1 = cache.y1;
               coords = cache.coords;
             } else {
-              var _sx = this.sx,
-                  _sy = this.sy;
-              x1 = _sx + computedStyle.marginLeft;
-              y1 = _sy + computedStyle.marginTop;
+              x1 = sx + computedStyle.marginLeft;
+              y1 = sy + computedStyle.marginTop;
               dx = tx - x1;
               dy = ty - y1;
               coords = [tx, ty];
@@ -15506,6 +15512,8 @@
               cacheTotal.__available = true;
               cacheTotal.x1 = x1;
               cacheTotal.y1 = y1;
+              var bx = cacheTotal.bx = x1 - bboxTotal[0];
+              var by = cacheTotal.by = y1 - bboxTotal[1];
               dx += tx;
               dy += ty;
               dx -= coords[0];
@@ -15516,7 +15524,7 @@
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx + bx - 1, ty + by - 1);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
@@ -15563,8 +15571,8 @@
                 _dy = 0,
                 ox,
                 oy;
-            var _sx2 = this.sx,
-                _sy2 = this.sy,
+            var _sx = this.sx,
+                _sy = this.sy,
                 domParent = this.domParent; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
 
             var _computedStyle$transf = _slicedToArray(computedStyle.transformOrigin, 2),
@@ -15575,13 +15583,15 @@
                 _tx2 = _cacheTop$coords[0],
                 _ty2 = _cacheTop$coords[1],
                 _x = cacheTop.x1,
-                _y = cacheTop.y1;
+                _y = cacheTop.y1,
+                _bx = cacheTop.bx,
+                _by = cacheTop.by;
 
             var m = matrix.slice(0);
-            var tfx = tox + _tx2 - 1;
-            var tfy = toy + _ty2 - 1;
-            var px = _sx2 - domParent.sx;
-            var py = _sy2 - domParent.sy;
+            var tfx = tox + _tx2 + _bx - 1;
+            var tfy = toy + _ty2 + _by - 1;
+            var px = _sx - domParent.sx;
+            var py = _sy - domParent.sy;
             tfx += px;
             tfy += py;
 
@@ -15602,8 +15612,8 @@
                   _dx2 = _ref.dx,
                   _dy2 = _ref.dy;
 
-              ox = _sx2 - _x;
-              oy = _sy2 - _y;
+              ox = _sx - _x;
+              oy = _sy - _y;
               _dx2 += ox - x;
               _dy2 += oy - y;
               ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox - px, oy - toy - py, size, size);
@@ -15619,8 +15629,8 @@
                   _x2 = _cache$coords[0],
                   _y2 = _cache$coords[1];
 
-              ox = _sx2 - _x;
-              oy = _sy2 - _y;
+              ox = _sx - _x;
+              oy = _sy - _y;
               _dx += ox - _x2;
               _dy += oy - _y2;
             } else {
@@ -15628,8 +15638,8 @@
                   _x3 = _this$bbox[0],
                   _y3 = _this$bbox[1];
 
-              ox = _sx2 - _x;
-              oy = _sy2 - _y;
+              ox = _sx - _x;
+              oy = _sy - _y;
               _dx += ox - _x3;
               _dy += oy - _y3;
             } // 即便无内容也只是空执行
@@ -15658,8 +15668,10 @@
 
               if (cacheFilter) {
                 var _x4 = cacheFilter.x1,
-                    _y4 = cacheFilter.y1;
-                ctx.drawImage(cacheFilter.canvas, _x4 - 1, _y4 - 1);
+                    _y4 = cacheFilter.y1,
+                    _bx2 = cacheFilter.bx,
+                    _by2 = cacheFilter.by;
+                ctx.drawImage(cacheFilter.canvas, _x4 - _bx2 - 1, _y4 - _by2 - 1);
                 return;
               }
 
@@ -15671,20 +15683,24 @@
                     _size = _cacheTotal3.size,
                     _canvas = _cacheTotal3.canvas,
                     _x5 = _cacheTotal3.x1,
-                    _y5 = _cacheTotal3.y1;
+                    _y5 = _cacheTotal3.y1,
+                    _bx3 = _cacheTotal3.bx,
+                    _by3 = _cacheTotal3.by;
 
-                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - 1, _y5 - 1, _size, _size);
+                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx3 - 1, _y5 - _by3 - 1, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
 
               if (cache && cache.available) {
                 var _ox = cache.ox,
-                    _oy = cache.oy;
-                var _sx3 = this.sx,
-                    _sy3 = this.sy;
+                    _oy = cache.oy,
+                    _bx4 = cache.bx,
+                    _by4 = cache.by;
+                var _sx2 = this.sx,
+                    _sy2 = this.sy;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx3 - _ox - 1, _sy3 - _oy - 1);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx4 - 1, _sy2 - _oy - _by4 - 1);
               }
 
               zIndexChildren.forEach(function (item) {

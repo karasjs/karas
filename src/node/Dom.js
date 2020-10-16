@@ -41,6 +41,9 @@ function genOffScreenBlur(cacheTotal, v) {
   cacheFilter.coords = cacheTotal.coords;
   cacheFilter.x1 = x1;
   cacheFilter.y1 = y1;
+  // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
+  cacheFilter.bx = cacheTotal.bx;
+  cacheFilter.by = cacheTotal.by;
   return cacheFilter;
 }
 
@@ -1401,7 +1404,6 @@ class Dom extends Xom {
           coords = cache.coords;
         }
         else {
-          let { sx, sy } = this;
           x1 = sx + computedStyle.marginLeft;
           y1 = sy + computedStyle.marginTop;
           dx = tx - x1;
@@ -1413,6 +1415,8 @@ class Dom extends Xom {
           cacheTotal.__available = true;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
+          let bx = cacheTotal.bx = x1 - bboxTotal[0];
+          let by = cacheTotal.by = y1 - bboxTotal[1];
           dx += tx;
           dy += ty;
           dx -= coords[0];
@@ -1422,7 +1426,7 @@ class Dom extends Xom {
           ctx = cacheTotal.ctx;
           ctx.setTransform([1, 0, 0, 1, 0, 0]);
           ctx.globalAlpha = 1;
-          super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
+          super.__applyCache(renderMode, lv, ctx, tx + bx - 1, ty + by - 1);
           zIndexChildren.forEach(item => {
             ctx.setTransform([1, 0, 0, 1, 0, 0]);
             ctx.globalAlpha = 1;
@@ -1466,10 +1470,10 @@ class Dom extends Xom {
       let { sx, sy, domParent } = this;
       // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
       let [tox, toy] = computedStyle.transformOrigin;
-      let { coords: [tx, ty], x1, y1 } = cacheTop;
+      let { coords: [tx, ty], x1, y1, bx, by } = cacheTop;
       let m = matrix.slice(0);
-      let tfx = tox + tx - 1;
-      let tfy = toy + ty - 1;
+      let tfx = tox + tx + bx - 1;
+      let tfy = toy + ty + by - 1;
       let px = sx - domParent.sx;
       let py = sy - domParent.sy;
       tfx += px;
@@ -1524,20 +1528,20 @@ class Dom extends Xom {
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
       if(cacheFilter) {
-        let { x1, y1 } = cacheFilter;
-        ctx.drawImage(cacheFilter.canvas, x1 - 1, y1 - 1);
+        let { x1, y1, bx, by } = cacheFilter;
+        ctx.drawImage(cacheFilter.canvas, x1 - bx - 1, y1 - by - 1);
         return;
       }
       if(cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], size, canvas, x1, y1 } = cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1, y1 - 1, size, size);
+        let { coords: [x, y], size, canvas, x1, y1, bx, by } = cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - bx - 1, y1 - by - 1, size, size);
         return;
       }
       // 无内容就没有cache，继续看children
       if(cache && cache.available) {
-        let { ox, oy } = cache;
+        let { ox, oy, bx, by } = cache;
         let { sx, sy } = this;
-        super.__applyCache(renderMode, lv, ctx, sx - ox - 1, sy - oy - 1);
+        super.__applyCache(renderMode, lv, ctx, sx - ox - bx - 1, sy - oy - by - 1);
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {

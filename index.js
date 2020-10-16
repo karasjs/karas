@@ -11862,22 +11862,24 @@
               cache.__bbox = bbox;
               cache.sx = x;
               cache.sy = y;
-              cache.bx = x1 - bbox[0]; // padding原点和box原点的差值
-
-              cache.by = y1 - bbox[1];
-              cache.ox = x - x1; // padding原点和dom原点的差值
-
-              cache.oy = y - y1;
               cache.x1 = x1; // padding原点坐标
 
               cache.y1 = y1;
+              cache.ox = x - x1; // padding原点和dom原点的差值
+
+              cache.oy = y - y1;
+              cache.bx = x - bbox[0];
+              cache.by = x - bbox[1];
+              cache.bx1 = x1 - bbox[0]; // padding原点和box原点的差值
+
+              cache.by1 = y1 - bbox[1];
               ctx = cache.ctx;
 
               var _cache$coords = _slicedToArray(cache.coords, 2),
                   xc = _cache$coords[0],
                   yc = _cache$coords[1];
 
-              dx = cache.dx = xc - bbox[0]; // cache坐标和padding原点的差值
+              dx = cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
 
               dy = cache.dy = yc - bbox[1]; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
@@ -12533,19 +12535,25 @@
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop) {
-        // 空内容用默认bbox
-        if (!this.__cache) {
-          return this.bbox;
+        var bbox;
+
+        if (this.__cacheFilter) {
+          bbox = this.__cacheFilter.bbox.slice(0);
+        } else if (this.__cacheTotal) {
+          bbox = this.__cacheFilter.bbox.slice(0);
+        } else if (this.__cache) {
+          bbox = this.__cache.bbox.slice(0);
+        } else {
+          bbox = this.bbox;
         }
 
-        var bbox = this.__cache.bbox.slice(0);
-
         if (!isTop && !equalArr$2(matrix, [1, 0, 0, 1, 0, 0])) {
-          var _bbox = _slicedToArray(bbox, 4),
-              x0 = _bbox[0],
-              y0 = _bbox[1],
-              x1 = _bbox[2],
-              y1 = _bbox[3];
+          var _bbox = bbox,
+              _bbox2 = _slicedToArray(_bbox, 4),
+              x0 = _bbox2[0],
+              y0 = _bbox2[1],
+              x1 = _bbox2[2],
+              y1 = _bbox2[3];
 
           var _mx$calPoint = mx.calPoint([x0, y0], matrix);
 
@@ -13921,14 +13929,22 @@
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
     blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+    cacheFilter.sx = cacheTotal.sx;
+    cacheFilter.sy = cacheTotal.sy;
+    cacheFilter.x1 = x1;
+    cacheFilter.y1 = y1;
+    cacheFilter.ox = cacheTotal.ox;
+    cacheFilter.oy = cacheTotal.oy;
     cacheFilter.dx = cacheTotal.dx;
     cacheFilter.dy = cacheTotal.dy;
-    cacheFilter.coords = cacheTotal.coords;
-    cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1; // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
+    cacheFilter.coords = cacheTotal.coords; // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
 
     cacheFilter.bx = cacheTotal.bx;
     cacheFilter.by = cacheTotal.by;
+    cacheFilter.bx1 = cacheTotal.bx1;
+    cacheFilter.by1 = cacheTotal.by1;
+    cacheFilter.dbx = cacheTotal.dbx;
+    cacheFilter.dby = cacheTotal.dby;
     return cacheFilter;
   }
 
@@ -15180,7 +15196,7 @@
             if (blurValue) {
               // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
               if (o$1.contain(lv, o$1.FILTER)) {
-                var bbox = this.__mergeBbox([1, 0, 0, 1, 0, 0], true);
+                var bbox = this.__mergeBbox(null, true);
 
                 var old = cacheTotal.bbox; // bbox没变化省略更新total
 
@@ -15464,7 +15480,7 @@
 
 
         if (mode === MODE.TOP) {
-          var bboxTotal = this.__mergeBbox([1, 0, 0, 1, 0, 0], true); // 空内容
+          var bboxTotal = this.__mergeBbox(null, true); // 空内容
 
 
           if (!bboxTotal) {
@@ -15492,45 +15508,62 @@
 
             var dx, dy, x1, y1, coords;
 
-            if (cache) {
+            if (cache && cache.available) {
               dx = cache.dx;
               dy = cache.dy;
               x1 = cache.x1;
               y1 = cache.y1;
               coords = cache.coords;
             } else {
+              var bbox = this.bbox;
               x1 = sx + computedStyle.marginLeft;
-              y1 = sy + computedStyle.marginTop;
-              dx = tx - x1;
-              dy = ty - y1;
+              y1 = sy + computedStyle.marginTop; // dx = tx - x1;
+              // dy = ty - y1;
+
+              dx = tx - bbox[0];
+              dy = ty - bbox[1];
               coords = [tx, ty];
             } // 首次生成
 
 
             if (!cacheTotal.available) {
               cacheTotal.__available = true;
+              cacheTotal.sx = sx;
+              cacheTotal.sy = sy;
               cacheTotal.x1 = x1;
               cacheTotal.y1 = y1;
-              cacheTotal.bx = x1 - bboxTotal[0];
+              cacheTotal.ox = x1 - sx;
+              cacheTotal.oy = y1 - sy;
+              cacheTotal.bx = sx - bboxTotal[0];
               cacheTotal.by = y1 - bboxTotal[1];
-              dx += tx;
-              dy += ty;
-              dx -= coords[0];
-              dy -= coords[1];
+              cacheTotal.bx1 = x1 - bboxTotal[0];
+              cacheTotal.by1 = y1 - bboxTotal[1];
+              dx += tx - coords[0];
+              dy += ty - coords[1];
               cacheTotal.dx = dx;
               cacheTotal.dy = dy;
               ctx = cacheTotal.ctx;
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
+              var dbx = 0,
+                  dby = 0;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1, ty - 1);
+              if (cache) {
+                dbx = cache.bbox[0] - cacheTotal.bbox[0];
+                dby = cache.bbox[1] - cacheTotal.bbox[1];
+              }
+
+              cacheTotal.dbx = dbx;
+              cacheTotal.dby = dby;
+
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx, dy);
+                  item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dby);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }
@@ -15583,12 +15616,14 @@
                 _ty2 = _cacheTop$coords[1],
                 _x = cacheTop.x1,
                 _y = cacheTop.y1,
-                bx = cacheTop.bx,
-                by = cacheTop.by;
+                bx1 = cacheTop.bx1,
+                by1 = cacheTop.by1,
+                _dbx = cacheTop.dbx,
+                _dby = cacheTop.dby;
 
             var m = matrix.slice(0);
-            var tfx = tox + _tx2 + bx - 1;
-            var tfy = toy + _ty2 + by - 1;
+            var tfx = tox + _tx2 + bx1 - _dbx - 1;
+            var tfy = toy + _ty2 + by1 - _dby - 1;
             var px = _sx - domParent.sx;
             var py = _sy - domParent.sy;
             tfx += px;
@@ -15644,12 +15679,12 @@
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - px, oy - toy - py); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - px + _dbx, oy - toy - py + _dby); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - tox - px + 1, _dy - toy - py + 1);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - tox - px + 1 + _dbx, _dy - toy - py + 1 + _dby);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }
@@ -15668,9 +15703,11 @@
               if (cacheFilter) {
                 var _x4 = cacheFilter.x1,
                     _y4 = cacheFilter.y1,
-                    _bx = cacheFilter.bx,
-                    _by = cacheFilter.by;
-                ctx.drawImage(cacheFilter.canvas, _x4 - _bx - 1, _y4 - _by - 1);
+                    _bx = cacheFilter.bx1,
+                    _by = cacheFilter.by1,
+                    _dbx2 = cacheFilter.dbx,
+                    _dby2 = cacheFilter.dby;
+                ctx.drawImage(cacheFilter.canvas, _x4 - _bx - 1 - _dbx2, _y4 - _by - 1 - _dby2);
                 return;
               }
 
@@ -15683,10 +15720,12 @@
                     _canvas = _cacheTotal3.canvas,
                     _x5 = _cacheTotal3.x1,
                     _y5 = _cacheTotal3.y1,
-                    _bx2 = _cacheTotal3.bx,
-                    _by2 = _cacheTotal3.by;
+                    _bx2 = _cacheTotal3.bx1,
+                    _by2 = _cacheTotal3.by1,
+                    _dbx3 = _cacheTotal3.dbx,
+                    _dby3 = _cacheTotal3.dby;
 
-                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx2 - 1, _y5 - _by2 - 1, _size, _size);
+                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx2 - 1 - _dbx3, _y5 - _by2 - 1 - _dby3, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -15694,12 +15733,14 @@
               if (cache && cache.available) {
                 var _ox = cache.ox,
                     _oy = cache.oy,
-                    _bx3 = cache.bx,
-                    _by3 = cache.by;
+                    _bx3 = cache.bx1,
+                    _by3 = cache.by1,
+                    _dbx4 = cache.dbx,
+                    _dby4 = cache.dby;
                 var _sx2 = this.sx,
                     _sy2 = this.sy;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx3 - 1, _sy2 - _oy - _by3 - 1);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx3 - 1 - _dbx4, _sy2 - _oy - _by3 - 1 - _dby4);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -15711,24 +15752,53 @@
               });
             }
       }
+      /**
+       * 以cacheTotal为基准递归合并包含children的bbox
+       * @param matrix
+       * @param isTop
+       * @param dx filter造成的偏移，递归传递下去所有children需要扩展此值
+       * @param dy
+       * @returns bbox
+       * @private
+       */
+
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop) {
-        // 这里以top的matrix状态为起点单位矩阵
-        if (!isTop) {
-          matrix = mx.multiply(this.matrix, matrix);
-        } // 不一定有，空层内容，和bbox不同，要考虑matrix的影响，top的为单位matrix无影响
+        var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+        var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
-
+        // 这里以top的matrix状态为起点单位矩阵，top一定是filter，需将filter造成的bbox扩展偏移传递下去
         var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
+
+        if (isTop) {
+          matrix = [1, 0, 0, 1, 0, 0];
+          bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
+          var sx = this.sx,
+              sy = this.sy,
+              computedStyle = this.computedStyle;
+          dx = sx + computedStyle.marginLeft - bbox[0];
+          dy = sy + computedStyle.marginTop - bbox[1];
+        } else {
+          matrix = mx.multiply(this.matrix, matrix);
+          bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
+          bbox[0] -= dx;
+          bbox[1] -= dy;
+          bbox[2] += dx;
+          bbox[3] += dy;
+        }
 
         this.zIndexChildren.forEach(function (item) {
           var t;
 
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             t = item.bbox;
+            t[0] -= dx;
+            t[1] -= dy;
+            t[2] += dx;
+            t[3] += dy;
           } else {
-            t = item.__mergeBbox(matrix);
+            t = item.__mergeBbox(matrix, false, dx, dy);
           }
 
           if (!bbox) {

@@ -1442,15 +1442,17 @@ class Xom extends Node {
           cache.__bbox = bbox;
           cache.sx = x;
           cache.sy = y;
-          cache.bx = x1 - bbox[0]; // padding原点和box原点的差值
-          cache.by = y1 - bbox[1];
-          cache.ox = x - x1; // padding原点和dom原点的差值
-          cache.oy = y - y1;
           cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
+          cache.ox = x - x1; // padding原点和dom原点的差值
+          cache.oy = y - y1;
+          cache.bx = x - bbox[0];
+          cache.by = x - bbox[1];
+          cache.bx1 = x1 - bbox[0]; // padding原点和box原点的差值
+          cache.by1 = y1 - bbox[1];
           ctx = cache.ctx;
           let [xc, yc] = cache.coords;
-          dx = cache.dx = xc - bbox[0]; // cache坐标和padding原点的差值
+          dx = cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
           dy = cache.dy = yc - bbox[1];
           // 重置ctx为cache的，以及绘制坐标为cache的区域
           x1 = xc;
@@ -2034,11 +2036,19 @@ class Xom extends Node {
   }
 
   __mergeBbox(matrix, isTop) {
-    // 空内容用默认bbox
-    if(!this.__cache) {
-      return this.bbox;
+    let bbox;
+    if(this.__cacheFilter) {
+      bbox = this.__cacheFilter.bbox.slice(0);
     }
-    let bbox = this.__cache.bbox.slice(0);
+    else if(this.__cacheTotal) {
+      bbox = this.__cacheFilter.bbox.slice(0);
+    }
+    else if(this.__cache) {
+      bbox = this.__cache.bbox.slice(0);
+    }
+    else {
+      bbox = this.bbox;
+    }
     if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
       let [x0, y0, x1, y1] = bbox;
       [x0, y0] = mx.calPoint([x0, y0], matrix);

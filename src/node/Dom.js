@@ -1496,9 +1496,9 @@ class Dom extends Xom {
       if(cache && cache.available) {
         dx = cache.dx;
         dy = cache.dy;
-        let { coords: [x, y] } = cache; console.log(cache); console.log(cacheTop)
-        ox = sx - x1;
-        oy = sy - y1;
+        let { coords: [x, y] } = cache;
+        ox = sx - x1 - cache.ox;
+        oy = sy - y1 - cache.oy;
         dx += ox - x;
         dy += oy - y;
       }

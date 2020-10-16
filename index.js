@@ -15628,10 +15628,8 @@
                   _x2 = _cache$coords[0],
                   _y2 = _cache$coords[1];
 
-              console.log(cache);
-              console.log(cacheTop);
-              ox = _sx - _x;
-              oy = _sy - _y;
+              ox = _sx - _x - cache.ox;
+              oy = _sy - _y - cache.oy;
               _dx += ox - _x2;
               _dy += oy - _y2;
             } else {

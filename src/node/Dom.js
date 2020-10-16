@@ -1461,27 +1461,31 @@ class Dom extends Xom {
     else if(mode === MODE.CHILD) {
       matrix = mx.multiply(matrix, this.matrix);
       opacity *= computedStyle.opacity;
+      ctx.globalAlpha = opacity;
+      let dx = 0, dy = 0, ox, oy;
+      let { sx, sy, domParent } = this;
       // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
       let [tox, toy] = computedStyle.transformOrigin;
-      let m = matrix.slice(0);
       let { coords: [tx, ty], x1, y1 } = cacheTop;
+      let m = matrix.slice(0);
       let tfx = tox + tx - 1;
       let tfy = toy + ty - 1;
+      let px = sx - domParent.sx;
+      let py = sy - domParent.sy;
+      tfx += px;
+      tfy += py;
       if(tfx || tfy) {
         m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
       }
       ctx.setTransform(...m);
-      ctx.globalAlpha = opacity;
-      let dx = 0, dy = 0, ox, oy;
-      let { sx, sy } = this;
-      // 优先filter
+      // 优先filter，再是total
       if(cacheFilter || cacheTotal && cacheTotal.available) {
         let { coords: [x, y], canvas, size, dx, dy } = cacheFilter || cacheTotal;
         ox = sx - x1;
         oy = sy - y1;
         dx += ox - x;
         dy += oy - y;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox, oy - toy, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox - px, oy - toy - py, size, size);
         return;
       }
       // 可能会无内容没cache，跳过自身继续看children
@@ -1502,11 +1506,11 @@ class Dom extends Xom {
         dy += oy - y;
       }
       // 即便无内容也只是空执行
-      super.__applyCache(renderMode, lv, ctx, ox - tox, oy - toy);
+      super.__applyCache(renderMode, lv, ctx, ox - tox - px, oy - toy - py);
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx - tox + 1, dy - toy + 1);
+          item.__renderByMask(renderMode, null, ctx, null, dx - tox - px + 1, dy - toy - py + 1);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);

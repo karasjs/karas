@@ -15557,13 +15557,19 @@
             var _ctx;
 
             matrix = mx.multiply(matrix, this.matrix);
-            opacity *= computedStyle.opacity; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
+            opacity *= computedStyle.opacity;
+            ctx.globalAlpha = opacity;
+            var _dx = 0,
+                _dy = 0,
+                ox,
+                oy;
+            var _sx2 = this.sx,
+                _sy2 = this.sy,
+                domParent = this.domParent; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
 
             var _computedStyle$transf = _slicedToArray(computedStyle.transformOrigin, 2),
                 tox = _computedStyle$transf[0],
                 toy = _computedStyle$transf[1];
-
-            var m = matrix.slice(0);
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx2 = _cacheTop$coords[0],
@@ -15571,22 +15577,20 @@
                 _x = cacheTop.x1,
                 _y = cacheTop.y1;
 
+            var m = matrix.slice(0);
             var tfx = tox + _tx2 - 1;
             var tfy = toy + _ty2 - 1;
+            var px = _sx2 - domParent.sx;
+            var py = _sy2 - domParent.sy;
+            tfx += px;
+            tfy += py;
 
             if (tfx || tfy) {
               m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
             }
 
-            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(m));
+            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(m)); // 优先filter，再是total
 
-            ctx.globalAlpha = opacity;
-            var _dx = 0,
-                _dy = 0,
-                ox,
-                oy;
-            var _sx2 = this.sx,
-                _sy2 = this.sy; // 优先filter
 
             if (cacheFilter || cacheTotal && cacheTotal.available) {
               var _ref = cacheFilter || cacheTotal,
@@ -15602,7 +15606,7 @@
               oy = _sy2 - _y;
               _dx2 += ox - x;
               _dy2 += oy - y;
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox, oy - toy, size, size);
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox - px, oy - toy - py, size, size);
               return;
             } // 可能会无内容没cache，跳过自身继续看children
 
@@ -15631,12 +15635,12 @@
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox, oy - toy); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - px, oy - toy - py); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - tox + 1, _dy - toy + 1);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - tox - px + 1, _dy - toy - py + 1);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }

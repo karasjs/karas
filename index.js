@@ -12539,9 +12539,9 @@
 
         if (this.__cacheFilter) {
           bbox = this.__cacheFilter.bbox.slice(0);
-        } else if (this.__cacheTotal) {
+        } else if (this.__cacheTotal && this.__cacheTotal.available) {
           bbox = this.__cacheFilter.bbox.slice(0);
-        } else if (this.__cache) {
+        } else if (this.__cache && this.__cache.available) {
           bbox = this.__cache.bbox.slice(0);
         } else {
           bbox = this.bbox;

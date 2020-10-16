@@ -13914,8 +13914,7 @@
         size = cacheTotal.size,
         canvas = cacheTotal.canvas,
         x1 = cacheTotal.x1,
-        y1 = cacheTotal.y1,
-        bbox = cacheTotal.bbox;
+        y1 = cacheTotal.y1;
 
     var offScreen = inject.getCacheCanvas(size, size);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);

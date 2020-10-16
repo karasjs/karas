@@ -13917,6 +13917,9 @@
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
     blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+    cacheFilter.dx = cacheTotal.dx;
+    cacheFilter.dy = cacheTotal.dy;
+    cacheFilter.coords = cacheTotal.coords;
     cacheFilter.x1 = x1;
     cacheFilter.y1 = y1;
     return cacheFilter;
@@ -15568,8 +15571,8 @@
                 _x = cacheTop.x1,
                 _y = cacheTop.y1;
 
-            var tfx = tox + _tx2;
-            var tfy = toy + _ty2;
+            var tfx = tox + _tx2 - 1;
+            var tfy = toy + _ty2 - 1;
 
             if (tfx || tfy) {
               m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
@@ -15577,32 +15580,32 @@
 
             (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(m));
 
-            ctx.globalAlpha = opacity; // 优先filter
-
-            if (cacheFilter) {
-              ctx.drawImage(cacheFilter.canvas, -tox - 1, -toy - 1);
-              return;
-            } // 被当做总缓存下的子元素也有总缓存时
-
-
-            if (cacheTotal && cacheTotal.available) {
-              var _cacheTotal3 = cacheTotal,
-                  _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                  x = _cacheTotal3$coords[0],
-                  y = _cacheTotal3$coords[1],
-                  canvas = _cacheTotal3.canvas,
-                  size = _cacheTotal3.size;
-
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, -tox - 1, -toy - 1, size, size);
-              return;
-            }
-
+            ctx.globalAlpha = opacity;
             var _dx = 0,
                 _dy = 0,
                 ox,
                 oy;
             var _sx2 = this.sx,
-                _sy2 = this.sy; // 可能会无内容没cache，跳过自身继续看children
+                _sy2 = this.sy; // 优先filter
+
+            if (cacheFilter || cacheTotal && cacheTotal.available) {
+              var _ref = cacheFilter || cacheTotal,
+                  _ref$coords = _slicedToArray(_ref.coords, 2),
+                  x = _ref$coords[0],
+                  y = _ref$coords[1],
+                  canvas = _ref.canvas,
+                  size = _ref.size,
+                  _dx2 = _ref.dx,
+                  _dy2 = _ref.dy;
+
+              ox = _sx2 - _x;
+              oy = _sy2 - _y;
+              _dx2 += ox - x;
+              _dy2 += oy - y;
+              ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox, oy - toy, size, size);
+              return;
+            } // 可能会无内容没cache，跳过自身继续看children
+
 
             if (cache && cache.available) {
               _dx = cache.dx;
@@ -15628,12 +15631,12 @@
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - 1, oy - toy - 1); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox, oy - toy); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - tox, _dy - toy);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - tox + 1, _dy - toy + 1);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }
@@ -15657,14 +15660,14 @@
               }
 
               if (cacheTotal && cacheTotal.available) {
-                var _cacheTotal4 = cacheTotal,
-                    _cacheTotal4$coords = _slicedToArray(_cacheTotal4.coords, 2),
-                    _x6 = _cacheTotal4$coords[0],
-                    _y6 = _cacheTotal4$coords[1],
-                    _size = _cacheTotal4.size,
-                    _canvas = _cacheTotal4.canvas,
-                    _x5 = _cacheTotal4.x1,
-                    _y5 = _cacheTotal4.y1;
+                var _cacheTotal3 = cacheTotal,
+                    _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
+                    _x6 = _cacheTotal3$coords[0],
+                    _y6 = _cacheTotal3$coords[1],
+                    _size = _cacheTotal3.size,
+                    _canvas = _cacheTotal3.canvas,
+                    _x5 = _cacheTotal3.x1,
+                    _y5 = _cacheTotal3.y1;
 
                 ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - 1, _y5 - 1, _size, _size);
                 return;

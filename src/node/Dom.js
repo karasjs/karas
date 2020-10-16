@@ -36,6 +36,9 @@ function genOffScreenBlur(cacheTotal, v) {
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+  cacheFilter.dx = cacheTotal.dx;
+  cacheFilter.dy = cacheTotal.dy;
+  cacheFilter.coords = cacheTotal.coords;
   cacheFilter.x1 = x1;
   cacheFilter.y1 = y1;
   return cacheFilter;
@@ -1462,26 +1465,25 @@ class Dom extends Xom {
       let [tox, toy] = computedStyle.transformOrigin;
       let m = matrix.slice(0);
       let { coords: [tx, ty], x1, y1 } = cacheTop;
-      let tfx = tox + tx;
-      let tfy = toy + ty;
+      let tfx = tox + tx - 1;
+      let tfy = toy + ty - 1;
       if(tfx || tfy) {
         m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
       }
       ctx.setTransform(...m);
       ctx.globalAlpha = opacity;
-      // 优先filter
-      if(cacheFilter) {
-        ctx.drawImage(cacheFilter.canvas, - tox - 1, - toy - 1);
-        return;
-      }
-      // 被当做总缓存下的子元素也有总缓存时
-      if(cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], canvas, size } = cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, - tox - 1, - toy - 1, size, size);
-        return;
-      }
       let dx = 0, dy = 0, ox, oy;
       let { sx, sy } = this;
+      // 优先filter
+      if(cacheFilter || cacheTotal && cacheTotal.available) {
+        let { coords: [x, y], canvas, size, dx, dy } = cacheFilter || cacheTotal;
+        ox = sx - x1;
+        oy = sy - y1;
+        dx += ox - x;
+        dy += oy - y;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox, oy - toy, size, size);
+        return;
+      }
       // 可能会无内容没cache，跳过自身继续看children
       if(cache && cache.available) {
         dx = cache.dx;
@@ -1500,11 +1502,11 @@ class Dom extends Xom {
         dy += oy - y;
       }
       // 即便无内容也只是空执行
-      super.__applyCache(renderMode, lv, ctx, ox - tox - 1, oy - toy - 1);
+      super.__applyCache(renderMode, lv, ctx, ox - tox, oy - toy);
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx - tox, dy - toy);
+          item.__renderByMask(renderMode, null, ctx, null, dx - tox + 1, dy - toy + 1);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);

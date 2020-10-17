@@ -1415,8 +1415,6 @@ class Dom extends Xom {
           let bbox = this.bbox;
           x1 = sx + computedStyle.marginLeft;
           y1 = sy + computedStyle.marginTop;
-          // dx = tx - x1;
-          // dy = ty - y1;
           dx = tx - bbox[0];
           dy = ty - bbox[1];
           coords = [tx, ty];
@@ -1448,7 +1446,7 @@ class Dom extends Xom {
           }
           cacheTotal.dbx = dbx;
           cacheTotal.dby = dby;
-            super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
+          super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
           zIndexChildren.forEach(item => {
             ctx.setTransform([1, 0, 0, 1, 0, 0]);
             ctx.globalAlpha = 1;
@@ -1587,34 +1585,32 @@ class Dom extends Xom {
    */
   __mergeBbox(matrix, isTop, dx = 0, dy = 0) {
     // 这里以top的matrix状态为起点单位矩阵，top一定是filter，需将filter造成的bbox扩展偏移传递下去
-    let bbox = super.__mergeBbox(matrix, isTop);
+    let bbox;
     if(isTop) {
-      matrix = [1, 0, 0, 1, 0, 0];
+      matrix = this.matrixEvent;
       bbox = super.__mergeBbox(matrix, isTop);
-      let { sx, sy, computedStyle } = this;
-      dx = sx + computedStyle.marginLeft - bbox[0];
-      dy = sy + computedStyle.marginTop - bbox[1];
+      if(bbox) {
+        let { sx, sy, computedStyle } = this;
+        dx = sx + computedStyle.marginLeft - bbox[0];
+        dy = sy + computedStyle.marginTop - bbox[1];
+      }
     }
     else {
       matrix = mx.multiply(this.matrix, matrix);
       bbox = super.__mergeBbox(matrix, isTop);
-      bbox[0] -= dx;
-      bbox[1] -= dy;
-      bbox[2] += dx;
-      bbox[3] += dy;
+      if(bbox) {
+        bbox[0] -= dx;
+        bbox[1] -= dy;
+        bbox[2] += dx;
+        bbox[3] += dy;
+      }
     }
     this.zIndexChildren.forEach(item => {
-      let t;
-      if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-        t = item.bbox;
-        t[0] -= dx;
-        t[1] -= dy;
-        t[2] += dx;
-        t[3] += dy;
-      }
-      else {
-        t = item.__mergeBbox(matrix, false, dx, dy);
-      }
+      let t = item.__mergeBbox(matrix, false);
+      t[0] -= dx;
+      t[1] -= dy;
+      t[2] += dx;
+      t[3] += dy;
       if(!bbox) {
         bbox = t;
       }

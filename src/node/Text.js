@@ -3,6 +3,7 @@ import LineBox from './LineBox';
 import mode from './mode';
 import css from '../style/css';
 import util from '../util/util';
+import mx from '../math/matrix';
 
 class Text extends Node {
   constructor(content) {
@@ -231,6 +232,23 @@ class Text extends Node {
     cb(this);
   }
 
+  __mergeBbox(matrix) {
+    let bbox = this.bbox;
+    let [x1, y1] = bbox;
+    [x1, y1] = mx.calPoint([x1, y1], matrix);
+    let xa = x1, ya = y1, xb = x1, yb = y1;
+    for(let i = 2; i < 8; i += 2) {
+      let x = bbox[i], y = bbox[i + 1];
+      [x, y] = mx.calPoint([x, y], matrix);
+      xa = Math.min(xa, x);
+      xb = Math.max(xa, x);
+      ya = Math.min(ya, y);
+      yb = Math.max(yb, y);
+    }
+    bbox = [xa, ya, xb, xb, yb];
+    return bbox;
+  }
+
   get content() {
     return this.__content;
   }
@@ -278,7 +296,14 @@ class Text extends Node {
 
   get bbox() {
     let { sx, sy, width, height } = this;
-    return [sx, sy, sx + width, sy + height];
+    let x1 = sx, y1 = sy;
+    let x2 = sx + width, y2 = sy + height;
+    return [
+      x1, y1,
+      x2, y1,
+      x1, y2,
+      x2, y2,
+    ];
   }
 }
 

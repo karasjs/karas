@@ -2035,28 +2035,29 @@ class Xom extends Node {
     }
   }
 
+  // 简化bbox为2个坐标点形式，并附带matrix计算
   __mergeBbox(matrix, isTop) {
-    let bbox;
-    if(this.__cacheFilter) {
-      bbox = this.__cacheFilter.bbox.slice(0);
+    // 空内容
+    if(!this.__cache || !this.__cache.available) {
+      return null;
     }
-    else if(this.__cacheTotal && this.__cacheTotal.available) {
-      bbox = this.__cacheFilter.bbox.slice(0);
-    }
-    else if(this.__cache && this.__cache.available) {
-      bbox = this.__cache.bbox.slice(0);
+    let bbox = this.__cache.bbox;
+    if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+      let [x1, y1] = bbox;
+      [x1, y1] = mx.calPoint([x1, y1], matrix);
+      let xa = x1, ya = y1, xb = x1, yb = y1;
+      for(let i = 2; i < 8; i += 2) {
+        let x = bbox[i], y = bbox[i + 1];
+        [x, y] = mx.calPoint([x, y], matrix);
+        xa = Math.min(xa, x);
+        xb = Math.max(xa, x);
+        ya = Math.min(ya, y);
+        yb = Math.max(yb, y);
+      }
+      bbox = [xa, ya, xb, xb, yb];
     }
     else {
-      bbox = this.bbox;
-    }
-    if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-      let [x0, y0, x1, y1] = bbox;
-      [x0, y0] = mx.calPoint([x0, y0], matrix);
-      [x1, y1] = mx.calPoint([x1, y1], matrix);
-      bbox[0] = Math.min(x0, x1);
-      bbox[1] = Math.min(y0, y1);
-      bbox[2] = Math.max(x0, x1);
-      bbox[3] = Math.max(y0, y1);
+      bbox = [bbox[0], bbox[1], bbox[6], bbox[7]];
     }
     return bbox;
   }
@@ -2466,11 +2467,8 @@ class Xom extends Node {
         filter,
       },
     } = this;
-    if(display === 'none') {
-      return [sx, sy, 0, 0];
-    }
     let ox = 0, oy = 0;
-    if(boxShadow) {
+    if(display !== 'none' && boxShadow) {
       boxShadow.forEach(item => {
         let [x, y, blur, spread, , inset] = item;
         if(inset !== 'inset') {
@@ -2481,7 +2479,7 @@ class Xom extends Node {
         }
       });
     }
-    if(filter) {
+    if(display !== 'none' && Array.isArray(filter)) {
       for(let i = 0, len = filter.length; i < len; i++) {
         let [k, v] = filter[i];
         if(k === 'blur') {
@@ -2495,7 +2493,14 @@ class Xom extends Node {
     sy += marginTop;
     width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;
     height += borderTopWidth + paddingTop + borderBottomWidth + paddingBottom;
-    return [sx - ox, sy - oy, sx + width + ox, sy + height + oy];
+    let x1 = sx - ox, y1 = sy - oy;
+    let x2 = sx + width + ox, y2 = sy + height + oy;
+    return [
+      x1, y1,
+      x2, y1,
+      x1, y2,
+      x2, y2,
+    ];
   }
 
   get listener() {

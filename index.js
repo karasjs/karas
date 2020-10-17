@@ -7278,6 +7278,46 @@
         cb(this);
       }
     }, {
+      key: "__mergeBbox",
+      value: function __mergeBbox(matrix) {
+        var bbox = this.bbox;
+
+        var _bbox = bbox,
+            _bbox2 = _slicedToArray(_bbox, 2),
+            x1 = _bbox2[0],
+            y1 = _bbox2[1];
+
+        var _mx$calPoint = mx.calPoint([x1, y1], matrix);
+
+        var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+
+        x1 = _mx$calPoint2[0];
+        y1 = _mx$calPoint2[1];
+        var xa = x1,
+            ya = y1,
+            xb = x1,
+            yb = y1;
+
+        for (var i = 2; i < 8; i += 2) {
+          var x = bbox[i],
+              y = bbox[i + 1];
+
+          var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+
+          var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+
+          x = _mx$calPoint4[0];
+          y = _mx$calPoint4[1];
+          xa = Math.min(xa, x);
+          xb = Math.max(xa, x);
+          ya = Math.min(ya, y);
+          yb = Math.max(yb, y);
+        }
+
+        bbox = [xa, ya, xb, xb, yb];
+        return bbox;
+      }
+    }, {
       key: "content",
       get: function get() {
         return this.__content;
@@ -7339,7 +7379,11 @@
             sy = this.sy,
             width = this.width,
             height = this.height;
-        return [sx, sy, sx + width, sy + height];
+        var x1 = sx,
+            y1 = sy;
+        var x2 = sx + width,
+            y2 = sy + height;
+        return [x1, y1, x2, y1, x1, y2, x2, y2];
       }
     }]);
 
@@ -12531,47 +12575,54 @@
 
           ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
         }
-      }
+      } // 简化bbox为2个坐标点形式，并附带matrix计算
+
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop) {
-        var bbox;
-
-        if (this.__cacheFilter) {
-          bbox = this.__cacheFilter.bbox.slice(0);
-        } else if (this.__cacheTotal && this.__cacheTotal.available) {
-          bbox = this.__cacheFilter.bbox.slice(0);
-        } else if (this.__cache && this.__cache.available) {
-          bbox = this.__cache.bbox.slice(0);
-        } else {
-          bbox = this.bbox;
+        // 空内容
+        if (!this.__cache || !this.__cache.available) {
+          return null;
         }
+
+        var bbox = this.__cache.bbox;
 
         if (!isTop && !equalArr$2(matrix, [1, 0, 0, 1, 0, 0])) {
           var _bbox = bbox,
-              _bbox2 = _slicedToArray(_bbox, 4),
-              x0 = _bbox2[0],
-              y0 = _bbox2[1],
-              x1 = _bbox2[2],
-              y1 = _bbox2[3];
+              _bbox2 = _slicedToArray(_bbox, 2),
+              x1 = _bbox2[0],
+              y1 = _bbox2[1];
 
-          var _mx$calPoint = mx.calPoint([x0, y0], matrix);
+          var _mx$calPoint = mx.calPoint([x1, y1], matrix);
 
           var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
 
-          x0 = _mx$calPoint2[0];
-          y0 = _mx$calPoint2[1];
+          x1 = _mx$calPoint2[0];
+          y1 = _mx$calPoint2[1];
+          var xa = x1,
+              ya = y1,
+              xb = x1,
+              yb = y1;
 
-          var _mx$calPoint3 = mx.calPoint([x1, y1], matrix);
+          for (var i = 2; i < 8; i += 2) {
+            var x = bbox[i],
+                y = bbox[i + 1];
 
-          var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+            var _mx$calPoint3 = mx.calPoint([x, y], matrix);
 
-          x1 = _mx$calPoint4[0];
-          y1 = _mx$calPoint4[1];
-          bbox[0] = Math.min(x0, x1);
-          bbox[1] = Math.min(y0, y1);
-          bbox[2] = Math.max(x0, x1);
-          bbox[3] = Math.max(y0, y1);
+            var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+
+            x = _mx$calPoint4[0];
+            y = _mx$calPoint4[1];
+            xa = Math.min(xa, x);
+            xb = Math.max(xa, x);
+            ya = Math.min(ya, y);
+            yb = Math.max(yb, y);
+          }
+
+          bbox = [xa, ya, xb, xb, yb];
+        } else {
+          bbox = [bbox[0], bbox[1], bbox[6], bbox[7]];
         }
 
         return bbox;
@@ -13023,15 +13074,10 @@
             paddingLeft = _this$computedStyle5.paddingLeft,
             boxShadow = _this$computedStyle5.boxShadow,
             filter = _this$computedStyle5.filter;
-
-        if (display === 'none') {
-          return [sx, sy, 0, 0];
-        }
-
         var ox = 0,
             oy = 0;
 
-        if (boxShadow) {
+        if (display !== 'none' && boxShadow) {
           boxShadow.forEach(function (item) {
             var _item3 = _slicedToArray(item, 6),
                 x = _item3[0],
@@ -13049,7 +13095,7 @@
           });
         }
 
-        if (filter) {
+        if (display !== 'none' && Array.isArray(filter)) {
           for (var i = 0, len = filter.length; i < len; i++) {
             var _filter$i = _slicedToArray(filter[i], 2),
                 k = _filter$i[0],
@@ -13067,7 +13113,11 @@
         sy += marginTop;
         width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;
         height += borderTopWidth + paddingTop + borderBottomWidth + paddingBottom;
-        return [sx - ox, sy - oy, sx + width + ox, sy + height + oy];
+        var x1 = sx - ox,
+            y1 = sy - oy;
+        var x2 = sx + width + ox,
+            y2 = sy + height + oy;
+        return [x1, y1, x2, y1, x1, y2, x2, y2];
       }
     }, {
       key: "listener",
@@ -13885,7 +13935,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache', '__mergeBbox'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -15517,9 +15567,7 @@
             } else {
               var bbox = this.bbox;
               x1 = sx + computedStyle.marginLeft;
-              y1 = sy + computedStyle.marginTop; // dx = tx - x1;
-              // dy = ty - y1;
-
+              y1 = sy + computedStyle.marginTop;
               dx = tx - bbox[0];
               dy = ty - bbox[1];
               coords = [tx, ty];
@@ -15767,39 +15815,39 @@
       value: function __mergeBbox(matrix, isTop) {
         var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
         var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
         // 这里以top的matrix状态为起点单位矩阵，top一定是filter，需将filter造成的bbox扩展偏移传递下去
-        var bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
+        var bbox;
 
         if (isTop) {
-          matrix = [1, 0, 0, 1, 0, 0];
+          matrix = this.matrixEvent;
           bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
-          var sx = this.sx,
-              sy = this.sy,
-              computedStyle = this.computedStyle;
-          dx = sx + computedStyle.marginLeft - bbox[0];
-          dy = sy + computedStyle.marginTop - bbox[1];
+
+          if (bbox) {
+            var sx = this.sx,
+                sy = this.sy,
+                computedStyle = this.computedStyle;
+            dx = sx + computedStyle.marginLeft - bbox[0];
+            dy = sy + computedStyle.marginTop - bbox[1];
+          }
         } else {
           matrix = mx.multiply(this.matrix, matrix);
           bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
-          bbox[0] -= dx;
-          bbox[1] -= dy;
-          bbox[2] += dx;
-          bbox[3] += dy;
+
+          if (bbox) {
+            bbox[0] -= dx;
+            bbox[1] -= dy;
+            bbox[2] += dx;
+            bbox[3] += dy;
+          }
         }
 
         this.zIndexChildren.forEach(function (item) {
-          var t;
+          var t = item.__mergeBbox(matrix, false);
 
-          if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-            t = item.bbox;
-            t[0] -= dx;
-            t[1] -= dy;
-            t[2] += dx;
-            t[3] += dy;
-          } else {
-            t = item.__mergeBbox(matrix, false, dx, dy);
-          }
+          t[0] -= dx;
+          t[1] -= dy;
+          t[2] += dx;
+          t[3] += dy;
 
           if (!bbox) {
             bbox = t;

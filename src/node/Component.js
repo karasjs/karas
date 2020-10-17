@@ -292,6 +292,7 @@ Object.keys(change.GEOM).concat([
   'deepScan',
   '__cancelCache',
   '__applyCache',
+  '__mergeBbox',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

@@ -2041,7 +2041,7 @@ class Xom extends Node {
     if(!this.__cache || !this.__cache.available) {
       return null;
     }
-    let bbox = this.__cache.bbox;
+    let bbox = this.__cache.bbox.slice(0);
     if(!isTop) {
       bbox = util.transformBbox(bbox, matrix);
     }

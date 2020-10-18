@@ -12594,7 +12594,7 @@
           return null;
         }
 
-        var bbox = this.__cache.bbox;
+        var bbox = this.__cache.bbox.slice(0);
 
         if (!isTop) {
           bbox = util.transformBbox(bbox, matrix);
@@ -15563,13 +15563,17 @@
               cacheTotal.dy = dy;
               ctx = cacheTotal.ctx;
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
-              ctx.globalAlpha = 1;
+              ctx.globalAlpha = 1; // 计算total的相对原点与dom的相对原点偏移值，有cache使用它的bbox，没有用x1/y1
+
               var dbx = 0,
                   dby = 0;
 
               if (cache) {
                 dbx = cache.bbox[0] - cacheTotal.bbox[0];
                 dby = cache.bbox[1] - cacheTotal.bbox[1];
+              } else {
+                dbx = x1 - cacheTotal.bbox[0];
+                dby = y1 - cacheTotal.bbox[1];
               }
 
               cacheTotal.dbx = dbx;

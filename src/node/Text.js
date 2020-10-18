@@ -233,20 +233,7 @@ class Text extends Node {
   }
 
   __mergeBbox(matrix) {
-    let bbox = this.bbox;
-    let [x1, y1] = bbox;
-    [x1, y1] = mx.calPoint([x1, y1], matrix);
-    let xa = x1, ya = y1, xb = x1, yb = y1;
-    for(let i = 2; i < 8; i += 2) {
-      let x = bbox[i], y = bbox[i + 1];
-      [x, y] = mx.calPoint([x, y], matrix);
-      xa = Math.min(xa, x);
-      xb = Math.max(xa, x);
-      ya = Math.min(ya, y);
-      yb = Math.max(yb, y);
-    }
-    bbox = [xa, ya, xb, xb, yb];
-    return bbox;
+    return util.transformBbox(this.bbox, matrix);
   }
 
   get content() {
@@ -298,12 +285,7 @@ class Text extends Node {
     let { sx, sy, width, height } = this;
     let x1 = sx, y1 = sy;
     let x2 = sx + width, y2 = sy + height;
-    return [
-      x1, y1,
-      x2, y1,
-      x1, y2,
-      x2, y2,
-    ];
+    return [x1, y1, x2, y2];
   }
 }
 

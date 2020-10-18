@@ -2042,22 +2042,8 @@ class Xom extends Node {
       return null;
     }
     let bbox = this.__cache.bbox;
-    if(!isTop && !equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
-      let [x1, y1] = bbox;
-      [x1, y1] = mx.calPoint([x1, y1], matrix);
-      let xa = x1, ya = y1, xb = x1, yb = y1;
-      for(let i = 2; i < 8; i += 2) {
-        let x = bbox[i], y = bbox[i + 1];
-        [x, y] = mx.calPoint([x, y], matrix);
-        xa = Math.min(xa, x);
-        xb = Math.max(xa, x);
-        ya = Math.min(ya, y);
-        yb = Math.max(yb, y);
-      }
-      bbox = [xa, ya, xb, xb, yb];
-    }
-    else {
-      bbox = [bbox[0], bbox[1], bbox[6], bbox[7]];
+    if(!isTop) {
+      bbox = util.transformBbox(bbox, matrix);
     }
     return bbox;
   }
@@ -2493,14 +2479,7 @@ class Xom extends Node {
     sy += marginTop;
     width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;
     height += borderTopWidth + paddingTop + borderBottomWidth + paddingBottom;
-    let x1 = sx - ox, y1 = sy - oy;
-    let x2 = sx + width + ox, y2 = sy + height + oy;
-    return [
-      x1, y1,
-      x2, y1,
-      x1, y2,
-      x2, y2,
-    ];
+    return [sx - ox, sy - oy, sx + width + ox, sy + height + oy];
   }
 
   get listener() {

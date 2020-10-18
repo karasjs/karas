@@ -1933,6 +1933,49 @@
     });
   }
 
+  function transformBbox(bbox, matrix) {
+    if (!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+      var _bbox = bbox,
+          _bbox2 = _slicedToArray(_bbox, 4),
+          x1 = _bbox2[0],
+          y1 = _bbox2[1],
+          x2 = _bbox2[2],
+          y2 = _bbox2[3];
+
+      var _mx$calPoint = mx.calPoint([x1, y1], matrix);
+
+      var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
+
+      x1 = _mx$calPoint2[0];
+      y1 = _mx$calPoint2[1];
+      var list = [x2, y1, x1, y2, x2, y2];
+      var xa = x1,
+          ya = y1,
+          xb = x1,
+          yb = y1;
+
+      for (var i = 0; i < 6; i += 2) {
+        var x = list[i],
+            y = list[i + 1];
+
+        var _mx$calPoint3 = mx.calPoint([x, y], matrix);
+
+        var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
+
+        x = _mx$calPoint4[0];
+        y = _mx$calPoint4[1];
+        xa = Math.min(xa, x);
+        xb = Math.max(xa, x);
+        ya = Math.min(ya, y);
+        yb = Math.max(yb, y);
+      }
+
+      bbox = [xa, ya, xb, yb];
+    }
+
+    return bbox;
+  }
+
   var util = {
     isObject: isObject,
     isString: isString,
@@ -1965,7 +2008,8 @@
     equal: equal,
     extend: extend,
     joinArr: joinArr,
-    extendAnimate: extendAnimate
+    extendAnimate: extendAnimate,
+    transformBbox: transformBbox
   };
 
   var PX = unit.PX,
@@ -7280,42 +7324,7 @@
     }, {
       key: "__mergeBbox",
       value: function __mergeBbox(matrix) {
-        var bbox = this.bbox;
-
-        var _bbox = bbox,
-            _bbox2 = _slicedToArray(_bbox, 2),
-            x1 = _bbox2[0],
-            y1 = _bbox2[1];
-
-        var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-        var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
-
-        x1 = _mx$calPoint2[0];
-        y1 = _mx$calPoint2[1];
-        var xa = x1,
-            ya = y1,
-            xb = x1,
-            yb = y1;
-
-        for (var i = 2; i < 8; i += 2) {
-          var x = bbox[i],
-              y = bbox[i + 1];
-
-          var _mx$calPoint3 = mx.calPoint([x, y], matrix);
-
-          var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
-
-          x = _mx$calPoint4[0];
-          y = _mx$calPoint4[1];
-          xa = Math.min(xa, x);
-          xb = Math.max(xa, x);
-          ya = Math.min(ya, y);
-          yb = Math.max(yb, y);
-        }
-
-        bbox = [xa, ya, xb, xb, yb];
-        return bbox;
+        return util.transformBbox(this.bbox, matrix);
       }
     }, {
       key: "content",
@@ -7383,7 +7392,7 @@
             y1 = sy;
         var x2 = sx + width,
             y2 = sy + height;
-        return [x1, y1, x2, y1, x1, y2, x2, y2];
+        return [x1, y1, x2, y2];
       }
     }]);
 
@@ -12587,42 +12596,8 @@
 
         var bbox = this.__cache.bbox;
 
-        if (!isTop && !equalArr$2(matrix, [1, 0, 0, 1, 0, 0])) {
-          var _bbox = bbox,
-              _bbox2 = _slicedToArray(_bbox, 2),
-              x1 = _bbox2[0],
-              y1 = _bbox2[1];
-
-          var _mx$calPoint = mx.calPoint([x1, y1], matrix);
-
-          var _mx$calPoint2 = _slicedToArray(_mx$calPoint, 2);
-
-          x1 = _mx$calPoint2[0];
-          y1 = _mx$calPoint2[1];
-          var xa = x1,
-              ya = y1,
-              xb = x1,
-              yb = y1;
-
-          for (var i = 2; i < 8; i += 2) {
-            var x = bbox[i],
-                y = bbox[i + 1];
-
-            var _mx$calPoint3 = mx.calPoint([x, y], matrix);
-
-            var _mx$calPoint4 = _slicedToArray(_mx$calPoint3, 2);
-
-            x = _mx$calPoint4[0];
-            y = _mx$calPoint4[1];
-            xa = Math.min(xa, x);
-            xb = Math.max(xa, x);
-            ya = Math.min(ya, y);
-            yb = Math.max(yb, y);
-          }
-
-          bbox = [xa, ya, xb, xb, yb];
-        } else {
-          bbox = [bbox[0], bbox[1], bbox[6], bbox[7]];
+        if (!isTop) {
+          bbox = util.transformBbox(bbox, matrix);
         }
 
         return bbox;
@@ -13113,11 +13088,7 @@
         sy += marginTop;
         width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;
         height += borderTopWidth + paddingTop + borderBottomWidth + paddingBottom;
-        var x1 = sx - ox,
-            y1 = sy - oy;
-        var x2 = sx + width + ox,
-            y2 = sy + height + oy;
-        return [x1, y1, x2, y1, x1, y2, x2, y2];
+        return [sx - ox, sy - oy, sx + width + ox, sy + height + oy];
       }
     }, {
       key: "listener",

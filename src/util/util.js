@@ -1,4 +1,5 @@
 import $$type from './$$type';
+import mx from '../math/matrix';
 
 let toString = {}.toString;
 function isType(type) {
@@ -378,6 +379,25 @@ function extendAnimate(ovd, nvd) {
   });
 }
 
+function transformBbox(bbox, matrix) {
+  if(!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+    let [x1, y1, x2, y2] = bbox;
+    [x1, y1] = mx.calPoint([x1, y1], matrix);
+    let list = [x2, y1, x1, y2, x2, y2];
+    let xa = x1, ya = y1, xb = x1, yb = y1;
+    for(let i = 0; i < 6; i += 2) {
+      let x = list[i], y = list[i + 1];
+      [x, y] = mx.calPoint([x, y], matrix);
+      xa = Math.min(xa, x);
+      xb = Math.max(xa, x);
+      ya = Math.min(ya, y);
+      yb = Math.max(yb, y);
+    }
+    bbox = [xa, ya, xb, yb];
+  }
+  return bbox;
+}
+
 let util = {
   isObject,
   isString,
@@ -411,6 +431,7 @@ let util = {
   extend,
   joinArr,
   extendAnimate,
+  transformBbox,
 };
 
 export default util;

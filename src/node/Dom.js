@@ -1157,12 +1157,13 @@ class Dom extends Xom {
               let dx = bbox[0] - old[0];
               let dy = bbox[1] - old[1];
               let newTotal = Cache.getInstance(bbox);
-              if(newTotal && newTotal.available) {
+              if(newTotal && newTotal.enabled) {
                 let { coords: [ox, oy], size } = cacheTotal;
                 let { coords: [nx, ny], size: size2 } = newTotal;
                 newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
                 cacheTotal.release();
                 cacheTotal = this.__cacheTotal = newTotal;
+                cacheTotal.__available = true;
                 this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
               }
               // 更新后超限，丢掉blur降级
@@ -1497,7 +1498,7 @@ class Dom extends Xom {
       // 优先filter，再是total
       if(cacheFilter || cacheTotal && cacheTotal.available) {
         let { coords: [x, y], canvas, size } = cacheFilter || cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx, dy, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
         return;
       }
       // 即便无内容也只是空执行

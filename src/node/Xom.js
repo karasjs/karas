@@ -2039,10 +2039,13 @@ class Xom extends Node {
   // 简化bbox为2个坐标点形式，并附带matrix计算
   __mergeBbox(matrix, isTop, dx, dy) {
     // 空内容
-    if(!this.__cache || !this.__cache.available) {
-      return null;
+    let bbox;
+    if(this.__cache && this.__cache.available) {
+      bbox = this.__cache.bbox.slice(0);
     }
-    let bbox = this.__cache.bbox.slice(0);
+    else {
+      bbox = this.bbox;
+    }
     if(!isTop) {
       bbox = util.transformBbox(bbox, matrix, dx, dy);
     }

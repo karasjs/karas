@@ -12605,11 +12605,13 @@
       key: "__mergeBbox",
       value: function __mergeBbox(matrix, isTop, dx, dy) {
         // 空内容
-        if (!this.__cache || !this.__cache.available) {
-          return null;
-        }
+        var bbox;
 
-        var bbox = this.__cache.bbox.slice(0);
+        if (this.__cache && this.__cache.available) {
+          bbox = this.__cache.bbox.slice(0);
+        } else {
+          bbox = this.bbox;
+        }
 
         if (!isTop) {
           bbox = util.transformBbox(bbox, matrix, dx, dy);
@@ -15238,7 +15240,7 @@
                   var dy = bbox[1] - old[1];
                   var newTotal = Cache.getInstance(bbox);
 
-                  if (newTotal && newTotal.available) {
+                  if (newTotal && newTotal.enabled) {
                     var _cacheTotal = cacheTotal,
                         _cacheTotal$coords2 = _slicedToArray(_cacheTotal.coords, 2),
                         ox = _cacheTotal$coords2[0],
@@ -15253,6 +15255,7 @@
                     newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
                     cacheTotal.release();
                     cacheTotal = this.__cacheTotal = newTotal;
+                    cacheTotal.__available = true;
                     this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
                   } // 更新后超限，丢掉blur降级
                   else {
@@ -15655,7 +15658,7 @@
                   canvas = _ref.canvas,
                   size = _ref.size;
 
-              ctx.drawImage(canvas, _x2 - 1, _y2 - 1, size, size, _dx, _dy, size, size);
+              ctx.drawImage(canvas, _x2 - 1, _y2 - 1, size, size, _dx - 1, _dy - 1, size, size);
               return;
             } // 即便无内容也只是空执行
 

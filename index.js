@@ -15653,17 +15653,17 @@
                   canvas = _ref.canvas,
                   size = _ref.size;
 
-              ctx.drawImage(canvas, _x - 1, _y - 1, size, size, _tx2 + _dbx, _ty2 + _dby, size, size);
+              ctx.drawImage(canvas, _x - 1, _y - 1, size, size, _dx, _dy, size, size);
               return;
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx2 - 1 + _dbx, _ty2 - 1 + _dby); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _dx - 1, _dy - 1); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _tx2 - item.sx + _dbx, _ty2 - item.sy + _dby);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - item.sx, _dy - item.sy);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }

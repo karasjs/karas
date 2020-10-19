@@ -1495,15 +1495,15 @@ class Dom extends Xom {
       // 优先filter，再是total
       if(cacheFilter || cacheTotal && cacheTotal.available) {
         let { coords: [x, y], canvas, size } = cacheFilter || cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, tx + dbx, ty + dby, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx, dy, size, size);
         return;
       }
       // 即便无内容也只是空执行
-      super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
+      super.__applyCache(renderMode, lv, ctx, dx - 1, dy - 1);
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, tx - item.sx + dbx, ty - item.sy + dby);
+          item.__renderByMask(renderMode, null, ctx, null, dx - item.sx, dy - item.sy);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);

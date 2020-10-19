@@ -1505,7 +1505,7 @@ class Dom extends Xom {
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx - item.sx, dy - item.sy);
+          item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);

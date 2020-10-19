@@ -15665,7 +15665,7 @@
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - item.sx, _dy - item.sy);
+                item.__renderByMask(renderMode, null, ctx, null, _dx - item.sx + computedStyle.paddingLeft, _dy - item.sy + computedStyle.paddingTop);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }

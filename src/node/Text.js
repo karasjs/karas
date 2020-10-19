@@ -232,8 +232,8 @@ class Text extends Node {
     cb(this);
   }
 
-  __mergeBbox(matrix) {
-    return util.transformBbox(this.bbox, matrix);
+  __mergeBbox(matrix, tx, ty, dx, dy) {
+    return util.transformBbox(this.bbox, matrix, dx, dy);
   }
 
   get content() {

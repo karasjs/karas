@@ -8,6 +8,7 @@ import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import blur from '../style/blur';
+import tf from '../style/transform';
 import util from '../util/util';
 import inject from '../util/inject';
 import level from '../refresh/level';
@@ -36,20 +37,20 @@ function genOffScreenBlur(cacheTotal, v) {
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
-  cacheFilter.sx = cacheTotal.sx;
-  cacheFilter.sy = cacheTotal.sy;
+  // cacheFilter.sx = cacheTotal.sx;
+  // cacheFilter.sy = cacheTotal.sy;
   cacheFilter.x1 = x1;
   cacheFilter.y1 = y1;
-  cacheFilter.ox = cacheTotal.ox;
-  cacheFilter.oy = cacheTotal.oy;
-  cacheFilter.dx = cacheTotal.dx;
-  cacheFilter.dy = cacheTotal.dy;
-  cacheFilter.coords = cacheTotal.coords;
+  // cacheFilter.ox = cacheTotal.ox;
+  // cacheFilter.oy = cacheTotal.oy;
+  // cacheFilter.dx = cacheTotal.dx;
+  // cacheFilter.dy = cacheTotal.dy;
+  // cacheFilter.coords = cacheTotal.coords;
   // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
-  cacheFilter.bx = cacheTotal.bx;
-  cacheFilter.by = cacheTotal.by;
-  cacheFilter.bx1 = cacheTotal.bx1;
-  cacheFilter.by1 = cacheTotal.by1;
+  // cacheFilter.bx = cacheTotal.bx;
+  // cacheFilter.by = cacheTotal.by;
+  // cacheFilter.bx1 = cacheTotal.bx1;
+  // cacheFilter.by1 = cacheTotal.by1;
   cacheFilter.dbx = cacheTotal.dbx;
   cacheFilter.dby = cacheTotal.dby;
   return cacheFilter;
@@ -1374,7 +1375,7 @@ class Dom extends Xom {
     let cache = this.__cache;
     let zIndexChildren = this.zIndexChildren;
     let computedStyle = this.computedStyle;
-    let blurValue;
+    let blurValue = 0;
     if(Array.isArray(computedStyle.filter)) {
       computedStyle.filter.forEach(item => {
         let [k, v] = item;
@@ -1426,31 +1427,22 @@ class Dom extends Xom {
           cacheTotal.sy = sy;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
-          cacheTotal.ox = x1 - sx;
-          cacheTotal.oy = y1 - sy;
-          cacheTotal.bx = sx - bboxTotal[0];
-          cacheTotal.by = y1 - bboxTotal[1];
-          cacheTotal.bx1 = x1 - bboxTotal[0];
-          cacheTotal.by1 = y1 - bboxTotal[1];
-          dx += tx - coords[0];
-          dy += ty - coords[1];
-          cacheTotal.dx = dx;
-          cacheTotal.dy = dy;
+          // cacheTotal.ox = x1 - sx;
+          // cacheTotal.oy = y1 - sy;
+          // cacheTotal.bx = sx - bboxTotal[0];
+          // cacheTotal.by = y1 - bboxTotal[1];
+          // cacheTotal.bx1 = x1 - bboxTotal[0];
+          // cacheTotal.by1 = y1 - bboxTotal[1];
+          cacheTotal.dx = dx += tx - coords[0];
+          cacheTotal.dy = dy += ty - coords[1];
           ctx = cacheTotal.ctx;
-          ctx.setTransform([1, 0, 0, 1, 0, 0]);
-          ctx.globalAlpha = 1;
-          // 计算total的相对原点与dom的相对原点偏移值，有cache使用它的bbox，没有用x1/y1
-          let dbx = 0, dby = 0;
-          if(cache) {
-            dbx = cache.bbox[0] - cacheTotal.bbox[0];
-            dby = cache.bbox[1] - cacheTotal.bbox[1];
-          }
-          else {
-            dbx = x1 - cacheTotal.bbox[0];
-            dby = y1 - cacheTotal.bbox[1];
-          }
+          // 计算bbox的相对dom点偏移值，可能因filter/children范围导致
+          let dbx = x1 - cacheTotal.bbox[0], dby = y1 - cacheTotal.bbox[1];
           cacheTotal.dbx = dbx;
           cacheTotal.dby = dby;
+          // 以top为基准matrix/opacity
+          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.globalAlpha = 1;
           super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
           zIndexChildren.forEach(item => {
             ctx.setTransform([1, 0, 0, 1, 0, 0]);
@@ -1478,7 +1470,7 @@ class Dom extends Xom {
           }
         });
       }
-      // 生成filter缓存
+      // 生成filter缓存，超尺寸降级舍弃
       if(blurValue && cacheTotal && cacheTotal.available) {
         this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
       }
@@ -1488,58 +1480,30 @@ class Dom extends Xom {
     }
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === MODE.CHILD) {
-      matrix = mx.multiply(matrix, this.matrix);
+      let { sx: x, sy: y } = this;
+      let { coords: [tx, ty], sx, sy, dbx, dby } = cacheTop;
+      let dx = tx + x - sx + dbx;
+      let dy = ty + y - sy + dby;
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += dx;
+      tfo[1] += dy;
+      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      ctx.setTransform(...matrix);
       opacity *= computedStyle.opacity;
       ctx.globalAlpha = opacity;
-      let dx = 0, dy = 0, ox, oy;
-      let { sx, sy, domParent } = this;
-      // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
-      let [tox, toy] = computedStyle.transformOrigin;
-      let { coords: [tx, ty], x1, y1, bx1, by1, dbx, dby } = cacheTop;
-      let m = matrix.slice(0);
-      let tfx = tox + tx + bx1 - dbx - 1;
-      let tfy = toy + ty + by1 - dby - 1;
-      let px = sx - domParent.sx;
-      let py = sy - domParent.sy;
-      tfx += px;
-      tfy += py;
-      if(tfx || tfy) {
-        m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
-      }
-      ctx.setTransform(...m);
       // 优先filter，再是total
       if(cacheFilter || cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], canvas, size, dx, dy } = cacheFilter || cacheTotal;
-        ox = sx - x1;
-        oy = sy - y1;
-        dx += ox - x;
-        dy += oy - y;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox - px, oy - toy - py, size, size);
+        let { coords: [x, y], canvas, size } = cacheFilter || cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, tx + dbx, ty + dby, size, size);
         return;
       }
-      // 可能会无内容没cache，跳过自身继续看children
-      if(cache && cache.available) {
-        dx = cache.dx;
-        dy = cache.dy;
-        let { coords: [x, y] } = cache;
-        ox = sx - x1 - cache.ox;
-        oy = sy - y1 - cache.oy;
-        dx += ox - x;
-        dy += oy - y;
-      }
-      else {
-        let [x, y] = this.bbox;
-        ox = sx - x1;
-        oy = sy - y1;
-        dx += ox - x;
-        dy += oy - y;
-      }
       // 即便无内容也只是空执行
-      super.__applyCache(renderMode, lv, ctx, ox - tox - px + dbx, oy - toy - py + dby);
+      super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx - tox - px + 1 + dbx, dy - toy - py + 1 + dby);
+          item.__renderByMask(renderMode, null, ctx, null, tx - item.sx + dbx, ty - item.sy + dby);
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
@@ -1553,20 +1517,19 @@ class Dom extends Xom {
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
       if(cacheFilter) {
-        let { x1, y1, bx1, by1, dbx, dby } = cacheFilter;
-        ctx.drawImage(cacheFilter.canvas, x1 - bx1 - 1 - dbx, y1 - by1 - 1 - dby);
+        let { x1, y1, dbx, dby } = cacheFilter;
+        ctx.drawImage(cacheFilter.canvas, x1 - 1 - dbx, y1 - 1 - dby);
         return;
       }
       if(cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], size, canvas, x1, y1, bx1, by1, dbx, dby } = cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - bx1 - 1 - dbx, y1 - by1 - 1 - dby, size, size);
+        let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
         return;
       }
       // 无内容就没有cache，继续看children
       if(cache && cache.available) {
-        let { ox, oy, bx1, by1, dbx, dby } = cache;
-        let { sx, sy } = this;
-        super.__applyCache(renderMode, lv, ctx, sx - ox - bx1 - 1 - dbx, sy - oy - by1 - 1 - dby);
+        let { x1, y1 } = cache;
+        super.__applyCache(renderMode, lv, ctx, x1 - 1, y1 - 1);
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
@@ -1583,39 +1546,49 @@ class Dom extends Xom {
    * 以cacheTotal为基准递归合并包含children的bbox
    * @param matrix
    * @param isTop
+   * @param tx 顶dom的坐标
+   * @param ty
    * @param dx filter造成的偏移，递归传递下去所有children需要扩展此值
    * @param dy
    * @returns bbox
    * @private
    */
-  __mergeBbox(matrix, isTop, dx = 0, dy = 0) {
-    // 这里以top的matrix状态为起点单位矩阵，top一定是filter，需将filter造成的bbox扩展偏移传递下去
+  __mergeBbox(matrix, isTop, tx, ty, dx, dy) {
     let bbox;
+    let { sx, sy, computedStyle } = this;
+    // 顶点初始化为起点，偏移值要考虑filter
     if(isTop) {
-      matrix = this.matrixEvent;
+      matrix = [1, 0, 0, 1, 0, 0];
       bbox = super.__mergeBbox(matrix, isTop);
+      tx = sx;
+      ty = sy;
       if(bbox) {
-        let { sx, sy, computedStyle } = this;
         dx = sx + computedStyle.marginLeft - bbox[0];
         dy = sy + computedStyle.marginTop - bbox[1];
       }
-    }
-    else {
-      matrix = mx.multiply(this.matrix, matrix);
-      bbox = super.__mergeBbox(matrix, isTop);
-      if(bbox) {
-        bbox[0] -= dx;
-        bbox[1] -= dy;
-        bbox[2] += dx;
-        bbox[3] += dy;
+      else if(Array.isArray(computedStyle.filter)) {
+        computedStyle.filter.forEach(item => {
+          let [k, v] = item;
+          if(k === 'blur' && v > 0) {
+            let d = mx.int2convolution(v);
+            dx = dy = d;
+          }
+        });
+      }
+      else {
+        dx = dy = 0;
       }
     }
+    else {
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += sx - tx;
+      tfo[1] += sy - ty;
+      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      bbox = super.__mergeBbox(matrix, isTop, dx, dy);
+    }
     this.zIndexChildren.forEach(item => {
-      let t = item.__mergeBbox(matrix, false);
-      t[0] -= dx;
-      t[1] -= dy;
-      t[2] += dx;
-      t[3] += dy;
+      let t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
       if(!bbox) {
         bbox = t;
       }

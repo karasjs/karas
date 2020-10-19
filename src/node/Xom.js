@@ -1383,7 +1383,7 @@ class Xom extends Node {
     }
     // canvas/svg/事件需要3种不同的matrix
     let matrix = __cacheStyle.matrix;
-    let renderMatrix = this.__svgMatrix = matrix;
+    let renderMatrix = this.__renderMatrix = matrix;
     // 变换对事件影响，canvas要设置渲染
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
@@ -1444,12 +1444,13 @@ class Xom extends Node {
           cache.sy = y;
           cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
-          cache.ox = x - x1; // padding原点和dom原点的差值
-          cache.oy = y - y1;
-          cache.bx = x - bbox[0];
-          cache.by = x - bbox[1];
-          cache.bx1 = x1 - bbox[0]; // padding原点和box原点的差值
-          cache.by1 = y1 - bbox[1];
+          // cache.ox = x - x1; // padding原点和dom原点的差值
+          // cache.oy = y - y1;
+          // cache.bx = x - bbox[0];
+          // cache.by = x - bbox[1];
+          // cache.dbx = x1 - bbox[0]; // padding原点和box原点的差值
+          // cache.dby = y1 - bbox[1];
+          let dbx = cache.dbx = x1 - bbox[0], dby = cache.dby = y1 - bbox[1];
           ctx = cache.ctx;
           let [xc, yc] = cache.coords;
           dx = cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
@@ -1458,14 +1459,14 @@ class Xom extends Node {
           x1 = xc;
           y1 = yc;
           if(dx) {
-            x2 += dx;
-            x3 += dx;
-            x4 += dx;
+            x2 += dx - dbx;
+            x3 += dx - dbx;
+            x4 += dx - dbx;
           }
           if(dy) {
-            y2 += dy;
-            y3 += dy;
-            y4 += dy;
+            y2 += dy - dby;
+            y3 += dy - dby;
+            y4 += dy - dby;
           }
         }
         // 更新后可能超了需重置
@@ -1980,8 +1981,8 @@ class Xom extends Node {
           for(let i = 0, len = children.length; i < len; i++) {
             let { tagName, props } = children[i];
             if(tagName === 'path') {
-              let matrix = sibling.__svgMatrix;
-              let inverse = mx.inverse(this.__svgMatrix);
+              let matrix = sibling.__renderMatrix;
+              let inverse = mx.inverse(this.__renderMatrix);
               matrix = mx.multiply(matrix, inverse);
               // transform属性放在最后一个省去循环
               let len = props.length;
@@ -2036,14 +2037,14 @@ class Xom extends Node {
   }
 
   // 简化bbox为2个坐标点形式，并附带matrix计算
-  __mergeBbox(matrix, isTop) {
+  __mergeBbox(matrix, isTop, dx, dy) {
     // 空内容
     if(!this.__cache || !this.__cache.available) {
       return null;
     }
     let bbox = this.__cache.bbox.slice(0);
     if(!isTop) {
-      bbox = util.transformBbox(bbox, matrix);
+      bbox = util.transformBbox(bbox, matrix, dx, dy);
     }
     return bbox;
   }
@@ -2492,10 +2493,6 @@ class Xom extends Node {
 
   get matrixEvent() {
     return this.__matrixEvent;
-  }
-
-  get svgMatrix() {
-    return this.__svgMatrix;
   }
 
   get style() {

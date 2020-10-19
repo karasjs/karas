@@ -379,11 +379,20 @@ function extendAnimate(ovd, nvd) {
   });
 }
 
-function transformBbox(bbox, matrix) {
+function transformBbox(bbox, matrix, dx = 0, dy = 0) {
   if(!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
     let [x1, y1, x2, y2] = bbox;
-    [x1, y1] = mx.calPoint([x1, y1], matrix);
+    // 可能因filter的原因扩展范围
+    if(dx) {
+      x1 -= dx;
+      x2 += dx;
+    }
+    if(dy) {
+      y1 -= dy;
+      y2 += dy;
+    }
     let list = [x2, y1, x1, y2, x2, y2];
+    [x1, y1] = mx.calPoint([x1, y1], matrix);
     let xa = x1, ya = y1, xb = x1, yb = y1;
     for(let i = 0; i < 6; i += 2) {
       let x = list[i], y = list[i + 1];

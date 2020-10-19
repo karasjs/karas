@@ -1934,13 +1934,29 @@
   }
 
   function transformBbox(bbox, matrix) {
+    var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
     if (!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
       var _bbox = bbox,
           _bbox2 = _slicedToArray(_bbox, 4),
           x1 = _bbox2[0],
           y1 = _bbox2[1],
           x2 = _bbox2[2],
-          y2 = _bbox2[3];
+          y2 = _bbox2[3]; // 可能因filter的原因扩展范围
+
+
+      if (dx) {
+        x1 -= dx;
+        x2 += dx;
+      }
+
+      if (dy) {
+        y1 -= dy;
+        y2 += dy;
+      }
+
+      var list = [x2, y1, x1, y2, x2, y2];
 
       var _mx$calPoint = mx.calPoint([x1, y1], matrix);
 
@@ -1948,7 +1964,6 @@
 
       x1 = _mx$calPoint2[0];
       y1 = _mx$calPoint2[1];
-      var list = [x2, y1, x1, y2, x2, y2];
       var xa = x1,
           ya = y1,
           xb = x1,
@@ -7323,8 +7338,8 @@
       }
     }, {
       key: "__mergeBbox",
-      value: function __mergeBbox(matrix) {
-        return util.transformBbox(this.bbox, matrix);
+      value: function __mergeBbox(matrix, tx, ty, dx, dy) {
+        return util.transformBbox(this.bbox, matrix, dx, dy);
       }
     }, {
       key: "content",
@@ -11833,7 +11848,7 @@
 
 
         var matrix = __cacheStyle.matrix;
-        var renderMatrix = this.__svgMatrix = matrix; // 变换对事件影响，canvas要设置渲染
+        var renderMatrix = this.__renderMatrix = matrix; // 变换对事件影响，canvas要设置渲染
 
         if (p) {
           matrix = mx.multiply(p.matrixEvent, matrix);
@@ -11917,15 +11932,15 @@
               cache.sy = y;
               cache.x1 = x1; // padding原点坐标
 
-              cache.y1 = y1;
-              cache.ox = x - x1; // padding原点和dom原点的差值
+              cache.y1 = y1; // cache.ox = x - x1; // padding原点和dom原点的差值
+              // cache.oy = y - y1;
+              // cache.bx = x - bbox[0];
+              // cache.by = x - bbox[1];
+              // cache.dbx = x1 - bbox[0]; // padding原点和box原点的差值
+              // cache.dby = y1 - bbox[1];
 
-              cache.oy = y - y1;
-              cache.bx = x - bbox[0];
-              cache.by = x - bbox[1];
-              cache.bx1 = x1 - bbox[0]; // padding原点和box原点的差值
-
-              cache.by1 = y1 - bbox[1];
+              var dbx = cache.dbx = x1 - bbox[0],
+                  dby = cache.dby = y1 - bbox[1];
               ctx = cache.ctx;
 
               var _cache$coords = _slicedToArray(cache.coords, 2),
@@ -11940,15 +11955,15 @@
               y1 = yc;
 
               if (dx) {
-                x2 += dx;
-                x3 += dx;
-                x4 += dx;
+                x2 += dx - dbx;
+                x3 += dx - dbx;
+                x4 += dx - dbx;
               }
 
               if (dy) {
-                y2 += dy;
-                y3 += dy;
-                y4 += dy;
+                y2 += dy - dby;
+                y3 += dy - dby;
+                y4 += dy - dby;
               }
             } // 更新后可能超了需重置
             else if (this.__cache) {
@@ -12520,8 +12535,8 @@
                     _props = _children$_i.props;
 
                 if (_tagName === 'path') {
-                  var matrix = sibling.__svgMatrix;
-                  var inverse = mx.inverse(this.__svgMatrix);
+                  var matrix = sibling.__renderMatrix;
+                  var inverse = mx.inverse(this.__renderMatrix);
                   matrix = mx.multiply(matrix, inverse); // transform属性放在最后一个省去循环
 
                   var _len5 = _props.length;
@@ -12588,7 +12603,7 @@
 
     }, {
       key: "__mergeBbox",
-      value: function __mergeBbox(matrix, isTop) {
+      value: function __mergeBbox(matrix, isTop, dx, dy) {
         // 空内容
         if (!this.__cache || !this.__cache.available) {
           return null;
@@ -12597,7 +12612,7 @@
         var bbox = this.__cache.bbox.slice(0);
 
         if (!isTop) {
-          bbox = util.transformBbox(bbox, matrix);
+          bbox = util.transformBbox(bbox, matrix, dx, dy);
         }
 
         return bbox;
@@ -13104,11 +13119,6 @@
       key: "matrixEvent",
       get: function get() {
         return this.__matrixEvent;
-      }
-    }, {
-      key: "svgMatrix",
-      get: function get() {
-        return this.__svgMatrix;
       }
     }, {
       key: "style",
@@ -13949,21 +13959,21 @@
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
-    blur.gaussBlur(offScreen, cacheFilter, v, size, size);
-    cacheFilter.sx = cacheTotal.sx;
-    cacheFilter.sy = cacheTotal.sy;
-    cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1;
-    cacheFilter.ox = cacheTotal.ox;
-    cacheFilter.oy = cacheTotal.oy;
-    cacheFilter.dx = cacheTotal.dx;
-    cacheFilter.dy = cacheTotal.dy;
-    cacheFilter.coords = cacheTotal.coords; // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
+    blur.gaussBlur(offScreen, cacheFilter, v, size, size); // cacheFilter.sx = cacheTotal.sx;
+    // cacheFilter.sy = cacheTotal.sy;
 
-    cacheFilter.bx = cacheTotal.bx;
-    cacheFilter.by = cacheTotal.by;
-    cacheFilter.bx1 = cacheTotal.bx1;
-    cacheFilter.by1 = cacheTotal.by1;
+    cacheFilter.x1 = x1;
+    cacheFilter.y1 = y1; // cacheFilter.ox = cacheTotal.ox;
+    // cacheFilter.oy = cacheTotal.oy;
+    // cacheFilter.dx = cacheTotal.dx;
+    // cacheFilter.dy = cacheTotal.dy;
+    // cacheFilter.coords = cacheTotal.coords;
+    // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
+    // cacheFilter.bx = cacheTotal.bx;
+    // cacheFilter.by = cacheTotal.by;
+    // cacheFilter.bx1 = cacheTotal.bx1;
+    // cacheFilter.by1 = cacheTotal.by1;
+
     cacheFilter.dbx = cacheTotal.dbx;
     cacheFilter.dby = cacheTotal.dby;
     return cacheFilter;
@@ -15485,7 +15495,7 @@
         var cache = this.__cache;
         var zIndexChildren = this.zIndexChildren;
         var computedStyle = this.computedStyle;
-        var blurValue;
+        var blurValue = 0;
 
         if (Array.isArray(computedStyle.filter)) {
           computedStyle.filter.forEach(function (item) {
@@ -15550,34 +15560,24 @@
               cacheTotal.sx = sx;
               cacheTotal.sy = sy;
               cacheTotal.x1 = x1;
-              cacheTotal.y1 = y1;
-              cacheTotal.ox = x1 - sx;
-              cacheTotal.oy = y1 - sy;
-              cacheTotal.bx = sx - bboxTotal[0];
-              cacheTotal.by = y1 - bboxTotal[1];
-              cacheTotal.bx1 = x1 - bboxTotal[0];
-              cacheTotal.by1 = y1 - bboxTotal[1];
-              dx += tx - coords[0];
-              dy += ty - coords[1];
-              cacheTotal.dx = dx;
-              cacheTotal.dy = dy;
-              ctx = cacheTotal.ctx;
-              ctx.setTransform([1, 0, 0, 1, 0, 0]);
-              ctx.globalAlpha = 1; // 计算total的相对原点与dom的相对原点偏移值，有cache使用它的bbox，没有用x1/y1
+              cacheTotal.y1 = y1; // cacheTotal.ox = x1 - sx;
+              // cacheTotal.oy = y1 - sy;
+              // cacheTotal.bx = sx - bboxTotal[0];
+              // cacheTotal.by = y1 - bboxTotal[1];
+              // cacheTotal.bx1 = x1 - bboxTotal[0];
+              // cacheTotal.by1 = y1 - bboxTotal[1];
 
-              var dbx = 0,
-                  dby = 0;
+              cacheTotal.dx = dx += tx - coords[0];
+              cacheTotal.dy = dy += ty - coords[1];
+              ctx = cacheTotal.ctx; // 计算bbox的相对dom点偏移值，可能因filter/children范围导致
 
-              if (cache) {
-                dbx = cache.bbox[0] - cacheTotal.bbox[0];
-                dby = cache.bbox[1] - cacheTotal.bbox[1];
-              } else {
-                dbx = x1 - cacheTotal.bbox[0];
-                dby = y1 - cacheTotal.bbox[1];
-              }
-
+              var dbx = x1 - cacheTotal.bbox[0],
+                  dby = y1 - cacheTotal.bbox[1];
               cacheTotal.dbx = dbx;
-              cacheTotal.dby = dby;
+              cacheTotal.dby = dby; // 以top为基准matrix/opacity
+
+              ctx.setTransform([1, 0, 0, 1, 0, 0]);
+              ctx.globalAlpha = 1;
 
               _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
 
@@ -15607,7 +15607,7 @@
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
                 }
               });
-            } // 生成filter缓存
+            } // 生成filter缓存，超尺寸降级舍弃
 
 
           if (blurValue && cacheTotal && cacheTotal.available) {
@@ -15619,95 +15619,51 @@
         else if (mode === MODE.CHILD) {
             var _ctx;
 
-            matrix = mx.multiply(matrix, this.matrix);
-            opacity *= computedStyle.opacity;
-            ctx.globalAlpha = opacity;
-            var _dx = 0,
-                _dy = 0,
-                ox,
-                oy;
-            var _sx = this.sx,
-                _sy = this.sy,
-                domParent = this.domParent; // 因为cache坐标不一定在原点，需要考虑已有matrix和tfo，左乘模拟偏移到对应位置而不是用绘制坐标的方式
-
-            var _computedStyle$transf = _slicedToArray(computedStyle.transformOrigin, 2),
-                tox = _computedStyle$transf[0],
-                toy = _computedStyle$transf[1];
+            var x = this.sx,
+                y = this.sy;
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx2 = _cacheTop$coords[0],
                 _ty2 = _cacheTop$coords[1],
-                _x = cacheTop.x1,
-                _y = cacheTop.y1,
-                bx1 = cacheTop.bx1,
-                by1 = cacheTop.by1,
+                _sx = cacheTop.sx,
+                _sy = cacheTop.sy,
                 _dbx = cacheTop.dbx,
                 _dby = cacheTop.dby;
 
-            var m = matrix.slice(0);
-            var tfx = tox + _tx2 + bx1 - _dbx - 1;
-            var tfy = toy + _ty2 + by1 - _dby - 1;
-            var px = _sx - domParent.sx;
-            var py = _sy - domParent.sy;
-            tfx += px;
-            tfy += py;
+            var _dx = _tx2 + x - _sx + _dbx;
 
-            if (tfx || tfy) {
-              m = mx.multiply([1, 0, 0, 1, tfx, tfy], m);
-            }
+            var _dy = _ty2 + y - _sy + _dby;
 
-            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(m)); // 优先filter，再是total
+            var tfo = computedStyle.transformOrigin.slice(0);
+            tfo[0] += _dx;
+            tfo[1] += _dy;
+            var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+            matrix = mx.multiply(matrix, m);
 
+            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
+
+            opacity *= computedStyle.opacity;
+            ctx.globalAlpha = opacity; // 优先filter，再是total
 
             if (cacheFilter || cacheTotal && cacheTotal.available) {
               var _ref = cacheFilter || cacheTotal,
                   _ref$coords = _slicedToArray(_ref.coords, 2),
-                  x = _ref$coords[0],
-                  y = _ref$coords[1],
+                  _x = _ref$coords[0],
+                  _y = _ref$coords[1],
                   canvas = _ref.canvas,
-                  size = _ref.size,
-                  _dx2 = _ref.dx,
-                  _dy2 = _ref.dy;
+                  size = _ref.size;
 
-              ox = _sx - _x;
-              oy = _sy - _y;
-              _dx2 += ox - x;
-              _dy2 += oy - y;
-              ctx.drawImage(canvas, x - 1, y - 1, size, size, ox - tox - px, oy - toy - py, size, size);
+              ctx.drawImage(canvas, _x - 1, _y - 1, size, size, _tx2 + _dbx, _ty2 + _dby, size, size);
               return;
-            } // 可能会无内容没cache，跳过自身继续看children
-
-
-            if (cache && cache.available) {
-              _dx = cache.dx;
-              _dy = cache.dy;
-
-              var _cache$coords = _slicedToArray(cache.coords, 2),
-                  _x2 = _cache$coords[0],
-                  _y2 = _cache$coords[1];
-
-              ox = _sx - _x - cache.ox;
-              oy = _sy - _y - cache.oy;
-              _dx += ox - _x2;
-              _dy += oy - _y2;
-            } else {
-              var _this$bbox = _slicedToArray(this.bbox, 2),
-                  _x3 = _this$bbox[0],
-                  _y3 = _this$bbox[1];
-
-              ox = _sx - _x;
-              oy = _sy - _y;
-              _dx += ox - _x3;
-              _dy += oy - _y3;
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, ox - tox - px + _dbx, oy - toy - py + _dby); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx2 - 1 + _dbx, _ty2 - 1 + _dby); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - tox - px + 1 + _dbx, _dy - toy - py + 1 + _dby);
+                item.__renderByMask(renderMode, null, ctx, null, _tx2 - item.sx + _dbx, _ty2 - item.sy + _dby);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }
@@ -15724,46 +15680,36 @@
               (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
 
               if (cacheFilter) {
-                var _x4 = cacheFilter.x1,
-                    _y4 = cacheFilter.y1,
-                    _bx = cacheFilter.bx1,
-                    _by = cacheFilter.by1,
+                var _x2 = cacheFilter.x1,
+                    _y2 = cacheFilter.y1,
                     _dbx2 = cacheFilter.dbx,
                     _dby2 = cacheFilter.dby;
-                ctx.drawImage(cacheFilter.canvas, _x4 - _bx - 1 - _dbx2, _y4 - _by - 1 - _dby2);
+                ctx.drawImage(cacheFilter.canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
                 var _cacheTotal3 = cacheTotal,
                     _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _x6 = _cacheTotal3$coords[0],
-                    _y6 = _cacheTotal3$coords[1],
+                    _x4 = _cacheTotal3$coords[0],
+                    _y4 = _cacheTotal3$coords[1],
                     _size = _cacheTotal3.size,
                     _canvas = _cacheTotal3.canvas,
-                    _x5 = _cacheTotal3.x1,
-                    _y5 = _cacheTotal3.y1,
-                    _bx2 = _cacheTotal3.bx1,
-                    _by2 = _cacheTotal3.by1,
+                    _x3 = _cacheTotal3.x1,
+                    _y3 = _cacheTotal3.y1,
                     _dbx3 = _cacheTotal3.dbx,
                     _dby3 = _cacheTotal3.dby;
 
-                ctx.drawImage(_canvas, _x6 - 1, _y6 - 1, _size, _size, _x5 - _bx2 - 1 - _dbx3, _y5 - _by2 - 1 - _dby3, _size, _size);
+                ctx.drawImage(_canvas, _x4 - 1, _y4 - 1, _size, _size, _x3 - 1 - _dbx3, _y3 - 1 - _dby3, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
 
               if (cache && cache.available) {
-                var _ox = cache.ox,
-                    _oy = cache.oy,
-                    _bx3 = cache.bx1,
-                    _by3 = cache.by1,
-                    _dbx4 = cache.dbx,
-                    _dby4 = cache.dby;
-                var _sx2 = this.sx,
-                    _sy2 = this.sy;
+                var _x5 = cache.x1,
+                    _y5 = cache.y1;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _sx2 - _ox - _bx3 - 1 - _dbx4, _sy2 - _oy - _by3 - 1 - _dby4);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _x5 - 1, _y5 - 1);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -15779,6 +15725,8 @@
        * 以cacheTotal为基准递归合并包含children的bbox
        * @param matrix
        * @param isTop
+       * @param tx 顶dom的坐标
+       * @param ty
        * @param dx filter造成的偏移，递归传递下去所有children需要扩展此值
        * @param dy
        * @returns bbox
@@ -15787,42 +15735,46 @@
 
     }, {
       key: "__mergeBbox",
-      value: function __mergeBbox(matrix, isTop) {
-        var dx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-        var dy = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-        // 这里以top的matrix状态为起点单位矩阵，top一定是filter，需将filter造成的bbox扩展偏移传递下去
+      value: function __mergeBbox(matrix, isTop, tx, ty, dx, dy) {
         var bbox;
+        var sx = this.sx,
+            sy = this.sy,
+            computedStyle = this.computedStyle; // 顶点初始化为起点，偏移值要考虑filter
 
         if (isTop) {
-          matrix = this.matrixEvent;
+          matrix = [1, 0, 0, 1, 0, 0];
           bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
+          tx = sx;
+          ty = sy;
 
           if (bbox) {
-            var sx = this.sx,
-                sy = this.sy,
-                computedStyle = this.computedStyle;
             dx = sx + computedStyle.marginLeft - bbox[0];
             dy = sy + computedStyle.marginTop - bbox[1];
+          } else if (Array.isArray(computedStyle.filter)) {
+            computedStyle.filter.forEach(function (item) {
+              var _item4 = _slicedToArray(item, 2),
+                  k = _item4[0],
+                  v = _item4[1];
+
+              if (k === 'blur' && v > 0) {
+                var d = mx.int2convolution(v);
+                dx = dy = d;
+              }
+            });
+          } else {
+            dx = dy = 0;
           }
         } else {
-          matrix = mx.multiply(this.matrix, matrix);
-          bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop);
-
-          if (bbox) {
-            bbox[0] -= dx;
-            bbox[1] -= dy;
-            bbox[2] += dx;
-            bbox[3] += dy;
-          }
+          var tfo = computedStyle.transformOrigin.slice(0);
+          tfo[0] += sx - tx;
+          tfo[1] += sy - ty;
+          var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+          matrix = mx.multiply(matrix, m);
+          bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop, dx, dy);
         }
 
         this.zIndexChildren.forEach(function (item) {
-          var t = item.__mergeBbox(matrix, false);
-
-          t[0] -= dx;
-          t[1] -= dy;
-          t[2] += dx;
-          t[3] += dy;
+          var t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
 
           if (!bbox) {
             bbox = t;

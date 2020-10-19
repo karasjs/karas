@@ -1,7 +1,8 @@
 import Geom from './Geom';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
+import geom from '../math/geom';
 
 let { isNil } = util;
 
@@ -63,14 +64,14 @@ class Polyline extends Geom {
     });
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       originX,
       originY,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -78,10 +79,7 @@ class Polyline extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, height, points, controls, __cacheProps, isMulti } = this;
     let rebuild = true;
     if(isNil(__cacheProps.points)) {
@@ -174,13 +172,59 @@ class Polyline extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get points() {
     return this.getProps('points');
   }
+
   get controls() {
     return this.getProps('controls');
+  }
+
+  get bbox() {
+    let { isMulti, __cacheProps: { points, controls }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    if(!isMulti) {
+      points = [points];
+      controls = [controls];
+    }
+    points.forEach((pointList, i) => {
+      if(!pointList || pointList.length < 2 || pointList[0].length < 2 || pointList[1].length < 2) {
+        return;
+      }
+      let controlList = controls[i];
+      let [xa, ya] = pointList[0];
+      for(let i = 1, len = pointList.length; i < len; i++) {
+        let [xb, yb] = pointList[i];
+        let c = controlList[i - 1];
+        if(c && c.length === 4) {
+          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+        }
+        else if(c && c.length === 2) {
+          let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+        }
+        else {
+          bbox[0] = Math.min(bbox[0], xa - half);
+          bbox[1] = Math.min(bbox[0], xb - half);
+          bbox[2] = Math.max(bbox[0], xa + half);
+          bbox[3] = Math.max(bbox[0], xb + half);
+        }
+        xa = xb;
+        ya = yb;
+      }
+    });
+    return bbox;
   }
 }
 

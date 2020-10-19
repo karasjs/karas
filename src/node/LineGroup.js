@@ -33,7 +33,7 @@ class LineGroup {
 
   horizonAlign(diff) {
     this.list.forEach(item => {
-      item.__offsetX(diff);
+      item.__offsetX(diff, true);
     });
   }
 

@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
 import geom from '../math/geom';
@@ -35,14 +35,14 @@ class Circle extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       cx,
       cy,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -50,10 +50,7 @@ class Circle extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, r, __cacheProps, isMulti } = this;
     if(isNil(__cacheProps.r)) {
       if(isMulti) {
@@ -103,10 +100,39 @@ class Circle extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get r() {
     return this.getProps('r');
+  }
+
+  get bbox() {
+    let { isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
+    let w = bbox[2] - bbox[0];
+    let h = bbox[3] - bbox[1];
+    if(isMulti) {
+      let max = 0;
+      r.forEach(r => {
+        max = Math.max(r, max);
+      });
+      r = max;
+    }
+    let d = r + strokeWidth;
+    let diff = d - Math.min(w, h);
+    if(diff > 0) {
+      let half = diff * 0.5;
+      if(d > w) {
+        bbox[0] -= half;
+        bbox[2] += half;
+      }
+      if(d > h) {
+        bbox[1] -= half;
+        bbox[3] += half;
+      }
+    }
+    return bbox;
   }
 }
 

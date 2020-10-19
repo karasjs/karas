@@ -4,7 +4,7 @@ import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
 import css from '../style/css';
-import repaint from '../animate/repaint';
+import change from '../refresh/change';
 
 const { isNil, isFunction, clone, extend } = util;
 
@@ -23,6 +23,7 @@ function setUpdateFlag(cp) {
 class Component extends Event {
   constructor(props = {}) {
     super();
+    this.__tagName = /(?:function|class)\s+([\w$]+)/.exec(this.constructor.toString())[1];
     // 构建工具中都是arr，手写可能出现hash情况
     if(Array.isArray(props)) {
       this.props = util.arr2hash(props);
@@ -38,35 +39,46 @@ class Component extends Event {
   }
 
   setState(n, cb) {
+    let self = this;
     if(isNil(n)) {
       n = {};
     }
+    else if(isFunction(n)) {
+      cb.call(self);
+      return;
+    }
     else {
-      let state = clone(this.state);
+      if(Object.keys(n).length === 0) {
+        if(isFunction(cb)) {
+          cb.call(self);
+        }
+        return;
+      }
+      let state = clone(self.state);
       n = extend(state, n);
     }
-    let root = this.root;
-    if(root && this.__isMounted) {
-      root.delRefreshTask(this.__task);
+    let root = self.root;
+    if(root && self.__isMounted) {
+      root.delRefreshTask(self.__task);
       this.__task = {
         before: () => {
           // 标识更新
-          this.__nextState = n;
+          self.__nextState = n;
           setUpdateFlag(this);
         },
         after: () => {
           if(isFunction(cb)) {
-            cb();
+            cb.call(self);
           }
         },
         __state: true, // 特殊标识来源让root刷新时识别
       };
-      root.addRefreshTask(this.__task);
+      root.addRefreshTask(self.__task);
     }
     // 构造函数中调用还未render，
     else if(isFunction(cb)) {
-      this.__state = n;
-      cb();
+      self.__state = n;
+      cb.call(self);
     }
   }
 
@@ -85,7 +97,7 @@ class Component extends Event {
       console.warn('Component render() return a text, should not inherit style/event');
     }
     else if(sr instanceof Node) {
-      let style = css.normalize(this.props.style || {});
+      let style = css.normalize(this.props.style);
       let keys = Object.keys(style);
       extend(sr.style, style, keys);
       extend(sr.currentStyle, style, keys);
@@ -103,8 +115,9 @@ class Component extends Event {
       });
     }
     else if(sr instanceof Component) {
+      // 本身build是递归的，子cp已经初始化了
       console.warn('Component render() return a component: '
-        + this + ' -> ' + sr.tagName
+        + this.tagName + ' -> ' + sr.tagName
         + ', should not inherit style/event');
     }
     else {
@@ -156,15 +169,19 @@ class Component extends Event {
     }
   }
 
-  __measure(renderMode, ctx) {
+  __computeMeasure(renderMode, ctx, isHost, cb) {
     let sr = this.shadowRoot;
     if(sr instanceof Text) {
-      sr.__measure(renderMode, ctx);
+      sr.__computeMeasure(renderMode, ctx);
     }
     // 其它类型为Xom或Component
     else {
-      sr.__measure(renderMode, ctx, true);
+      sr.__computeMeasure(renderMode, ctx, true, cb);
     }
+  }
+
+  get tagName() {
+    return this.__tagName;
   }
 
   get shadowRoot() {
@@ -181,6 +198,14 @@ class Component extends Event {
 
   get parent() {
     return this.__parent;
+  }
+
+  get prev() {
+    return this.__prev;
+  }
+
+  get next() {
+    return this.__next;
   }
 
   get ref() {
@@ -200,7 +225,7 @@ class Component extends Event {
   }
 }
 
-Object.keys(repaint.GEOM).concat([
+Object.keys(change.GEOM).concat([
   'x',
   'y',
   'ox',
@@ -228,6 +253,15 @@ Object.keys(repaint.GEOM).concat([
   'lineBoxes',
   'charWidthList',
   'charWidth',
+  'layoutData',
+  'availableAnimating',
+  'effectiveAnimating',
+  'displayAnimating',
+  'visibilityAnimating',
+  '__refreshLevel',
+  '__cacheTotal',
+  '__cache',
+  'bbox',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {
@@ -255,7 +289,10 @@ Object.keys(repaint.GEOM).concat([
   'removeAnimate',
   'clearAnimate',
   'updateStyle',
-  '__cancelCacheSvg',
+  'deepScan',
+  '__cancelCache',
+  '__applyCache',
+  '__mergeBbox',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

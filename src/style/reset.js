@@ -77,33 +77,54 @@ const GEOM = {
   strokeMiterlimit: 4,
 };
 
-let dom = [];
-let domKey = [];
+let DOM_ENTRY_SET = [];
+let DOM_KEY_SET = [];
 Object.keys(DOM).forEach(k => {
-  domKey.push(k);
+  DOM_KEY_SET.push(k);
   let v = DOM[k];
-  dom.push({
+  DOM_ENTRY_SET.push({
     k,
     v,
   });
 });
 
-let geom = [];
-let geomKey = [];
+let GEOM_ENTRY_SET = [];
+let GEOM_KEY_SET = [];
 Object.keys(GEOM).forEach(k => {
-  geomKey.push(k);
+  GEOM_KEY_SET.push(k);
   let v = GEOM[k];
-  geom.push({
+  GEOM_ENTRY_SET.push({
     k,
     v,
   });
+});
+
+let INHERIT = {
+  fontFamily: 'arial',
+  fontSize: 16,
+  fontWeight: 400,
+  fontStyle: 'normal',
+  color: '#000',
+  textAlign: 'left',
+  visibility: 'visible',
+  pointerEvents: 'auto',
+};
+
+let INHERIT_KEY_SET = [];
+Object.keys(INHERIT).forEach(k => {
+  INHERIT_KEY_SET.push(k);
 });
 
 export default {
   DOM,
   GEOM,
-  domKey,
-  geomKey,
-  dom,
-  geom,
+  isValid(i) {
+    return DOM.hasOwnProperty(i) || GEOM.hasOwnProperty(i);
+  },
+  DOM_KEY_SET,
+  GEOM_KEY_SET,
+  DOM_ENTRY_SET,
+  GEOM_ENTRY_SET,
+  INHERIT,
+  INHERIT_KEY_SET,
 };

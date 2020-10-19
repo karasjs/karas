@@ -1,8 +1,9 @@
 import Node from './Node';
 import LineBox from './LineBox';
+import mode from './mode';
 import css from '../style/css';
-import mode from '../util/mode';
 import util from '../util/util';
+import mx from '../math/matrix';
 
 class Text extends Node {
   constructor(content) {
@@ -21,14 +22,14 @@ class Text extends Node {
   };
 
   // 预先计算每个字的宽度
-  __measure(renderMode, ctx) {
+  __computeMeasure(renderMode, ctx) {
     let { content, computedStyle, charWidthList } = this;
     // 每次都要清空重新计算，计算会有缓存
     charWidthList.splice(0);
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
     }
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
       style: computedStyle,
@@ -71,7 +72,7 @@ class Text extends Node {
 
   __measureCb() {
     let { content, computedStyle, charWidthList } = this;
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily;
+    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {
@@ -198,7 +199,7 @@ class Text extends Node {
     return this.width;
   }
 
-  render(renderMode, ctx) {
+  render(renderMode, lv, ctx, defs, dx = 0, dy = 0) {
     if(renderMode === mode.SVG) {
       this.__virtualDom = {
         type: 'text',
@@ -220,11 +221,19 @@ class Text extends Node {
       }
     }
     lineBoxes.forEach(item => {
-      item.render(renderMode, ctx, computedStyle, cacheStyle);
+      item.render(renderMode, ctx, computedStyle, cacheStyle, dx, dy);
     });
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);
     }
+  }
+
+  deepScan(cb) {
+    cb(this);
+  }
+
+  __mergeBbox(matrix, tx, ty, dx, dy) {
+    return util.transformBbox(this.bbox, matrix, dx, dy);
   }
 
   get content() {
@@ -270,6 +279,13 @@ class Text extends Node {
 
   get cacheStyle() {
     return this.parent.__cacheStyle;
+  }
+
+  get bbox() {
+    let { sx, sy, width, height } = this;
+    let x1 = sx, y1 = sy;
+    let x2 = sx + width, y2 = sy + height;
+    return [x1, y1, x2, y2];
   }
 }
 

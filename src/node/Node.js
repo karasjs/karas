@@ -2,16 +2,17 @@ class Node {
   constructor() {
     this.__x = 0;
     this.__y = 0;
-    this.__ox = 0; // relative/margin:auto/text-align等造成的偏移量
+    this.__ox = 0; // relative造成的偏移量
     this.__oy = 0;
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;
-    this.__prev = null;
-    this.__next = null;
-    this.__parent = null;
-    this.__root = null;
-    this.__host = null;
+    // 默认undefined
+    // this.__prev = null;
+    // this.__next = null;
+    // this.__parent = null;
+    // this.__root = null;
+    // this.__host = null;
   }
 
   __offsetX(diff, isLayout) {
@@ -34,7 +35,7 @@ class Node {
 
   __destroy() {
     this.__isDestroyed = true;
-    this.__parent = null;
+    // this.__parent = null;
   }
 
   get x() {
@@ -87,6 +88,25 @@ class Node {
 
   get parent() {
     return this.__parent;
+  }
+
+  get domParent() {
+    let p = this;
+    let root = this.root;
+    while(p) {
+      if(p === root) {
+        p = undefined;
+        break;
+      }
+      if(p.parent) {
+        p = p.parent;
+        break;
+      }
+      if(p.host) {
+        p = p.host;
+      }
+    }
+    return p;
   }
 
   // canvas/svg根节点

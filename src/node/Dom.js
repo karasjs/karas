@@ -1,5 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
+import mode from './mode';
 import LineGroup from './LineGroup';
 import Component from './Component';
 import tag from './tag';
@@ -7,16 +8,86 @@ import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
 import blur from '../style/blur';
-import mode from '../util/mode';
+import tf from '../style/transform';
 import util from '../util/util';
 import inject from '../util/inject';
+import level from '../refresh/level';
+import Cache from '../refresh/Cache';
+import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
-const { calAbsolute } = css;
+const { calAbsolute, isRelativeOrAbsolute } = css;
 
-function isRelativeOrAbsolute(node) {
-  let position = node.computedStyle.position;
-  return position === 'relative' || position === 'absolute';
+const MODE = {
+  ROOT: 0, // 普通主屏递归渲染
+  TOP: 1, // 局部根节点离屏汇总渲染
+  CHILD: 2, // 局部根节点的子节点汇总渲染
+};
+
+/**
+ * 复制cacheTotal的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+ * @param cacheTotal
+ * @param v
+ * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
+ */
+function genOffScreenBlur(cacheTotal, v) {
+  let { coords: [x, y], size, canvas, x1, y1 } = cacheTotal;
+  let offScreen = inject.getCacheCanvas(size, size);
+  offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+  offScreen.draw();
+  let cacheFilter = inject.getCacheWebgl(size, size);
+  blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+  cacheFilter.x1 = x1;
+  cacheFilter.y1 = y1;
+  cacheFilter.dbx = cacheTotal.dbx;
+  cacheFilter.dby = cacheTotal.dby;
+  return cacheFilter;
+}
+
+function genZIndexChildren(dom) {
+  let flow = [];
+  let abs = [];
+  let needSort = false;
+  let lastIndex;
+  dom.children.forEach((item, i) => {
+    let child = item;
+    if(item instanceof Component) {
+      item = item.shadowRoot;
+    }
+    // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+    if(!item.isMask && !item.isClip && item.computedStyle) {
+      if(item instanceof Xom) {
+        if(isRelativeOrAbsolute(item)) {
+          // 临时变量为排序使用
+          child.__iIndex = i;
+          let z = child.__zIndex = item.currentStyle.zIndex;
+          abs.push(child);
+          if(lastIndex === undefined) {
+            lastIndex = z;
+          }
+          else if(!needSort) {
+            if(z < lastIndex) {
+              needSort = true;
+            }
+            lastIndex = z;
+          }
+        }
+        else {
+          flow.push(child);
+        }
+      }
+      else {
+        flow.push(child);
+      }
+    }
+  });
+  needSort && abs.sort(function(a, b) {
+    if(a.__zIndex !== b.__zIndex) {
+      return a.__zIndex - b.__zIndex;
+    }
+    return a.__iIndex - b.__iIndex;
+  });
+  return flow.concat(abs);
 }
 
 class Dom extends Xom {
@@ -40,7 +111,7 @@ class Dom extends Xom {
     if(!style.fontWeight && tag.BOLD.hasOwnProperty(tagName)) {
       style.fontWeight = 700;
     }
-    this.__style = css.normalize(style, reset.dom);
+    this.__style = css.normalize(style, reset.DOM_ENTRY_SET);
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];
@@ -72,20 +143,20 @@ class Dom extends Xom {
   }
 
   // 设置y偏移值，递归包括children，此举在justify-content/margin-auto等对齐用
-  __offsetX(diff, isLayout) {
-    super.__offsetX(diff, isLayout);
+  __offsetX(diff, isLayout, lv) {
+    super.__offsetX(diff, isLayout, lv);
     this.flowChildren.forEach(item => {
       if(item) {
-        item.__offsetX(diff, isLayout);
+        item.__offsetX(diff, isLayout, lv);
       }
     });
   }
 
-  __offsetY(diff, isLayout) {
-    super.__offsetY(diff, isLayout);
+  __offsetY(diff, isLayout, lv) {
+    super.__offsetY(diff, isLayout, lv);
     this.flowChildren.forEach(item => {
       if(item) {
-        item.__offsetY(diff, isLayout);
+        item.__offsetY(diff, isLayout, lv);
       }
     });
   }
@@ -107,13 +178,11 @@ class Dom extends Xom {
       paddingTop,
       paddingRight,
       paddingBottom,
-    } = currentStyle;
-    let {
       borderTopWidth,
       borderRightWidth,
       borderBottomWidth,
       borderLeftWidth,
-    } = computedStyle;
+    } = currentStyle;
     let main = isDirectionRow ? width : height;
     if(main.unit === PX) {
       b = max = main.value;
@@ -137,6 +206,7 @@ class Dom extends Xom {
       }
       // 文本垂直
       else {
+        css.computeReflow(item);
         item.__layout({
           x: 0,
           y: 0,
@@ -153,7 +223,7 @@ class Dom extends Xom {
         + this.__calMp(marginRight, w)
         + this.__calMp(paddingLeft, w)
         + this.__calMp(paddingRight, w);
-      let w2 = borderRightWidth + borderLeftWidth + mp;
+      let w2 = borderLeftWidth.value + borderRightWidth.value + mp;
       b += w2;
       max += w2;
       min += w2;
@@ -163,7 +233,7 @@ class Dom extends Xom {
         + this.__calMp(marginBottom, w)
         + this.__calMp(paddingTop, w)
         + this.__calMp(paddingBottom, w);
-      let h2 = borderTopWidth + borderBottomWidth + mp;
+      let h2 = borderTopWidth.value + borderBottomWidth.value + mp;
       b += h2;
       max += h2;
       min += h2;
@@ -686,7 +756,7 @@ class Dom extends Xom {
     let lineGroup = new LineGroup(x, y);
     flowChildren.forEach(item => {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
-        if(item.computedStyle.display !== 'inline') {
+        if(item.currentStyle.display !== 'inline') {
           item.currentStyle.display = item.computedStyle.display = 'inline';
           console.error('Inline can not contain block/flex');
         }
@@ -810,8 +880,14 @@ class Dom extends Xom {
     }
   }
 
-  // 只针对绝对定位children布局
-  __layoutAbs(container, data) {
+  /**
+   * 只针对绝对定位children布局
+   * @param container
+   * @param data
+   * @param target 可选，只针对某个abs的child特定布局，在局部更新时用
+   * @private
+   */
+  __layoutAbs(container, data, target) {
     let { sx: x, sy: y, innerWidth, innerHeight, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
@@ -829,6 +905,9 @@ class Dom extends Xom {
     y += marginTop + borderTopWidth;
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
+      if(target && target !== item) {
+        return;
+      }
       let { currentStyle, computedStyle } = item;
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, innerWidth);
@@ -889,8 +968,8 @@ class Dom extends Xom {
         x2 -= computedStyle.marginRight;
         x2 -= computedStyle.paddingLeft;
         x2 -= computedStyle.paddingRight;
-        x2 -= computedStyle.borderLeftWidth;
-        x2 -= computedStyle.borderRightWidth;
+        x2 -= currentStyle.borderLeftWidth.value;
+        x2 -= currentStyle.borderRightWidth.value;
       }
       else if(fixedLeft) {
         x2 = x + computedStyle.left;
@@ -922,8 +1001,8 @@ class Dom extends Xom {
         y2 -= computedStyle.marginBottom;
         y2 -= computedStyle.paddingTop;
         y2 -= computedStyle.paddingBottom;
-        y2 -= computedStyle.borderTopWidth;
-        y2 -= computedStyle.borderBottomWidth;
+        y2 -= currentStyle.borderTopWidth.value;
+        y2 -= currentStyle.borderBottomWidth.value;
       }
       else if(fixedTop) {
         y2 = y + computedStyle.top;
@@ -993,10 +1072,13 @@ class Dom extends Xom {
         item.__offsetY(-item.outerHeight, true);
       }
     });
-    // 递归进行，遇到absolute/relative的设置新容器
+    if(target) {
+      return;
+    }
+    // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
       if(item instanceof Dom) {
-        item.__layoutAbs(['absolute', 'relative'].indexOf(item.computedStyle.position) > -1 ? item : container, data);
+        item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);
       }
       else if(item instanceof Component) {
         let sr = item.shadowRoot;
@@ -1007,62 +1089,522 @@ class Dom extends Xom {
     });
   }
 
-  render(renderMode, ctx, defs) {
-    let offScreen = super.render(renderMode, ctx, defs);
+  render(renderMode, lv, ctx, defs) {
+    // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
+    let res = super.render(renderMode, lv, ctx, defs);
+    res = res || {};
+    let { offScreen, filter } = res;
+    // canvas检查filter，无缓存时的绘制
     if(offScreen && offScreen.target && offScreen.target.ctx) {
       ctx = offScreen.target.ctx;
     }
-    // 降级
+    // 降级，有offScreen但没离屏canvas/webgl功能，舍弃blur
     else {
       offScreen = null;
     }
+    let { root, isDestroyed, virtualDom, children,
+      computedStyle: { position, display, visibility } } = this;
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
-      this.virtualDom.type = 'dom';
+      virtualDom.type = 'dom';
     }
-    let { isDestroyed, computedStyle: { display }, children } = this;
-    if(isDestroyed || display === 'none' || !children.length) {
-      return;
+    // canvas在隐藏时返回空，svg则有内容
+    if(isDestroyed || display === 'none' || (renderMode === mode.CANVAS && visibility === 'hidden')) {
+      return res;
     }
-    // 先渲染过滤mask
+    // filter特殊缓存
+    let cacheFilter = this.__cacheFilter;
+    let blurValue;
+    if(Array.isArray(filter)) {
+      filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          blurValue = v;
+        }
+      });
+    }
+    if(renderMode === mode.CANVAS && cacheFilter && blurValue
+      && lv < level.REPAINT && !level.contain(lv, level.FILTER)) {
+      return res;
+    }
+    this.__cacheFilter = null;
+    // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
+    let cacheTotal = this.__cacheTotal;
+    if(lv < level.REPAINT && cacheTotal && cacheTotal.available) {
+      if(renderMode === mode.CANVAS) {
+        if(blurValue) {
+          // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
+          if(level.contain(lv, level.FILTER)) {
+            let bbox = this.__mergeBbox(null, true);
+            let old = cacheTotal.bbox;
+            // bbox没变化省略更新total
+            if(util.equalArr(bbox, old)) {
+              this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+            }
+            else {
+              let dx = old[0] - bbox[0];
+              let dy = old[1] - bbox[1];
+              let newTotal = Cache.getInstance(bbox);
+              if(newTotal && newTotal.enabled) {
+                let { coords: [ox, oy], size } = cacheTotal;
+                let { coords: [nx, ny], size: size2 } = newTotal;
+                newTotal.x1 = cacheTotal.x1;
+                newTotal.y1 = cacheTotal.y1;
+                newTotal.dx = cacheTotal.dx + dx;
+                newTotal.dy = cacheTotal.dy + dy;
+                newTotal.dbx = cacheTotal.dbx + dx;
+                newTotal.dby = cacheTotal.dby + dy;
+                newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+                cacheTotal.release();
+                cacheTotal = this.__cacheTotal = newTotal;
+                cacheTotal.__available = true;
+                this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+              }
+              // 更新后超限，丢掉blur降级
+              else {
+                this.__cacheFilter = null;
+              }
+            }
+          }
+        }
+        else {
+          this.__cacheFilter = null;
+        }
+      }
+      else if(renderMode === mode.SVG) {
+        virtualDom.cache = true; // 标识vd整体缓存无需深度diff
+      }
+      return res;
+    }
+    // 先渲染过滤mask，仅svg进入，canvas在下面自身做
     children.forEach(item => {
-      if(item.isMask || item.isClip) {
-        item.__renderAsMask(renderMode, ctx, defs, !item.isMask);
+      if(!(item instanceof Component) && (item.isMask || item.isClip)) {
+        item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
       }
     });
+    // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
+    let canCacheChildren = true;
+    let draw = !root.cache || renderMode === mode.SVG;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndex = this.zIndexChildren;
-    zIndex.forEach(item => {
-      item.__renderByMask(renderMode, ctx, defs);
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    zIndexChildren.forEach(item => {
+      // canvas开启缓存text先不渲染，节点先绘制到自身cache上
+      if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+        if(draw) {
+          item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+        }
+      }
+      else {
+        // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
+        let offScreen;
+        let blurValue;
+        let newCtx = ctx;
+        let isGeom = item.tagName.charAt(0) === '$';
+        let cache;
+        if(renderMode === mode.CANVAS && isGeom) {
+          let filter = item.currentStyle.filter;
+          if(Array.isArray(filter)) {
+            filter.forEach(item => {
+              let [k, v] = item;
+              if(k === 'blur' && v > 0) {
+                if(root.cache) {
+                  blurValue = v;
+                }
+                else {
+                  let { width, height } = root;
+                  let c = inject.getCacheCanvas(width, height, '__$$geom$$__');
+                  if(c.ctx) {
+                    newCtx = c.ctx;
+                    offScreen = {
+                      ctx,
+                    };
+                    offScreen.target = c;
+                    ctx = c.ctx;
+                  }
+                }
+              }
+            });
+          }
+          // geom特殊处理生成cacheTotal代替cache，因为没children，但可能有cacheFilter
+          if(root.cache) {
+            if(item.__cache && item.__cache.ctx) {
+              if(item.__refreshLevel >= level.REPAINT) {
+                item.__cache.ctx.clearRect(0, 0, root.width, root.height);
+              }
+              cache = item.__cacheTotal = item.__cache;
+              newCtx = cache.ctx;
+            }
+            else {
+              item.__cache = item.__cacheTotal = null; // 需置空，geom>=REPAINT的重绘不会置空干扰xom逻辑
+              cache = inject.getCacheCanvas(root.width, root.height);
+              if(cache && cache.ctx) {
+                newCtx = cache.ctx;
+              }
+            }
+          }
+        }
+        let temp = item.__renderByMask(renderMode, item.__refreshLevel, newCtx, defs);
+        // geom且root无cache才有offScreen
+        if(offScreen) {
+          let { width, height } = root;
+          let webgl = inject.getCacheWebgl(width, height, '__$$geom-blur$$__');
+          let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+          offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+          offScreen.target.draw();
+          res.clear();
+        }
+        // geom生成cacheFilter
+        else if(blurValue && cache) {
+          let { width, height } = root;
+          let f = item.__cacheFilter = item.__cacheFilter || inject.getCacheCanvas(width, height);
+          f.ctx.clearRect(0, 0, width, height);
+          f.draw();
+          f.ctx.drawImage(cache.canvas, 0, 0);
+          let webgl = inject.getCacheWebgl(width, height, '__$$geom-cache-blur$$__');
+          let res = blur.gaussBlur(f, webgl, blurValue, width, height);
+          f.draw();
+          res.clear();
+        }
+        else if(isGeom && item.__cacheFilter) {
+          item.__cacheFilter = null;
+        }
+        // 后赋值给geom，这样初次运行时没有这个属性防止缓存，geom子类会在render中判断break使用缓存
+        if(cache && cache.ctx) {
+          item.__cache = item.__cacheTotal = cache;
+        }
+        // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
+        if(!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
+          canCacheChildren = false;
+        }
+      }
     });
-    // 模糊滤镜写回
-    if(renderMode === mode.CANVAS && offScreen) {
-      let { width, height } = this.root;
-      let webgl = inject.getCacheWebgl(width, height);
-      let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-      offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-      offScreen.target.draw();
-      res.clear();
+    /**
+     * canvas决定是否作为一个局部整体是否缓存的因素
+     * 首先本身无有影响的动画，且children无有效的动画
+     * 然后本身是relative/absolute/Component
+     * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
+     * 目前处于递归的回溯阶段，即冒泡阶段，
+     * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
+     * filter是个特殊情况，需要webgl离屏执行，所以一定有缓存
+     * svg则不需要这些，vd上cache标明整体缓存无需递归diff
+     */
+    let canCacheSelf = renderMode === mode.CANVAS
+      && (canCacheChildren && !this.effectiveAnimating || blurValue);
+    if(canCacheSelf && !blurValue && ['relative', 'absolute'].indexOf(position) === -1 && !this.isShadowRoot) {
+      canCacheSelf = false;
     }
-    // img的children在子类特殊处理
-    else if(renderMode === mode.SVG && this.tagName !== 'img') {
-      this.virtualDom.children = zIndex.map(item => item.virtualDom);
+    // 需考虑缓存和滤镜
+    if(renderMode === mode.CANVAS) {
+      // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
+      if(root.cache) {
+        // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
+        if(this === root) {
+          this.__applyCache(renderMode, lv, ctx, MODE.ROOT);
+        }
+        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
+        else if(canCacheSelf) {
+          this.__applyCache(renderMode, lv, ctx, MODE.TOP);
+        }
+        // 非局部缓存的节点等待root调用
+      }
+      // 无缓存时有offScreen对象，尝试使用webgl的blur，对象生成条件在Xom初始化做
+      else if(offScreen) {
+        let { width, height } = root;
+        let webgl = inject.getCacheWebgl(width, height);
+        let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+        offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+        offScreen.target.draw();
+        res.clear();
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
+      this.__cacheTotal = {
+        available: true,
+        release() {
+          this.available = false;
+          delete virtualDom.cache;
+        },
+      };
+      // img的children在子类特殊处理
+      if(this.tagName !== 'img') {
+        virtualDom.children = zIndexChildren.map(item => item.virtualDom);
+      }
       // 没变化则将text孩子设置cache
-      if(this.virtualDom.cache) {
+      if(virtualDom.hasOwnProperty('lv')) {
         this.virtualDom.children.forEach(item => {
           if(item.type === 'text') {
             item.cache = true;
           }
         });
       }
+      else {
+        this.virtualDom.children.forEach(item => {
+          if(item.type === 'text') {
+            delete item.cache;
+          }
+        });
+      }
+    }
+    // 向上回溯传值，要考虑children
+    if(res.canCache && !canCacheChildren) {
+      res.canCache = false;
+    }
+    return res;
+  }
+
+  /**
+   * canvas下，应用离屏内容缓存到主屏或者局部根节点上
+   * 有可能子节点没超限但整体超限，此时要考虑降级分别绘制
+   * @param renderMode
+   * @param lv
+   * @param ctx
+   * @param mode 局部根节点总缓存、及其子节点、最后root发起的无局部整体的节点自身缓存应用
+   * @param cacheTop 汇总离屏canvas的目标
+   * @param opacity 以top为基点
+   * @param matrix 以top为基点
+   */
+  __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
+    let cacheFilter = this.__cacheFilter;
+    let cacheTotal = this.__cacheTotal;
+    let cache = this.__cache;
+    let zIndexChildren = this.zIndexChildren;
+    let computedStyle = this.computedStyle;
+    let blurValue = 0;
+    if(Array.isArray(computedStyle.filter)) {
+      computedStyle.filter.forEach(item => {
+        let [k, v] = item;
+        if(k === 'blur' && v > 0) {
+          blurValue = v;
+        }
+      });
+    }
+    // 局部根节点缓存汇总渲染
+    if(mode === MODE.TOP) {
+      let bboxTotal = this.__mergeBbox(null, true);
+      // 空内容
+      if(!bboxTotal) {
+        return;
+      }
+      // 第一次初始化进行bbox合集计算
+      if(!cacheTotal) {
+        cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
+      }
+      // 后续如果超过可缓存的lv重设，否则直接用已有内容
+      else if(!cacheTotal.enabled) {
+        cacheTotal.reset(bboxTotal);
+      }
+      let { sx, sy } = this;
+      // 缓存可用时各children依次执行进行离屏汇总
+      if(cacheTotal && cacheTotal.enabled) {
+        cacheTotal.__bbox = bboxTotal;
+        let { coords: [tx, ty] } = cacheTotal;
+        let dx, dy, x1, y1, coords;
+        if(cache && cache.available) {
+          x1 = cache.x1;
+          y1 = cache.y1;
+          dx = cache.dx;
+          dy = cache.dy;
+          coords = cache.coords;
+        }
+        else {
+          let bbox = this.bbox;
+          x1 = sx + computedStyle.marginLeft;
+          y1 = sy + computedStyle.marginTop;
+          dx = tx - bbox[0];
+          dy = ty - bbox[1];
+          coords = [tx, ty];
+        }
+        // 首次生成
+        if(!cacheTotal.available) {
+          cacheTotal.__available = true;
+          cacheTotal.x1 = x1;
+          cacheTotal.y1 = y1;
+          cacheTotal.dx = dx += tx - coords[0];
+          cacheTotal.dy = dy += ty - coords[1];
+          ctx = cacheTotal.ctx;
+          // 计算bbox的相对dom点偏移值，可能因filter/children范围导致
+          let dbx = x1 - cacheTotal.bbox[0], dby = y1 - cacheTotal.bbox[1];
+          cacheTotal.dbx = dbx;
+          cacheTotal.dby = dby;
+          // 以top为基准matrix/opacity
+          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.globalAlpha = 1;
+          super.__applyCache(renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
+          zIndexChildren.forEach(item => {
+            ctx.setTransform([1, 0, 0, 1, 0, 0]);
+            ctx.globalAlpha = 1;
+            if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+              item.__renderByMask(renderMode, null, ctx, null, dx, dy);
+            }
+            else {
+              item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
+            }
+          });
+        }
+      }
+      // 超尺寸无法进行，降级渲染
+      else {
+        let tx = sx + computedStyle.marginLeft;
+        let ty = sy + computedStyle.marginTop;
+        super.__applyCache(renderMode, lv, ctx, tx - 1, ty - 1);
+        zIndexChildren.forEach(item => {
+          if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+            item.__renderByMask(renderMode, null, ctx);
+          }
+          else {
+            item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
+          }
+        });
+      }
+      // 生成filter缓存，超尺寸降级舍弃
+      if(blurValue && cacheTotal && cacheTotal.available) {
+        this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+      }
+      else if(cacheFilter) {
+        this.__cacheFilter = null;
+      }
+    }
+    // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
+    else if(mode === MODE.CHILD) {
+      let { sx: x, sy: y } = this;
+      x += computedStyle.marginLeft;
+      y += computedStyle.marginTop;
+      let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
+      let dx = tx + x - x1 + dbx;
+      let dy = ty + y - y1 + dby;
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += dx;
+      tfo[1] += dy;
+      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      ctx.setTransform(...matrix);
+      opacity *= computedStyle.opacity;
+      ctx.globalAlpha = opacity;
+      // 优先filter，再是total
+      if(cacheFilter || cacheTotal && cacheTotal.available) {
+        let { coords: [x, y], canvas, size } = cacheFilter || cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
+        return;
+      }
+      // 即便无内容也只是空执行
+      super.__applyCache(renderMode, lv, ctx, dx - 1, dy - 1);
+      // 递归children
+      zIndexChildren.forEach(item => {
+        if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+          item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
+        }
+        else {
+          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
+        }
+      });
+    }
+    // root调用局部整体缓存或单个节点缓存绘入主画布
+    else if(mode === MODE.ROOT) {
+      let { __opacity, matrixEvent } = this;
+      // 写回主画布前设置
+      ctx.globalAlpha = __opacity;
+      ctx.setTransform(...matrixEvent);
+      if(cacheFilter) {
+        let { x1, y1, dbx, dby } = cacheFilter;
+        ctx.drawImage(cacheFilter.canvas, x1 - 1 - dbx, y1 - 1 - dby);
+        return;
+      }
+      if(cacheTotal && cacheTotal.available) {
+        let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cacheTotal;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+        return;
+      }
+      // 无内容就没有cache，继续看children
+      if(cache && cache.available) {
+        let { x1, y1, dbx, dby } = cache;
+        super.__applyCache(renderMode, lv, ctx, x1 - 1 - dbx, y1 - 1 - dby);
+      }
+      zIndexChildren.forEach(item => {
+        if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+          item.__renderByMask(renderMode, null, ctx);
+        }
+        else {
+          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
+        }
+      });
     }
   }
 
-  __measure(renderMode, ctx, isRoot) {
-    super.__measure(renderMode, ctx, isRoot);
+  /**
+   * 以cacheTotal为基准递归合并包含children的bbox
+   * @param matrix
+   * @param isTop
+   * @param tx 顶dom的坐标
+   * @param ty
+   * @param dx filter造成的偏移，递归传递下去所有children需要扩展此值
+   * @param dy
+   * @returns bbox
+   * @private
+   */
+  __mergeBbox(matrix, isTop, tx, ty, dx, dy) {
+    let bbox;
+    let { sx, sy, computedStyle } = this;
+    // 顶点初始化为起点，偏移值要考虑filter
+    if(isTop) {
+      matrix = [1, 0, 0, 1, 0, 0];
+      bbox = super.__mergeBbox(matrix, isTop);
+      tx = sx;
+      ty = sy;
+      if(bbox) {
+        dx = sx + computedStyle.marginLeft - bbox[0];
+        dy = sy + computedStyle.marginTop - bbox[1];
+      }
+      else if(Array.isArray(computedStyle.filter)) {
+        computedStyle.filter.forEach(item => {
+          let [k, v] = item;
+          if(k === 'blur' && v > 0) {
+            let d = mx.int2convolution(v);
+            dx = dy = d;
+          }
+        });
+      }
+      else {
+        dx = dy = 0;
+      }
+    }
+    else {
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += sx - tx;
+      tfo[1] += sy - ty;
+      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      bbox = super.__mergeBbox(matrix, isTop, dx, dy);
+    }
+    this.zIndexChildren.forEach(item => {
+      let t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
+      if(!bbox) {
+        bbox = t;
+      }
+      else {
+        bbox[0] = Math.min(bbox[0], t[0]);
+        bbox[1] = Math.min(bbox[1], t[1]);
+        bbox[2] = Math.max(bbox[2], t[2]);
+        bbox[3] = Math.max(bbox[3], t[3]);
+      }
+    });
+    return bbox;
+  }
+
+  /**
+   * 布局前检查继承的样式以及统计字体测量信息
+   * 首次检查为整树遍历，后续检查是节点自发局部检查，不再进入
+   * @param renderMode
+   * @param ctx
+   * @param isHost
+   * @param cb
+   * @private
+   */
+  __computeMeasure(renderMode, ctx, isHost, cb) {
+    super.__computeMeasure(renderMode, ctx, isHost, cb);
     // 即便自己不需要计算，但children还要继续递归检查
     this.children.forEach(item => {
-      item.__measure(renderMode, ctx);
+      item.__computeMeasure(renderMode, ctx, false, cb);
     });
   }
 
@@ -1116,12 +1658,24 @@ class Dom extends Xom {
     return super.__emitEvent(e);
   }
 
-  __cancelCacheSvg() {
-    super.__cancelCacheSvg();
-    this.children.forEach(child => {
-      if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
-        child.__cancelCacheSvg();
-      }
+  __cancelCache(recursion) {
+    super.__cancelCache(recursion);
+    if(recursion) {
+      this.children.forEach(child => {
+        if(child instanceof Xom || child instanceof Component && child.shadowRoot instanceof Xom) {
+          child.__cancelCache(recursion);
+        }
+      });
+    }
+  }
+
+  // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
+  deepScan(cb, options) {
+    if(super.deepScan(cb, options)) {
+      return;
+    }
+    this.children.forEach(node => {
+      node.deepScan(cb, options);
     });
   }
 
@@ -1134,7 +1688,7 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Text || item.computedStyle && item.computedStyle.position !== 'absolute';
+      return item instanceof Text || item.currentStyle.position !== 'absolute';
     });
   }
 
@@ -1143,54 +1697,12 @@ class Dom extends Xom {
       if(item instanceof Component) {
         item = item.shadowRoot;
       }
-      return item instanceof Xom && item.computedStyle && item.computedStyle.position === 'absolute';
+      return item instanceof Xom && item.currentStyle.position === 'absolute';
     });
   }
 
   get zIndexChildren() {
-    let flow = [];
-    let abs = [];
-    let needSort = false;
-    let lastIndex;
-    this.children.forEach((item, i) => {
-      let child = item;
-      if(item instanceof Component) {
-        item = item.shadowRoot;
-      }
-      // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-      if(!item.isMask && !item.isClip && item.computedStyle) {
-        if(item instanceof Xom) {
-          if(isRelativeOrAbsolute(item)) {
-            // 临时变量为排序使用
-            child.__iIndex = i;
-            let z = child.__zIndex = item.currentStyle.zIndex;
-            abs.push(child);
-            if(lastIndex === undefined) {
-              lastIndex = z;
-            }
-            else if(!needSort) {
-              if(z < lastIndex) {
-                needSort = true;
-              }
-              lastIndex = z;
-            }
-          }
-          else {
-            flow.push(child);
-          }
-        }
-        else {
-          flow.push(child);
-        }
-      }
-    });
-    needSort && abs.sort(function(a, b) {
-      if(a.__zIndex !== b.__zIndex) {
-        return a.__zIndex - b.__zIndex;
-      }
-      return a.__iIndex - b.__iIndex;
-    });
-    return flow.concat(abs);
+    return this.__zIndexChildren;
   }
 
   get lineGroups() {

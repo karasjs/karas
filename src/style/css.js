@@ -2,9 +2,11 @@ import unit from './unit';
 import font from './font';
 import gradient from './gradient';
 import reg from './reg';
+import reset from './reset';
+import abbr from './abbr';
 import util from '../util/util';
-import repaint from '../animate/repaint';
 import key from '../animate/key';
+import change from '../refresh/change';
 
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int } = util;
@@ -19,74 +21,6 @@ const {
   EXPAND_HASH,
   GRADIENT_TYPE,
 } = key;
-
-function parserOneBorder(style, direction) {
-  let k = 'border' + direction;
-  let v = style[k];
-  if(isNil(v)) {
-    return;
-  }
-  // 后面会统一格式化处理
-  if(isNil(style[k + 'Width'])) {
-    let w = /\b[\d.]+px\b/i.exec(v);
-    style[k + 'Width'] = w ? w[0] : 0;
-  }
-  if(isNil(style[k + 'Style'])) {
-    let s = /\b(solid|dashed|dotted)\b/i.exec(v);
-    style[k + 'Style'] = s ? s[1] : 'solid';
-  }
-  if(isNil(style[k + 'Color'])) {
-    let c = /#[0-9a-f]{3,6}/i.exec(v);
-    if(c && [4, 7].indexOf(c[0].length) > -1) {
-      style[k + 'Color'] = c[0];
-    }
-    else if(/\btransparent\b/i.test(v)) {
-      style[k + 'Color'] = 'transparent';
-    }
-    else {
-      c = /rgba?\(.+\)/i.exec(v);
-      style[k + 'Color'] = c ? c[0] : 'transparent';
-    }
-  }
-}
-
-function parseFlex(style, grow, shrink, basis) {
-  if(isNil(style.flexGrow)) {
-    style.flexGrow = grow;
-  }
-  if(isNil(style.flexShrink)) {
-    style.flexShrink = shrink;
-  }
-  if(isNil(style.flexBasis)) {
-    style.flexBasis = basis;
-  }
-}
-
-function parseMarginPadding(style, key) {
-  let temp = style[key];
-  if(temp) {
-    let match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
-    if(match) {
-      if(match.length === 1) {
-        match[3] = match[2] = match[1] = match[0];
-      }
-      else if(match.length === 2) {
-        match[2] = match[0];
-        match[3] = match[1];
-      }
-      else if(match.length === 3) {
-        match[3] = match[1];
-      }
-      ['Top', 'Right', 'Bottom', 'Left'].forEach((k, i) => {
-        k = key + k;
-        if(isNil(style[k])) {
-          style[k] = match[i];
-        }
-      });
-    }
-    delete style[key];
-  }
-}
 
 /**
  * 通用的格式化计算数值单位的方法，百分比像素auto和纯数字，直接修改传入对象本身
@@ -161,173 +95,72 @@ function compatibleTransform(k, v) {
  * 将传入的手写style标准化，并且用reset默认值覆盖其中为空的
  * @param style 手写的style样式
  * @param reset 默认样式
- * @returns 标准化的样式
+ * @returns Object 标准化的样式
  */
 function normalize(style, reset = []) {
+  if(!util.isObject(style)) {
+    return {};
+  }
   // style只有单层无需深度clone
   style = util.extend({}, style);
   // 缩写提前处理，因为reset里没有缩写
   let temp = style.border;
   if(temp) {
-    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-      k = 'border' + k;
-      if(isNil(style[k])) {
-        style[k] = temp;
-      }
-    });
+    abbr.toFull(style, 'border');
     delete style.border;
   }
-  ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-    parserOneBorder(style, k);
+  ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'].forEach(k => {
+    abbr.toFull(style, k);
+    delete style[k];
   });
   temp = style.borderWidth;
   if(temp) {
-    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-      k = 'border' + k + 'Width';
-      if(isNil(style[k])) {
-        // width后面会统一格式化处理
-        style[k] = temp;
-      }
-    });
+    abbr.toFull(style, 'borderWidth');
     delete style.borderWidth;
   }
   temp = style.borderColor;
   if(temp) {
-    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-      k = 'border' + k + 'Color';
-      if(isNil(style[k])) {
-        style[k] = rgba2int(temp);
-      }
-    });
+    abbr.toFull(style, 'borderColor');
     delete style.borderColor;
   }
   temp = style.borderStyle;
   if(temp) {
-    ['Top', 'Right', 'Bottom', 'Left'].forEach(k => {
-      k = 'border' + k + 'Style';
-      if(isNil(style[k])) {
-        style[k] = temp;
-      }
-    });
+    abbr.toFull(style, 'borderStyle');
     delete style.borderStyle;
   }
   temp = style.borderRadius;
   if(temp) {
-    // borderRadius缩写很特殊，/分隔x/y，然后上右下左4个
-    temp = temp.toString().split('/');
-    if(temp.length === 1) {
-      temp[1] = temp[0];
-    }
-    for(let i = 0; i < 2; i++) {
-      let item = temp[i].toString().split(/\s+/);
-      if(item.length === 0) {
-        temp[i] = [0, 0, 0, 0];
-      }
-      else if(item.length === 1) {
-        temp[i] = [item[0], item[0], item[0], item[0]];
-      }
-      else if(item.length === 2) {
-        temp[i] = [item[0], item[1], item[0], item[1]];
-      }
-      else if(item.length === 3) {
-        temp[i] = [item[0], item[1], item[2], item[1]];
-      }
-      else {
-        temp[i] = item.slice(0, 4);
-      }
-    }
-    ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft'].forEach((k, i) => {
-      k = 'border' + k + 'Radius';
-      if(isNil(style[k])) {
-        style[k] = temp[0][i] + ' ' + temp[1][i];
-      }
-    });
+    abbr.toFull(style, 'borderRadius');
     delete style.borderRadius;
   }
   temp = style.background;
   // 处理渐变背景缩写
   if(temp) {
-    // gradient/image和颜色可以并存
-    if(isNil(style.backgroundImage)) {
-      let gd = reg.gradient.exec(temp);
-      if(gd) {
-        style.backgroundImage = gd[0];
-        temp = temp.replace(gd[0], '');
-      }
-      else {
-        let img = reg.img.exec(temp);
-        if(img) {
-          style.backgroundImage = img[0];
-          temp = temp.replace(img[0], '');
-        }
-      }
-    }
-    if(isNil(style.backgroundRepeat)) {
-      let repeat = /(no-)?repeat(-[xy])?/i.exec(temp);
-      if(repeat) {
-        style.backgroundRepeat = repeat[0].toLowerCase();
-      }
-    }
-    if(isNil(style.backgroundColor)) {
-      let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(temp);
-      if(bgc) {
-        style.backgroundColor = bgc[0];
-        temp = temp.replace(bgc[0], '');
-      }
-    }
-    if(isNil(style.backgroundPosition)) {
-      let position = temp.match(reg.position);
-      if(position) {
-        style.backgroundPositionX = position[0];
-        style.backgroundPositionY = position.length > 1 ? position[1] : position[0];
-      }
-    }
+    abbr.toFull(style, 'background');
     delete style.background;
   }
   // 背景位置
   temp = style.backgroundPosition;
   if(!isNil(temp)) {
-    temp = temp.toString().split(/\s+/);
-    if(temp.length === 1) {
-      temp[1] = '50%';
-    }
-    [style.backgroundPositionX, style.backgroundPositionY] = temp;
+    abbr.toFull(style, 'backgroundPosition');
     delete style.backgroundPosition;
   }
   // flex
   temp = style.flex;
   if(temp) {
-    if(temp === 'none') {
-      parseFlex(style, 0, 0, 'auto');
-    }
-    else if(temp === 'auto') {
-      parseFlex(style, 1, 1, 'auto');
-    }
-    else if(/^[\d.]+$/.test(temp)) {
-      parseFlex(style, Math.max(0, parseFloat(temp)), 1, 0);
-    }
-    else if(/^[\d.]+px$/i.test(temp)) {
-      parseFlex(style, 1, 1, 0);
-    }
-    else if(/^[\d.]+%$/.test(temp)) {
-      parseFlex(style, 1, 1, temp);
-    }
-    else if(/^[\d.]+\s+[\d.]+$/.test(temp)) {
-      let arr = temp.split(/\s+/);
-      parseFlex(style, arr[0], arr[1], 0);
-    }
-    else if(/^[\d.]+\s+[\d.]+%$/.test(temp)) {
-      let arr = temp.split(/\s+/);
-      parseFlex(style, arr[0], 1, arr[1]);
-    }
-    else {
-      parseFlex(style, 0, 1, 'auto');
-    }
+    abbr.toFull(style, 'flex');
     delete style.flex;
   }
-  // margin
-  parseMarginPadding(style, 'margin');
-  parseMarginPadding(style, 'padding');
+  temp = style.margin;
+  if(!isNil(temp)) {
+    abbr.toFull(style, 'margin');
+    delete style.margin;
+  }
+  temp = style.padding;
+  if(!isNil(temp)) {
+    abbr.toFull(style, 'padding');
+    delete style.padding;
+  }
   [
     'translateX',
     'translateY',
@@ -343,6 +176,19 @@ function normalize(style, reset = []) {
       console.error(`Can not use expand style "${k}" with transform`);
     }
   });
+  // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
+  ['translate', 'scale', 'skew'].forEach(k => {
+    temp = style[k];
+    if(!isNil(temp)) {
+      abbr.toFull(style, k);
+      delete style[k];
+    }
+  });
+  temp = style.rotate;
+  if(!isNil(temp)) {
+    abbr.toFull(style, 'rotate');
+    delete style.rotate;
+  }
   // 默认reset，根据传入不同，当style为空时覆盖
   reset.forEach(item => {
     let { k, v } = item;
@@ -582,19 +428,6 @@ function normalize(style, reset = []) {
       tfo[1] = tfo[0];
     }
   }
-  // 扩展css，将transform几个值拆分为独立的css为动画准备，同时不能使用transform
-  ['translate', 'scale', 'skew'].forEach(k => {
-    temp = style[k];
-    if(!isNil(temp)) {
-      let arr = temp.toString().split(/\s*,\s*/);
-      if(arr.length === 1) {
-        arr[1] = arr[0];
-      }
-      style[k + 'X'] = arr[0];
-      style[k + 'Y'] = arr[1];
-      delete style[k];
-    }
-  });
   [
     'translateX',
     'translateY',
@@ -919,41 +752,41 @@ function normalize(style, reset = []) {
   return style;
 }
 
-// 影响文字测量的只有字体和大小，必须提前处理，另顺带处理掉布局相关的属性
 /**
  * 第一次和REFLOW等级下，刷新前首先执行，生成computedStyle
- * 影响文字测量的只有字体和大小，也需要提前处理
- * 继承相关的计算，包括布局的，以及渲染repaint的
- * @param node
- * @param isRoot
- * @param currentStyle
- * @param computedStyle
+ * 影响文字测量的只有字体和大小和重量，需要提前处理
+ * 继承相关的计算
+ * @param node 对象节点
+ * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
  */
-function compute(node, isRoot, currentStyle, computedStyle) {
-  let parentComputedStyle = isRoot ? null : node.parent.computedStyle;
-  let { fontSize, fontFamily, fontWeight, textAlign, lineHeight } = currentStyle;
-  if(fontSize.unit === INHERIT) {
-    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize;
-  }
-  else if(fontSize.unit === PERCENT) {
-    computedStyle.fontSize = isRoot ? DEFAULT_FONT_SIZE : parentComputedStyle.fontSize * fontSize.value * 0.01;
-  }
-  else {
-    computedStyle.fontSize = fontSize.value;
-  }
-  if(fontFamily.unit === INHERIT) {
-    computedStyle.fontFamily = isRoot ? 'arial' : parentComputedStyle.fontFamily;
-  }
-  else {
-    computedStyle.fontFamily = fontFamily.value;
-  }
-  if(fontWeight.unit === INHERIT) {
-    computedStyle.fontWeight = isRoot ? 400 : parentComputedStyle.fontWeight;
-  }
-  else {
-    computedStyle.fontWeight = fontWeight.value;
-  }
-  // 顺带将可提前计算且与布局相关的属性提前计算到computedStyle上，渲染相关的在各自render中做
+function computeMeasure(node, isHost) {
+  let { currentStyle, computedStyle, parent } = node;
+  let parentComputedStyle = !isHost && parent.computedStyle;
+  change.MEASURE_KEY_SET.forEach(k => {
+    let v = currentStyle[k];
+    if(v.unit === INHERIT) {
+      computedStyle[k] = isHost ? reset.INHERIT[k] : parentComputedStyle[k];
+    }
+    // 只有fontSize会有%
+    else if(v.unit === PERCENT) {
+      computedStyle[k] = isHost ? reset.INHERIT[k] : (parentComputedStyle[k] * v.value * 0.01);
+    }
+    else {
+      computedStyle[k] = v.value;
+    }
+  });
+}
+
+/**
+ * 每次布局前需要计算的reflow相关的computedStyle
+ * @param node 对象节点
+ * @param isHost 是否是根节点或组件节点这种局部根节点，无继承需使用默认值
+ */
+function computeReflow(node, isHost) {
+  let { currentStyle, computedStyle, parent } = node;
+  let { textAlign, lineHeight } = currentStyle;
+  let isRoot = !parent;
+  let parentComputedStyle = parent && parent.computedStyle;
   [
     'borderTopWidth',
     'borderRightWidth',
@@ -961,7 +794,7 @@ function compute(node, isRoot, currentStyle, computedStyle) {
     'borderLeftWidth',
   ].forEach(k => {
     // border-width不支持百分比
-    computedStyle[k] = currentStyle[k].unit === PX ? Math.max(0, currentStyle[k].value) : 0;
+    computedStyle[k] = (currentStyle[k].unit === PX) ? Math.max(0, currentStyle[k].value) : 0;
   });
   [
     'position',
@@ -1143,20 +976,25 @@ function equalStyle(k, a, b, target) {
     return true;
   }
   // multi都是纯值数组，equalArr本身即递归，非multi根据类型判断
-  if(repaint.GEOM.hasOwnProperty(k)) {
-    if(target.isMulti || k === 'points' || k === 'controls' || k === 'controlA' || k === 'controlB') {
-      return util.equalArr(a, b);
-    }
+  if(change.isGeom(target.tagName, k) && (target.isMulti || Array.isArray(a) && Array.isArray(b))) {
+    return util.equalArr(a, b);
   }
   return a === b;
 }
 
+function isRelativeOrAbsolute(node) {
+  let position = node.currentStyle.position;
+  return position === 'relative' || position === 'absolute';
+}
+
 export default {
   normalize,
-  compute,
+  computeMeasure,
+  computeReflow,
   setFontStyle,
   getBaseLine,
   calRelative,
   calAbsolute,
   equalStyle,
+  isRelativeOrAbsolute,
 };

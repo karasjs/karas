@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import painter from '../util/painter';
 import geom from '../math/geom';
 import util from "../util/util";
@@ -65,14 +65,14 @@ class Rect extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       originX,
       originY,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -80,10 +80,7 @@ class Rect extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx)) {
@@ -104,6 +101,8 @@ class Rect extends Geom {
         __cacheProps.ry = Math.min(ry, 0.5) * height;
       }
     }
+    __cacheProps.originX = originX;
+    __cacheProps.originY = originY;
     // rx/ry有变化需重建顶点
     if(rebuild) {
       let { rx, ry } = __cacheProps;
@@ -153,13 +152,26 @@ class Rect extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get rx() {
     return this.getProps('rx');
   }
+
   get ry() {
     return this.getProps('ry');
+  }
+
+  get bbox() {
+    let { width, height, __cacheProps: { originX, originY }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    bbox[0] = Math.min(bbox[0], originX - half);
+    bbox[1] = Math.min(bbox[1], originY - half);
+    bbox[2] = Math.min(bbox[2], originX + width + half);
+    bbox[3] = Math.min(bbox[3], originY + height + half);
+    return bbox;
   }
 }
 

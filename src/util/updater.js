@@ -2,7 +2,7 @@ import util from './util';
 import builder from './builder';
 import $$type from './$$type';
 
-const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
+const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
 
@@ -33,7 +33,7 @@ function check(vd) {
  * 检查cp是否有state变更
  * @param cp
  * @param nextProps
- * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制更新
+ * @param forceCheckUpdate，被render()后的json的二级组件，发现props有变更强制检查更新，否则可以跳过
  */
 function checkCp(cp, nextProps, forceCheckUpdate) {
   if(cp.__nextState || forceCheckUpdate) {
@@ -72,12 +72,30 @@ function updateCp(cp, props, state) {
   let oldJson = cp.__cd;
   let json = builder.flattenJson(cp.render());
   // 对比新老render()返回的内容，更新后重新生成sr
-  diffSr(cp.shadowRoot, oldJson, json);
+  diffSr(oldSr, oldJson, json);
   cp.__init(json);
+  // 为了局部dom布局需要知道老的css信息
+  let sr = cp.shadowRoot;
+  while(sr instanceof Component) {
+    sr = sr.shadowRoot;
+  }
+  if(sr instanceof Xom) {
+    sr.__width = oldSr.width;
+    sr.__height = oldSr.height;
+    sr.__computedStyle = oldSr.computedStyle;
+    sr.__layoutData = oldSr.layoutData;
+  }
+  else {
+    sr.__parent = oldSr.parent;
+  }
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
-  if(!util.isObject(json) || json.$$type !== TYPE_PL) {
+  if(!util.isObject(json) || !json.placeholder) {
     removeList.push(oldSr);
+  }
+  // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
+  if(json && json.placeholder) {
+    delete json.placeholder;
   }
 }
 
@@ -235,7 +253,7 @@ function diffChildren(vd, oj, nj) {
 function diffCp(oj, nj, vd) {
   // props全等，直接替换新json类型为占位符，引用老vd内容，无需重新创建
   // 否则需要强制触发组件更新，包含setState内容
-  nj.$$type = TYPE_PL;
+  nj.placeholder = true;
   nj.value = vd;
   let sr = vd.shadowRoot;
   // 对比需忽略on开头的事件，直接改老的引用到新的上，这样只变了on的话无需更新

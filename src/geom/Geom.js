@@ -2,7 +2,7 @@ import Xom from '../node/Xom';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 
 const { AUTO, PX, PERCENT } = unit;
@@ -28,7 +28,7 @@ class Geom extends Xom {
         style.opacity = 1;
       }
     }
-    this.__style = css.normalize(this.style, reset.dom.concat(reset.geom));
+    this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
     this.__cacheProps = {};
@@ -107,7 +107,7 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __preRender(renderMode, ctx, defs) {
+  __preRender(renderMode, lv, ctx, defs) {
     let { sx: x, sy: y, width, height, __cacheStyle, currentStyle, computedStyle } = this;
     let {
       borderTopWidth,
@@ -146,19 +146,6 @@ class Geom extends Xom {
       }
       else {
         __cacheStyle.fill = int2rgba(currentStyle.fill);
-      }
-    }
-    if(__cacheStyle.strokeWidth === undefined) {
-      __cacheStyle.strokeWidth = true;
-      let strokeWidth = currentStyle.strokeWidth;
-      if(strokeWidth.unit === PX) {
-        computedStyle.strokeWidth = strokeWidth.value;
-      }
-      else if(strokeWidth.unit === PERCENT) {
-        computedStyle.strokeWidth = strokeWidth.value * width * 0.01;
-      }
-      else {
-        computedStyle.strokeWidth = 0;
       }
     }
     if(__cacheStyle.strokeWidth === undefined) {
@@ -248,32 +235,23 @@ class Geom extends Xom {
     };
   }
 
-  render(renderMode, ctx, defs) {
-    super.render(renderMode, ctx, defs);
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
     if(renderMode === mode.SVG) {
-      if(this.virtualDom.cache) {
-        return {
-          cache: true,
-        };
+      if(res.break) {
+        return res;
       }
       this.virtualDom.type = 'geom';
     }
-    let { isDestroyed, computedStyle: { display } } = this;
-    if(isDestroyed || display === 'none') {
-      return {
-        isDestroyed,
-        display,
-      };
-    }
-    return this.__preRender(renderMode, ctx, defs);
+    this.__offScreen = res.offScreen;
+    let res2 = this.__preRender(renderMode, lv, ctx, defs);
+    return Object.assign(res, res2);
   }
 
-  __renderAsMask(renderMode, ctx, defs, isClip) {
+  __renderAsMask(renderMode, lv, ctx, defs, isClip) {
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
     if(renderMode === mode.SVG) {
-      // 强制不缓存，防止引用mask的matrix变化不生效
-      this.__cancelCacheSvg();
-      this.render(renderMode, ctx, defs);
+      this.render(renderMode, lv, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {
         vd.isClip = true;
@@ -281,6 +259,24 @@ class Geom extends Xom {
       else {
         vd.isMask = true;
       }
+      // 强制不缓存，防止引用mask的matrix变化不生效
+      delete vd.lv;
+    }
+  }
+
+  __applyCache(renderMode, lv, ctx, mode) {
+    let { __opacity, matrixEvent } = this;
+    // 写回主画布前设置
+    ctx.globalAlpha = __opacity;
+    ctx.setTransform(...matrixEvent);
+    // 优先filter，然后total
+    let cacheFilter = this.__cacheFilter;
+    let cacheTotal = this.__cacheTotal;
+    if(cacheFilter) {
+      ctx.drawImage(cacheFilter.canvas, 0, 0);
+    }
+    else if(cacheTotal) {
+      ctx.drawImage(cacheTotal.canvas, 0, 0);
     }
   }
 
@@ -297,6 +293,17 @@ class Geom extends Xom {
     if(strokeMiterlimit !== 4) {
       props.push(['stroke-miterlimit', strokeMiterlimit]);
     }
+  }
+
+  __cancelCache(recursion) {
+    super.__cancelCache(recursion);
+    this.__cacheProps = {};
+  }
+
+  // geom强制有内容
+  __calCache() {
+    super.__calCache.apply(this, arguments);
+    return true;
   }
 
   addGeom(tagName, props) {

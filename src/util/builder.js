@@ -1,8 +1,9 @@
 import Text from '../node/Text';
+import tag from '../node/tag';
 import util from './util';
 import $$type from './$$type';
 
-const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
+const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
 
@@ -36,9 +37,10 @@ function initCp(json, root, owner) {
  * @param root
  * @param owner
  * @param host
+ * @param hasP 出现过p标签
  * @returns vd
  */
-function build(json, root, owner, host) {
+function build(json, root, owner, host, hasP) {
   if(Array.isArray(json)) {
     return json.map(item => build(item, root, owner, host));
   }
@@ -46,18 +48,28 @@ function build(json, root, owner, host) {
   if(util.isObject(json) && json.$$type) {
     let { tagName, props, children, klass, $$type, inherit, __animateRecords } = json;
     // 更新过程中无变化的cp直接使用原来生成的
-    if($$type === TYPE_PL) {
+    if($$type === TYPE_CP && json.placeholder) {
       return json.value;
     }
     if($$type === TYPE_VD) {
-      if(tagName === 'div' || tagName === 'span') {
+      if(tagName === 'img') {
+        vd = new Img(tagName, props);
+        if(Array.isArray(children) && children.length) {
+          throw new Error('Img can not contain children');
+        }
+      }
+      else {
         vd = new Dom(tagName, props);
       }
-      else if(tagName === 'img') {
-        vd = new Img(tagName, props);
+      // 检查p不能包含div
+      if(tagName === 'p') {
+        hasP = true;
+      }
+      else if(tagName === 'div' && hasP) {
+        throw new Error('Markup p can not contain div');
       }
       if(Array.isArray(children)) {
-        children = relation(vd, build(children, root, owner, host));
+        children = relation(vd, build(children, root, owner, host, hasP));
       }
       else {
         children = [];
@@ -70,7 +82,7 @@ function build(json, root, owner, host) {
     }
     else if($$type === TYPE_CP) {
       vd = new klass(props);
-      vd.__tagName = tagName;
+      vd.__tagName = vd.__tagName || tagName;
     }
     else {
       return new Text(json);
@@ -142,7 +154,7 @@ function traverseJson(list, children, options) {
     list.push(children);
     options.lastText = null;
   }
-  else if(children && (children.$$type === TYPE_CP || children.$$type === TYPE_PL)) {
+  else if(children && children.$$type === TYPE_CP) {
     list.push(children);
     // 强制component即便返回text也形成一个独立的节点，合并在layout布局中做
     options.lastText = null;

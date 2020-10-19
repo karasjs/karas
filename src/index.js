@@ -3,10 +3,7 @@ import Dom from './node/Dom';
 import Img from './node/Img';
 import Root from './node/Root';
 import tag from './node/tag';
-import $$type from './util/$$type';
-import builder from './util/builder';
-import updater from './util/updater';
-import mode from './util/mode';
+import mode from './node/mode';
 import Geom from './geom/Geom';
 import Line from './geom/Line';
 import Polyline from './geom/Polyline';
@@ -18,11 +15,15 @@ import Ellipse from './geom/Ellipse';
 import Component from './node/Component';
 import Event from './util/Event';
 import util from './util/util';
-import parser from './parser/index';
+import $$type from './util/$$type';
+import builder from './util/builder';
+import updater from './util/updater';
 import inject from './util/inject';
+import parser from './parser/index';
 import style from './style/index';
 import animate from './animate/index';
 import math from './math/index';
+import refresh from './refresh/index';
 import { version } from '../package.json';
 
 Geom.register('$line', Line);
@@ -107,6 +108,7 @@ let karas = {
   math,
   builder,
   updater,
+  refresh,
 };
 
 builder.ref({

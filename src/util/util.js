@@ -1,4 +1,5 @@
 import $$type from './$$type';
+import mx from '../math/matrix';
 
 let toString = {}.toString;
 function isType(type) {
@@ -116,10 +117,11 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, mask, clip, filter } = vd;
+    let { opacity, transform, visibility, mask, clip, filter } = vd;
     return '<g'
-      + (opacity !== 1 ? (' opacity="' + opacity + '"') : '')
+      + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
+      + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
       + (clip ? (' clip-path="' + clip + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
@@ -247,8 +249,7 @@ function clone(obj) {
     return obj;
   }
   // parse递归会出现内部先返回解析好的json，外部parse不能clone
-  if(obj.$$type === $$type.TYPE_PL
-    || obj.$$type === $$type.TYPE_VD
+  if(obj.$$type === $$type.TYPE_VD
     || obj.$$type === $$type.TYPE_GM
     || obj.$$type === $$type.TYPE_CP) {
     return obj;
@@ -378,6 +379,34 @@ function extendAnimate(ovd, nvd) {
   });
 }
 
+function transformBbox(bbox, matrix, dx = 0, dy = 0) {
+  if(!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+    let [x1, y1, x2, y2] = bbox;
+    // 可能因filter的原因扩展范围
+    if(dx) {
+      x1 -= dx;
+      x2 += dx;
+    }
+    if(dy) {
+      y1 -= dy;
+      y2 += dy;
+    }
+    let list = [x2, y1, x1, y2, x2, y2];
+    [x1, y1] = mx.calPoint([x1, y1], matrix);
+    let xa = x1, ya = y1, xb = x1, yb = y1;
+    for(let i = 0; i < 6; i += 2) {
+      let x = list[i], y = list[i + 1];
+      [x, y] = mx.calPoint([x, y], matrix);
+      xa = Math.min(xa, x);
+      xb = Math.max(xa, x);
+      ya = Math.min(ya, y);
+      yb = Math.max(yb, y);
+    }
+    bbox = [xa, ya, xb, yb];
+  }
+  return bbox;
+}
+
 let util = {
   isObject,
   isString,
@@ -411,6 +440,7 @@ let util = {
   extend,
   joinArr,
   extendAnimate,
+  transformBbox,
 };
 
 export default util;

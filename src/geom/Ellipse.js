@@ -1,5 +1,5 @@
 import Geom from './Geom';
-import mode from '../util/mode';
+import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
 import geom from '../math/geom';
@@ -46,14 +46,14 @@ class Ellipse extends Geom {
     }
   }
 
-  render(renderMode, ctx, defs) {
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
     let {
-      isDestroyed,
-      cache,
       cx,
       cy,
-      display,
-      visibility,
       fill,
       stroke,
       strokeWidth,
@@ -61,10 +61,7 @@ class Ellipse extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
-    } = super.render(renderMode, ctx, defs);
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || cache) {
-      return;
-    }
+    } = res;
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx)) {
@@ -133,13 +130,51 @@ class Ellipse extends Geom {
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }
+    return res;
   }
 
   get rx() {
     return this.getProps('rx');
   }
+
   get ry() {
     return this.getProps('ry');
+  }
+
+  get bbox() {
+    let { isMulti, __cacheProps: { rx, ry }, computedStyle: { strokeWidth } } = this;
+    let bbox = super.bbox;
+    let w = bbox[2] - bbox[0];
+    let h = bbox[3] - bbox[1];
+    if(isMulti) {
+      let max = 0;
+      rx.forEach(rx => {
+        max = Math.max(rx, max);
+      });
+      rx = max;
+      max = 0;
+      ry.forEach(ry => {
+        max = Math.max(ry, max);
+      });
+      ry = max;
+    }
+    let dx = rx + strokeWidth;
+    let dy = ry + strokeWidth;
+    let diffX = dx - w;
+    let diffY = dy - h;
+    if(diffX > 0 || diffY > 0) {
+      if(diffX > 0) {
+        let half = diffX * 0.5;
+        bbox[0] -= half;
+        bbox[2] += half;
+      }
+      if(diffY > 0) {
+        let half = diffY * 0.5;
+        bbox[1] -= half;
+        bbox[3] += half;
+      }
+    }
+    return bbox;
   }
 }
 

@@ -3,7 +3,7 @@ import Node from '../node/Node';
 import $$type from '../util/$$type';
 import util from '../util/util';
 
-const { TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
+const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let { isNil, isFunction, isPrimitive, clone, extend } = util;
 let { abbrCssProperty, abbrAnimateOption, abbrAnimate } = abbr;
@@ -199,7 +199,7 @@ function parse(karas, json, animateRecords, vars, hash = {}) {
   }
   else {
     vd = karas.createVd(tagName, props, children.map((item, i) => {
-      if(item && [TYPE_PL, TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
+      if(item && [TYPE_VD, TYPE_GM, TYPE_CP].indexOf(item.$$type) > -1) {
         return item;
       }
       return parse(karas, item, animateRecords, vars, hash);

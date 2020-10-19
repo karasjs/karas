@@ -1,11 +1,15 @@
 import util from './util';
+import level from '../refresh/level';
 
 const { joinVd, joinDef } = util;
 
 function diff(elem, ovd, nvd) {
   let cns = elem.childNodes;
   diffDefs(cns[0], ovd.defs, nvd.defs);
-  diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  // <REPAINT不会有lv属性，无需对比
+  if(!nvd.hasOwnProperty('lv')) {
+    diffBb(cns[1], ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  }
   diffD2D(elem, ovd, nvd, true);
 }
 
@@ -125,7 +129,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, mask, clip, filter, conClip } = nvd;
+  let { transform, opacity, visibility, mask, clip, filter, conClip } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -135,12 +139,15 @@ function diffX2X(elem, ovd, nvd) {
     }
   }
   if(ovd.opacity !== opacity) {
-    if(opacity !== 1) {
+    if(opacity !== 1 && opacity !== undefined) {
       elem.setAttribute('opacity', opacity);
     }
     else {
       elem.removeAttribute('opacity');
     }
+  }
+  if(ovd.visibility !== visibility) {
+    elem.setAttribute('visibility', visibility);
   }
   if(ovd.mask !== mask) {
     if(mask) {
@@ -182,8 +189,69 @@ function diffX2X(elem, ovd, nvd) {
   }
 }
 
+function diffByLessLv(elem, ovd, nvd, lv) {
+  if(lv === level.NONE) {
+    return;
+  }
+  let { transform, opacity, visibility, mask, clip, filter } = nvd;
+  if(level.contain(lv, level.TRANSFORM)) {
+    if(transform) {
+      elem.setAttribute('transform', transform);
+    }
+    else {
+      elem.removeAttribute('transform');
+    }
+  }
+  if(level.contain(lv, level.OPACITY)) {
+    if(opacity !== 1) {
+      elem.setAttribute('opacity', opacity);
+    }
+    else {
+      elem.removeAttribute('opacity');
+    }
+  }
+  if(level.contain(lv, level.VISIBILITY)) {
+    elem.setAttribute('visibility', visibility);
+  }
+  if(level.contain(lv, level.FILTER)) {
+    if(filter) {
+      elem.setAttribute('filter', filter);
+    }
+    else {
+      elem.removeAttribute('filter');
+    }
+  }
+  if(mask) {
+    elem.setAttribute('mask', mask);
+  }
+  else {
+    elem.removeAttribute('mask');
+  }
+  if(ovd.clip) {
+    elem.removeAttribute('clip-path');
+  }
+  if(clip) {
+    elem.setAttribute('clip-path', clip);
+  }
+  else {
+    elem.removeAttribute('clip-path');
+  }
+  if(ovd.mask) {
+    elem.removeAttribute('mask');
+  }
+}
+
 function diffD2D(elem, ovd, nvd, root) {
-  if(!nvd.cache) {
+  // cache表明children无变化缓存，一定是REPAINT以下的，只需看自身的lv
+  if(nvd.cache) {
+    diffByLessLv(elem, ovd, nvd, nvd.lv);
+    return;
+  }
+  // 无cache且<REPAINT的情况快速对比且继续对比children
+  if(nvd.hasOwnProperty('lv')) {
+    diffByLessLv(elem, ovd, nvd, nvd.lv);
+  }
+  else {
     diffX2X(elem, ovd, nvd);
     if(!root) {
       diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
@@ -289,7 +357,7 @@ function diffBb(elem, obb, nbb, oClip, nClip) {
   let ol = obb.length;
   let nl = nbb.length;
   if(oClip !== nClip) {
-    if(!nMask) {
+    if(!nClip) {
       elem.removeAttribute('clip-path');
     }
     else {

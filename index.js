@@ -11927,9 +11927,9 @@
 
             if (cache && cache.enabled) {
               this.__cache = cache;
-              cache.__bbox = bbox;
-              cache.sx = x;
-              cache.sy = y;
+              cache.__bbox = bbox; // cache.sx = x;
+              // cache.sy = y;
+
               cache.x1 = x1; // padding原点坐标
 
               cache.y1 = y1; // cache.ox = x - x1; // padding原点和dom原点的差值
@@ -15556,9 +15556,9 @@
 
 
             if (!cacheTotal.available) {
-              cacheTotal.__available = true;
-              cacheTotal.sx = sx;
-              cacheTotal.sy = sy;
+              cacheTotal.__available = true; // cacheTotal.sx = sx;
+              // cacheTotal.sy = sy;
+
               cacheTotal.x1 = x1;
               cacheTotal.y1 = y1; // cacheTotal.ox = x1 - sx;
               // cacheTotal.oy = y1 - sy;
@@ -15621,18 +15621,20 @@
 
             var x = this.sx,
                 y = this.sy;
+            x += computedStyle.marginLeft;
+            y += computedStyle.marginTop;
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx2 = _cacheTop$coords[0],
                 _ty2 = _cacheTop$coords[1],
-                _sx = cacheTop.sx,
-                _sy = cacheTop.sy,
+                _x = cacheTop.x1,
+                _y = cacheTop.y1,
                 _dbx = cacheTop.dbx,
                 _dby = cacheTop.dby;
 
-            var _dx = _tx2 + x - _sx + _dbx;
+            var _dx = _tx2 + x - _x + _dbx;
 
-            var _dy = _ty2 + y - _sy + _dby;
+            var _dy = _ty2 + y - _y + _dby;
 
             var tfo = computedStyle.transformOrigin.slice(0);
             tfo[0] += _dx;
@@ -15648,12 +15650,12 @@
             if (cacheFilter || cacheTotal && cacheTotal.available) {
               var _ref = cacheFilter || cacheTotal,
                   _ref$coords = _slicedToArray(_ref.coords, 2),
-                  _x = _ref$coords[0],
-                  _y = _ref$coords[1],
+                  _x2 = _ref$coords[0],
+                  _y2 = _ref$coords[1],
                   canvas = _ref.canvas,
                   size = _ref.size;
 
-              ctx.drawImage(canvas, _x - 1, _y - 1, size, size, _dx, _dy, size, size);
+              ctx.drawImage(canvas, _x2 - 1, _y2 - 1, size, size, _dx, _dy, size, size);
               return;
             } // 即便无内容也只是空执行
 
@@ -15680,36 +15682,38 @@
               (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
 
               if (cacheFilter) {
-                var _x2 = cacheFilter.x1,
-                    _y2 = cacheFilter.y1,
+                var _x3 = cacheFilter.x1,
+                    _y3 = cacheFilter.y1,
                     _dbx2 = cacheFilter.dbx,
                     _dby2 = cacheFilter.dby;
-                ctx.drawImage(cacheFilter.canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
+                ctx.drawImage(cacheFilter.canvas, _x3 - 1 - _dbx2, _y3 - 1 - _dby2);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
                 var _cacheTotal3 = cacheTotal,
                     _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _x4 = _cacheTotal3$coords[0],
-                    _y4 = _cacheTotal3$coords[1],
+                    _x5 = _cacheTotal3$coords[0],
+                    _y5 = _cacheTotal3$coords[1],
                     _size = _cacheTotal3.size,
                     _canvas = _cacheTotal3.canvas,
-                    _x3 = _cacheTotal3.x1,
-                    _y3 = _cacheTotal3.y1,
+                    _x4 = _cacheTotal3.x1,
+                    _y4 = _cacheTotal3.y1,
                     _dbx3 = _cacheTotal3.dbx,
                     _dby3 = _cacheTotal3.dby;
 
-                ctx.drawImage(_canvas, _x4 - 1, _y4 - 1, _size, _size, _x3 - 1 - _dbx3, _y3 - 1 - _dby3, _size, _size);
+                ctx.drawImage(_canvas, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx3, _y4 - 1 - _dby3, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
 
               if (cache && cache.available) {
-                var _x5 = cache.x1,
-                    _y5 = cache.y1;
+                var _x6 = cache.x1,
+                    _y6 = cache.y1,
+                    _dbx4 = cache.dbx,
+                    _dby4 = cache.dby;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _x5 - 1, _y5 - 1);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _x6 - 1 - _dbx4, _y6 - 1 - _dby4);
               }
 
               zIndexChildren.forEach(function (item) {

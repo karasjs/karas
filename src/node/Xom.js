@@ -1440,8 +1440,8 @@ class Xom extends Node {
         if(cache && cache.enabled) {
           this.__cache = cache;
           cache.__bbox = bbox;
-          cache.sx = x;
-          cache.sy = y;
+          // cache.sx = x;
+          // cache.sy = y;
           cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
           // cache.ox = x - x1; // padding原点和dom原点的差值

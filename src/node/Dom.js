@@ -1423,8 +1423,8 @@ class Dom extends Xom {
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
-          cacheTotal.sx = sx;
-          cacheTotal.sy = sy;
+          // cacheTotal.sx = sx;
+          // cacheTotal.sy = sy;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
           // cacheTotal.ox = x1 - sx;
@@ -1481,9 +1481,11 @@ class Dom extends Xom {
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === MODE.CHILD) {
       let { sx: x, sy: y } = this;
-      let { coords: [tx, ty], sx, sy, dbx, dby } = cacheTop;
-      let dx = tx + x - sx + dbx;
-      let dy = ty + y - sy + dby;
+      x += computedStyle.marginLeft;
+      y += computedStyle.marginTop;
+      let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
+      let dx = tx + x - x1 + dbx;
+      let dy = ty + y - y1 + dby;
       let tfo = computedStyle.transformOrigin.slice(0);
       tfo[0] += dx;
       tfo[1] += dy;
@@ -1528,8 +1530,8 @@ class Dom extends Xom {
       }
       // 无内容就没有cache，继续看children
       if(cache && cache.available) {
-        let { x1, y1 } = cache;
-        super.__applyCache(renderMode, lv, ctx, x1 - 1, y1 - 1);
+        let { x1, y1, dbx, dby } = cache;
+        super.__applyCache(renderMode, lv, ctx, x1 - 1 - dbx, y1 - 1 - dby);
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {

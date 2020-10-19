@@ -15586,7 +15586,7 @@
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dby);
+                  item.__renderByMask(renderMode, null, ctx, null, dx, dy);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }

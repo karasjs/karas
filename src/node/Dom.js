@@ -1154,12 +1154,18 @@ class Dom extends Xom {
               this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
             }
             else {
-              let dx = bbox[0] - old[0];
-              let dy = bbox[1] - old[1];
+              let dx = old[0] - bbox[0];
+              let dy = old[1] - bbox[1];
               let newTotal = Cache.getInstance(bbox);
               if(newTotal && newTotal.enabled) {
                 let { coords: [ox, oy], size } = cacheTotal;
                 let { coords: [nx, ny], size: size2 } = newTotal;
+                newTotal.x1 = cacheTotal.x1;
+                newTotal.y1 = cacheTotal.y1;
+                newTotal.dx = cacheTotal.dx + dx;
+                newTotal.dy = cacheTotal.dy + dy;
+                newTotal.dbx = cacheTotal.dbx + dx;
+                newTotal.dby = cacheTotal.dby + dy;
                 newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
                 cacheTotal.release();
                 cacheTotal = this.__cacheTotal = newTotal;

@@ -15236,8 +15236,8 @@
                 if (util.equalArr(bbox, old)) {
                   this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
                 } else {
-                  var dx = bbox[0] - old[0];
-                  var dy = bbox[1] - old[1];
+                  var dx = old[0] - bbox[0];
+                  var dy = old[1] - bbox[1];
                   var newTotal = Cache.getInstance(bbox);
 
                   if (newTotal && newTotal.enabled) {
@@ -15252,6 +15252,12 @@
                         ny = _newTotal$coords[1],
                         size2 = newTotal.size;
 
+                    newTotal.x1 = cacheTotal.x1;
+                    newTotal.y1 = cacheTotal.y1;
+                    newTotal.dx = cacheTotal.dx + dx;
+                    newTotal.dy = cacheTotal.dy + dy;
+                    newTotal.dbx = cacheTotal.dbx + dx;
+                    newTotal.dby = cacheTotal.dby + dy;
                     newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
                     cacheTotal.release();
                     cacheTotal = this.__cacheTotal = newTotal;

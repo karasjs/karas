@@ -1423,7 +1423,11 @@ class Xom extends Node {
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
       if(cache && cache.available && lv < level.REPAINT) {
         if(level.contain(lv, level.FILTER) && !isGeom) {
-          cache.__bbox = this.bbox;
+          let bbox = cache.__bbox = this.bbox;
+          let dbx = cache.dbx = x1 - bbox[0], dby = cache.dby = y1 - bbox[1];
+          let [xc, yc] = cache.coords;
+          cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
+          cache.dy = yc - bbox[1];
         }
         return { break: true, canCache, cache, filter };
       }
@@ -1440,16 +1444,8 @@ class Xom extends Node {
         if(cache && cache.enabled) {
           this.__cache = cache;
           cache.__bbox = bbox;
-          // cache.sx = x;
-          // cache.sy = y;
           cache.x1 = x1; // padding原点坐标
           cache.y1 = y1;
-          // cache.ox = x - x1; // padding原点和dom原点的差值
-          // cache.oy = y - y1;
-          // cache.bx = x - bbox[0];
-          // cache.by = x - bbox[1];
-          // cache.dbx = x1 - bbox[0]; // padding原点和box原点的差值
-          // cache.dby = y1 - bbox[1];
           let dbx = cache.dbx = x1 - bbox[0], dby = cache.dby = y1 - bbox[1];
           ctx = cache.ctx;
           let [xc, yc] = cache.coords;

@@ -11903,7 +11903,17 @@
 
           if (cache && cache.available && lv < o$1.REPAINT) {
             if (o$1.contain(lv, o$1.FILTER) && !isGeom) {
-              cache.__bbox = this.bbox;
+              var bbox = cache.__bbox = this.bbox;
+              var dbx = cache.dbx = x1 - bbox[0],
+                  dby = cache.dby = y1 - bbox[1];
+
+              var _cache$coords = _slicedToArray(cache.coords, 2),
+                  xc = _cache$coords[0],
+                  yc = _cache$coords[1];
+
+              cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
+
+              cache.dy = yc - bbox[1];
             }
 
             return {
@@ -11916,54 +11926,48 @@
 
 
           if ((!cache || !cache.available) && !isGeom) {
-            var bbox = this.bbox;
+            var _bbox = this.bbox;
 
             if (cache) {
-              cache.reset(bbox);
+              cache.reset(_bbox);
             } else {
-              cache = Cache.getInstance(bbox);
+              cache = Cache.getInstance(_bbox);
             } // 有可能超过最大尺寸限制不使用缓存
 
 
             if (cache && cache.enabled) {
               this.__cache = cache;
-              cache.__bbox = bbox; // cache.sx = x;
-              // cache.sy = y;
-
+              cache.__bbox = _bbox;
               cache.x1 = x1; // padding原点坐标
 
-              cache.y1 = y1; // cache.ox = x - x1; // padding原点和dom原点的差值
-              // cache.oy = y - y1;
-              // cache.bx = x - bbox[0];
-              // cache.by = x - bbox[1];
-              // cache.dbx = x1 - bbox[0]; // padding原点和box原点的差值
-              // cache.dby = y1 - bbox[1];
+              cache.y1 = y1;
 
-              var dbx = cache.dbx = x1 - bbox[0],
-                  dby = cache.dby = y1 - bbox[1];
+              var _dbx = cache.dbx = x1 - _bbox[0],
+                  _dby = cache.dby = y1 - _bbox[1];
+
               ctx = cache.ctx;
 
-              var _cache$coords = _slicedToArray(cache.coords, 2),
-                  xc = _cache$coords[0],
-                  yc = _cache$coords[1];
+              var _cache$coords2 = _slicedToArray(cache.coords, 2),
+                  _xc = _cache$coords2[0],
+                  _yc = _cache$coords2[1];
 
-              dx = cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
+              dx = cache.dx = _xc - _bbox[0]; // cache坐标和box原点的差值
 
-              dy = cache.dy = yc - bbox[1]; // 重置ctx为cache的，以及绘制坐标为cache的区域
+              dy = cache.dy = _yc - _bbox[1]; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
-              x1 = xc;
-              y1 = yc;
+              x1 = _xc;
+              y1 = _yc;
 
               if (dx) {
-                x2 += dx - dbx;
-                x3 += dx - dbx;
-                x4 += dx - dbx;
+                x2 += dx - _dbx;
+                x3 += dx - _dbx;
+                x4 += dx - _dbx;
               }
 
               if (dy) {
-                y2 += dy - dby;
-                y3 += dy - dby;
-                y4 += dy - dby;
+                y2 += dy - _dby;
+                y3 += dy - _dby;
+                y4 += dy - _dby;
               }
             } // 更新后可能超了需重置
             else if (this.__cache) {
@@ -13961,21 +13965,9 @@
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
     offScreen.draw();
     var cacheFilter = inject.getCacheWebgl(size, size);
-    blur.gaussBlur(offScreen, cacheFilter, v, size, size); // cacheFilter.sx = cacheTotal.sx;
-    // cacheFilter.sy = cacheTotal.sy;
-
+    blur.gaussBlur(offScreen, cacheFilter, v, size, size);
     cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1; // cacheFilter.ox = cacheTotal.ox;
-    // cacheFilter.oy = cacheTotal.oy;
-    // cacheFilter.dx = cacheTotal.dx;
-    // cacheFilter.dy = cacheTotal.dy;
-    // cacheFilter.coords = cacheTotal.coords;
-    // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
-    // cacheFilter.bx = cacheTotal.bx;
-    // cacheFilter.by = cacheTotal.by;
-    // cacheFilter.bx1 = cacheTotal.bx1;
-    // cacheFilter.by1 = cacheTotal.by1;
-
+    cacheFilter.y1 = y1;
     cacheFilter.dbx = cacheTotal.dbx;
     cacheFilter.dby = cacheTotal.dby;
     return cacheFilter;
@@ -15549,10 +15541,10 @@
             var dx, dy, x1, y1, coords;
 
             if (cache && cache.available) {
-              dx = cache.dx;
-              dy = cache.dy;
               x1 = cache.x1;
               y1 = cache.y1;
+              dx = cache.dx;
+              dy = cache.dy;
               coords = cache.coords;
             } else {
               var bbox = this.bbox;
@@ -15565,17 +15557,9 @@
 
 
             if (!cacheTotal.available) {
-              cacheTotal.__available = true; // cacheTotal.sx = sx;
-              // cacheTotal.sy = sy;
-
+              cacheTotal.__available = true;
               cacheTotal.x1 = x1;
-              cacheTotal.y1 = y1; // cacheTotal.ox = x1 - sx;
-              // cacheTotal.oy = y1 - sy;
-              // cacheTotal.bx = sx - bboxTotal[0];
-              // cacheTotal.by = y1 - bboxTotal[1];
-              // cacheTotal.bx1 = x1 - bboxTotal[0];
-              // cacheTotal.by1 = y1 - bboxTotal[1];
-
+              cacheTotal.y1 = y1;
               cacheTotal.dx = dx += tx - coords[0];
               cacheTotal.dy = dy += ty - coords[1];
               ctx = cacheTotal.ctx; // 计算bbox的相对dom点偏移值，可能因filter/children范围导致

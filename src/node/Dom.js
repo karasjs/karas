@@ -37,20 +37,8 @@ function genOffScreenBlur(cacheTotal, v) {
   offScreen.draw();
   let cacheFilter = inject.getCacheWebgl(size, size);
   blur.gaussBlur(offScreen, cacheFilter, v, size, size);
-  // cacheFilter.sx = cacheTotal.sx;
-  // cacheFilter.sy = cacheTotal.sy;
   cacheFilter.x1 = x1;
   cacheFilter.y1 = y1;
-  // cacheFilter.ox = cacheTotal.ox;
-  // cacheFilter.oy = cacheTotal.oy;
-  // cacheFilter.dx = cacheTotal.dx;
-  // cacheFilter.dy = cacheTotal.dy;
-  // cacheFilter.coords = cacheTotal.coords;
-  // 特殊记录偏移值，因为filter会使得内容范围超过x1/y1
-  // cacheFilter.bx = cacheTotal.bx;
-  // cacheFilter.by = cacheTotal.by;
-  // cacheFilter.bx1 = cacheTotal.bx1;
-  // cacheFilter.by1 = cacheTotal.by1;
   cacheFilter.dbx = cacheTotal.dbx;
   cacheFilter.dby = cacheTotal.dby;
   return cacheFilter;
@@ -1413,10 +1401,10 @@ class Dom extends Xom {
         let { coords: [tx, ty] } = cacheTotal;
         let dx, dy, x1, y1, coords;
         if(cache && cache.available) {
-          dx = cache.dx;
-          dy = cache.dy;
           x1 = cache.x1;
           y1 = cache.y1;
+          dx = cache.dx;
+          dy = cache.dy;
           coords = cache.coords;
         }
         else {
@@ -1430,16 +1418,8 @@ class Dom extends Xom {
         // 首次生成
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
-          // cacheTotal.sx = sx;
-          // cacheTotal.sy = sy;
           cacheTotal.x1 = x1;
           cacheTotal.y1 = y1;
-          // cacheTotal.ox = x1 - sx;
-          // cacheTotal.oy = y1 - sy;
-          // cacheTotal.bx = sx - bboxTotal[0];
-          // cacheTotal.by = y1 - bboxTotal[1];
-          // cacheTotal.bx1 = x1 - bboxTotal[0];
-          // cacheTotal.by1 = y1 - bboxTotal[1];
           cacheTotal.dx = dx += tx - coords[0];
           cacheTotal.dy = dy += ty - coords[1];
           ctx = cacheTotal.ctx;

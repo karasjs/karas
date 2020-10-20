@@ -102,6 +102,9 @@ function getIndex(list, t, i, j) {
 }
 
 function getNewList(list, len, start, end) {
+  if(start === 0 && end === 1) {
+    return list;
+  }
   let i = 0, j = list.length - 2;
   if(start > 0) {
     i = getIndex(len.increase, start * len.total, i, j);
@@ -251,7 +254,7 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = res;
-    let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
+    let { width, height, points, controls, start, end, __cacheProps, isMulti } = this; console.log(start,end)
     // rebuild和reset区分开，防止start/end动画时重算所有节点和len
     let rebuild, reset;
     if(isNil(__cacheProps.points)) {
@@ -329,9 +332,7 @@ class Polyline extends Geom {
         });
       }
       else {
-        if(start !== 0 || end !== 1) {
-          __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
-        }
+        __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
       }
       if(renderMode === mode.SVG) {
         if(isMulti) {

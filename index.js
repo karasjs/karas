@@ -20449,6 +20449,10 @@
   }
 
   function getNewList(list, len, start, end) {
+    if (start === 0 && end === 1) {
+      return list;
+    }
+
     var i = 0,
         j = list.length - 2;
 
@@ -20646,7 +20650,8 @@
             start = this.start,
             end = this.end,
             __cacheProps = this.__cacheProps,
-            isMulti = this.isMulti; // rebuild和reset区分开，防止start/end动画时重算所有节点和len
+            isMulti = this.isMulti;
+        console.log(start, end); // rebuild和reset区分开，防止start/end动画时重算所有节点和len
 
         var rebuild, reset;
 
@@ -20736,9 +20741,7 @@
               }
             });
           } else {
-            if (start !== 0 || end !== 1) {
-              __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
-            }
+            __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
           }
 
           if (renderMode === mode.SVG) {

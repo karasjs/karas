@@ -414,21 +414,32 @@
       return;
     }
 
-    ctx.moveTo(list[0][0] + dx, list[0][1] + dy);
+    var start = 0;
 
-    for (var i = 1, len = list.length; i < len; i++) {
+    for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (!Array.isArray(item)) {
+      if (Array.isArray(item)) {
+        start = i;
+        break;
+      }
+    }
+
+    ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+
+    for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
+      var _item = list[_i];
+
+      if (!Array.isArray(_item)) {
         continue;
       }
 
-      if (item.length === 2) {
-        ctx.lineTo(item[0] + dx, item[1] + dy);
-      } else if (item.length === 4) {
-        ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
-      } else if (item.length === 6) {
-        ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+      if (_item.length === 2) {
+        ctx.lineTo(_item[0] + dx, _item[1] + dy);
+      } else if (_item.length === 4) {
+        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy);
+      } else if (_item.length === 6) {
+        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _item[4] + dx, _item[5] + dy);
       }
     }
   }
@@ -438,21 +449,32 @@
       return '';
     }
 
-    var s = 'M' + list[0][0] + ',' + list[0][1];
+    var start = 0;
 
-    for (var i = 1, len = list.length; i < len; i++) {
+    for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (!Array.isArray(item)) {
+      if (Array.isArray(item)) {
+        start = i;
+        break;
+      }
+    }
+
+    var s = 'M' + list[start][0] + ',' + list[start][1];
+
+    for (var _i2 = start + 1, _len2 = list.length; _i2 < _len2; _i2++) {
+      var _item2 = list[_i2];
+
+      if (!Array.isArray(_item2)) {
         continue;
       }
 
-      if (item.length === 2) {
-        s += 'L' + item[0] + ',' + item[1];
-      } else if (item.length === 4) {
-        s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
-      } else if (item.length === 6) {
-        s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
+      if (_item2.length === 2) {
+        s += 'L' + _item2[0] + ',' + _item2[1];
+      } else if (_item2.length === 4) {
+        s += 'Q' + _item2[0] + ',' + _item2[1] + ' ' + _item2[2] + ',' + _item2[3];
+      } else if (_item2.length === 6) {
+        s += 'C' + _item2[0] + ',' + _item2[1] + ' ' + _item2[2] + ',' + _item2[3] + ' ' + _item2[4] + ',' + _item2[5];
       }
     }
 
@@ -1150,6 +1172,281 @@
       return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
     }
   }
+  /**
+   * 范数 or 模
+   */
+
+
+  function norm(v) {
+    var order = v.length;
+    var sum = v.reduce(function (a, b) {
+      return Math.pow(a, order) + Math.pow(b, order);
+    });
+    return Math.pow(sum, 1 / order);
+  }
+
+  function simpson38(derivativeFunc, l, r) {
+    var f = derivativeFunc;
+    var middleL = (2 * l + r) / 3;
+    var middleR = (l + 2 * r) / 3;
+    return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
+  }
+  /**
+   * bezier 曲线的长度
+   * @param derivativeFunc 微分函数
+   * @param l 左点
+   * @param r 右点
+   * @param eps 精度
+   * @return {*} number
+   */
+
+
+  function adaptiveSimpson38(derivativeFunc, l, r) {
+    var eps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.001;
+    var f = derivativeFunc;
+    var mid = (l + r) / 2;
+    var st = simpson38(f, l, r);
+    var sl = simpson38(f, l, mid);
+    var sr = simpson38(f, mid, r);
+    var ans = sl + sr - st;
+
+    if (Math.abs(ans) <= 15 * eps) {
+      return sl + sr + ans / 15;
+    }
+
+    return adaptiveSimpson38(f, l, mid, eps / 2) + adaptiveSimpson38(f, mid, r, eps / 2);
+  }
+  /**
+   * bezier 曲线的长度
+   * @param points 曲线的起止点 和 控制点
+   * @param order 阶次， 2 和 3
+   * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
+   * @param endT 计算长度的终点
+   * @return {*} number
+   */
+
+
+  function bezierLength(points, order) {
+    var startT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var endT = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    return adaptiveSimpson38(derivativeFunc, startT, endT);
+  }
+  /**
+   * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at3(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points = _slicedToArray(points, 4),
+        p0 = _points[0],
+        p1 = _points[1],
+        p2 = _points[2],
+        p3 = _points[3];
+
+    var _p = _slicedToArray(p0, 2),
+        x0 = _p[0],
+        y0 = _p[1];
+
+    var _p2 = _slicedToArray(p1, 2),
+        x1 = _p2[0],
+        y1 = _p2[1];
+
+    var _p3 = _slicedToArray(p2, 2),
+        x2 = _p3[0],
+        y2 = _p3[1];
+
+    var _p4 = _slicedToArray(p3, 2),
+        x3 = _p4[0],
+        y3 = _p4[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 3) * x0 + 3 * t * Math.pow(1 - t, 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
+      y = Math.pow(1 - t, 3) * y0 + 3 * t * Math.pow(1 - t, 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
+    } else if (order === 1) {
+      x = 3 * ((1 - t) * (1 - t) * (x1 - x0) + 2 * (1 - t) * t * (x2 - x1) + t * t * (x3 - x2));
+      y = 3 * ((1 - t) * (1 - t) * (y1 - y0) + 2 * (1 - t) * t * (y2 - y1) + t * t * (y3 - y2));
+    } else if (order === 2) {
+      x = 6 * (x2 - 2 * x1 + x0) * (1 - t) + 6 * (x3 - 2 * x2 + x1) * t;
+      y = 6 * (y2 - 2 * y1 + y0) * (1 - t) + 6 * (y3 - 2 * y2 + y1) * t;
+    } else if (order === 3) {
+      x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
+      y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
+    } else {
+      // 3阶导数就是常数了，大于3阶的都是0
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+  /**
+   * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at2(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points2 = _slicedToArray(points, 3),
+        p0 = _points2[0],
+        p1 = _points2[1],
+        p2 = _points2[2];
+
+    var _p5 = _slicedToArray(p0, 2),
+        x0 = _p5[0],
+        y0 = _p5[1];
+
+    var _p6 = _slicedToArray(p1, 2),
+        x1 = _p6[0],
+        y1 = _p6[1];
+
+    var _p7 = _slicedToArray(p2, 2),
+        x2 = _p7[0],
+        y2 = _p7[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 2) * x0 + 2 * t * (1 - t) * x1 + Math.pow(t, 2) * x2;
+      y = Math.pow(1 - t, 2) * y0 + 2 * t * (1 - t) * y1 + Math.pow(t, 2) * y2;
+    } else if (order === 1) {
+      x = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
+      y = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
+    } else if (order === 2) {
+      x = 2 * (x2 - 2 * x1 + x0);
+      y = 2 * (y2 - 2 * y1 + y0);
+    } else {
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+
+  function at(t, points, bezierOrder) {
+    var derivativeOrder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    if (bezierOrder === 2) {
+      return at2(t, points, derivativeOrder);
+    } else if (bezierOrder === 3) {
+      return at3(t, points, derivativeOrder);
+    }
+  }
+
+  function pointAtBezier(points, order, percent, maxIteration, eps) {
+    var length = bezierLength(points, order, 0, 1);
+    return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
+  }
+
+  function pointAtBezierWithLength(points, order, length) {
+    var percent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+    var maxIteration = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
+    var eps = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.001;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    var targetLen = length * percent;
+    var approachLen = length;
+    var approachT = percent;
+    var preApproachT = approachT;
+
+    for (var i = 0; i < maxIteration; i++) {
+      approachLen = simpson38(derivativeFunc, 0, approachT);
+      var d = approachLen - targetLen;
+
+      if (Math.abs(d) < eps) {
+        break;
+      } // Newton 法
+
+
+      var derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
+
+      var derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
+
+      var numerator = d * derivative1;
+      var denominator = d * derivative2 + derivative1 * derivative1;
+      approachT = approachT - numerator / denominator;
+
+      if (Math.abs(approachT - preApproachT) < eps) {
+        break;
+      } else {
+        preApproachT = approachT;
+      }
+    }
+
+    return at(approachT, points, order, 0);
+  }
+
+  function sliceBezier(points, t) {
+    var _points3 = _slicedToArray(points, 4),
+        _points3$ = _slicedToArray(_points3[0], 2),
+        x1 = _points3$[0],
+        y1 = _points3$[1],
+        _points3$2 = _slicedToArray(_points3[1], 2),
+        x2 = _points3$2[0],
+        y2 = _points3$2[1],
+        _points3$3 = _slicedToArray(_points3[2], 2),
+        x3 = _points3$3[0],
+        y3 = _points3$3[1],
+        p4 = _points3[3];
+
+    var x12 = (x2 - x1) * t + x1;
+    var y12 = (y2 - y1) * t + y1;
+    var x23 = (x3 - x2) * t + x2;
+    var y23 = (y3 - y2) * t + y2;
+    var x123 = (x23 - x12) * t + x12;
+    var y123 = (y23 - y12) * t + y12;
+
+    if (points.length === 4) {
+      var _p8 = _slicedToArray(p4, 2),
+          x4 = _p8[0],
+          y4 = _p8[1];
+
+      var x34 = (x4 - x3) * t + x3;
+      var y34 = (y4 - y3) * t + y3;
+      var x234 = (x34 - x23) * t + x23;
+      var y234 = (y34 - y23) * t + y23;
+      var x1234 = (x234 - x123) * t + x123;
+      var y1234 = (y234 - y123) * t + y123;
+      return [[x1, y1], [x12, y12], [x123, y123], [x1234, y1234]];
+    } else if (points.length === 3) {
+      return [[x1, y1], [x12, y12], [x123, y123]];
+    }
+  }
+
+  function sliceBezier2Both(points) {
+    var start = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+    start = Math.max(start, 0);
+    end = Math.min(end, 1);
+
+    if (start === 0 && end === 1) {
+      return points;
+    }
+
+    if (end < 1) {
+      points = sliceBezier(points, end);
+    }
+
+    if (start > 0) {
+      points = sliceBezier(points.reverse(), 1 - start).reverse();
+    }
+
+    return points;
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -1172,7 +1469,12 @@
     isRectsInside: isRectsInside,
     calCoordsInNode: calCoordsInNode,
     calPercentInNode: calPercentInNode,
-    bboxBezier: bboxBezier
+    bboxBezier: bboxBezier,
+    bezierLength: bezierLength,
+    pointAtBezier: pointAtBezier,
+    pointAtBezierWithLength: pointAtBezierWithLength,
+    sliceBezier: sliceBezier,
+    sliceBezier2Both: sliceBezier2Both
   };
 
   function calDeg(x1, y1, x2, y2) {
@@ -5465,7 +5767,6 @@
       fontWeight: true,
       fontFamily: true
     },
-    NUMBER: 5,
     isIgnore: function isIgnore(k) {
       return this.IGNORE.hasOwnProperty(k);
     },
@@ -5538,13 +5839,13 @@
     return list;
   };
 
-  o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB']);
+  o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
   o.addGeom('$circle', ['r']);
   o.addGeom('$ellipse', ['rx', 'ry']);
   o.addGeom('$rect', ['rx', 'ry']);
   o.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
-  o.addGeom('$polyline', ['points', 'controls']);
-  o.addGeom('$polygon', ['points', 'controls']);
+  o.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
+  o.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
 
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
@@ -19537,6 +19838,77 @@
     return num;
   }
 
+  function limitStartEnd(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start, end) {
+    console.log(num, start, end);
+
+    if (num === 3) {
+      var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+
+      var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+
+      var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+
+      x1 = _geom$sliceBezier2Bot3[0];
+      y1 = _geom$sliceBezier2Bot3[1];
+      controlA = _geom$sliceBezier2Bot2[1];
+      controlB = _geom$sliceBezier2Bot2[2];
+
+      var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+
+      x2 = _geom$sliceBezier2Bot4[0];
+      y2 = _geom$sliceBezier2Bot4[1];
+    } else if (num === 2) {
+      var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+
+      var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+
+      var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+
+      x1 = _geom$sliceBezier2Bot7[0];
+      y1 = _geom$sliceBezier2Bot7[1];
+      controlB = _geom$sliceBezier2Bot6[1];
+
+      var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+
+      x2 = _geom$sliceBezier2Bot8[0];
+      y2 = _geom$sliceBezier2Bot8[1];
+    } else if (num === 1) {
+      var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+
+      var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+
+      var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+
+      x1 = _geom$sliceBezier2Bot11[0];
+      y1 = _geom$sliceBezier2Bot11[1];
+      controlA = _geom$sliceBezier2Bot10[1];
+
+      var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+
+      x2 = _geom$sliceBezier2Bot12[0];
+      y2 = _geom$sliceBezier2Bot12[1];
+    } else {
+      var a = Math.abs(x1 - x2);
+      var b = Math.abs(y1 - y2);
+      x1 += a * start;
+      y1 += b * start;
+      x2 -= a * (1 - end);
+      y2 -= b * (1 - end);
+    }
+
+    return [x1, y1, x2, y2, controlA, controlB];
+  }
+
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
@@ -19556,6 +19928,8 @@
         _this.__y2 = [1];
         _this.__controlA = [[]];
         _this.__controlB = [[]];
+        _this.__start = [0];
+        _this.__end = [0];
 
         if (Array.isArray(props.x1)) {
           _this.__x1 = props.x1.map(function (i) {
@@ -19608,9 +19982,25 @@
             return [];
           });
         }
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd(parseFloat(i) || 0);
+          });
+        } else if (!isNil$8(props.start)) {
+          _this.__start = [limitStartEnd(parseFloat(props.start) || 0)];
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            return limitStartEnd(parseFloat(i) || 0);
+          });
+        } else if (!isNil$8(props.end)) {
+          _this.__end = [limitStartEnd(parseFloat(props.end) || 0)];
+        }
       } else {
-        _this.__x1 = _this.__y1 = 0;
-        _this.__x2 = _this.__y2 = 1;
+        _this.__x1 = _this.__y1 = _this.__start = 0;
+        _this.__x2 = _this.__y2 = _this.__end = 1;
         _this.__controlA = [];
         _this.__controlB = [];
 
@@ -19628,6 +20018,14 @@
 
         if (!isNil$8(props.y2)) {
           _this.__y2 = parseFloat(props.y2) || 0;
+        }
+
+        if (!isNil$8(props.start)) {
+          _this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$8(props.end)) {
+          _this.__end = limitStartEnd(parseFloat(props.end) || 0);
         }
 
         if (Array.isArray(props.controlA)) {
@@ -19667,6 +20065,8 @@
             y2 = this.y2,
             controlA = this.controlA,
             controlB = this.controlB,
+            start = this.start,
+            end = this.end,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
         var rebuild;
@@ -19701,22 +20101,68 @@
           __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
         }
 
+        if (isNil$8(__cacheProps.start)) {
+          rebuild = true;
+          __cacheProps.start = start;
+        }
+
+        if (isNil$8(__cacheProps.end)) {
+          rebuild = true;
+          __cacheProps.end = end;
+        }
+
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
 
           if (isMulti) {
-            __cacheProps.x1.forEach(function (xa, i) {
-              var xb = __cacheProps.x2[i];
-              var ya = __cacheProps.y1[i];
-              var yb = __cacheProps.y2[i];
-              var ca = __cacheProps.controlA[i];
-              var cb = __cacheProps.controlB[i];
-              var curve = curveNum(ca, cb);
-              d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
+            __cacheProps.x1.forEach(function (x1, i) {
+              var x2 = __cacheProps.x2[i];
+              var y1 = __cacheProps.y1[i];
+              var y2 = __cacheProps.y2[i];
+              var controlA = __cacheProps.controlA[i];
+              var controlB = __cacheProps.controlB[i];
+              var start = __cacheProps.start[i];
+              var end = __cacheProps.end[i];
+              var curve = curveNum(controlA, controlB);
+
+              if (start !== 0 || end !== 1) {
+                var _getNewPoint = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+
+                var _getNewPoint2 = _slicedToArray(_getNewPoint, 6);
+
+                x1 = _getNewPoint2[0];
+                y1 = _getNewPoint2[1];
+                x2 = _getNewPoint2[2];
+                y2 = _getNewPoint2[3];
+                controlA = _getNewPoint2[4];
+                controlB = _getNewPoint2[5];
+              }
+
+              d += painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-            d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, curve);
+            var _x = __cacheProps.x1,
+                _y = __cacheProps.y1,
+                _x2 = __cacheProps.x2,
+                _y2 = __cacheProps.y2,
+                _controlA = __cacheProps.controlA,
+                _controlB = __cacheProps.controlB;
+
+            if (start !== 0 || end !== 1) {
+              var _getNewPoint3 = getNewPoint(_x, _y, _x2, _y2, _controlA, _controlB, curve, start, end, __cacheProps.len);
+
+              var _getNewPoint4 = _slicedToArray(_getNewPoint3, 6);
+
+              _x = _getNewPoint4[0];
+              _y = _getNewPoint4[1];
+              _x2 = _getNewPoint4[2];
+              _y2 = _getNewPoint4[3];
+              _controlA = _getNewPoint4[4];
+              _controlB = _getNewPoint4[5];
+            }
+
+            d = painter.svgLine(_x, _y, _x2, _y2, _controlA, _controlB, curve);
           }
 
           __cacheProps.d = d;
@@ -19727,19 +20173,55 @@
             ctx.beginPath();
 
             if (isMulti) {
-              __cacheProps.x1.forEach(function (xa, i) {
-                var xb = __cacheProps.x2[i];
-                var ya = __cacheProps.y1[i];
-                var yb = __cacheProps.y2[i];
-                var ca = __cacheProps.controlA[i];
-                var cb = __cacheProps.controlB[i];
-                var curve = curveNum(ca, cb);
-                painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+              __cacheProps.x1.forEach(function (x1, i) {
+                var x2 = __cacheProps.x2[i];
+                var y1 = __cacheProps.y1[i];
+                var y2 = __cacheProps.y2[i];
+                var controlA = __cacheProps.controlA[i];
+                var controlB = __cacheProps.controlB[i];
+                var start = __cacheProps.start[i];
+                var end = __cacheProps.end[i];
+                var curve = curveNum(controlA, controlB);
+
+                if (start !== 0 || end !== 1) {
+                  var _getNewPoint5 = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+
+                  var _getNewPoint6 = _slicedToArray(_getNewPoint5, 6);
+
+                  x1 = _getNewPoint6[0];
+                  y1 = _getNewPoint6[1];
+                  x2 = _getNewPoint6[2];
+                  y2 = _getNewPoint6[3];
+                  controlA = _getNewPoint6[4];
+                  controlB = _getNewPoint6[5];
+                }
+
+                painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve);
               });
             } else {
               var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
 
-              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve);
+              var _x3 = __cacheProps.x1,
+                  _y3 = __cacheProps.y1,
+                  _x4 = __cacheProps.x2,
+                  _y4 = __cacheProps.y2,
+                  _controlA2 = __cacheProps.controlA,
+                  _controlB2 = __cacheProps.controlB;
+
+              if (start !== 0 || end !== 1) {
+                var _getNewPoint7 = getNewPoint(_x3, _y3, _x4, _y4, _controlA2, _controlB2, _curve, start, end, __cacheProps.len);
+
+                var _getNewPoint8 = _slicedToArray(_getNewPoint7, 6);
+
+                _x3 = _getNewPoint8[0];
+                _y3 = _getNewPoint8[1];
+                _x4 = _getNewPoint8[2];
+                _y4 = _getNewPoint8[3];
+                _controlA2 = _getNewPoint8[4];
+                _controlB2 = _getNewPoint8[5];
+              }
+
+              painter.canvasLine(ctx, _x3, _y3, _x4, _y4, _controlA2, _controlB2, _curve);
             }
 
             ctx.stroke();
@@ -19784,6 +20266,16 @@
       key: "controlB",
       get: function get() {
         return this.getProps('controlB');
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
       }
     }, {
       key: "bbox",
@@ -19862,6 +20354,178 @@
     return point;
   }
 
+  function limitStartEnd$1(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getLength(list, isMulti) {
+    var res = [];
+    var total = 0;
+    var increase = [];
+
+    if (isMulti) {
+      total = [];
+      list.forEach(function (list) {
+        var temp = getLength(list);
+        res.push(temp.list);
+        total.push(temp.total);
+        increase.push(temp.increase);
+      });
+    } else if (Array.isArray(list)) {
+      total = 0;
+      var start = 0;
+
+      for (var i = 0, len = list.length; i < len; i++) {
+        var item = list[i];
+
+        if (Array.isArray(item)) {
+          start = i;
+          break;
+        }
+      }
+
+      var prev = list[start];
+
+      for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
+        var _item = list[_i];
+
+        if (!Array.isArray(_item)) {
+          continue;
+        }
+
+        if (_item.length === 2) {
+          var a = Math.abs(_item[0] - prev[0]);
+          var b = Math.abs(_item[1] - prev[1]);
+          var c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+          res.push(c);
+          total += c;
+          increase.push(total);
+          prev = _item;
+        } else if (_item.length === 4) {
+          var _c = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
+
+          res.push(_c);
+          total += _c;
+          increase.push(total);
+          prev = [_item[2], _item[3]];
+        } else if (_item.length === 6) {
+          var _c2 = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
+
+          res.push(_c2);
+          total += _c2;
+          increase.push(total);
+          prev = [_item[4], _item[5]];
+        }
+      }
+    }
+
+    return {
+      list: res,
+      total: total,
+      increase: increase
+    };
+  }
+
+  function getIndex(list, t, i, j) {
+    if (i === j) {
+      return i;
+    }
+
+    var middle = i + (j - i >> 1);
+
+    if (list[middle] === t) {
+      return middle;
+    } else if (list[middle] > t) {
+      return getIndex(list, t, i, Math.max(middle - 1, i));
+    } else {
+      return getIndex(list, t, Math.min(middle + 1, j), j);
+    }
+  }
+
+  function getNewList(list, len, start, end) {
+    var i = 0,
+        j = list.length - 2;
+
+    if (start > 0) {
+      i = getIndex(len.increase, start * len.total, i, j);
+    }
+
+    if (end < 1) {
+      j = getIndex(len.increase, end * len.total, i, j);
+    }
+
+    list = util.clone(list);
+    end *= len.total;
+
+    if (end < len.increase[j]) {
+      var prev = list[j].slice(list[j].length - 2);
+      var current = list[j + 1];
+      var l = len.list[j];
+      var diff = len.increase[j] - end;
+      var t = 1 - diff / l;
+
+      if (current.length === 2) {
+        var a = Math.abs(current[0] - prev[0]);
+        var b = Math.abs(current[1] - prev[1]);
+        list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
+      } else if (current.length === 4) {
+        var res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+        list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
+      } else if (current.length === 6) {
+        var _res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+
+        list[j + 1] = [_res[1][0], _res[1][1], _res[2][0], _res[2][1], _res[3][0], _res[3][1]];
+      }
+    }
+
+    start *= len.total;
+
+    if (start > (i ? len.increase[i - 1] : 0)) {
+      var _prev = list[i].slice(list[i].length - 2);
+
+      var _current = list[i + 1];
+      var _l = len.list[i];
+
+      var _diff = start - (i ? len.increase[i - 1] : 0);
+
+      var _t = _diff / _l;
+
+      if (_current.length === 2) {
+        var _a = Math.abs(_current[0] - _prev[0]);
+
+        var _b = Math.abs(_current[1] - _prev[1]);
+
+        list[i] = [_prev[0] + _t * _a, _prev[1] + _t * _b];
+      } else if (_current.length === 4) {
+        var _res2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res2[0];
+        list[i + 1] = [_res2[1][0], _res2[1][1], _res2[2][0], _res2[2][1]];
+      } else if (_current.length === 6) {
+        var _res3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res3[0];
+        list[i + 1] = [_res3[1][0], _res3[1][1], _res3[2][0], _res3[2][1], _current[4], _current[5]];
+      }
+    }
+
+    if (j < list.length - 2) {
+      list = list.slice(0, j + 2);
+    }
+
+    if (i > 0) {
+      list = list.slice(i);
+    }
+
+    return list;
+  }
+
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
@@ -19877,10 +20541,38 @@
       if (_this.isMulti) {
         _this.__points = [[]];
         _this.__controls = [[]];
+        _this.__start = [0];
+        _this.__end = [0];
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd$1(parseFloat(i) || 0);
+          });
+        } else if (!isNil$9(props.start)) {
+          _this.__start = [limitStartEnd$1(parseFloat(props.start) || 0)];
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            return limitStartEnd$1(parseFloat(i) || 0);
+          });
+        } else if (!isNil$9(props.end)) {
+          _this.__end = [limitStartEnd$1(parseFloat(props.end) || 0)];
+        }
       } else {
         _this.__points = []; // 控制点
 
         _this.__controls = [];
+        _this.__start = 0;
+        _this.__end = 1;
+
+        if (!isNil$9(props.start)) {
+          _this.__start = limitStartEnd$1(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$9(props.end)) {
+          _this.__end = limitStartEnd$1(parseFloat(props.end) || 0);
+        }
       }
 
       if (Array.isArray(props.controls)) {
@@ -19916,11 +20608,11 @@
 
           var res = [];
 
-          for (var _i = 0; _i < len; _i++) {
-            if (_i % 2 === 0) {
-              res.push(originX + item[_i] * width);
+          for (var _i2 = 0; _i2 < len; _i2++) {
+            if (_i2 % 2 === 0) {
+              res.push(originX + item[_i2] * width);
             } else {
-              res.push(originY + item[_i] * height);
+              res.push(originY + item[_i2] * height);
             }
           }
 
@@ -19951,10 +20643,16 @@
             height = this.height,
             points = this.points,
             controls = this.controls,
+            start = this.start,
+            end = this.end,
             __cacheProps = this.__cacheProps,
-            isMulti = this.isMulti;
+            isMulti = this.isMulti; // rebuild和reset区分开，防止start/end动画时重算所有节点和len
+
+        var rebuild, reset;
 
         if (isNil$9(__cacheProps.points)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.points = points.map(function (item) {
               if (Array.isArray(item)) {
@@ -19967,6 +20665,8 @@
         }
 
         if (isNil$9(__cacheProps.controls)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.controls = controls.map(function (item) {
               if (Array.isArray(item)) {
@@ -19980,14 +20680,23 @@
           }
         }
 
-        var pts = __cacheProps.points;
-        var cls = __cacheProps.controls; // points/controls有变化就需要重建顶点
+        if (isNil$9(__cacheProps.start)) {
+          reset = true;
+          __cacheProps.start = start;
+        }
 
-        {
+        if (isNil$9(__cacheProps.end)) {
+          reset = true;
+          __cacheProps.end = end;
+        } // points/controls有变化就需要重建顶点
+
+
+        if (rebuild) {
+          var pts = __cacheProps.points;
+          var cls = __cacheProps.controls;
+
           if (isMulti) {
-            var list = pts.filter(function (item) {
-              return Array.isArray(item);
-            }).map(function (item, i) {
+            var list = pts.map(function (item, i) {
               var cl = cls[i];
 
               if (Array.isArray(item)) {
@@ -20000,16 +20709,8 @@
                 });
               }
             });
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = list;
-            } else if (renderMode === mode.SVG) {
-              var d = '';
-              list.forEach(function (item) {
-                return d += painter.svgPolygon(item);
-              });
-              __cacheProps.d = d;
-            }
+            __cacheProps.list = list;
+            __cacheProps.len = getLength(list, isMulti);
           } else {
             var _list = pts.filter(function (item) {
               return Array.isArray(item);
@@ -20021,17 +20722,43 @@
               return point;
             });
 
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = _list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = painter.svgPolygon(_list);
+            __cacheProps.len = getLength(_list, isMulti);
+            __cacheProps.list = _list;
+          }
+        } // rebuild或reset时，重新计算节点列表，仅reset说明只有start/end变化
+
+
+        if (rebuild || reset) {
+          if (isMulti) {
+            __cacheProps.list2 = __cacheProps.list.map(function (item, i) {
+              if (Array.isArray(item)) {
+                return getNewList(item, __cacheProps.len[i], start[i], end[i]);
+              }
+            });
+          } else {
+            if (start !== 0 || end !== 1) {
+              __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
+            }
+          }
+
+          if (renderMode === mode.SVG) {
+            if (isMulti) {
+              var d = '';
+
+              __cacheProps.list2.forEach(function (item) {
+                return d += painter.svgPolygon(item);
+              });
+
+              __cacheProps.d = d;
+            } else {
+              __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
             }
           }
         }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
-          var _list2 = __cacheProps.list;
+          var _list2 = __cacheProps.list2;
 
           if (isMulti) {
             _list2.forEach(function (item) {
@@ -20069,6 +20796,16 @@
         return this.getProps('controls');
       }
     }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
+      }
+    }, {
       key: "bbox",
       get: function get() {
         var isMulti = this.isMulti,
@@ -20097,12 +20834,12 @@
               xa = _pointList$[0],
               ya = _pointList$[1];
 
-          for (var _i2 = 1, len = pointList.length; _i2 < len; _i2++) {
-            var _pointList$_i = _slicedToArray(pointList[_i2], 2),
+          for (var _i3 = 1, len = pointList.length; _i3 < len; _i3++) {
+            var _pointList$_i = _slicedToArray(pointList[_i3], 2),
                 xb = _pointList$_i[0],
                 yb = _pointList$_i[1];
 
-            var c = controlList[_i2 - 1];
+            var c = controlList[_i3 - 1];
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);

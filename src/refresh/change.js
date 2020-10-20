@@ -50,7 +50,6 @@ let o = {
     fontWeight: true,
     fontFamily: true,
   },
-  NUMBER: 5,
   isIgnore(k) {
     return this.IGNORE.hasOwnProperty(k);
   },
@@ -114,12 +113,12 @@ o.measureInheritList = function(target) {
   return list;
 };
 
-o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB']);
+o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
 o.addGeom('$circle', ['r']);
 o.addGeom('$ellipse', ['rx', 'ry']);
 o.addGeom('$rect', ['rx', 'ry']);
 o.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
-o.addGeom('$polyline', ['points', 'controls']);
-o.addGeom('$polygon', ['points', 'controls']);
+o.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
+o.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
 
 export default o;

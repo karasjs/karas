@@ -43,6 +43,38 @@ function curveNum(controlA, controlB) {
   return num;
 }
 
+function limitStartEnd(v) {
+  if(v < 0) {
+    v = 0;
+  }
+  else if(v > 1) {
+    v = 1;
+  }
+  return v;
+}
+
+function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start, end) {
+  console.log(num, start, end);
+  if(num === 3) {
+    [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+  }
+  else if(num === 2) {
+    [[x1, y1], controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+  }
+  else if(num === 1) {
+    [[x1, y1], controlA, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+  }
+  else {
+    let a = Math.abs(x1 - x2);
+    let b = Math.abs(y1 - y2);
+    x1 += a * start;
+    y1 += b * start;
+    x2 -= a * (1 - end);
+    y2 -= b * (1 - end);
+  }
+  return [x1, y1, x2, y2, controlA, controlB];
+}
+
 class Line extends Geom {
   constructor(tagName, props) {
     super(tagName, props);
@@ -54,6 +86,8 @@ class Line extends Geom {
       this.__y2 = [1];
       this.__controlA = [[]];
       this.__controlB = [[]];
+      this.__start = [0];
+      this.__end = [0];
       if(Array.isArray(props.x1)) {
         this.__x1 = props.x1.map(i => parseFloat(i) || 0);
       }
@@ -94,10 +128,22 @@ class Line extends Geom {
           return [];
         });
       }
+      if(Array.isArray(props.start)) {
+        this.__start = props.start.map(i => limitStartEnd(parseFloat(i) || 0));
+      }
+      else if(!isNil(props.start)) {
+        this.__start = [limitStartEnd(parseFloat(props.start) || 0)];
+      }
+      if(Array.isArray(props.end)) {
+        this.__end = props.end.map(i => limitStartEnd(parseFloat(i) || 0));
+      }
+      else if(!isNil(props.end)) {
+        this.__end = [limitStartEnd(parseFloat(props.end) || 0)];
+      }
     }
     else {
-      this.__x1 = this.__y1 = 0;
-      this.__x2 = this.__y2 = 1;
+      this.__x1 = this.__y1 = this.__start = 0;
+      this.__x2 = this.__y2 = this.__end = 1;
       this.__controlA = [];
       this.__controlB = [];
       if(!isNil(props.x1)) {
@@ -111,6 +157,12 @@ class Line extends Geom {
       }
       if(!isNil(props.y2)) {
         this.__y2 = parseFloat(props.y2) || 0;
+      }
+      if(!isNil(props.start)) {
+        this.__start = limitStartEnd(parseFloat(props.start) || 0);
+      }
+      if(!isNil(props.end)) {
+        this.__end = limitStartEnd(parseFloat(props.end) || 0);
       }
       if(Array.isArray(props.controlA)) {
         this.__controlA = props.controlA;
@@ -136,7 +188,7 @@ class Line extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = res;
-    let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps, isMulti } = this;
+    let { width, height, x1, y1, x2, y2, controlA, controlB, start, end, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.x1)) {
       rebuild = true;
@@ -162,23 +214,39 @@ class Line extends Geom {
       rebuild = true;
       __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
     }
+    if(isNil(__cacheProps.start)) {
+      rebuild = true;
+      __cacheProps.start = start;
+    }
+    if(isNil(__cacheProps.end)) {
+      rebuild = true;
+      __cacheProps.end = end;
+    }
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {
-        __cacheProps.x1.forEach((xa, i) => {
-          let xb = __cacheProps.x2[i];
-          let ya = __cacheProps.y1[i];
-          let yb = __cacheProps.y2[i];
-          let ca = __cacheProps.controlA[i];
-          let cb = __cacheProps.controlB[i];
-          let curve = curveNum(ca, cb);
-          d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
+        __cacheProps.x1.forEach((x1, i) => {
+          let x2 = __cacheProps.x2[i];
+          let y1 = __cacheProps.y1[i];
+          let y2 = __cacheProps.y2[i];
+          let controlA = __cacheProps.controlA[i];
+          let controlB = __cacheProps.controlB[i];
+          let start = __cacheProps.start[i];
+          let end = __cacheProps.end[i];
+          let curve = curveNum(controlA, controlB);
+          if(start !== 0 || end !== 1) {
+            [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+          }
+          d += painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
         });
       }
       else {
         let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-        d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2,
-          __cacheProps.controlA, __cacheProps.controlB, curve);
+        let { x1, y1, x2, y2, controlA, controlB } = __cacheProps;
+        if(start !== 0 || end !== 1) {
+          [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+        }
+        d = painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
       }
       __cacheProps.d = d;
     }
@@ -186,20 +254,28 @@ class Line extends Geom {
       if(strokeWidth > 0) {
         ctx.beginPath();
         if(isMulti) {
-          __cacheProps.x1.forEach((xa, i) => {
-            let xb = __cacheProps.x2[i];
-            let ya = __cacheProps.y1[i];
-            let yb = __cacheProps.y2[i];
-            let ca = __cacheProps.controlA[i];
-            let cb = __cacheProps.controlB[i];
-            let curve = curveNum(ca, cb);
-            painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+          __cacheProps.x1.forEach((x1, i) => {
+            let x2 = __cacheProps.x2[i];
+            let y1 = __cacheProps.y1[i];
+            let y2 = __cacheProps.y2[i];
+            let controlA = __cacheProps.controlA[i];
+            let controlB = __cacheProps.controlB[i];
+            let start = __cacheProps.start[i];
+            let end = __cacheProps.end[i];
+            let curve = curveNum(controlA, controlB);
+            if(start !== 0 || end !== 1) {
+              [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+            }
+            painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve);
           });
         }
         else {
           let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-          painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2,
-            __cacheProps.controlA, __cacheProps.controlB, curve);
+          let { x1, y1, x2, y2, controlA, controlB } = __cacheProps;
+          if(start !== 0 || end !== 1) {
+            [x1, y1, x2, y2, controlA, controlB] = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+          }
+          painter.canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, curve);
         }
         ctx.stroke();
         ctx.closePath();
@@ -240,6 +316,14 @@ class Line extends Geom {
 
   get controlB() {
     return this.getProps('controlB');
+  }
+
+  get start() {
+    return this.getProps('start');
+  }
+
+  get end() {
+    return this.getProps('end');
   }
 
   get bbox() {

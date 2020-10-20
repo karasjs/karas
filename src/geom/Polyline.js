@@ -174,18 +174,36 @@ class Polyline extends Geom {
       this.__points = [[]];
       this.__controls = [[]];
       this.__start = [0];
-      this.__end = [0];
+      this.__end = [1];
       if(Array.isArray(props.start)) {
         this.__start = props.start.map(i => limitStartEnd(parseFloat(i) || 0));
+        for(let i = this.__start.length; i  < this.__points.length; i++) {
+          this.__start.push(0);
+        }
       }
       else if(!isNil(props.start)) {
-        this.__start = [limitStartEnd(parseFloat(props.start) || 0)];
+        let v = limitStartEnd(parseFloat(props.start) || 0);
+        this.__start = this.__points.map(() => v);
       }
       if(Array.isArray(props.end)) {
-        this.__end = props.end.map(i => limitStartEnd(parseFloat(i) || 0));
+        this.__end = props.end.map(i => {
+          let v = parseFloat(i);
+          if(isNaN(v)) {
+            v = 1;
+          }
+          return limitStartEnd(v);
+        });
+        for(let i = this.__end.length; i  < this.__points.length; i++) {
+          this.__end.push(1);
+        }
       }
       else if(!isNil(props.end)) {
-        this.__end = [limitStartEnd(parseFloat(props.end) || 0)];
+        let v = parseFloat(props.end);
+        if(isNaN(v)) {
+          v = 1;
+        }
+        v = limitStartEnd(v);
+        this.__end = this.__points.map(() => v);
       }
     }
     else {
@@ -254,7 +272,7 @@ class Polyline extends Geom {
       strokeLinejoin,
       strokeMiterlimit,
     } = res;
-    let { width, height, points, controls, start, end, __cacheProps, isMulti } = this; console.log(start,end)
+    let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
     // rebuild和reset区分开，防止start/end动画时重算所有节点和len
     let rebuild, reset;
     if(isNil(__cacheProps.points)) {
@@ -327,12 +345,17 @@ class Polyline extends Geom {
       if(isMulti) {
         __cacheProps.list2 = __cacheProps.list.map((item, i) => {
           if(Array.isArray(item)) {
-            return getNewList(item, __cacheProps.len[i], start[i], end[i]);
+            let len = __cacheProps.len;
+            return getNewList(item, {
+              list: len.list[i],
+              total: len.total[i],
+              increase: len.increase[i],
+            }, __cacheProps.start[i], __cacheProps.end[i]);
           }
         });
       }
       else {
-        __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
+        __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
       }
       if(renderMode === mode.SVG) {
         if(isMulti) {

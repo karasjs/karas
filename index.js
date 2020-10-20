@@ -19849,8 +19849,6 @@
   }
 
   function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start, end) {
-    console.log(num, start, end);
-
     if (num === 3) {
       var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
 
@@ -19929,7 +19927,7 @@
         _this.__controlA = [[]];
         _this.__controlB = [[]];
         _this.__start = [0];
-        _this.__end = [0];
+        _this.__end = [1];
 
         if (Array.isArray(props.x1)) {
           _this.__x1 = props.x1.map(function (i) {
@@ -19987,16 +19985,42 @@
           _this.__start = props.start.map(function (i) {
             return limitStartEnd(parseFloat(i) || 0);
           });
+
+          for (var i = _this.__start.length; i < _this.__x1.length; i++) {
+            _this.__start.push(0);
+          }
         } else if (!isNil$8(props.start)) {
-          _this.__start = [limitStartEnd(parseFloat(props.start) || 0)];
+          var v = limitStartEnd(parseFloat(props.start) || 0);
+          _this.__start = _this.__x1.map(function () {
+            return v;
+          });
         }
 
         if (Array.isArray(props.end)) {
           _this.__end = props.end.map(function (i) {
-            return limitStartEnd(parseFloat(i) || 0);
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd(v);
           });
+
+          for (var _i = _this.__end.length; _i < _this.__x1.length; _i++) {
+            _this.__end.push(1);
+          }
         } else if (!isNil$8(props.end)) {
-          _this.__end = [limitStartEnd(parseFloat(props.end) || 0)];
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd(_v);
+          _this.__end = _this.__x1.map(function () {
+            return _v;
+          });
         }
       } else {
         _this.__x1 = _this.__y1 = _this.__start = 0;
@@ -20546,22 +20570,48 @@
         _this.__points = [[]];
         _this.__controls = [[]];
         _this.__start = [0];
-        _this.__end = [0];
+        _this.__end = [1];
 
         if (Array.isArray(props.start)) {
           _this.__start = props.start.map(function (i) {
             return limitStartEnd$1(parseFloat(i) || 0);
           });
+
+          for (var i = _this.__start.length; i < _this.__points.length; i++) {
+            _this.__start.push(0);
+          }
         } else if (!isNil$9(props.start)) {
-          _this.__start = [limitStartEnd$1(parseFloat(props.start) || 0)];
+          var v = limitStartEnd$1(parseFloat(props.start) || 0);
+          _this.__start = _this.__points.map(function () {
+            return v;
+          });
         }
 
         if (Array.isArray(props.end)) {
           _this.__end = props.end.map(function (i) {
-            return limitStartEnd$1(parseFloat(i) || 0);
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd$1(v);
           });
+
+          for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
+            _this.__end.push(1);
+          }
         } else if (!isNil$9(props.end)) {
-          _this.__end = [limitStartEnd$1(parseFloat(props.end) || 0)];
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd$1(_v);
+          _this.__end = _this.__points.map(function () {
+            return _v;
+          });
         }
       } else {
         _this.__points = []; // 控制点
@@ -20612,11 +20662,11 @@
 
           var res = [];
 
-          for (var _i2 = 0; _i2 < len; _i2++) {
-            if (_i2 % 2 === 0) {
-              res.push(originX + item[_i2] * width);
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            if (_i3 % 2 === 0) {
+              res.push(originX + item[_i3] * width);
             } else {
-              res.push(originY + item[_i2] * height);
+              res.push(originY + item[_i3] * height);
             }
           }
 
@@ -20650,8 +20700,7 @@
             start = this.start,
             end = this.end,
             __cacheProps = this.__cacheProps,
-            isMulti = this.isMulti;
-        console.log(start, end); // rebuild和reset区分开，防止start/end动画时重算所有节点和len
+            isMulti = this.isMulti; // rebuild和reset区分开，防止start/end动画时重算所有节点和len
 
         var rebuild, reset;
 
@@ -20737,11 +20786,16 @@
           if (isMulti) {
             __cacheProps.list2 = __cacheProps.list.map(function (item, i) {
               if (Array.isArray(item)) {
-                return getNewList(item, __cacheProps.len[i], start[i], end[i]);
+                var len = __cacheProps.len;
+                return getNewList(item, {
+                  list: len.list[i],
+                  total: len.total[i],
+                  increase: len.increase[i]
+                }, __cacheProps.start[i], __cacheProps.end[i]);
               }
             });
           } else {
-            __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, start, end);
+            __cacheProps.list2 = getNewList(__cacheProps.list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
           }
 
           if (renderMode === mode.SVG) {
@@ -20837,12 +20891,12 @@
               xa = _pointList$[0],
               ya = _pointList$[1];
 
-          for (var _i3 = 1, len = pointList.length; _i3 < len; _i3++) {
-            var _pointList$_i = _slicedToArray(pointList[_i3], 2),
+          for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
+            var _pointList$_i = _slicedToArray(pointList[_i4], 2),
                 xb = _pointList$_i[0],
                 yb = _pointList$_i[1];
 
-            var c = controlList[_i3 - 1];
+            var c = controlList[_i4 - 1];
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);

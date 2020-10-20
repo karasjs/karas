@@ -54,7 +54,6 @@ function limitStartEnd(v) {
 }
 
 function getNewPoint(x1, y1, x2, y2, controlA, controlB, num, start, end) {
-  console.log(num, start, end);
   if(num === 3) {
     [[x1, y1], controlA, controlB, [x2, y2]] = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
   }
@@ -87,7 +86,7 @@ class Line extends Geom {
       this.__controlA = [[]];
       this.__controlB = [[]];
       this.__start = [0];
-      this.__end = [0];
+      this.__end = [1];
       if(Array.isArray(props.x1)) {
         this.__x1 = props.x1.map(i => parseFloat(i) || 0);
       }
@@ -130,15 +129,33 @@ class Line extends Geom {
       }
       if(Array.isArray(props.start)) {
         this.__start = props.start.map(i => limitStartEnd(parseFloat(i) || 0));
+        for(let i = this.__start.length; i  < this.__x1.length; i++) {
+          this.__start.push(0);
+        }
       }
       else if(!isNil(props.start)) {
-        this.__start = [limitStartEnd(parseFloat(props.start) || 0)];
+        let v = limitStartEnd(parseFloat(props.start) || 0);
+        this.__start = this.__x1.map(() => v);
       }
       if(Array.isArray(props.end)) {
-        this.__end = props.end.map(i => limitStartEnd(parseFloat(i) || 0));
+        this.__end = props.end.map(i => {
+          let v = parseFloat(i);
+          if(isNaN(v)) {
+            v = 1;
+          }
+          return limitStartEnd(v);
+        });
+        for(let i = this.__end.length; i  < this.__x1.length; i++) {
+          this.__end.push(1);
+        }
       }
       else if(!isNil(props.end)) {
-        this.__end = [limitStartEnd(parseFloat(props.end) || 0)];
+        let v = parseFloat(props.end);
+        if(isNaN(v)) {
+          v = 1;
+        }
+        v = limitStartEnd(v);
+        this.__end = this.__x1.map(() => v);
       }
     }
     else {

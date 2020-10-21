@@ -1442,6 +1442,10 @@
     }
 
     if (start > 0) {
+      if (end < 1) {
+        start = start / end;
+      }
+
       points = sliceBezier(points.reverse(), 1 - start).reverse();
     }
 
@@ -20490,13 +20494,14 @@
 
     list = util.clone(list);
     end *= len.total;
+    var prePercent = 1;
 
     if (end < len.increase[j]) {
       var prev = list[j].slice(list[j].length - 2);
       var current = list[j + 1];
       var l = len.list[j];
       var diff = len.increase[j] - end;
-      var t = 1 - diff / l;
+      var t = prePercent = 1 - diff / l;
 
       if (current.length === 2) {
         var a = Math.abs(current[0] - prev[0]);
@@ -20518,7 +20523,8 @@
       var _prev = list[i].slice(list[i].length - 2);
 
       var _current = list[i + 1];
-      var _l = len.list[i];
+
+      var _l = len.list[i] * prePercent;
 
       var _diff = start - (i ? len.increase[i - 1] : 0);
 

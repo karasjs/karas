@@ -114,12 +114,13 @@ function getNewList(list, len, start, end) {
   }
   list = util.clone(list);
   end *= len.total;
+  let prePercent = 1;
   if(end < len.increase[j]) {
     let prev = list[j].slice(list[j].length - 2);
     let current = list[j + 1];
     let l = len.list[j];
     let diff = len.increase[j] - end;
-    let t = 1 - diff / l;
+    let t = prePercent = 1 - diff / l;
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);
       let b = Math.abs(current[1] - prev[1]);
@@ -138,7 +139,7 @@ function getNewList(list, len, start, end) {
   if(start > (i ? len.increase[i - 1] : 0)) {
     let prev = list[i].slice(list[i].length - 2);
     let current = list[i + 1];
-    let l = len.list[i];
+    let l = len.list[i] * prePercent;
     let diff = start - (i ? len.increase[i - 1] : 0);
     let t = diff / l;
     if(current.length === 2) {

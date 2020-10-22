@@ -19487,7 +19487,7 @@
           return res;
         }
 
-        this.__cacheFilter = null; // data在无cache时没有提前设置需实时计算
+        this.__cacheFilter = null; // data在无cache时没有提前设置
 
         var preData = this.root.cache ? this.__preData : this.__preSet(renderMode, ctx, defs);
         var x2 = res.x2,
@@ -19510,20 +19510,22 @@
     }, {
       key: "__renderAsMask",
       value: function __renderAsMask(renderMode, lv, ctx, defs, isClip) {
-        // mask渲染在canvas等被遮罩层调用，svg生成maskId
-        if (renderMode === mode.SVG) {
-          this.render(renderMode, lv, ctx, defs);
-          var vd = this.virtualDom;
+        if (renderMode === mode.CANVAS) {
+          this.root.cache && (this.__preData = this.__preSet(renderMode, ctx, defs));
+        } // mask渲染在canvas等被遮罩层调用，svg生成maskId
+        else if (renderMode === mode.SVG) {
+            this.render(renderMode, lv, ctx, defs);
+            var vd = this.virtualDom;
 
-          if (isClip) {
-            vd.isClip = true;
-          } else {
-            vd.isMask = true;
-          } // 强制不缓存，防止引用mask的matrix变化不生效
+            if (isClip) {
+              vd.isClip = true;
+            } else {
+              vd.isMask = true;
+            } // 强制不缓存，防止引用mask的matrix变化不生效
 
 
-          delete vd.lv;
-        }
+            delete vd.lv;
+          }
       } // 类似dom，但geom没有children所以没有total的概念
 
     }, {

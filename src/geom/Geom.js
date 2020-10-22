@@ -276,7 +276,7 @@ class Geom extends Xom {
       return res;
     }
     this.__cacheFilter = null;
-    // data在无cache时没有提前设置需实时计算
+    // data在无cache时没有提前设置
     let preData = this.root.cache ? this.__preData : this.__preSet(renderMode, ctx, defs);
     let { x2, y2 } = res;
     let { originX, originY } = preData;
@@ -291,8 +291,11 @@ class Geom extends Xom {
   }
 
   __renderAsMask(renderMode, lv, ctx, defs, isClip) {
+    if(renderMode === mode.CANVAS) {
+      this.root.cache && (this.__preData = this.__preSet(renderMode, ctx, defs));
+    }
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
-    if(renderMode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       this.render(renderMode, lv, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {

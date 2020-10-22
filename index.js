@@ -19487,8 +19487,10 @@
           return res;
         }
 
-        this.__cacheFilter = null;
-        var preData = this.__preData;
+        this.__cacheFilter = null; // data在无cache时没有提前设置
+
+        var preData = this.__preData || this.__preSet(renderMode, ctx, defs);
+
         var x2 = res.x2,
             y2 = res.y2;
         var originX = preData.originX,

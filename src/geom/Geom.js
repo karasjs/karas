@@ -276,7 +276,8 @@ class Geom extends Xom {
       return res;
     }
     this.__cacheFilter = null;
-    let preData = this.__preData;
+    // data在无cache时没有提前设置
+    let preData = this.__preData || this.__preSet(renderMode, ctx, defs);
     let { x2, y2 } = res;
     let { originX, originY } = preData;
     // 有cache时需计算差值

@@ -76,9 +76,6 @@ function updateCp(cp, props, state) {
   cp.__init(json);
   // 为了局部dom布局需要知道老的css信息
   let sr = cp.shadowRoot;
-  while(sr instanceof Component) {
-    sr = sr.shadowRoot;
-  }
   if(sr instanceof Xom) {
     sr.__width = oldSr.width;
     sr.__height = oldSr.height;

@@ -123,6 +123,9 @@ class Component extends Event {
     else {
       throw new Error('Component render() must return a dom/text: ' + this);
     }
+    while(sr instanceof Component) {
+      sr = sr.shadowRoot;
+    }
     sr.__host = this;
     this.__shadowRoot = sr;
     if(!this.__isMounted) {

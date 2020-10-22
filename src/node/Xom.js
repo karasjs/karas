@@ -1859,7 +1859,8 @@ class Xom extends Node {
     let { next, root } = this;
     let hasMask = next && next.isMask;
     let hasClip = next && next.isClip;
-    if(!hasMask && !hasClip) {
+    // cache情况特殊处理，geom照常绘制，交由dom处理mask
+    if((root.cache && renderMode === mode.CANVAS) || (!hasMask && !hasClip)) {
       return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {
@@ -1877,6 +1878,7 @@ class Xom extends Node {
         }
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
         // 当mask只有1个时，无需生成m，直接在c上即可
         if(list.length === 1) {
           next = list[0];
@@ -1907,8 +1909,8 @@ class Xom extends Node {
         ctx.restore();
         // 清除
         c.ctx.globalCompositeOperation = 'source-over';
-        // c.ctx.clearRect(0, 0, width, height);
-        // c.draw(c.ctx);
+        c.ctx.clearRect(0, 0, width, height);
+        c.draw(c.ctx);
       }
       // 劫持canvas原生方法使得多个clip矢量连续绘制
       else if(hasClip) {

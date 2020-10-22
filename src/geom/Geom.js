@@ -6,7 +6,6 @@ import mode from '../node/mode';
 import util from '../util/util';
 import level from '../refresh/level';
 import refreshMode from '../refresh/mode';
-import Cache from '../refresh/Cache';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 

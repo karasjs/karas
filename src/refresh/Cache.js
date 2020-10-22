@@ -43,11 +43,12 @@ class Cache {
   }
 
   clear() {
-    if(this.enabled && this.ctx && this.available) {
-      this.ctx.setTransform([1, 0, 0, 1, 0, 0]);
+    let ctx = this.ctx;
+    if(this.enabled && ctx && this.available) {
+      ctx.setTransform([1, 0, 0, 1, 0, 0]);
       let [x, y] = this.coords;
       let size = this.page.size;
-      this.ctx.clearRect(x - 1, y - 1, size, size);
+      ctx.clearRect(x - 1, y - 1, size, size);
     }
     this.__available = false;
   }
@@ -132,6 +133,37 @@ class Cache {
     return new Cache(bbox, page, pos);
   }
 
+  // static getClone(cache) {
+  //   let { bbox, page: { size, number } } = cache;
+  //   let res = Page.getClone(size, number);
+  //   let { page, pos } = res;
+  //   let o = new Cache(bbox, page, pos);
+  //   o.__appendData(cache.x1, cache.y1);
+  //   return o;
+  // }
+  //
+  // static updateClone(source, target) {
+  //   let { coords: [sx, sy], canvas } = source;
+  //   let { coords: [x, y], size, ctx } = target;
+  //   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  //   ctx.globalAlpha = 1;
+  //   ctx.drawImage(canvas, sx - 1, sy - 1, size, size, x - 1, y - 1, size, size);
+  // }
+
+  static genMask(cache) {
+    let { size, x1, y1 } = cache;
+    let offScreen = inject.getCacheCanvas(size, size);
+    // offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+    // offScreen.draw();
+    offScreen.coords = [1, 1];
+    offScreen.size = size;
+    offScreen.x1 = x1;
+    offScreen.y1 = y1;
+    offScreen.dbx = cache.dbx;
+    offScreen.dby = cache.dby;
+    return offScreen;
+  }
+
   /**
    * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
    * @param cache
@@ -183,6 +215,14 @@ class Cache {
     else {
       return cache;
     }
+  }
+
+  static drawCache(source, target) {
+    let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
+    let { coords: [x, y], canvas, size, x1: x12, y1: y12, dbx: dbx2, dby: dby2 } = source;
+    let dx = tx + x12 - x1 + dbx - dbx2;
+    let dy = ty + y12 - y1 + dby - dby2;
+    ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
   }
 }
 

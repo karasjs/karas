@@ -341,9 +341,6 @@ class Root extends Dom {
             if(len) {
               updater.updateList.forEach(cp => {
                 let sr = cp.shadowRoot;
-                while(sr instanceof Component) {
-                  sr = sr.shadowRoot;
-                }
                 // 可能返回text，需视为其parentNode
                 if(sr instanceof Text) {
                   sr = sr.domParent;

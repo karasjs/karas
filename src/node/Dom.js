@@ -65,6 +65,20 @@ function genZIndexChildren(dom) {
   return flow.concat(abs);
 }
 
+function getMaskChildren(dom) {
+  let list = [];
+  dom.children.forEach(item => {
+    let child = item;
+    if(item instanceof Component) {
+      item = item.shadowRoot;
+    }
+    if(item.isMask || item.isClip) {
+      list.push(child);
+    }
+  });
+  return list;
+}
+
 class Dom extends Xom {
   constructor(tagName, props, children) {
     super(tagName, props);
@@ -1140,6 +1154,10 @@ class Dom extends Xom {
     let draw = !root.cache || renderMode === mode.SVG;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
+    if(root.cache && renderMode === mode.CANVAS) {
+      zIndexChildren = getMaskChildren(this).concat(zIndexChildren);
+    }
     zIndexChildren.forEach(item => {
       let lv2 = item.__refreshLevel;
       // canvas开启缓存text先不渲染，节点先绘制到自身cache上
@@ -1250,12 +1268,23 @@ class Dom extends Xom {
      * 目前处于递归的回溯阶段，即冒泡阶段，
      * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
      * filter是个特殊情况，需要webgl离屏执行，所以一定有缓存
+     * 有mask也是个特殊情况，一定需要total
      * svg则不需要这些，vd上cache标明整体缓存无需递归diff
      */
     let canCacheSelf = renderMode === mode.CANVAS
       && (canCacheChildren && !this.effectiveAnimating || blurValue);
     if(canCacheSelf && !blurValue && ['relative', 'absolute'].indexOf(position) === -1 && !this.isShadowRoot) {
       canCacheSelf = false;
+    }
+    let hasMC;
+    if(renderMode === mode.CANVAS) {
+      let next = this.next;
+      let hasMask = next && next.isMask;
+      let hasClip = next && next.isClip;
+      if(hasMask || hasClip) {
+        hasMC = true;
+        canCacheSelf = true;
+      }
     }
     // 需考虑缓存和滤镜
     if(renderMode === mode.CANVAS) {
@@ -1268,6 +1297,44 @@ class Dom extends Xom {
         // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
         else if(canCacheSelf) {
           this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
+          if(hasMC) {
+            let cacheTotal = this.__cacheTotal;
+            if(cacheTotal && cacheTotal.available) {
+              let cacheMask = this.__cacheMask = Cache.genMask(cacheTotal);
+              let next = this.next;
+              let list = [];
+              while(next && (next.isMask || next.isClip)) {
+                list.push(next);
+                next = next.next;
+              }
+              let { ctx } = cacheMask;
+              // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+              list.forEach(item => {
+                // TODO matrix逆
+                let cacheFilter = item.__cacheFilter, cache = item.__cache;
+                let source = cacheFilter && cacheFilter.available && cacheFilter;
+                if(!source) {
+                  source = cache && cache.available && cache;
+                }
+                if(source) {
+                  Cache.drawCache(source, cacheMask);
+                }
+                else {
+                  console.error('CacheMask is oversize');
+                }
+              });
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              ctx.globalAlpha = 1;
+              ctx.globalCompositeOperation = 'source-in';
+              Cache.drawCache(cacheTotal, cacheMask);
+              ctx.globalCompositeOperation = 'source-over';
+              cacheMask.draw(ctx);
+            }
+            // 极端情况超限异常
+            else {
+              console.error('CacheTotal is oversize with mask');
+            }
+          }
         }
         // 非局部缓存的节点等待root调用
       }
@@ -1335,6 +1402,7 @@ class Dom extends Xom {
    */
   __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
     let cacheFilter = this.__cacheFilter;
+    let cacheMask = this.__cacheMask;
     let cacheTotal = this.__cacheTotal;
     let cache = this.__cache;
     let zIndexChildren = this.zIndexChildren;
@@ -1397,11 +1465,11 @@ class Dom extends Xom {
           cacheTotal.dbx = dbx;
           cacheTotal.dby = dby;
           // 以top为基准matrix/opacity
-          ctx.setTransform([1, 0, 0, 1, 0, 0]);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
           super.__applyCache(renderMode, ctx, tx - 1 + dbx, ty - 1 + dby);
           zIndexChildren.forEach(item => {
-            ctx.setTransform([1, 0, 0, 1, 0, 0]);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
               item.__renderByMask(renderMode, null, ctx, null, dx, dy);
@@ -1437,12 +1505,12 @@ class Dom extends Xom {
     }
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === refreshMode.CHILD) {
-      let { sx: x, sy: y } = this;
-      x += computedStyle.marginLeft;
-      y += computedStyle.marginTop;
+      let { sx, sy } = this;
+      sx += computedStyle.marginLeft;
+      sy += computedStyle.marginTop;
       let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
-      let dx = tx + x - x1 + dbx;
-      let dy = ty + y - y1 + dby;
+      let dx = tx + sx - x1 + dbx;
+      let dy = ty + sy - y1 + dby;
       let tfo = computedStyle.transformOrigin.slice(0);
       tfo[0] += dx;
       tfo[1] += dy;
@@ -1452,13 +1520,14 @@ class Dom extends Xom {
       opacity *= computedStyle.opacity;
       ctx.globalAlpha = opacity;
       // 优先filter，再是total
-      if(cacheFilter || cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], canvas, size, dbx, dby } = cacheFilter || cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 - dbx, dy - 1 - dby, size, size);
+      if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
+        Cache.drawCache(cacheFilter || cacheMask || cacheTotal, cacheTop);
         return;
       }
-      // 即便无内容也只是空执行
-      super.__applyCache(renderMode, ctx, dx - 1, dy - 1);
+      // 都没有正常cache和children
+      if(cache && cache.available) {
+        Cache.drawCache(cache, cacheTop);
+      }
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
@@ -1475,9 +1544,9 @@ class Dom extends Xom {
       // 写回主画布前设置
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
-      if(cacheFilter) {
-        let { x1, y1, dbx, dby } = cacheFilter;
-        ctx.drawImage(cacheFilter.canvas, x1 - 1 - dbx, y1 - 1 - dby);
+      if(cacheFilter || cacheMask) {
+        let { x1, y1, dbx, dby, canvas } = cacheFilter || cacheMask;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
         return;
       }
       if(cacheTotal && cacheTotal.available) {
@@ -1487,8 +1556,8 @@ class Dom extends Xom {
       }
       // 无内容就没有cache，继续看children
       if(cache && cache.available) {
-        let { x1, y1, dbx, dby } = cache;
-        super.__applyCache(renderMode, ctx, x1 - 1 - dbx, y1 - 1 - dby);
+        let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cache;
+        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {

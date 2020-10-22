@@ -130,7 +130,6 @@ class Root extends Dom {
         this.__height = value;
       }
     }
-    this.__offScreen = !!this.props.offScreen;
   }
 
   __genHtml() {
@@ -1216,10 +1215,6 @@ class Root extends Dom {
 
   get ctx() {
     return this.__ctx;
-  }
-
-  get offScreen() {
-    return this.__offScreen;
   }
 
   get defs() {

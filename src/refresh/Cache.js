@@ -1,4 +1,7 @@
 import Page from './Page';
+import util from '../util/util';
+import inject from '../util/inject';
+import blur from '../style/blur';
 
 class Cache {
   constructor(bbox, page, pos) {
@@ -28,14 +31,25 @@ class Cache {
     }
   }
 
+  __appendData(x1, y1) {
+    this.x1 = x1; // padding原点坐标
+    this.y1 = y1;
+    let [xc, yc] = this.coords;
+    let bbox = this.bbox;
+    this.dx = xc - bbox[0]; // cache坐标和box原点的差值
+    this.dy = yc - bbox[1];
+    this.dbx = x1 - bbox[0];
+    this.dby = y1 - bbox[1];
+  }
+
   clear() {
-    this.__available = false;
-    if(this.enabled && this.ctx) {
+    if(this.enabled && this.ctx && this.available) {
       this.ctx.setTransform([1, 0, 0, 1, 0, 0]);
       let [x, y] = this.coords;
       let size = this.page.size;
       this.ctx.clearRect(x - 1, y - 1, size, size);
     }
+    this.__available = false;
   }
 
   release() {
@@ -48,6 +62,11 @@ class Cache {
   }
 
   reset(bbox) {
+    // 尺寸没变复用之前的并清空
+    if(util.equalArr(this.bbox, bbox) && this.enabled) {
+      this.clear();
+      return;
+    }
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
@@ -111,6 +130,59 @@ class Cache {
     }
     let { page, pos } = res;
     return new Cache(bbox, page, pos);
+  }
+
+  /**
+   * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+   * @param cache
+   * @param v
+   * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
+   */
+  static genOffScreenBlur(cache, v) {
+    let { coords: [x, y], size, canvas, x1, y1 } = cache;
+    let offScreen = inject.getCacheCanvas(size, size);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+    offScreen.draw();
+    let cacheFilter = inject.getCacheWebgl(size, size);
+    blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+    cacheFilter.coords = [1, 1];
+    cacheFilter.size = size;
+    cacheFilter.x1 = x1;
+    cacheFilter.y1 = y1;
+    cacheFilter.dbx = cache.dbx;
+    cacheFilter.dby = cache.dby;
+    return cacheFilter;
+  }
+
+  /**
+   * bbox变化时直接用老的cache内容重设bbox
+   * @param cache
+   * @param bbox
+   */
+  static updateCache(cache, bbox) {
+    let old = cache.bbox;
+    if(!util.equalArr(bbox, old)) {
+      let dx = old[0] - bbox[0];
+      let dy = old[1] - bbox[1];
+      let newCache = Cache.getInstance(bbox);
+      if(newCache && newCache.enabled) {
+        let { coords: [ox, oy], size } = cache;
+        let { coords: [nx, ny], size: size2 } = newCache;
+        newCache.x1 = cache.x1;
+        newCache.y1 = cache.y1;
+        newCache.dx = cache.dx + dx;
+        newCache.dy = cache.dy + dy;
+        newCache.dbx = cache.dbx + dx;
+        newCache.dby = cache.dby + dy;
+        newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+        newCache.__available = true;
+        cache.release();
+        return newCache;
+      }
+    }
+    else {
+      return cache;
+    }
   }
 }
 

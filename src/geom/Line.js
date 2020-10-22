@@ -121,6 +121,30 @@ class Line extends Geom {
     }
   }
 
+  buildCache(originX, originY) {
+    let { width, height, __cacheProps, isMulti } = this;
+    let rebuild;
+    ['x1', 'x2'].forEach(k => {
+      if(isNil(__cacheProps[k])) {
+        rebuild = true;
+        __cacheProps[k] = reBuild(this[k], originX, width, isMulti);
+      }
+    });
+    ['y1', 'y2'].forEach(k => {
+      if(isNil(__cacheProps[k])) {
+        rebuild = true;
+        __cacheProps[k] = reBuild(this[k], originY, height, isMulti);
+      }
+    });
+    ['controlA', 'controlB'].forEach(k => {
+      if(isNil(__cacheProps[k])) {
+        rebuild = true;
+        __cacheProps[k] = reBuildC(this[k], originX, originY, width, height, isMulti);
+      }
+    });
+    return rebuild;
+  }
+
   render(renderMode, lv, ctx, defs) {
     let res = super.render(renderMode, lv, ctx, defs);
     if(res.break) {
@@ -135,33 +159,11 @@ class Line extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
-    let { width, height, x1, y1, x2, y2, controlA, controlB, __cacheProps, isMulti } = this;
-    let rebuild;
-    if(isNil(__cacheProps.x1)) {
-      rebuild = true;
-      __cacheProps.x1 = reBuild(x1, originX, width, isMulti);
-    }
-    if(isNil(__cacheProps.x2)) {
-      rebuild = true;
-      __cacheProps.x2 = reBuild(x2, originX, width, isMulti);
-    }
-    if(isNil(__cacheProps.y1)) {
-      rebuild = true;
-      __cacheProps.y1 = reBuild(y1, originY, height, isMulti);
-    }
-    if(isNil(__cacheProps.y2)) {
-      rebuild = true;
-      __cacheProps.y2 = reBuild(y2, originY, height, isMulti);
-    }
-    if(isNil(__cacheProps.controlA)) {
-      rebuild = true;
-      __cacheProps.controlA = reBuildC(controlA, originX, originY, width, height, isMulti);
-    }
-    if(isNil(__cacheProps.controlB)) {
-      rebuild = true;
-      __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
-    }
+    let { __cacheProps, isMulti } = this;
+    let rebuild = this.buildCache(originX, originY);
     if(rebuild && renderMode === mode.SVG) {
       let d = '';
       if(isMulti) {
@@ -193,13 +195,13 @@ class Line extends Geom {
             let ca = __cacheProps.controlA[i];
             let cb = __cacheProps.controlB[i];
             let curve = curveNum(ca, cb);
-            painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+            painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
           });
         }
         else {
           let curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
           painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2,
-            __cacheProps.controlA, __cacheProps.controlB, curve);
+            __cacheProps.controlA, __cacheProps.controlB, curve, dx, dy);
         }
         ctx.stroke();
         ctx.closePath();
@@ -243,10 +245,30 @@ class Line extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { x1, y1, x2, y2, controlA, controlB },
-      computedStyle: { strokeWidth } } = this;
+    let {
+      sx, sy,
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        boxShadow,
+        filter,
+        strokeWidth,
+      },
+      isMulti, __cacheProps,
+    } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    this.buildCache(originX, originY);
+    let { x1, y1, x2, y2, controlA, controlB } = __cacheProps;
     let bbox = super.bbox;
     let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
     if(!isMulti) {
       x1 = [x1];
       x2 = [x2];
@@ -262,31 +284,47 @@ class Line extends Geom {
       let ca = controlA[i];
       let cb = controlB[i];
       if((isNil(ca) || ca.length < 2) && (isNil(cb) || cb.length < 2)) {
-        bbox[0] = Math.min(bbox[0], xa - half);
-        bbox[1] = Math.min(bbox[0], xb - half);
-        bbox[2] = Math.max(bbox[0], xa + half);
-        bbox[3] = Math.max(bbox[0], xb + half);
+        bbox[0] = Math.min(bbox[0], xa - ox);
+        bbox[0] = Math.min(bbox[0], xb - ox);
+        bbox[1] = Math.min(bbox[1], ya - oy);
+        bbox[1] = Math.min(bbox[1], yb - oy);
+        bbox[2] = Math.max(bbox[2], xa + ox);
+        bbox[2] = Math.max(bbox[2], xb + ox);
+        bbox[3] = Math.max(bbox[3], ya + oy);
+        bbox[3] = Math.max(bbox[3], yb + oy);
       }
       else if(isNil(ca) || ca.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-        bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-        bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-        bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
       }
       else if(isNil(cb) || cb.length < 2) {
         let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-        bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-        bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-        bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
       }
       else {
         let bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
-        bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-        bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-        bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-        bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+        bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+        bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
+        bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+        bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
+        bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
+        bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+        bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
+        bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
       }
     });
     return bbox;

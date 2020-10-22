@@ -57,6 +57,40 @@
     return obj;
   }
 
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      if (enumerableOnly) symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      });
+      keys.push.apply(keys, symbols);
+    }
+
+    return keys;
+  }
+
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i] != null ? arguments[i] : {};
+
+      if (i % 2) {
+        ownKeys(Object(source), true).forEach(function (key) {
+          _defineProperty(target, key, source[key]);
+        });
+      } else if (Object.getOwnPropertyDescriptors) {
+        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+      } else {
+        ownKeys(Object(source)).forEach(function (key) {
+          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+        });
+      }
+    }
+
+    return target;
+  }
+
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -460,19 +494,21 @@
   }
 
   function canvasLine(ctx, x1, y1, x2, y2, controlA, controlB, num) {
-    ctx.moveTo(x1, y1);
+    var dx = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 0;
+    var dy = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : 0;
+    ctx.moveTo(x1 + dx, y1 + dy);
 
     if (num === 3) {
-      ctx.bezierCurveTo(controlA[0], controlA[1], controlB[0], controlB[1], x2, y2);
+      ctx.bezierCurveTo(controlA[0] + dx, controlA[1] + dy, controlB[0] + dx, controlB[1], x2 + dx, y2 + dy);
       return 2;
     } else if (num === 2) {
-      ctx.quadraticCurveTo(controlB[0], controlB[1], x2, y2);
+      ctx.quadraticCurveTo(controlB[0] + dx, controlB[1] + dy, x2 + dx, y2 + dy);
       return 2;
     } else if (num === 1) {
-      ctx.quadraticCurveTo(controlA[0], controlA[1], x2, y2);
+      ctx.quadraticCurveTo(controlA[0] + dx, controlA[1] + dy, x2 + dx, y2 + dy);
       return 2;
     } else {
-      ctx.lineTo(x2, y2);
+      ctx.lineTo(x2 + dx, y2 + dy);
       return 1;
     }
   }
@@ -492,14 +528,16 @@
   var OFFSET = Math.PI * 0.5;
 
   function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure) {
-    ctx.arc(cx, cy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
+    var dx = arguments.length > 14 && arguments[14] !== undefined ? arguments[14] : 0;
+    var dy = arguments.length > 15 && arguments[15] !== undefined ? arguments[15] : 0;
+    ctx.arc(cx + dx, cy + dy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
 
     if (edge) {
       if (!large || !closure) {
-        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx + dx, cy + dy);
       }
 
-      ctx.lineTo(x1, y1);
+      ctx.lineTo(x1 + dx, y1 + dy);
 
       if (strokeWidth > 0) {
         ctx.stroke();
@@ -510,10 +548,10 @@
       }
 
       if (!large || !closure) {
-        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx + dx, cy + dy);
       }
 
-      ctx.lineTo(x1, y1);
+      ctx.lineTo(x1 + dx, y1 + dy);
     }
   }
 
@@ -10521,20 +10559,38 @@
         }
       }
     }, {
+      key: "__appendData",
+      value: function __appendData(x1, y1) {
+        this.x1 = x1; // padding原点坐标
+
+        this.y1 = y1;
+
+        var _this$coords = _slicedToArray(this.coords, 2),
+            xc = _this$coords[0],
+            yc = _this$coords[1];
+
+        var bbox = this.bbox;
+        this.dx = xc - bbox[0]; // cache坐标和box原点的差值
+
+        this.dy = yc - bbox[1];
+        this.dbx = x1 - bbox[0];
+        this.dby = y1 - bbox[1];
+      }
+    }, {
       key: "clear",
       value: function clear() {
-        this.__available = false;
-
-        if (this.enabled && this.ctx) {
+        if (this.enabled && this.ctx && this.available) {
           this.ctx.setTransform([1, 0, 0, 1, 0, 0]);
 
-          var _this$coords = _slicedToArray(this.coords, 2),
-              x = _this$coords[0],
-              y = _this$coords[1];
+          var _this$coords2 = _slicedToArray(this.coords, 2),
+              x = _this$coords2[0],
+              y = _this$coords2[1];
 
           var size = this.page.size;
           this.ctx.clearRect(x - 1, y - 1, size, size);
         }
+
+        this.__available = false;
       }
     }, {
       key: "release",
@@ -10549,6 +10605,12 @@
     }, {
       key: "reset",
       value: function reset(bbox) {
+        // 尺寸没变复用之前的并清空
+        if (util.equalArr(this.bbox, bbox) && this.enabled) {
+          this.clear();
+          return;
+        }
+
         this.release();
         var w = Math.ceil(bbox[2] - bbox[0]);
         var h = Math.ceil(bbox[3] - bbox[1]); // 防止边的精度问题四周各+1px，宽高即+2px
@@ -10627,6 +10689,79 @@
         var page = res.page,
             pos = res.pos;
         return new Cache(bbox, page, pos);
+      }
+      /**
+       * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
+       * @param cache
+       * @param v
+       * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
+       */
+
+    }, {
+      key: "genOffScreenBlur",
+      value: function genOffScreenBlur(cache, v) {
+        var _cache$coords = _slicedToArray(cache.coords, 2),
+            x = _cache$coords[0],
+            y = _cache$coords[1],
+            size = cache.size,
+            canvas = cache.canvas,
+            x1 = cache.x1,
+            y1 = cache.y1;
+
+        var offScreen = inject.getCacheCanvas(size, size);
+        offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+        offScreen.draw();
+        var cacheFilter = inject.getCacheWebgl(size, size);
+        blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+        cacheFilter.coords = [1, 1];
+        cacheFilter.size = size;
+        cacheFilter.x1 = x1;
+        cacheFilter.y1 = y1;
+        cacheFilter.dbx = cache.dbx;
+        cacheFilter.dby = cache.dby;
+        return cacheFilter;
+      }
+      /**
+       * bbox变化时直接用老的cache内容重设bbox
+       * @param cache
+       * @param bbox
+       */
+
+    }, {
+      key: "updateCache",
+      value: function updateCache(cache, bbox) {
+        var old = cache.bbox;
+
+        if (!util.equalArr(bbox, old)) {
+          var dx = old[0] - bbox[0];
+          var dy = old[1] - bbox[1];
+          var newCache = Cache.getInstance(bbox);
+
+          if (newCache && newCache.enabled) {
+            var _cache$coords2 = _slicedToArray(cache.coords, 2),
+                ox = _cache$coords2[0],
+                oy = _cache$coords2[1],
+                size = cache.size;
+
+            var _newCache$coords = _slicedToArray(newCache.coords, 2),
+                nx = _newCache$coords[0],
+                ny = _newCache$coords[1],
+                size2 = newCache.size;
+
+            newCache.x1 = cache.x1;
+            newCache.y1 = cache.y1;
+            newCache.dx = cache.dx + dx;
+            newCache.dy = cache.dy + dy;
+            newCache.dbx = cache.dbx + dx;
+            newCache.dby = cache.dby + dy;
+            newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+            newCache.__available = true;
+            cache.release();
+            return newCache;
+          }
+        } else {
+          return cache;
+        }
       }
     }]);
 
@@ -11809,7 +11944,17 @@
         var y1 = y + marginTop;
         var y2 = y1 + borderTopWidth;
         var y3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = y3 + borderBottomWidth; // 防止cp直接返回cp嵌套，拿到真实dom的parent
+        var y4 = y3 + borderBottomWidth;
+        var res = {
+          x1: x1,
+          x2: x2,
+          x3: x3,
+          x4: x4,
+          y1: y1,
+          y2: y2,
+          y3: y3,
+          y4: y4
+        }; // 防止cp直接返回cp嵌套，拿到真实dom的parent
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
@@ -11868,10 +12013,10 @@
 
         if (visibility === 'hidden') {
           if (renderMode === mode.CANVAS) {
-            return {
+            return _objectSpread2(_objectSpread2({}, res), {}, {
               "break": true,
               canCache: !this.visibilityAnimating
-            };
+            });
           }
         }
 
@@ -11887,25 +12032,34 @@
             dy = 0;
 
         if (root.cache && renderMode === mode.CANVAS) {
+          var isGeom = this.tagName.charAt(0) === '$'; // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量
+
           if (!hasContent) {
-            if (cache && cache.available) {
+            if (!isGeom && cache && cache.available) {
               cache.release();
+            } // 无内容且lv变化小geom可以提前跳出，普通dom直接跳出
+
+
+            if (lv < o$1.REPAINT && isGeom) {
+              return _objectSpread2(_objectSpread2({}, res), {}, {
+                "break": true,
+                canCache: canCache,
+                filter: filter
+              });
             }
 
-            return {
-              "break": true,
+            return _objectSpread2(_objectSpread2({}, res), {}, {
               canCache: canCache,
               filter: filter
-            };
-          }
+            });
+          } // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
 
-          var isGeom = this.tagName.charAt(0) === '$'; // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
 
           if (cache && cache.available && lv < o$1.REPAINT) {
-            if (o$1.contain(lv, o$1.FILTER) && !isGeom) {
+            if (o$1.contain(lv, o$1.FILTER)) {
               var bbox = cache.__bbox = this.bbox;
-              var dbx = cache.dbx = x1 - bbox[0],
-                  dby = cache.dby = y1 - bbox[1];
+              cache.dbx = x1 - bbox[0];
+              cache.dby = y1 - bbox[1];
 
               var _cache$coords = _slicedToArray(cache.coords, 2),
                   xc = _cache$coords[0],
@@ -11916,16 +12070,16 @@
               cache.dy = yc - bbox[1];
             }
 
-            return {
+            return _objectSpread2(_objectSpread2({}, res), {}, {
               "break": true,
               canCache: canCache,
               cache: cache,
               filter: filter
-            };
+            });
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
 
-          if ((!cache || !cache.available) && !isGeom) {
+          if (!cache || !cache.available) {
             var _bbox = this.bbox;
 
             if (cache) {
@@ -11938,38 +12092,35 @@
             if (cache && cache.enabled) {
               this.__cache = cache;
               cache.__bbox = _bbox;
-              cache.x1 = x1; // padding原点坐标
 
-              cache.y1 = y1;
+              cache.__appendData(x1, y1);
 
-              var _dbx = cache.dbx = x1 - _bbox[0],
-                  _dby = cache.dby = y1 - _bbox[1];
-
+              var dbx = cache.dbx,
+                  dby = cache.dby;
               ctx = cache.ctx;
 
               var _cache$coords2 = _slicedToArray(cache.coords, 2),
                   _xc = _cache$coords2[0],
                   _yc = _cache$coords2[1];
 
-              dx = cache.dx = _xc - _bbox[0]; // cache坐标和box原点的差值
+              dx = cache.dx;
+              dy = cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
-              dy = cache.dy = _yc - _bbox[1]; // 重置ctx为cache的，以及绘制坐标为cache的区域
-
-              x1 = _xc;
-              y1 = _yc;
+              res.x1 = x1 = _xc + dbx;
+              res.y1 = y1 = _yc + dby;
 
               if (dx) {
-                x2 += dx - _dbx;
-                x3 += dx - _dbx;
-                x4 += dx - _dbx;
+                res.x2 = x2 += dx;
+                res.x3 = x3 += dx;
+                res.x4 = x4 += dx;
               }
 
               if (dy) {
-                y2 += dy - _dby;
-                y3 += dy - _dby;
-                y4 += dy - _dby;
+                res.y2 = y2 += dy;
+                res.y3 = y3 += dy;
+                res.y4 = y4 += dy;
               }
-            } // 更新后可能超了需重置
+            } // 更新后可能超了需释放
             else if (this.__cache) {
                 this.__cache.release();
 
@@ -12368,12 +12519,12 @@
         }
 
         if (renderMode === mode.CANVAS) {
-          return {
+          return _objectSpread2(_objectSpread2({}, res), {}, {
             canCache: canCache,
             cache: cache,
             offScreen: offScreen,
             filter: filter
-          };
+          });
         } // svg前面提前跳出，到这一定是>=REPAINT的变化
         else if (renderMode === mode.SVG) {
             return {
@@ -12415,7 +12566,7 @@
             if (list.length === 1) {
               next = list[0];
               c.ctx.globalCompositeOperation = 'destination-in';
-              next.render(renderMode, lv, c.ctx); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
+              next.render(renderMode, lv, c.ctx, null); // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
 
               c.draw(c.ctx);
               ctx.drawImage(c.canvas, 0, 0);
@@ -12424,7 +12575,7 @@
             else {
                 var m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
                 list.forEach(function (item) {
-                  item.render(renderMode, lv, m.ctx);
+                  item.render(renderMode, lv, m.ctx, null, true);
                 });
                 m.draw(m.ctx);
                 c.ctx.globalCompositeOperation = 'destination-in';
@@ -12440,9 +12591,8 @@
 
             ctx.restore(); // 清除
 
-            c.ctx.globalCompositeOperation = 'source-over';
-            c.ctx.clearRect(0, 0, width, height);
-            c.draw(c.ctx);
+            c.ctx.globalCompositeOperation = 'source-over'; // c.ctx.clearRect(0, 0, width, height);
+            // c.draw(c.ctx);
           } // 劫持canvas原生方法使得多个clip矢量连续绘制
           else if (hasClip) {
               ctx.save();
@@ -12589,19 +12739,21 @@
       }
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, tx, ty) {
+      value: function __applyCache(renderMode, ctx, tx, ty) {
         var cache = this.__cache;
 
         if (cache && cache.available) {
           var coords = cache.coords,
               canvas = cache.canvas,
-              size = cache.size;
+              size = cache.size,
+              dbx = cache.dbx,
+              dby = cache.dby;
 
           var _coords = _slicedToArray(coords, 2),
               x = _coords[0],
               y = _coords[1];
 
-          ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+          ctx.drawImage(canvas, x - 1, y - 1, size, size, tx - dbx, ty - dby, size, size);
         }
       } // 简化bbox为2个坐标点形式，并附带matrix计算
 
@@ -12984,6 +13136,46 @@
         this.layoutData.h += diff;
       }
     }, {
+      key: "__spreadByBoxShadowAndFilter",
+      value: function __spreadByBoxShadowAndFilter(boxShadow, filter) {
+        var ox = 0,
+            oy = 0;
+
+        if (Array.isArray(boxShadow)) {
+          boxShadow.forEach(function (item) {
+            var _item3 = _slicedToArray(item, 6),
+                x = _item3[0],
+                y = _item3[1],
+                blur = _item3[2],
+                spread = _item3[3],
+                inset = _item3[5];
+
+            if (inset !== 'inset') {
+              var d = mx.int2convolution(blur);
+              d += spread;
+              ox = Math.max(ox, x + d);
+              oy = Math.max(oy, y + d);
+            }
+          });
+        }
+
+        if (Array.isArray(filter)) {
+          for (var i = 0, len = filter.length; i < len; i++) {
+            var _filter$i = _slicedToArray(filter[i], 2),
+                k = _filter$i[0],
+                v = _filter$i[1];
+
+            if (k === 'blur') {
+              var d = mx.int2convolution(v);
+              ox = Math.max(ox, d);
+              oy = Math.max(oy, d);
+            }
+          }
+        }
+
+        return [ox, oy];
+      }
+    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -13057,7 +13249,6 @@
             width = this.width,
             height = this.height,
             _this$computedStyle5 = this.computedStyle,
-            display = _this$computedStyle5.display,
             borderTopWidth = _this$computedStyle5.borderTopWidth,
             borderRightWidth = _this$computedStyle5.borderRightWidth,
             borderBottomWidth = _this$computedStyle5.borderBottomWidth,
@@ -13070,40 +13261,11 @@
             paddingLeft = _this$computedStyle5.paddingLeft,
             boxShadow = _this$computedStyle5.boxShadow,
             filter = _this$computedStyle5.filter;
-        var ox = 0,
-            oy = 0;
 
-        if (display !== 'none' && boxShadow) {
-          boxShadow.forEach(function (item) {
-            var _item3 = _slicedToArray(item, 6),
-                x = _item3[0],
-                y = _item3[1],
-                blur = _item3[2],
-                spread = _item3[3],
-                inset = _item3[5];
-
-            if (inset !== 'inset') {
-              var d = mx.int2convolution(blur);
-              d += spread;
-              ox = Math.max(ox, x + d);
-              oy = Math.max(oy, y + d);
-            }
-          });
-        }
-
-        if (display !== 'none' && Array.isArray(filter)) {
-          for (var i = 0, len = filter.length; i < len; i++) {
-            var _filter$i = _slicedToArray(filter[i], 2),
-                k = _filter$i[0],
-                v = _filter$i[1];
-
-            if (k === 'blur') {
-              var d = mx.int2convolution(v);
-              ox = Math.max(ox, d);
-              oy = Math.max(oy, d);
-            }
-          }
-        }
+        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
+            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
+            ox = _this$__spreadByBoxSh2[0],
+            oy = _this$__spreadByBoxSh2[1];
 
         sx += marginLeft;
         sy += marginTop;
@@ -13932,12 +14094,7 @@
     };
   });
 
-  var AUTO$3 = unit.AUTO,
-      PX$5 = unit.PX,
-      PERCENT$6 = unit.PERCENT;
-  var calAbsolute$1 = css.calAbsolute,
-      isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
-  var MODE = {
+  var refreshMode = {
     ROOT: 0,
     // 普通主屏递归渲染
     TOP: 1,
@@ -13945,33 +14102,12 @@
     CHILD: 2 // 局部根节点的子节点汇总渲染
 
   };
-  /**
-   * 复制cacheTotal的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
-   * @param cacheTotal
-   * @param v
-   * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
-   */
 
-  function genOffScreenBlur(cacheTotal, v) {
-    var _cacheTotal$coords = _slicedToArray(cacheTotal.coords, 2),
-        x = _cacheTotal$coords[0],
-        y = _cacheTotal$coords[1],
-        size = cacheTotal.size,
-        canvas = cacheTotal.canvas,
-        x1 = cacheTotal.x1,
-        y1 = cacheTotal.y1;
-
-    var offScreen = inject.getCacheCanvas(size, size);
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
-    offScreen.draw();
-    var cacheFilter = inject.getCacheWebgl(size, size);
-    blur.gaussBlur(offScreen, cacheFilter, v, size, size);
-    cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1;
-    cacheFilter.dbx = cacheTotal.dbx;
-    cacheFilter.dby = cacheTotal.dby;
-    return cacheFilter;
-  }
+  var AUTO$3 = unit.AUTO,
+      PX$5 = unit.PX,
+      PERCENT$6 = unit.PERCENT;
+  var calAbsolute$1 = css.calAbsolute,
+      isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
 
   function genZIndexChildren(dom) {
     var flow = [];
@@ -15159,6 +15295,8 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
+        var _this3 = this;
+
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
@@ -15206,7 +15344,8 @@
               blurValue = v;
             }
           });
-        }
+        } // 有filter时改变除filter之外的变化直接返回
+
 
         if (renderMode === mode.CANVAS && cacheFilter && blurValue && lv < o$1.REPAINT && !o$1.contain(lv, o$1.FILTER)) {
           return res;
@@ -15217,52 +15356,22 @@
         var cacheTotal = this.__cacheTotal;
 
         if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
-          if (renderMode === mode.CANVAS) {
-            if (blurValue) {
-              // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
-              if (o$1.contain(lv, o$1.FILTER)) {
-                var bbox = this.__mergeBbox(null, true);
+          if (renderMode === mode.CANVAS && blurValue) {
+            // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
+            if (o$1.contain(lv, o$1.FILTER)) {
+              var bbox = this.__mergeBbox(null, true);
 
-                var old = cacheTotal.bbox; // bbox没变化省略更新total
+              var newCache = Cache.updateCache(cacheTotal, bbox);
 
-                if (util.equalArr(bbox, old)) {
-                  this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
-                } else {
-                  var dx = old[0] - bbox[0];
-                  var dy = old[1] - bbox[1];
-                  var newTotal = Cache.getInstance(bbox);
-
-                  if (newTotal && newTotal.enabled) {
-                    var _cacheTotal = cacheTotal,
-                        _cacheTotal$coords2 = _slicedToArray(_cacheTotal.coords, 2),
-                        ox = _cacheTotal$coords2[0],
-                        oy = _cacheTotal$coords2[1],
-                        size = _cacheTotal.size;
-
-                    var _newTotal$coords = _slicedToArray(newTotal.coords, 2),
-                        nx = _newTotal$coords[0],
-                        ny = _newTotal$coords[1],
-                        size2 = newTotal.size;
-
-                    newTotal.x1 = cacheTotal.x1;
-                    newTotal.y1 = cacheTotal.y1;
-                    newTotal.dx = cacheTotal.dx + dx;
-                    newTotal.dy = cacheTotal.dy + dy;
-                    newTotal.dbx = cacheTotal.dbx + dx;
-                    newTotal.dby = cacheTotal.dby + dy;
-                    newTotal.ctx.drawImage(cacheTotal.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
-                    cacheTotal.release();
-                    cacheTotal = this.__cacheTotal = newTotal;
-                    cacheTotal.__available = true;
-                    this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
-                  } // 更新后超限，丢掉blur降级
-                  else {
-                      this.__cacheFilter = null;
-                    }
+              if (newCache) {
+                this.__cacheTotal = newCache;
+                this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
+              } // 更新后超限，丢掉blur降级
+              else {
+                  console.error('CacheTotal is oversize');
+                  this.__cacheTotal = null;
+                  this.__cacheFilter = null;
                 }
-              }
-            } else {
-              this.__cacheFilter = null;
             }
           } else if (renderMode === mode.SVG) {
             virtualDom.cache = true; // 标识vd整体缓存无需深度diff
@@ -15283,20 +15392,24 @@
 
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         zIndexChildren.forEach(function (item) {
-          // canvas开启缓存text先不渲染，节点先绘制到自身cache上
+          var lv2 = item.__refreshLevel; // canvas开启缓存text先不渲染，节点先绘制到自身cache上
+
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
-              item.__renderByMask(renderMode, item.__refreshLevel, ctx);
+              item.__renderByMask(renderMode, lv2, ctx);
             }
           } else {
             // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
-            var _offScreen;
-
             var _blurValue;
 
             var newCtx = ctx;
-            var isGeom = item.tagName.charAt(0) === '$';
-            var cache;
+            var isGeom = item.tagName.charAt(0) === '$'; // geom计算bbox需提前获得数据
+
+            if (isGeom) {
+              item.__preData = item.__preSet(renderMode, ctx, defs);
+            }
+
+            var ignoreGeom;
 
             if (renderMode === mode.CANVAS && isGeom) {
               var _filter = item.currentStyle.filter;
@@ -15308,86 +15421,84 @@
                       v = _item2[1];
 
                   if (k === 'blur' && v > 0) {
-                    if (root.cache) {
-                      _blurValue = v;
-                    } else {
-                      var width = root.width,
-                          height = root.height;
-                      var c = inject.getCacheCanvas(width, height, '__$$geom$$__');
-
-                      if (c.ctx) {
-                        newCtx = c.ctx;
-                        _offScreen = {
-                          ctx: ctx
-                        };
-                        _offScreen.target = c;
-                        ctx = c.ctx;
-                      }
-                    }
+                    _blurValue = v;
                   }
                 });
-              } // geom特殊处理生成cacheTotal代替cache，因为没children，但可能有cacheFilter
+              } // 提前判断申请geom的cache，有老的用老的，没有申请新的，改写render()的ctx避免自定义geom感知离屏功能
 
 
               if (root.cache) {
-                if (item.__cache && item.__cache.ctx) {
-                  if (item.__refreshLevel >= o$1.REPAINT) {
-                    item.__cache.ctx.clearRect(0, 0, root.width, root.height);
-                  }
+                var _cacheFilter = item.__cacheFilter,
+                    cache = item.__cache;
 
-                  cache = item.__cacheTotal = item.__cache;
-                  newCtx = cache.ctx;
+                if (_cacheFilter && _blurValue && lv < o$1.REPAINT && !o$1.contain(lv2, o$1.FILTER)) {
+                  ignoreGeom = true;
                 } else {
-                  item.__cache = item.__cacheTotal = null; // 需置空，geom>=REPAINT的重绘不会置空干扰xom逻辑
+                  item.__cacheFilter = null;
 
-                  cache = inject.getCacheCanvas(root.width, root.height);
+                  if (lv < o$1.REPAINT && cache && cache.available) {
+                    ignoreGeom = true;
 
-                  if (cache && cache.ctx) {
-                    newCtx = cache.ctx;
+                    if (_blurValue && o$1.contain(lv2, o$1.FILTER)) {
+                      var _bbox = item.bbox;
+
+                      var _newCache = Cache.updateCache(cache, _bbox);
+
+                      if (_newCache) {
+                        item.__cache = _newCache;
+                        item.__cacheFilter = Cache.genOffScreenBlur(cache, _blurValue);
+                      } // 更新后超限，丢掉blur降级
+                      else {
+                          console.error('Geom cache is oversize');
+                          _this3.__cacheTotal = null;
+                          _this3.__cacheFilter = null;
+                        }
+                    }
+                  } else {
+                    if (cache) {
+                      if (cache.enabled) {
+                        if (lv2 < o$1.REPAINT) {
+                          if (o$1.contain(lv2, o$1.FILTER)) {
+                            cache.reset(item.bbox);
+                          }
+                        } else {
+                          cache.reset(item.bbox);
+                        }
+                      } else {
+                        cache.reset(item.bbox);
+                      }
+                    } else {
+                      cache = item.__cache = Cache.getInstance(item.bbox);
+                    }
+
+                    if (cache && cache.enabled) {
+                      newCtx = cache.ctx;
+                    }
                   }
                 }
               }
             }
 
-            var temp = item.__renderByMask(renderMode, item.__refreshLevel, newCtx, defs); // geom且root无cache才有offScreen
+            var temp = ignoreGeom ? {
+              canCache: true
+            } : item.__renderByMask(renderMode, lv2, newCtx, defs); // geom特殊处理filter，分缓存和非缓存情况
 
+            if (renderMode === mode.CANVAS && isGeom && !ignoreGeom && _blurValue) {
+              if (root.cache && item.__cache && item.__cache.available) {
+                item.__cacheFilter = Cache.genOffScreenBlur(item.__cache, _blurValue);
+              } else if (temp && temp.offScreen) {
+                var width = root.width,
+                    height = root.height;
+                var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
 
-            if (_offScreen) {
-              var width = root.width,
-                  height = root.height;
-              var webgl = inject.getCacheWebgl(width, height, '__$$geom-blur$$__');
+                var _res2 = blur.gaussBlur(offScreen.target, webgl, _blurValue, width, height);
 
-              var _res2 = blur.gaussBlur(_offScreen.target, webgl, _offScreen.blur, width, height);
+                offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+                offScreen.target.draw();
 
-              _offScreen.ctx.drawImage(_offScreen.target.canvas, 0, 0);
-
-              _offScreen.target.draw();
-
-              _res2.clear();
-            } // geom生成cacheFilter
-            else if (_blurValue && cache) {
-                var _width = root.width,
-                    _height = root.height;
-                var f = item.__cacheFilter = item.__cacheFilter || inject.getCacheCanvas(_width, _height);
-                f.ctx.clearRect(0, 0, _width, _height);
-                f.draw();
-                f.ctx.drawImage(cache.canvas, 0, 0);
-
-                var _webgl = inject.getCacheWebgl(_width, _height, '__$$geom-cache-blur$$__');
-
-                var _res3 = blur.gaussBlur(f, _webgl, _blurValue, _width, _height);
-
-                f.draw();
-
-                _res3.clear();
-              } else if (isGeom && item.__cacheFilter) {
-                item.__cacheFilter = null;
-              } // 后赋值给geom，这样初次运行时没有这个属性防止缓存，geom子类会在render中判断break使用缓存
-
-
-            if (cache && cache.ctx) {
-              item.__cache = item.__cacheTotal = cache;
-            } // Xom类型canvas为无有效动画方可被父亲缓存，svg用不到
+                _res2.clear();
+              }
+            } // Xom类型canvas无有效动画时方可被父亲缓存，svg用不到
 
 
             if (!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
@@ -15418,34 +15529,39 @@
           if (root.cache) {
             // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
             if (this === root) {
-              this.__applyCache(renderMode, lv, ctx, MODE.ROOT);
+              this.__applyCache(renderMode, lv, ctx, refreshMode.ROOT);
             } // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
             else if (canCacheSelf) {
-                this.__applyCache(renderMode, lv, ctx, MODE.TOP);
+                this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
               } // 非局部缓存的节点等待root调用
 
           } // 无缓存时有offScreen对象，尝试使用webgl的blur，对象生成条件在Xom初始化做
           else if (offScreen) {
               var width = root.width,
                   height = root.height;
-              var webgl = inject.getCacheWebgl(width, height);
+              var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
 
-              var _res4 = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
+              var _res3 = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
 
               offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
               offScreen.target.draw();
 
-              _res4.clear();
+              _res3.clear();
             }
         } else if (renderMode === mode.SVG) {
           // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-          this.__cacheTotal = {
-            available: true,
-            release: function release() {
-              this.available = false;
-              delete virtualDom.cache;
-            }
-          }; // img的children在子类特殊处理
+          if (!cacheTotal) {
+            this.__cacheTotal = {
+              available: true,
+              release: function release() {
+                this.available = false;
+                delete virtualDom.cache;
+              }
+            };
+          } else {
+            cacheTotal.available = true;
+          } // img的children在子类特殊处理
+
 
           if (this.tagName !== 'img') {
             virtualDom.children = zIndexChildren.map(function (item) {
@@ -15511,7 +15627,7 @@
         } // 局部根节点缓存汇总渲染
 
 
-        if (mode === MODE.TOP) {
+        if (mode === refreshMode.TOP) {
           var bboxTotal = this.__mergeBbox(null, true); // 空内容
 
 
@@ -15533,10 +15649,10 @@
           if (cacheTotal && cacheTotal.enabled) {
             cacheTotal.__bbox = bboxTotal;
 
-            var _cacheTotal2 = cacheTotal,
-                _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
-                tx = _cacheTotal2$coords[0],
-                ty = _cacheTotal2$coords[1];
+            var _cacheTotal = cacheTotal,
+                _cacheTotal$coords = _slicedToArray(_cacheTotal.coords, 2),
+                tx = _cacheTotal$coords[0],
+                ty = _cacheTotal$coords[1];
 
             var dx, dy, x1, y1, coords;
 
@@ -15572,7 +15688,7 @@
               ctx.setTransform([1, 0, 0, 1, 0, 0]);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, tx - 1 + dbx, ty - 1 + dby);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, tx - 1 + dbx, ty - 1 + dby);
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform([1, 0, 0, 1, 0, 0]);
@@ -15581,7 +15697,7 @@
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, null, ctx, null, dx, dy);
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }
               });
             }
@@ -15591,25 +15707,26 @@
 
               var _ty = sy + computedStyle.marginTop;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _tx - 1, _ty - 1);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, _tx - 1, _ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   item.__renderByMask(renderMode, null, ctx);
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, MODE.ROOT);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.ROOT);
                 }
               });
             } // 生成filter缓存，超尺寸降级舍弃
 
 
           if (blurValue && cacheTotal && cacheTotal.available) {
-            this.__cacheFilter = genOffScreenBlur(cacheTotal, blurValue);
+            this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
           } else if (cacheFilter) {
+            console.error('CacheFilter is oversize');
             this.__cacheFilter = null;
           }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
-        else if (mode === MODE.CHILD) {
+        else if (mode === refreshMode.CHILD) {
             var _ctx;
 
             var x = this.sx,
@@ -15646,14 +15763,16 @@
                   _x2 = _ref$coords[0],
                   _y2 = _ref$coords[1],
                   canvas = _ref.canvas,
-                  size = _ref.size;
+                  size = _ref.size,
+                  _dbx2 = _ref.dbx,
+                  _dby2 = _ref.dby;
 
-              ctx.drawImage(canvas, _x2 - 1, _y2 - 1, size, size, _dx - 1, _dy - 1, size, size);
+              ctx.drawImage(canvas, _x2 - 1, _y2 - 1, size, size, _dx - 1 - _dbx2, _dy - 1 - _dby2, size, size);
               return;
             } // 即便无内容也只是空执行
 
 
-            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _dx - 1, _dy - 1); // 递归children
+            _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, _dx - 1, _dy - 1); // 递归children
 
 
             zIndexChildren.forEach(function (item) {
@@ -15664,7 +15783,7 @@
               }
             });
           } // root调用局部整体缓存或单个节点缓存绘入主画布
-          else if (mode === MODE.ROOT) {
+          else if (mode === refreshMode.ROOT) {
               var _ctx2;
 
               var __opacity = this.__opacity,
@@ -15677,25 +15796,25 @@
               if (cacheFilter) {
                 var _x3 = cacheFilter.x1,
                     _y3 = cacheFilter.y1,
-                    _dbx2 = cacheFilter.dbx,
-                    _dby2 = cacheFilter.dby;
-                ctx.drawImage(cacheFilter.canvas, _x3 - 1 - _dbx2, _y3 - 1 - _dby2);
+                    _dbx3 = cacheFilter.dbx,
+                    _dby3 = cacheFilter.dby;
+                ctx.drawImage(cacheFilter.canvas, _x3 - 1 - _dbx3, _y3 - 1 - _dby3);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
-                var _cacheTotal3 = cacheTotal,
-                    _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    _x5 = _cacheTotal3$coords[0],
-                    _y5 = _cacheTotal3$coords[1],
-                    _size = _cacheTotal3.size,
-                    _canvas = _cacheTotal3.canvas,
-                    _x4 = _cacheTotal3.x1,
-                    _y4 = _cacheTotal3.y1,
-                    _dbx3 = _cacheTotal3.dbx,
-                    _dby3 = _cacheTotal3.dby;
+                var _cacheTotal2 = cacheTotal,
+                    _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
+                    _x5 = _cacheTotal2$coords[0],
+                    _y5 = _cacheTotal2$coords[1],
+                    _size = _cacheTotal2.size,
+                    _canvas = _cacheTotal2.canvas,
+                    _x4 = _cacheTotal2.x1,
+                    _y4 = _cacheTotal2.y1,
+                    _dbx4 = _cacheTotal2.dbx,
+                    _dby4 = _cacheTotal2.dby;
 
-                ctx.drawImage(_canvas, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx3, _y4 - 1 - _dby3, _size, _size);
+                ctx.drawImage(_canvas, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx4, _y4 - 1 - _dby4, _size, _size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -15703,10 +15822,10 @@
               if (cache && cache.available) {
                 var _x6 = cache.x1,
                     _y6 = cache.y1,
-                    _dbx4 = cache.dbx,
-                    _dby4 = cache.dby;
+                    _dbx5 = cache.dbx,
+                    _dby5 = cache.dby;
 
-                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, lv, ctx, _x6 - 1 - _dbx4, _y6 - 1 - _dby4);
+                _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, _x6 - 1 - _dbx5, _y6 - 1 - _dby5);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -17677,8 +17796,6 @@
             this.__height = _value;
           }
         }
-
-        this.__offScreen = !!this.props.offScreen;
       }
     }, {
       key: "__genHtml",
@@ -19023,11 +19140,6 @@
         return this.__ctx;
       }
     }, {
-      key: "offScreen",
-      get: function get() {
-        return this.__offScreen;
-      }
-    }, {
       key: "defs",
       get: function get() {
         return this.__defs;
@@ -19198,8 +19310,10 @@
         this.__cacheProps = {};
       }
     }, {
-      key: "__preRender",
-      value: function __preRender(renderMode, lv, ctx, defs) {
+      key: "__preSet",
+      value: function __preSet(renderMode, ctx, defs) {
+        var _this2 = this;
+
         var x = this.sx,
             y = this.sy,
             width = this.width,
@@ -19224,29 +19338,20 @@
         var iw = width + paddingLeft + paddingRight;
         var ih = height + paddingTop + paddingBottom; // 先根据cache计算需要重新计算的computedStyle
 
-        if (__cacheStyle.stroke === undefined) {
-          var _stroke = currentStyle.stroke;
-          computedStyle.stroke = _stroke;
+        ['stroke', 'fill'].forEach(function (k) {
+          if (isNil$7(__cacheStyle[k])) {
+            var v = currentStyle[k];
+            computedStyle[k] = v;
 
-          if (_stroke && (_stroke.k === 'linear' || _stroke.k === 'radial')) {
-            __cacheStyle.stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _stroke);
-          } else {
-            __cacheStyle.stroke = int2rgba$3(currentStyle.stroke);
+            if (v && (v.k === 'linear' || v.k === 'radial')) {
+              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, v);
+            } else {
+              __cacheStyle[k] = int2rgba$3(currentStyle[k]);
+            }
           }
-        }
+        });
 
-        if (__cacheStyle.fill === undefined) {
-          var _fill = currentStyle.fill;
-          computedStyle.fill = _fill;
-
-          if (_fill && (_fill.k === 'linear' || _fill.k === 'radial')) {
-            __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, _fill);
-          } else {
-            __cacheStyle.fill = int2rgba$3(currentStyle.fill);
-          }
-        }
-
-        if (__cacheStyle.strokeWidth === undefined) {
+        if (isNil$7(__cacheStyle.strokeWidth)) {
           __cacheStyle.strokeWidth = true;
           var _strokeWidth = currentStyle.strokeWidth;
 
@@ -19259,7 +19364,7 @@
           }
         }
 
-        if (__cacheStyle.strokeDasharray === undefined) {
+        if (isNil$7(__cacheStyle.strokeDasharray)) {
           __cacheStyle.strokeDasharray = true;
           computedStyle.strokeDasharray = currentStyle.strokeDasharray;
           __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
@@ -19277,6 +19382,35 @@
             strokeLinejoin = computedStyle.strokeLinejoin,
             strokeMiterlimit = computedStyle.strokeMiterlimit,
             strokeDasharray = computedStyle.strokeDasharray;
+        return {
+          x: x,
+          y: y,
+          originX: originX,
+          originY: originY,
+          cx: cx,
+          cy: cy,
+          display: display,
+          stroke: stroke,
+          strokeWidth: strokeWidth,
+          strokeDasharray: strokeDasharray,
+          strokeDasharrayStr: strokeDasharrayStr,
+          strokeLinecap: strokeLinecap,
+          strokeLinejoin: strokeLinejoin,
+          strokeMiterlimit: strokeMiterlimit,
+          fill: fill,
+          visibility: visibility
+        };
+      }
+    }, {
+      key: "__preSetCanvas",
+      value: function __preSetCanvas(renderMode, ctx, res) {
+        var stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharray = res.strokeDasharray,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            fill = res.fill;
 
         if (renderMode === mode.CANVAS) {
           if (ctx.fillStyle !== fill) {
@@ -19312,44 +19446,65 @@
             ctx.setLineDash(strokeDasharray);
           }
         }
-
-        return {
-          x: x,
-          y: y,
-          originX: originX,
-          originY: originY,
-          cx: cx,
-          cy: cy,
-          display: display,
-          stroke: stroke,
-          strokeWidth: strokeWidth,
-          strokeDasharray: strokeDasharray,
-          strokeDasharrayStr: strokeDasharrayStr,
-          strokeLinecap: strokeLinecap,
-          strokeLinejoin: strokeLinejoin,
-          strokeMiterlimit: strokeMiterlimit,
-          fill: fill,
-          visibility: visibility
-        };
       }
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
         var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
+        var cacheFilter = this.__cacheFilter,
+            cacheTotal = this.__cacheTotal,
+            cache = this.__cache;
+        var virtualDom = this.virtualDom; // 存在老的缓存认为可提前跳出
+
+        if (lv < o$1.REPAINT && (cache && cache.available || !o$1.contain(lv, o$1.FILTER) && cacheFilter)) {
+          res["break"] = true;
+        }
+
         if (renderMode === mode.SVG) {
-          if (res["break"]) {
-            return res;
+          if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
+            res["break"] = true;
+            virtualDom.cache = true;
+          }
+
+          if (!cacheTotal) {
+            this.__cacheTotal = {
+              available: true,
+              release: function release() {
+                this.available = false;
+                delete virtualDom.cache;
+              }
+            };
+          } else {
+            cacheTotal.available = true;
           }
 
           this.virtualDom.type = 'geom';
+        } // 无论canvas/svg，break可提前跳出省略计算s
+
+
+        if (res["break"]) {
+          return res;
         }
 
-        this.__offScreen = res.offScreen;
+        this.__cacheFilter = null;
+        var preData = this.__preData;
+        var x2 = res.x2,
+            y2 = res.y2;
+        var originX = preData.originX,
+            originY = preData.originY; // 有cache时需计算差值
 
-        var res2 = this.__preRender(renderMode, lv, ctx, defs);
+        var _this$computedStyle = this.computedStyle,
+            paddingLeft = _this$computedStyle.paddingLeft,
+            paddingTop = _this$computedStyle.paddingTop;
+        x2 += paddingLeft;
+        y2 += paddingTop;
+        preData.dx = x2 - originX;
+        preData.dy = y2 - originY;
 
-        return Object.assign(res, res2);
+        this.__preSetCanvas(renderMode, ctx, preData);
+
+        return Object.assign(res, preData);
       }
     }, {
       key: "__renderAsMask",
@@ -19368,24 +19523,73 @@
 
           delete vd.lv;
         }
-      }
+      } // 类似dom，但geom没有children所以没有total的概念
+
     }, {
       key: "__applyCache",
-      value: function __applyCache(renderMode, lv, ctx, mode) {
-        var __opacity = this.__opacity,
-            matrixEvent = this.matrixEvent; // 写回主画布前设置
-
-        ctx.globalAlpha = __opacity;
-        ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 优先filter，然后total
-
+      value: function __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
         var cacheFilter = this.__cacheFilter;
-        var cacheTotal = this.__cacheTotal;
+        var cache = this.__cache;
+        var computedStyle = this.computedStyle; // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
 
-        if (cacheFilter) {
-          ctx.drawImage(cacheFilter.canvas, 0, 0);
-        } else if (cacheTotal) {
-          ctx.drawImage(cacheTotal.canvas, 0, 0);
-        }
+        if (mode === refreshMode.CHILD) {
+          var x = this.sx,
+              y = this.sy;
+          x += computedStyle.marginLeft;
+          y += computedStyle.marginTop;
+
+          var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
+              tx = _cacheTop$coords[0],
+              ty = _cacheTop$coords[1],
+              x1 = cacheTop.x1,
+              y1 = cacheTop.y1,
+              dbx = cacheTop.dbx,
+              dby = cacheTop.dby;
+
+          var dx = tx + x - x1 + dbx;
+          var dy = ty + y - y1 + dby;
+          var tfo = computedStyle.transformOrigin.slice(0);
+          tfo[0] += dx;
+          tfo[1] += dy;
+          var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+          matrix = mx.multiply(matrix, m);
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+          opacity *= computedStyle.opacity;
+          ctx.globalAlpha = opacity; // 优先filter，再是total
+
+          if (cacheFilter) {
+            var _cacheFilter$coords = _slicedToArray(cacheFilter.coords, 2),
+                _x = _cacheFilter$coords[0],
+                _y = _cacheFilter$coords[1],
+                canvas = cacheFilter.canvas,
+                size = cacheFilter.size,
+                _dbx = cacheFilter.dbx,
+                _dby = cacheFilter.dby;
+
+            ctx.drawImage(canvas, _x - 1, _y - 1, size, size, dx - 1 - _dbx, dy - 1 - _dby, size, size);
+            return;
+          }
+
+          _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, dx - 1, dy - 1);
+        } // root调用局部整体缓存或单个节点缓存绘入主画布
+        else if (mode === refreshMode.ROOT) {
+            var __opacity = this.__opacity,
+                matrixEvent = this.matrixEvent; // 写回主画布前设置
+
+            ctx.globalAlpha = __opacity;
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 优先filter，然后total
+
+            if (cacheFilter) {
+              ctx.drawImage(cacheFilter.canvas, 0, 0);
+            } else if (cache && cache.available) {
+              var _x2 = cache.x1,
+                  _y2 = cache.y1,
+                  _dbx2 = cache.dbx,
+                  _dby2 = cache.dby;
+
+              _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
+            }
+          }
       }
     }, {
       key: "__propsStrokeStyle",
@@ -19643,6 +19847,36 @@
     }
 
     _createClass(Line, [{
+      key: "buildCache",
+      value: function buildCache(originX, originY) {
+        var _this2 = this;
+
+        var width = this.width,
+            height = this.height,
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        var rebuild;
+        ['x1', 'x2'].forEach(function (k) {
+          if (isNil$8(__cacheProps[k])) {
+            rebuild = true;
+            __cacheProps[k] = reBuild(_this2[k], originX, width, isMulti);
+          }
+        });
+        ['y1', 'y2'].forEach(function (k) {
+          if (isNil$8(__cacheProps[k])) {
+            rebuild = true;
+            __cacheProps[k] = reBuild(_this2[k], originY, height, isMulti);
+          }
+        });
+        ['controlA', 'controlB'].forEach(function (k) {
+          if (isNil$8(__cacheProps[k])) {
+            rebuild = true;
+            __cacheProps[k] = reBuildC(_this2[k], originX, originY, width, height, isMulti);
+          }
+        });
+        return rebuild;
+      }
+    }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
         var res = _get(_getPrototypeOf(Line.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
@@ -19658,48 +19892,12 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
-        var width = this.width,
-            height = this.height,
-            x1 = this.x1,
-            y1 = this.y1,
-            x2 = this.x2,
-            y2 = this.y2,
-            controlA = this.controlA,
-            controlB = this.controlB,
-            __cacheProps = this.__cacheProps,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+        var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild;
-
-        if (isNil$8(__cacheProps.x1)) {
-          rebuild = true;
-          __cacheProps.x1 = reBuild(x1, originX, width, isMulti);
-        }
-
-        if (isNil$8(__cacheProps.x2)) {
-          rebuild = true;
-          __cacheProps.x2 = reBuild(x2, originX, width, isMulti);
-        }
-
-        if (isNil$8(__cacheProps.y1)) {
-          rebuild = true;
-          __cacheProps.y1 = reBuild(y1, originY, height, isMulti);
-        }
-
-        if (isNil$8(__cacheProps.y2)) {
-          rebuild = true;
-          __cacheProps.y2 = reBuild(y2, originY, height, isMulti);
-        }
-
-        if (isNil$8(__cacheProps.controlA)) {
-          rebuild = true;
-          __cacheProps.controlA = reBuildC(controlA, originX, originY, width, height, isMulti);
-        }
-
-        if (isNil$8(__cacheProps.controlB)) {
-          rebuild = true;
-          __cacheProps.controlB = reBuildC(controlB, originX, originY, width, height, isMulti);
-        }
+        var rebuild = this.buildCache(originX, originY);
 
         if (rebuild && renderMode === mode.SVG) {
           var d = '';
@@ -19734,12 +19932,12 @@
                 var ca = __cacheProps.controlA[i];
                 var cb = __cacheProps.controlB[i];
                 var curve = curveNum(ca, cb);
-                painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve);
+                painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
               });
             } else {
               var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
 
-              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve);
+              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve, dx, dy);
             }
 
             ctx.stroke();
@@ -19788,19 +19986,41 @@
     }, {
       key: "bbox",
       get: function get() {
-        var isMulti = this.isMulti,
-            _this$__cacheProps = this.__cacheProps,
-            x1 = _this$__cacheProps.x1,
-            y1 = _this$__cacheProps.y1,
-            x2 = _this$__cacheProps.x2,
-            y2 = _this$__cacheProps.y2,
-            controlA = _this$__cacheProps.controlA,
-            controlB = _this$__cacheProps.controlB,
-            strokeWidth = this.computedStyle.strokeWidth;
+        var sx = this.sx,
+            sy = this.sy,
+            _this$computedStyle = this.computedStyle,
+            borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            marginTop = _this$computedStyle.marginTop,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingTop = _this$computedStyle.paddingTop,
+            paddingLeft = _this$computedStyle.paddingLeft,
+            boxShadow = _this$computedStyle.boxShadow,
+            filter = _this$computedStyle.filter,
+            strokeWidth = _this$computedStyle.strokeWidth,
+            isMulti = this.isMulti,
+            __cacheProps = this.__cacheProps;
+        var originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = sy + borderTopWidth + marginTop + paddingTop;
+        this.buildCache(originX, originY);
+        var x1 = __cacheProps.x1,
+            y1 = __cacheProps.y1,
+            x2 = __cacheProps.x2,
+            y2 = __cacheProps.y2,
+            controlA = __cacheProps.controlA,
+            controlB = __cacheProps.controlB;
 
         var bbox = _get(_getPrototypeOf(Line.prototype), "bbox", this);
 
         var half = strokeWidth * 0.5;
+
+        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
+            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
+            ox = _this$__spreadByBoxSh2[0],
+            oy = _this$__spreadByBoxSh2[1];
+
+        ox += half;
+        oy += half;
 
         if (!isMulti) {
           x1 = [x1];
@@ -19819,30 +20039,46 @@
           var cb = controlB[i];
 
           if ((isNil$8(ca) || ca.length < 2) && (isNil$8(cb) || cb.length < 2)) {
-            bbox[0] = Math.min(bbox[0], xa - half);
-            bbox[1] = Math.min(bbox[0], xb - half);
-            bbox[2] = Math.max(bbox[0], xa + half);
-            bbox[3] = Math.max(bbox[0], xb + half);
+            bbox[0] = Math.min(bbox[0], xa - ox);
+            bbox[0] = Math.min(bbox[0], xb - ox);
+            bbox[1] = Math.min(bbox[1], ya - oy);
+            bbox[1] = Math.min(bbox[1], yb - oy);
+            bbox[2] = Math.max(bbox[2], xa + ox);
+            bbox[2] = Math.max(bbox[2], xb + ox);
+            bbox[3] = Math.max(bbox[3], ya + oy);
+            bbox[3] = Math.max(bbox[3], yb + oy);
           } else if (isNil$8(ca) || ca.length < 2) {
             var bezierBox = geom.bboxBezier(xa, ya, cb[0], cb[1], xb, yb);
-            bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-            bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-            bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-            bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+            bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+            bbox[0] = Math.min(bbox[0], bezierBox[2] - ox);
+            bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+            bbox[1] = Math.min(bbox[1], bezierBox[3] - oy);
+            bbox[2] = Math.max(bbox[2], bezierBox[0] + ox);
+            bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+            bbox[3] = Math.max(bbox[3], bezierBox[1] + oy);
+            bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
           } else if (isNil$8(cb) || cb.length < 2) {
             var _bezierBox = geom.bboxBezier(xa, ya, ca[0], ca[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox[0] - half);
-            bbox[1] = Math.min(bbox[0], _bezierBox[1] - half);
-            bbox[2] = Math.max(bbox[0], _bezierBox[2] + half);
-            bbox[3] = Math.max(bbox[0], _bezierBox[3] + half);
+            bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
+            bbox[0] = Math.min(bbox[0], _bezierBox[2] - ox);
+            bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
+            bbox[1] = Math.min(bbox[1], _bezierBox[3] - oy);
+            bbox[2] = Math.max(bbox[2], _bezierBox[0] + ox);
+            bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
+            bbox[3] = Math.max(bbox[3], _bezierBox[1] + oy);
+            bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
           } else {
             var _bezierBox2 = geom.bboxBezier(xa, ya, ca[0], ca[1], cb[0], cb[1], xb, yb);
 
-            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - half);
-            bbox[1] = Math.min(bbox[0], _bezierBox2[1] - half);
-            bbox[2] = Math.max(bbox[0], _bezierBox2[2] + half);
-            bbox[3] = Math.max(bbox[0], _bezierBox2[3] + half);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[0] - ox);
+            bbox[0] = Math.min(bbox[0], _bezierBox2[2] - ox);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[1] - oy);
+            bbox[1] = Math.min(bbox[1], _bezierBox2[3] - oy);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[0] + ox);
+            bbox[2] = Math.max(bbox[2], _bezierBox2[2] + ox);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[1] + oy);
+            bbox[3] = Math.max(bbox[3], _bezierBox2[3] + oy);
           }
         });
         return bbox;
@@ -19946,7 +20182,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var width = this.width,
             height = this.height,
             points = this.points,
@@ -20035,10 +20273,10 @@
 
           if (isMulti) {
             _list2.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2);
+            painter.canvasPolygon(ctx, _list2, dx, dy);
           }
 
           ctx.fill();
@@ -20286,7 +20524,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var width = this.width,
             begin = this.begin,
             end = this.end,
@@ -20412,10 +20652,10 @@
 
           if (isMulti) {
             _begin2.forEach(function (begin, i) {
-              return painter.canvasSector(ctx, cx, cy, _r2[i], _x[i], _y[i], _x2[i], _y2[i], strokeWidth, begin[i], _end2[i], _large[i], _edge[i], _closure2[i]);
+              return painter.canvasSector(ctx, cx, cy, _r2[i], _x[i], _y[i], _x2[i], _y2[i], strokeWidth, begin[i], _end2[i], _large[i], _edge[i], _closure2[i], dx, dy);
             });
           } else {
-            painter.canvasSector(ctx, cx, cy, _r2, _x, _y, _x2, _y2, strokeWidth, _begin2, _end2, _large, _edge, _closure2);
+            painter.canvasSector(ctx, cx, cy, _r2, _x, _y, _x2, _y2, strokeWidth, _begin2, _end2, _large, _edge, _closure2, dx, dy);
           }
 
           ctx.fill();
@@ -20607,7 +20847,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -20678,10 +20920,10 @@
 
           if (isMulti) {
             _list2.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2);
+            painter.canvasPolygon(ctx, _list2, dx, dy);
           }
 
           ctx.fill();
@@ -20797,7 +21039,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var width = this.width,
             r = this.r,
             __cacheProps = this.__cacheProps,
@@ -20840,10 +21084,10 @@
 
           if (isMulti) {
             _list2.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2);
+            painter.canvasPolygon(ctx, _list2, dx, dy);
           }
 
           ctx.fill();
@@ -20989,7 +21233,9 @@
             strokeDasharrayStr = res.strokeDasharrayStr,
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit;
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -21057,10 +21303,10 @@
 
           if (isMulti) {
             _list2.forEach(function (item) {
-              return painter.canvasPolygon(ctx, item);
+              return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2);
+            painter.canvasPolygon(ctx, _list2, dx, dy);
           }
 
           ctx.fill();

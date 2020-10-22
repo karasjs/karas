@@ -50,6 +50,8 @@ class Circle extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     let { width, r, __cacheProps, isMulti } = this;
     if(isNil(__cacheProps.r)) {
@@ -79,10 +81,10 @@ class Circle extends Geom {
       let list = __cacheProps.list;
       ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        painter.canvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list, dx, dy);
       }
       ctx.fill();
       if(strokeWidth > 0) {

@@ -80,6 +80,8 @@ class Rect extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
@@ -131,10 +133,10 @@ class Rect extends Geom {
       let list = __cacheProps.list;
       ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        painter.canvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list, dx, dy);
       }
       ctx.fill();
       if(strokeWidth > 0) {

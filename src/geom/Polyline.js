@@ -79,6 +79,8 @@ class Polyline extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     let { width, height, points, controls, __cacheProps, isMulti } = this;
     let rebuild = true;
@@ -151,10 +153,10 @@ class Polyline extends Geom {
       ctx.beginPath();
       let list = __cacheProps.list;
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        painter.canvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list, dx, dy);
       }
       ctx.fill();
       if(strokeWidth > 0) {

@@ -1340,6 +1340,7 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
+    let res = { x1,  x2, x3, x4, y1, y2, y3, y4 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = this.domParent;
     // 计算好cacheStyle的内容，以及位图缓存指数
@@ -1402,7 +1403,7 @@ class Xom extends Node {
     // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
     if(visibility === 'hidden') {
       if(renderMode === mode.CANVAS) {
-        return { break: true, canCache: !this.visibilityAnimating };
+        return { ...res, break: true, canCache: !this.visibilityAnimating };
       }
     }
     if(renderMode === mode.SVG) {
@@ -1413,26 +1414,32 @@ class Xom extends Node {
     // 无缓存重新渲染时是否使用缓存
     let cache = this.__cache, dx = 0, dy = 0;
     if(root.cache && renderMode === mode.CANVAS) {
+      let isGeom = this.tagName.charAt(0) === '$';
+      // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量
       if(!hasContent) {
-        if(cache && cache.available) {
+        if(!isGeom && cache && cache.available) {
           cache.release();
         }
-        return { break: true, canCache, filter };
+        // 无内容且lv变化小geom可以提前跳出，普通dom直接跳出
+        if(lv < level.REPAINT && isGeom) {
+          return { ...res, break: true, canCache, filter };
+        }
+        return { ...res, canCache, filter };
       }
-      let isGeom = this.tagName.charAt(0) === '$';
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
       if(cache && cache.available && lv < level.REPAINT) {
-        if(level.contain(lv, level.FILTER) && !isGeom) {
+        if(level.contain(lv, level.FILTER)) {
           let bbox = cache.__bbox = this.bbox;
-          let dbx = cache.dbx = x1 - bbox[0], dby = cache.dby = y1 - bbox[1];
+          cache.dbx = x1 - bbox[0];
+          cache.dby = y1 - bbox[1];
           let [xc, yc] = cache.coords;
           cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
           cache.dy = yc - bbox[1];
         }
-        return { break: true, canCache, cache, filter };
+        return { ...res, break: true, canCache, cache, filter };
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      if((!cache || !cache.available) && !isGeom) {
+      if((!cache || !cache.available)) {
         let bbox = this.bbox;
         if(cache) {
           cache.reset(bbox);
@@ -1444,28 +1451,27 @@ class Xom extends Node {
         if(cache && cache.enabled) {
           this.__cache = cache;
           cache.__bbox = bbox;
-          cache.x1 = x1; // padding原点坐标
-          cache.y1 = y1;
-          let dbx = cache.dbx = x1 - bbox[0], dby = cache.dby = y1 - bbox[1];
+          cache.__appendData(x1, y1);
+          let dbx = cache.dbx, dby = cache.dby;
           ctx = cache.ctx;
           let [xc, yc] = cache.coords;
-          dx = cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
-          dy = cache.dy = yc - bbox[1];
+          dx = cache.dx;
+          dy = cache.dy;
           // 重置ctx为cache的，以及绘制坐标为cache的区域
-          x1 = xc;
-          y1 = yc;
+          res.x1 = x1 = xc + dbx;
+          res.y1 = y1 = yc + dby;
           if(dx) {
-            x2 += dx - dbx;
-            x3 += dx - dbx;
-            x4 += dx - dbx;
+            res.x2 = x2 += dx;
+            res.x3 = x3 += dx;
+            res.x4 = x4 += dx;
           }
           if(dy) {
-            y2 += dy - dby;
-            y3 += dy - dby;
-            y4 += dy - dby;
+            res.y2 = y2 += dy;
+            res.y3 = y3 += dy;
+            res.y4 = y4 += dy;
           }
         }
-        // 更新后可能超了需重置
+        // 更新后可能超了需释放
         else if(this.__cache) {
           this.__cache.release();
           this.__cache = null;
@@ -1841,7 +1847,7 @@ class Xom extends Node {
       });
     }
     if(renderMode === mode.CANVAS) {
-      return { canCache, cache, offScreen, filter };
+      return { ...res, canCache, cache, offScreen, filter };
     }
     // svg前面提前跳出，到这一定是>=REPAINT的变化
     else if(renderMode === mode.SVG) {
@@ -1875,7 +1881,7 @@ class Xom extends Node {
         if(list.length === 1) {
           next = list[0];
           c.ctx.globalCompositeOperation = 'destination-in';
-          next.render(renderMode, lv, c.ctx);
+          next.render(renderMode, lv, c.ctx, null);
           // 为小程序特殊提供的draw回调，每次绘制调用都在攒缓冲，drawImage另一个canvas时刷新缓冲，需在此时主动flush
           c.draw(c.ctx);
           ctx.drawImage(c.canvas, 0, 0);
@@ -1885,7 +1891,7 @@ class Xom extends Node {
         else {
           let m = inject.getCacheCanvas(width, height, '__$$mask2$$__');
           list.forEach(item => {
-            item.render(renderMode, lv, m.ctx);
+            item.render(renderMode, lv, m.ctx, null, true);
           });
           m.draw(m.ctx);
           c.ctx.globalCompositeOperation = 'destination-in';
@@ -1901,8 +1907,8 @@ class Xom extends Node {
         ctx.restore();
         // 清除
         c.ctx.globalCompositeOperation = 'source-over';
-        c.ctx.clearRect(0, 0, width, height);
-        c.draw(c.ctx);
+        // c.ctx.clearRect(0, 0, width, height);
+        // c.draw(c.ctx);
       }
       // 劫持canvas原生方法使得多个clip矢量连续绘制
       else if(hasClip) {
@@ -2023,12 +2029,12 @@ class Xom extends Node {
     }
   }
 
-  __applyCache(renderMode, lv, ctx, tx, ty) {
+  __applyCache(renderMode, ctx, tx, ty) {
     let cache = this.__cache;
     if(cache && cache.available) {
-      let { coords, canvas, size } = cache;
+      let { coords, canvas, size, dbx, dby } = cache;
       let [x, y] = coords;
-      ctx.drawImage(canvas, x - 1, y - 1, size, size, tx, ty, size, size);
+      ctx.drawImage(canvas, x - 1, y - 1, size, size, tx - dbx, ty - dby, size, size);
     }
   }
 
@@ -2354,6 +2360,32 @@ class Xom extends Node {
     this.layoutData.h += diff;
   }
 
+  __spreadByBoxShadowAndFilter(boxShadow, filter) {
+    let ox = 0, oy = 0;
+    if(Array.isArray(boxShadow)) {
+      boxShadow.forEach(item => {
+        let [x, y, blur, spread, , inset] = item;
+        if(inset !== 'inset') {
+          let d = mx.int2convolution(blur);
+          d += spread;
+          ox = Math.max(ox, x + d);
+          oy = Math.max(oy, y + d);
+        }
+      });
+    }
+    if(Array.isArray(filter)) {
+      for(let i = 0, len = filter.length; i < len; i++) {
+        let [k, v] = filter[i];
+        if(k === 'blur') {
+          let d = mx.int2convolution(v);
+          ox = Math.max(ox, d);
+          oy = Math.max(oy, d);
+        }
+      }
+    }
+    return [ox, oy];
+  }
+
   get tagName() {
     return this.__tagName;
   }
@@ -2433,12 +2465,8 @@ class Xom extends Node {
   // 不考虑margin的范围
   get bbox() {
     let {
-      sx,
-      sy,
-      width,
-      height,
+      sx, sy, width, height,
       computedStyle: {
-        display,
         borderTopWidth,
         borderRightWidth,
         borderBottomWidth,
@@ -2453,28 +2481,7 @@ class Xom extends Node {
         filter,
       },
     } = this;
-    let ox = 0, oy = 0;
-    if(display !== 'none' && boxShadow) {
-      boxShadow.forEach(item => {
-        let [x, y, blur, spread, , inset] = item;
-        if(inset !== 'inset') {
-          let d = mx.int2convolution(blur);
-          d += spread;
-          ox = Math.max(ox, x + d);
-          oy = Math.max(oy, y + d);
-        }
-      });
-    }
-    if(display !== 'none' && Array.isArray(filter)) {
-      for(let i = 0, len = filter.length; i < len; i++) {
-        let [k, v] = filter[i];
-        if(k === 'blur') {
-          let d = mx.int2convolution(v);
-          ox = Math.max(ox, d);
-          oy = Math.max(oy, d);
-        }
-      }
-    }
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
     sx += marginLeft;
     sy += marginTop;
     width += borderLeftWidth + paddingLeft + borderRightWidth + paddingRight;

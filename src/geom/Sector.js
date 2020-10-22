@@ -106,6 +106,8 @@ class Sector extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      dx,
+      dy,
     } = res;
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
@@ -178,10 +180,10 @@ class Sector extends Geom {
       ctx.beginPath();
       if(isMulti) {
         begin.forEach((begin, i) => painter.canvasSector(ctx, cx, cy, r[i], x1[i], y1[i], x2[i], y2[i],
-          strokeWidth, begin[i], end[i], large[i], edge[i], closure[i]));
+          strokeWidth, begin[i], end[i], large[i], edge[i], closure[i], dx, dy));
       }
       else {
-        painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure);
+        painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure, dx, dy);
       }
       ctx.fill();
       ctx.closePath();

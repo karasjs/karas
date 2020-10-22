@@ -70,6 +70,9 @@ function int2convolution(v) {
  */
 function inverse(m) {
   let [a, b, c, d, e, f] = m;
+  if(a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
+    return m;
+  }
   let ar = 1;
   let br = 0;
   let cr = 0;
@@ -78,12 +81,22 @@ function inverse(m) {
   let fr = 0;
   // 先检查a是否为0，强制a为1
   if(a === 0) {
-    a = 1;
-    c += 1;
-    e += 1;
-    ar = 2;
-    cr = 1;
-    er = 1;
+    if(b === 1) {
+      [a, b, c, d, e, f, ar, br, cr, dr, er, fr] = [b, a, d, c, f, e, br, ar, dr, cr, fr, er];
+    }
+    else if(b === 0) {
+      return [0, 0, 0, 0, 0, 0];
+    }
+    // R1 + R2/b
+    else {
+      a = 1;
+      c += c / b;
+      e += e / b;
+      ar += ar / b;
+      cr += cr / b;
+      er += er / b;
+      b = 0;
+    }
   }
   // b/a=x，R2-R1*x，b为0可优化
   if(b !== 0) {
@@ -91,21 +104,22 @@ function inverse(m) {
     b = 0;
     d -= c * x;
     f -= e * x;
-    br = -x;
+    br -= ar * x;
     dr -= cr * x;
     fr -= er * x;
   }
-  // R1/a，a为1可优化
+  // R1/a，a为0或1可优化
   if(a !== 1) {
-    a = 1;
     c /= a;
+    e /= a;
     ar /= a;
     cr /= a;
     er /= a;
+    a = 1;
   }
-  // c/e=y，R1-R2*y，c为0可优化
+  // c/d=y，R1-R2*y，c为0可优化
   if(c !== 0) {
-    let y = c / e;
+    let y = c / d;
     c = 0;
     e -= f * y;
     ar -= br * y;

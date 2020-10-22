@@ -2,6 +2,8 @@ import Page from './Page';
 import util from '../util/util';
 import inject from '../util/inject';
 import blur from '../style/blur';
+import tf from '../style/transform';
+import mx from '../math/matrix';
 
 class Cache {
   constructor(bbox, page, pos) {
@@ -217,11 +219,22 @@ class Cache {
     }
   }
 
-  static drawCache(source, target) {
+  static drawCache(source, target, transform, matrix, tfo, inverse) {
     let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
     let { coords: [x, y], canvas, size, x1: x12, y1: y12, dbx: dbx2, dby: dby2 } = source;
     let dx = tx + x12 - x1 + dbx - dbx2;
     let dy = ty + y12 - y1 + dby - dby2;
+    if(transform && matrix && tfo) {
+      tfo[0] += dx;
+      tfo[1] += dy;
+      let m = tf.calMatrixByOrigin(transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      if(inverse) {
+        inverse = mx.inverse(inverse);
+        matrix = mx.multiply(matrix, inverse);
+      }
+      ctx.setTransform(...matrix);
+    }
     ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
   }
 }

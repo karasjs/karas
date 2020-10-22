@@ -674,6 +674,10 @@
         e = _m2[4],
         f = _m2[5];
 
+    if (a === 1 && b === 0 && c === 0 && d === 1 && e === 0 && f === 0) {
+      return m;
+    }
+
     var ar = 1;
     var br = 0;
     var cr = 0;
@@ -682,12 +686,32 @@
     var fr = 0; // 先检查a是否为0，强制a为1
 
     if (a === 0) {
-      a = 1;
-      c += 1;
-      e += 1;
-      ar = 2;
-      cr = 1;
-      er = 1;
+      if (b === 1) {
+        var _ref = [b, a, d, c, f, e, br, ar, dr, cr, fr, er];
+        a = _ref[0];
+        b = _ref[1];
+        c = _ref[2];
+        d = _ref[3];
+        e = _ref[4];
+        f = _ref[5];
+        ar = _ref[6];
+        br = _ref[7];
+        cr = _ref[8];
+        dr = _ref[9];
+        er = _ref[10];
+        fr = _ref[11];
+      } else if (b === 0) {
+        return [0, 0, 0, 0, 0, 0];
+      } // R1 + R2/b
+      else {
+          a = 1;
+          c += c / b;
+          e += e / b;
+          ar += ar / b;
+          cr += cr / b;
+          er += er / b;
+          b = 0;
+        }
     } // b/a=x，R2-R1*x，b为0可优化
 
 
@@ -696,23 +720,24 @@
       b = 0;
       d -= c * x;
       f -= e * x;
-      br = -x;
+      br -= ar * x;
       dr -= cr * x;
       fr -= er * x;
-    } // R1/a，a为1可优化
+    } // R1/a，a为0或1可优化
 
 
     if (a !== 1) {
-      a = 1;
       c /= a;
+      e /= a;
       ar /= a;
       cr /= a;
       er /= a;
-    } // c/e=y，R1-R2*y，c为0可优化
+      a = 1;
+    } // c/d=y，R1-R2*y，c为0可优化
 
 
     if (c !== 0) {
-      var y = c / e;
+      var y = c / d;
       c = 0;
       e -= f * y;
       ar -= br * y;
@@ -10800,7 +10825,7 @@
       }
     }, {
       key: "drawCache",
-      value: function drawCache(source, target) {
+      value: function drawCache(source, target, transform, matrix, tfo, inverse) {
         var _target$coords = _slicedToArray(target.coords, 2),
             tx = _target$coords[0],
             ty = _target$coords[1],
@@ -10822,6 +10847,21 @@
 
         var dx = tx + x12 - x1 + dbx - dbx2;
         var dy = ty + y12 - y1 + dby - dby2;
+
+        if (transform && matrix && tfo) {
+          tfo[0] += dx;
+          tfo[1] += dy;
+          var m = tf.calMatrixByOrigin(transform, tfo);
+          matrix = mx.multiply(matrix, m);
+
+          if (inverse) {
+            inverse = mx.inverse(inverse);
+            matrix = mx.multiply(matrix, inverse);
+          }
+
+          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+        }
+
         ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
       }
     }]);
@@ -15649,7 +15689,18 @@
                       _next = _next.next;
                     }
 
-                    var _ctx = cacheMask.ctx; // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+                    var _cacheMask$coords = _slicedToArray(cacheMask.coords, 2),
+                        x = _cacheMask$coords[0],
+                        y = _cacheMask$coords[1],
+                        _ctx = cacheMask.ctx,
+                        dbx = cacheMask.dbx,
+                        dby = cacheMask.dby; // let { transform, transformOrigin } = this.computedStyle;
+                    // let tfo = transformOrigin.slice(0);
+                    // tfo[0] += x + dbx;
+                    // tfo[1] += y + dby;
+                    // let inverse = tf.calMatrixByOrigin(transform, tfo);
+                    // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+
 
                     list.forEach(function (item) {
                       // TODO matrix逆
@@ -15662,7 +15713,15 @@
                       }
 
                       if (source) {
-                        Cache.drawCache(source, cacheMask);
+                        _ctx.globalAlpha = item.__opacity;
+                        var _this3$computedStyle = _this3.computedStyle,
+                            transform = _this3$computedStyle.transform,
+                            transformOrigin = _this3$computedStyle.transformOrigin;
+                        var tfo = transformOrigin.slice(0);
+                        tfo[0] += x + dbx;
+                        tfo[1] += y + dby;
+                        var inverse = tf.calMatrixByOrigin(transform, tfo);
+                        Cache.drawCache(source, cacheMask, item.computedStyle.transform, [1, 0, 0, 1, 0, 0], item.computedStyle.transformOrigin.slice(0), inverse);
                       } else {
                         console.error('CacheMask is oversize');
                       }
@@ -15890,25 +15949,26 @@
                 _dbx = cacheTop.dbx,
                 _dby = cacheTop.dby;
 
+            var tfo = computedStyle.transformOrigin.slice(0);
+            opacity *= computedStyle.opacity;
+            ctx.globalAlpha = opacity; // 优先filter/mask，再是total
+
+            if (cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
+              var target = cacheFilter || cacheMask || cacheTotal;
+              Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
+              return;
+            }
+
             var _dx = _tx2 + _sx - _x + _dbx;
 
             var _dy = _ty2 + _sy - _y + _dby;
 
-            var tfo = computedStyle.transformOrigin.slice(0);
             tfo[0] += _dx;
             tfo[1] += _dy;
             var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
             matrix = mx.multiply(matrix, m);
 
-            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix));
-
-            opacity *= computedStyle.opacity;
-            ctx.globalAlpha = opacity; // 优先filter，再是total
-
-            if (cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
-              Cache.drawCache(cacheFilter || cacheMask || cacheTotal, cacheTop);
-              return;
-            } // 都没有正常cache和children
+            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix)); // 都没有正常cache和children
 
 
             if (cache && cache.available) {

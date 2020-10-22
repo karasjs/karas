@@ -1307,7 +1307,7 @@ class Dom extends Xom {
                 list.push(next);
                 next = next.next;
               }
-              let { ctx } = cacheMask;
+              let { coords: [x, y], ctx, dbx, dby } = cacheMask;
               // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
               list.forEach(item => {
                 // TODO matrix逆
@@ -1317,7 +1317,19 @@ class Dom extends Xom {
                   source = cache && cache.available && cache;
                 }
                 if(source) {
-                  Cache.drawCache(source, cacheMask);
+                  ctx.globalAlpha = item.__opacity;
+                  let { transform, transformOrigin } = this.computedStyle;
+                  let tfo = transformOrigin.slice(0);
+                  tfo[0] += x + dbx;
+                  tfo[1] += y + dby;
+                  let inverse = tf.calMatrixByOrigin(transform, tfo);
+                  Cache.drawCache(
+                    source, cacheMask,
+                    item.computedStyle.transform,
+                    [1, 0, 0, 1, 0, 0],
+                    item.computedStyle.transformOrigin.slice(0),
+                    inverse
+                  );
                 }
                 else {
                   console.error('CacheMask is oversize');
@@ -1509,21 +1521,22 @@ class Dom extends Xom {
       sx += computedStyle.marginLeft;
       sy += computedStyle.marginTop;
       let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
+      let tfo = computedStyle.transformOrigin.slice(0);
+      opacity *= computedStyle.opacity;
+      ctx.globalAlpha = opacity;
+      // 优先filter/mask，再是total
+      if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
+        let target = cacheFilter || cacheMask || cacheTotal;
+        Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
+        return;
+      }
       let dx = tx + sx - x1 + dbx;
       let dy = ty + sy - y1 + dby;
-      let tfo = computedStyle.transformOrigin.slice(0);
       tfo[0] += dx;
       tfo[1] += dy;
       let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
       matrix = mx.multiply(matrix, m);
       ctx.setTransform(...matrix);
-      opacity *= computedStyle.opacity;
-      ctx.globalAlpha = opacity;
-      // 优先filter，再是total
-      if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
-        Cache.drawCache(cacheFilter || cacheMask || cacheTotal, cacheTop);
-        return;
-      }
       // 都没有正常cache和children
       if(cache && cache.available) {
         Cache.drawCache(cache, cacheTop);

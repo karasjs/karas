@@ -19480,17 +19480,16 @@
           }
 
           this.virtualDom.type = 'geom';
-        } // 无论canvas/svg，break可提前跳出省略计算s
+        } // 无论canvas/svg，break可提前跳出省略计算
 
 
         if (res["break"]) {
           return res;
         }
 
-        this.__cacheFilter = null; // data在无cache时没有提前设置
+        this.__cacheFilter = null; // data在无cache时没有提前设置需实时计算
 
-        var preData = this.__preData || this.__preSet(renderMode, ctx, defs);
-
+        var preData = this.root.cache ? this.__preData : this.__preSet(renderMode, ctx, defs);
         var x2 = res.x2,
             y2 = res.y2;
         var originX = preData.originX,

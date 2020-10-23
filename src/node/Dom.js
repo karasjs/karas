@@ -1196,9 +1196,11 @@ class Dom extends Xom {
               if(lv2 < level.REPAINT && cache && cache.available) {
                 ignoreGeom = true;
                 if(blurValue && level.contain(lv2, level.FILTER)) {
-                  let newCache = Cache.updateCache(cacheMask || cache, bbox);
-                  if(newCache) {
-                    item.__cache = newCache;
+                  if(cacheMask) {
+                    cacheMask = item.__cacheMask = Cache.updateCache(cacheMask, bbox);
+                  }
+                  cache = item.__cache = Cache.updateCache(cache, bbox);
+                  if(cacheMask || cache && cache.available) {
                     item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
                   }
                   // 更新后超限，丢掉blur降级
@@ -1532,7 +1534,7 @@ class Dom extends Xom {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, null, ctx, null, dx, dy);
+              item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dbx);
             }
             else {
               item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);

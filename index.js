@@ -12146,17 +12146,7 @@
 
           if (cache && cache.available && lv < o$1.REPAINT) {
             if (o$1.contain(lv, o$1.FILTER)) {
-              var bbox = cache.__bbox = this.bbox;
-              cache.dbx = x1 - bbox[0];
-              cache.dby = y1 - bbox[1];
-
-              var _cache$coords = _slicedToArray(cache.coords, 2),
-                  xc = _cache$coords[0],
-                  yc = _cache$coords[1];
-
-              cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
-
-              cache.dy = yc - bbox[1];
+              cache = this.__cache = Cache.updateCache(cache, this.bbox);
             }
 
             return _objectSpread2(_objectSpread2({}, res), {}, {
@@ -12169,18 +12159,18 @@
 
 
           if (!cache || !cache.available) {
-            var _bbox = this.bbox;
+            var bbox = this.bbox;
 
             if (cache) {
-              cache.reset(_bbox);
+              cache.reset(bbox);
             } else {
-              cache = Cache.getInstance(_bbox);
+              cache = Cache.getInstance(bbox);
             } // 有可能超过最大尺寸限制不使用缓存
 
 
             if (cache && cache.enabled) {
               this.__cache = cache;
-              cache.__bbox = _bbox;
+              cache.__bbox = bbox;
 
               cache.__appendData(x1, y1);
 
@@ -12188,15 +12178,15 @@
                   dby = cache.dby;
               ctx = cache.ctx;
 
-              var _cache$coords2 = _slicedToArray(cache.coords, 2),
-                  _xc = _cache$coords2[0],
-                  _yc = _cache$coords2[1];
+              var _cache$coords = _slicedToArray(cache.coords, 2),
+                  xc = _cache$coords[0],
+                  yc = _cache$coords[1];
 
               dx = cache.dx;
               dy = cache.dy; // 重置ctx为cache的，以及绘制坐标为cache的区域
 
-              res.x1 = x1 = _xc + dbx;
-              res.y1 = y1 = _yc + dby;
+              res.x1 = x1 = xc + dbx;
+              res.y1 = y1 = yc + dby;
 
               if (dx) {
                 res.x2 = x2 += dx;
@@ -15566,10 +15556,13 @@
                     ignoreGeom = true;
 
                     if (_blurValue && o$1.contain(lv2, o$1.FILTER)) {
-                      var _newCache = Cache.updateCache(cacheMask || cache, _bbox);
+                      if (cacheMask) {
+                        cacheMask = item.__cacheMask = Cache.updateCache(cacheMask, _bbox);
+                      }
 
-                      if (_newCache) {
-                        item.__cache = _newCache;
+                      cache = item.__cache = Cache.updateCache(cache, _bbox);
+
+                      if (cacheMask || cache && cache.available) {
                         item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, _blurValue);
                       } // 更新后超限，丢掉blur降级
                       else {
@@ -15958,7 +15951,7 @@
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx, dy);
+                  item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dbx);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }

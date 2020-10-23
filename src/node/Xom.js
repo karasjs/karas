@@ -1430,12 +1430,7 @@ class Xom extends Node {
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
       if(cache && cache.available && lv < level.REPAINT) {
         if(level.contain(lv, level.FILTER)) {
-          let bbox = cache.__bbox = this.bbox;
-          cache.dbx = x1 - bbox[0];
-          cache.dby = y1 - bbox[1];
-          let [xc, yc] = cache.coords;
-          cache.dx = xc - bbox[0]; // cache坐标和box原点的差值
-          cache.dy = yc - bbox[1];
+          cache = this.__cache = Cache.updateCache(cache, this.bbox);
         }
         return { ...res, break: true, canCache, cache, filter };
       }

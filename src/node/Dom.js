@@ -1514,7 +1514,7 @@ class Dom extends Xom {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx + 1, cacheTotal.dy + 1);
+              item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
             }
             else {
               item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);

@@ -224,6 +224,47 @@ class Cache {
     }
     ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
   }
+
+  static drawMask(target, next, transform, tfo) {
+    let cacheMask = Cache.genMask(target);
+    let list = [];
+    while(next && (next.isMask || next.isClip)) {
+      list.push(next);
+      next = next.next;
+    }
+    let { coords: [x, y], ctx, dbx, dby } = cacheMask;
+    tfo[0] += x + dbx;
+    tfo[1] += y + dby;
+    let inverse = tf.calMatrixByOrigin(transform, tfo);
+    // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+    list.forEach(item => {
+      let cacheFilter = item.__cacheFilter, cache = item.__cache;
+      let source = cacheFilter && cacheFilter.available && cacheFilter;
+      if(!source) {
+        source = cache && cache.available && cache;
+      }
+      if(source) {
+        ctx.globalAlpha = item.__opacity;
+        Cache.drawCache(
+          source, cacheMask,
+          item.computedStyle.transform,
+          [1, 0, 0, 1, 0, 0],
+          item.computedStyle.transformOrigin.slice(0),
+          inverse
+        );
+      }
+      else {
+        console.error('CacheMask is oversize');
+      }
+    });
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-in';
+    Cache.drawCache(target, cacheMask);
+    ctx.globalCompositeOperation = 'source-over';
+    cacheMask.draw(ctx);
+    return cacheMask;
+  }
 }
 
 export default Cache;

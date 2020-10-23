@@ -1253,45 +1253,8 @@ class Dom extends Xom {
           let cacheMask = item.__cacheMask, cache = item.__cache;
           // 先尝试绘制mask，再看filter
           if(root.cache && hasMC && cache && cache.available) {
-            cacheMask = item.__cacheMask = Cache.genMask(cache);
-            let list = [];
-            while(next && (next.isMask || next.isClip)) {
-              list.push(next);
-              next = next.next;
-            }
-            let { coords: [x, y], ctx, dbx, dby } = cacheMask;
             let { transform, transformOrigin } = item.computedStyle;
-            let tfo = transformOrigin.slice(0);
-            tfo[0] += x + dbx;
-            tfo[1] += y + dby;
-            let inverse = tf.calMatrixByOrigin(transform, tfo);
-            // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
-            list.forEach(item2 => {
-              let cacheFilter = item2.__cacheFilter, cache = item2.__cache;
-              let source = cacheFilter && cacheFilter.available && cacheFilter;
-              if(!source) {
-                source = cache && cache.available && cache;
-              }
-              if(source) {
-                ctx.globalAlpha = item2.__opacity;
-                Cache.drawCache(
-                  source, cacheMask,
-                  item2.computedStyle.transform,
-                  [1, 0, 0, 1, 0, 0],
-                  item2.computedStyle.transformOrigin.slice(0),
-                  inverse
-                );
-              }
-              else {
-                console.error('CacheMask is oversize');
-              }
-            });
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.globalAlpha = 1;
-            ctx.globalCompositeOperation = 'source-in';
-            Cache.drawCache(cache, cacheMask);
-            ctx.globalCompositeOperation = 'source-over';
-            cacheMask.draw(ctx);
+            item.__cacheMask = Cache.drawMask(cache, next, transform, transformOrigin.slice(0));
           }
           if(root.cache && blurValue && (cacheMask || cache && cache.available)) {
             item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
@@ -1351,46 +1314,9 @@ class Dom extends Xom {
           if(hasMC) {
             let cacheTotal = this.__cacheTotal;
             if(cacheTotal && cacheTotal.available) {
-              let cacheMask = this.__cacheMask = Cache.genMask(cacheTotal);
+              let { transform, transformOrigin } = this.computedStyle;
               let next = this.next;
-              let list = [];
-              while(next && (next.isMask || next.isClip)) {
-                list.push(next);
-                next = next.next;
-              }
-              let { coords: [x, y], ctx, dbx, dby } = cacheMask;
-              // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
-              list.forEach(item => {
-                let cacheFilter = item.__cacheFilter, cache = item.__cache;
-                let source = cacheFilter && cacheFilter.available && cacheFilter;
-                if(!source) {
-                  source = cache && cache.available && cache;
-                }
-                if(source) {
-                  ctx.globalAlpha = item.__opacity;
-                  let { transform, transformOrigin } = this.computedStyle;
-                  let tfo = transformOrigin.slice(0);
-                  tfo[0] += x + dbx;
-                  tfo[1] += y + dby;
-                  let inverse = tf.calMatrixByOrigin(transform, tfo);
-                  Cache.drawCache(
-                    source, cacheMask,
-                    item.computedStyle.transform,
-                    [1, 0, 0, 1, 0, 0],
-                    item.computedStyle.transformOrigin.slice(0),
-                    inverse
-                  );
-                }
-                else {
-                  console.error('CacheMask is oversize');
-                }
-              });
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.globalAlpha = 1;
-              ctx.globalCompositeOperation = 'source-in';
-              Cache.drawCache(cacheTotal, cacheMask);
-              ctx.globalCompositeOperation = 'source-over';
-              cacheMask.draw(ctx);
+              this.__cacheMask = Cache.drawMask(cacheTotal, next, transform, transformOrigin.slice(0));
             }
             // 极端情况超限异常
             else {

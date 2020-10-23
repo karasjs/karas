@@ -244,7 +244,7 @@ class Geom extends Xom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs); // TODO: cacheMask
+    let res = super.render(renderMode, lv, ctx, defs);
     let cacheFilter = this.__cacheFilter, cacheTotal = this.__cacheTotal, cache = this.__cache;
     let virtualDom = this.virtualDom;
     // 存在老的缓存认为可提前跳出
@@ -343,13 +343,12 @@ class Geom extends Xom {
       // 写回主画布前设置
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
+      if(!target && cache && cache.available) {
+        target = cache;
+      }
       if(target) {
         let { x1, y1, dbx, dby, canvas } = target;
         ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
-      }
-      else if(cache && cache.available) {
-        let { x1, y1, dbx, dby } = cache;
-        super.__applyCache(renderMode, ctx, x1 - 1 - dbx, y1 - 1 - dby);
       }
     }
   }

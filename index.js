@@ -10851,6 +10851,52 @@
 
         ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
       }
+    }, {
+      key: "drawMask",
+      value: function drawMask(target, next, transform, tfo) {
+        var cacheMask = Cache.genMask(target);
+        var list = [];
+
+        while (next && (next.isMask || next.isClip)) {
+          list.push(next);
+          next = next.next;
+        }
+
+        var _cacheMask$coords = _slicedToArray(cacheMask.coords, 2),
+            x = _cacheMask$coords[0],
+            y = _cacheMask$coords[1],
+            ctx = cacheMask.ctx,
+            dbx = cacheMask.dbx,
+            dby = cacheMask.dby;
+
+        tfo[0] += x + dbx;
+        tfo[1] += y + dby;
+        var inverse = tf.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+
+        list.forEach(function (item) {
+          var cacheFilter = item.__cacheFilter,
+              cache = item.__cache;
+          var source = cacheFilter && cacheFilter.available && cacheFilter;
+
+          if (!source) {
+            source = cache && cache.available && cache;
+          }
+
+          if (source) {
+            ctx.globalAlpha = item.__opacity;
+            Cache.drawCache(source, cacheMask, item.computedStyle.transform, [1, 0, 0, 1, 0, 0], item.computedStyle.transformOrigin.slice(0), inverse);
+          } else {
+            console.error('CacheMask is oversize');
+          }
+        });
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-in';
+        Cache.drawCache(target, cacheMask);
+        ctx.globalCompositeOperation = 'source-over';
+        cacheMask.draw(ctx);
+        return cacheMask;
+      }
     }]);
 
     return Cache;
@@ -15406,8 +15452,6 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var _this3 = this;
-
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
@@ -15620,55 +15664,10 @@
                   _cache = item.__cache; // 先尝试绘制mask，再看filter
 
               if (root.cache && _hasMC && _cache && _cache.available) {
-                _cacheMask = item.__cacheMask = Cache.genMask(_cache);
-                var list = [];
-
-                while (next && (next.isMask || next.isClip)) {
-                  list.push(next);
-                  next = next.next;
-                }
-
-                var _cacheMask2 = _cacheMask,
-                    _cacheMask2$coords = _slicedToArray(_cacheMask2.coords, 2),
-                    x = _cacheMask2$coords[0],
-                    y = _cacheMask2$coords[1],
-                    _ctx = _cacheMask2.ctx,
-                    dbx = _cacheMask2.dbx,
-                    dby = _cacheMask2.dby;
-
                 var _item$computedStyle = item.computedStyle,
                     transform = _item$computedStyle.transform,
                     transformOrigin = _item$computedStyle.transformOrigin;
-                var tfo = transformOrigin.slice(0);
-                tfo[0] += x + dbx;
-                tfo[1] += y + dby;
-                var inverse = tf.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
-
-                list.forEach(function (item2) {
-                  var cacheFilter = item2.__cacheFilter,
-                      cache = item2.__cache;
-                  var source = cacheFilter && cacheFilter.available && cacheFilter;
-
-                  if (!source) {
-                    source = cache && cache.available && cache;
-                  }
-
-                  if (source) {
-                    _ctx.globalAlpha = item2.__opacity;
-                    Cache.drawCache(source, _cacheMask, item2.computedStyle.transform, [1, 0, 0, 1, 0, 0], item2.computedStyle.transformOrigin.slice(0), inverse);
-                  } else {
-                    console.error('CacheMask is oversize');
-                  }
-                });
-
-                _ctx.setTransform(1, 0, 0, 1, 0, 0);
-
-                _ctx.globalAlpha = 1;
-                _ctx.globalCompositeOperation = 'source-in';
-                Cache.drawCache(_cache, _cacheMask);
-                _ctx.globalCompositeOperation = 'source-over';
-
-                _cacheMask.draw(_ctx);
+                item.__cacheMask = Cache.drawMask(_cache, next, transform, transformOrigin.slice(0));
               }
 
               if (root.cache && _blurValue && (_cacheMask || _cache && _cache.available)) {
@@ -15739,54 +15738,11 @@
                   var _cacheTotal = this.__cacheTotal;
 
                   if (_cacheTotal && _cacheTotal.available) {
-                    var cacheMask = this.__cacheMask = Cache.genMask(_cacheTotal);
+                    var _this$computedStyle2 = this.computedStyle,
+                        transform = _this$computedStyle2.transform,
+                        transformOrigin = _this$computedStyle2.transformOrigin;
                     var _next = this.next;
-                    var list = [];
-
-                    while (_next && (_next.isMask || _next.isClip)) {
-                      list.push(_next);
-                      _next = _next.next;
-                    }
-
-                    var _cacheMask$coords = _slicedToArray(cacheMask.coords, 2),
-                        x = _cacheMask$coords[0],
-                        y = _cacheMask$coords[1],
-                        _ctx2 = cacheMask.ctx,
-                        dbx = cacheMask.dbx,
-                        dby = cacheMask.dby; // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
-
-
-                    list.forEach(function (item) {
-                      var cacheFilter = item.__cacheFilter,
-                          cache = item.__cache;
-                      var source = cacheFilter && cacheFilter.available && cacheFilter;
-
-                      if (!source) {
-                        source = cache && cache.available && cache;
-                      }
-
-                      if (source) {
-                        _ctx2.globalAlpha = item.__opacity;
-                        var _this3$computedStyle = _this3.computedStyle,
-                            transform = _this3$computedStyle.transform,
-                            transformOrigin = _this3$computedStyle.transformOrigin;
-                        var tfo = transformOrigin.slice(0);
-                        tfo[0] += x + dbx;
-                        tfo[1] += y + dby;
-                        var inverse = tf.calMatrixByOrigin(transform, tfo);
-                        Cache.drawCache(source, cacheMask, item.computedStyle.transform, [1, 0, 0, 1, 0, 0], item.computedStyle.transformOrigin.slice(0), inverse);
-                      } else {
-                        console.error('CacheMask is oversize');
-                      }
-                    });
-
-                    _ctx2.setTransform(1, 0, 0, 1, 0, 0);
-
-                    _ctx2.globalAlpha = 1;
-                    _ctx2.globalCompositeOperation = 'source-in';
-                    Cache.drawCache(_cacheTotal, cacheMask);
-                    _ctx2.globalCompositeOperation = 'source-over';
-                    cacheMask.draw(_ctx2);
+                    this.__cacheMask = Cache.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
                   } // 极端情况超限异常
                   else {
                       console.error('CacheTotal is oversize with mask');
@@ -15961,7 +15917,7 @@
           }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
         else if (mode === refreshMode.CHILD) {
-            var _ctx3;
+            var _ctx;
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx = _cacheTop$coords[0],
@@ -15992,7 +15948,7 @@
             var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
             matrix = mx.multiply(matrix, m);
 
-            (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrix)); // 都没有正常cache和children
+            (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix)); // 都没有正常cache和children
 
 
             if (cache && cache.available) {
@@ -16009,14 +15965,14 @@
             });
           } // root调用局部整体缓存或单个节点缓存绘入主画布
           else if (mode === refreshMode.ROOT) {
-              var _ctx4;
+              var _ctx2;
 
               var __opacity = this.__opacity,
                   matrixEvent = this.matrixEvent; // 写回主画布前设置
 
               ctx.globalAlpha = __opacity;
 
-              (_ctx4 = ctx).setTransform.apply(_ctx4, _toConsumableArray(matrixEvent));
+              (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
 
               if (cacheFilter || cacheMask) {
                 var _ref = cacheFilter || cacheMask,
@@ -19683,8 +19639,7 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs); // TODO: cacheMask
-
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
         var cacheFilter = this.__cacheFilter,
             cacheTotal = this.__cacheTotal,
@@ -19794,13 +19749,14 @@
           ctx.globalAlpha = opacity;
 
           if (target) {
-            var _target$coords = _slicedToArray(target.coords, 2),
+            var _target = target,
+                _target$coords = _slicedToArray(_target.coords, 2),
                 _x = _target$coords[0],
                 _y = _target$coords[1],
-                canvas = target.canvas,
-                size = target.size,
-                _dbx = target.dbx,
-                _dby = target.dby;
+                canvas = _target.canvas,
+                size = _target.size,
+                _dbx = _target.dbx,
+                _dby = _target.dby;
 
             ctx.drawImage(canvas, _x - 1, _y - 1, size, size, dx - 1 - _dbx, dy - 1 - _dby, size, size);
             return;
@@ -19815,20 +19771,18 @@
             ctx.globalAlpha = __opacity;
             ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent));
 
-            if (target) {
-              var _x2 = target.x1,
-                  _y2 = target.y1,
-                  _dbx2 = target.dbx,
-                  _dby2 = target.dby,
-                  _canvas = target.canvas;
-              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
-            } else if (cache && cache.available) {
-              var _x3 = cache.x1,
-                  _y3 = cache.y1,
-                  _dbx3 = cache.dbx,
-                  _dby3 = cache.dby;
+            if (!target && cache && cache.available) {
+              target = cache;
+            }
 
-              _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, _x3 - 1 - _dbx3, _y3 - 1 - _dby3);
+            if (target) {
+              var _target2 = target,
+                  _x2 = _target2.x1,
+                  _y2 = _target2.y1,
+                  _dbx2 = _target2.dbx,
+                  _dby2 = _target2.dby,
+                  _canvas = _target2.canvas;
+              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
             }
           }
       }

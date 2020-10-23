@@ -206,13 +206,19 @@ class Cache {
     let dx = tx + x12 - x1 + dbx - dbx2;
     let dy = ty + y12 - y1 + dby - dby2;
     if(transform && matrix && tfo) {
-      tfo[0] += dx + 1;
-      tfo[1] += dy + 1;
+      tfo[0] += dx;
+      tfo[1] += dy;
       let m = tf.calMatrixByOrigin(transform, tfo);
       matrix = mx.multiply(matrix, m);
       if(inverse) {
-        inverse = mx.inverse(inverse);
-        matrix = mx.multiply(matrix, inverse);
+        // 很多情况mask和target相同matrix，可简化计算
+        if(util.equalArr(matrix, inverse)) {
+          matrix = [1, 0, 0, 1, 0, 0];
+        }
+        else {
+          inverse = mx.inverse(inverse);
+          matrix = mx.multiply(matrix, inverse);
+        }
       }
       ctx.setTransform(...matrix);
     }

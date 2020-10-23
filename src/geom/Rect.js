@@ -65,24 +65,7 @@ class Rect extends Geom {
     }
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    if(res.break) {
-      return res;
-    }
-    let {
-      originX,
-      originY,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      dx,
-      dy,
-    } = res;
+  buildCache(originX, originY) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx)) {
@@ -103,34 +86,41 @@ class Rect extends Geom {
         __cacheProps.ry = Math.min(ry, 0.5) * height;
       }
     }
-    __cacheProps.originX = originX;
-    __cacheProps.originY = originY;
-    // rx/ry有变化需重建顶点
     if(rebuild) {
-      let { rx, ry } = __cacheProps;
       if(isMulti) {
-        let list = rx.map((rx, i) => genVertex(originX, originY, width, height, rx, ry[i]));
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          let d = '';
-          list.forEach(item => d += painter.svgPolygon(item));
-          __cacheProps.d = d;
-        }
+        __cacheProps.list = rx.map((rx, i) => genVertex(originX, originY, width, height, rx, ry[i]));
       }
       else {
-        let list = genVertex(originX, originY, width, height, rx, ry);
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgPolygon(list);
-        }
+        __cacheProps.list = genVertex(originX, originY, width, height, rx, ry);
       }
     }
+    __cacheProps.originX = originX;
+    __cacheProps.originY = originY;
+    return rebuild;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    let {
+      originX,
+      originY,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let { __cacheProps, isMulti } = this;
+    this.buildCache(originX, originY);
+    let list = __cacheProps.list;
     if(renderMode === mode.CANVAS) {
-      let list = __cacheProps.list;
       ctx.beginPath();
       if(isMulti) {
         list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
@@ -145,8 +135,15 @@ class Rect extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += painter.svgPolygon(item));
+      }
+      else {
+        d = painter.svgPolygon(list);
+      }
       let props = [
-        ['d', __cacheProps.d],
+        ['d', d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
@@ -166,13 +163,30 @@ class Rect extends Geom {
   }
 
   get bbox() {
-    let { width, height, __cacheProps: { originX, originY }, computedStyle: { strokeWidth } } = this;
+    let { sx, sy, width, height,
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        boxShadow,
+        filter,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    this.buildCache(originX, originY);
     let bbox = super.bbox;
     let half = strokeWidth * 0.5;
-    bbox[0] = Math.min(bbox[0], originX - half);
-    bbox[1] = Math.min(bbox[1], originY - half);
-    bbox[2] = Math.min(bbox[2], originX + width + half);
-    bbox[3] = Math.min(bbox[3], originY + height + half);
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    bbox[0] = Math.min(bbox[0], originX - ox);
+    bbox[1] = Math.min(bbox[1], originY - oy);
+    bbox[2] = Math.min(bbox[2], originX + width + ox);
+    bbox[3] = Math.min(bbox[3], originY + height + oy);
     return bbox;
   }
 }

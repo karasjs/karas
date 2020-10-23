@@ -309,8 +309,11 @@ class Geom extends Xom {
   // 类似dom，但geom没有children所以没有total的概念
   __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
     let cacheFilter = this.__cacheFilter;
+    let cacheMask = this.__cacheMask;
     let cache = this.__cache;
     let computedStyle = this.computedStyle;
+    // 优先filter，然后mask，再cache
+    let target = cacheFilter || cacheMask;
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     if(mode === refreshMode.CHILD) {
       let { sx: x, sy: y } = this;
@@ -327,9 +330,8 @@ class Geom extends Xom {
       ctx.setTransform(...matrix);
       opacity *= computedStyle.opacity;
       ctx.globalAlpha = opacity;
-      // 优先filter，再是total
-      if(cacheFilter) {
-        let { coords: [x, y], canvas, size, dbx, dby } = cacheFilter;
+      if(target) {
+        let { coords: [x, y], canvas, size, dbx, dby } = target;
         ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 - dbx, dy - 1 - dby, size, size);
         return;
       }
@@ -341,9 +343,9 @@ class Geom extends Xom {
       // 写回主画布前设置
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
-      // 优先filter，然后total
-      if(cacheFilter) {
-        ctx.drawImage(cacheFilter.canvas, 0, 0);
+      if(target) {
+        let { x1, y1, dbx, dby, canvas } = target;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
       }
       else if(cache && cache.available) {
         let { x1, y1, dbx, dby } = cache;

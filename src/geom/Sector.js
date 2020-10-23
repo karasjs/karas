@@ -91,24 +91,7 @@ class Sector extends Geom {
     }
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    if(res.break) {
-      return res;
-    }
-    let {
-      cx,
-      cy,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      dx,
-      dy,
-    } = res;
+  buildCache(cx, cy) {
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.begin)) {
@@ -136,9 +119,7 @@ class Sector extends Geom {
       rebuild = true;
       __cacheProps.closure = closure;
     }
-    // begin/end/r/edge/closure有变化就重建
     if(rebuild) {
-      let { begin, end, r, closure } = __cacheProps;
       if(isMulti) {
         __cacheProps.x1 = [];
         __cacheProps.x2 = [];
@@ -156,9 +137,6 @@ class Sector extends Geom {
           __cacheProps.y1.push(y1);
           __cacheProps.y2.push(y2);
           __cacheProps.large.push(large);
-          if(renderMode === mode.SVG) {
-            __cacheProps.d.push(painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge[i] || 0, closure[i]));
-          }
         });
       }
       else {
@@ -170,13 +148,33 @@ class Sector extends Geom {
         __cacheProps.y1 = y1;
         __cacheProps.y2 = y2;
         __cacheProps.large = large;
-        if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure);
-        }
       }
     }
+    return rebuild;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    let {
+      cx,
+      cy,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let { __cacheProps, isMulti } = this;
+    this.buildCache(cx, dy);
+    let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
     if(renderMode === mode.CANVAS) {
-      let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
       ctx.beginPath();
       if(isMulti) {
         begin.forEach((begin, i) => painter.canvasSector(ctx, cx, cy, r[i], x1[i], y1[i], x2[i], y2[i],
@@ -190,12 +188,18 @@ class Sector extends Geom {
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {
-        __cacheProps.d.map((item, i) => this.__genSector(__cacheProps.edge[i], item, fill, stroke, strokeWidth,
-          strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit));
+        r.forEach((r, i) => {
+          this.__genSector(edge[i],
+            painter.svgSector(cx, cy, r, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]),
+            fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
+          );
+        });
       }
       else {
-        this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth,
-          strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+        this.__genSector(edge,
+          painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure),
+          fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
+        );
       }
     }
     return res;

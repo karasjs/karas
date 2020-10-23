@@ -35,6 +35,20 @@ class Circle extends Geom {
     }
   }
 
+  buildCache(cx, cy) {
+    let { width, r, __cacheProps, isMulti } = this;
+    if(isNil(__cacheProps.r)) {
+      if(isMulti) {
+        __cacheProps.r = r.map(i => i * width * 0.5);
+        __cacheProps.list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r));
+      }
+      else {
+        __cacheProps.r = r * width * 0.5;
+        __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+      }
+    }
+  }
+
   render(renderMode, lv, ctx, defs) {
     let res = super.render(renderMode, lv, ctx, defs);
     if(res.break) {
@@ -53,32 +67,10 @@ class Circle extends Geom {
       dx,
       dy,
     } = res;
-    let { width, r, __cacheProps, isMulti } = this;
-    if(isNil(__cacheProps.r)) {
-      if(isMulti) {
-        __cacheProps.r = r.map(i => i * width * 0.5);
-        let list = __cacheProps.r.map(r => geom.ellipsePoints(cx, cy, r));
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = '';
-          list.forEach(item => __cacheProps.d += painter.svgPolygon(item));
-        }
-      }
-      else {
-        __cacheProps.r = r * width * 0.5;
-        let list = geom.ellipsePoints(cx, cy, __cacheProps.r);
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgPolygon(list);
-        }
-      }
-    }
+    let { __cacheProps, isMulti } = this;
+    this.buildCache(cx, cy);
+    let list = __cacheProps.list;
     if(renderMode === mode.CANVAS) {
-      let list = __cacheProps.list;
       ctx.beginPath();
       if(isMulti) {
         list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
@@ -93,8 +85,15 @@ class Circle extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += painter.svgPolygon(item));
+      }
+      else {
+        d = painter.svgPolygon(list);
+      }
       let props = [
-        ['d', __cacheProps.d],
+        ['d', d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth],
@@ -110,30 +109,49 @@ class Circle extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
-    let bbox = super.bbox;
-    let w = bbox[2] - bbox[0];
-    let h = bbox[3] - bbox[1];
+    let {
+      isMulti, __cacheProps,
+      sx, sy, width, height,
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        boxShadow,
+        filter,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
+    this.buildCache(cx, cy);
+    let r = 0;
     if(isMulti) {
       let max = 0;
-      r.forEach(r => {
+      __cacheProps.r.forEach(r => {
         max = Math.max(r, max);
       });
       r = max;
     }
-    let d = r + strokeWidth;
-    let diff = d - Math.min(w, h);
-    if(diff > 0) {
-      let half = diff * 0.5;
-      if(d > w) {
-        bbox[0] -= half;
-        bbox[2] += half;
-      }
-      if(d > h) {
-        bbox[1] -= half;
-        bbox[3] += half;
-      }
+    else {
+      r = __cacheProps.r;
     }
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    let xa = cx - r - ox;
+    let xb = cx + r + ox;
+    let ya = cy - r - oy;
+    let yb = cy + r + oy;
+    bbox[0] = Math.min(bbox[0], xa);
+    bbox[1] = Math.min(bbox[1], ya);
+    bbox[2] = Math.max(bbox[2], xb);
+    bbox[3] = Math.max(bbox[3], yb);
     return bbox;
   }
 }

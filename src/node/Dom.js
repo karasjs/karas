@@ -1138,9 +1138,6 @@ class Dom extends Xom {
           }
         }
       }
-      // else if(renderMode === mode.SVG) {
-      //   virtualDom.cache = true; // 标识vd整体缓存无需深度diff
-      // }
       return res;
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
@@ -1188,26 +1185,26 @@ class Dom extends Xom {
           }
           // 提前判断申请geom的cache，有老的用老的，没有申请新的，改写render()的ctx避免自定义geom感知离屏功能
           if(root.cache) {
-            let cacheFilter = item.__cacheFilter, cache = item.__cache;
-            if(cacheFilter && blurValue && lv < level.REPAINT && !level.contain(lv2, level.FILTER)) {
+            let cacheFilter = item.__cacheFilter, cacheMask = item.__cacheMask, cache = item.__cache;
+            if(cacheFilter && blurValue && lv < level.REPAINT && !level.contain(lv2, level.FILTER) || cacheMask) {
               ignoreGeom = true;
             }
             else {
-              item.__cacheFilter = null;
-              if(lv < level.REPAINT && cache && cache.available) {
+              item.__cacheFilter = item.__cacheMask = null;
+              let bbox = item.bbox;
+              // filter优先使用mask，再是cache
+              if(lv2 < level.REPAINT && cache && cache.available) {
                 ignoreGeom = true;
                 if(blurValue && level.contain(lv2, level.FILTER)) {
-                  let bbox = item.bbox;
-                  let newCache = Cache.updateCache(cache, bbox);
+                  let newCache = Cache.updateCache(cacheMask || cache, bbox);
                   if(newCache) {
                     item.__cache = newCache;
-                    item.__cacheFilter = Cache.genOffScreenBlur(cache, blurValue);
+                    item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
                   }
                   // 更新后超限，丢掉blur降级
                   else {
                     console.error('Geom cache is oversize');
-                    this.__cacheTotal = null;
-                    this.__cacheFilter = null;
+                    item.__cache = null;
                   }
                 }
               }
@@ -1216,19 +1213,19 @@ class Dom extends Xom {
                   if(cache.enabled) {
                     if(lv2 < level.REPAINT) {
                       if(level.contain(lv2, level.FILTER)) {
-                        cache.reset(item.bbox);
+                        cache.reset(bbox);
                       }
                     }
                     else {
-                      cache.reset(item.bbox);
+                      cache.reset(bbox);
                     }
                   }
                   else {
-                    cache.reset(item.bbox);
+                    cache.reset(bbox);
                   }
                 }
                 else {
-                  cache = item.__cache = Cache.getInstance(item.bbox);
+                  cache = item.__cache = Cache.getInstance(bbox);
                 }
                 if(cache && cache.enabled) {
                   newCtx = cache.ctx;
@@ -1241,9 +1238,59 @@ class Dom extends Xom {
           ? { canCache: true }
           : item.__renderByMask(renderMode, lv2, newCtx, defs);
         // geom特殊处理filter，分缓存和非缓存情况
-        if(renderMode === mode.CANVAS && isGeom && !ignoreGeom && blurValue) {
-          if(root.cache && item.__cache && item.__cache.available) {
-            item.__cacheFilter = Cache.genOffScreenBlur(item.__cache, blurValue);
+        if(renderMode === mode.CANVAS && isGeom && !ignoreGeom) {
+          let hasMC;
+          let next = item.next;
+          let hasMask = next && next.isMask;
+          let hasClip = next && next.isClip;
+          if(hasMask || hasClip) {
+            hasMC = true;
+          }
+          let cacheMask = item.__cacheMask, cache = item.__cache;
+          // 先尝试绘制mask，再看filter
+          if(root.cache && hasMC && cache && cache.available) {
+            cacheMask = item.__cacheMask = Cache.genMask(cache);
+            let list = [];
+            while(next && (next.isMask || next.isClip)) {
+              list.push(next);
+              next = next.next;
+            }
+            let { coords: [x, y], ctx, dbx, dby } = cacheMask;
+            let { transform, transformOrigin } = item.computedStyle;
+            let tfo = transformOrigin.slice(0);
+            tfo[0] += x + dbx;
+            tfo[1] += y + dby;
+            let inverse = tf.calMatrixByOrigin(transform, tfo);
+            // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+            list.forEach(item2 => {
+              let cacheFilter = item2.__cacheFilter, cache = item2.__cache;
+              let source = cacheFilter && cacheFilter.available && cacheFilter;
+              if(!source) {
+                source = cache && cache.available && cache;
+              }
+              if(source) {
+                ctx.globalAlpha = item2.__opacity;
+                Cache.drawCache(
+                  source, cacheMask,
+                  item2.computedStyle.transform,
+                  [1, 0, 0, 1, 0, 0],
+                  item2.computedStyle.transformOrigin.slice(0),
+                  inverse
+                );
+              }
+              else {
+                console.error('CacheMask is oversize');
+              }
+            });
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = 'source-in';
+            Cache.drawCache(cache, cacheMask);
+            ctx.globalCompositeOperation = 'source-over';
+            cacheMask.draw(ctx);
+          }
+          if(root.cache && blurValue && (cacheMask || cache && cache.available)) {
+            item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
           }
           else if(temp && temp.offScreen) {
             let { width, height } = root;
@@ -1319,8 +1366,8 @@ class Dom extends Xom {
                   ctx.globalAlpha = item.__opacity;
                   let { transform, transformOrigin } = this.computedStyle;
                   let tfo = transformOrigin.slice(0);
-                  tfo[0] += x + dbx + 1;
-                  tfo[1] += y + dby + 1;
+                  tfo[0] += x + dbx;
+                  tfo[1] += y + dby;
                   let inverse = tf.calMatrixByOrigin(transform, tfo);
                   Cache.drawCache(
                     source, cacheMask,
@@ -1533,8 +1580,8 @@ class Dom extends Xom {
       sy += computedStyle.marginTop;
       let dx = tx + sx - x1 + dbx;
       let dy = ty + sy - y1 + dby;
-      tfo[0] += dx + 1;
-      tfo[1] += dy + 1;
+      tfo[0] += dx;
+      tfo[1] += dy;
       let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
       matrix = mx.multiply(matrix, m);
       ctx.setTransform(...matrix);
@@ -1623,8 +1670,8 @@ class Dom extends Xom {
     }
     else {
       let tfo = computedStyle.transformOrigin.slice(0);
-      tfo[0] += sx - tx + 1;
-      tfo[1] += sy - ty + 1;
+      tfo[0] += sx - tx;
+      tfo[1] += sy - ty;
       let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
       matrix = mx.multiply(matrix, m);
       bbox = super.__mergeBbox(matrix, isTop, dx, dy);

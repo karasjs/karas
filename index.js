@@ -10831,14 +10831,19 @@
         var dy = ty + y12 - y1 + dby - dby2;
 
         if (transform && matrix && tfo) {
-          tfo[0] += dx + 1;
-          tfo[1] += dy + 1;
+          tfo[0] += dx;
+          tfo[1] += dy;
           var m = tf.calMatrixByOrigin(transform, tfo);
           matrix = mx.multiply(matrix, m);
 
           if (inverse) {
-            inverse = mx.inverse(inverse);
-            matrix = mx.multiply(matrix, inverse);
+            // 很多情况mask和target相同matrix，可简化计算
+            if (util.equalArr(matrix, inverse)) {
+              matrix = [1, 0, 0, 1, 0, 0];
+            } else {
+              inverse = mx.inverse(inverse);
+              matrix = mx.multiply(matrix, inverse);
+            }
           }
 
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
@@ -15489,10 +15494,7 @@
                   this.__cacheFilter = null;
                 }
             }
-          } // else if(renderMode === mode.SVG) {
-          //   virtualDom.cache = true; // 标识vd整体缓存无需深度diff
-          // }
-
+          }
 
           return res;
         } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
@@ -15551,29 +15553,28 @@
 
               if (root.cache) {
                 var _cacheFilter = item.__cacheFilter,
+                    cacheMask = item.__cacheMask,
                     cache = item.__cache;
 
-                if (_cacheFilter && _blurValue && lv < o$1.REPAINT && !o$1.contain(lv2, o$1.FILTER)) {
+                if (_cacheFilter && _blurValue && lv < o$1.REPAINT && !o$1.contain(lv2, o$1.FILTER) || cacheMask) {
                   ignoreGeom = true;
                 } else {
-                  item.__cacheFilter = null;
+                  item.__cacheFilter = item.__cacheMask = null;
+                  var _bbox = item.bbox; // filter优先使用mask，再是cache
 
-                  if (lv < o$1.REPAINT && cache && cache.available) {
+                  if (lv2 < o$1.REPAINT && cache && cache.available) {
                     ignoreGeom = true;
 
                     if (_blurValue && o$1.contain(lv2, o$1.FILTER)) {
-                      var _bbox = item.bbox;
-
-                      var _newCache = Cache.updateCache(cache, _bbox);
+                      var _newCache = Cache.updateCache(cacheMask || cache, _bbox);
 
                       if (_newCache) {
                         item.__cache = _newCache;
-                        item.__cacheFilter = Cache.genOffScreenBlur(cache, _blurValue);
+                        item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, _blurValue);
                       } // 更新后超限，丢掉blur降级
                       else {
                           console.error('Geom cache is oversize');
-                          _this3.__cacheTotal = null;
-                          _this3.__cacheFilter = null;
+                          item.__cache = null;
                         }
                     }
                   } else {
@@ -15581,16 +15582,16 @@
                       if (cache.enabled) {
                         if (lv2 < o$1.REPAINT) {
                           if (o$1.contain(lv2, o$1.FILTER)) {
-                            cache.reset(item.bbox);
+                            cache.reset(_bbox);
                           }
                         } else {
-                          cache.reset(item.bbox);
+                          cache.reset(_bbox);
                         }
                       } else {
-                        cache.reset(item.bbox);
+                        cache.reset(_bbox);
                       }
                     } else {
-                      cache = item.__cache = Cache.getInstance(item.bbox);
+                      cache = item.__cache = Cache.getInstance(_bbox);
                     }
 
                     if (cache && cache.enabled) {
@@ -15605,9 +15606,74 @@
               canCache: true
             } : item.__renderByMask(renderMode, lv2, newCtx, defs); // geom特殊处理filter，分缓存和非缓存情况
 
-            if (renderMode === mode.CANVAS && isGeom && !ignoreGeom && _blurValue) {
-              if (root.cache && item.__cache && item.__cache.available) {
-                item.__cacheFilter = Cache.genOffScreenBlur(item.__cache, _blurValue);
+            if (renderMode === mode.CANVAS && isGeom && !ignoreGeom) {
+              var _hasMC;
+
+              var next = item.next;
+              var hasMask = next && next.isMask;
+              var hasClip = next && next.isClip;
+
+              if (hasMask || hasClip) {
+                _hasMC = true;
+              }
+
+              var _cacheMask = item.__cacheMask,
+                  _cache = item.__cache; // 先尝试绘制mask，再看filter
+
+              if (root.cache && _hasMC && _cache && _cache.available) {
+                _cacheMask = item.__cacheMask = Cache.genMask(_cache);
+                var list = [];
+
+                while (next && (next.isMask || next.isClip)) {
+                  list.push(next);
+                  next = next.next;
+                }
+
+                var _cacheMask2 = _cacheMask,
+                    _cacheMask2$coords = _slicedToArray(_cacheMask2.coords, 2),
+                    x = _cacheMask2$coords[0],
+                    y = _cacheMask2$coords[1],
+                    _ctx = _cacheMask2.ctx,
+                    dbx = _cacheMask2.dbx,
+                    dby = _cacheMask2.dby;
+
+                var _item$computedStyle = item.computedStyle,
+                    transform = _item$computedStyle.transform,
+                    transformOrigin = _item$computedStyle.transformOrigin;
+                var tfo = transformOrigin.slice(0);
+                tfo[0] += x + dbx;
+                tfo[1] += y + dby;
+                var inverse = tf.calMatrixByOrigin(transform, tfo); // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+
+                list.forEach(function (item2) {
+                  var cacheFilter = item2.__cacheFilter,
+                      cache = item2.__cache;
+                  var source = cacheFilter && cacheFilter.available && cacheFilter;
+
+                  if (!source) {
+                    source = cache && cache.available && cache;
+                  }
+
+                  if (source) {
+                    _ctx.globalAlpha = item2.__opacity;
+                    Cache.drawCache(source, _cacheMask, item2.computedStyle.transform, [1, 0, 0, 1, 0, 0], item2.computedStyle.transformOrigin.slice(0), inverse);
+                  } else {
+                    console.error('CacheMask is oversize');
+                  }
+                });
+
+                _ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+                _ctx.globalAlpha = 1;
+                _ctx.globalCompositeOperation = 'source-in';
+                Cache.drawCache(_cache, _cacheMask);
+                _ctx.globalCompositeOperation = 'source-over';
+
+                _cacheMask.draw(_ctx);
+              }
+
+              if (root.cache && _blurValue && (_cacheMask || _cache && _cache.available)) {
+                item.__cacheFilter = Cache.genOffScreenBlur(_cacheMask || _cache, _blurValue);
               } else if (temp && temp.offScreen) {
                 var width = root.width,
                     height = root.height;
@@ -15686,7 +15752,7 @@
                     var _cacheMask$coords = _slicedToArray(cacheMask.coords, 2),
                         x = _cacheMask$coords[0],
                         y = _cacheMask$coords[1],
-                        _ctx = cacheMask.ctx,
+                        _ctx2 = cacheMask.ctx,
                         dbx = cacheMask.dbx,
                         dby = cacheMask.dby; // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
 
@@ -15701,13 +15767,13 @@
                       }
 
                       if (source) {
-                        _ctx.globalAlpha = item.__opacity;
+                        _ctx2.globalAlpha = item.__opacity;
                         var _this3$computedStyle = _this3.computedStyle,
                             transform = _this3$computedStyle.transform,
                             transformOrigin = _this3$computedStyle.transformOrigin;
                         var tfo = transformOrigin.slice(0);
-                        tfo[0] += x + dbx + 1;
-                        tfo[1] += y + dby + 1;
+                        tfo[0] += x + dbx;
+                        tfo[1] += y + dby;
                         var inverse = tf.calMatrixByOrigin(transform, tfo);
                         Cache.drawCache(source, cacheMask, item.computedStyle.transform, [1, 0, 0, 1, 0, 0], item.computedStyle.transformOrigin.slice(0), inverse);
                       } else {
@@ -15715,13 +15781,13 @@
                       }
                     });
 
-                    _ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    _ctx2.setTransform(1, 0, 0, 1, 0, 0);
 
-                    _ctx.globalAlpha = 1;
-                    _ctx.globalCompositeOperation = 'source-in';
+                    _ctx2.globalAlpha = 1;
+                    _ctx2.globalCompositeOperation = 'source-in';
                     Cache.drawCache(_cacheTotal, cacheMask);
-                    _ctx.globalCompositeOperation = 'source-over';
-                    cacheMask.draw(_ctx);
+                    _ctx2.globalCompositeOperation = 'source-over';
+                    cacheMask.draw(_ctx2);
                   } // 极端情况超限异常
                   else {
                       console.error('CacheTotal is oversize with mask');
@@ -15924,7 +15990,7 @@
           }
         } // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
         else if (mode === refreshMode.CHILD) {
-            var _ctx2;
+            var _ctx3;
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx2 = _cacheTop$coords[0],
@@ -15953,12 +16019,12 @@
 
             var _dy = _ty2 + _sy - _y + _dby;
 
-            tfo[0] += _dx + 1;
-            tfo[1] += _dy + 1;
+            tfo[0] += _dx;
+            tfo[1] += _dy;
             var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
             matrix = mx.multiply(matrix, m);
 
-            (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix)); // 都没有正常cache和children
+            (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrix)); // 都没有正常cache和children
 
 
             if (cache && cache.available) {
@@ -15975,14 +16041,14 @@
             });
           } // root调用局部整体缓存或单个节点缓存绘入主画布
           else if (mode === refreshMode.ROOT) {
-              var _ctx3;
+              var _ctx4;
 
               var __opacity = this.__opacity,
                   matrixEvent = this.matrixEvent; // 写回主画布前设置
 
               ctx.globalAlpha = __opacity;
 
-              (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrixEvent));
+              (_ctx4 = ctx).setTransform.apply(_ctx4, _toConsumableArray(matrixEvent));
 
               if (cacheFilter || cacheMask) {
                 var _ref = cacheFilter || cacheMask,
@@ -16081,8 +16147,8 @@
           }
         } else {
           var tfo = computedStyle.transformOrigin.slice(0);
-          tfo[0] += sx - tx + 1;
-          tfo[1] += sy - ty + 1;
+          tfo[0] += sx - tx;
+          tfo[1] += sy - ty;
           var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
           matrix = mx.multiply(matrix, m);
           bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop, dx, dy);
@@ -19728,8 +19794,11 @@
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
         var cacheFilter = this.__cacheFilter;
+        var cacheMask = this.__cacheMask;
         var cache = this.__cache;
-        var computedStyle = this.computedStyle; // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
+        var computedStyle = this.computedStyle; // 优先filter，然后mask，再cache
+
+        var target = cacheFilter || cacheMask; // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
 
         if (mode === refreshMode.CHILD) {
           var x = this.sx,
@@ -19754,16 +19823,16 @@
           matrix = mx.multiply(matrix, m);
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
           opacity *= computedStyle.opacity;
-          ctx.globalAlpha = opacity; // 优先filter，再是total
+          ctx.globalAlpha = opacity;
 
-          if (cacheFilter) {
-            var _cacheFilter$coords = _slicedToArray(cacheFilter.coords, 2),
-                _x = _cacheFilter$coords[0],
-                _y = _cacheFilter$coords[1],
-                canvas = cacheFilter.canvas,
-                size = cacheFilter.size,
-                _dbx = cacheFilter.dbx,
-                _dby = cacheFilter.dby;
+          if (target) {
+            var _target$coords = _slicedToArray(target.coords, 2),
+                _x = _target$coords[0],
+                _y = _target$coords[1],
+                canvas = target.canvas,
+                size = target.size,
+                _dbx = target.dbx,
+                _dby = target.dby;
 
             ctx.drawImage(canvas, _x - 1, _y - 1, size, size, dx - 1 - _dbx, dy - 1 - _dby, size, size);
             return;
@@ -19776,17 +19845,22 @@
                 matrixEvent = this.matrixEvent; // 写回主画布前设置
 
             ctx.globalAlpha = __opacity;
-            ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent)); // 优先filter，然后total
+            ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent));
 
-            if (cacheFilter) {
-              ctx.drawImage(cacheFilter.canvas, 0, 0);
+            if (target) {
+              var _x2 = target.x1,
+                  _y2 = target.y1,
+                  _dbx2 = target.dbx,
+                  _dby2 = target.dby,
+                  _canvas = target.canvas;
+              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
             } else if (cache && cache.available) {
-              var _x2 = cache.x1,
-                  _y2 = cache.y1,
-                  _dbx2 = cache.dbx,
-                  _dby2 = cache.dby;
+              var _x3 = cache.x1,
+                  _y3 = cache.y1,
+                  _dbx3 = cache.dbx,
+                  _dby3 = cache.dby;
 
-              _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
+              _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, _x3 - 1 - _dbx3, _y3 - 1 - _dby3);
             }
           }
       }
@@ -20705,27 +20779,8 @@
     }
 
     _createClass(Sector, [{
-      key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
-        var _this2 = this;
-
-        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
-
-        if (res["break"]) {
-          return res;
-        }
-
-        var cx = res.cx,
-            cy = res.cy,
-            fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+      key: "buildCache",
+      value: function buildCache(cx, cy) {
         var width = this.width,
             begin = this.begin,
             end = this.end,
@@ -20766,15 +20821,9 @@
         if (isNil$a(__cacheProps.closure)) {
           rebuild = true;
           __cacheProps.closure = closure;
-        } // begin/end/r/edge/closure有变化就重建
-
+        }
 
         if (rebuild) {
-          var _begin = __cacheProps.begin,
-              _end = __cacheProps.end,
-              _r = __cacheProps.r,
-              _closure = __cacheProps.closure;
-
           if (isMulti) {
             __cacheProps.x1 = [];
             __cacheProps.x2 = [];
@@ -20782,8 +20831,7 @@
             __cacheProps.y2 = [];
             __cacheProps.large = [];
             __cacheProps.d = [];
-
-            _begin.forEach(function (begin, i) {
+            begin.forEach(function (begin, i) {
               var r = isNil$a(r) ? width * 0.5 : r;
 
               var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
@@ -20791,12 +20839,12 @@
                   x1 = _getCoordsByDegree2[0],
                   y1 = _getCoordsByDegree2[1];
 
-              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, _end[i] || 0),
+              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end[i] || 0),
                   _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
                   x2 = _getCoordsByDegree4[0],
                   y2 = _getCoordsByDegree4[1];
 
-              var large = (_end[i] || 0) - begin > 180 ? 1 : 0;
+              var large = (end[i] || 0) - begin > 180 ? 1 : 0;
 
               __cacheProps.x1.push(x1);
 
@@ -20807,65 +20855,85 @@
               __cacheProps.y2.push(y2);
 
               __cacheProps.large.push(large);
-
-              if (renderMode === mode.SVG) {
-                __cacheProps.d.push(painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge[i] || 0, _closure[i]));
-              }
             });
           } else {
-            var _getCoordsByDegree5 = getCoordsByDegree(cx, cy, _r, _begin),
+            var _getCoordsByDegree5 = getCoordsByDegree(cx, cy, r, begin),
                 _getCoordsByDegree6 = _slicedToArray(_getCoordsByDegree5, 2),
                 x1 = _getCoordsByDegree6[0],
                 y1 = _getCoordsByDegree6[1];
 
-            var _getCoordsByDegree7 = getCoordsByDegree(cx, cy, _r, _end),
+            var _getCoordsByDegree7 = getCoordsByDegree(cx, cy, r, end),
                 _getCoordsByDegree8 = _slicedToArray(_getCoordsByDegree7, 2),
                 x2 = _getCoordsByDegree8[0],
                 y2 = _getCoordsByDegree8[1];
 
-            var large = _end - _begin > 180 ? 1 : 0;
+            var large = end - begin > 180 ? 1 : 0;
             __cacheProps.x1 = x1;
             __cacheProps.x2 = x2;
             __cacheProps.y1 = y1;
             __cacheProps.y2 = y2;
             __cacheProps.large = large;
-
-            if (renderMode === mode.SVG) {
-              __cacheProps.d = painter.svgSector(cx, cy, _r, x1, y1, x2, y2, strokeWidth, large, edge, _closure);
-            }
           }
         }
 
+        return rebuild;
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, lv, ctx, defs) {
+        var _this2 = this;
+
+        var res = _get(_getPrototypeOf(Sector.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+
+        if (res["break"]) {
+          return res;
+        }
+
+        var cx = res.cx,
+            cy = res.cy,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+        var __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        this.buildCache(cx, dy);
+        var begin = __cacheProps.begin,
+            end = __cacheProps.end,
+            r = __cacheProps.r,
+            x1 = __cacheProps.x1,
+            y1 = __cacheProps.y1,
+            x2 = __cacheProps.x2,
+            y2 = __cacheProps.y2,
+            edge = __cacheProps.edge,
+            large = __cacheProps.large,
+            closure = __cacheProps.closure;
+
         if (renderMode === mode.CANVAS) {
-          var _begin2 = __cacheProps.begin,
-              _end2 = __cacheProps.end,
-              _r2 = __cacheProps.r,
-              _x = __cacheProps.x1,
-              _y = __cacheProps.y1,
-              _x2 = __cacheProps.x2,
-              _y2 = __cacheProps.y2,
-              _edge = __cacheProps.edge,
-              _large = __cacheProps.large,
-              _closure2 = __cacheProps.closure;
           ctx.beginPath();
 
           if (isMulti) {
-            _begin2.forEach(function (begin, i) {
-              return painter.canvasSector(ctx, cx, cy, _r2[i], _x[i], _y[i], _x2[i], _y2[i], strokeWidth, begin[i], _end2[i], _large[i], _edge[i], _closure2[i], dx, dy);
+            begin.forEach(function (begin, i) {
+              return painter.canvasSector(ctx, cx, cy, r[i], x1[i], y1[i], x2[i], y2[i], strokeWidth, begin[i], end[i], large[i], edge[i], closure[i], dx, dy);
             });
           } else {
-            painter.canvasSector(ctx, cx, cy, _r2, _x, _y, _x2, _y2, strokeWidth, _begin2, _end2, _large, _edge, _closure2, dx, dy);
+            painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure, dx, dy);
           }
 
           ctx.fill();
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
-            __cacheProps.d.map(function (item, i) {
-              return _this2.__genSector(__cacheProps.edge[i], item, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            r.forEach(function (r, i) {
+              _this2.__genSector(edge[i], painter.svgSector(cx, cy, r, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
             });
           } else {
-            this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            this.__genSector(edge, painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           }
         }
 
@@ -21030,25 +21098,8 @@
     }
 
     _createClass(Rect, [{
-      key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
-        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
-
-        if (res["break"]) {
-          return res;
-        }
-
-        var originX = res.originX,
-            originY = res.originY,
-            fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+      key: "buildCache",
+      value: function buildCache(originX, originY) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -21081,48 +21132,54 @@
           }
         }
 
-        __cacheProps.originX = originX;
-        __cacheProps.originY = originY; // rx/ry有变化需重建顶点
-
         if (rebuild) {
-          var _rx = __cacheProps.rx,
-              _ry = __cacheProps.ry;
-
           if (isMulti) {
-            var list = _rx.map(function (rx, i) {
-              return genVertex(originX, originY, width, height, rx, _ry[i]);
+            __cacheProps.list = rx.map(function (rx, i) {
+              return genVertex(originX, originY, width, height, rx, ry[i]);
             });
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = list;
-            } else if (renderMode === mode.SVG) {
-              var d = '';
-              list.forEach(function (item) {
-                return d += painter.svgPolygon(item);
-              });
-              __cacheProps.d = d;
-            }
           } else {
-            var _list = genVertex(originX, originY, width, height, _rx, _ry);
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = _list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = painter.svgPolygon(_list);
-            }
+            __cacheProps.list = genVertex(originX, originY, width, height, rx, ry);
           }
         }
 
+        __cacheProps.originX = originX;
+        __cacheProps.originY = originY;
+        return rebuild;
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, lv, ctx, defs) {
+        var res = _get(_getPrototypeOf(Rect.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+
+        if (res["break"]) {
+          return res;
+        }
+
+        var originX = res.originX,
+            originY = res.originY,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+        var __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        this.buildCache(originX, originY);
+        var list = __cacheProps.list;
+
         if (renderMode === mode.CANVAS) {
-          var _list2 = __cacheProps.list;
           ctx.beginPath();
 
           if (isMulti) {
-            _list2.forEach(function (item) {
+            list.forEach(function (item) {
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2, dx, dy);
+            painter.canvasPolygon(ctx, list, dx, dy);
           }
 
           ctx.fill();
@@ -21133,7 +21190,17 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var d = '';
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return d += painter.svgPolygon(item);
+            });
+          } else {
+            d = painter.svgPolygon(list);
+          }
+
+          var props = [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -21155,20 +21222,39 @@
     }, {
       key: "bbox",
       get: function get() {
-        var width = this.width,
+        var sx = this.sx,
+            sy = this.sy,
+            width = this.width,
             height = this.height,
-            _this$__cacheProps = this.__cacheProps,
-            originX = _this$__cacheProps.originX,
-            originY = _this$__cacheProps.originY,
-            strokeWidth = this.computedStyle.strokeWidth;
+            _this$computedStyle = this.computedStyle,
+            borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            marginTop = _this$computedStyle.marginTop,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingTop = _this$computedStyle.paddingTop,
+            paddingLeft = _this$computedStyle.paddingLeft,
+            boxShadow = _this$computedStyle.boxShadow,
+            filter = _this$computedStyle.filter,
+            strokeWidth = _this$computedStyle.strokeWidth;
+        var originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = sy + borderTopWidth + marginTop + paddingTop;
+        this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
 
         var half = strokeWidth * 0.5;
-        bbox[0] = Math.min(bbox[0], originX - half);
-        bbox[1] = Math.min(bbox[1], originY - half);
-        bbox[2] = Math.min(bbox[2], originX + width + half);
-        bbox[3] = Math.min(bbox[3], originY + height + half);
+
+        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
+            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
+            ox = _this$__spreadByBoxSh2[0],
+            oy = _this$__spreadByBoxSh2[1];
+
+        ox += half;
+        oy += half;
+        bbox[0] = Math.min(bbox[0], originX - ox);
+        bbox[1] = Math.min(bbox[1], originY - oy);
+        bbox[2] = Math.min(bbox[2], originX + width + ox);
+        bbox[3] = Math.min(bbox[3], originY + height + oy);
         return bbox;
       }
     }]);
@@ -21222,6 +21308,28 @@
     }
 
     _createClass(Circle, [{
+      key: "buildCache",
+      value: function buildCache(cx, cy) {
+        var width = this.width,
+            r = this.r,
+            __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+
+        if (isNil$c(__cacheProps.r)) {
+          if (isMulti) {
+            __cacheProps.r = r.map(function (i) {
+              return i * width * 0.5;
+            });
+            __cacheProps.list = __cacheProps.r.map(function (r) {
+              return geom.ellipsePoints(cx, cy, r);
+            });
+          } else {
+            __cacheProps.r = r * width * 0.5;
+            __cacheProps.list = geom.ellipsePoints(cx, cy, __cacheProps.r);
+          }
+        }
+      }
+    }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
         var res = _get(_getPrototypeOf(Circle.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
@@ -21241,52 +21349,20 @@
             strokeMiterlimit = res.strokeMiterlimit,
             dx = res.dx,
             dy = res.dy;
-        var width = this.width,
-            r = this.r,
-            __cacheProps = this.__cacheProps,
+        var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-
-        if (isNil$c(__cacheProps.r)) {
-          if (isMulti) {
-            __cacheProps.r = r.map(function (i) {
-              return i * width * 0.5;
-            });
-
-            var list = __cacheProps.r.map(function (r) {
-              return geom.ellipsePoints(cx, cy, r);
-            });
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = '';
-              list.forEach(function (item) {
-                return __cacheProps.d += painter.svgPolygon(item);
-              });
-            }
-          } else {
-            __cacheProps.r = r * width * 0.5;
-
-            var _list = geom.ellipsePoints(cx, cy, __cacheProps.r);
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = _list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = painter.svgPolygon(_list);
-            }
-          }
-        }
+        this.buildCache(cx, cy);
+        var list = __cacheProps.list;
 
         if (renderMode === mode.CANVAS) {
-          var _list2 = __cacheProps.list;
           ctx.beginPath();
 
           if (isMulti) {
-            _list2.forEach(function (item) {
+            list.forEach(function (item) {
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2, dx, dy);
+            painter.canvasPolygon(ctx, list, dx, dy);
           }
 
           ctx.fill();
@@ -21297,7 +21373,17 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var d = '';
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return d += painter.svgPolygon(item);
+            });
+          } else {
+            d = painter.svgPolygon(list);
+          }
+
+          var props = [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -21315,39 +21401,59 @@
       key: "bbox",
       get: function get() {
         var isMulti = this.isMulti,
-            r = this.__cacheProps.r,
-            strokeWidth = this.computedStyle.strokeWidth;
-
-        var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
-
-        var w = bbox[2] - bbox[0];
-        var h = bbox[3] - bbox[1];
+            __cacheProps = this.__cacheProps,
+            sx = this.sx,
+            sy = this.sy,
+            width = this.width,
+            height = this.height,
+            _this$computedStyle = this.computedStyle,
+            borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            marginTop = _this$computedStyle.marginTop,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingTop = _this$computedStyle.paddingTop,
+            paddingLeft = _this$computedStyle.paddingLeft,
+            boxShadow = _this$computedStyle.boxShadow,
+            filter = _this$computedStyle.filter,
+            strokeWidth = _this$computedStyle.strokeWidth;
+        var originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = sy + borderTopWidth + marginTop + paddingTop;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        this.buildCache(cx, cy);
+        var r = 0;
 
         if (isMulti) {
           var max = 0;
-          r.forEach(function (r) {
+
+          __cacheProps.r.forEach(function (r) {
             max = Math.max(r, max);
           });
+
           r = max;
+        } else {
+          r = __cacheProps.r;
         }
 
-        var d = r + strokeWidth;
-        var diff = d - Math.min(w, h);
+        var bbox = _get(_getPrototypeOf(Circle.prototype), "bbox", this);
 
-        if (diff > 0) {
-          var half = diff * 0.5;
+        var half = strokeWidth * 0.5;
 
-          if (d > w) {
-            bbox[0] -= half;
-            bbox[2] += half;
-          }
+        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
+            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
+            ox = _this$__spreadByBoxSh2[0],
+            oy = _this$__spreadByBoxSh2[1];
 
-          if (d > h) {
-            bbox[1] -= half;
-            bbox[3] += half;
-          }
-        }
-
+        ox += half;
+        oy += half;
+        var xa = cx - r - ox;
+        var xb = cx + r + ox;
+        var ya = cy - r - oy;
+        var yb = cy + r + oy;
+        bbox[0] = Math.min(bbox[0], xa);
+        bbox[1] = Math.min(bbox[1], ya);
+        bbox[2] = Math.max(bbox[2], xb);
+        bbox[3] = Math.max(bbox[3], yb);
         return bbox;
       }
     }]);
@@ -21416,25 +21522,8 @@
     }
 
     _createClass(Ellipse, [{
-      key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
-        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
-
-        if (res["break"]) {
-          return res;
-        }
-
-        var cx = res.cx,
-            cy = res.cy,
-            fill = res.fill,
-            stroke = res.stroke,
-            strokeWidth = res.strokeWidth,
-            strokeDasharrayStr = res.strokeDasharrayStr,
-            strokeLinecap = res.strokeLinecap,
-            strokeLinejoin = res.strokeLinejoin,
-            strokeMiterlimit = res.strokeMiterlimit,
-            dx = res.dx,
-            dy = res.dy;
+      key: "buildCache",
+      value: function buildCache(cx, cy) {
         var width = this.width,
             height = this.height,
             rx = this.rx,
@@ -21465,47 +21554,54 @@
           } else {
             __cacheProps.ry = ry * height * 0.5;
           }
-        } // rx/ry有一个变了重新计算顶点
-
+        }
 
         if (rebuild) {
-          var _rx = __cacheProps.rx,
-              _ry = __cacheProps.ry;
-
           if (isMulti) {
-            var list = _rx.map(function (rx, i) {
-              return geom.ellipsePoints(cx, cy, rx, _ry[i]);
+            __cacheProps.list = rx.map(function (rx, i) {
+              return geom.ellipsePoints(cx, cy, rx, ry[i]);
             });
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = '';
-              list.forEach(function (item) {
-                return __cacheProps.d += painter.svgPolygon(item);
-              });
-            }
           } else {
-            var _list = geom.ellipsePoints(cx, cy, _rx, _ry);
-
-            if (renderMode === mode.CANVAS) {
-              __cacheProps.list = _list;
-            } else if (renderMode === mode.SVG) {
-              __cacheProps.d = painter.svgPolygon(_list);
-            }
+            __cacheProps.list = geom.ellipsePoints(cx, cy, rx, ry);
           }
         }
 
+        return rebuild;
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, lv, ctx, defs) {
+        var res = _get(_getPrototypeOf(Ellipse.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+
+        if (res["break"]) {
+          return res;
+        }
+
+        var cx = res.cx,
+            cy = res.cy,
+            fill = res.fill,
+            stroke = res.stroke,
+            strokeWidth = res.strokeWidth,
+            strokeDasharrayStr = res.strokeDasharrayStr,
+            strokeLinecap = res.strokeLinecap,
+            strokeLinejoin = res.strokeLinejoin,
+            strokeMiterlimit = res.strokeMiterlimit,
+            dx = res.dx,
+            dy = res.dy;
+        var __cacheProps = this.__cacheProps,
+            isMulti = this.isMulti;
+        this.buildCache(cx, dy);
+        var list = __cacheProps.list;
+
         if (renderMode === mode.CANVAS) {
-          var _list2 = __cacheProps.list;
           ctx.beginPath();
 
           if (isMulti) {
-            _list2.forEach(function (item) {
+            list.forEach(function (item) {
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, _list2, dx, dy);
+            painter.canvasPolygon(ctx, list, dx, dy);
           }
 
           ctx.fill();
@@ -21516,7 +21612,17 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var d = '';
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              return d += painter.svgPolygon(item);
+            });
+          } else {
+            d = painter.svgPolygon(list);
+          }
+
+          var props = [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -21539,49 +21645,64 @@
       key: "bbox",
       get: function get() {
         var isMulti = this.isMulti,
-            _this$__cacheProps = this.__cacheProps,
-            rx = _this$__cacheProps.rx,
-            ry = _this$__cacheProps.ry,
-            strokeWidth = this.computedStyle.strokeWidth;
+            __cacheProps = this.__cacheProps,
+            sx = this.sx,
+            sy = this.sy,
+            width = this.width,
+            height = this.height,
+            _this$computedStyle = this.computedStyle,
+            borderTopWidth = _this$computedStyle.borderTopWidth,
+            borderLeftWidth = _this$computedStyle.borderLeftWidth,
+            marginTop = _this$computedStyle.marginTop,
+            marginLeft = _this$computedStyle.marginLeft,
+            paddingTop = _this$computedStyle.paddingTop,
+            paddingLeft = _this$computedStyle.paddingLeft,
+            boxShadow = _this$computedStyle.boxShadow,
+            filter = _this$computedStyle.filter,
+            strokeWidth = _this$computedStyle.strokeWidth;
+        var originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+        var originY = sy + borderTopWidth + marginTop + paddingTop;
+        var cx = originX + width * 0.5;
+        var cy = originY + height * 0.5;
+        this.buildCache(cx, cy);
+        var rx = 0,
+            ry = 0;
+
+        if (isMulti) {
+          var mx,
+              my = 0;
+
+          __cacheProps.rx.forEach(function (rx, i) {
+            mx = Math.max(rx, mx);
+            my = Math.max(ry, __cacheProps.ry[i]);
+          });
+
+          rx = mx;
+          ry = my;
+        } else {
+          rx = __cacheProps.rx;
+          ry = __cacheProps.ry;
+        }
 
         var bbox = _get(_getPrototypeOf(Ellipse.prototype), "bbox", this);
 
-        var w = bbox[2] - bbox[0];
-        var h = bbox[3] - bbox[1];
+        var half = strokeWidth * 0.5;
 
-        if (isMulti) {
-          var max = 0;
-          rx.forEach(function (rx) {
-            max = Math.max(rx, max);
-          });
-          rx = max;
-          max = 0;
-          ry.forEach(function (ry) {
-            max = Math.max(ry, max);
-          });
-          ry = max;
-        }
+        var _this$__spreadByBoxSh = this.__spreadByBoxShadowAndFilter(boxShadow, filter),
+            _this$__spreadByBoxSh2 = _slicedToArray(_this$__spreadByBoxSh, 2),
+            ox = _this$__spreadByBoxSh2[0],
+            oy = _this$__spreadByBoxSh2[1];
 
-        var dx = rx + strokeWidth;
-        var dy = ry + strokeWidth;
-        var diffX = dx - w;
-        var diffY = dy - h;
-
-        if (diffX > 0 || diffY > 0) {
-          if (diffX > 0) {
-            var half = diffX * 0.5;
-            bbox[0] -= half;
-            bbox[2] += half;
-          }
-
-          if (diffY > 0) {
-            var _half = diffY * 0.5;
-
-            bbox[1] -= _half;
-            bbox[3] += _half;
-          }
-        }
-
+        ox += half;
+        oy += half;
+        var xa = cx - rx - ox;
+        var xb = cx + rx + ox;
+        var ya = cy - ry - oy;
+        var yb = cy + ry + oy;
+        bbox[0] = Math.min(bbox[0], xa);
+        bbox[1] = Math.min(bbox[1], ya);
+        bbox[2] = Math.max(bbox[2], xb);
+        bbox[3] = Math.max(bbox[3], yb);
         return bbox;
       }
     }]);

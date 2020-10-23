@@ -10783,7 +10783,8 @@
             var _cache$coords2 = _slicedToArray(cache.coords, 2),
                 ox = _cache$coords2[0],
                 oy = _cache$coords2[1],
-                size = cache.size;
+                size = cache.size,
+                canvas = cache.canvas;
 
             var _newCache$coords = _slicedToArray(newCache.coords, 2),
                 nx = _newCache$coords[0],
@@ -10795,7 +10796,7 @@
             newCache.dy = cache.dy + dy;
             newCache.dbx = cache.dbx + dx;
             newCache.dby = cache.dby + dy;
-            newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
+            newCache.ctx.drawImage(canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
             newCache.__available = true;
             cache.release();
             return newCache;
@@ -15891,66 +15892,39 @@
 
           if (!cacheTotal) {
             cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
-          } // 后续如果超过可缓存的lv重设，否则直接用已有内容
+          } // 后续如果超过可缓存的lv重设，否则直接用已有内容，重复利用在render()里做了，这里reset
           else if (!cacheTotal.enabled) {
               cacheTotal.reset(bboxTotal);
             }
 
           var sx = this.sx,
-              sy = this.sy; // 缓存可用时各children依次执行进行离屏汇总
+              sy = this.sy;
+          var x1 = sx + computedStyle.marginLeft;
+          var y1 = sy + computedStyle.marginTop; // 缓存可用时各children依次执行进行离屏汇总
 
           if (cacheTotal && cacheTotal.enabled) {
             cacheTotal.__bbox = bboxTotal;
 
-            var _cacheTotal2 = cacheTotal,
-                _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
-                tx = _cacheTotal2$coords[0],
-                ty = _cacheTotal2$coords[1];
-
-            var dx, dy, x1, y1, coords;
-
-            if (cache && cache.available) {
-              x1 = cache.x1;
-              y1 = cache.y1;
-              dx = cache.dx;
-              dy = cache.dy;
-              dx -= cache.dbx;
-              dy -= cache.dby;
-              coords = cache.coords;
-            } else {
-              var bbox = this.bbox;
-              x1 = sx + computedStyle.marginLeft;
-              y1 = sy + computedStyle.marginTop;
-              dx = tx - bbox[0];
-              dy = ty - bbox[1];
-              coords = [tx, ty];
-            } // 首次生成
+            cacheTotal.__appendData(x1, y1); // 每次刷新重新生成，一般都会进，特殊情况下遗留的老cacheTotal可以直接用
 
 
             if (!cacheTotal.available) {
               cacheTotal.__available = true;
-              cacheTotal.x1 = x1;
-              cacheTotal.y1 = y1;
-              cacheTotal.dx = dx += tx - coords[0];
-              cacheTotal.dy = dy += ty - coords[1];
-              ctx = cacheTotal.ctx; // 计算bbox的相对dom点偏移值，可能因filter/children范围导致
-
-              var dbx = x1 - cacheTotal.bbox[0],
-                  dby = y1 - cacheTotal.bbox[1];
-              cacheTotal.dbx = dbx;
-              cacheTotal.dby = dby; // 以top为基准matrix/opacity
+              ctx = cacheTotal.ctx; // 以top为基准matrix/opacity
 
               ctx.setTransform(1, 0, 0, 1, 0, 0);
               ctx.globalAlpha = 1;
 
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, tx - 1 + dbx, ty - 1 + dby);
+              if (cache && cache.available) {
+                Cache.drawCache(cache, cacheTotal);
+              }
 
               zIndexChildren.forEach(function (item) {
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.globalAlpha = 1;
 
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dbx);
+                  item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx + 1, cacheTotal.dy + 1);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
                 }
@@ -15958,11 +15932,10 @@
             }
           } // 超尺寸无法进行，降级渲染
           else {
-              var _tx = sx + computedStyle.marginLeft;
+              var tx = sx + computedStyle.marginLeft;
+              var ty = sy + computedStyle.marginTop;
 
-              var _ty = sy + computedStyle.marginTop;
-
-              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, _tx - 1, _ty - 1);
+              _get(_getPrototypeOf(Dom.prototype), "__applyCache", this).call(this, renderMode, ctx, tx - 1, ty - 1);
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
@@ -15985,12 +15958,12 @@
             var _ctx3;
 
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
-                _tx2 = _cacheTop$coords[0],
-                _ty2 = _cacheTop$coords[1],
+                _tx = _cacheTop$coords[0],
+                _ty = _cacheTop$coords[1],
                 _x = cacheTop.x1,
                 _y = cacheTop.y1,
-                _dbx = cacheTop.dbx,
-                _dby = cacheTop.dby;
+                dbx = cacheTop.dbx,
+                dby = cacheTop.dby;
 
             var tfo = computedStyle.transformOrigin.slice(0);
             opacity *= computedStyle.opacity;
@@ -16006,13 +15979,10 @@
                 _sy = this.sy;
             _sx += computedStyle.marginLeft;
             _sy += computedStyle.marginTop;
-
-            var _dx = _tx2 + _sx - _x + _dbx;
-
-            var _dy = _ty2 + _sy - _y + _dby;
-
-            tfo[0] += _dx;
-            tfo[1] += _dy;
+            var dx = _tx + _sx - _x + dbx;
+            var dy = _ty + _sy - _y + dby;
+            tfo[0] += dx;
+            tfo[1] += dy;
             var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
             matrix = mx.multiply(matrix, m);
 
@@ -16026,7 +15996,7 @@
 
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                item.__renderByMask(renderMode, null, ctx, null, _dx - item.sx + computedStyle.paddingLeft, _dy - item.sy + computedStyle.paddingTop);
+                item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
               } else {
                 item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
               }
@@ -16046,27 +16016,27 @@
                 var _ref = cacheFilter || cacheMask,
                     _x2 = _ref.x1,
                     _y2 = _ref.y1,
-                    _dbx2 = _ref.dbx,
-                    _dby2 = _ref.dby,
+                    _dbx = _ref.dbx,
+                    _dby = _ref.dby,
                     canvas = _ref.canvas;
 
-                ctx.drawImage(canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
+                ctx.drawImage(canvas, _x2 - 1 - _dbx, _y2 - 1 - _dby);
                 return;
               }
 
               if (cacheTotal && cacheTotal.available) {
-                var _cacheTotal3 = cacheTotal,
-                    _cacheTotal3$coords = _slicedToArray(_cacheTotal3.coords, 2),
-                    x = _cacheTotal3$coords[0],
-                    y = _cacheTotal3$coords[1],
-                    size = _cacheTotal3.size,
-                    _canvas = _cacheTotal3.canvas,
-                    _x3 = _cacheTotal3.x1,
-                    _y3 = _cacheTotal3.y1,
-                    _dbx3 = _cacheTotal3.dbx,
-                    _dby3 = _cacheTotal3.dby;
+                var _cacheTotal2 = cacheTotal,
+                    _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
+                    x = _cacheTotal2$coords[0],
+                    y = _cacheTotal2$coords[1],
+                    size = _cacheTotal2.size,
+                    _canvas = _cacheTotal2.canvas,
+                    _x3 = _cacheTotal2.x1,
+                    _y3 = _cacheTotal2.y1,
+                    _dbx2 = _cacheTotal2.dbx,
+                    _dby2 = _cacheTotal2.dby;
 
-                ctx.drawImage(_canvas, x - 1, y - 1, size, size, _x3 - 1 - _dbx3, _y3 - 1 - _dby3, size, size);
+                ctx.drawImage(_canvas, x - 1, y - 1, size, size, _x3 - 1 - _dbx2, _y3 - 1 - _dby2, size, size);
                 return;
               } // 无内容就没有cache，继续看children
 
@@ -16079,10 +16049,10 @@
                     _canvas2 = cache.canvas,
                     _x4 = cache.x1,
                     _y4 = cache.y1,
-                    _dbx4 = cache.dbx,
-                    _dby4 = cache.dby;
+                    _dbx3 = cache.dbx,
+                    _dby3 = cache.dby;
 
-                ctx.drawImage(_canvas2, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx4, _y4 - 1 - _dby4, _size, _size);
+                ctx.drawImage(_canvas2, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx3, _y4 - 1 - _dby3, _size, _size);
               }
 
               zIndexChildren.forEach(function (item) {

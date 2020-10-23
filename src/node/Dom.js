@@ -1487,54 +1487,32 @@ class Dom extends Xom {
       if(!cacheTotal) {
         cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
       }
-      // 后续如果超过可缓存的lv重设，否则直接用已有内容
+      // 后续如果超过可缓存的lv重设，否则直接用已有内容，重复利用在render()里做了，这里reset
       else if(!cacheTotal.enabled) {
         cacheTotal.reset(bboxTotal);
       }
       let { sx, sy } = this;
+      let x1 = sx + computedStyle.marginLeft;
+      let y1 = sy + computedStyle.marginTop;
       // 缓存可用时各children依次执行进行离屏汇总
       if(cacheTotal && cacheTotal.enabled) {
         cacheTotal.__bbox = bboxTotal;
-        let { coords: [tx, ty] } = cacheTotal;
-        let dx, dy, x1, y1, coords;
-        if(cache && cache.available) {
-          x1 = cache.x1;
-          y1 = cache.y1;
-          dx = cache.dx;
-          dy = cache.dy;
-          dx -= cache.dbx;
-          dy -= cache.dby;
-          coords = cache.coords;
-        }
-        else {
-          let bbox = this.bbox;
-          x1 = sx + computedStyle.marginLeft;
-          y1 = sy + computedStyle.marginTop;
-          dx = tx - bbox[0];
-          dy = ty - bbox[1];
-          coords = [tx, ty];
-        }
-        // 首次生成
+        cacheTotal.__appendData(x1, y1);
+        // 每次刷新重新生成，一般都会进，特殊情况下遗留的老cacheTotal可以直接用
         if(!cacheTotal.available) {
           cacheTotal.__available = true;
-          cacheTotal.x1 = x1;
-          cacheTotal.y1 = y1;
-          cacheTotal.dx = dx += tx - coords[0];
-          cacheTotal.dy = dy += ty - coords[1];
           ctx = cacheTotal.ctx;
-          // 计算bbox的相对dom点偏移值，可能因filter/children范围导致
-          let dbx = x1 - cacheTotal.bbox[0], dby = y1 - cacheTotal.bbox[1];
-          cacheTotal.dbx = dbx;
-          cacheTotal.dby = dby;
           // 以top为基准matrix/opacity
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalAlpha = 1;
-          super.__applyCache(renderMode, ctx, tx - 1 + dbx, ty - 1 + dby);
+          if(cache && cache.available) {
+            Cache.drawCache(cache, cacheTotal);
+          }
           zIndexChildren.forEach(item => {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              item.__renderByMask(renderMode, null, ctx, null, dx + dbx, dy + dbx);
+              item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx + 1, cacheTotal.dy + 1);
             }
             else {
               item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);

@@ -20697,6 +20697,7 @@
   var isNil$a = util.isNil;
 
   function getCoordsByDegree(x, y, r, d) {
+    r = Math.max(r, 0);
     d = d % 360;
 
     if (d >= 0 && d < 90) {
@@ -20834,6 +20835,8 @@
           }
         }
 
+        r = __cacheProps.r;
+
         if (isNil$a(__cacheProps.edge)) {
           rebuild = true;
           __cacheProps.edge = edge;
@@ -20853,7 +20856,7 @@
             __cacheProps.large = [];
             __cacheProps.d = [];
             begin.forEach(function (begin, i) {
-              var r = isNil$a(r) ? width * 0.5 : r;
+              var r = isNil$a(r[i]) ? width * 0.5 : r[i];
 
               var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
                   _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
@@ -20923,7 +20926,7 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        this.buildCache(cx, dy);
+        this.buildCache(cx, cy);
         var begin = __cacheProps.begin,
             end = __cacheProps.end,
             r = __cacheProps.r,
@@ -20950,8 +20953,8 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
-            r.forEach(function (r, i) {
-              _this2.__genSector(edge[i], painter.svgSector(cx, cy, r, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+            begin.forEach(function (begin, i) {
+              _this2.__genSector(edge[i], painter.svgSector(cx, cy, r[i], x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
             });
           } else {
             this.__genSector(edge, painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);

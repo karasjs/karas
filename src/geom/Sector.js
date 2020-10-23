@@ -6,6 +6,7 @@ import util from '../util/util';
 let { isNil } = util;
 
 function getCoordsByDegree(x, y, r, d) {
+  r = Math.max(r, 0);
   d = d % 360;
   if(d >= 0 && d < 90) {
     return [
@@ -111,6 +112,7 @@ class Sector extends Geom {
         __cacheProps.r = r * width * 0.5;
       }
     }
+    r = __cacheProps.r;
     if(isNil(__cacheProps.edge)) {
       rebuild = true;
       __cacheProps.edge = edge;
@@ -128,7 +130,7 @@ class Sector extends Geom {
         __cacheProps.large = [];
         __cacheProps.d = [];
         begin.forEach((begin, i) => {
-          let r = isNil(r) ? width * 0.5 : r;
+          let r = isNil(r[i]) ? width * 0.5 : r[i];
           let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
           let [x2, y2] = getCoordsByDegree(cx, cy, r, end[i] || 0);
           let large = ((end[i] || 0) - begin) > 180 ? 1 : 0;
@@ -172,7 +174,7 @@ class Sector extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    this.buildCache(cx, dy);
+    this.buildCache(cx, cy);
     let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
@@ -188,9 +190,9 @@ class Sector extends Geom {
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {
-        r.forEach((r, i) => {
+        begin.forEach((begin, i) => {
           this.__genSector(edge[i],
-            painter.svgSector(cx, cy, r, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]),
+            painter.svgSector(cx, cy, r[i], x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]),
             fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
           );
         });

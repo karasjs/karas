@@ -253,9 +253,9 @@ class Geom extends Xom {
     }
     if(renderMode === mode.SVG) {
       if(lv < level.REPAINT && cacheTotal && cacheTotal.available) {
-        res.break = true;
-        virtualDom.cache = true;
+        res.break = true; // geom子类标识可以跳过自定义render()
       }
+      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
       if(!cacheTotal) {
         this.__cacheTotal = {
           available: true,
@@ -265,7 +265,7 @@ class Geom extends Xom {
           },
         };
       }
-      else {
+      else if(!cacheTotal.available) {
         cacheTotal.available = true;
       }
       this.virtualDom.type = 'geom';

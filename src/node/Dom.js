@@ -1138,9 +1138,9 @@ class Dom extends Xom {
           }
         }
       }
-      else if(renderMode === mode.SVG) {
-        virtualDom.cache = true; // 标识vd整体缓存无需深度diff
-      }
+      // else if(renderMode === mode.SVG) {
+      //   virtualDom.cache = true; // 标识vd整体缓存无需深度diff
+      // }
       return res;
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
@@ -1370,7 +1370,7 @@ class Dom extends Xom {
           },
         };
       }
-      else {
+      else if(!cacheTotal.available) {
         cacheTotal.available = true;
       }
       // img的children在子类特殊处理

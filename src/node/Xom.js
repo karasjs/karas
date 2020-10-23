@@ -1287,6 +1287,7 @@ class Xom extends Node {
         if(this.__cacheTotal && this.__cacheTotal.available) {
           virtualDom = this.__virtualDom;
           virtualDom.lv = lv;
+          virtualDom.cache = true; // 标识vd整体缓存无需深度diff
         }
         // 否则extend老的，设置lv变化，等dom调用便跟children
         else {

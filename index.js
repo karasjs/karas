@@ -11989,6 +11989,7 @@
             if (this.__cacheTotal && this.__cacheTotal.available) {
               virtualDom = this.__virtualDom;
               virtualDom.lv = lv;
+              virtualDom.cache = true; // 标识vd整体缓存无需深度diff
             } // 否则extend老的，设置lv变化，等dom调用便跟children
             else {
                 virtualDom = this.__virtualDom = extend$1({}, this.__virtualDom);
@@ -14047,7 +14048,11 @@
           console.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
           throw new Error('Component render() must return a dom/text: ' + this);
-        }
+        } // shadow指向直接root，shadowRoot考虑到返回Component的递归
+
+
+        this.__shadow = sr;
+        sr.__host = this;
 
         while (sr instanceof Component) {
           sr = sr.shadowRoot;
@@ -14091,6 +14096,7 @@
           this.shadowRoot.__destroy();
         }
 
+        this.__shadow = null;
         this.__shadowRoot = null;
         this.__parent = null;
       }
@@ -14126,6 +14132,11 @@
       key: "tagName",
       get: function get() {
         return this.__tagName;
+      }
+    }, {
+      key: "shadow",
+      get: function get() {
+        return this.__shadow;
       }
     }, {
       key: "shadowRoot",
@@ -15496,9 +15507,10 @@
                   this.__cacheFilter = null;
                 }
             }
-          } else if (renderMode === mode.SVG) {
-            virtualDom.cache = true; // 标识vd整体缓存无需深度diff
-          }
+          } // else if(renderMode === mode.SVG) {
+          //   virtualDom.cache = true; // 标识vd整体缓存无需深度diff
+          // }
+
 
           return res;
         } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
@@ -15758,7 +15770,7 @@
                 delete virtualDom.cache;
               }
             };
-          } else {
+          } else if (!cacheTotal.available) {
             cacheTotal.available = true;
           } // img的children在子类特殊处理
 
@@ -18587,8 +18599,9 @@
         var plusList = [];
         totalList.forEach(function (item) {
           var parent = item;
-          var lv = parent.__refreshLevel || 0;
-          var need = lv >= o$1.REPAINT;
+          var lv = parent.__refreshLevel || 0; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
+
+          var need = lv >= o$1.REPAINT || renderMode === mode.SVG && item.tagName.charAt(0) === '$';
 
           if (need) {
             if (parent.__cache) {
@@ -18597,6 +18610,10 @@
 
             if (parent.__cacheTotal) {
               parent.__cacheTotal.release();
+            }
+
+            if (parent.__cacheMask) {
+              parent.__cacheMask = null;
             }
           }
 
@@ -18636,6 +18653,10 @@
 
             if (parent.__cacheFilter) {
               parent.__cacheFilter = null;
+            }
+
+            if (parent.__cacheMask) {
+              parent.__cacheMask = null;
             }
 
             parent = parent.domParent;
@@ -19657,9 +19678,9 @@
 
         if (renderMode === mode.SVG) {
           if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
-            res["break"] = true;
-            virtualDom.cache = true;
-          }
+            res["break"] = true; // geom子类标识可以跳过自定义render()
+          } // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
+
 
           if (!cacheTotal) {
             this.__cacheTotal = {
@@ -19669,7 +19690,7 @@
                 delete virtualDom.cache;
               }
             };
-          } else {
+          } else if (!cacheTotal.available) {
             cacheTotal.available = true;
           }
 

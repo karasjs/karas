@@ -123,6 +123,9 @@ class Component extends Event {
     else {
       throw new Error('Component render() must return a dom/text: ' + this);
     }
+    // shadow指向直接root，shadowRoot考虑到返回Component的递归
+    this.__shadow = sr;
+    sr.__host = this;
     while(sr instanceof Component) {
       sr = sr.shadowRoot;
     }
@@ -156,6 +159,7 @@ class Component extends Event {
     if(this.shadowRoot) {
       this.shadowRoot.__destroy();
     }
+    this.__shadow = null;
     this.__shadowRoot = null;
     this.__parent = null;
   }
@@ -185,6 +189,10 @@ class Component extends Event {
 
   get tagName() {
     return this.__tagName;
+  }
+
+  get shadow() {
+    return this.__shadow;
   }
 
   get shadowRoot() {

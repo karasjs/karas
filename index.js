@@ -15567,7 +15567,7 @@
               item.__preData = item.__preSet(renderMode, ctx, defs);
             }
 
-            var ignoreGeom;
+            var ignoreGeom, offScreen2;
 
             if (renderMode === mode.CANVAS && isGeom) {
               var _filter = item.currentStyle.filter;
@@ -15636,6 +15636,18 @@
                     }
                   }
                 }
+              } else if (_blurValue) {
+                var width = root.width,
+                    height = root.height;
+                var c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+
+                if (c.ctx) {
+                  offScreen2 = {
+                    ctx: ctx
+                  };
+                  offScreen2.target = c;
+                  newCtx = c.ctx;
+                }
               }
             } // 即便ignore也要render()，要计算matrix，xom里也会判断重复
 
@@ -15672,15 +15684,15 @@
 
               if (root.cache && _blurValue && (_cacheMask || _cache && _cache.available)) {
                 item.__cacheFilter = Cache$1.genOffScreenBlur(_cacheMask || _cache, _blurValue);
-              } else if (temp && temp.offScreen) {
-                var width = root.width,
-                    height = root.height;
-                var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
+              } else if (offScreen2) {
+                var _width = root.width,
+                    _height = root.height;
+                var webgl = inject.getCacheWebgl(_width, _height, '__$$blur$$__');
 
-                var _res2 = blur.gaussBlur(temp.offScreen.target, webgl, _blurValue, width, height);
+                var _res2 = blur.gaussBlur(offScreen2.target, webgl, _blurValue, _width, _height);
 
-                temp.offScreen.ctx.drawImage(temp.offScreen.target.canvas, 0, 0);
-                temp.offScreen.target.draw();
+                offScreen2.ctx.drawImage(offScreen2.target.canvas, 0, 0);
+                offScreen2.target.draw();
 
                 _res2.clear();
               }

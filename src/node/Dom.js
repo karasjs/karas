@@ -1172,7 +1172,7 @@ class Dom extends Xom {
         if(isGeom) {
           item.__preData = item.__preSet(renderMode, ctx, defs);
         }
-        let ignoreGeom;
+        let ignoreGeom, offScreen2;
         if(renderMode === mode.CANVAS && isGeom) {
           let filter = item.currentStyle.filter;
           if(Array.isArray(filter)) {
@@ -1235,6 +1235,17 @@ class Dom extends Xom {
               }
             }
           }
+          else if(blurValue) {
+            let { width, height } = root;
+            let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+            if(c.ctx) {
+              offScreen2 = {
+                ctx,
+              };
+              offScreen2.target = c;
+              newCtx = c.ctx;
+            }
+          }
         }
         // 即便ignore也要render()，要计算matrix，xom里也会判断重复
         let temp = item.__renderByMask(renderMode, lv2, newCtx, defs);
@@ -1259,12 +1270,12 @@ class Dom extends Xom {
           if(root.cache && blurValue && (cacheMask || cache && cache.available)) {
             item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
           }
-          else if(temp && temp.offScreen) {
+          else if(offScreen2) {
             let { width, height } = root;
             let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-            let res = blur.gaussBlur(temp.offScreen.target, webgl, blurValue, width, height);
-            temp.offScreen.ctx.drawImage(temp.offScreen.target.canvas, 0, 0);
-            temp.offScreen.target.draw();
+            let res = blur.gaussBlur(offScreen2.target, webgl, blurValue, width, height);
+            offScreen2.ctx.drawImage(offScreen2.target.canvas, 0, 0);
+            offScreen2.target.draw();
             res.clear();
           }
         }

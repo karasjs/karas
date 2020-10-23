@@ -20800,14 +20800,14 @@
             __cacheProps.large = [];
             __cacheProps.d = [];
             begin.forEach(function (begin, i) {
-              var r = isNil$a(r[i]) ? width * 0.5 : r[i];
+              var r2 = isNil$a(r[i]) ? width * 0.5 : r[i];
 
-              var _getCoordsByDegree = getCoordsByDegree(cx, cy, r, begin),
+              var _getCoordsByDegree = getCoordsByDegree(cx, cy, r2, begin),
                   _getCoordsByDegree2 = _slicedToArray(_getCoordsByDegree, 2),
                   x1 = _getCoordsByDegree2[0],
                   y1 = _getCoordsByDegree2[1];
 
-              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r, end[i] || 0),
+              var _getCoordsByDegree3 = getCoordsByDegree(cx, cy, r2, end[i] || 0),
                   _getCoordsByDegree4 = _slicedToArray(_getCoordsByDegree3, 2),
                   x2 = _getCoordsByDegree4[0],
                   y2 = _getCoordsByDegree4[1];
@@ -20868,7 +20868,8 @@
             strokeMiterlimit = res.strokeMiterlimit,
             dx = res.dx,
             dy = res.dy;
-        var __cacheProps = this.__cacheProps,
+        var width = this.width,
+            __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
         this.buildCache(cx, cy);
         var begin = __cacheProps.begin,
@@ -20898,7 +20899,9 @@
         } else if (renderMode === mode.SVG) {
           if (isMulti) {
             begin.forEach(function (begin, i) {
-              _this2.__genSector(edge[i], painter.svgSector(cx, cy, r[i], x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+              var r2 = isNil$a(r[i]) ? width * 0.5 : r[i];
+
+              _this2.__genSector(edge[i], painter.svgSector(cx, cy, r2, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
             });
           } else {
             this.__genSector(edge, painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure), fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
@@ -21122,12 +21125,15 @@
         }
 
         if (rebuild) {
+          var _rx = __cacheProps.rx,
+              _ry = __cacheProps.ry;
+
           if (isMulti) {
-            __cacheProps.list = rx.map(function (rx, i) {
-              return genVertex(originX, originY, width, height, rx, ry[i]);
+            __cacheProps.list = _rx.map(function (rx, i) {
+              return genVertex(originX, originY, width, height, rx, _ry[i]);
             });
           } else {
-            __cacheProps.list = genVertex(originX, originY, width, height, rx, ry);
+            __cacheProps.list = genVertex(originX, originY, width, height, _rx, _ry);
           }
         }
 
@@ -21546,12 +21552,15 @@
         }
 
         if (rebuild) {
+          var _rx = __cacheProps.rx,
+              _ry = __cacheProps.ry;
+
           if (isMulti) {
-            __cacheProps.list = rx.map(function (rx, i) {
-              return geom.ellipsePoints(cx, cy, rx, ry[i]);
+            __cacheProps.list = _rx.map(function (rx, i) {
+              return geom.ellipsePoints(cx, cy, rx, _ry[i]);
             });
           } else {
-            __cacheProps.list = geom.ellipsePoints(cx, cy, rx, ry);
+            __cacheProps.list = geom.ellipsePoints(cx, cy, _rx, _ry);
           }
         }
 

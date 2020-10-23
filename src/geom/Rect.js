@@ -87,6 +87,7 @@ class Rect extends Geom {
       }
     }
     if(rebuild) {
+      let { rx, ry } = __cacheProps;
       if(isMulti) {
         __cacheProps.list = rx.map((rx, i) => genVertex(originX, originY, width, height, rx, ry[i]));
       }

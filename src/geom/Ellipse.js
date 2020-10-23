@@ -68,6 +68,7 @@ class Ellipse extends Geom {
       }
     }
     if(rebuild) {
+      let { rx, ry } = __cacheProps;
       if(isMulti) {
         __cacheProps.list = rx.map((rx, i) => geom.ellipsePoints(cx, cy, rx, ry[i]));
       }

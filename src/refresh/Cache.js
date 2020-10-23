@@ -182,14 +182,14 @@ class Cache {
       let newCache = Cache.getInstance(bbox);
       if(newCache && newCache.enabled) {
         let { coords: [ox, oy], size } = cache;
-        let { coords: [nx, ny], size: size2 } = newCache;
+        let { coords: [nx, ny] } = newCache;
         newCache.x1 = cache.x1;
         newCache.y1 = cache.y1;
         newCache.dx = cache.dx + dx;
         newCache.dy = cache.dy + dy;
         newCache.dbx = cache.dbx + dx;
         newCache.dby = cache.dby + dy;
-        newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+        newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
         newCache.__available = true;
         cache.release();
         return newCache;

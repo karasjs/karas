@@ -10787,8 +10787,7 @@
 
             var _newCache$coords = _slicedToArray(newCache.coords, 2),
                 nx = _newCache$coords[0],
-                ny = _newCache$coords[1],
-                size2 = newCache.size;
+                ny = _newCache$coords[1];
 
             newCache.x1 = cache.x1;
             newCache.y1 = cache.y1;
@@ -10796,7 +10795,7 @@
             newCache.dy = cache.dy + dy;
             newCache.dbx = cache.dbx + dx;
             newCache.dby = cache.dby + dy;
-            newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size2, size2);
+            newCache.ctx.drawImage(cache.canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
             newCache.__available = true;
             cache.release();
             return newCache;

@@ -16787,30 +16787,30 @@
     cp.props = props;
     cp.__state = state;
     cp.__nextState = null;
-    var oldSr = cp.shadowRoot;
+    var oldS = cp.shadow;
     var oldJson = cp.__cd;
     var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
 
-    diffSr(oldSr, oldJson, json);
+    diffSr(oldS, oldJson, json);
 
     cp.__init(json); // 为了局部dom布局需要知道老的css信息
 
 
-    var sr = cp.shadowRoot;
+    var s = cp.shadow;
 
-    if (sr instanceof Xom$2) {
-      sr.__width = oldSr.width;
-      sr.__height = oldSr.height;
-      sr.__computedStyle = oldSr.computedStyle;
-      sr.__layoutData = oldSr.layoutData;
+    if (s instanceof Xom$2) {
+      s.__width = oldS.width;
+      s.__height = oldS.height;
+      s.__computedStyle = oldS.computedStyle;
+      s.__layoutData = oldS.layoutData;
     } else {
-      sr.__parent = oldSr.parent;
+      s.__parent = oldS.parent;
     }
 
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
-      removeList.push(oldSr);
+      removeList.push(oldS);
     } // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
 
 

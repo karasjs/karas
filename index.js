@@ -10716,32 +10716,14 @@
         var page = res.page,
             pos = res.pos;
         return new Cache(bbox, page, pos);
-      } // static getClone(cache) {
-      //   let { bbox, page: { size, number } } = cache;
-      //   let res = Page.getClone(size, number);
-      //   let { page, pos } = res;
-      //   let o = new Cache(bbox, page, pos);
-      //   o.__appendData(cache.x1, cache.y1);
-      //   return o;
-      // }
-      //
-      // static updateClone(source, target) {
-      //   let { coords: [sx, sy], canvas } = source;
-      //   let { coords: [x, y], size, ctx } = target;
-      //   ctx.setTransform(1, 0, 0, 1, 0, 0);
-      //   ctx.globalAlpha = 1;
-      //   ctx.drawImage(canvas, sx - 1, sy - 1, size, size, x - 1, y - 1, size, size);
-      // }
-
+      }
     }, {
       key: "genMask",
       value: function genMask(cache) {
         var size = cache.size,
             x1 = cache.x1,
             y1 = cache.y1;
-        var offScreen = inject.getCacheCanvas(size, size); // offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
-        // offScreen.draw();
-
+        var offScreen = inject.getCacheCanvas(size, size);
         offScreen.coords = [1, 1];
         offScreen.size = size;
         offScreen.x1 = x1;
@@ -15874,6 +15856,8 @@
               y1 = cache.y1;
               dx = cache.dx;
               dy = cache.dy;
+              dx -= cache.dbx;
+              dy -= cache.dby;
               coords = cache.coords;
             } else {
               var bbox = this.bbox;
@@ -15942,11 +15926,6 @@
         else if (mode === refreshMode.CHILD) {
             var _ctx2;
 
-            var _sx = this.sx,
-                _sy = this.sy;
-            _sx += computedStyle.marginLeft;
-            _sy += computedStyle.marginTop;
-
             var _cacheTop$coords = _slicedToArray(cacheTop.coords, 2),
                 _tx2 = _cacheTop$coords[0],
                 _ty2 = _cacheTop$coords[1],
@@ -15964,6 +15943,11 @@
               Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
               return;
             }
+
+            var _sx = this.sx,
+                _sy = this.sy;
+            _sx += computedStyle.marginLeft;
+            _sy += computedStyle.marginTop;
 
             var _dx = _tx2 + _sx - _x + _dbx;
 
@@ -19665,23 +19649,20 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
-        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+        var res = _get(_getPrototypeOf(Geom.prototype), "render", this).call(this, renderMode, lv, ctx, defs); // TODO: cacheMask
+
 
         var cacheFilter = this.__cacheFilter,
             cacheTotal = this.__cacheTotal,
             cache = this.__cache;
         var virtualDom = this.virtualDom; // 存在老的缓存认为可提前跳出
 
-        if (lv < o$1.REPAINT && (cache && cache.available || !o$1.contain(lv, o$1.FILTER) && cacheFilter)) {
-          res["break"] = true;
+        if (lv < o$1.REPAINT && (cacheTotal && cacheTotal.available || cache && cache.available || !o$1.contain(lv, o$1.FILTER) && cacheFilter)) {
+          res["break"] = true; // geom子类标识可以跳过自定义render()
         }
 
         if (renderMode === mode.SVG) {
-          if (lv < o$1.REPAINT && cacheTotal && cacheTotal.available) {
-            res["break"] = true; // geom子类标识可以跳过自定义render()
-          } // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-
-
+          // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
           if (!cacheTotal) {
             this.__cacheTotal = {
               available: true,

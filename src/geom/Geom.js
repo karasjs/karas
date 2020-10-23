@@ -244,17 +244,15 @@ class Geom extends Xom {
   }
 
   render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+    let res = super.render(renderMode, lv, ctx, defs); // TODO: cacheMask
     let cacheFilter = this.__cacheFilter, cacheTotal = this.__cacheTotal, cache = this.__cache;
     let virtualDom = this.virtualDom;
     // 存在老的缓存认为可提前跳出
-    if(lv < level.REPAINT && (cache && cache.available || !level.contain(lv, level.FILTER) && cacheFilter)) {
-      res.break = true;
+    if(lv < level.REPAINT
+      && (cacheTotal && cacheTotal.available || cache && cache.available || !level.contain(lv, level.FILTER) && cacheFilter)) {
+      res.break = true; // geom子类标识可以跳过自定义render()
     }
     if(renderMode === mode.SVG) {
-      if(lv < level.REPAINT && cacheTotal && cacheTotal.available) {
-        res.break = true; // geom子类标识可以跳过自定义render()
-      }
       // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
       if(!cacheTotal) {
         this.__cacheTotal = {

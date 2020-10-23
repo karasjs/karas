@@ -135,28 +135,9 @@ class Cache {
     return new Cache(bbox, page, pos);
   }
 
-  // static getClone(cache) {
-  //   let { bbox, page: { size, number } } = cache;
-  //   let res = Page.getClone(size, number);
-  //   let { page, pos } = res;
-  //   let o = new Cache(bbox, page, pos);
-  //   o.__appendData(cache.x1, cache.y1);
-  //   return o;
-  // }
-  //
-  // static updateClone(source, target) {
-  //   let { coords: [sx, sy], canvas } = source;
-  //   let { coords: [x, y], size, ctx } = target;
-  //   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  //   ctx.globalAlpha = 1;
-  //   ctx.drawImage(canvas, sx - 1, sy - 1, size, size, x - 1, y - 1, size, size);
-  // }
-
   static genMask(cache) {
     let { size, x1, y1 } = cache;
     let offScreen = inject.getCacheCanvas(size, size);
-    // offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
-    // offScreen.draw();
     offScreen.coords = [1, 1];
     offScreen.size = size;
     offScreen.x1 = x1;

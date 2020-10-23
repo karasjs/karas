@@ -94,8 +94,6 @@ class Rect extends Geom {
         __cacheProps.list = genVertex(originX, originY, width, height, rx, ry);
       }
     }
-    __cacheProps.originX = originX;
-    __cacheProps.originY = originY;
     return rebuild;
   }
 
@@ -164,6 +162,10 @@ class Rect extends Geom {
 
   get bbox() {
     let { sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
       computedStyle: {
         borderTopWidth,
         borderLeftWidth,
@@ -171,8 +173,6 @@ class Rect extends Geom {
         marginLeft,
         paddingTop,
         paddingLeft,
-        boxShadow,
-        filter,
         strokeWidth,
       } } = this;
     let originX = sx + borderLeftWidth + marginLeft + paddingLeft;

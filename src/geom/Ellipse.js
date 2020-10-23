@@ -97,7 +97,7 @@ class Ellipse extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    this.buildCache(cx, dy);
+    this.buildCache(cx, cy);
     let list = __cacheProps.list;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
@@ -145,6 +145,10 @@ class Ellipse extends Geom {
     let {
       isMulti, __cacheProps,
       sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
       computedStyle: {
         borderTopWidth,
         borderLeftWidth,
@@ -152,8 +156,6 @@ class Ellipse extends Geom {
         marginLeft,
         paddingTop,
         paddingLeft,
-        boxShadow,
-        filter,
         strokeWidth,
       } } = this;
     let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
@@ -163,7 +165,7 @@ class Ellipse extends Geom {
     this.buildCache(cx, cy);
     let rx = 0, ry = 0;
     if(isMulti) {
-      let mx, my = 0;
+      let mx = 0, my = 0;
       __cacheProps.rx.forEach((rx, i) => {
         mx = Math.max(rx, mx);
         my = Math.max(ry, __cacheProps.ry[i]);

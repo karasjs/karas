@@ -64,24 +64,7 @@ class Polyline extends Geom {
     });
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    if(res.break) {
-      return res;
-    }
-    let {
-      originX,
-      originY,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      dx,
-      dy,
-    } = res;
+  buildCache(originX, originY) {
     let { width, height, points, controls, __cacheProps, isMulti } = this;
     let rebuild = true;
     if(isNil(__cacheProps.points)) {
@@ -109,13 +92,11 @@ class Polyline extends Geom {
         __cacheProps.controls = this.__getPoints(originX, originY, width, height, controls, true);
       }
     }
-    let pts = __cacheProps.points;
-    let cls = __cacheProps.controls;
-    // points/controls有变化就需要重建顶点
     if(rebuild) {
+      let { points, controls } = __cacheProps;
       if(isMulti) {
-        let list = pts.filter(item => Array.isArray(item)).map((item, i) => {
-          let cl = cls[i];
+        __cacheProps.list = points.filter(item => Array.isArray(item)).map((item, i) => {
+          let cl = controls[i];
           if(Array.isArray(item)) {
             return item.map((point, j) => {
               if(j) {
@@ -125,33 +106,42 @@ class Polyline extends Geom {
             });
           }
         });
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          let d = '';
-          list.forEach(item => d += painter.svgPolygon(item));
-          __cacheProps.d = d;
-        }
       }
       else {
-        let list = pts.filter(item => Array.isArray(item)).map((point, i) => {
+        __cacheProps.list = points.filter(item => Array.isArray(item)).map((point, i) => {
           if(i) {
-            return concatPointAndControl(point, cls[i - 1]);
+            return concatPointAndControl(point, controls[i - 1]);
           }
           return point;
         });
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgPolygon(list);
-        }
       }
     }
+    return rebuild;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    let {
+      originX,
+      originY,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let { __cacheProps, isMulti } = this;
+    this.buildCache(originX, originY);
+    let list = __cacheProps.list;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
-      let list = __cacheProps.list;
       if(isMulti) {
         list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
@@ -165,8 +155,15 @@ class Polyline extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += painter.svgPolygon(item));
+      }
+      else {
+        d = painter.svgPolygon(list);
+      }
       let props = [
-        ['d', __cacheProps.d],
+        ['d', d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
@@ -186,9 +183,31 @@ class Polyline extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { points, controls }, computedStyle: { strokeWidth } } = this;
+    let {
+      isMulti, __cacheProps,
+      sx, sy,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    this.buildCache(originX, originY);
     let bbox = super.bbox;
     let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    let { points, controls } = __cacheProps;
     if(!isMulti) {
       points = [points];
       controls = [controls];
@@ -204,23 +223,23 @@ class Polyline extends Geom {
         let c = controlList[i - 1];
         if(c && c.length === 4) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-          bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-          bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-          bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - oy);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + ox);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + oy);
         }
         else if(c && c.length === 2) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
-          bbox[0] = Math.min(bbox[0], bezierBox[0] - half);
-          bbox[1] = Math.min(bbox[0], bezierBox[1] - half);
-          bbox[2] = Math.max(bbox[0], bezierBox[2] + half);
-          bbox[3] = Math.max(bbox[0], bezierBox[3] + half);
+          bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
+          bbox[1] = Math.min(bbox[0], bezierBox[1] - oy);
+          bbox[2] = Math.max(bbox[0], bezierBox[2] + ox);
+          bbox[3] = Math.max(bbox[0], bezierBox[3] + oy);
         }
         else {
-          bbox[0] = Math.min(bbox[0], xa - half);
-          bbox[1] = Math.min(bbox[0], xb - half);
-          bbox[2] = Math.max(bbox[0], xa + half);
-          bbox[3] = Math.max(bbox[0], xb + half);
+          bbox[0] = Math.min(bbox[0], xa - ox);
+          bbox[1] = Math.min(bbox[0], xb - oy);
+          bbox[2] = Math.max(bbox[0], xa + ox);
+          bbox[3] = Math.max(bbox[0], xb + oy);
         }
         xa = xb;
         ya = yb;

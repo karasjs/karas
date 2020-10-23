@@ -112,6 +112,10 @@ class Circle extends Geom {
     let {
       isMulti, __cacheProps,
       sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
       computedStyle: {
         borderTopWidth,
         borderLeftWidth,
@@ -119,8 +123,6 @@ class Circle extends Geom {
         marginLeft,
         paddingTop,
         paddingLeft,
-        boxShadow,
-        filter,
         strokeWidth,
       } } = this;
     let originX = sx + borderLeftWidth + marginLeft + paddingLeft;

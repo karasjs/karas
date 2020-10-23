@@ -247,6 +247,10 @@ class Line extends Geom {
   get bbox() {
     let {
       sx, sy,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
       computedStyle: {
         borderTopWidth,
         borderLeftWidth,
@@ -254,8 +258,6 @@ class Line extends Geom {
         marginLeft,
         paddingTop,
         paddingLeft,
-        boxShadow,
-        filter,
         strokeWidth,
       },
       isMulti, __cacheProps,

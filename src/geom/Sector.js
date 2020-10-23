@@ -256,30 +256,51 @@ class Sector extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
-    let bbox = super.bbox;
-    let w = bbox[2] - bbox[0];
-    let h = bbox[3] - bbox[1];
+    let {
+      isMulti, __cacheProps,
+      sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
+    this.buildCache(cx, cy);
+    let r = 0;
     if(isMulti) {
       let max = 0;
-      r.forEach(r => {
+      __cacheProps.r.forEach(r => {
         max = Math.max(r, max);
       });
       r = max;
     }
-    let d = r + strokeWidth;
-    let diff = d - Math.min(w, h);
-    if(diff > 0) {
-      let half = diff * 0.5;
-      if(d > w) {
-        bbox[0] -= half;
-        bbox[2] += half;
-      }
-      if(d > h) {
-        bbox[1] -= half;
-        bbox[3] += half;
-      }
+    else {
+      r = __cacheProps.r;
     }
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    let xa = cx - r - ox;
+    let xb = cx + r + ox;
+    let ya = cy - r - oy;
+    let yb = cy + r + oy;
+    bbox[0] = Math.min(bbox[0], xa);
+    bbox[1] = Math.min(bbox[1], ya);
+    bbox[2] = Math.max(bbox[2], xb);
+    bbox[3] = Math.max(bbox[3], yb);
     return bbox;
   }
 }

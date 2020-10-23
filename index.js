@@ -15593,11 +15593,17 @@
                   }
                 }
               }
-            }
+            } // 即便ignore也要render()，要计算matrix，xom里也会判断重复
 
-            var temp = ignoreGeom ? {
-              canCache: true
-            } : item.__renderByMask(renderMode, lv2, newCtx, defs); // geom特殊处理filter，分缓存和非缓存情况
+
+            var temp = item.__renderByMask(renderMode, lv2, newCtx, defs);
+
+            if (ignoreGeom) {
+              temp = {
+                canCache: true
+              };
+            } // geom特殊处理filter，分缓存和非缓存情况
+
 
             if (renderMode === mode.CANVAS && isGeom && !ignoreGeom) {
               var _hasMC;

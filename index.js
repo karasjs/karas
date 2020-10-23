@@ -10849,8 +10849,8 @@
         var dy = ty + y12 - y1 + dby - dby2;
 
         if (transform && matrix && tfo) {
-          tfo[0] += dx;
-          tfo[1] += dy;
+          tfo[0] += dx + 1;
+          tfo[1] += dy + 1;
           var m = tf.calMatrixByOrigin(transform, tfo);
           matrix = mx.multiply(matrix, m);
 
@@ -15694,16 +15694,10 @@
                         y = _cacheMask$coords[1],
                         _ctx = cacheMask.ctx,
                         dbx = cacheMask.dbx,
-                        dby = cacheMask.dby; // let { transform, transformOrigin } = this.computedStyle;
-                    // let tfo = transformOrigin.slice(0);
-                    // tfo[0] += x + dbx;
-                    // tfo[1] += y + dby;
-                    // let inverse = tf.calMatrixByOrigin(transform, tfo);
-                    // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+                        dby = cacheMask.dby; // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
 
 
                     list.forEach(function (item) {
-                      // TODO matrix逆
                       var cacheFilter = item.__cacheFilter,
                           cache = item.__cache;
                       var source = cacheFilter && cacheFilter.available && cacheFilter;
@@ -15718,8 +15712,8 @@
                             transform = _this3$computedStyle.transform,
                             transformOrigin = _this3$computedStyle.transformOrigin;
                         var tfo = transformOrigin.slice(0);
-                        tfo[0] += x + dbx;
-                        tfo[1] += y + dby;
+                        tfo[0] += x + dbx + 1;
+                        tfo[1] += y + dby + 1;
                         var inverse = tf.calMatrixByOrigin(transform, tfo);
                         Cache.drawCache(source, cacheMask, item.computedStyle.transform, [1, 0, 0, 1, 0, 0], item.computedStyle.transformOrigin.slice(0), inverse);
                       } else {
@@ -15963,8 +15957,8 @@
 
             var _dy = _ty2 + _sy - _y + _dby;
 
-            tfo[0] += _dx;
-            tfo[1] += _dy;
+            tfo[0] += _dx + 1;
+            tfo[1] += _dy + 1;
             var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
             matrix = mx.multiply(matrix, m);
 
@@ -16091,8 +16085,8 @@
           }
         } else {
           var tfo = computedStyle.transformOrigin.slice(0);
-          tfo[0] += sx - tx;
-          tfo[1] += sy - ty;
+          tfo[0] += sx - tx + 1;
+          tfo[1] += sy - ty + 1;
           var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
           matrix = mx.multiply(matrix, m);
           bbox = _get(_getPrototypeOf(Dom.prototype), "__mergeBbox", this).call(this, matrix, isTop, dx, dy);

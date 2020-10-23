@@ -225,8 +225,8 @@ class Cache {
     let dx = tx + x12 - x1 + dbx - dbx2;
     let dy = ty + y12 - y1 + dby - dby2;
     if(transform && matrix && tfo) {
-      tfo[0] += dx;
-      tfo[1] += dy;
+      tfo[0] += dx + 1;
+      tfo[1] += dy + 1;
       let m = tf.calMatrixByOrigin(transform, tfo);
       matrix = mx.multiply(matrix, m);
       if(inverse) {

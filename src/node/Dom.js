@@ -1310,7 +1310,6 @@ class Dom extends Xom {
               let { coords: [x, y], ctx, dbx, dby } = cacheMask;
               // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
               list.forEach(item => {
-                // TODO matrix逆
                 let cacheFilter = item.__cacheFilter, cache = item.__cache;
                 let source = cacheFilter && cacheFilter.available && cacheFilter;
                 if(!source) {
@@ -1320,8 +1319,8 @@ class Dom extends Xom {
                   ctx.globalAlpha = item.__opacity;
                   let { transform, transformOrigin } = this.computedStyle;
                   let tfo = transformOrigin.slice(0);
-                  tfo[0] += x + dbx;
-                  tfo[1] += y + dby;
+                  tfo[0] += x + dbx + 1;
+                  tfo[1] += y + dby + 1;
                   let inverse = tf.calMatrixByOrigin(transform, tfo);
                   Cache.drawCache(
                     source, cacheMask,
@@ -1532,8 +1531,8 @@ class Dom extends Xom {
       }
       let dx = tx + sx - x1 + dbx;
       let dy = ty + sy - y1 + dby;
-      tfo[0] += dx;
-      tfo[1] += dy;
+      tfo[0] += dx + 1;
+      tfo[1] += dy + 1;
       let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
       matrix = mx.multiply(matrix, m);
       ctx.setTransform(...matrix);
@@ -1622,8 +1621,8 @@ class Dom extends Xom {
     }
     else {
       let tfo = computedStyle.transformOrigin.slice(0);
-      tfo[0] += sx - tx;
-      tfo[1] += sy - ty;
+      tfo[0] += sx - tx + 1;
+      tfo[1] += sy - ty + 1;
       let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
       matrix = mx.multiply(matrix, m);
       bbox = super.__mergeBbox(matrix, isTop, dx, dy);

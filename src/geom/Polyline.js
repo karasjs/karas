@@ -224,22 +224,22 @@ class Polyline extends Geom {
         if(c && c.length === 4) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
           bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-          bbox[1] = Math.min(bbox[0], bezierBox[1] - oy);
-          bbox[2] = Math.max(bbox[0], bezierBox[2] + ox);
-          bbox[3] = Math.max(bbox[0], bezierBox[3] + oy);
+          bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+          bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+          bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
         }
         else if(c && c.length === 2) {
           let bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
           bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-          bbox[1] = Math.min(bbox[0], bezierBox[1] - oy);
-          bbox[2] = Math.max(bbox[0], bezierBox[2] + ox);
-          bbox[3] = Math.max(bbox[0], bezierBox[3] + oy);
+          bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+          bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+          bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
         }
         else {
           bbox[0] = Math.min(bbox[0], xa - ox);
-          bbox[1] = Math.min(bbox[0], xb - oy);
-          bbox[2] = Math.max(bbox[0], xa + ox);
-          bbox[3] = Math.max(bbox[0], xb + oy);
+          bbox[1] = Math.min(bbox[1], xb - oy);
+          bbox[2] = Math.max(bbox[2], xa + ox);
+          bbox[3] = Math.max(bbox[3], xb + oy);
         }
         xa = xb;
         ya = yb;

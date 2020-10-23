@@ -1262,9 +1262,9 @@ class Dom extends Xom {
           else if(temp && temp.offScreen) {
             let { width, height } = root;
             let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-            let res = blur.gaussBlur(offScreen.target, webgl, blurValue, width, height);
-            offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-            offScreen.target.draw();
+            let res = blur.gaussBlur(temp.offScreen.target, webgl, blurValue, width, height);
+            temp.offScreen.ctx.drawImage(temp.offScreen.target.canvas, 0, 0);
+            temp.offScreen.target.draw();
             res.clear();
           }
         }

@@ -1341,7 +1341,7 @@ class Xom extends Node {
     let y2 = y1 + borderTopWidth;
     let y3 = y2 + height + paddingTop + paddingBottom;
     let y4 = y3 + borderBottomWidth;
-    let res = { x1,  x2, x3, x4, y1, y2, y3, y4 };
+    let res = { x1, x2, x3, x4, y1, y2, y3, y4 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = this.domParent;
     // 计算好cacheStyle的内容，以及位图缓存指数

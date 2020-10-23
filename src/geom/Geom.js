@@ -331,11 +331,11 @@ class Geom extends Xom {
       opacity *= computedStyle.opacity;
       ctx.globalAlpha = opacity;
       if(target) {
-        let { coords: [x, y], canvas, size, dbx, dby } = target;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1 - dbx, dy - 1 - dby, size, size);
-        return;
+        Cache.drawCache(target, cacheTop);
       }
-      super.__applyCache(renderMode, ctx, dx - 1, dy - 1);
+      else if(cache && cache.available) {
+        Cache.drawCache(cache, cacheTop);
+      }
     }
     // root调用局部整体缓存或单个节点缓存绘入主画布
     else if(mode === refreshMode.ROOT) {
@@ -349,6 +349,10 @@ class Geom extends Xom {
       if(target) {
         let { x1, y1, dbx, dby, canvas } = target;
         ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
+      }
+      else if(cache && cache.available) {
+        let { coords: [tx, ty], x1, y1, dbx, dby, canvas, size } = target;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby, size, size, tx - 1, tx - 1, size, size);
       }
     }
   }

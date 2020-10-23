@@ -10545,7 +10545,7 @@
     return Page;
   }();
 
-  var Cache = /*#__PURE__*/function () {
+  var Cache$1 = /*#__PURE__*/function () {
     function Cache(bbox, page, pos) {
       _classCallCheck(this, Cache);
 
@@ -10902,7 +10902,7 @@
     return Cache;
   }();
 
-  _defineProperty(Cache, "COUNT", 5);
+  _defineProperty(Cache$1, "COUNT", 5);
 
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
@@ -12192,7 +12192,7 @@
 
           if (cache && cache.available && lv < o$1.REPAINT) {
             if (o$1.contain(lv, o$1.FILTER)) {
-              cache = this.__cache = Cache.updateCache(cache, this.bbox);
+              cache = this.__cache = Cache$1.updateCache(cache, this.bbox);
             }
 
             return _objectSpread2(_objectSpread2({}, res), {}, {
@@ -12210,7 +12210,7 @@
             if (cache) {
               cache.reset(bbox);
             } else {
-              cache = Cache.getInstance(bbox);
+              cache = Cache$1.getInstance(bbox);
             } // 有可能超过最大尺寸限制不使用缓存
 
 
@@ -15516,11 +15516,11 @@
             if (o$1.contain(lv, o$1.FILTER)) {
               var bbox = this.__mergeBbox(null, true);
 
-              var newCache = Cache.updateCache(cacheTotal, bbox);
+              var newCache = Cache$1.updateCache(cacheTotal, bbox);
 
               if (newCache) {
                 this.__cacheTotal = newCache;
-                this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
+                this.__cacheFilter = Cache$1.genOffScreenBlur(cacheTotal, blurValue);
               } // 更新后超限，丢掉blur降级
               else {
                   console.error('CacheTotal is oversize');
@@ -15601,13 +15601,13 @@
 
                     if (_blurValue && o$1.contain(lv2, o$1.FILTER)) {
                       if (cacheMask) {
-                        cacheMask = item.__cacheMask = Cache.updateCache(cacheMask, _bbox);
+                        cacheMask = item.__cacheMask = Cache$1.updateCache(cacheMask, _bbox);
                       }
 
-                      cache = item.__cache = Cache.updateCache(cache, _bbox);
+                      cache = item.__cache = Cache$1.updateCache(cache, _bbox);
 
                       if (cacheMask || cache && cache.available) {
-                        item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, _blurValue);
+                        item.__cacheFilter = Cache$1.genOffScreenBlur(cacheMask || cache, _blurValue);
                       } // 更新后超限，丢掉blur降级
                       else {
                           console.error('Geom cache is oversize');
@@ -15628,7 +15628,7 @@
                         cache.reset(_bbox);
                       }
                     } else {
-                      cache = item.__cache = Cache.getInstance(_bbox);
+                      cache = item.__cache = Cache$1.getInstance(_bbox);
                     }
 
                     if (cache && cache.enabled) {
@@ -15667,20 +15667,20 @@
                 var _item$computedStyle = item.computedStyle,
                     transform = _item$computedStyle.transform,
                     transformOrigin = _item$computedStyle.transformOrigin;
-                item.__cacheMask = Cache.drawMask(_cache, next, transform, transformOrigin.slice(0));
+                item.__cacheMask = Cache$1.drawMask(_cache, next, transform, transformOrigin.slice(0));
               }
 
               if (root.cache && _blurValue && (_cacheMask || _cache && _cache.available)) {
-                item.__cacheFilter = Cache.genOffScreenBlur(_cacheMask || _cache, _blurValue);
+                item.__cacheFilter = Cache$1.genOffScreenBlur(_cacheMask || _cache, _blurValue);
               } else if (temp && temp.offScreen) {
                 var width = root.width,
                     height = root.height;
                 var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
 
-                var _res2 = blur.gaussBlur(offScreen.target, webgl, _blurValue, width, height);
+                var _res2 = blur.gaussBlur(temp.offScreen.target, webgl, _blurValue, width, height);
 
-                offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-                offScreen.target.draw();
+                temp.offScreen.ctx.drawImage(temp.offScreen.target.canvas, 0, 0);
+                temp.offScreen.target.draw();
 
                 _res2.clear();
               }
@@ -15742,7 +15742,7 @@
                         transform = _this$computedStyle2.transform,
                         transformOrigin = _this$computedStyle2.transformOrigin;
                     var _next = this.next;
-                    this.__cacheMask = Cache.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
+                    this.__cacheMask = Cache$1.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
                   } // 极端情况超限异常
                   else {
                       console.error('CacheTotal is oversize with mask');
@@ -15853,7 +15853,7 @@
 
 
           if (!cacheTotal) {
-            cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
+            cacheTotal = this.__cacheTotal = Cache$1.getInstance(bboxTotal);
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容，重复利用在render()里做了，这里reset
           else if (!cacheTotal.enabled) {
               cacheTotal.reset(bboxTotal);
@@ -15878,7 +15878,7 @@
               ctx.globalAlpha = 1;
 
               if (cache && cache.available) {
-                Cache.drawCache(cache, cacheTotal);
+                Cache$1.drawCache(cache, cacheTotal);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -15910,7 +15910,7 @@
 
 
           if (blurValue && cacheTotal && cacheTotal.available) {
-            this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
+            this.__cacheFilter = Cache$1.genOffScreenBlur(cacheTotal, blurValue);
           } else if (cacheFilter) {
             console.error('CacheFilter is oversize');
             this.__cacheFilter = null;
@@ -15933,7 +15933,7 @@
 
             if (cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
               var target = cacheFilter || cacheMask || cacheTotal;
-              Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
+              Cache$1.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
               return;
             }
 
@@ -15952,7 +15952,7 @@
 
 
             if (cache && cache.available) {
-              Cache.drawCache(cache, cacheTop);
+              Cache$1.drawCache(cache, cacheTop);
             } // 递归children
 
 
@@ -19749,20 +19749,10 @@
           ctx.globalAlpha = opacity;
 
           if (target) {
-            var _target = target,
-                _target$coords = _slicedToArray(_target.coords, 2),
-                _x = _target$coords[0],
-                _y = _target$coords[1],
-                canvas = _target.canvas,
-                size = _target.size,
-                _dbx = _target.dbx,
-                _dby = _target.dby;
-
-            ctx.drawImage(canvas, _x - 1, _y - 1, size, size, dx - 1 - _dbx, dy - 1 - _dby, size, size);
-            return;
+            Cache.drawCache(target, cacheTop);
+          } else if (cache && cache.available) {
+            Cache.drawCache(cache, cacheTop);
           }
-
-          _get(_getPrototypeOf(Geom.prototype), "__applyCache", this).call(this, renderMode, ctx, dx - 1, dy - 1);
         } // root调用局部整体缓存或单个节点缓存绘入主画布
         else if (mode === refreshMode.ROOT) {
             var __opacity = this.__opacity,
@@ -19776,13 +19766,26 @@
             }
 
             if (target) {
+              var _target = target,
+                  _x = _target.x1,
+                  _y = _target.y1,
+                  _dbx = _target.dbx,
+                  _dby = _target.dby,
+                  canvas = _target.canvas;
+              ctx.drawImage(canvas, _x - 1 - _dbx, _y - 1 - _dby);
+            } else if (cache && cache.available) {
               var _target2 = target,
+                  _target2$coords = _slicedToArray(_target2.coords, 2),
+                  _tx = _target2$coords[0],
+                  _ty = _target2$coords[1],
                   _x2 = _target2.x1,
                   _y2 = _target2.y1,
                   _dbx2 = _target2.dbx,
                   _dby2 = _target2.dby,
-                  _canvas = _target2.canvas;
-              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2);
+                  _canvas = _target2.canvas,
+                  size = _target2.size;
+
+              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2, size, size, _tx - 1, _tx - 1, size, size);
             }
           }
       }
@@ -20568,21 +20571,21 @@
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
               bbox[0] = Math.min(bbox[0], bezierBox[0] - ox);
-              bbox[1] = Math.min(bbox[0], bezierBox[1] - oy);
-              bbox[2] = Math.max(bbox[0], bezierBox[2] + ox);
-              bbox[3] = Math.max(bbox[0], bezierBox[3] + oy);
+              bbox[1] = Math.min(bbox[1], bezierBox[1] - oy);
+              bbox[2] = Math.max(bbox[2], bezierBox[2] + ox);
+              bbox[3] = Math.max(bbox[3], bezierBox[3] + oy);
             } else if (c && c.length === 2) {
               var _bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], xb, yb);
 
               bbox[0] = Math.min(bbox[0], _bezierBox[0] - ox);
-              bbox[1] = Math.min(bbox[0], _bezierBox[1] - oy);
-              bbox[2] = Math.max(bbox[0], _bezierBox[2] + ox);
-              bbox[3] = Math.max(bbox[0], _bezierBox[3] + oy);
+              bbox[1] = Math.min(bbox[1], _bezierBox[1] - oy);
+              bbox[2] = Math.max(bbox[2], _bezierBox[2] + ox);
+              bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
             } else {
               bbox[0] = Math.min(bbox[0], xa - ox);
-              bbox[1] = Math.min(bbox[0], xb - oy);
-              bbox[2] = Math.max(bbox[0], xa + ox);
-              bbox[3] = Math.max(bbox[0], xb + oy);
+              bbox[1] = Math.min(bbox[1], xb - oy);
+              bbox[2] = Math.max(bbox[2], xa + ox);
+              bbox[3] = Math.max(bbox[3], xb + oy);
             }
 
             xa = xb;
@@ -22118,7 +22121,7 @@
     level: o$1,
     change: o,
     Page: Page,
-    Cache: Cache
+    Cache: Cache$1
   };
 
   var version = "0.39.0";

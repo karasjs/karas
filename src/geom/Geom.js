@@ -4,6 +4,10 @@ import css from '../style/css';
 import unit from '../style/unit';
 import mode from '../node/mode';
 import util from '../util/util';
+import level from '../refresh/level';
+import refreshMode from '../refresh/mode';
+import tf from '../style/transform';
+import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
 const { int2rgba, isNil } = util;
@@ -107,7 +111,7 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __preRender(renderMode, lv, ctx, defs) {
+  __preSet(renderMode, ctx, defs) {
     let { sx: x, sy: y, width, height, __cacheStyle, currentStyle, computedStyle } = this;
     let {
       borderTopWidth,
@@ -128,27 +132,19 @@ class Geom extends Xom {
     let iw = width + paddingLeft + paddingRight;
     let ih = height + paddingTop + paddingBottom;
     // 先根据cache计算需要重新计算的computedStyle
-    if(__cacheStyle.stroke === undefined) {
-      let stroke = currentStyle.stroke;
-      computedStyle.stroke = stroke;
-      if(stroke && (stroke.k === 'linear' || stroke.k === 'radial')) {
-        __cacheStyle.stroke = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, stroke);
+    ['stroke', 'fill'].forEach(k => {
+      if(isNil(__cacheStyle[k])) {
+        let v = currentStyle[k];
+        computedStyle[k] = v;
+        if(v && (v.k === 'linear' || v.k === 'radial')) {
+          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, v);
+        }
+        else {
+          __cacheStyle[k] = int2rgba(currentStyle[k]);
+        }
       }
-      else {
-        __cacheStyle.stroke = int2rgba(currentStyle.stroke);
-      }
-    }
-    if(__cacheStyle.fill === undefined) {
-      let fill = currentStyle.fill;
-      computedStyle.fill = fill;
-      if(fill && (fill.k === 'linear' || fill.k === 'radial')) {
-        __cacheStyle.fill = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, fill);
-      }
-      else {
-        __cacheStyle.fill = int2rgba(currentStyle.fill);
-      }
-    }
-    if(__cacheStyle.strokeWidth === undefined) {
+    });
+    if(isNil(__cacheStyle.strokeWidth)) {
       __cacheStyle.strokeWidth = true;
       let strokeWidth = currentStyle.strokeWidth;
       if(strokeWidth.unit === PX) {
@@ -161,7 +157,7 @@ class Geom extends Xom {
         computedStyle.strokeWidth = 0;
       }
     }
-    if(__cacheStyle.strokeDasharray === undefined) {
+    if(isNil(__cacheStyle.strokeDasharray)) {
       __cacheStyle.strokeDasharray = true;
       computedStyle.strokeDasharray = currentStyle.strokeDasharray;
       __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
@@ -186,6 +182,36 @@ class Geom extends Xom {
       strokeMiterlimit,
       strokeDasharray,
     } = computedStyle;
+    return {
+      x,
+      y,
+      originX,
+      originY,
+      cx,
+      cy,
+      display,
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      fill,
+      visibility,
+    };
+  }
+
+  __preSetCanvas(renderMode, ctx, res) {
+    let {
+      stroke,
+      strokeWidth,
+      strokeDasharray,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      fill,
+    } = res;
     if(renderMode === mode.CANVAS) {
       if(ctx.fillStyle !== fill) {
         ctx.fillStyle = fill;
@@ -215,42 +241,58 @@ class Geom extends Xom {
         ctx.setLineDash(strokeDasharray);
       }
     }
-    return {
-      x,
-      y,
-      originX,
-      originY,
-      cx,
-      cy,
-      display,
-      stroke,
-      strokeWidth,
-      strokeDasharray,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      fill,
-      visibility,
-    };
   }
 
   render(renderMode, lv, ctx, defs) {
     let res = super.render(renderMode, lv, ctx, defs);
+    let cacheFilter = this.__cacheFilter, cacheTotal = this.__cacheTotal, cache = this.__cache;
+    let virtualDom = this.virtualDom;
+    // 存在老的缓存认为可提前跳出
+    if(lv < level.REPAINT
+      && (cacheTotal && cacheTotal.available || cache && cache.available || !level.contain(lv, level.FILTER) && cacheFilter)) {
+      res.break = true; // geom子类标识可以跳过自定义render()
+    }
     if(renderMode === mode.SVG) {
-      if(res.break) {
-        return res;
+      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
+      if(!cacheTotal) {
+        this.__cacheTotal = {
+          available: true,
+          release() {
+            this.available = false;
+            delete virtualDom.cache;
+          },
+        };
+      }
+      else if(!cacheTotal.available) {
+        cacheTotal.available = true;
       }
       this.virtualDom.type = 'geom';
     }
-    this.__offScreen = res.offScreen;
-    let res2 = this.__preRender(renderMode, lv, ctx, defs);
-    return Object.assign(res, res2);
+    // 无论canvas/svg，break可提前跳出省略计算
+    if(res.break) {
+      return res;
+    }
+    this.__cacheFilter = null;
+    // data在无cache时没有提前设置
+    let preData = (this.root.cache && renderMode === mode.CANVAS) ? this.__preData : this.__preSet(renderMode, ctx, defs);
+    let { x2, y2 } = res;
+    let { originX, originY } = preData;
+    // 有cache时需计算差值
+    let { paddingLeft, paddingTop } = this.computedStyle;
+    x2 += paddingLeft;
+    y2 += paddingTop;
+    preData.dx = x2 - originX;
+    preData.dy = y2 - originY;
+    this.__preSetCanvas(renderMode, ctx, preData);
+    return Object.assign(res, preData);
   }
 
   __renderAsMask(renderMode, lv, ctx, defs, isClip) {
+    if(renderMode === mode.CANVAS) {
+      this.root.cache && (this.__preData = this.__preSet(renderMode, ctx, defs));
+    }
     // mask渲染在canvas等被遮罩层调用，svg生成maskId
-    if(renderMode === mode.SVG) {
+    else if(renderMode === mode.SVG) {
       this.render(renderMode, lv, ctx, defs);
       let vd = this.virtualDom;
       if(isClip) {
@@ -264,19 +306,54 @@ class Geom extends Xom {
     }
   }
 
-  __applyCache(renderMode, lv, ctx, mode) {
-    let { __opacity, matrixEvent } = this;
-    // 写回主画布前设置
-    ctx.globalAlpha = __opacity;
-    ctx.setTransform(...matrixEvent);
-    // 优先filter，然后total
+  // 类似dom，但geom没有children所以没有total的概念
+  __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
     let cacheFilter = this.__cacheFilter;
-    let cacheTotal = this.__cacheTotal;
-    if(cacheFilter) {
-      ctx.drawImage(cacheFilter.canvas, 0, 0);
+    let cacheMask = this.__cacheMask;
+    let cache = this.__cache;
+    let computedStyle = this.computedStyle;
+    // 优先filter，然后mask，再cache
+    let target = cacheFilter || cacheMask;
+    // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
+    if(mode === refreshMode.CHILD) {
+      let { sx: x, sy: y } = this;
+      x += computedStyle.marginLeft;
+      y += computedStyle.marginTop;
+      let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
+      let dx = tx + x - x1 + dbx;
+      let dy = ty + y - y1 + dby;
+      let tfo = computedStyle.transformOrigin.slice(0);
+      tfo[0] += dx;
+      tfo[1] += dy;
+      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+      matrix = mx.multiply(matrix, m);
+      ctx.setTransform(...matrix);
+      opacity *= computedStyle.opacity;
+      ctx.globalAlpha = opacity;
+      if(target) {
+        Cache.drawCache(target, cacheTop);
+      }
+      else if(cache && cache.available) {
+        Cache.drawCache(cache, cacheTop);
+      }
     }
-    else if(cacheTotal) {
-      ctx.drawImage(cacheTotal.canvas, 0, 0);
+    // root调用局部整体缓存或单个节点缓存绘入主画布
+    else if(mode === refreshMode.ROOT) {
+      let { __opacity, matrixEvent } = this;
+      // 写回主画布前设置
+      ctx.globalAlpha = __opacity;
+      ctx.setTransform(...matrixEvent);
+      if(!target && cache && cache.available) {
+        target = cache;
+      }
+      if(target) {
+        let { x1, y1, dbx, dby, canvas } = target;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
+      }
+      else if(cache && cache.available) {
+        let { coords: [tx, ty], x1, y1, dbx, dby, canvas, size } = target;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby, size, size, tx - 1, tx - 1, size, size);
+      }
     }
   }
 

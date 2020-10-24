@@ -130,7 +130,6 @@ class Root extends Dom {
         this.__height = value;
       }
     }
-    this.__offScreen = !!this.props.offScreen;
   }
 
   __genHtml() {
@@ -342,9 +341,6 @@ class Root extends Dom {
             if(len) {
               updater.updateList.forEach(cp => {
                 let sr = cp.shadowRoot;
-                while(sr instanceof Component) {
-                  sr = sr.shadowRoot;
-                }
                 // 可能返回text，需视为其parentNode
                 if(sr instanceof Text) {
                   sr = sr.domParent;
@@ -600,13 +596,17 @@ class Root extends Dom {
     totalList.forEach(item => {
       let parent = item;
       let lv = parent.__refreshLevel || 0;
-      let need = lv >= level.REPAINT;
+      // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
+      let need = lv >= level.REPAINT || renderMode === mode.SVG && item.tagName.charAt(0) === '$';
       if(need) {
         if(parent.__cache) {
           parent.__cache.release();
         }
         if(parent.__cacheTotal) {
           parent.__cacheTotal.release();
+        }
+        if(parent.__cacheMask) {
+          parent.__cacheMask = null;
         }
       }
       if((need || level.contain(lv, level.FILTER)) && parent.__cacheFilter) {
@@ -638,6 +638,9 @@ class Root extends Dom {
         }
         if(parent.__cacheFilter) {
           parent.__cacheFilter = null;
+        }
+        if(parent.__cacheMask) {
+          parent.__cacheMask = null;
         }
         parent = parent.domParent;
       }
@@ -1216,10 +1219,6 @@ class Root extends Dom {
 
   get ctx() {
     return this.__ctx;
-  }
-
-  get offScreen() {
-    return this.__offScreen;
   }
 
   get defs() {

@@ -46,22 +46,7 @@ class Ellipse extends Geom {
     }
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    if(res.break) {
-      return res;
-    }
-    let {
-      cx,
-      cy,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-    } = res;
+  buildCache(cx, cy) {
     let { width, height, rx, ry, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.rx)) {
@@ -82,37 +67,46 @@ class Ellipse extends Geom {
         __cacheProps.ry = ry * height * 0.5;
       }
     }
-    // rx/ry有一个变了重新计算顶点
     if(rebuild) {
       let { rx, ry } = __cacheProps;
       if(isMulti) {
-        let list = rx.map((rx, i) => geom.ellipsePoints(cx, cy, rx, ry[i]));
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = '';
-          list.forEach(item => __cacheProps.d += painter.svgPolygon(item));
-        }
+        __cacheProps.list = rx.map((rx, i) => geom.ellipsePoints(cx, cy, rx, ry[i]));
       }
       else {
-        let list = geom.ellipsePoints(cx, cy, rx, ry);
-        if(renderMode === mode.CANVAS) {
-          __cacheProps.list = list;
-        }
-        else if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgPolygon(list);
-        }
+        __cacheProps.list = geom.ellipsePoints(cx, cy, rx, ry);
       }
     }
+    return rebuild;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    let {
+      cx,
+      cy,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let { __cacheProps, isMulti } = this;
+    this.buildCache(cx, cy);
+    let list = __cacheProps.list;
     if(renderMode === mode.CANVAS) {
-      let list = __cacheProps.list;
       ctx.beginPath();
       if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item));
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
       }
       else {
-        painter.canvasPolygon(ctx, list);
+        painter.canvasPolygon(ctx, list, dx, dy);
       }
       ctx.fill();
       if(strokeWidth > 0) {
@@ -121,8 +115,15 @@ class Ellipse extends Geom {
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += painter.svgPolygon(item));
+      }
+      else {
+        d = painter.svgPolygon(list);
+      }
       let props = [
-        ['d', __cacheProps.d],
+        ['d', d],
         ['fill', fill],
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
@@ -142,38 +143,54 @@ class Ellipse extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { rx, ry }, computedStyle: { strokeWidth } } = this;
-    let bbox = super.bbox;
-    let w = bbox[2] - bbox[0];
-    let h = bbox[3] - bbox[1];
+    let {
+      isMulti, __cacheProps,
+      sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
+    this.buildCache(cx, cy);
+    let rx = 0, ry = 0;
     if(isMulti) {
-      let max = 0;
-      rx.forEach(rx => {
-        max = Math.max(rx, max);
+      let mx = 0, my = 0;
+      __cacheProps.rx.forEach((rx, i) => {
+        mx = Math.max(rx, mx);
+        my = Math.max(ry, __cacheProps.ry[i]);
       });
-      rx = max;
-      max = 0;
-      ry.forEach(ry => {
-        max = Math.max(ry, max);
-      });
-      ry = max;
+      rx = mx;
+      ry = my;
     }
-    let dx = rx + strokeWidth;
-    let dy = ry + strokeWidth;
-    let diffX = dx - w;
-    let diffY = dy - h;
-    if(diffX > 0 || diffY > 0) {
-      if(diffX > 0) {
-        let half = diffX * 0.5;
-        bbox[0] -= half;
-        bbox[2] += half;
-      }
-      if(diffY > 0) {
-        let half = diffY * 0.5;
-        bbox[1] -= half;
-        bbox[3] += half;
-      }
+    else {
+      rx = __cacheProps.rx;
+      ry = __cacheProps.ry;
     }
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    let xa = cx - rx - ox;
+    let xb = cx + rx + ox;
+    let ya = cy - ry - oy;
+    let yb = cy + ry + oy;
+    bbox[0] = Math.min(bbox[0], xa);
+    bbox[1] = Math.min(bbox[1], ya);
+    bbox[2] = Math.max(bbox[2], xb);
+    bbox[3] = Math.max(bbox[3], yb);
     return bbox;
   }
 }

@@ -6,6 +6,7 @@ import util from '../util/util';
 let { isNil } = util;
 
 function getCoordsByDegree(x, y, r, d) {
+  r = Math.max(r, 0);
   d = d % 360;
   if(d >= 0 && d < 90) {
     return [
@@ -91,22 +92,7 @@ class Sector extends Geom {
     }
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    if(res.break) {
-      return res;
-    }
-    let {
-      cx,
-      cy,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-    } = res;
+  buildCache(cx, cy) {
     let { width, begin, end, r, edge, closure, __cacheProps, isMulti } = this;
     let rebuild;
     if(isNil(__cacheProps.begin)) {
@@ -126,6 +112,7 @@ class Sector extends Geom {
         __cacheProps.r = r * width * 0.5;
       }
     }
+    r = __cacheProps.r;
     if(isNil(__cacheProps.edge)) {
       rebuild = true;
       __cacheProps.edge = edge;
@@ -134,9 +121,7 @@ class Sector extends Geom {
       rebuild = true;
       __cacheProps.closure = closure;
     }
-    // begin/end/r/edge/closure有变化就重建
     if(rebuild) {
-      let { begin, end, r, closure } = __cacheProps;
       if(isMulti) {
         __cacheProps.x1 = [];
         __cacheProps.x2 = [];
@@ -145,18 +130,15 @@ class Sector extends Geom {
         __cacheProps.large = [];
         __cacheProps.d = [];
         begin.forEach((begin, i) => {
-          let r = isNil(r) ? width * 0.5 : r;
-          let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
-          let [x2, y2] = getCoordsByDegree(cx, cy, r, end[i] || 0);
+          let r2 = isNil(r[i]) ? width * 0.5 : r[i];
+          let [x1, y1] = getCoordsByDegree(cx, cy, r2, begin);
+          let [x2, y2] = getCoordsByDegree(cx, cy, r2, end[i] || 0);
           let large = ((end[i] || 0) - begin) > 180 ? 1 : 0;
           __cacheProps.x1.push(x1);
           __cacheProps.x2.push(x2);
           __cacheProps.y1.push(y1);
           __cacheProps.y2.push(y2);
           __cacheProps.large.push(large);
-          if(renderMode === mode.SVG) {
-            __cacheProps.d.push(painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge[i] || 0, closure[i]));
-          }
         });
       }
       else {
@@ -168,32 +150,59 @@ class Sector extends Geom {
         __cacheProps.y1 = y1;
         __cacheProps.y2 = y2;
         __cacheProps.large = large;
-        if(renderMode === mode.SVG) {
-          __cacheProps.d = painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure);
-        }
       }
     }
+    return rebuild;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    let {
+      cx,
+      cy,
+      fill,
+      stroke,
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let { width, __cacheProps, isMulti } = this;
+    this.buildCache(cx, cy);
+    let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
     if(renderMode === mode.CANVAS) {
-      let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
       ctx.beginPath();
       if(isMulti) {
         begin.forEach((begin, i) => painter.canvasSector(ctx, cx, cy, r[i], x1[i], y1[i], x2[i], y2[i],
-          strokeWidth, begin[i], end[i], large[i], edge[i], closure[i]));
+          strokeWidth, begin[i], end[i], large[i], edge[i], closure[i], dx, dy));
       }
       else {
-        painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure);
+        painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure, dx, dy);
       }
       ctx.fill();
       ctx.closePath();
     }
     else if(renderMode === mode.SVG) {
       if(isMulti) {
-        __cacheProps.d.map((item, i) => this.__genSector(__cacheProps.edge[i], item, fill, stroke, strokeWidth,
-          strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit));
+        begin.forEach((begin, i) => {
+          let r2 = isNil(r[i]) ? width * 0.5 : r[i];
+          this.__genSector(edge[i],
+            painter.svgSector(cx, cy, r2, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]),
+            fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
+          );
+        });
       }
       else {
-        this.__genSector(__cacheProps.edge, __cacheProps.d, fill, stroke, strokeWidth,
-          strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+        this.__genSector(edge,
+          painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure),
+          fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
+        );
       }
     }
     return res;
@@ -250,30 +259,51 @@ class Sector extends Geom {
   }
 
   get bbox() {
-    let { isMulti, __cacheProps: { r }, computedStyle: { strokeWidth } } = this;
-    let bbox = super.bbox;
-    let w = bbox[2] - bbox[0];
-    let h = bbox[3] - bbox[1];
+    let {
+      isMulti, __cacheProps,
+      sx, sy, width, height,
+      currentStyle: {
+        boxShadow,
+        filter,
+      },
+      computedStyle: {
+        borderTopWidth,
+        borderLeftWidth,
+        marginTop,
+        marginLeft,
+        paddingTop,
+        paddingLeft,
+        strokeWidth,
+      } } = this;
+    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
+    this.buildCache(cx, cy);
+    let r = 0;
     if(isMulti) {
       let max = 0;
-      r.forEach(r => {
+      __cacheProps.r.forEach(r => {
         max = Math.max(r, max);
       });
       r = max;
     }
-    let d = r + strokeWidth;
-    let diff = d - Math.min(w, h);
-    if(diff > 0) {
-      let half = diff * 0.5;
-      if(d > w) {
-        bbox[0] -= half;
-        bbox[2] += half;
-      }
-      if(d > h) {
-        bbox[1] -= half;
-        bbox[3] += half;
-      }
+    else {
+      r = __cacheProps.r;
     }
+    let bbox = super.bbox;
+    let half = strokeWidth * 0.5;
+    let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
+    ox += half;
+    oy += half;
+    let xa = cx - r - ox;
+    let xb = cx + r + ox;
+    let ya = cy - r - oy;
+    let yb = cy + r + oy;
+    bbox[0] = Math.min(bbox[0], xa);
+    bbox[1] = Math.min(bbox[1], ya);
+    bbox[2] = Math.max(bbox[2], xb);
+    bbox[3] = Math.max(bbox[3], yb);
     return bbox;
   }
 }

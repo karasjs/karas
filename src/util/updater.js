@@ -68,30 +68,27 @@ function updateCp(cp, props, state) {
   cp.props = props;
   cp.__state = state;
   cp.__nextState = null;
-  let oldSr = cp.shadowRoot;
+  let oldS = cp.shadow;
   let oldJson = cp.__cd;
   let json = builder.flattenJson(cp.render());
   // 对比新老render()返回的内容，更新后重新生成sr
-  diffSr(oldSr, oldJson, json);
+  diffSr(oldS, oldJson, json);
   cp.__init(json);
   // 为了局部dom布局需要知道老的css信息
-  let sr = cp.shadowRoot;
-  while(sr instanceof Component) {
-    sr = sr.shadowRoot;
-  }
-  if(sr instanceof Xom) {
-    sr.__width = oldSr.width;
-    sr.__height = oldSr.height;
-    sr.__computedStyle = oldSr.computedStyle;
-    sr.__layoutData = oldSr.layoutData;
+  let s = cp.shadow;
+  if(s instanceof Xom) {
+    s.__width = oldS.width;
+    s.__height = oldS.height;
+    s.__computedStyle = oldS.computedStyle;
+    s.__layoutData = oldS.layoutData;
   }
   else {
-    sr.__parent = oldSr.parent;
+    s.__parent = oldS.parent;
   }
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {
-    removeList.push(oldSr);
+    removeList.push(oldS);
   }
   // 子组件使用老的json时标识，更新后删除，render()返回空会没json对象
   if(json && json.placeholder) {

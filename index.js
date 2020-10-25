@@ -20256,6 +20256,80 @@
     return num;
   }
 
+  function limitStartEnd(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getNewPoint(x1, y1, x2, y2, controlA, controlB, num) {
+    var start = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
+    var end = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 1;
+
+    if (start > 0 || end < 1) {
+      if (num === 3) {
+        var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+
+        var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+
+        x1 = _geom$sliceBezier2Bot3[0];
+        y1 = _geom$sliceBezier2Bot3[1];
+        controlA = _geom$sliceBezier2Bot2[1];
+        controlB = _geom$sliceBezier2Bot2[2];
+
+        var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+
+        x2 = _geom$sliceBezier2Bot4[0];
+        y2 = _geom$sliceBezier2Bot4[1];
+      } else if (num === 2) {
+        var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+
+        var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+
+        x1 = _geom$sliceBezier2Bot7[0];
+        y1 = _geom$sliceBezier2Bot7[1];
+        controlB = _geom$sliceBezier2Bot6[1];
+
+        var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+
+        x2 = _geom$sliceBezier2Bot8[0];
+        y2 = _geom$sliceBezier2Bot8[1];
+      } else if (num === 1) {
+        var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+
+        var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+
+        x1 = _geom$sliceBezier2Bot11[0];
+        y1 = _geom$sliceBezier2Bot11[1];
+        controlA = _geom$sliceBezier2Bot10[1];
+
+        var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+
+        x2 = _geom$sliceBezier2Bot12[0];
+        y2 = _geom$sliceBezier2Bot12[1];
+      } else {
+        var a = Math.abs(x1 - x2);
+        var b = Math.abs(y1 - y2);
+        x1 += a * start;
+        y1 += b * start;
+        x2 -= a * (1 - end);
+        y2 -= b * (1 - end);
+      }
+    }
+
+    return [x1, y1, x2, y2, controlA, controlB];
+  }
+
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
@@ -20275,6 +20349,8 @@
         _this.__y2 = [1];
         _this.__controlA = [[]];
         _this.__controlB = [[]];
+        _this.__start = [0];
+        _this.__end = [1];
 
         if (Array.isArray(props.x1)) {
           _this.__x1 = props.x1.map(function (i) {
@@ -20327,9 +20403,51 @@
             return [];
           });
         }
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd(parseFloat(i) || 0);
+          });
+
+          for (var i = _this.__start.length; i < _this.__x1.length; i++) {
+            _this.__start.push(0);
+          }
+        } else if (!isNil$8(props.start)) {
+          var v = limitStartEnd(parseFloat(props.start) || 0);
+          _this.__start = _this.__x1.map(function () {
+            return v;
+          });
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd(v);
+          });
+
+          for (var _i = _this.__end.length; _i < _this.__x1.length; _i++) {
+            _this.__end.push(1);
+          }
+        } else if (!isNil$8(props.end)) {
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd(_v);
+          _this.__end = _this.__x1.map(function () {
+            return _v;
+          });
+        }
       } else {
-        _this.__x1 = _this.__y1 = 0;
-        _this.__x2 = _this.__y2 = 1;
+        _this.__x1 = _this.__y1 = _this.__start = 0;
+        _this.__x2 = _this.__y2 = _this.__end = 1;
         _this.__controlA = [];
         _this.__controlB = [];
 
@@ -20347,6 +20465,20 @@
 
         if (!isNil$8(props.y2)) {
           _this.__y2 = parseFloat(props.y2) || 0;
+        }
+
+        if (!isNil$8(props.start)) {
+          _this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$8(props.end)) {
+          var _v2 = parseFloat(props.end);
+
+          if (isNaN(_v2)) {
+            _v2 = 1;
+          }
+
+          _this.__end = limitStartEnd(_v2);
         }
 
         if (Array.isArray(props.controlA)) {
@@ -20389,6 +20521,12 @@
             __cacheProps[k] = reBuildC(_this2[k], originX, originY, width, height, isMulti);
           }
         });
+        ['start', 'end'].forEach(function (k) {
+          if (isNil$8(__cacheProps[k])) {
+            rebuild = true;
+            __cacheProps[k] = _this2[k];
+          }
+        });
         return rebuild;
       }
     }, {
@@ -20424,12 +20562,50 @@
               var yb = __cacheProps.y2[i];
               var ca = __cacheProps.controlA[i];
               var cb = __cacheProps.controlB[i];
+              var start = __cacheProps.start[i];
+              var end = __cacheProps.end[i];
               var curve = curveNum(ca, cb);
+
+              if (start !== 0 || end !== 1) {
+                var _getNewPoint = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+
+                var _getNewPoint2 = _slicedToArray(_getNewPoint, 6);
+
+                xa = _getNewPoint2[0];
+                ya = _getNewPoint2[1];
+                xb = _getNewPoint2[2];
+                ya = _getNewPoint2[3];
+                ca = _getNewPoint2[4];
+                cb = _getNewPoint2[5];
+              }
+
               d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-            d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, curve);
+            var x1 = __cacheProps.x1,
+                y1 = __cacheProps.y1,
+                x2 = __cacheProps.x2,
+                y2 = __cacheProps.y2,
+                controlA = __cacheProps.controlA,
+                controlB = __cacheProps.controlB,
+                start = __cacheProps.start,
+                end = __cacheProps.end;
+
+            if (start !== 0 || end !== 1) {
+              var _getNewPoint3 = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+
+              var _getNewPoint4 = _slicedToArray(_getNewPoint3, 6);
+
+              x1 = _getNewPoint4[0];
+              y1 = _getNewPoint4[1];
+              x2 = _getNewPoint4[2];
+              y2 = _getNewPoint4[3];
+              controlA = _getNewPoint4[4];
+              controlB = _getNewPoint4[5];
+            }
+
+            d = painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
           }
 
           __cacheProps.d = d;
@@ -20446,13 +20622,51 @@
                 var yb = __cacheProps.y2[i];
                 var ca = __cacheProps.controlA[i];
                 var cb = __cacheProps.controlB[i];
+                var start = __cacheProps.start[i];
+                var end = __cacheProps.end[i];
                 var curve = curveNum(ca, cb);
+
+                if (start !== 0 || end !== 1) {
+                  var _getNewPoint5 = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+
+                  var _getNewPoint6 = _slicedToArray(_getNewPoint5, 6);
+
+                  xa = _getNewPoint6[0];
+                  ya = _getNewPoint6[1];
+                  xb = _getNewPoint6[2];
+                  ya = _getNewPoint6[3];
+                  ca = _getNewPoint6[4];
+                  cb = _getNewPoint6[5];
+                }
+
                 painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
               });
             } else {
               var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
 
-              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve, dx, dy);
+              var _x = __cacheProps.x1,
+                  _y = __cacheProps.y1,
+                  _x2 = __cacheProps.x2,
+                  _y2 = __cacheProps.y2,
+                  _controlA = __cacheProps.controlA,
+                  _controlB = __cacheProps.controlB,
+                  _start = __cacheProps.start,
+                  _end = __cacheProps.end;
+
+              if (_start !== 0 || _end !== 1) {
+                var _getNewPoint7 = getNewPoint(_x, _y, _x2, _y2, _controlA, _controlB, _curve, _start, _end, __cacheProps.len);
+
+                var _getNewPoint8 = _slicedToArray(_getNewPoint7, 6);
+
+                _x = _getNewPoint8[0];
+                _y = _getNewPoint8[1];
+                _x2 = _getNewPoint8[2];
+                _y2 = _getNewPoint8[3];
+                _controlA = _getNewPoint8[4];
+                _controlB = _getNewPoint8[5];
+              }
+
+              painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
             }
 
             ctx.stroke();
@@ -20497,6 +20711,16 @@
       key: "controlB",
       get: function get() {
         return this.getProps('controlB');
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
       }
     }, {
       key: "bbox",
@@ -20614,6 +20838,187 @@
     return point;
   }
 
+  function limitStartEnd$1(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getLength(list, isMulti) {
+    var res = [];
+    var total = 0;
+    var increase = [];
+
+    if (isMulti) {
+      total = [];
+      list.forEach(function (list) {
+        var temp = getLength(list);
+        res.push(temp.list);
+        total.push(temp.total);
+        increase.push(temp.increase);
+      });
+    } else if (Array.isArray(list)) {
+      total = 0;
+      var start = 0;
+
+      for (var i = 0, len = list.length; i < len; i++) {
+        var item = list[i];
+
+        if (Array.isArray(item)) {
+          start = i;
+          break;
+        }
+      }
+
+      var prev = list[start];
+
+      for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
+        var _item = list[_i];
+
+        if (!Array.isArray(_item)) {
+          continue;
+        }
+
+        if (_item.length === 2) {
+          var a = Math.abs(_item[0] - prev[0]);
+          var b = Math.abs(_item[1] - prev[1]);
+          var c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+          res.push(c);
+          total += c;
+          increase.push(total);
+          prev = _item;
+        } else if (_item.length === 4) {
+          var _c = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
+
+          res.push(_c);
+          total += _c;
+          increase.push(total);
+          prev = [_item[2], _item[3]];
+        } else if (_item.length === 6) {
+          var _c2 = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
+
+          res.push(_c2);
+          total += _c2;
+          increase.push(total);
+          prev = [_item[4], _item[5]];
+        }
+      }
+    }
+
+    return {
+      list: res,
+      total: total,
+      increase: increase
+    };
+  }
+
+  function getIndex(list, t, i, j) {
+    if (i === j) {
+      return i;
+    }
+
+    var middle = i + (j - i >> 1);
+
+    if (list[middle] === t) {
+      return middle;
+    } else if (list[middle] > t) {
+      return getIndex(list, t, i, Math.max(middle - 1, i));
+    } else {
+      return getIndex(list, t, Math.min(middle + 1, j), j);
+    }
+  }
+
+  function getNewList(list, len) {
+    var start = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var end = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    if (start === 0 && end === 1) {
+      return list;
+    }
+
+    var i = 0,
+        j = list.length - 2;
+
+    if (start > 0) {
+      i = getIndex(len.increase, start * len.total, i, j);
+    }
+
+    if (end < 1) {
+      j = getIndex(len.increase, end * len.total, i, j);
+    }
+
+    list = util.clone(list);
+    end *= len.total;
+    var prePercent = 1;
+
+    if (end < len.increase[j]) {
+      var prev = list[j].slice(list[j].length - 2);
+      var current = list[j + 1];
+      var l = len.list[j];
+      var diff = len.increase[j] - end;
+      var t = prePercent = 1 - diff / l;
+
+      if (current.length === 2) {
+        var a = Math.abs(current[0] - prev[0]);
+        var b = Math.abs(current[1] - prev[1]);
+        list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
+      } else if (current.length === 4) {
+        var res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+        list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
+      } else if (current.length === 6) {
+        var _res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+
+        list[j + 1] = [_res[1][0], _res[1][1], _res[2][0], _res[2][1], _res[3][0], _res[3][1]];
+      }
+    }
+
+    start *= len.total;
+
+    if (start > (i ? len.increase[i - 1] : 0)) {
+      var _prev = list[i].slice(list[i].length - 2);
+
+      var _current = list[i + 1];
+
+      var _l = len.list[i] * prePercent;
+
+      var _diff = start - (i ? len.increase[i - 1] : 0);
+
+      var _t = _diff / _l;
+
+      if (_current.length === 2) {
+        var _a = Math.abs(_current[0] - _prev[0]);
+
+        var _b = Math.abs(_current[1] - _prev[1]);
+
+        list[i] = [_prev[0] + _t * _a, _prev[1] + _t * _b];
+      } else if (_current.length === 4) {
+        var _res2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res2[0];
+        list[i + 1] = [_res2[1][0], _res2[1][1], _res2[2][0], _res2[2][1]];
+      } else if (_current.length === 6) {
+        var _res3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res3[0];
+        list[i + 1] = [_res3[1][0], _res3[1][1], _res3[2][0], _res3[2][1], _current[4], _current[5]];
+      }
+    }
+
+    if (j < list.length - 2) {
+      list = list.slice(0, j + 2);
+    }
+
+    if (i > 0) {
+      list = list.slice(i);
+    }
+
+    return list;
+  }
+
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
@@ -20629,10 +21034,70 @@
       if (_this.isMulti) {
         _this.__points = [[]];
         _this.__controls = [[]];
+        _this.__start = [0];
+        _this.__end = [1];
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd$1(parseFloat(i) || 0);
+          });
+
+          for (var i = _this.__start.length; i < _this.__points.length; i++) {
+            _this.__start.push(0);
+          }
+        } else if (!isNil$9(props.start)) {
+          var v = limitStartEnd$1(parseFloat(props.start) || 0);
+          _this.__start = _this.__points.map(function () {
+            return v;
+          });
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd$1(v);
+          });
+
+          for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
+            _this.__end.push(1);
+          }
+        } else if (!isNil$9(props.end)) {
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd$1(_v);
+          _this.__end = _this.__points.map(function () {
+            return _v;
+          });
+        }
       } else {
         _this.__points = []; // 控制点
 
         _this.__controls = [];
+        _this.__start = 0;
+        _this.__end = 1;
+
+        if (!isNil$9(props.start)) {
+          _this.__start = limitStartEnd$1(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$9(props.end)) {
+          var _v2 = parseFloat(props.end);
+
+          if (isNaN(_v2)) {
+            _v2 = 1;
+          }
+
+          _this.__end = limitStartEnd$1(_v2);
+        }
       }
 
       if (Array.isArray(props.controls)) {
@@ -20668,11 +21133,11 @@
 
           var res = [];
 
-          for (var _i = 0; _i < len; _i++) {
-            if (_i % 2 === 0) {
-              res.push(originX + item[_i] * width);
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            if (_i3 % 2 === 0) {
+              res.push(originX + item[_i3] * width);
             } else {
-              res.push(originY + item[_i] * height);
+              res.push(originY + item[_i3] * height);
             }
           }
 
@@ -20688,11 +21153,15 @@
             height = this.height,
             points = this.points,
             controls = this.controls,
+            start = this.start,
+            end = this.end,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = true;
+        var rebuild, reset;
 
         if (isNil$9(__cacheProps.points)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.points = points.map(function (item) {
               if (Array.isArray(item)) {
@@ -20705,6 +21174,8 @@
         }
 
         if (isNil$9(__cacheProps.controls)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.controls = controls.map(function (item) {
               if (Array.isArray(item)) {
@@ -20718,7 +21189,18 @@
           }
         }
 
-        {
+        if (isNil$9(__cacheProps.start)) {
+          reset = true;
+          __cacheProps.start = start;
+        }
+
+        if (isNil$9(__cacheProps.end)) {
+          reset = true;
+          __cacheProps.end = end;
+        } // points/controls有变化就需要重建顶点
+
+
+        if (rebuild) {
           var _points = __cacheProps.points,
               _controls = __cacheProps.controls;
 
@@ -20738,6 +21220,7 @@
                 });
               }
             });
+            __cacheProps.len = getLength(__cacheProps.list, isMulti);
           } else {
             __cacheProps.list = _points.filter(function (item) {
               return Array.isArray(item);
@@ -20748,10 +21231,11 @@
 
               return point;
             });
+            __cacheProps.len = getLength(__cacheProps.list, isMulti);
           }
         }
 
-        return rebuild;
+        return rebuild || reset;
       }
     }, {
       key: "render",
@@ -20775,18 +21259,50 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        this.buildCache(originX, originY);
-        var list = __cacheProps.list;
+        var reBs = this.buildCache(originX, originY);
+
+        if (reBs) {
+          var list = __cacheProps.list;
+
+          if (isMulti) {
+            __cacheProps.list2 = list.map(function (item, i) {
+              if (Array.isArray(item)) {
+                var len = __cacheProps.len;
+                return getNewList(item, {
+                  list: len.list[i],
+                  total: len.total[i],
+                  increase: len.increase[i]
+                }, __cacheProps.start[i], __cacheProps.end[i]);
+              }
+            });
+          } else {
+            __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+          }
+
+          if (renderMode === mode.SVG) {
+            if (isMulti) {
+              var d = '';
+
+              __cacheProps.list2.forEach(function (item) {
+                return d += painter.svgPolygon(item);
+              });
+
+              __cacheProps.d = d;
+            } else {
+              __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
+            }
+          }
+        }
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
 
           if (isMulti) {
-            list.forEach(function (item) {
+            __cacheProps.list2.forEach(function (item) {
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, list, dx, dy);
+            painter.canvasPolygon(ctx, __cacheProps.list2, dx, dy);
           }
 
           ctx.fill();
@@ -20797,17 +21313,7 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var d = '';
-
-          if (isMulti) {
-            list.forEach(function (item) {
-              return d += painter.svgPolygon(item);
-            });
-          } else {
-            d = painter.svgPolygon(list);
-          }
-
-          var props = [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -20825,6 +21331,16 @@
       key: "controls",
       get: function get() {
         return this.getProps('controls');
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
       }
     }, {
       key: "bbox",
@@ -20878,12 +21394,12 @@
               xa = _pointList$[0],
               ya = _pointList$[1];
 
-          for (var _i2 = 1, len = pointList.length; _i2 < len; _i2++) {
-            var _pointList$_i = _slicedToArray(pointList[_i2], 2),
+          for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
+            var _pointList$_i = _slicedToArray(pointList[_i4], 2),
                 xb = _pointList$_i[0],
                 yb = _pointList$_i[1];
 
-            var c = controlList[_i2 - 1];
+            var c = controlList[_i4 - 1];
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);

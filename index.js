@@ -21157,7 +21157,7 @@
             end = this.end,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild, reset;
+        var rebuild;
 
         if (isNil$9(__cacheProps.points)) {
           rebuild = true;
@@ -21190,12 +21190,12 @@
         }
 
         if (isNil$9(__cacheProps.start)) {
-          reset = true;
+          rebuild = true;
           __cacheProps.start = start;
         }
 
         if (isNil$9(__cacheProps.end)) {
-          reset = true;
+          rebuild = true;
           __cacheProps.end = end;
         } // points/controls有变化就需要重建顶点
 
@@ -21235,7 +21235,7 @@
           }
         }
 
-        return rebuild || reset;
+        return rebuild;
       }
     }, {
       key: "render",
@@ -21259,38 +21259,35 @@
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var reBs = this.buildCache(originX, originY);
+        this.buildCache(originX, originY);
+        var list = __cacheProps.list;
 
-        if (reBs) {
-          var list = __cacheProps.list;
-
-          if (isMulti) {
-            __cacheProps.list2 = list.map(function (item, i) {
-              if (Array.isArray(item)) {
-                var len = __cacheProps.len;
-                return getNewList(item, {
-                  list: len.list[i],
-                  total: len.total[i],
-                  increase: len.increase[i]
-                }, __cacheProps.start[i], __cacheProps.end[i]);
-              }
-            });
-          } else {
-            __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
-          }
-
-          if (renderMode === mode.SVG) {
-            if (isMulti) {
-              var d = '';
-
-              __cacheProps.list2.forEach(function (item) {
-                return d += painter.svgPolygon(item);
-              });
-
-              __cacheProps.d = d;
-            } else {
-              __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
+        if (isMulti) {
+          __cacheProps.list2 = list.map(function (item, i) {
+            if (Array.isArray(item)) {
+              var len = __cacheProps.len;
+              return getNewList(item, {
+                list: len.list[i],
+                total: len.total[i],
+                increase: len.increase[i]
+              }, __cacheProps.start[i], __cacheProps.end[i]);
             }
+          });
+        } else {
+          __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+        }
+
+        if (renderMode === mode.SVG) {
+          if (isMulti) {
+            var d = '';
+
+            __cacheProps.list2.forEach(function (item) {
+              return d += painter.svgPolygon(item);
+            });
+
+            __cacheProps.d = d;
+          } else {
+            __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
           }
         }
 

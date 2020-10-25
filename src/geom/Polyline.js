@@ -292,11 +292,11 @@ class Polyline extends Geom {
       }
     }
     if(isNil(__cacheProps.start)) {
-      reset = true;
+      rebuild = true;
       __cacheProps.start = start;
     }
     if(isNil(__cacheProps.end)) {
-      reset = true;
+      rebuild = true;
       __cacheProps.end = end;
     }
     // points/controls有变化就需要重建顶点
@@ -326,7 +326,7 @@ class Polyline extends Geom {
         __cacheProps.len = getLength(__cacheProps.list, isMulti);
       }
     }
-    return rebuild || reset;
+    return rebuild;
   }
 
   render(renderMode, lv, ctx, defs) {
@@ -348,33 +348,31 @@ class Polyline extends Geom {
       dy,
     } = res;
     let { __cacheProps, isMulti } = this;
-    let reBs = this.buildCache(originX, originY);
-    if(reBs) {
-      let list = __cacheProps.list;
+    this.buildCache(originX, originY);
+    let list = __cacheProps.list;
+    if(isMulti) {
+      __cacheProps.list2 = list.map((item, i) => {
+        if(Array.isArray(item)) {
+          let len = __cacheProps.len;
+          return getNewList(item, {
+            list: len.list[i],
+            total: len.total[i],
+            increase: len.increase[i],
+          }, __cacheProps.start[i], __cacheProps.end[i]);
+        }
+      });
+    }
+    else {
+      __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+    }
+    if(renderMode === mode.SVG) {
       if(isMulti) {
-        __cacheProps.list2 = list.map((item, i) => {
-          if(Array.isArray(item)) {
-            let len = __cacheProps.len;
-            return getNewList(item, {
-              list: len.list[i],
-              total: len.total[i],
-              increase: len.increase[i],
-            }, __cacheProps.start[i], __cacheProps.end[i]);
-          }
-        });
+        let d = '';
+        __cacheProps.list2.forEach(item => d += painter.svgPolygon(item));
+        __cacheProps.d = d;
       }
       else {
-        __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
-      }
-      if(renderMode === mode.SVG) {
-        if(isMulti) {
-          let d = '';
-          __cacheProps.list2.forEach(item => d += painter.svgPolygon(item));
-          __cacheProps.d = d;
-        }
-        else {
-          __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
-        }
+        __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
       }
     }
     if(renderMode === mode.CANVAS) {

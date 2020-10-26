@@ -1319,8 +1319,8 @@ class Dom extends Xom {
         if(this === root) {
           this.__applyCache(renderMode, lv, ctx, refreshMode.ROOT);
         }
-        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
-        else if(canCacheSelf) {
+        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上，img除外自己处理
+        else if(canCacheSelf && this.tagName.toLowerCase() !== 'img') {
           this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
           if(hasMC) {
             let cacheTotal = this.__cacheTotal;
@@ -1385,6 +1385,8 @@ class Dom extends Xom {
     if(res.canCache && !canCacheChildren) {
       res.canCache = false;
     }
+    res.canCacheSelf = canCacheSelf;
+    res.hasMC = hasMC;
     return res;
   }
 
@@ -1721,7 +1723,7 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    return this.__zIndexChildren;
+    return this.__zIndexChildren || [];
   }
 
   get lineGroups() {

@@ -1416,7 +1416,8 @@ class Xom extends Node {
     let cache = this.__cache, dx = 0, dy = 0;
     if(root.cache && renderMode === mode.CANVAS) {
       let isGeom = this.tagName.charAt(0) === '$';
-      // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量
+      let isImg = this.tagName.toLowerCase() === 'img';
+      // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
       if(!hasContent) {
         if(!isGeom && cache && cache.available) {
           cache.release();
@@ -1425,7 +1426,9 @@ class Xom extends Node {
         if(lv < level.REPAINT && isGeom) {
           return { ...res, break: true, canCache, filter };
         }
-        return { ...res, canCache, filter };
+        if(!isImg) {
+          return { ...res, canCache, filter };
+        }
       }
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
       if(cache && cache.available && lv < level.REPAINT) {

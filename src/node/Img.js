@@ -8,6 +8,8 @@ import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
 import level from '../refresh/level';
+import refreshMode from '../refresh/mode';
+import Cache from '../refresh/Cache';
 
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
@@ -120,12 +122,21 @@ class Img extends Dom {
         visibility,
       },
       virtualDom,
+      __cache,
     } = this;
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
     }
-    let originX = x + marginLeft + borderLeftWidth + paddingLeft;
-    let originY = y + marginTop + borderTopWidth + paddingTop;
+    let originX, originY;
+    if(__cache && __cache.enabled) {
+      ctx = __cache.ctx;
+      originX = res.x2 + paddingLeft;
+      originY = res.y2 + paddingTop;
+    }
+    else {
+      originX = x + marginLeft + borderLeftWidth + paddingLeft;
+      originY = y + marginTop + borderTopWidth + paddingTop;
+    }
     let loadImg = this.__loadImg;
     if(loadImg.error) {
       let strokeWidth = Math.min(width, height) * 0.02;
@@ -348,6 +359,22 @@ class Img extends Dom {
         height,
       });
     }
+    if(res.canCacheSelf) {
+      this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
+      if(res.hasMC) {
+        let cacheTotal = this.__cacheTotal;
+        if(cacheTotal && cacheTotal.available) {
+          let { transform, transformOrigin } = this.computedStyle;
+          let next = this.next;
+          this.__cacheMask = Cache.drawMask(cacheTotal, next, transform, transformOrigin.slice(0));
+        }
+        // 极端情况超限异常
+        else {
+          console.error('CacheTotal is oversize with img\'s mask');
+        }
+      }
+    }
+    return res;
   }
 
   get baseLine() {

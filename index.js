@@ -12167,7 +12167,8 @@
             dy = 0;
 
         if (root.cache && renderMode === mode.CANVAS) {
-          var isGeom = this.tagName.charAt(0) === '$'; // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量
+          var isGeom = this.tagName.charAt(0) === '$';
+          var isImg = this.tagName.toLowerCase() === 'img'; // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
 
           if (!hasContent) {
             if (!isGeom && cache && cache.available) {
@@ -12183,10 +12184,12 @@
               });
             }
 
-            return _objectSpread2(_objectSpread2({}, res), {}, {
-              canCache: canCache,
-              filter: filter
-            });
+            if (!isImg) {
+              return _objectSpread2(_objectSpread2({}, res), {}, {
+                canCache: canCache,
+                filter: filter
+              });
+            }
           } // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
 
 
@@ -15742,8 +15745,8 @@
             // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
             if (this === root) {
               this.__applyCache(renderMode, lv, ctx, refreshMode.ROOT);
-            } // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上
-            else if (canCacheSelf) {
+            } // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上，img除外自己处理
+            else if (canCacheSelf && this.tagName.toLowerCase() !== 'img') {
                 this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
 
                 if (hasMC) {
@@ -15817,6 +15820,8 @@
           res.canCache = false;
         }
 
+        res.canCacheSelf = canCacheSelf;
+        res.hasMC = hasMC;
         return res;
       }
       /**
@@ -16244,7 +16249,7 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
-        return this.__zIndexChildren;
+        return this.__zIndexChildren || [];
       }
     }, {
       key: "lineGroups",
@@ -16399,14 +16404,24 @@
             borderBottomRightRadius = _this$computedStyle.borderBottomRightRadius,
             borderBottomLeftRadius = _this$computedStyle.borderBottomLeftRadius,
             visibility = _this$computedStyle.visibility,
-            virtualDom = this.virtualDom;
+            virtualDom = this.virtualDom,
+            __cache = this.__cache;
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return res;
         }
 
-        var originX = x + marginLeft + borderLeftWidth + paddingLeft;
-        var originY = y + marginTop + borderTopWidth + paddingTop;
+        var originX, originY;
+
+        if (__cache && __cache.enabled) {
+          ctx = __cache.ctx;
+          originX = res.x2 + paddingLeft;
+          originY = res.y2 + paddingTop;
+        } else {
+          originX = x + marginLeft + borderLeftWidth + paddingLeft;
+          originY = y + marginTop + borderTopWidth + paddingTop;
+        }
+
         var loadImg = this.__loadImg;
 
         if (loadImg.error) {
@@ -16610,6 +16625,27 @@
             height: height
           });
         }
+
+        if (res.canCacheSelf) {
+          this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
+
+          if (res.hasMC) {
+            var cacheTotal = this.__cacheTotal;
+
+            if (cacheTotal && cacheTotal.available) {
+              var _this$computedStyle2 = this.computedStyle,
+                  _transform = _this$computedStyle2.transform,
+                  transformOrigin = _this$computedStyle2.transformOrigin;
+              var next = this.next;
+              this.__cacheMask = Cache$1.drawMask(cacheTotal, next, _transform, transformOrigin.slice(0));
+            } // 极端情况超限异常
+            else {
+                console.error('CacheTotal is oversize with img\'s mask');
+              }
+          }
+        }
+
+        return res;
       }
     }, {
       key: "baseLine",
@@ -18462,15 +18498,10 @@
           var p = void 0;
           var _totalHash$__uniqueUp = totalHash[__uniqueUpdateId],
               style = _totalHash$__uniqueUp.style,
-              _focus = _totalHash$__uniqueUp.focus,
+              focus = _totalHash$__uniqueUp.focus,
               img = _totalHash$__uniqueUp.img,
               measure = _totalHash$__uniqueUp.measure,
               component = _totalHash$__uniqueUp.component;
-
-          if (img) {
-            lv |= o$1.REPAINT;
-          }
-
           var hasMeasure = measure;
           var hasZ = void 0;
 
@@ -18536,9 +18567,9 @@
             Object.assign(currentStyle, style);
           }
 
-          if (_focus !== undefined) {
+          if (!isNil$6(focus)) {
             hasUpdate = true;
-            lv = o$1.REFLOW;
+            lv |= focus;
           } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
@@ -18560,6 +18591,10 @@
             }
 
             node.__refreshLevel = o$1.getDetailRepaintByLv(style, lv);
+
+            if (!isNil$6(focus)) {
+              node.__refreshLevel |= focus;
+            }
           } // reflow在root的refresh中做
           else {
               node.__refreshLevel = o$1.REFLOW;
@@ -18895,7 +18930,7 @@
           else if (currentStyle.position !== computedStyle.position) {
               o.lv = LAYOUT;
 
-              if (checkInfluence(node, focus)) {
+              if (checkInfluence(node, true)) {
                 hasRoot = true;
                 break;
               }
@@ -18912,6 +18947,7 @@
                     break;
                   }
                 } // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
+                // img加载特殊进到这里强制LAYOUT
 
 
                 if (onlyXY && !img) {

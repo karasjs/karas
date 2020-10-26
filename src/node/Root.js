@@ -469,6 +469,16 @@ class Root extends Dom {
         };
         totalList.push(node);
       }
+      // 即便存在，focus/img也需要更新
+      else {
+        let target = totalHash[node.__uniqueUpdateId];
+        if(img) {
+          target.img = img;
+        }
+        if(!isNil(focus)) {
+          target.focus = focus;
+        }
+      }
       // updateStyle()这样的调用还要计算normalize
       if(origin && style) {
         style = css.normalize(style);
@@ -493,9 +503,6 @@ class Root extends Dom {
       let lv = level.NONE;
       let p;
       let { style, focus, img, measure, component } = totalHash[__uniqueUpdateId];
-      if(img) {
-        lv |= level.REPAINT;
-      }
       let hasMeasure = measure;
       let hasZ;
       for(let k in style) {
@@ -551,9 +558,9 @@ class Root extends Dom {
       if(style) {
         Object.assign(currentStyle, style);
       }
-      if(focus !== undefined) {
+      if(!isNil(focus)) {
         hasUpdate = true;
-        lv = level.REFLOW;
+        lv |= focus;
       }
       // 无任何改变处理的去除记录，如pointerEvents、无效的left
       if(lv === level.NONE) {
@@ -571,6 +578,9 @@ class Root extends Dom {
           lv |= level.REPAINT;
         }
         node.__refreshLevel = level.getDetailRepaintByLv(style, lv);
+        if(!isNil(focus)) {
+          node.__refreshLevel |= focus;
+        }
       }
       // reflow在root的refresh中做
       else {
@@ -851,7 +861,7 @@ class Root extends Dom {
       // absolute和非absolute互换
       else if(currentStyle.position !== computedStyle.position) {
         o.lv = LAYOUT;
-        if(checkInfluence(node, focus)) {
+        if(checkInfluence(node, true)) {
           hasRoot = true;
           break;
         }
@@ -868,6 +878,7 @@ class Root extends Dom {
           }
         }
         // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
+        // img加载特殊进到这里强制LAYOUT
         if(onlyXY && !img) {
           if(computedStyle.position === 'relative') {
             o.lv |= OFFSET;

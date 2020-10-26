@@ -15447,10 +15447,10 @@
                     item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                   }
                 } else {
-                  var _diff10 = maxCross - item.outerWidth;
+                  var _diff10 = maxCross - item.outerHeight;
 
                   if (_diff10 !== 0) {
-                    item.__offsetX(_diff10, true);
+                    item.__offsetY(_diff10, true);
                   }
                 }
               } else {

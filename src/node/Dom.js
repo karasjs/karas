@@ -822,9 +822,9 @@ class Dom extends Xom {
               }
             }
             else {
-              let diff = maxCross - item.outerWidth;
+              let diff = maxCross - item.outerHeight;
               if(diff !== 0) {
-                item.__offsetX(diff, true);
+                item.__offsetY(diff, true);
               }
             }
           }

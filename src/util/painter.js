@@ -2,8 +2,16 @@ function canvasPolygon(ctx, list, dx = 0, dy = 0) {
   if(!list || !list.length) {
     return;
   }
-  ctx.moveTo(list[0][0] + dx, list[0][1] + dy);
-  for(let i = 1, len = list.length; i < len; i++) {
+  let start = 0;
+  for(let i = 0, len = list.length; i < len; i++) {
+    let item = list[i];
+    if(Array.isArray(item)) {
+      start = i;
+      break;
+    }
+  }
+  ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+  for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {
       continue;
@@ -24,8 +32,16 @@ function svgPolygon(list) {
   if(!list || !list.length) {
     return '';
   }
-  let s = 'M' + list[0][0] + ',' + list[0][1];
-  for(let i = 1, len = list.length; i < len; i++) {
+  let start = 0;
+  for(let i = 0, len = list.length; i < len; i++) {
+    let item = list[i];
+    if(Array.isArray(item)) {
+      start = i;
+      break;
+    }
+  }
+  let s = 'M' + list[start][0] + ',' + list[start][1];
+  for(let i = start + 1, len = list.length; i < len; i++) {
     let item = list[i];
     if(!Array.isArray(item)) {
       continue;

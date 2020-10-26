@@ -448,21 +448,32 @@
       return;
     }
 
-    ctx.moveTo(list[0][0] + dx, list[0][1] + dy);
+    var start = 0;
 
-    for (var i = 1, len = list.length; i < len; i++) {
+    for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (!Array.isArray(item)) {
+      if (Array.isArray(item)) {
+        start = i;
+        break;
+      }
+    }
+
+    ctx.moveTo(list[start][0] + dx, list[start][1] + dy);
+
+    for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
+      var _item = list[_i];
+
+      if (!Array.isArray(_item)) {
         continue;
       }
 
-      if (item.length === 2) {
-        ctx.lineTo(item[0] + dx, item[1] + dy);
-      } else if (item.length === 4) {
-        ctx.quadraticCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy);
-      } else if (item.length === 6) {
-        ctx.bezierCurveTo(item[0] + dx, item[1] + dy, item[2] + dx, item[3] + dy, item[4] + dx, item[5] + dy);
+      if (_item.length === 2) {
+        ctx.lineTo(_item[0] + dx, _item[1] + dy);
+      } else if (_item.length === 4) {
+        ctx.quadraticCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy);
+      } else if (_item.length === 6) {
+        ctx.bezierCurveTo(_item[0] + dx, _item[1] + dy, _item[2] + dx, _item[3] + dy, _item[4] + dx, _item[5] + dy);
       }
     }
   }
@@ -472,21 +483,32 @@
       return '';
     }
 
-    var s = 'M' + list[0][0] + ',' + list[0][1];
+    var start = 0;
 
-    for (var i = 1, len = list.length; i < len; i++) {
+    for (var i = 0, len = list.length; i < len; i++) {
       var item = list[i];
 
-      if (!Array.isArray(item)) {
+      if (Array.isArray(item)) {
+        start = i;
+        break;
+      }
+    }
+
+    var s = 'M' + list[start][0] + ',' + list[start][1];
+
+    for (var _i2 = start + 1, _len2 = list.length; _i2 < _len2; _i2++) {
+      var _item2 = list[_i2];
+
+      if (!Array.isArray(_item2)) {
         continue;
       }
 
-      if (item.length === 2) {
-        s += 'L' + item[0] + ',' + item[1];
-      } else if (item.length === 4) {
-        s += 'Q' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3];
-      } else if (item.length === 6) {
-        s += 'C' + item[0] + ',' + item[1] + ' ' + item[2] + ',' + item[3] + ' ' + item[4] + ',' + item[5];
+      if (_item2.length === 2) {
+        s += 'L' + _item2[0] + ',' + _item2[1];
+      } else if (_item2.length === 4) {
+        s += 'Q' + _item2[0] + ',' + _item2[1] + ' ' + _item2[2] + ',' + _item2[3];
+      } else if (_item2.length === 6) {
+        s += 'C' + _item2[0] + ',' + _item2[1] + ' ' + _item2[2] + ',' + _item2[3] + ' ' + _item2[4] + ',' + _item2[5];
       }
     }
 
@@ -1213,6 +1235,285 @@
       return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
     }
   }
+  /**
+   * 范数 or 模
+   */
+
+
+  function norm(v) {
+    var order = v.length;
+    var sum = v.reduce(function (a, b) {
+      return Math.pow(a, order) + Math.pow(b, order);
+    });
+    return Math.pow(sum, 1 / order);
+  }
+
+  function simpson38(derivativeFunc, l, r) {
+    var f = derivativeFunc;
+    var middleL = (2 * l + r) / 3;
+    var middleR = (l + 2 * r) / 3;
+    return (f(l) + 3 * f(middleL) + 3 * f(middleR) + f(r)) * (r - l) / 8;
+  }
+  /**
+   * bezier 曲线的长度
+   * @param derivativeFunc 微分函数
+   * @param l 左点
+   * @param r 右点
+   * @param eps 精度
+   * @return {*} number
+   */
+
+
+  function adaptiveSimpson38(derivativeFunc, l, r) {
+    var eps = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.001;
+    var f = derivativeFunc;
+    var mid = (l + r) / 2;
+    var st = simpson38(f, l, r);
+    var sl = simpson38(f, l, mid);
+    var sr = simpson38(f, mid, r);
+    var ans = sl + sr - st;
+
+    if (Math.abs(ans) <= 15 * eps) {
+      return sl + sr + ans / 15;
+    }
+
+    return adaptiveSimpson38(f, l, mid, eps / 2) + adaptiveSimpson38(f, mid, r, eps / 2);
+  }
+  /**
+   * bezier 曲线的长度
+   * @param points 曲线的起止点 和 控制点
+   * @param order 阶次， 2 和 3
+   * @param startT 计算长度的起点，满足 0 <= startT <= endT <= 1
+   * @param endT 计算长度的终点
+   * @return {*} number
+   */
+
+
+  function bezierLength(points, order) {
+    var startT = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var endT = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    return adaptiveSimpson38(derivativeFunc, startT, endT);
+  }
+  /**
+   * 3 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at3(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points = _slicedToArray(points, 4),
+        p0 = _points[0],
+        p1 = _points[1],
+        p2 = _points[2],
+        p3 = _points[3];
+
+    var _p = _slicedToArray(p0, 2),
+        x0 = _p[0],
+        y0 = _p[1];
+
+    var _p2 = _slicedToArray(p1, 2),
+        x1 = _p2[0],
+        y1 = _p2[1];
+
+    var _p3 = _slicedToArray(p2, 2),
+        x2 = _p3[0],
+        y2 = _p3[1];
+
+    var _p4 = _slicedToArray(p3, 2),
+        x3 = _p4[0],
+        y3 = _p4[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 3) * x0 + 3 * t * Math.pow(1 - t, 2) * x1 + 3 * (1 - t) * Math.pow(t, 2) * x2 + Math.pow(t, 3) * x3;
+      y = Math.pow(1 - t, 3) * y0 + 3 * t * Math.pow(1 - t, 2) * y1 + 3 * (1 - t) * Math.pow(t, 2) * y2 + Math.pow(t, 3) * y3;
+    } else if (order === 1) {
+      x = 3 * ((1 - t) * (1 - t) * (x1 - x0) + 2 * (1 - t) * t * (x2 - x1) + t * t * (x3 - x2));
+      y = 3 * ((1 - t) * (1 - t) * (y1 - y0) + 2 * (1 - t) * t * (y2 - y1) + t * t * (y3 - y2));
+    } else if (order === 2) {
+      x = 6 * (x2 - 2 * x1 + x0) * (1 - t) + 6 * (x3 - 2 * x2 + x1) * t;
+      y = 6 * (y2 - 2 * y1 + y0) * (1 - t) + 6 * (y3 - 2 * y2 + y1) * t;
+    } else if (order === 3) {
+      x = 6 * (x3 - 3 * x2 + 3 * x1 - x0);
+      y = 6 * (y3 - 3 * y2 + 3 * y1 - y0);
+    } else {
+      // 3阶导数就是常数了，大于3阶的都是0
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+  /**
+   * 2 阶 bezier 曲线的 order 阶导数在 t 位置时候的 (x, y) 的值
+   */
+
+
+  function at2(t, points) {
+    var order = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+
+    var _points2 = _slicedToArray(points, 3),
+        p0 = _points2[0],
+        p1 = _points2[1],
+        p2 = _points2[2];
+
+    var _p5 = _slicedToArray(p0, 2),
+        x0 = _p5[0],
+        y0 = _p5[1];
+
+    var _p6 = _slicedToArray(p1, 2),
+        x1 = _p6[0],
+        y1 = _p6[1];
+
+    var _p7 = _slicedToArray(p2, 2),
+        x2 = _p7[0],
+        y2 = _p7[1];
+
+    var x = 0;
+    var y = 0;
+
+    if (order === 0) {
+      x = Math.pow(1 - t, 2) * x0 + 2 * t * (1 - t) * x1 + Math.pow(t, 2) * x2;
+      y = Math.pow(1 - t, 2) * y0 + 2 * t * (1 - t) * y1 + Math.pow(t, 2) * y2;
+    } else if (order === 1) {
+      x = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
+      y = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
+    } else if (order === 2) {
+      x = 2 * (x2 - 2 * x1 + x0);
+      y = 2 * (y2 - 2 * y1 + y0);
+    } else {
+      x = 0;
+      y = 0;
+    }
+
+    return [x, y];
+  }
+
+  function at(t, points, bezierOrder) {
+    var derivativeOrder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    if (bezierOrder === 2) {
+      return at2(t, points, derivativeOrder);
+    } else if (bezierOrder === 3) {
+      return at3(t, points, derivativeOrder);
+    }
+  }
+
+  function pointAtBezier(points, order, percent, maxIteration, eps) {
+    var length = bezierLength(points, order, 0, 1);
+    return pointAtBezierWithLength(points, order, length, percent, maxIteration, eps);
+  }
+
+  function pointAtBezierWithLength(points, order, length) {
+    var percent = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+    var maxIteration = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 20;
+    var eps = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0.001;
+
+    var derivativeFunc = function derivativeFunc(t) {
+      return norm(at(t, points, order));
+    };
+
+    var targetLen = length * percent;
+    var approachLen = length;
+    var approachT = percent;
+    var preApproachT = approachT;
+
+    for (var i = 0; i < maxIteration; i++) {
+      approachLen = simpson38(derivativeFunc, 0, approachT);
+      var d = approachLen - targetLen;
+
+      if (Math.abs(d) < eps) {
+        break;
+      } // Newton 法
+
+
+      var derivative1 = norm(at(approachT, points, order, 1)); // 1 阶导数
+
+      var derivative2 = norm(at(approachT, points, order, 2)); // 2 阶导数
+
+      var numerator = d * derivative1;
+      var denominator = d * derivative2 + derivative1 * derivative1;
+      approachT = approachT - numerator / denominator;
+
+      if (Math.abs(approachT - preApproachT) < eps) {
+        break;
+      } else {
+        preApproachT = approachT;
+      }
+    }
+
+    return at(approachT, points, order, 0);
+  }
+
+  function sliceBezier(points, t) {
+    var _points3 = _slicedToArray(points, 4),
+        _points3$ = _slicedToArray(_points3[0], 2),
+        x1 = _points3$[0],
+        y1 = _points3$[1],
+        _points3$2 = _slicedToArray(_points3[1], 2),
+        x2 = _points3$2[0],
+        y2 = _points3$2[1],
+        _points3$3 = _slicedToArray(_points3[2], 2),
+        x3 = _points3$3[0],
+        y3 = _points3$3[1],
+        p4 = _points3[3];
+
+    var x12 = (x2 - x1) * t + x1;
+    var y12 = (y2 - y1) * t + y1;
+    var x23 = (x3 - x2) * t + x2;
+    var y23 = (y3 - y2) * t + y2;
+    var x123 = (x23 - x12) * t + x12;
+    var y123 = (y23 - y12) * t + y12;
+
+    if (points.length === 4) {
+      var _p8 = _slicedToArray(p4, 2),
+          x4 = _p8[0],
+          y4 = _p8[1];
+
+      var x34 = (x4 - x3) * t + x3;
+      var y34 = (y4 - y3) * t + y3;
+      var x234 = (x34 - x23) * t + x23;
+      var y234 = (y34 - y23) * t + y23;
+      var x1234 = (x234 - x123) * t + x123;
+      var y1234 = (y234 - y123) * t + y123;
+      return [[x1, y1], [x12, y12], [x123, y123], [x1234, y1234]];
+    } else if (points.length === 3) {
+      return [[x1, y1], [x12, y12], [x123, y123]];
+    }
+  }
+
+  function sliceBezier2Both(points) {
+    var start = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var end = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+    start = Math.max(start, 0);
+    end = Math.min(end, 1);
+
+    if (start === 0 && end === 1) {
+      return points;
+    }
+
+    if (end < 1) {
+      points = sliceBezier(points, end);
+    }
+
+    if (start > 0) {
+      if (end < 1) {
+        start = start / end;
+      }
+
+      points = sliceBezier(points.reverse(), 1 - start).reverse();
+    }
+
+    return points;
+  }
 
   var geom = {
     vectorProduct: vectorProduct,
@@ -1235,7 +1536,12 @@
     isRectsInside: isRectsInside,
     calCoordsInNode: calCoordsInNode,
     calPercentInNode: calPercentInNode,
-    bboxBezier: bboxBezier
+    bboxBezier: bboxBezier,
+    bezierLength: bezierLength,
+    pointAtBezier: pointAtBezier,
+    pointAtBezierWithLength: pointAtBezierWithLength,
+    sliceBezier: sliceBezier,
+    sliceBezier2Both: sliceBezier2Both
   };
 
   function calDeg(x1, y1, x2, y2) {
@@ -5136,6 +5442,7 @@
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'stretch',
+    alignSelf: 'auto',
     textAlign: 'inherit',
     transformOrigin: 'center',
     visibility: 'inherit',
@@ -5160,7 +5467,8 @@
     strokeDasharray: '',
     strokeLinecap: 'butt',
     strokeLinejoin: 'miter',
-    strokeMiterlimit: 4
+    strokeMiterlimit: 4,
+    fillRule: 'nonzero'
   };
   var DOM_ENTRY_SET = [];
   var DOM_KEY_SET = [];
@@ -5528,7 +5836,6 @@
       fontWeight: true,
       fontFamily: true
     },
-    NUMBER: 5,
     isIgnore: function isIgnore(k) {
       return this.IGNORE.hasOwnProperty(k);
     },
@@ -5601,13 +5908,13 @@
     return list;
   };
 
-  o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB']);
+  o.addGeom('$line', ['x1', 'y1', 'x2', 'y2', 'controlA', 'controlB', 'start', 'end']);
   o.addGeom('$circle', ['r']);
   o.addGeom('$ellipse', ['rx', 'ry']);
   o.addGeom('$rect', ['rx', 'ry']);
   o.addGeom('$sector', ['begin', 'end', 'edge', 'closure']);
-  o.addGeom('$polyline', ['points', 'controls']);
-  o.addGeom('$polygon', ['points', 'controls']);
+  o.addGeom('$polyline', ['points', 'controls', 'start', 'end']);
+  o.addGeom('$polygon', ['points', 'controls', 'start', 'end']);
 
   var AUTO = unit.AUTO,
       PX$2 = unit.PX,
@@ -6303,7 +6610,7 @@
       } else {
         style.strokeDasharray = [];
       }
-    } // fill和stroke为渐变时特殊处理
+    } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
     temp = style.fill;
@@ -15004,7 +15311,10 @@
             // 短侧轴的children伸张侧轴长度至相同，超过的不动，固定宽高的也不动
             flowChildren.forEach(function (item) {
               var computedStyle = item.computedStyle,
-                  currentStyle = item.currentStyle;
+                  _item$currentStyle = item.currentStyle,
+                  alignSelf = _item$currentStyle.alignSelf,
+                  width = _item$currentStyle.width,
+                  height = _item$currentStyle.height;
               var borderTopWidth = computedStyle.borderTopWidth,
                   borderRightWidth = computedStyle.borderRightWidth,
                   borderBottomWidth = computedStyle.borderBottomWidth,
@@ -15019,29 +15329,217 @@
                   paddingLeft = computedStyle.paddingLeft;
 
               if (isDirectionRow) {
-                if (currentStyle.height.unit === AUTO$3) {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff = maxCross - item.outerHeight;
+
+                  if (_diff !== 0) {
+                    item.__offsetY(_diff * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff2 = maxCross - item.outerHeight;
+
+                  if (_diff2 !== 0) {
+                    item.__offsetY(_diff2, true);
+                  }
+                } else if (height.unit === AUTO$3) {
                   item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 }
               } else {
-                if (currentStyle.width.unit === AUTO$3) {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff3 = maxCross - item.outerWidth;
+
+                  if (_diff3 !== 0) {
+                    item.__offsetX(_diff3 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff4 = maxCross - item.outerWidth;
+
+                  if (_diff4 !== 0) {
+                    item.__offsetX(_diff4, true);
+                  }
+                } else if (width.unit === AUTO$3) {
                   item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
                 }
               }
             });
           } else if (alignItems === 'center') {
             flowChildren.forEach(function (item) {
-              var diff = maxCross - item.outerHeight;
+              var alignSelf = item.currentStyle.alignSelf;
 
-              if (diff !== 0) {
-                item.__offsetY(diff * 0.5, true);
+              if (isDirectionRow) {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
+                  var _diff5 = maxCross - item.outerHeight;
+
+                  if (_diff5 !== 0) {
+                    item.__offsetY(_diff5, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var computedStyle = item.computedStyle,
+                      height = item.currentStyle.height;
+                  var borderTopWidth = computedStyle.borderTopWidth,
+                      borderBottomWidth = computedStyle.borderBottomWidth,
+                      marginTop = computedStyle.marginTop,
+                      marginBottom = computedStyle.marginBottom,
+                      paddingTop = computedStyle.paddingTop,
+                      paddingBottom = computedStyle.paddingBottom;
+
+                  if (height.unit === AUTO$3) {
+                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                  }
+                } else {
+                  var _diff6 = maxCross - item.outerHeight;
+
+                  if (_diff6 !== 0) {
+                    item.__offsetY(_diff6 * 0.5, true);
+                  }
+                }
+              } else {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'flex-end') {
+                  var _diff7 = maxCross - item.outerWidth;
+
+                  if (_diff7 !== 0) {
+                    item.__offsetX(_diff7, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var _computedStyle = item.computedStyle,
+                      width = item.currentStyle.width;
+                  var borderRightWidth = _computedStyle.borderRightWidth,
+                      borderLeftWidth = _computedStyle.borderLeftWidth,
+                      marginRight = _computedStyle.marginRight,
+                      marginLeft = _computedStyle.marginLeft,
+                      paddingRight = _computedStyle.paddingRight,
+                      paddingLeft = _computedStyle.paddingLeft;
+
+                  if (width.unit === AUTO$3) {
+                    item.__width = _computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  }
+                } else {
+                  var _diff8 = maxCross - item.outerWidth;
+
+                  if (_diff8 !== 0) {
+                    item.__offsetX(_diff8 * 0.5, true);
+                  }
+                }
               }
             });
           } else if (alignItems === 'flex-end') {
             flowChildren.forEach(function (item) {
-              var diff = maxCross - item.outerHeight;
+              var alignSelf = item.currentStyle.alignSelf;
 
-              if (diff !== 0) {
-                item.__offsetY(diff, true);
+              if (isDirectionRow) {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff9 = maxCross - item.outerHeight;
+
+                  if (_diff9 !== 0) {
+                    item.__offsetY(_diff9 * 0.5, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var computedStyle = item.computedStyle,
+                      height = item.currentStyle.height;
+                  var borderTopWidth = computedStyle.borderTopWidth,
+                      borderBottomWidth = computedStyle.borderBottomWidth,
+                      marginTop = computedStyle.marginTop,
+                      marginBottom = computedStyle.marginBottom,
+                      paddingTop = computedStyle.paddingTop,
+                      paddingBottom = computedStyle.paddingBottom;
+
+                  if (height.unit === AUTO$3) {
+                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                  }
+                } else {
+                  var _diff10 = maxCross - item.outerHeight;
+
+                  if (_diff10 !== 0) {
+                    item.__offsetY(_diff10, true);
+                  }
+                }
+              } else {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff11 = maxCross - item.outerWidth;
+
+                  if (_diff11 !== 0) {
+                    item.__offsetX(_diff11 * 0.5, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var _computedStyle2 = item.computedStyle,
+                      width = item.currentStyle.width;
+                  var borderRightWidth = _computedStyle2.borderRightWidth,
+                      borderLeftWidth = _computedStyle2.borderLeftWidth,
+                      marginRight = _computedStyle2.marginRight,
+                      marginLeft = _computedStyle2.marginLeft,
+                      paddingRight = _computedStyle2.paddingRight,
+                      paddingLeft = _computedStyle2.paddingLeft;
+
+                  if (width.unit === AUTO$3) {
+                    item.__width = _computedStyle2.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  }
+                } else {
+                  var _diff12 = maxCross - item.outerHeight;
+
+                  if (_diff12 !== 0) {
+                    item.__offsetY(_diff12, true);
+                  }
+                }
+              }
+            });
+          } else {
+            flowChildren.forEach(function (item) {
+              var alignSelf = item.currentStyle.alignSelf;
+
+              if (isDirectionRow) {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff13 = maxCross - item.outerHeight;
+
+                  if (_diff13 !== 0) {
+                    item.__offsetY(_diff13 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff14 = maxCross - item.outerHeight;
+
+                  if (_diff14 !== 0) {
+                    item.__offsetY(_diff14, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var computedStyle = item.computedStyle,
+                      height = item.currentStyle.height;
+                  var borderTopWidth = computedStyle.borderTopWidth,
+                      borderBottomWidth = computedStyle.borderBottomWidth,
+                      marginTop = computedStyle.marginTop,
+                      marginBottom = computedStyle.marginBottom,
+                      paddingTop = computedStyle.paddingTop,
+                      paddingBottom = computedStyle.paddingBottom;
+
+                  if (height.unit === AUTO$3) {
+                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                  }
+                }
+              } else {
+                if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
+                  var _diff15 = maxCross - item.outerWidth;
+
+                  if (_diff15 !== 0) {
+                    item.__offsetX(_diff15 * 0.5, true);
+                  }
+                } else if (alignSelf === 'flex-end') {
+                  var _diff16 = maxCross - item.outerWidth;
+
+                  if (_diff16 !== 0) {
+                    item.__offsetX(_diff16, true);
+                  }
+                } else if (alignSelf === 'stretch') {
+                  var _computedStyle3 = item.computedStyle,
+                      width = item.currentStyle.width;
+                  var borderRightWidth = _computedStyle3.borderRightWidth,
+                      borderLeftWidth = _computedStyle3.borderLeftWidth,
+                      marginRight = _computedStyle3.marginRight,
+                      marginLeft = _computedStyle3.marginLeft,
+                      paddingRight = _computedStyle3.paddingRight,
+                      paddingLeft = _computedStyle3.paddingLeft;
+
+                  if (width.unit === AUTO$3) {
+                    item.__width = _computedStyle3.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  }
+                }
               }
             });
           }
@@ -19623,7 +20121,7 @@
         } // 直接赋值的
 
 
-        ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit'].forEach(function (k) {
+        ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         });
         var fill = __cacheStyle.fill,
@@ -19633,7 +20131,8 @@
             strokeLinecap = computedStyle.strokeLinecap,
             strokeLinejoin = computedStyle.strokeLinejoin,
             strokeMiterlimit = computedStyle.strokeMiterlimit,
-            strokeDasharray = computedStyle.strokeDasharray;
+            strokeDasharray = computedStyle.strokeDasharray,
+            fillRule = computedStyle.fillRule;
         return {
           x: x,
           y: y,
@@ -19650,7 +20149,8 @@
           strokeLinejoin: strokeLinejoin,
           strokeMiterlimit: strokeMiterlimit,
           fill: fill,
-          visibility: visibility
+          visibility: visibility,
+          fillRule: fillRule
         };
       }
     }, {
@@ -20002,6 +20502,80 @@
     return num;
   }
 
+  function limitStartEnd(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getNewPoint(x1, y1, x2, y2, controlA, controlB, num) {
+    var start = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 0;
+    var end = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : 1;
+
+    if (start > 0 || end < 1) {
+      if (num === 3) {
+        var _geom$sliceBezier2Bot = geom.sliceBezier2Both([[x1, y1], controlA, controlB, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot2 = _slicedToArray(_geom$sliceBezier2Bot, 4);
+
+        var _geom$sliceBezier2Bot3 = _slicedToArray(_geom$sliceBezier2Bot2[0], 2);
+
+        x1 = _geom$sliceBezier2Bot3[0];
+        y1 = _geom$sliceBezier2Bot3[1];
+        controlA = _geom$sliceBezier2Bot2[1];
+        controlB = _geom$sliceBezier2Bot2[2];
+
+        var _geom$sliceBezier2Bot4 = _slicedToArray(_geom$sliceBezier2Bot2[3], 2);
+
+        x2 = _geom$sliceBezier2Bot4[0];
+        y2 = _geom$sliceBezier2Bot4[1];
+      } else if (num === 2) {
+        var _geom$sliceBezier2Bot5 = geom.sliceBezier2Both([[x1, y1], controlB, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot6 = _slicedToArray(_geom$sliceBezier2Bot5, 3);
+
+        var _geom$sliceBezier2Bot7 = _slicedToArray(_geom$sliceBezier2Bot6[0], 2);
+
+        x1 = _geom$sliceBezier2Bot7[0];
+        y1 = _geom$sliceBezier2Bot7[1];
+        controlB = _geom$sliceBezier2Bot6[1];
+
+        var _geom$sliceBezier2Bot8 = _slicedToArray(_geom$sliceBezier2Bot6[2], 2);
+
+        x2 = _geom$sliceBezier2Bot8[0];
+        y2 = _geom$sliceBezier2Bot8[1];
+      } else if (num === 1) {
+        var _geom$sliceBezier2Bot9 = geom.sliceBezier2Both([[x1, y1], controlA, [x2, y2]], start, end);
+
+        var _geom$sliceBezier2Bot10 = _slicedToArray(_geom$sliceBezier2Bot9, 3);
+
+        var _geom$sliceBezier2Bot11 = _slicedToArray(_geom$sliceBezier2Bot10[0], 2);
+
+        x1 = _geom$sliceBezier2Bot11[0];
+        y1 = _geom$sliceBezier2Bot11[1];
+        controlA = _geom$sliceBezier2Bot10[1];
+
+        var _geom$sliceBezier2Bot12 = _slicedToArray(_geom$sliceBezier2Bot10[2], 2);
+
+        x2 = _geom$sliceBezier2Bot12[0];
+        y2 = _geom$sliceBezier2Bot12[1];
+      } else {
+        var a = Math.abs(x1 - x2);
+        var b = Math.abs(y1 - y2);
+        x1 += a * start;
+        y1 += b * start;
+        x2 -= a * (1 - end);
+        y2 -= b * (1 - end);
+      }
+    }
+
+    return [x1, y1, x2, y2, controlA, controlB];
+  }
+
   var Line = /*#__PURE__*/function (_Geom) {
     _inherits(Line, _Geom);
 
@@ -20021,6 +20595,8 @@
         _this.__y2 = [1];
         _this.__controlA = [[]];
         _this.__controlB = [[]];
+        _this.__start = [0];
+        _this.__end = [1];
 
         if (Array.isArray(props.x1)) {
           _this.__x1 = props.x1.map(function (i) {
@@ -20073,9 +20649,51 @@
             return [];
           });
         }
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd(parseFloat(i) || 0);
+          });
+
+          for (var i = _this.__start.length; i < _this.__x1.length; i++) {
+            _this.__start.push(0);
+          }
+        } else if (!isNil$8(props.start)) {
+          var v = limitStartEnd(parseFloat(props.start) || 0);
+          _this.__start = _this.__x1.map(function () {
+            return v;
+          });
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd(v);
+          });
+
+          for (var _i = _this.__end.length; _i < _this.__x1.length; _i++) {
+            _this.__end.push(1);
+          }
+        } else if (!isNil$8(props.end)) {
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd(_v);
+          _this.__end = _this.__x1.map(function () {
+            return _v;
+          });
+        }
       } else {
-        _this.__x1 = _this.__y1 = 0;
-        _this.__x2 = _this.__y2 = 1;
+        _this.__x1 = _this.__y1 = _this.__start = 0;
+        _this.__x2 = _this.__y2 = _this.__end = 1;
         _this.__controlA = [];
         _this.__controlB = [];
 
@@ -20093,6 +20711,20 @@
 
         if (!isNil$8(props.y2)) {
           _this.__y2 = parseFloat(props.y2) || 0;
+        }
+
+        if (!isNil$8(props.start)) {
+          _this.__start = limitStartEnd(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$8(props.end)) {
+          var _v2 = parseFloat(props.end);
+
+          if (isNaN(_v2)) {
+            _v2 = 1;
+          }
+
+          _this.__end = limitStartEnd(_v2);
         }
 
         if (Array.isArray(props.controlA)) {
@@ -20135,6 +20767,12 @@
             __cacheProps[k] = reBuildC(_this2[k], originX, originY, width, height, isMulti);
           }
         });
+        ['start', 'end'].forEach(function (k) {
+          if (isNil$8(__cacheProps[k])) {
+            rebuild = true;
+            __cacheProps[k] = _this2[k];
+          }
+        });
         return rebuild;
       }
     }, {
@@ -20170,12 +20808,50 @@
               var yb = __cacheProps.y2[i];
               var ca = __cacheProps.controlA[i];
               var cb = __cacheProps.controlB[i];
+              var start = __cacheProps.start[i];
+              var end = __cacheProps.end[i];
               var curve = curveNum(ca, cb);
+
+              if (start !== 0 || end !== 1) {
+                var _getNewPoint = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+
+                var _getNewPoint2 = _slicedToArray(_getNewPoint, 6);
+
+                xa = _getNewPoint2[0];
+                ya = _getNewPoint2[1];
+                xb = _getNewPoint2[2];
+                ya = _getNewPoint2[3];
+                ca = _getNewPoint2[4];
+                cb = _getNewPoint2[5];
+              }
+
               d += painter.svgLine(xa, ya, xb, yb, ca, cb, curve);
             });
           } else {
             var curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
-            d = painter.svgLine(__cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, curve);
+            var x1 = __cacheProps.x1,
+                y1 = __cacheProps.y1,
+                x2 = __cacheProps.x2,
+                y2 = __cacheProps.y2,
+                controlA = __cacheProps.controlA,
+                controlB = __cacheProps.controlB,
+                start = __cacheProps.start,
+                end = __cacheProps.end;
+
+            if (start !== 0 || end !== 1) {
+              var _getNewPoint3 = getNewPoint(x1, y1, x2, y2, controlA, controlB, curve, start, end, __cacheProps.len);
+
+              var _getNewPoint4 = _slicedToArray(_getNewPoint3, 6);
+
+              x1 = _getNewPoint4[0];
+              y1 = _getNewPoint4[1];
+              x2 = _getNewPoint4[2];
+              y2 = _getNewPoint4[3];
+              controlA = _getNewPoint4[4];
+              controlB = _getNewPoint4[5];
+            }
+
+            d = painter.svgLine(x1, y1, x2, y2, controlA, controlB, curve);
           }
 
           __cacheProps.d = d;
@@ -20192,13 +20868,51 @@
                 var yb = __cacheProps.y2[i];
                 var ca = __cacheProps.controlA[i];
                 var cb = __cacheProps.controlB[i];
+                var start = __cacheProps.start[i];
+                var end = __cacheProps.end[i];
                 var curve = curveNum(ca, cb);
+
+                if (start !== 0 || end !== 1) {
+                  var _getNewPoint5 = getNewPoint(xa, ya, xb, ya, ca, cb, curve, start, end, __cacheProps.len);
+
+                  var _getNewPoint6 = _slicedToArray(_getNewPoint5, 6);
+
+                  xa = _getNewPoint6[0];
+                  ya = _getNewPoint6[1];
+                  xb = _getNewPoint6[2];
+                  ya = _getNewPoint6[3];
+                  ca = _getNewPoint6[4];
+                  cb = _getNewPoint6[5];
+                }
+
                 painter.canvasLine(ctx, xa, ya, xb, yb, ca, cb, curve, dx, dy);
               });
             } else {
               var _curve = curveNum(__cacheProps.controlA, __cacheProps.controlB);
 
-              painter.canvasLine(ctx, __cacheProps.x1, __cacheProps.y1, __cacheProps.x2, __cacheProps.y2, __cacheProps.controlA, __cacheProps.controlB, _curve, dx, dy);
+              var _x = __cacheProps.x1,
+                  _y = __cacheProps.y1,
+                  _x2 = __cacheProps.x2,
+                  _y2 = __cacheProps.y2,
+                  _controlA = __cacheProps.controlA,
+                  _controlB = __cacheProps.controlB,
+                  _start = __cacheProps.start,
+                  _end = __cacheProps.end;
+
+              if (_start !== 0 || _end !== 1) {
+                var _getNewPoint7 = getNewPoint(_x, _y, _x2, _y2, _controlA, _controlB, _curve, _start, _end, __cacheProps.len);
+
+                var _getNewPoint8 = _slicedToArray(_getNewPoint7, 6);
+
+                _x = _getNewPoint8[0];
+                _y = _getNewPoint8[1];
+                _x2 = _getNewPoint8[2];
+                _y2 = _getNewPoint8[3];
+                _controlA = _getNewPoint8[4];
+                _controlB = _getNewPoint8[5];
+              }
+
+              painter.canvasLine(ctx, _x, _y, _x2, _y2, _controlA, _controlB, _curve, dx, dy);
             }
 
             ctx.stroke();
@@ -20243,6 +20957,16 @@
       key: "controlB",
       get: function get() {
         return this.getProps('controlB');
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
       }
     }, {
       key: "bbox",
@@ -20360,6 +21084,187 @@
     return point;
   }
 
+  function limitStartEnd$1(v) {
+    if (v < 0) {
+      v = 0;
+    } else if (v > 1) {
+      v = 1;
+    }
+
+    return v;
+  }
+
+  function getLength(list, isMulti) {
+    var res = [];
+    var total = 0;
+    var increase = [];
+
+    if (isMulti) {
+      total = [];
+      list.forEach(function (list) {
+        var temp = getLength(list);
+        res.push(temp.list);
+        total.push(temp.total);
+        increase.push(temp.increase);
+      });
+    } else if (Array.isArray(list)) {
+      total = 0;
+      var start = 0;
+
+      for (var i = 0, len = list.length; i < len; i++) {
+        var item = list[i];
+
+        if (Array.isArray(item)) {
+          start = i;
+          break;
+        }
+      }
+
+      var prev = list[start];
+
+      for (var _i = start + 1, _len = list.length; _i < _len; _i++) {
+        var _item = list[_i];
+
+        if (!Array.isArray(_item)) {
+          continue;
+        }
+
+        if (_item.length === 2) {
+          var a = Math.abs(_item[0] - prev[0]);
+          var b = Math.abs(_item[1] - prev[1]);
+          var c = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+          res.push(c);
+          total += c;
+          increase.push(total);
+          prev = _item;
+        } else if (_item.length === 4) {
+          var _c = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]]], 2);
+
+          res.push(_c);
+          total += _c;
+          increase.push(total);
+          prev = [_item[2], _item[3]];
+        } else if (_item.length === 6) {
+          var _c2 = geom.bezierLength([prev, [_item[0], _item[1]], [_item[2], _item[3]], [_item[4], _item[5]]], 3);
+
+          res.push(_c2);
+          total += _c2;
+          increase.push(total);
+          prev = [_item[4], _item[5]];
+        }
+      }
+    }
+
+    return {
+      list: res,
+      total: total,
+      increase: increase
+    };
+  }
+
+  function getIndex(list, t, i, j) {
+    if (i === j) {
+      return i;
+    }
+
+    var middle = i + (j - i >> 1);
+
+    if (list[middle] === t) {
+      return middle;
+    } else if (list[middle] > t) {
+      return getIndex(list, t, i, Math.max(middle - 1, i));
+    } else {
+      return getIndex(list, t, Math.min(middle + 1, j), j);
+    }
+  }
+
+  function getNewList(list, len) {
+    var start = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var end = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+
+    if (start === 0 && end === 1) {
+      return list;
+    }
+
+    var i = 0,
+        j = list.length - 2;
+
+    if (start > 0) {
+      i = getIndex(len.increase, start * len.total, i, j);
+    }
+
+    if (end < 1) {
+      j = getIndex(len.increase, end * len.total, i, j);
+    }
+
+    list = util.clone(list);
+    end *= len.total;
+    var prePercent = 1;
+
+    if (end < len.increase[j]) {
+      var prev = list[j].slice(list[j].length - 2);
+      var current = list[j + 1];
+      var l = len.list[j];
+      var diff = len.increase[j] - end;
+      var t = prePercent = 1 - diff / l;
+
+      if (current.length === 2) {
+        var a = Math.abs(current[0] - prev[0]);
+        var b = Math.abs(current[1] - prev[1]);
+        list[j + 1] = [current[1] - (1 - t) * a, current[1] - (1 - t) * b];
+      } else if (current.length === 4) {
+        var res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]]], t);
+        list[j + 1] = [res[1][0], res[1][1], res[2][0], res[2][1]];
+      } else if (current.length === 6) {
+        var _res = geom.sliceBezier([prev, [current[0], current[1]], [current[2], current[3]], [current[4], current[5]]], t);
+
+        list[j + 1] = [_res[1][0], _res[1][1], _res[2][0], _res[2][1], _res[3][0], _res[3][1]];
+      }
+    }
+
+    start *= len.total;
+
+    if (start > (i ? len.increase[i - 1] : 0)) {
+      var _prev = list[i].slice(list[i].length - 2);
+
+      var _current = list[i + 1];
+
+      var _l = len.list[i] * prePercent;
+
+      var _diff = start - (i ? len.increase[i - 1] : 0);
+
+      var _t = _diff / _l;
+
+      if (_current.length === 2) {
+        var _a = Math.abs(_current[0] - _prev[0]);
+
+        var _b = Math.abs(_current[1] - _prev[1]);
+
+        list[i] = [_prev[0] + _t * _a, _prev[1] + _t * _b];
+      } else if (_current.length === 4) {
+        var _res2 = geom.sliceBezier([[_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res2[0];
+        list[i + 1] = [_res2[1][0], _res2[1][1], _res2[2][0], _res2[2][1]];
+      } else if (_current.length === 6) {
+        var _res3 = geom.sliceBezier([[_current[4], _current[5]], [_current[2], _current[3]], [_current[0], _current[1]], _prev], 1 - _t).reverse();
+
+        list[i] = _res3[0];
+        list[i + 1] = [_res3[1][0], _res3[1][1], _res3[2][0], _res3[2][1], _current[4], _current[5]];
+      }
+    }
+
+    if (j < list.length - 2) {
+      list = list.slice(0, j + 2);
+    }
+
+    if (i > 0) {
+      list = list.slice(i);
+    }
+
+    return list;
+  }
+
   var Polyline = /*#__PURE__*/function (_Geom) {
     _inherits(Polyline, _Geom);
 
@@ -20375,10 +21280,70 @@
       if (_this.isMulti) {
         _this.__points = [[]];
         _this.__controls = [[]];
+        _this.__start = [0];
+        _this.__end = [1];
+
+        if (Array.isArray(props.start)) {
+          _this.__start = props.start.map(function (i) {
+            return limitStartEnd$1(parseFloat(i) || 0);
+          });
+
+          for (var i = _this.__start.length; i < _this.__points.length; i++) {
+            _this.__start.push(0);
+          }
+        } else if (!isNil$9(props.start)) {
+          var v = limitStartEnd$1(parseFloat(props.start) || 0);
+          _this.__start = _this.__points.map(function () {
+            return v;
+          });
+        }
+
+        if (Array.isArray(props.end)) {
+          _this.__end = props.end.map(function (i) {
+            var v = parseFloat(i);
+
+            if (isNaN(v)) {
+              v = 1;
+            }
+
+            return limitStartEnd$1(v);
+          });
+
+          for (var _i2 = _this.__end.length; _i2 < _this.__points.length; _i2++) {
+            _this.__end.push(1);
+          }
+        } else if (!isNil$9(props.end)) {
+          var _v = parseFloat(props.end);
+
+          if (isNaN(_v)) {
+            _v = 1;
+          }
+
+          _v = limitStartEnd$1(_v);
+          _this.__end = _this.__points.map(function () {
+            return _v;
+          });
+        }
       } else {
         _this.__points = []; // 控制点
 
         _this.__controls = [];
+        _this.__start = 0;
+        _this.__end = 1;
+
+        if (!isNil$9(props.start)) {
+          _this.__start = limitStartEnd$1(parseFloat(props.start) || 0);
+        }
+
+        if (!isNil$9(props.end)) {
+          var _v2 = parseFloat(props.end);
+
+          if (isNaN(_v2)) {
+            _v2 = 1;
+          }
+
+          _this.__end = limitStartEnd$1(_v2);
+        }
       }
 
       if (Array.isArray(props.controls)) {
@@ -20414,11 +21379,11 @@
 
           var res = [];
 
-          for (var _i = 0; _i < len; _i++) {
-            if (_i % 2 === 0) {
-              res.push(originX + item[_i] * width);
+          for (var _i3 = 0; _i3 < len; _i3++) {
+            if (_i3 % 2 === 0) {
+              res.push(originX + item[_i3] * width);
             } else {
-              res.push(originY + item[_i] * height);
+              res.push(originY + item[_i3] * height);
             }
           }
 
@@ -20434,11 +21399,15 @@
             height = this.height,
             points = this.points,
             controls = this.controls,
+            start = this.start,
+            end = this.end,
             __cacheProps = this.__cacheProps,
             isMulti = this.isMulti;
-        var rebuild = true;
+        var rebuild;
 
         if (isNil$9(__cacheProps.points)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.points = points.map(function (item) {
               if (Array.isArray(item)) {
@@ -20451,6 +21420,8 @@
         }
 
         if (isNil$9(__cacheProps.controls)) {
+          rebuild = true;
+
           if (isMulti) {
             __cacheProps.controls = controls.map(function (item) {
               if (Array.isArray(item)) {
@@ -20464,7 +21435,18 @@
           }
         }
 
-        {
+        if (isNil$9(__cacheProps.start)) {
+          rebuild = true;
+          __cacheProps.start = start;
+        }
+
+        if (isNil$9(__cacheProps.end)) {
+          rebuild = true;
+          __cacheProps.end = end;
+        } // points/controls有变化就需要重建顶点
+
+
+        if (rebuild) {
           var _points = __cacheProps.points,
               _controls = __cacheProps.controls;
 
@@ -20484,6 +21466,7 @@
                 });
               }
             });
+            __cacheProps.len = getLength(__cacheProps.list, isMulti);
           } else {
             __cacheProps.list = _points.filter(function (item) {
               return Array.isArray(item);
@@ -20494,6 +21477,7 @@
 
               return point;
             });
+            __cacheProps.len = getLength(__cacheProps.list, isMulti);
           }
         }
 
@@ -20517,6 +21501,7 @@
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
             strokeMiterlimit = res.strokeMiterlimit,
+            fillRule = res.fillRule,
             dx = res.dx,
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
@@ -20524,18 +21509,47 @@
         this.buildCache(originX, originY);
         var list = __cacheProps.list;
 
+        if (isMulti) {
+          __cacheProps.list2 = list.map(function (item, i) {
+            if (Array.isArray(item)) {
+              var len = __cacheProps.len;
+              return getNewList(item, {
+                list: len.list[i],
+                total: len.total[i],
+                increase: len.increase[i]
+              }, __cacheProps.start[i], __cacheProps.end[i]);
+            }
+          });
+        } else {
+          __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+        }
+
+        if (renderMode === mode.SVG) {
+          if (isMulti) {
+            var d = '';
+
+            __cacheProps.list2.forEach(function (item) {
+              return d += painter.svgPolygon(item);
+            });
+
+            __cacheProps.d = d;
+          } else {
+            __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
+          }
+        }
+
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
 
           if (isMulti) {
-            list.forEach(function (item) {
+            __cacheProps.list2.forEach(function (item) {
               return painter.canvasPolygon(ctx, item, dx, dy);
             });
           } else {
-            painter.canvasPolygon(ctx, list, dx, dy);
+            painter.canvasPolygon(ctx, __cacheProps.list2, dx, dy);
           }
 
-          ctx.fill();
+          ctx.fill(fillRule === 'evenodd' ? fillRule : 'nonzero');
 
           if (strokeWidth > 0) {
             ctx.stroke();
@@ -20543,17 +21557,11 @@
 
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
-          var d = '';
+          var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
-          if (isMulti) {
-            list.forEach(function (item) {
-              return d += painter.svgPolygon(item);
-            });
-          } else {
-            d = painter.svgPolygon(list);
+          if (fillRule === 'evenodd') {
+            props.push(['fill-rule', 'evenodd']);
           }
-
-          var props = [['d', d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -20571,6 +21579,16 @@
       key: "controls",
       get: function get() {
         return this.getProps('controls');
+      }
+    }, {
+      key: "start",
+      get: function get() {
+        return this.getProps('start');
+      }
+    }, {
+      key: "end",
+      get: function get() {
+        return this.getProps('end');
       }
     }, {
       key: "bbox",
@@ -20624,12 +21642,12 @@
               xa = _pointList$[0],
               ya = _pointList$[1];
 
-          for (var _i2 = 1, len = pointList.length; _i2 < len; _i2++) {
-            var _pointList$_i = _slicedToArray(pointList[_i2], 2),
+          for (var _i4 = 1, len = pointList.length; _i4 < len; _i4++) {
+            var _pointList$_i = _slicedToArray(pointList[_i4], 2),
                 xb = _pointList$_i[0],
                 yb = _pointList$_i[1];
 
-            var c = controlList[_i2 - 1];
+            var c = controlList[_i4 - 1];
 
             if (c && c.length === 4) {
               var bezierBox = geom.bboxBezier(xa, ya, c[0], c[1], c[2], c[3], xb, yb);
@@ -22196,7 +23214,7 @@
     Cache: Cache$1
   };
 
-  var version = "0.39.2";
+  var version = "0.40.0-1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

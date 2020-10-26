@@ -166,7 +166,8 @@ class Geom extends Xom {
     [
       'strokeLinecap',
       'strokeLinejoin',
-      'strokeMiterlimit'
+      'strokeMiterlimit',
+      'fillRule',
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
@@ -181,6 +182,7 @@ class Geom extends Xom {
       strokeLinejoin,
       strokeMiterlimit,
       strokeDasharray,
+      fillRule,
     } = computedStyle;
     return {
       x,
@@ -199,6 +201,7 @@ class Geom extends Xom {
       strokeMiterlimit,
       fill,
       visibility,
+      fillRule,
     };
   }
 

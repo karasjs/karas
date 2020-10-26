@@ -128,6 +128,10 @@ class Img extends Dom {
       return res;
     }
     let originX, originY;
+    // img无children所以total就是cache避免多余生成
+    if(renderMode === mode.CANVAS) {
+      this.__cacheTotal = __cache;
+    }
     if(__cache && __cache.enabled) {
       ctx = __cache.ctx;
       originX = res.x2 + paddingLeft;

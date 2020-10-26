@@ -469,6 +469,16 @@ class Root extends Dom {
         };
         totalList.push(node);
       }
+      // 即便存在，focus/img也需要更新
+      else {
+        let target = totalHash[node.__uniqueUpdateId];
+        if(img) {
+          target.img = img;
+        }
+        if(!isNil(focus)) {
+          target.focus = focus;
+        }
+      }
       // updateStyle()这样的调用还要计算normalize
       if(origin && style) {
         style = css.normalize(style);

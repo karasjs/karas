@@ -12138,7 +12138,7 @@
 
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
-          if (!o$1.contain(lv, o$1.TRANSFORM) && lv < o$1.REFLOW) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+          if (!o$1.contain(lv, o$1.TRANSFORM) && lv < o$1.REPAINT) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           } else {
             delete virtualDom.transform;
@@ -16411,7 +16411,11 @@
           return res;
         }
 
-        var originX, originY;
+        var originX, originY; // img无children所以total就是cache避免多余生成
+
+        if (renderMode === mode.CANVAS) {
+          this.__cacheTotal = __cache;
+        }
 
         if (__cache && __cache.enabled) {
           ctx = __cache.ctx;
@@ -18458,7 +18462,18 @@
               component: component
             };
             totalList.push(node);
-          } // updateStyle()这样的调用还要计算normalize
+          } // 即便存在，focus/img也需要更新
+          else {
+              var target = totalHash[node.__uniqueUpdateId];
+
+              if (img) {
+                target.img = img;
+              }
+
+              if (!isNil$6(focus)) {
+                target.focus = focus;
+              }
+            } // updateStyle()这样的调用还要计算normalize
 
 
           if (origin && style) {

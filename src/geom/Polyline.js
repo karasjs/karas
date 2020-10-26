@@ -263,7 +263,7 @@ class Polyline extends Geom {
 
   buildCache(originX, originY) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
-    let rebuild, reset;
+    let rebuild;
     if(isNil(__cacheProps.points)) {
       rebuild = true;
       if(isMulti) {
@@ -344,6 +344,7 @@ class Polyline extends Geom {
       strokeLinecap,
       strokeLinejoin,
       strokeMiterlimit,
+      fillRule,
       dx,
       dy,
     } = res;
@@ -383,7 +384,7 @@ class Polyline extends Geom {
       else {
         painter.canvasPolygon(ctx, __cacheProps.list2, dx, dy);
       }
-      ctx.fill();
+      ctx.fill(fillRule === 'evenodd' ? fillRule : 'nonzero');
       if(strokeWidth > 0) {
         ctx.stroke();
       }
@@ -396,6 +397,9 @@ class Polyline extends Geom {
         ['stroke', stroke],
         ['stroke-width', strokeWidth]
       ];
+      if(fillRule === 'evenodd') {
+        props.push(['fill-rule', 'evenodd']);
+      }
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       this.addGeom('path', props);
     }

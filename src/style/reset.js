@@ -75,6 +75,7 @@ const GEOM = {
   strokeLinecap: 'butt',
   strokeLinejoin: 'miter',
   strokeMiterlimit: 4,
+  fillRule: 'nonzero',
 };
 
 let DOM_ENTRY_SET = [];

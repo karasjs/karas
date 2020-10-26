@@ -5466,7 +5466,8 @@
     strokeDasharray: '',
     strokeLinecap: 'butt',
     strokeLinejoin: 'miter',
-    strokeMiterlimit: 4
+    strokeMiterlimit: 4,
+    fillRule: 'nonzero'
   };
   var DOM_ENTRY_SET = [];
   var DOM_KEY_SET = [];
@@ -6608,7 +6609,7 @@
       } else {
         style.strokeDasharray = [];
       }
-    } // fill和stroke为渐变时特殊处理
+    } // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
 
 
     temp = style.fill;
@@ -19928,7 +19929,7 @@
         } // 直接赋值的
 
 
-        ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit'].forEach(function (k) {
+        ['strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit', 'fillRule'].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
         });
         var fill = __cacheStyle.fill,
@@ -19938,7 +19939,8 @@
             strokeLinecap = computedStyle.strokeLinecap,
             strokeLinejoin = computedStyle.strokeLinejoin,
             strokeMiterlimit = computedStyle.strokeMiterlimit,
-            strokeDasharray = computedStyle.strokeDasharray;
+            strokeDasharray = computedStyle.strokeDasharray,
+            fillRule = computedStyle.fillRule;
         return {
           x: x,
           y: y,
@@ -19955,7 +19957,8 @@
           strokeLinejoin: strokeLinejoin,
           strokeMiterlimit: strokeMiterlimit,
           fill: fill,
-          visibility: visibility
+          visibility: visibility,
+          fillRule: fillRule
         };
       }
     }, {
@@ -21306,6 +21309,7 @@
             strokeLinecap = res.strokeLinecap,
             strokeLinejoin = res.strokeLinejoin,
             strokeMiterlimit = res.strokeMiterlimit,
+            fillRule = res.fillRule,
             dx = res.dx,
             dy = res.dy;
         var __cacheProps = this.__cacheProps,
@@ -21353,7 +21357,7 @@
             painter.canvasPolygon(ctx, __cacheProps.list2, dx, dy);
           }
 
-          ctx.fill();
+          ctx.fill(fillRule === 'evenodd' ? fillRule : 'nonzero');
 
           if (strokeWidth > 0) {
             ctx.stroke();
@@ -21362,6 +21366,10 @@
           ctx.closePath();
         } else if (renderMode === mode.SVG) {
           var props = [['d', __cacheProps.d], ['fill', fill], ['stroke', stroke], ['stroke-width', strokeWidth]];
+
+          if (fillRule === 'evenodd') {
+            props.push(['fill-rule', 'evenodd']);
+          }
 
           this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
 
@@ -23014,7 +23022,7 @@
     Cache: Cache$1
   };
 
-  var version = "0.39.2";
+  var version = "0.40.0-1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

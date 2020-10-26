@@ -668,7 +668,7 @@ function normalize(style, reset = []) {
       style.strokeDasharray = [];
     }
   }
-  // fill和stroke为渐变时特殊处理
+  // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
   if(temp) {
     if(temp.indexOf('-gradient(') > 0) {

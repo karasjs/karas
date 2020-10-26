@@ -49,6 +49,7 @@ const DOM = {
   flexDirection: 'row',
   justifyContent: 'flex-start',
   alignItems: 'stretch',
+  alignSelf: 'auto',
   textAlign: 'inherit',
   transformOrigin: 'center',
   visibility: 'inherit',

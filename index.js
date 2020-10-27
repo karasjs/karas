@@ -20324,31 +20324,25 @@
             ctx.globalAlpha = __opacity;
             ctx.setTransform.apply(ctx, _toConsumableArray(matrixEvent));
 
-            if (!target && cache && cache.available) {
-              target = cache;
-            }
-
             if (target) {
-              var _target = target,
-                  _x = _target.x1,
-                  _y = _target.y1,
-                  _dbx = _target.dbx,
-                  _dby = _target.dby,
-                  canvas = _target.canvas;
+              var _x = target.x1,
+                  _y = target.y1,
+                  _dbx = target.dbx,
+                  _dby = target.dby,
+                  canvas = target.canvas;
               ctx.drawImage(canvas, _x - 1 - _dbx, _y - 1 - _dby);
             } else if (cache && cache.available) {
-              var _target2 = target,
-                  _target2$coords = _slicedToArray(_target2.coords, 2),
-                  _tx = _target2$coords[0],
-                  _ty = _target2$coords[1],
-                  _x2 = _target2.x1,
-                  _y2 = _target2.y1,
-                  _dbx2 = _target2.dbx,
-                  _dby2 = _target2.dby,
-                  _canvas = _target2.canvas,
-                  size = _target2.size;
+              var _cache$coords = _slicedToArray(cache.coords, 2),
+                  _tx = _cache$coords[0],
+                  _ty = _cache$coords[1],
+                  _x2 = cache.x1,
+                  _y2 = cache.y1,
+                  _dbx2 = cache.dbx,
+                  _dby2 = cache.dby,
+                  _canvas = cache.canvas,
+                  size = cache.size;
 
-              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2, size, size, _tx - 1, _tx - 1, size, size);
+              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2, size, size, _tx - 1, _ty - 1, size, size);
             }
           }
       }
@@ -23214,7 +23208,7 @@
     Cache: Cache$1
   };
 
-  var version = "0.40.0";
+  var version = "0.40.1";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

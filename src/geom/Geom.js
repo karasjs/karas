@@ -346,16 +346,13 @@ class Geom extends Xom {
       // 写回主画布前设置
       ctx.globalAlpha = __opacity;
       ctx.setTransform(...matrixEvent);
-      if(!target && cache && cache.available) {
-        target = cache;
-      }
       if(target) {
         let { x1, y1, dbx, dby, canvas } = target;
         ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
       }
       else if(cache && cache.available) {
-        let { coords: [tx, ty], x1, y1, dbx, dby, canvas, size } = target;
-        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby, size, size, tx - 1, tx - 1, size, size);
+        let { coords: [tx, ty], x1, y1, dbx, dby, canvas, size } = cache;
+        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby, size, size, tx - 1, ty - 1, size, size);
       }
     }
   }

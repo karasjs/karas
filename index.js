@@ -20342,7 +20342,7 @@
                   _canvas = cache.canvas,
                   size = cache.size;
 
-              ctx.drawImage(_canvas, _x2 - 1 - _dbx2, _y2 - 1 - _dby2, size, size, _tx - 1, _ty - 1, size, size);
+              ctx.drawImage(_canvas, _tx - 1, _ty - 1, size, size, _x2 - 1 - _dbx2, _y2 - 1 - _dby2, size, size);
             }
           }
       }
@@ -23208,7 +23208,7 @@
     Cache: Cache$1
   };
 
-  var version = "0.40.1";
+  var version = "0.40.2";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);
@@ -23288,6 +23288,7 @@
     mode: mode,
     Component: Component$1,
     Geom: Geom$2,
+    Dom: Dom$1,
     Root: Root,
     Event: Event,
     util: util,

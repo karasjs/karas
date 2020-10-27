@@ -98,6 +98,7 @@ let karas = {
   mode,
   Component,
   Geom,
+  Dom,
   Root,
   Event,
   util,

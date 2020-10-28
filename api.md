@@ -100,6 +100,359 @@ class Component extends karas.Component {
 }
 ```
 
+<a name="Node"></a>
+
+## Node
+Xom/Text的基类，抽象共有部分。
+
+### 类属性property
+
+#### x
+* **类型** `Number` 只读
+* **说明**  
+x坐标。
+
+#### y
+* **类型** `Number` 只读
+* **说明**  
+y坐标。
+
+#### ox
+* **类型** `Number` 只读
+* **说明**  
+x偏移坐标，因relative造成。
+
+#### oy
+* **类型** `Number` 只读
+* **说明**  
+y偏移坐标，因relative造成。
+
+#### width
+* **类型** `Number` 只读
+* **说明**  
+宽度。
+
+#### height
+* **类型** `Number` 只读
+* **说明**  
+高度。
+
+#### innerWidth
+* **类型** `Number` 只读
+* **说明**  
+内部宽度，包含padding。注意节点display:none时为0。
+
+#### innerHeight
+* **类型** `Number` 只读
+* **说明**  
+内部高度，包含padding。注意节点display:none时为0。
+
+#### style
+* **类型** `Object` 只读
+* **说明**  
+标签属性中传入的style样式集合。
+
+#### currentStyle
+* **类型** `Object` 只读
+* **说明**  
+当前的style样式集合，格式化后的。如果有动画，更新的样式反应在`currentStyle`上，而不会修改原始`style`引用。
+
+#### computedStyle
+* **类型** `Object` 只读
+* **说明**  
+当前的style样式集合，计算后的，类似window.getComputedStyle()。
+
+#### prev
+* **类型** `Xom` 只读
+* **说明**  
+前面一个相邻的兄弟节点。
+
+#### next
+* **类型** `Xom` 只读
+* **说明**  
+后面一个相邻的兄弟节点。
+
+#### parent
+* **类型** `Xom` 只读
+* **说明**  
+直接父亲节点。
+
+#### domParent
+* **类型** `Xom` 只读
+* **说明**  
+真实父亲节点，[Component](#Component)的[shadowRoot](#shadowRoot)没有`parent`，因此`domParent`会指向`Component`本身的`parent`。
+
+#### root
+* **类型** `Root` 只读
+* **说明**  
+根节点。详见[Root](#Root)。
+
+#### host
+* **类型** `Root/Component` 只读
+* **说明**  
+局部根节点，即ref所属的根节点。当出现在一个组件内部时，通过`Component.ref.a`访问到自己，是属于组件的。当直接出现在Root下时，通过`Root.ref.a`访问到自己，是属于Root。详见[Root](#Root)、[Component](#Component)。
+
+#### bbox
+* **类型** `Array<Number>` 只读
+* **说明**  
+所占矩形坐标框，不包含margin。
+
+#### baseLine
+* **类型** `Number` 只读
+* **说明**  
+baseLine，字母x的下边线位置。
+
+<a name="Text"></a>
+
+## Text
+文字类，处理有关文本的数据。[Node](#Node)的派生类。
+
+### 类属性property
+
+#### content
+* **类型** `String` 读写
+* **说明**  
+读取/设置文本的内容。
+
+#### charWidth
+* **类型** `Number` 只读
+* **说明**  
+内容中最大字符宽度。
+
+#### charWidthList
+* **类型** `Array<Number>` 只读
+* **说明**  
+内容的所有字符宽度列表。
+
+#### textWidth
+* **类型** `Number` 只读
+* **说明**  
+内容的字符宽度总和。
+
+<a name="Xom"></a>
+## Xom
+Dom/Geom的基类，抽象共有部分。[Node](#Node)的派生类。
+
+### 类属性property
+
+#### tagName
+* **类型** `String` 只读
+* **说明**  
+标签名。
+
+#### sx
+* **类型** `Number` 只读
+* **说明**  
+x坐标+偏移坐标。
+
+#### sy
+* **类型** `Number` 只读
+* **说明**  
+y坐标+偏移坐标。
+
+#### outerWidth
+* **类型** `Number` 只读
+* **说明**  
+外部宽度，包含margin、border、padding。注意节点display:none时为0。
+
+#### outerHeight
+* **类型** `Number` 只读
+* **说明**  
+外部高度，包含margin、border、padding。注意节点display:none时为0。
+
+#### listener
+* **类型** `Object` 只读
+* **说明**  
+所有onXxx侦听存储的hash，一般开发用不到。
+
+#### matrix
+* **类型** `Array<Number>` 只读
+* **说明**  
+css标准的transform最终计算值，一维6为数组表达，相对于父元素。
+
+#### matrixEvent
+* **类型** `Array<Number>` 只读
+* **说明**  
+canvas标准的transform最终计算值，一维6为数组表达，相对于根元素。
+
+#### renderMatrix
+* **类型** `Array<Number>` 只读
+* **说明**  
+svg标准的transform最终计算值，一维6为数组表达，相对于父元素。
+
+#### animationList
+* **类型** `Array<Animation>` 只读
+* **说明**  
+当前的动画队列。详见[Animation](#Animation)。
+
+#### availableAnimating
+* **类型** `boolean` 只读
+* **说明**  
+当前的所有动画列表中是否包含有效的。无效的定义是类似`pointer-events`这种对渲染无效的css动画。没有动画也是无效。
+
+#### effectiveAnimating
+* **类型** `boolean` 只读
+* **说明**  
+当前的所有动画列表中是否包含有影响的。影响的定义是`opacity`、`transform`、`filter`、`visibility`这种对渲染缓存有影响的css动画。没有动画也是无效，包含`availableAnimating`。
+
+#### displayAnimating
+* **类型** `boolean` 只读
+* **说明**  
+当前的所有动画列表中是否包含display变化的，且本帧和下一帧有变化。
+
+#### visibilityAnimating
+* **类型** `boolean` 只读
+* **说明**  
+当前的所有动画列表中是否包含visibility变化的，且本帧和下一帧有变化。
+
+#### isShadowRoot
+* **类型** `boolean` 只读
+* **说明**  
+是否是[Component](#Component)的shadowRoot。
+
+#### isDestroyed
+* **类型** `boolean` 只读
+* **说明**  
+是否以被销毁。
+
+### 类方法method
+
+#### animate
+* **类型** `Function`
+* **参数**
+  * list `Array<Object>`
+  动画列表
+  * options `Object`
+  动画参数
+* **说明**  
+开始执行一段动画并将结果存入animateList中。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <$rect style={{width: 100, height:100}} ref="rect"/>
+  </canvas>,
+  '#selector'
+);
+root.ref.rect.animate([
+  {
+    "translateX": 0
+  },
+  {
+    "translateX": 100
+  },
+], {
+  duration: 1000,
+});
+```
+
+#### removeAnimate
+* **类型** `Function`
+* **参数**
+  * target `Animation`
+  动画对象
+* **说明**  
+取消并从animateList中移除一段动画。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <$rect style={{width: 100, height:100}} ref="rect"/>
+  </canvas>,
+  '#selector'
+);
+let animate = root.ref.rect.animate([
+  {
+    "translateX": 0
+  },
+  {
+    "translateX": 100
+  },
+], {
+  duration: 1000,
+});
+root.ref.removeAnimate(animate);
+```
+
+#### clearAnimate
+* **类型** `Function`
+* **参数**
+  * target `Animation`
+  动画对象
+* **说明**  
+取消所有动画并清空animateList中。
+
+#### updateStyle
+* **类型** `Function`
+* **参数**
+  * style `Object`
+  更新的样式inline集合
+  * cb `Function`
+  更新且刷新后的回调
+* **说明**  
+异步更新样式。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div ref="div">text</div>
+  </canvas>,
+  '#selector'
+);
+root.ref.div.updateStyle({
+  color: '#F00',
+}, function() {
+  console.log('updateStyle');
+});
+```
+
+### html属性attribute
+
+#### onXxx
+* **类型** `Function`
+* **说明**  
+侦听Dom事件，on后面跟驼峰事件名。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <div onClick={e => conosole.log('click', e)}>click</div>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### style
+* **类型** `Object`
+* **说明**  
+css样式，jsx的inline写法。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <div style={{ color: '#F00' }}>style</div>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### ref
+* **类型** `String/Function`
+* **说明**  
+引用标识，可供局部根节点访问到。
+* **示例**
+```jsx
+let div;
+let root = karas.render(
+  <canvas>
+    <div ref="div">ref</div>
+    <div ref={ref => div = ref}>ref</div>
+  </canvas>,
+  '#selector'
+);
+console.log(root.ref.div === div);
+```
+
 <a name="Dom"></a>
 ### Dom
 * **类型** `class`
@@ -515,320 +868,6 @@ let a = root.ref.div.animate([
 a.on(karas.Event.END, function() {
   console.log('end'); // 因为播放循环2次，所以有2轮结束。
 });
-```
-
-<a name="Xom"></a>
-## Xom
-外界无法访问，Dom/Geom的基类，抽象共有部分。
-
-### 类属性property
-
-#### tagName
-* **类型** `String` 只读
-* **说明**  
-标签名。
-
-#### x
-* **类型** `Number` 只读
-* **说明**  
-x坐标。
-
-#### y
-* **类型** `Number` 只读
-* **说明**  
-y坐标。
-
-#### ox
-* **类型** `Number` 只读
-* **说明**  
-x偏移坐标，因relative造成。
-
-#### oy
-* **类型** `Number` 只读
-* **说明**  
-y偏移坐标，因relative造成。
-
-#### sx
-* **类型** `Number` 只读
-* **说明**  
-x坐标+偏移坐标。
-
-#### sy
-* **类型** `Number` 只读
-* **说明**  
-y坐标+偏移坐标。
-
-#### width
-* **类型** `Number` 只读
-* **说明**  
-宽度。
-
-#### height
-* **类型** `Number` 只读
-* **说明**  
-高度。
-
-#### innerWidth
-* **类型** `Number` 只读
-* **说明**  
-内部宽度，包含padding。
-
-#### innerHeight
-* **类型** `Number` 只读
-* **说明**  
-内部高度，包含padding。
-
-#### outerWidth
-* **类型** `Number` 只读
-* **说明**  
-外部宽度，包含margin、border、padding。
-
-#### outerHeight
-* **类型** `Number` 只读
-* **说明**  
-外部高度，包含margin、border、padding。
-
-#### prev
-* **类型** `Xom` 只读
-* **说明**  
-前面一个相邻的兄弟节点。
-
-#### next
-* **类型** `Xom` 只读
-* **说明**  
-后面一个相邻的兄弟节点。
-
-#### parent
-* **类型** `Xom` 只读
-* **说明**  
-直接父亲节点。
-
-#### domParent
-* **类型** `Xom` 只读
-* **说明**  
-真实父亲节点，[Component](#Component)的[shadowRoot](#shadowRoot)没有`parent`，因此`domParent`会指向`Component`本身的`parent`。
-
-#### root
-* **类型** `Root` 只读
-* **说明**  
-根节点。详见[Root](#Root)。
-
-#### host
-* **类型** `Root/Component` 只读
-* **说明**  
-局部根节点，即ref所属的根节点。当出现在一个组件内部时，通过`Component.ref.a`访问到自己，是属于组件的。当直接出现在Root下时，通过`Root.ref.a`访问到自己，是属于Root。详见[Root](#Root)、[Component](#Component)。
-
-#### bbox
-* **类型** `Array<Number>` 只读
-* **说明**  
-所占矩形坐标框，不包含margin。
-
-#### listener
-* **类型** `Object` 只读
-* **说明**  
-所有onXxx侦听存储的hash，一般开发用不到。
-
-#### matrix
-* **类型** `Array<Number>` 只读
-* **说明**  
-css标准的transform最终计算值，一维6为数组表达，相对于父元素。
-
-#### matrixEvent
-* **类型** `Array<Number>` 只读
-* **说明**  
-canvas标准的transform最终计算值，一维6为数组表达，相对于根元素。
-
-#### renderMatrix
-* **类型** `Array<Number>` 只读
-* **说明**  
-svg标准的transform最终计算值，一维6为数组表达，相对于父元素。
-
-#### style
-* **类型** `Object` 只读
-* **说明**  
-标签属性中传入的style样式集合。
-
-#### currentStyle
-* **类型** `Object` 只读
-* **说明**  
-当前的style样式集合，格式化后的。如果有动画，更新的样式反应在`currentStyle`上，而不会修改原始`style`引用。
-
-#### computedStyle
-* **类型** `Object` 只读
-* **说明**  
-当前的style样式集合，计算后的，类似window.getComputedStyle()。
-
-#### animationList
-* **类型** `Array<Animation>` 只读
-* **说明**  
-当前的动画队列。详见[Animation](#Animation)。
-
-#### availableAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含有效的。无效的定义是类似`pointer-events`这种对渲染无效的css动画。没有动画也是无效。
-
-#### effectiveAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含有影响的。影响的定义是`opacity`、`transform`、`filter`、`visibility`这种对渲染缓存有影响的css动画。没有动画也是无效，包含`availableAnimating`。
-
-#### displayAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含display变化的，且本帧和下一帧有变化。
-
-#### visibilityAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含visibility变化的，且本帧和下一帧有变化。
-
-#### isShadowRoot
-* **类型** `boolean` 只读
-* **说明**  
-是否是[Component](#Component)的shadowRoot。
-
-#### isDestroyed
-* **类型** `boolean` 只读
-* **说明**  
-是否以被销毁。
-
-### 类方法method
-
-#### animate
-* **类型** `Function`
-* **参数**
-  * list `Array<Object>`
-  动画列表
-  * options `Object`
-  动画参数
-* **说明**  
-开始执行一段动画并将结果存入animateList中。
-* **示例**
-```jsx
-let root = karas.render(
-  <canvas>
-    <$rect style={{width: 100, height:100}} ref="rect"/>
-  </canvas>,
-  '#selector'
-);
-root.ref.rect.animate([
-  {
-    "translateX": 0
-  },
-  {
-    "translateX": 100
-  },
-], {
-  duration: 1000,
-});
-```
-
-#### removeAnimate
-* **类型** `Function`
-* **参数**
-  * target `Animation`
-  动画对象
-* **说明**  
-取消并从animateList中移除一段动画。
-* **示例**
-```jsx
-let root = karas.render(
-  <canvas>
-    <$rect style={{width: 100, height:100}} ref="rect"/>
-  </canvas>,
-  '#selector'
-);
-let animate = root.ref.rect.animate([
-  {
-    "translateX": 0
-  },
-  {
-    "translateX": 100
-  },
-], {
-  duration: 1000,
-});
-root.ref.removeAnimate(animate);
-```
-
-#### clearAnimate
-* **类型** `Function`
-* **参数**
-  * target `Animation`
-  动画对象
-* **说明**  
-取消所有动画并清空animateList中。
-
-#### updateStyle
-* **类型** `Function`
-* **参数**
-  * style `Object`
-  更新的样式inline集合
-  * cb `Function`
-  更新且刷新后的回调
-* **说明**  
-异步更新样式。
-* **示例**
-```jsx
-let root = karas.render(
-  <canvas>
-    <div ref="div">text</div>
-  </canvas>,
-  '#selector'
-);
-root.ref.div.updateStyle({
-  color: '#F00',
-}, function() {
-  console.log('updateStyle');
-});
-```
-
-### html属性attribute
-
-#### onXxx
-* **类型** `Function`
-* **说明**  
-侦听Dom事件，on后面跟驼峰事件名。
-* **示例**
-```jsx
-karas.render(
-  <canvas>
-    <div onClick={e => conosole.log('click', e)}>click</div>
-  </canvas>,
-  '#selector'
-);
-```
-
-#### style
-* **类型** `Object`
-* **说明**  
-css样式，jsx的inline写法。
-* **示例**
-```jsx
-karas.render(
-  <canvas>
-    <div style={{ color: '#F00' }}>style</div>
-  </canvas>,
-  '#selector'
-);
-```
-
-#### ref
-* **类型** `String/Function`
-* **说明**  
-引用标识，可供局部根节点访问到。
-* **示例**
-```jsx
-let div;
-let root = karas.render(
-  <canvas>
-    <div ref="div">ref</div>
-    <div ref={ref => div = ref}>ref</div>
-  </canvas>,
-  '#selector'
-);
-console.log(root.ref.div === div);
 ```
 
 <a name="虚拟Dom"></a>

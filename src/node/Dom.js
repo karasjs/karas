@@ -1303,7 +1303,7 @@ class Dom extends Xom {
       virtualDom.type = 'dom';
     }
     // canvas在隐藏时返回空，svg则有内容
-    if(isDestroyed || display === 'none' || (renderMode === mode.CANVAS && visibility === 'hidden')) {
+    if(isDestroyed || display === 'none') {
       return res;
     }
     // filter特殊缓存

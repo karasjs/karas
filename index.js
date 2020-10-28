@@ -13624,6 +13624,11 @@
             display = _this$computedStyle.display,
             paddingRight = _this$computedStyle.paddingRight,
             paddingLeft = _this$computedStyle.paddingLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.width + paddingLeft + paddingRight;
       }
     }, {
@@ -13633,6 +13638,11 @@
             display = _this$computedStyle2.display,
             paddingTop = _this$computedStyle2.paddingTop,
             paddingBottom = _this$computedStyle2.paddingBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.height + paddingTop + paddingBottom;
       }
     }, {
@@ -13644,6 +13654,11 @@
             borderRightWidth = _this$computedStyle3.borderRightWidth,
             marginRight = _this$computedStyle3.marginRight,
             marginLeft = _this$computedStyle3.marginLeft;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerWidth + borderLeftWidth + borderRightWidth + marginLeft + marginRight;
       }
     }, {
@@ -13655,6 +13670,11 @@
             borderBottomWidth = _this$computedStyle4.borderBottomWidth,
             marginTop = _this$computedStyle4.marginTop,
             marginBottom = _this$computedStyle4.marginBottom;
+
+        if (display === 'none') {
+          return 0;
+        }
+
         return this.innerHeight + borderTopWidth + borderBottomWidth + marginTop + marginBottom;
       } // 不考虑margin的范围
 
@@ -15950,7 +15970,7 @@
         } // canvas在隐藏时返回空，svg则有内容
 
 
-        if (isDestroyed || display === 'none' || renderMode === mode.CANVAS && visibility === 'hidden') {
+        if (isDestroyed || display === 'none') {
           return res;
         } // filter特殊缓存
 

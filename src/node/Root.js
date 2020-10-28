@@ -313,7 +313,7 @@ class Root extends Dom {
     if(!cb) {
       return;
     }
-    let { task, renderMode, ctx } = this;
+    let { task } = this;
     // 第一个添加延迟侦听，后续放队列等待一并执行
     if(!task.length) {
       let clone;

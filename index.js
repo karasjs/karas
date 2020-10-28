@@ -13624,11 +13624,6 @@
             display = _this$computedStyle.display,
             paddingRight = _this$computedStyle.paddingRight,
             paddingLeft = _this$computedStyle.paddingLeft;
-
-        if (display === 'none') {
-          return 0;
-        }
-
         return this.width + paddingLeft + paddingRight;
       }
     }, {
@@ -13638,11 +13633,6 @@
             display = _this$computedStyle2.display,
             paddingTop = _this$computedStyle2.paddingTop,
             paddingBottom = _this$computedStyle2.paddingBottom;
-
-        if (display === 'none') {
-          return 0;
-        }
-
         return this.height + paddingTop + paddingBottom;
       }
     }, {
@@ -13654,11 +13644,6 @@
             borderRightWidth = _this$computedStyle3.borderRightWidth,
             marginRight = _this$computedStyle3.marginRight,
             marginLeft = _this$computedStyle3.marginLeft;
-
-        if (display === 'none') {
-          return 0;
-        }
-
         return this.innerWidth + borderLeftWidth + borderRightWidth + marginLeft + marginRight;
       }
     }, {
@@ -13670,11 +13655,6 @@
             borderBottomWidth = _this$computedStyle4.borderBottomWidth,
             marginTop = _this$computedStyle4.marginTop,
             marginBottom = _this$computedStyle4.marginBottom;
-
-        if (display === 'none') {
-          return 0;
-        }
-
         return this.innerHeight + borderTopWidth + borderBottomWidth + marginTop + marginBottom;
       } // 不考虑margin的范围
 
@@ -13724,6 +13704,11 @@
       key: "matrixEvent",
       get: function get() {
         return this.__matrixEvent;
+      }
+    }, {
+      key: "renderMatrix",
+      get: function get() {
+        return this.__renderMatrix;
       }
     }, {
       key: "style",
@@ -13833,23 +13818,7 @@
         }
 
         return false;
-      } // get filterAnimating() {
-      //   let list = this.animationList;
-      //   for(let i = 0, len = list.length; i < len; i++) {
-      //     let item = list[i];
-      //     if(item.animating && item.currentFrames) {
-      //       let { transition } = item.currentFrame;
-      //       for(let i = 0, len = transition.length; i < len; i++) {
-      //         let k = transition[i].k;
-      //         if(k === 'filter') {
-      //           return true;
-      //         }
-      //       }
-      //     }
-      //   }
-      //   return false;
-      // }
-
+      }
     }, {
       key: "currentStyle",
       get: function get() {
@@ -14524,7 +14493,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'style', 'animating', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'animateProps', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -18772,9 +18741,7 @@
           return;
         }
 
-        var task = this.task,
-            renderMode = this.renderMode,
-            ctx = this.ctx; // 第一个添加延迟侦听，后续放队列等待一并执行
+        var task = this.task; // 第一个添加延迟侦听，后续放队列等待一并执行
 
         if (!task.length) {
           var clone;
@@ -23208,7 +23175,7 @@
     Cache: Cache$1
   };
 
-  var version = "0.40.2";
+  var version = "0.40.4";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

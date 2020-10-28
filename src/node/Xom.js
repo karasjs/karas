@@ -2399,9 +2399,6 @@ class Xom extends Node {
         paddingLeft,
       },
     } = this;
-    if(display === 'none') {
-      return 0;
-    }
     return this.width
       + paddingLeft
       + paddingRight;
@@ -2415,9 +2412,6 @@ class Xom extends Node {
         paddingBottom,
       },
     } = this;
-    if(display === 'none') {
-      return 0;
-    }
     return this.height
       + paddingTop
       + paddingBottom;
@@ -2433,9 +2427,6 @@ class Xom extends Node {
         marginLeft,
       },
     } = this;
-    if(display === 'none') {
-      return 0;
-    }
     return this.innerWidth
       + borderLeftWidth
       + borderRightWidth
@@ -2453,9 +2444,6 @@ class Xom extends Node {
         marginBottom,
       },
     } = this;
-    if(display === 'none') {
-      return 0;
-    }
     return this.innerHeight
       + borderTopWidth
       + borderBottomWidth
@@ -2500,6 +2488,10 @@ class Xom extends Node {
 
   get matrixEvent() {
     return this.__matrixEvent;
+  }
+
+  get renderMatrix() {
+    return this.__renderMatrix;
   }
 
   get style() {
@@ -2585,23 +2577,6 @@ class Xom extends Node {
     }
     return false;
   }
-
-  // get filterAnimating() {
-  //   let list = this.animationList;
-  //   for(let i = 0, len = list.length; i < len; i++) {
-  //     let item = list[i];
-  //     if(item.animating && item.currentFrames) {
-  //       let { transition } = item.currentFrame;
-  //       for(let i = 0, len = transition.length; i < len; i++) {
-  //         let k = transition[i].k;
-  //         if(k === 'filter') {
-  //           return true;
-  //         }
-  //       }
-  //     }
-  //   }
-  //   return false;
-  // }
 
   get currentStyle() {
     return this.__currentStyle;

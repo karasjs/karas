@@ -971,7 +971,7 @@ class Root extends Dom {
           // 找到最上层容器，如果是组件的子节点，以sr为container，sr本身往上找
           let container = node;
           if(isNowAbs) {
-            while(!container.parent && container.host) {
+            while(container.isShadowRoot) {
               container = container.host; // 先把可能递归嵌套的组件循环完
             }
             container = container.parent;

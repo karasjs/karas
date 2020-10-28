@@ -1266,11 +1266,11 @@ class Dom extends Xom {
         item.__offsetY(-item.outerHeight, true);
       }
     });
-    if(target) {
-      return;
-    }
     // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
+      if(target && target !== item) {
+        return;
+      }
       if(item instanceof Dom) {
         item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);
       }
@@ -1613,6 +1613,10 @@ class Dom extends Xom {
     let cache = this.__cache;
     let zIndexChildren = this.zIndexChildren;
     let computedStyle = this.computedStyle;
+    let { display, visibility } = computedStyle;
+    if(display === 'none') {
+      return;
+    }
     let blurValue = 0;
     if(Array.isArray(computedStyle.filter)) {
       computedStyle.filter.forEach(item => {
@@ -1624,6 +1628,9 @@ class Dom extends Xom {
     }
     // 局部根节点缓存汇总渲染
     if(mode === refreshMode.TOP) {
+      if(visibility === 'hidden') {
+        return;
+      }
       let bboxTotal = this.__mergeBbox(null, true);
       // 空内容
       if(!bboxTotal) {
@@ -1692,33 +1699,37 @@ class Dom extends Xom {
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === refreshMode.CHILD) {
       let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
-      let tfo = computedStyle.transformOrigin.slice(0);
-      opacity *= computedStyle.opacity;
-      ctx.globalAlpha = opacity;
-      // 优先filter/mask，再是total
-      if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
-        let target = cacheFilter || cacheMask || cacheTotal;
-        Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
-        return;
-      }
-      let { sx, sy } = this;
-      sx += computedStyle.marginLeft;
-      sy += computedStyle.marginTop;
-      let dx = tx + sx - x1 + dbx;
-      let dy = ty + sy - y1 + dby;
-      tfo[0] += dx;
-      tfo[1] += dy;
-      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
-      matrix = mx.multiply(matrix, m);
-      ctx.setTransform(...matrix);
-      // 都没有正常cache和children
-      if(cache && cache.available) {
-        Cache.drawCache(cache, cacheTop);
+      if(visibility !== 'hidden') {
+        let tfo = computedStyle.transformOrigin.slice(0);
+        opacity *= computedStyle.opacity;
+        ctx.globalAlpha = opacity;
+        // 优先filter/mask，再是total
+        if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
+          let target = cacheFilter || cacheMask || cacheTotal;
+          Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
+          return;
+        }
+        let { sx, sy } = this;
+        sx += computedStyle.marginLeft;
+        sy += computedStyle.marginTop;
+        let dx = tx + sx - x1 + dbx;
+        let dy = ty + sy - y1 + dby;
+        tfo[0] += dx;
+        tfo[1] += dy;
+        let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
+        matrix = mx.multiply(matrix, m);
+        ctx.setTransform(...matrix);
+        // 都没有正常cache和children
+        if(cache && cache.available) {
+          Cache.drawCache(cache, cacheTop);
+        }
       }
       // 递归children
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
+          if(visibility !== 'hidden') {
+            item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
+          }
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
@@ -1728,27 +1739,31 @@ class Dom extends Xom {
     // root调用局部整体缓存或单个节点缓存绘入主画布
     else if(mode === refreshMode.ROOT) {
       let { __opacity, matrixEvent } = this;
-      // 写回主画布前设置
-      ctx.globalAlpha = __opacity;
-      ctx.setTransform(...matrixEvent);
-      if(cacheFilter || cacheMask) {
-        let { x1, y1, dbx, dby, canvas } = cacheFilter || cacheMask;
-        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
-        return;
-      }
-      if(cacheTotal && cacheTotal.available) {
-        let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cacheTotal;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
-        return;
-      }
-      // 无内容就没有cache，继续看children
-      if(cache && cache.available) {
-        let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cache;
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+      if(visibility !== 'hidden') {
+        // 写回主画布前设置
+        ctx.globalAlpha = __opacity;
+        ctx.setTransform(...matrixEvent);
+        if(cacheFilter || cacheMask) {
+          let { x1, y1, dbx, dby, canvas } = cacheFilter || cacheMask;
+          ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
+          return;
+        }
+        if(cacheTotal && cacheTotal.available) {
+          let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cacheTotal;
+          ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+          return;
+        }
+        // 无内容就没有cache，继续看children
+        if(cache && cache.available) {
+          let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cache;
+          ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+        }
       }
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          item.__renderByMask(renderMode, null, ctx);
+          if(visibility !== 'hidden') {
+            item.__renderByMask(renderMode, null, ctx);
+          }
         }
         else {
           item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
@@ -1771,6 +1786,7 @@ class Dom extends Xom {
   __mergeBbox(matrix, isTop, tx, ty, dx, dy) {
     let bbox;
     let { sx, sy, computedStyle } = this;
+    let display = computedStyle.display;
     // 顶点初始化为起点，偏移值要考虑filter
     if(isTop) {
       matrix = [1, 0, 0, 1, 0, 0];
@@ -1794,7 +1810,7 @@ class Dom extends Xom {
         dx = dy = 0;
       }
     }
-    else {
+    else if(display !== 'none') {
       let tfo = computedStyle.transformOrigin.slice(0);
       tfo[0] += sx - tx;
       tfo[1] += sy - ty;
@@ -1802,18 +1818,21 @@ class Dom extends Xom {
       matrix = mx.multiply(matrix, m);
       bbox = super.__mergeBbox(matrix, isTop, dx, dy);
     }
-    this.zIndexChildren.forEach(item => {
-      let t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
-      if(!bbox) {
-        bbox = t;
-      }
-      else {
-        bbox[0] = Math.min(bbox[0], t[0]);
-        bbox[1] = Math.min(bbox[1], t[1]);
-        bbox[2] = Math.max(bbox[2], t[2]);
-        bbox[3] = Math.max(bbox[3], t[3]);
-      }
-    });
+    if(display !== 'none') {
+      this.zIndexChildren.forEach(item => {
+        let t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
+        if(!bbox) {
+          bbox = t;
+        }
+        // display:none可能为空
+        else if(t) {
+          bbox[0] = Math.min(bbox[0], t[0]);
+          bbox[1] = Math.min(bbox[1], t[1]);
+          bbox[2] = Math.max(bbox[2], t[2]);
+          bbox[3] = Math.max(bbox[3], t[3]);
+        }
+      });
+    }
     return bbox;
   }
 

@@ -1,3 +1,5 @@
+import Node from './node/Node';
+import Text from './node/Text';
 import Xom from './node/Xom';
 import Dom from './node/Dom';
 import Img from './node/Img';
@@ -97,7 +99,10 @@ let karas = {
   },
   mode,
   Component,
+  Node,
+  Text,
   Geom,
+  Xom,
   Dom,
   Root,
   Event,

@@ -1699,6 +1699,11 @@ class Dom extends Xom {
     // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
     else if(mode === refreshMode.CHILD) {
       let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
+      let { sx, sy } = this;
+      sx += computedStyle.marginLeft;
+      sy += computedStyle.marginTop;
+      let dx = tx + sx - x1 + dbx;
+      let dy = ty + sy - y1 + dby;
       if(visibility !== 'hidden') {
         let tfo = computedStyle.transformOrigin.slice(0);
         opacity *= computedStyle.opacity;
@@ -1709,11 +1714,6 @@ class Dom extends Xom {
           Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
           return;
         }
-        let { sx, sy } = this;
-        sx += computedStyle.marginLeft;
-        sy += computedStyle.marginTop;
-        let dx = tx + sx - x1 + dbx;
-        let dy = ty + sy - y1 + dby;
         tfo[0] += dx;
         tfo[1] += dy;
         let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);

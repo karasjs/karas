@@ -1616,9 +1616,9 @@
   }
 
   function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
-    if (arguments.length === 4) {
+    if (arguments.length === 6) {
       return bboxBezier2(x0, y0, x1, y1, x2, y2);
-    } else if (arguments.length === 6) {
+    } else if (arguments.length === 8) {
       return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
     }
   }
@@ -10852,7 +10852,7 @@
     return Page;
   }();
 
-  var Cache$1 = /*#__PURE__*/function () {
+  var Cache = /*#__PURE__*/function () {
     function Cache(bbox, page, pos) {
       _classCallCheck(this, Cache);
 
@@ -11209,7 +11209,7 @@
     return Cache;
   }();
 
-  _defineProperty(Cache$1, "COUNT", 5);
+  _defineProperty(Cache, "COUNT", 5);
 
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
@@ -12502,7 +12502,7 @@
 
           if (cache && cache.available && lv < o$1.REPAINT) {
             if (o$1.contain(lv, o$1.FILTER)) {
-              cache = this.__cache = Cache$1.updateCache(cache, this.bbox);
+              cache = this.__cache = Cache.updateCache(cache, this.bbox);
             }
 
             return _objectSpread2(_objectSpread2({}, res), {}, {
@@ -12520,7 +12520,7 @@
             if (cache) {
               cache.reset(bbox);
             } else {
-              cache = Cache$1.getInstance(bbox);
+              cache = Cache.getInstance(bbox);
             } // 有可能超过最大尺寸限制不使用缓存
 
 
@@ -15985,11 +15985,11 @@
             if (o$1.contain(lv, o$1.FILTER)) {
               var bbox = this.__mergeBbox(null, true);
 
-              var newCache = Cache$1.updateCache(cacheTotal, bbox);
+              var newCache = Cache.updateCache(cacheTotal, bbox);
 
               if (newCache) {
                 this.__cacheTotal = newCache;
-                this.__cacheFilter = Cache$1.genOffScreenBlur(cacheTotal, blurValue);
+                this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
               } // 更新后超限，丢掉blur降级
               else {
                   console.error('CacheTotal is oversize');
@@ -16070,13 +16070,13 @@
 
                     if (_blurValue && o$1.contain(lv2, o$1.FILTER)) {
                       if (cacheMask) {
-                        cacheMask = item.__cacheMask = Cache$1.updateCache(cacheMask, _bbox);
+                        cacheMask = item.__cacheMask = Cache.updateCache(cacheMask, _bbox);
                       }
 
-                      cache = item.__cache = Cache$1.updateCache(cache, _bbox);
+                      cache = item.__cache = Cache.updateCache(cache, _bbox);
 
                       if (cacheMask || cache && cache.available) {
-                        item.__cacheFilter = Cache$1.genOffScreenBlur(cacheMask || cache, _blurValue);
+                        item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, _blurValue);
                       } // 更新后超限，丢掉blur降级
                       else {
                           console.error('Geom cache is oversize');
@@ -16097,7 +16097,7 @@
                         cache.reset(_bbox);
                       }
                     } else {
-                      cache = item.__cache = Cache$1.getInstance(_bbox);
+                      cache = item.__cache = Cache.getInstance(_bbox);
                     }
 
                     if (cache && cache.enabled) {
@@ -16148,11 +16148,11 @@
                 var _item$computedStyle = item.computedStyle,
                     transform = _item$computedStyle.transform,
                     transformOrigin = _item$computedStyle.transformOrigin;
-                item.__cacheMask = Cache$1.drawMask(_cache, next, transform, transformOrigin.slice(0));
+                item.__cacheMask = Cache.drawMask(_cache, next, transform, transformOrigin.slice(0));
               }
 
               if (root.cache && _blurValue && (_cacheMask || _cache && _cache.available)) {
-                item.__cacheFilter = Cache$1.genOffScreenBlur(_cacheMask || _cache, _blurValue);
+                item.__cacheFilter = Cache.genOffScreenBlur(_cacheMask || _cache, _blurValue);
               } else if (offScreen2) {
                 var _width = root.width,
                     _height = root.height;
@@ -16223,7 +16223,7 @@
                         transform = _this$computedStyle2.transform,
                         transformOrigin = _this$computedStyle2.transformOrigin;
                     var _next = this.next;
-                    this.__cacheMask = Cache$1.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
+                    this.__cacheMask = Cache.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
                   } // 极端情况超限异常
                   else {
                       console.error('CacheTotal is oversize with mask');
@@ -16347,7 +16347,7 @@
 
 
           if (!cacheTotal) {
-            cacheTotal = this.__cacheTotal = Cache$1.getInstance(bboxTotal);
+            cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
           } // 后续如果超过可缓存的lv重设，否则直接用已有内容，重复利用在render()里做了，这里reset
           else if (!cacheTotal.enabled) {
               cacheTotal.reset(bboxTotal);
@@ -16372,7 +16372,7 @@
               ctx.globalAlpha = 1;
 
               if (cache && cache.available) {
-                Cache$1.drawCache(cache, cacheTotal);
+                Cache.drawCache(cache, cacheTotal);
               }
 
               zIndexChildren.forEach(function (item) {
@@ -16404,7 +16404,7 @@
 
 
           if (blurValue && cacheTotal && cacheTotal.available) {
-            this.__cacheFilter = Cache$1.genOffScreenBlur(cacheTotal, blurValue);
+            this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
           } else if (cacheFilter) {
             console.error('CacheFilter is oversize');
             this.__cacheFilter = null;
@@ -16419,6 +16419,13 @@
                 dbx = cacheTop.dbx,
                 dby = cacheTop.dby;
 
+            var _sx = this.sx,
+                _sy = this.sy;
+            _sx += computedStyle.marginLeft;
+            _sy += computedStyle.marginTop;
+            var dx = _tx + _sx - _x + dbx;
+            var dy = _ty + _sy - _y + dby;
+
             if (visibility !== 'hidden') {
               var _ctx;
 
@@ -16428,21 +16435,12 @@
 
               if (cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
                 var target = cacheFilter || cacheMask || cacheTotal;
-                Cache$1.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
+                Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
                 return;
               }
 
-              var _sx = this.sx,
-                  _sy = this.sy;
-              _sx += computedStyle.marginLeft;
-              _sy += computedStyle.marginTop;
-
-              var _dx = _tx + _sx - _x + dbx;
-
-              var _dy = _ty + _sy - _y + dby;
-
-              tfo[0] += _dx;
-              tfo[1] += _dy;
+              tfo[0] += dx;
+              tfo[1] += dy;
               var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
               matrix = mx.multiply(matrix, m);
 
@@ -16450,7 +16448,7 @@
 
 
               if (cache && cache.available) {
-                Cache$1.drawCache(cache, cacheTop);
+                Cache.drawCache(cache, cacheTop);
               }
             } // 递归children
 
@@ -17135,7 +17133,7 @@
                   _transform = _this$computedStyle2.transform,
                   transformOrigin = _this$computedStyle2.transformOrigin;
               var next = this.next;
-              this.__cacheMask = Cache$1.drawMask(cacheTotal, next, _transform, transformOrigin.slice(0));
+              this.__cacheMask = Cache.drawMask(cacheTotal, next, _transform, transformOrigin.slice(0));
             } // 极端情况超限异常
             else {
                 console.error('CacheTotal is oversize with img\'s mask');
@@ -23199,7 +23197,7 @@
     level: o$1,
     change: o,
     Page: Page,
-    Cache: Cache$1
+    Cache: Cache
   };
 
   var version = "0.40.4";

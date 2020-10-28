@@ -8,6 +8,7 @@ import level from '../refresh/level';
 import refreshMode from '../refresh/mode';
 import tf from '../style/transform';
 import mx from '../math/matrix';
+import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT } = unit;
 const { int2rgba, isNil } = util;

@@ -150,14 +150,16 @@ class Cache {
   }
 
   static genMask(cache) {
-    let { size, x1, y1 } = cache;
-    let offScreen = inject.getCacheCanvas(size, size);
+    let { size, x1, y1, width, height } = cache;
+    let offScreen = inject.getCacheCanvas(width, height);
     offScreen.coords = [1, 1];
     offScreen.size = size;
     offScreen.x1 = x1;
     offScreen.y1 = y1;
     offScreen.dbx = cache.dbx;
     offScreen.dby = cache.dby;
+    offScreen.width = width;
+    offScreen.height = height;
     return offScreen;
   }
 
@@ -168,18 +170,20 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genOffScreenBlur(cache, v) {
-    let { coords: [x, y], size, canvas, x1, y1 } = cache;
-    let offScreen = inject.getCacheCanvas(size, size);
-    offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+    let { coords: [x, y], size, canvas, x1, y1, width, height } = cache;
+    let offScreen = inject.getCacheCanvas(width, height);
+    offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
-    let cacheFilter = inject.getCacheWebgl(size, size);
-    blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+    let cacheFilter = inject.getCacheWebgl(width, height);
+    blur.gaussBlur(offScreen, cacheFilter, v, width, height);
     cacheFilter.coords = [1, 1];
     cacheFilter.size = size;
     cacheFilter.x1 = x1;
     cacheFilter.y1 = y1;
     cacheFilter.dbx = cache.dbx;
     cacheFilter.dby = cache.dby;
+    cacheFilter.width = width;
+    cacheFilter.height = height;
     return cacheFilter;
   }
 

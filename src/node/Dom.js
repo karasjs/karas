@@ -1660,13 +1660,15 @@ class Dom extends Xom {
             ctx.globalAlpha = 1;
           }
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.save();
           if(cache && cache.available) {
             Cache.drawCache(cache, cacheTotal);
           }
           zIndexChildren.forEach(item => {
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              ctx.restore();
+              if(ctx.globalAlpha !== 1) {
+                ctx.globalAlpha = 1;
+              }
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
               item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
             }
             else {
@@ -1772,7 +1774,7 @@ class Dom extends Xom {
           }
         }
         else {
-          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, matrixEvent);
+          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
         }
       });
     }

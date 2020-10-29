@@ -11051,14 +11051,18 @@
       value: function genMask(cache) {
         var size = cache.size,
             x1 = cache.x1,
-            y1 = cache.y1;
-        var offScreen = inject.getCacheCanvas(size, size);
+            y1 = cache.y1,
+            width = cache.width,
+            height = cache.height;
+        var offScreen = inject.getCacheCanvas(width, height);
         offScreen.coords = [1, 1];
         offScreen.size = size;
         offScreen.x1 = x1;
         offScreen.y1 = y1;
         offScreen.dbx = cache.dbx;
         offScreen.dby = cache.dby;
+        offScreen.width = width;
+        offScreen.height = height;
         return offScreen;
       }
       /**
@@ -11077,19 +11081,23 @@
             size = cache.size,
             canvas = cache.canvas,
             x1 = cache.x1,
-            y1 = cache.y1;
+            y1 = cache.y1,
+            width = cache.width,
+            height = cache.height;
 
-        var offScreen = inject.getCacheCanvas(size, size);
-        offScreen.ctx.drawImage(canvas, x - 1, y - 1, size, size, 0, 0, size, size);
+        var offScreen = inject.getCacheCanvas(width, height);
+        offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
         offScreen.draw();
-        var cacheFilter = inject.getCacheWebgl(size, size);
-        blur.gaussBlur(offScreen, cacheFilter, v, size, size);
+        var cacheFilter = inject.getCacheWebgl(width, height);
+        blur.gaussBlur(offScreen, cacheFilter, v, width, height);
         cacheFilter.coords = [1, 1];
         cacheFilter.size = size;
         cacheFilter.x1 = x1;
         cacheFilter.y1 = y1;
         cacheFilter.dbx = cache.dbx;
         cacheFilter.dby = cache.dby;
+        cacheFilter.width = width;
+        cacheFilter.height = height;
         return cacheFilter;
       }
       /**
@@ -16418,7 +16426,6 @@
               }
 
               ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.save();
 
               if (cache && cache.available) {
                 Cache.drawCache(cache, cacheTotal);
@@ -16426,7 +16433,11 @@
 
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
-                  ctx.restore();
+                  if (ctx.globalAlpha !== 1) {
+                    ctx.globalAlpha = 1;
+                  }
+
+                  ctx.setTransform(1, 0, 0, 1, 0, 0);
 
                   item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
                 } else {
@@ -16583,7 +16594,7 @@
                     item.__renderByMask(renderMode, null, ctx);
                   }
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, matrixEvent);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
                 }
               });
             }

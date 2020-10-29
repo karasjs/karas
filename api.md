@@ -1111,6 +1111,32 @@ root.addRefreshTask(cb);
 root.delRefreshTask(cb);
 ```
 
+### html属性attribute
+
+#### width/height
+* **类型** `Number`
+* **说明**  
+定义画布的尺寸，类似于浏览器body的尺寸。必需。
+* **示例**
+```jsx
+karas.render(
+  <canvas width={100} height={100}>Hello karas!</canvas>,
+  '#selector'
+);
+```
+
+#### cache
+* **类型** `boolean`
+* **说明**  
+是否开启缓存功能，仅canvas/webgl生效，提升性能。可选。
+* **示例**
+```jsx
+karas.render(
+  <canvas cache={true}>Hello karas!</canvas>,
+  '#selector'
+);
+```
+
 <a name="自定义图形"></a>
 ## 自定义图形
 有时候，内置的矢量图形标签不够用或者不好用，需要继承[Geom](#Geom)来实现。比如要绘制一个田字格，虽然用`$polyline`标签也能做到，但语义表达和数据传入非常不方便，这时候可以自定义来实现。另见基类[Xom](#Xom)。

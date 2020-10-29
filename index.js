@@ -10859,15 +10859,17 @@
   }();
 
   var Cache = /*#__PURE__*/function () {
-    function Cache(bbox, page, pos) {
+    function Cache(w, h, bbox, page, pos) {
       _classCallCheck(this, Cache);
 
-      this.__init(bbox, page, pos);
+      this.__init(w, h, bbox, page, pos);
     }
 
     _createClass(Cache, [{
       key: "__init",
-      value: function __init(bbox, page, pos) {
+      value: function __init(w, h, bbox, page, pos) {
+        this.__width = w;
+        this.__height = h;
         this.__bbox = bbox;
         this.__page = page;
         this.__pos = pos;
@@ -10953,9 +10955,11 @@
 
         this.release();
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]); // 防止边的精度问题四周各+1px，宽高即+2px
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        w += 2;
+        h += 2; // 防止边的精度问题四周各+1px，宽高即+2px
 
-        var res = Page.getInstance(Math.max(w + 2, h + 2));
+        var res = Page.getInstance(Math.max(w, h));
 
         if (!res) {
           this.__enabled = false;
@@ -10965,7 +10969,7 @@
         var page = res.page,
             pos = res.pos;
 
-        this.__init(bbox, page, pos);
+        this.__init(w, h, bbox, page, pos);
       } // 是否功能可用，生成离屏canvas及尺寸超限
 
     }, {
@@ -11005,6 +11009,16 @@
         return this.page.size;
       }
     }, {
+      key: "width",
+      get: function get() {
+        return this.__width;
+      }
+    }, {
+      key: "height",
+      get: function get() {
+        return this.__height;
+      }
+    }, {
       key: "pos",
       get: function get() {
         return this.__pos;
@@ -11018,9 +11032,11 @@
       key: "getInstance",
       value: function getInstance(bbox) {
         var w = Math.ceil(bbox[2] - bbox[0]);
-        var h = Math.ceil(bbox[3] - bbox[1]); // 防止边的精度问题四周各+1px，宽高即+2px
+        var h = Math.ceil(bbox[3] - bbox[1]);
+        w += 2;
+        h += 2; // 防止边的精度问题四周各+1px，宽高即+2px
 
-        var res = Page.getInstance(Math.max(w + 2, h + 2));
+        var res = Page.getInstance(Math.max(w, h));
 
         if (!res) {
           return;
@@ -11028,7 +11044,7 @@
 
         var page = res.page,
             pos = res.pos;
-        return new Cache(bbox, page, pos);
+        return new Cache(w, h, bbox, page, pos);
       }
     }, {
       key: "genMask",
@@ -11097,7 +11113,9 @@
                 ox = _cache$coords2[0],
                 oy = _cache$coords2[1],
                 size = cache.size,
-                canvas = cache.canvas;
+                canvas = cache.canvas,
+                width = cache.width,
+                height = cache.height;
 
             var _newCache$coords = _slicedToArray(newCache.coords, 2),
                 nx = _newCache$coords[0],
@@ -11109,7 +11127,7 @@
             newCache.dy = cache.dy + dy;
             newCache.dbx = cache.dbx + dx;
             newCache.dby = cache.dby + dy;
-            newCache.ctx.drawImage(canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
+            newCache.ctx.drawImage(canvas, ox - 1, oy - 1, width, height, dx + nx - 1, dy + ny - 1, width, height);
             newCache.__available = true;
             cache.release();
             return newCache;
@@ -11138,7 +11156,9 @@
             x12 = source.x1,
             y12 = source.y1,
             dbx2 = source.dbx,
-            dby2 = source.dby;
+            dby2 = source.dby,
+            width = source.width,
+            height = source.height;
 
         var dx = tx + x12 - x1 + dbx - dbx2;
         var dy = ty + y12 - y1 + dby - dby2;
@@ -11162,7 +11182,7 @@
           ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
         }
 
-        ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
+        ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
       }
     }, {
       key: "drawMask",
@@ -15968,8 +15988,7 @@
             children = this.children,
             _this$computedStyle = this.computedStyle,
             position = _this$computedStyle.position,
-            display = _this$computedStyle.display,
-            visibility = _this$computedStyle.visibility; // 不显示的为了diff也要根据type生成
+            display = _this$computedStyle.display; // 不显示的为了diff也要根据type生成
 
         if (renderMode === mode.SVG) {
           virtualDom.type = 'dom';
@@ -16394,18 +16413,21 @@
               cacheTotal.__available = true;
               ctx = cacheTotal.ctx; // 以top为基准matrix/opacity
 
+              if (ctx.globalAlpha !== 1) {
+                ctx.globalAlpha = 1;
+              }
+
               ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.globalAlpha = 1;
+              ctx.save();
 
               if (cache && cache.available) {
                 Cache.drawCache(cache, cacheTotal);
               }
 
               zIndexChildren.forEach(function (item) {
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.globalAlpha = 1;
-
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
+                  ctx.restore();
+
                   item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
                 } else {
                   item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
@@ -16457,7 +16479,11 @@
 
               var tfo = computedStyle.transformOrigin.slice(0);
               opacity *= computedStyle.opacity;
-              ctx.globalAlpha = opacity; // 优先filter/mask，再是total
+
+              if (ctx.globalAlpha !== opacity) {
+                ctx.globalAlpha = opacity;
+              } // 优先filter/mask，再是total
+
 
               if (cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
                 var target = cacheFilter || cacheMask || cacheTotal;
@@ -16497,7 +16523,9 @@
                 var _ctx2;
 
                 // 写回主画布前设置
-                ctx.globalAlpha = __opacity;
+                if (ctx.globalAlpha !== __opacity) {
+                  ctx.globalAlpha = __opacity;
+                }
 
                 (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
 
@@ -16523,9 +16551,11 @@
                       _x3 = _cacheTotal2.x1,
                       _y3 = _cacheTotal2.y1,
                       _dbx2 = _cacheTotal2.dbx,
-                      _dby2 = _cacheTotal2.dby;
+                      _dby2 = _cacheTotal2.dby,
+                      width = _cacheTotal2.width,
+                      height = _cacheTotal2.height;
 
-                  ctx.drawImage(_canvas, x - 1, y - 1, size, size, _x3 - 1 - _dbx2, _y3 - 1 - _dby2, size, size);
+                  ctx.drawImage(_canvas, x - 1, y - 1, width, height, _x3 - 1 - _dbx2, _y3 - 1 - _dby2, width, height);
                   return;
                 } // 无内容就没有cache，继续看children
 
@@ -16539,9 +16569,11 @@
                       _x4 = cache.x1,
                       _y4 = cache.y1,
                       _dbx3 = cache.dbx,
-                      _dby3 = cache.dby;
+                      _dby3 = cache.dby,
+                      _width2 = cache.width,
+                      _height2 = cache.height;
 
-                  ctx.drawImage(_canvas2, _x5 - 1, _y5 - 1, _size, _size, _x4 - 1 - _dbx3, _y4 - 1 - _dby3, _size, _size);
+                  ctx.drawImage(_canvas2, _x5 - 1, _y5 - 1, _width2, _height2, _x4 - 1 - _dbx3, _y4 - 1 - _dby3, _width2, _height2);
                 }
               }
 
@@ -16551,7 +16583,7 @@
                     item.__renderByMask(renderMode, null, ctx);
                   }
                 } else {
-                  item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
+                  item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, matrixEvent);
                 }
               });
             }
@@ -19318,6 +19350,11 @@
         var _this6 = this;
 
         var reflowList = this.__reflowList;
+
+        if (!reflowList.length) {
+          return;
+        }
+
         var root = this;
         var hasRoot;
         __uniqueReflowId = 0;

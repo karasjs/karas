@@ -740,6 +740,9 @@ class Root extends Dom {
    */
   __checkReflow(width, height) {
     let { __reflowList: reflowList } = this;
+    if(!reflowList.length) {
+      return;
+    }
     let root = this;
     let hasRoot;
     __uniqueReflowId = 0;

@@ -1297,7 +1297,7 @@ class Dom extends Xom {
       offScreen = null;
     }
     let { root, isDestroyed, virtualDom, children,
-      computedStyle: { position, display, visibility } } = this;
+      computedStyle: { position, display } } = this;
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       virtualDom.type = 'dom';
@@ -1656,15 +1656,17 @@ class Dom extends Xom {
           cacheTotal.__available = true;
           ctx = cacheTotal.ctx;
           // 以top为基准matrix/opacity
+          if(ctx.globalAlpha !== 1) {
+            ctx.globalAlpha = 1;
+          }
           ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.globalAlpha = 1;
+          ctx.save();
           if(cache && cache.available) {
             Cache.drawCache(cache, cacheTotal);
           }
           zIndexChildren.forEach(item => {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.globalAlpha = 1;
             if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
+              ctx.restore();
               item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
             }
             else {
@@ -1707,7 +1709,9 @@ class Dom extends Xom {
       if(visibility !== 'hidden') {
         let tfo = computedStyle.transformOrigin.slice(0);
         opacity *= computedStyle.opacity;
-        ctx.globalAlpha = opacity;
+        if(ctx.globalAlpha !== opacity) {
+          ctx.globalAlpha = opacity;
+        }
         // 优先filter/mask，再是total
         if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
           let target = cacheFilter || cacheMask || cacheTotal;
@@ -1741,7 +1745,9 @@ class Dom extends Xom {
       let { __opacity, matrixEvent } = this;
       if(visibility !== 'hidden') {
         // 写回主画布前设置
-        ctx.globalAlpha = __opacity;
+        if(ctx.globalAlpha !== __opacity) {
+          ctx.globalAlpha = __opacity;
+        }
         ctx.setTransform(...matrixEvent);
         if(cacheFilter || cacheMask) {
           let { x1, y1, dbx, dby, canvas } = cacheFilter || cacheMask;
@@ -1749,14 +1755,14 @@ class Dom extends Xom {
           return;
         }
         if(cacheTotal && cacheTotal.available) {
-          let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cacheTotal;
-          ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+          let { coords: [x, y], size, canvas, x1, y1, dbx, dby, width, height } = cacheTotal;
+          ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
           return;
         }
         // 无内容就没有cache，继续看children
         if(cache && cache.available) {
-          let { coords: [x, y], size, canvas, x1, y1, dbx, dby } = cache;
-          ctx.drawImage(canvas, x - 1, y - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
+          let { coords: [x, y], size, canvas, x1, y1, dbx, dby, width, height } = cache;
+          ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
         }
       }
       zIndexChildren.forEach(item => {
@@ -1766,7 +1772,7 @@ class Dom extends Xom {
           }
         }
         else {
-          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
+          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, matrixEvent);
         }
       });
     }

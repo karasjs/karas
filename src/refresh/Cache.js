@@ -6,11 +6,13 @@ import tf from '../style/transform';
 import mx from '../math/matrix';
 
 class Cache {
-  constructor(bbox, page, pos) {
-    this.__init(bbox, page, pos);
+  constructor(w, h, bbox, page, pos) {
+    this.__init(w, h, bbox, page, pos);
   }
 
-  __init(bbox, page, pos) {
+  __init(w, h, bbox, page, pos) {
+    this.__width = w;
+    this.__height = h;
     this.__bbox = bbox;
     this.__page = page;
     this.__pos = pos;
@@ -73,14 +75,16 @@ class Cache {
     this.release();
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
+    w += 2;
+    h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
-    let res = Page.getInstance(Math.max(w + 2, h + 2));
+    let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       this.__enabled = false;
       return;
     }
     let { page, pos } = res;
-    this.__init(bbox, page, pos);
+    this.__init(w, h, bbox, page, pos);
   }
 
   // 是否功能可用，生成离屏canvas及尺寸超限
@@ -113,6 +117,14 @@ class Cache {
     return this.page.size;
   }
 
+  get width() {
+    return this.__width;
+  }
+
+  get height() {
+    return this.__height;
+  }
+
   get pos() {
     return this.__pos;
   }
@@ -126,13 +138,15 @@ class Cache {
   static getInstance(bbox) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
+    w += 2;
+    h += 2;
     // 防止边的精度问题四周各+1px，宽高即+2px
-    let res = Page.getInstance(Math.max(w + 2, h + 2));
+    let res = Page.getInstance(Math.max(w, h));
     if(!res) {
       return;
     }
     let { page, pos } = res;
-    return new Cache(bbox, page, pos);
+    return new Cache(w, h, bbox, page, pos);
   }
 
   static genMask(cache) {
@@ -181,7 +195,7 @@ class Cache {
       let dy = old[1] - bbox[1];
       let newCache = Cache.getInstance(bbox);
       if(newCache && newCache.enabled) {
-        let { coords: [ox, oy], size, canvas } = cache;
+        let { coords: [ox, oy], size, canvas, width, height } = cache;
         let { coords: [nx, ny] } = newCache;
         newCache.x1 = cache.x1;
         newCache.y1 = cache.y1;
@@ -189,7 +203,7 @@ class Cache {
         newCache.dy = cache.dy + dy;
         newCache.dbx = cache.dbx + dx;
         newCache.dby = cache.dby + dy;
-        newCache.ctx.drawImage(canvas, ox - 1, oy - 1, size, size, dx + nx - 1, dy + ny - 1, size, size);
+        newCache.ctx.drawImage(canvas, ox - 1, oy - 1, width, height, dx + nx - 1, dy + ny - 1, width, height);
         newCache.__available = true;
         cache.release();
         return newCache;
@@ -202,7 +216,7 @@ class Cache {
 
   static drawCache(source, target, transform, matrix, tfo, inverse) {
     let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
-    let { coords: [x, y], canvas, size, x1: x12, y1: y12, dbx: dbx2, dby: dby2 } = source;
+    let { coords: [x, y], canvas, size, x1: x12, y1: y12, dbx: dbx2, dby: dby2, width, height } = source;
     let dx = tx + x12 - x1 + dbx - dbx2;
     let dy = ty + y12 - y1 + dby - dby2;
     if(transform && matrix && tfo) {
@@ -222,7 +236,7 @@ class Cache {
       }
       ctx.setTransform(...matrix);
     }
-    ctx.drawImage(canvas, x - 1, y - 1, size, size, dx - 1, dy - 1, size, size);
+    ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
   }
 
   static drawMask(target, next, transform, tfo) {

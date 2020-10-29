@@ -7814,8 +7814,8 @@
       o = hash[key];
     }
 
-    o.setAttribute('width', width);
-    o.setAttribute('height', height);
+    o.setAttribute('width', width + 'px');
+    o.setAttribute('height', height + 'px');
 
     if (typeof karas !== 'undefined' && karas.debug) {
       o.style.width = width + 'px';
@@ -12010,12 +12010,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, ctx, defs, parent, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this3 = this;
 
-        var sx = this.sx,
-            sy = this.sy,
-            __cacheStyle = this.__cacheStyle,
+        var __cacheStyle = this.__cacheStyle,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle;
         var backgroundPositionX = currentStyle.backgroundPositionX,
@@ -12072,204 +12070,203 @@
           this.__matrix = computedStyle.transform = matrix || [1, 0, 0, 1, 0, 0];
         }
 
-        if (__cacheStyle.backgroundPositionX === undefined) {
-          __cacheStyle.backgroundPositionX = true;
-          computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth + '%';
-        }
-
-        if (__cacheStyle.backgroundPositionY === undefined) {
-          __cacheStyle.backgroundPositionY = true;
-          computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth + '%';
-        }
-
-        if (__cacheStyle.backgroundSize === undefined) {
-          __cacheStyle.backgroundSize = true;
-          computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
-        }
-
-        if (__cacheStyle.backgroundImage === undefined) {
-          var _backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage; // 防止隐藏不加载背景图
-
-
-          if (util.isString(_backgroundImage)) {
-            __cacheStyle.backgroundImage = true;
-            var loadBgi = this.__loadBgi;
-            var cache = inject.IMG[_backgroundImage];
-
-            if (cache && cache.state === inject.LOADED) {
-              loadBgi.url = _backgroundImage;
-              loadBgi.source = cache.source;
-              loadBgi.width = cache.width;
-              loadBgi.height = cache.height;
-            }
-
-            if (loadBgi.url !== _backgroundImage) {
-              // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
-              loadBgi.url = _backgroundImage;
-              loadBgi.source = null;
-              inject.measureImg(_backgroundImage, function (data) {
-                // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
-                  loadBgi.source = data.source;
-                  loadBgi.width = data.width;
-                  loadBgi.height = data.height;
-                  var node = _this3;
-                  var root = node.root;
-                  root.delRefreshTask(loadBgi.cb);
-                  root.addRefreshTask(loadBgi.cb = {
-                    before: function before() {
-                      root.__addUpdate({
-                        node: node,
-                        focus: o$1.REPAINT
-                      });
-                    }
-                  });
-                }
-              }, {
-                width: innerWidth,
-                height: innerHeight
-              });
-            }
-          } else if (_backgroundImage && _backgroundImage.k) {
-            __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, _backgroundImage);
+        if (lv >= o$1.REPAINT) {
+          if (__cacheStyle.backgroundPositionX === undefined) {
+            __cacheStyle.backgroundPositionX = true;
+            computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth + '%';
           }
-        }
 
-        var backgroundImage = __cacheStyle.backgroundImage;
-
-        if (__cacheStyle.boxShadow === undefined) {
-          __cacheStyle.boxShadow = true;
-          computedStyle.boxShadow = currentStyle.boxShadow;
-        } // 这些直接赋值的不需要再算缓存
-
-
-        ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'filter'].forEach(function (k) {
-          computedStyle[k] = currentStyle[k];
-        });
-        ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
-          if (__cacheStyle[k] === undefined) {
-            __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k].value);
+          if (__cacheStyle.backgroundPositionY === undefined) {
+            __cacheStyle.backgroundPositionY = true;
+            computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth + '%';
           }
-        }); // 强制计算继承性的
 
-        if (parent) {
-          var parentComputedStyle = parent.computedStyle;
-          ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
-            if (currentStyle[k].unit === INHERIT$3) {
-              computedStyle[k] = parentComputedStyle[k];
-            } else {
-              computedStyle[k] = currentStyle[k].value;
-            }
+          if (__cacheStyle.backgroundSize === undefined) {
+            __cacheStyle.backgroundSize = true;
+            computedStyle.backgroundSize = calBackgroundSize(currentStyle.backgroundSize, innerWidth, innerHeight);
+          }
 
-            if (k === 'color') {
-              __cacheStyle.color = int2rgba$2(computedStyle.color);
+          if (__cacheStyle.backgroundImage === undefined) {
+            var backgroundImage = computedStyle.backgroundImage = currentStyle.backgroundImage; // 防止隐藏不加载背景图
+
+            if (util.isString(backgroundImage)) {
+              __cacheStyle.backgroundImage = true;
+              var loadBgi = this.__loadBgi;
+              var cache = inject.IMG[backgroundImage];
+
+              if (cache && cache.state === inject.LOADED) {
+                loadBgi.url = backgroundImage;
+                loadBgi.source = cache.source;
+                loadBgi.width = cache.width;
+                loadBgi.height = cache.height;
+              }
+
+              if (loadBgi.url !== backgroundImage) {
+                // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
+                loadBgi.url = backgroundImage;
+                loadBgi.source = null;
+                inject.measureImg(backgroundImage, function (data) {
+                  // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
+                  if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
+                    loadBgi.source = data.source;
+                    loadBgi.width = data.width;
+                    loadBgi.height = data.height;
+                    var node = _this3;
+                    var root = node.root;
+                    root.delRefreshTask(loadBgi.cb);
+                    root.addRefreshTask(loadBgi.cb = {
+                      before: function before() {
+                        root.__addUpdate({
+                          node: node,
+                          focus: o$1.REPAINT
+                        });
+                      }
+                    });
+                  }
+                }, {
+                  width: innerWidth,
+                  height: innerHeight
+                });
+              }
+            } else if (backgroundImage && backgroundImage.k) {
+              __cacheStyle.backgroundImage = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, backgroundImage);
             }
+          }
+
+          if (__cacheStyle.boxShadow === undefined) {
+            __cacheStyle.boxShadow = true;
+            computedStyle.boxShadow = currentStyle.boxShadow;
+          } // 这些直接赋值的不需要再算缓存
+
+
+          ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'filter'].forEach(function (k) {
+            computedStyle[k] = currentStyle[k];
           });
-        } // root和component的根节点不能是inherit
-        else {
-            ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
-              if (currentStyle[k].unit !== INHERIT$3) {
-                computedStyle[k] = currentStyle[k].value;
+          ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
+            if (__cacheStyle[k] === undefined) {
+              __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k].value);
+            }
+          }); // 强制计算继承性的
 
-                if (k === 'color') {
-                  __cacheStyle.color = int2rgba$2(computedStyle.color);
-                }
+          if (parent) {
+            var parentComputedStyle = parent.computedStyle;
+            ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
+              if (currentStyle[k].unit === INHERIT$3) {
+                computedStyle[k] = parentComputedStyle[k];
+              } else {
+                computedStyle[k] = currentStyle[k].value;
+              }
+
+              if (k === 'color') {
+                __cacheStyle.color = int2rgba$2(computedStyle.color);
               }
             });
+          } // root和component的根节点不能是inherit
+          else {
+              ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
+                if (currentStyle[k].unit !== INHERIT$3) {
+                  computedStyle[k] = currentStyle[k].value;
 
-            if (currentStyle.fontStyle.unit === INHERIT$3) {
-              computedStyle.fontStyle = 'normal';
-            }
+                  if (k === 'color') {
+                    __cacheStyle.color = int2rgba$2(computedStyle.color);
+                  }
+                }
+              });
 
-            if (currentStyle.fontWeight.unit === INHERIT$3) {
-              computedStyle.fontWeight = 400;
-            }
+              if (currentStyle.fontStyle.unit === INHERIT$3) {
+                computedStyle.fontStyle = 'normal';
+              }
 
-            if (currentStyle.color.unit === INHERIT$3) {
-              computedStyle.color = [0, 0, 0, 1];
-              __cacheStyle.color = 'rgba(0,0,0,1)';
-            }
+              if (currentStyle.fontWeight.unit === INHERIT$3) {
+                computedStyle.fontWeight = 400;
+              }
 
-            if (currentStyle.visibility.unit === INHERIT$3) {
-              computedStyle.visibility = 'visible';
-            }
+              if (currentStyle.color.unit === INHERIT$3) {
+                computedStyle.color = [0, 0, 0, 1];
+                __cacheStyle.color = 'rgba(0,0,0,1)';
+              }
 
-            if (currentStyle.pointerEvents.unit === INHERIT$3) {
-              computedStyle.pointerEvents = 'auto';
-            }
-          } // 圆角边计算
+              if (currentStyle.visibility.unit === INHERIT$3) {
+                computedStyle.visibility = 'visible';
+              }
+
+              if (currentStyle.pointerEvents.unit === INHERIT$3) {
+                computedStyle.pointerEvents = 'auto';
+              }
+            } // 圆角边计算
 
 
-        if (__cacheStyle.borderTopLeftRadius === undefined || __cacheStyle.borderTopRightRadius === undefined || __cacheStyle.borderBottomRightRadius === undefined || __cacheStyle.borderBottomLeftRadius === undefined) {
-          __cacheStyle.borderTopLeftRadius = __cacheStyle.borderTopRightRadius = __cacheStyle.borderBottomRightRadius = __cacheStyle.borderBottomLeftRadius = true;
-          calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+          if (__cacheStyle.borderTopLeftRadius === undefined || __cacheStyle.borderTopRightRadius === undefined || __cacheStyle.borderBottomRightRadius === undefined || __cacheStyle.borderBottomLeftRadius === undefined) {
+            __cacheStyle.borderTopLeftRadius = __cacheStyle.borderTopRightRadius = __cacheStyle.borderBottomRightRadius = __cacheStyle.borderBottomLeftRadius = true;
+            calBorderRadius(outerWidth, outerHeight, currentStyle, computedStyle);
+            ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
+              __cacheStyle['border' + k] = undefined;
+            });
+          }
+
+          var borderTopLeftRadius = computedStyle.borderTopLeftRadius,
+              borderTopRightRadius = computedStyle.borderTopRightRadius,
+              borderBottomRightRadius = computedStyle.borderBottomRightRadius,
+              borderBottomLeftRadius = computedStyle.borderBottomLeftRadius; // width/style/radius影响border，color不影响渲染缓存
+
           ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
-            __cacheStyle['border' + k] = undefined;
+            var k2 = 'border' + k;
+            var kw = k2 + 'Width';
+            var ks = k2 + 'Style';
+
+            if (__cacheStyle[kw] === undefined) {
+              __cacheStyle[kw] = true;
+              __cacheStyle[k2] = undefined;
+            }
+
+            if (__cacheStyle[ks] === undefined) {
+              __cacheStyle[ks] = true;
+              __cacheStyle[k2] = undefined;
+            }
+
+            if (__cacheStyle[k2] === undefined) {
+              if (k === 'Top') {
+                if (borderTopWidth > 0) {
+                  var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
+                  var deg2 = Math.atan(borderTopWidth / borderRightWidth);
+                  __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
+                } else {
+                  __cacheStyle[k2] = [];
+                }
+              } else if (k === 'Right') {
+                if (borderRightWidth > 0) {
+                  var _deg = Math.atan(borderRightWidth / borderTopWidth);
+
+                  var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
+
+                  __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
+                } else {
+                  __cacheStyle[k2] = [];
+                }
+              } else if (k === 'Bottom') {
+                if (borderBottomWidth > 0) {
+                  var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
+
+                  var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
+
+                  __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
+                } else {
+                  __cacheStyle[k2] = [];
+                }
+              } else if (k === 'Left') {
+                if (borderLeftWidth > 0) {
+                  var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
+
+                  var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
+
+                  __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
+                } else {
+                  __cacheStyle[k2] = [];
+                }
+              }
+            }
           });
         }
-
-        var borderTopLeftRadius = computedStyle.borderTopLeftRadius,
-            borderTopRightRadius = computedStyle.borderTopRightRadius,
-            borderBottomRightRadius = computedStyle.borderBottomRightRadius,
-            borderBottomLeftRadius = computedStyle.borderBottomLeftRadius; // width/style/radius影响border，color不影响渲染缓存
-
-        ['Top', 'Right', 'Bottom', 'Left'].forEach(function (k) {
-          var k2 = 'border' + k;
-          var kw = k2 + 'Width';
-          var ks = k2 + 'Style';
-
-          if (__cacheStyle[kw] === undefined) {
-            __cacheStyle[kw] = true;
-            __cacheStyle[k2] = undefined;
-          }
-
-          if (__cacheStyle[ks] === undefined) {
-            __cacheStyle[ks] = true;
-            __cacheStyle[k2] = undefined;
-          }
-
-          if (__cacheStyle[k2] === undefined) {
-            if (k === 'Top') {
-              if (borderTopWidth > 0) {
-                var deg1 = Math.atan(borderTopWidth / borderLeftWidth);
-                var deg2 = Math.atan(borderTopWidth / borderRightWidth);
-                __cacheStyle[k2] = border.calPoints(borderTopWidth, computedStyle[ks], deg1, deg2, x1, x2, x3, x4, y1, y2, y3, y4, 0, borderTopLeftRadius, borderTopRightRadius);
-              } else {
-                __cacheStyle[k2] = [];
-              }
-            } else if (k === 'Right') {
-              if (borderRightWidth > 0) {
-                var _deg = Math.atan(borderRightWidth / borderTopWidth);
-
-                var _deg2 = Math.atan(borderRightWidth / borderBottomWidth);
-
-                __cacheStyle[k2] = border.calPoints(borderRightWidth, computedStyle[ks], _deg, _deg2, x1, x2, x3, x4, y1, y2, y3, y4, 1, borderTopRightRadius, borderBottomRightRadius);
-              } else {
-                __cacheStyle[k2] = [];
-              }
-            } else if (k === 'Bottom') {
-              if (borderBottomWidth > 0) {
-                var _deg3 = Math.atan(borderBottomWidth / borderLeftWidth);
-
-                var _deg4 = Math.atan(borderBottomWidth / borderRightWidth);
-
-                __cacheStyle[k2] = border.calPoints(borderBottomWidth, computedStyle[ks], _deg3, _deg4, x1, x2, x3, x4, y1, y2, y3, y4, 2, borderBottomLeftRadius, borderBottomRightRadius);
-              } else {
-                __cacheStyle[k2] = [];
-              }
-            } else if (k === 'Left') {
-              if (borderLeftWidth > 0) {
-                var _deg5 = Math.atan(borderLeftWidth / borderTopWidth);
-
-                var _deg6 = Math.atan(borderLeftWidth / borderBottomWidth);
-
-                __cacheStyle[k2] = border.calPoints(borderLeftWidth, computedStyle[ks], _deg5, _deg6, x1, x2, x3, x4, y1, y2, y3, y4, 3, borderTopLeftRadius, borderBottomLeftRadius);
-              } else {
-                __cacheStyle[k2] = [];
-              }
-            }
-          }
-        });
 
         if (!matrixCache) {
           var tfo = computedStyle.transformOrigin.slice(0);
@@ -12280,13 +12277,15 @@
 
 
         if (renderMode === mode.CANVAS) {
-          if (util.isString(backgroundImage)) {
+          var _backgroundImage = __cacheStyle.backgroundImage;
+
+          if (util.isString(_backgroundImage)) {
             return true;
           }
 
           if (computedStyle.backgroundColor[3] > 0) {
             return true;
-          } else if (backgroundImage && backgroundImage.k) {
+          } else if (_backgroundImage && _backgroundImage.k) {
             return true;
           }
 
@@ -12398,11 +12397,59 @@
           }
         } else if (renderMode === mode.SVG) {
           this.__lastDisplay = computedStyle.display;
+        } // 先判断cache避免重复运算
+
+
+        var cache = this.__cache;
+
+        if (renderMode === mode.CANVAS && cache && cache.available && lv < o$1.REPAINT) {
+          if (lv > o$1.NONE) {
+            var _x = this.__sx,
+                _y = this.__sy;
+
+            var _p;
+
+            if (o$1.contain(lv, o$1.TRANSFORM)) {
+              this.__calCache(renderMode, lv, ctx, defs, null, _x, _y);
+
+              _p = _p || this.domParent;
+              var _matrix = __cacheStyle.matrix;
+
+              if (_p) {
+                _matrix = mx.multiply(_p.matrixEvent, _matrix);
+              }
+
+              this.__matrixEvent = _matrix;
+            }
+
+            if (o$1.contain(lv, o$1.OPACITY)) {
+              var _opacity = computedStyle.opacity;
+              _p = _p || this.domParent;
+
+              if (_p) {
+                _opacity *= _p.__opacity;
+              }
+
+              this.__opacity = _opacity;
+            }
+
+            if (computedStyle.visibility === 'hidden') {
+              return {
+                canCache: !this.visibilityAnimating
+              };
+            }
+          }
+
+          return {
+            canCache: !this.availableAnimating
+          };
         } // 使用sx和sy渲染位置，考虑了relative和translate影响
 
 
         var x = this.sx,
             y = this.sy;
+        this.__sx = x;
+        this.__sy = y;
         var marginTop = computedStyle.marginTop,
             marginLeft = computedStyle.marginLeft,
             paddingTop = computedStyle.paddingTop,
@@ -12434,7 +12481,7 @@
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var hasContent = this.__calCache(renderMode, ctx, defs, this.parent, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+        var hasContent = this.__calCache(renderMode, lv, ctx, defs, this.parent, x, y, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
 
         var backgroundColor = computedStyle.backgroundColor,
             borderTopColor = computedStyle.borderTopColor,
@@ -12503,8 +12550,7 @@
 
         var canCache = !hasContent || !this.availableAnimating; // 无缓存重新渲染时是否使用缓存
 
-        var cache = this.__cache,
-            dx = 0,
+        var dx = 0,
             dy = 0;
 
         if (root.cache && renderMode === mode.CANVAS) {
@@ -12793,11 +12839,11 @@
 
                 if (xnl > 0) {
                   for (var i = 0; i < xnl; i++) {
-                    var _x = bgX - (i + 1) * w;
+                    var _x2 = bgX - (i + 1) * w;
 
-                    repeat.push([_x, bgY]); // 看最左边超过没有
+                    repeat.push([_x2, bgY]); // 看最左边超过没有
 
-                    if (!needMask && i === 0 && _x < x2) {
+                    if (!needMask && i === 0 && _x2 < x2) {
                       needMask = true;
                     }
                   }
@@ -12805,11 +12851,11 @@
 
                 if (xnr > 0) {
                   for (var _i3 = 0; _i3 < xnr; _i3++) {
-                    var _x2 = bgX + (_i3 + 1) * w;
+                    var _x3 = bgX + (_i3 + 1) * w;
 
-                    repeat.push([_x2, bgY]); // 看最右边超过没有
+                    repeat.push([_x3, bgY]); // 看最右边超过没有
 
-                    if (!needMask && _i3 === xnr - 1 && _x2 + w > x2 + innerWidth) {
+                    if (!needMask && _i3 === xnr - 1 && _x3 + w > x2 + innerWidth) {
                       needMask = true;
                     }
                   }
@@ -12817,11 +12863,11 @@
 
                 if (ynt > 0) {
                   for (var _i4 = 0; _i4 < ynt; _i4++) {
-                    var _y = bgY - (_i4 + 1) * h;
+                    var _y2 = bgY - (_i4 + 1) * h;
 
-                    repeat.push([bgX, _y]); // 看最上边超过没有
+                    repeat.push([bgX, _y2]); // 看最上边超过没有
 
-                    if (!needMask && _i4 === 0 && _y < y2) {
+                    if (!needMask && _i4 === 0 && _y2 < y2) {
                       needMask = true;
                     }
                   }
@@ -12829,11 +12875,11 @@
 
                 if (ynb > 0) {
                   for (var _i5 = 0; _i5 < ynb; _i5++) {
-                    var _y2 = bgY + (_i5 + 1) * h;
+                    var _y3 = bgY + (_i5 + 1) * h;
 
-                    repeat.push([bgX, _y2]); // 看最下边超过没有
+                    repeat.push([bgX, _y3]); // 看最下边超过没有
 
-                    if (!needMask && _i5 === ynb - 1 && _y2 + w > y2 + innerHeight) {
+                    if (!needMask && _i5 === ynb - 1 && _y3 + w > y2 + innerHeight) {
                       needMask = true;
                     }
                   }
@@ -12889,14 +12935,14 @@
                     ctx.restore();
                   }
                 } else if (renderMode === mode.SVG) {
-                  var _matrix = image.matrixResize(_width2, _height2, w, h, bgX, bgY, innerWidth, innerHeight);
+                  var _matrix2 = image.matrixResize(_width2, _height2, w, h, bgX, bgY, innerWidth, innerHeight);
 
                   var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width2], ['height', _height2]];
                   var needResize;
 
-                  if (_matrix && !equalArr$2(_matrix, [1, 0, 0, 1, 0, 0])) {
+                  if (_matrix2 && !equalArr$2(_matrix2, [1, 0, 0, 1, 0, 0])) {
                     needResize = true;
-                    props.push(['transform', 'matrix(' + joinArr$1(_matrix, ',') + ')']);
+                    props.push(['transform', 'matrix(' + joinArr$1(_matrix2, ',') + ')']);
                   }
 
                   if (needMask) {
@@ -12921,10 +12967,10 @@
                     var copy = clone$2(props);
 
                     if (needResize) {
-                      var _matrix2 = image.matrixResize(_width2, _height2, w, h, item[0], item[1], innerWidth, innerHeight);
+                      var _matrix3 = image.matrixResize(_width2, _height2, w, h, item[0], item[1], innerWidth, innerHeight);
 
-                      if (_matrix2 && !equalArr$2(_matrix2, [1, 0, 0, 1, 0, 0])) {
-                        copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
+                      if (_matrix3 && !equalArr$2(_matrix3, [1, 0, 0, 1, 0, 0])) {
+                        copy[5][1] = 'matrix(' + joinArr$1(_matrix3, ',') + ')';
                       }
                     }
 

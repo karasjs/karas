@@ -121,12 +121,14 @@ function getNewList(list, len, start = 0, end = 1) {
   }
   list = util.clone(list);
   end *= len.total;
-  if(end < len.increase[j]) {
+  let prePercent = 1;
+  if(end > len.increase[j]) {
     let prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
     let current = list[j + 1];
     let l = len.list[j];
-    let diff = len.increase[j] - end;
-    let t = 1 - diff / l;
+    let diff = end - len.increase[j];
+    let t = diff / l;
+    prePercent = t;
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);
       let b = Math.abs(current[1] - prev[1]);
@@ -146,6 +148,10 @@ function getNewList(list, len, start = 0, end = 1) {
     let prev = list[i].slice(list[i].length - 2);
     let current = list[i + 1];
     let l = len.list[i];
+    // 同一条线段时如果有end裁剪，会影响start长度
+    if(i === j && prePercent !== 1) {
+      l *= prePercent;
+    }
     let diff = start - len.increase[i];
     let t = diff / l;
     if(current.length === 2) {

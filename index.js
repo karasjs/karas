@@ -21220,14 +21220,16 @@
 
     list = util.clone(list);
     end *= len.total;
+    var prePercent = 1;
 
-    if (end < len.increase[j]) {
+    if (end > len.increase[j]) {
       var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
 
       var current = list[j + 1];
       var l = len.list[j];
-      var diff = len.increase[j] - end;
-      var t = 1 - diff / l;
+      var diff = end - len.increase[j];
+      var t = diff / l;
+      prePercent = t;
 
       if (current.length === 2) {
         var a = Math.abs(current[0] - prev[0]);
@@ -21249,7 +21251,11 @@
       var _prev = list[i].slice(list[i].length - 2);
 
       var _current = list[i + 1];
-      var _l = len.list[i];
+      var _l = len.list[i]; // 同一条线段时如果有end裁剪，会影响start长度
+
+      if (i === j && prePercent !== 1) {
+        _l *= prePercent;
+      }
 
       var _diff = start - len.increase[i];
 
@@ -23234,7 +23240,7 @@
     Cache: Cache
   };
 
-  var version = "0.40.5";
+  var version = "0.40.6";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

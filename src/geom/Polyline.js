@@ -34,11 +34,12 @@ function getLength(list, isMulti) {
       let temp = getLength(list);
       res.push(temp.list);
       total.push(temp.total);
-      increase.push(temp.increase);
+      increase.push([0].concat(temp.increase));
     });
   }
   else if(Array.isArray(list)) {
     total = 0;
+    increase.push(0);
     let start = 0;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
@@ -87,6 +88,9 @@ function getLength(list, isMulti) {
 
 function getIndex(list, t, i, j) {
   if(i === j) {
+    if(list[i] > t) {
+      return i - 1;
+    }
     return i;
   }
   let middle = i + ((j - i) >> 1);
@@ -105,6 +109,9 @@ function getNewList(list, len, start = 0, end = 1) {
   if(start === 0 && end === 1) {
     return list;
   }
+  if(start >= end) {
+    return [];
+  }
   let i = 0, j = list.length - 2;
   if(start > 0) {
     i = getIndex(len.increase, start * len.total, i, j);
@@ -114,13 +121,12 @@ function getNewList(list, len, start = 0, end = 1) {
   }
   list = util.clone(list);
   end *= len.total;
-  let prePercent = 1;
   if(end < len.increase[j]) {
-    let prev = list[j].slice(list[j].length - 2);
+    let prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
     let current = list[j + 1];
     let l = len.list[j];
     let diff = len.increase[j] - end;
-    let t = prePercent = 1 - diff / l;
+    let t = 1 - diff / l;
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);
       let b = Math.abs(current[1] - prev[1]);
@@ -136,11 +142,11 @@ function getNewList(list, len, start = 0, end = 1) {
     }
   }
   start *= len.total;
-  if(start > (i ? len.increase[i - 1] : 0)) {
+  if(start > len.increase[i]) {
     let prev = list[i].slice(list[i].length - 2);
     let current = list[i + 1];
-    let l = len.list[i] * prePercent;
-    let diff = start - (i ? len.increase[i - 1] : 0);
+    let l = len.list[i];
+    let diff = start - len.increase[i];
     let t = diff / l;
     if(current.length === 2) {
       let a = Math.abs(current[0] - prev[0]);

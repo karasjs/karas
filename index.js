@@ -1616,9 +1616,15 @@
   }
 
   function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+    if (arguments.length === 4) {
+      return [x0, y0, x1, y1];
+    }
+
     if (arguments.length === 6) {
       return bboxBezier2(x0, y0, x1, y1, x2, y2);
-    } else if (arguments.length === 8) {
+    }
+
+    if (arguments.length === 8) {
       return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
     }
   }
@@ -21111,10 +21117,11 @@
         var temp = getLength(list);
         res.push(temp.list);
         total.push(temp.total);
-        increase.push(temp.increase);
+        increase.push([0].concat(temp.increase));
       });
     } else if (Array.isArray(list)) {
       total = 0;
+      increase.push(0);
       var start = 0;
 
       for (var i = 0, len = list.length; i < len; i++) {
@@ -21170,6 +21177,10 @@
 
   function getIndex(list, t, i, j) {
     if (i === j) {
+      if (list[i] > t) {
+        return i - 1;
+      }
+
       return i;
     }
 
@@ -21192,6 +21203,10 @@
       return list;
     }
 
+    if (start >= end) {
+      return [];
+    }
+
     var i = 0,
         j = list.length - 2;
 
@@ -21205,14 +21220,14 @@
 
     list = util.clone(list);
     end *= len.total;
-    var prePercent = 1;
 
     if (end < len.increase[j]) {
-      var prev = list[j].slice(list[j].length - 2);
+      var prev = list[j].slice(list[j].length - 2); // 最后2个点是x,y，前面是control
+
       var current = list[j + 1];
       var l = len.list[j];
       var diff = len.increase[j] - end;
-      var t = prePercent = 1 - diff / l;
+      var t = 1 - diff / l;
 
       if (current.length === 2) {
         var a = Math.abs(current[0] - prev[0]);
@@ -21230,14 +21245,13 @@
 
     start *= len.total;
 
-    if (start > (i ? len.increase[i - 1] : 0)) {
+    if (start > len.increase[i]) {
       var _prev = list[i].slice(list[i].length - 2);
 
       var _current = list[i + 1];
+      var _l = len.list[i];
 
-      var _l = len.list[i] * prePercent;
-
-      var _diff = start - (i ? len.increase[i - 1] : 0);
+      var _diff = start - len.increase[i];
 
       var _t = _diff / _l;
 
@@ -23220,7 +23234,7 @@
     Cache: Cache
   };
 
-  var version = "0.40.4";
+  var version = "0.40.5";
 
   Geom$2.register('$line', Line);
   Geom$2.register('$polyline', Polyline);

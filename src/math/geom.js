@@ -350,10 +350,13 @@ function bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3) {
 }
 
 function bboxBezier(x0, y0, x1, y1, x2, y2, x3, y3) {
+  if(arguments.length === 4) {
+    return [x0, y0, x1, y1];
+  }
   if(arguments.length === 6) {
     return bboxBezier2(x0, y0, x1, y1, x2, y2);
   }
-  else if(arguments.length === 8) {
+  if(arguments.length === 8) {
     return bboxBezier3(x0, y0, x1, y1, x2, y2, x3, y3);
   }
 }

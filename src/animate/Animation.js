@@ -894,6 +894,7 @@ class Animation extends Event {
     super();
     this.__id = uuid++;
     this.__target = target;
+    this.__root = target.root;
     list = clone(list || []);
     if(Array.isArray(list)) {
       this.__list = list.filter(item => item && isObject(item));
@@ -1217,9 +1218,6 @@ class Animation extends Event {
       let enterFrame = this.__enterFrame = {
         before: diff => {
           let { root, fps, playCount, iterations } = this;
-          if(!root) {
-            return;
-          }
           // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
           let currentTime = this.__calDiffTime(diff);
           // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
@@ -1603,7 +1601,7 @@ class Animation extends Event {
   }
 
   get root() {
-    return this.target.root;
+    return this.__root;
   }
 
   get keys() {

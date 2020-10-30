@@ -495,6 +495,7 @@ class Root extends Dom {
     // 此时做root检查，防止root出现继承等无效样式
     this.__checkRoot(width, height);
     // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
+    let zIndexList = [];
     let measureList = [];
     let reflowList = [];
     for(let i = 0, len = totalList.length; i < len; i++) {
@@ -570,6 +571,10 @@ class Root extends Dom {
         len--;
         continue;
       }
+      // 记录下来清除parent的zIndexChildren缓存
+      if(hasZ) {
+        zIndexList.push(node);
+      }
       // reflow/repaint/measure相关的记录下来
       let isRepaint = level.isRepaint(lv);
       if(isRepaint) {
@@ -597,6 +602,12 @@ class Root extends Dom {
         }
       }
     }
+    /**
+     * 遍历zIndex更改，清除它parent的zIndexChildren缓存
+     */
+    zIndexList.forEach(item => {
+      delete item.domParent.__zIndexChildren;
+    });
     /**
      * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

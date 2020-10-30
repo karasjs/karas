@@ -382,6 +382,10 @@
     }, {
       key: "domParent",
       get: function get() {
+        if (this.__domParent !== undefined) {
+          return this.__domParent;
+        }
+
         var p = this;
         var root = this.root;
 
@@ -401,7 +405,7 @@
           }
         }
 
-        return p;
+        return this.__domParent = p || null;
       } // canvas/svg根节点
 
     }, {
@@ -9436,6 +9440,7 @@
       _this = _super.call(this);
       _this.__id = uuid++;
       _this.__target = target;
+      _this.__root = target.root;
       list = clone$1(list || []);
 
       if (Array.isArray(list)) {
@@ -9835,12 +9840,7 @@
               var root = _this3.root,
                   fps = _this3.fps,
                   playCount = _this3.playCount,
-                  iterations = _this3.iterations;
-
-              if (!root) {
-                return;
-              } // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-
+                  iterations = _this3.iterations; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
               var currentTime = _this3.__calDiffTime(diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
@@ -10356,7 +10356,7 @@
     }, {
       key: "root",
       get: function get() {
-        return this.target.root;
+        return this.__root;
       }
     }, {
       key: "keys",
@@ -11265,6 +11265,7 @@
   var calRelative$1 = css.calRelative;
   var canvasPolygon$1 = painter.canvasPolygon,
       svgPolygon$1 = painter.svgPolygon;
+  var TRANSFORM_ALL = o$1.TRANSFORM | o$1.TRANSLATE_X | o$1.TRANSLATE_Y;
 
   function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
     if (renderMode === mode.CANVAS) {
@@ -12443,7 +12444,7 @@
         } // 先判断cache避免重复运算
 
 
-        if (lv < o$1.REPAINT && (renderMode === mode.CANVAS && cache && cache.available || renderMode === mode.SVG && cacheTotal && cacheTotal.available)) {
+        if (lv < o$1.REPAINT && renderMode === mode.CANVAS && cache && cache.available) {
           var _canCache2 = cacheTotal && cacheTotal.available;
 
           if (lv > o$1.NONE) {
@@ -12452,7 +12453,7 @@
 
             var _p;
 
-            if (o$1.contain(lv, o$1.TRANSFORM | o$1.TRANSLATE_X | o$1.TRANSLATE_Y)) {
+            if (o$1.contain(lv, TRANSFORM_ALL)) {
               this.__calCache(renderMode, lv, ctx, defs, null, __cacheStyle, currentStyle, computedStyle, _x, _y);
 
               _p = _p || this.domParent;
@@ -12576,7 +12577,7 @@
 
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
-          if (!o$1.contain(lv, o$1.TRANSFORM) && lv < o$1.REPAINT) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
+          if (!o$1.contain(lv, TRANSFORM_ALL) && lv < o$1.REPAINT) ; else if (!equalArr$2(renderMatrix, [1, 0, 0, 1, 0, 0])) {
             virtualDom.transform = 'matrix(' + joinArr$1(renderMatrix, ',') + ')';
           } else {
             delete virtualDom.transform;
@@ -16645,10 +16646,9 @@
         } // filter特殊缓存
 
 
-        var cacheFilter = this.__cacheFilter;
         var blurValue = this.__blurValue; // 有filter时改变除filter之外的变化直接返回
 
-        if (renderMode === mode.CANVAS && cacheFilter && blurValue && lv < o$1.REPAINT && !o$1.contain(lv, o$1.FILTER)) {
+        if (renderMode === mode.CANVAS && blurValue && this.__cacheFilter && lv < o$1.REPAINT && !o$1.contain(lv, o$1.FILTER)) {
           return res;
         }
 
@@ -16677,25 +16677,36 @@
           }
 
           return res;
-        } // 先渲染过滤mask，仅svg进入，canvas在下面自身做
+        } // 先渲染过滤mask，仅svg进入，canvas在下面自身做，记得只首次执行
 
 
-        if (renderMode === mode.SVG) {
+        if (renderMode === mode.SVG && !this.__noChildMask) {
+          var hasMask;
           children.forEach(function (item) {
             if (!(item instanceof Component$1) && (item.isMask || item.isClip)) {
+              hasMask = true;
+
               item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
             }
-          });
+          }); // 没mask标识以后无需重复遍历
+
+          if (!hasMask) {
+            this.__noChildMask = true;
+          }
         } // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
 
 
         var canCacheChildren = true;
         var draw = !root.cache || renderMode === mode.SVG; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
-        var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this); // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
+        var zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this); // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
 
         if (root.cache && renderMode === mode.CANVAS) {
-          zIndexChildren = getMaskChildren(this).concat(zIndexChildren);
+          var maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
+
+          if (maskChildren.length) {
+            zIndexChildren = maskChildren.concat(zIndexChildren);
+          }
         }
 
         zIndexChildren.forEach(function (item) {
@@ -16735,11 +16746,11 @@
 
 
               if (root.cache) {
-                var _cacheFilter = item.__cacheFilter,
+                var cacheFilter = item.__cacheFilter,
                     cacheMask = item.__cacheMask,
                     cache = item.__cache;
 
-                if (_cacheFilter && _blurValue && lv < o$1.REPAINT && !o$1.contain(lv2, o$1.FILTER) || cacheMask) {
+                if (cacheFilter && _blurValue && lv < o$1.REPAINT && !o$1.contain(lv2, o$1.FILTER) || cacheMask) {
                   ignoreGeom = true;
                 } else {
                   item.__cacheFilter = item.__cacheMask = null;
@@ -16814,10 +16825,12 @@
               var _hasMC;
 
               var next = item.next;
-              var hasMask = next && next.isMask;
+
+              var _hasMask = next && next.isMask;
+
               var hasClip = next && next.isClip;
 
-              if (hasMask || hasClip) {
+              if (_hasMask || hasClip) {
                 _hasMC = true;
               }
 
@@ -16875,10 +16888,12 @@
 
         if (renderMode === mode.CANVAS) {
           var next = this.next;
-          var hasMask = next && next.isMask;
+
+          var _hasMask2 = next && next.isMask;
+
           var hasClip = next && next.isClip;
 
-          if (hasMask || hasClip) {
+          if (_hasMask2 || hasClip) {
             hasMC = true;
             canCacheSelf = true;
           }
@@ -16939,7 +16954,7 @@
           } // img的children在子类特殊处理
 
 
-          if (this.tagName !== 'img') {
+          if (this.tagName.toLowerCase() !== 'img') {
             virtualDom.children = zIndexChildren.map(function (item) {
               return item.virtualDom;
             });
@@ -16998,20 +17013,7 @@
           return;
         }
 
-        var blurValue = 0;
-
-        if (Array.isArray(computedStyle.filter)) {
-          computedStyle.filter.forEach(function (item) {
-            var _item2 = _slicedToArray(item, 2),
-                k = _item2[0],
-                v = _item2[1];
-
-            if (k === 'blur' && v > 0) {
-              blurValue = v;
-            }
-          });
-        } // 局部根节点缓存汇总渲染
-
+        var blurValue = this.__blurValue; // 局部根节点缓存汇总渲染
 
         if (mode === refreshMode.TOP) {
           if (visibility === 'hidden') {
@@ -17258,9 +17260,9 @@
             dy = sy + computedStyle.marginTop - bbox[1];
           } else if (Array.isArray(computedStyle.filter)) {
             computedStyle.filter.forEach(function (item) {
-              var _item3 = _slicedToArray(item, 2),
-                  k = _item3[0],
-                  v = _item3[1];
+              var _item2 = _slicedToArray(item, 2),
+                  k = _item2[0],
+                  v = _item2[1];
 
               if (k === 'blur' && v > 0) {
                 var d = mx.int2convolution(v);
@@ -19680,6 +19682,7 @@
         this.__checkRoot(width, height); // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
 
 
+        var zIndexList = [];
         var measureList = [];
         var reflowList = [];
 
@@ -19780,6 +19783,11 @@
             i--;
             len--;
             continue;
+          } // 记录下来清除parent的zIndexChildren缓存
+
+
+          if (hasZ) {
+            zIndexList.push(node);
           } // reflow/repaint/measure相关的记录下来
 
 
@@ -19812,10 +19820,17 @@
             }
         }
         /**
+         * 遍历zIndex更改，清除它parent的zIndexChildren缓存
+         */
+
+
+        zIndexList.forEach(function (item) {
+          delete item.domParent.__zIndexChildren;
+        });
+        /**
          * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
          */
-
 
         var cacheHash = {};
         var plusList = [];

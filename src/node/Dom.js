@@ -1308,10 +1308,9 @@ class Dom extends Xom {
       return res;
     }
     // filter特殊缓存
-    let cacheFilter = this.__cacheFilter;
     let blurValue = this.__blurValue;
     // 有filter时改变除filter之外的变化直接返回
-    if(renderMode === mode.CANVAS && cacheFilter && blurValue
+    if(renderMode === mode.CANVAS && blurValue && this.__cacheFilter
       && lv < level.REPAINT && !level.contain(lv, level.FILTER)) {
       return res;
     }
@@ -1338,22 +1337,31 @@ class Dom extends Xom {
       }
       return res;
     }
-    // 先渲染过滤mask，仅svg进入，canvas在下面自身做
-    if(renderMode === mode.SVG) {
+    // 先渲染过滤mask，仅svg进入，canvas在下面自身做，记得只首次执行
+    if(renderMode === mode.SVG && !this.__noChildMask) {
+      let hasMask;
       children.forEach(item => {
         if(!(item instanceof Component) && (item.isMask || item.isClip)) {
+          hasMask = true;
           item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
         }
       });
+      // 没mask标识以后无需重复遍历
+      if(!hasMask) {
+        this.__noChildMask = true;
+      }
     }
     // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
     let canCacheChildren = true;
     let draw = !root.cache || renderMode === mode.SVG;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
     // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
     if(root.cache && renderMode === mode.CANVAS) {
-      zIndexChildren = getMaskChildren(this).concat(zIndexChildren);
+      let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
+      if(maskChildren.length) {
+        zIndexChildren = maskChildren.concat(zIndexChildren);
+      }
     }
     zIndexChildren.forEach(item => {
       let lv2 = item.__refreshLevel;
@@ -1562,7 +1570,7 @@ class Dom extends Xom {
         cacheTotal.available = true;
       }
       // img的children在子类特殊处理
-      if(this.tagName !== 'img') {
+      if(this.tagName.toLowerCase() !== 'img') {
         virtualDom.children = zIndexChildren.map(item => item.virtualDom);
       }
       // 没变化则将text孩子设置cache
@@ -1612,15 +1620,7 @@ class Dom extends Xom {
     if(display === 'none') {
       return;
     }
-    let blurValue = 0;
-    if(Array.isArray(computedStyle.filter)) {
-      computedStyle.filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          blurValue = v;
-        }
-      });
-    }
+    let blurValue = this.__blurValue;
     // 局部根节点缓存汇总渲染
     if(mode === refreshMode.TOP) {
       if(visibility === 'hidden') {

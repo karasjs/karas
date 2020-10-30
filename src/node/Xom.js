@@ -23,6 +23,8 @@ const { clone, int2rgba, equalArr, extend, joinArr } = util;
 const { calRelative } = css;
 const { canvasPolygon, svgPolygon } = painter;
 
+const TRANSFORM_ALL = level.TRANSFORM | level.TRANSLATE_X | level.TRANSLATE_Y;
+
 function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
   if(renderMode === mode.CANVAS) {
     ctx.beginPath();
@@ -1360,13 +1362,12 @@ class Xom extends Node {
     }
     // 先判断cache避免重复运算
     if(lv < level.REPAINT
-      && (renderMode === mode.CANVAS && cache && cache.available
-        || renderMode === mode.SVG && cacheTotal && cacheTotal.available)) {
+      && renderMode === mode.CANVAS && cache && cache.available) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
         let { __sx: x, __sy: y } = this;
         let p;
-        if(level.contain(lv, level.TRANSFORM | level.TRANSLATE_X | level.TRANSLATE_Y)) {
+        if(level.contain(lv, TRANSFORM_ALL)) {
           this.__calCache(renderMode, lv, ctx, defs, null, __cacheStyle, currentStyle, computedStyle, x, y);
           p = p || this.domParent;
           let matrix = __cacheStyle.matrix;
@@ -1476,7 +1477,7 @@ class Xom extends Node {
     this.__matrixEvent = matrix;
     if(renderMode === mode.SVG) {
       // svg可以没变化省略计算，因为只相对于自身
-      if(!level.contain(lv, level.TRANSFORM) && lv < level.REPAINT) {}
+      if(!level.contain(lv, TRANSFORM_ALL) && lv < level.REPAINT) {}
       else if(!equalArr(renderMatrix, [1, 0, 0, 1, 0, 0])) {
         virtualDom.transform = 'matrix(' + joinArr(renderMatrix, ',') + ')';
       }

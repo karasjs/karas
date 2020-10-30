@@ -91,6 +91,9 @@ class Node {
   }
 
   get domParent() {
+    if(this.__domParent !== undefined) {
+      return this.__domParent;
+    }
     let p = this;
     let root = this.root;
     while(p) {
@@ -106,7 +109,7 @@ class Node {
         p = p.host;
       }
     }
-    return p;
+    return this.__domParent = p || null;
   }
 
   // canvas/svg根节点

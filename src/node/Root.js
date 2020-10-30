@@ -577,7 +577,7 @@ class Root extends Dom {
         if(hasZ && renderMode === mode.SVG) {
           lv |= level.REPAINT;
         }
-        node.__refreshLevel = level.getDetailRepaintByLv(style, lv);
+        node.__refreshLevel = level.getDetailRepaint(style, lv);
         if(!isNil(focus)) {
           node.__refreshLevel |= focus;
         }

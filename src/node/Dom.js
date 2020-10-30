@@ -3,6 +3,7 @@ import Text from './Text';
 import mode from './mode';
 import LineGroup from './LineGroup';
 import Component from './Component';
+import Geom from '../geom/Geom';
 import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
@@ -1308,15 +1309,7 @@ class Dom extends Xom {
     }
     // filter特殊缓存
     let cacheFilter = this.__cacheFilter;
-    let blurValue;
-    if(Array.isArray(filter)) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          blurValue = v;
-        }
-      });
-    }
+    let blurValue = this.__blurValue;
     // 有filter时改变除filter之外的变化直接返回
     if(renderMode === mode.CANVAS && cacheFilter && blurValue
       && lv < level.REPAINT && !level.contain(lv, level.FILTER)) {
@@ -1346,11 +1339,13 @@ class Dom extends Xom {
       return res;
     }
     // 先渲染过滤mask，仅svg进入，canvas在下面自身做
-    children.forEach(item => {
-      if(!(item instanceof Component) && (item.isMask || item.isClip)) {
-        item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
-      }
-    });
+    if(renderMode === mode.SVG) {
+      children.forEach(item => {
+        if(!(item instanceof Component) && (item.isMask || item.isClip)) {
+          item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
+        }
+      });
+    }
     // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
     let canCacheChildren = true;
     let draw = !root.cache || renderMode === mode.SVG;
@@ -1372,7 +1367,7 @@ class Dom extends Xom {
         // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
         let blurValue;
         let newCtx = ctx;
-        let isGeom = item.tagName.charAt(0) === '$';
+        let isGeom = item instanceof Geom;
         // geom计算bbox需提前获得数据
         if(isGeom) {
           item.__preData = item.__preSet(renderMode, ctx, defs);
@@ -1751,8 +1746,9 @@ class Dom extends Xom {
           ctx.globalAlpha = __opacity;
         }
         ctx.setTransform(...matrixEvent);
-        if(cacheFilter || cacheMask) {
-          let { x1, y1, dbx, dby, canvas } = cacheFilter || cacheMask;
+        let target = cacheFilter || cacheMask;
+        if(target) {
+          let { x1, y1, dbx, dby, canvas } = target;
           ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
           return;
         }

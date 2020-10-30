@@ -3,27 +3,30 @@ import change from './change';
 const ENUM = {
   // 低4位表示repaint级别
   NONE: 0, //                                          0
-  TRANSFORM: 1, //                                     1
-  OPACITY: 2, //                                      10
-  FILTER: 4, //                                      100
-  VISIBILITY: 8, //                                 1000
-  REPAINT: 16, //                                   10000
+  TRANSLATE_X: 1, //                                   1
+  TRANSLATE_Y: 2, //                                  10
+  TRANSFORM: 4, //                                   100
+  OPACITY: 8, //                                    1000
+  FILTER: 16, //                                   10000
+  VISIBILITY: 32, //                              100000
+  REPAINT: 64, //                                1000000
 
   // 高位表示reflow
-  REFLOW: 32, // 整体需要重排                        10000
+  REFLOW: 128, //                               10000000
 };
 
 const TRANSFORMS = {
-  translateX: true,
-  translateY: true,
+  // translateX: true,
+  // translateY: true,
   scaleX: true,
   scaleY: true,
   rotateZ: true,
+  transformOrigin: true,
 };
 
 let o = Object.assign({
   contain(lv, value) {
-    return (lv & value) === value;
+    return (lv & value) > 0;
   },
   /**
    * 仅得出大概等级none/repaint/reflow
@@ -44,7 +47,7 @@ let o = Object.assign({
    * @param style
    * @param lv
    */
-  getDetailRepaintByLv(style, lv) {
+  getDetailRepaint(style, lv) {
     if(lv === ENUM.NONE) {
       return ENUM.NONE;
     }
@@ -52,7 +55,13 @@ let o = Object.assign({
       let lv = ENUM.NONE;
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          if(TRANSFORMS.hasOwnProperty(i)) {
+          if(i === 'translateX') {
+            lv |= ENUM.TRANSLATE_X;
+          }
+          else if(i === 'translateY') {
+            lv |= ENUM.TRANSLATE_Y;
+          }
+          else if(TRANSFORMS.hasOwnProperty(i)) {
             lv |= ENUM.TRANSFORM;
           }
           else if(i === 'opacity') {

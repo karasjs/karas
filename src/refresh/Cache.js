@@ -133,8 +133,6 @@ class Cache {
     return this.__coords;
   }
 
-  static COUNT = 5;
-
   static getInstance(bbox) {
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);

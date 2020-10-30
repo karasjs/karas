@@ -12113,27 +12113,6 @@
             }
           }
 
-        if (o$1.contain(lv, o$1.OPACITY)) {
-          computedStyle.opacity = currentStyle.opacity;
-        }
-
-        if (o$1.contain(lv, o$1.FILTER)) {
-          computedStyle.filter = currentStyle.filter;
-        } // pointerEvents这种none的
-
-
-        if (currentStyle.pointerEvents.unit === INHERIT$3) {
-          if (parent) {
-            computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
-          } else {
-            computedStyle.pointerEvents = 'auto';
-          }
-        } else {
-          computedStyle.pointerEvents = currentStyle.pointerEvents.value;
-        }
-
-        computedStyle.pointerEvents = currentStyle.pointerEvents;
-
         if (lv >= o$1.REPAINT) {
           if (__cacheStyle.backgroundPositionX === undefined) {
             __cacheStyle.backgroundPositionX = true;
@@ -12205,7 +12184,7 @@
           } // 这些直接赋值的不需要再算缓存
 
 
-          ['zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
+          ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'filter'].forEach(function (k) {
             computedStyle[k] = currentStyle[k];
           });
           ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -12229,7 +12208,7 @@
             });
           } // root和component的根节点不能是inherit
           else {
-              ['fontStyle', 'color', 'visibility'].forEach(function (k) {
+              ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
                 if (currentStyle[k].unit !== INHERIT$3) {
                   computedStyle[k] = currentStyle[k].value;
 
@@ -12254,6 +12233,10 @@
 
               if (currentStyle.visibility.unit === INHERIT$3) {
                 computedStyle.visibility = 'visible';
+              }
+
+              if (currentStyle.pointerEvents.unit === INHERIT$3) {
+                computedStyle.pointerEvents = 'auto';
               }
             } // 圆角边计算
 
@@ -12328,6 +12311,25 @@
               }
             }
           });
+        } else {
+          if (o$1.contain(lv, o$1.OPACITY)) {
+            computedStyle.opacity = currentStyle.opacity;
+          }
+
+          if (o$1.contain(lv, o$1.FILTER)) {
+            computedStyle.filter = currentStyle.filter;
+          } // pointerEvents这种none的
+
+
+          if (currentStyle.pointerEvents.unit === INHERIT$3) {
+            if (parent) {
+              computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
+            } else {
+              computedStyle.pointerEvents = 'auto';
+            }
+          } else {
+            computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+          }
         }
 
         if (!matrixCache) {

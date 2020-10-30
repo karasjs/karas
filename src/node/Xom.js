@@ -1019,25 +1019,6 @@ class Xom extends Node {
         this.__matrix = computedStyle.transform = matrix || [1, 0, 0, 1, 0, 0];
       }
     }
-    if(level.contain(lv, level.OPACITY)) {
-      computedStyle.opacity = currentStyle.opacity;
-    }
-    if(level.contain(lv, level.FILTER)) {
-      computedStyle.filter = currentStyle.filter;
-    }
-    // pointerEvents这种none的
-    if(currentStyle.pointerEvents.unit === INHERIT) {
-      if(parent) {
-        computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
-      }
-      else {
-        computedStyle.pointerEvents = 'auto';
-      }
-    }
-    else {
-      computedStyle.pointerEvents = currentStyle.pointerEvents.value;
-    }
-    computedStyle.pointerEvents = currentStyle.pointerEvents;
     if(lv >= level.REPAINT) {
       if(__cacheStyle.backgroundPositionX === undefined) {
         __cacheStyle.backgroundPositionX = true;
@@ -1110,12 +1091,14 @@ class Xom extends Node {
       }
       // 这些直接赋值的不需要再算缓存
       [
+        'opacity',
         'zIndex',
         'borderTopStyle',
         'borderRightStyle',
         'borderBottomStyle',
         'borderLeftStyle',
         'backgroundRepeat',
+        'filter',
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });
@@ -1156,6 +1139,7 @@ class Xom extends Node {
           'fontStyle',
           'color',
           'visibility',
+          'pointerEvents',
         ].forEach(k => {
           if(currentStyle[k].unit !== INHERIT) {
             computedStyle[k] = currentStyle[k].value;
@@ -1176,6 +1160,9 @@ class Xom extends Node {
         }
         if(currentStyle.visibility.unit === INHERIT) {
           computedStyle.visibility = 'visible';
+        }
+        if(currentStyle.pointerEvents.unit === INHERIT) {
+          computedStyle.pointerEvents = 'auto';
         }
       }
       // 圆角边计算
@@ -1263,6 +1250,26 @@ class Xom extends Node {
           }
         }
       });
+    }
+    else {
+      if(level.contain(lv, level.OPACITY)) {
+        computedStyle.opacity = currentStyle.opacity;
+      }
+      if(level.contain(lv, level.FILTER)) {
+        computedStyle.filter = currentStyle.filter;
+      }
+      // pointerEvents这种none的
+      if(currentStyle.pointerEvents.unit === INHERIT) {
+        if(parent) {
+          computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
+        }
+        else {
+          computedStyle.pointerEvents = 'auto';
+        }
+      }
+      else {
+        computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+      }
     }
     if(!matrixCache) {
       let tfo = computedStyle.transformOrigin.slice(0);

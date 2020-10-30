@@ -11259,6 +11259,7 @@
       INHERIT$3 = unit.INHERIT;
   var clone$2 = util.clone,
       int2rgba$2 = util.int2rgba,
+      rgba2int$3 = util.rgba2int,
       equalArr$2 = util.equalArr,
       extend$1 = util.extend,
       joinArr$1 = util.joinArr;
@@ -12191,55 +12192,7 @@
             if (__cacheStyle[k] === undefined) {
               __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k].value);
             }
-          }); // 强制计算继承性的
-
-          if (parent) {
-            var parentComputedStyle = parent.computedStyle;
-            ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
-              if (currentStyle[k].unit === INHERIT$3) {
-                computedStyle[k] = parentComputedStyle[k];
-              } else {
-                computedStyle[k] = currentStyle[k].value;
-              }
-
-              if (k === 'color') {
-                __cacheStyle.color = int2rgba$2(computedStyle.color);
-              }
-            });
-          } // root和component的根节点不能是inherit
-          else {
-              ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
-                if (currentStyle[k].unit !== INHERIT$3) {
-                  computedStyle[k] = currentStyle[k].value;
-
-                  if (k === 'color') {
-                    __cacheStyle.color = int2rgba$2(computedStyle.color);
-                  }
-                }
-              });
-
-              if (currentStyle.fontStyle.unit === INHERIT$3) {
-                computedStyle.fontStyle = 'normal';
-              }
-
-              if (currentStyle.fontWeight.unit === INHERIT$3) {
-                computedStyle.fontWeight = 400;
-              }
-
-              if (currentStyle.color.unit === INHERIT$3) {
-                computedStyle.color = [0, 0, 0, 1];
-                __cacheStyle.color = 'rgba(0,0,0,1)';
-              }
-
-              if (currentStyle.visibility.unit === INHERIT$3) {
-                computedStyle.visibility = 'visible';
-              }
-
-              if (currentStyle.pointerEvents.unit === INHERIT$3) {
-                computedStyle.pointerEvents = 'auto';
-              }
-            } // 圆角边计算
-
+          }); // 圆角边计算
 
           if (__cacheStyle.borderTopLeftRadius === undefined || __cacheStyle.borderTopRightRadius === undefined || __cacheStyle.borderBottomRightRadius === undefined || __cacheStyle.borderBottomLeftRadius === undefined) {
             __cacheStyle.borderTopLeftRadius = __cacheStyle.borderTopRightRadius = __cacheStyle.borderBottomRightRadius = __cacheStyle.borderBottomLeftRadius = true;
@@ -12318,19 +12271,43 @@
 
           if (o$1.contain(lv, o$1.FILTER)) {
             computedStyle.filter = currentStyle.filter;
-          } // pointerEvents这种none的
-
-
-          if (currentStyle.pointerEvents.unit === INHERIT$3) {
-            if (parent) {
-              computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
-            } else {
-              computedStyle.pointerEvents = 'auto';
-            }
-          } else {
-            computedStyle.pointerEvents = currentStyle.pointerEvents.value;
           }
+        } // 强制计算继承性的
+
+
+        var parentComputedStyle = parent && parent.computedStyle;
+
+        if (currentStyle.fontStyle.unit === INHERIT$3) {
+          computedStyle.fontStyle = parent ? parentComputedStyle.fontStyle : 'normal';
+        } else if (!__cacheStyle.fontStyle) {
+          computedStyle.fontStyle = currentStyle.fontStyle.value;
         }
+
+        __cacheStyle.fontStyle = computedStyle.fontStyle;
+
+        if (currentStyle.color.unit === INHERIT$3) {
+          computedStyle.color = parent ? parentComputedStyle.color : [0, 0, 0, 1];
+          __cacheStyle.color = int2rgba$2(computedStyle.color);
+        } else if (!__cacheStyle.color) {
+          computedStyle.color = rgba2int$3(currentStyle.color.value);
+          __cacheStyle.color = int2rgba$2(computedStyle.color);
+        }
+
+        if (currentStyle.visibility.unit === INHERIT$3) {
+          computedStyle.visibility = parent ? parentComputedStyle.visibility : 'visible';
+        } else if (!__cacheStyle.visibility) {
+          computedStyle.visibility = currentStyle.visibility.value;
+        }
+
+        __cacheStyle.visibility = computedStyle.visibility;
+
+        if (currentStyle.pointerEvents.unit === INHERIT$3) {
+          computedStyle.pointerEvents = parent ? parentComputedStyle.pointerEvents : 'auto';
+        } else if (!__cacheStyle.pointerEvents) {
+          computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+        }
+
+        __cacheStyle.pointerEvents = computedStyle.pointerEvents;
 
         if (!matrixCache) {
           var tfo = computedStyle.transformOrigin.slice(0);
@@ -12466,7 +12443,7 @@
         } // 先判断cache避免重复运算，无内容无cache根据NONE判断
 
 
-        if (lv === o$1.NONE || lv < o$1.REPAINT && renderMode === mode.CANVAS && cache && cache.available) {
+        if (root.cache && renderMode === mode.CANVAS && lv < o$1.REPAINT && cache && cache.available) {
           var _canCache2 = cacheTotal && cacheTotal.available;
 
           if (lv > o$1.NONE) {
@@ -16651,6 +16628,8 @@
     }, {
       key: "render",
       value: function render(renderMode, lv, ctx, defs) {
+        var _this3 = this;
+
         // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
         var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
 
@@ -16750,6 +16729,16 @@
 
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
+              if (renderMode === mode.CANVAS) {
+                var _ctx;
+
+                if (ctx.globalAlpha !== _this3.__opacity) {
+                  ctx.globalAlpha = _this3.__opacity;
+                }
+
+                (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(_this3.matrixEvent));
+              }
+
               item.__renderByMask(renderMode, lv2, ctx);
             }
           } else {
@@ -17151,7 +17140,7 @@
             var dy = _ty + _sy - _y + dby;
 
             if (visibility !== 'hidden') {
-              var _ctx;
+              var _ctx2;
 
               var tfo = computedStyle.transformOrigin.slice(0);
               opacity *= computedStyle.opacity;
@@ -17172,7 +17161,7 @@
               var m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
               matrix = mx.multiply(matrix, m);
 
-              (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix)); // 都没有正常cache和children
+              (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrix)); // 都没有正常cache和children
 
 
               if (cache && cache.available) {
@@ -17184,6 +17173,14 @@
             zIndexChildren.forEach(function (item) {
               if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                 if (visibility !== 'hidden') {
+                  var _ctx3;
+
+                  if (ctx.globalAlpha !== opacity) {
+                    ctx.globalAlpha = opacity;
+                  }
+
+                  (_ctx3 = ctx).setTransform.apply(_ctx3, _toConsumableArray(matrix));
+
                   item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
                 }
               } else {
@@ -17196,14 +17193,14 @@
                   matrixEvent = this.matrixEvent;
 
               if (visibility !== 'hidden') {
-                var _ctx2;
+                var _ctx4;
 
                 // 写回主画布前设置
                 if (ctx.globalAlpha !== __opacity) {
                   ctx.globalAlpha = __opacity;
                 }
 
-                (_ctx2 = ctx).setTransform.apply(_ctx2, _toConsumableArray(matrixEvent));
+                (_ctx4 = ctx).setTransform.apply(_ctx4, _toConsumableArray(matrixEvent));
 
                 var _target = cacheFilter || cacheMask;
 
@@ -17256,6 +17253,14 @@
               zIndexChildren.forEach(function (item) {
                 if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
                   if (visibility !== 'hidden') {
+                    var _ctx5;
+
+                    if (ctx.globalAlpha !== __opacity) {
+                      ctx.globalAlpha = __opacity;
+                    }
+
+                    (_ctx5 = ctx).setTransform.apply(_ctx5, _toConsumableArray(matrixEvent));
+
                     item.__renderByMask(renderMode, null, ctx);
                   }
                 } else {

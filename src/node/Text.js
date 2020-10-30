@@ -3,7 +3,6 @@ import LineBox from './LineBox';
 import mode from './mode';
 import css from '../style/css';
 import util from '../util/util';
-import mx from '../math/matrix';
 
 class Text extends Node {
   constructor(content) {

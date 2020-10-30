@@ -19,7 +19,7 @@ import level from '../refresh/level';
 import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
-const { clone, int2rgba, equalArr, extend, joinArr } = util;
+const { clone, int2rgba, rgba2int, equalArr, extend, joinArr } = util;
 const { calRelative } = css;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -1113,58 +1113,6 @@ class Xom extends Node {
           __cacheStyle[k] = int2rgba(computedStyle[k] = currentStyle[k].value);
         }
       });
-      // 强制计算继承性的
-      if(parent) {
-        let parentComputedStyle = parent.computedStyle;
-        [
-          'fontStyle',
-          'color',
-          'visibility',
-          'pointerEvents',
-        ].forEach(k => {
-          if(currentStyle[k].unit === INHERIT) {
-            computedStyle[k] = parentComputedStyle[k];
-          }
-          else {
-            computedStyle[k] = currentStyle[k].value;
-          }
-          if(k === 'color') {
-            __cacheStyle.color = int2rgba(computedStyle.color);
-          }
-        });
-      }
-      // root和component的根节点不能是inherit
-      else {
-        [
-          'fontStyle',
-          'color',
-          'visibility',
-          'pointerEvents',
-        ].forEach(k => {
-          if(currentStyle[k].unit !== INHERIT) {
-            computedStyle[k] = currentStyle[k].value;
-            if(k === 'color') {
-              __cacheStyle.color = int2rgba(computedStyle.color)
-            }
-          }
-        });
-        if(currentStyle.fontStyle.unit === INHERIT) {
-          computedStyle.fontStyle = 'normal';
-        }
-        if(currentStyle.fontWeight.unit === INHERIT) {
-          computedStyle.fontWeight = 400;
-        }
-        if(currentStyle.color.unit === INHERIT) {
-          computedStyle.color = [0, 0, 0, 1];
-          __cacheStyle.color = 'rgba(0,0,0,1)';
-        }
-        if(currentStyle.visibility.unit === INHERIT) {
-          computedStyle.visibility = 'visible';
-        }
-        if(currentStyle.pointerEvents.unit === INHERIT) {
-          computedStyle.pointerEvents = 'auto';
-        }
-      }
       // 圆角边计算
       if(__cacheStyle.borderTopLeftRadius === undefined
         || __cacheStyle.borderTopRightRadius === undefined
@@ -1258,19 +1206,38 @@ class Xom extends Node {
       if(level.contain(lv, level.FILTER)) {
         computedStyle.filter = currentStyle.filter;
       }
-      // pointerEvents这种none的
-      if(currentStyle.pointerEvents.unit === INHERIT) {
-        if(parent) {
-          computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
-        }
-        else {
-          computedStyle.pointerEvents = 'auto';
-        }
-      }
-      else {
-        computedStyle.pointerEvents = currentStyle.pointerEvents.value;
-      }
     }
+    // 强制计算继承性的
+    let parentComputedStyle = parent && parent.computedStyle;
+    if(currentStyle.fontStyle.unit === INHERIT) {
+      computedStyle.fontStyle = parent ? parentComputedStyle.fontStyle : 'normal';
+    }
+    else if(!__cacheStyle.fontStyle) {
+      computedStyle.fontStyle = currentStyle.fontStyle.value;
+    }
+    __cacheStyle.fontStyle = computedStyle.fontStyle;
+    if(currentStyle.color.unit === INHERIT) {
+      computedStyle.color = parent ? parentComputedStyle.color : [0, 0, 0, 1];
+      __cacheStyle.color = int2rgba(computedStyle.color);
+    }
+    else if(!__cacheStyle.color) {
+      computedStyle.color = rgba2int(currentStyle.color.value);
+      __cacheStyle.color = int2rgba(computedStyle.color);
+    }
+    if(currentStyle.visibility.unit === INHERIT) {
+      computedStyle.visibility = parent ? parentComputedStyle.visibility : 'visible';
+    }
+    else if(!__cacheStyle.visibility) {
+      computedStyle.visibility = currentStyle.visibility.value;
+    }
+    __cacheStyle.visibility = computedStyle.visibility;
+    if(currentStyle.pointerEvents.unit === INHERIT) {
+      computedStyle.pointerEvents = parent ? parentComputedStyle.pointerEvents : 'auto';
+    }
+    else if(!__cacheStyle.pointerEvents) {
+      computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+    }
+    __cacheStyle.pointerEvents = computedStyle.pointerEvents;
     if(!matrixCache) {
       let tfo = computedStyle.transformOrigin.slice(0);
       tfo[0] += sx;
@@ -1381,8 +1348,8 @@ class Xom extends Node {
       this.__lastDisplay = computedStyle.display;
     }
     // 先判断cache避免重复运算，无内容无cache根据NONE判断
-    if(lv === level.NONE || lv < level.REPAINT
-      && renderMode === mode.CANVAS && cache && cache.available) {
+    if(root.cache && renderMode === mode.CANVAS
+      && lv < level.REPAINT && cache && cache.available) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
         let { __sx: x, __sy: y } = this;

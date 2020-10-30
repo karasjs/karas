@@ -1368,6 +1368,12 @@ class Dom extends Xom {
       // canvas开启缓存text先不渲染，节点先绘制到自身cache上
       if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
         if(draw) {
+          if(renderMode === mode.CANVAS) {
+            if(ctx.globalAlpha !== this.__opacity) {
+              ctx.globalAlpha = this.__opacity;
+            }
+            ctx.setTransform(...this.matrixEvent);
+          }
           item.__renderByMask(renderMode, lv2, ctx);
         }
       }
@@ -1729,6 +1735,10 @@ class Dom extends Xom {
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
           if(visibility !== 'hidden') {
+            if(ctx.globalAlpha !== opacity) {
+              ctx.globalAlpha = opacity;
+            }
+            ctx.setTransform(...matrix);
             item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
           }
         }
@@ -1766,6 +1776,10 @@ class Dom extends Xom {
       zIndexChildren.forEach(item => {
         if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
           if(visibility !== 'hidden') {
+            if(ctx.globalAlpha !== __opacity) {
+              ctx.globalAlpha = __opacity;
+            }
+            ctx.setTransform(...matrixEvent);
             item.__renderByMask(renderMode, null, ctx);
           }
         }

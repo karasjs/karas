@@ -1380,8 +1380,8 @@ class Xom extends Node {
     else if(renderMode === mode.SVG) {
       this.__lastDisplay = computedStyle.display;
     }
-    // 先判断cache避免重复运算
-    if(lv < level.REPAINT
+    // 先判断cache避免重复运算，无内容无cache根据NONE判断
+    if(lv === level.NONE || lv < level.REPAINT
       && renderMode === mode.CANVAS && cache && cache.available) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
@@ -1973,6 +1973,8 @@ class Xom extends Node {
     let hasClip = next && next.isClip;
     // cache情况特殊处理，geom照常绘制，交由dom处理mask
     if((root.cache && renderMode === mode.CANVAS) || (!hasMask && !hasClip)) {
+      // 覆盖方法避免每次判断
+      this.__renderByMask = this.render;
       return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {

@@ -503,11 +503,11 @@
     var isSubIdB = b[4] === 0 && b[5] === 0;
 
     if (isPreIdA && isSubIdA) {
-      return b;
+      return b.slice(0);
     }
 
     if (isPreIdB && isSubIdB) {
-      return a;
+      return a.slice(0);
     }
 
     if (isPreIdA && isPreIdB) {
@@ -12463,10 +12463,10 @@
           }
         } else if (renderMode === mode.SVG) {
           this.__lastDisplay = computedStyle.display;
-        } // 先判断cache避免重复运算
+        } // 先判断cache避免重复运算，无内容无cache根据NONE判断
 
 
-        if (lv < o$1.REPAINT && renderMode === mode.CANVAS && cache && cache.available) {
+        if (lv === o$1.NONE || lv < o$1.REPAINT && renderMode === mode.CANVAS && cache && cache.available) {
           var _canCache2 = cacheTotal && cacheTotal.available;
 
           if (lv > o$1.NONE) {
@@ -13144,6 +13144,8 @@
         var hasClip = next && next.isClip; // cache情况特殊处理，geom照常绘制，交由dom处理mask
 
         if (root.cache && renderMode === mode.CANVAS || !hasMask && !hasClip) {
+          // 覆盖方法避免每次判断
+          this.__renderByMask = this.render;
           return this.render(renderMode, lv, ctx, defs);
         }
 
@@ -19220,9 +19222,9 @@
       _this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
 
       _this.__mh = 0;
-      _this.__sx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+      _this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
 
-      _this.__sy = 1;
+      _this.__scy = 1;
       _this.__task = [];
       _this.__ref = {};
       _this.__updateList = [];
@@ -19282,8 +19284,8 @@
 
         if (['touchend', 'touchcancel'].indexOf(e.type) === -1) {
           var dom = this.dom,
-              __sx = this.__sx,
-              __sy = this.__sy;
+              __scx = this.__scx,
+              __scy = this.__scy;
 
           var _dom$getBoundingClien = dom.getBoundingClientRect(),
               x2 = _dom$getBoundingClien.x,
@@ -19301,12 +19303,12 @@
           x = pageX - x;
           y = pageY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
 
-          if (__sx !== 1) {
-            x /= __sx;
+          if (__scx !== 1) {
+            x /= __scx;
           }
 
-          if (__sy !== 1) {
-            y /= __sy;
+          if (__scy !== 1) {
+            y /= __scy;
           }
         }
 
@@ -19486,8 +19488,8 @@
       value: function scale() {
         var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
         var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : x;
-        this.__sx = x;
-        this.__sy = y;
+        this.__scx = x;
+        this.__scy = y;
       }
     }, {
       key: "addRefreshTask",

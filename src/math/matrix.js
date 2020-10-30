@@ -11,10 +11,10 @@ function multiply(a, b) {
   let isSubIdA = a[4] === 0 && a[5] === 0;
   let isSubIdB = b[4] === 0 && b[5] === 0;
   if(isPreIdA && isSubIdA) {
-    return b;
+    return b.slice(0);
   }
   if(isPreIdB && isSubIdB) {
-    return a;
+    return a.slice(0);
   }
   if(isPreIdA && isPreIdB) {
     a = a.slice(0);

@@ -12441,8 +12441,9 @@
           }
         } else if (renderMode === mode.SVG) {
           this.__lastDisplay = computedStyle.display;
-        } // 先判断cache避免重复运算，无内容无cache根据NONE判断
+        }
 
+        this.__blurValue = 0; // 先判断cache避免重复运算，无内容无cache根据NONE判断
 
         if (root.cache && renderMode === mode.CANVAS && lv < o$1.REPAINT && cache && cache.available) {
           var _canCache2 = cacheTotal && cacheTotal.available;
@@ -12451,11 +12452,11 @@
             var _x = this.__sx,
                 _y = this.__sy;
 
+            this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, _x, _y);
+
             var _p;
 
             if (o$1.contain(lv, TRANSFORM_ALL)) {
-              this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, _x, _y);
-
               _p = _p || this.domParent;
               var _matrix = __cacheStyle.matrix;
 
@@ -12477,7 +12478,7 @@
               this.__opacity = _opacity;
             }
 
-            if (o$1.contain(lv, o$1.FILTER)) {
+            if (o$1.contain(lv, o$1.FILTER) && Array.isArray(computedStyle.filter)) {
               computedStyle.filter.forEach(function (item) {
                 var _item = _slicedToArray(item, 2),
                     k = _item[0],
@@ -12617,6 +12618,8 @@
             dy = 0;
 
         if (root.cache && renderMode === mode.CANVAS) {
+          // 置空防止原型链查找性能
+          this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
           var isGeom = this.tagName.charAt(0) === '$';
           var isImg = this.tagName.toLowerCase() === 'img'; // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
 
@@ -12711,7 +12714,6 @@
 
 
         var offScreen;
-        console.log(filter);
 
         if (Array.isArray(filter)) {
           filter.forEach(function (item) {

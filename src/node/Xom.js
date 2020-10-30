@@ -1347,15 +1347,16 @@ class Xom extends Node {
     else if(renderMode === mode.SVG) {
       this.__lastDisplay = computedStyle.display;
     }
+    this.__blurValue = 0;
     // 先判断cache避免重复运算，无内容无cache根据NONE判断
     if(root.cache && renderMode === mode.CANVAS
       && lv < level.REPAINT && cache && cache.available) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
         let { __sx: x, __sy: y } = this;
+        this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y);
         let p;
         if(level.contain(lv, TRANSFORM_ALL)) {
-          this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y);
           p = p || this.domParent;
           let matrix = __cacheStyle.matrix;
           if(p) {
@@ -1371,7 +1372,7 @@ class Xom extends Node {
           }
           this.__opacity = opacity;
         }
-        if(level.contain(lv, level.FILTER)) {
+        if(level.contain(lv, level.FILTER) && Array.isArray(computedStyle.filter)) {
           computedStyle.filter.forEach(item => {
             let [k, v] = item;
             if(k === 'blur') {
@@ -1494,6 +1495,8 @@ class Xom extends Node {
     // 无缓存重新渲染时是否使用缓存
     let dx = 0, dy = 0;
     if(root.cache && renderMode === mode.CANVAS) {
+      // 置空防止原型链查找性能
+      this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
       let isGeom = this.tagName.charAt(0) === '$';
       let isImg = this.tagName.toLowerCase() === 'img';
       // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
@@ -1561,7 +1564,7 @@ class Xom extends Node {
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let offScreen; console.log(filter);
+    let offScreen;
     if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;

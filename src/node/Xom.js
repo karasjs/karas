@@ -1503,10 +1503,10 @@ class Xom extends Node {
         }
         // 无内容且lv变化小geom可以提前跳出，普通dom直接跳出
         if(lv < level.REPAINT && isGeom) {
-          return { ...res, break: true, canCache, filter };
+          return { ...res, break: true, canCache };
         }
         if(!isImg) {
-          return { ...res, canCache, filter };
+          return { ...res, canCache };
         }
       }
       // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
@@ -1514,7 +1514,7 @@ class Xom extends Node {
         if(level.contain(lv, level.FILTER)) {
           cache = this.__cache = Cache.updateCache(cache, this.bbox);
         }
-        return { ...res, break: true, canCache, cache, filter };
+        return { ...res, break: true, canCache, cache };
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
       if((!cache || !cache.available)) {
@@ -1561,21 +1561,20 @@ class Xom extends Node {
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let offScreen;
-    if(Array.isArray(filter)
-      && (renderMode === mode.CANVAS && (!cache || !cache.enabled)
-        || renderMode === mode.SVG)) {
+    let offScreen; console.log(filter);
+    if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;
         if(k === 'blur') {
           this.__blurValue = v;
           // geom由dom看管，做了替换工作，以便自定义geom时render()不感知离屏过程
-          if(renderMode === mode.CANVAS && v > 0 && this.tagName.charAt(0) !== '$') {
+          if(renderMode === mode.CANVAS && v > 0  && (!cache || !cache.enabled) && this.tagName.charAt(0) !== '$') {
             let { width, height } = root;
             let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
             if(c.ctx) {
               offScreen = {
                 ctx,
+                blur: v,
               };
               offScreen.target = c;
               ctx = c.ctx;
@@ -1915,18 +1914,8 @@ class Xom extends Node {
     if(cache && cache.enabled) {
       cache.__available = true;
     }
-    if(Array.isArray(filter)) {
-      filter.forEach(item => {
-        let [k, v] = item;
-        if(k === 'blur' && v > 0) {
-          if(renderMode === mode.CANVAS) {
-            offScreen && (offScreen.blur = v);
-          }
-        }
-      });
-    }
     if(renderMode === mode.CANVAS) {
-      return { ...res, canCache, cache, offScreen, filter };
+      return { ...res, canCache, cache, offScreen };
     }
     // svg前面提前跳出，到这一定是>=REPAINT的变化
     else if(renderMode === mode.SVG) {

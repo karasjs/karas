@@ -12629,15 +12629,13 @@
             if (lv < o$1.REPAINT && isGeom) {
               return _objectSpread2(_objectSpread2({}, res), {}, {
                 "break": true,
-                canCache: canCache,
-                filter: filter
+                canCache: canCache
               });
             }
 
             if (!isImg) {
               return _objectSpread2(_objectSpread2({}, res), {}, {
-                canCache: canCache,
-                filter: filter
+                canCache: canCache
               });
             }
           } // 有缓存情况快速使用位图缓存不再继续，filter要更新bbox范围，排除geom，因为是整屏
@@ -12651,8 +12649,7 @@
             return _objectSpread2(_objectSpread2({}, res), {}, {
               "break": true,
               canCache: canCache,
-              cache: cache,
-              filter: filter
+              cache: cache
             });
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
@@ -12714,8 +12711,9 @@
 
 
         var offScreen;
+        console.log(filter);
 
-        if (Array.isArray(filter) && (renderMode === mode.CANVAS && (!cache || !cache.enabled) || renderMode === mode.SVG)) {
+        if (Array.isArray(filter)) {
           filter.forEach(function (item) {
             var _item2 = _slicedToArray(item, 2),
                 k = _item2[0],
@@ -12724,14 +12722,15 @@
             if (k === 'blur') {
               _this4.__blurValue = v; // geom由dom看管，做了替换工作，以便自定义geom时render()不感知离屏过程
 
-              if (renderMode === mode.CANVAS && v > 0 && _this4.tagName.charAt(0) !== '$') {
+              if (renderMode === mode.CANVAS && v > 0 && (!cache || !cache.enabled) && _this4.tagName.charAt(0) !== '$') {
                 var _width = root.width,
                     _height = root.height;
                 var c = inject.getCacheCanvas(_width, _height, '__$$blur$$__');
 
                 if (c.ctx) {
                   offScreen = {
-                    ctx: ctx
+                    ctx: ctx,
+                    blur: v
                   };
                   offScreen.target = c;
                   ctx = c.ctx;
@@ -13085,26 +13084,11 @@
           cache.__available = true;
         }
 
-        if (Array.isArray(filter)) {
-          filter.forEach(function (item) {
-            var _item3 = _slicedToArray(item, 2),
-                k = _item3[0],
-                v = _item3[1];
-
-            if (k === 'blur' && v > 0) {
-              if (renderMode === mode.CANVAS) {
-                offScreen && (offScreen.blur = v);
-              }
-            }
-          });
-        }
-
         if (renderMode === mode.CANVAS) {
           return _objectSpread2(_objectSpread2({}, res), {}, {
             canCache: canCache,
             cache: cache,
-            offScreen: offScreen,
-            filter: filter
+            offScreen: offScreen
           });
         } // svg前面提前跳出，到这一定是>=REPAINT的变化
         else if (renderMode === mode.SVG) {
@@ -13728,12 +13712,12 @@
 
         if (Array.isArray(boxShadow)) {
           boxShadow.forEach(function (item) {
-            var _item4 = _slicedToArray(item, 6),
-                x = _item4[0],
-                y = _item4[1],
-                blur = _item4[2],
-                spread = _item4[3],
-                inset = _item4[5];
+            var _item3 = _slicedToArray(item, 6),
+                x = _item3[0],
+                y = _item3[1],
+                blur = _item3[2],
+                spread = _item3[3],
+                inset = _item3[5];
 
             if (inset !== 'inset') {
               var d = mx.int2convolution(blur);

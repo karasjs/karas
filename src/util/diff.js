@@ -194,7 +194,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
     return;
   }
   let { transform, opacity, visibility, mask, clip, filter } = nvd;
-  if(level.contain(lv, level.TRANSFORM)) {
+  if(level.contain(lv, level.TRANSLATE_X | level.TRANSLATE_Y | level.TRANSFORM)) {
     if(transform) {
       elem.setAttribute('transform', transform);
     }

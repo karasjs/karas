@@ -12743,7 +12743,9 @@
               }
             }
           });
-        } else if (virtualDom && virtualDom.filter && (!filter || !filter.length)) {
+        }
+
+        if (virtualDom && virtualDom.filter && this.__blurValue <= 0) {
           delete virtualDom.filter;
         } // svg在非首次有vd缓存的情况下，本次绘制<REPAINT可以提前跳出
 
@@ -18514,7 +18516,7 @@
         clip = nvd.clip,
         filter = nvd.filter;
 
-    if (o$1.contain(lv, o$1.TRANSFORM)) {
+    if (o$1.contain(lv, o$1.TRANSLATE_X | o$1.TRANSLATE_Y | o$1.TRANSFORM)) {
       if (transform) {
         elem.setAttribute('transform', transform);
       } else {

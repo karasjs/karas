@@ -3,6 +3,7 @@ import Text from './Text';
 import Component from './Component';
 import Defs from './Defs';
 import mode from './mode';
+import Geom from '../geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
 import util from '../util/util';
@@ -457,9 +458,10 @@ class Root extends Dom {
       if(node.isDestroyed) {
         return;
       }
+      let target;
       if(!node.hasOwnProperty('__uniqueUpdateId')) {
         node.__uniqueUpdateId = uniqueUpdateId;
-        totalHash[uniqueUpdateId++] = {
+        target = totalHash[uniqueUpdateId++] = {
           node,
           style: {},
           focus,
@@ -467,11 +469,11 @@ class Root extends Dom {
           measure,
           component,
         };
-        totalList.push(node);
+        totalList.push(target);
       }
       // 即便存在，focus/img也需要更新
       else {
-        let target = totalHash[node.__uniqueUpdateId];
+        target = totalHash[node.__uniqueUpdateId];
         if(img) {
           target.img = img;
         }
@@ -488,7 +490,7 @@ class Root extends Dom {
         Object.assign(node.__style, style);
       }
       if(style) {
-        Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+        Object.assign(target.style, style);
       }
     });
     this.__updateList = [];
@@ -499,11 +501,12 @@ class Root extends Dom {
     let measureList = [];
     let reflowList = [];
     for(let i = 0, len = totalList.length; i < len; i++) {
-      let node = totalList[i];
-      let { tagName, __uniqueUpdateId, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
+      let target = totalList[i];
+      let node = target.node;
+      let { tagName, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
       let lv = level.NONE;
       let p;
-      let { style, focus, img, measure, component } = totalHash[__uniqueUpdateId];
+      let { style, focus, img, measure, component } = target;
       let hasMeasure = measure;
       let hasZ;
       for(let k in style) {
@@ -520,9 +523,6 @@ class Root extends Dom {
             }
           }
           else {
-            if(k === 'zIndex') {
-              hasZ = true;
-            }
             // 需和现在不等，且不是pointerEvents这种无关的
             if(!css.equalStyle(k, v, currentStyle[k], node)) {
               // pointerEvents这种无关的只需更新
@@ -548,6 +548,9 @@ class Root extends Dom {
                 // repaint置空，如果reflow会重新生成空的
                 __cacheStyle[k] = undefined;
                 currentStyle[k] = v;
+              }
+              if(k === 'zIndex') {
+                hasZ = true;
               }
             }
           }
@@ -615,10 +618,10 @@ class Root extends Dom {
     let cacheHash = {};
     let plusList = [];
     totalList.forEach(item => {
-      let parent = item;
+      let parent = item.node;
       let lv = parent.__refreshLevel || 0;
       // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
-      let need = lv >= level.REPAINT || renderMode === mode.SVG && item.tagName.charAt(0) === '$';
+      let need = lv >= level.REPAINT || renderMode === mode.SVG && parent instanceof Geom;
       if(need) {
         if(parent.__cache) {
           parent.__cache.release();
@@ -672,8 +675,8 @@ class Root extends Dom {
     });
     // 没有更新的内容返回true
     if(!hasUpdate) {
-      totalList.forEach(node => {
-        delete node.__uniqueUpdateId;
+      totalList.forEach(item => {
+        delete item.node.__uniqueUpdateId;
       });
       return true;
     }
@@ -729,8 +732,8 @@ class Root extends Dom {
         }
       });
     });
-    totalList.forEach(node => {
-      delete node.__uniqueUpdateId;
+    totalList.forEach(item => {
+      delete item.node.__uniqueUpdateId;
     });
   }
 

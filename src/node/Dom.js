@@ -1288,7 +1288,7 @@ class Dom extends Xom {
     // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
     let res = super.render(renderMode, lv, ctx, defs);
     res = res || {};
-    let { offScreen, filter } = res;
+    let { offScreen, isDestroyed, displayNone } = res;
     // canvas检查filter，无缓存时的绘制
     if(offScreen && offScreen.target && offScreen.target.ctx) {
       ctx = offScreen.target.ctx;
@@ -1297,14 +1297,14 @@ class Dom extends Xom {
     else {
       offScreen = null;
     }
-    let { root, isDestroyed, virtualDom, children,
-      computedStyle: { position, display } } = this;
+    let { root, virtualDom, children,
+      computedStyle: { position } } = this;
     // 不显示的为了diff也要根据type生成
     if(renderMode === mode.SVG) {
       virtualDom.type = 'dom';
     }
     // canvas在隐藏时返回空，svg则有内容
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || displayNone) {
       return res;
     }
     // filter特殊缓存

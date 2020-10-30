@@ -12113,6 +12113,27 @@
             }
           }
 
+        if (o$1.contain(lv, o$1.OPACITY)) {
+          computedStyle.opacity = currentStyle.opacity;
+        }
+
+        if (o$1.contain(lv, o$1.FILTER)) {
+          computedStyle.filter = currentStyle.filter;
+        } // pointerEvents这种none的
+
+
+        if (currentStyle.pointerEvents.unit === INHERIT$3) {
+          if (parent) {
+            computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
+          } else {
+            computedStyle.pointerEvents = 'auto';
+          }
+        } else {
+          computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+        }
+
+        computedStyle.pointerEvents = currentStyle.pointerEvents;
+
         if (lv >= o$1.REPAINT) {
           if (__cacheStyle.backgroundPositionX === undefined) {
             __cacheStyle.backgroundPositionX = true;
@@ -12184,7 +12205,7 @@
           } // 这些直接赋值的不需要再算缓存
 
 
-          ['opacity', 'zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat', 'filter'].forEach(function (k) {
+          ['zIndex', 'borderTopStyle', 'borderRightStyle', 'borderBottomStyle', 'borderLeftStyle', 'backgroundRepeat'].forEach(function (k) {
             computedStyle[k] = currentStyle[k];
           });
           ['backgroundColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(function (k) {
@@ -12208,7 +12229,7 @@
             });
           } // root和component的根节点不能是inherit
           else {
-              ['fontStyle', 'color', 'visibility', 'pointerEvents'].forEach(function (k) {
+              ['fontStyle', 'color', 'visibility'].forEach(function (k) {
                 if (currentStyle[k].unit !== INHERIT$3) {
                   computedStyle[k] = currentStyle[k].value;
 
@@ -12233,10 +12254,6 @@
 
               if (currentStyle.visibility.unit === INHERIT$3) {
                 computedStyle.visibility = 'visible';
-              }
-
-              if (currentStyle.pointerEvents.unit === INHERIT$3) {
-                computedStyle.pointerEvents = 'auto';
               }
             } // 圆角边计算
 
@@ -12395,6 +12412,7 @@
 
         if (isDestroyed) {
           return {
+            isDestroyed: isDestroyed,
             "break": true
           };
         }
@@ -12428,6 +12446,7 @@
         if (computedStyle.display === 'none') {
           if (renderMode === mode.CANVAS) {
             return {
+              displayNone: true,
               canCache: !this.displayAnimating
             };
           } else if (renderMode === mode.SVG) {
@@ -12435,6 +12454,7 @@
 
             this.__lastDisplay = 'none';
             return {
+              displayNone: true,
               "break": true,
               canCache: _canCache
             };
@@ -12454,7 +12474,7 @@
             var _p;
 
             if (o$1.contain(lv, TRANSFORM_ALL)) {
-              this.__calCache(renderMode, lv, ctx, defs, null, __cacheStyle, currentStyle, computedStyle, _x, _y);
+              this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, _x, _y);
 
               _p = _p || this.domParent;
               var _matrix = __cacheStyle.matrix;
@@ -12475,6 +12495,18 @@
               }
 
               this.__opacity = _opacity;
+            }
+
+            if (o$1.contain(lv, o$1.FILTER)) {
+              computedStyle.filter.forEach(function (item) {
+                var _item = _slicedToArray(item, 2),
+                    k = _item[0],
+                    v = _item[1];
+
+                if (k === 'blur') {
+                  _this4.__blurValue = v;
+                }
+              });
             }
 
             if (computedStyle.visibility === 'hidden') {
@@ -12705,9 +12737,9 @@
 
         if (Array.isArray(filter) && (renderMode === mode.CANVAS && (!cache || !cache.enabled) || renderMode === mode.SVG)) {
           filter.forEach(function (item) {
-            var _item = _slicedToArray(item, 2),
-                k = _item[0],
-                v = _item[1];
+            var _item2 = _slicedToArray(item, 2),
+                k = _item2[0],
+                v = _item2[1];
 
             if (k === 'blur') {
               _this4.__blurValue = v; // geom由dom看管，做了替换工作，以便自定义geom时render()不感知离屏过程
@@ -13075,9 +13107,9 @@
 
         if (Array.isArray(filter)) {
           filter.forEach(function (item) {
-            var _item2 = _slicedToArray(item, 2),
-                k = _item2[0],
-                v = _item2[1];
+            var _item3 = _slicedToArray(item, 2),
+                k = _item3[0],
+                v = _item3[1];
 
             if (k === 'blur' && v > 0) {
               if (renderMode === mode.CANVAS) {
@@ -13714,12 +13746,12 @@
 
         if (Array.isArray(boxShadow)) {
           boxShadow.forEach(function (item) {
-            var _item3 = _slicedToArray(item, 6),
-                x = _item3[0],
-                y = _item3[1],
-                blur = _item3[2],
-                spread = _item3[3],
-                inset = _item3[5];
+            var _item4 = _slicedToArray(item, 6),
+                x = _item4[0],
+                y = _item4[1],
+                blur = _item4[2],
+                spread = _item4[3],
+                inset = _item4[5];
 
             if (inset !== 'inset') {
               var d = mx.int2convolution(blur);
@@ -16621,7 +16653,8 @@
         res = res || {};
         var _res = res,
             offScreen = _res.offScreen,
-            filter = _res.filter; // canvas检查filter，无缓存时的绘制
+            isDestroyed = _res.isDestroyed,
+            displayNone = _res.displayNone; // canvas检查filter，无缓存时的绘制
 
         if (offScreen && offScreen.target && offScreen.target.ctx) {
           ctx = offScreen.target.ctx;
@@ -16631,19 +16664,16 @@
           }
 
         var root = this.root,
-            isDestroyed = this.isDestroyed,
             virtualDom = this.virtualDom,
             children = this.children,
-            _this$computedStyle = this.computedStyle,
-            position = _this$computedStyle.position,
-            display = _this$computedStyle.display; // 不显示的为了diff也要根据type生成
+            position = this.computedStyle.position; // 不显示的为了diff也要根据type生成
 
         if (renderMode === mode.SVG) {
           virtualDom.type = 'dom';
         } // canvas在隐藏时返回空，svg则有内容
 
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || displayNone) {
           return res;
         } // filter特殊缓存
 
@@ -16732,10 +16762,10 @@
             var ignoreGeom, offScreen2;
 
             if (renderMode === mode.CANVAS && isGeom) {
-              var _filter = item.currentStyle.filter;
+              var filter = item.currentStyle.filter;
 
-              if (Array.isArray(_filter)) {
-                _filter.forEach(function (item) {
+              if (Array.isArray(filter)) {
+                filter.forEach(function (item) {
                   var _item = _slicedToArray(item, 2),
                       k = _item[0],
                       v = _item[1];
@@ -16916,9 +16946,9 @@
                   var _cacheTotal = this.__cacheTotal;
 
                   if (_cacheTotal && _cacheTotal.available) {
-                    var _this$computedStyle2 = this.computedStyle,
-                        transform = _this$computedStyle2.transform,
-                        transformOrigin = _this$computedStyle2.transformOrigin;
+                    var _this$computedStyle = this.computedStyle,
+                        transform = _this$computedStyle.transform,
+                        transformOrigin = _this$computedStyle.transformOrigin;
                     var _next = this.next;
                     this.__cacheMask = Cache.drawMask(_cacheTotal, _next, transform, transformOrigin.slice(0));
                   } // 极端情况超限异常
@@ -19641,9 +19671,11 @@
             return;
           }
 
+          var target;
+
           if (!node.hasOwnProperty('__uniqueUpdateId')) {
             node.__uniqueUpdateId = uniqueUpdateId;
-            totalHash[uniqueUpdateId++] = {
+            target = totalHash[uniqueUpdateId++] = {
               node: node,
               style: {},
               focus: focus,
@@ -19651,10 +19683,10 @@
               measure: measure,
               component: component
             };
-            totalList.push(node);
+            totalList.push(target);
           } // 即便存在，focus/img也需要更新
           else {
-              var target = totalHash[node.__uniqueUpdateId];
+              target = totalHash[node.__uniqueUpdateId];
 
               if (img) {
                 target.img = img;
@@ -19676,7 +19708,7 @@
           }
 
           if (style) {
-            Object.assign(totalHash[node.__uniqueUpdateId].style, style);
+            Object.assign(target.style, style);
           }
         });
         this.__updateList = []; // 此时做root检查，防止root出现继承等无效样式
@@ -19689,10 +19721,10 @@
         var reflowList = [];
 
         for (var i = 0, len = totalList.length; i < len; i++) {
-          var node = totalList[i];
+          var target = totalList[i];
+          var node = target.node;
 
           var tagName = node.tagName,
-              __uniqueUpdateId = node.__uniqueUpdateId,
               currentStyle = node.currentStyle,
               currentProps = node.currentProps,
               _node$__cacheStyle = node.__cacheStyle,
@@ -19702,12 +19734,11 @@
 
           var lv = o$1.NONE;
           var p = void 0;
-          var _totalHash$__uniqueUp = totalHash[__uniqueUpdateId],
-              style = _totalHash$__uniqueUp.style,
-              focus = _totalHash$__uniqueUp.focus,
-              img = _totalHash$__uniqueUp.img,
-              measure = _totalHash$__uniqueUp.measure,
-              component = _totalHash$__uniqueUp.component;
+          var style = target.style,
+              focus = target.focus,
+              img = target.img,
+              measure = target.measure,
+              component = target.component;
           var hasMeasure = measure;
           var hasZ = void 0;
 
@@ -19724,11 +19755,7 @@
                   __cacheProps[k] = undefined;
                 }
               } else {
-                if (k === 'zIndex') {
-                  hasZ = true;
-                } // 需和现在不等，且不是pointerEvents这种无关的
-
-
+                // 需和现在不等，且不是pointerEvents这种无关的
                 if (!css.equalStyle(k, v, currentStyle[k], node)) {
                   // pointerEvents这种无关的只需更新
                   if (o.isIgnore(k)) {
@@ -19759,6 +19786,10 @@
 
                     __cacheStyle[k] = undefined;
                     currentStyle[k] = v;
+                  }
+
+                  if (k === 'zIndex') {
+                    hasZ = true;
                   }
                 }
               }
@@ -19837,10 +19868,10 @@
         var cacheHash = {};
         var plusList = [];
         totalList.forEach(function (item) {
-          var parent = item;
+          var parent = item.node;
           var lv = parent.__refreshLevel || 0; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
 
-          var need = lv >= o$1.REPAINT || renderMode === mode.SVG && item.tagName.charAt(0) === '$';
+          var need = lv >= o$1.REPAINT || renderMode === mode.SVG && parent instanceof Geom$1;
 
           if (need) {
             if (parent.__cache) {
@@ -19907,8 +19938,8 @@
         }); // 没有更新的内容返回true
 
         if (!hasUpdate) {
-          totalList.forEach(function (node) {
-            delete node.__uniqueUpdateId;
+          totalList.forEach(function (item) {
+            delete item.node.__uniqueUpdateId;
           });
           return true;
         }
@@ -19979,8 +20010,8 @@
             }
           });
         });
-        totalList.forEach(function (node) {
-          delete node.__uniqueUpdateId;
+        totalList.forEach(function (item) {
+          delete item.node.__uniqueUpdateId;
         });
       }
       /**

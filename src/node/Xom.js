@@ -1019,6 +1019,25 @@ class Xom extends Node {
         this.__matrix = computedStyle.transform = matrix || [1, 0, 0, 1, 0, 0];
       }
     }
+    if(level.contain(lv, level.OPACITY)) {
+      computedStyle.opacity = currentStyle.opacity;
+    }
+    if(level.contain(lv, level.FILTER)) {
+      computedStyle.filter = currentStyle.filter;
+    }
+    // pointerEvents这种none的
+    if(currentStyle.pointerEvents.unit === INHERIT) {
+      if(parent) {
+        computedStyle.pointerEvents = parent.computedStyle.pointerEvents;
+      }
+      else {
+        computedStyle.pointerEvents = 'auto';
+      }
+    }
+    else {
+      computedStyle.pointerEvents = currentStyle.pointerEvents.value;
+    }
+    computedStyle.pointerEvents = currentStyle.pointerEvents;
     if(lv >= level.REPAINT) {
       if(__cacheStyle.backgroundPositionX === undefined) {
         __cacheStyle.backgroundPositionX = true;
@@ -1091,14 +1110,12 @@ class Xom extends Node {
       }
       // 这些直接赋值的不需要再算缓存
       [
-        'opacity',
         'zIndex',
         'borderTopStyle',
         'borderRightStyle',
         'borderBottomStyle',
         'borderLeftStyle',
         'backgroundRepeat',
-        'filter',
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });
@@ -1139,7 +1156,6 @@ class Xom extends Node {
           'fontStyle',
           'color',
           'visibility',
-          'pointerEvents',
         ].forEach(k => {
           if(currentStyle[k].unit !== INHERIT) {
             computedStyle[k] = currentStyle[k].value;
@@ -1160,9 +1176,6 @@ class Xom extends Node {
         }
         if(currentStyle.visibility.unit === INHERIT) {
           computedStyle.visibility = 'visible';
-        }
-        if(currentStyle.pointerEvents.unit === INHERIT) {
-          computedStyle.pointerEvents = 'auto';
         }
       }
       // 圆角边计算
@@ -1318,7 +1331,7 @@ class Xom extends Node {
     // 渲染完认为完全无变更，等布局/动画/更新重置
     this.__refreshLevel = level.NONE;
     if(isDestroyed) {
-      return { break: true };
+      return { isDestroyed, break: true };
     }
     let virtualDom;
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
@@ -1349,12 +1362,12 @@ class Xom extends Node {
     // svg已经初始化好了vd，canCache是指本次渲染是否和上次有变化即NONE
     if(computedStyle.display === 'none') {
       if(renderMode === mode.CANVAS) {
-        return { canCache: !this.displayAnimating };
+        return { displayNone: true, canCache: !this.displayAnimating };
       }
       else if(renderMode === mode.SVG) {
         let canCache = this.__lastDisplay === 'none';
         this.__lastDisplay = 'none';
-        return { break: true, canCache };
+        return { displayNone: true, break: true, canCache };
       }
     }
     else if(renderMode === mode.SVG) {
@@ -1368,7 +1381,7 @@ class Xom extends Node {
         let { __sx: x, __sy: y } = this;
         let p;
         if(level.contain(lv, TRANSFORM_ALL)) {
-          this.__calCache(renderMode, lv, ctx, defs, null, __cacheStyle, currentStyle, computedStyle, x, y);
+          this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y);
           p = p || this.domParent;
           let matrix = __cacheStyle.matrix;
           if(p) {
@@ -1383,6 +1396,14 @@ class Xom extends Node {
             opacity *= p.__opacity;
           }
           this.__opacity = opacity;
+        }
+        if(level.contain(lv, level.FILTER)) {
+          computedStyle.filter.forEach(item => {
+            let [k, v] = item;
+            if(k === 'blur') {
+              this.__blurValue = v;
+            }
+          });
         }
         if(computedStyle.visibility === 'hidden') {
           return { canCache: canCache || !this.visibilityAnimating };

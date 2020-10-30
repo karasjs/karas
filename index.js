@@ -10600,6 +10600,7 @@
     scaleX: true,
     scaleY: true,
     rotateZ: true,
+    transform: true,
     transformOrigin: true
   };
   var o$1 = Object.assign({

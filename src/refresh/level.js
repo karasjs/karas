@@ -21,6 +21,7 @@ const TRANSFORMS = {
   scaleX: true,
   scaleY: true,
   rotateZ: true,
+  transform: true,
   transformOrigin: true,
 };
 

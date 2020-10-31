@@ -16712,8 +16712,7 @@
         }
 
         zIndexChildren.forEach(function (item) {
-          var lv2 = item.__refreshLevel; // canvas开启缓存text先不渲染，节点先绘制到自身cache上
-
+          // canvas开启缓存text先不渲染，节点先绘制到自身cache上
           if (item instanceof Text || item instanceof Component$1 && item.shadowRoot instanceof Text) {
             if (draw) {
               if (renderMode === mode.CANVAS) {
@@ -16726,10 +16725,11 @@
                 (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(_this3.matrixEvent));
               }
 
-              item.__renderByMask(renderMode, lv2, ctx);
+              item.__renderByMask(renderMode, null, ctx);
             }
           } else {
-            // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
+            var lv2 = item.__refreshLevel; // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
+
             var _blurValue;
 
             var newCtx = ctx;
@@ -17012,20 +17012,20 @@
     }, {
       key: "__applyCache",
       value: function __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
-        var cacheFilter = this.__cacheFilter;
-        var cacheMask = this.__cacheMask;
-        var cacheTotal = this.__cacheTotal;
-        var cache = this.__cache;
-        var zIndexChildren = this.zIndexChildren;
-        var computedStyle = this.computedStyle;
+        var computedStyle = this.computedStyle,
+            blurValue = this.__blurValue,
+            cacheMask = this.__cacheMask,
+            cacheFilter = this.__cacheFilter,
+            cacheTotal = this.__cacheTotal,
+            cache = this.__cache,
+            zIndexChildren = this.zIndexChildren;
         var display = computedStyle.display,
             visibility = computedStyle.visibility;
 
         if (display === 'none') {
           return;
-        }
+        } // 局部根节点缓存汇总渲染
 
-        var blurValue = this.__blurValue; // 局部根节点缓存汇总渲染
 
         if (mode === refreshMode.TOP) {
           if (visibility === 'hidden') {

@@ -1364,7 +1364,6 @@ class Dom extends Xom {
       }
     }
     zIndexChildren.forEach(item => {
-      let lv2 = item.__refreshLevel;
       // canvas开启缓存text先不渲染，节点先绘制到自身cache上
       if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
         if(draw) {
@@ -1374,10 +1373,11 @@ class Dom extends Xom {
             }
             ctx.setTransform(...this.matrixEvent);
           }
-          item.__renderByMask(renderMode, lv2, ctx);
+          item.__renderByMask(renderMode, null, ctx);
         }
       }
       else {
+        let lv2 = item.__refreshLevel;
         // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
         let blurValue;
         let newCtx = ctx;
@@ -1616,17 +1616,19 @@ class Dom extends Xom {
    * @param matrix 以top为基点
    */
   __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
-    let cacheFilter = this.__cacheFilter;
-    let cacheMask = this.__cacheMask;
-    let cacheTotal = this.__cacheTotal;
-    let cache = this.__cache;
-    let zIndexChildren = this.zIndexChildren;
-    let computedStyle = this.computedStyle;
+    let {
+      computedStyle,
+      __blurValue: blurValue,
+      __cacheMask: cacheMask,
+      __cacheFilter: cacheFilter,
+      __cacheTotal: cacheTotal,
+      __cache: cache,
+      zIndexChildren,
+    } = this;
     let { display, visibility } = computedStyle;
     if(display === 'none') {
       return;
     }
-    let blurValue = this.__blurValue;
     // 局部根节点缓存汇总渲染
     if(mode === refreshMode.TOP) {
       if(visibility === 'hidden') {

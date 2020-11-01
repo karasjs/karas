@@ -12445,7 +12445,7 @@
 
         this.__blurValue = 0; // 先判断cache避免重复运算，无内容无cache根据NONE判断
 
-        if (root.cache && renderMode === mode.CANVAS && lv < o$1.REPAINT && cache && cache.available) {
+        if (root.cache && renderMode === mode.CANVAS && lv < o$1.REPAINT) {
           var _canCache2 = cacheTotal && cacheTotal.available;
 
           if (lv > o$1.NONE) {
@@ -12486,6 +12486,13 @@
 
                 if (k === 'blur') {
                   _this4.__blurValue = v;
+                  var bbox = _this4.bbox;
+
+                  if (cache) {
+                    _this4.__cache = Cache.updateCache(cache, bbox);
+                  } else {
+                    _this4.__cache = Cache.getInstance(bbox);
+                  }
                 }
               });
             }
@@ -13108,8 +13115,6 @@
         var hasClip = next && next.isClip; // cache情况特殊处理，geom照常绘制，交由dom处理mask
 
         if (root.cache && renderMode === mode.CANVAS || !hasMask && !hasClip) {
-          // 覆盖方法避免每次判断
-          this.__renderByMask = this.render;
           return this.render(renderMode, lv, ctx, defs);
         }
 

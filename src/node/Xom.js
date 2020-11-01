@@ -1349,8 +1349,7 @@ class Xom extends Node {
     }
     this.__blurValue = 0;
     // 先判断cache避免重复运算，无内容无cache根据NONE判断
-    if(root.cache && renderMode === mode.CANVAS
-      && lv < level.REPAINT && cache && cache.available) {
+    if(root.cache && renderMode === mode.CANVAS && lv < level.REPAINT) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
         let { __sx: x, __sy: y } = this;
@@ -1377,6 +1376,13 @@ class Xom extends Node {
             let [k, v] = item;
             if(k === 'blur') {
               this.__blurValue = v;
+              let bbox = this.bbox;
+              if(cache) {
+                this.__cache = Cache.updateCache(cache, bbox);
+              }
+              else {
+                this.__cache = Cache.getInstance(bbox);
+              }
             }
           });
         }
@@ -1932,8 +1938,6 @@ class Xom extends Node {
     let hasClip = next && next.isClip;
     // cache情况特殊处理，geom照常绘制，交由dom处理mask
     if((root.cache && renderMode === mode.CANVAS) || (!hasMask && !hasClip)) {
-      // 覆盖方法避免每次判断
-      this.__renderByMask = this.render;
       return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {

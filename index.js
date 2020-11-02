@@ -19992,6 +19992,7 @@
         keys.forEach(function (k) {
           parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
         });
+        this.__reflowList = reflowList;
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

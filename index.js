@@ -19199,6 +19199,236 @@
     }
   }
 
+  var uniqueUpdateId = 0;
+
+  function parseUpdate(renderMode, root, updateHash, target, reflowList, measureList, cacheHash, cacheList) {
+    var node = target.node,
+        style = target.style,
+        origin = target.origin,
+        overwrite = target.overwrite,
+        focus = target.focus,
+        img = target.img,
+        measure = target.measure,
+        list = target.list; // updateStyle()这样的调用还要计算normalize
+
+    if (origin && style) {
+      style = css.normalize(style);
+    } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
+
+
+    if (overwrite && style) {
+      Object.assign(node.__style, style);
+    }
+
+    if (style) {
+      Object.assign(target.style, style);
+    } // 多次调用更新才会有list，一般没有，优化
+
+
+    if (list) {
+      list.forEach(function (item) {
+        var style = item.style,
+            origin = item.origin,
+            overwrite = item.overwrite;
+
+        if (origin && style) {
+          style = css.normalize(style);
+        }
+
+        if (overwrite && style) {
+          Object.assign(node.__style, style);
+        }
+
+        if (style) {
+          Object.assign(target.style, style);
+        }
+      });
+    }
+
+    style = target.style; // 按节点合并完style后判断改变等级
+
+    var tagName = node.tagName,
+        currentStyle = node.currentStyle,
+        currentProps = node.currentProps,
+        _node$__cacheStyle = node.__cacheStyle,
+        __cacheStyle = _node$__cacheStyle === void 0 ? {} : _node$__cacheStyle,
+        _node$__cacheProps = node.__cacheProps,
+        __cacheProps = _node$__cacheProps === void 0 ? {} : _node$__cacheProps;
+
+    var lv = o$1.NONE;
+    var p;
+    var hasMeasure = measure;
+    var hasZ;
+
+    for (var k in style) {
+      if (style.hasOwnProperty(k)) {
+        var v = style[k]; // 只有geom的props和style2种可能
+
+        if (o.isGeom(tagName, k)) {
+          if (!css.equalStyle(k, v, currentProps[k], node)) {
+            p = p || {};
+            p[k] = style[k];
+            lv |= o$1.REPAINT;
+            __cacheProps[k] = undefined;
+          }
+        } else {
+          // 需和现在不等，且不是pointerEvents这种无关的
+          if (!css.equalStyle(k, v, currentStyle[k], node)) {
+            // pointerEvents这种无关的只需更新
+            if (o.isIgnore(k)) {
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+            } else {
+              // TRBL变化只对relative/absolute起作用，其它忽视
+              if ({
+                top: true,
+                right: true,
+                bottom: true,
+                left: true
+              }.hasOwnProperty(k)) {
+                if (currentStyle.position !== 'relative' && currentStyle.position !== 'absolute' && style.position !== 'relative' && style.position !== 'absolute') {
+                  delete style[k];
+                  continue;
+                }
+              } // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
+
+
+              lv |= o$1.getLevel(k);
+
+              if (o.isMeasure(k)) {
+                hasMeasure = true;
+              } // repaint置空，如果reflow会重新生成空的
+
+
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+            }
+
+            if (k === 'zIndex') {
+              hasZ = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (p) {
+      Object.assign(currentProps, p);
+    }
+
+    if (style) {
+      Object.assign(currentStyle, style);
+    }
+
+    if (!isNil$7(focus)) {
+      lv |= focus;
+    } // 无任何改变处理的去除记录，如pointerEvents、无效的left
+
+
+    if (lv === o$1.NONE) {
+      delete node.__uniqueUpdateId;
+      return;
+    } // 记录下来清除parent的zIndexChildren缓存
+
+
+    if (hasZ) {
+      delete node.domParent.__zIndexChildren;
+    } // reflow/repaint/measure相关的记录下来
+
+
+    var isRepaint = o$1.isRepaint(lv);
+
+    if (isRepaint) {
+      // zIndex变化需清空svg缓存
+      if (hasZ && renderMode === mode.SVG) {
+        lv |= o$1.REPAINT;
+      }
+
+      node.__refreshLevel = o$1.getDetailRepaint(style, lv);
+
+      if (!isNil$7(focus)) {
+        node.__refreshLevel |= focus;
+      }
+    } // reflow在root的refresh中做
+    else {
+        node.__refreshLevel = o$1.REFLOW;
+        reflowList.push({
+          node: node,
+          style: style,
+          img: img
+        }); // measure需要提前先处理
+
+        if (hasMeasure) {
+          measureList.push(node);
+        }
+      } // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
+
+
+    var need = node.__refreshLevel >= o$1.REPAINT || renderMode === mode.SVG && node instanceof Geom$1;
+
+    if (need) {
+      if (node.__cache) {
+        node.__cache.release();
+      }
+
+      if (node.__cacheTotal) {
+        node.__cacheTotal.release();
+      }
+
+      if (node.__cacheMask) {
+        node.__cacheMask = null;
+      }
+    }
+
+    if ((need || o$1.contain(lv, o$1.FILTER)) && node.__cacheFilter) {
+      node.__cacheFilter = null;
+    } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
+
+
+    var parent = node.domParent; // 向上查找，出现重复跳出
+
+    while (parent) {
+      if (parent.hasOwnProperty('__uniqueUpdateId')) {
+        var id = parent.__uniqueUpdateId;
+
+        if (cacheHash.hasOwnProperty(id)) {
+          return;
+        }
+
+        cacheHash[id] = true;
+      } // 没有的需要设置一个标识
+      else {
+          var _id = parent.__uniqueUpdateId = uniqueUpdateId++;
+
+          cacheHash[_id] = true;
+          cacheList.push(parent);
+        }
+
+      var _lv = parent.__refreshLevel;
+
+      var _need = _lv >= o$1.REPAINT;
+
+      if (_need && parent.__cache) {
+        parent.__cache.release();
+      } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
+
+
+      if (parent.__cacheTotal) {
+        parent.__cacheTotal.release();
+      }
+
+      if (parent.__cacheFilter) {
+        parent.__cacheFilter = null;
+      }
+
+      if (parent.__cacheMask) {
+        parent.__cacheMask = null;
+      }
+
+      parent = parent.domParent;
+    }
+  }
+
   var uuid$1 = 0;
 
   var Root = /*#__PURE__*/function (_Dom) {
@@ -19225,6 +19455,7 @@
       _this.__task = [];
       _this.__ref = {};
       _this.__updateList = [];
+      _this.__updateHash = {};
       _this.__reflowList = [{
         node: _assertThisInitialized(_this)
       }]; // 初始化填自己，第一次布局时复用逻辑完全重新布局
@@ -19537,9 +19768,8 @@
                       node: sr,
                       style: sr.currentStyle,
                       focus: o$1.REFLOW,
-                      measure: true,
-                      // 未知强制measure
-                      component: true
+                      measure: true // 未知强制measure
+
                     });
                   });
 
@@ -19637,10 +19867,99 @@
 
         css.computeMeasure(this, true);
       }
+      /**
+       * 添加更新入口，按节点汇总更新信息
+       * @private
+       */
+
     }, {
       key: "__addUpdate",
       value: function __addUpdate(o) {
-        this.__updateList.push(o);
+        var updateHash = this.__updateHash;
+        var node = o.node,
+            style = o.style,
+            origin = o.origin,
+            overwrite = o.overwrite,
+            focus = o.focus,
+            img = o.img,
+            measure = o.measure; // 事件队列和setState等原因，可能node已经销毁
+
+        if (node.isDestroyed) {
+          return;
+        }
+
+        var target; // root特殊处理，检查变更时优先看继承信息
+
+        if (node === this) {
+          target = this.__updateRoot;
+
+          if (target) {
+            if (img) {
+              target.img = img;
+            }
+
+            if (focus) {
+              target.focus = focus;
+            }
+
+            if (measure) {
+              target.measure = true;
+            }
+
+            target.list = target.list || [];
+            target.list.push({
+              style: style,
+              origin: origin,
+              overwrite: overwrite
+            });
+          } else {
+            this.__updateRoot = {
+              node: node,
+              style: style,
+              origin: origin,
+              overwrite: overwrite,
+              focus: focus,
+              img: img,
+              measure: measure
+            };
+          }
+        } else if (!node.hasOwnProperty('__uniqueUpdateId')) {
+          node.__uniqueUpdateId = uniqueUpdateId; // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
+
+          target = updateHash[uniqueUpdateId++] = {
+            node: node,
+            style: style,
+            origin: origin,
+            overwrite: overwrite,
+            focus: focus,
+            img: img,
+            measure: measure
+          };
+        } else if (updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
+          target = updateHash[node.__uniqueUpdateId];
+
+          if (img) {
+            target.img = img;
+          }
+
+          if (focus) {
+            target.focus = focus;
+          }
+
+          if (measure) {
+            target.measure = true;
+          } // 后续存在新建list上，需增加遍历逻辑
+
+
+          target.list = target.list || [];
+          target.list.push({
+            style: style,
+            origin: origin,
+            overwrite: overwrite
+          });
+        } else {
+          console.error('Update process miss uniqueUpdateId');
+        }
       }
       /**
        * 除首次外每次刷新前检查更新列表，计算样式变化，以及测量信息
@@ -19652,300 +19971,27 @@
       value: function __checkUpdate(renderMode, ctx, width, height) {
         var _this5 = this;
 
-        var updateList = this.__updateList;
-        var hasUpdate; // 先按node合并所有样式的更新，一个node可能有多次更新调用，每个node临时生成一个更新id和更新style合集
-
-        var totalList = [];
-        var totalHash = {};
-        var uniqueUpdateId = 0;
-        updateList.forEach(function (item) {
-          var node = item.node,
-              style = item.style,
-              origin = item.origin,
-              overwrite = item.overwrite,
-              focus = item.focus,
-              img = item.img,
-              measure = item.measure,
-              component = item.component; // 事件队列和setState等原因，可能node已经销毁
-
-          if (node.isDestroyed) {
-            return;
-          }
-
-          var target;
-
-          if (!node.hasOwnProperty('__uniqueUpdateId')) {
-            node.__uniqueUpdateId = uniqueUpdateId;
-            target = totalHash[uniqueUpdateId++] = {
-              node: node,
-              style: {},
-              focus: focus,
-              img: img,
-              measure: measure,
-              component: component
-            };
-            totalList.push(target);
-          } // 即便存在，focus/img也需要更新
-          else {
-              target = totalHash[node.__uniqueUpdateId];
-
-              if (img) {
-                target.img = img;
-              }
-
-              if (!isNil$7(focus)) {
-                target.focus = focus;
-              }
-            } // updateStyle()这样的调用还要计算normalize
-
-
-          if (origin && style) {
-            style = css.normalize(style);
-          } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
-
-
-          if (overwrite && style) {
-            Object.assign(node.__style, style);
-          }
-
-          if (style) {
-            Object.assign(target.style, style);
-          }
-        });
-        this.__updateList = []; // 此时做root检查，防止root出现继承等无效样式
-
-        this.__checkRoot(width, height); // 合并完后按node计算更新的结果，无变化/reflow/repaint等级
-
-
-        var zIndexList = [];
+        uniqueUpdateId = 0;
         var measureList = [];
         var reflowList = [];
-
-        for (var i = 0, len = totalList.length; i < len; i++) {
-          var target = totalList[i];
-          var node = target.node;
-
-          var tagName = node.tagName,
-              currentStyle = node.currentStyle,
-              currentProps = node.currentProps,
-              _node$__cacheStyle = node.__cacheStyle,
-              __cacheStyle = _node$__cacheStyle === void 0 ? {} : _node$__cacheStyle,
-              _node$__cacheProps = node.__cacheProps,
-              __cacheProps = _node$__cacheProps === void 0 ? {} : _node$__cacheProps;
-
-          var lv = o$1.NONE;
-          var p = void 0;
-          var style = target.style,
-              focus = target.focus,
-              img = target.img,
-              measure = target.measure,
-              component = target.component;
-          var hasMeasure = measure;
-          var hasZ = void 0;
-
-          for (var k in style) {
-            if (style.hasOwnProperty(k)) {
-              var v = style[k]; // 只有geom的props和style2种可能
-
-              if (o.isGeom(tagName, k)) {
-                if (!css.equalStyle(k, v, currentProps[k], node)) {
-                  hasUpdate = true;
-                  p = p || {};
-                  p[k] = style[k];
-                  lv |= o$1.REPAINT;
-                  __cacheProps[k] = undefined;
-                }
-              } else {
-                // 需和现在不等，且不是pointerEvents这种无关的
-                if (!css.equalStyle(k, v, currentStyle[k], node)) {
-                  // pointerEvents这种无关的只需更新
-                  if (o.isIgnore(k)) {
-                    __cacheStyle[k] = undefined;
-                    currentStyle[k] = v;
-                  } else {
-                    // TRBL变化只对relative/absolute起作用，其它忽视
-                    if ({
-                      top: true,
-                      right: true,
-                      bottom: true,
-                      left: true
-                    }.hasOwnProperty(k)) {
-                      if (currentStyle.position !== 'relative' && currentStyle.position !== 'absolute' && style.position !== 'relative' && style.position !== 'absolute') {
-                        delete style[k];
-                        continue;
-                      }
-                    }
-
-                    hasUpdate = true; // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
-
-                    lv |= o$1.getLevel(k);
-
-                    if (o.isMeasure(k)) {
-                      hasMeasure = true;
-                    } // repaint置空，如果reflow会重新生成空的
-
-
-                    __cacheStyle[k] = undefined;
-                    currentStyle[k] = v;
-                  }
-
-                  if (k === 'zIndex') {
-                    hasZ = true;
-                  }
-                }
-              }
-            }
-          }
-
-          if (p) {
-            Object.assign(currentProps, p);
-          }
-
-          if (style) {
-            Object.assign(currentStyle, style);
-          }
-
-          if (!isNil$7(focus)) {
-            hasUpdate = true;
-            lv |= focus;
-          } // 无任何改变处理的去除记录，如pointerEvents、无效的left
-
-
-          if (lv === o$1.NONE) {
-            delete node.__uniqueUpdateId;
-            totalList.splice(i, 1);
-            i--;
-            len--;
-            continue;
-          } // 记录下来清除parent的zIndexChildren缓存
-
-
-          if (hasZ) {
-            zIndexList.push(node);
-          } // reflow/repaint/measure相关的记录下来
-
-
-          var isRepaint = o$1.isRepaint(lv);
-
-          if (isRepaint) {
-            // zIndex变化需清空svg缓存
-            if (hasZ && renderMode === mode.SVG) {
-              lv |= o$1.REPAINT;
-            }
-
-            node.__refreshLevel = o$1.getDetailRepaint(style, lv);
-
-            if (!isNil$7(focus)) {
-              node.__refreshLevel |= focus;
-            }
-          } // reflow在root的refresh中做
-          else {
-              node.__refreshLevel = o$1.REFLOW;
-              reflowList.push({
-                node: node,
-                style: style,
-                img: img,
-                component: component
-              }); // measure需要提前先处理
-
-              if (hasMeasure) {
-                measureList.push(node);
-              }
-            }
-        }
-        /**
-         * 遍历zIndex更改，清除它parent的zIndexChildren缓存
-         */
-
-
-        zIndexList.forEach(function (item) {
-          delete item.domParent.__zIndexChildren;
-        });
-        /**
-         * 遍历每项REPAINT和REFLOW节点，清除等级>=REPAINT的汇总缓存信息
-         * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
-         */
-
         var cacheHash = {};
-        var plusList = [];
-        totalList.forEach(function (item) {
-          var parent = item.node;
-          var lv = parent.__refreshLevel || 0; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
+        var cacheList = [];
+        var updateRoot = this.__updateRoot;
+        var updateHash = this.__updateHash; // root更新特殊提前，因为有继承因素
 
-          var need = lv >= o$1.REPAINT || renderMode === mode.SVG && parent instanceof Geom$1;
+        if (updateRoot) {
+          this.__updateRoot = null;
+          parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式
 
-          if (need) {
-            if (parent.__cache) {
-              parent.__cache.release();
-            }
-
-            if (parent.__cacheTotal) {
-              parent.__cacheTotal.release();
-            }
-
-            if (parent.__cacheMask) {
-              parent.__cacheMask = null;
-            }
-          }
-
-          if ((need || o$1.contain(lv, o$1.FILTER)) && parent.__cacheFilter) {
-            parent.__cacheFilter = null;
-          }
-
-          parent = parent.domParent; // 向上查找，出现重复跳出
-
-          while (parent) {
-            if (parent.hasOwnProperty('__uniqueUpdateId')) {
-              var _uniqueUpdateId = parent.__uniqueUpdateId;
-
-              if (cacheHash.hasOwnProperty(_uniqueUpdateId)) {
-                return;
-              }
-
-              cacheHash[_uniqueUpdateId] = true;
-            } // 没有的需要设置一个标识
-            else {
-                parent.__uniqueUpdateId = uniqueUpdateId++;
-                plusList.push(parent);
-              }
-
-            var _lv = parent.__refreshLevel;
-
-            var _need = _lv >= o$1.REPAINT;
-
-            if (_need && parent.__cache) {
-              parent.__cache.release();
-            } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
+          this.__checkRoot(width, height);
+        } // 汇总处理每个节点
 
 
-            if (parent.__cacheTotal) {
-              parent.__cacheTotal.release();
-            }
-
-            if (parent.__cacheFilter) {
-              parent.__cacheFilter = null;
-            }
-
-            if (parent.__cacheMask) {
-              parent.__cacheMask = null;
-            }
-
-            parent = parent.domParent;
-          }
-        }); // 附加的清除
-
-        plusList.forEach(function (node) {
-          delete node.__uniqueUpdateId;
-        }); // 没有更新的内容返回true
-
-        if (!hasUpdate) {
-          totalList.forEach(function (item) {
-            delete item.node.__uniqueUpdateId;
-          });
-          return true;
-        }
-
-        this.__reflowList = reflowList;
+        this.__updateHash = {};
+        var keys = Object.keys(updateHash);
+        keys.forEach(function (k) {
+          parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
+        });
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -19963,14 +20009,14 @@
           measureHash[__uniqueUpdateId] = true;
           var last = node; // 检查measure的属性是否是inherit
 
-          var isInherit = o.isMeasureInherit(totalHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = o.isMeasureInherit(updateHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             var _loop = function _loop() {
               var _parent = parent,
                   __uniqueUpdateId = _parent.__uniqueUpdateId,
                   currentStyle = _parent.currentStyle;
-              var style = totalHash[__uniqueUpdateId];
+              var style = updateHash[__uniqueUpdateId];
               var isInherit = void 0;
 
               if (parent.hasOwnProperty('__uniqueUpdateId')) {
@@ -20010,9 +20056,13 @@
               measureHash[target.__uniqueUpdateId] = true;
             }
           });
+        }); // 做完清空留待下次刷新重来
+
+        keys.forEach(function (k) {
+          delete updateHash[k].node.__uniqueUpdateId;
         });
-        totalList.forEach(function (item) {
-          delete item.node.__uniqueUpdateId;
+        cacheList.forEach(function (item) {
+          delete item.__uniqueUpdateId;
         });
       }
       /**
@@ -20156,8 +20206,7 @@
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
               style = _reflowList$i.style,
-              img = _reflowList$i.img,
-              component = _reflowList$i.component; // root提前跳出，完全重新布局
+              img = _reflowList$i.img; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -20172,8 +20221,7 @@
             reflowHash[__uniqueReflowId++] = {
               node: node,
               lv: OFFSET$1,
-              img: img,
-              component: component
+              img: img
             };
           }
 

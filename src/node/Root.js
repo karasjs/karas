@@ -692,7 +692,6 @@ class Root extends Dom {
    * @private
    */
   __checkUpdate(renderMode, ctx, width, height) {
-    uniqueUpdateId = 0;
     let measureList = [];
     let reflowList = [];
     let cacheHash = {};
@@ -707,12 +706,17 @@ class Root extends Dom {
       this.__checkRoot(width, height);
     }
     // 汇总处理每个节点
-    this.__updateHash = {};
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
       parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
     });
+    // 先做一部分reset避免下面measureList干扰
     this.__reflowList = reflowList;
+    uniqueUpdateId = 0;
+    this.__updateHash = {};
+    cacheList.forEach(item => {
+      delete item.__uniqueUpdateId;
+    });
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
      * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -731,9 +735,9 @@ class Root extends Dom {
       if(isInherit) {
         while(parent && parent !== this) {
           let { __uniqueUpdateId, currentStyle } = parent;
-          let style = updateHash[__uniqueUpdateId].style;
           let isInherit;
           if(parent.hasOwnProperty('__uniqueUpdateId')) {
+            let style = updateHash[__uniqueUpdateId].style;
             measureHash[__uniqueUpdateId] = true;
             let temp = change.measureInheritList(style);
             temp.forEach(k => {
@@ -767,9 +771,6 @@ class Root extends Dom {
     // 做完清空留待下次刷新重来
     keys.forEach(k => {
       delete updateHash[k].node.__uniqueUpdateId;
-    });
-    cacheList.forEach(item => {
-      delete item.__uniqueUpdateId;
     });
   }
 

@@ -764,6 +764,7 @@ function computeMeasure(node, isHost) {
   let parentComputedStyle = !isHost && parent.computedStyle;
   change.MEASURE_KEY_SET.forEach(k => {
     let v = currentStyle[k];
+    // console.log(node.tagName, k, v);
     if(v.unit === INHERIT) {
       computedStyle[k] = isHost ? reset.INHERIT[k] : parentComputedStyle[k];
     }

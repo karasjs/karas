@@ -3861,7 +3861,7 @@
         parent = node.parent;
     var parentComputedStyle = !isHost && parent.computedStyle;
     o.MEASURE_KEY_SET.forEach(function (k) {
-      var v = currentStyle[k];
+      var v = currentStyle[k]; // console.log(node.tagName, k, v);
 
       if (v.unit === INHERIT$1) {
         computedStyle[k] = isHost ? reset.INHERIT[k] : parentComputedStyle[k];
@@ -19982,7 +19982,6 @@
       value: function __checkUpdate(renderMode, ctx, width, height) {
         var _this5 = this;
 
-        uniqueUpdateId = 0;
         var measureList = [];
         var reflowList = [];
         var cacheHash = {};
@@ -19998,12 +19997,17 @@
         } // 汇总处理每个节点
 
 
-        this.__updateHash = {};
         var keys = Object.keys(updateHash);
         keys.forEach(function (k) {
           parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
-        });
+        }); // 先做一部分reset避免下面measureList干扰
+
         this.__reflowList = reflowList;
+        uniqueUpdateId = 0;
+        this.__updateHash = {};
+        cacheList.forEach(function (item) {
+          delete item.__uniqueUpdateId;
+        });
         /**
          * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
          * 过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -20028,10 +20032,10 @@
               var _parent = parent,
                   __uniqueUpdateId = _parent.__uniqueUpdateId,
                   currentStyle = _parent.currentStyle;
-              var style = updateHash[__uniqueUpdateId].style;
               var isInherit = void 0;
 
               if (parent.hasOwnProperty('__uniqueUpdateId')) {
+                var style = updateHash[__uniqueUpdateId].style;
                 measureHash[__uniqueUpdateId] = true;
                 var temp = o.measureInheritList(style);
                 temp.forEach(function (k) {
@@ -20072,9 +20076,6 @@
 
         keys.forEach(function (k) {
           delete updateHash[k].node.__uniqueUpdateId;
-        });
-        cacheList.forEach(function (item) {
-          delete item.__uniqueUpdateId;
         });
       }
       /**

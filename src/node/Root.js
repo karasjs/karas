@@ -203,14 +203,12 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     if(hasZ && renderMode === mode.SVG) {
       lv |= level.REPAINT;
     }
-    node.__refreshLevel = level.getDetailRepaint(style, lv);
     if(!isNil(focus)) {
-      node.__refreshLevel |= focus;
+      lv |= focus;
     }
   }
   // reflow在root的refresh中做
   else {
-    node.__refreshLevel = level.REFLOW;
     reflowList.push({
       node,
       style,
@@ -221,6 +219,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       measureList.push(node);
     }
   }
+  node.__refreshLevel = lv;
   // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
   let need = node.__refreshLevel >= level.REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {

@@ -1765,13 +1765,13 @@ class Dom extends Xom {
           return;
         }
         if(cacheTotal && cacheTotal.available) {
-          let { coords: [x, y], size, canvas, x1, y1, dbx, dby, width, height } = cacheTotal;
+          let { coords: [x, y], canvas, x1, y1, dbx, dby, width, height } = cacheTotal;
           ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
           return;
         }
         // 无内容就没有cache，继续看children
         if(cache && cache.available) {
-          let { coords: [x, y], size, canvas, x1, y1, dbx, dby, width, height } = cache;
+          let { coords: [x, y], canvas, x1, y1, dbx, dby, width, height } = cache;
           ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
         }
       }

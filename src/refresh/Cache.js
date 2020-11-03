@@ -197,7 +197,7 @@ class Cache {
       let dy = old[1] - bbox[1];
       let newCache = Cache.getInstance(bbox);
       if(newCache && newCache.enabled) {
-        let { coords: [ox, oy], size, canvas, width, height } = cache;
+        let { coords: [ox, oy], canvas, width, height } = cache;
         let { coords: [nx, ny] } = newCache;
         newCache.x1 = cache.x1;
         newCache.y1 = cache.y1;
@@ -218,7 +218,7 @@ class Cache {
 
   static drawCache(source, target, transform, matrix, tfo, inverse) {
     let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
-    let { coords: [x, y], canvas, size, x1: x12, y1: y12, dbx: dbx2, dby: dby2, width, height } = source;
+    let { coords: [x, y], canvas, x1: x12, y1: y12, dbx: dbx2, dby: dby2, width, height } = source;
     let dx = tx + x12 - x1 + dbx - dbx2;
     let dy = ty + y12 - y1 + dby - dby2;
     if(transform && matrix && tfo) {

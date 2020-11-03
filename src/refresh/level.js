@@ -30,7 +30,7 @@ let o = Object.assign({
     return (lv & value) > 0;
   },
   /**
-   * 仅得出大概等级none/repaint/reflow
+   * 得出等级
    * @param k
    * @returns {number|*}
    */
@@ -38,49 +38,25 @@ let o = Object.assign({
     if(change.isIgnore(k)) {
       return ENUM.NONE;
     }
+    if(k === 'translateX') {
+      return ENUM.TRANSLATE_X;
+    }
+    else if(k === 'translateY') {
+      return ENUM.TRANSLATE_Y;
+    }
+    else if(TRANSFORMS.hasOwnProperty(k)) {
+      return ENUM.TRANSFORM;
+    }
+    else if(k === 'opacity') {
+      return ENUM.OPACITY;
+    }
+    else if(k === 'filter') {
+      return ENUM.FILTER;
+    }
     if(change.isRepaint(k)) {
       return ENUM.REPAINT;
     }
     return ENUM.REFLOW;
-  },
-  /**
-   * 根据大概等级细化repaint分级
-   * @param style
-   * @param lv
-   */
-  getDetailRepaint(style, lv) {
-    if(lv === ENUM.NONE) {
-      return ENUM.NONE;
-    }
-    if(lv === ENUM.REPAINT) {
-      let lv = ENUM.NONE;
-      for(let i in style) {
-        if(style.hasOwnProperty(i)) {
-          if(i === 'translateX') {
-            lv |= ENUM.TRANSLATE_X;
-          }
-          else if(i === 'translateY') {
-            lv |= ENUM.TRANSLATE_Y;
-          }
-          else if(TRANSFORMS.hasOwnProperty(i)) {
-            lv |= ENUM.TRANSFORM;
-          }
-          else if(i === 'opacity') {
-            lv |= ENUM.OPACITY;
-          }
-          else if(i === 'filter') {
-            lv |= ENUM.FILTER;
-          }
-          else {
-            lv |= ENUM.REPAINT;
-          }
-        }
-      }
-      return lv;
-    }
-    else {
-      return ENUM.REFLOW;
-    }
   },
   isReflow(lv) {
     return !this.isRepaint(lv);

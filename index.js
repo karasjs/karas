@@ -9906,12 +9906,17 @@
               var i;
 
               if (length === 2) {
-                i = currentTime >= currentFrames[1].time ? 1 : 0;
+                i = currentTime < currentFrames[1].time ? 0 : 1;
               } else {
                 i = binarySearch(0, length - 1, currentTime, currentFrames);
               }
 
-              var current = _this3.__currentFrame = currentFrames[i]; // 最后一帧结束动画
+              var current = currentFrames[i];
+
+              if (current !== _this3.__currentFrame) {
+                _this3.__currentFrame = current;
+              } // 最后一帧结束动画
+
 
               var isLastFrame = i === length - 1;
               var isLastCount = playCount >= iterations - 1;
@@ -10627,7 +10632,7 @@
     },
 
     /**
-     * 仅得出大概等级none/repaint/reflow
+     * 得出等级
      * @param k
      * @returns {number|*}
      */
@@ -10636,48 +10641,23 @@
         return ENUM.NONE;
       }
 
+      if (k === 'translateX') {
+        return ENUM.TRANSLATE_X;
+      } else if (k === 'translateY') {
+        return ENUM.TRANSLATE_Y;
+      } else if (TRANSFORMS.hasOwnProperty(k)) {
+        return ENUM.TRANSFORM;
+      } else if (k === 'opacity') {
+        return ENUM.OPACITY;
+      } else if (k === 'filter') {
+        return ENUM.FILTER;
+      }
+
       if (o.isRepaint(k)) {
         return ENUM.REPAINT;
       }
 
       return ENUM.REFLOW;
-    },
-
-    /**
-     * 根据大概等级细化repaint分级
-     * @param style
-     * @param lv
-     */
-    getDetailRepaint: function getDetailRepaint(style, lv) {
-      if (lv === ENUM.NONE) {
-        return ENUM.NONE;
-      }
-
-      if (lv === ENUM.REPAINT) {
-        var _lv = ENUM.NONE;
-
-        for (var i in style) {
-          if (style.hasOwnProperty(i)) {
-            if (i === 'translateX') {
-              _lv |= ENUM.TRANSLATE_X;
-            } else if (i === 'translateY') {
-              _lv |= ENUM.TRANSLATE_Y;
-            } else if (TRANSFORMS.hasOwnProperty(i)) {
-              _lv |= ENUM.TRANSFORM;
-            } else if (i === 'opacity') {
-              _lv |= ENUM.OPACITY;
-            } else if (i === 'filter') {
-              _lv |= ENUM.FILTER;
-            } else {
-              _lv |= ENUM.REPAINT;
-            }
-          }
-        }
-
-        return _lv;
-      } else {
-        return ENUM.REFLOW;
-      }
     },
     isReflow: function isReflow(lv) {
       return !this.isRepaint(lv);
@@ -11148,7 +11128,6 @@
             var _cache$coords2 = _slicedToArray(cache.coords, 2),
                 ox = _cache$coords2[0],
                 oy = _cache$coords2[1],
-                size = cache.size,
                 canvas = cache.canvas,
                 width = cache.width,
                 height = cache.height;
@@ -11188,7 +11167,6 @@
             x = _source$coords[0],
             y = _source$coords[1],
             canvas = source.canvas,
-            size = source.size,
             x12 = source.x1,
             y12 = source.y1,
             dbx2 = source.dbx,
@@ -12468,9 +12446,10 @@
 
           if (lv > o$1.NONE) {
             var _x = this.__sx,
-                _y = this.__sy;
+                _y = this.__sy,
+                parent = this.parent;
 
-            this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, _x, _y);
+            this.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, _x, _y);
 
             var _p;
 
@@ -13128,11 +13107,20 @@
       key: "__renderByMask",
       value: function __renderByMask(renderMode, lv, ctx, defs) {
         var next = this.next,
-            root = this.root;
-        var hasMask = next && next.isMask;
-        var hasClip = next && next.isClip; // cache情况特殊处理，geom照常绘制，交由dom处理mask
+            root = this.root,
+            __hasMC = this.__hasMC;
 
-        if (root.cache && renderMode === mode.CANVAS || !hasMask && !hasClip) {
+        if (__hasMC === undefined) {
+          var _hasMask = next && next.isMask;
+
+          var _hasClip = next && next.isClip;
+
+          __hasMC = !_hasMask && !_hasClip;
+          this.__hasMC = !!__hasMC;
+        } // cache情况特殊处理，geom照常绘制，交由dom处理mask
+
+
+        if (root.cache && renderMode === mode.CANVAS || __hasMC) {
           return this.render(renderMode, lv, ctx, defs);
         }
 
@@ -17229,7 +17217,6 @@
                       _cacheTotal2$coords = _slicedToArray(_cacheTotal2.coords, 2),
                       x = _cacheTotal2$coords[0],
                       y = _cacheTotal2$coords[1],
-                      size = _cacheTotal2.size,
                       _canvas = _cacheTotal2.canvas,
                       _x3 = _cacheTotal2.x1,
                       _y3 = _cacheTotal2.y1,
@@ -17247,7 +17234,6 @@
                   var _cache$coords = _slicedToArray(cache.coords, 2),
                       _x5 = _cache$coords[0],
                       _y5 = _cache$coords[1],
-                      _size = cache.size,
                       _canvas2 = cache.canvas,
                       _x4 = cache.x1,
                       _y4 = cache.y1,
@@ -19362,14 +19348,11 @@
         lv |= o$1.REPAINT;
       }
 
-      node.__refreshLevel = o$1.getDetailRepaint(style, lv);
-
       if (!isNil$7(focus)) {
-        node.__refreshLevel |= focus;
+        lv |= focus;
       }
     } // reflow在root的refresh中做
     else {
-        node.__refreshLevel = o$1.REFLOW;
         reflowList.push({
           node: node,
           style: style,
@@ -19379,8 +19362,9 @@
         if (hasMeasure) {
           measureList.push(node);
         }
-      } // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
+      }
 
+    node.__refreshLevel = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效
 
     var need = node.__refreshLevel >= o$1.REPAINT || renderMode === mode.SVG && node instanceof Geom$1;
 

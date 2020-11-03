@@ -1263,12 +1263,15 @@ class Animation extends Event {
           // 只有2帧可优化，否则2分查找当前帧
           let i;
           if(length === 2) {
-            i = currentTime >= currentFrames[1].time ? 1 : 0;
+            i = currentTime < currentFrames[1].time ? 0 : 1;
           }
           else {
             i = binarySearch(0, length - 1, currentTime, currentFrames);
           }
-          let current = this.__currentFrame = currentFrames[i];
+          let current = currentFrames[i];
+          if(current !== this.__currentFrame) {
+            this.__currentFrame = current;
+          }
           // 最后一帧结束动画
           let isLastFrame = i === length - 1;
           let isLastCount = playCount >= iterations - 1;

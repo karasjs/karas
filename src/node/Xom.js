@@ -1352,8 +1352,8 @@ class Xom extends Node {
     if(root.cache && renderMode === mode.CANVAS && lv < level.REPAINT) {
       let canCache = cacheTotal && cacheTotal.available;
       if(lv > level.NONE) {
-        let { __sx: x, __sy: y } = this;
-        this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y);
+        let { __sx: x, __sy: y, parent } = this;
+        this.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, x, y);
         let p;
         if(level.contain(lv, TRANSFORM_ALL)) {
           p = p || this.domParent;
@@ -1933,11 +1933,15 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {
-    let { next, root } = this;
-    let hasMask = next && next.isMask;
-    let hasClip = next && next.isClip;
+    let { next, root, __hasMC } = this;
+    if(__hasMC === undefined) {
+      let hasMask = next && next.isMask;
+      let hasClip = next && next.isClip;
+      __hasMC = !hasMask && !hasClip;
+      this.__hasMC = !!__hasMC;
+    }
     // cache情况特殊处理，geom照常绘制，交由dom处理mask
-    if((root.cache && renderMode === mode.CANVAS) || (!hasMask && !hasClip)) {
+    if((root.cache && renderMode === mode.CANVAS) || __hasMC) {
       return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {

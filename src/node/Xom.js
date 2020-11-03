@@ -1933,21 +1933,19 @@ class Xom extends Node {
   }
 
   __renderByMask(renderMode, lv, ctx, defs) {
-    let { next, root, __hasMC } = this;
-    if(__hasMC === undefined) {
-      let hasMask = next && next.isMask;
-      let hasClip = next && next.isClip;
-      __hasMC = !hasMask && !hasClip;
-      this.__hasMC = !!__hasMC;
+    let { next, root, __hasMask, __hasClip } = this;
+    if(__hasMask === undefined || __hasClip === undefined) {
+      __hasMask = this.__hasMask = !!(next && next.isMask);
+      __hasClip = this.__hasClip = !!(next && next.isClip);
     }
     // cache情况特殊处理，geom照常绘制，交由dom处理mask
-    if((root.cache && renderMode === mode.CANVAS) || __hasMC) {
+    if((root.cache && renderMode === mode.CANVAS) || (!__hasMask && !__hasClip)) {
       return this.render(renderMode, lv, ctx, defs);
     }
     if(renderMode === mode.CANVAS) {
       let res;
       // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
-      if(hasMask) {
+      if(__hasMask) {
         let { width, height } = root;
         let c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
         res = this.render(renderMode, lv, c.ctx);
@@ -1994,7 +1992,7 @@ class Xom extends Node {
         c.draw(c.ctx);
       }
       // 劫持canvas原生方法使得多个clip矢量连续绘制
-      else if(hasClip) {
+      else if(__hasClip) {
         ctx.save();
         ctx.beginPath();
         let fill = ctx.fill;
@@ -2041,12 +2039,12 @@ class Xom extends Node {
         if(!sibling) {
           break;
         }
-        if(hasMask) {
+        if(__hasMask) {
           if(!sibling.isMask) {
             break;
           }
         }
-        else if(hasClip) {
+        else if(__hasClip) {
           if(!sibling.isClip) {
             break;
           }
@@ -2084,28 +2082,28 @@ class Xom extends Node {
         if(!sibling) {
           break;
         }
-        if(hasMask) {
+        if(__hasMask) {
           if(!sibling.isMask) {
             break;
           }
         }
-        else if(hasClip) {
+        else if(__hasClip) {
           if(!sibling.isClip) {
             break;
           }
         }
       }
       let id = defs.add({
-        tagName: hasClip ? 'clipPath' : 'mask',
+        tagName: __hasClip ? 'clipPath' : 'mask',
         props: [],
         children: mChildren,
       });
       id = 'url(#' + id + ')';
       // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
-      if(hasMask) {
+      if(__hasMask) {
         this.virtualDom.mask = id;
       }
-      else if(hasClip) {
+      else if(__hasClip) {
         this.virtualDom.clip = id;
       }
       return res;

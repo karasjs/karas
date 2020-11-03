@@ -13108,26 +13108,23 @@
       value: function __renderByMask(renderMode, lv, ctx, defs) {
         var next = this.next,
             root = this.root,
-            __hasMC = this.__hasMC;
+            __hasMask = this.__hasMask,
+            __hasClip = this.__hasClip;
 
-        if (__hasMC === undefined) {
-          var _hasMask = next && next.isMask;
-
-          var _hasClip = next && next.isClip;
-
-          __hasMC = !_hasMask && !_hasClip;
-          this.__hasMC = !!__hasMC;
+        if (__hasMask === undefined || __hasClip === undefined) {
+          __hasMask = this.__hasMask = !!(next && next.isMask);
+          __hasClip = this.__hasClip = !!(next && next.isClip);
         } // cache情况特殊处理，geom照常绘制，交由dom处理mask
 
 
-        if (root.cache && renderMode === mode.CANVAS || __hasMC) {
+        if (root.cache && renderMode === mode.CANVAS || !__hasMask && !__hasClip) {
           return this.render(renderMode, lv, ctx, defs);
         }
 
         if (renderMode === mode.CANVAS) {
           var res; // canvas借用2个离屏canvas来处理，c绘制本xom，m绘制多个mask
 
-          if (hasMask) {
+          if (__hasMask) {
             var width = root.width,
                 height = root.height;
             var c = inject.getCacheCanvas(width, height, '__$$mask1$$__');
@@ -13176,7 +13173,7 @@
             c.ctx.clearRect(0, 0, width, height);
             c.draw(c.ctx);
           } // 劫持canvas原生方法使得多个clip矢量连续绘制
-          else if (hasClip) {
+          else if (__hasClip) {
               ctx.save();
               ctx.beginPath();
               var fill = ctx.fill;
@@ -13236,11 +13233,11 @@
               break;
             }
 
-            if (hasMask) {
+            if (__hasMask) {
               if (!sibling.isMask) {
                 break;
               }
-            } else if (hasClip) {
+            } else if (__hasClip) {
               if (!sibling.isClip) {
                 break;
               }
@@ -13292,11 +13289,11 @@
               break;
             }
 
-            if (hasMask) {
+            if (__hasMask) {
               if (!sibling.isMask) {
                 break;
               }
-            } else if (hasClip) {
+            } else if (__hasClip) {
               if (!sibling.isClip) {
                 break;
               }
@@ -13304,15 +13301,15 @@
           }
 
           var id = defs.add({
-            tagName: hasClip ? 'clipPath' : 'mask',
+            tagName: __hasClip ? 'clipPath' : 'mask',
             props: [],
             children: mChildren
           });
           id = 'url(#' + id + ')'; // 作为mask会在defs生成maskId供使用，多个连续mask共用一个id
 
-          if (hasMask) {
+          if (__hasMask) {
             this.virtualDom.mask = id;
-          } else if (hasClip) {
+          } else if (__hasClip) {
             this.virtualDom.clip = id;
           }
 

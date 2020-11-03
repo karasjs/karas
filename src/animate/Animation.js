@@ -1096,70 +1096,70 @@ class Animation extends Event {
       prev = calFrame(prev, next, keys, target);
     }
     this.__framesR = framesR;
-    // finish/cancel共有的before处理
-    this.__clean = (isFinish) => {
-      this.__cancelTask();
-      this.__nextTime = 0;
-      let restore;
-      let style = this.style;
-      if(isFinish) {
-        this.__currentTime = this.delay + duration + this.endDelay;
-        this.__playCount = iterations;
-        this.__playState = 'finished';
-        // cancel需要清除finish根据情况保留
-        if(!this.__stayEnd()) {
-          this.__style = {};
-          restore = true;
-        }
-      }
-      else {
-        this.__playCount = this.__currentTime = 0;
-        this.__playState = 'idle';
+  }
+
+  __clean(isFinish) {
+    this.__cancelTask();
+    this.__nextTime = 0;
+    let restore;
+    let { style, duration, iterations, keys, target } = this;
+    if(isFinish) {
+      this.__currentTime = this.delay + duration + this.endDelay;
+      this.__playCount = iterations;
+      this.__playState = 'finished';
+      // cancel需要清除finish根据情况保留
+      if(!this.__stayEnd()) {
         this.__style = {};
         restore = true;
       }
-      // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
-      if(restore) {
-        this.__currentFrames = undefined;
-        this.__currentFrame = undefined;
-        keys.forEach(k => {
-          if(change.GEOM.hasOwnProperty(k)) {
-            if(target.__currentProps[k] === style[k]) {
-              target.__currentProps[k] = target.props[k];
-            }
+    }
+    else {
+      this.__playCount = this.__currentTime = 0;
+      this.__playState = 'idle';
+      this.__style = {};
+      restore = true;
+    }
+    // 动画取消结束不停留在最后一帧需要还原target原本的样式，需要对比目前是否是由本动画赋值的
+    if(restore) {
+      this.__currentFrames = undefined;
+      this.__currentFrame = undefined;
+      keys.forEach(k => {
+        if(change.GEOM.hasOwnProperty(k)) {
+          if(target.__currentProps[k] === style[k]) {
+            target.__currentProps[k] = target.props[k];
           }
-          else {
-            if(target.__currentStyle[k] === style[k]) {
-              target.__currentStyle[k] = target.style[k];
-            }
+        }
+        else {
+          if(target.__currentStyle[k] === style[k]) {
+            target.__currentStyle[k] = target.style[k];
           }
-        });
-      }
-    };
-    // 生成finish的任务事件
-    this.__fin = (cb, diff) => {
-      // 防止重复触发
-      if(!this.__hasFin) {
-        this.__hasFin = true;
-        this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
-        this.emit(Event.FINISH);
-      }
-      if(isFunction(cb)) {
-        cb.call(this, diff);
-      }
-    };
-    // 同步执行，用在finish()这种主动调用
-    this.__frameCb = (diff, isDelay) => {
-      this.emit(Event.FRAME, diff, isDelay);
-      if(this.__firstPlay) {
-        this.__firstPlay = false;
-        this.emit(Event.PLAY);
-      }
-      if(isFunction(this.__playCb)) {
-        this.__playCb.call(this, diff, isDelay);
-        this.__playCb = null;
-      }
-    };
+        }
+      });
+    }
+  }
+
+  __fin(cb, diff) {
+    // 防止重复触发
+    if(!this.__hasFin) {
+      this.__hasFin = true;
+      this.__begin = this.__end = this.__isDelay = this.__finish = this.__inFps = this.__enterFrame = null;
+      this.emit(Event.FINISH);
+    }
+    if(isFunction(cb)) {
+      cb.call(this, diff);
+    }
+  }
+
+  __frameCb(diff, isDelay) {
+    this.emit(Event.FRAME, diff, isDelay);
+    if(this.__firstPlay) {
+      this.__firstPlay = false;
+      this.emit(Event.PLAY);
+    }
+    if(isFunction(this.__playCb)) {
+      this.__playCb.call(this, diff, isDelay);
+      this.__playCb = null;
+    }
   }
 
   __calDiffTime(diff) {
@@ -1183,7 +1183,7 @@ class Animation extends Event {
   }
 
   play(cb) {
-    let { isDestroyed, duration, playState, __frameCb, list } = this;
+    let { isDestroyed, duration, playState, list } = this;
     if(isDestroyed || duration <= 0 || list.length < 1) {
       return this;
     }
@@ -1243,7 +1243,7 @@ class Animation extends Event {
             delay = 0;
           }
           // 还没过前置delay
-          if(currentTime < delay) {
+          else if(currentTime < delay) {
             if(stayBegin) {
               let current = frames[0].style;
               genBeforeRefresh(current, this, root, target);
@@ -1337,7 +1337,7 @@ class Animation extends Event {
             this.__inFps = false;
             return;
           }
-          __frameCb(diff, this.__isDelay);
+          this.__frameCb(diff, this.__isDelay);
           this.__isDelay = false;
           if(this.__begin) {
             this.__begin = false;
@@ -1405,11 +1405,11 @@ class Animation extends Event {
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     self.__cancelTask();
-    let { root, frames, __frameCb, __clean, __fin, __originStyle } = self;
+    let { root, frames, __originStyle } = self;
     if(root) {
       let current;
       if(self.__hasFin) {
-        __fin(cb, 0);
+        self.__fin(cb, 0);
         return self;
       }
       // 停留在最后一帧
@@ -1422,12 +1422,12 @@ class Animation extends Event {
       root.addRefreshTask({
         before() {
           genBeforeRefresh(current, self, root, self.target);
-          __clean(true);
+          self.__clean(true);
         },
         after(diff) {
           self.__assigning = false;
-          __frameCb(diff);
-          __fin(cb, diff);
+          self.__frameCb(diff);
+          self.__fin(cb, diff);
         },
       });
     }
@@ -1441,7 +1441,7 @@ class Animation extends Event {
       return self;
     }
     self.__cancelTask();
-    let { root, __frameCb, __clean, __originStyle } = self;
+    let { root, __originStyle } = self;
     if(root) {
       if(self.__hasCancel) {
         if(isFunction(cb)) {
@@ -1463,11 +1463,11 @@ class Animation extends Event {
       root.addRefreshTask({
         before() {
           genBeforeRefresh(__originStyle, self, root, self.target);
-          __clean();
+          self.__clean();
         },
         after(diff) {
           self.__assigning = false;
-          __frameCb(diff);
+          self.__frameCb(diff);
           task(diff);
         },
       });

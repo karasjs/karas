@@ -676,25 +676,27 @@ function binarySearch(i, j, time, frames) {
 
 function getEasing(ea) {
   let timingFunction;
-  if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
-    let v = ea.match(/[\d.]+/g);
-    timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
-  }
-  else if((timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea))) {
-    let steps = parseInt(timingFunction[1]);
-    let stepsD = timingFunction[2];
-    timingFunction = function(percent) {
-      // steps有效定义正整数
-      if(steps && steps > 0) {
-        let per = 1 / steps;
-        let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-        return n / steps;
-      }
-      return percent;
-    };
-  }
-  else {
-    timingFunction = easing[ea] || linear;
+  if(ea) {
+    if(/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
+      let v = ea.match(/[\d.]+/g);
+      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+    }
+    else if((timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea))) {
+      let steps = parseInt(timingFunction[1]);
+      let stepsD = timingFunction[2];
+      timingFunction = function(percent) {
+        // steps有效定义正整数
+        if(steps && steps > 0) {
+          let per = 1 / steps;
+          let n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+          return n / steps;
+        }
+        return percent;
+      };
+    }
+    else {
+      timingFunction = easing[ea];
+    }
   }
   return timingFunction;
 }
@@ -710,7 +712,7 @@ function getEasing(ea) {
 function calIntermediateStyle(frame, percent, target) {
   let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
-  if(timingFunction !== linear) {
+  if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
   }
   let transition = frame.transition;

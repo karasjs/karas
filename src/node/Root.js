@@ -271,6 +271,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     }
     parent = parent.domParent;
   }
+  return true;
 }
 
 let uuid = 0;
@@ -444,7 +445,7 @@ class Root extends Dom {
       this.__computeMeasure(renderMode, ctx);
     }
     // 非首次刷新如果没有更新则无需继续
-    else if(this.__checkUpdate(renderMode, ctx, width, height)) {
+    else if(!this.__checkUpdate(renderMode, ctx, width, height)) {
       return;
     }
     // 获取所有字体和大小测量，一般是同步，为了防止外部因素inject是异步写成了cb形式
@@ -698,17 +699,18 @@ class Root extends Dom {
     let cacheList = [];
     let updateRoot = this.__updateRoot;
     let updateHash = this.__updateHash;
+    let hasUpdate;
     // root更新特殊提前，因为有继承因素
     if(updateRoot) {
       this.__updateRoot = null;
-      parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
+      hasUpdate ||= parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式
       this.__checkRoot(width, height);
     }
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
+      hasUpdate ||= parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
     });
     // 先做一部分reset避免下面measureList干扰
     this.__reflowList = reflowList;
@@ -772,6 +774,7 @@ class Root extends Dom {
     keys.forEach(k => {
       delete updateHash[k].node.__uniqueUpdateId;
     });
+    return hasUpdate;
   }
 
   /**

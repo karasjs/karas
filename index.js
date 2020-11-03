@@ -3861,7 +3861,7 @@
         parent = node.parent;
     var parentComputedStyle = !isHost && parent.computedStyle;
     o.MEASURE_KEY_SET.forEach(function (k) {
-      var v = currentStyle[k]; // console.log(node.tagName, k, v);
+      var v = currentStyle[k];
 
       if (v.unit === INHERIT$1) {
         computedStyle[k] = isHost ? reset.INHERIT[k] : parentComputedStyle[k];
@@ -9211,25 +9211,27 @@
   function getEasing(ea) {
     var timingFunction;
 
-    if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
-      var v = ea.match(/[\d.]+/g);
-      timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
-    } else if (timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea)) {
-      var steps = parseInt(timingFunction[1]);
-      var stepsD = timingFunction[2];
+    if (ea) {
+      if (/^\s*(?:cubic-bezier\s*)?\(\s*[\d.]+\s*,\s*[-\d.]+\s*,\s*[\d.]+\s*,\s*[-\d.]+\s*\)\s*$/i.test(ea)) {
+        var v = ea.match(/[\d.]+/g);
+        timingFunction = easing.cubicBezier(v[0], v[1], v[2], v[3]);
+      } else if (timingFunction = /^\s*steps\s*\(\s*(\d+)(?:\s*,\s*(\w+))?\s*\)/i.exec(ea)) {
+        var steps = parseInt(timingFunction[1]);
+        var stepsD = timingFunction[2];
 
-      timingFunction = function timingFunction(percent) {
-        // steps有效定义正整数
-        if (steps && steps > 0) {
-          var per = 1 / steps;
-          var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
-          return n / steps;
-        }
+        timingFunction = function timingFunction(percent) {
+          // steps有效定义正整数
+          if (steps && steps > 0) {
+            var per = 1 / steps;
+            var n = stepsD === 'start' ? Math.ceil(percent / per) : Math.floor(percent / per);
+            return n / steps;
+          }
 
-        return percent;
-      };
-    } else {
-      timingFunction = easing[ea] || linear;
+          return percent;
+        };
+      } else {
+        timingFunction = easing[ea];
+      }
     }
 
     return timingFunction;
@@ -9248,7 +9250,7 @@
     var style = clone$1(frame.style);
     var timingFunction = getEasing(frame.easing);
 
-    if (timingFunction !== linear) {
+    if (timingFunction && timingFunction !== linear) {
       percent = timingFunction(percent);
     }
 
@@ -19437,6 +19439,8 @@
 
       parent = parent.domParent;
     }
+
+    return true;
   }
 
   var uuid$1 = 0;
@@ -19674,7 +19678,7 @@
 
           this.__computeMeasure(renderMode, ctx);
         } // 非首次刷新如果没有更新则无需继续
-        else if (this.__checkUpdate(renderMode, ctx, width, height)) {
+        else if (!this.__checkUpdate(renderMode, ctx, width, height)) {
             return;
           } // 获取所有字体和大小测量，一般是同步，为了防止外部因素inject是异步写成了cb形式
 
@@ -19987,11 +19991,12 @@
         var cacheHash = {};
         var cacheList = [];
         var updateRoot = this.__updateRoot;
-        var updateHash = this.__updateHash; // root更新特殊提前，因为有继承因素
+        var updateHash = this.__updateHash;
+        var hasUpdate; // root更新特殊提前，因为有继承因素
 
         if (updateRoot) {
           this.__updateRoot = null;
-          parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式
+          hasUpdate || (hasUpdate = parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList)); // 此时做root检查，防止root出现继承等无效样式
 
           this.__checkRoot(width, height);
         } // 汇总处理每个节点
@@ -19999,7 +20004,7 @@
 
         var keys = Object.keys(updateHash);
         keys.forEach(function (k) {
-          parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
+          hasUpdate || (hasUpdate = parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList));
         }); // 先做一部分reset避免下面measureList干扰
 
         this.__reflowList = reflowList;
@@ -20077,6 +20082,7 @@
         keys.forEach(function (k) {
           delete updateHash[k].node.__uniqueUpdateId;
         });
+        return hasUpdate;
       }
       /**
        * 除首次外每次刷新前检查reflow列表，计算需要reflow的节点局部重新布局

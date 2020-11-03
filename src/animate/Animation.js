@@ -892,7 +892,6 @@ function gotoOverload(options, cb) {
 }
 
 let uuid = 0;
-let lastAnimate;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1097,12 +1096,6 @@ class Animation extends Event {
       prev = calFrame(prev, next, keys, target);
     }
     this.__framesR = framesR;
-    // 连续执行相同动画时场景优化，时间计算使用头个，后面赋值即可
-    if(lastAnimate && lastAnimate.duration === this.duration) {
-      lastAnimate.__nextSibling = this;
-      this.__prevSibling = lastAnimate;
-    }
-    lastAnimate = this;
     // finish/cancel共有的before处理
     this.__clean = (isFinish) => {
       this.__cancelTask();
@@ -1234,7 +1227,7 @@ class Animation extends Event {
         before: diff => {
           let { root, target, fps, playCount, iterations, currentFrames } = this;
           // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-          let currentTime = this.__prevSibling ? this.__prevSibling.currentTime : this.__calDiffTime(diff);
+          let currentTime = this.__calDiffTime(diff);
           // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
           if(!firstEnter && fps < 60) {
             diff = this.__fpsTime += diff;
@@ -1390,10 +1383,6 @@ class Animation extends Event {
     this.__playState = 'paused';
     this.__cancelTask();
     this.emit(Event.PAUSE);
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
     return this;
   }
 
@@ -1413,10 +1402,6 @@ class Animation extends Event {
     }
     // 先清除所有回调任务，多次调用finish也会清除只留最后一次
     self.__cancelTask();
-    if(self.__nextSibling) {
-      self.__nextSibling.__prevSibling = null;
-    }
-    self.__prevSibling = self.__nextSibling = null;
     let { root, frames, __frameCb, __clean, __fin, __originStyle } = self;
     if(root) {
       let current;
@@ -1453,10 +1438,6 @@ class Animation extends Event {
       return self;
     }
     self.__cancelTask();
-    if(self.__nextSibling) {
-      self.__nextSibling.__prevSibling = null;
-    }
-    self.__prevSibling = self.__nextSibling = null;
     let { root, __frameCb, __clean, __originStyle } = self;
     if(root) {
       if(self.__hasCancel) {
@@ -1496,10 +1477,6 @@ class Animation extends Event {
     if(isDestroyed || duration <= 0) {
       return this;
     }
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
     [options, cb] = gotoOverload(options, cb);
     // 计算出时间点直接累加播放
     this.__goto(v, options.isFrame, options.excludeDelay);
@@ -1511,10 +1488,6 @@ class Animation extends Event {
 
   gotoAndStop(v, options, cb) {
     let { isDestroyed, duration, delay, endDelay } = this;
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
     if(isDestroyed || duration <= 0) {
       return this;
     }
@@ -1663,10 +1636,6 @@ class Animation extends Event {
 
   set duration(v) {
     this.__duration = Math.max(0, parseFloat(v) || 0);
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get delay() {
@@ -1675,10 +1644,6 @@ class Animation extends Event {
 
   set delay(v) {
     this.__delay = Math.max(0, parseFloat(v) || 0);
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get endDelay() {
@@ -1687,10 +1652,6 @@ class Animation extends Event {
 
   set endDelay(v) {
     this.__endDelay = Math.max(0, parseFloat(v) || 0);
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get fps() {
@@ -1703,10 +1664,6 @@ class Animation extends Event {
       v = 60;
     }
     this.__fps = v;
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get spf() {
@@ -1728,10 +1685,6 @@ class Animation extends Event {
       }
     }
     this.__iterations = v;
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get fill() {
@@ -1740,10 +1693,6 @@ class Animation extends Event {
 
   set fill(v) {
     this.__fill = v || 'none';
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get direction() {
@@ -1752,10 +1701,6 @@ class Animation extends Event {
 
   set direction(v) {
     this.__direction = v || 'normal';
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get frames() {
@@ -1776,10 +1721,6 @@ class Animation extends Event {
       v = 1;
     }
     this.__playbackRate = v;
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get easing() {
@@ -1798,10 +1739,6 @@ class Animation extends Event {
     v = parseFloat(v) || 0;
     if(v >= 0) {
       this.__currentTime = this.__nextTime = v;
-      if(this.__nextSibling) {
-        this.__nextSibling.__prevSibling = null;
-      }
-      this.__prevSibling = this.__nextSibling = null;
     }
   }
 
@@ -1820,6 +1757,10 @@ class Animation extends Event {
   get playCount() {
     return this.__playCount;
   }
+
+  // set playCount(v) {
+  //   this.__playCount = Math.max(0, parseInt(v) || 0);
+  // }
 
   get isDestroyed() {
     return this.__isDestroyed;
@@ -1844,10 +1785,6 @@ class Animation extends Event {
     else {
       this.__spfLimit = !!v;
     }
-    if(this.__nextSibling) {
-      this.__nextSibling.__prevSibling = null;
-    }
-    this.__prevSibling = this.__nextSibling = null;
   }
 
   get assigning() {

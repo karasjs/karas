@@ -8639,13 +8639,12 @@
    * @param style
    * @param animation
    * @param root
-   * @param node
    */
 
 
-  function genBeforeRefresh(style, animation, root, node) {
+  function genBeforeRefresh(style, animation, root) {
     root.__addUpdate({
-      node: node,
+      node: animation.target,
       style: style
     });
 
@@ -9878,7 +9877,7 @@
               if (currentTime < delay) {
                 if (stayBegin) {
                   var _current = frames[0].style;
-                  genBeforeRefresh(_current, _this3, root, target);
+                  genBeforeRefresh(_current, _this3, root);
                 } // 即便不刷新，依旧执行begin和帧回调
 
 
@@ -9969,7 +9968,7 @@
                 } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-              genBeforeRefresh(current, _this3, root, target); // 每次循环完触发end事件，最后一次循环触发finish
+              genBeforeRefresh(current, _this3, root); // 每次循环完触发end事件，最后一次循环触发finish
 
               if (isLastFrame && (!inEndDelay || isLastCount)) {
                 _this3.__end = true;
@@ -10097,7 +10096,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(current, self, root, self.target);
+              genBeforeRefresh(current, self, root);
 
               __clean(true);
             },
@@ -10159,7 +10158,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(__originStyle, self, root, self.target);
+              genBeforeRefresh(__originStyle, self, root);
 
               __clean();
             },
@@ -19337,7 +19336,7 @@
     } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
-    if (lv === o$1.NONE) {
+    if (lv === o$1.NONE && !img) {
       delete node.__uniqueUpdateId;
       return;
     } // 记录下来清除parent的zIndexChildren缓存

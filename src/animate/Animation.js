@@ -108,11 +108,10 @@ function inherit(frames, keys, target) {
  * @param style
  * @param animation
  * @param root
- * @param node
  */
-function genBeforeRefresh(style, animation, root, node) {
+function genBeforeRefresh(style, animation, root) {
   root.__addUpdate({
-    node,
+    node: animation.target,
     style,
   });
   animation.__style = style;
@@ -1242,7 +1241,7 @@ class Animation extends Event {
           if(currentTime < delay) {
             if(stayBegin) {
               let current = frames[0].style;
-              genBeforeRefresh(current, this, root, target);
+              genBeforeRefresh(current, this, root);
             }
             // 即便不刷新，依旧执行begin和帧回调
             if(currentTime === 0) {
@@ -1325,7 +1324,7 @@ class Animation extends Event {
             current = calIntermediateStyle(current, percent, target);
           }
           // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-          genBeforeRefresh(current, this, root, target);
+          genBeforeRefresh(current, this, root);
           // 每次循环完触发end事件，最后一次循环触发finish
           if(isLastFrame && (!inEndDelay || isLastCount)) {
             this.__end = true;
@@ -1412,7 +1411,7 @@ class Animation extends Event {
       }
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(current, self, root, self.target);
+          genBeforeRefresh(current, self, root);
           __clean(true);
         },
         after(diff) {
@@ -1453,7 +1452,7 @@ class Animation extends Event {
       };
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(__originStyle, self, root, self.target);
+          genBeforeRefresh(__originStyle, self, root);
           __clean();
         },
         after(diff) {

@@ -188,7 +188,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     lv |= focus;
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
-  if(lv === level.NONE) {
+  if(lv === level.NONE && !img) {
     delete node.__uniqueUpdateId;
     return;
   }

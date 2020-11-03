@@ -432,6 +432,7 @@ class Root extends Dom {
   }
 
   refresh(cb, isFirst) {
+    this.__hookTask = null;
     let { isDestroyed, renderMode, ctx, defs, width, height } = this;
     if(isDestroyed) {
       return;
@@ -730,7 +731,7 @@ class Root extends Dom {
       if(isInherit) {
         while(parent && parent !== this) {
           let { __uniqueUpdateId, currentStyle } = parent;
-          let style = updateHash[__uniqueUpdateId];
+          let style = updateHash[__uniqueUpdateId].style;
           let isInherit;
           if(parent.hasOwnProperty('__uniqueUpdateId')) {
             measureHash[__uniqueUpdateId] = true;
@@ -919,13 +920,15 @@ class Root extends Dom {
       }
       // 所有其它变化
       else {
-        let keys = Object.keys(style);
         let onlyXY = true;
-        for(let i = 0, len = keys.length; i < len; i++) {
-          let k = keys[i];
-          if(k !== 'left' && k !== 'top' && k !== 'right' && k !== 'bottom') {
-            onlyXY = false;
-            break;
+        if(style) {
+          let keys = Object.keys(style);
+          for(let i = 0, len = keys.length; i < len; i++) {
+            let k = keys[i];
+            if(k !== 'left' && k !== 'top' && k !== 'right' && k !== 'bottom') {
+              onlyXY = false;
+              break;
+            }
           }
         }
         // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
@@ -1251,13 +1254,13 @@ class Root extends Dom {
     });
   }
 
+  // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+  // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
   __frameHook() {
-    // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
-    // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
-    let r = this.__hookTask = this.__hookTask || (() => {
-      this.refresh();
-    });
-    if(frame.__hookTask.indexOf(r) === -1) {
+    if(!this.__hookTask) {
+      let r = this.__hookTask = (() => {
+        this.refresh();
+      });
       frame.__hookTask.push(r);
     }
   }

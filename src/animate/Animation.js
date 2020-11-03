@@ -105,16 +105,17 @@ function inherit(frames, keys, target) {
  * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
  * 在异步时，因为动画本身是异步，需要addRefreshTask
  * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
- * @param frameStyle
+ * @param style
  * @param animation
  * @param root
+ * @param node
  */
-function genBeforeRefresh(frameStyle, animation, root) {
+function genBeforeRefresh(style, animation, root, node) {
   root.__addUpdate({
-    node: animation.target,
-    style: frameStyle,
+    node,
+    style,
   });
-  animation.__style = frameStyle;
+  animation.__style = style;
   animation.__assigning = true;
   // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
   // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
@@ -712,8 +713,9 @@ function calIntermediateStyle(frame, percent, target) {
   if(timingFunction !== linear) {
     percent = timingFunction(percent);
   }
-  frame.transition.forEach(item => {
-    let { k, v, d, p } = item;
+  let transition = frame.transition;
+  for(let i = 0, len = transition.length; i < len; i++) {
+    let { k, v, d, p } = transition[i];
     let st = style[k];
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === 'transform') {
@@ -875,7 +877,7 @@ function calIntermediateStyle(frame, percent, target) {
     else if(k === 'opacity' || k === 'zIndex') {
       style[k] += v * percent;
     }
-  });
+  }
   return style;
 }
 
@@ -1238,7 +1240,7 @@ class Animation extends Event {
           if(currentTime < delay) {
             if(stayBegin) {
               let current = frames[0].style;
-              genBeforeRefresh(current, this, root);
+              genBeforeRefresh(current, this, root, target);
             }
             // 即便不刷新，依旧执行begin和帧回调
             if(currentTime === 0) {
@@ -1321,7 +1323,7 @@ class Animation extends Event {
             current = calIntermediateStyle(current, percent, target);
           }
           // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-          genBeforeRefresh(current, this, root);
+          genBeforeRefresh(current, this, root, target);
           // 每次循环完触发end事件，最后一次循环触发finish
           if(isLastFrame && (!inEndDelay || isLastCount)) {
             this.__end = true;
@@ -1408,7 +1410,7 @@ class Animation extends Event {
       }
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(current, self, root);
+          genBeforeRefresh(current, self, root, self.target);
           __clean(true);
         },
         after(diff) {
@@ -1449,7 +1451,7 @@ class Animation extends Event {
       };
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(__originStyle, self, root);
+          genBeforeRefresh(__originStyle, self, root, self.target);
           __clean();
         },
         after(diff) {

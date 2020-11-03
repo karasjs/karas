@@ -8031,7 +8031,10 @@
     }),
     now: function now() {
       if (typeof performance !== 'undefined') {
-        inject.now = performance.now.bind(performance);
+        inject.now = function () {
+          return Math.floor(performance.now());
+        };
+
         return Math.floor(performance.now());
       }
 
@@ -8633,19 +8636,20 @@
    * 通知root更新当前动画，需要根据frame的状态来决定是否是同步插入
    * 在异步时，因为动画本身是异步，需要addRefreshTask
    * 而如果此时frame在执行before过程中，说明帧动画本身是在before计算的，需要同步插入
-   * @param frameStyle
+   * @param style
    * @param animation
    * @param root
+   * @param node
    */
 
 
-  function genBeforeRefresh(frameStyle, animation, root) {
+  function genBeforeRefresh(style, animation, root, node) {
     root.__addUpdate({
-      node: animation.target,
-      style: frameStyle
+      node: node,
+      style: style
     });
 
-    animation.__style = frameStyle;
+    animation.__style = style;
     animation.__assigning = true; // frame每帧回调时，下方先执行计算好变更的样式，这里特殊插入一个hook，让root增加一个刷新操作
     // 多个动画调用因为相同root也只会插入一个，这样在所有动画执行完毕后frame里检查同步进行刷新，解决单异步问题
 
@@ -9248,11 +9252,14 @@
       percent = timingFunction(percent);
     }
 
-    frame.transition.forEach(function (item) {
-      var k = item.k,
-          v = item.v,
-          d = item.d,
-          p = item.p;
+    var transition = frame.transition;
+
+    for (var i = 0, len = transition.length; i < len; i++) {
+      var _transition$i = transition[i],
+          k = _transition$i.k,
+          v = _transition$i.v,
+          d = _transition$i.d,
+          p = _transition$i.p;
       var st = style[k]; // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
 
       if (k === 'transform') {
@@ -9260,8 +9267,8 @@
           st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
         }
 
-        for (var i = 0; i < 6; i++) {
-          st[0][1][i] += v[i] * percent;
+        for (var _i10 = 0; _i10 < 6; _i10++) {
+          st[0][1][_i10] += v[_i10] * percent;
         }
       } else if (k === 'filter') {
         // 只有1个样式声明了filter另外一个为空
@@ -9271,8 +9278,8 @@
 
         st[0][1] += v * percent;
       } else if (RADIUS_HASH$2.hasOwnProperty(k)) {
-        for (var _i10 = 0; _i10 < 2; _i10++) {
-          st[_i10].value += v[_i10] * percent;
+        for (var _i11 = 0; _i11 < 2; _i11++) {
+          st[_i11].value += v[_i11] * percent;
         }
       } else if (k === 'backgroundPositionX' || k === 'backgroundPositionY' || LENGTH_HASH$2.hasOwnProperty(k) || EXPAND_HASH$2.hasOwnProperty(k)) {
         if (v !== 0) {
@@ -9287,22 +9294,22 @@
           st[1].value += v[1] * percent;
         }
       } else if (k === 'boxShadow') {
-        for (var _i11 = 0, len = Math.min(st.length, v.length); _i11 < len; _i11++) {
+        for (var _i12 = 0, _len7 = Math.min(st.length, v.length); _i12 < _len7; _i12++) {
           // x/y/blur/spread
           for (var j = 0; j < 4; j++) {
-            st[_i11][j] += v[_i11][j] * percent;
+            st[_i12][j] += v[_i12][j] * percent;
           } // rgba
 
 
           for (var _j4 = 0; _j4 < 4; _j4++) {
-            st[_i11][4][_j4] += v[_i11][4][_j4] * percent;
+            st[_i12][4][_j4] += v[_i12][4][_j4] * percent;
           }
         }
       } else if (GRADIENT_HASH$2.hasOwnProperty(k)) {
         if (GRADIENT_TYPE$2.hasOwnProperty(st.k)) {
-          for (var _i12 = 0, _len7 = Math.min(st.v.length, v.length); _i12 < _len7; _i12++) {
-            var a = st.v[_i12];
-            var b = v[_i12];
+          for (var _i13 = 0, _len8 = Math.min(st.v.length, v.length); _i13 < _len8; _i13++) {
+            var a = st.v[_i13];
+            var b = v[_i13];
             a[0][0] += b[0][0] * percent;
             a[0][1] += b[0][1] * percent;
             a[0][2] += b[0][2] * percent;
@@ -9336,83 +9343,86 @@
           st[2] += v[2] * percent;
           st[3] += v[3] * percent;
         } else if (o.GEOM.hasOwnProperty(k)) {
-          var _st = style[k];
+          (function () {
+            var st = style[k];
 
-          if (target.isMulti) {
-            if (k === 'points' || k === 'controls') {
-              for (var _i13 = 0, _len8 = Math.min(_st.length, v.length); _i13 < _len8; _i13++) {
-                var o$1 = _st[_i13];
-                var n = v[_i13];
+            if (target.isMulti) {
+              if (k === 'points' || k === 'controls') {
+                for (var _i14 = 0, _len9 = Math.min(st.length, v.length); _i14 < _len9; _i14++) {
+                  var o = st[_i14];
+                  var n = v[_i14];
 
-                if (!isNil$4(o$1) && !isNil$4(n)) {
-                  for (var _j5 = 0, len2 = Math.min(o$1.length, n.length); _j5 < len2; _j5++) {
-                    var o2 = o$1[_j5];
-                    var n2 = n[_j5];
+                  if (!isNil$4(o) && !isNil$4(n)) {
+                    for (var _j5 = 0, len2 = Math.min(o.length, n.length); _j5 < len2; _j5++) {
+                      var o2 = o[_j5];
+                      var n2 = n[_j5];
 
-                    if (!isNil$4(o2) && !isNil$4(n2)) {
-                      for (var _k2 = 0, len3 = Math.min(o2.length, n2.length); _k2 < len3; _k2++) {
-                        if (!isNil$4(o2[_k2]) && !isNil$4(n2[_k2])) {
-                          o2[_k2] += n2[_k2] * percent;
+                      if (!isNil$4(o2) && !isNil$4(n2)) {
+                        for (var _k2 = 0, len3 = Math.min(o2.length, n2.length); _k2 < len3; _k2++) {
+                          if (!isNil$4(o2[_k2]) && !isNil$4(n2[_k2])) {
+                            o2[_k2] += n2[_k2] * percent;
+                          }
                         }
                       }
                     }
                   }
                 }
+              } else if (k === 'controlA' || k === 'controlB') {
+                v.forEach(function (item, i) {
+                  var st2 = st[i];
+
+                  if (!isNil$4(item) && !isNil$4(st2)) {
+                    for (var _i15 = 0, _len10 = Math.min(st2.length, item.length); _i15 < _len10; _i15++) {
+                      var _o = st2[_i15];
+                      var _n = item[_i15];
+
+                      if (!isNil$4(_o) && !isNil$4(_n)) {
+                        st2[_i15] += _n * percent;
+                      }
+                    }
+                  }
+                });
+              } else {
+                v.forEach(function (item, i) {
+                  if (!isNil$4(item) && !isNil$4(st[i])) {
+                    st[i] += item * percent;
+                  }
+                });
               }
-            } else if (k === 'controlA' || k === 'controlB') {
-              v.forEach(function (item, i) {
-                var st2 = _st[i];
+            } else {
+              if (k === 'points' || k === 'controls') {
+                for (var _i16 = 0, _len11 = Math.min(st.length, v.length); _i16 < _len11; _i16++) {
+                  var _o2 = st[_i16];
+                  var _n2 = v[_i16];
 
-                if (!isNil$4(item) && !isNil$4(st2)) {
-                  for (var _i14 = 0, _len9 = Math.min(st2.length, item.length); _i14 < _len9; _i14++) {
-                    var _o = st2[_i14];
-                    var _n = item[_i14];
-
-                    if (!isNil$4(_o) && !isNil$4(_n)) {
-                      st2[_i14] += _n * percent;
+                  if (!isNil$4(_o2) && !isNil$4(_n2)) {
+                    for (var _j6 = 0, _len12 = Math.min(_o2.length, _n2.length); _j6 < _len12; _j6++) {
+                      if (!isNil$4(_o2[_j6]) && !isNil$4(_n2[_j6])) {
+                        _o2[_j6] += _n2[_j6] * percent;
+                      }
                     }
                   }
                 }
-              });
-            } else {
-              v.forEach(function (item, i) {
-                if (!isNil$4(item) && !isNil$4(_st[i])) {
-                  _st[i] += item * percent;
+              } else if (k === 'controlA' || k === 'controlB') {
+                if (!isNil$4(st[0]) && !isNil$4(v[0])) {
+                  st[0] += v[0] * percent;
                 }
-              });
-            }
-          } else {
-            if (k === 'points' || k === 'controls') {
-              for (var _i15 = 0, _len10 = Math.min(_st.length, v.length); _i15 < _len10; _i15++) {
-                var _o2 = _st[_i15];
-                var _n2 = v[_i15];
 
-                if (!isNil$4(_o2) && !isNil$4(_n2)) {
-                  for (var _j6 = 0, _len11 = Math.min(_o2.length, _n2.length); _j6 < _len11; _j6++) {
-                    if (!isNil$4(_o2[_j6]) && !isNil$4(_n2[_j6])) {
-                      _o2[_j6] += _n2[_j6] * percent;
-                    }
-                  }
+                if (!isNil$4(st[1]) && !isNil$4(v[1])) {
+                  st[1] += v[1] * percent;
+                }
+              } else {
+                if (!isNil$4(st) && !isNil$4(v)) {
+                  style[k] += v * percent;
                 }
               }
-            } else if (k === 'controlA' || k === 'controlB') {
-              if (!isNil$4(_st[0]) && !isNil$4(v[0])) {
-                _st[0] += v[0] * percent;
-              }
-
-              if (!isNil$4(_st[1]) && !isNil$4(v[1])) {
-                _st[1] += v[1] * percent;
-              }
-            } else {
-              if (!isNil$4(_st) && !isNil$4(v)) {
-                style[k] += v * percent;
-              }
             }
-          }
+          })();
         } else if (k === 'opacity' || k === 'zIndex') {
           style[k] += v * percent;
         }
-    });
+    }
+
     return style;
   }
 
@@ -9526,8 +9536,8 @@
         var offset = -1;
         var tagName = target.tagName;
 
-        var _loop = function _loop(_i16, _len12) {
-          var current = list[_i16];
+        var _loop = function _loop(_i17, _len13) {
+          var current = list[_i17];
 
           if (current.hasOwnProperty('offset')) {
             current.offset = parseFloat(current.offset) || 0;
@@ -9535,19 +9545,19 @@
             current.offset = Math.min(1, current.offset); // 超过区间[0,1]
 
             if (isNaN(current.offset) || current.offset < 0 || current.offset > 1) {
-              list.splice(_i16, 1);
-              _i16--;
-              _len12--;
-              i = _i16;
-              len = _len12;
+              list.splice(_i17, 1);
+              _i17--;
+              _len13--;
+              i = _i17;
+              len = _len13;
               return "continue";
             } // <=前面的
             else if (current.offset <= offset) {
-                list.splice(_i16, 1);
-                _i16--;
-                _len12--;
-                i = _i16;
-                len = _len12;
+                list.splice(_i17, 1);
+                _i17--;
+                _len13--;
+                i = _i17;
+                len = _len13;
                 return "continue";
               }
           }
@@ -9563,8 +9573,8 @@
               delete current[k];
             }
           });
-          i = _i16;
-          len = _len12;
+          i = _i17;
+          len = _len13;
         };
 
         for (var i = 0, len = list.length; i < len; i++) {
@@ -9617,14 +9627,14 @@
         } // 计算没有设置offset的时间
 
 
-        for (var _i17 = 1, _len13 = list.length; _i17 < _len13; _i17++) {
-          var start = list[_i17]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
+        for (var _i18 = 1, _len14 = list.length; _i18 < _len14; _i18++) {
+          var start = list[_i18]; // 从i=1开始offset一定>0，找到下一个有offset的，均分中间无声明的
 
           if (!start.hasOwnProperty('offset')) {
             var end = void 0;
-            var j = _i17 + 1;
+            var j = _i18 + 1;
 
-            for (; j < _len13; j++) {
+            for (; j < _len14; j++) {
               end = list[j];
 
               if (end.hasOwnProperty('offset')) {
@@ -9632,16 +9642,16 @@
               }
             }
 
-            var num = j - _i17 + 1;
-            start = list[_i17 - 1];
+            var num = j - _i18 + 1;
+            start = list[_i18 - 1];
             var per = (end.offset - start.offset) / num;
 
-            for (var k = _i17; k < j; k++) {
+            for (var k = _i18; k < j; k++) {
               var item = list[k];
-              item.offset = start.offset + per * (k + 1 - _i17);
+              item.offset = start.offset + per * (k + 1 - _i18);
             }
 
-            _i17 = j;
+            _i18 = j;
           }
         }
 
@@ -9669,8 +9679,8 @@
         var length = frames.length;
         var prev = frames[0];
 
-        for (var _i18 = 1; _i18 < length; _i18++) {
-          var next = frames[_i18];
+        for (var _i19 = 1; _i19 < length; _i19++) {
+          var next = frames[_i19];
           prev = calFrame(prev, next, keys, target);
         } // 反向存储帧的倒排结果
 
@@ -9682,8 +9692,8 @@
         });
         prev = framesR[0];
 
-        for (var _i19 = 1; _i19 < length; _i19++) {
-          var _next = framesR[_i19];
+        for (var _i20 = 1; _i20 < length; _i20++) {
+          var _next = framesR[_i20];
           prev = calFrame(prev, _next, keys, target);
         }
 
@@ -9866,7 +9876,7 @@
               if (currentTime < delay) {
                 if (stayBegin) {
                   var _current = frames[0].style;
-                  genBeforeRefresh(_current, _this3, root);
+                  genBeforeRefresh(_current, _this3, root, target);
                 } // 即便不刷新，依旧执行begin和帧回调
 
 
@@ -9957,7 +9967,7 @@
                 } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-              genBeforeRefresh(current, _this3, root); // 每次循环完触发end事件，最后一次循环触发finish
+              genBeforeRefresh(current, _this3, root, target); // 每次循环完触发end事件，最后一次循环触发finish
 
               if (isLastFrame && (!inEndDelay || isLastCount)) {
                 _this3.__end = true;
@@ -10085,7 +10095,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(current, self, root);
+              genBeforeRefresh(current, self, root, self.target);
 
               __clean(true);
             },
@@ -10147,7 +10157,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(__originStyle, self, root);
+              genBeforeRefresh(__originStyle, self, root, self.target);
 
               __clean();
             },
@@ -19645,6 +19655,7 @@
       value: function refresh(cb, isFirst) {
         var _this3 = this;
 
+        this.__hookTask = null;
         var isDestroyed = this.isDestroyed,
             renderMode = this.renderMode,
             ctx = this.ctx,
@@ -20017,7 +20028,7 @@
               var _parent = parent,
                   __uniqueUpdateId = _parent.__uniqueUpdateId,
                   currentStyle = _parent.currentStyle;
-              var style = updateHash[__uniqueUpdateId];
+              var style = updateHash[__uniqueUpdateId].style;
               var isInherit = void 0;
 
               if (parent.hasOwnProperty('__uniqueUpdateId')) {
@@ -20240,15 +20251,18 @@
               }
             } // 所有其它变化
             else {
-                var keys = Object.keys(style);
                 var onlyXY = true;
 
-                for (var _i = 0, _len = keys.length; _i < _len; _i++) {
-                  var k = keys[_i];
+                if (style) {
+                  var keys = Object.keys(style);
 
-                  if (k !== 'left' && k !== 'top' && k !== 'right' && k !== 'bottom') {
-                    onlyXY = false;
-                    break;
+                  for (var _i = 0, _len = keys.length; _i < _len; _i++) {
+                    var k = keys[_i];
+
+                    if (k !== 'left' && k !== 'top' && k !== 'right' && k !== 'bottom') {
+                      onlyXY = false;
+                      break;
+                    }
                   }
                 } // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
                 // img加载特殊进到这里强制LAYOUT
@@ -20639,19 +20653,19 @@
         this.children.forEach(function (item) {
           item.__computeMeasure(renderMode, ctx);
         });
-      }
+      } // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
+      // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
+
     }, {
       key: "__frameHook",
       value: function __frameHook() {
         var _this7 = this;
 
-        // 每个root拥有一个刷新hook，多个root塞到frame的__hookTask里
-        // frame在所有的帧刷新逻辑执行后检查hook列表，进行root刷新操作
-        var r = this.__hookTask = this.__hookTask || function () {
-          _this7.refresh();
-        };
+        if (!this.__hookTask) {
+          var r = this.__hookTask = function () {
+            _this7.refresh();
+          };
 
-        if (frame.__hookTask.indexOf(r) === -1) {
           frame.__hookTask.push(r);
         }
       }

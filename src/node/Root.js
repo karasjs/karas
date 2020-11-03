@@ -108,7 +108,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   if(overwrite && style) {
     Object.assign(node.__style, style);
   }
-  if(style) {
+  if(style && style !== target.style) {
     Object.assign(target.style, style);
   }
   // 多次调用更新才会有list，一般没有，优化
@@ -626,10 +626,9 @@ class Root extends Dom {
     if(node.isDestroyed) {
       return;
     }
-    let target;
     // root特殊处理，检查变更时优先看继承信息
     if(node === this) {
-      target = this.__updateRoot;
+      let target = this.__updateRoot;
       if(target) {
         if(img) {
           target.img = img;
@@ -658,7 +657,7 @@ class Root extends Dom {
     else if(!node.hasOwnProperty('__uniqueUpdateId')) {
       node.__uniqueUpdateId = uniqueUpdateId;
       // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
-      target = updateHash[uniqueUpdateId++] = {
+      updateHash[uniqueUpdateId++] = {
         node,
         style,
         origin,
@@ -669,7 +668,7 @@ class Root extends Dom {
       };
     }
     else if(updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
-      target = updateHash[node.__uniqueUpdateId];
+      let target = updateHash[node.__uniqueUpdateId];
       if(img) {
         target.img = img;
       }
@@ -742,11 +741,6 @@ class Root extends Dom {
             let style = updateHash[__uniqueUpdateId].style;
             measureHash[__uniqueUpdateId] = true;
             let temp = change.measureInheritList(style);
-            temp.forEach(k => {
-              currentStyle[k] = style[k];
-              // 已经赋值过的删除避免重复
-              delete style[k];
-            });
             isInherit = !!temp.length;
           }
           else {

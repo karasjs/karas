@@ -19232,7 +19232,7 @@
       Object.assign(node.__style, style);
     }
 
-    if (style) {
+    if (style && style !== target.style) {
       Object.assign(target.style, style);
     } // 多次调用更新才会有list，一般没有，优化
 
@@ -19901,12 +19901,11 @@
 
         if (node.isDestroyed) {
           return;
-        }
+        } // root特殊处理，检查变更时优先看继承信息
 
-        var target; // root特殊处理，检查变更时优先看继承信息
 
         if (node === this) {
-          target = this.__updateRoot;
+          var target = this.__updateRoot;
 
           if (target) {
             if (img) {
@@ -19941,7 +19940,7 @@
         } else if (!node.hasOwnProperty('__uniqueUpdateId')) {
           node.__uniqueUpdateId = uniqueUpdateId; // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
 
-          target = updateHash[uniqueUpdateId++] = {
+          updateHash[uniqueUpdateId++] = {
             node: node,
             style: style,
             origin: origin,
@@ -19951,23 +19950,24 @@
             measure: measure
           };
         } else if (updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
-          target = updateHash[node.__uniqueUpdateId];
+          var _target = updateHash[node.__uniqueUpdateId];
 
           if (img) {
-            target.img = img;
+            _target.img = img;
           }
 
           if (focus) {
-            target.focus = focus;
+            _target.focus = focus;
           }
 
           if (measure) {
-            target.measure = true;
+            _target.measure = true;
           } // 后续存在新建list上，需增加遍历逻辑
 
 
-          target.list = target.list || [];
-          target.list.push({
+          _target.list = _target.list || [];
+
+          _target.list.push({
             style: style,
             origin: origin,
             overwrite: overwrite
@@ -20033,41 +20033,31 @@
           var isInherit = o.isMeasureInherit(updateHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
-            var _loop = function _loop() {
+            while (parent && parent !== _this5) {
               var _parent = parent,
-                  __uniqueUpdateId = _parent.__uniqueUpdateId,
+                  _uniqueUpdateId = _parent.__uniqueUpdateId,
                   currentStyle = _parent.currentStyle;
-              var isInherit = void 0;
+
+              var _isInherit = void 0;
 
               if (parent.hasOwnProperty('__uniqueUpdateId')) {
-                var style = updateHash[__uniqueUpdateId].style;
-                measureHash[__uniqueUpdateId] = true;
+                var style = updateHash[_uniqueUpdateId].style;
+                measureHash[_uniqueUpdateId] = true;
                 var temp = o.measureInheritList(style);
-                temp.forEach(function (k) {
-                  currentStyle[k] = style[k]; // 已经赋值过的删除避免重复
-
-                  delete style[k];
-                });
-                isInherit = !!temp.length;
+                _isInherit = !!temp.length;
               } else {
-                isInherit = o.isMeasureInherit(currentStyle);
+                _isInherit = o.isMeasureInherit(currentStyle);
               } // 如果parent有inherit存入列表且继续向上，否则跳出循环
 
 
-              if (isInherit) {
+              if (_isInherit) {
                 last = parent;
               } else {
-                return "break";
+                break;
               } // 考虑component下的继续往上继承
 
 
               parent = parent.domParent;
-            };
-
-            while (parent && parent !== _this5) {
-              var _ret = _loop();
-
-              if (_ret === "break") break;
             }
           } // 自顶向下查找inherit的，利用已有的方法+回调
 

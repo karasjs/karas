@@ -13911,7 +13911,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating && item.currentFrames) {
+          if (item.animating && item.currentFrame) {
             var transition = item.currentFrame.transition;
 
             for (var _i11 = 0, _len6 = transition.length; _i11 < _len6; _i11++) {
@@ -13933,7 +13933,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating && item.currentFrames) {
+          if (item.animating && item.currentFrame) {
             var transition = item.currentFrame.transition;
 
             for (var _i12 = 0, _len7 = transition.length; _i12 < _len7; _i12++) {
@@ -13957,7 +13957,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating && item.currentFrames) {
+          if (item.animating && item.currentFrame) {
             var transition = item.currentFrame.transition;
 
             for (var _i13 = 0, _len8 = transition.length; _i13 < _len8; _i13++) {
@@ -13981,7 +13981,7 @@
         for (var i = 0, len = list.length; i < len; i++) {
           var item = list[i];
 
-          if (item.animating && item.currentFrames) {
+          if (item.animating && item.currentFrame) {
             var transition = item.currentFrame.transition;
 
             for (var _i14 = 0, _len9 = transition.length; _i14 < _len9; _i14++) {

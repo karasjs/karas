@@ -2601,7 +2601,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating && item.currentFrames) {
+      if(item.animating && item.currentFrame) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           if(!change.isIgnore(transition[i].k)) {
@@ -2618,7 +2618,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating && item.currentFrames) {
+      if(item.animating && item.currentFrame) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;
@@ -2637,7 +2637,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating && item.currentFrames) {
+      if(item.animating && item.currentFrame) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;
@@ -2655,7 +2655,7 @@ class Xom extends Node {
     let list = this.animationList;
     for(let i = 0, len = list.length; i < len; i++) {
       let item = list[i];
-      if(item.animating && item.currentFrames) {
+      if(item.animating && item.currentFrame) {
         let { transition } = item.currentFrame;
         for(let i = 0, len = transition.length; i < len; i++) {
           let k = transition[i].k;

@@ -9437,6 +9437,7 @@
   }
 
   var uuid = 0;
+  var lastAnimate;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
@@ -9698,7 +9699,14 @@
           prev = calFrame(prev, _next, keys, target);
         }
 
-        this.__framesR = framesR; // finish/cancel共有的before处理
+        this.__framesR = framesR; // 连续执行相同动画时场景优化，时间计算使用头个，后面赋值即可
+
+        if (lastAnimate && lastAnimate.duration === this.duration) {
+          lastAnimate.__nextSibling = this;
+          this.__prevSibling = lastAnimate;
+        }
+
+        lastAnimate = this; // finish/cancel共有的before处理
 
         this.__clean = function (isFinish) {
           _this2.__cancelTask();
@@ -9859,8 +9867,7 @@
                   iterations = _this3.iterations,
                   currentFrames = _this3.currentFrames; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
-              var currentTime = _this3.__calDiffTime(diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-
+              var currentTime = _this3.__prevSibling ? _this3.__prevSibling.currentTime : _this3.__calDiffTime(diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
               if (!firstEnter && fps < 60) {
                 diff = _this3.__fpsTime += diff;
@@ -10047,6 +10054,12 @@
         this.__cancelTask();
 
         this.emit(Event.PAUSE);
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
         return this;
       }
     }, {
@@ -10078,6 +10091,11 @@
 
         self.__cancelTask();
 
+        if (self.__nextSibling) {
+          self.__nextSibling.__prevSibling = null;
+        }
+
+        self.__prevSibling = self.__nextSibling = null;
         var root = self.root,
             frames = self.frames,
             __frameCb = self.__frameCb,
@@ -10134,6 +10152,11 @@
 
         self.__cancelTask();
 
+        if (self.__nextSibling) {
+          self.__nextSibling.__prevSibling = null;
+        }
+
+        self.__prevSibling = self.__nextSibling = null;
         var root = self.root,
             __frameCb = self.__frameCb,
             __clean = self.__clean,
@@ -10193,6 +10216,12 @@
           return this;
         }
 
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
+
         var _gotoOverload = gotoOverload(options, cb);
 
         var _gotoOverload2 = _slicedToArray(_gotoOverload, 2);
@@ -10218,6 +10247,12 @@
             duration = this.duration,
             delay = this.delay,
             endDelay = this.endDelay;
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
 
         if (isDestroyed || duration <= 0) {
           return this;
@@ -10403,6 +10438,12 @@
       },
       set: function set(v) {
         this.__duration = Math.max(0, parseFloat(v) || 0);
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "delay",
@@ -10411,6 +10452,12 @@
       },
       set: function set(v) {
         this.__delay = Math.max(0, parseFloat(v) || 0);
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "endDelay",
@@ -10419,6 +10466,12 @@
       },
       set: function set(v) {
         this.__endDelay = Math.max(0, parseFloat(v) || 0);
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "fps",
@@ -10433,6 +10486,12 @@
         }
 
         this.__fps = v;
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "spf",
@@ -10456,6 +10515,12 @@
         }
 
         this.__iterations = v;
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "fill",
@@ -10464,6 +10529,12 @@
       },
       set: function set(v) {
         this.__fill = v || 'none';
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "direction",
@@ -10472,6 +10543,12 @@
       },
       set: function set(v) {
         this.__direction = v || 'normal';
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "frames",
@@ -10496,6 +10573,12 @@
         }
 
         this.__playbackRate = v;
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "easing",
@@ -10517,6 +10600,12 @@
 
         if (v >= 0) {
           this.__currentTime = this.__nextTime = v;
+
+          if (this.__nextSibling) {
+            this.__nextSibling.__prevSibling = null;
+          }
+
+          this.__prevSibling = this.__nextSibling = null;
         }
       }
     }, {
@@ -10538,10 +10627,7 @@
       key: "playCount",
       get: function get() {
         return this.__playCount;
-      } // set playCount(v) {
-      //   this.__playCount = Math.max(0, parseInt(v) || 0);
-      // }
-
+      }
     }, {
       key: "isDestroyed",
       get: function get() {
@@ -10569,6 +10655,12 @@
         } else {
           this.__spfLimit = !!v;
         }
+
+        if (this.__nextSibling) {
+          this.__nextSibling.__prevSibling = null;
+        }
+
+        this.__prevSibling = this.__nextSibling = null;
       }
     }, {
       key: "assigning",

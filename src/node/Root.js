@@ -244,7 +244,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     if(parent.hasOwnProperty('__uniqueUpdateId')) {
       let id = parent.__uniqueUpdateId;
       if(cacheHash.hasOwnProperty(id)) {
-        return;
+        break;
       }
       cacheHash[id] = true;
     }
@@ -703,14 +703,14 @@ class Root extends Dom {
     // root更新特殊提前，因为有继承因素
     if(updateRoot) {
       this.__updateRoot = null;
-      hasUpdate ||= parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
+      hasUpdate = parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式
       this.__checkRoot(width, height);
     }
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      hasUpdate ||= parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList);
+      hasUpdate = parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList) || hasUpdate;
     });
     // 先做一部分reset避免下面measureList干扰
     this.__reflowList = reflowList;

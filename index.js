@@ -19404,7 +19404,7 @@
         var id = parent.__uniqueUpdateId;
 
         if (cacheHash.hasOwnProperty(id)) {
-          return;
+          break;
         }
 
         cacheHash[id] = true;
@@ -19996,7 +19996,7 @@
 
         if (updateRoot) {
           this.__updateRoot = null;
-          hasUpdate || (hasUpdate = parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList)); // 此时做root检查，防止root出现继承等无效样式
+          hasUpdate = parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式
 
           this.__checkRoot(width, height);
         } // 汇总处理每个节点
@@ -20004,7 +20004,7 @@
 
         var keys = Object.keys(updateHash);
         keys.forEach(function (k) {
-          hasUpdate || (hasUpdate = parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList));
+          hasUpdate = parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList) || hasUpdate;
         }); // 先做一部分reset避免下面measureList干扰
 
         this.__reflowList = reflowList;

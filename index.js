@@ -1087,9 +1087,9 @@
   function extendAnimate(ovd, nvd) {
     var list = nvd.__animationList = ovd.animationList.splice(0);
     list.forEach(function (item) {
-      item.__target = nvd; // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍
+      item.__target = nvd; // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
 
-      if (item.assigning) {
+      if (item.assigning || item.finished && item.__stayEnd()) {
         item.assignCurrentStyle();
       }
     });
@@ -8242,19 +8242,18 @@
 
   _defineProperty(Event, "END", 'end');
 
-  var isFunction$2 = util.isFunction,
-      isObject$1 = util.isObject;
+  var isFunction$2 = util.isFunction;
 
   function traversal(list, diff, step) {
     if (step === 'before') {
       list.forEach(function (item) {
-        if (isObject$1(item) && isFunction$2(item.before)) {
+        if (item && isFunction$2(item.before)) {
           item.before(diff);
         }
       });
     } else if (step === 'after') {
       list.forEach(function (item) {
-        if (isObject$1(item) && isFunction$2(item.after)) {
+        if (item && isFunction$2(item.after)) {
           item.after(diff);
         } else if (isFunction$2(item)) {
           item(diff);
@@ -8547,7 +8546,7 @@
   var isNil$4 = util.isNil,
       isFunction$3 = util.isFunction,
       isNumber$1 = util.isNumber,
-      isObject$2 = util.isObject,
+      isObject$1 = util.isObject,
       clone$1 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
@@ -8639,12 +8638,13 @@
    * @param style
    * @param animation
    * @param root
+   * @param node
    */
 
 
-  function genBeforeRefresh(style, animation, root) {
+  function genBeforeRefresh(style, animation, root, node) {
     root.__addUpdate({
-      node: animation.target,
+      node: node,
       style: style
     });
 
@@ -9456,10 +9456,10 @@
 
       if (Array.isArray(list)) {
         _this.__list = list.filter(function (item) {
-          return item && isObject$2(item);
+          return item && isObject$1(item);
         });
       } // 动画过程另外一种形式，object描述k-v形式
-      else if (list && isObject$2(list)) {
+      else if (list && isObject$1(list)) {
           var nl = [];
           Object.keys(list).forEach(function (k) {
             var v = list[k];
@@ -9495,7 +9495,7 @@
       _this.direction = op.direction;
       _this.playbackRate = op.playbackRate;
       _this.__easing = op.easing;
-      _this.playCount = 0;
+      _this.__playCount = 0;
       _this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
 
       _this.__frames = []; // 每帧数据
@@ -9834,8 +9834,12 @@
               delay = this.delay,
               endDelay = this.endDelay,
               __clean = this.__clean,
-              __fin = this.__fin,
-              target = this.target; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
+              __fin = this.__fin; // 初始化根据方向确定帧序列
+
+          this.__currentFrames = {
+            reverse: true,
+            'alternate-reverse': true
+          }.hasOwnProperty(this.direction) ? framesR : frames; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
 
           var stayEnd = this.__stayEnd();
 
@@ -9849,9 +9853,11 @@
           var enterFrame = this.__enterFrame = {
             before: function before(diff) {
               var root = _this3.root,
+                  target = _this3.target,
                   fps = _this3.fps,
                   playCount = _this3.playCount,
-                  iterations = _this3.iterations; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
+                  iterations = _this3.iterations,
+                  currentFrames = _this3.currentFrames; // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
 
               var currentTime = _this3.__calDiffTime(diff); // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
 
@@ -9877,7 +9883,7 @@
               if (currentTime < delay) {
                 if (stayBegin) {
                   var _current = frames[0].style;
-                  genBeforeRefresh(_current, _this3, root);
+                  genBeforeRefresh(_current, _this3, root, target);
                 } // 即便不刷新，依旧执行begin和帧回调
 
 
@@ -9887,37 +9893,24 @@
 
                 _this3.__isDelay = true;
                 return;
-              } // 根据播放次数确定正反方向
+              } // 减去delay，计算在哪一帧
 
-
-              var currentFrames;
-
-              if (direction === 'reverse') {
-                currentFrames = framesR;
-              } else if ({
-                alternate: true,
-                'alternate-reverse': true
-              }.hasOwnProperty(direction)) {
-                var isEven = playCount % 2 === 0;
-
-                if (direction === 'alternate') {
-                  currentFrames = isEven ? frames : framesR;
-                } else {
-                  currentFrames = isEven ? framesR : frames;
-                }
-              } else {
-                currentFrames = frames;
-              }
-
-              _this3.__currentFrames = frames; // 减去delay，计算在哪一帧
 
               currentTime -= delay;
 
               if (currentTime === 0) {
                 _this3.__begin = true;
+              } // 只有2帧可优化，否则2分查找当前帧
+
+
+              var i;
+
+              if (length === 2) {
+                i = currentTime >= currentFrames[1].time ? 1 : 0;
+              } else {
+                i = binarySearch(0, length - 1, currentTime, currentFrames);
               }
 
-              var i = binarySearch(0, length - 1, currentTime, currentFrames);
               var current = _this3.__currentFrame = currentFrames[i]; // 最后一帧结束动画
 
               var isLastFrame = i === length - 1;
@@ -9968,7 +9961,7 @@
                 } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
-              genBeforeRefresh(current, _this3, root); // 每次循环完触发end事件，最后一次循环触发finish
+              genBeforeRefresh(current, _this3, root, target); // 每次循环完触发end事件，最后一次循环触发finish
 
               if (isLastFrame && (!inEndDelay || isLastCount)) {
                 _this3.__end = true;
@@ -10001,7 +9994,21 @@
               if (_this3.__end) {
                 _this3.__end = false;
 
-                _this3.emit(Event.END, _this3.playCount - 1);
+                _this3.emit(Event.END, _this3.playCount - 1); // 有正反播放需要重设帧序列
+
+
+                if ({
+                  alternate: true,
+                  'alternate-reverse': true
+                }.hasOwnProperty(_this3.direction)) {
+                  var isEven = _this3.playCount % 2 === 0;
+
+                  if (direction === 'alternate') {
+                    _this3.__currentFrames = isEven ? frames : framesR;
+                  } else {
+                    _this3.__currentFrames = isEven ? framesR : frames;
+                  }
+                }
               }
 
               if (_this3.__finish) {
@@ -10096,7 +10103,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(current, self, root);
+              genBeforeRefresh(current, self, root, self.target);
 
               __clean(true);
             },
@@ -10158,7 +10165,7 @@
 
           root.addRefreshTask({
             before: function before() {
-              genBeforeRefresh(__originStyle, self, root);
+              genBeforeRefresh(__originStyle, self, root, self.target);
 
               __clean();
             },
@@ -10531,10 +10538,10 @@
       key: "playCount",
       get: function get() {
         return this.__playCount;
-      },
-      set: function set(v) {
-        this.__playCount = Math.max(0, parseInt(v) || 0);
-      }
+      } // set playCount(v) {
+      //   this.__playCount = Math.max(0, parseInt(v) || 0);
+      // }
+
     }, {
       key: "isDestroyed",
       get: function get() {
@@ -19114,7 +19121,7 @@
   }();
 
   var isNil$7 = util.isNil,
-      isObject$3 = util.isObject,
+      isObject$2 = util.isObject,
       isFunction$6 = util.isFunction;
   var AUTO$6 = unit.AUTO,
       PX$7 = unit.PX,
@@ -19753,7 +19760,7 @@
               if (clone.length) {
                 var setStateList = [];
                 clone.forEach(function (item, i) {
-                  if (isObject$3(item) && isFunction$6(item.before)) {
+                  if (isObject$2(item) && isFunction$6(item.before)) {
                     // 收集组件setState的更新，特殊处理
                     if (item.__state) {
                       setStateList.push(i);
@@ -19811,7 +19818,7 @@
             },
             after: function after(diff) {
               clone.forEach(function (item) {
-                if (isObject$3(item) && isFunction$6(item.after)) {
+                if (isObject$2(item) && isFunction$6(item.after)) {
                   item.after(diff);
                 } else if (isFunction$6(item)) {
                   item(diff);

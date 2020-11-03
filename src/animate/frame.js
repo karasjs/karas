@@ -1,19 +1,19 @@
 import inject from '../util/inject';
 import util from '../util/util';
 
-const { isFunction, isObject } = util;
+const { isFunction } = util;
 
 function traversal(list, diff, step) {
   if(step === 'before') {
     list.forEach(item => {
-      if(isObject(item) && isFunction(item.before)) {
+      if(item && isFunction(item.before)) {
         item.before(diff);
       }
     });
   }
   else if(step === 'after') {
     list.forEach(item => {
-      if(isObject(item) && isFunction(item.after)) {
+      if(item && isFunction(item.after)) {
         item.after(diff);
       }
       else if(isFunction(item)) {

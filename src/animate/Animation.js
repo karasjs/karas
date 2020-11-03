@@ -108,10 +108,11 @@ function inherit(frames, keys, target) {
  * @param style
  * @param animation
  * @param root
+ * @param node
  */
-function genBeforeRefresh(style, animation, root) {
+function genBeforeRefresh(style, animation, root, node) {
   root.__addUpdate({
-    node: animation.target,
+    node,
     style,
   });
   animation.__style = style;
@@ -937,7 +938,7 @@ class Animation extends Event {
     this.direction = op.direction;
     this.playbackRate = op.playbackRate;
     this.__easing = op.easing;
-    this.playCount = 0;
+    this.__playCount = 0;
     this.spfLimit = op.spfLimit; // 定帧功能，不跳帧，每帧时间限制为最大spf
     this.__frames = []; // 每帧数据
     this.__framesR = []; // 存储反向播放的数据
@@ -1208,8 +1209,12 @@ class Animation extends Event {
         endDelay,
         __clean,
         __fin,
-        target,
       } = this;
+      // 初始化根据方向确定帧序列
+      this.__currentFrames = {
+        reverse: true,
+        'alternate-reverse': true,
+      }.hasOwnProperty(this.direction) ? framesR : frames;
       // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
       let stayBegin = this.__stayBegin();
@@ -1220,7 +1225,7 @@ class Animation extends Event {
       // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {
-          let { root, fps, playCount, iterations } = this;
+          let { root, target, fps, playCount, iterations, currentFrames } = this;
           // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
           let currentTime = this.__calDiffTime(diff);
           // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
@@ -1241,7 +1246,7 @@ class Animation extends Event {
           if(currentTime < delay) {
             if(stayBegin) {
               let current = frames[0].style;
-              genBeforeRefresh(current, this, root);
+              genBeforeRefresh(current, this, root, target);
             }
             // 即便不刷新，依旧执行begin和帧回调
             if(currentTime === 0) {
@@ -1250,30 +1255,19 @@ class Animation extends Event {
             this.__isDelay = true;
             return;
           }
-          // 根据播放次数确定正反方向
-          let currentFrames;
-          if(direction === 'reverse') {
-            currentFrames = framesR;
-          }
-          else if({ alternate: true, 'alternate-reverse': true }.hasOwnProperty(direction)) {
-            let isEven = playCount % 2 === 0;
-            if(direction === 'alternate') {
-              currentFrames = isEven ? frames : framesR;
-            }
-            else {
-              currentFrames = isEven ? framesR : frames;
-            }
-          }
-          else {
-            currentFrames = frames;
-          }
-          this.__currentFrames = frames;
           // 减去delay，计算在哪一帧
           currentTime -= delay;
           if(currentTime === 0) {
             this.__begin = true;
           }
-          let i = binarySearch(0, length - 1, currentTime, currentFrames);
+          // 只有2帧可优化，否则2分查找当前帧
+          let i;
+          if(length === 2) {
+            i = currentTime >= currentFrames[1].time ? 1 : 0;
+          }
+          else {
+            i = binarySearch(0, length - 1, currentTime, currentFrames);
+          }
           let current = this.__currentFrame = currentFrames[i];
           // 最后一帧结束动画
           let isLastFrame = i === length - 1;
@@ -1324,7 +1318,7 @@ class Animation extends Event {
             current = calIntermediateStyle(current, percent, target);
           }
           // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-          genBeforeRefresh(current, this, root);
+          genBeforeRefresh(current, this, root, target);
           // 每次循环完触发end事件，最后一次循环触发finish
           if(isLastFrame && (!inEndDelay || isLastCount)) {
             this.__end = true;
@@ -1349,6 +1343,19 @@ class Animation extends Event {
           if(this.__end) {
             this.__end = false;
             this.emit(Event.END, this.playCount - 1);
+            // 有正反播放需要重设帧序列
+            if({
+              alternate: true,
+              'alternate-reverse': true,
+            }.hasOwnProperty(this.direction)) {
+              let isEven = this.playCount % 2 === 0;
+              if(direction === 'alternate') {
+                this.__currentFrames = isEven ? frames : framesR;
+              }
+              else {
+                this.__currentFrames = isEven ? framesR : frames;
+              }
+            }
           }
           if(this.__finish) {
             this.__finish = false;
@@ -1411,7 +1418,7 @@ class Animation extends Event {
       }
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(current, self, root);
+          genBeforeRefresh(current, self, root, self.target);
           __clean(true);
         },
         after(diff) {
@@ -1452,7 +1459,7 @@ class Animation extends Event {
       };
       root.addRefreshTask({
         before() {
-          genBeforeRefresh(__originStyle, self, root);
+          genBeforeRefresh(__originStyle, self, root, self.target);
           __clean();
         },
         after(diff) {
@@ -1751,9 +1758,9 @@ class Animation extends Event {
     return this.__playCount;
   }
 
-  set playCount(v) {
-    this.__playCount = Math.max(0, parseInt(v) || 0);
-  }
+  // set playCount(v) {
+  //   this.__playCount = Math.max(0, parseInt(v) || 0);
+  // }
 
   get isDestroyed() {
     return this.__isDestroyed;

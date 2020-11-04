@@ -8271,6 +8271,7 @@
       this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
+      this.__taskBF = [];
       this.__now = null;
     }
 
@@ -8278,7 +8279,8 @@
       key: "__init",
       value: function __init() {
         var self = this;
-        var task = self.task;
+        var task = self.task,
+            taskBF = self.taskBF;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -8286,7 +8288,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (isPause || !task.length) {
+            if (isPause || !task.length && !taskBF.length) {
               return;
             }
 
@@ -8296,17 +8298,24 @@
 
             last = now; // 优先动画计算
 
+            var cloneBF = taskBF.slice(0);
             var clone = task.slice(0);
+            cloneBF.forEach(function (item) {
+              item.before(diff);
+            });
             traversal(clone, diff, 'before'); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
 
             self.__hookTask.splice(0).forEach(function (item) {
               return item();
-            }); // 普通的before/after
+            }); // 普通的after
 
 
+            cloneBF.forEach(function (item) {
+              item.after(diff);
+            });
             traversal(clone, diff, 'after'); // 还有则继续，没有则停止节省性能
 
-            if (task.length) {
+            if (task.length || taskBF.length) {
               cb();
             }
           });
@@ -8321,13 +8330,26 @@
           return;
         }
 
-        var task = this.task;
+        var task = this.task,
+            taskBF = this.taskBF;
 
-        if (!task.length) {
+        if (!task.length && !taskBF.length) {
           this.__init();
         }
 
         task.push(handle);
+      }
+    }, {
+      key: "__onFrameBF",
+      value: function __onFrameBF(animate) {
+        var task = this.task,
+            taskBF = this.taskBF;
+
+        if (!task.length && !taskBF.length) {
+          this.__init();
+        }
+
+        taskBF.push(animate);
       }
     }, {
       key: "offFrame",
@@ -8336,7 +8358,8 @@
           return;
         }
 
-        var task = this.task;
+        var task = this.task,
+            taskBF = this.taskBF;
 
         for (var i = 0, len = task.length; i < len; i++) {
           var item = task[i]; // 需考虑nextFrame包裹的引用对比
@@ -8347,7 +8370,27 @@
           }
         }
 
-        if (!task.length) {
+        if (!task.length && !taskBF.length) {
+          inject.cancelAnimationFrame(this.id);
+          this.__now = null;
+        }
+      }
+    }, {
+      key: "__offFrameBF",
+      value: function __offFrameBF(animate) {
+        var task = this.task,
+            taskBF = this.taskBF;
+
+        for (var i = 0, len = taskBF.length; i < len; i++) {
+          var item = taskBF[i]; // 需考虑nextFrame包裹的引用对比
+
+          if (item === animate) {
+            animate.splice(i, 1);
+            break;
+          }
+        }
+
+        if (!task.length && !taskBF.length) {
           inject.cancelAnimationFrame(this.id);
           this.__now = null;
         }
@@ -8395,6 +8438,11 @@
       key: "task",
       get: function get() {
         return this.__task;
+      }
+    }, {
+      key: "taskBF",
+      get: function get() {
+        return this.__taskBF;
       }
     }]);
 
@@ -9437,6 +9485,8 @@
   }
 
   var uuid = 0;
+  var lastCurrentTime;
+  var lastNextTime;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
@@ -9780,7 +9830,14 @@
         var playbackRate = this.playbackRate,
             spfLimit = this.spfLimit,
             fps = this.fps;
-        this.__currentTime = this.__nextTime; // 定帧限制每帧时间间隔最大为spf
+        var v = this.__currentTime = this.__nextTime;
+
+        if (lastCurrentTime === v) {
+          this.__nextTime = lastNextTime;
+          return v;
+        }
+
+        lastCurrentTime = v; // 定帧限制每帧时间间隔最大为spf
 
         if (spfLimit) {
           if (spfLimit === true) {
@@ -9795,8 +9852,8 @@
           diff *= playbackRate;
         }
 
-        this.__nextTime += diff;
-        return this.__currentTime;
+        lastNextTime = this.__nextTime += diff;
+        return v;
       }
     }, {
       key: "play",
@@ -9832,26 +9889,38 @@
               framesR = this.framesR,
               direction = this.direction,
               delay = this.delay,
-              endDelay = this.endDelay; // 初始化根据方向确定帧序列
+              endDelay = this.endDelay,
+              root = this.root; // 特殊优化缓存
 
-          this.__currentFrames = {
+          var length = frames.length,
+              is2 = length === 2;
+          var lastI, lastFrame, endTime, endTimeR;
+          var isAlternate = {
+            alternate: true,
+            'alternate-reverse': true
+          }.hasOwnProperty(direction); // 初始化根据方向确定帧序列
+
+          var cfs = this.__currentFrames = {
             reverse: true,
             'alternate-reverse': true
-          }.hasOwnProperty(this.direction) ? framesR : frames; // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
+          }.hasOwnProperty(direction) ? framesR : frames;
+
+          if (is2) {
+            endTime = cfs[1].time;
+            endTimeR = 1 / endTime;
+          } // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
+
 
           var stayEnd = this.__stayEnd();
 
           var stayBegin = this.__stayBegin(); // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
 
 
-          this.__currentTime = this.__nextTime = this.__fpsTime = 0; // 再计算两帧之间的变化，存入transition属性
-
-          var length = frames.length; // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
+          this.__currentTime = this.__nextTime = this.__fpsTime = 0; // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
 
           var enterFrame = this.__enterFrame = {
             before: function before(diff) {
-              var root = _this2.root,
-                  target = _this2.target,
+              var target = _this2.target,
                   fps = _this2.fps,
                   playCount = _this2.playCount,
                   iterations = _this2.iterations,
@@ -9901,16 +9970,20 @@
 
               var i;
 
-              if (length === 2) {
-                i = currentTime < currentFrames[1].time ? 0 : 1;
+              if (is2) {
+                i = currentTime < endTime ? 0 : 1;
               } else {
                 i = binarySearch(0, length - 1, currentTime, currentFrames);
-              }
+              } // 索引不同再重设currentFrame
 
-              var current = currentFrames[i];
 
-              if (current !== _this2.__currentFrame) {
-                _this2.__currentFrame = current;
+              var current;
+
+              if (lastI !== i) {
+                lastI = i;
+                current = _this2.__currentFrame = lastFrame = currentFrames[i];
+              } else {
+                current = lastFrame;
               } // 最后一帧结束动画
 
 
@@ -9955,10 +10028,15 @@
                     }
                   }
               } // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-              else {
-                  var total = currentFrames[i + 1].time - current.time;
-                  var percent = (currentTime - current.time) / total;
+              else if (is2) {
+                  var percent = currentTime * endTimeR;
                   current = calIntermediateStyle(current, percent, target);
+                } else {
+                  var total = currentFrames[i + 1].time - current.time;
+
+                  var _percent = (currentTime - current.time) / total;
+
+                  current = calIntermediateStyle(current, _percent, target);
                 } // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
 
 
@@ -9998,10 +10076,7 @@
                 _this2.emit(Event.END, _this2.playCount - 1); // 有正反播放需要重设帧序列
 
 
-                if ({
-                  alternate: true,
-                  'alternate-reverse': true
-                }.hasOwnProperty(_this2.direction)) {
+                if (isAlternate) {
                   var isEven = _this2.playCount % 2 === 0;
 
                   if (direction === 'alternate') {
@@ -10034,7 +10109,7 @@
       }
     }, {
       key: "pause",
-      value: function pause() {
+      value: function pause(silence) {
         var isDestroyed = this.isDestroyed,
             duration = this.duration,
             pending = this.pending;
@@ -10047,7 +10122,10 @@
 
         this.__cancelTask();
 
-        this.emit(Event.PAUSE);
+        if (!silence) {
+          this.emit(Event.PAUSE);
+        }
+
         return this;
       }
     }, {
@@ -10460,6 +10538,11 @@
       },
       set: function set(v) {
         this.__fill = v || 'none';
+
+        if (this.playState === 'running') {
+          this.pause(true);
+          this.resume();
+        }
       }
     }, {
       key: "direction",
@@ -10468,6 +10551,11 @@
       },
       set: function set(v) {
         this.__direction = v || 'normal';
+
+        if (this.playState === 'running') {
+          this.pause(true);
+          this.resume();
+        }
       }
     }, {
       key: "frames",

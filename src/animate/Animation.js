@@ -892,6 +892,8 @@ function gotoOverload(options, cb) {
 }
 
 let uuid = 0;
+let lastCurrentTime;
+let lastNextTime;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1164,7 +1166,12 @@ class Animation extends Event {
 
   __calDiffTime(diff) {
     let { playbackRate, spfLimit, fps } = this;
-    this.__currentTime = this.__nextTime;
+    let v = this.__currentTime = this.__nextTime;
+    if(lastCurrentTime === v) {
+      this.__nextTime = lastNextTime;
+      return v;
+    }
+    lastCurrentTime = v;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
       if(spfLimit === true) {
@@ -1178,8 +1185,8 @@ class Animation extends Event {
     if(playbackRate !== 1 && playbackRate > 0) {
       diff *= playbackRate;
     }
-    this.__nextTime += diff;
-    return this.__currentTime;
+    lastNextTime = this.__nextTime += diff;
+    return v;
   }
 
   play(cb) {
@@ -1207,23 +1214,33 @@ class Animation extends Event {
         direction,
         delay,
         endDelay,
+        root,
       } = this;
+      // 特殊优化缓存
+      let length = frames.length, is2 = length === 2;
+      let lastI, lastFrame, endTime, endTimeR;
+      let isAlternate = {
+        alternate: true,
+        'alternate-reverse': true,
+      }.hasOwnProperty(direction);
       // 初始化根据方向确定帧序列
-      this.__currentFrames = {
+      let cfs = this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true,
-      }.hasOwnProperty(this.direction) ? framesR : frames;
+      }.hasOwnProperty(direction) ? framesR : frames;
+      if(is2) {
+        endTime = cfs[1].time;
+        endTimeR = 1 / endTime;
+      }
       // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
       let stayBegin = this.__stayBegin();
       // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      // 再计算两帧之间的变化，存入transition属性
-      let length = frames.length;
       // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
       let enterFrame = this.__enterFrame = {
         before: diff => {
-          let { root, target, fps, playCount, iterations, currentFrames } = this;
+          let { target, fps, playCount, iterations, currentFrames } = this;
           // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
           let currentTime = this.__calDiffTime(diff);
           // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
@@ -1260,15 +1277,20 @@ class Animation extends Event {
           }
           // 只有2帧可优化，否则2分查找当前帧
           let i;
-          if(length === 2) {
-            i = currentTime < currentFrames[1].time ? 0 : 1;
+          if(is2) {
+            i = currentTime < endTime ? 0 : 1;
           }
           else {
             i = binarySearch(0, length - 1, currentTime, currentFrames);
           }
-          let current = currentFrames[i];
-          if(current !== this.__currentFrame) {
-            this.__currentFrame = current;
+          // 索引不同再重设currentFrame
+          let current;
+          if(lastI !== i) {
+            lastI = i;
+            current = this.__currentFrame = lastFrame = currentFrames[i];
+          }
+          else {
+            current = lastFrame;
           }
           // 最后一帧结束动画
           let isLastFrame = i === length - 1;
@@ -1313,6 +1335,10 @@ class Animation extends Event {
             }
           }
           // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
+          else if(is2) {
+            let percent = currentTime * endTimeR;
+            current = calIntermediateStyle(current, percent, target);
+          }
           else {
             let total = currentFrames[i + 1].time - current.time;
             let percent = (currentTime - current.time) / total;
@@ -1345,10 +1371,7 @@ class Animation extends Event {
             this.__end = false;
             this.emit(Event.END, this.playCount - 1);
             // 有正反播放需要重设帧序列
-            if({
-              alternate: true,
-              'alternate-reverse': true,
-            }.hasOwnProperty(this.direction)) {
+            if(isAlternate) {
               let isEven = this.playCount % 2 === 0;
               if(direction === 'alternate') {
                 this.__currentFrames = isEven ? frames : framesR;
@@ -1376,14 +1399,16 @@ class Animation extends Event {
     return this;
   }
 
-  pause() {
+  pause(silence) {
     let { isDestroyed, duration, pending } = this;
     if(isDestroyed || duration <= 0 || pending) {
       return this;
     }
     this.__playState = 'paused';
     this.__cancelTask();
-    this.emit(Event.PAUSE);
+    if(!silence) {
+      this.emit(Event.PAUSE);
+    }
     return this;
   }
 
@@ -1694,6 +1719,10 @@ class Animation extends Event {
 
   set fill(v) {
     this.__fill = v || 'none';
+    if(this.playState === 'running') {
+      this.pause(true);
+      this.resume();
+    }
   }
 
   get direction() {
@@ -1702,6 +1731,10 @@ class Animation extends Event {
 
   set direction(v) {
     this.__direction = v || 'normal';
+    if(this.playState === 'running') {
+      this.pause(true);
+      this.resume();
+    }
   }
 
   get frames() {

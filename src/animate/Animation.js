@@ -710,7 +710,7 @@ function getEasing(ea) {
  * @returns {*}
  */
 function calIntermediateStyle(frame, percent, target) {
-  let style = css.clone(frame.style);
+  let style = clone(frame.style);
   let timingFunction = getEasing(frame.easing);
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);
@@ -892,8 +892,6 @@ function gotoOverload(options, cb) {
 }
 
 let uuid = 0;
-let lastCurrentTime;
-let lastNextTime;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1167,11 +1165,6 @@ class Animation extends Event {
   __calDiffTime(diff) {
     let { playbackRate, spfLimit, fps } = this;
     let v = this.__currentTime = this.__nextTime;
-    if(lastCurrentTime === v) {
-      this.__nextTime = lastNextTime;
-      return v;
-    }
-    lastCurrentTime = v;
     // 定帧限制每帧时间间隔最大为spf
     if(spfLimit) {
       if(spfLimit === true) {
@@ -1185,7 +1178,7 @@ class Animation extends Event {
     if(playbackRate !== 1 && playbackRate > 0) {
       diff *= playbackRate;
     }
-    lastNextTime = this.__nextTime += diff;
+    this.__nextTime += diff;
     return v;
   }
 

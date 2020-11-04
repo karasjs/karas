@@ -710,7 +710,7 @@ function getEasing(ea) {
  * @returns {*}
  */
 function calIntermediateStyle(frame, percent, target) {
-  let style = clone(frame.style);
+  let style = css.clone(frame.style);
   let timingFunction = getEasing(frame.easing);
   if(timingFunction && timingFunction !== linear) {
     percent = timingFunction(percent);

@@ -3892,7 +3892,7 @@
       // border-width不支持百分比
       computedStyle[k] = currentStyle[k].unit === PX$1 ? Math.max(0, currentStyle[k].value) : 0;
     });
-    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'flexGrow', 'flexShrink'].forEach(function (k) {
+    ['position', 'display', 'flexDirection', 'justifyContent', 'alignItems', 'alignSelf', 'flexGrow', 'flexShrink'].forEach(function (k) {
       computedStyle[k] = currentStyle[k];
     });
 
@@ -4090,6 +4090,47 @@
     return position === 'relative' || position === 'absolute';
   }
 
+  var direct = {
+    position: true,
+    display: true,
+    backgroundSize: true,
+    backgroundRepeat: true,
+    borderTopStyle: true,
+    borderRightStyle: true,
+    borderBottomStyle: true,
+    borderLeftStyle: true,
+    flexDirection: true,
+    justifyContent: true,
+    alignItems: true,
+    alignSelf: true,
+    flexGrow: true,
+    flexShrink: true,
+    strokeLinecap: true,
+    strokeLinejoin: true,
+    strokeMiterlimit: true,
+    fillRule: true
+  };
+
+  function clone$1(style) {
+    var res = {};
+
+    for (var k in style) {
+      if (style.hasOwnProperty(k)) {
+        var v = style[k];
+
+        if (direct.hasOwnProperty(k)) {
+          res[k] = v;
+        } else if (k === 'filter' || k === 'transform' || k === 'strokeDasharray') {
+          res[k] = util.extend({}, v);
+        } else {
+          res[k] = util.extend({}, v, ['value', 'unit']);
+        }
+      }
+    }
+
+    return res;
+  }
+
   var css = {
     normalize: normalize,
     computeMeasure: computeMeasure,
@@ -4099,7 +4140,8 @@
     calRelative: calRelative,
     calAbsolute: calAbsolute,
     equalStyle: equalStyle,
-    isRelativeOrAbsolute: isRelativeOrAbsolute
+    isRelativeOrAbsolute: isRelativeOrAbsolute,
+    clone: clone$1
   };
 
   var LineBox = /*#__PURE__*/function () {
@@ -8595,7 +8637,7 @@
       isFunction$3 = util.isFunction,
       isNumber$1 = util.isNumber,
       isObject$1 = util.isObject,
-      clone$1 = util.clone,
+      clone$2 = util.clone,
       equalArr$1 = util.equalArr;
   var linear = easing.linear;
   var COLOR_HASH$2 = key.COLOR_HASH,
@@ -9294,7 +9336,7 @@
 
 
   function calIntermediateStyle(frame, percent, target) {
-    var style = clone$1(frame.style);
+    var style = css.clone(frame.style);
     var timingFunction = getEasing(frame.easing);
 
     if (timingFunction && timingFunction !== linear) {
@@ -9502,7 +9544,7 @@
       _this.__id = uuid++;
       _this.__target = target;
       _this.__root = target.root;
-      list = clone$1(list || []);
+      list = clone$2(list || []);
 
       if (Array.isArray(list)) {
         _this.__list = list.filter(function (item) {
@@ -9634,21 +9676,21 @@
 
 
         if (list.length === 1) {
-          list[0] = clone$1(list[0]);
+          list[0] = clone$2(list[0]);
 
           if (list[0].offset === 1) {
             list.unshift({
               offset: 0
             });
           } else {
-            var copy = clone$1(list[0]);
+            var copy = clone$2(list[0]);
             copy.offset = 1;
             list.push(copy);
           }
         } // 强制clone防止同引用
         else {
             list.forEach(function (item, i) {
-              list[i] = clone$1(item);
+              list[i] = clone$2(item);
             });
           } // 首尾时间偏移强制为[0, 1]，不是的话前后加空帧
 
@@ -9734,7 +9776,7 @@
         } // 反向存储帧的倒排结果
 
 
-        var framesR = clone$1(frames).reverse();
+        var framesR = clone$2(frames).reverse();
         framesR.forEach(function (item) {
           item.time = duration - item.time;
           item.transition = [];
@@ -11333,7 +11375,7 @@
       PERCENT$5 = unit.PERCENT,
       STRING$2 = unit.STRING,
       INHERIT$3 = unit.INHERIT;
-  var clone$2 = util.clone,
+  var clone$3 = util.clone,
       int2rgba$2 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       equalArr$2 = util.equalArr,
@@ -11886,7 +11928,7 @@
           return;
         }
 
-        this.__layoutData = clone$2(data); // margin/padding在abs前已经计算过了，无需二次计算
+        this.__layoutData = clone$3(data); // margin/padding在abs前已经计算过了，无需二次计算
 
         if (!fromAbs) {
           this.__mp(currentStyle, computedStyle, w);
@@ -13114,7 +13156,7 @@
                   }); // 再画重复的十字和4角象限
 
                   repeat.forEach(function (item) {
-                    var copy = clone$2(props);
+                    var copy = clone$3(props);
 
                     if (needResize) {
                       var _matrix3 = image.matrixResize(_width2, _height2, w, h, item[0], item[1], innerWidth, innerHeight);
@@ -14454,7 +14496,7 @@
 
   var isNil$5 = util.isNil,
       isFunction$4 = util.isFunction,
-      clone$3 = util.clone,
+      clone$4 = util.clone,
       extend$2 = util.extend;
   /**
    * 向上设置cp类型叶子节点，表明从root到本节点这条链路有更新，使得无链路更新的节约递归
@@ -14520,7 +14562,7 @@
             return;
           }
 
-          var state = clone$3(self.state);
+          var state = clone$4(self.state);
           n = extend$2(state, n);
         }
 
@@ -23180,7 +23222,7 @@
   var isNil$e = util.isNil,
       isFunction$7 = util.isFunction,
       isPrimitive = util.isPrimitive,
-      clone$4 = util.clone,
+      clone$5 = util.clone,
       extend$3 = util.extend;
   var abbrCssProperty$1 = abbr$1.abbrCssProperty,
       abbrAnimateOption$1 = abbr$1.abbrAnimateOption,
@@ -23308,7 +23350,7 @@
   function linkChild(child, libraryItem) {
     // 规定图层child只有init和动画，属性和子图层来自库
     child.tagName = libraryItem.tagName;
-    child.props = clone$4(libraryItem.props);
+    child.props = clone$5(libraryItem.props);
     child.children = libraryItem.children; // library的var-也要继承过来，本身的var-优先级更高，目前只有children会出现优先级情况
 
     Object.keys(libraryItem).forEach(function (k) {

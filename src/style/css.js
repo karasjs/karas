@@ -802,6 +802,7 @@ function computeReflow(node, isHost) {
     'flexDirection',
     'justifyContent',
     'alignItems',
+    'alignSelf',
     'flexGrow',
     'flexShrink',
   ].forEach(k => {
@@ -987,6 +988,45 @@ function isRelativeOrAbsolute(node) {
   return position === 'relative' || position === 'absolute';
 }
 
+let direct = {
+  position: true,
+  display: true,
+  backgroundSize: true,
+  backgroundRepeat: true,
+  borderTopStyle: true,
+  borderRightStyle: true,
+  borderBottomStyle: true,
+  borderLeftStyle: true,
+  flexDirection: true,
+  justifyContent: true,
+  alignItems: true,
+  alignSelf: true,
+  flexGrow: true,
+  flexShrink: true,
+  strokeLinecap: true,
+  strokeLinejoin: true,
+  strokeMiterlimit: true,
+  fillRule: true,
+};
+function clone(style) {
+  let res = {};
+  for(let k in style) {
+    if(style.hasOwnProperty(k)) {
+      let v = style[k];
+      if(direct.hasOwnProperty(k)) {
+        res[k] = v;
+      }
+      else if(k === 'filter' || k === 'transform' || k === 'strokeDasharray') {
+        res[k] = util.extend({}, v);
+      }
+      else {
+        res[k] = util.extend({}, v, ['value', 'unit']);
+      }
+    }
+  }
+  return res;
+}
+
 export default {
   normalize,
   computeMeasure,
@@ -997,4 +1037,5 @@ export default {
   calAbsolute,
   equalStyle,
   isRelativeOrAbsolute,
+  clone,
 };

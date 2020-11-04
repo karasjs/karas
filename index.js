@@ -9832,9 +9832,7 @@
               framesR = this.framesR,
               direction = this.direction,
               delay = this.delay,
-              endDelay = this.endDelay,
-              __clean = this.__clean,
-              __fin = this.__fin; // 初始化根据方向确定帧序列
+              endDelay = this.endDelay; // 初始化根据方向确定帧序列
 
           this.__currentFrames = {
             reverse: true,
@@ -9972,7 +9970,7 @@
                 if (playCount >= iterations) {
                   _this2.__finish = true;
 
-                  __clean(true);
+                  _this2.__clean(true);
                 }
               }
             },
@@ -10017,7 +10015,7 @@
               if (_this2.__finish) {
                 _this2.__finish = false;
 
-                __fin();
+                _this2.__fin();
               }
 
               if (_this2.__nextBegin) {

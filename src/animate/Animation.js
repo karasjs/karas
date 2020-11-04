@@ -1207,8 +1207,6 @@ class Animation extends Event {
         direction,
         delay,
         endDelay,
-        __clean,
-        __fin,
       } = this;
       // 初始化根据方向确定帧序列
       this.__currentFrames = {
@@ -1327,7 +1325,7 @@ class Animation extends Event {
             this.__end = true;
             if(playCount >= iterations) {
               this.__finish = true;
-              __clean(true);
+              this.__clean(true);
             }
           }
         },
@@ -1362,7 +1360,7 @@ class Animation extends Event {
           }
           if(this.__finish) {
             this.__finish = false;
-            __fin();
+            this.__fin();
           }
           if(this.__nextBegin) {
             this.__nextBegin = false;

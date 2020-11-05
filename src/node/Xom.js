@@ -686,11 +686,8 @@ class Xom extends Node {
   __modifyStruct(root, offset = 0) {
     let struct = this.__struct;
     let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-    root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
-    let d = this.__struct.total - struct.total;
-    struct = this.domParent.__struct;
-    struct.total += d;
-    return [this.__struct, d];
+    root.__structs.splice(struct.index + offset, 1, ns);
+    return [this.__struct, 1];
   }
 
   // 获取margin/padding的实际值
@@ -730,11 +727,11 @@ class Xom extends Node {
     } = currentStyle;
     this.__refreshLevel = level.REFLOW;
     this.__cancelCache();
+    this.__layoutData = clone(data);
     if(isDestroyed || display === 'none') {
       this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
       return;
     }
-    this.__layoutData = clone(data);
     // margin/padding在abs前已经计算过了，无需二次计算
     if(!fromAbs) {
       this.__mp(currentStyle, computedStyle, w);

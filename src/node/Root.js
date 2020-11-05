@@ -474,6 +474,14 @@ class Root extends Dom {
         this.__clear(ctx);
       }
       this.render(renderMode, this.__refreshLevel, ctx, defs);
+      // 利用list循环代替tree递归快速渲染
+      // let cache = this.cache;
+      // this.__structs.forEach(struct => {
+      //   console.log(struct);
+      //   let { node, index, childIndex, lv, num, total } = struct;
+      //   node.render2(renderMode, node.__refreshLevel, ctx, defs, cache);
+      // });
+      // svg的特殊diff需要
       if(renderMode === mode.SVG) {
         let nvd = this.virtualDom;
         nvd.defs = defs.value;

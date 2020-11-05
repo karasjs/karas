@@ -133,6 +133,16 @@ class Dom extends Xom {
     return arr;
   }
 
+  __modifyStruct(root, offset = 0) {
+    let struct = this.__struct;
+    let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+    root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
+    let d = this.__struct.total - struct.total;
+    struct = this.domParent.__struct;
+    struct.total += d;
+    return [this.__struct, d];
+  }
+
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
   __tryLayInline(w, total) {
     let { flowChildren, currentStyle: { width } } = this;

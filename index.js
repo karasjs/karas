@@ -11845,19 +11845,14 @@
     _createClass(Xom, [{
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
-        var _root$__structs;
-
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var struct = this.__struct;
 
         var ns = this.__structure(struct.index, struct.lv, struct.childIndex);
 
-        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct.index + offset, struct.total + 1].concat(_toConsumableArray(ns)));
+        root.__structs.splice(struct.index + offset, 1, ns);
 
-        var d = this.__struct.total - struct.total;
-        struct = this.domParent.__struct;
-        struct.total += d;
-        return [this.__struct, d];
+        return [this.__struct, 1];
       } // 获取margin/padding的实际值
 
     }, {
@@ -11899,12 +11894,13 @@
 
         this.__cancelCache();
 
+        this.__layoutData = clone$2(data);
+
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = computedStyle.width = computedStyle.height = 0;
           return;
-        }
+        } // margin/padding在abs前已经计算过了，无需二次计算
 
-        this.__layoutData = clone$2(data); // margin/padding在abs前已经计算过了，无需二次计算
 
         if (!fromAbs) {
           this.__mp(currentStyle, computedStyle, w);
@@ -15462,6 +15458,23 @@
         res.num = zIndexChildren.length;
         res.total = arr.length - 1;
         return arr;
+      }
+    }, {
+      key: "__modifyStruct",
+      value: function __modifyStruct(root) {
+        var _root$__structs;
+
+        var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+        var struct = this.__struct;
+
+        var ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+
+        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct.index + offset, struct.total + 1].concat(_toConsumableArray(ns)));
+
+        var d = this.__struct.total - struct.total;
+        struct = this.domParent.__struct;
+        struct.total += d;
+        return [this.__struct, d];
       } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
 
     }, {
@@ -19830,7 +19843,15 @@
             _this3.__clear(ctx);
           }
 
-          _this3.render(renderMode, _this3.__refreshLevel, ctx, defs);
+          _this3.render(renderMode, _this3.__refreshLevel, ctx, defs); // 利用list循环代替tree递归快速渲染
+          // let cache = this.cache;
+          // this.__structs.forEach(struct => {
+          //   console.log(struct);
+          //   let { node, index, childIndex, lv, num, total } = struct;
+          //   node.render2(renderMode, node.__refreshLevel, ctx, defs, cache);
+          // });
+          // svg的特殊diff需要
+
 
           if (renderMode === mode.SVG) {
             var nvd = _this3.virtualDom;

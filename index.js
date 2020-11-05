@@ -16907,7 +16907,7 @@
         var canCacheChildren = true;
         var draw = !root.cache || renderMode === mode.SVG; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
-        var zIndexChildren = this.__zIndexChildren; // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
+        var zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this); // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
 
         if (root.cache && renderMode === mode.CANVAS) {
           var maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
@@ -19382,19 +19382,20 @@
     return node.hasOwnProperty('__uniqueReflowId') && hash[node.__uniqueReflowId] >= LAYOUT;
   }
 
-  function setLAYOUT(node, hash) {
-    addLAYOUT(node, hash);
+  function setLAYOUT(node, hash, component) {
+    addLAYOUT(node, hash, component);
     hash[node.__uniqueReflowId].lv |= LAYOUT;
   }
 
   var __uniqueReflowId = 0;
 
-  function addLAYOUT(node, hash) {
+  function addLAYOUT(node, hash, component) {
     if (!node.hasOwnProperty('__uniqueReflowId')) {
       node.__uniqueReflowId = __uniqueReflowId;
       hash[__uniqueReflowId++] = {
         node: node,
-        lv: LAYOUT
+        lv: LAYOUT,
+        component: component
       };
     }
   }
@@ -20347,16 +20348,15 @@
         __uniqueReflowId = 0;
         var reflowHash = {}; // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
 
-        function checkInfluence(node, focus) {
+        function checkInfluence(node, component, focus) {
           // 自身尺寸固定且无变化，无需向上查找，但position发生变化的除外
           if (isFixedSize(node, root) && !focus) {
             return;
           } // cp强制刷新
+          // if(node instanceof Component) {
+          //   return;
+          // }
 
-
-          if (node instanceof Component$1) {
-            return;
-          }
 
           var target = node; // inline新老都影响，节点变为最近的父非inline
 
@@ -20377,13 +20377,13 @@
 
 
               if (_parent3.currentStyle.position === 'absolute' || _parent3.computedStyle.position === 'absolute') {
-                setLAYOUT(_parent3, reflowHash);
+                setLAYOUT(_parent3, reflowHash, component);
                 return;
               } // 父固定宽度跳出直接父进行LAYOUT即可
 
 
               if (isFixedSize(_parent3)) {
-                setLAYOUT(_parent3, reflowHash);
+                setLAYOUT(_parent3, reflowHash, component);
                 return;
               } // 继续向上
 
@@ -20393,7 +20393,7 @@
 
 
             if (isFixedSize(target)) {
-              setLAYOUT(target, reflowHash);
+              setLAYOUT(target, reflowHash, component);
               return;
             }
           } // 此时target指向node，如果原本是inline则是其非inline父
@@ -20419,12 +20419,12 @@
               }
 
               if (parent.currentStyle.position === 'absolute' || parent.computedStyle.position === 'absolute') {
-                setLAYOUT(parent, reflowHash);
+                setLAYOUT(parent, reflowHash, component);
                 return;
               }
 
               if (isFixedSize(parent)) {
-                setLAYOUT(parent, reflowHash);
+                setLAYOUT(parent, reflowHash, component);
                 return;
               }
 
@@ -20433,7 +20433,7 @@
 
 
             if (isFixedSize(target)) {
-              setLAYOUT(target, reflowHash);
+              setLAYOUT(target, reflowHash, component);
               return;
             }
           } // 此时target指向node，如果父原本是flex则是其最上flex父
@@ -20447,7 +20447,7 @@
 
 
           if (target !== node) {
-            setLAYOUT(target, reflowHash);
+            setLAYOUT(target, reflowHash, component);
           }
         } // 遍历检查发生布局改变的节点列表，此时computedStyle还是老的，currentStyle是新的
 
@@ -20485,7 +20485,7 @@
           else if (currentStyle.position !== computedStyle.position) {
               o.lv = LAYOUT;
 
-              if (checkInfluence(node, true)) {
+              if (checkInfluence(node, component, true)) {
                 hasRoot = true;
                 break;
               }
@@ -20516,7 +20516,7 @@
                 else {
                     o.lv = LAYOUT;
 
-                    if (checkInfluence(node)) {
+                    if (checkInfluence(node, component)) {
                       hasRoot = true;
                       break;
                     }

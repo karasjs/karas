@@ -1436,7 +1436,7 @@ class Dom extends Xom {
     let canCacheChildren = true;
     let draw = !root.cache || renderMode === mode.SVG;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndexChildren = this.__zIndexChildren;
+    let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
     // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
     if(root.cache && renderMode === mode.CANVAS) {
       let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);

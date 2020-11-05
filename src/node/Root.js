@@ -81,18 +81,19 @@ function isLAYOUT(node, hash) {
   return node.hasOwnProperty('__uniqueReflowId') && hash[node.__uniqueReflowId] >= LAYOUT;
 }
 
-function setLAYOUT(node, hash) {
-  addLAYOUT(node, hash);
+function setLAYOUT(node, hash, component) {
+  addLAYOUT(node, hash, component);
   hash[node.__uniqueReflowId].lv |= LAYOUT;
 }
 
 let __uniqueReflowId = 0;
-function addLAYOUT(node, hash) {
+function addLAYOUT(node, hash, component) {
   if(!node.hasOwnProperty('__uniqueReflowId')) {
     node.__uniqueReflowId = __uniqueReflowId;
     hash[__uniqueReflowId++] = {
       node,
       lv: LAYOUT,
+      component,
     };
   }
 }
@@ -846,15 +847,15 @@ class Root extends Dom {
     let reflowHash = {};
 
     // 单独提出共用检测影响的函数，非absolute和relative的offset情况从节点本身开始向上分析影响
-    function checkInfluence(node, focus) {
+    function checkInfluence(node, component, focus) {
       // 自身尺寸固定且无变化，无需向上查找，但position发生变化的除外
       if(isFixedSize(node, root) && !focus) {
         return;
       }
       // cp强制刷新
-      if(node instanceof Component) {
-        return;
-      }
+      // if(node instanceof Component) {
+      //   return;
+      // }
       let target = node;
       // inline新老都影响，节点变为最近的父非inline
       if(node.currentStyle.display === 'inline' || node.computedStyle.display === 'inline') {
@@ -871,12 +872,12 @@ class Root extends Dom {
           }
           // 遇到absolute跳出，如果absolute发生变化，一定会存在于列表中，不用考虑
           if(parent.currentStyle.position === 'absolute' || parent.computedStyle.position === 'absolute') {
-            setLAYOUT(parent, reflowHash);
+            setLAYOUT(parent, reflowHash, component);
             return;
           }
           // 父固定宽度跳出直接父进行LAYOUT即可
           if(isFixedSize(parent)) {
-            setLAYOUT(parent, reflowHash);
+            setLAYOUT(parent, reflowHash, component);
             return;
           }
           // 继续向上
@@ -885,7 +886,7 @@ class Root extends Dom {
         while(parent && (parent.currentStyle.display === 'inline' || parent.computedStyle.display === 'inline'));
         // target至少是node的parent，如果固定尺寸提前跳出
         if(isFixedSize(target)) {
-          setLAYOUT(target, reflowHash);
+          setLAYOUT(target, reflowHash, component);
           return;
         }
       }
@@ -906,11 +907,11 @@ class Root extends Dom {
             return;
           }
           if(parent.currentStyle.position === 'absolute' || parent.computedStyle.position === 'absolute') {
-            setLAYOUT(parent, reflowHash);
+            setLAYOUT(parent, reflowHash, component);
             return;
           }
           if(isFixedSize(parent)) {
-            setLAYOUT(parent, reflowHash);
+            setLAYOUT(parent, reflowHash, component);
             return;
           }
           parent = parent.domParent;
@@ -918,7 +919,7 @@ class Root extends Dom {
         while(parent && (parent.computedStyle.display === 'flex' || parent.currentStyle.display === 'flex'));
         // target至少是node的parent，如果固定尺寸提前跳出
         if(isFixedSize(target)) {
-          setLAYOUT(target, reflowHash);
+          setLAYOUT(target, reflowHash, component);
           return;
         }
       }
@@ -930,7 +931,7 @@ class Root extends Dom {
       }
       // 向上查找了并且没提前跳出的，父重新布局
       if(target !== node) {
-        setLAYOUT(target, reflowHash);
+        setLAYOUT(target, reflowHash, component);
       }
     }
 
@@ -961,7 +962,7 @@ class Root extends Dom {
       // absolute和非absolute互换
       else if(currentStyle.position !== computedStyle.position) {
         o.lv = LAYOUT;
-        if(checkInfluence(node, true)) {
+        if(checkInfluence(node, component, true)) {
           hasRoot = true;
           break;
         }
@@ -989,7 +990,7 @@ class Root extends Dom {
         // 剩余的其它变化
         else {
           o.lv = LAYOUT;
-          if(checkInfluence(node)) {
+          if(checkInfluence(node, component)) {
             hasRoot = true;
             break;
           }

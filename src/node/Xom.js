@@ -683,13 +683,6 @@ class Xom extends Node {
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
   }
 
-  __modifyStruct(root, offset = 0) {
-    let struct = this.__struct;
-    let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-    root.__structs.splice(struct.index + offset, 1, ns);
-    return [this.__struct, 1];
-  }
-
   // 获取margin/padding的实际值
   __mp(currentStyle, computedStyle, w) {
     [

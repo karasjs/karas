@@ -24,6 +24,13 @@ class Node {
     };
   }
 
+  __modifyStruct(root, offset = 0) {
+    let struct = this.__struct;
+    let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+    root.__structs.splice(struct.index + offset, 1, ns);
+    return [this.__struct, 1];
+  }
+
   __offsetX(diff, isLayout) {
     if(isLayout) {
       this.__x += diff;

@@ -302,6 +302,18 @@
         };
       }
     }, {
+      key: "__modifyStruct",
+      value: function __modifyStruct(root) {
+        var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+        var struct = this.__struct;
+
+        var ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+
+        root.__structs.splice(struct.index + offset, 1, ns);
+
+        return [this.__struct, 1];
+      }
+    }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout) {
         if (isLayout) {
@@ -11840,22 +11852,10 @@
       _this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
 
       return _this;
-    }
+    } // 获取margin/padding的实际值
+
 
     _createClass(Xom, [{
-      key: "__modifyStruct",
-      value: function __modifyStruct(root) {
-        var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-        var struct = this.__struct;
-
-        var ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-
-        root.__structs.splice(struct.index + offset, 1, ns);
-
-        return [this.__struct, 1];
-      } // 获取margin/padding的实际值
-
-    }, {
       key: "__mp",
       value: function __mp(currentStyle, computedStyle, w) {
         var _this2 = this;

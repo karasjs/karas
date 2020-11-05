@@ -273,13 +273,29 @@ Object.keys(change.GEOM).concat([
   '__cacheTotal',
   '__cache',
   'bbox',
-  '__struct',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {
     get() {
       let sr = this.shadowRoot;
       if(sr) {
         return sr[fn];
+      }
+    },
+  });
+});
+
+['__struct'].forEach(fn => {
+  Object.defineProperty(Component.prototype, fn, {
+    get() {
+      let sr = this.shadowRoot;
+      if(sr) {
+        return sr[fn];
+      }
+    },
+    set(v) {
+      let sr = this.shadowRoot;
+      if(sr) {
+        sr[fn] = v;
       }
     },
   });

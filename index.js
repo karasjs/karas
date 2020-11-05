@@ -14758,25 +14758,23 @@
         }
       }
     });
-  });
-  ['__struct'].forEach(function (fn) {
-    Object.defineProperty(Component$1.prototype, fn, {
-      get: function get() {
-        var sr = this.shadowRoot;
+  }); // ['__struct'].forEach(fn => {
+  //   Object.defineProperty(Component.prototype, fn, {
+  //     get() {
+  //       let sr = this.shadowRoot;
+  //       if(sr) {
+  //         return sr[fn];
+  //       }
+  //     },
+  //     set(v) {
+  //       let sr = this.shadowRoot;
+  //       if(sr) {
+  //         sr[fn] = v;
+  //       }
+  //     },
+  //   });
+  // });
 
-        if (sr) {
-          return sr[fn];
-        }
-      },
-      set: function set(v) {
-        var sr = this.shadowRoot;
-
-        if (sr) {
-          sr[fn] = v;
-        }
-      }
-    });
-  });
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache', '__mergeBbox', '__structure', '__modifyStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
@@ -15514,6 +15512,11 @@
             index = _this$__struct.index,
             total = _this$__struct.total;
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+
+        if (zIndexChildren.length === 1) {
+          return;
+        }
+
         zIndexChildren.forEach(function (child, i) {
           child.__struct.childIndex = i;
         }); // 按直接子节点划分为相同数量的若干段进行排序
@@ -18204,6 +18207,7 @@
     cp.__state = state;
     cp.__nextState = null;
     var oldS = cp.shadow;
+    var oldSr = cp.shadowRoot;
     var oldJson = cp.__cd;
     var json = builder.flattenJson(cp.render()); // 对比新老render()返回的内容，更新后重新生成sr
 
@@ -18212,18 +18216,28 @@
     cp.__init(json); // 为了局部dom布局需要知道老的css信息
 
 
-    var s = cp.shadow;
+    var sr = cp.shadowRoot;
 
-    if (s instanceof Xom$2) {
-      s.__width = oldS.width;
-      s.__height = oldS.height;
-      s.__computedStyle = oldS.computedStyle;
-      s.__layoutData = oldS.layoutData;
-    } else {
-      s.__parent = oldS.parent;
+    if (sr instanceof Xom$2) {
+      sr.__width = oldSr.width;
+      sr.__height = oldSr.height;
+      sr.__computedStyle = oldSr.computedStyle;
+      sr.__layoutData = oldSr.layoutData;
     }
 
-    s.__struct = oldS.__struct;
+    sr.__parent = oldSr.parent;
+    sr.__struct = oldSr.__struct; // let s = cp.shadow;
+    // if(s instanceof Xom) {
+    //   s.__width = oldS.width;
+    //   s.__height = oldS.height;
+    //   s.__computedStyle = oldS.computedStyle;
+    //   s.__layoutData = oldS.layoutData;
+    // }
+    // else {
+    //   s.__parent = oldS.parent;
+    // }
+    // s.__struct = oldS.__struct;
+
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {

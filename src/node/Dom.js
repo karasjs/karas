@@ -155,6 +155,9 @@ class Dom extends Xom {
   __updateStruct(structs) {
     let { index, total } = this.__struct;
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    if(zIndexChildren.length === 1) {
+      return;
+    }
     zIndexChildren.forEach((child, i) => {
       child.__struct.childIndex = i;
     });

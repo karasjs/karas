@@ -69,23 +69,33 @@ function updateCp(cp, props, state) {
   cp.__state = state;
   cp.__nextState = null;
   let oldS = cp.shadow;
+  let oldSr = cp.shadowRoot;
   let oldJson = cp.__cd;
   let json = builder.flattenJson(cp.render());
   // 对比新老render()返回的内容，更新后重新生成sr
   diffSr(oldS, oldJson, json);
   cp.__init(json);
   // 为了局部dom布局需要知道老的css信息
-  let s = cp.shadow;
-  if(s instanceof Xom) {
-    s.__width = oldS.width;
-    s.__height = oldS.height;
-    s.__computedStyle = oldS.computedStyle;
-    s.__layoutData = oldS.layoutData;
+  let sr = cp.shadowRoot;
+  if(sr instanceof Xom) {
+    sr.__width = oldSr.width;
+    sr.__height = oldSr.height;
+    sr.__computedStyle = oldSr.computedStyle;
+    sr.__layoutData = oldSr.layoutData;
   }
-  else {
-    s.__parent = oldS.parent;
-  }
-  s.__struct = oldS.__struct;
+  sr.__parent = oldSr.parent;
+  sr.__struct = oldSr.__struct;
+  // let s = cp.shadow;
+  // if(s instanceof Xom) {
+  //   s.__width = oldS.width;
+  //   s.__height = oldS.height;
+  //   s.__computedStyle = oldS.computedStyle;
+  //   s.__layoutData = oldS.layoutData;
+  // }
+  // else {
+  //   s.__parent = oldS.parent;
+  // }
+  // s.__struct = oldS.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

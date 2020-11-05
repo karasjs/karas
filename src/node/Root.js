@@ -98,7 +98,7 @@ function addLAYOUT(node, hash) {
 }
 
 let uniqueUpdateId = 0;
-function parseUpdate(renderMode, root, updateHash, target, reflowList, measureList, cacheHash, cacheList) {
+function parseUpdate(renderMode, root, updateHash, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
   let { node, style, origin, overwrite, focus, img, component, measure, list } = target;
   // updateStyle()这样的调用还要计算normalize
   if(origin && style) {
@@ -133,46 +133,49 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   let p;
   let hasMeasure = measure;
   let hasZ;
-  for(let k in style) {
-    if(style.hasOwnProperty(k)) {
-      let v = style[k];
-      // 只有geom的props和style2种可能
-      if(change.isGeom(tagName, k)) {
-        if(!css.equalStyle(k, v, currentProps[k], node)) {
-          p = p || {};
-          p[k] = style[k];
-          lv |= level.REPAINT;
-          __cacheProps[k] = undefined;
+  // component无需遍历
+  if(!component) {
+    for(let k in style) {
+      if(style.hasOwnProperty(k)) {
+        let v = style[k];
+        // 只有geom的props和style2种可能
+        if(change.isGeom(tagName, k)) {
+          if(!css.equalStyle(k, v, currentProps[k], node)) {
+            p = p || {};
+            p[k] = style[k];
+            lv |= level.REPAINT;
+            __cacheProps[k] = undefined;
+          }
         }
-      }
-      else {
-        // 需和现在不等，且不是pointerEvents这种无关的
-        if(!css.equalStyle(k, v, currentStyle[k], node)) {
-          // pointerEvents这种无关的只需更新
-          if(change.isIgnore(k)) {
-            __cacheStyle[k] = undefined;
-            currentStyle[k] = v;
-          }
-          else {
-            // TRBL变化只对relative/absolute起作用，其它忽视
-            if({ top: true, right: true, bottom: true, left:true }.hasOwnProperty(k)) {
-              if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute'
-                && style.position !== 'relative' && style.position !== 'absolute') {
-                delete style[k];
-                continue;
+        else {
+          // 需和现在不等，且不是pointerEvents这种无关的
+          if(!css.equalStyle(k, v, currentStyle[k], node)) {
+            // pointerEvents这种无关的只需更新
+            if(change.isIgnore(k)) {
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+            }
+            else {
+              // TRBL变化只对relative/absolute起作用，其它忽视
+              if({ top: true, right: true, bottom: true, left: true }.hasOwnProperty(k)) {
+                if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute'
+                  && style.position !== 'relative' && style.position !== 'absolute') {
+                  delete style[k];
+                  continue;
+                }
               }
+              // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
+              lv |= level.getLevel(k);
+              if(change.isMeasure(k)) {
+                hasMeasure = true;
+              }
+              // repaint置空，如果reflow会重新生成空的
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
             }
-            // 只粗略区分出none/repaint/reflow，repaint细化等级在后续，reflow在checkReflow()
-            lv |= level.getLevel(k);
-            if(change.isMeasure(k)) {
-              hasMeasure = true;
+            if(k === 'zIndex' && node !== root) {
+              hasZ = true;
             }
-            // repaint置空，如果reflow会重新生成空的
-            __cacheStyle[k] = undefined;
-            currentStyle[k] = v;
-          }
-          if(k === 'zIndex' && node !== root) {
-            hasZ = true;
           }
         }
       }
@@ -207,9 +210,14 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     if(!isNil(focus)) {
       lv |= focus;
     }
-    // z改变影响struct局部重排，注意和reflow避免重复，它的数量不会变因此不影响外围
-    if(hasZ && !component) {
-      node.domParent.__modifyStruct(root);
+    // z改变影响struct局部重排，它的数量不会变因此不影响外围，此处先收集，最后统一对局部根节点进行更新
+    if(hasZ && !component && zHash) {
+      let parent = node.domParent;
+      if(!parent.hasOwnProperty('__uniqueZId')) {
+        zHash[uniqueUpdateId] = true;
+        parent.__uniqueZId = uniqueUpdateId++;
+        zList.push(parent);
+      }
     }
   }
   // reflow在root的refresh中做
@@ -255,8 +263,8 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     }
     // 没有的需要设置一个标识
     else {
-      let id = parent.__uniqueUpdateId = uniqueUpdateId++;
-      cacheHash[id] = true;
+      cacheHash[uniqueUpdateId] = true;
+      parent.__uniqueUpdateId = uniqueUpdateId++;
       cacheList.push(parent);
     }
     let lv = parent.__refreshLevel;
@@ -725,27 +733,39 @@ class Root extends Dom {
     let reflowList = [];
     let cacheHash = {};
     let cacheList = [];
+    let zHash = {};
+    let zList = [];
     let updateRoot = this.__updateRoot;
     let updateHash = this.__updateHash;
     let hasUpdate;
     // root更新特殊提前，因为有继承因素
+    let root = this;
     if(updateRoot) {
       this.__updateRoot = null;
-      hasUpdate = parseUpdate(renderMode, this, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
+      hasUpdate = parseUpdate(renderMode, root, updateHash, updateRoot,
+        reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式
       this.__checkRoot(width, height);
     }
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      hasUpdate = parseUpdate(renderMode, this, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList) || hasUpdate;
+      hasUpdate = parseUpdate(renderMode, this, updateHash, updateHash[k],
+        reflowList, measureList, cacheHash, cacheList, zHash, zList) || hasUpdate;
     });
-    // 先做一部分reset避免下面measureList干扰
+    // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
     this.__reflowList = reflowList;
     uniqueUpdateId = 0;
     this.__updateHash = {};
     cacheList.forEach(item => {
       delete item.__uniqueUpdateId;
+    });
+    // zIndex改变的汇总修改，防止重复操作
+    zList.forEach(item => {
+      if(item.hasOwnProperty('__uniqueZId')) {
+        delete item.__uniqueZId;
+        item.__updateStruct(root.__structs);
+      }
     });
     /**
      * 遍历每项节点，计算测量信息，节点向上向下查找继承信息，如果parent也是继承，先计算parent的
@@ -1033,8 +1053,13 @@ class Root extends Dom {
         let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
-          let isLastAbs = node.computedStyle.position === 'absolute';
-          let isNowAbs = node.currentStyle.position === 'absolute';
+          let zIndex, position, cs = node.computedStyle;
+          if(component) {
+            zIndex = cs.zIndex;
+            position = cs.position;
+          }
+          let isLastAbs = cs.position === 'absolute';
+          let isNowAbs = cs.position === 'absolute';
           let parent = node.domParent;
           let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let current = node;
@@ -1072,7 +1097,7 @@ class Root extends Dom {
             if(!container) {
               container = root;
             }
-            parent.__layoutAbs(container, null, node);
+            parent.__layoutAbs(container, null, node); console.log(1);
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];
             diffList.push(arr);
@@ -1100,9 +1125,6 @@ class Root extends Dom {
                 h,
               });
             }
-            let arr = node.__modifyStruct(root, diffI);
-            diffI += arr[1];
-            diffList.push(arr);
           }
           // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
           let fromAbs = node.computedStyle.position === 'absolute';
@@ -1210,6 +1232,19 @@ class Root extends Dom {
             while(last) {
               last.__cancelCache();
               last = last.domParent;
+            }
+          }
+          // component未知dom变化，所以强制重新struct，同时防止zIndex变更影响父节点
+          if(component) {
+            let arr = node.__modifyStruct(root, diffI);
+            diffI += arr[1];
+            diffList.push(arr);
+            if((cs.position !== position && (cs.position === 'static' || position === 'static'))
+              || cs.zIndex !== zIndex) {
+              node.domParent.__updateStruct(root.__structs);
+              if(this.renderMode === mode.SVG) {
+                cleanSvgCache(node.domParent);
+              }
             }
           }
         }

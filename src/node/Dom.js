@@ -137,10 +137,55 @@ class Dom extends Xom {
     let struct = this.__struct;
     let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
     root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
-    let d = this.__struct.total - struct.total;
-    struct = this.domParent.__struct;
-    struct.total += d;
+    let d = 0;
+    if(this !== root) {
+      let d = this.__struct.total - struct.total;
+      struct = this.domParent.__struct;
+      struct.total += d;
+    }
     return [this.__struct, d];
+  }
+
+  /**
+   * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
+   * 即便包含component造成的dom变化也不影响，component作为子节点reflow会再执行，这里重排老的vd
+   * @param structs
+   * @private
+   */
+  __updateStruct(structs) {
+    let { index, total } = this.__struct;
+    let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
+    zIndexChildren.forEach((child, i) => {
+      child.__struct.childIndex = i;
+    });
+    // 按直接子节点划分为相同数量的若干段进行排序
+    let arr = [];
+    for(let i = index + 1; i <= total; i++) {
+      let child = structs[i];
+      arr.push({
+        child,
+        list: structs.slice(child.index, child.index + child.total + 1),
+      });
+      i += child.total;
+    }
+    let needSort;
+    arr.sort(function(a, b) {
+      let res = a.child.childIndex - b.child.childIndex;
+      if(res < 0) {
+        needSort = true;
+      }
+      return res;
+    });
+    if(needSort) {
+      let list = [];
+      arr.forEach(item => {
+        list = list.concat(item.list);
+      });
+      list.forEach((struct, i) => {
+        struct.index = index + i + 1;
+      })
+      structs.splice(index + 1, total, ...list);
+    }
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下

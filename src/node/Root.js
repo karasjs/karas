@@ -288,15 +288,20 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   return true;
 }
 
-function cleanSvgCache(node) {
-  node.__refreshLevel |= level.REPAINT;
+function cleanSvgCache(node, child) {
+  if(child) {
+    node.__refreshLevel |= level.REPAINT;
+  }
+  else {
+    node.__cacheTotal.release();
+  }
   if(Array.isArray(node.children)) {
     node.children.forEach(child => {
       if(child instanceof Component) {
         child = child.shadowRoot;
       }
       if(!(child instanceof Text)) {
-        cleanSvgCache(child);
+        cleanSvgCache(child, true);
       }
     });
   }

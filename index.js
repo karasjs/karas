@@ -14748,7 +14748,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox', '__struct']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -19649,8 +19649,12 @@
     return true;
   }
 
-  function cleanSvgCache(node) {
-    node.__refreshLevel |= o$1.REPAINT;
+  function cleanSvgCache(node, child) {
+    if (child) {
+      node.__refreshLevel |= o$1.REPAINT;
+    } else {
+      node.__cacheTotal.release();
+    }
 
     if (Array.isArray(node.children)) {
       node.children.forEach(function (child) {
@@ -19659,7 +19663,7 @@
         }
 
         if (!(child instanceof Text)) {
-          cleanSvgCache(child);
+          cleanSvgCache(child, true);
         }
       });
     }

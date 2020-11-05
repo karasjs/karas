@@ -1097,10 +1097,7 @@ class Root extends Dom {
             if(!container) {
               container = root;
             }
-            parent.__layoutAbs(container, null, node); console.log(1);
-            let arr = node.__modifyStruct(root, diffI);
-            diffI += arr[1];
-            diffList.push(arr);
+            parent.__layoutAbs(container, null, node);
             // 前后都是abs无需偏移后面兄弟
             if(isLastAbs) {
               return;

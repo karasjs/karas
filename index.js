@@ -20654,14 +20654,8 @@
                     container = root;
                   }
 
-                  parent.__layoutAbs(container, null, node);
+                  parent.__layoutAbs(container, null, node); // 前后都是abs无需偏移后面兄弟
 
-                  console.log(1);
-
-                  var arr = node.__modifyStruct(root, diffI);
-
-                  diffI += arr[1];
-                  diffList.push(arr); // 前后都是abs无需偏移后面兄弟
 
                   if (isLastAbs) {
                     return;
@@ -20823,10 +20817,10 @@
 
 
                 if (component) {
-                  var _arr = node.__modifyStruct(root, diffI);
+                  var arr = node.__modifyStruct(root, diffI);
 
-                  diffI += _arr[1];
-                  diffList.push(_arr);
+                  diffI += arr[1];
+                  diffList.push(arr);
 
                   if (cs.position !== position && (cs.position === 'static' || position === 'static') || cs.zIndex !== zIndex) {
                     node.domParent.__updateStruct(root.__structs);

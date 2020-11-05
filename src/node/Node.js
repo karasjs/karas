@@ -15,6 +15,15 @@ class Node {
     // this.__host = null;
   }
 
+  __structure(i, lv, j) {
+    return this.__struct = {
+      node: this,
+      index: i,
+      childIndex: j,
+      lv,
+    };
+  }
+
   __offsetX(diff, isLayout) {
     if(isLayout) {
       this.__x += diff;

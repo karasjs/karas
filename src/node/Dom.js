@@ -30,8 +30,8 @@ function genZIndexChildren(dom) {
     if(item instanceof Component) {
       item = item.shadowRoot;
     }
-    // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
-    if(!item.isMask && !item.isClip && item.computedStyle) {
+    // 不是遮罩，并且已有__layoutData，特殊情况下中途插入的节点还未渲染
+    if(!item.isMask && !item.isClip && (item.__layoutData || item instanceof Text)) {
       if(item instanceof Xom) {
         if(isRelativeOrAbsolute(item)) {
           // 临时变量为排序使用
@@ -105,6 +105,32 @@ class Dom extends Xom {
     // currentStyle/currentProps不深度clone，继承一层即可，动画时也是extend这样只改一层引用不动原始静态style
     this.__currentStyle = util.extend({}, this.__style);
     this.__children = children || [];
+  }
+
+  __structure(i, lv, j) {
+    let res = super.__structure(i++, lv, j);
+    let arr = [res];
+    let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
+    if(this.root.cache && this.root.renderMode === mode.CANVAS) {
+      let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
+      if(maskChildren.length) {
+        zIndexChildren = maskChildren.concat(zIndexChildren);
+      }
+    }
+    zIndexChildren.forEach((child, j) => {
+      let temp = child.__structure(i, lv + 1, j);
+      if(Array.isArray(temp)) {
+        i += temp.length;
+        arr = arr.concat(temp);
+      }
+      else {
+        i++;
+        arr.push(temp);
+      }
+    });
+    res.num = zIndexChildren.length;
+    res.total = arr.length - 1;
+    return arr;
   }
 
   // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
@@ -1355,7 +1381,7 @@ class Dom extends Xom {
     let canCacheChildren = true;
     let draw = !root.cache || renderMode === mode.SVG;
     // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
+    let zIndexChildren = this.__zIndexChildren;
     // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
     if(root.cache && renderMode === mode.CANVAS) {
       let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
@@ -1967,7 +1993,7 @@ class Dom extends Xom {
   }
 
   get zIndexChildren() {
-    return this.__zIndexChildren || [];
+    return this.__zIndexChildren;
   }
 
   get lineGroups() {

@@ -292,6 +292,16 @@
     }
 
     _createClass(Node, [{
+      key: "__structure",
+      value: function __structure(i, lv, j) {
+        return this.__struct = {
+          node: this,
+          index: i,
+          childIndex: j,
+          lv: lv
+        };
+      }
+    }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout) {
         if (isLayout) {
@@ -11830,10 +11840,27 @@
       _this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
 
       return _this;
-    } // 获取margin/padding的实际值
-
+    }
 
     _createClass(Xom, [{
+      key: "__modifyStruct",
+      value: function __modifyStruct(root) {
+        var _root$__structs;
+
+        var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+        var struct = this.__struct;
+
+        var ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+
+        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct.index + offset, struct.total + 1].concat(_toConsumableArray(ns)));
+
+        var d = this.__struct.total - struct.total;
+        struct = this.domParent.__struct;
+        struct.total += d;
+        return [this.__struct, d];
+      } // 获取margin/padding的实际值
+
+    }, {
       key: "__mp",
       value: function __mp(currentStyle, computedStyle, w) {
         var _this2 = this;
@@ -11860,7 +11887,7 @@
     }, {
       key: "__layout",
       value: function __layout(data, isVirtual, fromAbs) {
-        css.computeReflow(this, !this.parent);
+        css.computeReflow(this, this.isShadowRoot);
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
@@ -14736,7 +14763,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache', '__mergeBbox'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache', '__mergeBbox', '__structure', '__modifyStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -15311,10 +15338,10 @@
 
       if (item instanceof Component$1) {
         item = item.shadowRoot;
-      } // 不是遮罩，并且已有computedStyle，特殊情况下中途插入的节点还未渲染
+      } // 不是遮罩，并且已有__layoutData，特殊情况下中途插入的节点还未渲染
 
 
-      if (!item.isMask && !item.isClip && item.computedStyle) {
+      if (!item.isMask && !item.isClip && (item.__layoutData || item instanceof Text)) {
         if (item instanceof Xom) {
           if (isRelativeOrAbsolute$1(item)) {
             // 临时变量为排序使用
@@ -15403,10 +15430,41 @@
       _this.__currentStyle = util.extend({}, _this.__style);
       _this.__children = children || [];
       return _this;
-    } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
-
+    }
 
     _createClass(Dom, [{
+      key: "__structure",
+      value: function __structure(i, lv, j) {
+        var res = _get(_getPrototypeOf(Dom.prototype), "__structure", this).call(this, i++, lv, j);
+
+        var arr = [res];
+        var zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
+
+        if (this.root.cache && this.root.renderMode === mode.CANVAS) {
+          var maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
+
+          if (maskChildren.length) {
+            zIndexChildren = maskChildren.concat(zIndexChildren);
+          }
+        }
+
+        zIndexChildren.forEach(function (child, j) {
+          var temp = child.__structure(i, lv + 1, j);
+
+          if (Array.isArray(temp)) {
+            i += temp.length;
+            arr = arr.concat(temp);
+          } else {
+            i++;
+            arr.push(temp);
+          }
+        });
+        res.num = zIndexChildren.length;
+        res.total = arr.length - 1;
+        return arr;
+      } // 给定父宽度情况下，尝试行内放下后的剩余宽度，为负数即放不下
+
+    }, {
       key: "__tryLayInline",
       value: function __tryLayInline(w, total) {
         var flowChildren = this.flowChildren,
@@ -16779,7 +16837,7 @@
         var canCacheChildren = true;
         var draw = !root.cache || renderMode === mode.SVG; // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
 
-        var zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this); // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
+        var zIndexChildren = this.__zIndexChildren; // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
 
         if (root.cache && renderMode === mode.CANVAS) {
           var maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
@@ -17543,7 +17601,7 @@
     }, {
       key: "zIndexChildren",
       get: function get() {
-        return this.__zIndexChildren || [];
+        return this.__zIndexChildren;
       }
     }, {
       key: "lineGroups",
@@ -18077,6 +18135,7 @@
       s.__parent = oldS.parent;
     }
 
+    s.__struct = oldS.__struct;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
@@ -19279,6 +19338,7 @@
         overwrite = target.overwrite,
         focus = target.focus,
         img = target.img,
+        component = target.component,
         measure = target.measure,
         list = target.list; // updateStyle()这样的调用还要计算normalize
 
@@ -19375,7 +19435,7 @@
               currentStyle[k] = v;
             }
 
-            if (k === 'zIndex') {
+            if (k === 'zIndex' && node !== root) {
               hasZ = true;
             }
           }
@@ -19396,7 +19456,7 @@
     } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
-    if (lv === o$1.NONE && !img) {
+    if (lv === o$1.NONE && !img && !component) {
       delete node.__uniqueUpdateId;
       return;
     } // 记录下来清除parent的zIndexChildren缓存
@@ -19407,23 +19467,30 @@
     } // reflow/repaint/measure相关的记录下来
 
 
-    var isRepaint = o$1.isRepaint(lv);
+    var isRepaint = !component && o$1.isRepaint(lv);
 
     if (isRepaint) {
       // zIndex变化需清空svg缓存
       if (hasZ && renderMode === mode.SVG) {
         lv |= o$1.REPAINT;
+        cleanSvgCache(node.domParent);
       }
 
       if (!isNil$7(focus)) {
         lv |= focus;
+      } // z改变影响struct局部重排，注意和reflow避免重复，它的数量不会变因此不影响外围
+
+
+      if (hasZ && !component) {
+        node.domParent.__modifyStruct(root);
       }
     } // reflow在root的refresh中做
     else {
         reflowList.push({
           node: node,
           style: style,
-          img: img
+          img: img,
+          component: component
         }); // measure需要提前先处理
 
         if (hasMeasure) {
@@ -19498,6 +19565,22 @@
     }
 
     return true;
+  }
+
+  function cleanSvgCache(node) {
+    node.__refreshLevel |= o$1.REPAINT;
+
+    if (Array.isArray(node.children)) {
+      node.children.forEach(function (child) {
+        if (child instanceof Component$1) {
+          child = child.shadowRoot;
+        }
+
+        if (!(child instanceof Text)) {
+          cleanSvgCache(child);
+        }
+      });
+    }
   }
 
   var uuid$1 = 0;
@@ -19840,7 +19923,9 @@
                       node: sr,
                       style: sr.currentStyle,
                       focus: o$1.REFLOW,
-                      measure: true // 未知强制measure
+                      measure: true,
+                      // 未知强制measure
+                      component: true // 强制reflow
 
                     });
                   });
@@ -19954,6 +20039,7 @@
             overwrite = o.overwrite,
             focus = o.focus,
             img = o.img,
+            component = o.component,
             measure = o.measure; // 事件队列和setState等原因，可能node已经销毁
 
         if (node.isDestroyed) {
@@ -20004,6 +20090,7 @@
             overwrite: overwrite,
             focus: focus,
             img: img,
+            component: component,
             measure: measure
           };
         } else if (updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
@@ -20272,7 +20359,8 @@
           var _reflowList$i = reflowList[i],
               node = _reflowList$i.node,
               style = _reflowList$i.style,
-              img = _reflowList$i.img; // root提前跳出，完全重新布局
+              img = _reflowList$i.img,
+              component = _reflowList$i.component; // root提前跳出，完全重新布局
 
           if (node === this) {
             hasRoot = true;
@@ -20287,7 +20375,8 @@
             reflowHash[__uniqueReflowId++] = {
               node: node,
               lv: OFFSET$1,
-              img: img
+              img: img,
+              component: component
             };
           }
 
@@ -20319,10 +20408,10 @@
                     }
                   }
                 } // relative只有x/y变化时特殊只进行OFFSET，非relative的忽视掉这个无用影响
-                // img加载特殊进到这里强制LAYOUT
+                // img和component加载特殊进到这里强制LAYOUT
 
 
-                if (onlyXY && !img) {
+                if (onlyXY && !img && !component) {
                   if (computedStyle.position === 'relative') {
                     o.lv |= OFFSET$1;
                   }
@@ -20361,10 +20450,7 @@
             h: height
           });
 
-          return [reflowList, [{
-            node: this,
-            lv: LAYOUT
-          }]];
+          this.__structs = this.__structure(0, 0);
         }
         /**
          * 修剪树，自顶向下深度遍历
@@ -20402,9 +20488,12 @@
               uniqueList: uniqueList
             }); // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
 
+            var diffList = [];
+            var diffI = 0;
             uniqueList.forEach(function (item) {
               var node = item.node,
-                  lv = item.lv; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
+                  lv = item.lv,
+                  component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
                 var isLastAbs = node.computedStyle.position === 'absolute';
@@ -20417,9 +20506,15 @@
                     h = _parent$layoutData.h,
                     _width = parent.width,
                     _computedStyle = parent.computedStyle;
-                var ref;
+                var current = node; // cp的shadowRoot要向上到cp本身
 
-                if (ref = node.prev) {
+                while (component && current.isShadowRoot) {
+                  current = current.host;
+                }
+
+                var ref = current.prev;
+
+                if (ref) {
                   y = ref.y;
                   y += ref.outerHeight;
                 } else {
@@ -20435,11 +20530,7 @@
                 var container = node;
 
                 if (isNowAbs) {
-                  while (container.isShadowRoot) {
-                    container = container.host; // 先把可能递归嵌套的组件循环完
-                  }
-
-                  container = container.parent;
+                  container = container.domParent;
 
                   while (container && container !== root) {
                     if (isRelativeOrAbsolute$2) {
@@ -20457,8 +20548,12 @@
                     container = root;
                   }
 
-                  parent.__layoutAbs(container, null, node); // 一直abs无需偏移后面兄弟
+                  parent.__layoutAbs(container, null, node);
 
+                  var arr = node.__modifyStruct(root, diffI);
+
+                  diffI += arr[1];
+                  diffList.push(arr); // 前后都是abs无需偏移后面兄弟
 
                   if (isLastAbs) {
                     return;
@@ -20485,6 +20580,11 @@
                       h: h
                     });
                   }
+
+                  var _arr = node.__modifyStruct(root, diffI);
+
+                  diffI += _arr[1];
+                  diffList.push(_arr);
                 } // 记录重新布局引发的差值w/h，注意abs到非abs的切换情况
 
 
@@ -20692,11 +20792,45 @@
                     node.__offsetX(newX - oldX, false, o$1.REFLOW);
                   }
                 }
+            }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了
+            // 这里因为和update保持一致的顺序，因此一定是先根顺序且互不包含
+
+            var _diff = 0,
+                lastIndex = 0,
+                isFirst = true,
+                structs = root.__structs;
+            diffList.forEach(function (item) {
+              var _item = _slicedToArray(item, 2),
+                  ns = _item[0],
+                  d = _item[1]; // 第一个有变化的，及后面无论有无变化都需更新
+              // 第1个变化区域无需更改前面一段
+
+
+              if (isFirst) {
+                isFirst = false;
+                lastIndex = ns.index + ns.total + 1;
+                _diff += d;
+              } // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
+              else {
+                  var j = ns.index + ns.total + 1 + _diff;
+
+                  for (var _i2 = lastIndex; _i2 < j; _i2++) {
+                    structs[_i2].index += _diff;
+                  }
+
+                  lastIndex = j;
+                  _diff += d;
+                }
             });
+
+            for (var _i3 = lastIndex, _len2 = structs.length; _i3 < _len2; _i3++) {
+              structs[_i3].index += _diff;
+            } // 清除id
+
+
             reflowList.forEach(function (item) {
               return delete item.node.__uniqueReflowId;
             });
-            return [reflowList, uniqueList];
           }
       } // 特殊覆盖方法，不需要super()计算自己，因为放在每次checkRoot()做过了
 

@@ -85,6 +85,7 @@ function updateCp(cp, props, state) {
   else {
     s.__parent = oldS.parent;
   }
+  s.__struct = oldS.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

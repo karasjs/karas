@@ -683,6 +683,16 @@ class Xom extends Node {
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
   }
 
+  __modifyStruct(root, offset = 0) {
+    let struct = this.__struct;
+    let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
+    root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
+    let d = this.__struct.total - struct.total;
+    struct = this.domParent.__struct;
+    struct.total += d;
+    return [this.__struct, d];
+  }
+
   // 获取margin/padding的实际值
   __mp(currentStyle, computedStyle, w) {
     [
@@ -710,7 +720,7 @@ class Xom extends Node {
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
   __layout(data, isVirtual, fromAbs) {
-    css.computeReflow(this, !this.parent);
+    css.computeReflow(this, this.isShadowRoot);
     let { w } = data;
     let { isDestroyed, currentStyle, computedStyle } = this;
     let {

@@ -14758,23 +14758,7 @@
         }
       }
     });
-  }); // ['__struct'].forEach(fn => {
-  //   Object.defineProperty(Component.prototype, fn, {
-  //     get() {
-  //       let sr = this.shadowRoot;
-  //       if(sr) {
-  //         return sr[fn];
-  //       }
-  //     },
-  //     set(v) {
-  //       let sr = this.shadowRoot;
-  //       if(sr) {
-  //         sr[fn] = v;
-  //       }
-  //     },
-  //   });
-  // });
-
+  });
   ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__applyCache', '__mergeBbox', '__structure', '__modifyStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
@@ -15490,10 +15474,9 @@
         var d = 0;
 
         if (this !== root) {
-          var _d = this.__struct.total - struct.total;
-
+          d = this.__struct.total - struct.total;
           struct = this.domParent.__struct;
-          struct.total += _d;
+          struct.total += d;
         }
 
         return [this.__struct, d];
@@ -18226,18 +18209,7 @@
     }
 
     sr.__parent = oldSr.parent;
-    sr.__struct = oldSr.__struct; // let s = cp.shadow;
-    // if(s instanceof Xom) {
-    //   s.__width = oldS.width;
-    //   s.__height = oldS.height;
-    //   s.__computedStyle = oldS.computedStyle;
-    //   s.__layoutData = oldS.layoutData;
-    // }
-    // else {
-    //   s.__parent = oldS.parent;
-    // }
-    // s.__struct = oldS.__struct;
-
+    sr.__struct = oldSr.__struct;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {

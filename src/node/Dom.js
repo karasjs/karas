@@ -139,7 +139,7 @@ class Dom extends Xom {
     root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
     let d = 0;
     if(this !== root) {
-      let d = this.__struct.total - struct.total;
+      d = this.__struct.total - struct.total;
       struct = this.domParent.__struct;
       struct.total += d;
     }

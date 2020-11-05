@@ -85,17 +85,6 @@ function updateCp(cp, props, state) {
   }
   sr.__parent = oldSr.parent;
   sr.__struct = oldSr.__struct;
-  // let s = cp.shadow;
-  // if(s instanceof Xom) {
-  //   s.__width = oldS.width;
-  //   s.__height = oldS.height;
-  //   s.__computedStyle = oldS.computedStyle;
-  //   s.__layoutData = oldS.layoutData;
-  // }
-  // else {
-  //   s.__parent = oldS.parent;
-  // }
-  // s.__struct = oldS.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

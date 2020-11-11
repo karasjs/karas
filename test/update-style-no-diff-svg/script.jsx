@@ -19,6 +19,6 @@ o.children[0].updateStyle({
     [1, 1],
     [0, 1],
   ],
-}, function(n) {
-  input.value += n;
+}, function() {
+  input.value += 2;
 });

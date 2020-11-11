@@ -10020,10 +10020,10 @@
                 // 多次播放时到达最后一帧也会显示
 
                 if (stayEnd || !isLastCount) {
-                  current = current.style;
+                  current = util.clone(current.style);
                 } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
                 else {
-                    current = _this2.__originStyle;
+                    current = util.clone(_this2.__originStyle);
                   } // 非尾每轮次放完增加次数和计算下轮准备
 
 
@@ -12208,13 +12208,13 @@
           if (__cacheStyle.backgroundPositionX === undefined) {
             __cacheStyle.backgroundPositionX = true;
             var backgroundPositionX = currentStyle.backgroundPositionX;
-            computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value * innerWidth + '%';
+            computedStyle.backgroundPositionX = backgroundPositionX.unit === PX$4 ? backgroundPositionX.value : backgroundPositionX.value + '%';
           }
 
           if (__cacheStyle.backgroundPositionY === undefined) {
             __cacheStyle.backgroundPositionY = true;
             var backgroundPositionY = currentStyle.backgroundPositionY;
-            computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value * innerWidth + '%';
+            computedStyle.backgroundPositionY = backgroundPositionY.unit === PX$4 ? backgroundPositionY.value : backgroundPositionY.value + '%';
           }
 
           if (__cacheStyle.backgroundSize === undefined) {
@@ -13649,9 +13649,7 @@
       key: "updateStyle",
       value: function updateStyle(style, cb) {
         var tagName = this.tagName,
-            root = this.root,
-            props = this.props,
-            os = this.style;
+            root = this.root;
 
         if (root) {
           var hasChange; // 先去掉缩写
@@ -13662,19 +13660,12 @@
               abbr.toFull(style, k);
               delete style[k];
             }
-          }); // 此处仅检测样式是否有效
+          }); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
 
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
-              // 是规定内的合法样式
               if (o.isValid(tagName, i)) {
-                if (o.isGeom(tagName, i)) {
-                  if (!css.equalStyle(i, style[i], props[i], this)) {
-                    hasChange = true;
-                  }
-                } else if (!css.equalStyle(i, style[i], os[i], this)) {
-                  hasChange = true;
-                }
+                hasChange = true;
               } else {
                 delete style[i];
               }

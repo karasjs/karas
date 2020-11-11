@@ -1305,11 +1305,11 @@ class Animation extends Event {
             // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
             // 多次播放时到达最后一帧也会显示
             if(stayEnd || !isLastCount) {
-              current = current.style;
+              current = util.clone(current.style);
             }
             // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
             else {
-              current = this.__originStyle;
+              current = util.clone(this.__originStyle);
             }
             // 非尾每轮次放完增加次数和计算下轮准备
             if(!isLastCount) {

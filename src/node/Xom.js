@@ -1026,7 +1026,7 @@ class Xom extends Node {
           backgroundPositionX,
         } = currentStyle;
         computedStyle.backgroundPositionX = backgroundPositionX.unit === PX
-          ? backgroundPositionX.value : backgroundPositionX.value * innerWidth + '%';
+          ? backgroundPositionX.value : (backgroundPositionX.value + '%');
       }
       if(__cacheStyle.backgroundPositionY === undefined) {
         __cacheStyle.backgroundPositionY = true;
@@ -1034,7 +1034,7 @@ class Xom extends Node {
           backgroundPositionY,
         } = currentStyle;
         computedStyle.backgroundPositionY = backgroundPositionY.unit === PX
-          ? backgroundPositionY.value : backgroundPositionY.value * innerWidth + '%';
+          ? backgroundPositionY.value : (backgroundPositionY.value + '%');
       }
       if(__cacheStyle.backgroundSize === undefined) {
         __cacheStyle.backgroundSize = true;
@@ -2310,7 +2310,7 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { tagName, root, props, style: os } = this;
+    let { tagName, root } = this;
     if(root) {
       let hasChange;
       // 先去掉缩写
@@ -2321,19 +2321,11 @@ class Xom extends Node {
           delete style[k];
         }
       });
-      // 此处仅检测样式是否有效
+      // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
       for(let i in style) {
         if(style.hasOwnProperty(i)) {
-          // 是规定内的合法样式
           if(change.isValid(tagName, i)) {
-            if(change.isGeom(tagName, i)) {
-              if(!css.equalStyle(i, style[i], props[i], this)) {
-                hasChange = true;
-              }
-            }
-            else if(!css.equalStyle(i, style[i], os[i], this)) {
-              hasChange = true;
-            }
+            hasChange = true;
           }
           else {
             delete style[i];

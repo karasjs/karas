@@ -565,6 +565,7 @@ function renderSvg(renderMode, ctx, defs, root) {
   let parentVdList = [];
   let parentVd;
   let lastLv = 0;
+  let last;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
     let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask, hasClip } = item;
@@ -584,6 +585,12 @@ function renderSvg(renderMode, ctx, defs, root) {
       parentMatrix = parentMatrixList[lv - 1];
       parentVdList.splice(lv);
       parentVd = parentVdList[lv - 1];
+    }
+    else if(lv > lastLv) {
+      parentMatrixList.push(last.__matrix);
+      let vd = last.virtualDom;
+      parentVdList.push(vd);
+      parentVd = vd;
     }
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
@@ -714,13 +721,12 @@ function renderSvg(renderMode, ctx, defs, root) {
     if(parentVd && !node.isMask && !node.isClip) {
       parentVd.children.push(virtualDom);
     }
-    if(i === 0 || lv !== lastLv) {
+    if(i === 0) {
       parentMatrix = node.__matrix;
-      parentMatrixList.push(parentMatrix);
       parentVd = virtualDom;
-      parentVdList.push(parentVd);
     }
     lastLv = lv;
+    last = node;
   }
 }
 

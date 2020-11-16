@@ -18847,6 +18847,7 @@
     var parentVdList = [];
     var parentVd;
     var lastLv = 0;
+    var last;
 
     var _loop2 = function _loop2(len, _i6) {
       var item = __structs[_i6];
@@ -18876,6 +18877,11 @@
         parentMatrix = parentMatrixList[lv - 1];
         parentVdList.splice(lv);
         parentVd = parentVdList[lv - 1];
+      } else if (lv > lastLv) {
+        parentMatrixList.push(last.__matrix);
+        var vd = last.virtualDom;
+        parentVdList.push(vd);
+        parentVd = vd;
       }
 
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
@@ -19027,14 +19033,13 @@
         parentVd.children.push(virtualDom);
       }
 
-      if (_i6 === 0 || lv !== lastLv) {
+      if (_i6 === 0) {
         parentMatrix = node.__matrix;
-        parentMatrixList.push(parentMatrix);
         parentVd = virtualDom;
-        parentVdList.push(parentVd);
       }
 
       lastLv = lv;
+      last = node;
       _i5 = _i6;
     };
 

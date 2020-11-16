@@ -14189,30 +14189,6 @@
     return LineGroup;
   }();
 
-  var TAG_NAME = {
-    'div': true,
-    'p': true,
-    'span': true,
-    'img': true,
-    'b': true,
-    'strong': true
-  };
-  var INLINE = {
-    'span': true,
-    'img': true,
-    'b': true,
-    'strong': true
-  };
-  var BOLD = {
-    'b': true,
-    'strong': true
-  };
-  var tag = {
-    TAG_NAME: TAG_NAME,
-    INLINE: INLINE,
-    BOLD: BOLD
-  };
-
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
@@ -14383,7 +14359,7 @@
       }
 
       if (children.$$type === TYPE_VD$1) {
-        flattenJson(children.children);
+        flattenJson(children);
       }
 
       list.push(children);
@@ -15308,6 +15284,30 @@
 
     return Geom;
   }(Xom);
+
+  var TAG_NAME = {
+    'div': true,
+    'p': true,
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var INLINE = {
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var BOLD = {
+    'b': true,
+    'strong': true
+  };
+  var tag = {
+    TAG_NAME: TAG_NAME,
+    INLINE: INLINE,
+    BOLD: BOLD
+  };
 
   var AUTO$4 = unit.AUTO,
       PX$6 = unit.PX,

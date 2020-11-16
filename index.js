@@ -12631,7 +12631,6 @@
 
         if (renderMode === mode.SVG) {
           virtualDom = this.__virtualDom = {
-            type: 'dom',
             bb: [],
             children: [],
             visibility: 'visible'
@@ -14430,12 +14429,6 @@
             lastMcIndex = i - 1;
             mcHash[lastMcIndex] = [item];
             hasMc = true;
-
-            if (item.isMask) {
-              children[i - 1].__hasMask = true;
-            } else {
-              children[i - 1].__hasClip = true;
-            }
           }
         } else {
           lastMcIndex = undefined;
@@ -15931,6 +15924,17 @@
         this.children.forEach(function (item) {
           item.__computeMeasure(renderMode, ctx, false, cb);
         });
+      }
+    }, {
+      key: "render",
+      value: function render(renderMode, lv, ctx, defs, cache) {
+        var res = _get(_getPrototypeOf(Dom.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
+
+        if (renderMode === mode.SVG) {
+          this.virtualDom.type = 'dom';
+        }
+
+        return res;
       }
     }, {
       key: "__destroy",

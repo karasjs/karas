@@ -1354,7 +1354,6 @@ class Xom extends Node {
     // svg设置vd上的lv属性标明<REPAINT时应用缓存，初始化肯定没有
     if(renderMode === mode.SVG) {
       virtualDom = this.__virtualDom = {
-        type: 'dom',
         bb: [],
         children: [],
         visibility: 'visible',

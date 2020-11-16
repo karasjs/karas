@@ -1,5 +1,6 @@
 import Xom from './Xom';
 import Text from './Text';
+import mode from './mode';
 import LineGroup from './LineGroup';
 import Component from './Component';
 import tag from './tag';
@@ -36,12 +37,6 @@ function genZIndexChildren(dom) {
           lastMcIndex = i - 1;
           mcHash[lastMcIndex] = [item];
           hasMc = true;
-          if(item.isMask) {
-            children[i - 1].__hasMask = true;
-          }
-          else {
-            children[i - 1].__hasClip = true;
-          }
         }
       }
       else {
@@ -88,20 +83,6 @@ function genZIndexChildren(dom) {
     }
   }
   return res;
-}
-
-function getMaskChildren(dom) {
-  let list = [];
-  dom.children.forEach(item => {
-    let child = item;
-    if(item instanceof Component) {
-      item = item.shadowRoot;
-    }
-    if(item.isMask || item.isClip) {
-      list.push(child);
-    }
-  });
-  return list;
 }
 
 class Dom extends Xom {
@@ -1403,6 +1384,14 @@ class Dom extends Xom {
     this.children.forEach(item => {
       item.__computeMeasure(renderMode, ctx, false, cb);
     });
+  }
+
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
+    if(renderMode === mode.SVG) {
+      this.virtualDom.type = 'dom';
+    }
+    return res;
   }
 
   __destroy() {

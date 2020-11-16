@@ -1,21 +1,12 @@
 import Xom from './Xom';
 import Text from './Text';
-import mode from './mode';
 import LineGroup from './LineGroup';
 import Component from './Component';
-import Geom from '../geom/Geom';
 import tag from './tag';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
-import blur from '../style/blur';
-import tf from '../style/transform';
 import util from '../util/util';
-import inject from '../util/inject';
-import level from '../refresh/level';
-import Cache from '../refresh/Cache';
-import refreshMode from '../refresh/mode';
-import mx from '../math/matrix';
 
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
@@ -23,37 +14,61 @@ const { calAbsolute, isRelativeOrAbsolute } = css;
 function genZIndexChildren(dom) {
   let flow = [];
   let abs = [];
+  let hasMc;
+  let mcHash = {};
   let needSort = false;
   let lastIndex;
-  dom.children.forEach((item, i) => {
+  let lastMcIndex;
+  let children = dom.children;
+  children.forEach((item, i) => {
     let child = item;
     if(item instanceof Component) {
       item = item.shadowRoot;
     }
-    // 不是遮罩，并且已有__layoutData，特殊情况下中途插入的节点还未渲染
-    if(!item.isMask && !item.isClip && (item.__layoutData || item instanceof Text)) {
-      if(item instanceof Xom) {
-        if(isRelativeOrAbsolute(item)) {
-          // 临时变量为排序使用
-          child.__iIndex = i;
-          let z = child.__zIndex = item.currentStyle.zIndex;
-          abs.push(child);
-          if(lastIndex === undefined) {
-            lastIndex = z;
+    // 遮罩单独保存后特殊排序，需要有__layoutData，特殊情况下中途插入的节点还未渲染
+    if(item.__layoutData || item instanceof Text) {
+      if(item.isMask || item.isClip) {
+        // 开头的mc忽略，后续的连续mc以第一次出现为准
+        if(lastMcIndex !== undefined) {
+          mcHash[lastMcIndex].push(item);
+        }
+        else if(i) {
+          lastMcIndex = i - 1;
+          mcHash[lastMcIndex] = [item];
+          hasMc = true;
+          if(item.isMask) {
+            children[i - 1].__hasMask = true;
           }
-          else if(!needSort) {
-            if(z < lastIndex) {
-              needSort = true;
+          else {
+            children[i - 1].__hasClip = true;
+          }
+        }
+      }
+      else {
+        lastMcIndex = undefined;
+        if(item instanceof Xom) {
+          if(isRelativeOrAbsolute(item)) {
+            // 临时变量为排序使用
+            child.__iIndex = i;
+            let z = child.__zIndex = item.currentStyle.zIndex;
+            abs.push(child);
+            if(lastIndex === undefined) {
+              lastIndex = z;
             }
-            lastIndex = z;
+            else if(!needSort) {
+              if(z < lastIndex) {
+                needSort = true;
+              }
+              lastIndex = z;
+            }
+          }
+          else {
+            flow.push(child);
           }
         }
         else {
           flow.push(child);
         }
-      }
-      else {
-        flow.push(child);
       }
     }
   });
@@ -63,7 +78,16 @@ function genZIndexChildren(dom) {
     }
     return a.__iIndex - b.__iIndex;
   });
-  return flow.concat(abs);
+  let res = flow.concat(abs);
+  // 将遮罩插入到对应顺序上
+  if(hasMc) {
+    for(let i = res.length - 1; i >= 0; i--) {
+      if(mcHash.hasOwnProperty(i)) {
+        res.splice(i + 1, 0, ...mcHash[i]);
+      }
+    }
+  }
+  return res;
 }
 
 function getMaskChildren(dom) {
@@ -111,12 +135,6 @@ class Dom extends Xom {
     let res = super.__structure(i++, lv, j);
     let arr = [res];
     let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
-    if(this.root.cache && this.root.renderMode === mode.CANVAS) {
-      let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
-      if(maskChildren.length) {
-        zIndexChildren = maskChildren.concat(zIndexChildren);
-      }
-    }
     zIndexChildren.forEach((child, j) => {
       let temp = child.__structure(i, lv + 1, j);
       if(Array.isArray(temp)) {
@@ -128,8 +146,9 @@ class Dom extends Xom {
         arr.push(temp);
       }
     });
+    let total = arr.length - 1;
     res.num = zIndexChildren.length;
-    res.total = arr.length - 1;
+    res.total = total;
     return arr;
   }
 
@@ -155,7 +174,8 @@ class Dom extends Xom {
   __updateStruct(structs) {
     let { index, total } = this.__struct;
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
-    if(zIndexChildren.length === 1) {
+    let length = zIndexChildren.length;
+    if(length === 1) {
       return;
     }
     zIndexChildren.forEach((child, i) => {
@@ -1366,578 +1386,6 @@ class Dom extends Xom {
         }
       }
     });
-  }
-
-  render(renderMode, lv, ctx, defs) {
-    // 无论缓存与否，都需执行，因为有计算或svg，且super自身判断了缓存情况省略渲染
-    let res = super.render(renderMode, lv, ctx, defs);
-    res = res || {};
-    let { offScreen, isDestroyed, displayNone } = res;
-    // canvas检查filter，无缓存时的绘制
-    if(offScreen && offScreen.target && offScreen.target.ctx) {
-      ctx = offScreen.target.ctx;
-    }
-    // 降级，有offScreen但没离屏canvas/webgl功能，舍弃blur
-    else {
-      offScreen = null;
-    }
-    let { root, virtualDom, children,
-      computedStyle: { position } } = this;
-    // 不显示的为了diff也要根据type生成
-    if(renderMode === mode.SVG) {
-      virtualDom.type = 'dom';
-    }
-    // canvas在隐藏时返回空，svg则有内容
-    if(isDestroyed || displayNone) {
-      return res;
-    }
-    // filter特殊缓存
-    let blurValue = this.__blurValue;
-    // 有filter时改变除filter之外的变化直接返回
-    if(renderMode === mode.CANVAS && blurValue && this.__cacheFilter
-      && lv < level.REPAINT && !level.contain(lv, level.FILTER)) {
-      return res;
-    }
-    this.__cacheFilter = null;
-    // 先检查是否有缓存且刷新等级在REPAINT以下，直接跳过无需继续
-    let cacheTotal = this.__cacheTotal;
-    if(lv < level.REPAINT && cacheTotal && cacheTotal.available) {
-      if(renderMode === mode.CANVAS && blurValue) {
-        // blur变化更新，用新的bbox先偏移cacheTotal，再更新cacheFilter，保持尺寸和边距一致性
-        if(level.contain(lv, level.FILTER)) {
-          let bbox = this.__mergeBbox(null, true);
-          let newCache = Cache.updateCache(cacheTotal, bbox);
-          if(newCache) {
-            this.__cacheTotal = newCache;
-            this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
-          }
-          // 更新后超限，丢掉blur降级
-          else {
-            console.error('CacheTotal is oversize');
-            this.__cacheTotal = null;
-            this.__cacheFilter = null;
-          }
-        }
-      }
-      return res;
-    }
-    // 先渲染过滤mask，仅svg进入，canvas在下面自身做，记得只首次执行
-    if(renderMode === mode.SVG && !this.__noChildMask) {
-      let hasMask;
-      children.forEach(item => {
-        if(!(item instanceof Component) && (item.isMask || item.isClip)) {
-          hasMask = true;
-          item.__renderAsMask(renderMode, item.__refreshLevel, ctx, defs, !item.isMask);
-        }
-      });
-      // 没mask标识以后无需重复遍历
-      if(!hasMask) {
-        this.__noChildMask = true;
-      }
-    }
-    // 查找所有非文本children是否都可以放入此层整体缓存，比如有的超尺寸或离屏功能不可用或动画执行影响
-    let canCacheChildren = true;
-    let draw = !root.cache || renderMode === mode.SVG;
-    // 按照zIndex排序绘制过滤mask，同时由于svg严格按照先后顺序渲染，没有z-index概念，需要排序将relative/absolute放后面
-    let zIndexChildren = this.__zIndexChildren = this.__zIndexChildren || genZIndexChildren(this);
-    // cache时canvas模式需将mask/clip的geom照常绘制出来，且保证先于其它孩子绘制
-    if(root.cache && renderMode === mode.CANVAS) {
-      let maskChildren = this.__maskChildren = this.__maskChildren || getMaskChildren(this);
-      if(maskChildren.length) {
-        zIndexChildren = maskChildren.concat(zIndexChildren);
-      }
-    }
-    zIndexChildren.forEach(item => {
-      // canvas开启缓存text先不渲染，节点先绘制到自身cache上
-      if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-        if(draw) {
-          if(renderMode === mode.CANVAS) {
-            if(ctx.globalAlpha !== this.__opacity) {
-              ctx.globalAlpha = this.__opacity;
-            }
-            ctx.setTransform(...this.matrixEvent);
-          }
-          item.__renderByMask(renderMode, null, ctx);
-        }
-      }
-      else {
-        let lv2 = item.__refreshLevel;
-        // geom需特殊处理，避免自定义geom覆盖render()时感知离屏功能
-        let blurValue;
-        let newCtx = ctx;
-        let isGeom = item instanceof Geom;
-        // geom计算bbox需提前获得数据
-        if(isGeom) {
-          item.__preData = item.__preSet(renderMode, ctx, defs);
-        }
-        let ignoreGeom, offScreen2;
-        if(renderMode === mode.CANVAS && isGeom) {
-          let filter = item.currentStyle.filter;
-          if(Array.isArray(filter)) {
-            filter.forEach(item => {
-              let [k, v] = item;
-              if(k === 'blur' && v > 0) {
-                blurValue = v;
-              }
-            });
-          }
-          // 提前判断申请geom的cache，有老的用老的，没有申请新的，改写render()的ctx避免自定义geom感知离屏功能
-          if(root.cache) {
-            let cacheFilter = item.__cacheFilter, cacheMask = item.__cacheMask, cache = item.__cache;
-            if(cacheFilter && blurValue && lv < level.REPAINT && !level.contain(lv2, level.FILTER) || cacheMask) {
-              ignoreGeom = true;
-            }
-            else {
-              item.__cacheFilter = item.__cacheMask = null;
-              let bbox = item.bbox;
-              // filter优先使用mask，再是cache
-              if(lv2 < level.REPAINT && cache && cache.available) {
-                ignoreGeom = true;
-                if(blurValue && level.contain(lv2, level.FILTER)) {
-                  if(cacheMask) {
-                    cacheMask = item.__cacheMask = Cache.updateCache(cacheMask, bbox);
-                  }
-                  cache = item.__cache = Cache.updateCache(cache, bbox);
-                  if(cacheMask || cache && cache.available) {
-                    item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
-                  }
-                  // 更新后超限，丢掉blur降级
-                  else {
-                    console.error('Geom cache is oversize');
-                    item.__cache = null;
-                  }
-                }
-              }
-              else {
-                if(cache) {
-                  if(cache.enabled) {
-                    if(lv2 < level.REPAINT) {
-                      if(level.contain(lv2, level.FILTER)) {
-                        cache.reset(bbox);
-                      }
-                    }
-                    else {
-                      cache.reset(bbox);
-                    }
-                  }
-                  else {
-                    cache.reset(bbox);
-                  }
-                }
-                else {
-                  cache = item.__cache = Cache.getInstance(bbox);
-                }
-                if(cache && cache.enabled) {
-                  newCtx = cache.ctx;
-                }
-              }
-            }
-          }
-          else if(blurValue) {
-            let { width, height } = root;
-            let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
-            if(c.ctx) {
-              offScreen2 = {
-                ctx,
-              };
-              offScreen2.target = c;
-              newCtx = c.ctx;
-            }
-          }
-        }
-        // 即便ignore也要render()，要计算matrix，xom里也会判断重复
-        let temp = item.__renderByMask(renderMode, lv2, newCtx, defs);
-        if(ignoreGeom) {
-          temp = { canCache: true };
-        }
-        // geom特殊处理filter，分缓存和非缓存情况
-        if(renderMode === mode.CANVAS && isGeom && !ignoreGeom) {
-          let hasMC;
-          let next = item.next;
-          let hasMask = next && next.isMask;
-          let hasClip = next && next.isClip;
-          if(hasMask || hasClip) {
-            hasMC = true;
-          }
-          let cacheMask = item.__cacheMask, cache = item.__cache;
-          // 先尝试绘制mask，再看filter
-          if(root.cache && hasMC && cache && cache.available) {
-            let { transform, transformOrigin } = item.computedStyle;
-            item.__cacheMask = Cache.drawMask(cache, next, transform, transformOrigin.slice(0));
-          }
-          if(root.cache && blurValue && (cacheMask || cache && cache.available)) {
-            item.__cacheFilter = Cache.genOffScreenBlur(cacheMask || cache, blurValue);
-          }
-          else if(offScreen2) {
-            let { width, height } = root;
-            let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-            let res = blur.gaussBlur(offScreen2.target, webgl, blurValue, width, height);
-            offScreen2.ctx.drawImage(offScreen2.target.canvas, 0, 0);
-            offScreen2.target.draw();
-            res.clear();
-          }
-        }
-        // Xom类型canvas无有效动画时方可被父亲缓存，svg用不到
-        if(!canCacheChildren || !temp || !temp.canCache || item.availableAnimating) {
-          canCacheChildren = false;
-        }
-      }
-    });
-    /**
-     * canvas决定是否作为一个局部整体是否缓存的因素
-     * 首先本身无有影响的动画，且children无有效的动画
-     * 然后本身是relative/absolute/Component
-     * root作为最后执行，即便不满足条件也要特殊处理，重复递归应用缓存
-     * 目前处于递归的回溯阶段，即冒泡阶段，
-     * 所有局部根节点进行绘制局部整体缓存，待root再次递归执行一次
-     * filter是个特殊情况，需要webgl离屏执行，所以一定有缓存
-     * 有mask也是个特殊情况，一定需要total
-     * svg则不需要这些，vd上cache标明整体缓存无需递归diff
-     */
-    let canCacheSelf = renderMode === mode.CANVAS
-      && (canCacheChildren && !this.effectiveAnimating || blurValue);
-    if(canCacheSelf && !blurValue && ['relative', 'absolute'].indexOf(position) === -1 && !this.isShadowRoot) {
-      canCacheSelf = false;
-    }
-    let hasMC;
-    if(renderMode === mode.CANVAS) {
-      let next = this.next;
-      let hasMask = next && next.isMask;
-      let hasClip = next && next.isClip;
-      if(hasMask || hasClip) {
-        hasMC = true;
-        canCacheSelf = true;
-      }
-    }
-    // 需考虑缓存和滤镜
-    if(renderMode === mode.CANVAS) {
-      // 冒泡阶段将所有局部整体缓存离屏绘制好以便调用
-      if(root.cache) {
-        // root最终执行，递归所有children应用自身缓存，遇到局部根节点离屏缓存则绘制到主屏上
-        if(this === root) {
-          this.__applyCache(renderMode, lv, ctx, refreshMode.ROOT);
-        }
-        // 作为局部根节点整体进行绘制并缓存，递归将所有子节点绘制到局部整体上，img除外自己处理
-        else if(canCacheSelf && this.tagName.toLowerCase() !== 'img') {
-          this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
-          if(hasMC) {
-            let cacheTotal = this.__cacheTotal;
-            if(cacheTotal && cacheTotal.available) {
-              let { transform, transformOrigin } = this.computedStyle;
-              let next = this.next;
-              this.__cacheMask = Cache.drawMask(cacheTotal, next, transform, transformOrigin.slice(0));
-            }
-            // 极端情况超限异常
-            else {
-              console.error('CacheTotal is oversize with mask');
-            }
-          }
-        }
-        // 非局部缓存的节点等待root调用
-      }
-      // 无缓存时有offScreen对象，尝试使用webgl的blur，对象生成条件在Xom初始化做
-      else if(offScreen) {
-        let { width, height } = root;
-        let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
-        let res = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-        offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
-        offScreen.target.draw();
-        res.clear();
-      }
-    }
-    else if(renderMode === mode.SVG) {
-      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!cacheTotal) {
-        this.__cacheTotal = {
-          available: true,
-          release() {
-            this.available = false;
-            delete virtualDom.cache;
-          },
-        };
-      }
-      else if(!cacheTotal.available) {
-        cacheTotal.available = true;
-      }
-      // img的children在子类特殊处理
-      if(this.tagName.toLowerCase() !== 'img') {
-        virtualDom.children = zIndexChildren.map(item => item.virtualDom);
-      }
-      // 没变化则将text孩子设置cache
-      if(virtualDom.hasOwnProperty('lv')) {
-        this.virtualDom.children.forEach(item => {
-          if(item.type === 'text') {
-            item.cache = true;
-          }
-        });
-      }
-      else {
-        this.virtualDom.children.forEach(item => {
-          if(item.type === 'text') {
-            delete item.cache;
-          }
-        });
-      }
-    }
-    // 向上回溯传值，要考虑children
-    if(res.canCache && !canCacheChildren) {
-      res.canCache = false;
-    }
-    res.canCacheSelf = canCacheSelf;
-    res.hasMC = hasMC;
-    return res;
-  }
-
-  /**
-   * canvas下，应用离屏内容缓存到主屏或者局部根节点上
-   * 有可能子节点没超限但整体超限，此时要考虑降级分别绘制
-   * @param renderMode
-   * @param lv
-   * @param ctx
-   * @param mode 局部根节点总缓存、及其子节点、最后root发起的无局部整体的节点自身缓存应用
-   * @param cacheTop 汇总离屏canvas的目标
-   * @param opacity 以top为基点
-   * @param matrix 以top为基点
-   */
-  __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
-    let {
-      computedStyle,
-      __blurValue: blurValue,
-      __cacheMask: cacheMask,
-      __cacheFilter: cacheFilter,
-      __cacheTotal: cacheTotal,
-      __cache: cache,
-      zIndexChildren,
-    } = this;
-    let { display, visibility } = computedStyle;
-    if(display === 'none') {
-      return;
-    }
-    // 局部根节点缓存汇总渲染
-    if(mode === refreshMode.TOP) {
-      if(visibility === 'hidden') {
-        return;
-      }
-      let bboxTotal = this.__mergeBbox(null, true);
-      // 空内容
-      if(!bboxTotal) {
-        return;
-      }
-      // 第一次初始化进行bbox合集计算
-      if(!cacheTotal) {
-        cacheTotal = this.__cacheTotal = Cache.getInstance(bboxTotal);
-      }
-      // 后续如果超过可缓存的lv重设，否则直接用已有内容，重复利用在render()里做了，这里reset
-      else if(!cacheTotal.enabled) {
-        cacheTotal.reset(bboxTotal);
-      }
-      let { sx, sy } = this;
-      let x1 = sx + computedStyle.marginLeft;
-      let y1 = sy + computedStyle.marginTop;
-      // 缓存可用时各children依次执行进行离屏汇总
-      if(cacheTotal && cacheTotal.enabled) {
-        cacheTotal.__bbox = bboxTotal;
-        cacheTotal.__appendData(x1, y1);
-        // 每次刷新重新生成，一般都会进，特殊情况下遗留的老cacheTotal可以直接用
-        if(!cacheTotal.available) {
-          cacheTotal.__available = true;
-          ctx = cacheTotal.ctx;
-          // 以top为基准matrix/opacity
-          if(ctx.globalAlpha !== 1) {
-            ctx.globalAlpha = 1;
-          }
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          if(cache && cache.available) {
-            Cache.drawCache(cache, cacheTotal);
-          }
-          zIndexChildren.forEach(item => {
-            if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-              if(ctx.globalAlpha !== 1) {
-                ctx.globalAlpha = 1;
-              }
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              item.__renderByMask(renderMode, null, ctx, null, cacheTotal.dx, cacheTotal.dy);
-            }
-            else {
-              item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.CHILD, cacheTotal, 1, [1, 0, 0, 1, 0, 0]);
-            }
-          });
-        }
-      }
-      // 超尺寸无法进行，降级渲染
-      else {
-        let tx = sx + computedStyle.marginLeft;
-        let ty = sy + computedStyle.marginTop;
-        super.__applyCache(renderMode, ctx, tx - 1, ty - 1);
-        zIndexChildren.forEach(item => {
-          if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-            item.__renderByMask(renderMode, null, ctx);
-          }
-          else {
-            item.__applyCache(renderMode, item.__refreshLevel, ctx, refreshMode.ROOT);
-          }
-        });
-      }
-      // 生成filter缓存，超尺寸降级舍弃
-      if(blurValue && cacheTotal && cacheTotal.available) {
-        this.__cacheFilter = Cache.genOffScreenBlur(cacheTotal, blurValue);
-      }
-      else if(cacheFilter) {
-        console.error('CacheFilter is oversize');
-        this.__cacheFilter = null;
-      }
-    }
-    // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
-    else if(mode === refreshMode.CHILD) {
-      let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
-      let { sx, sy } = this;
-      sx += computedStyle.marginLeft;
-      sy += computedStyle.marginTop;
-      let dx = tx + sx - x1 + dbx;
-      let dy = ty + sy - y1 + dby;
-      if(visibility !== 'hidden') {
-        let tfo = computedStyle.transformOrigin.slice(0);
-        opacity *= computedStyle.opacity;
-        if(ctx.globalAlpha !== opacity) {
-          ctx.globalAlpha = opacity;
-        }
-        // 优先filter/mask，再是total
-        if(cacheFilter || cacheMask || cacheTotal && cacheTotal.available) {
-          let target = cacheFilter || cacheMask || cacheTotal;
-          Cache.drawCache(target, cacheTop, computedStyle.transform, matrix, tfo);
-          return;
-        }
-        tfo[0] += dx;
-        tfo[1] += dy;
-        let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
-        matrix = mx.multiply(matrix, m);
-        ctx.setTransform(...matrix);
-        // 都没有正常cache和children
-        if(cache && cache.available) {
-          Cache.drawCache(cache, cacheTop);
-        }
-      }
-      // 递归children
-      zIndexChildren.forEach(item => {
-        if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          if(visibility !== 'hidden') {
-            if(ctx.globalAlpha !== opacity) {
-              ctx.globalAlpha = opacity;
-            }
-            ctx.setTransform(...matrix);
-            item.__renderByMask(renderMode, null, ctx, null, dx - item.sx + computedStyle.paddingLeft, dy - item.sy + computedStyle.paddingTop);
-          }
-        }
-        else {
-          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode, cacheTop, opacity, matrix);
-        }
-      });
-    }
-    // root调用局部整体缓存或单个节点缓存绘入主画布
-    else if(mode === refreshMode.ROOT) {
-      let { __opacity, matrixEvent } = this;
-      if(visibility !== 'hidden') {
-        // 写回主画布前设置
-        if(ctx.globalAlpha !== __opacity) {
-          ctx.globalAlpha = __opacity;
-        }
-        ctx.setTransform(...matrixEvent);
-        let target = cacheFilter || cacheMask;
-        if(target) {
-          let { x1, y1, dbx, dby, canvas } = target;
-          ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
-          return;
-        }
-        if(cacheTotal && cacheTotal.available) {
-          let { coords: [x, y], canvas, x1, y1, dbx, dby, width, height } = cacheTotal;
-          ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
-          return;
-        }
-        // 无内容就没有cache，继续看children
-        if(cache && cache.available) {
-          let { coords: [x, y], canvas, x1, y1, dbx, dby, width, height } = cache;
-          ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
-        }
-      }
-      zIndexChildren.forEach(item => {
-        if(item instanceof Text || item instanceof Component && item.shadowRoot instanceof Text) {
-          if(visibility !== 'hidden') {
-            if(ctx.globalAlpha !== __opacity) {
-              ctx.globalAlpha = __opacity;
-            }
-            ctx.setTransform(...matrixEvent);
-            item.__renderByMask(renderMode, null, ctx);
-          }
-        }
-        else {
-          item.__applyCache(renderMode, item.__refreshLevel, ctx, mode);
-        }
-      });
-    }
-  }
-
-  /**
-   * 以cacheTotal为基准递归合并包含children的bbox
-   * @param matrix
-   * @param isTop
-   * @param tx 顶dom的坐标
-   * @param ty
-   * @param dx filter造成的偏移，递归传递下去所有children需要扩展此值
-   * @param dy
-   * @returns bbox
-   * @private
-   */
-  __mergeBbox(matrix, isTop, tx, ty, dx, dy) {
-    let bbox;
-    let { sx, sy, computedStyle } = this;
-    let display = computedStyle.display;
-    // 顶点初始化为起点，偏移值要考虑filter
-    if(isTop) {
-      matrix = [1, 0, 0, 1, 0, 0];
-      bbox = super.__mergeBbox(matrix, isTop);
-      tx = sx;
-      ty = sy;
-      if(bbox) {
-        dx = sx + computedStyle.marginLeft - bbox[0];
-        dy = sy + computedStyle.marginTop - bbox[1];
-      }
-      else if(Array.isArray(computedStyle.filter)) {
-        computedStyle.filter.forEach(item => {
-          let [k, v] = item;
-          if(k === 'blur' && v > 0) {
-            let d = mx.int2convolution(v);
-            dx = dy = d;
-          }
-        });
-      }
-      else {
-        dx = dy = 0;
-      }
-    }
-    else if(display !== 'none') {
-      let tfo = computedStyle.transformOrigin.slice(0);
-      tfo[0] += sx - tx;
-      tfo[1] += sy - ty;
-      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
-      matrix = mx.multiply(matrix, m);
-      bbox = super.__mergeBbox(matrix, isTop, dx, dy);
-    }
-    if(display !== 'none') {
-      this.zIndexChildren.forEach(item => {
-        let t = item.__mergeBbox(matrix, false, tx, ty, dx, dy);
-        if(!bbox) {
-          bbox = t;
-        }
-        // display:none可能为空
-        else if(t) {
-          bbox[0] = Math.min(bbox[0], t[0]);
-          bbox[1] = Math.min(bbox[1], t[1]);
-          bbox[2] = Math.max(bbox[2], t[2]);
-          bbox[3] = Math.max(bbox[3], t[3]);
-        }
-      });
-    }
-    return bbox;
   }
 
   /**

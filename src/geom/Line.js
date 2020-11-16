@@ -351,24 +351,18 @@ class Line extends Geom {
 
   get bbox() {
     let {
-      sx, sy,
-      currentStyle: {
-        boxShadow,
-        filter,
-      },
+      __x2, __y2,
       computedStyle: {
-        borderTopWidth,
-        borderLeftWidth,
-        marginTop,
-        marginLeft,
         paddingTop,
         paddingLeft,
         strokeWidth,
+        boxShadow,
+        filter,
       },
       isMulti, __cacheProps,
     } = this;
-    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let originX = __x2 + paddingLeft;
+    let originY = __y2 + paddingTop;
     this.buildCache(originX, originY);
     let { x1, y1, x2, y2, controlA, controlB } = __cacheProps;
     let bbox = super.bbox;

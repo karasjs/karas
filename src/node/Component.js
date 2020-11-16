@@ -303,8 +303,6 @@ Object.keys(change.GEOM).concat([
   'updateStyle',
   'deepScan',
   '__cancelCache',
-  '__applyCache',
-  '__mergeBbox',
   '__structure',
   '__modifyStruct',
 ].forEach(fn => {

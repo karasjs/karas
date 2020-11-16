@@ -380,7 +380,7 @@ function extendAnimate(ovd, nvd) {
 }
 
 function transformBbox(bbox, matrix, dx = 0, dy = 0) {
-  if(!equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+  if(matrix && !mx.isE(matrix)) {
     let [x1, y1, x2, y2] = bbox;
     // 可能因filter的原因扩展范围
     if(dx) {
@@ -403,6 +403,12 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
       yb = Math.max(yb, y);
     }
     bbox = [xa, ya, xb, yb];
+  }
+  else if(dx || dy) {
+    bbox[0] -= dx;
+    bbox[1] -= dy;
+    bbox[2] += dx;
+    bbox[3] += dy;
   }
   return bbox;
 }

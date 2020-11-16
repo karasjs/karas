@@ -363,21 +363,6 @@ class Img extends Dom {
         height,
       });
     }
-    if(res.canCacheSelf) {
-      this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
-      if(res.hasMC) {
-        let cacheTotal = this.__cacheTotal;
-        if(cacheTotal && cacheTotal.available) {
-          let { transform, transformOrigin } = this.computedStyle;
-          let next = this.next;
-          this.__cacheMask = Cache.drawMask(cacheTotal, next, transform, transformOrigin.slice(0));
-        }
-        // 极端情况超限异常
-        else {
-          console.error('CacheTotal is oversize with img\'s mask');
-        }
-      }
-    }
     return res;
   }
 

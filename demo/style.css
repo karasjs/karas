@@ -72,5 +72,6 @@ canvas, svg{
   width:360px;
   height:360px;
   transform:translateZ(0);
+  background:#EEE;
 }
 

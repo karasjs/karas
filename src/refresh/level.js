@@ -5,7 +5,9 @@ const ENUM = {
   NONE: 0, //                                          0
   TRANSLATE_X: 1, //                                   1
   TRANSLATE_Y: 2, //                                  10
+  // TRANSLATE: 3, //                                    11
   TRANSFORM: 4, //                                   100
+  TRANSFORM_ALL: 7, //                               111
   OPACITY: 8, //                                    1000
   FILTER: 16, //                                   10000
   VISIBILITY: 32, //                              100000

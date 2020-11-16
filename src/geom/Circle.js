@@ -111,22 +111,16 @@ class Circle extends Geom {
   get bbox() {
     let {
       isMulti, __cacheProps,
-      sx, sy, width, height,
-      currentStyle: {
-        boxShadow,
-        filter,
-      },
+      __x2, __y2, width, height,
       computedStyle: {
-        borderTopWidth,
-        borderLeftWidth,
-        marginTop,
-        marginLeft,
         paddingTop,
         paddingLeft,
         strokeWidth,
+        boxShadow,
+        filter,
       } } = this;
-    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let originX = __x2 + paddingLeft;
+    let originY = __y2 + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     this.buildCache(cx, cy);

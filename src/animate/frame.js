@@ -29,20 +29,20 @@ class Frame {
   constructor() {
     this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
     this.__task = [];
-    this.__taskBF = [];
+    this.__taskA = [];
     this.__now = null;
   }
 
   __init() {
     let self = this;
-    let { task, taskBF } = self;
+    let { task, taskA } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        if(isPause || !task.length && !taskBF.length) {
+        if(isPause || !task.length && !taskA.length) {
           return;
         }
         let now = self.__now = inject.now();
@@ -51,21 +51,21 @@ class Frame {
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
-        let cloneBF = taskBF.slice(0);
+        let cloneA = taskA.slice(0);
         let clone = task.slice(0);
-        cloneBF.forEach(item => {
-          item.before(diff);
+        cloneA.forEach(item => {
+          item.__before(diff);
         });
         traversal(clone, diff, 'before');
         // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
         self.__hookTask.splice(0).forEach(item => item());
         // 普通的after
-        cloneBF.forEach(item => {
-          item.after(diff);
+        cloneA.forEach(item => {
+          item.__after(diff);
         });
         traversal(clone, diff, 'after');
         // 还有则继续，没有则停止节省性能
-        if(task.length || taskBF.length) {
+        if(task.length || taskA.length) {
           cb();
         }
       });
@@ -77,26 +77,26 @@ class Frame {
     if(!handle) {
       return;
     }
-    let { task, taskBF } = this;
-    if(!task.length && !taskBF.length) {
+    let { task, taskA } = this;
+    if(!task.length && !taskA.length) {
       this.__init();
     }
     task.push(handle);
   }
 
-  __onFrameBF(animate) {
-    let { task, taskBF } = this;
-    if(!task.length && !taskBF.length) {
+  __onFrameA(animate) {
+    let { task, taskA } = this;
+    if(!task.length && !taskA.length) {
       this.__init();
     }
-    taskBF.push(animate);
+    taskA.push(animate);
   }
 
   offFrame(handle) {
     if(!handle) {
       return;
     }
-    let { task, taskBF } = this;
+    let { task, taskA } = this;
     for(let i = 0, len = task.length; i < len; i++) {
       let item = task[i];
       // 需考虑nextFrame包裹的引用对比
@@ -105,23 +105,23 @@ class Frame {
         break;
       }
     }
-    if(!task.length && !taskBF.length) {
+    if(!task.length && !taskA.length) {
       inject.cancelAnimationFrame(this.id);
       this.__now = null;
     }
   }
 
-  __offFrameBF(animate) {
-    let { task, taskBF } = this;
-    for(let i = 0, len = taskBF.length; i < len; i++) {
-      let item = taskBF[i];
+  __offFrameA(animate) {
+    let { task, taskA } = this;
+    for(let i = 0, len = taskA.length; i < len; i++) {
+      let item = taskA[i];
       // 需考虑nextFrame包裹的引用对比
       if(item === animate) {
-        animate.splice(i, 1);
+        taskA.splice(i, 1);
         break;
       }
     }
-    if(!task.length && !taskBF.length) {
+    if(!task.length && !taskA.length) {
       inject.cancelAnimationFrame(this.id);
       this.__now = null;
     }
@@ -161,8 +161,8 @@ class Frame {
     return this.__task;
   }
 
-  get taskBF() {
-    return this.__taskBF;
+  get taskA() {
+    return this.__taskA;
   }
 }
 

@@ -16,19 +16,24 @@ class Node {
   }
 
   __structure(i, lv, j) {
-    return this.__struct = {
+    let res = this.__struct = {
       node: this,
       index: i,
       childIndex: j,
       lv,
     };
+    if(this.__hasMask) {
+      res.hasMask = this.__hasMask;
+    }
+    if(this.__hasClip) {
+      res.hasClip = this.__hasClip;
+    }
+    return res;
   }
 
   __modifyStruct(root, offset = 0) {
     let struct = this.__struct;
-    let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-    root.__structs.splice(struct.index + offset, 1, ns);
-    return [this.__struct, 1];
+    return [struct, 1];
   }
 
   __offsetX(diff, isLayout) {

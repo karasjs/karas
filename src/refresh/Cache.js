@@ -42,7 +42,7 @@ class Cache {
     let bbox = this.bbox;
     this.dx = xc - bbox[0]; // cache坐标和box原点的差值
     this.dy = yc - bbox[1];
-    this.dbx = x1 - bbox[0];
+    this.dbx = x1 - bbox[0]; // 原始x1/y1和box原点的差值
     this.dby = y1 - bbox[1];
   }
 
@@ -133,7 +133,12 @@ class Cache {
     return this.__coords;
   }
 
+  static NUM = 3;
+
   static getInstance(bbox) {
+    if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
+      return;
+    }
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
     w += 2;
@@ -280,6 +285,34 @@ class Cache {
     ctx.globalCompositeOperation = 'source-over';
     cacheMask.draw(ctx);
     return cacheMask;
+  }
+
+  static mergeTotal(cacheTotal, __structs, index) {
+    let ctx = cacheTotal.ctx;
+    // 以top为基准matrix/opacity
+    if(ctx.globalAlpha !== 1) {
+      ctx.globalAlpha = 1;
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // 先应用节点本身内容__cache
+    let { node: { __cache }, lv, total } = __structs[index];
+    if(__cache && __cache.__available) {
+      Cache.drawCache(__cache, cacheTotal);
+    }
+    // 先序遍历所有子节点，遇到有__cacheTotal的可以跳过其子节点
+    let opacityHash = {};
+    let matrixHash = {};
+    let lastMatrix;
+    for(let i = index + 1; i < total; i++) {
+      let { node, node: { __cacheTotal, __cache }, lv: lv2, total: total2 } = __structs[i];
+      if(__cacheTotal && __cacheTotal.__available) {
+        Cache.drawCache(__cacheTotal, cacheTotal);
+        i += total;
+      }
+      else if(__cache && __cache.__available) {
+        Cache.drawCache(__cache, cacheTotal);
+      }
+    }
   }
 }
 

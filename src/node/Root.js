@@ -7,7 +7,7 @@ import Geom from '../geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
 import util from '../util/util';
-import diff from '../util/diff';
+import domDiff from '../util/diff';
 import css from '../style/css';
 import unit from '../style/unit';
 import inject from '../util/inject';
@@ -16,6 +16,7 @@ import frame from '../animate/frame';
 import Controller from '../animate/Controller';
 import change from '../refresh/change';
 import level from '../refresh/level';
+import struct from '../refresh/struct';
 
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT } = unit;
@@ -101,6 +102,9 @@ function addLAYOUT(node, hash, component) {
 let uniqueUpdateId = 0;
 function parseUpdate(renderMode, root, updateHash, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
   let { node, style, origin, overwrite, focus, img, component, measure, list } = target;
+  if(node.isDestroyed) {
+    return;
+  }
   // updateStyle()这样的调用还要计算normalize
   if(origin && style) {
     style = css.normalize(style);
@@ -109,8 +113,9 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   if(overwrite && style) {
     Object.assign(node.__style, style);
   }
+  // updateStyle()格式化后重新赋值回去
   if(style && style !== target.style) {
-    Object.assign(target.style, style);
+    target.style = style;
   }
   // 多次调用更新才会有list，一般没有，优化
   if(list) {
@@ -129,7 +134,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   }
   style = target.style;
   // 按节点合并完style后判断改变等级
-  let { tagName, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
+  let { tagName, currentStyle, currentProps, __cacheStyle, __cacheProps } = node;
   let lv = level.NONE;
   let p;
   let hasMeasure = measure;
@@ -159,8 +164,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
             else {
               // TRBL变化只对relative/absolute起作用，其它忽视
               if({ top: true, right: true, bottom: true, left: true }.hasOwnProperty(k)) {
-                if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute'
-                  && style.position !== 'relative' && style.position !== 'absolute') {
+                if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute') {
                   delete style[k];
                   continue;
                 }
@@ -173,9 +177,9 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
               // repaint置空，如果reflow会重新生成空的
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
-            }
-            if(k === 'zIndex' && node !== root) {
-              hasZ = true;
+              if(k === 'zIndex' && node !== root) {
+                hasZ = true;
+              }
             }
           }
         }
@@ -194,11 +198,21 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   if(lv === level.NONE && !img && !component) {
     delete node.__uniqueUpdateId;
-    return;
+    return [];
   }
   // 记录下来清除parent的zIndexChildren缓存
   if(hasZ) {
     delete node.domParent.__zIndexChildren;
+  }
+  // mask需清除遮罩对象的缓存
+  if(node.isMask || node.isClip) {
+    let prev = node.prev;
+    while(prev && (prev.isMask || prev.isClip)) {
+      prev = prev.prev;
+    }
+    if(prev && prev.__cacheMask) {
+      prev.__cacheMask = null;
+    }
   }
   // reflow/repaint/measure相关的记录下来
   let isRepaint = !component && level.isRepaint(lv);
@@ -285,7 +299,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     }
     parent = parent.domParent;
   }
-  return true;
+  return [true, hasZ];
 }
 
 function cleanSvgCache(node, child) {
@@ -486,21 +500,23 @@ class Root extends Dom {
       this.__checkReflow(width, height);
       if(renderMode === mode.CANVAS) {
         this.__clear(ctx);
+        // 利用list循环代替tree递归快速渲染
+        if(this.cache) {
+          struct.renderCacheCanvas(renderMode, ctx, defs, this);
+        }
+        else {
+          struct.renderCanvas(renderMode, ctx, defs, this);
+        }
       }
-      this.render(renderMode, this.__refreshLevel, ctx, defs);
-      // 利用list循环代替tree递归快速渲染
-      // let cache = this.cache;
-      // this.__structs.forEach(struct => {
-      //   console.log(struct);
-      //   let { node, index, childIndex, lv, num, total } = struct;
-      //   node.render2(renderMode, node.__refreshLevel, ctx, defs, cache);
-      // });
       // svg的特殊diff需要
-      if(renderMode === mode.SVG) {
+      else if(renderMode === mode.SVG) {
+        struct.renderSvg(renderMode, ctx, defs, this);
         let nvd = this.virtualDom;
         nvd.defs = defs.value;
         if(this.dom.__root) {
-          diff(this.dom, this.dom.__vd, nvd);
+          // console.log(this.dom.__vd);
+          // console.log(nvd);
+          domDiff(this.dom, this.dom.__vd, nvd);
         }
         else {
           this.dom.innerHTML = util.joinVirtualDom(nvd);
@@ -663,54 +679,34 @@ class Root extends Dom {
    */
   __addUpdate(o) {
     let updateHash = this.__updateHash;
-    let { node, style, origin, overwrite, focus, img, component, measure } = o;
-    // 事件队列和setState等原因，可能node已经销毁
-    if(node.isDestroyed) {
-      return;
-    }
+    let node = o.node;
     // root特殊处理，检查变更时优先看继承信息
     if(node === this) {
       let target = this.__updateRoot;
       if(target) {
-        if(img) {
-          target.img = img;
+        if(o.img) {
+          target.img = o.img;
         }
-        if(focus) {
-          target.focus = focus;
+        if(o.focus) {
+          target.focus = o.focus;
         }
-        if(measure) {
+        if(o.measure) {
           target.measure = true;
         }
         target.list = target.list || [];
-        target.list.push({ style, origin, overwrite });
+        target.list.push({ style: o.style, origin: o.origin, overwrite: o.overwrite });
       }
       else {
-        this.__updateRoot = {
-          node,
-          style,
-          origin,
-          overwrite,
-          focus,
-          img,
-          measure,
-        };
+        this.__updateRoot = o;
       }
     }
     else if(!node.hasOwnProperty('__uniqueUpdateId')) {
       node.__uniqueUpdateId = uniqueUpdateId;
       // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
-      updateHash[uniqueUpdateId++] = {
-        node,
-        style,
-        origin,
-        overwrite,
-        focus,
-        img,
-        component,
-        measure,
-      };
+      updateHash[uniqueUpdateId++] = o;
     }
     else if(updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
+      let { style, origin, overwrite, focus, img, measure } = o;
       let target = updateHash[node.__uniqueUpdateId];
       if(img) {
         target.img = img;
@@ -743,12 +739,12 @@ class Root extends Dom {
     let zList = [];
     let updateRoot = this.__updateRoot;
     let updateHash = this.__updateHash;
-    let hasUpdate;
+    let hasUpdate, hasZ;
     // root更新特殊提前，因为有继承因素
     let root = this;
     if(updateRoot) {
       this.__updateRoot = null;
-      hasUpdate = parseUpdate(renderMode, root, updateHash, updateRoot,
+      [hasUpdate] = parseUpdate(renderMode, root, updateHash, updateRoot,
         reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式
       this.__checkRoot(width, height);
@@ -756,8 +752,10 @@ class Root extends Dom {
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      hasUpdate = parseUpdate(renderMode, this, updateHash, updateHash[k],
-        reflowList, measureList, cacheHash, cacheList, zHash, zList) || hasUpdate;
+      let [t1, t2] = parseUpdate(renderMode, this, updateHash, updateHash[k],
+        reflowList, measureList, cacheHash, cacheList, zHash, zList);
+      hasUpdate = hasUpdate || t1;
+      hasZ = hasZ || t2;
     });
     // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
     this.__reflowList = reflowList;
@@ -1022,6 +1020,7 @@ class Root extends Dom {
         h: height,
       });
       this.__structs = this.__structure(0, 0);
+      return true;
     }
     /**
      * 修剪树，自顶向下深度遍历

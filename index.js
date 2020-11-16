@@ -18842,10 +18842,10 @@
     var __structs = root.__structs;
     var maskHash = {}; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
-    var matrixList = [];
+    var parentMatrixList = [];
     var parentMatrix;
-    var lastList = [];
-    var last;
+    var parentVdList = [];
+    var parentVd;
     var lastLv = 0;
 
     var _loop2 = function _loop2(len, _i6) {
@@ -18859,13 +18859,6 @@
           hasMask = item.hasMask,
           hasClip = item.hasClip;
 
-      if (node instanceof Text) {
-        node.render(renderMode, __refreshLevel, ctx, defs);
-        last.virtualDom.children.push(node.virtualDom);
-        _i5 = _i6;
-        return "continue";
-      }
-
       if (hasMask || hasClip) {
         var start = _i6 + (total || 0) + 1;
         var end = start + (hasMask || hasClip); // svg限制了只能Geom单节点，不可能是Dom
@@ -18878,23 +18871,11 @@
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
 
 
-      if (_i6 === 0) {
-        lastList.push(node);
-      } else if (lv > lastLv) {
-        parentMatrix = last.__matrixEvent;
-
-        if (mx.isE(parentMatrix)) {
-          parentMatrix = null;
-        }
-
-        matrixList.push(parentMatrix);
-        lastList.push(node);
-      } else if (lv < lastLv) {
-        var diff = lastLv - lv;
-        matrixList.splice(-1, diff);
-        parentMatrix = matrixList[lv];
-        lastList.splice(-1, diff);
-        last = lastList[lv];
+      if (lv < lastLv) {
+        parentMatrixList.splice(lv);
+        parentMatrix = parentMatrixList[lv - 1];
+        parentVdList.splice(lv);
+        parentVd = parentVdList[lv - 1];
       }
 
       var virtualDom = void 0; // svg小刷新等级时直接修改vd，这样Geom不再感知
@@ -19042,19 +19023,23 @@
         }
       }
 
-      if (last && !node.isMask && !node.isClip) {
-        last.virtualDom.children.push(node.virtualDom);
+      if (parentVd && !node.isMask && !node.isClip) {
+        parentVd.children.push(virtualDom);
       }
 
-      last = node;
+      if (_i6 === 0 || lv !== lastLv) {
+        parentMatrix = node.__matrix;
+        parentMatrixList.push(parentMatrix);
+        parentVd = virtualDom;
+        parentVdList.push(parentVd);
+      }
+
       lastLv = lv;
       _i5 = _i6;
     };
 
     for (var _i5 = 0, len = __structs.length; _i5 < len; _i5++) {
-      var _ret2 = _loop2(len, _i5);
-
-      if (_ret2 === "continue") continue;
+      _loop2(len, _i5);
     }
   }
 

@@ -560,19 +560,14 @@ function renderSvg(renderMode, ctx, defs, root) {
   let { __structs } = root;
   let maskHash = {};
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
-  let matrixList = [];
+  let parentMatrixList = [];
   let parentMatrix;
-  let lastList = [];
-  let last;
+  let parentVdList = [];
+  let parentVd;
   let lastLv = 0;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
     let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask, hasClip } = item;
-    if(node instanceof Text) {
-      node.render(renderMode, __refreshLevel, ctx, defs);
-      last.virtualDom.children.push(node.virtualDom);
-      continue;
-    }
     if(hasMask || hasClip) {
       let start = i + (total || 0) + 1;
       let end = start + (hasMask || hasClip);
@@ -584,23 +579,11 @@ function renderSvg(renderMode, ctx, defs, root) {
       };
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
-    if(i === 0) {
-      lastList.push(node);
-    }
-    else if(lv > lastLv) {
-      parentMatrix = last.__matrixEvent;
-      if(mx.isE(parentMatrix)) {
-        parentMatrix = null;
-      }
-      matrixList.push(parentMatrix);
-      lastList.push(node);
-    }
-    else if(lv < lastLv) {
-      let diff = lastLv - lv;
-      matrixList.splice(-1, diff);
-      parentMatrix = matrixList[lv];
-      lastList.splice(-1, diff);
-      last = lastList[lv];
+    if(lv < lastLv) {
+      parentMatrixList.splice(lv);
+      parentMatrix = parentMatrixList[lv - 1];
+      parentVdList.splice(lv);
+      parentVd = parentVdList[lv - 1];
     }
     let virtualDom;
     // svg小刷新等级时直接修改vd，这样Geom不再感知
@@ -728,10 +711,15 @@ function renderSvg(renderMode, ctx, defs, root) {
         }
       }
     }
-    if(last && !node.isMask && !node.isClip) {
-      last.virtualDom.children.push(node.virtualDom);
+    if(parentVd && !node.isMask && !node.isClip) {
+      parentVd.children.push(virtualDom);
     }
-    last = node;
+    if(i === 0 || lv !== lastLv) {
+      parentMatrix = node.__matrix;
+      parentMatrixList.push(parentMatrix);
+      parentVd = virtualDom;
+      parentVdList.push(parentVd);
+    }
     lastLv = lv;
   }
 }

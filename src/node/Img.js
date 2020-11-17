@@ -101,7 +101,7 @@ class Img extends Dom {
   render(renderMode, lv, ctx, defs) {
     let res = super.render(renderMode, lv, ctx, defs);
     let {
-      sx: x, sy: y, width, height, isDestroyed,
+      sx: x, sy: y, width, height, isDestroyed, root,
       props: {
         src,
       },
@@ -129,7 +129,7 @@ class Img extends Dom {
     }
     let originX, originY;
     // img无children所以total就是cache避免多余生成
-    if(renderMode === mode.CANVAS) {
+    if(renderMode === mode.CANVAS && root.cache) {
       this.__cacheTotal = __cache;
     }
     if(__cache && __cache.enabled) {
@@ -363,7 +363,7 @@ class Img extends Dom {
         height,
       });
     }
-    if(res.canCacheSelf) {
+    if(res.canCacheSelf && root.cache) {
       this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
       if(res.hasMC) {
         let cacheTotal = this.__cacheTotal;

@@ -17805,6 +17805,7 @@
             width = this.width,
             height = this.height,
             isDestroyed = this.isDestroyed,
+            root = this.root,
             src = this.props.src,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
@@ -17830,7 +17831,7 @@
 
         var originX, originY; // img无children所以total就是cache避免多余生成
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS && root.cache) {
           this.__cacheTotal = __cache;
         }
 
@@ -18001,21 +18002,22 @@
                 _loadImg.error = true;
               }
 
-              var root = self.root,
+              var _root = self.root,
                   _self$currentStyle = self.currentStyle,
                   _width = _self$currentStyle.width,
                   _height = _self$currentStyle.height;
-              root.delRefreshTask(self.__task);
+
+              _root.delRefreshTask(self.__task);
 
               if (_width.unit !== AUTO$5 && _height.unit !== AUTO$5) {
-                root.addRefreshTask(self.__task = {
+                _root.addRefreshTask(self.__task = {
                   before: function before() {
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-                    root.__addUpdate({
+                    _root.__addUpdate({
                       node: self,
                       focus: o$1.REPAINT,
                       img: true
@@ -18023,14 +18025,14 @@
                   }
                 });
               } else {
-                root.addRefreshTask(self.__task = {
+                _root.addRefreshTask(self.__task = {
                   before: function before() {
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
 
-                    root.__addUpdate({
+                    _root.__addUpdate({
                       node: self,
                       focus: o$1.REFLOW,
                       // 没有样式变化但内容尺寸发生了变化强制执行
@@ -18047,7 +18049,7 @@
           });
         }
 
-        if (res.canCacheSelf) {
+        if (res.canCacheSelf && root.cache) {
           this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
 
           if (res.hasMC) {

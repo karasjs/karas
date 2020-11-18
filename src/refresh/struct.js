@@ -489,18 +489,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
   let maskEndHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
-    let { node, total, hasMask, hasClip,
-      node: { computedStyle: {
-        display,
-        visibility,
-      } } } = item;
-    if(display === 'none') {
-      i += total;
-      continue;
-    }
-    if(visibility === 'hidden') {
-      continue;
-    }
+    let { node, total, hasMask, hasClip } = item;
     if(maskStartHash.hasOwnProperty(i)) {
       ctx = maskStartHash[i].ctx;
     }
@@ -528,6 +517,14 @@ function renderCanvas(renderMode, ctx, defs, root) {
     else {
       res = node.render(renderMode, node.__refreshLevel, ctx, defs);
     }
+    let { computedStyle: { display, visiblity } } = node;
+    if(display === 'none') {
+      i += total;
+      continue;
+    }
+    if(visiblity === 'hidden') {
+      continue;
+    }
     let { offScreen } = res;
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
     if(offScreen) {
@@ -537,7 +534,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       list.unshift(offScreen);
       ctx = offScreen.target.ctx;
     }
-    if(node instanceof Geom) { console.log(node);
+    if(node instanceof Geom) {
       node.render(renderMode, node.__refreshLevel, ctx, defs);
     }
     // 最后一个节点检查filter，有则应用，可能有多个包含自己
@@ -689,6 +686,13 @@ function renderSvg(renderMode, ctx, defs, root) {
       }
       node.render(renderMode, __refreshLevel, ctx, defs);
       virtualDom = node.virtualDom;
+    }
+    let { computedStyle: { display } } = node;
+    if(display === 'none') {
+      i += total;
+      lastLv = lv;
+      last = node;
+      continue;
     }
     if(maskHash.hasOwnProperty(i)) {
       let { index, start, end } = maskHash[i];

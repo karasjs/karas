@@ -18727,19 +18727,7 @@
       var node = item.node,
           total = item.total,
           hasMask = item.hasMask,
-          hasClip = item.hasClip,
-          _item$node$computedSt = item.node.computedStyle,
-          display = _item$node$computedSt.display,
-          visibility = _item$node$computedSt.visibility;
-
-      if (display === 'none') {
-        _i4 += total;
-        continue;
-      }
-
-      if (visibility === 'hidden') {
-        continue;
-      }
+          hasClip = item.hasClip;
 
       if (maskStartHash.hasOwnProperty(_i4)) {
         ctx = maskStartHash[_i4].ctx;
@@ -18772,6 +18760,19 @@
         res = node.render(renderMode, node.__refreshLevel, ctx, defs);
       }
 
+      var _node$computedStyle2 = node.computedStyle,
+          display = _node$computedStyle2.display,
+          visiblity = _node$computedStyle2.visiblity;
+
+      if (display === 'none') {
+        _i4 += total;
+        continue;
+      }
+
+      if (visiblity === 'hidden') {
+        continue;
+      }
+
       var _res = res,
           offScreen = _res.offScreen; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
@@ -18785,7 +18786,6 @@
       }
 
       if (node instanceof Geom$1) {
-        console.log(node);
         node.render(renderMode, node.__refreshLevel, ctx, defs);
       } // 最后一个节点检查filter，有则应用，可能有多个包含自己
 
@@ -18967,6 +18967,16 @@
         virtualDom = node.virtualDom;
       }
 
+      var display = node.computedStyle.display;
+
+      if (display === 'none') {
+        _i6 += total;
+        lastLv = lv;
+        last = node;
+        _i5 = _i6;
+        return "continue";
+      }
+
       if (maskHash.hasOwnProperty(_i6)) {
         var _maskHash$_i = maskHash[_i6],
             index = _maskHash$_i.index,
@@ -18979,11 +18989,11 @@
         for (var j = _start; j < _end; j++) {
           var _node4 = __structs[j].node;
           var _node4$computedStyle = _node4.computedStyle,
-              display = _node4$computedStyle.display,
+              _display2 = _node4$computedStyle.display,
               visibility = _node4$computedStyle.visibility,
               children = _node4.virtualDom.children;
 
-          if (display !== 'none' && visibility !== 'hidden') {
+          if (_display2 !== 'none' && visibility !== 'hidden') {
             mChildren = mChildren.concat(children);
 
             for (var k = 0, _len3 = children.length; k < _len3; k++) {
@@ -19039,7 +19049,9 @@
     };
 
     for (var _i5 = 0, len = __structs.length; _i5 < len; _i5++) {
-      _loop2(len, _i5);
+      var _ret2 = _loop2(len, _i5);
+
+      if (_ret2 === "continue") continue;
     }
   }
 

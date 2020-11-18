@@ -12869,11 +12869,8 @@
 
 
         if (renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
-          var _ctx;
-
           ctx.globalAlpha = opacity;
-
-          (_ctx = ctx).setTransform.apply(_ctx, _toConsumableArray(matrix));
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         } // 背景色垫底
 
 
@@ -13184,7 +13181,7 @@
         }
 
         if (renderMode === mode.CANVAS) {
-          return _objectSpread2(_objectSpread2({}, res), {}, {
+          return Object.assign(res, {
             canCache: canCache,
             cache: cache,
             offScreen: offScreen

@@ -1630,7 +1630,7 @@ class Xom extends Node {
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && (!cache || !cache.enabled)) {
       ctx.globalAlpha = opacity;
-      ctx.setTransform(...matrix);
+      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
@@ -1924,7 +1924,7 @@ class Xom extends Node {
       cache.__available = true;
     }
     if(renderMode === mode.CANVAS) {
-      return { ...res, canCache, cache, offScreen };
+      return Object.assign(res, { canCache, cache, offScreen });
     }
     // svg前面提前跳出，到这一定是>=REPAINT的变化
     else if(renderMode === mode.SVG) {

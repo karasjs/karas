@@ -2189,11 +2189,15 @@ class Xom extends Node {
 
   __resizeX(diff) {
     this.computedStyle.width = this.__width += diff;
+    this.__innerWidth += diff;
+    this.__outerWidth += diff;
     this.layoutData.w += diff;
   }
 
   __resizeY(diff) {
     this.computedStyle.height = this.__height += diff;
+    this.__innerHeight += diff;
+    this.__outerHeight += diff;
     this.layoutData.h += diff;
   }
 

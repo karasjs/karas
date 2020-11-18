@@ -15685,6 +15685,7 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isVirtual) {
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -15905,6 +15906,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
@@ -16417,6 +16419,7 @@
       value: function __layoutInline(data, isVirtual) {
         var _this2 = this;
 
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;

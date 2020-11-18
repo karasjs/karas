@@ -331,6 +331,7 @@ class Dom extends Xom {
 
   // 本身block布局时计算好所有子元素的基本位置
   __layoutBlock(data, isVirtual) {
+    this.__zIndexChildren = null;
     let { flowChildren, currentStyle, computedStyle, lineGroups } = this;
     lineGroups.splice(0);
     let {
@@ -517,6 +518,7 @@ class Dom extends Xom {
 
   // 弹性布局时的计算位置
   __layoutFlex(data, isVirtual) {
+    this.__zIndexChildren = null;
     let { flowChildren, currentStyle } = this;
     let {
       flexDirection,
@@ -1018,6 +1020,7 @@ class Dom extends Xom {
 
   // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
   __layoutInline(data, isVirtual) {
+    this.__zIndexChildren = null;
     let { flowChildren, computedStyle, lineGroups } = this;
     lineGroups.splice(0);
     let {

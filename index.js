@@ -18672,10 +18672,6 @@
 
         if (hasTotal) {
           _i3 += _total3;
-
-          if (_hasMask || _hasClip) {
-            _i3 += _hasMask || _hasClip;
-          }
         } // 无内容Xom会没有__cache
 
 
@@ -18690,7 +18686,10 @@
         }
 
         if (target) {
-          _i3 += _hasMask || _hasClip;
+          if (_hasMask || _hasClip) {
+            _i3 += _hasMask || _hasClip;
+          }
+
           var _opacity = _node3.__opacity,
               _matrixEvent = _node3.matrixEvent;
           ctx.globalAlpha = _opacity;

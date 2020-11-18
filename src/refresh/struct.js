@@ -458,9 +458,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       let hasTotal = __cacheMask || __cacheFilter || __cacheTotal && __cacheTotal.available;
       if(hasTotal) {
         i += total;
-        if(hasMask || hasClip) {
-          i += hasMask || hasClip;
-        }
       }
       // 无内容Xom会没有__cache
       let target = __cacheMask || __cacheFilter;
@@ -471,7 +468,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         target = __cache && __cache.available ? __cache : null;
       }
       if(target) {
-        i += hasMask || hasClip;
+        if(hasMask || hasClip) {
+          i += hasMask || hasClip;
+        }
         let { __opacity, matrixEvent } = node;
         ctx.globalAlpha = __opacity;
         ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);

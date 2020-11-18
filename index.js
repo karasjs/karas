@@ -13826,30 +13826,6 @@
     return LineGroup;
   }();
 
-  var TAG_NAME = {
-    'div': true,
-    'p': true,
-    'span': true,
-    'img': true,
-    'b': true,
-    'strong': true
-  };
-  var INLINE = {
-    'span': true,
-    'img': true,
-    'b': true,
-    'strong': true
-  };
-  var BOLD = {
-    'b': true,
-    'strong': true
-  };
-  var tag = {
-    TAG_NAME: TAG_NAME,
-    INLINE: INLINE,
-    BOLD: BOLD
-  };
-
   var TYPE_VD$1 = $$type.TYPE_VD,
       TYPE_GM$1 = $$type.TYPE_GM,
       TYPE_CP$1 = $$type.TYPE_CP;
@@ -14020,7 +13996,7 @@
       }
 
       if (children.$$type === TYPE_VD$1) {
-        flattenJson(children.children);
+        flattenJson(children);
       }
 
       list.push(children);
@@ -14396,6 +14372,30 @@
       }
     };
   });
+
+  var TAG_NAME = {
+    'div': true,
+    'p': true,
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var INLINE = {
+    'span': true,
+    'img': true,
+    'b': true,
+    'strong': true
+  };
+  var BOLD = {
+    'b': true,
+    'strong': true
+  };
+  var tag = {
+    TAG_NAME: TAG_NAME,
+    INLINE: INLINE,
+    BOLD: BOLD
+  };
 
   var AUTO$3 = unit.AUTO,
       PX$5 = unit.PX,
@@ -14780,6 +14780,7 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isVirtual) {
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -15000,6 +15001,7 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
@@ -15298,7 +15300,11 @@
                     item.__offsetY(_diff2, true);
                   }
                 } else if (height.unit === AUTO$3) {
-                  item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                  var old = item.height;
+                  var v = item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                  var d = v - old;
+                  item.__innerHeight += d;
+                  item.__outerHeight += d;
                 }
               } else {
                 if (alignSelf === 'flex-start') ; else if (alignSelf === 'center') {
@@ -15314,7 +15320,14 @@
                     item.__offsetX(_diff4, true);
                   }
                 } else if (width.unit === AUTO$3) {
-                  item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                  var _old = item.width;
+
+                  var _v = item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+
+                  var _d = _v - _old;
+
+                  item.__innerWidth += _d;
+                  item.__outerWidth += _d;
                 }
               }
             });
@@ -15400,7 +15413,11 @@
                       paddingBottom = computedStyle.paddingBottom;
 
                   if (height.unit === AUTO$3) {
-                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var old = item.height;
+                    var v = item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var d = v - old;
+                    item.__innerHeight += d;
+                    item.__outerHeight += d;
                   }
                 } else {
                   var _diff10 = maxCross - item.outerHeight;
@@ -15427,7 +15444,14 @@
                       paddingLeft = _computedStyle2.paddingLeft;
 
                   if (width.unit === AUTO$3) {
-                    item.__width = _computedStyle2.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _old2 = item.width;
+
+                    var _v2 = item.__width = _computedStyle2.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+
+                    var _d2 = _v2 - _old2;
+
+                    item.__innerWidth += _d2;
+                    item.__outerWidth += _d2;
                   }
                 } else {
                   var _diff12 = maxCross - item.outerHeight;
@@ -15466,7 +15490,11 @@
                       paddingBottom = computedStyle.paddingBottom;
 
                   if (height.unit === AUTO$3) {
-                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var old = item.height;
+                    var v = item.__height = item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var d = v - old;
+                    item.__innerHeight += d;
+                    item.__outerHeight += d;
                   }
                 }
               } else {
@@ -15493,7 +15521,14 @@
                       paddingLeft = _computedStyle3.paddingLeft;
 
                   if (width.unit === AUTO$3) {
-                    item.__width = _computedStyle3.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _old3 = item.width;
+
+                    var _v3 = item.__width = _computedStyle3.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+
+                    var _d3 = _v3 - _old3;
+
+                    item.__innerWidth += _d3;
+                    item.__outerWidth += _d3;
                   }
                 }
               }
@@ -15512,6 +15547,7 @@
       value: function __layoutInline(data, isVirtual) {
         var _this2 = this;
 
+        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
@@ -23518,7 +23554,7 @@
     Cache: Cache
   };
 
-  var version = "0.40.9";
+  var version = "0.40.11";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

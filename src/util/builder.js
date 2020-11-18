@@ -1,5 +1,4 @@
 import Text from '../node/Text';
-import tag from '../node/tag';
 import util from './util';
 import $$type from './$$type';
 
@@ -149,7 +148,7 @@ function traverseJson(list, children, options) {
       throw new Error('Can not nest canvas/svg');
     }
     if(children.$$type === TYPE_VD) {
-      flattenJson(children.children);
+      flattenJson(children);
     }
     list.push(children);
     options.lastText = null;

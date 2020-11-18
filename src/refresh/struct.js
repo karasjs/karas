@@ -2,6 +2,7 @@ import inject from '../util/inject';
 import Geom from '../geom/Geom';
 import blur from '../style/blur';
 import Text from '../node/Text';
+import Dom from '../node/Dom';
 import mx from '../math/matrix';
 import level from './level';
 import util from '../util/util';
@@ -604,7 +605,9 @@ function renderSvg(renderMode, ctx, defs, root) {
       else {
         __cacheTotal.available = true;
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
-        virtualDom.children = [];
+        if(node instanceof Dom && node.tagName.toLowerCase() !== 'img') {
+          virtualDom.children = [];
+        }
         delete virtualDom.cache;
       }
       let { currentStyle, computedStyle } = node;

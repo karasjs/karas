@@ -849,7 +849,11 @@ class Dom extends Xom {
                 paddingBottom,
               } = computedStyle;
               if(height.unit === AUTO) {
-                item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                let old = item.height;
+                let v = item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                let d = v - old;
+                item.__innerHeight += d;
+                item.__outerHeight += d;
               }
             }
             else {
@@ -879,7 +883,11 @@ class Dom extends Xom {
                 paddingLeft,
               } = computedStyle;
               if(width.unit === AUTO) {
-                item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                let old = item.width;
+                let v = item.__width = computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                let d = v - old;
+                item.__innerWidth += d;
+                item.__outerWidth += d;
               }
             }
             else {

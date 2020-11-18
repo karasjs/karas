@@ -15357,7 +15357,11 @@
                       paddingBottom = computedStyle.paddingBottom;
 
                   if (height.unit === AUTO$3) {
-                    item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var old = item.height;
+                    var v = item.__height = computedStyle.height = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                    var d = v - old;
+                    item.__innerHeight += d;
+                    item.__outerHeight += d;
                   }
                 } else {
                   var _diff6 = maxCross - item.outerHeight;
@@ -15384,7 +15388,14 @@
                       paddingLeft = _computedStyle.paddingLeft;
 
                   if (width.unit === AUTO$3) {
-                    item.__width = _computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _old2 = item.width;
+
+                    var _v2 = item.__width = _computedStyle.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+
+                    var _d2 = _v2 - _old2;
+
+                    item.__innerWidth += _d2;
+                    item.__outerWidth += _d2;
                   }
                 } else {
                   var _diff8 = maxCross - item.outerWidth;
@@ -15448,14 +15459,14 @@
                       paddingLeft = _computedStyle2.paddingLeft;
 
                   if (width.unit === AUTO$3) {
-                    var _old2 = item.width;
+                    var _old3 = item.width;
 
-                    var _v2 = item.__width = _computedStyle2.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v3 = item.__width = _computedStyle2.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
-                    var _d2 = _v2 - _old2;
+                    var _d3 = _v3 - _old3;
 
-                    item.__innerWidth += _d2;
-                    item.__outerWidth += _d2;
+                    item.__innerWidth += _d3;
+                    item.__outerWidth += _d3;
                   }
                 } else {
                   var _diff12 = maxCross - item.outerHeight;
@@ -15525,14 +15536,14 @@
                       paddingLeft = _computedStyle3.paddingLeft;
 
                   if (width.unit === AUTO$3) {
-                    var _old3 = item.width;
+                    var _old4 = item.width;
 
-                    var _v3 = item.__width = _computedStyle3.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
+                    var _v4 = item.__width = _computedStyle3.width = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
 
-                    var _d3 = _v3 - _old3;
+                    var _d4 = _v4 - _old4;
 
-                    item.__innerWidth += _d3;
-                    item.__outerWidth += _d3;
+                    item.__innerWidth += _d4;
+                    item.__outerWidth += _d4;
                   }
                 }
               }
@@ -18935,7 +18946,11 @@
         } else {
           __cacheTotal.available = true;
           virtualDom = node.__virtualDom = util.extend({}, virtualDom);
-          virtualDom.children = [];
+
+          if (node instanceof Dom$1 && node.tagName.toLowerCase() !== 'img') {
+            virtualDom.children = [];
+          }
+
           delete virtualDom.cache;
         }
 

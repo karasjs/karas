@@ -61,12 +61,12 @@ class Component extends Event {
     if(root && self.__isMounted) {
       root.delRefreshTask(self.__task);
       this.__task = {
-        before: () => {
+        __before: () => {
           // 标识更新
           self.__nextState = n;
           setUpdateFlag(this);
         },
-        after: () => {
+        __after: () => {
           if(isFunction(cb)) {
             cb.call(self);
           }

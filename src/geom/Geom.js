@@ -314,6 +314,10 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
+  __releaseWhenEmpty(__cache) {
+    super.__releaseWhenEmpty(__cache);
+  }
+
   addGeom(tagName, props) {
     props = util.hash2arr(props);
     this.virtualDom.children.push({

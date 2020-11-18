@@ -329,7 +329,7 @@ class Img extends Dom {
           root.delRefreshTask(self.__task);
           if(width.unit !== AUTO && height.unit !== AUTO) {
             root.addRefreshTask(self.__task = {
-              before() {
+              __before() {
                 if(self.isDestroyed) {
                   return;
                 }
@@ -344,7 +344,7 @@ class Img extends Dom {
           }
           else {
             root.addRefreshTask(self.__task = {
-              before() {
+              __before() {
                 if(self.isDestroyed) {
                   return;
                 }
@@ -364,6 +364,10 @@ class Img extends Dom {
       });
     }
     return res;
+  }
+
+  __releaseWhenEmpty(__cache) {
+    super.__releaseWhenEmpty(__cache);
   }
 
   get baseLine() {

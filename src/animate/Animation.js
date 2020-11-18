@@ -1323,7 +1323,7 @@ class Animation extends Event {
             playCount = ++this.__playCount;
             // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
             if(playCount >= iterations) {
-              frame.__offFrameA(this);
+              frame.offFrame(this);
             }
           }
         }
@@ -1378,8 +1378,8 @@ class Animation extends Event {
       };
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-    frame.__offFrameA(this);
-    frame.__onFrameA(this);
+    frame.offFrame(this);
+    frame.onFrame(this);
     this.__startTime = frame.__now;
     return this;
   }
@@ -1428,11 +1428,11 @@ class Animation extends Event {
         current = __originStyle;
       }
       root.addRefreshTask({
-        before() {
+        __before() {
           genBeforeRefresh(current, self, root, self.target);
           self.__clean(true);
         },
-        after(diff) {
+        __after(diff) {
           self.__assigning = false;
           self.__frameCb(diff);
           self.__fin(cb, diff);
@@ -1469,11 +1469,11 @@ class Animation extends Event {
         }
       };
       root.addRefreshTask({
-        before() {
+        __before() {
           genBeforeRefresh(__originStyle, self, root, self.target);
           self.__clean();
         },
-        after(diff) {
+        __after(diff) {
           self.__assigning = false;
           self.__frameCb(diff);
           task(diff);
@@ -1588,8 +1588,7 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    // frame.offFrame(this.__enterFrame);
-    frame.__offFrameA(this);
+    frame.offFrame(this);
     this.__playCb = null;
   }
 
@@ -1603,7 +1602,7 @@ class Animation extends Event {
     }
     else {
       frame.nextFrame({
-        before() {
+        __before() {
           // 尚未初始化的清除
           self.__clean && self.__clean();
           self.__target = null;

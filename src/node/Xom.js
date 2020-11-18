@@ -949,8 +949,9 @@ class Xom extends Node {
         else {
           v = v.value;
         }
-        x = v - (computedStyle.translateX || 0);
-        computedStyle.translateX = v;
+        x = v - (computedStyle.transform[4] || 0);
+        computedStyle.transform[4] += x;
+        matrixCache[4] += x;
       }
       if(level.contain(lv, level.TRANSLATE_Y)) {
         let v = currentStyle.translateY;
@@ -963,11 +964,10 @@ class Xom extends Node {
         else {
           v = v.value;
         }
-        y = v - (computedStyle.translateY || 0);
-        computedStyle.translateY = v;
+        y = v - (computedStyle.transform[5] || 0);
+        computedStyle.transform[5] += y;
+        matrixCache[5] += y;
       }
-      matrixCache[4] += x;
-      matrixCache[5] += y;
       __cacheStyle.matrix = matrixCache;
     }
     // 先根据cache计算需要重新计算的computedStyle
@@ -1108,7 +1108,7 @@ class Xom extends Node {
                 let root = node.root;
                 root.delRefreshTask(loadBgi.cb);
                 root.addRefreshTask(loadBgi.cb = {
-                  before() {
+                  __before() {
                     root.__addUpdate({
                       node,
                       focus: level.REPAINT,
@@ -1473,10 +1473,11 @@ class Xom extends Node {
         delete virtualDom.transform;
       }
     }
-    // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
+    // 隐藏不渲染
     if(visibility === 'hidden') {
       if(renderMode === mode.CANVAS) {
-        return { ...res, break: true };
+        res.break = true;
+        return res;
       }
     }
     if(renderMode === mode.SVG) {
@@ -1487,14 +1488,10 @@ class Xom extends Node {
     if(cache && renderMode === mode.CANVAS) {
       // 置空防止原型链查找性能
       this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
-      // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
+      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断
       if(!hasContent) {
-        let isGeom = this.tagName.charAt(0) === '$';
-        let isImg = this.tagName.toLowerCase() === 'img';
-        if(!isGeom && !isImg && __cache && __cache.available) {
-          __cache.release();
-        }
-        return { ...res, break: !isGeom && !isImg };
+        res.break = this.__releaseWhenEmpty(__cache);
+        return res;
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
       if((!__cache || !__cache.available)) {
@@ -2103,7 +2100,7 @@ class Xom extends Node {
       }
       let node = this;
       root.addRefreshTask(node.__task = {
-        before() {
+        __before() {
           if(node.isDestroyed) {
             return;
           }
@@ -2115,7 +2112,7 @@ class Xom extends Node {
             overwrite: true, // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
           });
         },
-        after(diff) {
+        __after(diff) {
           if(util.isFunction(cb)) {
             cb.call(node, diff);
           }
@@ -2225,6 +2222,13 @@ class Xom extends Node {
       }
     }
     return [ox, oy];
+  }
+
+  __releaseWhenEmpty(__cache) {
+    if(__cache && __cache.available) {
+      __cache.release();
+    }
+    return true;
   }
 
   get tagName() {

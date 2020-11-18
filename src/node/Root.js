@@ -555,18 +555,18 @@ class Root extends Dom {
     if(!task.length) {
       let clone;
       frame.nextFrame(this.__rTask = {
-        before: diff => {
+        __before: diff => {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             let setStateList = [];
             clone.forEach((item, i) => {
-              if(isObject(item) && isFunction(item.before)) {
+              if(isObject(item) && isFunction(item.__before)) {
                 // 收集组件setState的更新，特殊处理
                 if(item.__state) {
                   setStateList.push(i);
                 }
-                item.before(diff);
+                item.__before(diff);
               }
             });
             // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
@@ -609,10 +609,10 @@ class Root extends Dom {
             updater.did();
           }
         },
-        after: diff => {
+        __after: diff => {
           clone.forEach(item => {
-            if(isObject(item) && isFunction(item.after)) {
-              item.after(diff);
+            if(isObject(item) && isFunction(item.__after)) {
+              item.__after(diff);
             }
             else if(isFunction(item)) {
               item(diff);

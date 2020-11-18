@@ -57,40 +57,6 @@
     return obj;
   }
 
-  function ownKeys(object, enumerableOnly) {
-    var keys = Object.keys(object);
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(object);
-      if (enumerableOnly) symbols = symbols.filter(function (sym) {
-        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-      });
-      keys.push.apply(keys, symbols);
-    }
-
-    return keys;
-  }
-
-  function _objectSpread2(target) {
-    for (var i = 1; i < arguments.length; i++) {
-      var source = arguments[i] != null ? arguments[i] : {};
-
-      if (i % 2) {
-        ownKeys(Object(source), true).forEach(function (key) {
-          _defineProperty(target, key, source[key]);
-        });
-      } else if (Object.getOwnPropertyDescriptors) {
-        Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-      } else {
-        ownKeys(Object(source)).forEach(function (key) {
-          Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-        });
-      }
-    }
-
-    return target;
-  }
-
   function _inherits(subClass, superClass) {
     if (typeof superClass !== "function" && superClass !== null) {
       throw new TypeError("Super expression must either be null or a function");
@@ -8282,20 +8248,14 @@
 
   var isFunction$2 = util.isFunction;
 
-  function traversal(list, diff, step) {
-    if (step === 'before') {
+  function traversal(list, diff, after) {
+    if (after) {
       list.forEach(function (item) {
-        if (item && isFunction$2(item.before)) {
-          item.before(diff);
-        }
+        item.__after && item.__after(diff);
       });
-    } else if (step === 'after') {
+    } else {
       list.forEach(function (item) {
-        if (item && isFunction$2(item.after)) {
-          item.after(diff);
-        } else if (isFunction$2(item)) {
-          item(diff);
-        }
+        item.__before && item.__before(diff);
       });
     }
   }
@@ -8309,7 +8269,6 @@
       this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
 
       this.__task = [];
-      this.__taskA = [];
       this.__now = null;
     }
 
@@ -8317,8 +8276,7 @@
       key: "__init",
       value: function __init() {
         var self = this;
-        var task = self.task,
-            taskA = self.taskA;
+        var task = self.task;
         inject.cancelAnimationFrame(self.id);
         var last = self.__now = inject.now();
 
@@ -8326,7 +8284,7 @@
           // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
           inject.cancelAnimationFrame(self.id);
           self.id = inject.requestAnimationFrame(function () {
-            if (isPause || !task.length && !taskA.length) {
+            if (isPause || !task.length) {
               return;
             }
 
@@ -8336,24 +8294,17 @@
 
             last = now; // 优先动画计算
 
-            var cloneA = taskA.slice(0);
             var clone = task.slice(0);
-            cloneA.forEach(function (item) {
-              item.__before(diff);
-            });
-            traversal(clone, diff, 'before'); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
+            traversal(clone, diff); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
 
             self.__hookTask.splice(0).forEach(function (item) {
               return item();
-            }); // 普通的after
+            }); // 普通的before/after
 
 
-            cloneA.forEach(function (item) {
-              item.__after(diff);
-            });
-            traversal(clone, diff, 'after'); // 还有则继续，没有则停止节省性能
+            traversal(clone, diff, true); // 还有则继续，没有则停止节省性能
 
-            if (task.length || taskA.length) {
+            if (task.length) {
               cb();
             }
           });
@@ -8368,26 +8319,20 @@
           return;
         }
 
-        var task = this.task,
-            taskA = this.taskA;
+        var task = this.task;
 
-        if (!task.length && !taskA.length) {
+        if (!task.length) {
           this.__init();
+        }
+
+        if (isFunction$2(handle)) {
+          handle = {
+            __after: handle,
+            __karasFramecb: handle
+          };
         }
 
         task.push(handle);
-      }
-    }, {
-      key: "__onFrameA",
-      value: function __onFrameA(animate) {
-        var task = this.task,
-            taskA = this.taskA;
-
-        if (!task.length && !taskA.length) {
-          this.__init();
-        }
-
-        taskA.push(animate);
       }
     }, {
       key: "offFrame",
@@ -8396,8 +8341,7 @@
           return;
         }
 
-        var task = this.task,
-            taskA = this.taskA;
+        var task = this.task;
 
         for (var i = 0, len = task.length; i < len; i++) {
           var item = task[i]; // 需考虑nextFrame包裹的引用对比
@@ -8408,27 +8352,7 @@
           }
         }
 
-        if (!task.length && !taskA.length) {
-          inject.cancelAnimationFrame(this.id);
-          this.__now = null;
-        }
-      }
-    }, {
-      key: "__offFrameA",
-      value: function __offFrameA(animate) {
-        var task = this.task,
-            taskA = this.taskA;
-
-        for (var i = 0, len = taskA.length; i < len; i++) {
-          var item = taskA[i]; // 需考虑nextFrame包裹的引用对比
-
-          if (item === animate) {
-            taskA.splice(i, 1);
-            break;
-          }
-        }
-
-        if (!task.length && !taskA.length) {
+        if (!task.length) {
           inject.cancelAnimationFrame(this.id);
           this.__now = null;
         }
@@ -8443,14 +8367,16 @@
         } // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
 
 
-        var cb = isFunction$2(handle) ? function (diff) {
-          handle(diff);
+        var cb = isFunction$2(handle) ? {
+          __after: function __after(diff) {
+            handle(diff);
 
-          _this.offFrame(cb);
+            _this.offFrame(cb);
+          }
         } : {
-          before: handle.before,
-          after: function after(diff) {
-            handle.after && handle.after(diff);
+          __before: handle.__before,
+          __after: function __after(diff) {
+            handle.__after && handle.__after(diff);
 
             _this.offFrame(cb);
           }
@@ -8476,11 +8402,6 @@
       key: "task",
       get: function get() {
         return this.__task;
-      }
-    }, {
-      key: "taskA",
-      get: function get() {
-        return this.__taskA;
       }
     }]);
 
@@ -10054,7 +9975,7 @@
                   playCount = ++_this2.__playCount; // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
 
                   if (playCount >= iterations) {
-                    frame.__offFrameA(_this2);
+                    frame.offFrame(_this2);
                   }
                 }
             } else {
@@ -10124,10 +10045,8 @@
         } // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
 
 
-        frame.__offFrameA(this);
-
-        frame.__onFrameA(this);
-
+        frame.offFrame(this);
+        frame.onFrame(this);
         this.__startTime = frame.__now;
         return this;
       }
@@ -10202,12 +10121,12 @@
           }
 
           root.addRefreshTask({
-            before: function before() {
+            __before: function __before() {
               genBeforeRefresh(current, self, root, self.target);
 
               self.__clean(true);
             },
-            after: function after(diff) {
+            __after: function __after(diff) {
               self.__assigning = false;
 
               self.__frameCb(diff);
@@ -10262,12 +10181,12 @@
           };
 
           root.addRefreshTask({
-            before: function before() {
+            __before: function __before() {
               genBeforeRefresh(__originStyle, self, root, self.target);
 
               self.__clean();
             },
-            after: function after(diff) {
+            __after: function __after(diff) {
               self.__assigning = false;
 
               self.__frameCb(diff);
@@ -10434,9 +10353,7 @@
     }, {
       key: "__cancelTask",
       value: function __cancelTask() {
-        // frame.offFrame(this.__enterFrame);
-        frame.__offFrameA(this);
-
+        frame.offFrame(this);
         this.__playCb = null;
       }
     }, {
@@ -10450,7 +10367,7 @@
           self.__target = null;
         } else {
           frame.nextFrame({
-            before: function before() {
+            __before: function __before() {
               // 尚未初始化的清除
               self.__clean && self.__clean();
               self.__target = null;
@@ -12247,8 +12164,9 @@
               v = v.value;
             }
 
-            x = v - (computedStyle.translateX || 0);
-            computedStyle.translateX = v;
+            x = v - (computedStyle.transform[4] || 0);
+            computedStyle.transform[4] += x;
+            matrixCache[4] += x;
           }
 
           if (o$1.contain(lv, o$1.TRANSLATE_Y)) {
@@ -12262,12 +12180,11 @@
               _v = _v.value;
             }
 
-            y = _v - (computedStyle.translateY || 0);
-            computedStyle.translateY = _v;
+            y = _v - (computedStyle.transform[5] || 0);
+            computedStyle.transform[5] += y;
+            matrixCache[5] += y;
           }
 
-          matrixCache[4] += x;
-          matrixCache[5] += y;
           __cacheStyle.matrix = matrixCache;
         } // 先根据cache计算需要重新计算的computedStyle
         else {
@@ -12392,7 +12309,7 @@
                     var root = node.root;
                     root.delRefreshTask(loadBgi.cb);
                     root.addRefreshTask(loadBgi.cb = {
-                      before: function before() {
+                      __before: function __before() {
                         root.__addUpdate({
                           node: node,
                           focus: o$1.REPAINT
@@ -12750,14 +12667,13 @@
           } else {
             delete virtualDom.transform;
           }
-        } // 隐藏不渲染，依然注意canCache在canvas/svg下意义不同
+        } // 隐藏不渲染
 
 
         if (visibility === 'hidden') {
           if (renderMode === mode.CANVAS) {
-            return _objectSpread2(_objectSpread2({}, res), {}, {
-              "break": true
-            });
+            res["break"] = true;
+            return res;
           }
         }
 
@@ -12771,19 +12687,11 @@
 
         if (cache && renderMode === mode.CANVAS) {
           // 置空防止原型链查找性能
-          this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null; // 无内容可释放并提前跳出，geom特殊判断，因为后面子类会绘制矢量，img也特殊判断
+          this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null; // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断
 
           if (!hasContent) {
-            var isGeom = this.tagName.charAt(0) === '$';
-            var isImg = this.tagName.toLowerCase() === 'img';
-
-            if (!isGeom && !isImg && __cache && __cache.available) {
-              __cache.release();
-            }
-
-            return _objectSpread2(_objectSpread2({}, res), {}, {
-              "break": !isGeom && !isImg
-            });
+            res["break"] = this.__releaseWhenEmpty(__cache);
+            return res;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
 
@@ -13450,7 +13358,7 @@
 
           var node = this;
           root.addRefreshTask(node.__task = {
-            before: function before() {
+            __before: function __before() {
               if (node.isDestroyed) {
                 return;
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -13465,7 +13373,7 @@
 
               });
             },
-            after: function after(diff) {
+            __after: function __after(diff) {
               if (util.isFunction(cb)) {
                 cb.call(node, diff);
               }
@@ -13610,6 +13518,15 @@
         }
 
         return [ox, oy];
+      }
+    }, {
+      key: "__releaseWhenEmpty",
+      value: function __releaseWhenEmpty(__cache) {
+        if (__cache && __cache.available) {
+          __cache.release();
+        }
+
+        return true;
       }
     }, {
       key: "tagName",
@@ -14151,12 +14068,12 @@
         if (root && self.__isMounted) {
           root.delRefreshTask(self.__task);
           this.__task = {
-            before: function before() {
+            __before: function __before() {
               // 标识更新
               self.__nextState = n;
               setUpdateFlag(_this2);
             },
-            after: function after() {
+            __after: function __after() {
               if (isFunction$4(cb)) {
                 cb.call(self);
               }
@@ -16450,7 +16367,7 @@
 
               if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
                 root.addRefreshTask(self.__task = {
-                  before: function before() {
+                  __before: function __before() {
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -16465,7 +16382,7 @@
                 });
               } else {
                 root.addRefreshTask(self.__task = {
-                  before: function before() {
+                  __before: function __before() {
                     if (self.isDestroyed) {
                       return;
                     } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
@@ -16489,6 +16406,11 @@
         }
 
         return res;
+      }
+    }, {
+      key: "__releaseWhenEmpty",
+      value: function __releaseWhenEmpty(__cache) {
+        _get(_getPrototypeOf(Img.prototype), "__releaseWhenEmpty", this).call(this, __cache);
       }
     }, {
       key: "baseLine",
@@ -16894,6 +16816,11 @@
         _get(_getPrototypeOf(Geom.prototype), "__cancelCache", this).call(this, recursion);
 
         this.__cacheProps = {};
+      }
+    }, {
+      key: "__releaseWhenEmpty",
+      value: function __releaseWhenEmpty(__cache) {
+        _get(_getPrototypeOf(Geom.prototype), "__releaseWhenEmpty", this).call(this, __cache);
       }
     }, {
       key: "addGeom",
@@ -18947,7 +18874,7 @@
           __cacheTotal.available = true;
           virtualDom = node.__virtualDom = util.extend({}, virtualDom);
 
-          if (node instanceof Dom$1 && node.tagName.toLowerCase() !== 'img') {
+          if (node instanceof Dom$1 && !(node instanceof Img$1)) {
             virtualDom.children = [];
           }
 
@@ -19800,19 +19727,19 @@
         if (!task.length) {
           var clone;
           frame.nextFrame(this.__rTask = {
-            before: function before(diff) {
+            __before: function __before(diff) {
               clone = task.splice(0); // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
 
               if (clone.length) {
                 var setStateList = [];
                 clone.forEach(function (item, i) {
-                  if (isObject$2(item) && isFunction$6(item.before)) {
+                  if (isObject$2(item) && isFunction$6(item.__before)) {
                     // 收集组件setState的更新，特殊处理
                     if (item.__state) {
                       setStateList.push(i);
                     }
 
-                    item.before(diff);
+                    item.__before(diff);
                   }
                 }); // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
 
@@ -19864,10 +19791,10 @@
                 updater.did();
               }
             },
-            after: function after(diff) {
+            __after: function __after(diff) {
               clone.forEach(function (item) {
-                if (isObject$2(item) && isFunction$6(item.after)) {
-                  item.after(diff);
+                if (isObject$2(item) && isFunction$6(item.__after)) {
+                  item.__after(diff);
                 } else if (isFunction$6(item)) {
                   item(diff);
                 }

@@ -3,6 +3,7 @@ import Geom from '../geom/Geom';
 import blur from '../style/blur';
 import Text from '../node/Text';
 import Dom from '../node/Dom';
+import Img from '../node/Img';
 import mx from '../math/matrix';
 import level from './level';
 import util from '../util/util';
@@ -605,7 +606,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       else {
         __cacheTotal.available = true;
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
-        if(node instanceof Dom && node.tagName.toLowerCase() !== 'img') {
+        if(node instanceof Dom && !(node instanceof Img)) {
           virtualDom.children = [];
         }
         delete virtualDom.cache;

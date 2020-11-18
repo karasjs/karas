@@ -291,6 +291,8 @@
         } else {
           this.__ox += diff;
         }
+
+        this.__sx += diff;
       }
     }, {
       key: "__offsetY",
@@ -300,6 +302,8 @@
         } else {
           this.__oy += diff;
         }
+
+        this.__sy += diff;
       }
     }, {
       key: "__destroy",
@@ -4450,7 +4454,7 @@
             cacheStyle = this.cacheStyle;
 
         if (isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
-          return;
+          return false;
         }
 
         if (renderMode === mode.CANVAS) {
@@ -11264,7 +11268,7 @@
             }
           }
 
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
+          ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         }
 
         ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
@@ -12164,7 +12168,8 @@
               v = v.value;
             }
 
-            x = v - (computedStyle.transform[4] || 0);
+            x = v - (computedStyle.translateX || 0);
+            computedStyle.translateX = v;
             computedStyle.transform[4] += x;
             matrixCache[4] += x;
           }
@@ -12180,7 +12185,8 @@
               _v = _v.value;
             }
 
-            y = _v - (computedStyle.transform[5] || 0);
+            y = _v - (computedStyle.translateY || 0);
+            computedStyle.translateY = _v;
             computedStyle.transform[5] += y;
             matrixCache[5] += y;
           }
@@ -12212,6 +12218,7 @@
               else {
                   var temp = [];
                   ['translateX', 'translateY', 'rotateZ', 'rotate', 'skewX', 'skewY', 'scaleX', 'scaleY'].forEach(function (k) {
+                    delete computedStyle[k];
                     var v = currentStyle[k];
 
                     if (util.isNil(v)) {
@@ -13434,7 +13441,8 @@
       key: "deepScan",
       value: function deepScan(cb, options) {
         return cb(this, options);
-      }
+      } // isLayout为false时，为relative/margin/flex/vertical等
+
     }, {
       key: "__offsetX",
       value: function __offsetX(diff, isLayout, lv) {
@@ -13442,12 +13450,16 @@
 
         if (isLayout) {
           this.layoutData.x += diff;
-          this.__sx += diff;
         }
 
         if (lv !== undefined) {
           this.__refreshLevel |= lv;
         }
+
+        this.__x1 += diff;
+        this.__x2 += diff;
+        this.__x3 += diff;
+        this.__x4 += diff;
       }
     }, {
       key: "__offsetY",
@@ -13456,12 +13468,16 @@
 
         if (isLayout) {
           this.layoutData.y += diff;
-          this.__sy += diff;
         }
 
         if (lv !== undefined) {
           this.__refreshLevel |= lv;
         }
+
+        this.__y1 += diff;
+        this.__y2 += diff;
+        this.__y3 += diff;
+        this.__y4 += diff;
       }
     }, {
       key: "__resizeX",
@@ -18158,7 +18174,8 @@
     return res.reverse();
   }
 
-  function genBboxTotal(node, __structs, index, total, parentIndexHash, matrixHash, opacityHash) {
+  function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
+    var matrixHash = {};
     var x1 = node.__x1,
         y1 = node.__y1,
         cache = node.__cache,
@@ -18283,7 +18300,7 @@
     var parentIndexHash = {};
     var matrixHash = {};
     var opacityHash = {};
-    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, matrixHash, opacityHash);
+    var bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
 
     if (cacheTop) {
       cacheTop.reset(bboxTotal);
@@ -18341,26 +18358,48 @@
       }
 
       var parentIndex = parentIndexHash[i];
+      var matrix = matrixHash[parentIndex];
       var opacity = opacityHash[i]; // 先看text
 
       if (_node2 instanceof Text) {
         ctx.globalAlpha = opacityHash[parentIndex];
-        var matrix = matrixHash[parentIndex];
 
-        if (matrix) {
-          ctx.setTransform.apply(ctx, _toConsumableArray(matrix));
-        }
+        var _matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
+
+        ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
 
         _node2.render(renderMode, 0, ctx, defs, tx - x1 + dbx, ty - y1 + dby);
       } // 再看total缓存
       else if (__cacheTotal && __cacheTotal.available) {
           ctx.globalAlpha = opacity;
-          Cache.drawCache(__cacheTotal, cacheTop, transform, matrixHash[i], transformOrigin);
+          Cache.drawCache(__cacheTotal, cacheTop, transform, matrix || [1, 0, 0, 1, 0, 0], transformOrigin);
           i += _total2;
         } // 最后看cache，没有的是无内容的Xom节点
         else if (__cache && __cache.available) {
             ctx.globalAlpha = opacity;
-            Cache.drawCache(__cache, cacheTop, transform, matrixHash[i], transformOrigin);
+
+            if (transform && !mx.isE(transform)) {
+              var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+
+              tfo[0] += __cache.x1 - x1 + dbx + tx;
+              tfo[1] += __cache.y1 - y1 + dby + ty;
+              var m = tf.calMatrixByOrigin(transform, tfo);
+
+              if (matrix) {
+                matrix = mx.multiply(matrix, m);
+              } else {
+                matrix = m;
+              }
+            }
+
+            if (matrix) {
+              matrixHash[i] = matrix;
+              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            } else {
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+
+            Cache.drawCache(__cache, cacheTop);
           }
     }
 
@@ -18457,7 +18496,7 @@
         }
 
         if (o$1.contain(__refreshLevel, o$1.FILTER)) {
-          var filter = computedStyle.filter = currentStyle.fitler;
+          var filter = computedStyle.filter = currentStyle.filter;
           node.__blurValue = 0;
 
           if (Array.isArray(filter)) {
@@ -18761,14 +18800,14 @@
 
       var _node$computedStyle2 = node.computedStyle,
           display = _node$computedStyle2.display,
-          visiblity = _node$computedStyle2.visiblity;
+          visibility = _node$computedStyle2.visibility;
 
       if (display === 'none') {
         _i4 += total;
         continue;
       }
 
-      if (visiblity === 'hidden') {
+      if (visibility === 'hidden') {
         continue;
       }
 
@@ -18926,7 +18965,7 @@
         }
 
         if (o$1.contain(__refreshLevel, o$1.FILTER)) {
-          var filter = computedStyle.filter = currentStyle.fitler;
+          var filter = computedStyle.filter = currentStyle.filter;
 
           if (Array.isArray(filter)) {
             filter.forEach(function (item) {
@@ -19001,16 +19040,16 @@
                   props = _children$k.props;
 
               if (tagName === 'path') {
-                var _matrix = _node4.renderMatrix;
+                var _matrix2 = _node4.renderMatrix;
                 var inverse = mx.inverse(dom.renderMatrix);
-                _matrix = mx.multiply(_matrix, inverse); // transform属性放在最后一个省去循环
+                _matrix2 = mx.multiply(_matrix2, inverse); // transform属性放在最后一个省去循环
 
                 var _len4 = props.length;
 
                 if (!_len4 || props[_len4 - 1][0] !== 'transform') {
-                  props.push(['transform', "matrix(".concat(_matrix, ")")]);
+                  props.push(['transform', "matrix(".concat(_matrix2, ")")]);
                 } else {
-                  props[_len4 - 1][1] = "matrix(".concat(_matrix, ")");
+                  props[_len4 - 1][1] = "matrix(".concat(_matrix2, ")");
                 }
               }
             }

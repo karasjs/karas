@@ -207,7 +207,7 @@ class Text extends Node {
     }
     let { isDestroyed, computedStyle, lineBoxes, cacheStyle } = this;
     if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
-      return;
+      return false;
     }
     if(renderMode === mode.CANVAS) {
       let font = css.setFontStyle(computedStyle);

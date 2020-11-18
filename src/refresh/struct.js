@@ -68,7 +68,8 @@ function genLRD(structs) {
   return res.reverse();
 }
 
-function genBboxTotal(node, __structs, index, total, parentIndexHash, matrixHash, opacityHash) {
+function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
+  let matrixHash = {};
   let { __x1: x1, __y1: y1, __cache: cache, __blurValue: blurValue } = node;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
@@ -165,7 +166,7 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
   let parentIndexHash = {};
   let matrixHash = {};
   let opacityHash = {};
-  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, matrixHash, opacityHash);
+  let bboxTotal = genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash);
   if(cacheTop) {
     cacheTop.reset(bboxTotal);
   }
@@ -197,26 +198,45 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
       continue;
     }
     let parentIndex = parentIndexHash[i];
-    let opacity = opacityHash[i]
+    let matrix = matrixHash[parentIndex];
+    let opacity = opacityHash[i];
     // 先看text
     if(node instanceof Text) {
       ctx.globalAlpha = opacityHash[parentIndex];
-      let matrix = matrixHash[parentIndex];
-      if(matrix) {
-        ctx.setTransform(...matrix);
-      }
+      let matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
+      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
       node.render(renderMode, 0, ctx, defs, tx - x1 + dbx, ty - y1 + dby);
     }
     // 再看total缓存
     else if(__cacheTotal && __cacheTotal.available) {
       ctx.globalAlpha = opacity;
-      Cache.drawCache(__cacheTotal, cacheTop, transform, matrixHash[i], transformOrigin);
+      Cache.drawCache(__cacheTotal, cacheTop, transform, matrix || [1, 0, 0, 1, 0, 0], transformOrigin);
       i += total;
     }
     // 最后看cache，没有的是无内容的Xom节点
     else if(__cache && __cache.available) {
       ctx.globalAlpha = opacity;
-      Cache.drawCache(__cache, cacheTop, transform, matrixHash[i], transformOrigin);
+      if(transform && !mx.isE(transform)) {
+        let tfo = transformOrigin.slice(0);
+        // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+        tfo[0] += __cache.x1 - x1 + dbx + tx;
+        tfo[1] += __cache.y1 - y1 + dby + ty;
+        let m = tf.calMatrixByOrigin(transform, tfo);
+        if(matrix) {
+          matrix = mx.multiply(matrix, m);
+        }
+        else {
+          matrix = m;
+        }
+      }
+      if(matrix) {
+        matrixHash[i] = matrix;
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      }
+      else {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      Cache.drawCache(__cache, cacheTop);
     }
   }
   return cacheTop;
@@ -293,7 +313,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         node.__opacity = parentOpacity * opacity;
       }
       if(level.contain(__refreshLevel, level.FILTER)) {
-        let filter = computedStyle.filter = currentStyle.fitler;
+        let filter = computedStyle.filter = currentStyle.filter;
         node.__blurValue = 0;
         if(Array.isArray(filter)) {
           filter.forEach(item => {
@@ -516,12 +536,12 @@ function renderCanvas(renderMode, ctx, defs, root) {
     else {
       res = node.render(renderMode, node.__refreshLevel, ctx, defs);
     }
-    let { computedStyle: { display, visiblity } } = node;
+    let { computedStyle: { display, visibility } } = node;
     if(display === 'none') {
       i += total;
       continue;
     }
-    if(visiblity === 'hidden') {
+    if(visibility === 'hidden') {
       continue;
     }
     let { offScreen } = res;
@@ -643,7 +663,7 @@ function renderSvg(renderMode, ctx, defs, root) {
         }
       }
       if(level.contain(__refreshLevel, level.FILTER)) {
-        let filter = computedStyle.filter = currentStyle.fitler;
+        let filter = computedStyle.filter = currentStyle.filter;
         if(Array.isArray(filter)) {
           filter.forEach(item => {
             let [k, v] = item;

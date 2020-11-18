@@ -43,6 +43,7 @@ class Node {
     else {
       this.__ox += diff;
     }
+    this.__sx += diff;
   }
 
   __offsetY(diff, isLayout) {
@@ -52,6 +53,7 @@ class Node {
     else {
       this.__oy += diff;
     }
+    this.__sy += diff;
   }
 
   __destroy() {

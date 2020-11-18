@@ -241,7 +241,7 @@ class Cache {
           matrix = mx.multiply(matrix, inverse);
         }
       }
-      ctx.setTransform(...matrix);
+      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
   }

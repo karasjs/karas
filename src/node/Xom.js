@@ -949,7 +949,8 @@ class Xom extends Node {
         else {
           v = v.value;
         }
-        x = v - (computedStyle.transform[4] || 0);
+        x = v - (computedStyle.translateX || 0);
+        computedStyle.translateX = v;
         computedStyle.transform[4] += x;
         matrixCache[4] += x;
       }
@@ -964,7 +965,8 @@ class Xom extends Node {
         else {
           v = v.value;
         }
-        y = v - (computedStyle.transform[5] || 0);
+        y = v - (computedStyle.translateY || 0);
+        computedStyle.translateY = v;
         computedStyle.transform[5] += y;
         matrixCache[5] += y;
       }
@@ -1019,6 +1021,7 @@ class Xom extends Node {
             'scaleX',
             'scaleY',
           ].forEach(k => {
+            delete computedStyle[k];
             let v = currentStyle[k];
             if(util.isNil(v)) {
               return;
@@ -2162,26 +2165,33 @@ class Xom extends Node {
     return cb(this, options);
   }
 
+  // isLayout为false时，为relative/margin/flex/vertical等
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout);
     if(isLayout) {
       this.layoutData.x += diff;
-      this.__sx += diff;
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
     }
+    this.__x1 += diff;
+    this.__x2 += diff;
+    this.__x3 += diff;
+    this.__x4 += diff;
   }
 
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout);
     if(isLayout) {
       this.layoutData.y += diff;
-      this.__sy += diff;
     }
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
     }
+    this.__y1 += diff;
+    this.__y2 += diff;
+    this.__y3 += diff;
+    this.__y4 += diff;
   }
 
   __resizeX(diff) {

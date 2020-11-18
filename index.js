@@ -9934,8 +9934,8 @@
             else if (is2) {
                 percent = currentTime / duration;
               } else {
-                var total = currentFrames[i + 1].time - frameTime.time;
-                percent = (currentTime - frameTime.time) / total;
+                var total = currentFrames[i + 1].time - frameTime;
+                percent = (currentTime - frameTime) / total;
               }
 
             var isLastCount = playCount >= iterations - 1;

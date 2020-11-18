@@ -1284,8 +1284,8 @@ class Animation extends Event {
           percent = currentTime / duration;
         }
         else {
-          let total = currentFrames[i + 1].time - frameTime.time;
-          percent = (currentTime - frameTime.time) / total;
+          let total = currentFrames[i + 1].time - frameTime;
+          percent = (currentTime - frameTime) / total;
         }
         let isLastCount = playCount >= iterations - 1;
         let inEndDelay, current = currentFrames[i];

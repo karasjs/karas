@@ -489,7 +489,18 @@ function renderCanvas(renderMode, ctx, defs, root) {
   let maskEndHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
-    let { node, total, hasMask, hasClip } = item;
+    let { node, total, hasMask, hasClip,
+      node: { computedStyle: {
+        display,
+        visibility,
+      } } } = item;
+    if(display === 'none') {
+      i += total;
+      continue;
+    }
+    if(visibility === 'hidden') {
+      continue;
+    }
     if(maskStartHash.hasOwnProperty(i)) {
       ctx = maskStartHash[i].ctx;
     }
@@ -526,7 +537,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       list.unshift(offScreen);
       ctx = offScreen.target.ctx;
     }
-    if(node instanceof Geom) {
+    if(node instanceof Geom) { console.log(node);
       node.render(renderMode, node.__refreshLevel, ctx, defs);
     }
     // 最后一个节点检查filter，有则应用，可能有多个包含自己

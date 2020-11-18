@@ -18727,7 +18727,19 @@
       var node = item.node,
           total = item.total,
           hasMask = item.hasMask,
-          hasClip = item.hasClip;
+          hasClip = item.hasClip,
+          _item$node$computedSt = item.node.computedStyle,
+          display = _item$node$computedSt.display,
+          visibility = _item$node$computedSt.visibility;
+
+      if (display === 'none') {
+        _i4 += total;
+        continue;
+      }
+
+      if (visibility === 'hidden') {
+        continue;
+      }
 
       if (maskStartHash.hasOwnProperty(_i4)) {
         ctx = maskStartHash[_i4].ctx;
@@ -18773,6 +18785,7 @@
       }
 
       if (node instanceof Geom$1) {
+        console.log(node);
         node.render(renderMode, node.__refreshLevel, ctx, defs);
       } // 最后一个节点检查filter，有则应用，可能有多个包含自己
 

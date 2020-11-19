@@ -716,6 +716,7 @@ class Xom extends Node {
       + computedStyle.marginRight + computedStyle.borderRightWidth;
     this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth
       + computedStyle.marginBottom + computedStyle.borderBottomWidth;
+    // console.log(this.tagName, w, this.__innerWidth);
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
@@ -804,8 +805,12 @@ class Xom extends Node {
     this.__sx = this.x + this.ox;
     this.__sy = this.y + this.oy;
     // 计算结果存入computedStyle
-    computedStyle.width = this.width;
-    computedStyle.height = this.height;
+    let tw = computedStyle.width = this.width;
+    let th = computedStyle.height = this.height;
+    // virtual时计算返回给abs布局用，普通的在各自layout做
+    if(isVirtual) {
+      this.__iwSize(tw, th);
+    }
     let { next } = this;
     // mask关系只有布局才会变更，普通渲染关系不会改变
     if(next && (next.isMask || next.isClip)) {

@@ -204,7 +204,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   if(lv === level.NONE && !img && !component) {
     delete node.__uniqueUpdateId;
-    return [];
+    return;
   }
   // 记录下来清除parent的zIndexChildren缓存
   if(hasZ) {
@@ -337,7 +337,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     }
     parent = parent.domParent;
   }
-  return [true, hasZ];
+  return true;
 }
 
 function cleanSvgCache(node, child) {

@@ -19337,7 +19337,7 @@
 
     if (lv === o$1.NONE && !img && !component) {
       delete node.__uniqueUpdateId;
-      return [];
+      return;
     } // 记录下来清除parent的zIndexChildren缓存
 
 
@@ -19504,7 +19504,7 @@
       parent = parent.domParent;
     }
 
-    return [true, hasZ];
+    return true;
   }
 
   function cleanSvgCache(node, child) {

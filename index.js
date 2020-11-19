@@ -16991,11 +16991,14 @@
     var sr = cp.shadowRoot;
 
     if (sr instanceof Xom$2) {
-      ['__width', '__height', '__outerWidth', '__outerHeight', '__sx', '__sy', '__sx1', '__sx2', '__sx3', '__sx4', '__sy1', '__sy2', '__sy3', '__sy4', '__computedStyle', '__layoutData', '__parent', '__struct'].forEach(function (k) {
+      ['__outerWidth', '__outerHeight', '__sx', '__sy', '__sx2', '__sx3', '__sx4', '__sy1', '__sy2', '__sy3', '__sy4', '__computedStyle'].forEach(function (k) {
         sr[k] = oldSr[k];
       });
     }
 
+    ['__width', '__height', '__sx1', '__layoutData', '__parent', '__struct'].forEach(function (k) {
+      sr[k] = oldSr[k];
+    });
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
@@ -20444,9 +20447,12 @@
               if (lv >= LAYOUT) {
                 var cps = node.computedStyle,
                     cts = node.currentStyle;
-                var isLastAbs = cps.position === 'absolute';
+                var zIndex = cps.zIndex,
+                    position = cps.position,
+                    display = cps.display;
+                var isLastAbs = position === 'absolute';
                 var isNowAbs = cts.position === 'absolute';
-                var isLastNone = cps.display === 'none';
+                var isLastNone = display === 'none';
                 var isNowNone = cts.display === 'none';
 
                 if (isLastNone && isNowNone) {
@@ -20671,7 +20677,7 @@
                   diffI += arr[1];
                   diffList.push(arr);
 
-                  if (cps.position !== cts.position && (cps.position === 'static' || cts.position === 'static') || cps.zIndex !== cts.zIndex) {
+                  if (position !== cts.position && (position === 'static' || cts.position === 'static') || zIndex !== cts.zIndex) {
                     node.domParent.__updateStruct(root.__structs);
 
                     if (_this6.renderMode === mode.SVG) {

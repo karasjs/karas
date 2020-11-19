@@ -79,13 +79,10 @@ function updateCp(cp, props, state) {
   let sr = cp.shadowRoot;
   if(sr instanceof Xom) {
     [
-      '__width',
-      '__height',
       '__outerWidth',
       '__outerHeight',
       '__sx',
       '__sy',
-      '__sx1',
       '__sx2',
       '__sx3',
       '__sx4',
@@ -94,13 +91,20 @@ function updateCp(cp, props, state) {
       '__sy3',
       '__sy4',
       '__computedStyle',
-      '__layoutData',
-      '__parent',
-      '__struct',
     ].forEach(k => {
       sr[k] = oldSr[k];
     });
   }
+  [
+    '__width',
+    '__height',
+    '__sx1',
+    '__layoutData',
+    '__parent',
+    '__struct',
+  ].forEach(k => {
+    sr[k] = oldSr[k];
+  });
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

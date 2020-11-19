@@ -1096,9 +1096,10 @@ class Root extends Dom {
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
           let cps = node.computedStyle, cts = node.currentStyle;
-          let isLastAbs = cps.position === 'absolute';
+          let zIndex = cps.zIndex, position = cps.position, display = cps.display;
+          let isLastAbs = position === 'absolute';
           let isNowAbs = cts.position === 'absolute';
-          let isLastNone = cps.display === 'none';
+          let isLastNone = display === 'none';
           let isNowNone = cts.display === 'none';
           if(isLastNone && isNowNone) {
             return;
@@ -1279,8 +1280,8 @@ class Root extends Dom {
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];
             diffList.push(arr);
-            if((cps.position !== cts.position && (cps.position === 'static' || cts.position === 'static'))
-              || cps.zIndex !== cts.zIndex) {
+            if((position !== cts.position && (position === 'static' || cts.position === 'static'))
+              || zIndex !== cts.zIndex) {
               node.domParent.__updateStruct(root.__structs);
               if(this.renderMode === mode.SVG) {
                 cleanSvgCache(node.domParent);

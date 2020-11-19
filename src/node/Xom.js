@@ -708,7 +708,7 @@ class Xom extends Node {
     return 0;
   }
 
-  __iwSize(w, h) {
+  __ioSize(w, h) {
     let computedStyle = this.computedStyle;
     this.__innerWidth = w += computedStyle.paddingLeft + computedStyle.paddingRight;
     this.__innerHeight = h += computedStyle.paddingTop + computedStyle.paddingBottom;
@@ -809,7 +809,7 @@ class Xom extends Node {
     let th = computedStyle.height = this.height;
     // virtual时计算返回给abs布局用，普通的在各自layout做
     if(isVirtual) {
-      this.__iwSize(tw, th);
+      this.__ioSize(tw, th);
     }
     let { next } = this;
     // mask关系只有布局才会变更，普通渲染关系不会改变

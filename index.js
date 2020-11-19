@@ -11901,8 +11901,8 @@
         return 0;
       }
     }, {
-      key: "__iwSize",
-      value: function __iwSize(w, h) {
+      key: "__ioSize",
+      value: function __ioSize(w, h) {
         var computedStyle = this.computedStyle;
         this.__innerWidth = w += computedStyle.paddingLeft + computedStyle.paddingRight;
         this.__innerHeight = h += computedStyle.paddingTop + computedStyle.paddingBottom;
@@ -12013,7 +12013,7 @@
         var th = computedStyle.height = this.height; // virtual时计算返回给abs布局用，普通的在各自layout做
 
         if (isVirtual) {
-          this.__iwSize(tw, th);
+          this.__ioSize(tw, th);
         }
 
         var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
@@ -14748,6 +14748,9 @@
 
         if (fixedWidth && isVirtual) {
           this.__width = w;
+
+          this.__ioSize(w, this.height);
+
           return;
         } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
@@ -14928,7 +14931,7 @@
         var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__iwSize(tw, th);
+        this.__ioSize(tw, th);
 
         if (lineGroup.size) {
           y += lineGroup.marginBottom;
@@ -14969,6 +14972,9 @@
 
         if (fixedWidth && isVirtual) {
           this.__width = w;
+
+          this.__ioSize(w, this.height);
+
           return;
         }
 
@@ -15064,7 +15070,10 @@
         });
 
         if (isVirtual) {
-          this.__width = Math.min(maxX, w);
+          var _tw = this.__width = Math.min(maxX, w);
+
+          this.__ioSize(_tw, this.height);
+
           return;
         }
 
@@ -15505,7 +15514,7 @@
         var tw = this.__width = w;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__iwSize(tw, th);
+        this.__ioSize(tw, th);
 
         this.__marginAuto(currentStyle, data);
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -15531,6 +15540,9 @@
 
         if (fixedWidth && isVirtual) {
           this.__width = w;
+
+          this.__ioSize(w, this.height);
+
           return;
         } // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
 
@@ -15667,7 +15679,7 @@
         var tw = this.__width = fixedWidth ? w : maxW;
         var th = this.__height = fixedHeight ? h : y - data.y;
 
-        this.__iwSize(tw, th); // text-align
+        this.__ioSize(tw, th); // text-align
 
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
@@ -16622,6 +16634,8 @@
 
         this.__width = w;
 
+        this.__ioSize(w, this.height);
+
         this.__marginAuto(this.currentStyle, data);
 
         this.__cacheProps = {};
@@ -16644,8 +16658,11 @@
             h = _this$__preLayout2.h; // 元素的width不能超过父元素w
 
 
-        this.__width = fixedWidth ? w : x - data.x;
-        this.__height = fixedHeight ? h : y - data.y;
+        var tw = this.__width = fixedWidth ? w : x - data.x;
+        var th = this.__height = fixedHeight ? h : y - data.y;
+
+        this.__ioSize(tw, th);
+
         this.__cacheProps = {};
       }
     }, {

@@ -95,6 +95,7 @@ class Geom extends Xom {
       return;
     }
     this.__width = w;
+    this.__ioSize(w, this.height);
     this.__marginAuto(this.currentStyle, data);
     this.__cacheProps = {};
   }
@@ -107,8 +108,9 @@ class Geom extends Xom {
   __layoutInline(data) {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 元素的width不能超过父元素w
-    this.__width = fixedWidth ? w : x - data.x;
-    this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = fixedWidth ? w : x - data.x;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__ioSize(tw, th);
     this.__cacheProps = {};
   }
 

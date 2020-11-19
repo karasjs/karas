@@ -340,6 +340,7 @@ class Dom extends Xom {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
       this.__width = w;
+      this.__ioSize(w, this.height);
       return;
     }
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
@@ -499,7 +500,7 @@ class Dom extends Xom {
     }
     let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
-    this.__iwSize(tw, th);
+    this.__ioSize(tw, th);
     if(lineGroup.size) {
       y += lineGroup.marginBottom;
     }
@@ -528,6 +529,7 @@ class Dom extends Xom {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
       this.__width = w;
+      this.__ioSize(w, this.height);
       return;
     }
     let maxX = 0;
@@ -613,7 +615,8 @@ class Dom extends Xom {
       }
     });
     if(isVirtual) {
-      this.__width = Math.min(maxX, w);
+      let tw = this.__width = Math.min(maxX, w);
+      this.__ioSize(tw, this.height);
       return;
     }
     let maxCross = 0;
@@ -1051,7 +1054,7 @@ class Dom extends Xom {
     }
     let tw = this.__width = w;
     let th = this.__height = fixedHeight ? h : y - data.y;
-    this.__iwSize(tw, th);
+    this.__ioSize(tw, th);
     this.__marginAuto(currentStyle, data);
   }
 
@@ -1065,6 +1068,7 @@ class Dom extends Xom {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
       this.__width = w;
+      this.__ioSize(w, this.height);
       return;
     }
     // 因精度问题，统计宽度均从0开始累加每行，最后取最大值，仅在abs布局时isVirtual生效
@@ -1187,7 +1191,7 @@ class Dom extends Xom {
     // 元素的width不能超过父元素w
     let tw = this.__width = fixedWidth ? w : maxW;
     let th = this.__height = fixedHeight ? h : y - data.y;
-    this.__iwSize(tw, th);
+    this.__ioSize(tw, th);
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {

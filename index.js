@@ -7824,10 +7824,12 @@
       o = hash[key] = document.createElement('canvas');
     } else {
       o = hash[key];
-    }
+    } // o.setAttribute('width', width + 'px');
+    // o.setAttribute('height', height + 'px');
 
-    o.setAttribute('width', width + 'px');
-    o.setAttribute('height', height + 'px');
+
+    o.width = width;
+    o.height = height;
 
     if (typeof karas !== 'undefined' && karas.debug) {
       o.style.width = width + 'px';

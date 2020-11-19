@@ -98,8 +98,8 @@ class Img extends Dom {
     super.__destroy();
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
     let {
       sx: x, sy: y, width, height, isDestroyed,
       props: {
@@ -367,7 +367,9 @@ class Img extends Dom {
   }
 
   __releaseWhenEmpty(__cache) {
-    super.__releaseWhenEmpty(__cache);
+    if(!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+      return super.__releaseWhenEmpty(__cache);
+    }
   }
 
   get baseLine() {

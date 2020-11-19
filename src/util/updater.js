@@ -96,6 +96,8 @@ function updateCp(cp, props, state) {
     });
   }
   [
+    '__x',
+    '__y',
     '__width',
     '__height',
     '__sx1',

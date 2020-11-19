@@ -76,6 +76,9 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   if(cache && cache.available) {
     bboxTotal = cache.bbox.slice(0);
   }
+  else {
+    bboxTotal = node.bbox;
+  }
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和blur
   let list = [index];
   let blurHash = {
@@ -356,10 +359,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(node.__cache) {
           node.render(renderMode, __refreshLevel, node.__cache.ctx, defs, true);
         }
-        // 发生错误了要删掉缓存数据，里面会有错误或偏移的坐标
-        else {
-          // delete node.__renderSelfData;
-        }
       }
       else {
         res = node.render(renderMode, __refreshLevel, ctx, defs, true);
@@ -576,11 +575,15 @@ function renderCanvas(renderMode, ctx, defs, root) {
       let { ctx: origin, content, mask } = maskEndHash[i];
       ctx = content.ctx;
       ctx.globalCompositeOperation = 'destination-in';
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(mask.canvas, 0, 0);
       mask.draw(ctx);
       ctx.globalCompositeOperation = 'source-over';
       mask.ctx.clearRect(0, 0, width, height);
       ctx = origin;
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(content.canvas, 0, 0);
       content.draw(ctx);
       content.ctx.clearRect(0, 0, width, height);
@@ -720,7 +723,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       let { index, start, end } = maskHash[i];
       let target = __structs[index];
       let dom = target.node;
-      let mChildren = [];
+      let mChildren = [], has;
       for(let j = start; j < end; j++) {
         let node = __structs[j].node;
         let { computedStyle: { display, visibility }, virtualDom: { children } } = node;
@@ -732,8 +735,17 @@ function renderSvg(renderMode, ctx, defs, root) {
               let matrix = node.renderMatrix;
               let inverse = mx.inverse(dom.renderMatrix);
               matrix = mx.multiply(matrix, inverse);
-              // transform属性放在最后一个省去循环
               let len = props.length;
+              // 防止遮罩为空
+              if(!has) {
+                for(let l = 0; l < len; l++) {
+                  let [k, v] = props[l];
+                  if(k === 'd' && v) {
+                    has = true;
+                  }
+                }
+              }
+              // transform属性放在最后一个省去循环
               if(!len || props[len - 1][0] !== 'transform') {
                 props.push(['transform', `matrix(${matrix})`]);
               }
@@ -743,7 +755,7 @@ function renderSvg(renderMode, ctx, defs, root) {
             }
           }
         }
-        if(mChildren.length) {
+        if(has) {
           let id = defs.add({
             tagName: target.hasClip ? 'clipPath' : 'mask',
             props: [],

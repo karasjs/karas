@@ -708,6 +708,16 @@ class Xom extends Node {
     return 0;
   }
 
+  __iwSize(w, h) {
+    let computedStyle = this.computedStyle;
+    this.__innerWidth = w += computedStyle.paddingLeft + computedStyle.paddingRight;
+    this.__innerHeight = h += computedStyle.paddingTop + computedStyle.paddingBottom;
+    this.__outerWidth = w + computedStyle.marginLeft + computedStyle.borderLeftWidth
+      + computedStyle.marginRight + computedStyle.borderRightWidth;
+    this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth
+      + computedStyle.marginBottom + computedStyle.borderBottomWidth;
+  }
+
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
@@ -794,14 +804,8 @@ class Xom extends Node {
     this.__sx = this.x + this.ox;
     this.__sy = this.y + this.oy;
     // 计算结果存入computedStyle
-    let tw = computedStyle.width = this.width;
-    let th = computedStyle.height = this.height;
-    this.__innerWidth = tw += computedStyle.paddingLeft + computedStyle.paddingRight;
-    this.__innerHeight = th += computedStyle.paddingTop + computedStyle.paddingBottom;
-    this.__outerWidth = tw + computedStyle.marginLeft + computedStyle.borderLeftWidth
-      + computedStyle.marginRight + computedStyle.borderRightWidth;
-    this.__outerHeight = th + computedStyle.marginTop + computedStyle.borderTopWidth
-      + computedStyle.marginBottom + computedStyle.borderBottomWidth;
+    computedStyle.width = this.width;
+    computedStyle.height = this.height;
     let { next } = this;
     // mask关系只有布局才会变更，普通渲染关系不会改变
     if(next && (next.isMask || next.isClip)) {
@@ -1492,8 +1496,8 @@ class Xom extends Node {
       // 置空防止原型链查找性能
       this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断
-      if(!hasContent) {
-        res.break = this.__releaseWhenEmpty(__cache);
+      if(!hasContent && this.__releaseWhenEmpty(__cache)) {
+        res.break = true;
         return res;
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做

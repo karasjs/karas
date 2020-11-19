@@ -497,8 +497,9 @@ class Dom extends Xom {
       }
       y += lineGroup.height;
     }
-    this.__width = fixedWidth || !isVirtual ? w : maxW;
-    this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__iwSize(tw, th);
     if(lineGroup.size) {
       y += lineGroup.marginBottom;
     }
@@ -689,9 +690,13 @@ class Dom extends Xom {
           } = computedStyle;
           if(isDirectionRow) {
             item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
+            item.__innerWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+            item.__outerWidth = main;
           }
           else {
             item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+            item.__innerHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+            item.__outerHeight = main;
           }
         }
       }
@@ -1044,8 +1049,9 @@ class Dom extends Xom {
         });
       }
     }
-    this.__width = w;
-    this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = w;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__iwSize(tw, th);
     this.__marginAuto(currentStyle, data);
   }
 
@@ -1179,8 +1185,9 @@ class Dom extends Xom {
       maxW = Math.max(maxW, cw);
     }
     // 元素的width不能超过父元素w
-    this.__width = fixedWidth ? w : maxW;
-    this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = fixedWidth ? w : maxW;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__iwSize(tw, th);
     // text-align
     if(!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
       lineGroups.forEach(lineGroup => {

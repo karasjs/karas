@@ -314,9 +314,8 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  __releaseWhenEmpty(__cache) {
-    super.__releaseWhenEmpty(__cache);
-  }
+  // geom的cache无内容也不清除
+  __releaseWhenEmpty() {}
 
   addGeom(tagName, props) {
     props = util.hash2arr(props);

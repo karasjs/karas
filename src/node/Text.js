@@ -166,6 +166,7 @@ class Text extends Node {
         item.__offsetX(diff);
       });
     }
+    this.__sx1 += diff;
   }
 
   __offsetY(diff, isLayout) {
@@ -175,6 +176,7 @@ class Text extends Node {
         item.__offsetY(diff);
       });
     }
+    this.__sy1 += diff;
   }
 
   __tryLayInline(w) {

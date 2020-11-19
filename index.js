@@ -4395,6 +4395,8 @@
             item.__offsetX(diff);
           });
         }
+
+        this.__sx1 += diff;
       }
     }, {
       key: "__offsetY",
@@ -4406,6 +4408,8 @@
             item.__offsetY(diff);
           });
         }
+
+        this.__sy1 += diff;
       }
     }, {
       key: "__tryLayInline",
@@ -11895,6 +11899,15 @@
         }
 
         return 0;
+      }
+    }, {
+      key: "__iwSize",
+      value: function __iwSize(w, h) {
+        var computedStyle = this.computedStyle;
+        this.__innerWidth = w += computedStyle.paddingLeft + computedStyle.paddingRight;
+        this.__innerHeight = h += computedStyle.paddingTop + computedStyle.paddingBottom;
+        this.__outerWidth = w + computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.marginRight + computedStyle.borderRightWidth;
+        this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth + computedStyle.marginBottom + computedStyle.borderBottomWidth;
       } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
 
     }, {
@@ -11996,12 +12009,8 @@
         this.__sx = this.x + this.ox;
         this.__sy = this.y + this.oy; // 计算结果存入computedStyle
 
-        var tw = computedStyle.width = this.width;
-        var th = computedStyle.height = this.height;
-        this.__innerWidth = tw += computedStyle.paddingLeft + computedStyle.paddingRight;
-        this.__innerHeight = th += computedStyle.paddingTop + computedStyle.paddingBottom;
-        this.__outerWidth = tw + computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.marginRight + computedStyle.borderRightWidth;
-        this.__outerHeight = th + computedStyle.marginTop + computedStyle.borderTopWidth + computedStyle.marginBottom + computedStyle.borderBottomWidth;
+        computedStyle.width = this.width;
+        computedStyle.height = this.height;
         var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
 
         if (next && (next.isMask || next.isClip)) {
@@ -12696,8 +12705,8 @@
           // 置空防止原型链查找性能
           this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null; // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断
 
-          if (!hasContent) {
-            res["break"] = this.__releaseWhenEmpty(__cache);
+          if (!hasContent && this.__releaseWhenEmpty(__cache)) {
+            res["break"] = true;
             return res;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
@@ -14911,8 +14920,10 @@
           y += lineGroup.height;
         }
 
-        this.__width = fixedWidth || !isVirtual ? w : maxW;
-        this.__height = fixedHeight ? h : y - data.y;
+        var tw = this.__width = fixedWidth || !isVirtual ? w : maxW;
+        var th = this.__height = fixedHeight ? h : y - data.y;
+
+        this.__iwSize(tw, th);
 
         if (lineGroup.size) {
           y += lineGroup.marginBottom;
@@ -15128,8 +15139,12 @@
 
               if (isDirectionRow) {
                 item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
+                item.__innerWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+                item.__outerWidth = main;
               } else {
                 item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
+                item.__innerHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+                item.__outerHeight = main;
               }
             }
           } else {
@@ -15482,8 +15497,10 @@
           }
         }
 
-        this.__width = w;
-        this.__height = fixedHeight ? h : y - data.y;
+        var tw = this.__width = w;
+        var th = this.__height = fixedHeight ? h : y - data.y;
+
+        this.__iwSize(tw, th);
 
         this.__marginAuto(currentStyle, data);
       } // inline比较特殊，先简单顶部对其，后续还需根据vertical和lineHeight计算y偏移
@@ -15642,8 +15659,11 @@
         } // 元素的width不能超过父元素w
 
 
-        this.__width = fixedWidth ? w : maxW;
-        this.__height = fixedHeight ? h : y - data.y; // text-align
+        var tw = this.__width = fixedWidth ? w : maxW;
+        var th = this.__height = fixedHeight ? h : y - data.y;
+
+        this.__iwSize(tw, th); // text-align
+
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
@@ -16166,10 +16186,10 @@
       }
     }, {
       key: "render",
-      value: function render(renderMode, lv, ctx, defs) {
+      value: function render(renderMode, lv, ctx, defs, cache) {
         var _this2 = this;
 
-        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs);
+        var res = _get(_getPrototypeOf(Img.prototype), "render", this).call(this, renderMode, lv, ctx, defs, cache);
 
         var x = this.sx,
             y = this.sy,
@@ -16423,7 +16443,9 @@
     }, {
       key: "__releaseWhenEmpty",
       value: function __releaseWhenEmpty(__cache) {
-        _get(_getPrototypeOf(Img.prototype), "__releaseWhenEmpty", this).call(this, __cache);
+        if (!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+          return _get(_getPrototypeOf(Img.prototype), "__releaseWhenEmpty", this).call(this, __cache);
+        }
       }
     }, {
       key: "baseLine",
@@ -16833,12 +16855,11 @@
         _get(_getPrototypeOf(Geom.prototype), "__cancelCache", this).call(this, recursion);
 
         this.__cacheProps = {};
-      }
+      } // geom的cache无内容也不清除
+
     }, {
       key: "__releaseWhenEmpty",
-      value: function __releaseWhenEmpty(__cache) {
-        _get(_getPrototypeOf(Geom.prototype), "__releaseWhenEmpty", this).call(this, __cache);
-      }
+      value: function __releaseWhenEmpty() {}
     }, {
       key: "addGeom",
       value: function addGeom(tagName, props) {
@@ -16996,7 +17017,7 @@
       });
     }
 
-    ['__width', '__height', '__sx1', '__layoutData', '__parent', '__struct'].forEach(function (k) {
+    ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__struct'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
@@ -18186,6 +18207,8 @@
 
     if (cache && cache.available) {
       bboxTotal = cache.bbox.slice(0);
+    } else {
+      bboxTotal = node.bbox;
     } // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和blur
 
 
@@ -18855,6 +18878,8 @@
             _mask = _maskEndHash$_i.mask;
         ctx = _content.ctx;
         ctx.globalCompositeOperation = 'destination-in';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(_mask.canvas, 0, 0);
 
         _mask.draw(ctx);
@@ -18864,6 +18889,8 @@
         _mask.ctx.clearRect(0, 0, width, height);
 
         ctx = origin;
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(_content.canvas, 0, 0);
 
         _content.draw(ctx);
@@ -19028,7 +19055,8 @@
             _end = _maskHash$_i.end;
         var target = __structs[index];
         var dom = target.node;
-        var mChildren = [];
+        var mChildren = [],
+            has;
 
         for (var j = _start; j < _end; j++) {
           var _node4 = __structs[j].node;
@@ -19048,9 +19076,21 @@
               if (tagName === 'path') {
                 var _matrix2 = _node4.renderMatrix;
                 var inverse = mx.inverse(dom.renderMatrix);
-                _matrix2 = mx.multiply(_matrix2, inverse); // transform属性放在最后一个省去循环
+                _matrix2 = mx.multiply(_matrix2, inverse);
+                var _len4 = props.length; // 防止遮罩为空
 
-                var _len4 = props.length;
+                if (!has) {
+                  for (var l = 0; l < _len4; l++) {
+                    var _props$l = _slicedToArray(props[l], 2),
+                        _k = _props$l[0],
+                        v = _props$l[1];
+
+                    if (_k === 'd' && v) {
+                      has = true;
+                    }
+                  }
+                } // transform属性放在最后一个省去循环
+
 
                 if (!_len4 || props[_len4 - 1][0] !== 'transform') {
                   props.push(['transform', "matrix(".concat(_matrix2, ")")]);
@@ -19061,7 +19101,7 @@
             }
           }
 
-          if (mChildren.length) {
+          if (has) {
             var id = defs.add({
               tagName: target.hasClip ? 'clipPath' : 'mask',
               props: [],

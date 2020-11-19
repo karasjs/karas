@@ -716,7 +716,6 @@ class Xom extends Node {
       + computedStyle.marginRight + computedStyle.borderRightWidth;
     this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth
       + computedStyle.marginBottom + computedStyle.borderBottomWidth;
-    // console.log(this.tagName, w, this.__innerWidth);
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
@@ -1105,7 +1104,7 @@ class Xom extends Node {
             loadBgi.width = cache.width;
             loadBgi.height = cache.height;
           }
-          if(loadBgi.url !== backgroundImage) {
+          else if(loadBgi.url !== backgroundImage) {
             // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
             loadBgi.url = backgroundImage;
             loadBgi.source = null;
@@ -1120,6 +1119,7 @@ class Xom extends Node {
                 root.delRefreshTask(loadBgi.cb);
                 root.addRefreshTask(loadBgi.cb = {
                   __before() {
+                    __cacheStyle.backgroundImage = undefined;
                     root.__addUpdate({
                       node,
                       focus: level.REPAINT,
@@ -1296,7 +1296,7 @@ class Xom extends Node {
         return this.__hasContent;
       }
       let backgroundImage = __cacheStyle.backgroundImage;
-      if(util.isString(backgroundImage)) {
+      if(backgroundImage) {
         return true;
       }
       if(computedStyle.backgroundColor[3] > 0) {

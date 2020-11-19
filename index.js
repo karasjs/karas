@@ -11903,7 +11903,7 @@
         this.__innerWidth = w += computedStyle.paddingLeft + computedStyle.paddingRight;
         this.__innerHeight = h += computedStyle.paddingTop + computedStyle.paddingBottom;
         this.__outerWidth = w + computedStyle.marginLeft + computedStyle.borderLeftWidth + computedStyle.marginRight + computedStyle.borderRightWidth;
-        this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth + computedStyle.marginBottom + computedStyle.borderBottomWidth; // console.log(this.tagName, w, this.__innerWidth);
+        this.__outerHeight = h + computedStyle.marginTop + computedStyle.borderTopWidth + computedStyle.marginBottom + computedStyle.borderBottomWidth;
       } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
 
     }, {
@@ -12309,9 +12309,7 @@
                 loadBgi.source = cache.source;
                 loadBgi.width = cache.width;
                 loadBgi.height = cache.height;
-              }
-
-              if (loadBgi.url !== backgroundImage) {
+              } else if (loadBgi.url !== backgroundImage) {
                 // 可能改变导致多次加载，每次清空，成功后还要比对url是否相同
                 loadBgi.url = backgroundImage;
                 loadBgi.source = null;
@@ -12326,6 +12324,8 @@
                     root.delRefreshTask(loadBgi.cb);
                     root.addRefreshTask(loadBgi.cb = {
                       __before: function __before() {
+                        __cacheStyle.backgroundImage = undefined;
+
                         root.__addUpdate({
                           node: node,
                           focus: o$1.REPAINT
@@ -12480,7 +12480,7 @@
 
           var _backgroundImage = __cacheStyle.backgroundImage;
 
-          if (util.isString(_backgroundImage)) {
+          if (_backgroundImage) {
             return true;
           }
 

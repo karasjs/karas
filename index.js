@@ -18388,6 +18388,8 @@
           _node2 = _structs$i3.node,
           _total2 = _structs$i3.total,
           _structs$i3$node = _structs$i3.node,
+          __cacheMask = _structs$i3$node.__cacheMask,
+          __cacheFilter = _structs$i3$node.__cacheFilter,
           __cacheTotal = _structs$i3$node.__cacheTotal,
           __cache = _structs$i3$node.__cache,
           _structs$i3$node$comp = _structs$i3$node.computedStyle,
@@ -18407,7 +18409,6 @@
 
       var parentIndex = parentIndexHash[i];
       var matrix = matrixHash[parentIndex];
-      var opacity = opacityHash[i]; // 先看text
 
       if (_node2 instanceof Text) {
         ctx.globalAlpha = opacityHash[parentIndex];
@@ -18418,14 +18419,22 @@
 
         _node2.render(renderMode, 0, ctx, defs, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存/cache，都没有的是无内容的Xom节点
-      else if (__cacheTotal && __cacheTotal.available || __cache && __cache.available) {
-          ctx.globalAlpha = opacity;
-
+      else {
           if (transform && !mx.isE(transform)) {
             var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-            tfo[0] += __cache.sx1 - sx1 + dbx + tx;
-            tfo[1] += __cache.sy1 - sy1 + dby + ty;
+            if (__cache && __cache.available) {
+              tfo[0] += __cache.sx1;
+              tfo[1] += __cache.sy1;
+            } else {
+              tfo[0] += _node2.__sx1;
+              tfo[1] += _node2.__sy1;
+            }
+
+            var dx = -sx1 + dbx + tx;
+            var dy = -sy1 + dby + ty;
+            tfo[0] += dx;
+            tfo[1] += dy;
             var m = tf.calMatrixByOrigin(transform, tfo);
 
             if (matrix) {
@@ -18437,20 +18446,29 @@
 
           if (matrix) {
             matrixHash[i] = matrix;
-            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-          } else {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
           }
 
-          var target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
+          var target = __cacheMask || __cacheFilter;
+
+          if (!target) {
+            target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
+          }
 
           if (target) {
             i += _total2;
-          } else {
+          } else if (__cache && __cache.available) {
             target = __cache;
           }
 
-          Cache.drawCache(target, cacheTop);
+          if (target) {
+            if (matrix) {
+              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            } else {
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+
+            Cache.drawCache(target, cacheTop);
+          }
         }
     }
 
@@ -18675,13 +18693,34 @@
 
         if (focus) {
           prevLv = lv;
-          count = 1; // 有老的直接使用，没有才重新生成
+          count = 1;
+        } // >是父节点
+        else if (lv > prevLv) {
+            prevLv = lv;
+            count++; // 当>临界值时，进行cacheTotal合并
 
-          if (!__cacheTotal || !__cacheTotal.available) {
-            __cacheTotal = node.__cacheTotal = genTotal(renderMode, defs, node, lv, index, total, __structs, __cacheTotal, __cache);
+            if (count >= NUM) {
+              count = 1;
+              focus = true;
+            }
+          } // <是Root的另一条链路，忽略掉重新开始，之前是上个链路，到Root了都不满足合并条件
+          else if (lv < prevLv) {
+              prevLv = lv;
+              count = 1;
+            } // 相等同级继续增加计数
+            else {
+                count++;
+              }
+
+        if (focus) {
+          // 有老的直接使用，没有才重新生成
+          if (__cacheTotal && __cacheTotal.available) {
+            continue;
           }
 
-          if (!__cacheTotal || !__cacheTotal.available) {
+          __cacheTotal = node.__cacheTotal = genTotal(renderMode, defs, node, lv, index, total, __structs, __cacheTotal, __cache);
+
+          if (!__cacheTotal) {
             root.cache = false;
             return renderCanvas(renderMode, originCtx, defs, root);
           }
@@ -18693,33 +18732,7 @@
           if ((hasMask || hasClip) && !__cacheMask) {
             __cacheMask = genMask(node, __cacheFilter || (__cacheTotal && __cacheTotal.available ? __cacheTotal : __cache), __cacheFilter);
           }
-        } // >是父节点
-        else if (lv > prevLv) {
-            prevLv = lv;
-            count++; // 当>临界值时，进行cacheTotal合并
-
-            if (count >= NUM) {
-              count = 1; // 有老的直接使用，没有才重新生成
-
-              if (__cacheTotal && __cacheTotal.available) {
-                continue;
-              }
-
-              __cacheTotal = node.__cacheTotal = genTotal(renderMode, defs, node, lv, index, total, __structs, __cacheTotal, __cache);
-
-              if (!__cacheTotal) {
-                root.cache = false;
-                return renderCanvas(renderMode, originCtx, defs, root);
-              }
-            }
-          } // <是Root的另一条链路，忽略掉重新开始，之前是上个链路，到Root了都不满足合并条件
-          else if (lv < prevLv) {
-              prevLv = lv;
-              count = 1;
-            } // 相等同级继续增加计数
-            else {
-                count++;
-              }
+        }
       }
     } // 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的Text
 

@@ -133,7 +133,7 @@ class Cache {
     return this.__coords;
   }
 
-  static NUM = 3;
+  static NUM = 5;
 
   static getInstance(bbox) {
     if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {

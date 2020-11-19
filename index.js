@@ -11361,7 +11361,7 @@
     return Cache;
   }();
 
-  _defineProperty(Cache, "NUM", 3);
+  _defineProperty(Cache, "NUM", 5);
 
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
@@ -18567,7 +18567,7 @@
           if (node instanceof Geom$1) {
             res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
 
-            if (node.__cache) {
+            if (node.__cache && node.__cache.available) {
               node.render(renderMode, __refreshLevel, node.__cache.ctx, defs, true);
             }
           } else {

@@ -373,7 +373,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       let res;
       if(node instanceof Geom) {
         res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
-        if(node.__cache) {
+        if(node.__cache && node.__cache.available) {
           node.render(renderMode, __refreshLevel, node.__cache.ctx, defs, true);
         }
       }

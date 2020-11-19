@@ -19758,11 +19758,11 @@
           y = y2 || top || 0;
 
           var _ref = e.touches ? e.touches[0] : e,
-              pageX = _ref.pageX,
-              pageY = _ref.pageY;
+              clientX = _ref.clientX,
+              clientY = _ref.clientY;
 
-          x = pageX - x;
-          y = pageY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
+          x = clientX - x;
+          y = clientY - y; // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
 
           if (__scx !== 1) {
             x /= __scx;
@@ -23789,7 +23789,7 @@
     Cache: Cache
   };
 
-  var version = "0.40.11";
+  var version = "0.40.12";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

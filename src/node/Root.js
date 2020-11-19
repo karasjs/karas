@@ -366,9 +366,9 @@ class Root extends Dom {
       let { x: x2, y: y2, left, top } = dom.getBoundingClientRect();
       x = x2 || left || 0;
       y = y2 || top || 0;
-      let { pageX, pageY } = e.touches ? e.touches[0] : e;
-      x = pageX - x;
-      y = pageY - y;
+      let { clientX, clientY } = e.touches ? e.touches[0] : e;
+      x = clientX - x;
+      y = clientY - y;
       // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
       if(__scx !== 1) {
         x /= __scx;

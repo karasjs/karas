@@ -813,16 +813,15 @@ class Xom extends Node {
     }
     let { next } = this;
     // mask关系只有布局才会变更，普通渲染关系不会改变
-    if(next && (next.isMask || next.isClip)) {
-      let key = next.isMask ? '__hasMask' : '__hasClip';
+    if(!this.isMask && next && (next.isMask)) {
       let count = 0;
       while(next) {
-        if(next.isMask || next.isClip) {
+        if(next.isMask) {
           count++;
         }
         next = next.next;
       }
-      this[key] = count;
+      this.__hasMask = count;
     }
     // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
     let ar = this.__animateRecords;

@@ -20,18 +20,13 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
     this.__isMask = !!this.props.mask;
-    this.__isClip = !!this.props.clip;
-    let { style, isMask, isClip } = this;
-    if(isMask || isClip) {
+    let { style, isMask } = this;
+    if(isMask) {
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
       style.stroke = null;
-      if(isClip) {
-        style.fill = '#FFF';
-        style.opacity = 1;
-      }
     }
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
@@ -346,10 +341,6 @@ class Geom extends Xom {
 
   get isMask() {
     return this.__isMask;
-  }
-
-  get isClip() {
-    return this.__isClip;
   }
 
   get currentProps() {

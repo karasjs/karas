@@ -243,9 +243,9 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     }
   }
   // mask需清除遮罩对象的缓存
-  if(node.isMask || node.isClip) {
+  if(node.isMask) {
     let prev = node.prev;
-    while(prev && (prev.isMask || prev.isClip)) {
+    while(prev && (prev.isMask)) {
       prev = prev.prev;
     }
     if(prev && prev.__cacheMask) {

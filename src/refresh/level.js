@@ -10,11 +10,10 @@ const ENUM = {
   TRANSFORM_ALL: 7, //                               111
   OPACITY: 8, //                                    1000
   FILTER: 16, //                                   10000
-  VISIBILITY: 32, //                              100000
-  REPAINT: 64, //                                1000000
+  REPAINT: 32, //                                 100000
 
   // 高位表示reflow
-  REFLOW: 128, //                               10000000
+  REFLOW: 64, //                                 1000000
 };
 
 const TRANSFORMS = {

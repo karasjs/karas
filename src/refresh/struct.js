@@ -407,7 +407,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           computedStyle: { position, display, visibility },
           __cacheFilter, __cacheMask, __cacheTotal, __cache, __blurValue,
         },
-        node, lv, index, total, hasMask, hasClip,
+        node, lv, index, total, hasMask,
       } = __structs[lrd[i]];
       if(display === 'none' || visibility === 'hidden') {
         prevLv = lv;
@@ -419,7 +419,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         continue;
       }
       // relative/absolute强制开启total
-      let focus = position === 'relative' || position === 'absolute' || hasMask || hasClip || __blurValue > 0;
+      let focus = position === 'relative' || position === 'absolute' || hasMask || __blurValue > 0;
       if(focus) {
         prevLv = lv;
         count = 1;
@@ -458,7 +458,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           genFilter(node, __cacheTotal && __cacheTotal.available
             ? __cacheTotal : __cache, __blurValue);
         }
-        if((hasMask || hasClip) && !__cacheMask) {
+        if(hasMask && !__cacheMask) {
           __cacheMask = genMask(node, __cacheFilter
             || (__cacheTotal && __cacheTotal.available
               ? __cacheTotal : __cache), __cacheFilter);
@@ -469,7 +469,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   // 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的Text
   for(let i = 0, len = __structs.length; i < len; i++) {
     let {
-      node, total, hasMask, hasClip, node: {
+      node, total, hasMask, node: {
         __cacheMask, __cacheFilter, __cacheTotal, __cache,
         computedStyle: { display, visibility },
       },
@@ -501,8 +501,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         target = __cache && __cache.available ? __cache : null;
       }
       if(target) {
-        if(hasMask || hasClip) {
-          i += hasMask || hasClip;
+        if(hasMask) {
+          i += hasMask;
         }
         let { __opacity, matrixEvent } = node;
         ctx.globalAlpha = __opacity;
@@ -521,18 +521,17 @@ function renderCanvas(renderMode, ctx, defs, root) {
   let maskEndHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
-    let { node, total, hasMask, hasClip } = item;
+    let { node, total, hasMask } = item;
     if(maskStartHash.hasOwnProperty(i)) {
       ctx = maskStartHash[i].ctx;
     }
-    if(hasMask || hasClip) {
-      let has = hasMask || hasClip;
+    if(hasMask) {
       let j = i + (total || 0) + 1;
       let content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
       let mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
       maskStartHash[j] = mask;
       // 虽然目前只有Geom单节点，但未来可能出现Dom作为mask
-      while(has--) {
+      while(hasMask--) {
         j += (__structs[j].total || 0) + 1;
       }
       maskEndHash[j - 1] = {
@@ -560,7 +559,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
     let { offScreen } = res;
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
     if(offScreen) {
-      let j = i + total;
+      let j = i + (total || 0);
       let list = filterHash[j] = filterHash[j] || [];
       // 逆序存，应用时先自己后parent
       list.unshift(offScreen);
@@ -591,13 +590,13 @@ function renderCanvas(renderMode, ctx, defs, root) {
       ctx.drawImage(mask.canvas, 0, 0);
       mask.draw(ctx);
       ctx.globalCompositeOperation = 'source-over';
-      mask.ctx.clearRect(0, 0, width, height);
+      // mask.ctx.clearRect(0, 0, width, height);
       ctx = origin;
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(content.canvas, 0, 0);
       content.draw(ctx);
-      content.ctx.clearRect(0, 0, width, height);
+      // content.ctx.clearRect(0, 0, width, height);
     }
   }
 }
@@ -614,10 +613,10 @@ function renderSvg(renderMode, ctx, defs, root) {
   let last;
   for(let i = 0, len = __structs.length; i < len; i++) {
     let item = __structs[i];
-    let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask, hasClip } = item;
-    if(hasMask || hasClip) {
+    let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
+    if(hasMask) {
       let start = i + (total || 0) + 1;
-      let end = start + (hasMask || hasClip);
+      let end = start + hasMask;
       // svg限制了只能Geom单节点，不可能是Dom
       maskHash[end - 1] = {
         index: i,
@@ -681,6 +680,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       }
       if(level.contain(__refreshLevel, level.FILTER)) {
         let filter = computedStyle.filter = currentStyle.filter;
+        delete virtualDom.filter;
         if(Array.isArray(filter)) {
           filter.forEach(item => {
             let [k, v] = item;
@@ -706,9 +706,6 @@ function renderSvg(renderMode, ctx, defs, root) {
                   ],
                 });
                 virtualDom.filter = 'url(#' + id + ')';
-              }
-              else {
-                delete virtualDom.filter;
               }
             }
           });
@@ -768,21 +765,16 @@ function renderSvg(renderMode, ctx, defs, root) {
         }
         if(has) {
           let id = defs.add({
-            tagName: target.hasClip ? 'clipPath' : 'mask',
+            tagName: 'mask',
             props: [],
             children: mChildren,
           });
           id = 'url(#' + id + ')';
-          if(target.hasClip) {
-            dom.virtualDom.clip = id;
-          }
-          else {
-            dom.virtualDom.mask = id;
-          }
+          dom.virtualDom.mask = id;
         }
       }
     }
-    if(parentVd && !node.isMask && !node.isClip) {
+    if(parentVd && !node.isMask) {
       parentVd.children.push(virtualDom);
     }
     if(i === 0) {

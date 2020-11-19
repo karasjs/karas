@@ -249,7 +249,7 @@ class Cache {
   static drawMask(target, next, transform, tfo) {
     let cacheMask = Cache.genMask(target);
     let list = [];
-    while(next && (next.isMask || next.isClip)) {
+    while(next && (next.isMask)) {
       list.push(next);
       next = next.next;
     }

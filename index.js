@@ -271,10 +271,6 @@
           res.hasMask = this.__hasMask;
         }
 
-        if (this.__hasClip) {
-          res.hasClip = this.__hasClip;
-        }
-
         return res;
       }
     }, {
@@ -762,7 +758,7 @@
 
     s += '>';
     (vd.children || []).forEach(function (item) {
-      if (item.isMask || item.isClip) {
+      if (item.isMask) {
         return;
       }
 
@@ -811,7 +807,7 @@
 
       _s2 += '>';
       (vd.children || []).forEach(function (item) {
-        if (item.isMask || item.isClip) {
+        if (item.isMask) {
           return;
         }
 
@@ -10683,12 +10679,10 @@
     //                                    1000
     FILTER: 16,
     //                                   10000
-    VISIBILITY: 32,
-    //                              100000
-    REPAINT: 64,
-    //                                1000000
+    REPAINT: 32,
+    //                                 100000
     // 高位表示reflow
-    REFLOW: 128 //                               10000000
+    REFLOW: 64 //                                 1000000
 
   };
   var TRANSFORMS = {
@@ -11283,7 +11277,7 @@
         var cacheMask = Cache.genMask(target);
         var list = [];
 
-        while (next && (next.isMask || next.isClip)) {
+        while (next && next.isMask) {
           list.push(next);
           next = next.next;
         }
@@ -12018,19 +12012,18 @@
 
         var next = this.next; // mask关系只有布局才会变更，普通渲染关系不会改变
 
-        if (next && (next.isMask || next.isClip)) {
-          var key = next.isMask ? '__hasMask' : '__hasClip';
+        if (!this.isMask && next && next.isMask) {
           var count = 0;
 
           while (next) {
-            if (next.isMask || next.isClip) {
+            if (next.isMask) {
               count++;
             }
 
             next = next.next;
           }
 
-          this[key] = count;
+          this.__hasMask = count;
         } // 动态json引用时动画暂存，第一次布局时处理这些动画到root的animateController上
 
 
@@ -14372,7 +14365,7 @@
 
 
       if (item.__layoutData || item instanceof Text) {
-        if (item.isMask || item.isClip) {
+        if (item.isMask) {
           // 开头的mc忽略，后续的连续mc以第一次出现为准
           if (lastMcIndex !== undefined) {
             mcHash[lastMcIndex].push(item);
@@ -16535,24 +16528,17 @@
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
       _this.__isMask = !!_this.props.mask;
-      _this.__isClip = !!_this.props.clip;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
-          isMask = _assertThisInitialize.isMask,
-          isClip = _assertThisInitialize.isClip;
+          isMask = _assertThisInitialize.isMask;
 
-      if (isMask || isClip) {
+      if (isMask) {
         style.visibility = 'visible';
         style.background = null;
         style.border = null;
         style.strokeWidth = 0;
         style.stroke = null;
-
-        if (isClip) {
-          style.fill = '#FFF';
-          style.opacity = 1;
-        }
       }
 
       _this.__style = css.normalize(_this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
@@ -16917,11 +16903,6 @@
       key: "isMask",
       get: function get() {
         return this.__isMask;
-      }
-    }, {
-      key: "isClip",
-      get: function get() {
-        return this.__isClip;
       }
     }, {
       key: "currentProps",
@@ -17506,7 +17487,6 @@
         opacity = nvd.opacity,
         visibility = nvd.visibility,
         mask = nvd.mask,
-        clip = nvd.clip,
         filter = nvd.filter,
         conClip = nvd.conClip;
 
@@ -17536,22 +17516,6 @@
       } else {
         elem.removeAttribute('mask');
       }
-
-      if (ovd.clip) {
-        elem.removeAttribute('clip-path');
-      }
-    }
-
-    if (ovd.clip !== clip) {
-      if (clip) {
-        elem.setAttribute('clip-path', clip);
-      } else {
-        elem.removeAttribute('clip-path');
-      }
-
-      if (ovd.mask) {
-        elem.removeAttribute('mask');
-      }
     }
 
     if (ovd.filter !== filter) {
@@ -17578,9 +17542,7 @@
 
     var transform = nvd.transform,
         opacity = nvd.opacity,
-        visibility = nvd.visibility,
         mask = nvd.mask,
-        clip = nvd.clip,
         filter = nvd.filter;
 
     if (o$1.contain(lv, o$1.TRANSLATE_X | o$1.TRANSLATE_Y | o$1.TRANSFORM)) {
@@ -17599,10 +17561,6 @@
       }
     }
 
-    if (o$1.contain(lv, o$1.VISIBILITY)) {
-      elem.setAttribute('visibility', visibility);
-    }
-
     if (o$1.contain(lv, o$1.FILTER)) {
       if (filter) {
         elem.setAttribute('filter', filter);
@@ -17615,16 +17573,6 @@
       elem.setAttribute('mask', mask);
     } else {
       elem.removeAttribute('mask');
-    }
-
-    if (ovd.clip) {
-      elem.removeAttribute('clip-path');
-    }
-
-    if (clip) {
-      elem.setAttribute('clip-path', clip);
-    } else {
-      elem.removeAttribute('clip-path');
     }
 
     if (ovd.mask) {
@@ -18677,8 +18625,7 @@
             lv = _structs$lrd$_i.lv,
             index = _structs$lrd$_i.index,
             total = _structs$lrd$_i.total,
-            hasMask = _structs$lrd$_i.hasMask,
-            hasClip = _structs$lrd$_i.hasClip;
+            hasMask = _structs$lrd$_i.hasMask;
 
         if (display === 'none' || visibility === 'hidden') {
           prevLv = lv;
@@ -18692,7 +18639,7 @@
         } // relative/absolute强制开启total
 
 
-        var focus = position === 'relative' || position === 'absolute' || hasMask || hasClip || __blurValue > 0;
+        var focus = position === 'relative' || position === 'absolute' || hasMask || __blurValue > 0;
 
         if (focus) {
           prevLv = lv;
@@ -18732,7 +18679,7 @@
             genFilter(node, __cacheTotal && __cacheTotal.available ? __cacheTotal : __cache, __blurValue);
           }
 
-          if ((hasMask || hasClip) && !__cacheMask) {
+          if (hasMask && !__cacheMask) {
             __cacheMask = genMask(node, __cacheFilter || (__cacheTotal && __cacheTotal.available ? __cacheTotal : __cache), __cacheFilter);
           }
         }
@@ -18745,7 +18692,6 @@
           _node3 = _structs$_i.node,
           _total3 = _structs$_i.total,
           _hasMask = _structs$_i.hasMask,
-          _hasClip = _structs$_i.hasClip,
           _structs$_i$node = _structs$_i.node,
           _cacheMask = _structs$_i$node.__cacheMask,
           _cacheFilter = _structs$_i$node.__cacheFilter,
@@ -18792,8 +18738,8 @@
         }
 
         if (target) {
-          if (_hasMask || _hasClip) {
-            _i3 += _hasMask || _hasClip;
+          if (_hasMask) {
+            _i3 += _hasMask;
           }
 
           var _opacity = _node3.__opacity,
@@ -18831,21 +18777,19 @@
       var item = __structs[_i4];
       var node = item.node,
           total = item.total,
-          hasMask = item.hasMask,
-          hasClip = item.hasClip;
+          hasMask = item.hasMask;
 
       if (maskStartHash.hasOwnProperty(_i4)) {
         ctx = maskStartHash[_i4].ctx;
       }
 
-      if (hasMask || hasClip) {
-        var has = hasMask || hasClip;
+      if (hasMask) {
         var j = _i4 + (total || 0) + 1;
         var content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
         var mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
         maskStartHash[j] = mask; // 虽然目前只有Geom单节点，但未来可能出现Dom作为mask
 
-        while (has--) {
+        while (hasMask--) {
           j += (__structs[j].total || 0) + 1;
         }
 
@@ -18882,7 +18826,7 @@
           offScreen = _res.offScreen; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
 
       if (offScreen) {
-        var _j = _i4 + total;
+        var _j = _i4 + (total || 0);
 
         var list = filterHash[_j] = filterHash[_j] || []; // 逆序存，应用时先自己后parent
 
@@ -18922,18 +18866,15 @@
 
         _mask.draw(ctx);
 
-        ctx.globalCompositeOperation = 'source-over';
-
-        _mask.ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over'; // mask.ctx.clearRect(0, 0, width, height);
 
         ctx = origin;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(_content.canvas, 0, 0);
 
-        _content.draw(ctx);
+        _content.draw(ctx); // content.ctx.clearRect(0, 0, width, height);
 
-        _content.ctx.clearRect(0, 0, width, height);
       }
     }
   }
@@ -18957,12 +18898,11 @@
           __refreshLevel = _item$node2.__refreshLevel,
           total = item.total,
           lv = item.lv,
-          hasMask = item.hasMask,
-          hasClip = item.hasClip;
+          hasMask = item.hasMask;
 
-      if (hasMask || hasClip) {
+      if (hasMask) {
         var start = _i6 + (total || 0) + 1;
-        var end = start + (hasMask || hasClip); // svg限制了只能Geom单节点，不可能是Dom
+        var end = start + hasMask; // svg限制了只能Geom单节点，不可能是Dom
 
         maskHash[end - 1] = {
           index: _i6,
@@ -19037,6 +18977,7 @@
 
         if (o$1.contain(__refreshLevel, o$1.FILTER)) {
           var filter = computedStyle.filter = currentStyle.filter;
+          delete virtualDom.filter;
 
           if (Array.isArray(filter)) {
             filter.forEach(function (item) {
@@ -19058,8 +18999,6 @@
                     }]
                   });
                   virtualDom.filter = 'url(#' + id + ')';
-                } else {
-                  delete virtualDom.filter;
                 }
               }
             });
@@ -19141,22 +19080,17 @@
 
           if (has) {
             var id = defs.add({
-              tagName: target.hasClip ? 'clipPath' : 'mask',
+              tagName: 'mask',
               props: [],
               children: mChildren
             });
             id = 'url(#' + id + ')';
-
-            if (target.hasClip) {
-              dom.virtualDom.clip = id;
-            } else {
-              dom.virtualDom.mask = id;
-            }
+            dom.virtualDom.mask = id;
           }
         }
       }
 
-      if (parentVd && !node.isMask && !node.isClip) {
+      if (parentVd && !node.isMask) {
         parentVd.children.push(virtualDom);
       }
 
@@ -19475,10 +19409,10 @@
     } // mask需清除遮罩对象的缓存
 
 
-    if (node.isMask || node.isClip) {
+    if (node.isMask) {
       var prev = node.prev;
 
-      while (prev && (prev.isMask || prev.isClip)) {
+      while (prev && prev.isMask) {
         prev = prev.prev;
       }
 

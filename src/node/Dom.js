@@ -28,7 +28,7 @@ function genZIndexChildren(dom) {
     }
     // 遮罩单独保存后特殊排序，需要有__layoutData，特殊情况下中途插入的节点还未渲染
     if(item.__layoutData || item instanceof Text) {
-      if(item.isMask || item.isClip) {
+      if(item.isMask) {
         // 开头的mc忽略，后续的连续mc以第一次出现为准
         if(lastMcIndex !== undefined) {
           mcHash[lastMcIndex].push(item);

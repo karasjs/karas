@@ -25,9 +25,6 @@ class Node {
     if(this.__hasMask) {
       res.hasMask = this.__hasMask;
     }
-    if(this.__hasClip) {
-      res.hasClip = this.__hasClip;
-    }
     return res;
   }
 

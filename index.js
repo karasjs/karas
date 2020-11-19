@@ -18108,7 +18108,7 @@
         var first;
         var last;
 
-        for (var i = index + 1, len = i + top.total; i < len; i++) {
+        for (var i = index + 1, len = i + (top.total || 0); i < len; i++) {
           var _structs$i = structs[i],
               node = _structs$i.node,
               total = _structs$i.total,
@@ -18130,19 +18130,19 @@
 
           last = obj;
 
-          if (node instanceof Text || total === 0) {
+          if (node instanceof Text || !total) {
             continue;
           } // 不可见和遗留有total缓存的跳过
 
 
           if (display === 'none' || __cacheTotal && __cacheTotal.available) {
-            i += total;
+            i += total || 0;
             continue;
           }
 
           hash[i] = obj;
           list.push(i);
-          i += total;
+          i += total || 0;
         } // 第一层Root没有parent，后面层都有，最后一个子节点连到parent，如果parent本身有链接，赋予first
 
 
@@ -18194,7 +18194,7 @@
       list.splice(0).forEach(function (parentIndex) {
         var total = __structs[parentIndex].total;
 
-        for (var i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
+        for (var i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
           var _structs$i2 = __structs[i],
               _structs$i2$node = _structs$i2.node,
               __cacheTotal = _structs$i2$node.__cacheTotal,
@@ -18212,7 +18212,7 @@
               _total = _structs$i2.total; // display:none跳过整个节点树，visibility只跳过自身
 
           if (display === 'none') {
-            i += _total;
+            i += _total || 0;
             continue;
           }
 
@@ -18227,7 +18227,7 @@
               dy = 0;
 
           if (__cacheTotal && __cacheTotal.available) {
-            i += _total;
+            i += _total || 0;
             bbox = __cacheTotal.bbox.slice(0);
             dx = __cacheTotal.dbx;
             dy = __cacheTotal.dby;
@@ -18333,7 +18333,7 @@
     } // 先序遍历汇总到total
 
 
-    for (var i = index + 1, len = index + total + 1; i < len; i++) {
+    for (var i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
       var _structs$i3 = __structs[i],
           _node2 = _structs$i3.node,
           _total2 = _structs$i3.total,
@@ -18349,7 +18349,7 @@
           transformOrigin = _structs$i3$node$comp.transformOrigin;
 
       if (display === 'none') {
-        i += _total2;
+        i += _total2 || 0;
         continue;
       }
 
@@ -18406,7 +18406,7 @@
           }
 
           if (target) {
-            i += _total2;
+            i += _total2 || 0;
           } else if (__cache && __cache.available) {
             target = __cache;
           }
@@ -18553,7 +18553,7 @@
 
 
         if (__cacheTotal && __cacheTotal.available) {
-          _i += total;
+          _i += total || 0;
         }
       }
       /**
@@ -18704,7 +18704,7 @@
           _visibility = _structs$_i$node$comp.visibility;
 
       if (_display === 'none') {
-        _i3 += _total3;
+        _i3 += _total3 || 0;
         continue;
       }
 
@@ -18725,7 +18725,7 @@
         var hasTotal = _cacheMask || _cacheFilter || _cacheTotal && _cacheTotal.available;
 
         if (hasTotal) {
-          _i3 += _total3;
+          _i3 += _total3 || 0;
         } // 无内容Xom会没有__cache
 
 
@@ -18816,7 +18816,7 @@
           visibility = _node$computedStyle2.visibility;
 
       if (display === 'none') {
-        _i4 += total;
+        _i4 += total || 0;
         continue;
       }
 
@@ -18932,10 +18932,10 @@
         virtualDom = node.virtualDom; // total可以跳过所有孩子节点省略循环
 
         if (__cacheTotal && __cacheTotal.available) {
-          _i6 += total;
+          _i6 += total || 0;
           virtualDom.cache = true;
         } else {
-          __cacheTotal.available = true;
+          __cacheTotal && (__cacheTotal.available = true);
           virtualDom = node.__virtualDom = util.extend({}, virtualDom);
 
           if (node instanceof Dom$1 && !(node instanceof Img$1)) {
@@ -19020,7 +19020,7 @@
       var display = node.computedStyle.display;
 
       if (display === 'none') {
-        _i6 += total;
+        _i6 += total || 0;
         lastLv = lv;
         last = node;
         _i5 = _i6;

@@ -26,7 +26,7 @@ function genLRD(structs) {
       let parent = hash[index];
       let first;
       let last;
-      for(let i = index + 1, len = i + top.total; i < len; i++) {
+      for(let i = index + 1, len = i + (top.total || 0); i < len; i++) {
         let { node, total, node: { __cacheTotal, computedStyle: { display } } } = structs[i];
         // 子节点从开始到最后形成单链表
         let obj = { i };
@@ -37,17 +37,17 @@ function genLRD(structs) {
           obj.p = last;
         }
         last = obj;
-        if(node instanceof Text || total === 0) {
+        if(node instanceof Text || !total) {
           continue;
         }
         // 不可见和遗留有total缓存的跳过
         if(display === 'none' || __cacheTotal && __cacheTotal.available) {
-          i += total;
+          i += (total || 0);
           continue;
         }
         hash[i] = obj;
         list.push(i);
-        i += total;
+        i += (total || 0);
       }
       // 第一层Root没有parent，后面层都有，最后一个子节点连到parent，如果parent本身有链接，赋予first
       if(parent && last) {
@@ -88,13 +88,13 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   while(list.length) {
     list.splice(0).forEach(parentIndex => {
       let total = __structs[parentIndex].total;
-      for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
+      for(let i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
         let { node: { __cacheTotal, __cache, __blurValue, __sx1, __sy1,
           computedStyle: { display, visibility, transform, transformOrigin, opacity } },
           node, total } = __structs[i];
         // display:none跳过整个节点树，visibility只跳过自身
         if(display === 'none') {
-          i += total;
+          i += (total || 0);
           continue;
         }
         if(visibility === 'hidden') {
@@ -104,7 +104,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
         opacityHash[i] = opacityHash[parentIndex] * opacity;
         let bbox, dx = 0, dy = 0;
         if(__cacheTotal && __cacheTotal.available) {
-          i += total;
+          i += (total || 0);
           bbox = __cacheTotal.bbox.slice(0);
           dx = __cacheTotal.dbx;
           dy = __cacheTotal.dby;
@@ -192,11 +192,11 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
     Cache.drawCache(cache, cacheTop);
   }
   // 先序遍历汇总到total
-  for(let i = index + 1, len = index + total + 1; i < len; i++) {
+  for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let { node, total, node: { __cacheMask, __cacheFilter, __cacheTotal, __cache,
       computedStyle: { display, visibility, transform, transformOrigin } } } = __structs[i];
     if(display === 'none') {
-      i += total;
+      i += (total || 0);
       continue;
     }
     if(visibility === 'hidden') {
@@ -245,7 +245,7 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
         target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
       }
       if(target) {
-        i += total;
+        i += (total || 0);
       }
       else if(__cache && __cache.available) {
         target= __cache;
@@ -361,7 +361,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       }
       // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
       if(__cacheTotal && __cacheTotal.available) {
-        i += total;
+        i += (total || 0);
       }
     }
     /**
@@ -475,7 +475,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       },
     } = __structs[i];
     if(display === 'none') {
-      i += total;
+      i += (total || 0);
       continue;
     }
     if(visibility === 'hidden') {
@@ -490,7 +490,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     else {
       let hasTotal = __cacheMask || __cacheFilter || __cacheTotal && __cacheTotal.available;
       if(hasTotal) {
-        i += total;
+        i += (total || 0);
       }
       // 无内容Xom会没有__cache
       let target = __cacheMask || __cacheFilter;
@@ -550,7 +550,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
     }
     let { computedStyle: { display, visibility } } = node;
     if(display === 'none') {
-      i += total;
+      i += (total || 0);
       continue;
     }
     if(visibility === 'hidden') {
@@ -643,11 +643,11 @@ function renderSvg(renderMode, ctx, defs, root) {
       virtualDom = node.virtualDom;
       // total可以跳过所有孩子节点省略循环
       if(__cacheTotal && __cacheTotal.available) {
-        i += total;
+        i += (total || 0);
         virtualDom.cache = true;
       }
       else {
-        __cacheTotal.available = true;
+        __cacheTotal && (__cacheTotal.available = true);
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
         if(node instanceof Dom && !(node instanceof Img)) {
           virtualDom.children = [];
@@ -722,7 +722,7 @@ function renderSvg(renderMode, ctx, defs, root) {
     }
     let { computedStyle: { display } } = node;
     if(display === 'none') {
-      i += total;
+      i += (total || 0);
       lastLv = lv;
       last = node;
       continue;

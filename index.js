@@ -18409,6 +18409,7 @@
 
       var parentIndex = parentIndexHash[i];
       var matrix = matrixHash[parentIndex];
+      var opacity = opacityHash[i]; // 先看text
 
       if (_node2 instanceof Text) {
         ctx.globalAlpha = opacityHash[parentIndex];
@@ -18461,6 +18462,8 @@
           }
 
           if (target) {
+            ctx.globalAlpha = opacity;
+
             if (matrix) {
               ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
             } else {

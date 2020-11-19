@@ -251,6 +251,7 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
         target= __cache;
       }
       if(target) {
+        ctx.globalAlpha = opacity;
         if(matrix) {
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         }

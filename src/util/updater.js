@@ -78,13 +78,29 @@ function updateCp(cp, props, state) {
   // 为了局部dom布局需要知道老的css信息
   let sr = cp.shadowRoot;
   if(sr instanceof Xom) {
-    sr.__width = oldSr.width;
-    sr.__height = oldSr.height;
-    sr.__computedStyle = oldSr.computedStyle;
-    sr.__layoutData = oldSr.layoutData;
+    [
+      '__width',
+      '__height',
+      '__outerWidth',
+      '__outerHeight',
+      '__sx',
+      '__sy',
+      '__sx1',
+      '__sx2',
+      '__sx3',
+      '__sx4',
+      '__sy1',
+      '__sy2',
+      '__sy3',
+      '__sy4',
+      '__computedStyle',
+      '__layoutData',
+      '__parent',
+      '__struct',
+    ].forEach(k => {
+      sr[k] = oldSr[k];
+    });
   }
-  sr.__parent = oldSr.parent;
-  sr.__struct = oldSr.__struct;
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

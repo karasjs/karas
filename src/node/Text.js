@@ -86,8 +86,8 @@ class Text extends Node {
 
   __layout(data, isVirtual) {
     let { x, y, w } = data;
-    this.__x = this.__x1 = x;
-    this.__y = this.__y1 = y;
+    this.__x = this.__sx1 = x;
+    this.__y = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;

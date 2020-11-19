@@ -261,7 +261,7 @@ class Sector extends Geom {
   get bbox() {
     let {
       isMulti, __cacheProps,
-      __x2, __y2, width, height,
+      __sx2, __sy2, width, height,
       computedStyle: {
         paddingTop,
         paddingLeft,
@@ -269,8 +269,8 @@ class Sector extends Geom {
         boxShadow,
         filter,
       } } = this;
-    let originX = __x2 + paddingLeft;
-    let originY = __y2 + paddingTop;
+    let originX = __sx2 + paddingLeft;
+    let originY = __sy2 + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     this.buildCache(cx, cy);

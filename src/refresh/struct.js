@@ -70,7 +70,7 @@ function genLRD(structs) {
 
 function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
   let matrixHash = {};
-  let { __x1: x1, __y1: y1, __cache: cache, __blurValue: blurValue } = node;
+  let { __sx1: sx1, __sy1: sy1, __cache: cache, __blurValue: blurValue } = node;
   // 先将局部根节点的bbox算好，可能没内容是空
   let bboxTotal;
   if(cache && cache.available) {
@@ -86,7 +86,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
     list.splice(0).forEach(parentIndex => {
       let total = __structs[parentIndex].total;
       for(let i = parentIndex + 1, len = parentIndex + total + 1; i < len; i++) {
-        let { node: { __cacheTotal, __cache, __blurValue, __x1, __y1,
+        let { node: { __cacheTotal, __cache, __blurValue, __sx1, __sy1,
           computedStyle: { display, visibility, transform, transformOrigin, opacity } },
           node, total } = __structs[i];
         // display:none跳过整个节点树，visibility只跳过自身
@@ -122,8 +122,8 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
           if(transform && !mx.isE(transform)) {
             let tfo = transformOrigin.slice(0);
             // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-            tfo[0] += __x1 - x1 + dx;
-            tfo[1] += __y1 - y1 + dy;
+            tfo[0] += __sx1 - sx1 + dx;
+            tfo[1] += __sy1 - sy1 + dy;
             let m = tf.calMatrixByOrigin(transform, tfo);
             if(matrix) {
               matrix = mx.multiply(matrix, m);
@@ -178,8 +178,8 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
     console.error('Downgrade to no cache mode for cache-total error');
     return;
   }
-  let { __x1: x1, __y1: y1 } = node;
-  cacheTop.__appendData(x1, y1);
+  let { __sx1: sx1, __sy1: sy1 } = node;
+  cacheTop.__appendData(sx1, sy1);
   cacheTop.__available = true;
   let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
   // 先绘制自己的cache，起点所以matrix视作E为空
@@ -205,7 +205,7 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
       ctx.globalAlpha = opacityHash[parentIndex];
       let matrix = matrixHash[parentIndex] || [1, 0, 0, 1, 0, 0];
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-      node.render(renderMode, 0, ctx, defs, tx - x1 + dbx, ty - y1 + dby);
+      node.render(renderMode, 0, ctx, defs, tx - sx1 + dbx, ty - sy1 + dby);
     }
     // 再看total缓存
     else if(__cacheTotal && __cacheTotal.available) {
@@ -219,8 +219,8 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
       if(transform && !mx.isE(transform)) {
         let tfo = transformOrigin.slice(0);
         // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
-        tfo[0] += __cache.x1 - x1 + dbx + tx;
-        tfo[1] += __cache.y1 - y1 + dby + ty;
+        tfo[0] += __cache.sx1 - sx1 + dbx + tx;
+        tfo[1] += __cache.sy1 - sy1 + dby + ty;
         let m = tf.calMatrixByOrigin(transform, tfo);
         if(matrix) {
           matrix = mx.multiply(matrix, m);
@@ -494,8 +494,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         let { __opacity, matrixEvent } = node;
         ctx.globalAlpha = __opacity;
         ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
-        let { coords: [x, y], canvas, x1, y1, dbx, dby, width, height } = target;
-        ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
+        let { coords: [x, y], canvas, sx1, sy1, dbx, dby, width, height } = target;
+        ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
       }
     }
   }

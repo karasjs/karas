@@ -4299,8 +4299,8 @@
         var x = data.x,
             y = data.y,
             w = data.w;
-        this.__x = this.__x1 = x;
-        this.__y = this.__y1 = y;
+        this.__x = this.__sx1 = x;
+        this.__y = this.__sy1 = y;
         var isDestroyed = this.isDestroyed,
             content = this.content,
             computedStyle = this.computedStyle,
@@ -10978,10 +10978,10 @@
       }
     }, {
       key: "__appendData",
-      value: function __appendData(x1, y1) {
-        this.x1 = x1; // padding原点坐标
+      value: function __appendData(sx1, sy1) {
+        this.sx1 = sx1; // padding原点坐标
 
-        this.y1 = y1;
+        this.sy1 = sy1;
 
         var _this$coords = _slicedToArray(this.coords, 2),
             xc = _this$coords[0],
@@ -10991,9 +10991,9 @@
         this.dx = xc - bbox[0]; // cache坐标和box原点的差值
 
         this.dy = yc - bbox[1];
-        this.dbx = x1 - bbox[0]; // 原始x1/y1和box原点的差值
+        this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
 
-        this.dby = y1 - bbox[1];
+        this.dby = sy1 - bbox[1];
       }
     }, {
       key: "clear",
@@ -12603,14 +12603,14 @@
             borderRightWidth = computedStyle.borderRightWidth,
             borderTopWidth = computedStyle.borderTopWidth,
             borderBottomWidth = computedStyle.borderBottomWidth;
-        var x1 = this.__x1 = x + marginLeft;
-        var x2 = this.__x2 = x1 + borderLeftWidth;
-        var x3 = this.__x3 = x2 + width + paddingLeft + paddingRight;
-        var x4 = this.__x4 = x3 + borderRightWidth;
-        var y1 = this.__y1 = y + marginTop;
-        var y2 = this.__y2 = y1 + borderTopWidth;
-        var y3 = this.__y3 = y2 + height + paddingTop + paddingBottom;
-        var y4 = this.__y4 = y3 + borderBottomWidth;
+        var x1 = this.__sx1 = x + marginLeft;
+        var x2 = this.__sx2 = x1 + borderLeftWidth;
+        var x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
+        var x4 = this.__sx4 = x3 + borderRightWidth;
+        var y1 = this.__sy1 = y + marginTop;
+        var y2 = this.__sy2 = y1 + borderTopWidth;
+        var y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
+        var y4 = this.__sy4 = y3 + borderBottomWidth;
         var res = {
           x1: x1,
           x2: x2,
@@ -13456,10 +13456,10 @@
           this.__refreshLevel |= lv;
         }
 
-        this.__x1 += diff;
-        this.__x2 += diff;
-        this.__x3 += diff;
-        this.__x4 += diff;
+        this.__sx1 += diff;
+        this.__sx2 += diff;
+        this.__sx3 += diff;
+        this.__sx4 += diff;
       }
     }, {
       key: "__offsetY",
@@ -13474,10 +13474,10 @@
           this.__refreshLevel |= lv;
         }
 
-        this.__y1 += diff;
-        this.__y2 += diff;
-        this.__y3 += diff;
-        this.__y4 += diff;
+        this.__sy1 += diff;
+        this.__sy2 += diff;
+        this.__sy3 += diff;
+        this.__sy4 += diff;
       }
     }, {
       key: "__resizeX",
@@ -13583,8 +13583,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __x1 = this.__x1,
-            __y1 = this.__y1,
+        var __sx1 = this.__sx1,
+            __sy1 = this.__sy1,
             innerWidth = this.innerWidth,
             innerHeight = this.innerHeight,
             _this$computedStyle = this.computedStyle,
@@ -13602,7 +13602,7 @@
 
         innerWidth += borderLeftWidth + borderRightWidth;
         innerHeight += borderTopWidth + borderBottomWidth;
-        return [__x1 - ox, __y1 - oy, __x1 + innerWidth + ox, __y1 + innerHeight + oy];
+        return [__sx1 - ox, __sy1 - oy, __sx1 + innerWidth + ox, __sy1 + innerHeight + oy];
       }
     }, {
       key: "listener",
@@ -14717,7 +14717,6 @@
     }, {
       key: "__layoutBlock",
       value: function __layoutBlock(data, isVirtual) {
-        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
@@ -14938,7 +14937,6 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
-        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle.flexDirection,
@@ -15495,7 +15493,6 @@
       value: function __layoutInline(data, isVirtual) {
         var _this2 = this;
 
-        this.__zIndexChildren = null;
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
@@ -16475,6 +16472,10 @@
     return Defs;
   }();
 
+  // import tf from '../style/transform';
+  // import mx from '../math/matrix';
+  // import Cache from '../refresh/Cache';
+
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
@@ -16990,14 +16991,11 @@
     var sr = cp.shadowRoot;
 
     if (sr instanceof Xom$2) {
-      sr.__width = oldSr.width;
-      sr.__height = oldSr.height;
-      sr.__computedStyle = oldSr.computedStyle;
-      sr.__layoutData = oldSr.layoutData;
+      ['__width', '__height', '__outerWidth', '__outerHeight', '__sx', '__sy', '__sx1', '__sx2', '__sx3', '__sx4', '__sy1', '__sy2', '__sy3', '__sy4', '__computedStyle', '__layoutData', '__parent', '__struct'].forEach(function (k) {
+        sr[k] = oldSr[k];
+      });
     }
 
-    sr.__parent = oldSr.parent;
-    sr.__struct = oldSr.__struct;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
@@ -18176,8 +18174,8 @@
 
   function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHash) {
     var matrixHash = {};
-    var x1 = node.__x1,
-        y1 = node.__y1,
+    var sx1 = node.__sx1,
+        sy1 = node.__sy1,
         cache = node.__cache,
         blurValue = node.__blurValue; // 先将局部根节点的bbox算好，可能没内容是空
 
@@ -18204,8 +18202,8 @@
               __cacheTotal = _structs$i2$node.__cacheTotal,
               __cache = _structs$i2$node.__cache,
               __blurValue = _structs$i2$node.__blurValue,
-              __x1 = _structs$i2$node.__x1,
-              __y1 = _structs$i2$node.__y1,
+              __sx1 = _structs$i2$node.__sx1,
+              __sy1 = _structs$i2$node.__sy1,
               _structs$i2$node$comp = _structs$i2$node.computedStyle,
               display = _structs$i2$node$comp.display,
               visibility = _structs$i2$node$comp.visibility,
@@ -18253,8 +18251,8 @@
             if (transform && !mx.isE(transform)) {
               var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              tfo[0] += __x1 - x1 + dx;
-              tfo[1] += __y1 - y1 + dy;
+              tfo[0] += __sx1 - sx1 + dx;
+              tfo[1] += __sy1 - sy1 + dy;
               var m = tf.calMatrixByOrigin(transform, tfo);
 
               if (matrix) {
@@ -18314,10 +18312,10 @@
       return;
     }
 
-    var x1 = node.__x1,
-        y1 = node.__y1;
+    var sx1 = node.__sx1,
+        sy1 = node.__sy1;
 
-    cacheTop.__appendData(x1, y1);
+    cacheTop.__appendData(sx1, sy1);
 
     cacheTop.__available = true;
 
@@ -18368,7 +18366,7 @@
 
         ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
 
-        _node2.render(renderMode, 0, ctx, defs, tx - x1 + dbx, ty - y1 + dby);
+        _node2.render(renderMode, 0, ctx, defs, tx - sx1 + dbx, ty - sy1 + dby);
       } // 再看total缓存
       else if (__cacheTotal && __cacheTotal.available) {
           ctx.globalAlpha = opacity;
@@ -18381,8 +18379,8 @@
             if (transform && !mx.isE(transform)) {
               var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              tfo[0] += __cache.x1 - x1 + dbx + tx;
-              tfo[1] += __cache.y1 - y1 + dby + ty;
+              tfo[0] += __cache.sx1 - sx1 + dbx + tx;
+              tfo[1] += __cache.sy1 - sy1 + dby + ty;
               var m = tf.calMatrixByOrigin(transform, tfo);
 
               if (matrix) {
@@ -18739,14 +18737,14 @@
               x = _target$coords[0],
               y = _target$coords[1],
               canvas = _target.canvas,
-              x1 = _target.x1,
-              y1 = _target.y1,
+              sx1 = _target.sx1,
+              sy1 = _target.sy1,
               dbx = _target.dbx,
               dby = _target.dby,
               width = _target.width,
               height = _target.height;
 
-          ctx.drawImage(canvas, x - 1, y - 1, width, height, x1 - 1 - dbx, y1 - 1 - dby, width, height);
+          ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
         }
       }
     }
@@ -19260,7 +19258,7 @@
     var lv = o$1.NONE;
     var p;
     var hasMeasure = measure;
-    var hasZ; // component无需遍历
+    var hasZ, hasVisibility, hasColor; // component无需遍历
 
     if (!component) {
       for (var k in style) {
@@ -19309,6 +19307,14 @@
                 if (k === 'zIndex' && node !== root) {
                   hasZ = true;
                 }
+
+                if (k === 'visibility') {
+                  hasVisibility = true;
+                }
+
+                if (k === 'color') {
+                  hasColor = true;
+                }
               }
             }
           }
@@ -19337,6 +19343,49 @@
 
     if (hasZ) {
       delete node.domParent.__zIndexChildren;
+    } // visibility/color变化，影响子继承
+
+
+    if (hasVisibility || hasColor) {
+      for (var __structs = root.__structs, __struct = node.__struct, i = __struct.index + 1, len = i + __struct.total; i < len; i++) {
+        var _structs$i = __structs[i],
+            _node = _structs$i.node,
+            _currentStyle = _structs$i.node.currentStyle,
+            total = _structs$i.total;
+
+        var _need = void 0; // text的style指向parent，因此text一定变更
+
+
+        if (hasVisibility && (_node instanceof Text || _currentStyle.visibility.unit === unit.INHERIT)) {
+          _need = true;
+        }
+
+        if (hasColor && (_node instanceof Text || _currentStyle.color.unit === unit.INHERIT)) {
+          _need = true;
+        }
+
+        if (_need) {
+          _node.__refreshLevel |= o$1.REPAINT;
+
+          if (_node.__cache) {
+            _node.__cache.release();
+          }
+
+          if (_node.__cacheTotal) {
+            _node.__cacheTotal.release();
+          }
+
+          if (_node.__cacheMask) {
+            _node.__cacheMask = null;
+          }
+
+          if (_node.__cacheFilter) {
+            _node.__cacheFilter = null;
+          }
+        } else {
+          i += total || 0;
+        }
+      }
     } // mask需清除遮罩对象的缓存
 
 
@@ -19433,9 +19482,9 @@
 
       var _lv = parent.__refreshLevel;
 
-      var _need = _lv >= o$1.REPAINT;
+      var _need2 = _lv >= o$1.REPAINT;
 
-      if (_need && parent.__cache) {
+      if (_need2 && parent.__cache) {
         parent.__cache.release();
       } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
 
@@ -20023,26 +20072,16 @@
 
         if (updateRoot) {
           this.__updateRoot = null;
+          hasUpdate = parseUpdate(renderMode, root, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList); // 此时做root检查，防止root出现继承等无效样式
 
-          var _parseUpdate = parseUpdate(renderMode, root, updateHash, updateRoot, reflowList, measureList, cacheHash, cacheList);
-
-          var _parseUpdate2 = _slicedToArray(_parseUpdate, 1);
-
-          hasUpdate = _parseUpdate2[0];
-
-          // 此时做root检查，防止root出现继承等无效样式
           this.__checkRoot(width, height);
         } // 汇总处理每个节点
 
 
         var keys = Object.keys(updateHash);
         keys.forEach(function (k) {
-          var _parseUpdate3 = parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList, zHash, zList),
-              _parseUpdate4 = _slicedToArray(_parseUpdate3, 2),
-              t1 = _parseUpdate4[0],
-              t2 = _parseUpdate4[1];
-
-          hasUpdate = hasUpdate || t1;
+          var t = parseUpdate(renderMode, _this5, updateHash, updateHash[k], reflowList, measureList, cacheHash, cacheList, zHash, zList);
+          hasUpdate = hasUpdate || t;
         }); // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
 
         this.__reflowList = reflowList;
@@ -20398,17 +20437,17 @@
                   component = item.component; // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
 
               if (lv >= LAYOUT) {
-                var zIndex,
-                    position,
-                    cs = node.computedStyle;
+                var cps = node.computedStyle,
+                    cts = node.currentStyle;
+                var isLastAbs = cps.position === 'absolute';
+                var isNowAbs = cts.position === 'absolute';
+                var isLastNone = cps.display === 'none';
+                var isNowNone = cts.display === 'none';
 
-                if (component) {
-                  zIndex = cs.zIndex;
-                  position = cs.position;
+                if (isLastNone && isNowNone) {
+                  return;
                 }
 
-                var isLastAbs = cs.position === 'absolute';
-                var isNowAbs = cs.position === 'absolute';
                 var parent = node.domParent;
                 var _parent$layoutData = parent.layoutData,
                     _x = _parent$layoutData.x,
@@ -20566,14 +20605,14 @@
 
 
                     var _p3 = _p2,
-                        _currentStyle = _p3.currentStyle;
-                    var isAbs = _currentStyle.positoin === 'absolute';
+                        _currentStyle2 = _p3.currentStyle;
+                    var isAbs = _currentStyle2.positoin === 'absolute';
 
                     if (dx) {
                       var need = void 0; // width在block不需要，parent一定不会是flex/inline
 
                       if (isAbs) {
-                        if (_currentStyle.width.unit === AUTO$6 && (_currentStyle.left.unit === AUTO$6 || _currentStyle.right.unit === AUTO$6)) {
+                        if (_currentStyle2.width.unit === AUTO$6 && (_currentStyle2.left.unit === AUTO$6 || _currentStyle2.right.unit === AUTO$6)) {
                           need = true;
                         }
                       }
@@ -20588,18 +20627,18 @@
                     }
 
                     if (dy) {
-                      var _need2 = void 0;
+                      var _need3 = void 0;
 
                       if (isAbs) {
-                        if (_currentStyle.height.unit === AUTO$6 && (_currentStyle.top.unit === AUTO$6 || _currentStyle.bottom.unit === AUTO$6)) {
-                          _need2 = true;
+                        if (_currentStyle2.height.unit === AUTO$6 && (_currentStyle2.top.unit === AUTO$6 || _currentStyle2.bottom.unit === AUTO$6)) {
+                          _need3 = true;
                         }
                       } // height则需要
-                      else if (_currentStyle.height.unit === AUTO$6) {
-                          _need2 = true;
+                      else if (_currentStyle2.height.unit === AUTO$6) {
+                          _need3 = true;
                         }
 
-                      if (_need2) {
+                      if (_need3) {
                         _p2.__resizeY(dy);
 
                         _p2.__cancelCache();
@@ -20627,14 +20666,22 @@
                   diffI += arr[1];
                   diffList.push(arr);
 
-                  if (cs.position !== position && (cs.position === 'static' || position === 'static') || cs.zIndex !== zIndex) {
+                  if (cps.position !== cts.position && (cps.position === 'static' || cts.position === 'static') || cps.zIndex !== cts.zIndex) {
                     node.domParent.__updateStruct(root.__structs);
 
                     if (_this6.renderMode === mode.SVG) {
                       cleanSvgCache(node.domParent);
                     }
                   }
-                }
+                } // display有none变化，重置struct和zc
+                else if (isLastNone || isNowNone) {
+                    node.__zIndexChildren = null;
+
+                    var _arr = node.__modifyStruct(root, diffI);
+
+                    diffI += _arr[1];
+                    diffList.push(_arr);
+                  }
               } // OFFSET操作的节点都是relative，要考虑auto变化
               else {
                   var _node$currentStyle = node.currentStyle,
@@ -20642,7 +20689,7 @@
                       right = _node$currentStyle.right,
                       bottom = _node$currentStyle.bottom,
                       left = _node$currentStyle.left,
-                      _currentStyle2 = node.currentStyle,
+                      _currentStyle3 = node.currentStyle,
                       _node$computedStyle = node.computedStyle,
                       t = _node$computedStyle.top,
                       r = _node$computedStyle.right,
@@ -20661,11 +20708,11 @@
                   var newY = 0;
 
                   if (top.unit !== AUTO$6) {
-                    newY = calRelative$2(_currentStyle2, 'top', top, _parent4);
+                    newY = calRelative$2(_currentStyle3, 'top', top, _parent4);
                     _computedStyle2.top = newY;
                     _computedStyle2.bottom = 'auto';
                   } else if (bottom.unit !== AUTO$6) {
-                    newY = -calRelative$2(_currentStyle2, 'bottom', bottom, _parent4);
+                    newY = -calRelative$2(_currentStyle3, 'bottom', bottom, _parent4);
                     _computedStyle2.bottom = -newY;
                     _computedStyle2.top = 'auto';
                   } else {
@@ -20687,11 +20734,11 @@
                   var newX = 0;
 
                   if (left.unit !== AUTO$6) {
-                    newX = calRelative$2(_currentStyle2, 'left', left, _parent4);
+                    newX = calRelative$2(_currentStyle3, 'left', left, _parent4);
                     _computedStyle2.left = newX;
                     _computedStyle2.right = 'auto';
                   } else if (right.unit !== AUTO$6) {
-                    newX = -calRelative$2(_currentStyle2, 'right', right, _parent4);
+                    newX = -calRelative$2(_currentStyle3, 'right', right, _parent4);
                     _computedStyle2.right = -newX;
                     _computedStyle2.left = 'auto';
                   } else {
@@ -21336,8 +21383,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __x2 = this.__x2,
-            __y2 = this.__y2,
+        var __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle.paddingTop,
             paddingLeft = _this$computedStyle.paddingLeft,
@@ -21346,8 +21393,8 @@
             filter = _this$computedStyle.filter,
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
         var x1 = __cacheProps.x1,
             y1 = __cacheProps.y1,
@@ -21967,8 +22014,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __x2 = this.__x2,
-            __y2 = this.__y2,
+        var __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             _this$computedStyle = this.computedStyle,
             paddingTop = _this$computedStyle.paddingTop,
             paddingLeft = _this$computedStyle.paddingLeft,
@@ -21977,8 +22024,8 @@
             filter = _this$computedStyle.filter,
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Polyline.prototype), "bbox", this);
@@ -22400,8 +22447,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __x2 = this.__x2,
-            __y2 = this.__y2,
+            __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
@@ -22410,8 +22457,8 @@
             strokeWidth = _this$computedStyle.strokeWidth,
             boxShadow = _this$computedStyle.boxShadow,
             filter = _this$computedStyle.filter;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -22648,8 +22695,8 @@
     }, {
       key: "bbox",
       get: function get() {
-        var __x2 = this.__x2,
-            __y2 = this.__y2,
+        var __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
@@ -22658,8 +22705,8 @@
             strokeWidth = _this$computedStyle.strokeWidth,
             boxShadow = _this$computedStyle.boxShadow,
             filter = _this$computedStyle.filter;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
 
         var bbox = _get(_getPrototypeOf(Rect.prototype), "bbox", this);
@@ -22824,8 +22871,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __x2 = this.__x2,
-            __y2 = this.__y2,
+            __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
@@ -22834,8 +22881,8 @@
             strokeWidth = _this$computedStyle.strokeWidth,
             boxShadow = _this$computedStyle.boxShadow,
             filter = _this$computedStyle.filter;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);
@@ -23067,8 +23114,8 @@
       get: function get() {
         var isMulti = this.isMulti,
             __cacheProps = this.__cacheProps,
-            __x2 = this.__x2,
-            __y2 = this.__y2,
+            __sx2 = this.__sx2,
+            __sy2 = this.__sy2,
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
@@ -23077,8 +23124,8 @@
             strokeWidth = _this$computedStyle.strokeWidth,
             boxShadow = _this$computedStyle.boxShadow,
             filter = _this$computedStyle.filter;
-        var originX = __x2 + paddingLeft;
-        var originY = __y2 + paddingTop;
+        var originX = __sx2 + paddingLeft;
+        var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
         var cy = originY + height * 0.5;
         this.buildCache(cx, cy);

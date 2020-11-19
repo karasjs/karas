@@ -1407,14 +1407,14 @@ class Xom extends Node {
       borderTopWidth,
       borderBottomWidth,
     } = computedStyle;
-    let x1 = this.__x1 = x + marginLeft;
-    let x2 = this.__x2 = x1 + borderLeftWidth;
-    let x3 = this.__x3 = x2 + width + paddingLeft + paddingRight;
-    let x4 = this.__x4 = x3 + borderRightWidth;
-    let y1 = this.__y1 = y + marginTop;
-    let y2 = this.__y2 = y1 + borderTopWidth;
-    let y3 = this.__y3 = y2 + height + paddingTop + paddingBottom;
-    let y4 = this.__y4 = y3 + borderBottomWidth;
+    let x1 = this.__sx1 = x + marginLeft;
+    let x2 = this.__sx2 = x1 + borderLeftWidth;
+    let x3 = this.__sx3 = x2 + width + paddingLeft + paddingRight;
+    let x4 = this.__sx4 = x3 + borderRightWidth;
+    let y1 = this.__sy1 = y + marginTop;
+    let y2 = this.__sy2 = y1 + borderTopWidth;
+    let y3 = this.__sy3 = y2 + height + paddingTop + paddingBottom;
+    let y4 = this.__sy4 = y3 + borderBottomWidth;
     let res = { x1, x2, x3, x4, y1, y2, y3, y4 };
     // 防止cp直接返回cp嵌套，拿到真实dom的parent
     let p = this.domParent;
@@ -2174,10 +2174,10 @@ class Xom extends Node {
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
     }
-    this.__x1 += diff;
-    this.__x2 += diff;
-    this.__x3 += diff;
-    this.__x4 += diff;
+    this.__sx1 += diff;
+    this.__sx2 += diff;
+    this.__sx3 += diff;
+    this.__sx4 += diff;
   }
 
   __offsetY(diff, isLayout, lv) {
@@ -2188,10 +2188,10 @@ class Xom extends Node {
     if(lv !== undefined) {
       this.__refreshLevel |= lv;
     }
-    this.__y1 += diff;
-    this.__y2 += diff;
-    this.__y3 += diff;
-    this.__y4 += diff;
+    this.__sy1 += diff;
+    this.__sy2 += diff;
+    this.__sy3 += diff;
+    this.__sy4 += diff;
   }
 
   __resizeX(diff) {
@@ -2272,7 +2272,7 @@ class Xom extends Node {
   // 不考虑margin的范围
   get bbox() {
     let {
-      __x1, __y1, innerWidth, innerHeight,
+      __sx1, __sy1, innerWidth, innerHeight,
       computedStyle: {
         borderTopWidth,
         borderRightWidth,
@@ -2285,7 +2285,7 @@ class Xom extends Node {
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
     innerWidth += borderLeftWidth + borderRightWidth;
     innerHeight += borderTopWidth + borderBottomWidth;
-    return [__x1 - ox, __y1 - oy, __x1 + innerWidth + ox, __y1 + innerHeight + oy];
+    return [__sx1 - ox, __sy1 - oy, __sx1 + innerWidth + ox, __sy1 + innerHeight + oy];
   }
 
   get listener() {

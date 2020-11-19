@@ -351,7 +351,7 @@ class Line extends Geom {
 
   get bbox() {
     let {
-      __x2, __y2,
+      __sx2, __sy2,
       computedStyle: {
         paddingTop,
         paddingLeft,
@@ -361,8 +361,8 @@ class Line extends Geom {
       },
       isMulti, __cacheProps,
     } = this;
-    let originX = __x2 + paddingLeft;
-    let originY = __y2 + paddingTop;
+    let originX = __sx2 + paddingLeft;
+    let originY = __sy2 + paddingTop;
     this.buildCache(originX, originY);
     let { x1, y1, x2, y2, controlA, controlB } = __cacheProps;
     let bbox = super.bbox;

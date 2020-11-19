@@ -35,15 +35,15 @@ class Cache {
     }
   }
 
-  __appendData(x1, y1) {
-    this.x1 = x1; // padding原点坐标
-    this.y1 = y1;
+  __appendData(sx1, sy1) {
+    this.sx1 = sx1; // padding原点坐标
+    this.sy1 = sy1;
     let [xc, yc] = this.coords;
     let bbox = this.bbox;
     this.dx = xc - bbox[0]; // cache坐标和box原点的差值
     this.dy = yc - bbox[1];
-    this.dbx = x1 - bbox[0]; // 原始x1/y1和box原点的差值
-    this.dby = y1 - bbox[1];
+    this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
+    this.dby = sy1 - bbox[1];
   }
 
   clear() {

@@ -138,7 +138,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   let lv = level.NONE;
   let p;
   let hasMeasure = measure;
-  let hasZ;
+  let hasZ, hasVisibility, hasColor;
   // component无需遍历
   if(!component) {
     for(let k in style) {
@@ -180,6 +180,12 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
               if(k === 'zIndex' && node !== root) {
                 hasZ = true;
               }
+              if(k === 'visibility') {
+                hasVisibility = true;
+              }
+              if(k === 'color') {
+                hasColor = true;
+              }
             }
           }
         }
@@ -203,6 +209,38 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   // 记录下来清除parent的zIndexChildren缓存
   if(hasZ) {
     delete node.domParent.__zIndexChildren;
+  }
+  // visibility/color变化，影响子继承
+  if(hasVisibility || hasColor) {
+    for(let __structs = root.__structs, __struct = node.__struct, i = __struct.index + 1, len = i + __struct.total; i < len; i++) {
+      let { node, node: { currentStyle }, total } = __structs[i];
+      let need;
+      // text的style指向parent，因此text一定变更
+      if(hasVisibility && (node instanceof Text || currentStyle.visibility.unit === unit.INHERIT)) {
+        need = true;
+      }
+      if(hasColor && (node instanceof Text || currentStyle.color.unit === unit.INHERIT)) {
+        need = true;
+      }
+      if(need) {
+        node.__refreshLevel |= level.REPAINT;
+        if(node.__cache) {
+          node.__cache.release();
+        }
+        if(node.__cacheTotal) {
+          node.__cacheTotal.release();
+        }
+        if(node.__cacheMask) {
+          node.__cacheMask = null;
+        }
+        if(node.__cacheFilter) {
+          node.__cacheFilter = null;
+        }
+      }
+      else {
+        i += total || 0;
+      }
+    }
   }
   // mask需清除遮罩对象的缓存
   if(node.isMask || node.isClip) {
@@ -739,12 +777,12 @@ class Root extends Dom {
     let zList = [];
     let updateRoot = this.__updateRoot;
     let updateHash = this.__updateHash;
-    let hasUpdate, hasZ;
+    let hasUpdate;
     // root更新特殊提前，因为有继承因素
     let root = this;
     if(updateRoot) {
       this.__updateRoot = null;
-      [hasUpdate] = parseUpdate(renderMode, root, updateHash, updateRoot,
+      hasUpdate = parseUpdate(renderMode, root, updateHash, updateRoot,
         reflowList, measureList, cacheHash, cacheList);
       // 此时做root检查，防止root出现继承等无效样式
       this.__checkRoot(width, height);
@@ -752,10 +790,9 @@ class Root extends Dom {
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      let [t1, t2] = parseUpdate(renderMode, this, updateHash, updateHash[k],
+      let t = parseUpdate(renderMode, this, updateHash, updateHash[k],
         reflowList, measureList, cacheHash, cacheList, zHash, zList);
-      hasUpdate = hasUpdate || t1;
-      hasZ = hasZ || t2;
+      hasUpdate = hasUpdate || t;
     });
     // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
     this.__reflowList = reflowList;
@@ -1058,13 +1095,14 @@ class Root extends Dom {
         let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
-          let zIndex, position, cs = node.computedStyle;
-          if(component) {
-            zIndex = cs.zIndex;
-            position = cs.position;
+          let cps = node.computedStyle, cts = node.currentStyle;
+          let isLastAbs = cps.position === 'absolute';
+          let isNowAbs = cts.position === 'absolute';
+          let isLastNone = cps.display === 'none';
+          let isNowNone = cts.display === 'none';
+          if(isLastNone && isNowNone) {
+            return;
           }
-          let isLastAbs = cs.position === 'absolute';
-          let isNowAbs = cs.position === 'absolute';
           let parent = node.domParent;
           let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let current = node;
@@ -1241,13 +1279,20 @@ class Root extends Dom {
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];
             diffList.push(arr);
-            if((cs.position !== position && (cs.position === 'static' || position === 'static'))
-              || cs.zIndex !== zIndex) {
+            if((cps.position !== cts.position && (cps.position === 'static' || cts.position === 'static'))
+              || cps.zIndex !== cts.zIndex) {
               node.domParent.__updateStruct(root.__structs);
               if(this.renderMode === mode.SVG) {
                 cleanSvgCache(node.domParent);
               }
             }
+          }
+          // display有none变化，重置struct和zc
+          else if(isLastNone || isNowNone) {
+            node.__zIndexChildren = null;
+            let arr = node.__modifyStruct(root, diffI);
+            diffI += arr[1];
+            diffList.push(arr);
           }
         }
         // OFFSET操作的节点都是relative，要考虑auto变化

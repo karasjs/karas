@@ -11133,15 +11133,15 @@
       key: "genMask",
       value: function genMask(cache) {
         var size = cache.size,
-            x1 = cache.x1,
-            y1 = cache.y1,
+            sx1 = cache.sx1,
+            sy1 = cache.sy1,
             width = cache.width,
             height = cache.height;
         var offScreen = inject.getCacheCanvas(width, height);
         offScreen.coords = [1, 1];
         offScreen.size = size;
-        offScreen.x1 = x1;
-        offScreen.y1 = y1;
+        offScreen.sx1 = sx1;
+        offScreen.sy1 = sy1;
         offScreen.dbx = cache.dbx;
         offScreen.dby = cache.dby;
         offScreen.width = width;
@@ -11163,8 +11163,8 @@
             y = _cache$coords[1],
             size = cache.size,
             canvas = cache.canvas,
-            x1 = cache.x1,
-            y1 = cache.y1,
+            sx1 = cache.sx1,
+            sy1 = cache.sy1,
             width = cache.width,
             height = cache.height;
 
@@ -11175,8 +11175,8 @@
         blur.gaussBlur(offScreen, cacheFilter, v, width, height);
         cacheFilter.coords = [1, 1];
         cacheFilter.size = size;
-        cacheFilter.x1 = x1;
-        cacheFilter.y1 = y1;
+        cacheFilter.sx1 = sx1;
+        cacheFilter.sy1 = sy1;
         cacheFilter.dbx = cache.dbx;
         cacheFilter.dby = cache.dby;
         cacheFilter.width = width;
@@ -11211,8 +11211,8 @@
                 nx = _newCache$coords[0],
                 ny = _newCache$coords[1];
 
-            newCache.x1 = cache.x1;
-            newCache.y1 = cache.y1;
+            newCache.sx1 = cache.sx1;
+            newCache.sy1 = cache.sy1;
             newCache.dx = cache.dx + dx;
             newCache.dy = cache.dy + dy;
             newCache.dbx = cache.dbx + dx;
@@ -11232,8 +11232,8 @@
         var _target$coords = _slicedToArray(target.coords, 2),
             tx = _target$coords[0],
             ty = _target$coords[1],
-            x1 = target.x1,
-            y1 = target.y1,
+            sx1 = target.sx1,
+            sy1 = target.sy1,
             ctx = target.ctx,
             dbx = target.dbx,
             dby = target.dby;
@@ -11242,15 +11242,15 @@
             x = _source$coords[0],
             y = _source$coords[1],
             canvas = source.canvas,
-            x12 = source.x1,
-            y12 = source.y1,
+            sx2 = source.sx1,
+            sy2 = source.sy1,
             dbx2 = source.dbx,
             dby2 = source.dby,
             width = source.width,
             height = source.height;
 
-        var dx = tx + x12 - x1 + dbx - dbx2;
-        var dy = ty + y12 - y1 + dby - dby2;
+        var dx = tx + sx2 - sx1 + dbx - dbx2;
+        var dy = ty + sy2 - sy1 + dby - dby2;
 
         if (transform && matrix && tfo) {
           tfo[0] += dx;
@@ -18329,7 +18329,9 @@
 
 
     if (cache && cache.available) {
-      Cache.drawCache(cache, cacheTop, null, null, null);
+      ctx.globalAlpha = 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      Cache.drawCache(cache, cacheTop);
     } // 先序遍历汇总到total
 
 
@@ -18367,38 +18369,41 @@
         ctx.setTransform(_matrix[0], _matrix[1], _matrix[2], _matrix[3], _matrix[4], _matrix[5]);
 
         _node2.render(renderMode, 0, ctx, defs, tx - sx1 + dbx, ty - sy1 + dby);
-      } // 再看total缓存
-      else if (__cacheTotal && __cacheTotal.available) {
+      } // 再看total缓存/cache，都没有的是无内容的Xom节点
+      else if (__cacheTotal && __cacheTotal.available || __cache && __cache.available) {
           ctx.globalAlpha = opacity;
-          Cache.drawCache(__cacheTotal, cacheTop, transform, matrix || [1, 0, 0, 1, 0, 0], transformOrigin);
-          i += _total2;
-        } // 最后看cache，没有的是无内容的Xom节点
-        else if (__cache && __cache.available) {
-            ctx.globalAlpha = opacity;
 
-            if (transform && !mx.isE(transform)) {
-              var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
+          if (transform && !mx.isE(transform)) {
+            var tfo = transformOrigin.slice(0); // total下的节点tfo的计算，以total为原点，差值坐标即相对坐标
 
-              tfo[0] += __cache.sx1 - sx1 + dbx + tx;
-              tfo[1] += __cache.sy1 - sy1 + dby + ty;
-              var m = tf.calMatrixByOrigin(transform, tfo);
-
-              if (matrix) {
-                matrix = mx.multiply(matrix, m);
-              } else {
-                matrix = m;
-              }
-            }
+            tfo[0] += __cache.sx1 - sx1 + dbx + tx;
+            tfo[1] += __cache.sy1 - sy1 + dby + ty;
+            var m = tf.calMatrixByOrigin(transform, tfo);
 
             if (matrix) {
-              matrixHash[i] = matrix;
-              ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+              matrix = mx.multiply(matrix, m);
             } else {
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              matrix = m;
             }
-
-            Cache.drawCache(__cache, cacheTop);
           }
+
+          if (matrix) {
+            matrixHash[i] = matrix;
+            ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+          } else {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+          }
+
+          var target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
+
+          if (target) {
+            i += _total2;
+          } else {
+            target = __cache;
+          }
+
+          Cache.drawCache(target, cacheTop);
+        }
     }
 
     return cacheTop;

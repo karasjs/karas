@@ -153,12 +153,12 @@ class Cache {
   }
 
   static genMask(cache) {
-    let { size, x1, y1, width, height } = cache;
+    let { size, sx1, sy1, width, height } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.coords = [1, 1];
     offScreen.size = size;
-    offScreen.x1 = x1;
-    offScreen.y1 = y1;
+    offScreen.sx1 = sx1;
+    offScreen.sy1 = sy1;
     offScreen.dbx = cache.dbx;
     offScreen.dby = cache.dby;
     offScreen.width = width;
@@ -173,7 +173,7 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genOffScreenBlur(cache, v) {
-    let { coords: [x, y], size, canvas, x1, y1, width, height } = cache;
+    let { coords: [x, y], size, canvas, sx1, sy1, width, height } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
@@ -181,8 +181,8 @@ class Cache {
     blur.gaussBlur(offScreen, cacheFilter, v, width, height);
     cacheFilter.coords = [1, 1];
     cacheFilter.size = size;
-    cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1;
+    cacheFilter.sx1 = sx1;
+    cacheFilter.sy1 = sy1;
     cacheFilter.dbx = cache.dbx;
     cacheFilter.dby = cache.dby;
     cacheFilter.width = width;
@@ -204,8 +204,8 @@ class Cache {
       if(newCache && newCache.enabled) {
         let { coords: [ox, oy], canvas, width, height } = cache;
         let { coords: [nx, ny] } = newCache;
-        newCache.x1 = cache.x1;
-        newCache.y1 = cache.y1;
+        newCache.sx1 = cache.sx1;
+        newCache.sy1 = cache.sy1;
         newCache.dx = cache.dx + dx;
         newCache.dy = cache.dy + dy;
         newCache.dbx = cache.dbx + dx;
@@ -222,10 +222,10 @@ class Cache {
   }
 
   static drawCache(source, target, transform, matrix, tfo, inverse) {
-    let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
-    let { coords: [x, y], canvas, x1: x12, y1: y12, dbx: dbx2, dby: dby2, width, height } = source;
-    let dx = tx + x12 - x1 + dbx - dbx2;
-    let dy = ty + y12 - y1 + dby - dby2;
+    let { coords: [tx, ty], sx1, sy1, ctx, dbx, dby } = target;
+    let { coords: [x, y], canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
+    let dx = tx + sx2 - sx1 + dbx - dbx2;
+    let dy = ty + sy2 - sy1 + dby - dby2;
     if(transform && matrix && tfo) {
       tfo[0] += dx;
       tfo[1] += dy;

@@ -184,7 +184,9 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
   let { coords: [tx, ty], ctx, dbx, dby } = cacheTop;
   // 先绘制自己的cache，起点所以matrix视作E为空
   if(cache && cache.available) {
-    Cache.drawCache(cache, cacheTop, null, null, null);
+    ctx.globalAlpha = 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    Cache.drawCache(cache, cacheTop);
   }
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + total + 1; i < len; i++) {
@@ -207,14 +209,8 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
       node.render(renderMode, 0, ctx, defs, tx - sx1 + dbx, ty - sy1 + dby);
     }
-    // 再看total缓存
-    else if(__cacheTotal && __cacheTotal.available) {
-      ctx.globalAlpha = opacity;
-      Cache.drawCache(__cacheTotal, cacheTop, transform, matrix || [1, 0, 0, 1, 0, 0], transformOrigin);
-      i += total;
-    }
-    // 最后看cache，没有的是无内容的Xom节点
-    else if(__cache && __cache.available) {
+    // 再看total缓存/cache，都没有的是无内容的Xom节点
+    else if(__cacheTotal && __cacheTotal.available || __cache && __cache.available) {
       ctx.globalAlpha = opacity;
       if(transform && !mx.isE(transform)) {
         let tfo = transformOrigin.slice(0);
@@ -236,7 +232,14 @@ function genTotal(renderMode, defs, node, lv, index, total, __structs, cacheTop,
       else {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
       }
-      Cache.drawCache(__cache, cacheTop);
+      let target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
+      if(target) {
+        i += total;
+      }
+      else {
+        target= __cache;
+      }
+      Cache.drawCache(target, cacheTop);
     }
   }
   return cacheTop;

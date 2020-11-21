@@ -10672,7 +10672,6 @@
     //                                   1
     TRANSLATE_Y: 2,
     //                                  10
-    // TRANSLATE: 3, //                                    11
     TRANSFORM: 4,
     //                                   100
     TRANSFORM_ALL: 7,
@@ -10889,39 +10888,9 @@
           page: page,
           pos: pos
         };
-      } // static set MAX(v) {
-      //   let n = v;
-      //   while(n > 2) {
-      //     n = n % 2;
-      //   }
-      //   if(n !== 0) {
-      //     console.error('Page max-size must be a multiple of 2');
-      //     return;
-      //   }
-      //   if(v < 8) {
-      //     console.error('Page max-size must >= 8');
-      //     return;
-      //   }
-      //   MAX = v;
-      //   n = 1;
-      //   SIZE = [];
-      //   NUMBER = [];
-      //   while(true) {
-      //     SIZE.unshift(v);
-      //     NUMBER.unshift(n);
-      //     v >>= 1;
-      //     // canvas太大初始化会卡，这里限制8个
-      //     if(n < 8) {
-      //       n <<= 1;
-      //     }
-      //     if(v < 8) {
-      //       break;
-      //     }
-      //   }
-      // }
-
+      }
     }, {
-      key: "SIZE",
+      key: "CONFIG",
       set: function set(v) {
         if (!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
           return;
@@ -10930,6 +10899,12 @@
         SIZE = v.SIZE;
         NUMBER$3 = v.NUMBER;
         MAX = SIZE[SIZE.length - 1];
+      },
+      get: function get() {
+        return {
+          SIZE: SIZE,
+          NUMBER: NUMBER$3
+        };
       }
     }, {
       key: "MAX",
@@ -18331,7 +18306,6 @@
 
 
     if (!cacheTop || !cacheTop.enabled) {
-      // console.error('Downgrade to no cache mode for cache-total error');
       return;
     }
 
@@ -18575,8 +18549,7 @@
           }
 
           if (!__cache.enabled) {
-            console.warn('Downgrade for cache-filter error'); // root.cache = false;
-            // return renderCanvas(renderMode, originCtx, defs, root);
+            console.warn('Downgrade for cache-filter change error');
           }
         } // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
 
@@ -18599,13 +18572,7 @@
             }
           } else {
             node.render(renderMode, __refreshLevel, ctx, defs, true);
-          } // 离屏错误需整体降级无cache方案，并不再启用
-          // if(res.limitCache) {
-          //   console.error('Downgrade to no cache mode for cache error');
-          //   root.cache = false;
-          //   return renderCanvas(renderMode, originCtx, defs, root);
-          // }
-
+          }
         }
 
       last = node;
@@ -18629,98 +18596,95 @@
      * 无需判断display:none和visibility:hidden，前者已经被过滤，后者可能是total
      */
 
-    if (lrd.length > 1) {
-      var NUM = Math.max(1, Cache.NUM);
-      var prevLv = __structs[lrd[0]].lv,
-          count = 0,
-          hash = {};
+    var NUM = Math.max(1, Cache.NUM);
+    var prevLv = __structs[lrd[0]].lv,
+        count = 0,
+        hash = {};
 
-      for (var _i2 = 0, _len = lrd.length - 1; _i2 < _len; _i2++) {
-        var _structs$lrd$_i = __structs[lrd[_i2]],
-            _structs$lrd$_i$node = _structs$lrd$_i.node,
-            _structs$lrd$_i$node$ = _structs$lrd$_i$node.computedStyle,
-            position = _structs$lrd$_i$node$.position,
-            visibility = _structs$lrd$_i$node$.visibility,
-            __cacheFilter = _structs$lrd$_i$node.__cacheFilter,
-            __cacheMask = _structs$lrd$_i$node.__cacheMask,
-            __cacheTotal = _structs$lrd$_i$node.__cacheTotal,
-            __cache = _structs$lrd$_i$node.__cache,
-            __blurValue = _structs$lrd$_i$node.__blurValue,
-            node = _structs$lrd$_i.node,
-            lv = _structs$lrd$_i.lv,
-            index = _structs$lrd$_i.index,
-            total = _structs$lrd$_i.total,
-            hasMask = _structs$lrd$_i.hasMask; // text一定是叶子节点
+    for (var _i2 = 0, _len = lrd.length - 1; _i2 < _len; _i2++) {
+      var _structs$lrd$_i = __structs[lrd[_i2]],
+          _structs$lrd$_i$node = _structs$lrd$_i.node,
+          _structs$lrd$_i$node$ = _structs$lrd$_i$node.computedStyle,
+          position = _structs$lrd$_i$node$.position,
+          visibility = _structs$lrd$_i$node$.visibility,
+          __cacheFilter = _structs$lrd$_i$node.__cacheFilter,
+          __cacheMask = _structs$lrd$_i$node.__cacheMask,
+          __cacheTotal = _structs$lrd$_i$node.__cacheTotal,
+          __cache = _structs$lrd$_i$node.__cache,
+          __blurValue = _structs$lrd$_i$node.__blurValue,
+          node = _structs$lrd$_i.node,
+          lv = _structs$lrd$_i.lv,
+          index = _structs$lrd$_i.index,
+          total = _structs$lrd$_i.total,
+          hasMask = _structs$lrd$_i.hasMask; // text一定是叶子节点
 
-        if (node instanceof Text) {
+      if (node instanceof Text) {
+        prevLv = lv;
+
+        if (visibility !== 'hidden') {
+          count++;
+        }
+
+        continue;
+      } // relative/absolute强制开启total
+
+
+      var focus = !node.__limitCache && ((position === 'relative' || position === 'absolute') && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+      || hasMask || __blurValue > 0);
+
+      if (focus) {
+        prevLv = lv;
+        count = 1;
+      } // >是父节点
+      else if (lv < prevLv) {
           prevLv = lv;
 
           if (visibility !== 'hidden') {
             count++;
+          } // 需累加跳链路积累的数字
+
+
+          if (hash.hasOwnProperty(lv)) {
+            count += hash[lv];
+          } // 当>临界值时，进行cacheTotal合并
+
+
+          if (count >= NUM && !node.__limitCache) {
+            count = 1;
+            focus = true;
           }
-
-          continue;
-        } // relative/absolute强制开启total
-
-
-        var focus = !node.__limitCache && ((position === 'relative' || position === 'absolute') && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
-        || hasMask || __blurValue > 0);
-
-        if (focus) {
-          prevLv = lv;
-          count = 1;
-        } // >是父节点
+        } // <是Root的另一条链路，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
         else if (lv > prevLv) {
             prevLv = lv;
 
-            if (visibility !== 'hidden') {
-              count++;
-            } // 需累加跳链路积累的数字
-
-
-            if (hash.hasOwnProperty(lv)) {
-              count += hash[lv];
-            } // 当>临界值时，进行cacheTotal合并
-
-
-            if (count >= NUM && !node.__limitCache) {
-              count = 1;
-              focus = true;
+            if (count) {
+              hash[prevLv - 1] = count;
             }
-          } // <是Root的另一条链路，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
-          else if (lv < prevLv) {
-              prevLv = lv;
 
-              if (count) {
-                hash[prevLv - 1] = count;
-              }
+            count = 0;
+          } // 相等同级继续增加计数
+          else if (visibility !== 'hidden') {
+              count++;
+            }
 
-              count = 0;
-            } // 相等同级继续增加计数
-            else if (visibility !== 'hidden') {
-                count++;
-              }
+      if (focus) {
+        // 有老的直接使用，没有才重新生成
+        if (__cacheTotal && __cacheTotal.available) {
+          continue;
+        }
 
-        if (focus) {
-          // 有老的直接使用，没有才重新生成
-          if (__cacheTotal && __cacheTotal.available) {
-            continue;
-          }
+        __cacheTotal = node.__cacheTotal = genTotal(renderMode, node, lv, index, total, __structs, __cacheTotal, __cache);
 
-          __cacheTotal = node.__cacheTotal = genTotal(renderMode, node, lv, index, total, __structs, __cacheTotal, __cache);
+        if (!__cacheTotal) {
+          continue;
+        }
 
-          if (!__cacheTotal) {
-            continue; // root.cache = false;
-            // return renderCanvas(renderMode, originCtx, defs, root);
-          }
+        if (__blurValue > 0 && !__cacheFilter) {
+          genFilter(node, __cacheTotal && __cacheTotal.available ? __cacheTotal : __cache, __blurValue);
+        }
 
-          if (__blurValue > 0 && !__cacheFilter) {
-            genFilter(node, __cacheTotal && __cacheTotal.available ? __cacheTotal : __cache, __blurValue);
-          }
-
-          if (hasMask && !__cacheMask) {
-            genMask(node, __cacheFilter || (__cacheTotal && __cacheTotal.available ? __cacheTotal : __cache), __cacheFilter);
-          }
+        if (hasMask && !__cacheMask) {
+          genMask(node, __cacheFilter || (__cacheTotal && __cacheTotal.available ? __cacheTotal : __cache), __cacheFilter);
         }
       }
     } // 超尺寸的依旧要走无cache逻辑render
@@ -18763,24 +18727,15 @@
         _node3.render(renderMode, __refreshLevel, ctx, defs);
       } else {
         var _opacity = _node3.__opacity,
-            _matrixEvent = _node3.matrixEvent; // let hasTotal = __cacheMask || __cacheFilter || __cacheTotal && __cacheTotal.available;
-        // if(hasTotal) {
-        //   i += (total || 0);
-        // }
-        // 有total的可以直接绘制并跳过索引
+            _matrixEvent = _node3.matrixEvent; // 有total的可以直接绘制并跳过索引
 
         var target = _cacheMask || _cacheFilter;
 
         if (!target) {
           target = _cacheTotal && _cacheTotal.available ? _cacheTotal : null;
-        } // if(!target) {
-        //   target = __cache && __cache.available ? __cache : null;
-        // }
-
+        }
 
         if (target) {
-          _i3 += _total3 || 0;
-
           if (_hasMask) {
             var j = _i3 + (_total3 || 0) + 1;
 
@@ -18791,6 +18746,7 @@
             _i3 = j - 1;
           }
 
+          _i3 += _total3 || 0;
           Cache.draw(ctx, _opacity, _matrixEvent, target);
         } // 无内容Xom会没有__cache且没有__limitCache
         else {
@@ -18827,6 +18783,8 @@
                 } else {
                   startIndex = endIndex = _j;
                 }
+
+                _j++;
               }
 
               if (startIndex) {
@@ -18992,6 +18950,8 @@
           } else {
             startIndex = endIndex = j;
           }
+
+          j++;
         }
 
         if (startIndex) {
@@ -19069,18 +19029,15 @@
 
         _mask2.draw(ctx);
 
-        ctx.globalCompositeOperation = 'source-over';
-
-        _mask2.ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over'; // mask.ctx.clearRect(0, 0, width, height);
 
         ctx = origin;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(_content2.canvas, 0, 0);
 
-        _content2.draw(ctx);
+        _content2.draw(ctx); // content.ctx.clearRect(0, 0, width, height);
 
-        _content2.ctx.clearRect(0, 0, width, height);
       }
     }
   }

@@ -118,44 +118,20 @@ class Page {
     return { page, pos };
   }
 
-  // static set MAX(v) {
-  //   let n = v;
-  //   while(n > 2) {
-  //     n = n % 2;
-  //   }
-  //   if(n !== 0) {
-  //     console.error('Page max-size must be a multiple of 2');
-  //     return;
-  //   }
-  //   if(v < 8) {
-  //     console.error('Page max-size must >= 8');
-  //     return;
-  //   }
-  //   MAX = v;
-  //   n = 1;
-  //   SIZE = [];
-  //   NUMBER = [];
-  //   while(true) {
-  //     SIZE.unshift(v);
-  //     NUMBER.unshift(n);
-  //     v >>= 1;
-  //     // canvas太大初始化会卡，这里限制8个
-  //     if(n < 8) {
-  //       n <<= 1;
-  //     }
-  //     if(v < 8) {
-  //       break;
-  //     }
-  //   }
-  // }
-
-  static set SIZE(v) {
+  static set CONFIG(v) {
     if(!v || !Array.isArray(v.SIZE) || !Array.isArray(v.NUMBER)) {
       return;
     }
     SIZE = v.SIZE;
     NUMBER = v.NUMBER;
     MAX = SIZE[SIZE.length - 1];
+  }
+
+  static get CONFIG() {
+    return {
+      SIZE,
+      NUMBER,
+    };
   }
 
   static get MAX() {

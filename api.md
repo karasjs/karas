@@ -285,26 +285,6 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 * **说明**  
 当前的动画队列。详见[Animation](#Animation)。
 
-#### availableAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含有效的。无效的定义是类似`pointer-events`这种对渲染无效的css动画。没有动画也是无效。
-
-#### effectiveAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含有影响的。影响的定义是`opacity`、`transform`、`filter`、`visibility`这种对渲染缓存有影响的css动画。没有动画也是无效，包含`availableAnimating`。
-
-#### displayAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含display变化的，且本帧和下一帧有变化。
-
-#### visibilityAnimating
-* **类型** `boolean` 只读
-* **说明**  
-当前的所有动画列表中是否包含visibility变化的，且本帧和下一帧有变化。
-
 #### isShadowRoot
 * **类型** `boolean` 只读
 * **说明**  
@@ -1288,7 +1268,7 @@ karas.render(
 ### 类属性property
 
 #### 代理实现
-tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、innerWidth、innerHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、availableAnimating、effectiveAnimating、displayAnimating、visibilityAnimating、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
+tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、innerWidth、innerHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
 
 <a name="shadow"></a>
 #### shadow
@@ -2040,7 +2020,7 @@ karas.animate.frame.resume();
 
 <a name="refresh包"></a>
 ## refresh包
-刷新工具集，包含`level`，`change`，`Page`、`Cache`4个大类，分别处理刷新等级枚举、变更计算、缓存分页算法、渲染缓存逻辑。此举是面向框架开发维护人员的，普通开发者无需关注。
+刷新工具集，包含`level`，`change`、`Cache`，`Page`4个大类，分别处理刷新等级枚举、变更计算、缓存分页算法、渲染缓存逻辑。此举是面向框架开发维护人员的，普通开发者无需关注。
 
 ### level
 * **说明**  
@@ -2050,14 +2030,45 @@ karas.animate.frame.resume();
 const ENUM = {
   // 低4位表示repaint级别
   NONE: 0, //                                          0
-  TRANSFORM: 1, //                                     1
-  OPACITY: 2, //                                      10
-  FILTER: 4, //                                      100
-  VISIBILITY: 8, //                                 1000
-  REPAINT: 16, //                                   10000
+  TRANSLATE_X: 1, //                                   1
+  TRANSLATE_Y: 2, //                                  10
+  TRANSFORM: 4, //                                   100
+  TRANSFORM_ALL: 7, //                               111
+  OPACITY: 8, //                                    1000
+  FILTER: 16, //                                   10000
+  REPAINT: 32, //                                 100000
 
   // 高位表示reflow
-  REFLOW: 32, // 整体需要重排                        10000
+  REFLOW: 64, //                                 1000000
+};
+```
+
+### Cache
+* **说明**  
+canvas的位图缓存功能实现，可以调整多少个节点进行一次局部聚类缓存。它相当于将一颗子树视为一个整体进行位图缓存。
+
+#### NUM
+* **类型** `Number` 读写
+* **说明**  
+读取/设置多少个节点进行局部缓存。默认5。
+* **示例**
+```jsx
+karas.refresh.Cache.NUM = 5;
+```
+
+### Page
+* **说明**  
+canvas的位图缓存分页功能实现，若干个离屏canvas共用一份，类似内存管理。
+
+#### CONFIG
+* **类型** Object 读写
+* **说明**  
+读取/设置一个正方形尺寸和相对的数量。比如8和8，指8*8像素的正方形，一共8*8=64个放在一个离屏canvas上。注意浏览器有最大尺寸限制，以及大尺寸canvas性能会降低。默认见下面示例。
+* **示例**
+```jsx
+karas.refresh.Page.CONFIG = {
+  SIZE:   [8, 16, 32, 64, 128, 256, 512, 1024, 2048],
+  NUMBER: [8,  8,  8,  8,   8,   4,   2,    1,    1],
 };
 ```
 

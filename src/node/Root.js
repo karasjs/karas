@@ -368,8 +368,8 @@ class Root extends Dom {
     this.__dom = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
-    this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
-    this.__scy = 1;
+    // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+    // this.__scy = 1;
     this.__task = [];
     this.__ref = {};
     this.__updateList = [];
@@ -415,18 +415,24 @@ class Root extends Dom {
     // 触摸结束取消特殊没有touches
     if(['touchend', 'touchcancel'].indexOf(e.type) === -1) {
       let { dom, __scx, __scy } = this;
-      let { x: x2, y: y2, left, top } = dom.getBoundingClientRect();
+      let { x: x2, y: y2, left, top, width, height } = dom.getBoundingClientRect();
       x = x2 || left || 0;
       y = y2 || top || 0;
-      let { pageX, pageY } = e.touches ? e.touches[0] : e;
-      x = pageX - x;
-      y = pageY - y;
-      // 外边的scale影响元素事件响应，根据倍数计算真实的坐标
-      if(__scx !== 1) {
+      let { clientX, clientY } = e.touches ? e.touches[0] : e;
+      x = clientX - x;
+      y = clientY - y;
+      // 外边的scale影响元素事件响应，根据倍数计算真实的坐标，优先手动指定，否则自动计算
+      if(!isNil(__scx)) {
         x /= __scx;
       }
-      if(__scy !== 1) {
+      else {
+        x /= width / this.width;
+      }
+      if(!isNil(__scy)) {
         y /= __scy;
+      }
+      else {
+        y /= height / this.height;
       }
     }
     return {

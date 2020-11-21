@@ -134,6 +134,9 @@ class Cache {
   }
 
   static NUM = 5;
+  static get MAX() {
+    return Page.MAX - 2;
+  }
 
   static getInstance(bbox) {
     if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
@@ -287,32 +290,11 @@ class Cache {
     return cacheMask;
   }
 
-  static mergeTotal(cacheTotal, __structs, index) {
-    let ctx = cacheTotal.ctx;
-    // 以top为基准matrix/opacity
-    if(ctx.globalAlpha !== 1) {
-      ctx.globalAlpha = 1;
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // 先应用节点本身内容__cache
-    let { node: { __cache }, lv, total } = __structs[index];
-    if(__cache && __cache.__available) {
-      Cache.drawCache(__cache, cacheTotal);
-    }
-    // 先序遍历所有子节点，遇到有__cacheTotal的可以跳过其子节点
-    let opacityHash = {};
-    let matrixHash = {};
-    let lastMatrix;
-    for(let i = index + 1; i < total; i++) {
-      let { node, node: { __cacheTotal, __cache }, lv: lv2, total: total2 } = __structs[i];
-      if(__cacheTotal && __cacheTotal.__available) {
-        Cache.drawCache(__cacheTotal, cacheTotal);
-        i += total;
-      }
-      else if(__cache && __cache.__available) {
-        Cache.drawCache(__cache, cacheTotal);
-      }
-    }
+  static draw(ctx, opacity, matrix, cache) {
+    ctx.globalAlpha = opacity;
+    ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+    let { coords: [x, y], canvas, sx1, sy1, dbx, dby, width, height } = cache;
+    ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
   }
 }
 

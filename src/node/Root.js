@@ -202,7 +202,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     lv |= focus;
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
-  if(lv === level.NONE && !img && !component) {
+  if(lv === level.NONE && !component) {
     delete node.__uniqueUpdateId;
     return;
   }
@@ -368,7 +368,7 @@ class Root extends Dom {
     this.__dom = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
-    // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+    // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__task = [];
     this.__ref = {};
@@ -426,13 +426,13 @@ class Root extends Dom {
         x /= __scx;
       }
       else {
-        x /= width / this.width;
+        x *= this.width / width;
       }
       if(!isNil(__scy)) {
         y /= __scy;
       }
       else {
-        y /= height / this.height;
+        y *= this.height / height;
       }
     }
     return {

@@ -101,7 +101,7 @@ class Img extends Dom {
   render(renderMode, lv, ctx, defs, cache) {
     let res = super.render(renderMode, lv, ctx, defs, cache);
     let {
-      sx: x, sy: y, width, height, isDestroyed,
+      width, height, isDestroyed,
       props: {
         src,
       },
@@ -132,15 +132,11 @@ class Img extends Dom {
     if(renderMode === mode.CANVAS) {
       this.__cacheTotal = __cache;
     }
-    if(__cache && __cache.enabled) {
+    if(cache && __cache && __cache.enabled) {
       ctx = __cache.ctx;
-      originX = res.x2 + paddingLeft;
-      originY = res.y2 + paddingTop;
     }
-    else {
-      originX = x + marginLeft + borderLeftWidth + paddingLeft;
-      originY = y + marginTop + borderTopWidth + paddingTop;
-    }
+    originX = res.x2 + paddingLeft;
+    originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
     if(loadImg.error) {
       let strokeWidth = Math.min(width, height) * 0.02;
@@ -337,7 +333,6 @@ class Img extends Dom {
                 root.__addUpdate({
                   node: self,
                   focus: level.REPAINT,
-                  img: true,
                 });
               },
             });
@@ -366,6 +361,7 @@ class Img extends Dom {
     return res;
   }
 
+  // img没加载时，清空，加载了或错误时，也返回true，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
   __releaseWhenEmpty(__cache) {
     if(!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
       return super.__releaseWhenEmpty(__cache);

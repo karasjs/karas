@@ -731,6 +731,7 @@ class Xom extends Node {
     this.__refreshLevel = level.REFLOW;
     this.__cancelCache();
     this.__layoutData = clone(data);
+    this.__limitCache = false;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__innerWidth = this.__innerHeight
@@ -1295,14 +1296,17 @@ class Xom extends Node {
       if(lv < level.REPAINT) {
         return this.__hasContent;
       }
-      let backgroundImage = __cacheStyle.backgroundImage;
+      let backgroundImage = computedStyle.backgroundImage;
       if(backgroundImage) {
-        return true;
+        if(backgroundImage.k) {
+          return true;
+        }
+        let loadBgi = this.__loadBgi;
+        if(backgroundImage === loadBgi.url && loadBgi.source) {
+          return true;
+        }
       }
       if(computedStyle.backgroundColor[3] > 0) {
-        return true;
-      }
-      else if(backgroundImage && backgroundImage.k) {
         return true;
       }
       for(let list = ['borderTop', 'borderRight', 'borderBottom', 'borderLeft'], i = 0, len = list.length; i < len; i++) {
@@ -1497,15 +1501,14 @@ class Xom extends Node {
     // canvas特殊申请离屏缓存
     let dx = 0, dy = 0;
     if(cache && renderMode === mode.CANVAS) {
-      // 置空防止原型链查找性能
-      this.__cache = this.__cacheTotal = this.__cacheFilter = this.__cacheMask = null;
-      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断
+      // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
         res.break = true;
+        this.__limitCache = false;
         return res;
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      if((!__cache || !__cache.available)) {
+      if(!this.__limitCache && (!__cache || !__cache.available)) {
         let bbox = this.bbox;
         if(__cache) {
           __cache.reset(bbox);
@@ -1537,15 +1540,14 @@ class Xom extends Node {
             res.y4 = y4 += dy;
           }
         }
-        // 更新后可能超了需释放
-        else if(this.__cache) {
-          this.__cache.release();
+        else {
+          this.__limitCache = true;
           __cache = this.__cache = null;
         }
       }
       // 无离屏功能视为不可缓存本身
-      if(!__cache || !__cache.enabled) {
-        return { cacheError: true };
+      if(this.__limitCache) {
+        return { limitCache: true };
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
@@ -2207,6 +2209,9 @@ class Xom extends Node {
     this.__innerWidth += diff;
     this.__outerWidth += diff;
     this.layoutData.w += diff;
+    if(diff < 0) {
+      this.__limitCache = false;
+    }
   }
 
   __resizeY(diff) {
@@ -2214,6 +2219,9 @@ class Xom extends Node {
     this.__innerHeight += diff;
     this.__outerHeight += diff;
     this.layoutData.h += diff;
+    if(diff < 0) {
+      this.__limitCache = false;
+    }
   }
 
   __spreadByBoxShadowAndFilter(boxShadow, filter) {

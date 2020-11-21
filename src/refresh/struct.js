@@ -413,81 +413,83 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
    * 过程中向上和平向可累计次数，另一条链路归零重新统计，mask改变一定会包含sibling的target
    * 无需判断display:none和visibility:hidden，前者已经被过滤，后者可能是total
    */
-  const NUM = Math.max(1, Cache.NUM);
-  let prevLv = __structs[lrd[0]].lv, count = 0, hash = {};
-  for(let i = 0, len = lrd.length - 1; i < len; i++) {
-    let {
-      node: {
-        computedStyle: { position, visibility },
-        __cacheFilter, __cacheMask, __cacheTotal, __cache, __blurValue,
-      },
-      node, lv, index, total, hasMask,
-    } = __structs[lrd[i]];
-    // text一定是叶子节点
-    if(node instanceof Text) {
-      prevLv = lv;
-      if(visibility !== 'hidden') {
-        count++;
+  if(lrd.length) {
+    const NUM = Math.max(1, Cache.NUM);
+    let prevLv = __structs[lrd[0]].lv, count = 0, hash = {};
+    for(let i = 0, len = lrd.length - 1; i < len; i++) {
+      let {
+        node: {
+          computedStyle: { position, visibility },
+          __cacheFilter, __cacheMask, __cacheTotal, __cache, __blurValue,
+        },
+        node, lv, index, total, hasMask,
+      } = __structs[lrd[i]];
+      // text一定是叶子节点
+      if(node instanceof Text) {
+        prevLv = lv;
+        if(visibility !== 'hidden') {
+          count++;
+        }
+        continue;
       }
-      continue;
-    }
-    // relative/absolute强制开启total
-    let focus = !node.__limitCache
-      && (
-        (
-          (position === 'relative' || position === 'absolute')
-          && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
-        ) || hasMask || __blurValue > 0);
-    if(focus) {
-      prevLv = lv;
-      count = 1;
-    }
-    // >是父节点
-    else if(lv < prevLv) {
-      prevLv = lv;
-      if(visibility !== 'hidden') {
-        count++;
-      }
-      // 需累加跳链路积累的数字
-      if(hash.hasOwnProperty(lv)) {
-        count += hash[lv];
-      }
-      // 当>临界值时，进行cacheTotal合并
-      if(count >= NUM && !node.__limitCache) {
+      // relative/absolute强制开启total
+      let focus = !node.__limitCache
+        && (
+          (
+            (position === 'relative' || position === 'absolute')
+            && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+          ) || hasMask || __blurValue > 0);
+      if(focus) {
+        prevLv = lv;
         count = 1;
-        focus = true;
       }
-    }
-    // <是Root的另一条链路，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
-    else if(lv > prevLv) {
-      prevLv = lv;
-      if(count) {
-        hash[prevLv - 1] = count;
+      // >是父节点
+      else if(lv < prevLv) {
+        prevLv = lv;
+        if(visibility !== 'hidden') {
+          count++;
+        }
+        // 需累加跳链路积累的数字
+        if(hash.hasOwnProperty(lv)) {
+          count += hash[lv];
+        }
+        // 当>临界值时，进行cacheTotal合并
+        if(count >= NUM && !node.__limitCache) {
+          count = 1;
+          focus = true;
+        }
       }
-      count = 0;
-    }
-    // 相等同级继续增加计数
-    else if(visibility !== 'hidden') {
-      count++;
-    }
-    if(focus) {
-      // 有老的直接使用，没有才重新生成
-      if(__cacheTotal && __cacheTotal.available) {
-        continue;
+      // <是Root的另一条链路，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
+      else if(lv > prevLv) {
+        prevLv = lv;
+        if(count) {
+          hash[prevLv - 1] = count;
+        }
+        count = 0;
       }
-      __cacheTotal = node.__cacheTotal
-        = genTotal(renderMode, node, lv, index, total, __structs, __cacheTotal, __cache);
-      if(!__cacheTotal) {
-        continue;
+      // 相等同级继续增加计数
+      else if(visibility !== 'hidden') {
+        count++;
       }
-      if(__blurValue > 0 && !__cacheFilter) {
-        genFilter(node, __cacheTotal && __cacheTotal.available
-          ? __cacheTotal : __cache, __blurValue);
-      }
-      if(hasMask && !__cacheMask) {
-        genMask(node, __cacheFilter
-          || (__cacheTotal && __cacheTotal.available
-            ? __cacheTotal : __cache), __cacheFilter);
+      if(focus) {
+        // 有老的直接使用，没有才重新生成
+        if(__cacheTotal && __cacheTotal.available) {
+          continue;
+        }
+        __cacheTotal = node.__cacheTotal
+          = genTotal(renderMode, node, lv, index, total, __structs, __cacheTotal, __cache);
+        if(!__cacheTotal) {
+          continue;
+        }
+        if(__blurValue > 0 && !__cacheFilter) {
+          genFilter(node, __cacheTotal && __cacheTotal.available
+            ? __cacheTotal : __cache, __blurValue);
+        }
+        if(hasMask && !__cacheMask) {
+          genMask(node, __cacheFilter
+            || (__cacheTotal && __cacheTotal.available
+              ? __cacheTotal : __cache), __cacheFilter);
+        }
       }
     }
   }
@@ -753,13 +755,13 @@ function renderCanvas(renderMode, ctx, defs, root) {
       ctx.drawImage(mask.canvas, 0, 0);
       mask.draw(ctx);
       ctx.globalCompositeOperation = 'source-over';
-      // mask.ctx.clearRect(0, 0, width, height);
+      mask.ctx.clearRect(0, 0, width, height);
       ctx = origin;
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(content.canvas, 0, 0);
       content.draw(ctx);
-      // content.ctx.clearRect(0, 0, width, height);
+      content.ctx.clearRect(0, 0, width, height);
     }
   }
 }

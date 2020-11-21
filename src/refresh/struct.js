@@ -443,8 +443,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       }
       // relative/absolute强制开启total
       let focus = !node.__limitCache
-        && (position === 'relative' || position === 'absolute' || hasMask || __blurValue > 0)
-        && (node.__hasContent && count || count > 1); // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+        && (
+          (
+            (position === 'relative' || position === 'absolute')
+            && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+          ) || hasMask || __blurValue > 0);
       if(focus) {
         prevLv = lv;
         count = 1;

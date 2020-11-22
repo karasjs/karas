@@ -450,9 +450,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           count++;
         }
         // 需累加跳链路积累的数字
-        if(hash.hasOwnProperty(lv)) {
-          count += hash[lv];
-        }
+        count += hash[lv] || 0;
+        hash[lv] = 0;
         // 当>临界值时，进行cacheTotal合并
         if(count >= NUM && !node.__limitCache) {
           count = 1;

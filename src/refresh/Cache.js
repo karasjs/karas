@@ -35,15 +35,15 @@ class Cache {
     }
   }
 
-  __appendData(x1, y1) {
-    this.x1 = x1; // padding原点坐标
-    this.y1 = y1;
+  __appendData(sx1, sy1) {
+    this.sx1 = sx1; // padding原点坐标
+    this.sy1 = sy1;
     let [xc, yc] = this.coords;
     let bbox = this.bbox;
     this.dx = xc - bbox[0]; // cache坐标和box原点的差值
     this.dy = yc - bbox[1];
-    this.dbx = x1 - bbox[0];
-    this.dby = y1 - bbox[1];
+    this.dbx = sx1 - bbox[0]; // 原始x1/y1和box原点的差值
+    this.dby = sy1 - bbox[1];
   }
 
   clear() {
@@ -133,7 +133,15 @@ class Cache {
     return this.__coords;
   }
 
+  static NUM = 5;
+  static get MAX() {
+    return Page.MAX - 2;
+  }
+
   static getInstance(bbox) {
+    if(isNaN(bbox[0]) || isNaN(bbox[1]) || isNaN(bbox[2]) || isNaN(bbox[3])) {
+      return;
+    }
     let w = Math.ceil(bbox[2] - bbox[0]);
     let h = Math.ceil(bbox[3] - bbox[1]);
     w += 2;
@@ -148,12 +156,12 @@ class Cache {
   }
 
   static genMask(cache) {
-    let { size, x1, y1, width, height } = cache;
+    let { size, sx1, sy1, width, height } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.coords = [1, 1];
     offScreen.size = size;
-    offScreen.x1 = x1;
-    offScreen.y1 = y1;
+    offScreen.sx1 = sx1;
+    offScreen.sy1 = sy1;
     offScreen.dbx = cache.dbx;
     offScreen.dby = cache.dby;
     offScreen.width = width;
@@ -168,7 +176,7 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genOffScreenBlur(cache, v) {
-    let { coords: [x, y], size, canvas, x1, y1, width, height } = cache;
+    let { coords: [x, y], size, canvas, sx1, sy1, width, height } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
@@ -176,8 +184,8 @@ class Cache {
     blur.gaussBlur(offScreen, cacheFilter, v, width, height);
     cacheFilter.coords = [1, 1];
     cacheFilter.size = size;
-    cacheFilter.x1 = x1;
-    cacheFilter.y1 = y1;
+    cacheFilter.sx1 = sx1;
+    cacheFilter.sy1 = sy1;
     cacheFilter.dbx = cache.dbx;
     cacheFilter.dby = cache.dby;
     cacheFilter.width = width;
@@ -199,8 +207,8 @@ class Cache {
       if(newCache && newCache.enabled) {
         let { coords: [ox, oy], canvas, width, height } = cache;
         let { coords: [nx, ny] } = newCache;
-        newCache.x1 = cache.x1;
-        newCache.y1 = cache.y1;
+        newCache.sx1 = cache.sx1;
+        newCache.sy1 = cache.sy1;
         newCache.dx = cache.dx + dx;
         newCache.dy = cache.dy + dy;
         newCache.dbx = cache.dbx + dx;
@@ -217,10 +225,10 @@ class Cache {
   }
 
   static drawCache(source, target, transform, matrix, tfo, inverse) {
-    let { coords: [tx, ty], x1, y1, ctx, dbx, dby } = target;
-    let { coords: [x, y], canvas, x1: x12, y1: y12, dbx: dbx2, dby: dby2, width, height } = source;
-    let dx = tx + x12 - x1 + dbx - dbx2;
-    let dy = ty + y12 - y1 + dby - dby2;
+    let { coords: [tx, ty], sx1, sy1, ctx, dbx, dby } = target;
+    let { coords: [x, y], canvas, sx1: sx2, sy1: sy2, dbx: dbx2, dby: dby2, width, height } = source;
+    let dx = tx + sx2 - sx1 + dbx - dbx2;
+    let dy = ty + sy2 - sy1 + dby - dby2;
     if(transform && matrix && tfo) {
       tfo[0] += dx;
       tfo[1] += dy;
@@ -236,7 +244,7 @@ class Cache {
           matrix = mx.multiply(matrix, inverse);
         }
       }
-      ctx.setTransform(...matrix);
+      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
   }
@@ -244,7 +252,7 @@ class Cache {
   static drawMask(target, next, transform, tfo) {
     let cacheMask = Cache.genMask(target);
     let list = [];
-    while(next && (next.isMask || next.isClip)) {
+    while(next && (next.isMask)) {
       list.push(next);
       next = next.next;
     }
@@ -280,6 +288,13 @@ class Cache {
     ctx.globalCompositeOperation = 'source-over';
     cacheMask.draw(ctx);
     return cacheMask;
+  }
+
+  static draw(ctx, opacity, matrix, cache) {
+    ctx.globalAlpha = opacity;
+    ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+    let { coords: [x, y], canvas, sx1, sy1, dbx, dby, width, height } = cache;
+    ctx.drawImage(canvas, x - 1, y - 1, width, height, sx1 - 1 - dbx, sy1 - 1 - dby, width, height);
   }
 }
 

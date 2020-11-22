@@ -1,4 +1,7 @@
-karas.refresh.Page.MAX = 256;
+karas.refresh.Page.CONFIG = {
+  SIZE: [8, 16, 32, 64, 128, 256],
+  NUMBER: [8,  8,  8,  8,   8,   4],
+};
 
 let json = {
   tagName: 'canvas',

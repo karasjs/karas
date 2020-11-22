@@ -98,10 +98,10 @@ class Img extends Dom {
     super.__destroy();
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
     let {
-      sx: x, sy: y, width, height, isDestroyed, root,
+      width, height, isDestroyed,
       props: {
         src,
       },
@@ -129,18 +129,14 @@ class Img extends Dom {
     }
     let originX, originY;
     // img无children所以total就是cache避免多余生成
-    if(renderMode === mode.CANVAS && root.cache) {
+    if(renderMode === mode.CANVAS) {
       this.__cacheTotal = __cache;
     }
-    if(__cache && __cache.enabled) {
+    if(cache && __cache && __cache.enabled) {
       ctx = __cache.ctx;
-      originX = res.x2 + paddingLeft;
-      originY = res.y2 + paddingTop;
     }
-    else {
-      originX = x + marginLeft + borderLeftWidth + paddingLeft;
-      originY = y + marginTop + borderTopWidth + paddingTop;
-    }
+    originX = res.x2 + paddingLeft;
+    originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
     if(loadImg.error) {
       let strokeWidth = Math.min(width, height) * 0.02;
@@ -329,7 +325,7 @@ class Img extends Dom {
           root.delRefreshTask(self.__task);
           if(width.unit !== AUTO && height.unit !== AUTO) {
             root.addRefreshTask(self.__task = {
-              before() {
+              __before() {
                 if(self.isDestroyed) {
                   return;
                 }
@@ -337,14 +333,13 @@ class Img extends Dom {
                 root.__addUpdate({
                   node: self,
                   focus: level.REPAINT,
-                  img: true,
                 });
               },
             });
           }
           else {
             root.addRefreshTask(self.__task = {
-              before() {
+              __before() {
                 if(self.isDestroyed) {
                   return;
                 }
@@ -363,22 +358,14 @@ class Img extends Dom {
         height,
       });
     }
-    if(res.canCacheSelf && root.cache) {
-      this.__applyCache(renderMode, lv, ctx, refreshMode.TOP);
-      if(res.hasMC) {
-        let cacheTotal = this.__cacheTotal;
-        if(cacheTotal && cacheTotal.available) {
-          let { transform, transformOrigin } = this.computedStyle;
-          let next = this.next;
-          this.__cacheMask = Cache.drawMask(cacheTotal, next, transform, transformOrigin.slice(0));
-        }
-        // 极端情况超限异常
-        else {
-          console.error('CacheTotal is oversize with img\'s mask');
-        }
-      }
-    }
     return res;
+  }
+
+  // img没加载时，清空，加载了或错误时，也返回true，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
+  __releaseWhenEmpty(__cache) {
+    if(!this.__loadImg.error && !this.__loadImg.source && this.__loadImg.url !== this.props.src) {
+      return super.__releaseWhenEmpty(__cache);
+    }
   }
 
   get baseLine() {

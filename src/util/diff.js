@@ -129,7 +129,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, visibility, mask, clip, filter, conClip } = nvd;
+  let { transform, opacity, visibility, mask, filter, conClip } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -156,20 +156,6 @@ function diffX2X(elem, ovd, nvd) {
     else {
       elem.removeAttribute('mask');
     }
-    if(ovd.clip) {
-      elem.removeAttribute('clip-path');
-    }
-  }
-  if(ovd.clip !== clip) {
-    if(clip) {
-      elem.setAttribute('clip-path', clip);
-    }
-    else {
-      elem.removeAttribute('clip-path');
-    }
-    if(ovd.mask) {
-      elem.removeAttribute('mask');
-    }
   }
   if(ovd.filter !== filter) {
     if(filter) {
@@ -193,7 +179,7 @@ function diffByLessLv(elem, ovd, nvd, lv) {
   if(lv === level.NONE) {
     return;
   }
-  let { transform, opacity, visibility, mask, clip, filter } = nvd;
+  let { transform, opacity, mask, filter } = nvd;
   if(level.contain(lv, level.TRANSLATE_X | level.TRANSLATE_Y | level.TRANSFORM)) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -210,9 +196,6 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('opacity');
     }
   }
-  if(level.contain(lv, level.VISIBILITY)) {
-    elem.setAttribute('visibility', visibility);
-  }
   if(level.contain(lv, level.FILTER)) {
     if(filter) {
       elem.setAttribute('filter', filter);
@@ -226,15 +209,6 @@ function diffByLessLv(elem, ovd, nvd, lv) {
   }
   else {
     elem.removeAttribute('mask');
-  }
-  if(ovd.clip) {
-    elem.removeAttribute('clip-path');
-  }
-  if(clip) {
-    elem.setAttribute('clip-path', clip);
-  }
-  else {
-    elem.removeAttribute('clip-path');
   }
   if(ovd.mask) {
     elem.removeAttribute('mask');

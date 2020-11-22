@@ -8,8 +8,6 @@ let o = karas.render(
         style={{position:'absolute',left:0,top:0,width:'100%',height:'100%',background:'#F00'}}>123</div>
       <$polygon
         mask="true"
-        rx={0.1}
-        ry={0.1}
         points={[
           [0, 0],
           [1, 1],

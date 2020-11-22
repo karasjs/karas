@@ -154,10 +154,15 @@ function inverse(m) {
   return [ar, br, cr, dr, er, fr];
 }
 
+function isE(m) {
+  return m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1 && m[4] === 0 && m[5] === 0;
+}
+
 export default {
   identity,
   multiply,
   calPoint,
   int2convolution,
   inverse,
+  isE,
 };

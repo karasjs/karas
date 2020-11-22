@@ -3,22 +3,15 @@ import util from '../util/util';
 
 const { isFunction } = util;
 
-function traversal(list, diff, step) {
-  if(step === 'before') {
+function traversal(list, diff, after) {
+  if(after) {
     list.forEach(item => {
-      if(item && isFunction(item.before)) {
-        item.before(diff);
-      }
+      item.__after && item.__after(diff);
     });
   }
-  else if(step === 'after') {
+  else {
     list.forEach(item => {
-      if(item && isFunction(item.after)) {
-        item.after(diff);
-      }
-      else if(isFunction(item)) {
-        item(diff);
-      }
+      item.__before && item.__before(diff);
     });
   }
 }
@@ -29,20 +22,19 @@ class Frame {
   constructor() {
     this.__hookTask = []; // 动画刷新后，每个root注册的刷新回调执行
     this.__task = [];
-    this.__taskBF = [];
     this.__now = null;
   }
 
   __init() {
     let self = this;
-    let { task, taskBF } = self;
+    let { task } = self;
     inject.cancelAnimationFrame(self.id);
     let last = self.__now = inject.now();
     function cb() {
       // 必须清除，可能会发生重复，当动画finish回调中gotoAndPlay(0)，下方结束判断发现aTask还有值会继续，新的init也会进入再次执行
       inject.cancelAnimationFrame(self.id);
       self.id = inject.requestAnimationFrame(function() {
-        if(isPause || !task.length && !taskBF.length) {
+        if(isPause || !task.length) {
           return;
         }
         let now = self.__now = inject.now();
@@ -51,21 +43,14 @@ class Frame {
         // let delta = diff * 0.06; // 比例是除以1/60s，等同于*0.06
         last = now;
         // 优先动画计算
-        let cloneBF = taskBF.slice(0);
         let clone = task.slice(0);
-        cloneBF.forEach(item => {
-          item.before(diff);
-        });
-        traversal(clone, diff, 'before');
+        traversal(clone, diff);
         // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
         self.__hookTask.splice(0).forEach(item => item());
-        // 普通的after
-        cloneBF.forEach(item => {
-          item.after(diff);
-        });
-        traversal(clone, diff, 'after');
+        // 普通的before/after
+        traversal(clone, diff, true);
         // 还有则继续，没有则停止节省性能
-        if(task.length || taskBF.length) {
+        if(task.length) {
           cb();
         }
       });
@@ -77,26 +62,24 @@ class Frame {
     if(!handle) {
       return;
     }
-    let { task, taskBF } = this;
-    if(!task.length && !taskBF.length) {
+    let { task } = this;
+    if(!task.length) {
       this.__init();
+    }
+    if(isFunction(handle)) {
+      handle = {
+        __after: handle,
+        __karasFramecb: handle,
+      };
     }
     task.push(handle);
-  }
-
-  __onFrameBF(animate) {
-    let { task, taskBF } = this;
-    if(!task.length && !taskBF.length) {
-      this.__init();
-    }
-    taskBF.push(animate);
   }
 
   offFrame(handle) {
     if(!handle) {
       return;
     }
-    let { task, taskBF } = this;
+    let { task } = this;
     for(let i = 0, len = task.length; i < len; i++) {
       let item = task[i];
       // 需考虑nextFrame包裹的引用对比
@@ -105,23 +88,7 @@ class Frame {
         break;
       }
     }
-    if(!task.length && !taskBF.length) {
-      inject.cancelAnimationFrame(this.id);
-      this.__now = null;
-    }
-  }
-
-  __offFrameBF(animate) {
-    let { task, taskBF } = this;
-    for(let i = 0, len = taskBF.length; i < len; i++) {
-      let item = taskBF[i];
-      // 需考虑nextFrame包裹的引用对比
-      if(item === animate) {
-        animate.splice(i, 1);
-        break;
-      }
-    }
-    if(!task.length && !taskBF.length) {
+    if(!task.length) {
       inject.cancelAnimationFrame(this.id);
       this.__now = null;
     }
@@ -132,13 +99,15 @@ class Frame {
       return;
     }
     // 包裹一层会导致添加后删除对比引用删不掉，需保存原有引用进行对比
-    let cb = isFunction(handle) ? diff => {
-      handle(diff);
-      this.offFrame(cb);
+    let cb = isFunction(handle) ? {
+      __after: diff => {
+        handle(diff);
+        this.offFrame(cb);
+      },
     } : {
-      before: handle.before,
-      after: diff => {
-        handle.after && handle.after(diff);
+      __before: handle.__before,
+      __after: diff => {
+        handle.__after && handle.__after(diff);
         this.offFrame(cb);
       },
     };
@@ -159,10 +128,6 @@ class Frame {
 
   get task() {
     return this.__task;
-  }
-
-  get taskBF() {
-    return this.__taskBF;
   }
 }
 

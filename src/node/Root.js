@@ -7,7 +7,7 @@ import Geom from '../geom/Geom';
 import builder from '../util/builder';
 import updater from '../util/updater';
 import util from '../util/util';
-import diff from '../util/diff';
+import domDiff from '../util/diff';
 import css from '../style/css';
 import unit from '../style/unit';
 import inject from '../util/inject';
@@ -16,6 +16,7 @@ import frame from '../animate/frame';
 import Controller from '../animate/Controller';
 import change from '../refresh/change';
 import level from '../refresh/level';
+import struct from '../refresh/struct';
 
 const { isNil, isObject, isFunction } = util;
 const { AUTO, PX, PERCENT } = unit;
@@ -101,6 +102,9 @@ function addLAYOUT(node, hash, component) {
 let uniqueUpdateId = 0;
 function parseUpdate(renderMode, root, updateHash, target, reflowList, measureList, cacheHash, cacheList, zHash, zList) {
   let { node, style, origin, overwrite, focus, img, component, measure, list } = target;
+  if(node.isDestroyed) {
+    return;
+  }
   // updateStyle()这样的调用还要计算normalize
   if(origin && style) {
     style = css.normalize(style);
@@ -109,8 +113,9 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   if(overwrite && style) {
     Object.assign(node.__style, style);
   }
+  // updateStyle()格式化后重新赋值回去
   if(style && style !== target.style) {
-    Object.assign(target.style, style);
+    target.style = style;
   }
   // 多次调用更新才会有list，一般没有，优化
   if(list) {
@@ -129,11 +134,11 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
   }
   style = target.style;
   // 按节点合并完style后判断改变等级
-  let { tagName, currentStyle, currentProps, __cacheStyle = {}, __cacheProps = {} } = node;
+  let { tagName, currentStyle, currentProps, __cacheStyle, __cacheProps } = node;
   let lv = level.NONE;
   let p;
   let hasMeasure = measure;
-  let hasZ;
+  let hasZ, hasVisibility, hasColor;
   // component无需遍历
   if(!component) {
     for(let k in style) {
@@ -159,8 +164,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
             else {
               // TRBL变化只对relative/absolute起作用，其它忽视
               if({ top: true, right: true, bottom: true, left: true }.hasOwnProperty(k)) {
-                if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute'
-                  && style.position !== 'relative' && style.position !== 'absolute') {
+                if(currentStyle.position !== 'relative' && currentStyle.position !== 'absolute') {
                   delete style[k];
                   continue;
                 }
@@ -173,9 +177,15 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
               // repaint置空，如果reflow会重新生成空的
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
-            }
-            if(k === 'zIndex' && node !== root) {
-              hasZ = true;
+              if(k === 'zIndex' && node !== root) {
+                hasZ = true;
+              }
+              if(k === 'visibility') {
+                hasVisibility = true;
+              }
+              if(k === 'color') {
+                hasColor = true;
+              }
             }
           }
         }
@@ -192,13 +202,55 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
     lv |= focus;
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
-  if(lv === level.NONE && !img && !component) {
+  if(lv === level.NONE && !component) {
     delete node.__uniqueUpdateId;
     return;
   }
   // 记录下来清除parent的zIndexChildren缓存
   if(hasZ) {
     delete node.domParent.__zIndexChildren;
+  }
+  // visibility/color变化，影响子继承
+  if(hasVisibility || hasColor) {
+    for(let __structs = root.__structs, __struct = node.__struct, i = __struct.index + 1, len = i + __struct.total; i < len; i++) {
+      let { node, node: { currentStyle }, total } = __structs[i];
+      let need;
+      // text的style指向parent，因此text一定变更
+      if(hasVisibility && (node instanceof Text || currentStyle.visibility.unit === unit.INHERIT)) {
+        need = true;
+      }
+      if(hasColor && (node instanceof Text || currentStyle.color.unit === unit.INHERIT)) {
+        need = true;
+      }
+      if(need) {
+        node.__refreshLevel |= level.REPAINT;
+        if(node.__cache) {
+          node.__cache.release();
+        }
+        if(node.__cacheTotal) {
+          node.__cacheTotal.release();
+        }
+        if(node.__cacheMask) {
+          node.__cacheMask = null;
+        }
+        if(node.__cacheFilter) {
+          node.__cacheFilter = null;
+        }
+      }
+      else {
+        i += total || 0;
+      }
+    }
+  }
+  // mask需清除遮罩对象的缓存
+  if(node.isMask) {
+    let prev = node.prev;
+    while(prev && (prev.isMask)) {
+      prev = prev.prev;
+    }
+    if(prev && prev.__cacheMask) {
+      prev.__cacheMask = null;
+    }
   }
   // reflow/repaint/measure相关的记录下来
   let isRepaint = !component && level.isRepaint(lv);
@@ -316,7 +368,7 @@ class Root extends Dom {
     this.__dom = null; // 真实DOM引用
     this.__mw = 0; // 记录最大宽高，防止尺寸变化清除不完全
     this.__mh = 0;
-    // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标
+    // this.__scx = 1; // 默认缩放，css改变canvas/svg缩放后影响事件坐标，有值手动指定，否则自动计算
     // this.__scy = 1;
     this.__task = [];
     this.__ref = {};
@@ -374,13 +426,13 @@ class Root extends Dom {
         x /= __scx;
       }
       else {
-        x /= width / this.width;
+        x *= this.width / width;
       }
       if(!isNil(__scy)) {
         y /= __scy;
       }
       else {
-        y /= height / this.height;
+        y *= this.height / height;
       }
     }
     return {
@@ -492,21 +544,23 @@ class Root extends Dom {
       this.__checkReflow(width, height);
       if(renderMode === mode.CANVAS) {
         this.__clear(ctx);
+        // 利用list循环代替tree递归快速渲染
+        if(this.cache) {
+          struct.renderCacheCanvas(renderMode, ctx, defs, this);
+        }
+        else {
+          struct.renderCanvas(renderMode, ctx, defs, this);
+        }
       }
-      this.render(renderMode, this.__refreshLevel, ctx, defs);
-      // 利用list循环代替tree递归快速渲染
-      // let cache = this.cache;
-      // this.__structs.forEach(struct => {
-      //   console.log(struct);
-      //   let { node, index, childIndex, lv, num, total } = struct;
-      //   node.render2(renderMode, node.__refreshLevel, ctx, defs, cache);
-      // });
       // svg的特殊diff需要
-      if(renderMode === mode.SVG) {
+      else if(renderMode === mode.SVG) {
+        struct.renderSvg(renderMode, ctx, defs, this);
         let nvd = this.virtualDom;
         nvd.defs = defs.value;
         if(this.dom.__root) {
-          diff(this.dom, this.dom.__vd, nvd);
+          // console.log(this.dom.__vd);
+          // console.log(nvd);
+          domDiff(this.dom, this.dom.__vd, nvd);
         }
         else {
           this.dom.innerHTML = util.joinVirtualDom(nvd);
@@ -545,18 +599,18 @@ class Root extends Dom {
     if(!task.length) {
       let clone;
       frame.nextFrame(this.__rTask = {
-        before: diff => {
+        __before: diff => {
           clone = task.splice(0);
           // 前置一般是动画计算此帧样式应用，然后刷新后出发frame事件，图片加载等同
           if(clone.length) {
             let setStateList = [];
             clone.forEach((item, i) => {
-              if(isObject(item) && isFunction(item.before)) {
+              if(isObject(item) && isFunction(item.__before)) {
                 // 收集组件setState的更新，特殊处理
                 if(item.__state) {
                   setStateList.push(i);
                 }
-                item.before(diff);
+                item.__before(diff);
               }
             });
             // 刷新前先进行setState检查，全都是setState触发的且没有更新则无需刷新
@@ -599,10 +653,10 @@ class Root extends Dom {
             updater.did();
           }
         },
-        after: diff => {
+        __after: diff => {
           clone.forEach(item => {
-            if(isObject(item) && isFunction(item.after)) {
-              item.after(diff);
+            if(isObject(item) && isFunction(item.__after)) {
+              item.__after(diff);
             }
             else if(isFunction(item)) {
               item(diff);
@@ -669,54 +723,34 @@ class Root extends Dom {
    */
   __addUpdate(o) {
     let updateHash = this.__updateHash;
-    let { node, style, origin, overwrite, focus, img, component, measure } = o;
-    // 事件队列和setState等原因，可能node已经销毁
-    if(node.isDestroyed) {
-      return;
-    }
+    let node = o.node;
     // root特殊处理，检查变更时优先看继承信息
     if(node === this) {
       let target = this.__updateRoot;
       if(target) {
-        if(img) {
-          target.img = img;
+        if(o.img) {
+          target.img = o.img;
         }
-        if(focus) {
-          target.focus = focus;
+        if(o.focus) {
+          target.focus = o.focus;
         }
-        if(measure) {
+        if(o.measure) {
           target.measure = true;
         }
         target.list = target.list || [];
-        target.list.push({ style, origin, overwrite });
+        target.list.push({ style: o.style, origin: o.origin, overwrite: o.overwrite });
       }
       else {
-        this.__updateRoot = {
-          node,
-          style,
-          origin,
-          overwrite,
-          focus,
-          img,
-          measure,
-        };
+        this.__updateRoot = o;
       }
     }
     else if(!node.hasOwnProperty('__uniqueUpdateId')) {
       node.__uniqueUpdateId = uniqueUpdateId;
       // 大多数情况节点都只有一次更新，所以优化首次直接存在style上，后续存在list
-      updateHash[uniqueUpdateId++] = {
-        node,
-        style,
-        origin,
-        overwrite,
-        focus,
-        img,
-        component,
-        measure,
-      };
+      updateHash[uniqueUpdateId++] = o;
     }
     else if(updateHash.hasOwnProperty(node.__uniqueUpdateId)) {
+      let { style, origin, overwrite, focus, img, measure } = o;
       let target = updateHash[node.__uniqueUpdateId];
       if(img) {
         target.img = img;
@@ -762,8 +796,9 @@ class Root extends Dom {
     // 汇总处理每个节点
     let keys = Object.keys(updateHash);
     keys.forEach(k => {
-      hasUpdate = parseUpdate(renderMode, this, updateHash, updateHash[k],
-        reflowList, measureList, cacheHash, cacheList, zHash, zList) || hasUpdate;
+      let t = parseUpdate(renderMode, this, updateHash, updateHash[k],
+        reflowList, measureList, cacheHash, cacheList, zHash, zList);
+      hasUpdate = hasUpdate || t;
     });
     // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
     this.__reflowList = reflowList;
@@ -1028,6 +1063,7 @@ class Root extends Dom {
         h: height,
       });
       this.__structs = this.__structure(0, 0);
+      return true;
     }
     /**
      * 修剪树，自顶向下深度遍历
@@ -1065,13 +1101,15 @@ class Root extends Dom {
         let { node, lv, component } = item;
         // 重新layout的w/h数据使用之前parent暂存的，x使用parent，y使用prev或者parent的
         if(lv >= LAYOUT) {
-          let zIndex, position, cs = node.computedStyle;
-          if(component) {
-            zIndex = cs.zIndex;
-            position = cs.position;
+          let cps = node.computedStyle, cts = node.currentStyle;
+          let zIndex = cps.zIndex, position = cps.position, display = cps.display;
+          let isLastAbs = position === 'absolute';
+          let isNowAbs = cts.position === 'absolute';
+          let isLastNone = display === 'none';
+          let isNowNone = cts.display === 'none';
+          if(isLastNone && isNowNone) {
+            return;
           }
-          let isLastAbs = cs.position === 'absolute';
-          let isNowAbs = cs.position === 'absolute';
           let parent = node.domParent;
           let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let current = node;
@@ -1248,13 +1286,20 @@ class Root extends Dom {
             let arr = node.__modifyStruct(root, diffI);
             diffI += arr[1];
             diffList.push(arr);
-            if((cs.position !== position && (cs.position === 'static' || position === 'static'))
-              || cs.zIndex !== zIndex) {
+            if((position !== cts.position && (position === 'static' || cts.position === 'static'))
+              || zIndex !== cts.zIndex) {
               node.domParent.__updateStruct(root.__structs);
               if(this.renderMode === mode.SVG) {
                 cleanSvgCache(node.domParent);
               }
             }
+          }
+          // display有none变化，重置struct和zc
+          else if(isLastNone || isNowNone) {
+            node.__zIndexChildren = null;
+            let arr = node.__modifyStruct(root, diffI);
+            diffI += arr[1];
+            diffList.push(arr);
           }
         }
         // OFFSET操作的节点都是relative，要考虑auto变化

@@ -162,22 +162,17 @@ class Rect extends Geom {
   }
 
   get bbox() {
-    let { sx, sy, width, height,
-      currentStyle: {
-        boxShadow,
-        filter,
-      },
+    let {
+      __sx2, __sy2, width, height,
       computedStyle: {
-        borderTopWidth,
-        borderLeftWidth,
-        marginTop,
-        marginLeft,
         paddingTop,
         paddingLeft,
         strokeWidth,
+        boxShadow,
+        filter,
       } } = this;
-    let originX = sx + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = sy + borderTopWidth + marginTop + paddingTop;
+    let originX = __sx2 + paddingLeft;
+    let originY = __sy2 + paddingTop;
     this.buildCache(originX, originY);
     let bbox = super.bbox;
     let half = strokeWidth * 0.5;

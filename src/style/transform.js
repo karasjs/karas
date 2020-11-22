@@ -1,10 +1,9 @@
 import unit from '../style/unit';
 import math from '../math/index';
-import util from '../util/util';
 
 const { PX, PERCENT } = unit;
 const { matrix, geom } = math;
-const { identity, calPoint, multiply } = matrix;
+const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
 
 function calSingle(t, k, v) {
@@ -81,7 +80,7 @@ function calMatrixWithOrigin(transform, transformOrigin, ow, oh) {
 
 // 判断点是否在一个矩形内，比如事件发生是否在节点上
 function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
-  if(matrix && !util.equalArr(matrix, [1, 0, 0, 1, 0, 0])) {
+  if(matrix && !isE(matrix)) {
     [x1, y1] = calPoint([x1, y1], matrix);
     [x2, y2] = calPoint([x2, y2], matrix);
     [x3, y3] = calPoint([x3, y3], matrix);

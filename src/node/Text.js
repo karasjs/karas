@@ -86,8 +86,8 @@ class Text extends Node {
 
   __layout(data, isVirtual) {
     let { x, y, w } = data;
-    this.__x = x;
-    this.__y = y;
+    this.__x = this.__sx1 = x;
+    this.__y = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
     if(isDestroyed || computedStyle.display === 'none') {
       return;
@@ -166,6 +166,7 @@ class Text extends Node {
         item.__offsetX(diff);
       });
     }
+    this.__sx1 += diff;
   }
 
   __offsetY(diff, isLayout) {
@@ -175,6 +176,7 @@ class Text extends Node {
         item.__offsetY(diff);
       });
     }
+    this.__sy1 += diff;
   }
 
   __tryLayInline(w) {
@@ -207,7 +209,7 @@ class Text extends Node {
     }
     let { isDestroyed, computedStyle, lineBoxes, cacheStyle } = this;
     if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
-      return;
+      return false;
     }
     if(renderMode === mode.CANVAS) {
       let font = css.setFontStyle(computedStyle);
@@ -225,14 +227,11 @@ class Text extends Node {
     if(renderMode === mode.SVG) {
       this.virtualDom.children = lineBoxes.map(lineBox => lineBox.virtualDom);
     }
+    return true;
   }
 
   deepScan(cb) {
     cb(this);
-  }
-
-  __mergeBbox(matrix, tx, ty, dx, dy) {
-    return util.transformBbox(this.bbox, matrix, dx, dy);
   }
 
   get content() {
@@ -281,6 +280,9 @@ class Text extends Node {
   }
 
   get bbox() {
+    if(!this.content) {
+      return;
+    }
     let { sx, sy, width, height } = this;
     let x1 = sx, y1 = sy;
     let x2 = sx + width, y2 = sy + height;

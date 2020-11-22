@@ -5,10 +5,10 @@ import unit from '../style/unit';
 import mode from '../node/mode';
 import util from '../util/util';
 import level from '../refresh/level';
-import refreshMode from '../refresh/mode';
-import tf from '../style/transform';
-import mx from '../math/matrix';
-import Cache from '../refresh/Cache';
+// import refreshMode from '../refresh/mode';
+// import tf from '../style/transform';
+// import mx from '../math/matrix';
+// import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT } = unit;
 const { int2rgba, isNil } = util;
@@ -20,18 +20,13 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
     this.__isMask = !!this.props.mask;
-    this.__isClip = !!this.props.clip;
-    let { style, isMask, isClip } = this;
-    if(isMask || isClip) {
+    let { style, isMask } = this;
+    if(isMask) {
       style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
       style.stroke = null;
-      if(isClip) {
-        style.fill = '#FFF';
-        style.opacity = 1;
-      }
     }
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
@@ -95,6 +90,7 @@ class Geom extends Xom {
       return;
     }
     this.__width = w;
+    this.__ioSize(w, this.height);
     this.__marginAuto(this.currentStyle, data);
     this.__cacheProps = {};
   }
@@ -107,38 +103,28 @@ class Geom extends Xom {
   __layoutInline(data) {
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     // 元素的width不能超过父元素w
-    this.__width = fixedWidth ? w : x - data.x;
-    this.__height = fixedHeight ? h : y - data.y;
+    let tw = this.__width = fixedWidth ? w : x - data.x;
+    let th = this.__height = fixedHeight ? h : y - data.y;
+    this.__ioSize(tw, th);
     this.__cacheProps = {};
   }
 
-  __preSet(renderMode, ctx, defs) {
-    let { sx: x, sy: y, width, height, __cacheStyle, currentStyle, computedStyle } = this;
-    let {
-      borderTopWidth,
-      borderLeftWidth,
-      display,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingRight,
-      paddingBottom,
-      paddingLeft,
-      visibility,
-    } = computedStyle;
-    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
-    let originY = y + borderTopWidth + marginTop + paddingTop;
-    let cx = originX + width * 0.5;
-    let cy = originY + height * 0.5;
-    let iw = width + paddingLeft + paddingRight;
-    let ih = height + paddingTop + paddingBottom;
-    // 先根据cache计算需要重新计算的computedStyle
+  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+             sx, sy, innerWidth, innerHeight, outerWidth, outerHeight,
+             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+             x1, x2, x3, x4, y1, y2, y3, y4) {
+    super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
+      sx, sy, innerWidth, innerHeight, outerWidth, outerHeight,
+      borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+      x1, x2, x3, x4, y1, y2, y3, y4);
+    // geom才有的style
     ['stroke', 'fill'].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
         computedStyle[k] = v;
         if(v && (v.k === 'linear' || v.k === 'radial')) {
-          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs, originX, originY, originX + width, originY + height, iw, ih, v);
+          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
+            x2, y2, x3, y3, innerWidth, innerHeight, v);
         }
         else {
           __cacheStyle[k] = int2rgba(currentStyle[k]);
@@ -172,6 +158,26 @@ class Geom extends Xom {
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
+    // Geom强制有内容
+    return true;
+  }
+
+  __preSet() {
+    let { sx: x, sy: y, width, height, __cacheStyle, computedStyle } = this;
+    let {
+      borderTopWidth,
+      borderLeftWidth,
+      display,
+      marginTop,
+      marginLeft,
+      paddingTop,
+      paddingLeft,
+      visibility,
+    } = computedStyle;
+    let originX = x + borderLeftWidth + marginLeft + paddingLeft;
+    let originY = y + borderTopWidth + marginTop + paddingTop;
+    let cx = originX + width * 0.5;
+    let cy = originY + height * 0.5;
     let {
       fill,
       stroke,
@@ -247,38 +253,32 @@ class Geom extends Xom {
     }
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
-    let cacheFilter = this.__cacheFilter, cacheTotal = this.__cacheTotal, cache = this.__cache;
-    let virtualDom = this.virtualDom;
+  render(renderMode, lv, ctx, defs, cache) {
+    // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
+    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs);
+    let {
+      __cache,
+      __cacheTotal,
+      __cacheFilter,
+      __cacheMask,
+    } = this;
     // 存在老的缓存认为可提前跳出
     if(lv < level.REPAINT
-      && (cacheTotal && cacheTotal.available || cache && cache.available || !level.contain(lv, level.FILTER) && cacheFilter)) {
+      && (__cacheTotal && __cacheTotal.available
+        || __cache && __cache.available
+        || !level.contain(lv, level.FILTER) && __cacheFilter
+        || __cacheMask)) {
       res.break = true; // geom子类标识可以跳过自定义render()
     }
     if(renderMode === mode.SVG) {
-      // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!cacheTotal) {
-        this.__cacheTotal = {
-          available: true,
-          release() {
-            this.available = false;
-            delete virtualDom.cache;
-          },
-        };
-      }
-      else if(!cacheTotal.available) {
-        cacheTotal.available = true;
-      }
       this.virtualDom.type = 'geom';
     }
     // 无论canvas/svg，break可提前跳出省略计算
     if(res.break) {
       return res;
     }
-    this.__cacheFilter = null;
     // data在无cache时没有提前设置
-    let preData = (this.root.cache && renderMode === mode.CANVAS) ? this.__preData : this.__preSet(renderMode, ctx, defs);
+    let preData = this.__preSet(renderMode, ctx, defs);
     let { x2, y2 } = res;
     let { originX, originY } = preData;
     // 有cache时需计算差值
@@ -289,73 +289,6 @@ class Geom extends Xom {
     preData.dy = y2 - originY;
     this.__preSetCanvas(renderMode, ctx, preData);
     return Object.assign(res, preData);
-  }
-
-  __renderAsMask(renderMode, lv, ctx, defs, isClip) {
-    if(renderMode === mode.CANVAS) {
-      this.root.cache && (this.__preData = this.__preSet(renderMode, ctx, defs));
-    }
-    // mask渲染在canvas等被遮罩层调用，svg生成maskId
-    else if(renderMode === mode.SVG) {
-      this.render(renderMode, lv, ctx, defs);
-      let vd = this.virtualDom;
-      if(isClip) {
-        vd.isClip = true;
-      }
-      else {
-        vd.isMask = true;
-      }
-      // 强制不缓存，防止引用mask的matrix变化不生效
-      delete vd.lv;
-    }
-  }
-
-  // 类似dom，但geom没有children所以没有total的概念
-  __applyCache(renderMode, lv, ctx, mode, cacheTop, opacity, matrix) {
-    let cacheFilter = this.__cacheFilter;
-    let cacheMask = this.__cacheMask;
-    let cache = this.__cache;
-    let computedStyle = this.computedStyle;
-    // 优先filter，然后mask，再cache
-    let target = cacheFilter || cacheMask;
-    // 向总的离屏canvas绘制，最后由top汇总再绘入主画布
-    if(mode === refreshMode.CHILD) {
-      let { sx: x, sy: y } = this;
-      x += computedStyle.marginLeft;
-      y += computedStyle.marginTop;
-      let { coords: [tx, ty], x1, y1, dbx, dby } = cacheTop;
-      let dx = tx + x - x1 + dbx;
-      let dy = ty + y - y1 + dby;
-      let tfo = computedStyle.transformOrigin.slice(0);
-      tfo[0] += dx;
-      tfo[1] += dy;
-      let m = tf.calMatrixByOrigin(computedStyle.transform, tfo);
-      matrix = mx.multiply(matrix, m);
-      ctx.setTransform(...matrix);
-      opacity *= computedStyle.opacity;
-      ctx.globalAlpha = opacity;
-      if(target) {
-        Cache.drawCache(target, cacheTop);
-      }
-      else if(cache && cache.available) {
-        Cache.drawCache(cache, cacheTop);
-      }
-    }
-    // root调用局部整体缓存或单个节点缓存绘入主画布
-    else if(mode === refreshMode.ROOT) {
-      let { __opacity, matrixEvent } = this;
-      // 写回主画布前设置
-      ctx.globalAlpha = __opacity;
-      ctx.setTransform(...matrixEvent);
-      if(target) {
-        let { x1, y1, dbx, dby, canvas } = target;
-        ctx.drawImage(canvas, x1 - 1 - dbx, y1 - 1 - dby);
-      }
-      else if(cache && cache.available) {
-        let { coords: [tx, ty], x1, y1, dbx, dby, canvas, size } = cache;
-        ctx.drawImage(canvas, tx - 1, ty - 1, size, size, x1 - 1 - dbx, y1 - 1 - dby, size, size);
-      }
-    }
   }
 
   __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {
@@ -378,11 +311,8 @@ class Geom extends Xom {
     this.__cacheProps = {};
   }
 
-  // geom强制有内容
-  __calCache() {
-    super.__calCache.apply(this, arguments);
-    return true;
-  }
+  // geom的cache无内容也不清除
+  __releaseWhenEmpty() {}
 
   addGeom(tagName, props) {
     props = util.hash2arr(props);
@@ -411,10 +341,6 @@ class Geom extends Xom {
 
   get isMask() {
     return this.__isMask;
-  }
-
-  get isClip() {
-    return this.__isClip;
   }
 
   get currentProps() {

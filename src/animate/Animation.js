@@ -728,6 +728,12 @@ function calIntermediateStyle(frame, percent, target) {
         st[0][1][i] += v[i] * percent;
       }
     }
+    else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
+      || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
+      if(v !== 0) {
+        st.value += v * percent;
+      }
+    }
     else if(k === 'filter') {
       // 只有1个样式声明了filter另外一个为空
       if(!st) {
@@ -738,12 +744,6 @@ function calIntermediateStyle(frame, percent, target) {
     else if(RADIUS_HASH.hasOwnProperty(k)) {
       for(let i = 0; i < 2; i++) {
         st[i].value += v[i] * percent;
-      }
-    }
-    else if(k === 'backgroundPositionX' || k === 'backgroundPositionY'
-      || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
-      if(v !== 0) {
-        st.value += v * percent;
       }
     }
     else if(k === 'transformOrigin' || k === 'backgroundSize') {
@@ -929,6 +929,7 @@ class Animation extends Event {
       options = this.__options;
     }
     let op = this.__options = options || {};
+    this.__playState = 'idle';
     this.__duration = Math.max(0, parseFloat(op.duration) || 0);
     this.delay = op.delay;
     this.endDelay = op.endDelay;
@@ -946,7 +947,6 @@ class Animation extends Event {
     this.currentTime = 0; // 当前播放时间点，不包括暂停时长，但包括delay、变速，以此定位动画处于何时
     this.__nextTime = 0; // 下一帧刷新时间点，即currentTime下一帧被此赋值
     this.__fpsTime = 0;
-    this.__playState = 'idle';
     this.__isDestroyed = false;
     this.__style = {};
     this.__assigning = false; // 本帧动画是否正在影响赋值style，即在事件的before之后after之前
@@ -1201,6 +1201,7 @@ class Animation extends Event {
     let firstEnter = true;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!this.__enterFrame) {
+      this.__enterFrame = true;
       let {
         frames,
         framesR,
@@ -1211,183 +1212,174 @@ class Animation extends Event {
       } = this;
       // 特殊优化缓存
       let length = frames.length, is2 = length === 2;
-      let lastI, lastFrame, endTime, endTimeR;
+      let endTime;
       let isAlternate = {
         alternate: true,
         'alternate-reverse': true,
       }.hasOwnProperty(direction);
       // 初始化根据方向确定帧序列
-      let cfs = this.__currentFrames = {
+      let currentFrames = this.__currentFrames = {
         reverse: true,
         'alternate-reverse': true,
       }.hasOwnProperty(direction) ? framesR : frames;
       if(is2) {
-        endTime = cfs[1].time;
-        endTimeR = 1 / endTime;
+        endTime = currentFrames[1].time;
       }
       // delay/endDelay/fill/direction在播放后就不可变更，没播放可以修改
       let stayEnd = this.__stayEnd();
       let stayBegin = this.__stayBegin();
       // 每次正常调用play都会从头开始，标识第一次enterFrame运行初始化
       this.__currentTime = this.__nextTime = this.__fpsTime = 0;
-      // 每帧执行的回调，firstEnter只有初次计算时有，第一帧强制不跳帧
-      let enterFrame = this.__enterFrame = {
-        before: diff => {
-          let { target, fps, playCount, iterations, currentFrames } = this;
-          // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
-          let currentTime = this.__calDiffTime(diff);
-          // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
-          if(!firstEnter && fps < 60) {
-            diff = this.__fpsTime += diff;
-            if(diff < 1000 / fps) {
-              this.__inFps = true;
-              return;
-            }
-            this.__fpsTime = 0;
-          }
-          firstEnter = false;
-          // delay仅第一次生效
-          if(playCount > 0) {
-            delay = 0;
-          }
-          // 还没过前置delay
-          else if(currentTime < delay) {
-            if(stayBegin) {
-              let current = frames[0].style;
-              genBeforeRefresh(current, this, root, target);
-            }
-            // 即便不刷新，依旧执行begin和帧回调
-            if(currentTime === 0) {
-              this.__begin = true;
-            }
-            this.__isDelay = true;
+      this.__before = (diff) => {
+        let { target, fps, playCount, currentFrames, iterations } = this;
+        // 用本帧和上帧时间差，计算累加运行时间currentTime，以便定位当前应该处于哪个时刻
+        let currentTime = this.__calDiffTime(diff);
+        // 增加的fps功能，当<60时计算跳帧，每帧运行依旧累加时间，达到fps时重置，第一帧强制不跳
+        if(!firstEnter && fps < 60) {
+          diff = this.__fpsTime += diff;
+          if(diff < 1000 / fps) {
+            this.__inFps = true;
             return;
           }
-          // 减去delay，计算在哪一帧
-          currentTime -= delay;
+          this.__fpsTime = 0;
+        }
+        firstEnter = false;
+        // delay仅第一次生效
+        if(playCount > 0) {
+          delay = 0;
+        }
+        // 还没过前置delay
+        else if(currentTime < delay) {
+          if(stayBegin) {
+            let current = frames[0].style;
+            genBeforeRefresh(current, this, root, target);
+          }
+          // 即便不刷新，依旧执行begin和帧回调
           if(currentTime === 0) {
             this.__begin = true;
           }
-          // 只有2帧可优化，否则2分查找当前帧
-          let i;
-          if(is2) {
-            i = currentTime < endTime ? 0 : 1;
+          this.__isDelay = true;
+          return;
+        }
+        // 减去delay，计算在哪一帧
+        currentTime -= delay;
+        if(currentTime === 0) {
+          this.__begin = true;
+        }
+        // 只有2帧可优化，否则2分查找当前帧
+        let i;
+        if(is2) {
+          i = currentTime < endTime ? 0 : 1;
+        }
+        else {
+          i = binarySearch(0, length - 1, currentTime, currentFrames);
+        }
+        let frameTime = currentFrames[i].time;
+        // 最后一帧结束动画
+        let isLastFrame = i === length - 1;
+        let percent = 0;
+        if(isLastFrame) {}
+        // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
+        else if(is2) {
+          percent = currentTime / duration;
+        }
+        else {
+          let total = currentFrames[i + 1].time - frameTime;
+          percent = (currentTime - frameTime) / total;
+        }
+        let isLastCount = playCount >= iterations - 1;
+        let inEndDelay, current = currentFrames[i];
+        /** 这里要考虑全几种场景：
+         * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
+         * 2. 单次播放无endDelay且fill停留
+         * 3. 单次播放有endDelay且fill不停留
+         * 4. 单次播放有endDelay且fill停留
+         * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
+         * 6. 多次播放无endDelay且fill停留
+         * 7. 多次播放有endDelay且fill不停留
+         * 8. 多次播放有endDelay且fill停留
+         */
+        if(isLastFrame) {
+          // endDelay实际最后一次播放时生效，这里仅计算时间对比
+          inEndDelay = currentTime < duration + endDelay;
+          // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
+          // 多次播放时到达最后一帧也会显示
+          if(stayEnd || !isLastCount) {
+            current = util.clone(current.style);
           }
+          // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {
-            i = binarySearch(0, length - 1, currentTime, currentFrames);
+            current = util.clone(this.__originStyle);
           }
-          // 索引不同再重设currentFrame
-          let current;
-          if(lastI !== i) {
-            lastI = i;
-            current = this.__currentFrame = lastFrame = currentFrames[i];
+          // 非尾每轮次放完增加次数和计算下轮准备
+          if(!isLastCount) {
+            this.__nextTime = currentTime - duration;
+            playCount = ++this.__playCount;
+            this.__nextBegin = true;
           }
-          else {
-            current = lastFrame;
-          }
-          // 最后一帧结束动画
-          let isLastFrame = i === length - 1;
-          let isLastCount = playCount >= iterations - 1;
-          let inEndDelay;
-          /** 这里要考虑全几种场景：
-           * 1. 单次播放无endDelay且fill不停留（有/无差异，下同）
-           * 2. 单次播放无endDelay且fill停留
-           * 3. 单次播放有endDelay且fill不停留
-           * 4. 单次播放有endDelay且fill停留
-           * 5. 多次播放无endDelay且fill不停留（尾次/非尾次，下同）
-           * 6. 多次播放无endDelay且fill停留
-           * 7. 多次播放有endDelay且fill不停留
-           * 8. 多次播放有endDelay且fill停留
-           */
-          if(isLastFrame) {
-            // endDelay实际最后一次播放时生效，这里仅计算时间对比
-            inEndDelay = currentTime < duration + endDelay;
-            // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
-            // 多次播放时到达最后一帧也会显示
-            if(stayEnd || !isLastCount) {
-              current = util.clone(current.style);
-            }
-            // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
-            else {
-              current = util.clone(this.__originStyle);
-            }
-            // 非尾每轮次放完增加次数和计算下轮准备
-            if(!isLastCount) {
-              this.__nextTime = currentTime - duration;
-              playCount = ++this.__playCount;
-              this.__nextBegin = true;
-            }
-            // 尾次考虑endDelay
-            else if(!inEndDelay) {
-              this.__nextTime = 0;
-              playCount = ++this.__playCount;
-              // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
-              if(playCount >= iterations) {
-                frame.offFrame(enterFrame);
-              }
-            }
-          }
-          // 否则根据目前到下一帧的时间差，计算百分比，再反馈到变化数值上
-          else if(is2) {
-            let percent = currentTime * endTimeR;
-            current = calIntermediateStyle(current, percent, target);
-          }
-          else {
-            let total = currentFrames[i + 1].time - current.time;
-            let percent = (currentTime - current.time) / total;
-            current = calIntermediateStyle(current, percent, target);
-          }
-          // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
-          genBeforeRefresh(current, this, root, target);
-          // 每次循环完触发end事件，最后一次循环触发finish
-          if(isLastFrame && (!inEndDelay || isLastCount)) {
-            this.__end = true;
+          // 尾次考虑endDelay
+          else if(!inEndDelay) {
+            this.__nextTime = 0;
+            playCount = ++this.__playCount;
+            // 判断次数结束每帧enterFrame调用，inEndDelay时不结束
             if(playCount >= iterations) {
-              this.__finish = true;
-              this.__clean(true);
+              frame.offFrame(this);
             }
           }
-        },
-        after: diff => {
-          this.__assigning = false;
-          if(this.__inFps) {
-            this.__inFps = false;
-            return;
+        }
+        else {
+          current = calIntermediateStyle(current, percent, target);
+        }
+        // 无论两帧之间是否有变化，都生成计算结果赋给style，去重在root做
+        genBeforeRefresh(current, this, root, target);
+        // 每次循环完触发end事件，最后一次循环触发finish
+        if(isLastFrame && (!inEndDelay || isLastCount)) {
+          this.__end = true;
+          if(playCount >= iterations) {
+            this.__finish = true;
+            this.__clean(true);
           }
-          this.__frameCb(diff, this.__isDelay);
-          this.__isDelay = false;
-          if(this.__begin) {
-            this.__begin = false;
-            this.emit(Event.BEGIN, this.playCount);
-          }
-          if(this.__end) {
-            this.__end = false;
-            this.emit(Event.END, this.playCount - 1);
-            // 有正反播放需要重设帧序列
-            if(isAlternate) {
-              let isEven = this.playCount % 2 === 0;
-              if(direction === 'alternate') {
-                this.__currentFrames = isEven ? frames : framesR;
-              }
-              else {
-                this.__currentFrames = isEven ? framesR : frames;
-              }
+        }
+      };
+      this.__after = (diff) => {
+        this.__assigning = false;
+        if(this.__inFps) {
+          this.__inFps = false;
+          return;
+        }
+        this.__frameCb(diff, this.__isDelay);
+        this.__isDelay = false;
+        if(this.__begin) {
+          this.__begin = false;
+          this.emit(Event.BEGIN, this.playCount);
+        }
+        if(this.__end) {
+          this.__end = false;
+          this.emit(Event.END, this.playCount - 1);
+          // 有正反播放需要重设帧序列
+          if(isAlternate) {
+            let isEven = this.playCount % 2 === 0;
+            if(direction === 'alternate') {
+              this.__currentFrames = isEven ? frames : framesR;
+            }
+            else {
+              this.__currentFrames = isEven ? framesR : frames;
             }
           }
-          if(this.__finish) {
-            this.__finish = false;
-            this.__fin();
-          }
-          if(this.__nextBegin) {
-            this.__nextBegin = false;
-            this.__begin = true;
-          }
-        },
+        }
+        if(this.__finish) {
+          this.__finish = false;
+          this.__fin();
+        }
+        if(this.__nextBegin) {
+          this.__nextBegin = false;
+          this.__begin = true;
+        }
       };
     }
     // 添加每帧回调且立刻执行，本次执行调用refreshTask也是下一帧再渲染，frame的每帧都是下一帧
-    frame.offFrame(this.__enterFrame);
-    frame.onFrame(this.__enterFrame);
+    frame.offFrame(this);
+    frame.onFrame(this);
     this.__startTime = frame.__now;
     return this;
   }
@@ -1436,11 +1428,11 @@ class Animation extends Event {
         current = __originStyle;
       }
       root.addRefreshTask({
-        before() {
+        __before() {
           genBeforeRefresh(current, self, root, self.target);
           self.__clean(true);
         },
-        after(diff) {
+        __after(diff) {
           self.__assigning = false;
           self.__frameCb(diff);
           self.__fin(cb, diff);
@@ -1477,11 +1469,11 @@ class Animation extends Event {
         }
       };
       root.addRefreshTask({
-        before() {
+        __before() {
           genBeforeRefresh(__originStyle, self, root, self.target);
           self.__clean();
         },
-        after(diff) {
+        __after(diff) {
           self.__assigning = false;
           self.__frameCb(diff);
           task(diff);
@@ -1596,7 +1588,7 @@ class Animation extends Event {
   }
 
   __cancelTask() {
-    frame.offFrame(this.__enterFrame);
+    frame.offFrame(this);
     this.__playCb = null;
   }
 
@@ -1610,7 +1602,7 @@ class Animation extends Event {
     }
     else {
       frame.nextFrame({
-        before() {
+        __before() {
           // 尚未初始化的清除
           self.__clean && self.__clean();
           self.__target = null;
@@ -1619,6 +1611,12 @@ class Animation extends Event {
     }
     self.__startTime = null;
     self.__isDestroyed = true;
+  }
+
+  __checkModify() {
+    if(this.playState !== 'idle' && this.playState !== 'finished') {
+      console.warn('Modification will not come into effect when animation is running');
+    }
   }
 
   get id() {
@@ -1654,7 +1652,11 @@ class Animation extends Event {
   }
 
   set duration(v) {
-    this.__duration = Math.max(0, parseFloat(v) || 0);
+    v = Math.max(0, parseFloat(v) || 0);
+    if(this.duration !== v) {
+      this.__duration = v;
+      this.__checkModify();
+    }
   }
 
   get delay() {
@@ -1662,7 +1664,11 @@ class Animation extends Event {
   }
 
   set delay(v) {
-    this.__delay = Math.max(0, parseFloat(v) || 0);
+    v = Math.max(0, parseFloat(v) || 0);
+    if(this.delay !== v) {
+      this.__delay = v;
+      this.__checkModify();
+    }
   }
 
   get endDelay() {
@@ -1670,7 +1676,11 @@ class Animation extends Event {
   }
 
   set endDelay(v) {
-    this.__endDelay = Math.max(0, parseFloat(v) || 0);
+    v = Math.max(0, parseFloat(v) || 0);
+    if(this.endDelay !== v) {
+      this.__endDelay = v;
+      this.__checkModify();
+    }
   }
 
   get fps() {
@@ -1679,10 +1689,12 @@ class Animation extends Event {
 
   set fps(v) {
     v = parseInt(v) || 60;
-    if(v <= 0) {
-      v = 60;
+    if(this.fps !== v) {
+      if(v <= 0) {
+        v = 60;
+      }
+      this.__fps = v;
     }
-    this.__fps = v;
   }
 
   get spf() {
@@ -1703,7 +1715,9 @@ class Animation extends Event {
         v = 1;
       }
     }
-    this.__iterations = v;
+    if(this.__iterations !== v) {
+      this.__iterations = v;
+    }
   }
 
   get fill() {
@@ -1711,10 +1725,10 @@ class Animation extends Event {
   }
 
   set fill(v) {
-    this.__fill = v || 'none';
-    if(this.playState === 'running') {
-      this.pause(true);
-      this.resume();
+    v = v || 'none';
+    if(this.fill !== v) {
+      this.__fill = v;
+      this.__checkModify();
     }
   }
 
@@ -1723,10 +1737,10 @@ class Animation extends Event {
   }
 
   set direction(v) {
-    this.__direction = v || 'normal';
-    if(this.playState === 'running') {
-      this.pause(true);
-      this.resume();
+    v = v || 'normal';
+    if(this.direction !== v) {
+      this.__direction = v || 'normal';
+      this.__checkModify();
     }
   }
 
@@ -1747,7 +1761,9 @@ class Animation extends Event {
     if(v <= 0) {
       v = 1;
     }
-    this.__playbackRate = v;
+    if(this.playbackRate !== v) {
+      this.__playbackRate = v;
+    }
   }
 
   get easing() {
@@ -1763,8 +1779,8 @@ class Animation extends Event {
   }
 
   set currentTime(v) {
-    v = parseFloat(v) || 0;
-    if(v >= 0) {
+    v = Math.max(0, parseFloat(v) || 0);
+    if(this.__currentTime !== v) {
       this.__currentTime = this.__nextTime = v;
     }
   }
@@ -1785,9 +1801,12 @@ class Animation extends Event {
     return this.__playCount;
   }
 
-  // set playCount(v) {
-  //   this.__playCount = Math.max(0, parseInt(v) || 0);
-  // }
+  set playCount(v) {
+    v = Math.max(0, parseInt(v) || 0);
+    if(this.playCount !== v) {
+      this.__playCount = v;
+    }
+  }
 
   get isDestroyed() {
     return this.__isDestroyed;
@@ -1807,10 +1826,13 @@ class Animation extends Event {
 
   set spfLimit(v) {
     if(util.isNumber(v) || /^\d/.test(v)) {
-      this.__spfLimit = Math.max(v, parseInt(v) || 0);
+      v = Math.max(0, parseInt(v) || 0);
     }
     else {
-      this.__spfLimit = !!v;
+      v = !!v;
+    }
+    if(this.spfLimit !== v) {
+      this.__spfLimit = v;
     }
   }
 

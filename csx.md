@@ -165,6 +165,9 @@
   * inherit 默认
   * none
   * auto
+* overflow
+  * visible 默认
+  * hidden
 * fill
   * transparent 默认
   * #rgb/rgb/rgba

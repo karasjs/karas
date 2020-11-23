@@ -8323,12 +8323,14 @@
             last = now; // 优先动画计算
 
             var clone = task.slice(0);
+
+            var hook = self.__hookTask.splice(0);
+
             traversal(clone, diff); // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
 
-            self.__hookTask.splice(0).forEach(function (item) {
+            hook.forEach(function (item) {
               return item();
             }); // 普通的before/after
-
 
             traversal(clone, diff, true); // 还有则继续，没有则停止节省性能
 
@@ -20302,28 +20304,23 @@
                       component: true // 强制reflow
 
                     });
-                  });
-
-                  _this4.refresh();
+                  }); // this.refresh();
                 } // 有可能组件都不需要更新，且没有其它触发的渲染更新
-                else if (clone.length > setStateList.length) {
-                    _this4.refresh();
-                  } // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
+                // else if(clone.length > setStateList.length) {
+                //   this.refresh();
+                // }
+                // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
+                // let r = this.__hookTask;
+                // if(r) {
+                //   let hookTask = frame.__hookTask;
+                //   let i = hookTask.indexOf(r);
+                //   if(i > -1) {
+                //     hookTask.splice(i, 1);
+                //   }
+                // }
+                // 触发didUpdate
+                // updater.did();
 
-
-                var r = _this4.__hookTask;
-
-                if (r) {
-                  var hookTask = frame.__hookTask;
-                  var i = hookTask.indexOf(r);
-
-                  if (i > -1) {
-                    hookTask.splice(i, 1);
-                  }
-                } // 触发didUpdate
-
-
-                updater.did();
               }
             },
             __after: function __after(diff) {
@@ -20333,9 +20330,13 @@
                 } else if (isFunction$6(item)) {
                   item(diff);
                 }
-              });
+              }); // 触发didUpdate
+
+              updater.did();
             }
           });
+
+          this.__frameHook();
         }
 
         if (task.indexOf(cb) === -1) {

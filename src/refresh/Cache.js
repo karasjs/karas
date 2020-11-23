@@ -237,7 +237,7 @@ class Cache {
   }
 
   /**
-   * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的Page中的Cache
+   * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
    */
   static genOverflow(target, node) {
     let { bbox } = target;

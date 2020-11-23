@@ -420,7 +420,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       let {
         node: {
           computedStyle: { position, visibility, overflow },
-          __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache, __blurValue,
+          __cacheTotal, __cache, __blurValue,
         },
         node, lv, index, total, hasMask,
       } = __structs[lrd[i]];

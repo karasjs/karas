@@ -11235,7 +11235,7 @@
         return cacheMask;
       }
       /**
-       * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的Page中的Cache
+       * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
        */
 
     }, {
@@ -18751,9 +18751,6 @@
             position = _structs$lrd$_i$node$.position,
             visibility = _structs$lrd$_i$node$.visibility,
             overflow = _structs$lrd$_i$node$.overflow,
-            __cacheOverflow = _structs$lrd$_i$node.__cacheOverflow,
-            __cacheMask = _structs$lrd$_i$node.__cacheMask,
-            __cacheFilter = _structs$lrd$_i$node.__cacheFilter,
             __cacheTotal = _structs$lrd$_i$node.__cacheTotal,
             __cache = _structs$lrd$_i$node.__cache,
             __blurValue = _structs$lrd$_i$node.__blurValue,
@@ -18851,9 +18848,9 @@
           _total3 = _structs$_i.total,
           _hasMask = _structs$_i.hasMask,
           _structs$_i$node = _structs$_i.node,
-          _cacheOverflow = _structs$_i$node.__cacheOverflow,
-          _cacheMask = _structs$_i$node.__cacheMask,
-          _cacheFilter = _structs$_i$node.__cacheFilter,
+          __cacheOverflow = _structs$_i$node.__cacheOverflow,
+          __cacheMask = _structs$_i$node.__cacheMask,
+          __cacheFilter = _structs$_i$node.__cacheFilter,
           _cacheTotal = _structs$_i$node.__cacheTotal,
           _cache = _structs$_i$node.__cache,
           __limitCache = _structs$_i$node.__limitCache,
@@ -18881,7 +18878,7 @@
         var _opacity = _node3.__opacity,
             _matrixEvent = _node3.matrixEvent; // 有total的可以直接绘制并跳过索引
 
-        var _target = _cacheOverflow || _cacheMask || _cacheFilter;
+        var _target = __cacheOverflow || __cacheMask || __cacheFilter;
 
         if (!_target) {
           _target = _cacheTotal && _cacheTotal.available ? _cacheTotal : null;
@@ -19776,11 +19773,18 @@
           }
 
           if (_node.__cacheMask) {
+            inject.releaseCacheCanvas(_node.__cacheMask.canvas);
             _node.__cacheMask = null;
           }
 
           if (_node.__cacheFilter) {
+            inject.releaseCacheCanvas(_node.__cacheFilter.canvas);
             _node.__cacheFilter = null;
+          }
+
+          if (_node.__cacheOverflow) {
+            inject.releaseCacheCanvas(_node.__cacheOverflow.canvas);
+            _node.__cacheOverflow = null;
           }
         } else {
           i += total || 0;
@@ -19853,11 +19857,18 @@
       }
 
       if (node.__cacheMask) {
+        inject.releaseCacheCanvas(node.__cacheMask.canvas);
         node.__cacheMask = null;
+      }
+
+      if (node.__cacheOverflow) {
+        inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
+        node.__cacheOverflow = null;
       }
     }
 
     if ((need || o$1.contain(lv, o$1.FILTER)) && node.__cacheFilter) {
+      inject.releaseCacheCanvas(node.__cacheFilter.canvas);
       node.__cacheFilter = null;
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
@@ -19894,11 +19905,18 @@
       }
 
       if (parent.__cacheFilter) {
+        inject.releaseCacheCanvas(parent.__cacheFilter.canvas);
         parent.__cacheFilter = null;
       }
 
       if (parent.__cacheMask) {
+        inject.releaseCacheCanvas(parent.__cacheMask.canvas);
         parent.__cacheMask = null;
+      }
+
+      if (parent.__cacheOverflow) {
+        inject.releaseCacheCanvas(parent.__cacheOverflow.canvas);
+        parent.__cacheOverflow = null;
       }
 
       parent = parent.domParent;

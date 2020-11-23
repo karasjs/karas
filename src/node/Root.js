@@ -231,10 +231,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
           node.__cacheTotal.release();
         }
         if(node.__cacheMask) {
+          inject.releaseCacheCanvas(node.__cacheMask.canvas);
           node.__cacheMask = null;
         }
         if(node.__cacheFilter) {
+          inject.releaseCacheCanvas(node.__cacheFilter.canvas);
           node.__cacheFilter = null;
+        }
+        if(node.__cacheOverflow) {
+          inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
+          node.__cacheOverflow = null;
         }
       }
       else {
@@ -297,10 +303,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       node.__cacheTotal.release();
     }
     if(node.__cacheMask) {
+      inject.releaseCacheCanvas(node.__cacheMask.canvas);
       node.__cacheMask = null;
+    }
+    if(node.__cacheOverflow) {
+      inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
+      node.__cacheOverflow = null;
     }
   }
   if((need || level.contain(lv, level.FILTER)) && node.__cacheFilter) {
+    inject.releaseCacheCanvas(node.__cacheFilter.canvas);
     node.__cacheFilter = null;
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -330,10 +342,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       parent.__cacheTotal.release();
     }
     if(parent.__cacheFilter) {
+      inject.releaseCacheCanvas(parent.__cacheFilter.canvas);
       parent.__cacheFilter = null;
     }
     if(parent.__cacheMask) {
+      inject.releaseCacheCanvas(parent.__cacheMask.canvas);
       parent.__cacheMask = null;
+    }
+    if(parent.__cacheOverflow) {
+      inject.releaseCacheCanvas(parent.__cacheOverflow.canvas);
+      parent.__cacheOverflow = null;
     }
     parent = parent.domParent;
   }

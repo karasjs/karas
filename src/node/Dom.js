@@ -29,6 +29,7 @@ function genZIndexChildren(dom) {
     // 遮罩单独保存后特殊排序，需要有__layoutData，特殊情况下中途插入的节点还未渲染
     if(item.__layoutData || item instanceof Text) {
       if(item.isMask) {
+        child.__iIndex = i;
         // 开头的mc忽略，后续的连续mc以第一次出现为准
         if(lastMcIndex !== undefined) {
           mcHash[lastMcIndex].push(item);
@@ -77,8 +78,9 @@ function genZIndexChildren(dom) {
   // 将遮罩插入到对应顺序上
   if(hasMc) {
     for(let i = res.length - 1; i >= 0; i--) {
-      if(mcHash.hasOwnProperty(i)) {
-        res.splice(i + 1, 0, ...mcHash[i]);
+      let idx = res[i].__iIndex;
+      if(mcHash.hasOwnProperty(idx)) {
+        res.splice(i + 1, 0, ...mcHash[idx]);
       }
     }
   }

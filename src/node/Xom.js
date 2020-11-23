@@ -819,6 +819,9 @@ class Xom extends Node {
         if(next.isMask) {
           count++;
         }
+        else {
+          break;
+        }
         next = next.next;
       }
       this.__hasMask = count;

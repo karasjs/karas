@@ -12002,6 +12002,8 @@
           while (next) {
             if (next.isMask) {
               count++;
+            } else {
+              break;
             }
 
             next = next.next;
@@ -14361,7 +14363,8 @@
 
       if (item.__layoutData || item instanceof Text) {
         if (item.isMask) {
-          // 开头的mc忽略，后续的连续mc以第一次出现为准
+          child.__iIndex = i; // 开头的mc忽略，后续的连续mc以第一次出现为准
+
           if (lastMcIndex !== undefined) {
             mcHash[lastMcIndex].push(item);
           } else if (i) {
@@ -14408,8 +14411,10 @@
 
     if (hasMc) {
       for (var i = res.length - 1; i >= 0; i--) {
-        if (mcHash.hasOwnProperty(i)) {
-          res.splice.apply(res, [i + 1, 0].concat(_toConsumableArray(mcHash[i])));
+        var idx = res[i].__iIndex;
+
+        if (mcHash.hasOwnProperty(idx)) {
+          res.splice.apply(res, [i + 1, 0].concat(_toConsumableArray(mcHash[idx])));
         }
       }
     }

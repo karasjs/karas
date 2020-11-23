@@ -756,10 +756,6 @@
       s += ' clip-path="' + vd.conClip + '"';
     }
 
-    if (vd.overflow) {
-      s += ' clip-path="' + vd.overflow + '"';
-    }
-
     s += '>';
     (vd.children || []).forEach(function (item) {
       if (item.isMask) {

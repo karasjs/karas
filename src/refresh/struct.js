@@ -562,8 +562,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             j++;
           }
           if(startIndex) {
-            let content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-            let mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
+            let content = inject.getCacheCanvas(width, height);
+            let mask = inject.getCacheCanvas(width, height);
             maskStartHash[startIndex] = mask;
             // 有start一定有end
             maskEndHash[endIndex] = {
@@ -586,7 +586,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           Cache.draw(ctx, __opacity, matrixEvent, __cache);
           if(__blurValue) {
             res = {};
-            let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+            let c = inject.getCacheCanvas(width, height);
             if(c.ctx) {
               let offScreen = {
                 ctx,
@@ -628,9 +628,12 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           list.forEach(offScreen => {
             let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
             let t = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-            offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+            let canvas = offScreen.target.canvas;
+            offScreen.ctx.drawImage(canvas, 0, 0);
             offScreen.target.draw();
             t.clear();
+            canvas.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(canvas);
             ctx = offScreen.ctx;
           });
         }
@@ -645,12 +648,14 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           mask.draw(ctx);
           ctx.globalCompositeOperation = 'source-over';
           mask.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(mask.canvas);
           ctx = origin;
           ctx.globalAlpha = 1;
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.drawImage(content.canvas, 0, 0);
           content.draw(ctx);
           content.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(content.canvas);
         }
       }
     }
@@ -692,8 +697,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
         j++;
       }
       if(startIndex) {
-        let content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-        let mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
+        let content = inject.getCacheCanvas(width, height);
+        let mask = inject.getCacheCanvas(width, height);
         maskStartHash[startIndex] = mask;
         // 有start一定有end
         maskEndHash[endIndex] = {
@@ -738,9 +743,12 @@ function renderCanvas(renderMode, ctx, defs, root) {
       list.forEach(offScreen => {
         let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
         let t = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-        offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+        let canvas = offScreen.target.canvas;
+        offScreen.ctx.drawImage(canvas, 0, 0);
         offScreen.target.draw();
         t.clear();
+        canvas.clearRect(0, 0, width, height);
+        inject.releaseCacheCanvas(canvas);
         ctx = offScreen.ctx;
       });
     }
@@ -755,12 +763,14 @@ function renderCanvas(renderMode, ctx, defs, root) {
       mask.draw(ctx);
       ctx.globalCompositeOperation = 'source-over';
       mask.ctx.clearRect(0, 0, width, height);
+      inject.releaseCacheCanvas(mask.canvas);
       ctx = origin;
       ctx.globalAlpha = 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.drawImage(content.canvas, 0, 0);
       content.draw(ctx);
       content.ctx.clearRect(0, 0, width, height);
+      inject.releaseCacheCanvas(content.canvas);
     }
   }
 }

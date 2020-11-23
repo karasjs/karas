@@ -1560,7 +1560,7 @@ class Xom extends Node {
           // 非cache模式返回offScreen，cache模式会生成cacheFilter识别
           if(renderMode === mode.CANVAS && v > 0  && !cache) {
             let { width, height } = root;
-            let c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+            let c = inject.getCacheCanvas(width, height);
             if(c.ctx) {
               offScreen = {
                 ctx,

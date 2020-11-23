@@ -7814,12 +7814,20 @@
   var SPF = 1000 / 60;
   var CANVAS = {};
   var WEBGL = {};
+  var CANVAS_LIST = [];
+  var WEBGL_LIST = [];
 
   function cache(key, width, height, hash) {
     var o;
 
     if (!key) {
-      o = document.createElement('canvas');
+      var target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
+
+      if (target.length) {
+        o = target.pop();
+      } else {
+        o = document.createElement('canvas');
+      }
     } else if (!hash[key]) {
       o = hash[key] = document.createElement('canvas');
     } else {
@@ -8057,6 +8065,9 @@
     getCacheCanvas: function getCacheCanvas(width, height, key) {
       return cacheCanvas(key, width, height);
     },
+    releaseCacheCanvas: function releaseCacheCanvas(o) {
+      CANVAS_LIST.push(o);
+    },
     delCacheCanvas: function delCacheCanvas(key) {
       key && delete CANVAS[key];
     },
@@ -8065,6 +8076,9 @@
     },
     getCacheWebgl: function getCacheWebgl(width, height, key) {
       return cacheWebgl(key, width, height);
+    },
+    releaseCacheWebgl: function releaseCacheWebgl(o) {
+      WEBGL_LIST.push(o);
     },
     delCacheWebgl: function delCacheWebgl(key) {
       key && delete WEBGL[key];
@@ -12754,7 +12768,7 @@
               if (renderMode === mode.CANVAS && v > 0 && !cache) {
                 var _width = root.width,
                     _height = root.height;
-                var c = inject.getCacheCanvas(_width, _height, '__$$blur$$__');
+                var c = inject.getCacheCanvas(_width, _height);
 
                 if (c.ctx) {
                   offScreen = {
@@ -18788,8 +18802,8 @@
               }
 
               if (startIndex) {
-                var content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-                var mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
+                var content = inject.getCacheCanvas(width, height);
+                var mask = inject.getCacheCanvas(width, height);
                 maskStartHash[startIndex] = mask; // 有start一定有end
 
                 maskEndHash[endIndex] = {
@@ -18815,7 +18829,7 @@
 
               if (_blurValue) {
                 res = {};
-                var c = inject.getCacheCanvas(width, height, '__$$blur$$__');
+                var c = inject.getCacheCanvas(width, height);
 
                 if (c.ctx) {
                   var offScreen = {
@@ -18863,9 +18877,12 @@
               _list.forEach(function (offScreen) {
                 var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
                 var t = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-                offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+                var canvas = offScreen.target.canvas;
+                offScreen.ctx.drawImage(canvas, 0, 0);
                 offScreen.target.draw();
                 t.clear();
+                canvas.clearRect(0, 0, width, height);
+                inject.releaseCacheCanvas(canvas);
                 ctx = offScreen.ctx;
               });
             } // mask在filter后面，先应用filter后再mask
@@ -18888,6 +18905,7 @@
 
               _mask.ctx.clearRect(0, 0, width, height);
 
+              inject.releaseCacheCanvas(_mask.canvas);
               ctx = origin;
               ctx.globalAlpha = 1;
               ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -18896,6 +18914,8 @@
               _content.draw(ctx);
 
               _content.ctx.clearRect(0, 0, width, height);
+
+              inject.releaseCacheCanvas(_content.canvas);
             }
           }
       }
@@ -18955,8 +18975,8 @@
         }
 
         if (startIndex) {
-          var content = inject.getCacheCanvas(width, height, '__$$mask1$$__');
-          var mask = inject.getCacheCanvas(width, height, '__$$mask2$$__');
+          var content = inject.getCacheCanvas(width, height);
+          var mask = inject.getCacheCanvas(width, height);
           maskStartHash[startIndex] = mask; // 有start一定有end
 
           maskEndHash[endIndex] = {
@@ -19008,9 +19028,12 @@
         _list2.forEach(function (offScreen) {
           var webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
           var t = blur.gaussBlur(offScreen.target, webgl, offScreen.blur, width, height);
-          offScreen.ctx.drawImage(offScreen.target.canvas, 0, 0);
+          var canvas = offScreen.target.canvas;
+          offScreen.ctx.drawImage(canvas, 0, 0);
           offScreen.target.draw();
           t.clear();
+          canvas.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(canvas);
           ctx = offScreen.ctx;
         });
       } // mask在filter后面，先应用filter后再mask
@@ -19033,6 +19056,7 @@
 
         _mask2.ctx.clearRect(0, 0, width, height);
 
+        inject.releaseCacheCanvas(_mask2.canvas);
         ctx = origin;
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -19041,6 +19065,8 @@
         _content2.draw(ctx);
 
         _content2.ctx.clearRect(0, 0, width, height);
+
+        inject.releaseCacheCanvas(_content2.canvas);
       }
     }
   }

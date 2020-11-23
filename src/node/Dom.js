@@ -19,7 +19,7 @@ function genZIndexChildren(dom) {
   let mcHash = {};
   let needSort = false;
   let lastIndex;
-  let lastMcIndex;
+  let lastMaskIndex;
   let children = dom.children;
   children.forEach((item, i) => {
     let child = item;
@@ -30,17 +30,18 @@ function genZIndexChildren(dom) {
     if(item.__layoutData || item instanceof Text) {
       if(item.isMask) {
         // 开头的mc忽略，后续的连续mc以第一次出现为准
-        if(lastMcIndex !== undefined) {
-          mcHash[lastMcIndex].push(item);
+        if(lastMaskIndex !== undefined) {
+          mcHash[lastMaskIndex].push(item);
         }
         else if(i) {
-          lastMcIndex = i - 1;
-          mcHash[lastMcIndex] = [item];
+          lastMaskIndex = i - 1;
+          children[lastMaskIndex].__iIndex = lastMaskIndex;
+          mcHash[lastMaskIndex] = [item];
           hasMc = true;
         }
       }
       else {
-        lastMcIndex = undefined;
+        lastMaskIndex = undefined;
         if(item instanceof Xom) {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用
@@ -77,8 +78,9 @@ function genZIndexChildren(dom) {
   // 将遮罩插入到对应顺序上
   if(hasMc) {
     for(let i = res.length - 1; i >= 0; i--) {
-      if(mcHash.hasOwnProperty(i)) {
-        res.splice(i + 1, 0, ...mcHash[i]);
+      let idx = res[i].__iIndex;
+      if(mcHash.hasOwnProperty(idx)) {
+        res.splice(i + 1, 0, ...mcHash[idx]);
       }
     }
   }

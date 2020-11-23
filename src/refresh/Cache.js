@@ -6,9 +6,10 @@ import tf from '../style/transform';
 import mx from '../math/matrix';
 
 function genSingle(cache) {
-  let { size, sx1, sy1, width, height } = cache;
+  let { size, sx1, sy1, width, height, bbox } = cache;
   let offScreen = inject.getCacheCanvas(width, height);
   offScreen.coords = [1, 1];
+  offScreen.bbox = bbox;
   offScreen.size = size;
   offScreen.sx1 = sx1;
   offScreen.sy1 = sy1;
@@ -176,12 +177,13 @@ class Cache {
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
   static genBlur(cache, v) {
-    let { coords: [x, y], size, canvas, sx1, sy1, width, height } = cache;
+    let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
     let cacheFilter = inject.getCacheWebgl(width, height);
     blur.gaussBlur(offScreen, cacheFilter, v, width, height);
+    cacheFilter.bbox = bbox;
     cacheFilter.coords = [1, 1];
     cacheFilter.size = size;
     cacheFilter.sx1 = sx1;
@@ -252,7 +254,7 @@ class Cache {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
-      ctx.rect(1, 1, outerWidth, outerHeight);
+      ctx.rect(sx - bbox[0] + 1, sy - bbox[1] + 1, outerWidth, outerHeight);
       ctx.fill();
       ctx.closePath();
       ctx.globalCompositeOperation = 'source-over';

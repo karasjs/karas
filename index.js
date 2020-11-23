@@ -10947,9 +10947,11 @@
         sx1 = cache.sx1,
         sy1 = cache.sy1,
         width = cache.width,
-        height = cache.height;
+        height = cache.height,
+        bbox = cache.bbox;
     var offScreen = inject.getCacheCanvas(width, height);
     offScreen.coords = [1, 1];
+    offScreen.bbox = bbox;
     offScreen.size = size;
     offScreen.sx1 = sx1;
     offScreen.sy1 = sy1;
@@ -11171,13 +11173,15 @@
             sx1 = cache.sx1,
             sy1 = cache.sy1,
             width = cache.width,
-            height = cache.height;
+            height = cache.height,
+            bbox = cache.bbox;
 
         var offScreen = inject.getCacheCanvas(width, height);
         offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
         offScreen.draw();
         var cacheFilter = inject.getCacheWebgl(width, height);
         blur.gaussBlur(offScreen, cacheFilter, v, width, height);
+        cacheFilter.bbox = bbox;
         cacheFilter.coords = [1, 1];
         cacheFilter.size = size;
         cacheFilter.sx1 = sx1;
@@ -11259,7 +11263,7 @@
           ctx.globalCompositeOperation = 'destination-in';
           ctx.fillStyle = '#FFF';
           ctx.beginPath();
-          ctx.rect(1, 1, outerWidth, outerHeight);
+          ctx.rect(sx - bbox[0] + 1, sy - bbox[1] + 1, outerWidth, outerHeight);
           ctx.fill();
           ctx.closePath();
           ctx.globalCompositeOperation = 'source-over';
@@ -18570,7 +18574,7 @@
   }
 
   function genFilter(node, cache, v) {
-    return node.__cacheFilter = Cache.drawBlur(cache, v);
+    return node.__cacheFilter = Cache.genBlur(cache, v);
   }
 
   function genMask(node, cache) {

@@ -285,7 +285,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
 }
 
 function genFilter(node, cache, v) {
-  return node.__cacheFilter = Cache.drawBlur(cache, v);
+  return node.__cacheFilter = Cache.genBlur(cache, v);
 }
 
 function genMask(node, cache) {

@@ -14351,7 +14351,7 @@
     var mcHash = {};
     var needSort = false;
     var lastIndex;
-    var lastMcIndex;
+    var lastMaskIndex;
     var children = dom.children;
     children.forEach(function (item, i) {
       var child = item;
@@ -14363,17 +14363,17 @@
 
       if (item.__layoutData || item instanceof Text) {
         if (item.isMask) {
-          child.__iIndex = i; // 开头的mc忽略，后续的连续mc以第一次出现为准
-
-          if (lastMcIndex !== undefined) {
-            mcHash[lastMcIndex].push(item);
+          // 开头的mc忽略，后续的连续mc以第一次出现为准
+          if (lastMaskIndex !== undefined) {
+            mcHash[lastMaskIndex].push(item);
           } else if (i) {
-            lastMcIndex = i - 1;
-            mcHash[lastMcIndex] = [item];
+            lastMaskIndex = i - 1;
+            children[lastMaskIndex].__iIndex = lastMaskIndex;
+            mcHash[lastMaskIndex] = [item];
             hasMc = true;
           }
         } else {
-          lastMcIndex = undefined;
+          lastMaskIndex = undefined;
 
           if (item instanceof Xom) {
             if (isRelativeOrAbsolute$1(item)) {

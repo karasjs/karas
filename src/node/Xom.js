@@ -1155,6 +1155,7 @@ class Xom extends Node {
         'borderLeftStyle',
         'backgroundRepeat',
         'filter',
+        'overflow',
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });
@@ -1349,7 +1350,9 @@ class Xom extends Node {
    * x1/x2/x3/x4/y1/y2/y3/y4 坐标
    * break svg判断无变化提前跳出
    * cacheError 离屏申请失败，仅canvas
-   * offScreen 无cache时的离屏canvas，仅canvas
+   * offScreenFilter 无cache时的离屏canvas，仅canvas
+   * offScreenMask 无cache时的离屏canvas，仅canvas
+   * offScreenOverflow 无cache时的离屏canvas，仅canvas
    */
   __renderSelf(renderMode, lv, ctx, defs, cache) {
     let {
@@ -1409,6 +1412,7 @@ class Xom extends Node {
       innerHeight,
       outerWidth,
       outerHeight,
+      __hasMask,
     } = this;
     let {
       marginTop,
@@ -1457,6 +1461,7 @@ class Xom extends Node {
       filter,
       backgroundSize,
       boxShadow,
+      overflow,
     } = computedStyle;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
@@ -1554,7 +1559,7 @@ class Xom extends Node {
       }
     }
     // 无cache时canvas的blur需绘制到离屏上应用后反向绘制回来，有cache在Dom里另生成一个filter的cache
-    let offScreen;
+    let offScreenFilter;
     if(Array.isArray(filter)) {
       filter.forEach(item => {
         let [k, v] = item;
@@ -1565,11 +1570,11 @@ class Xom extends Node {
             let { width, height } = root;
             let c = inject.getCacheCanvas(width, height);
             if(c.ctx) {
-              offScreen = {
+              offScreenFilter = {
                 ctx,
                 blur: v,
               };
-              offScreen.target = c;
+              offScreenFilter.target = c;
               ctx = c.ctx;
             }
           }
@@ -1603,6 +1608,67 @@ class Xom extends Node {
           }
         }
       });
+    }
+    let offScreenMask;
+    if(__hasMask) {
+      if(renderMode === mode.CANVAS && !cache) {
+        if(offScreenFilter) {
+          offScreenMask = offScreenFilter;
+        }
+        else {
+          let { width, height } = root;
+          let c = inject.getCacheCanvas(width, height);
+          if(c.ctx) {
+            offScreenMask = {
+              ctx,
+            };
+            offScreenMask.target = c;
+            ctx = c.ctx;
+          }
+        }
+      }
+    }
+    // overflow:hidden，最后判断，filter/mask优先
+    let offScreenOverflow;
+    if(overflow === 'hidden') {
+      if(renderMode === mode.CANVAS && !cache) {
+        if(offScreenFilter || offScreenMask) {
+          offScreenOverflow = (offScreenFilter || offScreenMask);
+        }
+        else {
+          let { width, height } = root;
+          let c = inject.getCacheCanvas(width, height);
+          if(c.ctx) {
+            offScreenOverflow = {
+              ctx,
+            };
+            offScreenOverflow.target = c;
+            ctx = c.ctx;
+          }
+        }
+        offScreenOverflow.x = x;
+        offScreenOverflow.y = y;
+        offScreenOverflow.outerWidth = outerWidth;
+        offScreenOverflow.outerHeight = outerHeight;
+      }
+      else if(renderMode === mode.SVG) {
+        let id = defs.add({
+          tagName: 'clipPath',
+          props: [],
+          children: [
+            {
+              tagName: 'path',
+              props: [
+                ['d', `M${x},${y}L${x + outerWidth},${y}L${x + outerWidth},${y + outerHeight}L${x},${y + outerHeight},L${x},${y}`],
+              ],
+            }
+          ],
+        });
+        virtualDom.overflow = 'url(#' + id + ')';
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      delete virtualDom.overflow;
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && !cache) {
@@ -1901,7 +1967,9 @@ class Xom extends Node {
       __cache.__available = true;
     }
     if(renderMode === mode.CANVAS) {
-     res.offScreen = offScreen;
+     res.offScreenFilter = offScreenFilter;
+     res.offScreenMask = offScreenMask;
+     res.offScreenOverflow = offScreenOverflow;
     }
     return res;
   }

@@ -65,6 +65,9 @@ function joinVirtualDom(vd) {
   if(vd.conClip) {
     s += ' clip-path="' + vd.conClip + '"';
   }
+  if(vd.overflow) {
+    s += ' clip-path="' + vd.overflow + '"';
+  }
   s += '>';
   (vd.children || []).forEach(item => {
     if(item.isMask) {
@@ -117,13 +120,13 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, visibility, mask, clip, filter } = vd;
+    let { opacity, transform, visibility, mask, overflow, filter } = vd;
     return '<g'
       + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
       + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
-      + (clip ? (' clip-path="' + clip + '"') : '')
+      + (overflow ? (' clip-path="' + overflow + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
       + '>' + s + '</g>';
   }

@@ -2595,7 +2595,8 @@
     rotateZ: 0,
     filter: null,
     boxShadow: null,
-    pointerEvents: 'inherit'
+    pointerEvents: 'inherit',
+    overflow: 'visible'
   };
   var GEOM = {
     fill: 'transparent',
@@ -2966,7 +2967,8 @@
       opacity: true,
       zIndex: true,
       filter: true,
-      boxShadow: true
+      boxShadow: true,
+      overflow: true
     },
     MEASURE: {
       fontSize: true,
@@ -3844,6 +3846,12 @@
           style.boxShadow.push(res);
         }
       });
+    }
+
+    temp = style.overflow;
+
+    if (temp && temp !== 'hidden') {
+      style.overflow = 'visible';
     }
 
     return style;

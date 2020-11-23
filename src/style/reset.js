@@ -66,6 +66,7 @@ const DOM = {
   filter: null,
   boxShadow: null,
   pointerEvents: 'inherit',
+  overflow: 'visible',
 };
 
 const GEOM = {

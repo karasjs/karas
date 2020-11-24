@@ -652,23 +652,7 @@ class Root extends Dom {
                   component: true, // 强制reflow
                 });
               });
-              // this.refresh();
             }
-            // 有可能组件都不需要更新，且没有其它触发的渲染更新
-            // else if(clone.length > setStateList.length) {
-            //   this.refresh();
-            // }
-            // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
-            // let r = this.__hookTask;
-            // if(r) {
-            //   let hookTask = frame.__hookTask;
-            //   let i = hookTask.indexOf(r);
-            //   if(i > -1) {
-            //     hookTask.splice(i, 1);
-            //   }
-            // }
-            // 触发didUpdate
-            // updater.did();
           }
         },
         __after: diff => {

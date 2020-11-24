@@ -299,7 +299,6 @@ function genOverflow(node, cache) {
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {
   let { __structs, width, height } = root;
-  let originCtx = ctx;
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let matrixList = [];
   let parentMatrix;
@@ -441,7 +440,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           ) || hasMask || __blurValue > 0 || overflow === 'hidden');
       if(focus) {
         prevLv = lv;
-        count = 1;
+        count = 0;
+        hash[lv - 1] = hash[lv - 1] || 0;
+        hash[lv - 1]++;
       }
       // >是父节点
       else if(lv < prevLv) {
@@ -454,7 +455,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         hash[lv] = 0;
         // 当>临界值时，进行cacheTotal合并
         if(count >= NUM && !node.__limitCache) {
-          count = 1;
+          count = 0;
+          hash[lv - 1] = hash[lv - 1] || 0;
+          hash[lv - 1]++;
           focus = true;
         }
       }
@@ -631,16 +634,40 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           list.forEach(offScreenFilter => {
             let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
             let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
-            let canvas = offScreenFilter.target.canvas;
-            offScreenFilter.ctx.drawImage(canvas, 0, 0);
-            offScreenFilter.target.draw();
             t.clear();
-            canvas.clearRect(0, 0, width, height);
-            inject.releaseCacheCanvas(canvas);
-            ctx = offScreenFilter.ctx;
+            if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i)) {
+              let target = offScreenFilter.target;
+              offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
+              target.draw();
+              target.ctx.clearRect(0, 0, width, height);
+              inject.releaseCacheCanvas(target.canvas);
+              ctx = offScreenFilter.ctx;
+            }
           });
         }
-        // mask在filter后面，先应用filter后再mask
+        // overflow在filter后面
+        if(overflowHash.hasOwnProperty(i)) {
+          let list = overflowHash[i];
+          list.forEach(offScreenOverflow => {
+            let { target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.rect(x, y, outerWidth, outerHeight);
+            ctx.fill();
+            ctx.closePath();
+            ctx.globalCompositeOperation = 'source-over';
+            if(!maskStartHash.hasOwnProperty(i + 1)) {
+              origin.drawImage(target.canvas, 0, 0);
+              ctx.clearRect(0, 0, width, height);
+              inject.releaseCacheCanvas(target.canvas);
+              ctx = origin;
+            }
+          });
+        }
+        // mask在最后，因为maskEnd比节点本省索引小
         if(maskEndHash.hasOwnProperty(i)) {
           let { mask, offScreenMask } = maskEndHash[i];
           ctx = offScreenMask.target.ctx;
@@ -660,26 +687,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           target.draw(ctx);
           target.ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(offScreenMask.target.canvas);
-        }
-        // overflow在最后
-        if(overflowHash.hasOwnProperty(i)) {
-          let list = overflowHash[i];
-          list.forEach(offScreenOverflow => {
-            let { target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
-            ctx.globalCompositeOperation = 'destination-in';
-            ctx.globalAlpha = 1;
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.fillStyle = '#FFF';
-            ctx.beginPath();
-            ctx.rect(x, y, outerWidth, outerHeight);
-            ctx.fill();
-            ctx.closePath();
-            origin.drawImage(target.canvas, 0, 0);
-            ctx.globalCompositeOperation = 'source-over';
-            ctx.clearRect(0, 0, width, height);
-            inject.releaseCacheCanvas(target.canvas);
-            ctx = origin;
-          });
         }
       }
     }
@@ -769,16 +776,40 @@ function renderCanvas(renderMode, ctx, defs, root) {
       list.forEach(offScreenFilter => {
         let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
         let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
-        let canvas = offScreenFilter.target.canvas;
-        offScreenFilter.ctx.drawImage(canvas, 0, 0);
-        offScreenFilter.target.draw();
         t.clear();
-        canvas.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(canvas);
-        ctx = offScreenFilter.ctx;
+        if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i)) {
+          let target = offScreenFilter.target;
+          offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
+          target.draw();
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
+          ctx = offScreenFilter.ctx;
+        }
       });
     }
-    // mask在filter后面，先应用filter后再mask
+    // overflow在filter后面
+    if(overflowHash.hasOwnProperty(i)) {
+      let list = overflowHash[i];
+      list.forEach(offScreenOverflow => {
+        let { target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.rect(x, y, outerWidth, outerHeight);
+        ctx.fill();
+        ctx.closePath();
+        ctx.globalCompositeOperation = 'source-over';
+        if(!maskStartHash.hasOwnProperty(i + 1)) {
+          origin.drawImage(target.canvas, 0, 0);
+          ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
+          ctx = origin;
+        }
+      });
+    }
+    // mask在最后，因为maskEnd比节点本省索引小
     if(maskEndHash.hasOwnProperty(i)) {
       let { mask, offScreenMask } = maskEndHash[i];
       ctx = offScreenMask.target.ctx;
@@ -798,26 +829,6 @@ function renderCanvas(renderMode, ctx, defs, root) {
       target.draw(ctx);
       target.ctx.clearRect(0, 0, width, height);
       inject.releaseCacheCanvas(offScreenMask.target.canvas);
-    }
-    // overflow在最后
-    if(overflowHash.hasOwnProperty(i)) {
-      let list = overflowHash[i];
-      list.forEach(offScreenOverflow => {
-        let { target, ctx: origin, x, y, outerWidth, outerHeight } = offScreenOverflow;
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = '#FFF';
-        ctx.beginPath();
-        ctx.rect(x, y, outerWidth, outerHeight);
-        ctx.fill();
-        ctx.closePath();
-        origin.drawImage(target.canvas, 0, 0);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(target.canvas);
-        ctx = origin;
-      });
     }
   }
 }

@@ -19,7 +19,6 @@ class Geom extends Xom {
     this.__isClip = this.__isMask && !!this.props.clip;
     let { style, isMask } = this;
     if(isMask) {
-      style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;

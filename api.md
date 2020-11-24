@@ -874,7 +874,7 @@ a.on(karas.Event.END, function() {
 #### zIndexChildren
 * **类型** `Array<Dom/Text/Geom>`
 * **说明**  
-此Dom下的直接孩子，且按照zIndex属性排好顺序，去除`mask`遮罩孩子。
+此Dom下的直接孩子，且按照zIndex属性排好顺序。
 
 #### lineGroups
 * **类型** `Array<Dom/Text/Geom>`
@@ -1208,12 +1208,12 @@ karas.render(
 #### isClip
 * **类型** `boolean` 只读
 * **说明**  
-当前标签属性是否传入了`clip`，表明图形是无透明遮罩。当为真值时，强制没有边线且没有透明度，因此只有封闭图形有效。
+当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。`clip`依赖`mask`属性声明。
 * **示例**
 ```jsx
 karas.render(
   <canvas>
-    <$rect style={{width: 100, height:100}} clip={true}/>
+    <$rect style={{width: 100, height:100}} mask={true} clip={true}/>
   </canvas>,
   '#selector'
 );

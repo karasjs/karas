@@ -16657,7 +16657,6 @@
           isMask = _assertThisInitialize.isMask;
 
       if (isMask) {
-        style.visibility = 'visible';
         style.background = null;
         style.border = null;
         style.strokeWidth = 0;
@@ -24157,7 +24156,7 @@
     Cache: Cache
   };
 
-  var version = "0.40.14";
+  var version = "0.41.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

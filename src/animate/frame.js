@@ -44,10 +44,9 @@ class Frame {
         last = now;
         // 优先动画计算
         let clone = task.slice(0);
-        let hook = self.__hookTask.splice(0);
         traversal(clone, diff);
-        // 执行动画造成的刷新并清空，在root的refreshTask回调中可能被清空，因为task已经刷新过了
-        hook.forEach(item => item());
+        // 执行动画造成的每个Root的刷新并清空
+        self.__hookTask.splice(0).forEach(item => item());
         // 普通的before/after
         traversal(clone, diff, true);
         // 还有则继续，没有则停止节省性能

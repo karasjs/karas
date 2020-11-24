@@ -215,6 +215,22 @@ function int2rgba(color) {
   return color || 'rgba(0,0,0,0)';
 }
 
+function int2invert(color) {
+  if(Array.isArray(color)) {
+    color = color.slice(0);
+    color[0] = 255 - color[0];
+    color[1] = 255 - color[1];
+    color[2] = 255 - color[2];
+    if(color.length === 4) {
+      return 'rgba(' + joinArr(color, ',') + ')';
+    }
+    else if(color.length === 3) {
+      return 'rgba(' + joinArr(color, ',') + ',1)';
+    }
+  }
+  return 'rgba(0,0,0,0)';
+}
+
 function arr2hash(arr) {
   let hash = {};
   for(let i = 0, len = arr.length; i < len; i++) {
@@ -438,6 +454,7 @@ let util = {
   joinDef,
   rgba2int,
   int2rgba,
+  int2invert,
   arr2hash,
   hash2arr,
   clone,

@@ -288,9 +288,9 @@ function genFilter(node, cache, v) {
   return node.__cacheFilter = Cache.genBlur(cache, v);
 }
 
-function genMask(node, cache) {
+function genMask(node, cache, isClip) {
   let { transform, transformOrigin } = node.computedStyle;
-  return node.__cacheMask = Cache.genMask(cache, node.next, transform, transformOrigin);
+  return node.__cacheMask = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
 }
 
 function genOverflow(node, cache) {
@@ -489,7 +489,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           target = genFilter(node, __cacheTotal, __blurValue);
         }
         if(hasMask) {
-          target = genMask(node, target);
+          target = genMask(node, target, node.next.isClip);
         }
         if(overflow === 'hidden') {
           genOverflow(node, target);
@@ -669,24 +669,44 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         }
         // mask在最后，因为maskEnd比节点本省索引小
         if(maskEndHash.hasOwnProperty(i)) {
-          let { mask, offScreenMask } = maskEndHash[i];
-          ctx = offScreenMask.target.ctx;
-          ctx.globalCompositeOperation = 'destination-in';
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.drawImage(mask.canvas, 0, 0);
-          mask.draw(ctx);
-          ctx.globalCompositeOperation = 'source-over';
-          mask.ctx.clearRect(0, 0, width, height);
-          inject.releaseCacheCanvas(mask.canvas);
-          ctx = offScreenMask.ctx;
-          ctx.globalAlpha = 1;
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          let target = offScreenMask.target;
-          ctx.drawImage(target.canvas, 0, 0);
-          target.draw(ctx);
-          target.ctx.clearRect(0, 0, width, height);
-          inject.releaseCacheCanvas(offScreenMask.target.canvas);
+          let { mask, offScreenMask, isClip } = maskEndHash[i];
+          if(isClip) {
+            ctx = mask.ctx;
+            ctx.globalCompositeOperation = 'source-out';
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(offScreenMask.target.canvas, 0, 0);
+            mask.draw(ctx);
+            ctx.globalCompositeOperation = 'source-over';
+            offScreenMask.target.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(offScreenMask.target.canvas);
+            ctx = offScreenMask.ctx;
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(mask.canvas, 0, 0);
+            mask.draw(ctx);
+            mask.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(mask.canvas);
+          }
+          else {
+            ctx = offScreenMask.target.ctx;
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(mask.canvas, 0, 0);
+            mask.draw(ctx);
+            ctx.globalCompositeOperation = 'source-over';
+            mask.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(mask.canvas);
+            ctx = offScreenMask.ctx;
+            ctx.globalAlpha = 1;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            let target = offScreenMask.target;
+            ctx.drawImage(target.canvas, 0, 0);
+            target.draw(ctx);
+            target.ctx.clearRect(0, 0, width, height);
+            inject.releaseCacheCanvas(offScreenMask.target.canvas);
+          }
         }
       }
     }
@@ -756,6 +776,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       maskEndHash[endIndex] = {
         mask,
         offScreenMask,
+        isClip: __structs[startIndex].node.isClip,
       };
       ctx = offScreenMask.target.ctx;
     }
@@ -811,30 +832,50 @@ function renderCanvas(renderMode, ctx, defs, root) {
     }
     // mask在最后，因为maskEnd比节点本省索引小
     if(maskEndHash.hasOwnProperty(i)) {
-      let { mask, offScreenMask } = maskEndHash[i];
-      ctx = offScreenMask.target.ctx;
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.globalAlpha = 1;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.drawImage(mask.canvas, 0, 0);
-      mask.draw(ctx);
-      ctx.globalCompositeOperation = 'source-over';
-      mask.ctx.clearRect(0, 0, width, height);
-      inject.releaseCacheCanvas(mask.canvas);
-      ctx = offScreenMask.ctx;
-      ctx.globalAlpha = 1;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      let target = offScreenMask.target;
-      ctx.drawImage(target.canvas, 0, 0);
-      target.draw(ctx);
-      target.ctx.clearRect(0, 0, width, height);
-      inject.releaseCacheCanvas(offScreenMask.target.canvas);
+      let { mask, offScreenMask, isClip } = maskEndHash[i];
+      if(isClip) {
+        ctx = mask.ctx;
+        ctx.globalCompositeOperation = 'source-out';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(offScreenMask.target.canvas, 0, 0);
+        mask.draw(ctx);
+        ctx.globalCompositeOperation = 'source-over';
+        offScreenMask.target.ctx.clearRect(0, 0, width, height);
+        inject.releaseCacheCanvas(offScreenMask.target.canvas);
+        ctx = offScreenMask.ctx;
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(mask.canvas, 0, 0);
+        mask.draw(ctx);
+        mask.ctx.clearRect(0, 0, width, height);
+        inject.releaseCacheCanvas(mask.canvas);
+      }
+      else {
+        ctx = offScreenMask.target.ctx;
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(mask.canvas, 0, 0);
+        mask.draw(ctx);
+        ctx.globalCompositeOperation = 'source-over';
+        mask.ctx.clearRect(0, 0, width, height);
+        inject.releaseCacheCanvas(mask.canvas);
+        ctx = offScreenMask.ctx;
+        ctx.globalAlpha = 1;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        let target = offScreenMask.target;
+        ctx.drawImage(target.canvas, 0, 0);
+        target.draw(ctx);
+        target.ctx.clearRect(0, 0, width, height);
+        inject.releaseCacheCanvas(offScreenMask.target.canvas);
+      }
     }
   }
 }
 
 function renderSvg(renderMode, ctx, defs, root) {
-  let { __structs } = root;
+  let { __structs, width, height } = root;
   let maskHash = {};
   // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
   let parentMatrixList = [];
@@ -854,6 +895,7 @@ function renderSvg(renderMode, ctx, defs, root) {
         index: i,
         start,
         end,
+        isClip: __structs[start].node.isClip,
       };
     }
     // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
@@ -960,18 +1002,38 @@ function renderSvg(renderMode, ctx, defs, root) {
       continue;
     }
     if(maskHash.hasOwnProperty(i)) {
-      let { index, start, end } = maskHash[i];
+      let { index, start, end, isClip } = maskHash[i];
       let target = __structs[index];
       let dom = target.node;
       let mChildren = [];
+      // clip模式时，先添加兜底整个白色使得全部都可见，mask本身变反色（黑色）
+      if(isClip) {
+        mChildren.push({
+          type: 'item',
+          tagName: 'path',
+          props: [
+            ['d', `M0,0L${width},0L${width},${height}L0,${height}L0,0`],
+            ['fill', 'rgba(255,255,255,1)'],
+            ['stroke-width', 0],
+          ],
+        });
+      }
       for(let j = start; j < end; j++) {
         let node = __structs[j].node;
-        let { computedStyle: { display, visibility }, virtualDom: { children } } = node;
+        let { computedStyle: { display, visibility, fill }, virtualDom: { children } } = node;
         if(display !== 'none' && visibility !== 'hidden') {
           mChildren = mChildren.concat(children);
           for(let k = 0, len = children.length; k < len; k++) {
             let { tagName, props } = children[k];
             if(tagName === 'path') {
+              if(isClip) {
+                for(let j = 0, len = props.length; j < len; j++) {
+                  let item = props[j];
+                  if(item[0] === 'fill') {
+                    item[1] = util.int2invert(fill);
+                  }
+                }
+              }
               let matrix = node.renderMatrix;
               let inverse = mx.inverse(dom.renderMatrix);
               matrix = mx.multiply(matrix, inverse);
@@ -995,6 +1057,7 @@ function renderSvg(renderMode, ctx, defs, root) {
         dom.virtualDom.mask = id;
       }
     }
+    // mask不入children
     if(parentVd && !node.isMask) {
       parentVd.children.push(virtualDom);
     }

@@ -907,6 +907,23 @@
     return color || 'rgba(0,0,0,0)';
   }
 
+  function int2invert(color) {
+    if (Array.isArray(color)) {
+      color = color.slice(0);
+      color[0] = 255 - color[0];
+      color[1] = 255 - color[1];
+      color[2] = 255 - color[2];
+
+      if (color.length === 4) {
+        return 'rgba(' + joinArr(color, ',') + ')';
+      } else if (color.length === 3) {
+        return 'rgba(' + joinArr(color, ',') + ',1)';
+      }
+    }
+
+    return 'rgba(0,0,0,0)';
+  }
+
   function arr2hash(arr) {
     var hash = {};
 
@@ -1180,6 +1197,7 @@
     joinDef: joinDef,
     rgba2int: rgba2int,
     int2rgba: int2rgba,
+    int2invert: int2invert,
     arr2hash: arr2hash,
     hash2arr: hash2arr,
     clone: clone,
@@ -10759,8 +10777,8 @@
   }, ENUM);
   o$1.TRANSFORMS = TRANSFORMS;
 
-  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048];
-  var NUMBER$3 = [8, 8, 8, 8, 8, 4, 2, 1, 1];
+  var SIZE = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+  var NUMBER$3 = [8, 8, 8, 8, 8, 4, 2, 1, 1, 1];
   var MAX = SIZE[SIZE.length - 1];
   var HASH = {};
 
@@ -11190,7 +11208,7 @@
       }
     }, {
       key: "genMask",
-      value: function genMask(target, next, transform, tfo) {
+      value: function genMask(target, next, isClip, transform, tfo) {
         var cacheMask = genSingle(target);
         var list = [];
 
@@ -11228,7 +11246,7 @@
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'source-in';
+        ctx.globalCompositeOperation = isClip ? 'source-out' : 'source-in';
         Cache.drawCache(target, cacheMask);
         ctx.globalCompositeOperation = 'source-over';
         cacheMask.draw(ctx);
@@ -16612,10 +16630,6 @@
     return Defs;
   }();
 
-  // import tf from '../style/transform';
-  // import mx from '../math/matrix';
-  // import Cache from '../refresh/Cache';
-
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
@@ -16636,6 +16650,7 @@
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
       _this.__isMask = !!_this.props.mask;
+      _this.__isClip = _this.__isMask && !!_this.props.clip;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
@@ -17011,6 +17026,11 @@
       key: "isMask",
       get: function get() {
         return this.__isMask;
+      }
+    }, {
+      key: "isClip",
+      get: function get() {
+        return this.__isClip;
       }
     }, {
       key: "currentProps",
@@ -18573,11 +18593,11 @@
     return node.__cacheFilter = Cache.genBlur(cache, v);
   }
 
-  function genMask(node, cache) {
+  function genMask(node, cache, isClip) {
     var _node$computedStyle = node.computedStyle,
         transform = _node$computedStyle.transform,
         transformOrigin = _node$computedStyle.transformOrigin;
-    return node.__cacheMask = Cache.genMask(cache, node.next, transform, transformOrigin);
+    return node.__cacheMask = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
   }
 
   function genOverflow(node, cache) {
@@ -18830,7 +18850,7 @@
           }
 
           if (hasMask) {
-            target = genMask(node, target);
+            target = genMask(node, target, node.next.isClip);
           }
 
           if (overflow === 'hidden') {
@@ -19074,31 +19094,59 @@
             if (maskEndHash.hasOwnProperty(_i4)) {
               var _maskEndHash$_i = maskEndHash[_i4],
                   _mask = _maskEndHash$_i.mask,
-                  _offScreenMask = _maskEndHash$_i.offScreenMask;
-              ctx = _offScreenMask.target.ctx;
-              ctx.globalCompositeOperation = 'destination-in';
-              ctx.globalAlpha = 1;
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              ctx.drawImage(_mask.canvas, 0, 0);
+                  _offScreenMask = _maskEndHash$_i.offScreenMask,
+                  isClip = _maskEndHash$_i.isClip;
 
-              _mask.draw(ctx);
+              if (isClip) {
+                ctx = _mask.ctx;
+                ctx.globalCompositeOperation = 'source-out';
+                ctx.globalAlpha = 1;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(_offScreenMask.target.canvas, 0, 0);
 
-              ctx.globalCompositeOperation = 'source-over';
+                _mask.draw(ctx);
 
-              _mask.ctx.clearRect(0, 0, width, height);
+                ctx.globalCompositeOperation = 'source-over';
 
-              inject.releaseCacheCanvas(_mask.canvas);
-              ctx = _offScreenMask.ctx;
-              ctx.globalAlpha = 1;
-              ctx.setTransform(1, 0, 0, 1, 0, 0);
-              var _target3 = _offScreenMask.target;
-              ctx.drawImage(_target3.canvas, 0, 0);
+                _offScreenMask.target.ctx.clearRect(0, 0, width, height);
 
-              _target3.draw(ctx);
+                inject.releaseCacheCanvas(_offScreenMask.target.canvas);
+                ctx = _offScreenMask.ctx;
+                ctx.globalAlpha = 1;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(_mask.canvas, 0, 0);
 
-              _target3.ctx.clearRect(0, 0, width, height);
+                _mask.draw(ctx);
 
-              inject.releaseCacheCanvas(_offScreenMask.target.canvas);
+                _mask.ctx.clearRect(0, 0, width, height);
+
+                inject.releaseCacheCanvas(_mask.canvas);
+              } else {
+                ctx = _offScreenMask.target.ctx;
+                ctx.globalCompositeOperation = 'destination-in';
+                ctx.globalAlpha = 1;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(_mask.canvas, 0, 0);
+
+                _mask.draw(ctx);
+
+                ctx.globalCompositeOperation = 'source-over';
+
+                _mask.ctx.clearRect(0, 0, width, height);
+
+                inject.releaseCacheCanvas(_mask.canvas);
+                ctx = _offScreenMask.ctx;
+                ctx.globalAlpha = 1;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                var _target3 = _offScreenMask.target;
+                ctx.drawImage(_target3.canvas, 0, 0);
+
+                _target3.draw(ctx);
+
+                _target3.ctx.clearRect(0, 0, width, height);
+
+                inject.releaseCacheCanvas(_offScreenMask.target.canvas);
+              }
             }
           }
       }
@@ -19199,7 +19247,8 @@
 
         maskEndHash[endIndex] = {
           mask: mask,
-          offScreenMask: offScreenMask
+          offScreenMask: offScreenMask,
+          isClip: __structs[startIndex].node.isClip
         };
         ctx = offScreenMask.target.ctx;
       } // overflow:hidden的离屏，最后孩子进行截取
@@ -19274,28 +19323,56 @@
       if (maskEndHash.hasOwnProperty(_i6)) {
         var _maskEndHash$_i2 = maskEndHash[_i6],
             _mask2 = _maskEndHash$_i2.mask,
-            _offScreenMask2 = _maskEndHash$_i2.offScreenMask;
-        ctx = _offScreenMask2.target.ctx;
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.drawImage(_mask2.canvas, 0, 0);
+            _offScreenMask2 = _maskEndHash$_i2.offScreenMask,
+            isClip = _maskEndHash$_i2.isClip;
 
-        _mask2.draw(ctx);
+        if (isClip) {
+          ctx = _mask2.ctx;
+          ctx.globalCompositeOperation = 'source-out';
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(_offScreenMask2.target.canvas, 0, 0);
 
-        ctx.globalCompositeOperation = 'source-over';
+          _mask2.draw(ctx);
 
-        _mask2.ctx.clearRect(0, 0, width, height);
+          ctx.globalCompositeOperation = 'source-over';
 
-        inject.releaseCacheCanvas(_mask2.canvas);
-        ctx = _offScreenMask2.ctx;
-        ctx.globalAlpha = 1;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        var target = _offScreenMask2.target;
-        ctx.drawImage(target.canvas, 0, 0);
-        target.draw(ctx);
-        target.ctx.clearRect(0, 0, width, height);
-        inject.releaseCacheCanvas(_offScreenMask2.target.canvas);
+          _offScreenMask2.target.ctx.clearRect(0, 0, width, height);
+
+          inject.releaseCacheCanvas(_offScreenMask2.target.canvas);
+          ctx = _offScreenMask2.ctx;
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(_mask2.canvas, 0, 0);
+
+          _mask2.draw(ctx);
+
+          _mask2.ctx.clearRect(0, 0, width, height);
+
+          inject.releaseCacheCanvas(_mask2.canvas);
+        } else {
+          ctx = _offScreenMask2.target.ctx;
+          ctx.globalCompositeOperation = 'destination-in';
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.drawImage(_mask2.canvas, 0, 0);
+
+          _mask2.draw(ctx);
+
+          ctx.globalCompositeOperation = 'source-over';
+
+          _mask2.ctx.clearRect(0, 0, width, height);
+
+          inject.releaseCacheCanvas(_mask2.canvas);
+          ctx = _offScreenMask2.ctx;
+          ctx.globalAlpha = 1;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          var target = _offScreenMask2.target;
+          ctx.drawImage(target.canvas, 0, 0);
+          target.draw(ctx);
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(_offScreenMask2.target.canvas);
+        }
       }
 
       _i5 = _i6;
@@ -19309,7 +19386,9 @@
   }
 
   function renderSvg(renderMode, ctx, defs, root) {
-    var __structs = root.__structs;
+    var __structs = root.__structs,
+        width = root.width,
+        height = root.height;
     var maskHash = {}; // 栈代替递归，存父节点的matrix/opacity，matrix为E时存null省略计算
 
     var parentMatrixList = [];
@@ -19336,7 +19415,8 @@
         maskHash[end - 1] = {
           index: _i8,
           start: start,
-          end: end
+          end: end,
+          isClip: __structs[start].node.isClip
         };
       } // lv变大说明是child，相等是sibling，变小可能是parent或另一棵子树，Root节点第一个特殊处理
 
@@ -19458,16 +19538,26 @@
         var _maskHash$_i = maskHash[_i8],
             index = _maskHash$_i.index,
             _start = _maskHash$_i.start,
-            _end = _maskHash$_i.end;
+            _end = _maskHash$_i.end,
+            isClip = _maskHash$_i.isClip;
         var target = __structs[index];
         var dom = target.node;
-        var mChildren = [];
+        var mChildren = []; // clip模式时，先添加兜底整个白色使得全部都可见，mask本身变反色（黑色）
+
+        if (isClip) {
+          mChildren.push({
+            type: 'item',
+            tagName: 'path',
+            props: [['d', "M0,0L".concat(width, ",0L").concat(width, ",").concat(height, "L0,").concat(height, "L0,0")], ['fill', 'rgba(255,255,255,1)'], ['stroke-width', 0]]
+          });
+        }
 
         for (var j = _start; j < _end; j++) {
           var _node3 = __structs[j].node;
           var _node3$computedStyle = _node3.computedStyle,
               _display2 = _node3$computedStyle.display,
               visibility = _node3$computedStyle.visibility,
+              fill = _node3$computedStyle.fill,
               children = _node3.virtualDom.children;
 
           if (_display2 !== 'none' && visibility !== 'hidden') {
@@ -19479,6 +19569,16 @@
                   props = _children$k.props;
 
               if (tagName === 'path') {
+                if (isClip) {
+                  for (var _j6 = 0, _len5 = props.length; _j6 < _len5; _j6++) {
+                    var _item3 = props[_j6];
+
+                    if (_item3[0] === 'fill') {
+                      _item3[1] = util.int2invert(fill);
+                    }
+                  }
+                }
+
                 var _matrix2 = _node3.renderMatrix;
                 var inverse = mx.inverse(dom.renderMatrix);
                 _matrix2 = mx.multiply(_matrix2, inverse);
@@ -19501,7 +19601,8 @@
           id = 'url(#' + id + ')';
           dom.virtualDom.mask = id;
         }
-      }
+      } // mask不入children
+
 
       if (parentVd && !node.isMask) {
         parentVd.children.push(virtualDom);

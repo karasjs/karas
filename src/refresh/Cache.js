@@ -195,7 +195,7 @@ class Cache {
     return cacheFilter;
   }
 
-  static genMask(target, next, transform, tfo) {
+  static genMask(target, next, isClip, transform, tfo) {
     let cacheMask = genSingle(target);
     let list = [];
     while(next && (next.isMask)) {
@@ -229,7 +229,7 @@ class Cache {
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-in';
+    ctx.globalCompositeOperation = isClip ? 'source-out' : 'source-in';
     Cache.drawCache(target, cacheMask);
     ctx.globalCompositeOperation = 'source-over';
     cacheMask.draw(ctx);

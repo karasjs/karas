@@ -749,6 +749,10 @@ function normalize(style, reset = []) {
       }
     });
   }
+  temp = style.overflow;
+  if(temp && temp !== 'hidden') {
+    style.overflow = 'visible';
+  }
   return style;
 }
 

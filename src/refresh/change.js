@@ -44,6 +44,7 @@ let o = {
     zIndex: true,
     filter: true,
     boxShadow: true,
+    overflow: true,
   },
   MEASURE: {
     fontSize: true,

@@ -129,7 +129,7 @@ function diffChild(elem, ovd, nvd) {
 }
 
 function diffX2X(elem, ovd, nvd) {
-  let { transform, opacity, visibility, mask, filter, conClip } = nvd;
+  let { transform, opacity, visibility, mask, overflow, filter, conClip } = nvd;
   if(ovd.transform !== transform) {
     if(transform) {
       elem.setAttribute('transform', transform);
@@ -163,6 +163,14 @@ function diffX2X(elem, ovd, nvd) {
     }
     else {
       elem.removeAttribute('filter');
+    }
+  }
+  if(ovd.overflow !== overflow) {
+    if(overflow) {
+      elem.setAttribute('clipPath', overflow);
+    }
+    else {
+      elem.removeAttribute('overflow');
     }
   }
   if(ovd.conClip !== conClip) {

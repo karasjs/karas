@@ -5,6 +5,21 @@ import blur from '../style/blur';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 
+function genSingle(cache) {
+  let { size, sx1, sy1, width, height, bbox } = cache;
+  let offScreen = inject.getCacheCanvas(width, height);
+  offScreen.coords = [1, 1];
+  offScreen.bbox = bbox;
+  offScreen.size = size;
+  offScreen.sx1 = sx1;
+  offScreen.sy1 = sy1;
+  offScreen.dbx = cache.dbx;
+  offScreen.dby = cache.dby;
+  offScreen.width = width;
+  offScreen.height = height;
+  return offScreen;
+}
+
 class Cache {
   constructor(w, h, bbox, page, pos) {
     this.__init(w, h, bbox, page, pos);
@@ -155,33 +170,20 @@ class Cache {
     return new Cache(w, h, bbox, page, pos);
   }
 
-  static genMask(cache) {
-    let { size, sx1, sy1, width, height } = cache;
-    let offScreen = inject.getCacheCanvas(width, height);
-    offScreen.coords = [1, 1];
-    offScreen.size = size;
-    offScreen.sx1 = sx1;
-    offScreen.sy1 = sy1;
-    offScreen.dbx = cache.dbx;
-    offScreen.dby = cache.dby;
-    offScreen.width = width;
-    offScreen.height = height;
-    return offScreen;
-  }
-
   /**
    * 复制cache的一块出来单独作为cacheFilter，尺寸边距保持一致，用webgl的滤镜
    * @param cache
    * @param v
    * @returns {{canvas: *, ctx: *, release(): void, available: boolean, draw()}}
    */
-  static genOffScreenBlur(cache, v) {
-    let { coords: [x, y], size, canvas, sx1, sy1, width, height } = cache;
+  static genBlur(cache, v) {
+    let { coords: [x, y], size, canvas, sx1, sy1, width, height, bbox } = cache;
     let offScreen = inject.getCacheCanvas(width, height);
     offScreen.ctx.drawImage(canvas, x - 1, y - 1, width, height, 0, 0, width, height);
     offScreen.draw();
     let cacheFilter = inject.getCacheWebgl(width, height);
     blur.gaussBlur(offScreen, cacheFilter, v, width, height);
+    cacheFilter.bbox = bbox;
     cacheFilter.coords = [1, 1];
     cacheFilter.size = size;
     cacheFilter.sx1 = sx1;
@@ -191,6 +193,73 @@ class Cache {
     cacheFilter.width = width;
     cacheFilter.height = height;
     return cacheFilter;
+  }
+
+  static genMask(target, next, isClip, transform, tfo) {
+    let cacheMask = genSingle(target);
+    let list = [];
+    while(next && (next.isMask)) {
+      list.push(next);
+      next = next.next;
+    }
+    let { coords: [x, y], ctx, dbx, dby } = cacheMask;
+    tfo[0] += x + dbx;
+    tfo[1] += y + dby;
+    let inverse = tf.calMatrixByOrigin(transform, tfo);
+    // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
+    list.forEach(item => {
+      let cacheFilter = item.__cacheFilter, cache = item.__cache;
+      let source = cacheFilter && cacheFilter.available && cacheFilter;
+      if(!source) {
+        source = cache && cache.available && cache;
+      }
+      if(source) {
+        ctx.globalAlpha = item.__opacity;
+        Cache.drawCache(
+          source, cacheMask,
+          item.computedStyle.transform,
+          [1, 0, 0, 1, 0, 0],
+          item.computedStyle.transformOrigin.slice(0),
+          inverse
+        );
+      }
+      else {
+        console.error('CacheMask is oversize');
+      }
+    });
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = isClip ? 'source-out' : 'source-in';
+    Cache.drawCache(target, cacheMask);
+    ctx.globalCompositeOperation = 'source-over';
+    cacheMask.draw(ctx);
+    return cacheMask;
+  }
+
+  /**
+   * 如果不超过bbox，直接用已有的total/filter/mask，否则生成一个新的
+   */
+  static genOverflow(target, node) {
+    let { bbox } = target;
+    let { sx, sy, outerWidth, outerHeight } = node;
+    let xe = sx + outerWidth;
+    let ye = sy + outerHeight;
+    if(bbox[0] < sx || bbox[1] < sy || bbox[2] > xe || bbox[3] > ye) {
+      let cacheOverflow = genSingle(target);
+      let ctx = cacheOverflow.ctx;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      Cache.drawCache(target, cacheOverflow);
+      cacheOverflow.draw(ctx);
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath();
+      ctx.rect(sx - bbox[0] + 1, sy - bbox[1] + 1, outerWidth, outerHeight);
+      ctx.fill();
+      ctx.closePath();
+      ctx.globalCompositeOperation = 'source-over';
+      return cacheOverflow;
+    }
   }
 
   /**
@@ -247,47 +316,6 @@ class Cache {
       ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     ctx.drawImage(canvas, x - 1, y - 1, width, height, dx - 1, dy - 1, width, height);
-  }
-
-  static drawMask(target, next, transform, tfo) {
-    let cacheMask = Cache.genMask(target);
-    let list = [];
-    while(next && (next.isMask)) {
-      list.push(next);
-      next = next.next;
-    }
-    let { coords: [x, y], ctx, dbx, dby } = cacheMask;
-    tfo[0] += x + dbx;
-    tfo[1] += y + dby;
-    let inverse = tf.calMatrixByOrigin(transform, tfo);
-    // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
-    list.forEach(item => {
-      let cacheFilter = item.__cacheFilter, cache = item.__cache;
-      let source = cacheFilter && cacheFilter.available && cacheFilter;
-      if(!source) {
-        source = cache && cache.available && cache;
-      }
-      if(source) {
-        ctx.globalAlpha = item.__opacity;
-        Cache.drawCache(
-          source, cacheMask,
-          item.computedStyle.transform,
-          [1, 0, 0, 1, 0, 0],
-          item.computedStyle.transformOrigin.slice(0),
-          inverse
-        );
-      }
-      else {
-        console.error('CacheMask is oversize');
-      }
-    });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-in';
-    Cache.drawCache(target, cacheMask);
-    ctx.globalCompositeOperation = 'source-over';
-    cacheMask.draw(ctx);
-    return cacheMask;
   }
 
   static draw(ctx, opacity, matrix, cache) {

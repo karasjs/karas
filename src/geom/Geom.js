@@ -5,10 +5,6 @@ import unit from '../style/unit';
 import mode from '../node/mode';
 import util from '../util/util';
 import level from '../refresh/level';
-// import refreshMode from '../refresh/mode';
-// import tf from '../style/transform';
-// import mx from '../math/matrix';
-// import Cache from '../refresh/Cache';
 
 const { AUTO, PX, PERCENT } = unit;
 const { int2rgba, isNil } = util;
@@ -20,9 +16,9 @@ class Geom extends Xom {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
     this.__isMask = !!this.props.mask;
+    this.__isClip = this.__isMask && !!this.props.clip;
     let { style, isMask } = this;
     if(isMask) {
-      style.visibility = 'visible';
       style.background = null;
       style.border = null;
       style.strokeWidth = 0;
@@ -341,6 +337,10 @@ class Geom extends Xom {
 
   get isMask() {
     return this.__isMask;
+  }
+
+  get isClip() {
+    return this.__isClip;
   }
 
   get currentProps() {

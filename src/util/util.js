@@ -117,13 +117,13 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, visibility, mask, clip, filter } = vd;
+    let { opacity, transform, visibility, mask, overflow, filter } = vd;
     return '<g'
       + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
       + ' visibility="' + visibility + '"'
       + (mask ? (' mask="' + mask + '"') : '')
-      + (clip ? (' clip-path="' + clip + '"') : '')
+      + (overflow ? (' clip-path="' + overflow + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
       + '>' + s + '</g>';
   }
@@ -213,6 +213,22 @@ function int2rgba(color) {
     }
   }
   return color || 'rgba(0,0,0,0)';
+}
+
+function int2invert(color) {
+  if(Array.isArray(color)) {
+    color = color.slice(0);
+    color[0] = 255 - color[0];
+    color[1] = 255 - color[1];
+    color[2] = 255 - color[2];
+    if(color.length === 4) {
+      return 'rgba(' + joinArr(color, ',') + ')';
+    }
+    else if(color.length === 3) {
+      return 'rgba(' + joinArr(color, ',') + ',1)';
+    }
+  }
+  return 'rgba(0,0,0,0)';
 }
 
 function arr2hash(arr) {
@@ -438,6 +454,7 @@ let util = {
   joinDef,
   rgba2int,
   int2rgba,
+  int2invert,
   arr2hash,
   hash2arr,
   clone,

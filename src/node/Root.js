@@ -231,10 +231,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
           node.__cacheTotal.release();
         }
         if(node.__cacheMask) {
+          inject.releaseCacheCanvas(node.__cacheMask.canvas);
           node.__cacheMask = null;
         }
         if(node.__cacheFilter) {
+          inject.releaseCacheCanvas(node.__cacheFilter.canvas);
           node.__cacheFilter = null;
+        }
+        if(node.__cacheOverflow) {
+          inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
+          node.__cacheOverflow = null;
         }
       }
       else {
@@ -297,10 +303,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       node.__cacheTotal.release();
     }
     if(node.__cacheMask) {
+      inject.releaseCacheCanvas(node.__cacheMask.canvas);
       node.__cacheMask = null;
+    }
+    if(node.__cacheOverflow) {
+      inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
+      node.__cacheOverflow = null;
     }
   }
   if((need || level.contain(lv, level.FILTER)) && node.__cacheFilter) {
+    inject.releaseCacheCanvas(node.__cacheFilter.canvas);
     node.__cacheFilter = null;
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
@@ -330,10 +342,16 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       parent.__cacheTotal.release();
     }
     if(parent.__cacheFilter) {
+      inject.releaseCacheCanvas(parent.__cacheFilter.canvas);
       parent.__cacheFilter = null;
     }
     if(parent.__cacheMask) {
+      inject.releaseCacheCanvas(parent.__cacheMask.canvas);
       parent.__cacheMask = null;
+    }
+    if(parent.__cacheOverflow) {
+      inject.releaseCacheCanvas(parent.__cacheOverflow.canvas);
+      parent.__cacheOverflow = null;
     }
     parent = parent.domParent;
   }
@@ -634,23 +652,7 @@ class Root extends Dom {
                   component: true, // 强制reflow
                 });
               });
-              this.refresh();
             }
-            // 有可能组件都不需要更新，且没有其它触发的渲染更新
-            else if(clone.length > setStateList.length) {
-              this.refresh();
-            }
-            // 避免重复刷新，在frame每帧执行中，比如图片进行了异步刷新，动画的hook就可以省略再刷新一次
-            let r = this.__hookTask;
-            if(r) {
-              let hookTask = frame.__hookTask;
-              let i = hookTask.indexOf(r);
-              if(i > -1) {
-                hookTask.splice(i, 1);
-              }
-            }
-            // 触发didUpdate
-            updater.did();
           }
         },
         __after: diff => {
@@ -662,8 +664,11 @@ class Root extends Dom {
               item(diff);
             }
           });
+          // 触发didUpdate
+          updater.did();
         }
       });
+      this.__frameHook();
     }
     if(task.indexOf(cb) === -1) {
       task.push(cb);

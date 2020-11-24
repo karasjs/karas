@@ -165,6 +165,9 @@
   * inherit 默认
   * none
   * auto
+* overflow
+  * visible 默认
+  * hidden
 * fill
   * transparent 默认
   * #rgb/rgb/rgba
@@ -248,6 +251,11 @@
 描边转角
 * stroke-miterlimit: Number
 描边斜切比率
+## 共有属性
+* mask: Boolean
+是否为遮罩，默认false。
+* clip: Boolean
+是否为裁剪性质的遮罩，默认false，依赖mask声明。
 ## 私有属性
 ### $circle
 * r: Number

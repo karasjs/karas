@@ -16283,7 +16283,7 @@
           return res;
         }
 
-        if (loadImg.error) {
+        if (loadImg.error && !this.props.placeholder) {
           if (res.fixedWidth) {
             res.h = res.w;
           } else if (res.fixedHeight) {
@@ -16335,15 +16335,15 @@
         var width = this.width,
             height = this.height,
             isDestroyed = this.isDestroyed,
-            src = this.props.src,
+            _this$props = this.props,
+            src = _this$props.src,
+            placeholder = _this$props.placeholder,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle.display,
             borderTopWidth = _this$computedStyle.borderTopWidth,
             borderRightWidth = _this$computedStyle.borderRightWidth,
             borderBottomWidth = _this$computedStyle.borderBottomWidth,
             borderLeftWidth = _this$computedStyle.borderLeftWidth,
-            marginTop = _this$computedStyle.marginTop,
-            marginLeft = _this$computedStyle.marginLeft,
             paddingTop = _this$computedStyle.paddingTop,
             paddingLeft = _this$computedStyle.paddingLeft,
             borderTopLeftRadius = _this$computedStyle.borderTopLeftRadius,
@@ -16372,7 +16372,7 @@
         originY = res.y2 + paddingTop;
         var loadImg = this.__loadImg;
 
-        if (loadImg.error) {
+        if (loadImg.error && !placeholder) {
           var strokeWidth = Math.min(width, height) * 0.02;
           var stroke = '#CCC';
           var fill = '#DDD';
@@ -16428,7 +16428,7 @@
 
             this.__addGeom('polygon', [['points', s], ['fill', fill]]);
           }
-        } else if (loadImg.url === src) {
+        } else if ((loadImg.url === src || placeholder) && loadImg.source) {
           var source = loadImg.source; // 无source不绘制
 
           if (source) {
@@ -16478,7 +16478,7 @@
                 matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
               }
 
-              var props = [['xlink:href', src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
+              var props = [['xlink:href', loadImg.error ? placeholder : src], ['x', originX], ['y', originY], ['width', loadImg.width], ['height', loadImg.height]];
 
               if (list) {
                 var _d = svgPolygon$2(list);
@@ -16520,52 +16520,67 @@
             var self = _this2; // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
 
             if (data.url === _loadImg.url && !self.__isDestroyed) {
+              var reload = function reload() {
+                var root = self.root,
+                    _self$currentStyle = self.currentStyle,
+                    width = _self$currentStyle.width,
+                    height = _self$currentStyle.height;
+                root.delRefreshTask(self.__task);
+
+                if (width.unit !== AUTO$4 && height.unit !== AUTO$4) {
+                  root.addRefreshTask(self.__task = {
+                    __before: function __before() {
+                      if (self.isDestroyed) {
+                        return;
+                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+                      root.__addUpdate({
+                        node: self,
+                        focus: o$1.REPAINT
+                      });
+                    }
+                  });
+                } else {
+                  root.addRefreshTask(self.__task = {
+                    __before: function __before() {
+                      if (self.isDestroyed) {
+                        return;
+                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+                      root.__addUpdate({
+                        node: self,
+                        focus: o$1.REFLOW,
+                        // 没有样式变化但内容尺寸发生了变化强制执行
+                        img: true // 特殊标识强制布局即便没有style变化
+
+                      });
+                    }
+                  });
+                }
+              };
+
               if (data.success) {
                 _loadImg.source = data.source;
                 _loadImg.width = data.width;
                 _loadImg.height = data.height;
+              } else if (placeholder) {
+                inject.measureImg(placeholder, function (data) {
+                  if (data.success) {
+                    _loadImg.error = true;
+                    _loadImg.source = data.source;
+                    _loadImg.width = data.width;
+                    _loadImg.height = data.height;
+                    reload();
+                  }
+                });
+                return;
               } else {
                 _loadImg.error = true;
               }
 
-              var root = self.root,
-                  _self$currentStyle = self.currentStyle,
-                  _width = _self$currentStyle.width,
-                  _height = _self$currentStyle.height;
-              root.delRefreshTask(self.__task);
-
-              if (_width.unit !== AUTO$4 && _height.unit !== AUTO$4) {
-                root.addRefreshTask(self.__task = {
-                  __before: function __before() {
-                    if (self.isDestroyed) {
-                      return;
-                    } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-
-                    root.__addUpdate({
-                      node: self,
-                      focus: o$1.REPAINT
-                    });
-                  }
-                });
-              } else {
-                root.addRefreshTask(self.__task = {
-                  __before: function __before() {
-                    if (self.isDestroyed) {
-                      return;
-                    } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-
-                    root.__addUpdate({
-                      node: self,
-                      focus: o$1.REFLOW,
-                      // 没有样式变化但内容尺寸发生了变化强制执行
-                      img: true // 特殊标识强制布局即便没有style变化
-
-                    });
-                  }
-                });
-              }
+              reload();
             }
           }, {
             width: width,

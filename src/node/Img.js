@@ -8,8 +8,6 @@ import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
 import level from '../refresh/level';
-import refreshMode from '../refresh/mode';
-import Cache from '../refresh/Cache';
 
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
@@ -53,7 +51,7 @@ class Img extends Dom {
     if(res.fixedWidth && res.fixedHeight) {
       return res;
     }
-    if(loadImg.error) {
+    if(loadImg.error && !this.props.placeholder) {
       if(res.fixedWidth) {
         res.h = res.w;
       }
@@ -104,6 +102,7 @@ class Img extends Dom {
       width, height, isDestroyed,
       props: {
         src,
+        placeholder,
       },
       computedStyle: {
         display,
@@ -111,8 +110,6 @@ class Img extends Dom {
         borderRightWidth,
         borderBottomWidth,
         borderLeftWidth,
-        marginTop,
-        marginLeft,
         paddingTop,
         paddingLeft,
         borderTopLeftRadius,
@@ -138,7 +135,7 @@ class Img extends Dom {
     originX = res.x2 + paddingLeft;
     originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
-    if(loadImg.error) {
+    if(loadImg.error && !placeholder) {
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
       let fill = '#DDD';
@@ -210,7 +207,7 @@ class Img extends Dom {
         ]);
       }
     }
-    else if(loadImg.url === src) {
+    else if((loadImg.url === src || placeholder) && loadImg.source) {
       let source = loadImg.source;
       // 无source不绘制
       if(source) {
@@ -265,7 +262,7 @@ class Img extends Dom {
             matrix = image.matrixResize(loadImg.width, loadImg.height, width, height, originX, originY, width, height);
           }
           let props = [
-            ['xlink:href', src],
+            ['xlink:href', loadImg.error ? placeholder : src],
             ['x', originX],
             ['y', originY],
             ['width', loadImg.width],
@@ -313,45 +310,60 @@ class Img extends Dom {
         let self = this;
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if(data.url === loadImg.url && !self.__isDestroyed) {
+          function reload() {
+            let { root, currentStyle: { width, height } } = self;
+            root.delRefreshTask(self.__task);
+            if(width.unit !== AUTO && height.unit !== AUTO) {
+              root.addRefreshTask(self.__task = {
+                __before() {
+                  if(self.isDestroyed) {
+                    return;
+                  }
+                  // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+                  root.__addUpdate({
+                    node: self,
+                    focus: level.REPAINT,
+                  });
+                },
+              });
+            }
+            else {
+              root.addRefreshTask(self.__task = {
+                __before() {
+                  if(self.isDestroyed) {
+                    return;
+                  }
+                  // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+                  root.__addUpdate({
+                    node: self,
+                    focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
+                    img: true, // 特殊标识强制布局即便没有style变化
+                  });
+                },
+              });
+            }
+          }
           if(data.success) {
             loadImg.source = data.source;
             loadImg.width = data.width;
             loadImg.height = data.height;
           }
+          else if(placeholder) {
+            inject.measureImg(placeholder, data => {
+              if(data.success) {
+                loadImg.error = true;
+                loadImg.source = data.source;
+                loadImg.width = data.width;
+                loadImg.height = data.height;
+                reload();
+              }
+            });
+            return;
+          }
           else {
             loadImg.error = true;
           }
-          let { root, currentStyle: { width, height } } = self;
-          root.delRefreshTask(self.__task);
-          if(width.unit !== AUTO && height.unit !== AUTO) {
-            root.addRefreshTask(self.__task = {
-              __before() {
-                if(self.isDestroyed) {
-                  return;
-                }
-                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                root.__addUpdate({
-                  node: self,
-                  focus: level.REPAINT,
-                });
-              },
-            });
-          }
-          else {
-            root.addRefreshTask(self.__task = {
-              __before() {
-                if(self.isDestroyed) {
-                  return;
-                }
-                // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                root.__addUpdate({
-                  node: self,
-                  focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
-                  img: true, // 特殊标识强制布局即便没有style变化
-                });
-              },
-            });
-          }
+          reload();
         }
       }, {
         width,

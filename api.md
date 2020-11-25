@@ -1208,12 +1208,12 @@ karas.render(
 #### isClip
 * **类型** `boolean` 只读
 * **说明**  
-当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。`clip`依赖`mask`属性声明。
+当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。
 * **示例**
 ```jsx
 karas.render(
   <canvas>
-    <$rect style={{width: 100, height:100}} mask={true} clip={true}/>
+    <$rect style={{width: 100, height:100}} clip={true}/>
   </canvas>,
   '#selector'
 );

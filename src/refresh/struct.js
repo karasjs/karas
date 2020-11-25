@@ -182,6 +182,9 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
   if(node.__limitCache) {
     return;
   }
+  if(total === 0) {
+    return node.__cacheTotal = cache;
+  }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
   let matrixHash = {};

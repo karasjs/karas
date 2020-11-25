@@ -16649,8 +16649,8 @@
 
       _this = _super.call(this, tagName, props);
       _this.__isMulti = !!_this.props.multi;
-      _this.__isMask = !!_this.props.mask;
-      _this.__isClip = _this.__isMask && !!_this.props.clip;
+      _this.__isClip = !!_this.props.clip;
+      _this.__isMask = _this.__isClip || !!_this.props.mask;
 
       var _assertThisInitialize = _assertThisInitialized(_this),
           style = _assertThisInitialize.style,
@@ -18446,6 +18446,10 @@
   function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
     if (node.__limitCache) {
       return;
+    }
+
+    if (total === 0) {
+      return node.__cacheTotal = cache;
     } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
 
 

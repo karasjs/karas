@@ -15,8 +15,8 @@ class Geom extends Xom {
   constructor(tagName, props) {
     super(tagName, props);
     this.__isMulti = !!this.props.multi;
-    this.__isMask = !!this.props.mask;
-    this.__isClip = this.__isMask && !!this.props.clip;
+    this.__isClip = !!this.props.clip;
+    this.__isMask = this.__isClip || !!this.props.mask;
     let { style, isMask } = this;
     if(isMask) {
       style.background = null;

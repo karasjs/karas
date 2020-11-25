@@ -1,0 +1,156 @@
+const KEY = {
+  position: 0,
+  display: 1,
+  top: 2,
+  right: 3,
+  bottom: 4,
+  left: 5,
+  marginTop: 6,
+  marginRight: 7,
+  marginBottom: 8,
+  marginLeft: 9,
+  paddingTop: 10,
+  paddingRight: 11,
+  paddingBottom: 12,
+  paddingLeft: 13,
+  fontSize: 14,
+  fontFamily: 15,
+  color: 16,
+  fontStyle: 17,
+  fontWeight: 18,
+  lineHeight: 19,
+  backgroundImage: 20,
+  backgroundColor: 21,
+  backgroundSize: 22,
+  backgroundRepeat: 23,
+  backgroundPositionX: 24,
+  backgroundPositionY: 25,
+  borderTopWidth: 26,
+  borderRightWidth: 27,
+  borderBottomWidth: 28,
+  borderLeftWidth: 29,
+  borderTopColor: 30,
+  borderRightColor: 31,
+  borderBottomColor: 32,
+  borderLeftColor: 33,
+  borderTopStyle: 34,
+  borderRightStyle: 35,
+  borderBottomStyle: 36,
+  borderLeftStyle: 37,
+  borderTopLeftRadius: 38,
+  borderTopRightRadius: 39,
+  borderBottomRightRadius: 40,
+  borderBottomLeftRadius: 41,
+  width: 42,
+  height: 43,
+  flexGrow: 44,
+  flexShrink: 45,
+  flexBasis: 46,
+  flexDirection: 47,
+  justifyContent: 48,
+  alignItems: 49,
+  alignSelf: 50,
+  textAlign: 51,
+  transformOrigin: 52,
+  visibility: 53,
+  opacity: 54,
+  zIndex: 55,
+  transform: 56,
+  translateX: 57,
+  translateY: 58,
+  scaleX: 59,
+  scaleY: 60,
+  skewX: 61,
+  skewY: 62,
+  rotateZ: 63,
+  filter: 64,
+  boxShadow: 65,
+  pointerEvents: 66,
+  overflow: 67,
+  // geom
+  fill: 68,
+  stroke: 69,
+  strokeWidth: 70,
+  strokeDasharray: 71,
+  strokeLinecap: 72,
+  strokeLinejoin: 73,
+  strokeMiterlimit: 74,
+  fillRule: 75,
+};
+
+const R_KEY = {};
+Object.keys(KEY).forEach(k => {
+  R_KEY[KEY[k]] = k;
+});
+
+const VALUE = {
+  static: 1,
+  relative: 2,
+  absolute: 3,
+  block: 4,
+  inline: 5,
+  none: 6,
+  auto: 7,
+  inherit: 8,
+  normal: 9,
+  transparent: 10,
+  repeat: 11,
+  'no-repeat': 12,
+  'repeat-x': 13,
+  'repeat-y': 14,
+  cover: 15,
+  contain: 16,
+  solid: 17,
+  dashed: 18,
+  dotted: 19,
+  row: 20,
+  column: 21,
+  'flex-start': 22,
+  'flex-end': 23,
+  center: 24,
+  stretch: 25,
+  visible: 26,
+  hidden: 27,
+  // geom
+  butt: 28,
+  round: 29,
+  square: 30,
+  miter: 31,
+  bevel: 32,
+  nonzero: 33,
+  evenodd: 34,
+};
+
+const R_VALUE = {};
+Object.keys(VALUE).forEach(k => {
+  R_VALUE[VALUE[k]] = k;
+});
+R_VALUE[0] = null;
+
+export default {
+  KEY,
+  R_KEY,
+  VALUE,
+  R_VALUE,
+  getKey(k) {
+    return KEY[k];
+  },
+  restoreKey(k) {
+    return R_KEY[k];
+  },
+  getValue(k) {
+    if(k === null) {
+      return 0;
+    }
+    if(VALUE.hasOwnProperty(k)) {
+      return VALUE[k];
+    }
+    return k;
+  },
+  restoreValue(k) {
+    if(VALUE.hasOwnProperty(k)) {
+      return VALUE[k];
+    }
+    return k;
+  },
+};

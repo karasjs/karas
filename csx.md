@@ -255,7 +255,7 @@
 * mask: Boolean
 是否为遮罩，默认false。
 * clip: Boolean
-是否为裁剪性质的遮罩，默认false，依赖mask声明。
+是否为裁剪性质的遮罩，默认false。
 ## 私有属性
 ### $circle
 * r: Number

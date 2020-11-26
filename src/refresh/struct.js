@@ -1139,9 +1139,6 @@ function renderSvg(renderMode, ctx, defs, root) {
     let { computedStyle: { display } } = node;
     if(display === 'none') {
       i += (total || 0);
-      lastLv = lv;
-      last = node;
-      continue;
     }
     if(maskHash.hasOwnProperty(i)) {
       let { index, start, end, isClip } = maskHash[i];

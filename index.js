@@ -12643,13 +12643,9 @@
 
 
         if (computedStyle.display === 'none') {
-          if (renderMode === mode.CANVAS) {
-            return {};
-          } else if (renderMode === mode.SVG) {
-            return {
-              "break": true
-            };
-          }
+          return {
+            "break": true
+          };
         } // 使用sx和sy渲染位置，考虑了relative和translate影响
 
 
@@ -19752,10 +19748,6 @@
 
       if (display === 'none') {
         _i8 += total || 0;
-        lastLv = lv;
-        last = node;
-        _i7 = _i8;
-        return "continue";
       }
 
       if (maskHash.hasOwnProperty(_i8)) {
@@ -19843,9 +19835,7 @@
     };
 
     for (var _i7 = 0, len = __structs.length; _i7 < len; _i7++) {
-      var _ret4 = _loop4(len, _i7);
-
-      if (_ret4 === "continue") continue;
+      _loop4(len, _i7);
     }
   }
 
@@ -24381,7 +24371,7 @@
     Cache: Cache
   };
 
-  var version = "0.42.0";
+  var version = "0.42.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

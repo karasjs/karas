@@ -1397,12 +1397,7 @@ class Xom extends Node {
     }
     // canvas返回信息，svg已经初始化好了vd
     if(computedStyle.display === 'none') {
-      if(renderMode === mode.CANVAS) {
-        return {};
-      }
-      else if(renderMode === mode.SVG) {
-        return { break: true };
-      }
+      return { break: true };
     }
     // 使用sx和sy渲染位置，考虑了relative和translate影响
     let {

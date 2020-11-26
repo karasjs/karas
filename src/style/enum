@@ -67,15 +67,16 @@ const KEY = {
   boxShadow: 65,
   pointerEvents: 66,
   overflow: 67,
+  mixBlendMode: 68,
   // geom
-  fill: 68,
-  stroke: 69,
-  strokeWidth: 70,
-  strokeDasharray: 71,
-  strokeLinecap: 72,
-  strokeLinejoin: 73,
-  strokeMiterlimit: 74,
-  fillRule: 75,
+  fill: 69,
+  stroke: 70,
+  strokeWidth: 71,
+  strokeDasharray: 72,
+  strokeLinecap: 73,
+  strokeLinejoin: 74,
+  strokeMiterlimit: 75,
+  fillRule: 76,
 };
 
 const R_KEY = {};
@@ -111,14 +112,15 @@ const VALUE = {
   stretch: 25,
   visible: 26,
   hidden: 27,
+  lighten: 28,
   // geom
-  butt: 28,
-  round: 29,
-  square: 30,
-  miter: 31,
-  bevel: 32,
-  nonzero: 33,
-  evenodd: 34,
+  butt: 29,
+  round: 30,
+  square: 31,
+  miter: 32,
+  bevel: 33,
+  nonzero: 34,
+  evenodd: 35,
 };
 
 const R_VALUE = {};

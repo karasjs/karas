@@ -1156,6 +1156,7 @@ class Xom extends Node {
         'backgroundRepeat',
         'filter',
         'overflow',
+        'mixBlendMode',
       ].forEach(k => {
         computedStyle[k] = currentStyle[k];
       });
@@ -1350,6 +1351,7 @@ class Xom extends Node {
    * x1/x2/x3/x4/y1/y2/y3/y4 坐标
    * break svg判断无变化提前跳出
    * cacheError 离屏申请失败，仅canvas
+   * offScreenBlend 无cache时的离屏canvas，仅canvas
    * offScreenFilter 无cache时的离屏canvas，仅canvas
    * offScreenMask 无cache时的离屏canvas，仅canvas
    * offScreenOverflow 无cache时的离屏canvas，仅canvas
@@ -1462,6 +1464,7 @@ class Xom extends Node {
       backgroundSize,
       boxShadow,
       overflow,
+      mixBlendMode,
     } = computedStyle;
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
@@ -1476,6 +1479,12 @@ class Xom extends Node {
       }
       else {
         virtualDom.opacity = opacity;
+      }
+      if(mixBlendMode !== 'normal') {
+        virtualDom.mixBlendMode = mixBlendMode;
+      }
+      else {
+        delete virtualDom.mixBlendMode;
       }
     }
     // canvas/svg/事件需要3种不同的matrix
@@ -1573,8 +1582,8 @@ class Xom extends Node {
               offScreenFilter = {
                 ctx,
                 blur: v,
+                target: c,
               };
-              offScreenFilter.target = c;
               ctx = c.ctx;
             }
           }
@@ -1621,8 +1630,8 @@ class Xom extends Node {
           if(c.ctx) {
             offScreenMask = {
               ctx,
+              target: c,
             };
-            offScreenMask.target = c;
             ctx = c.ctx;
           }
         }
@@ -1633,7 +1642,7 @@ class Xom extends Node {
     if(overflow === 'hidden') {
       if(renderMode === mode.CANVAS && !cache) {
         if(offScreenFilter || offScreenMask) {
-          offScreenOverflow = (offScreenFilter || offScreenMask);
+          offScreenOverflow = offScreenFilter || offScreenMask;
         }
         else {
           let { width, height } = root;
@@ -1641,8 +1650,8 @@ class Xom extends Node {
           if(c.ctx) {
             offScreenOverflow = {
               ctx,
+              target: c,
             };
-            offScreenOverflow.target = c;
             ctx = c.ctx;
           }
         }
@@ -1669,6 +1678,22 @@ class Xom extends Node {
     }
     else if(renderMode === mode.SVG) {
       delete virtualDom.overflow;
+    }
+    let offScreenBlend;
+    if(mixBlendMode !== 'normal' && !cache) {
+      if(offScreenFilter || offScreenMask || offScreenOverflow) {
+        offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
+      }
+      else {
+        let { width, height } = root;
+        let c = inject.getCacheCanvas(width, height);
+        offScreenBlend = {
+          ctx,
+          target: c,
+          mixBlendMode,
+        };
+        ctx = c.ctx;
+      }
     }
     // 无法使用缓存时主画布直接绘制需设置
     if(renderMode === mode.CANVAS && !cache) {
@@ -1966,10 +1991,11 @@ class Xom extends Node {
     if(__cache && __cache.enabled) {
       __cache.__available = true;
     }
-    if(renderMode === mode.CANVAS) {
-     res.offScreenFilter = offScreenFilter;
-     res.offScreenMask = offScreenMask;
-     res.offScreenOverflow = offScreenOverflow;
+    if(renderMode === mode.CANVAS && !cache) {
+      res.offScreenFilter = offScreenFilter;
+      res.offScreenMask = offScreenMask;
+      res.offScreenOverflow = offScreenOverflow;
+      res.offScreenBlend = offScreenBlend;
     }
     return res;
   }

@@ -187,8 +187,8 @@ function diffByLessLv(elem, ovd, nvd, lv) {
   if(lv === level.NONE) {
     return;
   }
-  let { transform, opacity, mask, filter } = nvd;
-  if(level.contain(lv, level.TRANSLATE_X | level.TRANSLATE_Y | level.TRANSFORM)) {
+  let { transform, opacity, mask, filter, mixBlendMode } = nvd;
+  if(level.contain(lv, level.TRANSFORM_ALL)) {
     if(transform) {
       elem.setAttribute('transform', transform);
     }
@@ -212,13 +212,18 @@ function diffByLessLv(elem, ovd, nvd, lv) {
       elem.removeAttribute('filter');
     }
   }
+  if(level.contain(lv, level.MIX_BLEND_MODE)) {
+    if(mixBlendMode) {
+      elem.setAttribute('style', 'mix-blend-mode:' + mixBlendMode);
+    }
+    else {
+      elem.removeAttribute('style');
+    }
+  }
   if(mask) {
     elem.setAttribute('mask', mask);
   }
   else {
-    elem.removeAttribute('mask');
-  }
-  if(ovd.mask) {
     elem.removeAttribute('mask');
   }
 }

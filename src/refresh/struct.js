@@ -216,7 +216,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
     let { node, total, node: { __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache,
-      computedStyle: { display, visibility, transform, transformOrigin } } } = __structs[i];
+      computedStyle: { display, visibility, transform, transformOrigin, mixBlendMode } } } = __structs[i];
     if(display === 'none') {
       i += (total || 0);
       continue;
@@ -273,6 +273,14 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
         target= __cache;
       }
       if(target) {
+        if(mixBlendMode !== 'normal') {
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        else {
+          ctx.globalCompositeOperation = mixBlendMode.replace(/[A-Z]/, function($0) {
+            return '-' + $0.toLowerCase();
+          });
+        }
         ctx.globalAlpha = opacity;
         if(matrix) {
           ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
@@ -382,6 +390,9 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           console.warn('Downgrade for cache-filter change error');
         }
       }
+      if(level.contain(__refreshLevel, level.MIX_BLEND_MODE)) {
+        computedStyle.mixBlendMode = currentStyle.mixBlendMode;
+      }
       // total可以跳过所有孩子节点省略循环，filter/mask强制前提有total
       if(__cacheTotal && __cacheTotal.available) {
         i += (total || 0);
@@ -421,7 +432,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     for(let i = 0, len = lrd.length - 1; i < len; i++) {
       let {
         node: {
-          computedStyle: { position, visibility, overflow },
+          computedStyle: { position, visibility, overflow, mixBlendMode },
           __cacheTotal, __cache, __blurValue,
         },
         node, lv, index, total, hasMask,
@@ -440,7 +451,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           (
             (position === 'relative' || position === 'absolute')
             && (node.__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
-          ) || hasMask || __blurValue > 0 || overflow === 'hidden');
+          ) || hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal');
       if(focus) {
         prevLv = lv;
         count = 0;
@@ -474,7 +485,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       }
       // 相等同级继续增加计数
       else if(visibility !== 'hidden') {
-        count++;
+        hash[lv - 1] = hash[lv - 1] || 0;
+        hash[lv - 1]++;
       }
       if(focus) {
         // 有老的直接使用，没有才重新生成
@@ -503,6 +515,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   // 超尺寸的依旧要走无cache逻辑render
   let filterHash = {};
   let overflowHash = {};
+  let blendHash = {};
   let maskStartHash = {};
   let maskEndHash = {};
   // 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
@@ -511,7 +524,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       node, total, hasMask, node: {
         __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache,
         __limitCache, __blurValue,
-        computedStyle: { display, visibility },
+        computedStyle: { display, visibility, overflow, mixBlendMode },
       },
     } = __structs[i];
     if(display === 'none') {
@@ -527,12 +540,20 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     else {
       let { __opacity, matrixEvent } = node;
-      // 有total的可以直接绘制并跳过索引
+      // 有total的可以直接绘制并跳过子节点索引
       let target = __cacheOverflow || __cacheMask || __cacheFilter;
       if(!target) {
         target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
       }
       if(target) {
+        if(mixBlendMode === 'normal') {
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        else {
+          ctx.globalCompositeOperation = mixBlendMode.replace(/[A-Z]/, function($0) {
+            return '-' + $0.toLowerCase();
+          });
+        }
         if(hasMask) {
           let j = i + (total || 0) + 1;
           while(hasMask--) {
@@ -542,6 +563,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         }
         i += (total || 0);
         Cache.draw(ctx, __opacity, matrixEvent, target);
+        // total应用后记得设置回来
+        ctx.globalCompositeOperation = 'source-over';
       }
       // 无内容Xom会没有__cache且没有__limitCache
       else {
@@ -549,23 +572,76 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           ctx = maskStartHash[i].ctx;
         }
         let res;
+        // 这里比较特殊，可能会有__cache但超限没被汇聚到total上，需mock出离屏对象数据
         if(__cache && __cache.available) {
-          if(visibility === 'hidden') {
-            continue;
-          }
-          Cache.draw(ctx, __opacity, matrixEvent, __cache);
+          res = {};
+          let offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend;
           if(__blurValue) {
-            res = {};
             let c = inject.getCacheCanvas(width, height);
             if(c.ctx) {
-              let offScreenFilter = {
+              offScreenFilter = {
                 ctx,
                 blur: __blurValue,
+                target: c,
               };
-              offScreenFilter.target = c;
               ctx = c.ctx;
               res.offScreenFilter = offScreenFilter;
             }
+          }
+          if(hasMask) {
+            let j = i + (total || 0) + 1;
+            while(hasMask--) {
+              j += (__structs[j].total || 0) + 1;
+            }
+            i = j - 1;
+            if(offScreenFilter) {
+              offScreenMask = offScreenFilter;
+            }
+            else {
+              let c = inject.getCacheCanvas(width, height);
+              if(c.ctx) {
+                offScreenMask = {
+                  ctx,
+                  target: c,
+                };
+                ctx = c.ctx;
+              }
+            }
+            res.offScreenMask = offScreenMask;
+          }
+          if(overflow === 'hidden') {
+            if(offScreenFilter || offScreenMask) {
+              offScreenOverflow = offScreenFilter || offScreenMask;
+            }
+            else {
+              let c = inject.getCacheCanvas(width, height);
+              if(c.ctx) {
+                offScreenOverflow = {
+                  ctx,
+                  target: c,
+                };
+                ctx = c.ctx;
+              }
+            }
+            res.offScreenOverflow = offScreenOverflow;
+          }
+          if(mixBlendMode !== 'normal') {
+            if(offScreenFilter || offScreenMask || offScreenOverflow) {
+              offScreenBlend = offScreenFilter || offScreenMask || offScreenOverflow;
+            }
+            else {
+              let c = inject.getCacheCanvas(width, height);
+              offScreenBlend = {
+                ctx,
+                target: c,
+                mixBlendMode,
+              };
+              ctx = c.ctx;
+            }
+            res.offScreenBlend = offScreenBlend;
+          }
+          if(visibility !== 'hidden') {
+            Cache.draw(ctx, __opacity, matrixEvent, __cache);
           }
         }
         // 超尺寸的特殊绘制
@@ -576,10 +652,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           else {
             res = node.render(renderMode, node.__refreshLevel, ctx, defs);
           }
-          if(visibility === 'hidden') {
-            continue;
-          }
-          let { offScreenFilter, offScreenMask, offScreenOverflow } = res;
+          let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res;
           // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
           if(offScreenFilter) {
             let j = i + (total || 0);
@@ -617,8 +690,16 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             maskEndHash[endIndex] = {
               mask,
               offScreenMask,
+              isClip: __structs[startIndex].node.isClip,
             };
             ctx = offScreenMask.target.ctx;
+          }
+          if(offScreenBlend) {
+            let j = i + (total || 0);
+            let list = blendHash[j] = blendHash[j] || [];
+            // 多个节点可能共用最后一个孩子节点的索引，存时逆序，使得子节点首先应用filter
+            list.unshift(offScreenBlend);
+            ctx = offScreenBlend.target.ctx;
           }
           // overflow:hidden的离屏，最后孩子进行截取
           if(offScreenOverflow) {
@@ -627,6 +708,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             list.unshift(offScreenOverflow);
             ctx = offScreenOverflow.target.ctx;
           }
+          // geom传递上述offScreen的新ctx渲染，因为自定义不可控
           if(node instanceof Geom) {
             node.render(renderMode, node.__refreshLevel, ctx, defs);
           }
@@ -638,7 +720,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
             let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
             t.clear();
-            if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i)) {
+            if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
               let target = offScreenFilter.target;
               offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
               target.draw();
@@ -662,7 +744,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.fill();
             ctx.closePath();
             ctx.globalCompositeOperation = 'source-over';
-            if(!maskStartHash.hasOwnProperty(i + 1)) {
+            if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
               origin.drawImage(target.canvas, 0, 0);
               ctx.clearRect(0, 0, width, height);
               inject.releaseCacheCanvas(target.canvas);
@@ -670,7 +752,23 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             }
           });
         }
-        // mask在最后，因为maskEnd比节点本省索引小
+        // 混合模式
+        if(blendHash.hasOwnProperty(i)) {
+          let list = blendHash[i];
+          list.forEach(offScreenBlend => {
+            let target = offScreenBlend.target;
+            offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
+            if(!maskStartHash.hasOwnProperty(i + 1)) {
+              offScreenBlend.ctx.drawImage(target.canvas, 0, 0);
+              target.draw();
+              target.ctx.clearRect(0, 0, width, height);
+              inject.releaseCacheCanvas(target.canvas);
+              ctx = offScreenBlend.ctx;
+              ctx.globalCompositeOperation = 'source-over';
+            }
+          });
+        }
+        // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
         if(maskEndHash.hasOwnProperty(i)) {
           let { mask, offScreenMask, isClip } = maskEndHash[i];
           if(isClip) {
@@ -687,6 +785,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.globalAlpha = 1;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.drawImage(mask.canvas, 0, 0);
+            // blendMode前面会修改主屏的，这里应用完后恢复正常
+            ctx.globalCompositeOperation = 'source-over';
             mask.draw(ctx);
             mask.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(mask.canvas);
@@ -706,6 +806,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             let target = offScreenMask.target;
             ctx.drawImage(target.canvas, 0, 0);
+            // blendMode前面会修改主屏的，这里应用完后恢复正常
+            ctx.globalCompositeOperation = 'source-over';
             target.draw(ctx);
             target.ctx.clearRect(0, 0, width, height);
             inject.releaseCacheCanvas(offScreenMask.target.canvas);
@@ -720,6 +822,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
   let { __structs, width, height } = root;
   let filterHash = {};
   let overflowHash = {};
+  let blendHash = {};
   let maskStartHash = {};
   let maskEndHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
@@ -741,7 +844,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       i += (total || 0);
       continue;
     }
-    let { offScreenFilter, offScreenMask, offScreenOverflow } = res;
+    let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res;
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
     if(offScreenFilter) {
       let j = i + (total || 0);
@@ -783,6 +886,13 @@ function renderCanvas(renderMode, ctx, defs, root) {
       };
       ctx = offScreenMask.target.ctx;
     }
+    if(offScreenBlend) {
+      let j = i + (total || 0);
+      let list = blendHash[j] = blendHash[j] || [];
+      // 多个节点可能共用最后一个孩子节点的索引，存时逆序，使得子节点首先应用filter
+      list.unshift(offScreenBlend);
+      ctx = offScreenBlend.target.ctx;
+    }
     // overflow:hidden的离屏，最后孩子进行截取
     if(offScreenOverflow) {
       let j = i + (total || 0);
@@ -801,7 +911,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         let webgl = inject.getCacheWebgl(width, height, '__$$blur$$__');
         let t = blur.gaussBlur(offScreenFilter.target, webgl, offScreenFilter.blur, width, height);
         t.clear();
-        if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i)) {
+        if(!maskStartHash.hasOwnProperty(i + 1) && !overflowHash.hasOwnProperty(i) && !blendHash.hasOwnProperty(i)) {
           let target = offScreenFilter.target;
           offScreenFilter.ctx.drawImage(target.canvas, 0, 0);
           target.draw();
@@ -825,7 +935,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.fill();
         ctx.closePath();
         ctx.globalCompositeOperation = 'source-over';
-        if(!maskStartHash.hasOwnProperty(i + 1)) {
+        if(!maskStartHash.hasOwnProperty(i + 1) && !blendHash.hasOwnProperty(i)) {
           origin.drawImage(target.canvas, 0, 0);
           ctx.clearRect(0, 0, width, height);
           inject.releaseCacheCanvas(target.canvas);
@@ -833,7 +943,23 @@ function renderCanvas(renderMode, ctx, defs, root) {
         }
       });
     }
-    // mask在最后，因为maskEnd比节点本省索引小
+    // 混合模式
+    if(blendHash.hasOwnProperty(i)) {
+      let list = blendHash[i];
+      list.forEach(offScreenBlend => {
+        let target = offScreenBlend.target;
+        offScreenBlend.ctx.globalCompositeOperation = offScreenBlend.mixBlendMode;
+        if(!maskStartHash.hasOwnProperty(i + 1)) {
+          offScreenBlend.ctx.drawImage(target.canvas, 0, 0);
+          target.draw();
+          target.ctx.clearRect(0, 0, width, height);
+          inject.releaseCacheCanvas(target.canvas);
+          ctx = offScreenBlend.ctx;
+          ctx.globalCompositeOperation = 'source-over';
+        }
+      });
+    }
+    // mask在最后，因为maskEnd比节点本身索引大，是其后面兄弟
     if(maskEndHash.hasOwnProperty(i)) {
       let { mask, offScreenMask, isClip } = maskEndHash[i];
       if(isClip) {
@@ -850,6 +976,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.globalAlpha = 1;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.drawImage(mask.canvas, 0, 0);
+        // blendMode前面会修改主屏的，这里应用完后恢复正常
+        ctx.globalCompositeOperation = 'source-over';
         mask.draw(ctx);
         mask.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(mask.canvas);
@@ -869,6 +997,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         let target = offScreenMask.target;
         ctx.drawImage(target.canvas, 0, 0);
+        // blendMode前面会修改主屏的，这里应用完后恢复正常
+        ctx.globalCompositeOperation = 'source-over';
         target.draw(ctx);
         target.ctx.clearRect(0, 0, width, height);
         inject.releaseCacheCanvas(offScreenMask.target.canvas);
@@ -986,6 +1116,15 @@ function renderSvg(renderMode, ctx, defs, root) {
               }
             }
           });
+        }
+      }
+      if(level.contain(__refreshLevel, level.MIX_BLEND_MODE)) {
+        let mixBlendMode = computedStyle.mixBlendMode = currentStyle.mixBlendMode;
+        if(mixBlendMode !== 'normal') {
+          virtualDom.mixBlendMode = mixBlendMode;
+        }
+        else {
+          delete virtualDom.mixBlendMode;
         }
       }
       virtualDom.lv = __refreshLevel;

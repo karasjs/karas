@@ -12,13 +12,15 @@
 * img
 
 # 支持属性
-`仅canvas/svg和矢量标签，矢量标签另列`
-* width
+* width `仅canvas/svg`
   * 0 默认
   * px
-* height
+* height `仅canvas/svg`
   * 0 默认
   * px
+* placeholder `仅img，图片加载失败时占位图`
+  * null 默认
+  * string
 
 # 支持CSS
 ## 标准样式
@@ -168,6 +170,23 @@
 * overflow
   * visible 默认
   * hidden
+* mixBlendMode
+  * normal 默认
+  * multiply
+  * screen
+  * overlay
+  * darken
+  * lighten
+  * colorDodge
+  * colorBurn
+  * hardLight
+  * softLight
+  * difference
+  * exclusion
+  * hue
+  * saturation
+  * color
+  * luminosity
 * fill
   * transparent 默认
   * #rgb/rgb/rgba

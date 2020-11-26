@@ -67,6 +67,7 @@ const DOM = {
   boxShadow: null,
   pointerEvents: 'inherit',
   overflow: 'visible',
+  mixBlendMode: 'normal',
 };
 
 const GEOM = {

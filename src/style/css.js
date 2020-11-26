@@ -753,6 +753,7 @@ function normalize(style, reset = []) {
   if(temp && temp !== 'hidden') {
     style.overflow = 'visible';
   }
+  // mixBlendMode不需处理直接赋值
   return style;
 }
 

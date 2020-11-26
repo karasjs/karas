@@ -117,7 +117,7 @@ function joinVd(vd) {
       s += joinVd(item);
     });
     s += '</g>';
-    let { opacity, transform, visibility, mask, overflow, filter } = vd;
+    let { opacity, transform, visibility, mask, overflow, filter, mixBlendMode } = vd;
     return '<g'
       + ((opacity !== 1 && opacity !== undefined) ? (' opacity="' + opacity + '"') : '')
       + (transform ? (' transform="' + transform + '"') : '')
@@ -125,6 +125,7 @@ function joinVd(vd) {
       + (mask ? (' mask="' + mask + '"') : '')
       + (overflow ? (' clip-path="' + overflow + '"') : '')
       + (filter ? (' filter="' + filter + '"') : '')
+      + (mixBlendMode ? (' style="mix-blend-mode:' + mixBlendMode + '"') : '')
       + '>' + s + '</g>';
   }
 }

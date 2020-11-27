@@ -15,8 +15,8 @@ npm install karas
 [![framework](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)
 
 ## API
-https://github.com/karasjs/karas/blob/master/api.md
-https://github.com/karasjs/karas/blob/master/csx.md
+* https://github.com/karasjs/karas/blob/master/api.md
+* https://github.com/karasjs/karas/blob/master/csx.md
 
 ## Demo
 * demo目录下是一个web端的演示教程示例，可直接本地预览

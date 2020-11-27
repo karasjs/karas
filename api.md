@@ -1561,7 +1561,63 @@ Geom矢量几何图形的样式键值对列表。
 [Root](#Root)的animateController属性的类。此举是面向框架开发维护人员的，普通开发者无需关注。
 
 ### easing
-贝塞尔曲线缓动计算方法。此举是面向框架开发维护人员的，普通开发者无需关注。
+贝塞尔曲线缓动计算方法，包含常见的缓动曲线类型，和自定义计算方法。
+
+#### linear
+* **类型** `Function`
+* **参数**
+  * percent `Number`
+  [0, 1]区间的百分比进度。
+* **说明**  
+直线缓动，等同于`bezier(1, 1, 0, 0)`。
+
+#### easeIn
+* **类型** `Function`
+* **参数**
+  * percent `Number`
+  [0, 1]区间的百分比进度。
+* **说明**  
+直线缓动，等同于`bezier(0.42, 0, 1, 1)`。
+
+#### easeOut
+* **类型** `Function`
+* **参数**
+  * percent `Number`
+  [0, 1]区间的百分比进度。
+* **说明**  
+直线缓动，等同于`bezier(0, 0, 0.58, 1)`。
+
+#### ease
+* **类型** `Function`
+* **参数**
+  * percent `Number`
+  [0, 1]区间的百分比进度。
+* **说明**  
+直线缓动，等同于`bezier(0.25, 0.1, 0.25, 1)`。
+
+#### easeInOut
+* **类型** `Function`
+* **参数**
+  * percent `Number`
+  [0, 1]区间的百分比进度。
+* **说明**  
+直线缓动，等同于`bezier(0.42, 0, 0.58, 1)`。
+
+#### cubicBezier
+* **类型** `Function`
+* **参数**
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+  曲线控制点，x在[0, 1]区间，y不限。
+* **说明**  
+自定义缓动曲线生成，传入4个参数，返回一个缓动函数输入输出器。
+* **示例**
+```jsx
+let easeInOut = karas.animate.easing.cubicBezier(0.42, 0, 0.58, 1);
+easeInOut(0.5); // 返回0.0197224535483112
+```
 
 ### frame
 帧动画工具。详见[frame](#frame)。

@@ -23943,13 +23943,15 @@
     offset: 'os',
     easing: 'e',
     filter: 'ft',
-    boxShadow: 'bd'
+    boxShadow: 'bd',
+    overflow: 'of'
   };
   var abbrCssProperty = {
     os: 'offset',
     e: 'easing',
     ft: 'filter',
-    bd: 'boxShadow'
+    bd: 'boxShadow',
+    of: 'overflow'
   };
   var fullAnimate = {
     value: 'v',
@@ -23968,9 +23970,7 @@
     spfLimit: 'sl'
   };
   var abbrAnimateOption = {};
-  reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET).forEach(function (item) {
-    var k = item.k;
-
+  reset.DOM_KEY_SET.concat(reset.GEOM_KEY_SET).forEach(function (k) {
     if (fullCssProperty.hasOwnProperty(k)) {
       abbrCssProperty[fullCssProperty[k]] = k;
       return;
@@ -24371,7 +24371,7 @@
     Cache: Cache
   };
 
-  var version = "0.42.1";
+  var version = "0.42.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

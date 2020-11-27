@@ -9,6 +9,7 @@ let fullCssProperty = {
   easing: 'e',
   filter: 'ft',
   boxShadow: 'bd',
+  overflow: 'of',
 };
 
 let abbrCssProperty = {
@@ -16,6 +17,7 @@ let abbrCssProperty = {
   e: 'easing',
   ft: 'filter',
   bd: 'boxShadow',
+  of: 'overflow',
 };
 
 let fullAnimate = {
@@ -39,8 +41,7 @@ let fullAnimateOption = {
 
 let abbrAnimateOption = {};
 
-reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET).forEach(item => {
-  let k = item.k;
+reset.DOM_KEY_SET.concat(reset.GEOM_KEY_SET).forEach(k => {
   if(fullCssProperty.hasOwnProperty(k)) {
     abbrCssProperty[fullCssProperty[k]] = k;
     return;

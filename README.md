@@ -4,19 +4,19 @@ A flexible JavaScript framework for RIA on Canvas/Svg.
 [![NPM version](https://img.shields.io/npm/v/karas.svg)](https://npmjs.org/package/karas)
 [![Build Status](https://api.travis-ci.com/karasjs/karas.svg?branch=master&status=started)](https://travis-ci.com/karasjs/karas)
 
+[![logo](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)
+
 ## INSTALL
 ```
 npm install karas
 ```
 
 ## Framework
-[![logo](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)
-
-## 文档
-https://github.com/karasjs/karas/wiki/%E6%96%87%E6%A1%A3
+[![framework](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)
 
 ## API
-https://github.com/karasjs/karas/wiki/API
+https://github.com/karasjs/karas/blob/master/api.md
+https://github.com/karasjs/karas/blob/master/csx.md
 
 ## Demo
 * demo目录下是一个web端的演示教程示例，可直接本地预览

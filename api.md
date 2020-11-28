@@ -82,7 +82,7 @@ karas.parse(
   * SVG `1`
   * WEBGL `2`
 * **说明**  
-渲染类型的枚举值，在覆盖render()方法时会作为首参传入，标明当前根节点类型。一般在自定义组件、自定义矢量类型时用到。
+渲染类型的枚举值，在覆盖render()方法时会作为首参传入，表明当前根节点类型。一般在自定义组件、自定义矢量类型时用到。
 * **示例**
 ```jsx
 class Component extends karas.Component {
@@ -293,7 +293,7 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 #### isDestroyed
 * **类型** `boolean` 只读
 * **说明**  
-是否以被销毁。
+是否已被销毁。
 
 ### 类方法method
 
@@ -351,7 +351,7 @@ let animate = root.ref.rect.animate([
 ], {
   duration: 1000,
 });
-root.ref.removeAnimate(animate);
+root.ref.rect.removeAnimate(animate);
 ```
 
 #### clearAnimate
@@ -360,7 +360,7 @@ root.ref.removeAnimate(animate);
   * target `Animation`
   动画对象
 * **说明**  
-取消所有动画并清空animateList中。
+取消所有动画并清空animateList。
 
 #### updateStyle
 * **类型** `Function`
@@ -391,7 +391,7 @@ root.ref.div.updateStyle({
 #### onXxx
 * **类型** `Function`
 * **说明**  
-侦听Dom事件，on后面跟驼峰事件名。
+侦听Dom事件，on后面跟驼峰事件名。注意回调函数的this指向当前类。
 * **示例**
 ```jsx
 karas.render(
@@ -792,6 +792,7 @@ let a = root.ref.div.animate([
 a.on(karas.Event.CANCEL, function() {
   console.log('cancel');
 });
+a.cancel();
 ```
 
 #### BEGIN
@@ -852,7 +853,7 @@ a.on(karas.Event.END, function() {
 
 <a name="虚拟Dom"></a>
 ## 虚拟Dom
-同React一样，VirtualDom是个很重要的概念。不过karas中的虚拟Dom更加纯粹，因为React最终会映射到真实Dom中，但karas的canvas/svg/webgl根本就没有Dom，VirtualDom是真的虚拟。另见基类[Xom](#Xom)。
+同React一样，VirtualDom是个很重要的概念。不过karas中的虚拟Dom更加纯粹，因为React最终会映射到真实Dom中，但karas的canvas/svg/webgl根本就没有Dom（svg其实有，但和平常开发的概念不一样），VirtualDom是真的虚拟。另见基类[Xom](#Xom)。
 
 ### 类属性property
 
@@ -1168,7 +1169,7 @@ if(!karas.Geom.hasRegister('$grid')) {
 }
 karas.render(
   <canvas>
-    <$Grid style={{width: 100, height:100}}/>
+    <$grid style={{width: 100, height:100}}/>
   </canvas>,
   '#selector'
 );
@@ -1329,6 +1330,23 @@ root.ref.cp.setState({ a: 1 }, function() {
 * **类型** `Function`
 * **说明**  
 侦听自定义事件，on后面跟-再跟事件名。组件本身继承了[Event](#Event)，所以可以触发自定义事件。
+* **示例**
+```jsx
+class Component extends karas.Component {
+  componentDidMount() {
+    this.emit('custom');
+  }
+  render() {
+    return <div onClick={() => this.click}>inner</div>;
+  }
+}
+karas.render(
+  <canvas>
+    <Component ref="cp" on-custom={() => console.log('custom')}/>
+  </canvas>,
+  '#selector'
+);
+```
 
 <a name="工具集"></a>
 ## 工具集
@@ -1435,6 +1453,14 @@ root.ref.cp.setState({ a: 1 }, function() {
   rgba值。
 * **说明**  
 将一维4长度的int颜色数组转换为css格式的rgba表达方式。
+
+### int2revert
+* **类型** `Function`
+* **参数**
+  * s `Array<int>`
+  rgba值。
+* **说明**  
+将一维4长度的int颜色数组转换为css格式的rgba表达方式，并反色。
 
 ### equalArr
 * **类型** `Function`
@@ -1773,16 +1799,6 @@ easeInOut(0.5); // 返回0.0197224535483112
 * **说明**  
 返回动画是否正在处于赋值给对象过程中，即每帧开始到刷新完成的这段时间。
 
-#### currentFrames
-* **类型** `Array<Object>` 只读
-* **说明**  
-返回动画当前的帧队列，正向为`frames`，反向为`framesR`。
-
-#### currentFrame
-* **类型** `Object` 只读
-* **说明**  
-返回动画的当前帧。
-
 ### 类方法method
 
 #### play
@@ -1898,7 +1914,7 @@ let a = root.ref.div.animate([
 a.finish();
 ```
 
-#### finish
+#### cancel
 * **类型** `Function`
 * **参数**
   * cb `Function`
@@ -2072,7 +2088,7 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、几何。此举是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举是面向框架开发维护人员的，普通开发者无需关注。
 
 <a name="refresh包"></a>
 ## refresh包
@@ -2092,10 +2108,11 @@ const ENUM = {
   TRANSFORM_ALL: 7, //                               111
   OPACITY: 8, //                                    1000
   FILTER: 16, //                                   10000
-  REPAINT: 32, //                                 100000
+  MIX_BLEND_MODE: 32, //                          100000
+  REPAINT: 64, //                                1000000
 
   // 高位表示reflow
-  REFLOW: 64, //                                 1000000
+  REFLOW: 128, //                               10000000
 };
 ```
 
@@ -2123,8 +2140,8 @@ canvas的位图缓存分页功能实现，若干个离屏canvas共用一份，�
 * **示例**
 ```jsx
 karas.refresh.Page.CONFIG = {
-  SIZE:   [8, 16, 32, 64, 128, 256, 512, 1024, 2048],
-  NUMBER: [8,  8,  8,  8,   8,   4,   2,    1,    1],
+  SIZE:   [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096],
+  NUMBER: [8,  8,  8,  8,   8,   4,   2,    1,    1,    1],
 };
 ```
 

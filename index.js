@@ -2762,7 +2762,7 @@
     borderStyle: ['borderStyleTop', 'borderStyleRight', 'borderStyleBottom', 'borderStyleLeft'],
     borderRadius: ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'],
     background: ['backgroundColor', 'backgroundImage', 'backgroundRepeat', 'backgroundPosition'],
-    backgroundRepeat: ['backgroundRepeatX', 'backgroundRepeatY'],
+    // backgroundRepeat: ['backgroundRepeatX', 'backgroundRepeatY'],
     backgroundPosition: ['backgroundPositionX', 'backgroundPositionY'],
     flex: ['flexGrow', 'flexShrink', 'flexBasis'],
     translate: ['translateX', 'translateY'],

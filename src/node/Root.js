@@ -704,8 +704,8 @@ class Root extends Dom {
       computedStyle.display = currentStyle.display = 'block';
     }
     // 同理position不能为absolute
-    if(currentStyle.positoin === 'absolute') {
-      computedStyle.position = currentStyle.positoin = 'static';
+    if(currentStyle.position === 'absolute') {
+      computedStyle.position = currentStyle.position = 'static';
     }
     // 根节点满宽高
     currentStyle.width = {
@@ -1240,7 +1240,7 @@ class Root extends Dom {
               }
               // parent判断是否要resize
               let { currentStyle } = p;
-              let isAbs = currentStyle.positoin === 'absolute';
+              let isAbs = currentStyle.position === 'absolute';
               if(dx) {
                 let need;
                 // width在block不需要，parent一定不会是flex/inline

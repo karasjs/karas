@@ -20715,8 +20715,8 @@
         } // 同理position不能为absolute
 
 
-        if (currentStyle.positoin === 'absolute') {
-          computedStyle.position = currentStyle.positoin = 'static';
+        if (currentStyle.position === 'absolute') {
+          computedStyle.position = currentStyle.position = 'static';
         } // 根节点满宽高
 
 
@@ -21367,7 +21367,7 @@
 
                     var _p3 = _p2,
                         _currentStyle2 = _p3.currentStyle;
-                    var isAbs = _currentStyle2.positoin === 'absolute';
+                    var isAbs = _currentStyle2.position === 'absolute';
 
                     if (dx) {
                       var need = void 0; // width在block不需要，parent一定不会是flex/inline
@@ -24371,7 +24371,7 @@
     Cache: Cache
   };
 
-  var version = "0.42.2";
+  var version = "0.42.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

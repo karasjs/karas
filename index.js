@@ -13330,6 +13330,18 @@
 
           this.__cacheFilter = null;
         }
+
+        if (this.__cacheMask) {
+          this.__cacheMask.release();
+
+          this.__cacheMask = null;
+        }
+
+        if (this.__cacheOverflow) {
+          this.__cacheOverflow.release();
+
+          this.__cacheOverflow = null;
+        }
       } // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
 
     }, {
@@ -13459,6 +13471,21 @@
 
         if (this.__cacheTotal) {
           this.__cacheTotal.release();
+        }
+
+        if (this.__cacheFilter) {
+          inject.releaseCacheCanvas(this.__cacheFilter.canvas);
+          this.__cacheFilter = null;
+        }
+
+        if (this.__cacheMask) {
+          inject.releaseCacheCanvas(this.__cacheMask.canvas);
+          this.__cacheMask = null;
+        }
+
+        if (this.__cacheOverflow) {
+          inject.releaseCacheCanvas(this.__cacheOverflow.canvas);
+          this.__cacheOverflow = null;
         }
       }
     }, {
@@ -20115,28 +20142,7 @@
         if (_need) {
           _node.__refreshLevel |= o$1.REPAINT;
 
-          if (_node.__cache) {
-            _node.__cache.release();
-          }
-
-          if (_node.__cacheTotal) {
-            _node.__cacheTotal.release();
-          }
-
-          if (_node.__cacheMask) {
-            inject.releaseCacheCanvas(_node.__cacheMask.canvas);
-            _node.__cacheMask = null;
-          }
-
-          if (_node.__cacheFilter) {
-            inject.releaseCacheCanvas(_node.__cacheFilter.canvas);
-            _node.__cacheFilter = null;
-          }
-
-          if (_node.__cacheOverflow) {
-            inject.releaseCacheCanvas(_node.__cacheOverflow.canvas);
-            _node.__cacheOverflow = null;
-          }
+          _node.__cancelCache();
         } else {
           i += total || 0;
         }

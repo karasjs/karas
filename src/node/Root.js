@@ -224,24 +224,7 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       }
       if(need) {
         node.__refreshLevel |= level.REPAINT;
-        if(node.__cache) {
-          node.__cache.release();
-        }
-        if(node.__cacheTotal) {
-          node.__cacheTotal.release();
-        }
-        if(node.__cacheMask) {
-          inject.releaseCacheCanvas(node.__cacheMask.canvas);
-          node.__cacheMask = null;
-        }
-        if(node.__cacheFilter) {
-          inject.releaseCacheCanvas(node.__cacheFilter.canvas);
-          node.__cacheFilter = null;
-        }
-        if(node.__cacheOverflow) {
-          inject.releaseCacheCanvas(node.__cacheOverflow.canvas);
-          node.__cacheOverflow = null;
-        }
+        node.__cancelCache();
       }
       else {
         i += total || 0;

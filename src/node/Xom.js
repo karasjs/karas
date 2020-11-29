@@ -2027,6 +2027,14 @@ class Xom extends Node {
       this.__cacheFilter.release();
       this.__cacheFilter = null;
     }
+    if(this.__cacheMask) {
+      this.__cacheMask.release();
+      this.__cacheMask = null;
+    }
+    if(this.__cacheOverflow) {
+      this.__cacheOverflow.release();
+      this.__cacheOverflow = null;
+    }
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能
@@ -2140,6 +2148,18 @@ class Xom extends Node {
     }
     if(this.__cacheTotal) {
       this.__cacheTotal.release();
+    }
+    if(this.__cacheFilter) {
+      inject.releaseCacheCanvas(this.__cacheFilter.canvas);
+      this.__cacheFilter = null;
+    }
+    if(this.__cacheMask) {
+      inject.releaseCacheCanvas(this.__cacheMask.canvas);
+      this.__cacheMask = null;
+    }
+    if(this.__cacheOverflow) {
+      inject.releaseCacheCanvas(this.__cacheOverflow.canvas);
+      this.__cacheOverflow = null;
     }
   }
 

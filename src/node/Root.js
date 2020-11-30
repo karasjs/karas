@@ -1,5 +1,6 @@
 import Dom from './Dom';
 import Text from './Text';
+import Xom from './Xom';
 import Component from './Component';
 import Defs from './Defs';
 import mode from './mode';
@@ -224,7 +225,9 @@ function parseUpdate(renderMode, root, updateHash, target, reflowList, measureLi
       }
       if(need) {
         node.__refreshLevel |= level.REPAINT;
-        node.__cancelCache();
+        if(node instanceof Xom) {
+          node.__cancelCache();
+        }
       }
       else {
         i += total || 0;

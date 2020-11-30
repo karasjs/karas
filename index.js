@@ -7887,6 +7887,12 @@
       },
       available: true,
       release: function release() {
+        if (hash === CANVAS) {
+          CANVAS_LIST.push(this.canvas);
+        } else {
+          WEBGL_LIST.push(this.canvas);
+        }
+
         this.canvas = null;
         this.ctx = null;
       }
@@ -20142,7 +20148,9 @@
         if (_need) {
           _node.__refreshLevel |= o$1.REPAINT;
 
-          _node.__cancelCache();
+          if (_node instanceof Xom) {
+            _node.__cancelCache();
+          }
         } else {
           i += total || 0;
         }

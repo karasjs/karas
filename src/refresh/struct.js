@@ -88,7 +88,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   // 广度遍历，不断一层层循环下去，用2个hash暂存每层的父matrix和blur
   let list = [index];
   let blurHash = {
-    index: blurValue,
+    [index]: blurValue,
   };
   opacityHash[index] = 1;
   while(list.length) {

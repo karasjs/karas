@@ -18408,9 +18408,9 @@
 
 
     var list = [index];
-    var blurHash = {
-      index: blurValue
-    };
+
+    var blurHash = _defineProperty({}, index, blurValue);
+
     opacityHash[index] = 1;
 
     while (list.length) {

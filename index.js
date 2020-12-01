@@ -18744,11 +18744,11 @@
         lastList.push(node);
       } else if (lv < lastLv) {
         var diff = lastLv - lv;
-        matrixList.splice(-1, diff);
+        matrixList.splice(-diff);
         parentMatrix = matrixList[lv];
-        opacityList.splice(-1, diff);
+        opacityList.splice(-diff);
         parentOpacity = opacityList[lv];
-        lastList.splice(-1, diff);
+        lastList.splice(-diff);
         last = lastList[lv];
       }
 

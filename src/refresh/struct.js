@@ -342,11 +342,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     else if(lv < lastLv) {
       let diff = lastLv - lv;
-      matrixList.splice(-1, diff);
+      matrixList.splice(-diff);
       parentMatrix = matrixList[lv];
-      opacityList.splice(-1, diff);
+      opacityList.splice(-diff);
       parentOpacity = opacityList[lv];
-      lastList.splice(-1, diff);
+      lastList.splice(-diff);
       last = lastList[lv];
     }
     if(computedStyle.display === 'none') {

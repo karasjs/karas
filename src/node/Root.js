@@ -95,6 +95,9 @@ function renderProp(k, v) {
   if(k === 'className') {
     k = 'class';
   }
+  else if(k === 'style') {
+    return '';
+  }
   return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
 }
 
@@ -171,8 +174,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     return;
   }
   // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
-  if(overwrite && style) {
-    Object.assign(node.__style, style);
+  if(overwrite) {
+    Object.assign(__config[NODE_STYLE], overwrite);
   }
   // 多次调用更新才会有list，一般没有，优化
   if(list) {
@@ -188,8 +191,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
           keys.push(k2);
         }
       });
-      if(overwrite && style) {
-        Object.assign(__config[NODE_STYLE], style);
+      if(overwrite) {
+        Object.assign(__config[NODE_STYLE], overwrite);
       }
       if(style) {
         Object.assign(target[UPDATE_STYLE], style);

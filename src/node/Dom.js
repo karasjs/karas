@@ -1119,7 +1119,7 @@ class Dom extends Xom {
     let { flowChildren, computedStyle, lineGroups } = this;
     lineGroups.splice(0);
     let {
-      textAlign,
+      [TEXT_ALIGN]: textAlign,
     } = computedStyle;
     let { fixedWidth, fixedHeight, x, y, w, h } = this.__preLayout(data);
     if(fixedWidth && isVirtual) {
@@ -1291,7 +1291,7 @@ class Dom extends Xom {
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, innerWidth);
       if(computedStyle[DISPLAY] === 'inline') {
-        currentStyle[DISPLAY] = computedStyle[DISPLAY] = 'block';
+        currentStyle[DISPLAY] = computedStyle[DISPLAY] = item.style.display = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,
         [BOTTOM]: bottom, [WIDTH]: width, [HEIGHT]: height, [DISPLAY]: display,

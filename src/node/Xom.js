@@ -2296,7 +2296,7 @@ class Xom extends Node {
           delete style[k];
         }
       });
-      style = css.normalize(style);
+      let formatStyle = css.normalize(style);
       // 空样式或非法或无改变直接返回
       if(!hasChange) {
         if(util.isFunction(cb)) {
@@ -2313,9 +2313,9 @@ class Xom extends Node {
           // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
           let res = {};
           res[UPDATE_NODE] = node;
-          res[UPDATE_STYLE] = style;
-          res[UPDATE_OVERWRITE] = true; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-          res[UPDATE_KEYS] = Object.keys(style).map(i => parseInt(i));
+          res[UPDATE_STYLE] = formatStyle;
+          res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+          res[UPDATE_KEYS] = Object.keys(formatStyle).map(i => parseInt(i));
           root.__addUpdate(node, node.__config, root, root.__config, res);
         },
         __after(diff) {

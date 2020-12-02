@@ -13994,7 +13994,7 @@
               delete style[k];
             }
           });
-          style = css.normalize(style); // 空样式或非法或无改变直接返回
+          var formatStyle = css.normalize(style); // 空样式或非法或无改变直接返回
 
           if (!hasChange) {
             if (util.isFunction(cb)) {
@@ -14014,10 +14014,10 @@
 
               var res = {};
               res[UPDATE_NODE$2] = node;
-              res[UPDATE_STYLE$2] = style;
-              res[UPDATE_OVERWRITE$1] = true; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
+              res[UPDATE_STYLE$2] = formatStyle;
+              res[UPDATE_OVERWRITE$1] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
 
-              res[UPDATE_KEYS$2] = Object.keys(style).map(function (i) {
+              res[UPDATE_KEYS$2] = Object.keys(formatStyle).map(function (i) {
                 return parseInt(i);
               });
 
@@ -14320,6 +14320,8 @@
     return Xom;
   }(Node);
 
+  var MARGIN_BOTTOM$2 = enums.STYLE_KEY.MARGIN_BOTTOM;
+
   var LineGroup = /*#__PURE__*/function () {
     function LineGroup(x, y) {
       _classCallCheck(this, LineGroup);
@@ -14415,7 +14417,7 @@
       get: function get() {
         var n = 0;
         this.list.forEach(function (item) {
-          n = Math.max(n, item.computedStyle.marginBottom);
+          n = Math.max(n, item.computedStyle[MARGIN_BOTTOM$2]);
         });
         return n;
       }
@@ -15014,7 +15016,7 @@
       MARGIN_LEFT$2 = _enums$STYLE_KEY$7.MARGIN_LEFT,
       MARGIN_TOP$2 = _enums$STYLE_KEY$7.MARGIN_TOP,
       MARGIN_RIGHT$2 = _enums$STYLE_KEY$7.MARGIN_RIGHT,
-      MARGIN_BOTTOM$2 = _enums$STYLE_KEY$7.MARGIN_BOTTOM,
+      MARGIN_BOTTOM$3 = _enums$STYLE_KEY$7.MARGIN_BOTTOM,
       PADDING_LEFT$2 = _enums$STYLE_KEY$7.PADDING_LEFT,
       PADDING_BOTTOM$2 = _enums$STYLE_KEY$7.PADDING_BOTTOM,
       PADDING_RIGHT$2 = _enums$STYLE_KEY$7.PADDING_RIGHT,
@@ -15350,7 +15352,7 @@
             marginLeft = currentStyle[MARGIN_LEFT$2],
             marginTop = currentStyle[MARGIN_TOP$2],
             marginRight = currentStyle[MARGIN_RIGHT$2],
-            marginBottom = currentStyle[MARGIN_BOTTOM$2],
+            marginBottom = currentStyle[MARGIN_BOTTOM$3],
             paddingLeft = currentStyle[PADDING_LEFT$2],
             paddingTop = currentStyle[PADDING_TOP$2],
             paddingRight = currentStyle[PADDING_RIGHT$2],
@@ -15852,7 +15854,7 @@
               var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
                   borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                   marginTop = computedStyle[MARGIN_TOP$2],
-                  marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                  marginBottom = computedStyle[MARGIN_BOTTOM$3],
                   paddingTop = computedStyle[PADDING_TOP$2],
                   paddingBottom = computedStyle[PADDING_BOTTOM$2],
                   borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
@@ -15951,7 +15953,7 @@
               var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
                   borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                   marginTop = computedStyle[MARGIN_TOP$2],
-                  marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                  marginBottom = computedStyle[MARGIN_BOTTOM$3],
                   paddingTop = computedStyle[PADDING_TOP$2],
                   paddingBottom = computedStyle[PADDING_BOTTOM$2],
                   borderRightWidth = computedStyle[BORDER_RIGHT_WIDTH$2],
@@ -16023,7 +16025,7 @@
                   var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
                       borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                       marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$3],
                       paddingTop = computedStyle[PADDING_TOP$2],
                       paddingBottom = computedStyle[PADDING_BOTTOM$2];
 
@@ -16094,7 +16096,7 @@
                   var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
                       borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                       marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$3],
                       paddingTop = computedStyle[PADDING_TOP$2],
                       paddingBottom = computedStyle[PADDING_BOTTOM$2];
 
@@ -16171,7 +16173,7 @@
                   var borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
                       borderBottomWidth = computedStyle[BORDER_BOTTOM_WIDTH$2],
                       marginTop = computedStyle[MARGIN_TOP$2],
-                      marginBottom = computedStyle[MARGIN_BOTTOM$2],
+                      marginBottom = computedStyle[MARGIN_BOTTOM$3],
                       paddingTop = computedStyle[PADDING_TOP$2],
                       paddingBottom = computedStyle[PADDING_BOTTOM$2];
 
@@ -16239,7 +16241,7 @@
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
         lineGroups.splice(0);
-        var textAlign = computedStyle.textAlign;
+        var textAlign = computedStyle[TEXT_ALIGN$2];
 
         var _this$__preLayout3 = this.__preLayout(data),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -16447,7 +16449,7 @@
           item.__mp(currentStyle, computedStyle, innerWidth);
 
           if (computedStyle[DISPLAY$3] === 'inline') {
-            currentStyle[DISPLAY$3] = computedStyle[DISPLAY$3] = 'block';
+            currentStyle[DISPLAY$3] = computedStyle[DISPLAY$3] = item.style.display = 'block';
           }
 
           var left = currentStyle[LEFT$2],
@@ -16536,7 +16538,7 @@
             y2 = y + innerHeight - computedStyle[BOTTOM$2] - h2; // 底对齐有尺寸时y值还需减去margin/border/padding的
 
             y2 -= computedStyle[MARGIN_TOP$2];
-            y2 -= computedStyle[MARGIN_BOTTOM$2];
+            y2 -= computedStyle[MARGIN_BOTTOM$3];
             y2 -= computedStyle[PADDING_TOP$2];
             y2 -= computedStyle[PADDING_BOTTOM$2];
             y2 -= currentStyle[BORDER_TOP_WIDTH$2][0];
@@ -20681,6 +20683,8 @@
 
     if (k === 'className') {
       k = 'class';
+    } else if (k === 'style') {
+      return '';
     }
 
     return ' ' + k + '="' + util.encodeHtml(s, true) + '"';
@@ -20766,8 +20770,8 @@
     } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
 
 
-    if (overwrite && style) {
-      Object.assign(node.__style, style);
+    if (overwrite) {
+      Object.assign(__config[NODE_STYLE$4], overwrite);
     } // 多次调用更新才会有list，一般没有，优化
 
 
@@ -20787,8 +20791,8 @@
           }
         });
 
-        if (overwrite && style) {
-          Object.assign(__config[NODE_STYLE$4], style);
+        if (overwrite) {
+          Object.assign(__config[NODE_STYLE$4], overwrite);
         }
 
         if (style) {

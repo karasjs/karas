@@ -84,7 +84,10 @@ function unify(frames, target) {
       // 空的过滤掉
       if(!isNil(v) && !hash.hasOwnProperty(k)) {
         hash[k] = true;
-        keys.push(parseInt(k));
+        if(!GEOM.hasOwnProperty(k)) {
+          k = parseInt(k);
+        }
+        keys.push(k);
       }
     });
   });
@@ -1270,16 +1273,6 @@ class Animation extends Event {
     }
   }
 
-  __fin(cb, diff) {
-    let __config = this.__config;
-    __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
-      = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-    this.emit(Event.FINISH);
-    if(isFunction(cb)) {
-      cb.call(this, diff);
-    }
-  }
-
   __frameCb(__config, diff, isDelay) {
     this.emit(Event.FRAME, diff, isDelay);
     if(__config[I_FIRST_PLAY]) {
@@ -1447,11 +1440,11 @@ class Animation extends Event {
       // 停留对比最后一帧，endDelay可能会多次进入这里，第二次进入样式相等不再重绘
       // 多次播放时到达最后一帧也会显示
       if(stayEnd || !isLastCount) {
-        current = cloneStyle(currentFrame[FRAME_STYLE]);
+        current = cloneStyle(currentFrame[FRAME_STYLE], __config[I_KEYS]);
       }
       // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
       else {
-        current = cloneStyle(__config[I_ORIGIN_STYLE]);
+        current = cloneStyle(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
       }
       // 非尾每轮次放完增加次数和计算下轮准备
       if(!isLastCount) {
@@ -1518,13 +1511,14 @@ class Animation extends Event {
         }
       }
     }
-    if(__config[I_FINISHED]) {
-      __config[I_FINISHED] = false;
-      this.__fin();
-    }
     if(__config[I_NEXT_BEGIN]) {
       __config[I_NEXT_BEGIN] = false;
       __config[I_BEGIN] = true;
+    }
+    if(__config[I_FINISHED]) {
+      __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
+        = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+      this.emit(Event.FINISH);
     }
   }
 
@@ -1581,6 +1575,7 @@ class Animation extends Event {
       }
       root.addRefreshTask({
         __before() {
+          __config[I_ASSIGNING] = true;
           genBeforeRefresh(current, __config[I_KEYS], __config, root, __config[I_TARGET]);
           self.__clean(true);
         },
@@ -1589,7 +1584,12 @@ class Animation extends Event {
             self.__hasFin = true;
             __config[I_ASSIGNING] = false;
             __config[I_FRAME_CB].call(self, __config, diff);
-            self.__fin(cb, diff);
+            __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
+              = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+            self.emit(Event.FINISH);
+          }
+          if(isFunction(cb)) {
+            cb.call(self, diff);
           }
         },
       });
@@ -1613,6 +1613,7 @@ class Animation extends Event {
     if(root) {
       root.addRefreshTask({
         __before() {
+          __config[I_ASSIGNING] = true;
           genBeforeRefresh(originStyle, __config[I_KEYS], __config, root, __config[I_TARGET]);
           self.__clean();
         },

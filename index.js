@@ -3186,6 +3186,7 @@
   var INHERIT$1 = unit.INHERIT;
   var STYLE_KEY$3 = enums.STYLE_KEY;
   var GEOM$1 = {};
+  var GEOM_KEY_SET$1 = [];
 
   var IGNORE = _defineProperty({}, STYLE_KEY$3.POINTER_EVENTS, true);
 
@@ -3193,6 +3194,7 @@
   var MEASURE = (_MEASURE = {}, _defineProperty(_MEASURE, STYLE_KEY$3.FONT_SIZE, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_WEIGHT, true), _defineProperty(_MEASURE, STYLE_KEY$3.FONT_FAMILY, true), _MEASURE);
   var o = {
     GEOM: GEOM$1,
+    GEOM_KEY_SET: GEOM_KEY_SET$1,
     IGNORE: IGNORE,
     REPAINT: REPAINT,
     MEASURE: MEASURE,
@@ -3202,7 +3204,11 @@
           o.addGeom(tagName, k);
         });
       } else if (ks) {
-        var hash = o.GEOM[ks] = o.GEOM[ks] || {};
+        if (!GEOM$1.hasOwnProperty(ks)) {
+          GEOM_KEY_SET$1.push(ks);
+        }
+
+        var hash = GEOM$1[ks] = GEOM$1[ks] || {};
         hash[tagName] = true;
       }
     }
@@ -3348,7 +3354,9 @@
       rgba2int$2 = util.rgba2int,
       equalArr$1 = util.equalArr;
   var MEASURE_KEY_SET$1 = o.MEASURE_KEY_SET,
-      isGeom$1 = o.isGeom;
+      isGeom$1 = o.isGeom,
+      GEOM$2 = o.GEOM,
+      GEOM_KEY_SET$2 = o.GEOM_KEY_SET;
   var DEFAULT_FONT_SIZE = 16;
   var COLOR_HASH$1 = key.COLOR_HASH,
       LENGTH_HASH$1 = key.LENGTH_HASH,
@@ -4016,6 +4024,17 @@
         res[STYLE_KEY$4[style2Upper$1(k)]] = style[k];
       }
     });
+    GEOM_KEY_SET$2.forEach(function (k) {
+      if (style.hasOwnProperty(k)) {
+        res[k] = style[k];
+      }
+    }); // for(let i = CUSTOM_STYLE_INDEX[0], len = CUSTOM_STYLE_INDEX[1]; i < len; i++) {
+    //   let k = STYLE_RV_KEY[i];
+    //   if(style.hasOwnProperty(k)) {
+    //     res[i] = style[k];
+    //   }
+    // }
+
     return res;
   }
   /**
@@ -4287,22 +4306,25 @@
       } // position等直接值类型赋值
       else if (VALUE$1.hasOwnProperty(k)) {
           res[k] = v;
-        } // 其余皆是数组
-        else {
-            var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+        } // geom自定义属性
+        else if (GEOM$2.hasOwnProperty(k)) {
+            res[k] = util.clone(v);
+          } // 其余皆是数组
+          else {
+              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
-            if (ARRAY_0$1.hasOwnProperty(k)) {
-              _n[0] = _n[0].slice(0);
-            } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-              _n[0] = _n[0].slice(0);
-              _n[1] = _n[1].slice(0);
-            } else if (k === TRANSFORM$1) {
-              for (var _i6 = 0, _len3 = _n.length; _i6 < _len3; _i6++) {
-                _n[_i6] = _n[_i6].slice(0);
+              if (ARRAY_0$1.hasOwnProperty(k)) {
+                _n[0] = _n[0].slice(0);
+              } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
+                _n[0] = _n[0].slice(0);
+                _n[1] = _n[1].slice(0);
+              } else if (k === TRANSFORM$1) {
+                for (var _i6 = 0, _len3 = _n.length; _i6 < _len3; _i6++) {
+                  _n[_i6] = _n[_i6].slice(0);
+                }
               }
             }
-          }
     }
 
     return res;
@@ -8878,7 +8900,7 @@
       equalArr$2 = util.equalArr;
   var linear = easing.linear;
   var cloneStyle$2 = css.cloneStyle;
-  var GEOM$2 = o.GEOM;
+  var GEOM$3 = o.GEOM;
   var COLOR_HASH$2 = key.COLOR_HASH,
       LENGTH_HASH$2 = key.LENGTH_HASH,
       RADIUS_HASH$2 = key.RADIUS_HASH,
@@ -8900,7 +8922,12 @@
 
         if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
           hash[k] = true;
-          keys.push(parseInt(k));
+
+          if (!GEOM$3.hasOwnProperty(k)) {
+            k = parseInt(k);
+          }
+
+          keys.push(k);
         }
       });
     }); // 添补没有声明完全的关键帧属性为节点当前值
@@ -8909,7 +8936,7 @@
       var style = item[FRAME_STYLE$1];
       keys.forEach(function (k) {
         if (!style.hasOwnProperty(k) || isNil$4(style[k])) {
-          if (GEOM$2.hasOwnProperty(k)) {
+          if (GEOM$3.hasOwnProperty(k)) {
             style[k] = target.currentProps[k];
           } else {
             style[k] = target.currentStyle[k];
@@ -9349,7 +9376,7 @@
       }
 
       res[1] = diff;
-    } else if (GEOM$2.hasOwnProperty(k)) {
+    } else if (GEOM$3.hasOwnProperty(k)) {
       if (isNil$4(p)) {
         return;
       } // 特殊处理multi
@@ -9668,7 +9695,7 @@
             st[1] += v[1] * percent;
             st[2] += v[2] * percent;
             st[3] += v[3] * percent;
-          } else if (GEOM$2.hasOwnProperty(k)) {
+          } else if (GEOM$3.hasOwnProperty(k)) {
             (function () {
               var st = style[k];
 
@@ -10137,7 +10164,7 @@
 
         if (restore) {
           keys.forEach(function (k) {
-            if (GEOM$2.hasOwnProperty(k)) {
+            if (GEOM$3.hasOwnProperty(k)) {
               if (target.__currentProps[k] === style[k]) {
                 target.__currentProps[k] = target.props[k];
               }
@@ -10147,17 +10174,6 @@
               }
             }
           });
-        }
-      }
-    }, {
-      key: "__fin",
-      value: function __fin(cb, diff) {
-        var __config = this.__config;
-        __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-        this.emit(Event.FINISH);
-
-        if (isFunction$3(cb)) {
-          cb.call(this, diff);
         }
       }
     }, {
@@ -10352,10 +10368,10 @@
           // 多次播放时到达最后一帧也会显示
 
           if (stayEnd || !isLastCount) {
-            current = cloneStyle$2(currentFrame[FRAME_STYLE$1]);
+            current = cloneStyle$2(currentFrame[FRAME_STYLE$1], __config[I_KEYS]);
           } // 不停留或超过endDelay则计算还原，有endDelay且fill模式不停留会再次进入这里
           else {
-              current = cloneStyle$2(__config[I_ORIGIN_STYLE]);
+              current = cloneStyle$2(__config[I_ORIGIN_STYLE], __config[I_KEYS]);
             } // 非尾每轮次放完增加次数和计算下轮准备
 
 
@@ -10431,15 +10447,14 @@
           }
         }
 
-        if (__config[I_FINISHED]) {
-          __config[I_FINISHED] = false;
-
-          this.__fin();
-        }
-
         if (__config[I_NEXT_BEGIN]) {
           __config[I_NEXT_BEGIN] = false;
           __config[I_BEGIN] = true;
+        }
+
+        if (__config[I_FINISHED]) {
+          __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+          this.emit(Event.FINISH);
         }
       }
     }, {
@@ -10510,6 +10525,7 @@
 
           root.addRefreshTask({
             __before: function __before() {
+              __config[I_ASSIGNING] = true;
               genBeforeRefresh(current, __config[I_KEYS], __config, root, __config[I_TARGET]);
 
               self.__clean(true);
@@ -10521,7 +10537,12 @@
 
                 __config[I_FRAME_CB].call(self, __config, diff);
 
-                self.__fin(cb, diff);
+                __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+                self.emit(Event.FINISH);
+              }
+
+              if (isFunction$3(cb)) {
+                cb.call(self, diff);
               }
             }
           });
@@ -10551,6 +10572,7 @@
         if (root) {
           root.addRefreshTask({
             __before: function __before() {
+              __config[I_ASSIGNING] = true;
               genBeforeRefresh(originStyle, __config[I_KEYS], __config, root, __config[I_TARGET]);
 
               self.__clean();
@@ -10656,7 +10678,7 @@
           if (style.hasOwnProperty(i)) {
             var v = style[i]; // geom的属性变化
 
-            if (GEOM$2.hasOwnProperty(i)) {
+            if (GEOM$3.hasOwnProperty(i)) {
               target.currentProps[i] = v;
             } // 样式
             else {
@@ -20837,74 +20859,73 @@
     var lv = focus || NONE$1;
     var p;
     var hasMeasure = measure;
-    var hasZ, hasVisibility, hasColor; // component无需遍历直接赋值
+    var hasZ, hasVisibility, hasColor; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
-    if (component) {
-      if (p) {
-        Object.assign(currentProps, p);
-      }
+    if (!component && style && keys) {
+      for (var i = 0, len = keys.length; i < len; i++) {
+        var k = keys[i];
+        var v = style[k]; // 只有geom的props和style2种可能
 
-      if (style) {
-        Object.assign(currentStyle, style);
-      }
-    } // img重新加载等情况没有样式更新
-    else if (style && keys) {
-        for (var i = 0, len = keys.length; i < len; i++) {
-          var k = keys[i];
-          var v = style[k]; // 只有geom的props和style2种可能
+        if (node instanceof Geom$1 && isGeom$2(tagName, k)) {
+          if (!equalStyle$1(k, v, currentProps[k], node)) {
+            p = p || {};
+            p[k] = style[k];
+            lv |= REPAINT$3;
+            __cacheProps[k] = undefined;
+          }
+        } else {
+          // 需和现在不等，且不是pointerEvents这种无关的
+          if (!equalStyle$1(k, v, currentStyle[k], node)) {
+            // pointerEvents这种无关的只需更新
+            if (isIgnore(k)) {
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+            } else {
+              // TRBL变化只对relative/absolute起作用，其它忽视
+              if (DIRECTION_HASH.hasOwnProperty(k)) {
+                var position = currentStyle[POSITION$4];
 
-          if (node instanceof Geom$1 && isGeom$2(tagName, k)) {
-            if (!equalStyle$1(k, v, currentProps[k], node)) {
-              p = p || {};
-              p[k] = style[k];
-              lv |= REPAINT$3;
-              __cacheProps[k] = undefined;
-            }
-          } else {
-            // 需和现在不等，且不是pointerEvents这种无关的
-            if (!equalStyle$1(k, v, currentStyle[k], node)) {
-              // pointerEvents这种无关的只需更新
-              if (isIgnore(k)) {
-                __cacheStyle[k] = undefined;
-                currentStyle[k] = v;
-              } else {
-                // TRBL变化只对relative/absolute起作用，其它忽视
-                if (DIRECTION_HASH.hasOwnProperty(k)) {
-                  var position = currentStyle[POSITION$4];
-
-                  if (position !== 'relative' && position !== 'absolute') {
-                    delete style[k];
-                    continue;
-                  }
-                } // repaint细化等级，reflow在checkReflow()
-
-
-                lv |= getLevel(k);
-
-                if (isMeasure(k)) {
-                  hasMeasure = true;
-                } // repaint置空，如果reflow会重新生成空的
-
-
-                __cacheStyle[k] = undefined;
-                currentStyle[k] = v;
-
-                if (k === Z_INDEX$3 && node !== root) {
-                  hasZ = true;
+                if (position !== 'relative' && position !== 'absolute') {
+                  delete style[k];
+                  continue;
                 }
+              } // repaint细化等级，reflow在checkReflow()
 
-                if (k === VISIBILITY$6) {
-                  hasVisibility = true;
-                }
 
-                if (k === COLOR$5) {
-                  hasColor = true;
-                }
+              lv |= getLevel(k);
+
+              if (isMeasure(k)) {
+                hasMeasure = true;
+              } // repaint置空，如果reflow会重新生成空的
+
+
+              __cacheStyle[k] = undefined;
+              currentStyle[k] = v;
+
+              if (k === Z_INDEX$3 && node !== root) {
+                hasZ = true;
+              }
+
+              if (k === VISIBILITY$6) {
+                hasVisibility = true;
+              }
+
+              if (k === COLOR$5) {
+                hasColor = true;
               }
             }
           }
         }
-      } // 无任何改变处理的去除记录，如pointerEvents、无效的left
+      }
+    }
+
+    if (p) {
+      Object.assign(currentProps, p);
+    }
+
+    if (style) {
+      Object.assign(currentStyle, style);
+    } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 
     if (lv === NONE$1 && !component) {

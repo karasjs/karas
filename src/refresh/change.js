@@ -4,9 +4,10 @@ import enums from '../util/enums';
 
 const { DOM: RESET_DOM, GEOM: RESET_GEOM } = reset;
 const { INHERIT } = unit;
-const { STYLE_KEY, STYLE_R_KEY } = enums;
+const { STYLE_KEY } = enums;
 
 const GEOM = {};
+const GEOM_KEY_SET = [];
 const IGNORE = {
   [STYLE_KEY.POINTER_EVENTS]: true,
 };
@@ -57,6 +58,7 @@ const MEASURE = {
 
 let o = {
   GEOM,
+  GEOM_KEY_SET,
   IGNORE,
   REPAINT,
   MEASURE,
@@ -67,7 +69,10 @@ let o = {
       });
     }
     else if(ks) {
-      let hash = o.GEOM[ks] = o.GEOM[ks] || {};
+      if(!GEOM.hasOwnProperty(ks)) {
+        GEOM_KEY_SET.push(ks);
+      }
+      let hash = GEOM[ks] = GEOM[ks] || {};
       hash[tagName] = true;
     }
   },

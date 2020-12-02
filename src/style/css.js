@@ -58,7 +58,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
-const { MEASURE_KEY_SET, isGeom } = change;
+const { MEASURE_KEY_SET, isGeom, GEOM, GEOM_KEY_SET } = change;
 
 const DEFAULT_FONT_SIZE = 16;
 
@@ -709,6 +709,17 @@ function normalize(style, reset = []) {
       res[STYLE_KEY[style2Upper(k)]] = style[k];
     }
   });
+  GEOM_KEY_SET.forEach(k => {
+    if(style.hasOwnProperty(k)) {
+      res[k] = style[k];
+    }
+  });
+  // for(let i = CUSTOM_STYLE_INDEX[0], len = CUSTOM_STYLE_INDEX[1]; i < len; i++) {
+  //   let k = STYLE_RV_KEY[i];
+  //   if(style.hasOwnProperty(k)) {
+  //     res[i] = style[k];
+  //   }
+  // }
   return res;
 }
 
@@ -1007,6 +1018,10 @@ function cloneStyle(style, keys) {
     // position等直接值类型赋值
     else if(VALUE.hasOwnProperty(k)) {
       res[k] = v;
+    }
+    // geom自定义属性
+    else if(GEOM.hasOwnProperty(k)) {
+      res[k] = util.clone(v);
     }
     // 其余皆是数组
     else {

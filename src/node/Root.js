@@ -214,17 +214,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   let p;
   let hasMeasure = measure;
   let hasZ, hasVisibility, hasColor;
-  // component无需遍历直接赋值
-  if(component) {
-    if(p) {
-      Object.assign(currentProps, p);
-    }
-    if(style) {
-      Object.assign(currentStyle, style);
-    }
-  }
-  // img重新加载等情况没有样式更新
-  else if(style && keys) {
+  // component无需遍历直接赋值，img重新加载等情况没有样式更新
+  if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
       let k = keys[i];
       let v = style[k];
@@ -275,6 +266,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
         }
       }
     }
+  }
+  if(p) {
+    Object.assign(currentProps, p);
+  }
+  if(style) {
+    Object.assign(currentStyle, style);
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   if(lv === NONE && !component) {

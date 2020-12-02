@@ -325,23 +325,23 @@ function diffG2G(elem, ovd, nvd) {
   else {
     diffX2X(elem, ovd, nvd);
     diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
-  }
-  let ol = ovd.children.length;
-  let nl = nvd.children.length;
-  let i = 0;
-  let lastChild = elem.lastChild;
-  let cns = lastChild.childNodes;
-  for(; i < Math.min(ol, nl); i++) {
-    diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
-  }
-  if(i < ol) {
-    for(let j = ol - 1; j >= i; j--) {
-      removeAt(lastChild, cns, j);
+    let ol = ovd.children.length;
+    let nl = nvd.children.length;
+    let i = 0;
+    let lastChild = elem.lastChild;
+    let cns = lastChild.childNodes;
+    for(; i < Math.min(ol, nl); i++) {
+      diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
     }
-  }
-  else if(i < nl) {
-    for(; i < nl; i++) {
-      insertAt(lastChild, cns, i, joinVd(nvd.children[i]));
+    if(i < ol) {
+      for(let j = ol - 1; j >= i; j--) {
+        removeAt(lastChild, cns, j);
+      }
+    }
+    else if(i < nl) {
+      for(; i < nl; i++) {
+        insertAt(lastChild, cns, i, joinVd(nvd.children[i]));
+      }
     }
   }
 }

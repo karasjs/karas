@@ -7702,20 +7702,8 @@
       return;
     }
 
-    var list = [['scaleX', {
-      value: targetWidth / imgWidth,
-      unit: NUMBER$1
-    }], ['scaleY', {
-      value: targetHeight / imgHeight,
-      unit: NUMBER$1
-    }]];
-    var tfo = tf.calOrigin([{
-      value: 0,
-      unit: PERCENT$3
-    }, {
-      value: 0,
-      unit: PERCENT$3
-    }], w, h);
+    var list = [['scaleX', [targetWidth / imgWidth, NUMBER$1]], ['scaleY', [targetHeight / imgHeight, NUMBER$1]]];
+    var tfo = tf.calOrigin([[0, PERCENT$3], [0, PERCENT$3]], w, h);
     tfo[0] += x;
     tfo[1] += y;
     return tf.calMatrixWithOrigin(list, tfo, w, h);
@@ -18517,25 +18505,24 @@
     } else {
       diffX2X(elem, ovd, nvd);
       diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
-    }
+      var ol = ovd.children.length;
+      var nl = nvd.children.length;
+      var i = 0;
+      var lastChild = elem.lastChild;
+      var cns = lastChild.childNodes;
 
-    var ol = ovd.children.length;
-    var nl = nvd.children.length;
-    var i = 0;
-    var lastChild = elem.lastChild;
-    var cns = lastChild.childNodes;
-
-    for (; i < Math.min(ol, nl); i++) {
-      diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
-    }
-
-    if (i < ol) {
-      for (var j = ol - 1; j >= i; j--) {
-        removeAt(lastChild, cns, j);
+      for (; i < Math.min(ol, nl); i++) {
+        diffItem(lastChild, i, ovd.children[i], nvd.children[i]);
       }
-    } else if (i < nl) {
-      for (; i < nl; i++) {
-        insertAt(lastChild, cns, i, joinVd$1(nvd.children[i]));
+
+      if (i < ol) {
+        for (var j = ol - 1; j >= i; j--) {
+          removeAt(lastChild, cns, j);
+        }
+      } else if (i < nl) {
+        for (; i < nl; i++) {
+          insertAt(lastChild, cns, i, joinVd$1(nvd.children[i]));
+        }
       }
     }
   }

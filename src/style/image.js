@@ -8,25 +8,10 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
     return;
   }
   let list = [
-    ['scaleX', {
-      value: targetWidth / imgWidth,
-      unit: NUMBER,
-    }],
-    ['scaleY', {
-      value: targetHeight / imgHeight,
-      unit: NUMBER,
-    }]
+    ['scaleX', [targetWidth / imgWidth, NUMBER]],
+    ['scaleY', [targetHeight / imgHeight, NUMBER]],
   ];
-  let tfo = transform.calOrigin([
-    {
-      value: 0,
-      unit: PERCENT,
-    },
-    {
-      value: 0,
-      unit: PERCENT,
-    }
-  ], w, h);
+  let tfo = transform.calOrigin([[0, PERCENT], [0, PERCENT]], w, h);
   tfo[0] += x;
   tfo[1] += y;
   return transform.calMatrixWithOrigin(list, tfo, w, h);

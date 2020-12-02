@@ -4260,7 +4260,9 @@
 
   function cloneStyle$1(style, keys) {
     if (!keys) {
-      keys = Object.keys(style);
+      keys = Object.keys(style).map(function (i) {
+        return parseInt(i);
+      });
     }
 
     var res = {};

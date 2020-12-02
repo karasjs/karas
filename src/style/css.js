@@ -980,7 +980,7 @@ const ARRAY_0_1 = {
 };
 function cloneStyle(style, keys) {
   if(!keys) {
-    keys = Object.keys(style);
+    keys = Object.keys(style).map(i => parseInt(i));
   }
   let res = {};
   for(let i = 0, len = keys.length; i < len; i++) {

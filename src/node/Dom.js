@@ -624,12 +624,12 @@ class Dom extends Xom {
           basisSum += max;
         }
         else if(flexBasis[1] === PX) {
-          computedStyle.flexBasis = b = flexBasis[0];
+          computedStyle[FLEX_BASIS] = b = flexBasis[0];
           basisList.push(b);
           basisSum += b;
         }
         else if(flexBasis[1] === PERCENT) {
-          b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+          b = computedStyle[FLEX_BASIS] = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
           basisList.push(b);
           basisSum += b;
         }

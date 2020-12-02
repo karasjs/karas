@@ -15738,11 +15738,11 @@
               basisList.push(max);
               basisSum += max;
             } else if (flexBasis[1] === PX$5) {
-              computedStyle.flexBasis = b = flexBasis[0];
+              computedStyle[FLEX_BASIS$2] = b = flexBasis[0];
               basisList.push(b);
               basisSum += b;
             } else if (flexBasis[1] === PERCENT$6) {
-              b = computedStyle.flexBasis = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
+              b = computedStyle[FLEX_BASIS$2] = (isDirectionRow ? w : h) * flexBasis[0] * 0.01;
               basisList.push(b);
               basisSum += b;
             }
@@ -20727,7 +20727,7 @@
   }
 
   function isFixedSize(node, root) {
-    return isFixedWidthOrHeight(node, root, 'width') && isFixedWidthOrHeight(node, root, 'height');
+    return isFixedWidthOrHeight(node, root, WIDTH$6) && isFixedWidthOrHeight(node, root, HEIGHT$6);
   }
 
   var OFFSET$1 = 0;

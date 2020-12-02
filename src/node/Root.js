@@ -130,7 +130,7 @@ function isFixedWidthOrHeight(node, root, k) {
   return false;
 }
 function isFixedSize(node, root) {
-  return isFixedWidthOrHeight(node, root, 'width') && isFixedWidthOrHeight(node, root, 'height');
+  return isFixedWidthOrHeight(node, root, WIDTH) && isFixedWidthOrHeight(node, root, HEIGHT);
 }
 
 const OFFSET = 0;

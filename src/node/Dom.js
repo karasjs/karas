@@ -901,7 +901,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { height } } = item;
+              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
               let {
                 [BORDER_TOP_WIDTH]: borderTopWidth,
                 [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -935,7 +935,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { width } } = item;
+              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
               let {
                 [BORDER_RIGHT_WIDTH]: borderRightWidth,
                 [BORDER_LEFT_WIDTH]: borderLeftWidth,
@@ -974,7 +974,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { height } } = item;
+              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
               let {
                 [BORDER_TOP_WIDTH]: borderTopWidth,
                 [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -1008,7 +1008,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { width } } = item;
+              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
               let {
                 [BORDER_RIGHT_WIDTH]: borderRightWidth,
                 [BORDER_LEFT_WIDTH]: borderLeftWidth,
@@ -1053,7 +1053,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { height } } = item;
+              let { computedStyle, currentStyle: { [HEIGHT]: height } } = item;
               let {
                 [BORDER_TOP_WIDTH]: borderTopWidth,
                 [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
@@ -1087,7 +1087,7 @@ class Dom extends Xom {
               }
             }
             else if(alignSelf === 'stretch') {
-              let { computedStyle, currentStyle: { width } } = item;
+              let { computedStyle, currentStyle: { [WIDTH]: width } } = item;
               let {
                 [BORDER_RIGHT_WIDTH]: borderRightWidth,
                 [BORDER_LEFT_WIDTH]: borderLeftWidth,

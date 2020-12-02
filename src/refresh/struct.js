@@ -1228,6 +1228,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       [STRUCT_HAS_MASK]: hasMask,
       [STRUCT_LV]: lv,
     } = __structs[i];
+    let __config = node.__config;
     // let {
     //   __cacheTotal,
     //   __refreshLevel,
@@ -1235,7 +1236,7 @@ function renderSvg(renderMode, ctx, defs, root) {
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: __refreshLevel,
-    } = node.__config;
+    } = __config;
     if(hasMask) {
       let start = i + (total || 0) + 1;
       let end = start + hasMask;
@@ -1280,7 +1281,15 @@ function renderSvg(renderMode, ctx, defs, root) {
       let { currentStyle, computedStyle } = node;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
         let { __cacheStyle, currentStyle } = node;
-        let matrix = node.__matrix = node.__renderMatrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
+        // 恶心的v8性能优化
+        let m = __config[NODE_MATRIX];
+        m[0] = matrix[0];
+        m[1] = matrix[1];
+        m[2] = matrix[2];
+        m[3] = matrix[3];
+        m[4] = matrix[4];
+        m[5] = matrix[5];
         if(mx.isE(matrix)) {
           delete virtualDom.transform;
         }
@@ -1290,7 +1299,14 @@ function renderSvg(renderMode, ctx, defs, root) {
         if(parentMatrix) {
           matrix = mx.multiply(parentMatrix, matrix);
         }
-        node.__matrixEvent = matrix;
+        // 恶心的v8性能优化
+        m = __config[NODE_MATRIX_EVENT];
+        m[0] = matrix[0];
+        m[1] = matrix[1];
+        m[2] = matrix[2];
+        m[3] = matrix[3];
+        m[4] = matrix[4];
+        m[5] = matrix[5];
       }
       if(contain(__refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];

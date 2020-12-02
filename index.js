@@ -18509,10 +18509,16 @@
   function diffG2G(elem, ovd, nvd) {
     if (nvd.cache) {
       return;
+    } // 无cache且<REPAINT的情况快速对比且继续对比children
+
+
+    if (nvd.hasOwnProperty('lv')) {
+      diffByLessLv(elem, ovd, nvd, nvd.lv);
+    } else {
+      diffX2X(elem, ovd, nvd);
+      diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     }
 
-    diffX2X(elem, ovd, nvd);
-    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
     var ol = ovd.children.length;
     var nl = nvd.children.length;
     var i = 0;
@@ -20372,14 +20378,14 @@
           node = _structs$_i4[STRUCT_NODE$2],
           total = _structs$_i4[STRUCT_TOTAL$2],
           hasMask = _structs$_i4[STRUCT_HAS_MASK$2],
-          lv = _structs$_i4[STRUCT_LV$3]; // let {
+          lv = _structs$_i4[STRUCT_LV$3];
+      var __config = node.__config; // let {
       //   __cacheTotal,
       //   __refreshLevel,
       // } = node;
 
-      var _node$__config5 = node.__config,
-          __cacheTotal = _node$__config5[NODE_CACHE_TOTAL$2],
-          __refreshLevel = _node$__config5[NODE_REFRESH_LV$2];
+      var __cacheTotal = __config[NODE_CACHE_TOTAL$2],
+          __refreshLevel = __config[NODE_REFRESH_LV$2];
 
       if (hasMask) {
         var start = _i8 + (total || 0) + 1;
@@ -20432,7 +20438,16 @@
           var __cacheStyle = node.__cacheStyle,
               _currentStyle2 = node.currentStyle;
 
-          var matrix = node.__matrix = node.__renderMatrix = node.__calMatrix(__refreshLevel, __cacheStyle, _currentStyle2, computedStyle);
+          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, _currentStyle2, computedStyle); // 恶心的v8性能优化
+
+
+          var m = __config[NODE_MATRIX$2];
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
 
           if (mx.isE(matrix)) {
             delete virtualDom.transform;
@@ -20442,9 +20457,16 @@
 
           if (parentMatrix) {
             matrix = mx.multiply(parentMatrix, matrix);
-          }
+          } // 恶心的v8性能优化
 
-          node.__matrixEvent = matrix;
+
+          m = __config[NODE_MATRIX_EVENT$2];
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
         }
 
         if (contain$1(__refreshLevel, OP$1)) {
@@ -20986,9 +21008,9 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$3] = node.__refreshLevel = lv; // dom在>=REPAINT时total失效
+    __config[NODE_REFRESH_LV$3] = node.__refreshLevel = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
 
-    var need = lv >= REPAINT$3;
+    var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
     if (need) {
       if (node.__cache) {

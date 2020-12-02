@@ -318,8 +318,14 @@ function diffG2G(elem, ovd, nvd) {
   if(nvd.cache) {
     return;
   }
-  diffX2X(elem, ovd, nvd);
-  diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  // 无cache且<REPAINT的情况快速对比且继续对比children
+  if(nvd.hasOwnProperty('lv')) {
+    diffByLessLv(elem, ovd, nvd, nvd.lv);
+  }
+  else {
+    diffX2X(elem, ovd, nvd);
+    diffBb(elem.firstChild, ovd.bb, nvd.bb, ovd.bbClip, nvd.bbClip);
+  }
   let ol = ovd.children.length;
   let nl = nvd.children.length;
   let i = 0;

@@ -356,8 +356,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
   }
   __config[NODE_REFRESH_LV] = node.__refreshLevel = lv;
-  // dom在>=REPAINT时total失效
-  let need = lv >= REPAINT;
+  // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+  let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
     if(node.__cache) {
       node.__cache.release();

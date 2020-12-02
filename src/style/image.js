@@ -1,6 +1,8 @@
 import unit from './unit';
 import transform from './transform';
+import enums from '../util/enums';
 
+const { STYLE_KEY: { SCALE_X, SCALE_Y } } = enums;
 const { PERCENT, NUMBER } = unit;
 
 function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h) {
@@ -8,8 +10,8 @@ function matrixResize(imgWidth, imgHeight, targetWidth, targetHeight, x, y, w, h
     return;
   }
   let list = [
-    ['scaleX', [targetWidth / imgWidth, NUMBER]],
-    ['scaleY', [targetHeight / imgHeight, NUMBER]],
+    [SCALE_X, [targetWidth / imgWidth, NUMBER]],
+    [SCALE_Y, [targetHeight / imgHeight, NUMBER]],
   ];
   let tfo = transform.calOrigin([[0, PERCENT], [0, PERCENT]], w, h);
   tfo[0] += x;

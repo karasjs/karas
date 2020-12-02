@@ -2053,7 +2053,7 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        renderBgc(renderMode, __cacheStyle.backgroundImage, x2, y2, innerWidth, innerHeight, ctx, this,
+        renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE], x2, y2, innerWidth, innerHeight, ctx, this,
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
           borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       }

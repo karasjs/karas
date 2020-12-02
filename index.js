@@ -13739,7 +13739,7 @@
               }
             }
           } else if (backgroundImage.k) {
-            renderBgc(renderMode, __cacheStyle.backgroundImage, x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE$1], x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
         } // boxShadow可能会有多个
 

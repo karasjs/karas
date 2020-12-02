@@ -13,6 +13,7 @@ const {
     FONT_FAMILY,
     FONT_WEIGHT,
     COLOR,
+    VISIBILITY,
   },
 } = enums;
 
@@ -220,7 +221,7 @@ class Text extends Node {
       };
     }
     let { isDestroyed, computedStyle, lineBoxes, cacheStyle } = this;
-    if(isDestroyed || computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+    if(isDestroyed || computedStyle[DISPLAY] === 'none' || computedStyle[VISIBILITY] === 'hidden') {
       return false;
     }
     if(renderMode === mode.CANVAS) {

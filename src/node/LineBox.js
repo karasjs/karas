@@ -1,6 +1,15 @@
 import mode from './mode';
 import css from '../style/css';
+import enums from '../util/enums';
 import util from '../util/util';
+
+const { STYLE_KEY: {
+  COLOR,
+  FONT_WEIGHT,
+  FONT_FAMILY,
+  FONT_SIZE,
+  FONT_STYLE,
+} } = enums;
 
 class LineBox {
   constructor(parent, x, y, w, content) {
@@ -28,11 +37,11 @@ class LineBox {
         props: [
           ['x', x],
           ['y', y],
-          ['fill', cacheStyle.color],
-          ['font-family', computedStyle.fontFamily],
-          ['font-weight', computedStyle.fontWeight],
-          ['font-style', computedStyle.fontStyle],
-          ['font-size', computedStyle.fontSize + 'px']
+          ['fill', cacheStyle[COLOR]],
+          ['font-family', computedStyle[FONT_FAMILY]],
+          ['font-weight', computedStyle[FONT_WEIGHT]],
+          ['font-style', computedStyle[FONT_STYLE]],
+          ['font-size', computedStyle[FONT_SIZE] + 'px']
         ],
         content: util.encodeHtml(content),
       };

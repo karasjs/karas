@@ -527,34 +527,45 @@ karas.render(
 一组注入方法的集合，用以注入实现非普通浏览器环境下的必要方法（如小程序、native开发）。一般情况下开发用不到。详见[注入](#注入)。
 
 <a name="style"></a>
-### style
+### style包
 * **类型** `Object`
 * **说明**  
 公开的style包下的对象集合，用以处理样式相关的方法。一般情况下开发用不到。详见[style包](#style包)。
 
 <a name="parser"></a>
-### parser
+### parser包
 * **类型** `Object`
 * **说明**  
 公开的parser包下的对象集合，用以处理动态json相关的方法。一般情况下开发用不到。详见[parser包](#parser包)。
 
 <a name="animate"></a>
-### animate
+### animate包
 * **类型** `Object`
 * **说明**  
 公开的animate包下的对象集合，用以处理动画相关的方法。一般情况下开发用不到。详见[animate包](#animate包)。
 
 <a name="math"></a>
-### math
+### math包
 * **类型** `Object`
 * **说明**  
 公开的math包下的对象集合，用以处理数学相关的方法。一般情况下开发用不到。详见[math包](#math包)。
 
 <a name="refresh"></a>
-### refresh
+### refresh包
 * **类型** `Object`
 * **说明**  
 公开的refresh包下的对象集合，用以处理刷新缓存相关的方法。一般情况下开发用不到。详见[refresh包](#refresh包)。
+
+<a name="enums"></a>
+### enums枚举
+* **类型** `Object`
+* **说明**  
+公开的枚举类型，因v8特殊优化的关系，一些常用的属性以索引下标的形式存储，而非常见的string的key。
+
+#### STYLE_KEY
+* **类型** `Object`
+* **说明**  
+currentStyle/computedStyle中的key枚举。
 
 <a name="自定义事件"></a>
 ## 自定义事件

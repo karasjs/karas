@@ -2,9 +2,17 @@ import Geom from './Geom';
 import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
+import enums from '../util/enums';
 import geom from '../math/geom';
 
-let { isNil } = util;
+const { STYLE_KEY: {
+  PADDING_TOP,
+  PADDING_LEFT,
+  STROKE_WIDTH,
+  BOX_SHADOW,
+  FILTER,
+} } = enums;
+const { isNil } = util;
 
 function concatPointAndControl(point, control) {
   if(Array.isArray(control) && (control.length === 2 || control.length === 4)
@@ -438,11 +446,11 @@ class Polyline extends Geom {
     let {
       __sx2, __sy2,
       computedStyle: {
-        paddingTop,
-        paddingLeft,
-        strokeWidth,
-        boxShadow,
-        filter,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_LEFT]: paddingLeft,
+        [STROKE_WIDTH]: strokeWidth,
+        [BOX_SHADOW]: boxShadow,
+        [FILTER]: filter,
       },
       isMulti, __cacheProps,
     } = this;

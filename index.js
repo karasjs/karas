@@ -313,16 +313,17 @@
     STROKE: 70,
     STROKE_WIDTH: 71,
     STROKE_DASHARRAY: 72,
-    STROKE_LINECAP: 73,
-    STROKE_LINEJOIN: 74,
-    STROKE_MITERLIMIT: 75,
-    FILL_RULE: 76,
-    MATRIX: 77,
+    STROKE_DASHARRAY_STR: 73,
+    STROKE_LINECAP: 74,
+    STROKE_LINEJOIN: 75,
+    STROKE_MITERLIMIT: 76,
+    FILL_RULE: 77,
+    MATRIX: 78,
     // 无此样式，仅cache需要
-    BORDER_TOP: 78,
-    BORDER_RIGHT: 79,
-    BORDER_BOTTOM: 80,
-    BORDER_LEFT: 81
+    BORDER_TOP: 79,
+    BORDER_RIGHT: 80,
+    BORDER_BOTTOM: 81,
+    BORDER_LEFT: 82
   };
 
   function style2Lower(s) {
@@ -17291,6 +17292,7 @@
       STROKE_LINECAP = _enums$STYLE_KEY$9.STROKE_LINECAP,
       STROKE_LINEJOIN = _enums$STYLE_KEY$9.STROKE_LINEJOIN,
       STROKE_DASHARRAY$1 = _enums$STYLE_KEY$9.STROKE_DASHARRAY,
+      STROKE_DASHARRAY_STR = _enums$STYLE_KEY$9.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$9.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$9.VISIBILITY,
       NODE_CACHE_PROPS$1 = enums.NODE_CACHE_PROPS,
@@ -17483,7 +17485,7 @@
         if (isNil$7(__cacheStyle[STROKE_DASHARRAY$1])) {
           __cacheStyle[STROKE_DASHARRAY$1] = true;
           computedStyle[STROKE_DASHARRAY$1] = currentStyle[STROKE_DASHARRAY$1];
-          __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle[STROKE_DASHARRAY$1], ',');
+          __cacheStyle[STROKE_DASHARRAY_STR] = util.joinArr(currentStyle[STROKE_DASHARRAY$1], ',');
         } // 直接赋值的
 
 
@@ -17516,7 +17518,7 @@
         var cy = originY + height * 0.5;
         var fill = __cacheStyle[FILL$1],
             stroke = __cacheStyle[STROKE$1],
-            strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY$1];
+            strokeDasharrayStr = __cacheStyle[STROKE_DASHARRAY_STR];
         var strokeWidth = computedStyle[STROKE_WIDTH],
             strokeLinecap = computedStyle[STROKE_LINECAP],
             strokeLinejoin = computedStyle[STROKE_LINEJOIN],
@@ -22394,6 +22396,12 @@
     return Root;
   }(Dom$1);
 
+  var _enums$STYLE_KEY$c = enums.STYLE_KEY,
+      PADDING_TOP$6 = _enums$STYLE_KEY$c.PADDING_TOP,
+      PADDING_LEFT$6 = _enums$STYLE_KEY$c.PADDING_LEFT,
+      STROKE_WIDTH$1 = _enums$STYLE_KEY$c.STROKE_WIDTH,
+      BOX_SHADOW$3 = _enums$STYLE_KEY$c.BOX_SHADOW,
+      FILTER$6 = _enums$STYLE_KEY$c.FILTER;
   var isNil$9 = util.isNil;
 
   function reBuild(target, origin, base, isMulti) {
@@ -22908,11 +22916,11 @@
         var __sx2 = this.__sx2,
             __sy2 = this.__sy2,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter,
+            paddingTop = _this$computedStyle[PADDING_TOP$6],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$6],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$1],
+            boxShadow = _this$computedStyle[BOX_SHADOW$3],
+            filter = _this$computedStyle[FILTER$6],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         var originX = __sx2 + paddingLeft;
@@ -23003,6 +23011,12 @@
     return Line;
   }(Geom$1);
 
+  var _enums$STYLE_KEY$d = enums.STYLE_KEY,
+      PADDING_TOP$7 = _enums$STYLE_KEY$d.PADDING_TOP,
+      PADDING_LEFT$7 = _enums$STYLE_KEY$d.PADDING_LEFT,
+      STROKE_WIDTH$2 = _enums$STYLE_KEY$d.STROKE_WIDTH,
+      BOX_SHADOW$4 = _enums$STYLE_KEY$d.BOX_SHADOW,
+      FILTER$7 = _enums$STYLE_KEY$d.FILTER;
   var isNil$a = util.isNil;
 
   function concatPointAndControl(point, control) {
@@ -23539,11 +23553,11 @@
         var __sx2 = this.__sx2,
             __sy2 = this.__sy2,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter,
+            paddingTop = _this$computedStyle[PADDING_TOP$7],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$7],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$2],
+            boxShadow = _this$computedStyle[BOX_SHADOW$4],
+            filter = _this$computedStyle[FILTER$7],
             isMulti = this.isMulti,
             __cacheProps = this.__cacheProps;
         var originX = __sx2 + paddingLeft;
@@ -23645,6 +23659,12 @@
     return Polygon;
   }(Polyline);
 
+  var _enums$STYLE_KEY$e = enums.STYLE_KEY,
+      PADDING_TOP$8 = _enums$STYLE_KEY$e.PADDING_TOP,
+      PADDING_LEFT$8 = _enums$STYLE_KEY$e.PADDING_LEFT,
+      STROKE_WIDTH$3 = _enums$STYLE_KEY$e.STROKE_WIDTH,
+      BOX_SHADOW$5 = _enums$STYLE_KEY$e.BOX_SHADOW,
+      FILTER$8 = _enums$STYLE_KEY$e.FILTER;
   var isNil$b = util.isNil;
 
   function getCoordsByDegree(x, y, r, d) {
@@ -23974,11 +23994,11 @@
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter;
+            paddingTop = _this$computedStyle[PADDING_TOP$8],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$8],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$3],
+            boxShadow = _this$computedStyle[BOX_SHADOW$5],
+            filter = _this$computedStyle[FILTER$8];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
@@ -24024,6 +24044,12 @@
     return Sector;
   }(Geom$1);
 
+  var _enums$STYLE_KEY$f = enums.STYLE_KEY,
+      PADDING_TOP$9 = _enums$STYLE_KEY$f.PADDING_TOP,
+      PADDING_LEFT$9 = _enums$STYLE_KEY$f.PADDING_LEFT,
+      STROKE_WIDTH$4 = _enums$STYLE_KEY$f.STROKE_WIDTH,
+      BOX_SHADOW$6 = _enums$STYLE_KEY$f.BOX_SHADOW,
+      FILTER$9 = _enums$STYLE_KEY$f.FILTER;
   var isNil$c = util.isNil;
 
   function genVertex(x, y, width, height) {
@@ -24222,11 +24248,11 @@
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter;
+            paddingTop = _this$computedStyle[PADDING_TOP$9],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$9],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$4],
+            boxShadow = _this$computedStyle[BOX_SHADOW$6],
+            filter = _this$computedStyle[FILTER$9];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         this.buildCache(originX, originY);
@@ -24253,6 +24279,12 @@
     return Rect;
   }(Geom$1);
 
+  var _enums$STYLE_KEY$g = enums.STYLE_KEY,
+      PADDING_TOP$a = _enums$STYLE_KEY$g.PADDING_TOP,
+      PADDING_LEFT$a = _enums$STYLE_KEY$g.PADDING_LEFT,
+      STROKE_WIDTH$5 = _enums$STYLE_KEY$g.STROKE_WIDTH,
+      BOX_SHADOW$7 = _enums$STYLE_KEY$g.BOX_SHADOW,
+      FILTER$a = _enums$STYLE_KEY$g.FILTER;
   var isNil$d = util.isNil;
 
   function getR$2(v) {
@@ -24398,11 +24430,11 @@
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter;
+            paddingTop = _this$computedStyle[PADDING_TOP$a],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$a],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$5],
+            boxShadow = _this$computedStyle[BOX_SHADOW$7],
+            filter = _this$computedStyle[FILTER$a];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
@@ -24448,6 +24480,12 @@
     return Circle;
   }(Geom$1);
 
+  var _enums$STYLE_KEY$h = enums.STYLE_KEY,
+      PADDING_TOP$b = _enums$STYLE_KEY$h.PADDING_TOP,
+      PADDING_LEFT$b = _enums$STYLE_KEY$h.PADDING_LEFT,
+      STROKE_WIDTH$6 = _enums$STYLE_KEY$h.STROKE_WIDTH,
+      BOX_SHADOW$8 = _enums$STYLE_KEY$h.BOX_SHADOW,
+      FILTER$b = _enums$STYLE_KEY$h.FILTER;
   var isNil$e = util.isNil;
 
   function getR$3(v) {
@@ -24641,11 +24679,11 @@
             width = this.width,
             height = this.height,
             _this$computedStyle = this.computedStyle,
-            paddingTop = _this$computedStyle.paddingTop,
-            paddingLeft = _this$computedStyle.paddingLeft,
-            strokeWidth = _this$computedStyle.strokeWidth,
-            boxShadow = _this$computedStyle.boxShadow,
-            filter = _this$computedStyle.filter;
+            paddingTop = _this$computedStyle[PADDING_TOP$b],
+            paddingLeft = _this$computedStyle[PADDING_LEFT$b],
+            strokeWidth = _this$computedStyle[STROKE_WIDTH$6],
+            boxShadow = _this$computedStyle[BOX_SHADOW$8],
+            filter = _this$computedStyle[FILTER$b];
         var originX = __sx2 + paddingLeft;
         var originY = __sy2 + paddingTop;
         var cx = originX + width * 0.5;
@@ -25226,7 +25264,8 @@
     math: math,
     builder: builder,
     updater: updater,
-    refresh: refresh
+    refresh: refresh,
+    enums: enums
   };
   builder.ref({
     Xom: Xom,

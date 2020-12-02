@@ -21,6 +21,7 @@ import $$type from './util/$$type';
 import builder from './util/builder';
 import updater from './util/updater';
 import inject from './util/inject';
+import enums from './util/enums';
 import parser from './parser/index';
 import style from './style/index';
 import animate from './animate/index';
@@ -115,6 +116,7 @@ let karas = {
   builder,
   updater,
   refresh,
+  enums,
 };
 
 builder.ref({

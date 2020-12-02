@@ -25,6 +25,7 @@ const { STYLE_KEY: {
   STROKE_LINECAP,
   STROKE_LINEJOIN,
   STROKE_DASHARRAY,
+  STROKE_DASHARRAY_STR,
   FILL_RULE,
   VISIBILITY,
 },
@@ -172,7 +173,7 @@ class Geom extends Xom {
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
       computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY];
-      __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle[STROKE_DASHARRAY], ',');
+      __cacheStyle[STROKE_DASHARRAY_STR] = util.joinArr(currentStyle[STROKE_DASHARRAY], ',');
     }
     // 直接赋值的
     [
@@ -206,7 +207,7 @@ class Geom extends Xom {
     let {
       [FILL]: fill,
       [STROKE]: stroke,
-      [STROKE_DASHARRAY]: strokeDasharrayStr,
+      [STROKE_DASHARRAY_STR]: strokeDasharrayStr,
     } = __cacheStyle;
     let {
       [STROKE_WIDTH]: strokeWidth,

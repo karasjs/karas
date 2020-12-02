@@ -19,7 +19,7 @@ let animation = t.animate([
 let n = 0;
 animation.on('finish', () => {
   let input = document.querySelector('input');
-  input.value += '/' + n + ':' + t.computedStyle.translateX;
+  input.value += '/' + n + ':' + t.getComputedStyle().translateX;
   if(n++ < 1) {
     animation.gotoAndPlay(0);
   }

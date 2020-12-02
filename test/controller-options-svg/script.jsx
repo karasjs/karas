@@ -53,5 +53,5 @@ let o = karas.parse({
 });
 let input = document.querySelector('input');
 controller.list[0].on('finish', function() {
-  input.value = o.children[0].computedStyle.color + '/' + o.children[1].computedStyle.color;
+  input.value = o.children[0].getComputedStyle().color + '/' + o.children[1].getComputedStyle().color;
 });

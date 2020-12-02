@@ -34,9 +34,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.fontSize + ',' + t2.computedStyle.fontSize;
+    input.value = t.getComputedStyle().fontSize + ',' + t2.getComputedStyle().fontSize;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.fontSize + ',' + t2.computedStyle.fontSize;
+  input.value += '/' + t.getComputedStyle().fontSize + ',' + t2.getComputedStyle().fontSize;
 });

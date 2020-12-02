@@ -16,7 +16,7 @@ let animation = t.animate([
   fill: 'forwards',
 });
 let input = document.querySelector('input');
-input.value = t.computedStyle.transform;
+input.value = t.getComputedStyle().transform;
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.transform;
+  input.value += '/' + t.getComputedStyle().transform;
 });

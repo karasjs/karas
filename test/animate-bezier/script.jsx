@@ -20,13 +20,13 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n === 0) {
-    input.value = t.computedStyle.fontSize;
+    input.value = t.getComputedStyle().fontSize;
   }
   else if(n === 1) {
-    input.value += '/' + (t.computedStyle.fontSize > 50);
+    input.value += '/' + (t.getComputedStyle().fontSize > 50);
   }
   n++;
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.fontSize;
+  input.value += '/' + t.getComputedStyle().fontSize;
 });

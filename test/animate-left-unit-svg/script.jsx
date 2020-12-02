@@ -34,9 +34,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.left + ',' + t2.computedStyle.left;
+    input.value = t.getComputedStyle().left + ',' + t2.getComputedStyle().left;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.left + ',' + t2.computedStyle.left;
+  input.value += '/' + t.getComputedStyle().left + ',' + t2.getComputedStyle().left;
 });

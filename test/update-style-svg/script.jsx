@@ -8,5 +8,5 @@ let input = document.querySelector('#base64');
 o.ref.div.updateStyle({
   color: '#00F'
 }, function() {
-  input.value = o.ref.div.computedStyle.color;
+  input.value = o.ref.div.getComputedStyle().color;
 });

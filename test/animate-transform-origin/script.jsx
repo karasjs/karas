@@ -6,7 +6,7 @@ let o = karas.render(
 );
 let t = o.ref.t;
 let input = document.querySelector('input');
-input.value = t.computedStyle.transformOrigin;
+input.value = t.getComputedStyle().transformOrigin;
 let animation = t.animate([
   {
     transformOrigin: 'left top',
@@ -21,9 +21,9 @@ let animation = t.animate([
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value += '/' + t.computedStyle.transformOrigin;
+    input.value += '/' + t.getComputedStyle().transformOrigin;
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.transformOrigin;
+  input.value += '/' + t.getComputedStyle().transformOrigin;
 });

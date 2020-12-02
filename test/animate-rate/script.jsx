@@ -21,10 +21,10 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.width;
+    input.value = t.getComputedStyle().width;
     animation.playbackRate = 1;
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.width;
+  input.value += '/' + t.getComputedStyle().width;
 });

@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.borderTopLeftRadius;
+    input.value = t.getComputedStyle().borderTopLeftRadius;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.borderTopLeftRadius;
+  input.value += '/' + t.getComputedStyle().borderTopLeftRadius;
 });

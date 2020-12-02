@@ -5,4 +5,4 @@ let o = karas.render(
   '#test'
 );
 let input = document.querySelector('#base64');
-input.value = JSON.stringify(o.virtualDom) + o.ref.line.computedStyle.visibility;
+input.value = JSON.stringify(o.virtualDom) + o.ref.line.getComputedStyle().visibility;

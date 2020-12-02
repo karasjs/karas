@@ -32,7 +32,7 @@ let a = c.shadowRoot.animate([{
   fill: 'both',
 });
 a.on('finish', () => {
-  input.value = c.shadowRoot.computedStyle.translateX;
+  input.value = c.shadowRoot.getComputedStyle().translateX;
 });
 c.setState({
   t: 456,

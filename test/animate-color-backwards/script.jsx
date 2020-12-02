@@ -25,6 +25,6 @@ animation.on(karas.Event.FRAME, (diff, isDelay) => {
     input.value += n;
   }
   if(n === 1) {
-    input.value += t.computedStyle.color;
+    input.value += t.getComputedStyle().color;
   }
 });

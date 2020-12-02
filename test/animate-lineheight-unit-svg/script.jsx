@@ -34,9 +34,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.lineHeight + ',' + t2.computedStyle.lineHeight;
+    input.value = t.getComputedStyle().lineHeight + ',' + t2.getComputedStyle().lineHeight;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.lineHeight + ',' + t2.computedStyle.lineHeight;
+  input.value += '/' + t.getComputedStyle().lineHeight + ',' + t2.getComputedStyle().lineHeight;
 });

@@ -39,9 +39,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation2.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value = t.computedStyle.width + ',' + t2.computedStyle.height;
+    input.value = t.getComputedStyle().width + ',' + t2.getComputedStyle().height;
   }
 });
 animation2.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.width + ',' + t2.computedStyle.height;
+  input.value += '/' + t.getComputedStyle().width + ',' + t2.getComputedStyle().height;
 });

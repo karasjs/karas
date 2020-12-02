@@ -36,5 +36,5 @@ let o = karas.parse({
 let t = o.children[0];
 t.animationList[0].on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
-  input.value = t.computedStyle.translateX;
+  input.value = t.getComputedStyle().translateX;
 });

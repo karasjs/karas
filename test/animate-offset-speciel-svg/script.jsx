@@ -24,13 +24,13 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FRAME, () => {
   if(n === 0) {
-    input.value = t.computedStyle.translateX;
+    input.value = t.getComputedStyle().translateX;
   }
   else if(n === 1) {
-    input.value += '/' + (t.computedStyle.translateX < 100);
+    input.value += '/' + (t.getComputedStyle().translateX < 100);
   }
   n++;
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.translateX;
+  input.value += '/' + t.getComputedStyle().translateX;
 });

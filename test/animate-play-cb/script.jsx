@@ -28,5 +28,5 @@ animation.on(karas.Event.FRAME, () => {
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.fontSize + ',' + t.computedStyle.lineHeight;
+  input.value += '/' + t.getComputedStyle().fontSize + ',' + t.getComputedStyle().lineHeight;
 });

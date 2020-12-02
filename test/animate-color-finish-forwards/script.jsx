@@ -22,6 +22,6 @@ animation.on(karas.Event.FRAME, () => {
 });
 animation.on(karas.Event.FINISH, () => {
   let input = document.querySelector('input');
-  input.value = t.computedStyle.color + '/' + n;
+  input.value = t.getComputedStyle().color + '/' + n;
 });
 animation.finish();

@@ -21,7 +21,7 @@ animation.on(karas.Event.FRAME, () => {
   n++;
   let input = document.querySelector('input');
   if(n === 1) {
-    input.value = t.computedStyle.color;
+    input.value = t.getComputedStyle().color;
   }
   else {
     input.value = 1;

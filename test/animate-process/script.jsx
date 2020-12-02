@@ -21,7 +21,7 @@ let n = 0;
 let last = 0;
 let correct = true;
 animation.on(karas.Event.FRAME, () => {
-  let current = t.computedStyle.width;
+  let current = t.getComputedStyle().width;
   if(current > last) {}
   else {
     correct = false;
@@ -29,7 +29,7 @@ animation.on(karas.Event.FRAME, () => {
   last = current;
 });
 animation.on(karas.Event.FINISH, () => {
-  let current = t.computedStyle.width;
+  let current = t.getComputedStyle().width;
   if(current === last && current === 200) {
     input.value = 'true';
   }

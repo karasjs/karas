@@ -22,16 +22,16 @@ let n = 0;
 animation.gotoAndPlay(200);
 animation.on(karas.Event.FRAME, () => {
   if(n === 0) {
-    input.value = t.computedStyle.height;
+    input.value = t.getComputedStyle().height;
   }
   else if(n === 1) {
-    input.value += '/' + t.computedStyle.height;
+    input.value += '/' + t.getComputedStyle().height;
   }
   else if(n === 2) {
-    input.value += '/' + (t.computedStyle.height > 100);
+    input.value += '/' + (t.getComputedStyle().height > 100);
   }
   n++;
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/' + t.computedStyle.height;
+  input.value += '/' + t.getComputedStyle().height;
 });

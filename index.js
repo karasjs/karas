@@ -4280,7 +4280,11 @@
   function cloneStyle$1(style, keys) {
     if (!keys) {
       keys = Object.keys(style).map(function (i) {
-        return parseInt(i);
+        if (!GEOM$2.hasOwnProperty(i)) {
+          i = parseInt(i);
+        }
+
+        return i;
       });
     }
 
@@ -4303,14 +4307,19 @@
         } else {
           res[k] = v.slice(0);
         }
+      } else if (k === FILTER) {
+        if (v) {
+          v = v.slice(0);
+          res[k] = v;
+        }
       } // position等直接值类型赋值
       else if (VALUE$1.hasOwnProperty(k)) {
           res[k] = v;
         } // geom自定义属性
         else if (GEOM$2.hasOwnProperty(k)) {
             res[k] = util.clone(v);
-          } // 其余皆是数组
-          else {
+          } // 其余皆是数组或空
+          else if (v) {
               var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 

@@ -652,7 +652,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           else {
             res = node.render(renderMode, node.__refreshLevel, ctx, defs);
           }
-          let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res;
+          let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res || {};
           // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
           if(offScreenFilter) {
             let j = i + (total || 0);
@@ -844,7 +844,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
       i += (total || 0);
       continue;
     }
-    let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res;
+    let { offScreenFilter, offScreenMask, offScreenOverflow, offScreenBlend } = res || {};
     // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
     if(offScreenFilter) {
       let j = i + (total || 0);

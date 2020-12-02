@@ -19134,11 +19134,12 @@
                   res = node.render(renderMode, node.__refreshLevel, ctx, defs);
                 }
 
-                var _res = res,
-                    _offScreenFilter = _res.offScreenFilter,
-                    _offScreenMask = _res.offScreenMask,
-                    _offScreenOverflow = _res.offScreenOverflow,
-                    _offScreenBlend = _res.offScreenBlend; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+                var _ref = res || {},
+                    _offScreenFilter = _ref.offScreenFilter,
+                    _offScreenMask = _ref.offScreenMask,
+                    _offScreenOverflow = _ref.offScreenOverflow,
+                    _offScreenBlend = _ref.offScreenBlend; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+
 
                 if (_offScreenFilter) {
                   var _j2 = _i4 + (total || 0);
@@ -19404,11 +19405,12 @@
         return "continue";
       }
 
-      var _res2 = res,
-          offScreenFilter = _res2.offScreenFilter,
-          offScreenMask = _res2.offScreenMask,
-          offScreenOverflow = _res2.offScreenOverflow,
-          offScreenBlend = _res2.offScreenBlend; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+      var _ref2 = res || {},
+          offScreenFilter = _ref2.offScreenFilter,
+          offScreenMask = _ref2.offScreenMask,
+          offScreenOverflow = _ref2.offScreenOverflow,
+          offScreenBlend = _ref2.offScreenBlend; // filter造成的离屏，需要将后续一段孩子节点区域的ctx替换，并在结束后应用结果，再替换回来
+
 
       if (offScreenFilter) {
         var j = _i6 + (total || 0);

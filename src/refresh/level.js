@@ -1,4 +1,12 @@
 import change from './change';
+import enums from '../util/enums';
+
+const { STYLE_KEY, STYLE_KEY: {
+  TRANSLATE_X,
+  TRANSLATE_Y,
+  OPACITY,
+  FILTER,
+} } = enums;
 
 const ENUM = {
   // 低4位表示repaint级别
@@ -19,11 +27,11 @@ const ENUM = {
 const TRANSFORMS = {
   // translateX: true,
   // translateY: true,
-  scaleX: true,
-  scaleY: true,
-  rotateZ: true,
-  transform: true,
-  transformOrigin: true,
+  [STYLE_KEY.SCALE_X]: true,
+  [STYLE_KEY.SCALE_Y]: true,
+  [STYLE_KEY.ROTATE_Z]: true,
+  [STYLE_KEY.TRANSFORM]: true,
+  [STYLE_KEY.TRANSFORM_ORIGIN]: true,
 };
 
 let o = Object.assign({
@@ -39,19 +47,19 @@ let o = Object.assign({
     if(change.isIgnore(k)) {
       return ENUM.NONE;
     }
-    if(k === 'translateX') {
+    if(k === TRANSLATE_X) {
       return ENUM.TRANSLATE_X;
     }
-    else if(k === 'translateY') {
+    else if(k === TRANSLATE_Y) {
       return ENUM.TRANSLATE_Y;
     }
     else if(TRANSFORMS.hasOwnProperty(k)) {
       return ENUM.TRANSFORM;
     }
-    else if(k === 'opacity') {
+    else if(k === OPACITY) {
       return ENUM.OPACITY;
     }
-    else if(k === 'filter') {
+    else if(k === FILTER) {
       return ENUM.FILTER;
     }
     if(change.isRepaint(k)) {

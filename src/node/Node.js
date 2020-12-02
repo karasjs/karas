@@ -1,3 +1,13 @@
+import enums from '../util/enums';
+
+const {
+  STRUCT_NODE,
+  STRUCT_INDEX,
+  STRUCT_CHILD_INDEX,
+  STRUCT_LV,
+  STRUCT_HAS_MASK,
+} = enums;
+
 class Node {
   constructor() {
     this.__x = 0;
@@ -16,14 +26,23 @@ class Node {
   }
 
   __structure(i, lv, j) {
+    // let res = this.__struct = {
+    //   node: this,
+    //   index: i,
+    //   childIndex: j,
+    //   lv,
+    // };
+    // if(this.__hasMask) {
+    //   res.hasMask = this.__hasMask;
+    // }
     let res = this.__struct = {
-      node: this,
-      index: i,
-      childIndex: j,
-      lv,
+      [STRUCT_NODE]: this,
+      [STRUCT_INDEX]: i,
+      [STRUCT_CHILD_INDEX]: j,
+      [STRUCT_LV]: lv,
     };
     if(this.__hasMask) {
-      res.hasMask = this.__hasMask;
+      res[STRUCT_HAS_MASK] = this.__hasMask;
     }
     return res;
   }
@@ -111,25 +130,7 @@ class Node {
   }
 
   get domParent() {
-    if(this.__domParent !== undefined) {
-      return this.__domParent;
-    }
-    let p = this;
-    let root = this.root;
-    while(p) {
-      if(p === root) {
-        p = undefined;
-        break;
-      }
-      if(p.parent) {
-        p = p.parent;
-        break;
-      }
-      if(p.host) {
-        p = p.host;
-      }
-    }
-    return this.__domParent = p || null;
+    return this.__domParent;
   }
 
   // canvas/svg根节点

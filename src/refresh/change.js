@@ -1,65 +1,65 @@
 import reset from '../style/reset';
 import unit from '../style/unit';
+import enums from '../util/enums';
+
+const { DOM: RESET_DOM, GEOM: RESET_GEOM } = reset;
+const { INHERIT } = unit;
+const { STYLE_KEY, STYLE_R_KEY } = enums;
+
+const GEOM = {};
+const IGNORE = {
+  [STYLE_KEY.POINTER_EVENTS]: true,
+};
+const REPAINT = {
+  [STYLE_KEY.TRANSFORM]: true,
+  [STYLE_KEY.TRANSLATE_X]: true,
+  [STYLE_KEY.TRANSLATE_Y]: true,
+  [STYLE_KEY.SKEW_X]: true,
+  [STYLE_KEY.SKEW_Y]: true,
+  [STYLE_KEY.SCALE_X]: true,
+  [STYLE_KEY.SCALE_Y]: true,
+  [STYLE_KEY.ROTATE_Z]: true,
+  [STYLE_KEY.COLOR]: true,
+  [STYLE_KEY.FONT_STYLE]: true,
+  [STYLE_KEY.STROKE_WIDTH]: true,
+  [STYLE_KEY.FILL]: true,
+  [STYLE_KEY.STROKE_DASHARRAY]: true,
+  [STYLE_KEY.STROKE_LINECAP]: true,
+  [STYLE_KEY.STROKE_LINEJOIN]: true,
+  [STYLE_KEY.STROKE_MITERLIMIT]: true,
+  [STYLE_KEY.BACKGROUND_COLOR]: true,
+  [STYLE_KEY.BACKGROUND_IMAGE]: true,
+  [STYLE_KEY.BACKGROUND_POSITION_X]: true,
+  [STYLE_KEY.BACKGROUND_POSITION_Y]: true,
+  [STYLE_KEY.BACKGROUND_REPEAT]: true,
+  [STYLE_KEY.BACKGROUND_SIZE]: true,
+  [STYLE_KEY.STROKE]: true,
+  [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
+  [STYLE_KEY.BORDER_LEFT_COLOR]: true,
+  [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
+  [STYLE_KEY.BORDER_TOP_COLOR]: true,
+  [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
+  [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
+  [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
+  [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
+  [STYLE_KEY.VISIBILITY]: true,
+  [STYLE_KEY.OPACITY]: true,
+  [STYLE_KEY.Z_INDEX]: true,
+  [STYLE_KEY.FILTER]: true,
+  [STYLE_KEY.BOX_SHADOW]: true,
+  [STYLE_KEY.OVERFLOW]: true,
+};
+const MEASURE = {
+  [STYLE_KEY.FONT_SIZE]: true,
+  [STYLE_KEY.FONT_WEIGHT]: true,
+  [STYLE_KEY.FONT_FAMILY]: true,
+};
 
 let o = {
-  GEOM: {
-  },
-  IGNORE: {
-    pointerEvents: true,
-  },
-  REPAINT: {
-    transform: true,
-    translateX: true,
-    translateY: true,
-    skewX: true,
-    skewY: true,
-    scaleX: true,
-    scaleY: true,
-    rotateZ: true,
-    color: true,
-    fontStyle: true,
-    strokeWidth: true,
-    fill: true,
-    strokeDasharray: true,
-    strokeLinecap: true,
-    strokeLinejoin: true,
-    strokeMiterlimit: true,
-    backgroundColor: true,
-    backgroundImage: true,
-    backgroundPositionX: true,
-    backgroundPositionY: true,
-    backgroundRepeat: true,
-    backgroundSize: true,
-    stroke: true,
-    borderBottomColor: true,
-    borderLeftColor: true,
-    borderRightColor: true,
-    borderTopColor: true,
-    borderTopLeftRadius: true,
-    borderTopRightRadius: true,
-    borderBottomRightRadius: true,
-    borderBottomLeftRadius: true,
-    visibility: true,
-    opacity: true,
-    zIndex: true,
-    filter: true,
-    boxShadow: true,
-    overflow: true,
-  },
-  MEASURE: {
-    fontSize: true,
-    fontWeight: true,
-    fontFamily: true,
-  },
-  isIgnore(k) {
-    return this.IGNORE.hasOwnProperty(k);
-  },
-  isRepaint(k) {
-    return this.REPAINT.hasOwnProperty(k) || this.isGeom(k);
-  },
-  isMeasure(k) {
-    return this.MEASURE.hasOwnProperty(k);
-  },
+  GEOM,
+  IGNORE,
+  REPAINT,
+  MEASURE,
   addGeom(tagName, ks) {
     if(Array.isArray(ks)) {
       ks.forEach(k => {
@@ -67,37 +67,48 @@ let o = {
       });
     }
     else if(ks) {
-      let list = o.GEOM[ks] = o.GEOM[ks] || {};
-      list[tagName] = true;
+      let hash = o.GEOM[ks] = o.GEOM[ks] || {};
+      hash[tagName] = true;
     }
-  },
-  isGeom(tagName, k) {
-    return this.GEOM.hasOwnProperty(k) && this.GEOM[k].hasOwnProperty(tagName);
-  },
-  isValid(tagName, k) {
-    if(!k) {
-      return false;
-    }
-    if(reset.DOM.hasOwnProperty(k)) {
-      return true;
-    }
-    // geom的fill等矢量才有的样式
-    if(tagName.charAt(0) === '$' && reset.GEOM.hasOwnProperty(k)) {
-      return true;
-    }
-    if(this.GEOM.hasOwnProperty(k)) {
-      return this.GEOM[k].hasOwnProperty(tagName);
-    }
-    return false;
   },
 };
 
-let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(o.MEASURE);
+o.isIgnore = function(k) {
+  return IGNORE.hasOwnProperty(k);
+};
+function isGeom(tagName, k) {
+  return GEOM.hasOwnProperty(k) && GEOM[k].hasOwnProperty(tagName);
+}
+o.isGeom = isGeom;
+o.isRepaint = function(k) {
+  return REPAINT.hasOwnProperty(k) || isGeom(k);
+};
+o.isMeasure = function(k) {
+  return MEASURE.hasOwnProperty(k);
+};
+o.isValid = function(tagName, k) {
+  if(!k) {
+    return false;
+  }
+  if(RESET_DOM.hasOwnProperty(k)) {
+    return true;
+  }
+  // geom的fill等矢量才有的样式
+  if(tagName.charAt(0) === '$' && RESET_GEOM.hasOwnProperty(k)) {
+    return true;
+  }
+  if(GEOM.hasOwnProperty(k)) {
+    return GEOM[k].hasOwnProperty(tagName);
+  }
+  return false;
+};
+
+let MEASURE_KEY_SET = o.MEASURE_KEY_SET = Object.keys(MEASURE).map(i => parseInt(i));
 let len = MEASURE_KEY_SET.length;
 o.isMeasureInherit = function(target) {
   for(let i = 0; i < len; i++) {
     let k = MEASURE_KEY_SET[i];
-    if(target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
+    if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
       return true;
     }
   }
@@ -107,7 +118,7 @@ o.measureInheritList = function(target) {
   let list = [];
   for(let i = 0; i < len; i++) {
     let k = MEASURE_KEY_SET[i];
-    if(target.hasOwnProperty(k) && target[k].unit === unit.INHERIT) {
+    if(target.hasOwnProperty(k) && target[k][1] === INHERIT) {
       list.push(k);
     }
   }

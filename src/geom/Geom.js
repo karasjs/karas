@@ -2,10 +2,34 @@ import Xom from '../node/Xom';
 import reset from '../style/reset';
 import css from '../style/css';
 import unit from '../style/unit';
+import enums from '../util/enums';
 import mode from '../node/mode';
 import util from '../util/util';
 import level from '../refresh/level';
 
+const { STYLE_KEY: {
+  DISPLAY,
+  MARGIN_TOP,
+  MARGIN_LEFT,
+  PADDING_TOP,
+  PADDING_LEFT,
+  WIDTH,
+  BORDER_TOP_WIDTH,
+  BORDER_RIGHT_WIDTH,
+  BORDER_BOTTOM_WIDTH,
+  BORDER_LEFT_WIDTH,
+  FILL,
+  STROKE,
+  STROKE_MITERLIMIT,
+  STROKE_WIDTH,
+  STROKE_LINECAP,
+  STROKE_LINEJOIN,
+  STROKE_DASHARRAY,
+  FILL_RULE,
+  VISIBILITY,
+},
+  NODE_CACHE_PROPS, NODE_CURRENT_PROPS, NODE_CURRENT_STYLE, NODE_IS_MASK, NODE_STYLE,
+} = enums;
 const { AUTO, PX, PERCENT } = unit;
 const { int2rgba, isNil } = util;
 
@@ -27,17 +51,22 @@ class Geom extends Xom {
     this.__style = css.normalize(this.style, reset.DOM_ENTRY_SET.concat(reset.GEOM_ENTRY_SET));
     this.__currentStyle = util.extend({}, this.__style);
     this.__currentProps = util.clone(this.props);
-    this.__cacheProps = {};
+    let config = this.__config;
+    config[NODE_CACHE_PROPS] = this.__cacheProps = {};
+    config[NODE_CURRENT_PROPS] = this.__currentProps;
+    config[NODE_CURRENT_STYLE] = this.__currentStyle;
+    config[NODE_IS_MASK] = isMask;
+    config[NODE_STYLE] = this.__style;
   }
 
   __tryLayInline(w, total) {
     // 无children，直接以style的width为宽度，不定义则为0
-    let { currentStyle: { width } } = this;
-    if(width.unit === PX) {
-      return w - width.value;
+    let { currentStyle: { [WIDTH]: width } } = this;
+    if(width[1] === PX) {
+      return w - width[0];
     }
-    else if(width.unit === PERCENT) {
-      return w - total * width.value * 0.01;
+    else if(width[1] === PERCENT) {
+      return w - total * width[0] * 0.01;
     }
     return w;
   }
@@ -49,18 +78,18 @@ class Geom extends Xom {
     let { currentStyle, computedStyle } = this;
     // 计算需考虑style的属性
     let {
-      width,
-      height,
+      [WIDTH]: width,
+      [HEIGHT]: height,
     } = currentStyle;
     let {
-      borderTopWidth,
-      borderRightWidth,
-      borderBottomWidth,
-      borderLeftWidth,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_RIGHT_WIDTH]: borderRightWidth,
+      [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
     } = computedStyle;
     let main = isDirectionRow ? width : height;
-    if(main.unit !== AUTO) {
-      b = max += main.value;
+    if(main[1] !== AUTO) {
+      b = max += main[0];
     }
     // border也得计算在内
     if(isDirectionRow) {
@@ -88,7 +117,7 @@ class Geom extends Xom {
     this.__width = w;
     this.__ioSize(w, this.height);
     this.__marginAuto(this.currentStyle, data);
-    this.__cacheProps = {};
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
   __layoutFlex(data) {
@@ -102,7 +131,7 @@ class Geom extends Xom {
     let tw = this.__width = fixedWidth ? w : x - data.x;
     let th = this.__height = fixedHeight ? h : y - data.y;
     this.__ioSize(tw, th);
-    this.__cacheProps = {};
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
@@ -114,7 +143,7 @@ class Geom extends Xom {
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       x1, x2, x3, x4, y1, y2, y3, y4);
     // geom才有的style
-    ['stroke', 'fill'].forEach(k => {
+    [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
         computedStyle[k] = v;
@@ -127,65 +156,65 @@ class Geom extends Xom {
         }
       }
     });
-    if(isNil(__cacheStyle.strokeWidth)) {
-      __cacheStyle.strokeWidth = true;
-      let strokeWidth = currentStyle.strokeWidth;
-      if(strokeWidth.unit === PX) {
-        computedStyle.strokeWidth = strokeWidth.value;
+    if(isNil(__cacheStyle[STROKE_WIDTH])) {
+      __cacheStyle[STROKE_WIDTH] = true;
+      let strokeWidth = currentStyle[STROKE_WIDTH];
+      if(strokeWidth[1] === PX) {
+        computedStyle[STROKE_WIDTH] = strokeWidth[0];
       }
-      else if(strokeWidth.unit === PERCENT) {
-        computedStyle.strokeWidth = strokeWidth.value * width * 0.01;
+      else if(strokeWidth[1] === PERCENT) {
+        computedStyle[STROKE_WIDTH] = strokeWidth[0] * this.width * 0.01;
       }
       else {
-        computedStyle.strokeWidth = 0;
+        computedStyle[STROKE_WIDTH] = 0;
       }
     }
-    if(isNil(__cacheStyle.strokeDasharray)) {
-      __cacheStyle.strokeDasharray = true;
-      computedStyle.strokeDasharray = currentStyle.strokeDasharray;
-      __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle.strokeDasharray, ',');
+    if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
+      __cacheStyle[STROKE_DASHARRAY] = true;
+      computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY];
+      __cacheStyle.strokeDasharrayStr = util.joinArr(currentStyle[STROKE_DASHARRAY], ',');
     }
     // 直接赋值的
     [
-      'strokeLinecap',
-      'strokeLinejoin',
-      'strokeMiterlimit',
-      'fillRule',
+      STROKE_LINECAP,
+      STROKE_LINEJOIN,
+      STROKE_MITERLIMIT,
+      FILL_RULE,
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
     });
     // Geom强制有内容
-    return true;
+    return computedStyle[VISIBILITY] !== 'hidden';
   }
 
   __preSet() {
     let { sx: x, sy: y, width, height, __cacheStyle, computedStyle } = this;
     let {
-      borderTopWidth,
-      borderLeftWidth,
-      display,
-      marginTop,
-      marginLeft,
-      paddingTop,
-      paddingLeft,
-      visibility,
+      [BORDER_TOP_WIDTH]: borderTopWidth,
+      [BORDER_LEFT_WIDTH]: borderLeftWidth,
+      [DISPLAY]: display,
+      [MARGIN_TOP]: marginTop,
+      [MARGIN_LEFT]: marginLeft,
+      [PADDING_TOP]: paddingTop,
+      [PADDING_LEFT]: paddingLeft,
+      [VISIBILITY]: visibility,
     } = computedStyle;
     let originX = x + borderLeftWidth + marginLeft + paddingLeft;
     let originY = y + borderTopWidth + marginTop + paddingTop;
     let cx = originX + width * 0.5;
     let cy = originY + height * 0.5;
     let {
-      fill,
-      stroke,
-      strokeDasharrayStr,
+      [FILL]: fill,
+      [STROKE]: stroke,
+      [STROKE_DASHARRAY]: strokeDasharrayStr,
     } = __cacheStyle;
     let {
-      strokeWidth,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      strokeDasharray,
-      fillRule,
+      [STROKE_WIDTH]: strokeWidth,
+      [STROKE_LINECAP]: strokeLinecap,
+      [STROKE_LINEJOIN]: strokeLinejoin,
+      [STROKE_MITERLIMIT]: strokeMiterlimit,
+      [STROKE_DASHARRAY]: strokeDasharray,
+      [FILL_RULE]: fillRule,
     } = computedStyle;
     return {
       x,
@@ -278,7 +307,7 @@ class Geom extends Xom {
     let { x2, y2 } = res;
     let { originX, originY } = preData;
     // 有cache时需计算差值
-    let { paddingLeft, paddingTop } = this.computedStyle;
+    let { [PADDING_LEFT]: paddingLeft, [PADDING_TOP]: paddingTop } = this.computedStyle;
     x2 += paddingLeft;
     y2 += paddingTop;
     preData.dx = x2 - originX;
@@ -304,7 +333,7 @@ class Geom extends Xom {
 
   __cancelCache(recursion) {
     super.__cancelCache(recursion);
-    this.__cacheProps = {};
+    this.__config[NODE_CACHE_PROPS] = this.__cacheProps = {};
   }
 
   // geom的cache无内容也不清除

@@ -2,7 +2,19 @@ import Node from './Node';
 import LineBox from './LineBox';
 import mode from './mode';
 import css from '../style/css';
+import enums from '../util/enums';
 import util from '../util/util';
+
+const {
+  STYLE_KEY: {
+    DISPLAY,
+    LINE_HEIGHT,
+    FONT_SIZE,
+    FONT_FAMILY,
+    FONT_WEIGHT,
+    COLOR,
+  },
+} = enums;
 
 class Text extends Node {
   constructor(content) {
@@ -28,7 +40,7 @@ class Text extends Node {
     if(renderMode === mode.CANVAS) {
       ctx.font = css.setFontStyle(computedStyle);
     }
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
+    let key = this.__key = computedStyle[FONT_SIZE] + ',' + computedStyle[FONT_FAMILY] + ',' + computedStyle[FONT_WEIGHT];
     let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
       key,
       style: computedStyle,
@@ -70,8 +82,8 @@ class Text extends Node {
   }
 
   __measureCb() {
-    let { content, computedStyle, charWidthList } = this;
-    let key = computedStyle.fontSize + ',' + computedStyle.fontFamily + ',' + computedStyle.fontWeight;
+    let { content, charWidthList } = this;
+    let key = this.__key;
     let cache = Text.CHAR_WIDTH_CACHE[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {
@@ -89,7 +101,7 @@ class Text extends Node {
     this.__x = this.__sx1 = x;
     this.__y = this.__sy1 = y;
     let { isDestroyed, content, computedStyle, lineBoxes, charWidthList } = this;
-    if(isDestroyed || computedStyle.display === 'none') {
+    if(isDestroyed || computedStyle[DISPLAY] === 'none') {
       return;
     }
     this.__ox = this.__oy = 0;
@@ -106,7 +118,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, count, content.slice(begin, i + 1));
         lineBoxes.push(lineBox);
         maxW = Math.max(maxW, count);
-        y += computedStyle.lineHeight;
+        y += computedStyle[LINE_HEIGHT];
         begin = i + 1;
         i = begin;
         count = 0;
@@ -124,7 +136,7 @@ class Text extends Node {
         let lineBox = new LineBox(this, x, y, width, content.slice(begin, i));
         lineBoxes.push(lineBox);
         maxW = Math.max(maxW, width);
-        y += computedStyle.lineHeight;
+        y += computedStyle[LINE_HEIGHT];
         begin = i;
         count = 0;
       }
@@ -141,7 +153,7 @@ class Text extends Node {
       let lineBox = new LineBox(this, x, y, count, content.slice(begin, length));
       lineBoxes.push(lineBox);
       maxW = Math.max(maxW, count);
-      y += computedStyle.lineHeight;
+      y += computedStyle[LINE_HEIGHT];
     }
     this.__width = maxW;
     this.__height = y - data.y;
@@ -216,7 +228,7 @@ class Text extends Node {
       if(ctx.font !== font) {
         ctx.font = font;
       }
-      let color = cacheStyle.color;
+      let color = cacheStyle[COLOR];
       if(ctx.fillStyle !== color) {
         ctx.fillStyle = color;
       }
@@ -277,6 +289,10 @@ class Text extends Node {
 
   get cacheStyle() {
     return this.parent.__cacheStyle;
+  }
+
+  get __config() {
+    return this.parent.__config;
   }
 
   get bbox() {

@@ -1,7 +1,9 @@
 import util from './util';
 import builder from './builder';
 import $$type from './$$type';
+import enums from './enums';
 
+const { NODE_COMPUTED_STYLE } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
@@ -94,6 +96,7 @@ function updateCp(cp, props, state) {
     ].forEach(k => {
       sr[k] = oldSr[k];
     });
+    sr.__config[NODE_COMPUTED_STYLE] = oldSr.computedStyle;
   }
   [
     '__x',
@@ -103,6 +106,7 @@ function updateCp(cp, props, state) {
     '__sx1',
     '__layoutData',
     '__parent',
+    '__domParent',
     '__struct',
   ].forEach(k => {
     sr[k] = oldSr[k];

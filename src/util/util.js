@@ -1,5 +1,8 @@
 import $$type from './$$type';
 import mx from '../math/matrix';
+import enums from './enums';
+
+const { STYLE_KEY, STYLE_KEY: { TRANSFORM } } = enums;
 
 let toString = {}.toString;
 function isType(type) {
@@ -430,6 +433,77 @@ function transformBbox(bbox, matrix, dx = 0, dy = 0) {
   return bbox;
 }
 
+const VALUE = {
+  [STYLE_KEY.POSITION]: true,
+  [STYLE_KEY.DISPLAY]: true,
+  [STYLE_KEY.BACKGROUND_REPEAT]: true,
+  [STYLE_KEY.FLEX_DIRECTION]: true,
+  [STYLE_KEY.JUSTIFY_CONTENT]: true,
+  [STYLE_KEY.ALIGN_ITEMS]: true,
+  [STYLE_KEY.ALIGN_SELF]: true,
+  [STYLE_KEY.OVERFLOW]: true,
+  [STYLE_KEY.MIX_BLEND_MODE]: true,
+  [STYLE_KEY.STROKE_LINECAP]: true,
+  [STYLE_KEY.STROKE_LINEJOIN]: true,
+  [STYLE_KEY.STROKE_MITERLIMIT]: true,
+  [STYLE_KEY.FILL_RULE]: true,
+};
+const ARRAY_0 = {
+  [STYLE_KEY.BACKGROUND_SIZE]: true,
+  [STYLE_KEY.BACKGROUND_COLOR]: true,
+  [STYLE_KEY.BORDER_TOP_COLOR]: true,
+  [STYLE_KEY.BORDER_RIGHT_COLOR]: true,
+  [STYLE_KEY.BORDER_BOTTOM_COLOR]: true,
+  [STYLE_KEY.BORDER_LEFT_COLOR]: true,
+};
+const ARRAY_0_1 = {
+  [STYLE_KEY.BORDER_TOP_LEFT_RADIUS]: true,
+  [STYLE_KEY.BORDER_TOP_RIGHT_RADIUS]: true,
+  [STYLE_KEY.BORDER_BOTTOM_RIGHT_RADIUS]: true,
+  [STYLE_KEY.BORDER_BOTTOM_LEFT_RADIUS]: true,
+  [STYLE_KEY.TRANSFORM_ORIGIN]: true,
+};
+function cloneStyle(style, keys) {
+  if(!keys) {
+    keys = Object.keys(style);
+  }
+  let res = {};
+  keys.forEach(k => {
+    let v = style[k];
+    // 渐变特殊处理
+    if(k === STYLE_KEY.BACKGROUND_IMAGE) {
+      if(v.k) {
+        res[k] = util.clone(v);
+      }
+      else {
+        res[k] = v;
+      }
+    }
+    // position等直接值类型赋值
+    else if(VALUE.hasOwnProperty(k)) {
+      res[k] = v;
+    }
+    // 其余皆是数组
+    else {
+      let n = res[k] = v.slice(0);
+      // 特殊引用里数组某项再次clone
+      if(ARRAY_0.hasOwnProperty(k)) {
+        n[0] = n[0].slice(0);
+      }
+      else if(ARRAY_0_1.hasOwnProperty(k)) {
+        n[0] = n[0].slice(0);
+        n[1] = n[1].slice(0);
+      }
+      else if(k === TRANSFORM) {
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+        }
+      }
+    }
+  });
+  return res;
+}
+
 let util = {
   isObject,
   isString,
@@ -459,6 +533,7 @@ let util = {
   arr2hash,
   hash2arr,
   clone,
+  cloneStyle,
   equalArr,
   equal,
   extend,

@@ -1,7 +1,7 @@
 # CSX
 * 继承JSX
-* 根元素必须是<canvas>或<svg>或<webgl>
-* 矢量元素标签必须是$开头
+* 根元素必须是`canvas`或`svg`或`webgl`
+* 矢量元素标签必须是`$`开头
 
 # 支持DOM
 * div
@@ -36,7 +36,7 @@
   * auto 默认
   * px
   * %
-* marginTop/marginRight/marginBottom/marginLeft
+* marginTop/marginRight/marginBottom/marginLeft `不会合并重叠margin`
   * auto 默认
   * px
   * %
@@ -334,12 +334,12 @@ y轴半径，相对于height百分比，取值[0, ∞)，默认1
 当扇形大于180°时，是否直接相连闭合两个端点，而不是经过圆心，默认false
 
 # 动态json格式
+json有压缩格式，即把常见的样式/动画的key简写别名，使得整体内容大小更短，但不易于阅读。
 ```ts
 {
   tagName: string,
-  props?: Object,
+  props?: Object, // props即属性，常见style和矢量属性在其内。
   children?: Array<Object>,
   animate?: Object/Array<{ value: Object/Array, options: Object }>,
 }
-// props即属性，常见style和矢量属性在其内。
 ```

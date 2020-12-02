@@ -1,7 +1,9 @@
 import Text from '../node/Text';
 import util from './util';
 import $$type from './$$type';
+import enums from './enums';
 
+const { NODE_DOM_PARENT } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
@@ -184,6 +186,11 @@ function relation(parent, children, options = {}) {
   }
   else if(children instanceof Xom || children instanceof Component || children instanceof Text) {
     children.__parent = parent;
+    children.__domParent = parent;
+    // 极为恶心，为了v8的性能优化
+    if(children.__config) {
+      children.__config[NODE_DOM_PARENT] = parent;
+    }
     if(options.prev) {
       options.prev.__next = children;
       children.__prev = options.prev;
@@ -197,6 +204,10 @@ function relation(parent, children, options = {}) {
       let sr = children.shadowRoot;
       if(sr instanceof Text) {
         sr.__parent = parent;
+      }
+      sr.__domParent = parent;
+      if(sr.__config) {
+        sr.__config[NODE_DOM_PARENT] = parent;
       }
     }
   }

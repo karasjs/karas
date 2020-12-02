@@ -10232,7 +10232,10 @@
         __config[I_PLAY_CB] = cb;
         __config[I_PLAY_STATE] = 'running'; // 每次play调用标识第一次运行，需响应play事件和回调
 
-        __config[I_FIRST_PLAY] = true; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
+        __config[I_FIRST_PLAY] = true; // 防止finish/cancel事件重复触发，每次播放重置
+
+        this.__hasFin = false;
+        this.__hasCancel = false; // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
 
         if (!__config[I_ENTER_FRAME]) {
           __config[I_ENTER_FRAME] = true;
@@ -10522,11 +10525,14 @@
               self.__clean(true);
             },
             __after: function __after(diff) {
-              __config[I_ASSIGNING] = false;
+              if (!self.__hasFin) {
+                self.__hasFin = true;
+                __config[I_ASSIGNING] = false;
 
-              __config[I_FRAME_CB].call(self, __config, diff);
+                __config[I_FRAME_CB].call(self, __config, diff);
 
-              self.__fin(cb, diff);
+                self.__fin(cb, diff);
+              }
             }
           });
         }
@@ -10560,12 +10566,15 @@
               self.__clean();
             },
             __after: function __after(diff) {
-              __config[I_ASSIGNING] = false;
+              if (!self.__hasCancel) {
+                self.__hasCancel = true;
+                __config[I_ASSIGNING] = false;
 
-              __config[I_FRAME_CB].call(self, __config, diff);
+                __config[I_FRAME_CB].call(self, __config, diff);
 
-              __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
-              self.emit(Event.CANCEL);
+                __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+                self.emit(Event.CANCEL);
+              }
 
               if (isFunction$3(cb)) {
                 cb.call(self, diff);
@@ -21645,7 +21654,7 @@
           measureHash[__uniqueUpdateId] = true;
           var last = node; // 检查measure的属性是否是inherit
 
-          var isInherit = o.isMeasureInherit(updateHash[__uniqueUpdateId].style); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
+          var isInherit = o.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE$3]); // 是inherit，需要向上查找，从顶部向下递归计算继承信息
 
           if (isInherit) {
             while (parent && parent !== root) {
@@ -21656,7 +21665,7 @@
               var _isInherit = void 0;
 
               if (parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID$1)) {
-                var style = updateHash[_uniqueUpdateId].style;
+                var style = updateHash[_uniqueUpdateId][UPDATE_STYLE$3];
                 measureHash[_uniqueUpdateId] = true;
                 var temp = o.measureInheritList(style);
                 _isInherit = !!temp.length;

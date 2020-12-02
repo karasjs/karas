@@ -899,14 +899,14 @@ class Root extends Dom {
       measureHash[__uniqueUpdateId] = true;
       let last = node;
       // 检查measure的属性是否是inherit
-      let isInherit = change.isMeasureInherit(updateHash[__uniqueUpdateId].style);
+      let isInherit = change.isMeasureInherit(updateHash[__uniqueUpdateId][UPDATE_STYLE]);
       // 是inherit，需要向上查找，从顶部向下递归计算继承信息
       if(isInherit) {
         while(parent && parent !== root) {
           let { __config:{ [NODE_UNIQUE_UPDATE_ID]: __uniqueUpdateId, }, currentStyle } = parent;
           let isInherit;
           if(parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-            let style = updateHash[__uniqueUpdateId].style;
+            let style = updateHash[__uniqueUpdateId][UPDATE_STYLE];
             measureHash[__uniqueUpdateId] = true;
             let temp = change.measureInheritList(style);
             isInherit = !!temp.length;

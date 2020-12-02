@@ -1331,6 +1331,9 @@ class Animation extends Event {
     __config[I_PLAY_STATE] = 'running';
     // 每次play调用标识第一次运行，需响应play事件和回调
     __config[I_FIRST_PLAY] = true;
+    // 防止finish/cancel事件重复触发，每次播放重置
+    this.__hasFin = false;
+    this.__hasCancel = false;
     // 只有第一次调用会进初始化，另外finish/cancel视为销毁也会重新初始化
     if(!__config[I_ENTER_FRAME]) {
       __config[I_ENTER_FRAME] = true;
@@ -1582,9 +1585,12 @@ class Animation extends Event {
           self.__clean(true);
         },
         __after(diff) {
-          __config[I_ASSIGNING] = false;
-          __config[I_FRAME_CB].call(self, __config, diff);
-          self.__fin(cb, diff);
+          if(!self.__hasFin) {
+            self.__hasFin = true;
+            __config[I_ASSIGNING] = false;
+            __config[I_FRAME_CB].call(self, __config, diff);
+            self.__fin(cb, diff);
+          }
         },
       });
     }
@@ -1611,11 +1617,14 @@ class Animation extends Event {
           self.__clean();
         },
         __after(diff) {
-          __config[I_ASSIGNING] = false;
-          __config[I_FRAME_CB].call(self, __config, diff);
-          __config[I_BEGIN] = __config[I_END] =__config[I_IS_DELAY] =__config[I_FINISHED]
-            =__config[I_IN_FPS] = __config[I_ENTER_FRAME] =  false;
-          self.emit(Event.CANCEL);
+          if(!self.__hasCancel) {
+            self.__hasCancel = true;
+            __config[I_ASSIGNING] = false;
+            __config[I_FRAME_CB].call(self, __config, diff);
+            __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
+              = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+            self.emit(Event.CANCEL);
+          }
           if(isFunction(cb)) {
             cb.call(self, diff);
           }

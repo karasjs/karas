@@ -22,9 +22,9 @@ let input = document.querySelector('input');
 let n = 0;
 animation.on('frame', () => {
   if(n++ === 0) {
-    input.value += '/' + t.currentStyle.translateX.value;
+    input.value += '/' + t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X][0];
   }
 });
 animation.on('begin', () => {
-  input.value += '/' + (t.currentStyle.translateX.value < 100);
+  input.value += '/' + (t.currentStyle[karas.enums.STYLE_KEY.TRANSLATE_X][0] < 100);
 });

@@ -105,6 +105,7 @@ let karas = {
   Geom,
   Xom,
   Dom,
+  Img,
   Root,
   Event,
   util,

@@ -3675,7 +3675,7 @@
     });
     temp = style.transform;
 
-    if (temp !== undefined) {
+    if (temp) {
       var transform = res[TRANSFORM$1] = [];
 
       var _match = (temp || '').toString().match(/\w+\(.+?\)/g);
@@ -17080,7 +17080,7 @@
         originY = res.y2 + paddingTop;
         var loadImg = this.__loadImg;
 
-        if (loadImg.error && !placeholder) {
+        if (loadImg.error && !placeholder && Img.showError) {
           if (!width || !height) {
             return res;
           }
@@ -17320,6 +17320,8 @@
 
     return Img;
   }(Dom$1);
+
+  _defineProperty(Img$1, "showError", true);
 
   var Defs = /*#__PURE__*/function () {
     function Defs(uuid) {
@@ -25384,6 +25386,7 @@
     Geom: Geom$1,
     Xom: Xom,
     Dom: Dom$1,
+    Img: Img$1,
     Root: Root,
     Event: Event,
     util: util,

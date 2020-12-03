@@ -100,10 +100,37 @@ class Component extends karas.Component {
 }
 ```
 
+### Node
+* **类型** `class`
+* **说明**  
+所有节点基类，[Dom](#Dom)、[Text](#Text)均实现了此类。详见[Node](#Node)。
+
+### Text
+* **类型** `class`
+* **说明**  
+文本节点。详见[Text](#Text)。
+
+### Xom
+* **类型** `class`
+* **说明**  
+所有非Text节点的基类，[Dom](#Dom)、[Geom](#Geom)均实现了此类。详见[Xom](#Xom)。
+
+### Dom
+* **类型** `class`
+* **说明**  
+所有dom节点的基类，[Img](#Img)实现了此类。详见[Img](#Img)。
+
+### Img
+
+### Component
+* **类型** `class`
+* **说明**  
+组件的基类，混入了[Event](#Event)。详见[Component](#Component)。
+
 <a name="Node"></a>
 
 ## Node
-Xom/Text的基类，抽象共有部分。
+Xom/Text的基类，抽象共有部分。所有节点均派生于它。
 
 ### 类属性property
 
@@ -449,7 +476,7 @@ console.log(root.ref.div === div);
 ```
 
 <a name="Dom"></a>
-### Dom
+## Dom
 * **类型** `class`
 * **说明**  
 VirtualDom的基类，所有非图形vd均是继承或实现了此类。一般情况下开发用不到。详见[虚拟Dom](#虚拟Dom)。
@@ -469,7 +496,7 @@ console.log(root);
 ```
 
 <a name="Geom"></a>
-### Geom
+## Geom
 * **类型** `class`
 * **说明**  
 自定义矢量图形，目前内置的有`Circle`、`Ellipse`、`Line`、`Polygon`、`Polyline`、`Rect`、`Sector`几类基本图形。当需要更多的类型时，需继承此类并覆盖render()方法，实现代码复用。详见[自定义图形](#自定义图形)。
@@ -496,8 +523,35 @@ karas.render(
 );
 ```
 
+## Img
+<a name="Img"></a>
+* **类型** `class`
+* **说明**  
+继承[Dom](#Dom)类，图片显示专用。
+
+### 类属性property
+
+#### src
+* **类型** `string` 只读
+* **说明**  
+图片的url。
+
+### 静态属性
+* **类型** `boolean` 读写
+* **说明**  
+当图片加载失败时，是否显示默认的错误占位提示。默认true。
+
+#### showError
+
+### html属性attribute
+
+#### placeholder
+* **类型** `string`
+* **说明**  
+当图片加载失败时，是否显示设置的占位图。占位图如果再次加载失败，则不展示。
+
 <a name="Component"></a>
-### Component
+## Component
 * **类型** `class`
 * **说明**  
 自定义组件，类似React的Component，逻辑和绘制的代码集合，可复用。详见[自定义组件](#自定义组件)。

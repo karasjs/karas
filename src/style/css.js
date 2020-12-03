@@ -356,7 +356,7 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.transform;
-  if(temp !== undefined) {
+  if(temp) {
     let transform = res[TRANSFORM] = [];
     let match = (temp || '').toString().match(/\w+\(.+?\)/g);
     if(match) {

@@ -172,7 +172,7 @@ class Img extends Dom {
     originX = res.x2 + paddingLeft;
     originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
-    if(loadImg.error && !placeholder) {
+    if(loadImg.error && !placeholder && Img.showError) {
       if(!width || !height) {
         return res;
       }
@@ -423,6 +423,8 @@ class Img extends Dom {
   get baseLine() {
     return this.height;
   }
+
+  static showError = true;
 }
 
 export default Img;

@@ -1222,7 +1222,7 @@ function renderSvg(renderMode, ctx, defs, root) {
   let lastLv = 0;
   let last;
   for(let i = 0, len = __structs.length; i < len; i++) {
-    let item = __structs[i];
+    // let item = __structs[i];
     // let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
     let {
       [STRUCT_NODE]: node,

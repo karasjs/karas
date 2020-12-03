@@ -4466,7 +4466,8 @@
       FONT_FAMILY$2 = _enums$STYLE_KEY$2.FONT_FAMILY,
       FONT_WEIGHT$2 = _enums$STYLE_KEY$2.FONT_WEIGHT,
       COLOR$2 = _enums$STYLE_KEY$2.COLOR,
-      VISIBILITY$1 = _enums$STYLE_KEY$2.VISIBILITY;
+      VISIBILITY$1 = _enums$STYLE_KEY$2.VISIBILITY,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$2.TEXT_ALIGN;
 
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
@@ -4645,7 +4646,7 @@
         this.__height = y - data.y; // flex/abs前置计算无需真正布局
 
         if (!isVirtual) {
-          var textAlign = computedStyle.textAlign;
+          var textAlign = computedStyle[TEXT_ALIGN$1];
 
           if (['center', 'right'].indexOf(textAlign) > -1) {
             lineBoxes.forEach(function (lineBox) {
@@ -8903,7 +8904,7 @@
       FONT_WEIGHT$4 = _enums$STYLE_KEY$6.FONT_WEIGHT,
       FONT_STYLE$2 = _enums$STYLE_KEY$6.FONT_STYLE,
       FONT_FAMILY$4 = _enums$STYLE_KEY$6.FONT_FAMILY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$6.TEXT_ALIGN,
+      TEXT_ALIGN$2 = _enums$STYLE_KEY$6.TEXT_ALIGN,
       MATRIX$2 = _enums$STYLE_KEY$6.MATRIX,
       UPDATE_NODE$1 = enums.UPDATE_NODE,
       UPDATE_STYLE$1 = enums.UPDATE_STYLE,
@@ -8998,7 +8999,7 @@
             style[k] = [computedStyle[k], PX$3];
           } else if (k === FONT_WEIGHT$4) {
             style[k] = [computedStyle[k], NUMBER$2];
-          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$4 || k === TEXT_ALIGN$1) {
+          } else if (k === FONT_STYLE$2 || k === FONT_FAMILY$4 || k === TEXT_ALIGN$2) {
             style[k] = [computedStyle[k], STRING$1];
           }
         }
@@ -13069,9 +13070,9 @@
             }
 
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
-              var k = list[i];
+              var _k = list[i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
+              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + _k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + _k + 'Color')]][3] > 0) {
                 return true;
               }
             }
@@ -14037,15 +14038,24 @@
           var hasChange; // 先去掉无用和缩写
 
           style = util.extend({}, style);
-          var ks = Object.keys(style); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
-
+          var ks = Object.keys(style);
           ks.forEach(function (k) {
-            if (o.isValid(tagName, k)) {
-              hasChange = true;
-            } else {
+            if (abbr.hasOwnProperty(k)) {
+              abbr.toFull(style, k);
               delete style[k];
             }
-          });
+          }); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
+
+          for (var i in style) {
+            if (style.hasOwnProperty(i)) {
+              if (o.isValid(tagName, i)) {
+                hasChange = true;
+              } else {
+                delete style[k];
+              }
+            }
+          }
+
           var formatStyle = css.normalize(style); // 空样式或非法或无改变直接返回
 
           if (!hasChange) {
@@ -14225,10 +14235,10 @@
         if (Array.isArray(filter)) {
           for (var i = 0, len = filter.length; i < len; i++) {
             var _filter$i = _slicedToArray(filter[i], 2),
-                k = _filter$i[0],
+                _k2 = _filter$i[0],
                 v = _filter$i[1];
 
-            if (k === 'blur') {
+            if (_k2 === 'blur') {
               var d = mx.int2convolution(v);
               ox = Math.max(ox, d);
               oy = Math.max(oy, d);
@@ -14685,9 +14695,9 @@
       });
     } else if (children instanceof Xom$1 || children instanceof Component || children instanceof Text) {
       children.__parent = parent;
-      children.__domParent = parent; // 极为恶心，为了v8的性能优化
+      children.__domParent = parent; // 极为恶心，为了v8的性能优化，text引用parent的，所以不能再设置
 
-      if (children.__config) {
+      if (!(children instanceof Text)) {
         children.__config[NODE_DOM_PARENT$1] = parent;
       }
 
@@ -15083,7 +15093,7 @@
       LEFT$2 = _enums$STYLE_KEY$9.LEFT,
       WIDTH$3 = _enums$STYLE_KEY$9.WIDTH,
       HEIGHT$4 = _enums$STYLE_KEY$9.HEIGHT,
-      TEXT_ALIGN$2 = _enums$STYLE_KEY$9.TEXT_ALIGN,
+      TEXT_ALIGN$3 = _enums$STYLE_KEY$9.TEXT_ALIGN,
       FLEX_DIRECTION$2 = _enums$STYLE_KEY$9.FLEX_DIRECTION,
       FLEX_BASIS$2 = _enums$STYLE_KEY$9.FLEX_BASIS,
       FLEX_SHRINK$1 = _enums$STYLE_KEY$9.FLEX_SHRINK,
@@ -15091,6 +15101,7 @@
       ALIGN_SELF$1 = _enums$STYLE_KEY$9.ALIGN_SELF,
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$9.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$9.JUSTIFY_CONTENT,
+      Z_INDEX$3 = _enums$STYLE_KEY$9.Z_INDEX,
       NODE_CURRENT_STYLE$2 = enums.NODE_CURRENT_STYLE,
       NODE_STYLE$2 = enums.NODE_STYLE,
       STRUCT_NUM$1 = enums.STRUCT_NUM,
@@ -15139,7 +15150,7 @@
             if (isRelativeOrAbsolute$1(item)) {
               // 临时变量为排序使用
               child.__iIndex = i;
-              var z = child.__zIndex = item.currentStyle.zIndex;
+              var z = child.__zIndex = item.currentStyle[Z_INDEX$3];
               abs.push(child);
 
               if (lastIndex === undefined) {
@@ -15286,8 +15297,9 @@
       key: "__updateStruct",
       value: function __updateStruct(structs) {
         var _this$__struct = this.__struct,
-            index = _this$__struct.index,
-            total = _this$__struct.total;
+            index = _this$__struct[STRUCT_INDEX$2],
+            _this$__struct$STRUCT = _this$__struct[STRUCT_TOTAL$1],
+            total = _this$__struct$STRUCT === void 0 ? 0 : _this$__struct$STRUCT;
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         var length = zIndexChildren.length;
 
@@ -15310,7 +15322,7 @@
             list: structs.slice(child[STRUCT_INDEX$2], child[STRUCT_INDEX$2] + child[STRUCT_TOTAL$1] + 1)
           }); // i += child.total;
 
-          i += child[STRUCT_TOTAL$1];
+          i += child[STRUCT_TOTAL$1] || 0;
         }
 
         var needSort;
@@ -15501,7 +15513,7 @@
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
         lineGroups.splice(0);
-        var textAlign = computedStyle[TEXT_ALIGN$2];
+        var textAlign = computedStyle[TEXT_ALIGN$3];
 
         var _this$__preLayout = this.__preLayout(data),
             fixedWidth = _this$__preLayout.fixedWidth,
@@ -16293,7 +16305,7 @@
             computedStyle = this.computedStyle,
             lineGroups = this.lineGroups;
         lineGroups.splice(0);
-        var textAlign = computedStyle[TEXT_ALIGN$2];
+        var textAlign = computedStyle[TEXT_ALIGN$3];
 
         var _this$__preLayout3 = this.__preLayout(data),
             fixedWidth = _this$__preLayout3.fixedWidth,
@@ -20410,8 +20422,8 @@
     var last;
 
     var _loop4 = function _loop4(len, _i8) {
-      var item = __structs[_i8]; // let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
-
+      // let item = __structs[i];
+      // let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
       var _structs$_i4 = __structs[_i8],
           node = _structs$_i4[STRUCT_NODE$2],
           total = _structs$_i4[STRUCT_TOTAL$2],
@@ -20610,10 +20622,10 @@
               if (tagName === 'path') {
                 if (isClip) {
                   for (var _j9 = 0, _len5 = props.length; _j9 < _len5; _j9++) {
-                    var _item3 = props[_j9];
+                    var item = props[_j9];
 
-                    if (_item3[0] === 'fill') {
-                      _item3[1] = util.int2invert(fill);
+                    if (item[0] === 'fill') {
+                      item[1] = util.int2invert(fill);
                     }
                   }
                 }
@@ -20680,7 +20692,7 @@
       COLOR$5 = _enums$STYLE_KEY$d.COLOR,
       WIDTH$6 = _enums$STYLE_KEY$d.WIDTH,
       HEIGHT$6 = _enums$STYLE_KEY$d.HEIGHT,
-      Z_INDEX$3 = _enums$STYLE_KEY$d.Z_INDEX,
+      Z_INDEX$4 = _enums$STYLE_KEY$d.Z_INDEX,
       MARGIN_TOP$4 = _enums$STYLE_KEY$d.MARGIN_TOP,
       MARGIN_LEFT$4 = _enums$STYLE_KEY$d.MARGIN_LEFT,
       PADDING_TOP$5 = _enums$STYLE_KEY$d.PADDING_TOP,
@@ -20929,7 +20941,7 @@
               __cacheStyle[k] = undefined;
               currentStyle[k] = v;
 
-              if (k === Z_INDEX$3 && node !== root) {
+              if (k === Z_INDEX$4 && node !== root) {
                 hasZ = true;
               }
 
@@ -22034,7 +22046,7 @@
               if (lv >= LAYOUT) {
                 var cps = node.computedStyle,
                     cts = node.currentStyle;
-                var zIndex = cps[Z_INDEX$3],
+                var zIndex = cps[Z_INDEX$4],
                     position = cps[POSITION$4],
                     display = cps[DISPLAY$7];
                 var isLastAbs = position === 'absolute';
@@ -22265,7 +22277,7 @@
                   diffI += arr[1];
                   diffList.push(arr);
 
-                  if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$3]) {
+                  if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                     node.domParent.__updateStruct(root.__structs);
 
                     if (_this4.renderMode === mode.SVG) {

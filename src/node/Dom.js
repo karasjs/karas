@@ -40,6 +40,7 @@ const { STYLE_KEY: {
   ALIGN_SELF,
   ALIGN_ITEMS,
   JUSTIFY_CONTENT,
+  Z_INDEX,
 },
   NODE_CURRENT_STYLE,
   NODE_STYLE,
@@ -86,7 +87,7 @@ function genZIndexChildren(dom) {
           if(isRelativeOrAbsolute(item)) {
             // 临时变量为排序使用
             child.__iIndex = i;
-            let z = child.__zIndex = item.currentStyle.zIndex;
+            let z = child.__zIndex = item.currentStyle[Z_INDEX];
             abs.push(child);
             if(lastIndex === undefined) {
               lastIndex = z;
@@ -204,7 +205,7 @@ class Dom extends Xom {
    * @private
    */
   __updateStruct(structs) {
-    let { index, total } = this.__struct;
+    let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__struct;
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     let length = zIndexChildren.length;
     if(length === 1) {
@@ -224,7 +225,7 @@ class Dom extends Xom {
         list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + child[STRUCT_TOTAL] + 1),
       });
       // i += child.total;
-      i += child[STRUCT_TOTAL];
+      i += child[STRUCT_TOTAL] || 0;
     }
     let needSort;
     arr.sort(function(a, b) {

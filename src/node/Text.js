@@ -14,6 +14,7 @@ const {
     FONT_WEIGHT,
     COLOR,
     VISIBILITY,
+    TEXT_ALIGN,
   },
 } = enums;
 
@@ -160,7 +161,7 @@ class Text extends Node {
     this.__height = y - data.y;
     // flex/abs前置计算无需真正布局
     if(!isVirtual) {
-      let { textAlign } = computedStyle;
+      let { [TEXT_ALIGN]: textAlign } = computedStyle;
       if(['center', 'right'].indexOf(textAlign) > -1) {
         lineBoxes.forEach(lineBox => {
           let diff = this.__width - lineBox.width;

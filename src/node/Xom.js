@@ -8,6 +8,7 @@ import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
 import blur from '../style/blur';
+import abbr from '../style/abbr';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -2287,15 +2288,23 @@ class Xom extends Node {
       // 先去掉无用和缩写
       style = util.extend({}, style);
       let ks = Object.keys(style);
-      // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
       ks.forEach(k => {
-        if(change.isValid(tagName, k)) {
-          hasChange = true;
-        }
-        else {
+        if(abbr.hasOwnProperty(k)) {
+          abbr.toFull(style, k);
           delete style[k];
         }
       });
+      // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
+      for(let i in style) {
+        if(style.hasOwnProperty(i)) {
+          if(change.isValid(tagName, i)) {
+            hasChange = true;
+          }
+          else {
+            delete style[k];
+          }
+        }
+      }
       let formatStyle = css.normalize(style);
       // 空样式或非法或无改变直接返回
       if(!hasChange) {

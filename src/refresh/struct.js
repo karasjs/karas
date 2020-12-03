@@ -553,7 +553,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
    */
   if(lrd.length) {
     const NUM = Math.max(1, Cache.NUM);
-    let prevLv = __structs[lrd[0]][STRUCT_LV], count = 0, hash = {};
+    let prevLv = __structs[lrd[0]][STRUCT_LV], hash = {};
     for(let i = 0, len = lrd.length - 1; i < len; i++) {
       // let {
       //   node: {
@@ -752,6 +752,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       if(!target) {
         target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
       }
+      // total的尝试
       if(target) {
         if(display === 'none') {
           i += (total || 0);
@@ -777,7 +778,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
       }
-      // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
+      // 自身cache尝试
       else {
         if(maskStartHash.hasOwnProperty(i)) {
           ctx = maskStartHash[i].ctx;
@@ -859,7 +860,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             Cache.draw(ctx, __opacity, matrixEvent, __cache);
           }
         }
-        // 超尺寸的特殊绘制，空的也进入
+        // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
         else if(!__limitCache) {
           if(node instanceof Geom) {
             res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);

@@ -19705,17 +19705,16 @@
           // count += hash[lv] || 0;
 
 
-          var _count = hash[lv] || 0;
-
+          var count = hash[lv] || 0;
           hash[lv] = 0;
           hash[lv - 1] = hash[lv - 1] || 0; // 当>临界值时，进行cacheTotal合并
 
-          if (!__limitCache && (_count >= NUM || (position === 'relative' || position === 'absolute') && (__hasContent || _count) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
-          || (hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal') && (__hasContent || _count))) {
+          if (!__limitCache && (count >= NUM || (position === 'relative' || position === 'absolute') && (__hasContent || count) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+          || (hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal') && (__hasContent || count))) {
             hash[lv - 1]++;
             need = true;
           } else {
-            hash[lv - 1] = _count;
+            hash[lv - 1] = count;
           } // count = 0;
 
         } // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
@@ -19836,7 +19835,8 @@
 
         if (!_target) {
           _target = __cacheTotal && __cacheTotal.available ? __cacheTotal : null;
-        }
+        } // total的尝试
+
 
         if (_target) {
           if (display === 'none') {
@@ -19868,7 +19868,7 @@
           Cache.draw(ctx, __opacity, matrixEvent, _target); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over';
-        } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
+        } // 自身cache尝试
         else {
             if (maskStartHash.hasOwnProperty(_i4)) {
               ctx = maskStartHash[_i4].ctx;
@@ -19964,7 +19964,7 @@
               if (visibility !== 'hidden') {
                 Cache.draw(ctx, __opacity, matrixEvent, __cache);
               }
-            } // 超尺寸的特殊绘制，空的也进入
+            } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
             else if (!__limitCache) {
                 if (node instanceof Geom$1) {
                   res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
@@ -20969,7 +20969,6 @@
         domParent = __config[NODE_DOM_PARENT$3],
         isMask = __config[NODE_IS_MASK$2];
     var lv = focus || NONE$1;
-    var p;
     var hasMeasure = measure;
     var hasZ, hasVisibility, hasColor; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
@@ -20980,10 +20979,9 @@
 
         if (node instanceof Geom$1 && isGeom$2(tagName, k)) {
           if (!equalStyle$1(k, v, currentProps[k], node)) {
-            p = p || {};
-            p[k] = style[k];
             lv |= REPAINT$3;
             __cacheProps[k] = undefined;
+            currentProps[k] = v;
           }
         } else {
           // 需和现在不等，且不是pointerEvents这种无关的
@@ -21029,14 +21027,6 @@
           }
         }
       }
-    }
-
-    if (p) {
-      Object.assign(currentProps, p);
-    }
-
-    if (style) {
-      Object.assign(currentStyle, style);
     } // 无任何改变处理的去除记录，如pointerEvents、无效的left
 
 

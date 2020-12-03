@@ -214,7 +214,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [NODE_IS_MASK]: isMask,
   } = __config;
   let lv = focus || NONE;
-  let p;
   let hasMeasure = measure;
   let hasZ, hasVisibility, hasColor;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
@@ -225,10 +224,9 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       // 只有geom的props和style2种可能
       if(node instanceof Geom && isGeom(tagName, k)) {
         if(!equalStyle(k, v, currentProps[k], node)) {
-          p = p || {};
-          p[k] = style[k];
           lv |= REPAINT;
           __cacheProps[k] = undefined;
+          currentProps[k] = v;
         }
       }
       else {
@@ -269,12 +267,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
         }
       }
     }
-  }
-  if(p) {
-    Object.assign(currentProps, p);
-  }
-  if(style) {
-    Object.assign(currentStyle, style);
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   if(lv === NONE && !component) {

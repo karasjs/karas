@@ -3341,7 +3341,8 @@
       FLEX_BASIS = _enums$STYLE_KEY.FLEX_BASIS,
       JUSTIFY_CONTENT = _enums$STYLE_KEY.JUSTIFY_CONTENT,
       ALIGN_SELF = _enums$STYLE_KEY.ALIGN_SELF,
-      ALIGN_ITEMS = _enums$STYLE_KEY.ALIGN_ITEMS;
+      ALIGN_ITEMS = _enums$STYLE_KEY.ALIGN_ITEMS,
+      MATRIX = _enums$STYLE_KEY.MATRIX;
   var AUTO = unit.AUTO,
       PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -3693,7 +3694,7 @@
             }
 
             if (arr.length === 6) {
-              transform.push(['matrix', arr]);
+              transform.push([MATRIX, arr]);
             }
           } else if (TRANSFORM_HASH.hasOwnProperty(k)) {
             var k2 = TRANSFORM_HASH[k];
@@ -4152,9 +4153,9 @@
       v = v[0];
     } else if (v[1] === PERCENT$1) {
       if (isWidth) {
-        v = calRelativePercent(v[0], parent, STYLE_KEY$4.width);
+        v = calRelativePercent(v[0], parent, WIDTH);
       } else {
-        v = calRelativePercent(v[0], parent, STYLE_KEY$4.height);
+        v = calRelativePercent(v[0], parent, HEIGHT$1);
       }
     }
 
@@ -4225,7 +4226,7 @@
     }
 
     if (COLOR_HASH$1.hasOwnProperty(k)) {
-      return a[0] === b[0] && equalArr$1(a[1], b[1]);
+      return a[1] === b[1] && equalArr$1(a[0], b[0]);
     }
 
     if (GRADIENT_HASH$1.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE$1.hasOwnProperty(a.k)) {
@@ -4301,39 +4302,51 @@
           var n = res[k] = v.slice(0);
           n[0] = n[0].slice(0);
         }
-      } else if (k === FILL) {
+      } else if (k === FILL || k === STROKE) {
         if (v.k) {
           res[k] = util.clone(v);
         } else {
           res[k] = v.slice(0);
         }
-      } else if (k === FILTER) {
-        if (v) {
-          v = v.slice(0);
-          res[k] = v;
-        }
-      } // position等直接值类型赋值
-      else if (VALUE$1.hasOwnProperty(k)) {
-          res[k] = v;
-        } // geom自定义属性
-        else if (GEOM$2.hasOwnProperty(k)) {
-            res[k] = util.clone(v);
-          } // 其余皆是数组或空
-          else if (v) {
-              var _n = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
+      } // else if(k === FILTER) {
+      //   if(v) {
+      //     v = v.slice(0);
+      //     res[k] = v;
+      //   }
+      // }
+      else if (k === TRANSFORM$1) {
+          if (v) {
+            var _n = v.slice(0);
+
+            for (var _i6 = 0, _len3 = _n.length; _i6 < _len3; _i6++) {
+              _n[_i6] = _n[_i6].slice(0);
+              _n[_i6][1] = _n[_i6][1].slice(0);
+            }
+
+            res[k] = _n;
+          }
+        } // position等直接值类型赋值
+        else if (VALUE$1.hasOwnProperty(k)) {
+            res[k] = v;
+          } // geom自定义属性
+          else if (GEOM$2.hasOwnProperty(k)) {
+              res[k] = util.clone(v);
+            } // 其余皆是数组或空
+            else if (v) {
+                var _n2 = res[k] = v.slice(0); // 特殊引用里数组某项再次clone
 
 
-              if (ARRAY_0$1.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
-              } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
-                _n[0] = _n[0].slice(0);
-                _n[1] = _n[1].slice(0);
-              } else if (k === TRANSFORM$1) {
-                for (var _i6 = 0, _len3 = _n.length; _i6 < _len3; _i6++) {
-                  _n[_i6] = _n[_i6].slice(0);
+                if (ARRAY_0$1.hasOwnProperty(k)) {
+                  _n2[0] = _n2[0].slice(0);
+                } else if (ARRAY_0_1$1.hasOwnProperty(k)) {
+                  _n2[0] = _n2[0].slice(0);
+                  _n2[1] = _n2[1].slice(0);
+                } else if (k === TRANSFORM$1) {
+                  for (var _i7 = 0, _len4 = _n2.length; _i7 < _len4; _i7++) {
+                    _n2[_i7] = _n2[_i7].slice(0);
+                  }
                 }
               }
-            }
     }
 
     return res;
@@ -5340,7 +5353,7 @@
       SKEW_X$1 = _enums$STYLE_KEY$3.SKEW_X,
       SKEW_Y$1 = _enums$STYLE_KEY$3.SKEW_Y,
       ROTATE_Z$1 = _enums$STYLE_KEY$3.ROTATE_Z,
-      MATRIX = _enums$STYLE_KEY$3.MATRIX;
+      MATRIX$1 = _enums$STYLE_KEY$3.MATRIX;
   var PX$2 = unit.PX,
       PERCENT$2 = unit.PERCENT;
   var matrix = math.matrix,
@@ -5374,7 +5387,7 @@
       t[0] = t[3] = cos;
       t[1] = sin;
       t[2] = -sin;
-    } else if (k === MATRIX) {
+    } else if (k === MATRIX$1) {
       t[0] = v[0];
       t[1] = v[1];
       t[2] = v[2];
@@ -5469,7 +5482,7 @@
       if (v[1] === PERCENT$2) {
         return v[0] * oh * 0.01;
       }
-    } else if (k === MATRIX) {
+    } else if (k === MATRIX$1) {
       return v;
     }
 
@@ -8890,6 +8903,7 @@
       FONT_STYLE$2 = _enums$STYLE_KEY$6.FONT_STYLE,
       FONT_FAMILY$4 = _enums$STYLE_KEY$6.FONT_FAMILY,
       TEXT_ALIGN$1 = _enums$STYLE_KEY$6.TEXT_ALIGN,
+      MATRIX$2 = _enums$STYLE_KEY$6.MATRIX,
       UPDATE_NODE$1 = enums.UPDATE_NODE,
       UPDATE_STYLE$1 = enums.UPDATE_STYLE,
       UPDATE_KEYS$1 = enums.UPDATE_KEYS,
@@ -8975,7 +8989,7 @@
           var ow = target.outerWidth;
           var oh = target.outerHeight;
           var m = tf.calMatrix(v, ow, oh);
-          style[k] = [['matrix', m]];
+          style[k] = [[MATRIX$2, m]];
         } else if (v[1] === INHERIT$3) {
           if (k === COLOR$3) {
             style[k] = [util.rgba2int(computedStyle[k]), RGBA$1];
@@ -9627,7 +9641,7 @@
 
       if (k === TRANSFORM$2) {
         if (!st) {
-          st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
+          st = style[k] = [[MATRIX$2, [1, 0, 0, 1, 0, 0]]];
         }
 
         for (var _i10 = 0; _i10 < 6; _i10++) {
@@ -11823,7 +11837,7 @@
       DISPLAY$2 = _enums$STYLE_KEY$8.DISPLAY,
       WIDTH$2 = _enums$STYLE_KEY$8.WIDTH,
       HEIGHT$3 = _enums$STYLE_KEY$8.HEIGHT,
-      MATRIX$1 = _enums$STYLE_KEY$8.MATRIX,
+      MATRIX$3 = _enums$STYLE_KEY$8.MATRIX,
       TRANSLATE_X$4 = _enums$STYLE_KEY$8.TRANSLATE_X,
       TRANSLATE_Y$3 = _enums$STYLE_KEY$8.TRANSLATE_Y,
       TRANSFORM$3 = _enums$STYLE_KEY$8.TRANSFORM,
@@ -12710,7 +12724,7 @@
     }, {
       key: "__calMatrix",
       value: function __calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight) {
-        var matrixCache = __cacheStyle[MATRIX$1]; // tx/ty变化特殊优化
+        var matrixCache = __cacheStyle[MATRIX$3]; // tx/ty变化特殊优化
 
         if (matrixCache && lv < REFLOW && !contain(lv, TF)) {
           var x = 0,
@@ -12750,7 +12764,7 @@
             matrixCache[5] += y;
           }
 
-          __cacheStyle[MATRIX$1] = matrixCache;
+          __cacheStyle[MATRIX$3] = matrixCache;
         } // 先根据cache计算需要重新计算的computedStyle
         else {
             if (sx === undefined) {
@@ -12816,7 +12830,7 @@
               var tfo = computedStyle[TRANSFORM_ORIGIN$2].slice(0);
               tfo[0] += sx;
               tfo[1] += sy;
-              matrixCache = __cacheStyle[MATRIX$1] = tf.calMatrixByOrigin(computedStyle[TRANSFORM$3], tfo);
+              matrixCache = __cacheStyle[MATRIX$3] = tf.calMatrixByOrigin(computedStyle[TRANSFORM$3], tfo);
             }
           }
 
@@ -13240,7 +13254,7 @@
         } // canvas/svg/事件需要3种不同的matrix
 
 
-        var matrix = this.__matrix = __config[NODE_MATRIX$1] = __cacheStyle[MATRIX$1];
+        var matrix = this.__matrix = __config[NODE_MATRIX$1] = __cacheStyle[MATRIX$3];
         var renderMatrix = this.__renderMatrix = matrix; // 变换对事件影响，canvas要设置渲染
 
         if (p) {
@@ -19906,10 +19920,10 @@
                   while (hasMask--) {
                     // 注意这里用currentStyle当前状态而不是computedStyle上次状态
                     var _structs$_j = __structs[_j3],
-                        _total3 = _structs$_j.total,
-                        _structs$_j$node$curr = _structs$_j.node.currentStyle,
-                        _display = _structs$_j$node$curr[DISPLAY$6],
-                        _visibility = _structs$_j$node$curr[VISIBILITY$5];
+                        _total3 = _structs$_j[STRUCT_TOTAL$2],
+                        _structs$_j$STRUCT_NO = _structs$_j[STRUCT_NODE$2].currentStyle,
+                        _display = _structs$_j$STRUCT_NO[DISPLAY$6],
+                        _visibility = _structs$_j$STRUCT_NO[VISIBILITY$5];
 
                     if (_display === 'none') {
                       _j3 += (_total3 || 0) + 1;
@@ -20180,10 +20194,10 @@
         while (hasMask--) {
           // 注意这里用currentStyle当前状态而不是computedStyle上次状态
           var _structs$_j2 = __structs[_j6],
-              _total4 = _structs$_j2.total,
-              _structs$_j2$node$cur = _structs$_j2.node.currentStyle,
-              display = _structs$_j2$node$cur[DISPLAY$6],
-              visibility = _structs$_j2$node$cur[VISIBILITY$5];
+              _total4 = _structs$_j2[STRUCT_TOTAL$2],
+              _structs$_j2$STRUCT_N = _structs$_j2[STRUCT_NODE$2].currentStyle,
+              display = _structs$_j2$STRUCT_N[DISPLAY$6],
+              visibility = _structs$_j2$STRUCT_N[VISIBILITY$5];
 
           if (display === 'none') {
             _j6 += (_total4 || 0) + 1;
@@ -21659,10 +21673,10 @@
         } // 汇总处理每个节点，k是递增数字直接循环遍历
 
 
-        var len = uniqueUpdateId;
+        var keys = Object.keys(updateHash);
 
-        for (var i = 0; i < len; i++) {
-          var t = parseUpdate(renderMode, root, updateHash[i], reflowList, measureList, cacheHash, cacheList, zHash, zList);
+        for (var i = 0, len = keys.length; i < len; i++) {
+          var t = parseUpdate(renderMode, root, updateHash[keys[i]], reflowList, measureList, cacheHash, cacheList, zHash, zList);
           hasUpdate = hasUpdate || t;
         } // 先做一部分reset避免下面measureList干扰，cacheList的是专门收集新增的额外节点
 
@@ -21737,8 +21751,8 @@
           });
         }); // 做完清空留待下次刷新重来
 
-        for (var _i2 = 0; _i2 < len; _i2++) {
-          delete updateHash[_i2][UPDATE_NODE$4].__config[NODE_UNIQUE_UPDATE_ID$1];
+        for (var _i2 = 0, _len2 = keys.length; _i2 < _len2; _i2++) {
+          delete updateHash[keys[_i2]][UPDATE_NODE$4].__config[NODE_UNIQUE_UPDATE_ID$1];
         }
 
         return hasUpdate;
@@ -21919,7 +21933,7 @@
                 if (style) {
                   var keys = Object.keys(style);
 
-                  for (var _i3 = 0, _len2 = keys.length; _i3 < _len2; _i3++) {
+                  for (var _i3 = 0, _len3 = keys.length; _i3 < _len3; _i3++) {
                     var k = keys[_i3];
 
                     if (!DIRECTION_HASH.hasOwnProperty(k)) {
@@ -22373,7 +22387,7 @@
                 }
             });
 
-            for (var _i5 = lastIndex, _len3 = structs.length; _i5 < _len3; _i5++) {
+            for (var _i5 = lastIndex, _len4 = structs.length; _i5 < _len4; _i5++) {
               structs[_i5][STRUCT_INDEX$4] += diff;
             } // 清除id
 

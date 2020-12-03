@@ -7,7 +7,7 @@ module.exports = {
       .url('file://' + path.join(__dirname, 'index.html'))
       .waitForElementVisible('body', 1000)
       .pause(500)
-      .assert.value('input', '{"k":"linear","d":180,"v":[[[255,0,0,1],[0,2]],[[0,0,255,1],[99,2]],[[255,255,255,1]]]}/{"k":"linear","d":90,"v":[[[255,0,0,1],[0,2]],[[0,0,255,1],[1,2]],[[255,255,255,1]]]}')
+      .assert.value('input', '{"bb":[],"children":[{"bb":[{"type":"item","tagName":"rect","props":[["x",0],["y",0],["width",100],["height",100],["fill","url(#karas-defs-0-0)"]]}],"children":[],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom","defs":[{"tagName":"linearGradient","props":[["x1",0],["y1",50],["x2",100],["y2",50]],"children":[{"tagName":"stop","props":[["stop-color","rgba(255,0,0,1)"],["offset","0%"]]},{"tagName":"stop","props":[["stop-color","rgba(0,0,255,1)"],["offset","1%"]]},{"tagName":"stop","props":[["stop-color","rgba(255,255,255,1)"],["offset","100%"]]}],"uuid":"karas-defs-0-0"}],"lv":0}')
       .end();
   }
 };

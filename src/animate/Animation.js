@@ -44,6 +44,7 @@ const { STYLE_KEY: {
   FONT_STYLE,
   FONT_FAMILY,
   TEXT_ALIGN,
+  MATRIX,
 },
   UPDATE_NODE, UPDATE_STYLE, UPDATE_KEYS,
   FRAME_STYLE,
@@ -123,7 +124,7 @@ function inherit(frames, keys, target) {
         let ow = target.outerWidth;
         let oh = target.outerHeight;
         let m = tf.calMatrix(v, ow, oh);
-        style[k] = [['matrix', m]];
+        style[k] = [[MATRIX, m]];
       }
       else if(v[1] === INHERIT) {
         if(k === COLOR) {
@@ -765,7 +766,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
       if(!st) {
-        st = style[k] = [['matrix', [1, 0, 0, 1, 0, 0]]];
+        st = style[k] = [[MATRIX, [1, 0, 0, 1, 0, 0]]];
       }
       for(let i = 0; i < 6; i++) {
         st[0][1][i] += v[i] * percent;

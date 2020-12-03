@@ -55,6 +55,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   JUSTIFY_CONTENT,
   ALIGN_SELF,
   ALIGN_ITEMS,
+  MATRIX,
 } } = enums;
 const { AUTO, PX, PERCENT, NUMBER, INHERIT, DEG, RGBA, STRING } = unit;
 const { isNil, rgba2int, equalArr } = util;
@@ -367,7 +368,7 @@ function normalize(style, reset = []) {
             arr = arr.slice(0, 6);
           }
           if(arr.length === 6) {
-            transform.push(['matrix', arr]);
+            transform.push([MATRIX, arr]);
           }
         }
         else if(TRANSFORM_HASH.hasOwnProperty(k)) {
@@ -850,10 +851,10 @@ function calRelative(currentStyle, k, v, parent, isWidth) {
   }
   else if(v[1] === PERCENT) {
     if(isWidth) {
-      v = calRelativePercent(v[0], parent, STYLE_KEY.width);
+      v = calRelativePercent(v[0], parent, WIDTH);
     }
     else {
-      v = calRelativePercent(v[0], parent, STYLE_KEY.height);
+      v = calRelativePercent(v[0], parent, HEIGHT);
     }
   }
   return v;
@@ -915,7 +916,7 @@ function equalStyle(k, a, b, target) {
     return equalArr(a, b);
   }
   if(COLOR_HASH.hasOwnProperty(k)) {
-    return a[0] === b[0] && equalArr(a[1], b[1]);
+    return a[1] === b[1] && equalArr(a[0], b[0]);
   }
   if(GRADIENT_HASH.hasOwnProperty(k) && a.k === b.k && GRADIENT_TYPE.hasOwnProperty(a.k)) {
     let av = a.v;
@@ -1012,7 +1013,7 @@ function cloneStyle(style, keys) {
         n[0] = n[0].slice(0);
       }
     }
-    else if(k === FILL) {
+    else if(k === FILL || k === STROKE) {
       if(v.k) {
         res[k] = util.clone(v);
       }
@@ -1020,10 +1021,20 @@ function cloneStyle(style, keys) {
         res[k] = v.slice(0);
       }
     }
-    else if(k === FILTER) {
+    // else if(k === FILTER) {
+    //   if(v) {
+    //     v = v.slice(0);
+    //     res[k] = v;
+    //   }
+    // }
+    else if(k === TRANSFORM) {
       if(v) {
-        v = v.slice(0);
-        res[k] = v;
+        let n = v.slice(0);
+        for(let i = 0, len = n.length; i < len; i++) {
+          n[i] = n[i].slice(0);
+          n[i][1] = n[i][1].slice(0);
+        }
+        res[k] = n;
       }
     }
     // position等直接值类型赋值

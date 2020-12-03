@@ -860,7 +860,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let startIndex, endIndex;
             while(hasMask--) {
               // 注意这里用currentStyle当前状态而不是computedStyle上次状态
-              let { total, node: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
+              let { [STRUCT_TOTAL]: total,
+                [STRUCT_NODE]: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
               if(display === 'none') {
                 j += (total || 0) + 1;
                 continue;
@@ -1061,7 +1062,8 @@ function renderCanvas(renderMode, ctx, defs, root) {
       let startIndex, endIndex;
       while(hasMask--) {
         // 注意这里用currentStyle当前状态而不是computedStyle上次状态
-        let { total, node: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
+        let { [STRUCT_TOTAL]: total,
+          [STRUCT_NODE]: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
         if(display === 'none') {
           j += (total || 0) + 1;
           continue;

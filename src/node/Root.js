@@ -863,9 +863,9 @@ class Root extends Dom {
       root.__checkRoot(width, height);
     }
     // 汇总处理每个节点，k是递增数字直接循环遍历
-    let len = uniqueUpdateId;
-    for(let i = 0; i < len; i++) {
-      let t = parseUpdate(renderMode, root, updateHash[i],
+    let keys = Object.keys(updateHash);
+    for(let i = 0, len = keys.length; i < len; i++) {
+      let t = parseUpdate(renderMode, root, updateHash[keys[i]],
         reflowList, measureList, cacheHash, cacheList, zHash, zList);
       hasUpdate = hasUpdate || t;
     }
@@ -930,8 +930,8 @@ class Root extends Dom {
       });
     });
     // 做完清空留待下次刷新重来
-    for(let i = 0; i < len; i++) {
-      delete updateHash[i][UPDATE_NODE].__config[NODE_UNIQUE_UPDATE_ID];
+    for(let i = 0, len = keys.length; i < len; i++) {
+      delete updateHash[keys[i]][UPDATE_NODE].__config[NODE_UNIQUE_UPDATE_ID];
     }
     return hasUpdate;
   }

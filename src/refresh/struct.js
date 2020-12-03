@@ -151,9 +151,6 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
     list.splice(0).forEach(parentIndex => {
       let total = __structs[parentIndex][STRUCT_TOTAL];
       for(let i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
-        // let { node: { __cacheTotal, __cache, __blurValue, __sx1, __sy1, __limitCache,
-        //   computedStyle: { display, visibility, transform, transformOrigin, opacity } },
-        //   node, total } = __structs[i];
         let {
           [STRUCT_NODE]: node,
           [STRUCT_TOTAL]: total,
@@ -413,7 +410,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   let lastLv = 0;
   // 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和缓存和局部根缓存，lv的变化根据大小相等进行出入栈parent操作
   for(let i = 0, len = __structs.length; i < len; i++) {
-    // let { node, node: { __cacheTotal, __cache, __refreshLevel, computedStyle }, total, lv } = item;
     let {
       [STRUCT_NODE]: node,
       [STRUCT_LV]: lv,
@@ -435,14 +431,11 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       lastList.push(node);
     }
     else if(lv > lastLv) {
-      // let config = last.__config;
-      // parentMatrix = last.__matrixEvent;
       parentMatrix = lastConfig[NODE_MATRIX_EVENT];
       if(mx.isE(parentMatrix)) {
         parentMatrix = null;
       }
       matrixList.push(parentMatrix);
-      // parentOpacity = last.__opacity;
       parentOpacity = lastConfig[NODE_OPACITY];
       opacityList.push(parentOpacity);
       lastList.push(node);
@@ -454,7 +447,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       opacityList.splice(-diff);
       parentOpacity = opacityList[lv];
       lastList.splice(-diff);
-      // last = lastList[lv];
       lastConfig = lastList[lv];
     }
     if(computedStyle[DISPLAY] === 'none') {
@@ -555,18 +547,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     const NUM = Math.max(1, Cache.NUM);
     let prevLv = __structs[lrd[0]][STRUCT_LV], hash = {};
     for(let i = 0, len = lrd.length - 1; i < len; i++) {
-      // let {
-      //   node: {
-      //     computedStyle: {
-      //       [POSITION]: position,
-      //       [VISIBILITY]: visibility,
-      //       [OVERFLOW]: overflow,
-      //       [MIX_BLEND_MODE]: mixBlendMode,
-      //     },
-      //     __cacheTotal, __cache, __blurValue,
-      //   },
-      //   node, lv, index, total, hasMask,
-      // } = __structs[lrd[i]];
       let {
         [STRUCT_NODE]: node,
         [STRUCT_LV]: lv,
@@ -605,12 +585,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         prevLv = lv;
         // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
         if(visibility !== 'hidden' && __hasContent) {
-          // count++;
           hash[lv] = hash[lv] || 0;
           hash[lv]++;
         }
         // 需累加跳链路积累的数字
-        // count += hash[lv] || 0;
         let count = hash[lv] || 0;
         hash[lv] = 0;
         hash[lv - 1] = hash[lv - 1] || 0;
@@ -628,30 +606,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         else {
           hash[lv - 1] = count;
         }
-        // count = 0;
       }
       // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
-      // else if(lv > prevLv) {
-      //   // prevLv = lv;
-      //   // if(count) {
-      //   //   hash[prevLv - 1] = count;
-      //   // }
-      //   // count = 0;
-      //   hash[lv - 1] = hash[lv - 1] || 0;
-      //   if(!__limitCache
-      //     && (
-      //       ((position === 'relative' || position === 'absolute')
-      //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
-      //       || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
-      //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
-      //     )) {
-      //     hash[lv - 1]++;
-      //     need = true;
-      //   }
-      //   else if(__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
-      //     hash[lv - 1]++;
-      //   }
-      // }
       // 相等同级继续增加计数，还需判断是否有filter等需生成total，第1个也会进入这里
       else {
         hash[lv - 1] = hash[lv - 1] || 0;
@@ -701,18 +657,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
   let maskEndHash = {};
   // 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
   for(let i = 0, len = __structs.length; i < len; i++) {
-    // let {
-    //   node, total, hasMask, node: {
-    //     __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache,
-    //     __limitCache, __blurValue,
-    //     computedStyle: {
-    //       [DISPLAY]: display,
-    //       [VISIBILITY]: visibility,
-    //       [OVERFLOW]: overflow,
-    //       [MIX_BLEND_MODE]: mixBlendMode,
-    //     },
-    //   },
-    // } = __structs[i];
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
@@ -735,10 +679,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         [MIX_BLEND_MODE]: mixBlendMode,
       },
     } = node.__config;
-    // if(display === 'none') {
-    //   i += (total || 0);
-    //   continue;
-    // }
     // text如果不可见，parent会直接跳过，不会走到这里
     if(node instanceof Text) {
       ctx.globalAlpha = __opacity;
@@ -746,7 +686,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       node.render(renderMode, 0, ctx, defs);
     }
     else {
-      // let { __opacity, matrixEvent } = node;
       // 有total的可以直接绘制并跳过子节点索引
       let target = __cacheOverflow || __cacheMask || __cacheFilter;
       if(!target) {
@@ -861,7 +800,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           }
         }
         // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
-        else if(!__limitCache) {
+        else if(__limitCache) {
           if(node instanceof Geom) {
             res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
           }
@@ -1047,8 +986,6 @@ function renderCanvas(renderMode, ctx, defs, root) {
   let maskStartHash = {};
   let maskEndHash = {};
   for(let i = 0, len = __structs.length; i < len; i++) {
-    // let item = __structs[i];
-    // let { node, total, hasMask, node: { computedStyle } } = item;
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
@@ -1249,8 +1186,6 @@ function renderSvg(renderMode, ctx, defs, root) {
   let lastLv = 0;
   let last;
   for(let i = 0, len = __structs.length; i < len; i++) {
-    // let item = __structs[i];
-    // let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
@@ -1258,10 +1193,6 @@ function renderSvg(renderMode, ctx, defs, root) {
       [STRUCT_LV]: lv,
     } = __structs[i];
     let __config = node.__config;
-    // let {
-    //   __cacheTotal,
-    //   __refreshLevel,
-    // } = node;
     let {
       [NODE_CACHE_TOTAL]: __cacheTotal,
       [NODE_REFRESH_LV]: __refreshLevel,

@@ -1246,7 +1246,7 @@ class Animation extends Event {
     if(isFinish) {
       __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY];
       // cancel需要清除finish根据情况保留
-      if(__config[I_STAY_END]) {
+      if(!__config[I_STAY_END]) {
         __config[I_STYLE] = {};
         restore = true;
       }
@@ -1519,6 +1519,7 @@ class Animation extends Event {
     if(__config[I_FINISHED]) {
       __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
         = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+      __config[I_PLAY_STATE] = 'finished';
       this.emit(Event.FINISH);
     }
   }
@@ -1584,6 +1585,7 @@ class Animation extends Event {
           if(!self.__hasFin) {
             self.__hasFin = true;
             __config[I_ASSIGNING] = false;
+            __config[I_PLAY_STATE] = 'finished';
             __config[I_FRAME_CB].call(self, __config, diff);
             __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
               = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
@@ -1622,6 +1624,7 @@ class Animation extends Event {
           if(!self.__hasCancel) {
             self.__hasCancel = true;
             __config[I_ASSIGNING] = false;
+            __config[I_PLAY_STATE] = 'idle';
             __config[I_FRAME_CB].call(self, __config, diff);
             __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED]
               = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;

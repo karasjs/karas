@@ -1438,7 +1438,6 @@ class Root extends Dom {
         // 第1个变化区域无需更改前面一段
         if(isFirst) {
           isFirst = false;
-          // lastIndex = ns.index + ns.total + 1;
           lastIndex = ns[STRUCT_INDEX] + ns[STRUCT_TOTAL] + 1;
           diff += d;
         }

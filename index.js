@@ -10187,7 +10187,7 @@
         if (isFinish) {
           __config[I_CURRENT_TIME] = __config[I_DELAY] + __config[I_DURATION] + __config[I_END_DELAY]; // cancel需要清除finish根据情况保留
 
-          if (__config[I_STAY_END]) {
+          if (!__config[I_STAY_END]) {
             __config[I_STYLE] = {};
             restore = true;
           }
@@ -10491,6 +10491,7 @@
 
         if (__config[I_FINISHED]) {
           __config[I_BEGIN] = __config[I_END] = __config[I_IS_DELAY] = __config[I_FINISHED] = __config[I_IN_FPS] = __config[I_ENTER_FRAME] = false;
+          __config[I_PLAY_STATE] = 'finished';
           this.emit(Event.FINISH);
         }
       }
@@ -10571,6 +10572,7 @@
               if (!self.__hasFin) {
                 self.__hasFin = true;
                 __config[I_ASSIGNING] = false;
+                __config[I_PLAY_STATE] = 'finished';
 
                 __config[I_FRAME_CB].call(self, __config, diff);
 
@@ -10618,6 +10620,7 @@
               if (!self.__hasCancel) {
                 self.__hasCancel = true;
                 __config[I_ASSIGNING] = false;
+                __config[I_PLAY_STATE] = 'idle';
 
                 __config[I_FRAME_CB].call(self, __config, diff);
 
@@ -19180,9 +19183,6 @@
         var total = __structs[parentIndex][STRUCT_TOTAL$2];
 
         for (var i = parentIndex + 1, len = parentIndex + (total || 0) + 1; i < len; i++) {
-          // let { node: { __cacheTotal, __cache, __blurValue, __sx1, __sy1, __limitCache,
-          //   computedStyle: { display, visibility, transform, transformOrigin, opacity } },
-          //   node, total } = __structs[i];
           var _structs$i2 = __structs[i],
               _node = _structs$i2[STRUCT_NODE$2],
               _total = _structs$i2[STRUCT_TOTAL$2];
@@ -19477,7 +19477,6 @@
     var lastLv = 0; // 先一遍先序遍历每个节点绘制到自己__cache上，排除Text和缓存和局部根缓存，lv的变化根据大小相等进行出入栈parent操作
 
     var _loop = function _loop(_i, len) {
-      // let { node, node: { __cacheTotal, __cache, __refreshLevel, computedStyle }, total, lv } = item;
       var _structs$_i = __structs[_i],
           node = _structs$_i[STRUCT_NODE$2],
           lv = _structs$_i[STRUCT_LV$3],
@@ -19497,16 +19496,13 @@
       if (_i === 0) {
         lastList.push(node);
       } else if (lv > lastLv) {
-        // let config = last.__config;
-        // parentMatrix = last.__matrixEvent;
         parentMatrix = lastConfig[NODE_MATRIX_EVENT$3];
 
         if (mx.isE(parentMatrix)) {
           parentMatrix = null;
         }
 
-        matrixList.push(parentMatrix); // parentOpacity = last.__opacity;
-
+        matrixList.push(parentMatrix);
         parentOpacity = lastConfig[NODE_OPACITY$2];
         opacityList.push(parentOpacity);
         lastList.push(node);
@@ -19516,8 +19512,7 @@
         parentMatrix = matrixList[lv];
         opacityList.splice(-diff);
         parentOpacity = opacityList[lv];
-        lastList.splice(-diff); // last = lastList[lv];
-
+        lastList.splice(-diff);
         lastConfig = lastList[lv];
       }
 
@@ -19651,18 +19646,6 @@
           hash = {};
 
       for (var _i2 = 0, _len = lrd.length - 1; _i2 < _len; _i2++) {
-        // let {
-        //   node: {
-        //     computedStyle: {
-        //       [POSITION]: position,
-        //       [VISIBILITY]: visibility,
-        //       [OVERFLOW]: overflow,
-        //       [MIX_BLEND_MODE]: mixBlendMode,
-        //     },
-        //     __cacheTotal, __cache, __blurValue,
-        //   },
-        //   node, lv, index, total, hasMask,
-        // } = __structs[lrd[i]];
         var _structs$lrd$_i = __structs[lrd[_i2]],
             node = _structs$lrd$_i[STRUCT_NODE$2],
             lv = _structs$lrd$_i[STRUCT_LV$3],
@@ -19698,11 +19681,9 @@
           prevLv = lv; // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
 
           if (visibility !== 'hidden' && __hasContent) {
-            // count++;
             hash[lv] = hash[lv] || 0;
             hash[lv]++;
           } // 需累加跳链路积累的数字
-          // count += hash[lv] || 0;
 
 
           var count = hash[lv] || 0;
@@ -19715,30 +19696,8 @@
             need = true;
           } else {
             hash[lv - 1] = count;
-          } // count = 0;
-
+          }
         } // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
-        // else if(lv > prevLv) {
-        //   // prevLv = lv;
-        //   // if(count) {
-        //   //   hash[prevLv - 1] = count;
-        //   // }
-        //   // count = 0;
-        //   hash[lv - 1] = hash[lv - 1] || 0;
-        //   if(!__limitCache
-        //     && (
-        //       ((position === 'relative' || position === 'absolute')
-        //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
-        //       || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
-        //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
-        //     )) {
-        //     hash[lv - 1]++;
-        //     need = true;
-        //   }
-        //   else if(__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
-        //     hash[lv - 1]++;
-        //   }
-        // }
         // 相等同级继续增加计数，还需判断是否有filter等需生成total，第1个也会进入这里
         else {
             hash[lv - 1] = hash[lv - 1] || 0;
@@ -19788,18 +19747,6 @@
     var maskEndHash = {}; // 最后先序遍历一次应用__cacheTotal即可，没有的用__cache，以及剩下的超尺寸的和Text
 
     var _loop2 = function _loop2(_i4, _len2) {
-      // let {
-      //   node, total, hasMask, node: {
-      //     __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache,
-      //     __limitCache, __blurValue,
-      //     computedStyle: {
-      //       [DISPLAY]: display,
-      //       [VISIBILITY]: visibility,
-      //       [OVERFLOW]: overflow,
-      //       [MIX_BLEND_MODE]: mixBlendMode,
-      //     },
-      //   },
-      // } = __structs[i];
       var _structs$_i2 = __structs[_i4],
           node = _structs$_i2[STRUCT_NODE$2],
           total = _structs$_i2[STRUCT_TOTAL$2],
@@ -19818,18 +19765,13 @@
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
           overflow = _node$__config3$NODE_[OVERFLOW$1],
-          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$1]; // if(display === 'none') {
-      //   i += (total || 0);
-      //   continue;
-      // }
-      // text如果不可见，parent会直接跳过，不会走到这里
+          mixBlendMode = _node$__config3$NODE_[MIX_BLEND_MODE$1]; // text如果不可见，parent会直接跳过，不会走到这里
 
       if (node instanceof Text) {
         ctx.globalAlpha = __opacity;
         ctx.setTransform(matrixEvent[0], matrixEvent[1], matrixEvent[2], matrixEvent[3], matrixEvent[4], matrixEvent[5]);
         node.render(renderMode, 0, ctx, defs);
       } else {
-        // let { __opacity, matrixEvent } = node;
         // 有total的可以直接绘制并跳过子节点索引
         var _target = __cacheOverflow || __cacheMask || __cacheFilter;
 
@@ -19965,7 +19907,7 @@
                 Cache.draw(ctx, __opacity, matrixEvent, __cache);
               }
             } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
-            else if (!__limitCache) {
+            else if (__limitCache) {
                 if (node instanceof Geom$1) {
                   res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
                 } else {
@@ -20224,8 +20166,6 @@
     var maskEndHash = {};
 
     var _loop3 = function _loop3(len, _i6) {
-      // let item = __structs[i];
-      // let { node, total, hasMask, node: { computedStyle } } = item;
       var _structs$_i3 = __structs[_i6],
           node = _structs$_i3[STRUCT_NODE$2],
           total = _structs$_i3[STRUCT_TOTAL$2],
@@ -20492,18 +20432,12 @@
     var last;
 
     var _loop4 = function _loop4(len, _i8) {
-      // let item = __structs[i];
-      // let { node, node: { __cacheTotal, __refreshLevel }, total, lv, hasMask } = item;
       var _structs$_i4 = __structs[_i8],
           node = _structs$_i4[STRUCT_NODE$2],
           total = _structs$_i4[STRUCT_TOTAL$2],
           hasMask = _structs$_i4[STRUCT_HAS_MASK$2],
           lv = _structs$_i4[STRUCT_LV$3];
-      var __config = node.__config; // let {
-      //   __cacheTotal,
-      //   __refreshLevel,
-      // } = node;
-
+      var __config = node.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$2],
           __refreshLevel = __config[NODE_REFRESH_LV$2];
 
@@ -22450,8 +22384,7 @@
 
 
               if (isFirst) {
-                isFirst = false; // lastIndex = ns.index + ns.total + 1;
-
+                isFirst = false;
                 lastIndex = ns[STRUCT_INDEX$4] + ns[STRUCT_TOTAL$3] + 1;
                 diff += d;
               } // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
@@ -25325,7 +25258,7 @@
     Cache: Cache
   };
 
-  var version = "0.42.3";
+  var version = "0.43.0";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

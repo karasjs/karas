@@ -3,7 +3,7 @@ import builder from './builder';
 import $$type from './$$type';
 import enums from './enums';
 
-const { NODE_COMPUTED_STYLE, NODE_DOM_PARENT } = enums;
+const { NODE_COMPUTED_STYLE, NODE_DOM_PARENT, NODE_MATRIX_EVENT } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
@@ -97,6 +97,9 @@ function updateCp(cp, props, state) {
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_COMPUTED_STYLE] = oldSr.computedStyle;
+  }
+  else {
+    sr.__config[NODE_MATRIX_EVENT] = oldSr.__config[NODE_MATRIX_EVENT];
   }
   [
     '__x',

@@ -201,7 +201,7 @@ function relation(parent, children, options = {}) {
     }
     options.prev = children;
     if(children instanceof Dom) {
-      relation(children, children.children);
+      // relation(children, children.children);
     }
     // 文字视作为父节点的直接文字子节点
     else if(children instanceof Component) {

@@ -768,6 +768,7 @@ class Xom extends Node {
     config[NODE_COMPUTED_STYLE] = this.__computedStyle;
     config[NODE_REFRESH_LV] = this.__refreshLevel;
     config[NODE_STYLE] = this.__style;
+    config[NODE_MATRIX_EVENT] = [];
   }
 
   __structure(i, lv, j) {
@@ -1582,7 +1583,14 @@ class Xom extends Node {
     if(p) {
       matrix = mx.multiply(p.matrixEvent, matrix);
     }
-    __config[NODE_MATRIX_EVENT] = this.__matrixEvent = matrix;
+    // 为了引用不变，防止变化后text获取不到，恶心的v8优化
+    let m = this.__matrixEvent = __config[NODE_MATRIX_EVENT];
+    m[0] = matrix[0];
+    m[1] = matrix[1];
+    m[2] = matrix[2];
+    m[3] = matrix[3];
+    m[4] = matrix[4];
+    m[5] = matrix[5];
     if(renderMode === mode.SVG) {
       // svg可以没变化省略计算，因为只相对于自身
       if(!contain(lv, TRANSFORM_ALL) && lv < REPAINT) {}

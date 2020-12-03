@@ -12423,6 +12423,7 @@
       config[NODE_COMPUTED_STYLE$1] = _this.__computedStyle;
       config[NODE_REFRESH_LV$1] = _this.__refreshLevel;
       config[NODE_STYLE$1] = _this.__style;
+      config[NODE_MATRIX_EVENT$1] = [];
       return _this;
     }
 
@@ -13260,9 +13261,16 @@
 
         if (p) {
           matrix = mx.multiply(p.matrixEvent, matrix);
-        }
+        } // 为了引用不变，防止变化后text获取不到，恶心的v8优化
 
-        __config[NODE_MATRIX_EVENT$1] = this.__matrixEvent = matrix;
+
+        var m = this.__matrixEvent = __config[NODE_MATRIX_EVENT$1];
+        m[0] = matrix[0];
+        m[1] = matrix[1];
+        m[2] = matrix[2];
+        m[3] = matrix[3];
+        m[4] = matrix[4];
+        m[5] = matrix[5];
 
         if (renderMode === mode.SVG) {
           // svg可以没变化省略计算，因为只相对于自身
@@ -14499,7 +14507,7 @@
       $$type: TYPE_VD$1
     });
     var children = build(c.children, root, root);
-    return relation(root, children);
+    return relation(root, children); // return children;
   }
 
   function initCp(json, root, owner) {
@@ -14712,9 +14720,7 @@
 
       options.prev = children;
 
-      if (children instanceof Dom) {
-        relation(children, children.children);
-      } // 文字视作为父节点的直接文字子节点
+      if (children instanceof Dom) ; // 文字视作为父节点的直接文字子节点
       else if (children instanceof Component) {
           var sr = children.shadowRoot;
 
@@ -17811,7 +17817,8 @@
   }(Xom);
 
   var NODE_COMPUTED_STYLE$2 = enums.NODE_COMPUTED_STYLE,
-      NODE_DOM_PARENT$2 = enums.NODE_DOM_PARENT;
+      NODE_DOM_PARENT$2 = enums.NODE_DOM_PARENT,
+      NODE_MATRIX_EVENT$2 = enums.NODE_MATRIX_EVENT;
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
@@ -17894,6 +17901,8 @@
         sr[k] = oldSr[k];
       });
       sr.__config[NODE_COMPUTED_STYLE$2] = oldSr.computedStyle;
+    } else {
+      sr.__config[NODE_MATRIX_EVENT$2] = oldSr.__config[NODE_MATRIX_EVENT$2];
     }
 
     ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent', '__struct'].forEach(function (k) {
@@ -18999,7 +19008,7 @@
       NODE_CACHE_MASK$2 = enums.NODE_CACHE_MASK,
       NODE_CACHE_FILTER$2 = enums.NODE_CACHE_FILTER,
       NODE_MATRIX$2 = enums.NODE_MATRIX,
-      NODE_MATRIX_EVENT$2 = enums.NODE_MATRIX_EVENT,
+      NODE_MATRIX_EVENT$3 = enums.NODE_MATRIX_EVENT,
       NODE_OPACITY$2 = enums.NODE_OPACITY,
       NODE_COMPUTED_STYLE$3 = enums.NODE_COMPUTED_STYLE,
       NODE_CURRENT_STYLE$4 = enums.NODE_CURRENT_STYLE,
@@ -19456,7 +19465,7 @@
       } else if (lv > lastLv) {
         // let config = last.__config;
         // parentMatrix = last.__matrixEvent;
-        parentMatrix = lastConfig[NODE_MATRIX_EVENT$2];
+        parentMatrix = lastConfig[NODE_MATRIX_EVENT$3];
 
         if (mx.isE(parentMatrix)) {
           parentMatrix = null;
@@ -19509,7 +19518,7 @@
           } // 恶心的v8性能优化
 
 
-          m = __config[NODE_MATRIX_EVENT$2];
+          m = __config[NODE_MATRIX_EVENT$3];
           m[0] = matrix[0];
           m[1] = matrix[1];
           m[2] = matrix[2];
@@ -19744,7 +19753,7 @@
           hasMask = _structs$_i2[STRUCT_HAS_MASK$2];
       var _node$__config3 = node.__config,
           __opacity = _node$__config3[NODE_OPACITY$2],
-          matrixEvent = _node$__config3[NODE_MATRIX_EVENT$2],
+          matrixEvent = _node$__config3[NODE_MATRIX_EVENT$3],
           __blurValue = _node$__config3[NODE_BLUR_VALUE$2],
           __limitCache = _node$__config3[NODE_LIMIT_CACHE$2],
           __cache = _node$__config3[NODE_CACHE$2],
@@ -20517,7 +20526,7 @@
           } // 恶心的v8性能优化
 
 
-          m = __config[NODE_MATRIX_EVENT$2];
+          m = __config[NODE_MATRIX_EVENT$3];
           m[0] = matrix[0];
           m[1] = matrix[1];
           m[2] = matrix[2];

@@ -26,6 +26,7 @@ class Text extends Node {
     this.__charWidthList = [];
     this.__charWidth = 0;
     this.__textWidth = 0;
+    this.__config = {};
   }
 
   static CHAR_WIDTH_CACHE = {};
@@ -293,9 +294,9 @@ class Text extends Node {
     return this.parent.__cacheStyle;
   }
 
-  get __config() {
-    return this.parent.__config;
-  }
+  // get __config() {
+  //   return this.parent.__config;
+  // }
 
   get bbox() {
     if(!this.content) {

@@ -27,6 +27,7 @@ function initCp(json, root, owner) {
     }
     return vd;
   }
+  // text的relation会由上层如Root设置
   else {
     return new Text(json);
   }
@@ -187,8 +188,11 @@ function relation(parent, children, options = {}) {
   else if(children instanceof Xom || children instanceof Component || children instanceof Text) {
     children.__parent = parent;
     children.__domParent = parent;
-    // 极为恶心，为了v8的性能优化，text引用parent的，所以不能再设置
-    if(!(children instanceof Text)) {
+    // 极为恶心，为了v8的性能优化，text复用parent的style部分，但domParent重设
+    if(children instanceof Text) {
+      Object.assign(children.__config, parent.__config);
+    }
+    if(children.__config) {
       children.__config[NODE_DOM_PARENT] = parent;
     }
     if(options.prev) {
@@ -204,6 +208,7 @@ function relation(parent, children, options = {}) {
       let sr = children.shadowRoot;
       if(sr instanceof Text) {
         sr.__parent = parent;
+        Object.assign(sr.__config, parent.__config);
       }
       sr.__domParent = parent;
       if(sr.__config) {

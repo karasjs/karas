@@ -4485,6 +4485,7 @@
       _this.__charWidthList = [];
       _this.__charWidth = 0;
       _this.__textWidth = 0;
+      _this.__config = {};
       return _this;
     }
 
@@ -4820,12 +4821,10 @@
       key: "cacheStyle",
       get: function get() {
         return this.parent.__cacheStyle;
-      }
-    }, {
-      key: "__config",
-      get: function get() {
-        return this.parent.__config;
-      }
+      } // get __config() {
+      //   return this.parent.__config;
+      // }
+
     }, {
       key: "bbox",
       get: function get() {
@@ -14513,9 +14512,10 @@
       }
 
       return vd;
-    } else {
-      return new Text(json);
-    }
+    } // text的relation会由上层如Root设置
+    else {
+        return new Text(json);
+      }
   }
   /**
    * 将初始json文件生成virtualDom
@@ -14695,9 +14695,13 @@
       });
     } else if (children instanceof Xom$1 || children instanceof Component || children instanceof Text) {
       children.__parent = parent;
-      children.__domParent = parent; // 极为恶心，为了v8的性能优化，text引用parent的，所以不能再设置
+      children.__domParent = parent; // 极为恶心，为了v8的性能优化，text复用parent的style部分，但domParent重设
 
-      if (!(children instanceof Text)) {
+      if (children instanceof Text) {
+        Object.assign(children.__config, parent.__config);
+      }
+
+      if (children.__config) {
         children.__config[NODE_DOM_PARENT$1] = parent;
       }
 
@@ -14716,6 +14720,7 @@
 
           if (sr instanceof Text) {
             sr.__parent = parent;
+            Object.assign(sr.__config, parent.__config);
           }
 
           sr.__domParent = parent;
@@ -17805,7 +17810,8 @@
     return Geom;
   }(Xom);
 
-  var NODE_COMPUTED_STYLE$2 = enums.NODE_COMPUTED_STYLE;
+  var NODE_COMPUTED_STYLE$2 = enums.NODE_COMPUTED_STYLE,
+      NODE_DOM_PARENT$2 = enums.NODE_DOM_PARENT;
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
@@ -17893,6 +17899,7 @@
     ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent', '__struct'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
+    sr.__config[NODE_DOM_PARENT$2] = oldSr.domParent;
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
@@ -20713,7 +20720,7 @@
       NODE_CACHE_PROPS$2 = enums.NODE_CACHE_PROPS,
       NODE_CURRENT_STYLE$5 = enums.NODE_CURRENT_STYLE,
       NODE_CURRENT_PROPS$2 = enums.NODE_CURRENT_PROPS,
-      NODE_DOM_PARENT$2 = enums.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$3 = enums.NODE_DOM_PARENT,
       NODE_IS_MASK$2 = enums.NODE_IS_MASK,
       NODE_REFRESH_LV$3 = enums.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = enums.NODE_IS_DESTROYED,
@@ -20893,7 +20900,7 @@
         __cacheProps = __config[NODE_CACHE_PROPS$2],
         currentStyle = __config[NODE_CURRENT_STYLE$5],
         currentProps = __config[NODE_CURRENT_PROPS$2],
-        domParent = __config[NODE_DOM_PARENT$2],
+        domParent = __config[NODE_DOM_PARENT$3],
         isMask = __config[NODE_IS_MASK$2];
     var lv = focus || NONE$1;
     var p;

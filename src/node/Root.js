@@ -60,6 +60,9 @@ const { STYLE_KEY: {
   NODE_STYLE,
   NODE_UPDATE_HASH,
   NODE_UNIQUE_UPDATE_ID,
+  NODE_CACHE_FILTER,
+  NODE_CACHE_OVERFLOW,
+  NODE_CACHE_MASK,
   STRUCT_INDEX,
   STRUCT_TOTAL,
   STRUCT_NODE,
@@ -364,16 +367,16 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     }
     if(node.__cacheMask) {
       node.__cacheMask.release();
-      node.__cacheMask = null;
+      node.__cacheMask = __config[NODE_CACHE_MASK] = null;
     }
     if(node.__cacheOverflow) {
       node.__cacheOverflow.release();
-      node.__cacheOverflow = null;
+      node.__cacheOverflow = __config[NODE_CACHE_OVERFLOW] = null;
     }
   }
   if((need || contain(lv, FILTER)) && node.__cacheFilter) {
     node.__cacheFilter.release();
-    node.__cacheFilter = null;
+    node.__cacheFilter = __config[NODE_CACHE_FILTER] = null;
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
   let parent = domParent;

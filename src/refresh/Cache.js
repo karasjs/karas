@@ -1,9 +1,15 @@
 import Page from './Page';
 import util from '../util/util';
 import inject from '../util/inject';
+import enums from '../util/enums';
 import blur from '../style/blur';
 import tf from '../style/transform';
 import mx from '../math/matrix';
+
+const { STYLE_KEY: {
+  TRANSFORM_ORIGIN,
+  TRANSFORM,
+} } = enums;
 
 function genSingle(cache) {
   let { size, sx1, sy1, width, height, bbox } = cache;
@@ -217,9 +223,9 @@ class Cache {
         ctx.globalAlpha = item.__opacity;
         Cache.drawCache(
           source, cacheMask,
-          item.computedStyle.transform,
+          item.computedStyle[TRANSFORM],
           [1, 0, 0, 1, 0, 0],
-          item.computedStyle.transformOrigin.slice(0),
+          item.computedStyle[TRANSFORM_ORIGIN].slice(0),
           inverse
         );
       }

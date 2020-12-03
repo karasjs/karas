@@ -255,10 +255,7 @@ function mergeBbox(bbox, t) {
   bbox[3] = Math.max(bbox[3], t[3]);
 }
 
-function genTotal(renderMode, node, __limitCache, lv, index, total, __structs, cacheTop, cache) {
-  if(__limitCache) {
-    return;
-  }
+function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
   if(total === 0) {
     return node.__cacheTotal = node.__config[NODE_CACHE_TOTAL] = cache;
   }
@@ -606,42 +603,71 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       // <是父节点
       if(lv < prevLv) {
         prevLv = lv;
+        // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
         if(visibility !== 'hidden' && __hasContent) {
-          count++;
+          // count++;
+          hash[lv] = hash[lv] || 0;
+          hash[lv]++;
         }
         // 需累加跳链路积累的数字
-        count += hash[lv] || 0;
+        // count += hash[lv] || 0;
+        let count = hash[lv] || 0;
         hash[lv] = 0;
+        hash[lv - 1] = hash[lv - 1] || 0;
         // 当>临界值时，进行cacheTotal合并
         if(!__limitCache
           && (count >= NUM
-            || (
-              (position === 'relative' || position === 'absolute')
-                && (__hasContent && count || count > 1) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
-              || hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal'
-            )
+            || ((position === 'relative' || position === 'absolute')
+              && (__hasContent|| count)) // 防止特殊情况，即空div包含1个count的内容，或者仅自己，没必要生成
+            || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
+              && (__hasContent || count))
           )) {
-          count = 0;
-          hash[lv - 1] = hash[lv - 1] || 0;
           hash[lv - 1]++;
           need = true;
         }
-      }
-      // >是Root的另一条链路，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
-      else if(lv > prevLv) {
-        prevLv = lv;
-        if(count) {
-          hash[prevLv - 1] = count;
+        else {
+          hash[lv - 1] = count;
         }
-        count = 0;
-        if(visibility !== 'hidden' && __hasContent) {
-          count++;
-        }
+        // count = 0;
       }
-      // 相等同级继续增加计数，第1个也会进入这里
-      else if(visibility !== 'hidden' && __hasContent) {
+      // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
+      // else if(lv > prevLv) {
+      //   // prevLv = lv;
+      //   // if(count) {
+      //   //   hash[prevLv - 1] = count;
+      //   // }
+      //   // count = 0;
+      //   hash[lv - 1] = hash[lv - 1] || 0;
+      //   if(!__limitCache
+      //     && (
+      //       ((position === 'relative' || position === 'absolute')
+      //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
+      //       || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
+      //         && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
+      //     )) {
+      //     hash[lv - 1]++;
+      //     need = true;
+      //   }
+      //   else if(__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
+      //     hash[lv - 1]++;
+      //   }
+      // }
+      // 相等同级继续增加计数，还需判断是否有filter等需生成total，第1个也会进入这里
+      else {
         hash[lv - 1] = hash[lv - 1] || 0;
-        hash[lv - 1]++;
+        if(!__limitCache
+          && (
+            ((position === 'relative' || position === 'absolute')
+              && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
+            || ((hasMask || __blurValue > 0 || overflow !== 'visible' || mixBlendMode !== 'normal')
+              && __hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available)
+          )) {
+          hash[lv - 1]++;
+          need = true;
+        }
+        else if(__hasContent && visibility !== 'hidden' || __cacheTotal && __cacheTotal.available) {
+          hash[lv - 1]++;
+        }
       }
       if(need) {
         // 有老的直接使用，没有才重新生成
@@ -649,7 +675,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           continue;
         }
         __cacheTotal = __config[NODE_CACHE_TOTAL] = node.__cacheTotal
-          = genTotal(renderMode, node, __limitCache, lv, index, total, __structs, __cacheTotal, __cache);
+          = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
         // 超限降级继续
         if(!__cacheTotal) {
           continue;

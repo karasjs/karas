@@ -236,13 +236,16 @@ function normalize(style, reset = []) {
   });
   // 背景图
   temp = style.backgroundImage;
-  if(temp) {
+  if(temp !== undefined) {
     // 区分是渐变色还是图
     if(reg.gradient.test(temp)) {
       res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
     }
     else if(reg.img.test(temp)) {
       res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
+    }
+    else {
+      res[BACKGROUND_IMAGE] = null;
     }
   }
   temp = style.backgroundColor;
@@ -353,9 +356,9 @@ function normalize(style, reset = []) {
     }
   });
   temp = style.transform;
-  if(temp) {
+  if(temp !== undefined) {
     let transform = res[TRANSFORM] = [];
-    let match = temp.toString().match(/\w+\(.+?\)/g);
+    let match = (temp || '').toString().match(/\w+\(.+?\)/g);
     if(match) {
       match.forEach(item => {
         let i = item.indexOf('(');
@@ -632,9 +635,9 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.filter;
-  if(temp) {
+  if(temp !== undefined) {
     let f = res[FILTER] = [];
-    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp);
+    let blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
     if(blur) {
       let v = parseFloat(blur[1]) || 0;
       if(v) {
@@ -661,27 +664,29 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.boxShadow;
-  if(temp) {
+  if(temp !== undefined) {
     let bs = res[BOX_SHADOW] = [];
-    let match = temp.match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
-    match.forEach(item => {
-      let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
-      if(boxShadow) {
-        let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
-        for(let i = 0; i < 4; i++) {
-          calUnit(res, i, res[i]);
-          // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
-          if(i > 1 && res[i][0] < 0) {
-            res[i] = 0;
+    let match = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    if(match) {
+      match.forEach(item => {
+        let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        if(boxShadow) {
+          let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
+          for(let i = 0; i < 4; i++) {
+            calUnit(res, i, res[i]);
+            // x/y可以负，blur和spread不行，没有继承且只有px无需保存单位
+            if(i > 1 && res[i][0] < 0) {
+              res[i] = 0;
+            }
+            if(res[i][1] === NUMBER) {
+              res[i] = res[i][0];
+            }
           }
-          if(res[i][1] === NUMBER) {
-            res[i] = res[i][0];
-          }
+          res[4] = rgba2int(res[4]);
+          bs.push(res);
         }
-        res[4] = rgba2int(res[4]);
-        bs.push(res);
-      }
-    });
+      });
+    }
   }
   // 直接赋值的string类型
   [

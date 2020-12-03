@@ -3574,8 +3574,9 @@
       temp = style[k];
 
       if (!isNil$3(temp)) {
+        k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
+
         if (/%$/.test(temp) || /px$/i.test(temp) || /^-?[\d.]+$/.test(temp)) {
-          k = i ? BACKGROUND_POSITION_Y : BACKGROUND_POSITION_X;
           calUnit(res, k, temp);
           temp = res[k];
 

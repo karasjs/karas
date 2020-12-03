@@ -778,7 +778,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         ctx.globalCompositeOperation = 'source-over';
       }
       // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
-      else if(__limitCache) {
+      else {
         if(maskStartHash.hasOwnProperty(i)) {
           ctx = maskStartHash[i].ctx;
         }
@@ -860,7 +860,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           }
         }
         // 超尺寸的特殊绘制，空的也进入
-        else {
+        else if(!__limitCache) {
           if(node instanceof Geom) {
             res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
           }

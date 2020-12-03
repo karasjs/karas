@@ -19869,7 +19869,7 @@
 
           ctx.globalCompositeOperation = 'source-over';
         } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
-        else if (__limitCache) {
+        else {
             if (maskStartHash.hasOwnProperty(_i4)) {
               ctx = maskStartHash[_i4].ctx;
             }
@@ -19965,7 +19965,7 @@
                 Cache.draw(ctx, __opacity, matrixEvent, __cache);
               }
             } // 超尺寸的特殊绘制，空的也进入
-            else {
+            else if (!__limitCache) {
                 if (node instanceof Geom$1) {
                   res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
                 } else {

@@ -777,8 +777,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         // total应用后记得设置回来
         ctx.globalCompositeOperation = 'source-over';
       }
-      // 无内容Xom会没有__cache且没有__limitCache
-      else if(!__limitCache) {
+      // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
+      else if(__limitCache) {
         if(maskStartHash.hasOwnProperty(i)) {
           ctx = maskStartHash[i].ctx;
         }

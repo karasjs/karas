@@ -180,8 +180,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   if(overwrite) {
     Object.assign(__config[NODE_STYLE], overwrite);
   }
-  // 多次调用更新才会有list，一般没有，优化
-  if(list) {
+  // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
+  if(list && !component) {
     let hash = {};
     keys.forEach(k => {
       hash[k] = true;
@@ -796,6 +796,9 @@ class Root extends Dom {
         }
         if(o[UPDATE_MEASURE]) {
           updateHash[UPDATE_MEASURE] = true;
+        }
+        if(o[UPDATE_COMPONENT]) {
+          updateHash[UPDATE_COMPONENT] = true;
         }
         // 后续存在新建list上，需增加遍历逻辑
         if(o[UPDATE_STYLE]) {

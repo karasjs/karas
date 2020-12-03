@@ -1307,7 +1307,8 @@
   function extendAnimate(ovd, nvd) {
     var list = nvd.__animationList = ovd.animationList.splice(0);
     list.forEach(function (item) {
-      item.__target = nvd; // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+      item.__setTarget(nvd); // 事件队列的缘故，可能动画本帧刚执行过，然后再继承，就会缺失，需再次赋值一遍；也有可能停留最后
+
 
       if (item.assigning || item.finished && item.__stayEnd()) {
         item.assignCurrentStyle();
@@ -3958,16 +3959,18 @@
     temp = style.filter;
 
     if (temp !== undefined) {
-      var f = res[FILTER] = [];
+      var f = null;
       var blur = /\bblur\s*\(\s*([\d.]+)\s*(?:px)?\s*\)/i.exec(temp || '');
 
       if (blur) {
         var _v = parseFloat(blur[1]) || 0;
 
         if (_v) {
-          f.push(['blur', _v]);
+          f = [['blur', _v]];
         }
       }
+
+      res[FILTER] = f;
     }
 
     temp = style.visibility;
@@ -3993,7 +3996,7 @@
     temp = style.boxShadow;
 
     if (temp !== undefined) {
-      var _bs = res[BOX_SHADOW] = [];
+      var _bs = null;
 
       var _match4 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
@@ -4002,6 +4005,7 @@
           var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
+            _bs = _bs || [];
             var _res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];
 
             for (var _i3 = 0; _i3 < 4; _i3++) {
@@ -4022,6 +4026,8 @@
           }
         });
       }
+
+      res[BOX_SHADOW] = _bs;
     } // 直接赋值的string类型
 
 
@@ -10767,6 +10773,29 @@
         if (ac) {
           ac.remove(this);
         }
+      }
+    }, {
+      key: "__stayBegin",
+      value: function __stayBegin() {
+        return {
+          backwards: true,
+          both: true
+        }.hasOwnProperty(this.fill);
+      }
+    }, {
+      key: "__stayEnd",
+      value: function __stayEnd() {
+        return {
+          forwards: true,
+          both: true
+        }.hasOwnProperty(this.fill);
+      }
+    }, {
+      key: "__setTarget",
+      value: function __setTarget(target) {
+        this.__target = target;
+        this.__config[I_TARGET] = target;
+        this.__config[I_NODE_CONFIG] = target.__config;
       }
     }, {
       key: "__cancelTask",
@@ -19839,8 +19868,8 @@
           Cache.draw(ctx, __opacity, matrixEvent, _target); // total应用后记得设置回来
 
           ctx.globalCompositeOperation = 'source-over';
-        } // 无内容Xom会没有__cache且没有__limitCache
-        else if (!__limitCache) {
+        } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
+        else if (__limitCache) {
             if (maskStartHash.hasOwnProperty(_i4)) {
               ctx = maskStartHash[_i4].ctx;
             }
@@ -20901,10 +20930,10 @@
 
     if (overwrite) {
       Object.assign(__config[NODE_STYLE$4], overwrite);
-    } // 多次调用更新才会有list，一般没有，优化
+    } // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
 
 
-    if (list) {
+    if (list && !component) {
       var hash = {};
       keys.forEach(function (k) {
         hash[k] = true;
@@ -21660,6 +21689,10 @@
 
             if (o[UPDATE_MEASURE$1]) {
               updateHash[UPDATE_MEASURE$1] = true;
+            }
+
+            if (o[UPDATE_COMPONENT$1]) {
+              updateHash[UPDATE_COMPONENT$1] = true;
             } // 后续存在新建list上，需增加遍历逻辑
 
 

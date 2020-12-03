@@ -1740,6 +1740,26 @@ class Animation extends Event {
     }
   }
 
+  __stayBegin() {
+    return {
+      backwards: true,
+      both: true,
+    }.hasOwnProperty(this.fill);
+  }
+
+  __stayEnd() {
+    return {
+      forwards: true,
+      both: true,
+    }.hasOwnProperty(this.fill);
+  }
+
+  __setTarget(target) {
+    this.__target = target;
+    this.__config[I_TARGET] = target;
+    this.__config[I_NODE_CONFIG] = target.__config;
+  }
+
   __cancelTask() {
     frame.offFrame(this);
     this.__config[I_PLAY_CB] = null;

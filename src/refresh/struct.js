@@ -603,7 +603,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           need = true;
         }
         else {
-          hash[lv - 1] = count;
+          hash[lv - 1] += count;
         }
       }
       // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用

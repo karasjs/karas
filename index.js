@@ -19714,7 +19714,7 @@
             hash[lv - 1]++;
             need = true;
           } else {
-            hash[lv - 1] = count;
+            hash[lv - 1] += count;
           }
         } // >是Root的另一条链路开始，忽略掉重新开始，之前的链路根据lv层级保存之前积累的数量供其父使用
         // 相等同级继续增加计数，还需判断是否有filter等需生成total，第1个也会进入这里

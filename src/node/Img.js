@@ -7,8 +7,25 @@ import unit from '../style/unit';
 import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
+import enums from '../util/enums';
 import level from '../refresh/level';
 
+const { STYLE_KEY: {
+  WIDTH,
+  HEIGHT,
+  DISPLAY,
+  BORDER_TOP_WIDTH,
+  BORDER_RIGHT_WIDTH,
+  BORDER_LEFT_WIDTH,
+  BORDER_BOTTOM_WIDTH,
+  PADDING_TOP,
+  PADDING_LEFT,
+  BORDER_TOP_LEFT_RADIUS,
+  BORDER_TOP_RIGHT_RADIUS,
+  BORDER_BOTTOM_RIGHT_RADIUS,
+  BORDER_BOTTOM_LEFT_RADIUS,
+  VISIBILITY,
+}, UPDATE_NODE, UPDATE_FOCUS, UPDATE_IMG, UPDATE_CONFIG } = enums;
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -96,6 +113,26 @@ class Img extends Dom {
     super.__destroy();
   }
 
+  // img根据加载情况更新__hasContent
+  __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
+    let res = super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+    if(!res) {
+      let {
+        computedStyle,
+        __loadImg: loadImg,
+        props: {
+          src,
+          placeholder,
+        }
+      } = this;
+      if(computedStyle[VISIBILITY] !== 'hidden' && (computedStyle[WIDTH] || computedStyle[HEIGHT])
+        && (loadImg.error || ((loadImg.url === src || placeholder) && loadImg.source))) {
+        res = true;
+      }
+    }
+    return res;
+  }
+
   render(renderMode, lv, ctx, defs, cache) {
     let res = super.render(renderMode, lv, ctx, defs, cache);
     let {
@@ -105,37 +142,40 @@ class Img extends Dom {
         placeholder,
       },
       computedStyle: {
-        display,
-        borderTopWidth,
-        borderRightWidth,
-        borderBottomWidth,
-        borderLeftWidth,
-        paddingTop,
-        paddingLeft,
-        borderTopLeftRadius,
-        borderTopRightRadius,
-        borderBottomRightRadius,
-        borderBottomLeftRadius,
-        visibility,
+        [DISPLAY]: display,
+        [BORDER_TOP_WIDTH]: borderTopWidth,
+        [BORDER_RIGHT_WIDTH]: borderRightWidth,
+        [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
+        [BORDER_LEFT_WIDTH]: borderLeftWidth,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_LEFT]: paddingLeft,
+        [BORDER_TOP_LEFT_RADIUS]: borderTopLeftRadius,
+        [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
+        [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
+        [BORDER_BOTTOM_LEFT_RADIUS]: borderBottomLeftRadius,
+        [VISIBILITY]: visibility,
       },
       virtualDom,
       __cache,
     } = this;
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
-      return res;
-    }
-    let originX, originY;
     // img无children所以total就是cache避免多余生成
     if(renderMode === mode.CANVAS) {
       this.__cacheTotal = __cache;
     }
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+      return res;
+    }
     if(cache && __cache && __cache.enabled) {
       ctx = __cache.ctx;
     }
+    let originX, originY;
     originX = res.x2 + paddingLeft;
     originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
-    if(loadImg.error && !placeholder) {
+    if(loadImg.error && !placeholder && Img.showError) {
+      if(!width || !height) {
+        return res;
+      }
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
       let fill = '#DDD';
@@ -209,8 +249,8 @@ class Img extends Dom {
     }
     else if((loadImg.url === src || placeholder) && loadImg.source) {
       let source = loadImg.source;
-      // 无source不绘制
-      if(source) {
+      // 无source不绘制，还要注意尺寸为0
+      if(source && (width || height)) {
         // 圆角需要生成一个mask
         let list = border.calRadius(originX, originY, width, height,
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -311,19 +351,20 @@ class Img extends Dom {
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
         if(data.url === loadImg.url && !self.__isDestroyed) {
           function reload() {
-            let { root, currentStyle: { width, height } } = self;
+            let { root, currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
             root.delRefreshTask(self.__task);
-            if(width.unit !== AUTO && height.unit !== AUTO) {
+            if(width[1] !== AUTO && height[1] !== AUTO) {
               root.addRefreshTask(self.__task = {
                 __before() {
                   if(self.isDestroyed) {
                     return;
                   }
                   // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                  root.__addUpdate({
-                    node: self,
-                    focus: level.REPAINT,
-                  });
+                  let res = {};
+                  res[UPDATE_NODE] = self;
+                  res[UPDATE_FOCUS] = level.REPAINT;
+                  res[UPDATE_CONFIG] = self.__config;
+                  root.__addUpdate(self, self.__config, root, root.__config, res);
                 },
               });
             }
@@ -334,11 +375,12 @@ class Img extends Dom {
                     return;
                   }
                   // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-                  root.__addUpdate({
-                    node: self,
-                    focus: level.REFLOW, // 没有样式变化但内容尺寸发生了变化强制执行
-                    img: true, // 特殊标识强制布局即便没有style变化
-                  });
+                  let res = {};
+                  res[UPDATE_NODE] = self;
+                  res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
+                  res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
+                  res[UPDATE_CONFIG] = self.__config;
+                  root.__addUpdate(self, self.__config, root, root.__config, res);
                 },
               });
             }
@@ -383,6 +425,8 @@ class Img extends Dom {
   get baseLine() {
     return this.height;
   }
+
+  static showError = true;
 }
 
 export default Img;

@@ -18,4 +18,4 @@ let animation = t.animate([
   easing: 'cubic-bezier(0, 1, 0, 1)',
 });
 let input = document.querySelector('input');
-input.value = animation.frames[0].easing + '/' + animation.frames[1].easing;
+input.value = animation.frames[0][karas.enums.FRAME_EASING] + '/' + animation.frames[1][karas.enums.FRAME_EASING];

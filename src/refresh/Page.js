@@ -11,7 +11,7 @@ class Page {
     this.__number = number;
     this.__free = this.__total = number * number;
     size *= number;
-    let offScreen = this.__canvas = inject.getCacheCanvas(size, size);
+    let offScreen = this.__canvas = inject.getCacheCanvas(size, size, null, number);
     if(offScreen) {
       this.__offScreen = offScreen;
     }

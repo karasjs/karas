@@ -44,24 +44,24 @@ function getLinearDeg(v) {
 
 function getRadialPosition(data) {
   if(/%$/.test(data) || /px$/.test(data) || /^-?[\d.]+$/.test(data)) {
-    return {
-      value: parseFloat(data),
-      unit: /%/.test(data) ? PERCENT : PX,
-    };
+    return [
+      parseFloat(data),
+      /%/.test(data) ? PERCENT : PX,
+    ];
   }
   else {
-    let res = {
-      value: {
+    let res = [
+      {
         top: 0,
         left: 0,
         center: 50,
         right: 100,
         bottom: 100,
       }[data],
-      unit: PERCENT,
-    };
-    if(isNil(res.value)) {
-      res.value = 50;
+      PERCENT,
+    ];
+    if(isNil(res[0])) {
+      res[0] = 50;
     }
     return res;
   }
@@ -77,11 +77,11 @@ function getColorStop(v, length) {
     if(item.length > 1) {
       let c = int2rgba(item[0]);
       let p = item[1];
-      if(p.unit === PERCENT) {
-        list.push([c, p.value * 0.01]);
+      if(p[1] === PERCENT) {
+        list.push([c, p[0] * 0.01]);
       }
       else {
-        list.push([c, p.value / length]);
+        list.push([c, p[0] / length]);
       }
     }
     else {
@@ -259,17 +259,17 @@ function calLinearCoords(deg, length, cx, cy) {
 function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
   // let size = 'farthest-corner';
   let cx, cy;
-  if(position[0].unit === PX) {
-    cx = x1 + position[0].value;
+  if(position[0][1] === PX) {
+    cx = x1 + position[0][0];
   }
   else {
-    cx = x1 + position[0].value * iw * 0.01;
+    cx = x1 + position[0][0] * iw * 0.01;
   }
-  if(position[1].unit === PX) {
-    cy = y1 + position[1].value;
+  if(position[1][1] === PX) {
+    cy = y1 + position[1][0];
   }
   else {
-    cy = y1 + position[1].value * ih * 0.01;
+    cy = y1 + position[1][0] * ih * 0.01;
   }
   let r;
   if(size === 'closest-side') {
@@ -431,13 +431,7 @@ function parseGradient(s) {
         o.p = [x, y];
       }
       else {
-        o.p = [{
-          value: 50,
-          unit: PERCENT,
-        }, {
-          value: 50,
-          unit: PERCENT,
-        }];
+        o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
     let v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
@@ -445,14 +439,12 @@ function parseGradient(s) {
       let res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
       let arr = [rgba2int(res[1])];
       if(res[2]) {
-        arr[1] = {
-          value: parseFloat(res[2]),
-        };
+        arr[1] = [parseFloat(res[2])];
         if(/%$/.test(res[2])) {
-          arr[1].unit = PERCENT;
+          arr[1][1] = PERCENT;
         }
         else {
-          arr[1].unit = PX;
+          arr[1][1] = PX;
         }
       }
       return arr;

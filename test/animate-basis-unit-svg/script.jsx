@@ -34,9 +34,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.flexBasis + ',' + t2.computedStyle.flexBasis;
+    input.value = t.getComputedStyle().flexBasis + ',' + t2.getComputedStyle().flexBasis;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.flexBasis + ',' + t2.computedStyle.flexBasis;
+  input.value += '/' + t.getComputedStyle().flexBasis + ',' + t2.getComputedStyle().flexBasis;
 });

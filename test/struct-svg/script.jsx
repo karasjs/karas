@@ -10,6 +10,6 @@ let o = karas.render(
 );
 let input = document.querySelector('#base64');
 input.value = JSON.stringify(o.__structs.map(item => {
-  item.node = item.node.tagName || 'text';
+  item[karas.enums.STRUCT_NODE] = item[karas.enums.STRUCT_NODE].tagName || 'text';
   return item;
 }));

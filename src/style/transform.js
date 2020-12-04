@@ -1,33 +1,44 @@
 import unit from '../style/unit';
+import enums from '../util/enums';
 import math from '../math/index';
 
+const { STYLE_KEY: {
+  TRANSLATE_X,
+  TRANSLATE_Y,
+  SCALE_X,
+  SCALE_Y,
+  SKEW_X,
+  SKEW_Y,
+  ROTATE_Z,
+  MATRIX,
+}} = enums;
 const { PX, PERCENT } = unit;
 const { matrix, geom } = math;
 const { identity, calPoint, multiply, isE } = matrix;
 const { d2r, pointInPolygon } = geom;
 
 function calSingle(t, k, v) {
-  if(k === 'translateX') {
+  if(k === TRANSLATE_X) {
     t[4] = v;
   }
-  else if(k === 'translateY') {
+  else if(k === TRANSLATE_Y) {
     t[5] = v;
   }
-  else if(k === 'scaleX') {
+  else if(k === SCALE_X) {
     t[0] = v;
   }
-  else if(k === 'scaleY') {
+  else if(k === SCALE_Y) {
     t[3] = v;
   }
-  else if(k === 'skewX') {
+  else if(k === SKEW_X) {
     v = d2r(v);
     t[2] = Math.tan(v);
   }
-  else if(k === 'skewY') {
+  else if(k === SKEW_Y) {
     v = d2r(v);
     t[1] = Math.tan(v);
   }
-  else if(k === 'rotateZ') {
+  else if(k === ROTATE_Z) {
     v = d2r(v);
     let sin = Math.sin(v);
     let cos = Math.cos(v);
@@ -35,7 +46,7 @@ function calSingle(t, k, v) {
     t[1] = sin;
     t[2] = -sin;
   }
-  else if(k === 'matrix') {
+  else if(k === MATRIX) {
     t[0] = v[0];
     t[1] = v[1];
     t[2] = v[2];
@@ -98,20 +109,20 @@ function pointInQuadrilateral(x, y, x1, y1, x2, y2, x4, y4, x3, y3, matrix) {
 }
 
 function normalizeSingle(k, v, ow, oh) {
-  if(k === 'translateX') {
-    if(v.unit === PERCENT) {
-      return v.value * ow * 0.01;
+  if(k === TRANSLATE_X) {
+    if(v[1] === PERCENT) {
+      return v[0] * ow * 0.01;
     }
   }
-  else if(k === 'translateY') {
-    if(v.unit === PERCENT) {
-      return v.value * oh * 0.01;
+  else if(k === TRANSLATE_Y) {
+    if(v[1] === PERCENT) {
+      return v[0] * oh * 0.01;
     }
   }
-  else if(k === 'matrix') {
+  else if(k === MATRIX) {
     return v;
   }
-  return v.value;
+  return v[0];
 }
 
 function normalize(transform, ow, oh) {
@@ -126,11 +137,11 @@ function normalize(transform, ow, oh) {
 function calOrigin(transformOrigin, w, h) {
   let tfo = [];
   transformOrigin.forEach((item, i) => {
-    if(item.unit === PX) {
-      tfo.push(item.value);
+    if(item[1] === PX) {
+      tfo.push(item[0]);
     }
-    else if(item.unit === PERCENT) {
-      tfo.push(item.value * (i ? h : w) * 0.01);
+    else if(item[1] === PERCENT) {
+      tfo.push(item[0] * (i ? h : w) * 0.01);
     }
   });
   return tfo;

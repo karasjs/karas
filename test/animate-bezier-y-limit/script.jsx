@@ -18,7 +18,7 @@ let animation = t.animate([
 });
 let input = document.querySelector('input');
 animation.on(karas.Event.FRAME, () => {
-  if(t.computedStyle.fontSize > 20) {
+  if(t.getComputedStyle().fontSize > 20) {
     input.value = 'true';
   }
 });

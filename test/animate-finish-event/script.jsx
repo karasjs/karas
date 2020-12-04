@@ -28,9 +28,9 @@ animation.finish(function() {
 });
 animation.on(karas.Event.FRAME, () => {
   if(n++ === 0) {
-    input.value += '/a' + t.computedStyle.color;
+    input.value += '/a' + t.getComputedStyle().color;
   }
 });
 animation.on(karas.Event.FINISH, () => {
-  input.value += '/f' + t.computedStyle.color;
+  input.value += '/f' + t.getComputedStyle().color;
 });

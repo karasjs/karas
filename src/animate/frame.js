@@ -3,16 +3,24 @@ import util from '../util/util';
 
 const { isFunction } = util;
 
-function traversal(list, diff, after) {
+function traversal(list, length, diff, after) {
   if(after) {
-    list.forEach(item => {
+    for(let i = 0; i < length; i++) {
+      let item = list[i];
       item.__after && item.__after(diff);
-    });
+    }
+    // list.forEach(item => {
+    //   item.__after && item.__after(diff);
+    // });
   }
   else {
-    list.forEach(item => {
+    for(let i = 0; i < length; i++) {
+      let item = list[i];
       item.__before && item.__before(diff);
-    });
+    }
+    // list.forEach(item => {
+    //   item.__before && item.__before(diff);
+    // });
   }
 }
 
@@ -44,11 +52,16 @@ class Frame {
         last = now;
         // 优先动画计算
         let clone = task.slice(0);
-        traversal(clone, diff);
+        let length = clone.length;
+        traversal(clone, length, diff);
         // 执行动画造成的每个Root的刷新并清空
-        self.__hookTask.splice(0).forEach(item => item());
+        let list = self.__hookTask.splice(0);
+        for(let i = 0, len = list.length; i < len; i++) {
+          list[i]();
+        }
+        // self.__hookTask.splice(0).forEach(item => item());
         // 普通的before/after
-        traversal(clone, diff, true);
+        traversal(clone, length, diff, true);
         // 还有则继续，没有则停止节省性能
         if(task.length) {
           cb();

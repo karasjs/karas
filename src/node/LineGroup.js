@@ -1,3 +1,9 @@
+import enums from '../util/enums';
+
+const { STYLE_KEY: {
+  MARGIN_BOTTOM,
+} } = enums;
+
 class LineGroup {
   constructor(x, y) {
     this.__list = [];
@@ -76,7 +82,7 @@ class LineGroup {
   get marginBottom() {
     let n = 0;
     this.list.forEach(item => {
-      n = Math.max(n, item.computedStyle.marginBottom);
+      n = Math.max(n, item.computedStyle[MARGIN_BOTTOM]);
     });
     return n;
   }

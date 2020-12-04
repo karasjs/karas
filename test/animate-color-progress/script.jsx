@@ -19,7 +19,7 @@ let n = 0;
 let last;
 let res = true;
 animation.on(karas.Event.FRAME, () => {
-  let now = t.computedStyle.color;
+  let now = t.getComputedStyle().color;
   if(now === last) {
     res = false;
   }

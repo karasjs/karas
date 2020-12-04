@@ -20,9 +20,9 @@ let input = document.querySelector('input');
 animation.on('frame', () => {
   n++;
   if(n === 1) {
-    input.value = t.computedStyle.filter;
+    input.value = t.getComputedStyle().filter;
   }
 });
 animation.on('finish', () => {
-  input.value += '/' + t.computedStyle.filter;
+  input.value += '/' + t.getComputedStyle().filter;
 });

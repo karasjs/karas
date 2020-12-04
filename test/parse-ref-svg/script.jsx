@@ -32,5 +32,5 @@ o.animateController.play();
 let input = document.querySelector('input');
 let a = o.ref.a;
 a.animationList[0].on('finish', function() {
-  input.value = 1 + '/' + a.computedStyle.color;
+  input.value = 1 + '/' + a.getComputedStyle().color;
 });

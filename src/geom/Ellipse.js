@@ -2,9 +2,17 @@ import Geom from './Geom';
 import mode from '../node/mode';
 import util from '../util/util';
 import painter from '../util/painter';
+import enums from '../util/enums';
 import geom from '../math/geom';
 
-let { isNil } = util;
+const { STYLE_KEY: {
+  PADDING_TOP,
+  PADDING_LEFT,
+  STROKE_WIDTH,
+  BOX_SHADOW,
+  FILTER,
+} } = enums;
+const { isNil } = util;
 
 function getR(v) {
   v = parseFloat(v);
@@ -147,11 +155,11 @@ class Ellipse extends Geom {
       isMulti, __cacheProps,
       __sx2, __sy2, width, height,
       computedStyle: {
-        paddingTop,
-        paddingLeft,
-        strokeWidth,
-        boxShadow,
-        filter,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_LEFT]: paddingLeft,
+        [STROKE_WIDTH]: strokeWidth,
+        [BOX_SHADOW]: boxShadow,
+        [FILTER]: filter,
       } } = this;
     let originX = __sx2 + paddingLeft;
     let originY = __sy2 + paddingTop;

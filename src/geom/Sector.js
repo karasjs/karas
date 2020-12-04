@@ -2,8 +2,16 @@ import Geom from './Geom';
 import mode from '../node/mode';
 import painter from '../util/painter';
 import util from '../util/util';
+import enums from '../util/enums';
 
-let { isNil } = util;
+const { STYLE_KEY: {
+  PADDING_TOP,
+  PADDING_LEFT,
+  STROKE_WIDTH,
+  BOX_SHADOW,
+  FILTER,
+} } = enums;
+const { isNil } = util;
 
 function getCoordsByDegree(x, y, r, d) {
   r = Math.max(r, 0);
@@ -263,11 +271,11 @@ class Sector extends Geom {
       isMulti, __cacheProps,
       __sx2, __sy2, width, height,
       computedStyle: {
-        paddingTop,
-        paddingLeft,
-        strokeWidth,
-        boxShadow,
-        filter,
+        [PADDING_TOP]: paddingTop,
+        [PADDING_LEFT]: paddingLeft,
+        [STROKE_WIDTH]: strokeWidth,
+        [BOX_SHADOW]: boxShadow,
+        [FILTER]: filter,
       } } = this;
     let originX = __sx2 + paddingLeft;
     let originY = __sy2 + paddingTop;

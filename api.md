@@ -100,10 +100,37 @@ class Component extends karas.Component {
 }
 ```
 
+### Node
+* **类型** `class`
+* **说明**  
+所有节点基类，[Dom](#Dom)、[Text](#Text)均实现了此类。详见[Node](#Node)。
+
+### Text
+* **类型** `class`
+* **说明**  
+文本节点。详见[Text](#Text)。
+
+### Xom
+* **类型** `class`
+* **说明**  
+所有非Text节点的基类，[Dom](#Dom)、[Geom](#Geom)均实现了此类。详见[Xom](#Xom)。
+
+### Dom
+* **类型** `class`
+* **说明**  
+所有dom节点的基类，[Img](#Img)实现了此类。详见[Img](#Img)。
+
+### Img
+
+### Component
+* **类型** `class`
+* **说明**  
+组件的基类，混入了[Event](#Event)。详见[Component](#Component)。
+
 <a name="Node"></a>
 
 ## Node
-Xom/Text的基类，抽象共有部分。
+Xom/Text的基类，抽象共有部分。所有节点均派生于它。
 
 ### 类属性property
 
@@ -163,12 +190,12 @@ y偏移坐标，因relative造成。
 当前的style样式集合，计算后的，类似window.getComputedStyle()。
 
 #### prev
-* **类型** `Xom` 只读
+* **类型** `Node` 只读
 * **说明**  
 前面一个相邻的兄弟节点。
 
 #### next
-* **类型** `Xom` 只读
+* **类型** `Node` 只读
 * **说明**  
 后面一个相邻的兄弟节点。
 
@@ -296,6 +323,21 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 是否已被销毁。
 
 ### 类方法method
+
+#### getComputedStyle()
+* **类型** `Function`
+* **说明**  
+获取当前计算好的样式
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div style={{width: 100, height:100}} ref="div"/>
+  </canvas>,
+  '#selector'
+);
+console.log(root.ref.div.getComputedStyle().width); // 100
+```
 
 #### animate
 * **类型** `Function`
@@ -434,7 +476,7 @@ console.log(root.ref.div === div);
 ```
 
 <a name="Dom"></a>
-### Dom
+## Dom
 * **类型** `class`
 * **说明**  
 VirtualDom的基类，所有非图形vd均是继承或实现了此类。一般情况下开发用不到。详见[虚拟Dom](#虚拟Dom)。
@@ -454,7 +496,7 @@ console.log(root);
 ```
 
 <a name="Geom"></a>
-### Geom
+## Geom
 * **类型** `class`
 * **说明**  
 自定义矢量图形，目前内置的有`Circle`、`Ellipse`、`Line`、`Polygon`、`Polyline`、`Rect`、`Sector`几类基本图形。当需要更多的类型时，需继承此类并覆盖render()方法，实现代码复用。详见[自定义图形](#自定义图形)。
@@ -481,8 +523,35 @@ karas.render(
 );
 ```
 
+## Img
+<a name="Img"></a>
+* **类型** `class`
+* **说明**  
+继承[Dom](#Dom)类，图片显示专用。
+
+### 类属性property
+
+#### src
+* **类型** `string` 只读
+* **说明**  
+图片的url。
+
+### 静态属性
+* **类型** `boolean` 读写
+* **说明**  
+当图片加载失败时，是否显示默认的错误占位提示。默认true。
+
+#### showError
+
+### html属性attribute
+
+#### placeholder
+* **类型** `string`
+* **说明**  
+当图片加载失败时，是否显示设置的占位图。占位图如果再次加载失败，则不展示。
+
 <a name="Component"></a>
-### Component
+## Component
 * **类型** `class`
 * **说明**  
 自定义组件，类似React的Component，逻辑和绘制的代码集合，可复用。详见[自定义组件](#自定义组件)。
@@ -512,34 +581,45 @@ karas.render(
 一组注入方法的集合，用以注入实现非普通浏览器环境下的必要方法（如小程序、native开发）。一般情况下开发用不到。详见[注入](#注入)。
 
 <a name="style"></a>
-### style
+### style包
 * **类型** `Object`
 * **说明**  
 公开的style包下的对象集合，用以处理样式相关的方法。一般情况下开发用不到。详见[style包](#style包)。
 
 <a name="parser"></a>
-### parser
+### parser包
 * **类型** `Object`
 * **说明**  
 公开的parser包下的对象集合，用以处理动态json相关的方法。一般情况下开发用不到。详见[parser包](#parser包)。
 
 <a name="animate"></a>
-### animate
+### animate包
 * **类型** `Object`
 * **说明**  
 公开的animate包下的对象集合，用以处理动画相关的方法。一般情况下开发用不到。详见[animate包](#animate包)。
 
 <a name="math"></a>
-### math
+### math包
 * **类型** `Object`
 * **说明**  
 公开的math包下的对象集合，用以处理数学相关的方法。一般情况下开发用不到。详见[math包](#math包)。
 
 <a name="refresh"></a>
-### refresh
+### refresh包
 * **类型** `Object`
 * **说明**  
 公开的refresh包下的对象集合，用以处理刷新缓存相关的方法。一般情况下开发用不到。详见[refresh包](#refresh包)。
+
+<a name="enums"></a>
+### enums枚举
+* **类型** `Object`
+* **说明**  
+公开的枚举类型，因v8特殊优化的关系，一些常用的属性以索引下标的形式存储，而非常见的string的key。
+
+#### STYLE_KEY
+* **类型** `Object`
+* **说明**  
+currentStyle/computedStyle中的key枚举。
 
 <a name="自定义事件"></a>
 ## 自定义事件

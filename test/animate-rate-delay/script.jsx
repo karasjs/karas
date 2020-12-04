@@ -21,5 +21,5 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 animation.on(karas.Event.FINISH, () => {
-  input.value = t.computedStyle.width;
+  input.value = t.getComputedStyle().width;
 });

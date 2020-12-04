@@ -22,5 +22,5 @@ let animation = t.animate([
 let input = document.querySelector('input');
 let n = 0;
 o.on('refresh', function() {
-  input.value += '/' + t.computedStyle.backgroundColor;
+  input.value += '/' + t.getComputedStyle().backgroundColor;
 });

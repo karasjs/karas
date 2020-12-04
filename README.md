@@ -2,7 +2,7 @@
 A flexible JavaScript framework for RIA on Canvas/Svg.
 
 [![NPM version](https://img.shields.io/npm/v/karas.svg)](https://npmjs.org/package/karas)
-[![Build Status](https://api.travis-ci.com/karasjs/karas.svg?branch=master&status=started)](https://travis-ci.com/karasjs/karas)
+![CI](https://github.com/karasjs/karas/workflows/CI/badge.svg)
 
 [![logo](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)](https://raw.githubusercontent.com/karasjs/karas/master/logo.png)
 

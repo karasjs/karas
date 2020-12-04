@@ -14,6 +14,7 @@ const { STYLE_KEY: {
   PADDING_TOP,
   PADDING_LEFT,
   WIDTH,
+  HEIGHT,
   BORDER_TOP_WIDTH,
   BORDER_RIGHT_WIDTH,
   BORDER_BOTTOM_WIDTH,
@@ -81,26 +82,24 @@ class Geom extends Xom {
     let {
       [WIDTH]: width,
       [HEIGHT]: height,
-    } = currentStyle;
-    let {
       [BORDER_TOP_WIDTH]: borderTopWidth,
       [BORDER_RIGHT_WIDTH]: borderRightWidth,
       [BORDER_BOTTOM_WIDTH]: borderBottomWidth,
       [BORDER_LEFT_WIDTH]: borderLeftWidth,
-    } = computedStyle;
+    } = currentStyle;
     let main = isDirectionRow ? width : height;
     if(main[1] !== AUTO) {
       b = max += main[0];
     }
     // border也得计算在内
     if(isDirectionRow) {
-      let w = borderRightWidth + borderLeftWidth;
+      let w = borderRightWidth[0] + borderLeftWidth[0];
       b += w;
       max += w;
       min += w;
     }
     else {
-      let h = borderTopWidth + borderBottomWidth;
+      let h = borderTopWidth[0] + borderBottomWidth[0];
       b += h;
       max += h;
       min += h;

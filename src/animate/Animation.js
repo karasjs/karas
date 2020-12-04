@@ -1772,6 +1772,9 @@ class Animation extends Event {
   __destroy(sync) {
     let self = this;
     let __config = self.__config;
+    if(__config[I_DESTROYED]) {
+      return;
+    }
     self.removeControl();
     // clean异步执行，因为里面的样式还原需要等到下一帧，否则同步执行清除后，紧接着的新同步动画获取不到currentStyle
     if(sync) {

@@ -5,7 +5,7 @@ const {
   STRUCT_INDEX,
   STRUCT_CHILD_INDEX,
   STRUCT_LV,
-  STRUCT_HAS_MASK,
+  NODE_IS_DESTROYED,
 } = enums;
 
 class Node {
@@ -17,34 +17,23 @@ class Node {
     this.__width = 0;
     this.__height = 0;
     this.__baseLine = 0;
+    this.__config = {};
     // 默认undefined
-    // this.__prev = null;
-    // this.__next = null;
-    // this.__parent = null;
-    // this.__root = null;
-    // this.__host = null;
+    // this.__prev = undefined;
+    // this.__next = undefined;
+    // this.__parent = undefined;
+    // this.__domParent = undefined;
+    // this.__root = undefined;
+    // this.__host = undefined;
   }
 
   __structure(i, lv, j) {
-    // let res = this.__struct = {
-    //   node: this,
-    //   index: i,
-    //   childIndex: j,
-    //   lv,
-    // };
-    // if(this.__hasMask) {
-    //   res.hasMask = this.__hasMask;
-    // }
-    let res = this.__struct = {
+    return this.__struct = {
       [STRUCT_NODE]: this,
       [STRUCT_INDEX]: i,
       [STRUCT_CHILD_INDEX]: j,
       [STRUCT_LV]: lv,
     };
-    if(this.__hasMask) {
-      res[STRUCT_HAS_MASK] = this.__hasMask;
-    }
-    return res;
   }
 
   __modifyStruct(root, offset = 0) {
@@ -74,7 +63,7 @@ class Node {
 
   __destroy() {
     this.__isDestroyed = true;
-    // this.__parent = null;
+    this.__config[NODE_IS_DESTROYED] = true;
   }
 
   get x() {

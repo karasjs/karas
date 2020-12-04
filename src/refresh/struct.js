@@ -69,7 +69,6 @@ function genLRD(structs) {
       let first;
       let last;
       for(let i = index + 1, len = i + (top[STRUCT_TOTAL] || 0); i < len; i++) {
-        // let { node, total, node: { __cacheTotal, computedStyle: { display } } } = structs[i];
         let {
           [STRUCT_NODE]: node,
           [STRUCT_TOTAL]: total,

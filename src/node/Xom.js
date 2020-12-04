@@ -83,9 +83,10 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   BORDER_BOTTOM,
   BORDER_LEFT,
 },
+  STRUCT_HAS_MASK,
   UPDATE_NODE, UPDATE_FOCUS, UPDATE_STYLE, UPDATE_OVERWRITE, UPDATE_KEYS, UPDATE_CONFIG,
   NODE_TAG_NAME, NODE_CACHE_STYLE, NODE_CURRENT_STYLE, NODE_COMPUTED_STYLE, NODE_STYLE,
-  NODE_STRUCT, NODE_OPACITY, NODE_MATRIX_EVENT, NODE_MATRIX, NODE_IS_DESTROYED,
+  NODE_STRUCT, NODE_OPACITY, NODE_MATRIX_EVENT, NODE_MATRIX,
   NODE_LIMIT_CACHE, NODE_BLUR_VALUE, NODE_HAS_CONTENT, NODE_REFRESH_LV,
   NODE_CACHE, NODE_CACHE_TOTAL, NODE_CACHE_FILTER, NODE_CACHE_MASK, NODE_CACHE_OVERFLOW,
 } = enums;
@@ -762,7 +763,7 @@ class Xom extends Node {
       },
     };
     this.__cacheStyle = {}; // 是否缓存重新计算computedStyle的样式key
-    let config = this.__config = {};
+    let config = this.__config;
     config[NODE_TAG_NAME] = tagName;
     config[NODE_CACHE_STYLE] = this.__cacheStyle;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
@@ -774,6 +775,9 @@ class Xom extends Node {
 
   __structure(i, lv, j) {
     let res = super.__structure(i, lv, j);
+    if(this.__hasMask) {
+      res[STRUCT_HAS_MASK] = this.__hasMask;
+    }
     this.__config[NODE_STRUCT] = res;
     return res;
   }
@@ -2109,6 +2113,7 @@ class Xom extends Node {
     if(this.isDestroyed) {
       return;
     }
+    super.__destroy();
     let { host, root } = this;
     let ref = this.props.ref;
     if(ref) {
@@ -2120,10 +2125,8 @@ class Xom extends Node {
     this.animationList.forEach(item => item.__destroy());
     root.delRefreshTask(this.__loadBgi.cb);
     root.delRefreshTask(this.__task);
-    super.__destroy();
     this.__matrix = this.__matrixEvent = this.__root = null;
     this.__cancelCache();
-    this.__config[NODE_IS_DESTROYED] = true;
   }
 
   // 先查找到注册了事件的节点，再捕获冒泡判断增加性能

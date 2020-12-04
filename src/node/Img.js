@@ -25,7 +25,7 @@ const { STYLE_KEY: {
   BORDER_BOTTOM_RIGHT_RADIUS,
   BORDER_BOTTOM_LEFT_RADIUS,
   VISIBILITY,
-}, UPDATE_NODE, UPDATE_FOCUS, UPDATE_IMG } = enums;
+}, UPDATE_NODE, UPDATE_FOCUS, UPDATE_IMG, UPDATE_CONFIG } = enums;
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 
@@ -363,6 +363,7 @@ class Img extends Dom {
                   let res = {};
                   res[UPDATE_NODE] = self;
                   res[UPDATE_FOCUS] = level.REPAINT;
+                  res[UPDATE_CONFIG] = self.__config;
                   root.__addUpdate(self, self.__config, root, root.__config, res);
                 },
               });
@@ -378,6 +379,7 @@ class Img extends Dom {
                   res[UPDATE_NODE] = self;
                   res[UPDATE_FOCUS] = level.REFLOW;  // 没有样式变化但内容尺寸发生了变化强制执行
                   res[UPDATE_IMG] = true;  // 特殊标识强制布局即便没有style变化
+                  res[UPDATE_CONFIG] = self.__config;
                   root.__addUpdate(self, self.__config, root, root.__config, res);
                 },
               });

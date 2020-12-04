@@ -48,6 +48,7 @@ const { STYLE_KEY: {
   UPDATE_MEASURE,
   UPDATE_OVERWRITE,
   UPDATE_LIST,
+  UPDATE_CONFIG,
   NODE_TAG_NAME,
   NODE_CACHE_STYLE,
   NODE_CACHE_PROPS,
@@ -171,8 +172,8 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [UPDATE_MEASURE]: measure,
     [UPDATE_LIST]: list,
     [UPDATE_KEYS]: keys,
+    [UPDATE_CONFIG]: __config,
   } = target;
-  let __config = node.__config;
   if(__config[NODE_IS_DESTROYED]) {
     return;
   }
@@ -182,12 +183,13 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
   if(list && !component) {
+    keys = keys.slice(0); // 防止原始值被更改
     let hash = {};
     keys.forEach(k => {
       hash[k] = true;
     });
     list.forEach(item => {
-      let { [UPDATE_STYLE]: style, [UPDATE_OVERWRITE]: overwrite, [UPDATE_KEYS]: keys2 } = item;
+      let { [UPDATE_STYLE]: style2, [UPDATE_OVERWRITE]: overwrite, [UPDATE_KEYS]: keys2 } = item;
       keys2.forEach(k2 => {
         if(!hash.hasOwnProperty(k2)) {
           hash[k2] = true;
@@ -197,13 +199,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       if(overwrite) {
         Object.assign(__config[NODE_STYLE], overwrite);
       }
-      if(style) {
-        Object.assign(target[UPDATE_STYLE], style);
+      if(style2) {
+        Object.assign(style, style2);
       }
     });
   }
   // 按节点合并完style后判断改变等级
-  // let { tagName, currentStyle, currentProps, __cacheStyle, __cacheProps } = node;
   let {
     [NODE_TAG_NAME]: tagName,
     [NODE_CACHE_STYLE]: __cacheStyle,
@@ -704,6 +705,7 @@ class Root extends Dom {
                 res[UPDATE_FOCUS] = REFLOW;
                 res[UPDATE_MEASURE] = true;
                 res[UPDATE_COMPONENT] = true;
+                res[UPDATE_CONFIG] = sr.__config;
                 this.__addUpdate(sr, sr.__config, this, this.__config, res);
               });
             }

@@ -46,7 +46,7 @@ const { STYLE_KEY: {
   TEXT_ALIGN,
   MATRIX,
 },
-  UPDATE_NODE, UPDATE_STYLE, UPDATE_KEYS,
+  UPDATE_NODE, UPDATE_STYLE, UPDATE_KEYS, UPDATE_CONFIG,
   FRAME_STYLE,
   FRAME_TIME,
   FRAME_EASING,
@@ -83,7 +83,7 @@ function unify(frames, target) {
     Object.keys(style).forEach(k => {
       let v = style[k];
       // 空的过滤掉
-      if(!isNil(v) && !hash.hasOwnProperty(k)) {
+      if(v !== undefined && !hash.hasOwnProperty(k)) {
         hash[k] = true;
         if(!GEOM.hasOwnProperty(k)) {
           k = parseInt(k);
@@ -158,7 +158,8 @@ function genBeforeRefresh(style, keys, __config, root, node) {
   let res = {};
   res[UPDATE_NODE] = node;
   res[UPDATE_STYLE] = style;
-  res[UPDATE_KEYS] = keys.slice(0);
+  res[UPDATE_KEYS] = keys;
+  res[UPDATE_CONFIG] = __config[I_NODE_CONFIG];
   root.__addUpdate(node, __config[I_NODE_CONFIG], root, __config[I_ROOT_CONFIG], res);
   __config[I_STYLE] = style;
   __config[I_ASSIGNING] = true;

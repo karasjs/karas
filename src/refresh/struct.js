@@ -582,7 +582,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       let need;
       // <是父节点
       if(lv < prevLv) {
-        prevLv = lv;
         // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
         if(visibility !== 'hidden' && __hasContent) {
           hash[lv] = hash[lv] || 0;
@@ -625,6 +624,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
           hash[lv - 1]++;
         }
       }
+      prevLv = lv;
       if(need) {
         // 有老的直接使用，没有才重新生成
         if(__cacheTotal && __cacheTotal.available) {

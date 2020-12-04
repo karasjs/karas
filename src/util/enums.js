@@ -119,6 +119,7 @@ const UPDATE_IMG = 5;
 const UPDATE_OVERWRITE = 6;
 const UPDATE_KEYS = 7;
 const UPDATE_LIST = 8;
+const UPDATE_CONFIG = 9;
 
 const FRAME_STYLE = 0;
 const FRAME_TIME = 1;
@@ -175,6 +176,7 @@ export default {
   UPDATE_OVERWRITE,
   UPDATE_KEYS,
   UPDATE_LIST,
+  UPDATE_CONFIG,
   // Animation的frame使用
   FRAME_STYLE,
   FRAME_TIME,

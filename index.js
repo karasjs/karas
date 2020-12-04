@@ -358,6 +358,7 @@
   var UPDATE_OVERWRITE = 6;
   var UPDATE_KEYS = 7;
   var UPDATE_LIST = 8;
+  var UPDATE_CONFIG = 9;
   var FRAME_STYLE = 0;
   var FRAME_TIME = 1;
   var FRAME_EASING = 2;
@@ -410,6 +411,7 @@
     UPDATE_OVERWRITE: UPDATE_OVERWRITE,
     UPDATE_KEYS: UPDATE_KEYS,
     UPDATE_LIST: UPDATE_LIST,
+    UPDATE_CONFIG: UPDATE_CONFIG,
     // Animation的frame使用
     FRAME_STYLE: FRAME_STYLE,
     FRAME_TIME: FRAME_TIME,
@@ -8918,6 +8920,7 @@
       UPDATE_NODE$1 = enums.UPDATE_NODE,
       UPDATE_STYLE$1 = enums.UPDATE_STYLE,
       UPDATE_KEYS$1 = enums.UPDATE_KEYS,
+      UPDATE_CONFIG$1 = enums.UPDATE_CONFIG,
       FRAME_STYLE$1 = enums.FRAME_STYLE,
       FRAME_TIME$1 = enums.FRAME_TIME,
       FRAME_EASING$1 = enums.FRAME_EASING,
@@ -8957,7 +8960,7 @@
       Object.keys(style).forEach(function (k) {
         var v = style[k]; // 空的过滤掉
 
-        if (!isNil$4(v) && !hash.hasOwnProperty(k)) {
+        if (v !== undefined && !hash.hasOwnProperty(k)) {
           hash[k] = true;
 
           if (!GEOM$3.hasOwnProperty(k)) {
@@ -9031,7 +9034,8 @@
     var res = {};
     res[UPDATE_NODE$1] = node;
     res[UPDATE_STYLE$1] = style;
-    res[UPDATE_KEYS$1] = keys.slice(0);
+    res[UPDATE_KEYS$1] = keys;
+    res[UPDATE_CONFIG$1] = __config[I_NODE_CONFIG];
 
     root.__addUpdate(node, __config[I_NODE_CONFIG], root, __config[I_ROOT_CONFIG], res);
 
@@ -11921,6 +11925,7 @@
       UPDATE_STYLE$2 = enums.UPDATE_STYLE,
       UPDATE_OVERWRITE$1 = enums.UPDATE_OVERWRITE,
       UPDATE_KEYS$2 = enums.UPDATE_KEYS,
+      UPDATE_CONFIG$2 = enums.UPDATE_CONFIG,
       NODE_TAG_NAME$1 = enums.NODE_TAG_NAME,
       NODE_CACHE_STYLE$1 = enums.NODE_CACHE_STYLE,
       NODE_CURRENT_STYLE$1 = enums.NODE_CURRENT_STYLE,
@@ -11953,6 +11958,7 @@
   var calRelative$1 = css.calRelative;
   var canvasPolygon$1 = painter.canvasPolygon,
       svgPolygon$1 = painter.svgPolygon;
+  var GEOM$4 = o.GEOM;
   var contain = o$1.contain,
       NONE = o$1.NONE,
       TRANSFORM_ALL = o$1.TRANSFORM_ALL,
@@ -12890,7 +12896,8 @@
             __cacheStyle[BACKGROUND_POSITION_X$2] = true;
             var bgX = currentStyle[BACKGROUND_POSITION_X$2];
             computedStyle[BACKGROUND_POSITION_X$2] = bgX[1] === PX$4 ? bgX[0] : bgX[0] + '%';
-          }
+          } // console.log(currentStyle[BACKGROUND_POSITION_X],currentStyle[BACKGROUND_POSITION_Y])
+
 
           if (__cacheStyle[BACKGROUND_POSITION_Y$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_Y$2] = true;
@@ -12935,6 +12942,7 @@
                         var res = {};
                         res[UPDATE_NODE$2] = node;
                         res[UPDATE_FOCUS$1] = REPAINT$1;
+                        res[UPDATE_CONFIG$2] = node.__config;
 
                         root.__addUpdate(node, node.__config, root, root.__config, res);
                       }
@@ -14079,7 +14087,8 @@
       key: "updateStyle",
       value: function updateStyle(style, cb) {
         var tagName = this.tagName,
-            root = this.root;
+            root = this.root,
+            __config = this.__config;
 
         if (root) {
           var hasChange; // 先去掉无用和缩写
@@ -14127,10 +14136,15 @@
               res[UPDATE_OVERWRITE$1] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
 
               res[UPDATE_KEYS$2] = Object.keys(formatStyle).map(function (i) {
-                return parseInt(i);
-              });
+                if (!GEOM$4.hasOwnProperty(i)) {
+                  i = parseInt(i);
+                }
 
-              root.__addUpdate(node, node.__config, root, root.__config, res);
+                return i;
+              });
+              res[UPDATE_CONFIG$2] = __config;
+
+              root.__addUpdate(node, __config, root, root.__config, res);
             },
             __after: function __after(diff) {
               if (util.isFunction(cb)) {
@@ -14142,7 +14156,9 @@
       }
     }, {
       key: "animate",
-      value: function animate(list, options) {
+      value: function animate(list) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
         if (this.isDestroyed) {
           return;
         }
@@ -16942,7 +16958,8 @@
       VISIBILITY$3 = _enums$STYLE_KEY$b.VISIBILITY,
       UPDATE_NODE$3 = enums.UPDATE_NODE,
       UPDATE_FOCUS$2 = enums.UPDATE_FOCUS,
-      UPDATE_IMG$1 = enums.UPDATE_IMG;
+      UPDATE_IMG$1 = enums.UPDATE_IMG,
+      UPDATE_CONFIG$3 = enums.UPDATE_CONFIG;
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -17282,6 +17299,7 @@
                       var res = {};
                       res[UPDATE_NODE$3] = self;
                       res[UPDATE_FOCUS$2] = o$1.REPAINT;
+                      res[UPDATE_CONFIG$3] = self.__config;
 
                       root.__addUpdate(self, self.__config, root, root.__config, res);
                     }
@@ -17299,6 +17317,8 @@
                       res[UPDATE_FOCUS$2] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
 
                       res[UPDATE_IMG$1] = true; // 特殊标识强制布局即便没有style变化
+
+                      res[UPDATE_CONFIG$3] = self.__config;
 
                       root.__addUpdate(self, self.__config, root, root.__config, res);
                     }
@@ -19678,8 +19698,7 @@
         var need = void 0; // <是父节点
 
         if (lv < prevLv) {
-          prevLv = lv; // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
-
+          // 只有这里代表自己的内容，其它的情况不能确定一定是叶子节点，虽然没内容不可见可能有total
           if (visibility !== 'hidden' && __hasContent) {
             hash[lv] = hash[lv] || 0;
             hash[lv]++;
@@ -19709,6 +19728,8 @@
               hash[lv - 1]++;
             }
           }
+
+        prevLv = lv;
 
         if (need) {
           // 有老的直接使用，没有才重新生成
@@ -20712,6 +20733,7 @@
       UPDATE_MEASURE$1 = enums.UPDATE_MEASURE,
       UPDATE_OVERWRITE$2 = enums.UPDATE_OVERWRITE,
       UPDATE_LIST$1 = enums.UPDATE_LIST,
+      UPDATE_CONFIG$4 = enums.UPDATE_CONFIG,
       NODE_TAG_NAME$2 = enums.NODE_TAG_NAME,
       NODE_CACHE_STYLE$2 = enums.NODE_CACHE_STYLE,
       NODE_CACHE_PROPS$2 = enums.NODE_CACHE_PROPS,
@@ -20854,8 +20876,8 @@
         component = target[UPDATE_COMPONENT$1],
         measure = target[UPDATE_MEASURE$1],
         list = target[UPDATE_LIST$1],
-        keys = target[UPDATE_KEYS$3];
-    var __config = node.__config;
+        keys = target[UPDATE_KEYS$3],
+        __config = target[UPDATE_CONFIG$4];
 
     if (__config[NODE_IS_DESTROYED$2]) {
       return;
@@ -20868,12 +20890,14 @@
 
 
     if (list && !component) {
+      keys = keys.slice(0); // 防止原始值被更改
+
       var hash = {};
       keys.forEach(function (k) {
         hash[k] = true;
       });
       list.forEach(function (item) {
-        var style = item[UPDATE_STYLE$3],
+        var style2 = item[UPDATE_STYLE$3],
             overwrite = item[UPDATE_OVERWRITE$2],
             keys2 = item[UPDATE_KEYS$3];
         keys2.forEach(function (k2) {
@@ -20887,12 +20911,11 @@
           Object.assign(__config[NODE_STYLE$4], overwrite);
         }
 
-        if (style) {
-          Object.assign(target[UPDATE_STYLE$3], style);
+        if (style2) {
+          Object.assign(style, style2);
         }
       });
     } // 按节点合并完style后判断改变等级
-    // let { tagName, currentStyle, currentProps, __cacheStyle, __cacheProps } = node;
 
 
     var tagName = __config[NODE_TAG_NAME$2],
@@ -21514,6 +21537,7 @@
                     res[UPDATE_FOCUS$3] = REFLOW$1;
                     res[UPDATE_MEASURE$1] = true;
                     res[UPDATE_COMPONENT$1] = true;
+                    res[UPDATE_CONFIG$4] = sr.__config;
 
                     _this3.__addUpdate(sr, sr.__config, _this3, _this3.__config, res);
                   });
@@ -25258,7 +25282,7 @@
     Cache: Cache
   };
 
-  var version = "0.43.0";
+  var version = "0.42.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

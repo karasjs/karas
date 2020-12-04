@@ -83,7 +83,7 @@ const { STYLE_KEY, STYLE_RV_KEY, style2Upper, STYLE_KEY: {
   BORDER_BOTTOM,
   BORDER_LEFT,
 },
-  UPDATE_NODE, UPDATE_FOCUS, UPDATE_STYLE, UPDATE_OVERWRITE, UPDATE_KEYS,
+  UPDATE_NODE, UPDATE_FOCUS, UPDATE_STYLE, UPDATE_OVERWRITE, UPDATE_KEYS, UPDATE_CONFIG,
   NODE_TAG_NAME, NODE_CACHE_STYLE, NODE_CURRENT_STYLE, NODE_COMPUTED_STYLE, NODE_STYLE,
   NODE_STRUCT, NODE_OPACITY, NODE_MATRIX_EVENT, NODE_MATRIX, NODE_IS_DESTROYED,
   NODE_LIMIT_CACHE, NODE_BLUR_VALUE, NODE_HAS_CONTENT, NODE_REFRESH_LV,
@@ -93,6 +93,7 @@ const { AUTO, PX, PERCENT, STRING, INHERIT } = unit;
 const { clone, int2rgba, rgba2int, joinArr, isNil } = util;
 const { calRelative } = css;
 const { canvasPolygon, svgPolygon } = painter;
+const { GEOM } = change;
 
 const {
   contain,
@@ -1176,6 +1177,7 @@ class Xom extends Node {
         } = currentStyle;
         computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
       }
+      // console.log(currentStyle[BACKGROUND_POSITION_X],currentStyle[BACKGROUND_POSITION_Y])
       if(__cacheStyle[BACKGROUND_POSITION_Y] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_Y] = true;
         let {
@@ -1219,6 +1221,7 @@ class Xom extends Node {
                     let res = {};
                     res[UPDATE_NODE] = node;
                     res[UPDATE_FOCUS] = REPAINT;
+                    res[UPDATE_CONFIG] = node.__config;
                     root.__addUpdate(node, node.__config, root, root.__config, res);
                   },
                 });
@@ -2290,7 +2293,7 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { tagName, root } = this;
+    let { tagName, root, __config } = this;
     if(root) {
       let hasChange;
       // 先去掉无用和缩写
@@ -2332,8 +2335,14 @@ class Xom extends Node {
           res[UPDATE_NODE] = node;
           res[UPDATE_STYLE] = formatStyle;
           res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
-          res[UPDATE_KEYS] = Object.keys(formatStyle).map(i => parseInt(i));
-          root.__addUpdate(node, node.__config, root, root.__config, res);
+          res[UPDATE_KEYS] = Object.keys(formatStyle).map(i => {
+            if(!GEOM.hasOwnProperty(i)) {
+              i = parseInt(i);
+            }
+            return i;
+          });
+          res[UPDATE_CONFIG] = __config;
+          root.__addUpdate(node, __config, root, root.__config, res);
         },
         __after(diff) {
           if(util.isFunction(cb)) {
@@ -2344,7 +2353,7 @@ class Xom extends Node {
     }
   }
 
-  animate(list, options) {
+  animate(list, options = {}) {
     if(this.isDestroyed) {
       return;
     }

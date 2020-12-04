@@ -20,53 +20,60 @@ import change from '../refresh/change';
 import level from '../refresh/level';
 import struct from '../refresh/struct';
 
-const { STYLE_KEY: {
-  TOP,
-  RIGHT,
-  BOTTOM,
-  LEFT,
-  POSITION,
-  DISPLAY,
-  VISIBILITY,
-  COLOR,
-  WIDTH,
-  HEIGHT,
-  Z_INDEX,
-  MARGIN_TOP,
-  MARGIN_LEFT,
-  PADDING_TOP,
-  PADDING_LEFT,
-  BORDER_TOP_WIDTH,
-  BORDER_LEFT_WIDTH,
-},
-  UPDATE_NODE,
-  UPDATE_STYLE,
-  UPDATE_KEYS,
-  UPDATE_COMPONENT,
-  UPDATE_FOCUS,
-  UPDATE_IMG,
-  UPDATE_MEASURE,
-  UPDATE_OVERWRITE,
-  UPDATE_LIST,
-  UPDATE_CONFIG,
-  NODE_TAG_NAME,
-  NODE_CACHE_STYLE,
-  NODE_CACHE_PROPS,
-  NODE_CURRENT_STYLE,
-  NODE_CURRENT_PROPS,
-  NODE_DOM_PARENT,
-  NODE_IS_MASK,
-  NODE_REFRESH_LV,
-  NODE_IS_DESTROYED,
-  NODE_STYLE,
-  NODE_UPDATE_HASH,
-  NODE_UNIQUE_UPDATE_ID,
-  NODE_CACHE_FILTER,
-  NODE_CACHE_OVERFLOW,
-  NODE_CACHE_MASK,
-  STRUCT_INDEX,
-  STRUCT_TOTAL,
-  STRUCT_NODE,
+const {
+  STYLE_KEY: {
+    TOP,
+    RIGHT,
+    BOTTOM,
+    LEFT,
+    POSITION,
+    DISPLAY,
+    VISIBILITY,
+    COLOR,
+    WIDTH,
+    HEIGHT,
+    Z_INDEX,
+    MARGIN_TOP,
+    MARGIN_LEFT,
+    PADDING_TOP,
+    PADDING_LEFT,
+    BORDER_TOP_WIDTH,
+    BORDER_LEFT_WIDTH,
+  },
+  UPDATE_KEY: {
+    UPDATE_NODE,
+    UPDATE_STYLE,
+    UPDATE_KEYS,
+    UPDATE_COMPONENT,
+    UPDATE_FOCUS,
+    UPDATE_IMG,
+    UPDATE_MEASURE,
+    UPDATE_OVERWRITE,
+    UPDATE_LIST,
+    UPDATE_CONFIG,
+  },
+  NODE_KEY: {
+    NODE_TAG_NAME,
+    NODE_CACHE_STYLE,
+    NODE_CACHE_PROPS,
+    NODE_CURRENT_STYLE,
+    NODE_CURRENT_PROPS,
+    NODE_DOM_PARENT,
+    NODE_IS_MASK,
+    NODE_REFRESH_LV,
+    NODE_IS_DESTROYED,
+    NODE_STYLE,
+    NODE_UPDATE_HASH,
+    NODE_UNIQUE_UPDATE_ID,
+    NODE_CACHE_FILTER,
+    NODE_CACHE_OVERFLOW,
+    NODE_CACHE_MASK,
+  },
+  STRUCT_KEY: {
+    STRUCT_INDEX,
+    STRUCT_TOTAL,
+    STRUCT_NODE,
+  }
 } = enums;
 const DIRECTION_HASH = {
   [TOP]: true,
@@ -271,7 +278,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 无任何改变处理的去除记录，如pointerEvents、无效的left
   if(lv === NONE && !component) {
-    delete node.__config[NODE_UNIQUE_UPDATE_ID];
+    delete __config[NODE_UNIQUE_UPDATE_ID];
     return;
   }
   // 记录下来清除parent的zIndexChildren缓存
@@ -281,7 +288,6 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   // visibility/color变化，影响子继承
   if(hasVisibility || hasColor) {
     for(let __structs = root.__structs, __struct = node.__struct, i = __struct[STRUCT_INDEX] + 1, len = i + __struct[STRUCT_TOTAL]; i < len; i++) {
-      // let { node, node: { __config, currentStyle }, total } = __structs[i];
       let {
         [STRUCT_NODE]: node,
         [STRUCT_TOTAL]: total,
@@ -931,7 +937,7 @@ class Root extends Dom {
     });
     // 做完清空留待下次刷新重来
     for(let i = 0, len = keys.length; i < len; i++) {
-      delete updateHash[keys[i]][UPDATE_NODE].__config[NODE_UNIQUE_UPDATE_ID];
+      delete updateHash[keys[i]][UPDATE_CONFIG][NODE_UNIQUE_UPDATE_ID];
     }
     return hasUpdate;
   }

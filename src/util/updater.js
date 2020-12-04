@@ -3,7 +3,7 @@ import builder from './builder';
 import $$type from './$$type';
 import enums from './enums';
 
-const { NODE_COMPUTED_STYLE, NODE_DOM_PARENT, NODE_MATRIX_EVENT } = enums;
+const { NODE_KEY: { NODE_COMPUTED_STYLE, NODE_DOM_PARENT, NODE_MATRIX_EVENT } } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;

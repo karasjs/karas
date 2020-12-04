@@ -1,11 +1,15 @@
 import enums from '../util/enums';
 
 const {
-  STRUCT_NODE,
-  STRUCT_INDEX,
-  STRUCT_CHILD_INDEX,
-  STRUCT_LV,
-  NODE_IS_DESTROYED,
+  STRUCT_KEY: {
+    STRUCT_NODE,
+    STRUCT_INDEX,
+    STRUCT_CHILD_INDEX,
+    STRUCT_LV,
+  },
+  NODE_KEY: {
+    NODE_IS_DESTROYED,
+  },
 } = enums;
 
 class Node {

@@ -3,7 +3,7 @@ import util from './util';
 import $$type from './$$type';
 import enums from './enums';
 
-const { NODE_DOM_PARENT } = enums;
+const { NODE_KEY: { NODE_DOM_PARENT } } = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;

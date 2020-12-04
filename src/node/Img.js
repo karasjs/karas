@@ -10,22 +10,30 @@ import border from '../style/border';
 import enums from '../util/enums';
 import level from '../refresh/level';
 
-const { STYLE_KEY: {
-  WIDTH,
-  HEIGHT,
-  DISPLAY,
-  BORDER_TOP_WIDTH,
-  BORDER_RIGHT_WIDTH,
-  BORDER_LEFT_WIDTH,
-  BORDER_BOTTOM_WIDTH,
-  PADDING_TOP,
-  PADDING_LEFT,
-  BORDER_TOP_LEFT_RADIUS,
-  BORDER_TOP_RIGHT_RADIUS,
-  BORDER_BOTTOM_RIGHT_RADIUS,
-  BORDER_BOTTOM_LEFT_RADIUS,
-  VISIBILITY,
-}, UPDATE_NODE, UPDATE_FOCUS, UPDATE_IMG, UPDATE_CONFIG } = enums;
+const {
+  STYLE_KEY: {
+    WIDTH,
+    HEIGHT,
+    DISPLAY,
+    BORDER_TOP_WIDTH,
+    BORDER_RIGHT_WIDTH,
+    BORDER_LEFT_WIDTH,
+    BORDER_BOTTOM_WIDTH,
+    PADDING_TOP,
+    PADDING_LEFT,
+    BORDER_TOP_LEFT_RADIUS,
+    BORDER_TOP_RIGHT_RADIUS,
+    BORDER_BOTTOM_RIGHT_RADIUS,
+    BORDER_BOTTOM_LEFT_RADIUS,
+    VISIBILITY,
+  },
+  UPDATE_KEY: {
+    UPDATE_NODE,
+    UPDATE_FOCUS,
+    UPDATE_IMG,
+    UPDATE_CONFIG,
+  },
+} = enums;
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
 

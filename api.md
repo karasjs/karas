@@ -532,7 +532,7 @@ karas.render(
 ### 类属性property
 
 #### src
-* **类型** `string` 只读
+* **类型** `String` 只读
 * **说明**  
 图片的url。
 
@@ -546,7 +546,7 @@ karas.render(
 ### html属性attribute
 
 #### placeholder
-* **类型** `string`
+* **类型** `String`
 * **说明**  
 当图片加载失败时，是否显示设置的占位图。占位图如果再次加载失败，则不展示。
 
@@ -1579,7 +1579,118 @@ karas.render(
 
 <a name="注入"></a>
 ## 注入
-在小程序、native等特殊环境下，一些必要的属性或方法和浏览器环境下不同，因此抽象出来这一部分作为可注入的实现。此举是面向框架开发维护人员的，普通开发者无需关注。
+在小程序、native等特殊环境下，一些必要的属性或方法和浏览器环境下不同，因此抽象出来这一部分作为可注入的实现。大部分是面向框架开发维护人员的，普通开发者无需关注。
+
+### measureImg
+* **类型** `Function`
+* **参数**
+  * url `String/Array<String>`
+  * cb `Function`
+* **说明**  
+加载并测量图片信息，成功或失败后回调。
+* **示例**
+```jsx
+karas.inject.measureImg('http://xxx', function(cache) {
+  console.log(cache);
+});
+```
+
+### IMG
+* **类型** `Object`
+* **说明**  
+测量图片信息hash保存。
+
+### INIT
+* **类型** `int`
+* **说明**  
+测量图片信息状态枚举。
+
+### LOADED
+* **类型** `int`
+* **说明**  
+测量图片信息状态枚举。
+
+### LOADING
+* **类型** `int`
+* **说明**  
+测量图片信息状态枚举。
+
+### isDom
+* **类型** `Function`
+* **参数**
+  * target `Object`
+* **说明**  
+判断参数是否是个真实Dom节点。
+* **示例**
+```jsx
+karas.inject.isDom(document.body);
+```
+
+### now
+* **类型** `Function`
+* **说明**  
+返回当前时间，整型，优先`performance`，其次`Date`。
+* **示例**
+```jsx
+karas.inject.now();
+```
+
+### requestAnimationFrame
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+* **说明**  
+下帧执行回调，返回执行id。
+* **示例**
+```jsx
+karas.inject.requestAnimationFrame(function() {
+  console.log('next');
+});
+```
+
+### cancelAnimationFrame
+* **类型** `Function`
+* **参数**
+  * cb `Function`
+* **说明**  
+取消下帧执行回调。
+* **示例**
+```jsx
+let id = karas.inject.requestAnimationFrame(function() {
+  console.log('next');
+});
+karas.inject.cancelAnimationFrame(id);
+```
+
+### getCacheCanvas
+* **类型** `Function`
+* **参数**
+  * width `Number`
+  * height `Number`
+  * key `String`
+* **说明**  
+从缓存池中获取指定高宽的离屏canvas缓存，如果指定key，则为唯一实例，否则自动从缓存列表中存取。
+
+### delCacheCanvas
+* **类型** `Function`
+* **参数**
+  * key `String`
+* **说明**  
+删除离屏canvas缓存实例。
+
+### releaseCacheCanvas
+* **类型** `Function`
+* **参数**
+  * target `CANVAS`
+* **说明**  
+回收离屏canvas到缓存池中。
+
+### hasCacheWebgl
+* **类型** `Function`
+* **参数**
+  * key `String`
+* **说明**  
+缓存池中是否存在指定key的离屏canvas缓存。
 
 <a name="style包"></a>
 ## style包

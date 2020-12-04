@@ -1265,8 +1265,8 @@ karas.render(
 ```jsx
 karas.render(
   <canvas>
-    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height:100}}/>
-    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height:100}} multi={true}/>
+    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
+    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
   </canvas>,
   '#selector'
 );
@@ -1275,12 +1275,13 @@ karas.render(
 #### isMask
 * **类型** `boolean` 只读
 * **说明**  
-当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。
+当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。它将作用于上一个相邻的兄弟[Xom](#Xom)节点，对[Text](#Text)不起作用。
 * **示例**
 ```jsx
 karas.render(
   <canvas>
-    <$rect style={{width: 100, height:100}} mask={true}/>
+    <div style={{width: 200, height: 200, background: '#F00'}}/>
+    <$rect style={{width: 100, height: 100}} mask={true}/>
   </canvas>,
   '#selector'
 );
@@ -1294,7 +1295,7 @@ karas.render(
 ```jsx
 karas.render(
   <canvas>
-    <$rect style={{width: 100, height:100}} clip={true}/>
+    <$rect style={{width: 100, height: 100}} clip={true}/>
   </canvas>,
   '#selector'
 );
@@ -2262,7 +2263,8 @@ class Component extends karas.Component {
 karas.render(
   <canvas>
     <div>
-      <Component style={{color:'#F00'}} onClick={() => console.log('outer click')}/>
+      <Component style={{color: '#F00'}}
+                 onClick={() => console.log('outer click')}/>
     </div>
   </canvas>,
   '#selector'

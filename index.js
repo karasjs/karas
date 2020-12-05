@@ -3304,6 +3304,10 @@
         }
 
         img.src = url;
+
+        if (typeof karas !== 'undefined' && karas.debug) {
+          document.body.appendChild(img);
+        }
       }
     },
     warn: function warn(s) {

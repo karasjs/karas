@@ -1,3 +1,5 @@
+import inject from '../util/inject';
+
 const VERTEX = `
 attribute vec2 aVertexPosition;
 attribute vec2 aTextureCoord;
@@ -46,7 +48,7 @@ void main(void)
 function initShaders(gl, vshader, fshader) {
   let program = createProgram(gl, vshader, fshader);
   if (!program) {
-    console.error('Failed to create program');
+    inject.error('Failed to create program');
     return false;
   }
 
@@ -76,7 +78,7 @@ function createProgram(gl, vshader, fshader) {
   let linked = gl.getProgramParameter(program, gl.LINK_STATUS);
   if (!linked) {
     let error = gl.getProgramInfoLog(program);
-    console.error('Failed to link program: ' + error);
+    inject.error('Failed to link program: ' + error);
     gl.deleteProgram(program);
     gl.deleteShader(fragmentShader);
     gl.deleteShader(vertexShader);
@@ -88,7 +90,7 @@ function createProgram(gl, vshader, fshader) {
 function loadShader(gl, type, source) {
   let shader = gl.createShader(type);
   if (shader == null) {
-    console.error('unable to create shader');
+    inject.error('unable to create shader');
     return null;
   }
 
@@ -99,7 +101,7 @@ function loadShader(gl, type, source) {
   let compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (!compiled) {
     let error = gl.getShaderInfoLog(shader);
-    console.error('Failed to compile shader: ' + error);
+    inject.error('Failed to compile shader: ' + error);
     gl.deleteShader(shader);
     return null;
   }

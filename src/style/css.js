@@ -6,6 +6,7 @@ import reset from './reset';
 import abbr from './abbr';
 import enums from '../util/enums';
 import util from '../util/util';
+import inject from '../util/inject';
 import key from '../animate/key';
 import change from '../refresh/change';
 
@@ -224,7 +225,7 @@ function normalize(style, reset = []) {
   ].forEach(k => {
     let v = style[k];
     if(!isNil(v) && style.transform) {
-      console.warn(`Can not use expand style "${k}" with transform`);
+      inject.warn(`Can not use expand style "${k}" with transform`);
     }
   });
   // 默认reset，根据传入不同，当style为空时覆盖

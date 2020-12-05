@@ -3096,6 +3096,329 @@
     }
   };
 
+  var _enums$STYLE_KEY = enums.STYLE_KEY,
+      FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE,
+      FONT_FAMILY = _enums$STYLE_KEY.FONT_FAMILY,
+      FONT_WEIGHT = _enums$STYLE_KEY.FONT_WEIGHT;
+  var SPF = 1000 / 60;
+  var CANVAS = {};
+  var WEBGL = {};
+  var CANVAS_LIST = [];
+  var WEBGL_LIST = [];
+
+  function cache(key, width, height, hash, message) {
+    var o;
+
+    if (!key) {
+      var target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
+
+      if (target.length) {
+        o = target.pop();
+      } else {
+        o = document.createElement('canvas');
+      }
+    } else if (!hash[key]) {
+      o = hash[key] = document.createElement('canvas');
+    } else {
+      o = hash[key];
+    } // o.setAttribute('width', width + 'px');
+    // o.setAttribute('height', height + 'px');
+
+
+    o.width = width;
+    o.height = height;
+
+    if (typeof karas !== 'undefined' && karas.debug) {
+      o.style.width = width + 'px';
+      o.style.height = height + 'px';
+      o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
+
+      if (key) {
+        o.setAttribute('key', key);
+      }
+
+      if (message) {
+        o.setAttribute('message', message);
+      }
+
+      document.body.appendChild(o);
+    }
+
+    return {
+      canvas: o,
+      ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
+      draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
+      },
+      available: true,
+      release: function release() {
+        if (hash === CANVAS) {
+          CANVAS_LIST.push(this.canvas);
+        } else {
+          WEBGL_LIST.push(this.canvas);
+        }
+
+        this.canvas = null;
+        this.ctx = null;
+      }
+    };
+  }
+
+  function cacheCanvas(key, width, height, message) {
+    return cache(key, width, height, CANVAS, message);
+  }
+
+  function cacheWebgl(key, width, height, message) {
+    return cache(key, width, height, WEBGL, message);
+  }
+
+  var IMG = {};
+  var INIT = 0;
+  var LOADING = 1;
+  var LOADED = 2;
+  var inject = {
+    measureText: function measureText() {
+      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
+          list = _Text$MEASURE_TEXT.list,
+          data = _Text$MEASURE_TEXT.data;
+      var html = '';
+      var keys = [];
+      var chars = [];
+      Object.keys(data).forEach(function (i) {
+        var _data$i = data[i],
+            key = _data$i.key,
+            style = _data$i.style,
+            s = _data$i.s;
+
+        if (s) {
+          var inline = "position:absolute;font-family:".concat(style[FONT_FAMILY], ";font-size:").concat(style[FONT_SIZE], "px;font-weight:").concat(style[FONT_WEIGHT]);
+
+          for (var j = 0, len = s.length; j < len; j++) {
+            keys.push(key);
+
+            var _char = s.charAt(j);
+
+            chars.push(_char);
+            html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;').replace(' ', '&nbsp;'), "</span>");
+          }
+        }
+      });
+
+      if (!html) {
+        return;
+      }
+
+      var div = document.createElement('div');
+      div.style.position = 'absolute';
+      div.style.left = '99999px';
+      div.style.top = '-99999px';
+      div.style.visibility = 'hidden';
+      document.body.appendChild(div);
+      div.innerHTML = html;
+      var cns = div.childNodes;
+      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
+          MEASURE_TEXT = Text.MEASURE_TEXT;
+
+      for (var i = 0, len = cns.length; i < len; i++) {
+        var node = cns[i];
+        var key = keys[i];
+        var _char2 = chars[i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
+
+        var css = window.getComputedStyle(node, null);
+        CHAR_WIDTH_CACHE[key][_char2] = parseFloat(css.width);
+      }
+
+      list.forEach(function (text) {
+        return text.__measureCb();
+      });
+      MEASURE_TEXT.list = [];
+      MEASURE_TEXT.data = {};
+      document.body.removeChild(div);
+    },
+    IMG: IMG,
+    INIT: INIT,
+    LOADED: LOADED,
+    LOADING: LOADING,
+    measureImg: function measureImg(url, cb) {
+      if (Array.isArray(url)) {
+        var count = 0;
+        var len = url.length;
+        var list = [];
+        url.forEach(function (item, i) {
+          inject.measureImg(item, function (cache) {
+            list[i] = cache;
+
+            if (++count === len) {
+              cb(list);
+            }
+          });
+        });
+        return;
+      }
+
+      var cache = IMG[url] = IMG[url] || {
+        state: INIT,
+        task: []
+      };
+
+      if (cache.state === LOADED) {
+        cb(cache);
+      } else if (cache.state === LOADING) {
+        cache.task.push(cb);
+      } else {
+        cache.state = LOADING;
+        cache.task.push(cb);
+        var img = new Image();
+
+        img.onload = function () {
+          cache.state = LOADED;
+          cache.success = true;
+          cache.width = img.width;
+          cache.height = img.height;
+          cache.source = img;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        img.onerror = function (e) {
+          inject.error('Measure img failed: ' + url);
+          cache.state = LOADED;
+          cache.success = false;
+          cache.url = url;
+          var list = cache.task.splice(0);
+          list.forEach(function (cb) {
+            return cb(cache);
+          });
+        };
+
+        if (url.substr(0, 5) !== 'data:') {
+          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
+
+          if (host) {
+            if (location.hostname !== host[1]) {
+              img.crossOrigin = 'anonymous';
+            }
+          }
+        }
+
+        img.src = url;
+      }
+    },
+    warn: function warn(s) {
+      console.warn(s);
+    },
+    error: function error(s) {
+      console.error(s);
+    },
+    requestAnimationFrame: function (_requestAnimationFrame) {
+      function requestAnimationFrame(_x) {
+        return _requestAnimationFrame.apply(this, arguments);
+      }
+
+      requestAnimationFrame.toString = function () {
+        return _requestAnimationFrame.toString();
+      };
+
+      return requestAnimationFrame;
+    }(function (cb) {
+      var res;
+
+      if (typeof requestAnimationFrame !== 'undefined') {
+        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
+        res = requestAnimationFrame(cb);
+      } else {
+        res = setTimeout(cb, SPF);
+
+        inject.requestAnimationFrame = function (cb) {
+          return setTimeout(cb, SPF);
+        };
+      }
+
+      return res;
+    }),
+    cancelAnimationFrame: function (_cancelAnimationFrame) {
+      function cancelAnimationFrame(_x2) {
+        return _cancelAnimationFrame.apply(this, arguments);
+      }
+
+      cancelAnimationFrame.toString = function () {
+        return _cancelAnimationFrame.toString();
+      };
+
+      return cancelAnimationFrame;
+    }(function (id) {
+      var res;
+
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
+        res = cancelAnimationFrame(id);
+      } else {
+        res = clearTimeout(id);
+
+        inject.cancelAnimationFrame = function (id) {
+          return clearTimeout(id);
+        };
+      }
+
+      return res;
+    }),
+    now: function now() {
+      if (typeof performance !== 'undefined') {
+        inject.now = function () {
+          return Math.floor(performance.now());
+        };
+
+        return Math.floor(performance.now());
+      }
+
+      inject.now = Date.now.bind(Date);
+      return Date.now();
+    },
+    hasCacheCanvas: function hasCacheCanvas(key) {
+      return key && CANVAS.hasOwnProperty(key);
+    },
+    getCacheCanvas: function getCacheCanvas(width, height, key, message) {
+      return cacheCanvas(key, width, height, message);
+    },
+    releaseCacheCanvas: function releaseCacheCanvas(o) {
+      CANVAS_LIST.push(o);
+    },
+    delCacheCanvas: function delCacheCanvas(key) {
+      key && delete CANVAS[key];
+    },
+    hasCacheWebgl: function hasCacheWebgl(key) {
+      return key && WEBGL.hasOwnProperty(key);
+    },
+    getCacheWebgl: function getCacheWebgl(width, height, key, message) {
+      return cacheWebgl(key, width, height, message);
+    },
+    releaseCacheWebgl: function releaseCacheWebgl(o) {
+      WEBGL_LIST.push(o);
+    },
+    delCacheWebgl: function delCacheWebgl(key) {
+      key && delete WEBGL[key];
+    },
+    isDom: function isDom(o) {
+      if (o) {
+        if (util.isString(o)) {
+          return true;
+        }
+
+        if (typeof window !== 'undefined' && window.Element && o instanceof window.Element) {
+          return true;
+        }
+
+        if (util.isFunction(o.getElementsByTagName)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  };
+
   var STYLE_KEY$2 = enums.STYLE_KEY;
   var KEY_COLOR = [[STYLE_KEY$2.BACKGROUND_COLOR], [STYLE_KEY$2.BORDER_BOTTOM_COLOR], [STYLE_KEY$2.BORDER_LEFT_COLOR], [STYLE_KEY$2.BORDER_RIGHT_COLOR], [STYLE_KEY$2.BORDER_TOP_COLOR], [STYLE_KEY$2.COLOR]];
   var KEY_LENGTH = [[STYLE_KEY$2.FONT_SIZE], [STYLE_KEY$2.BORDER_BOTTOM_WIDTH], [STYLE_KEY$2.BORDER_LEFT_WIDTH], [STYLE_KEY$2.BORDER_RIGHT_WIDTH], [STYLE_KEY$2.BORDER_TOP_WIDTH], [STYLE_KEY$2.LEFT], [STYLE_KEY$2.TOP], [STYLE_KEY$2.RIGHT], [STYLE_KEY$2.BOTTOM], [STYLE_KEY$2.FLEX_BASIS], [STYLE_KEY$2.WIDTH], [STYLE_KEY$2.HEIGHT], [STYLE_KEY$2.LINE_HEIGHT], [STYLE_KEY$2.MARGIN_BOTTOM], [STYLE_KEY$2.MARGIN_LEFT], [STYLE_KEY$2.MARGIN_TOP], [STYLE_KEY$2.MARGIN_RIGHT], [STYLE_KEY$2.PADDING_TOP], [STYLE_KEY$2.PADDING_RIGHT], [STYLE_KEY$2.PADDING_BOTTOM], [STYLE_KEY$2.PADDING_LEFT], [STYLE_KEY$2.STROKE_WIDTH], [STYLE_KEY$2.STROKE_MITERLIMIT]];
@@ -3256,53 +3579,53 @@
   var STYLE_KEY$4 = enums.STYLE_KEY,
       STYLE_RV_KEY$1 = enums.STYLE_RV_KEY,
       style2Upper$1 = enums.style2Upper,
-      _enums$STYLE_KEY = enums.STYLE_KEY,
-      POSITION = _enums$STYLE_KEY.POSITION,
-      WIDTH = _enums$STYLE_KEY.WIDTH,
-      HEIGHT = _enums$STYLE_KEY.HEIGHT,
-      TRANSLATE_X = _enums$STYLE_KEY.TRANSLATE_X,
-      TRANSLATE_Y = _enums$STYLE_KEY.TRANSLATE_Y,
-      SCALE_X = _enums$STYLE_KEY.SCALE_X,
-      SCALE_Y = _enums$STYLE_KEY.SCALE_Y,
-      SKEW_X = _enums$STYLE_KEY.SKEW_X,
-      SKEW_Y = _enums$STYLE_KEY.SKEW_Y,
-      ROTATE_Z = _enums$STYLE_KEY.ROTATE_Z,
-      TRANSFORM$1 = _enums$STYLE_KEY.TRANSFORM,
-      TRANSFORM_ORIGIN = _enums$STYLE_KEY.TRANSFORM_ORIGIN,
-      BACKGROUND_IMAGE = _enums$STYLE_KEY.BACKGROUND_IMAGE,
-      BACKGROUND_COLOR = _enums$STYLE_KEY.BACKGROUND_COLOR,
-      BACKGROUND_POSITION_X = _enums$STYLE_KEY.BACKGROUND_POSITION_X,
-      BACKGROUND_POSITION_Y = _enums$STYLE_KEY.BACKGROUND_POSITION_Y,
-      BACKGROUND_SIZE = _enums$STYLE_KEY.BACKGROUND_SIZE,
-      OPACITY = _enums$STYLE_KEY.OPACITY,
-      Z_INDEX = _enums$STYLE_KEY.Z_INDEX,
-      COLOR = _enums$STYLE_KEY.COLOR,
-      FONT_SIZE = _enums$STYLE_KEY.FONT_SIZE,
-      FONT_FAMILY = _enums$STYLE_KEY.FONT_FAMILY,
-      FONT_WEIGHT = _enums$STYLE_KEY.FONT_WEIGHT,
-      FONT_STYLE = _enums$STYLE_KEY.FONT_STYLE,
-      LINE_HEIGHT = _enums$STYLE_KEY.LINE_HEIGHT,
-      TEXT_ALIGN = _enums$STYLE_KEY.TEXT_ALIGN,
-      FILTER = _enums$STYLE_KEY.FILTER,
-      VISIBILITY = _enums$STYLE_KEY.VISIBILITY,
-      BOX_SHADOW = _enums$STYLE_KEY.BOX_SHADOW,
-      POINTER_EVENTS = _enums$STYLE_KEY.POINTER_EVENTS,
-      FILL = _enums$STYLE_KEY.FILL,
-      STROKE = _enums$STYLE_KEY.STROKE,
-      STROKE_DASHARRAY = _enums$STYLE_KEY.STROKE_DASHARRAY,
-      BORDER_TOP_WIDTH = _enums$STYLE_KEY.BORDER_TOP_WIDTH,
-      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY.BORDER_RIGHT_WIDTH,
-      BORDER_BOTTOM_WIDTH = _enums$STYLE_KEY.BORDER_BOTTOM_WIDTH,
-      BORDER_LEFT_WIDTH = _enums$STYLE_KEY.BORDER_LEFT_WIDTH,
-      DISPLAY = _enums$STYLE_KEY.DISPLAY,
-      FLEX_DIRECTION = _enums$STYLE_KEY.FLEX_DIRECTION,
-      FLEX_GROW = _enums$STYLE_KEY.FLEX_GROW,
-      FLEX_SHRINK = _enums$STYLE_KEY.FLEX_SHRINK,
-      FLEX_BASIS = _enums$STYLE_KEY.FLEX_BASIS,
-      JUSTIFY_CONTENT = _enums$STYLE_KEY.JUSTIFY_CONTENT,
-      ALIGN_SELF = _enums$STYLE_KEY.ALIGN_SELF,
-      ALIGN_ITEMS = _enums$STYLE_KEY.ALIGN_ITEMS,
-      MATRIX = _enums$STYLE_KEY.MATRIX;
+      _enums$STYLE_KEY$1 = enums.STYLE_KEY,
+      POSITION = _enums$STYLE_KEY$1.POSITION,
+      WIDTH = _enums$STYLE_KEY$1.WIDTH,
+      HEIGHT = _enums$STYLE_KEY$1.HEIGHT,
+      TRANSLATE_X = _enums$STYLE_KEY$1.TRANSLATE_X,
+      TRANSLATE_Y = _enums$STYLE_KEY$1.TRANSLATE_Y,
+      SCALE_X = _enums$STYLE_KEY$1.SCALE_X,
+      SCALE_Y = _enums$STYLE_KEY$1.SCALE_Y,
+      SKEW_X = _enums$STYLE_KEY$1.SKEW_X,
+      SKEW_Y = _enums$STYLE_KEY$1.SKEW_Y,
+      ROTATE_Z = _enums$STYLE_KEY$1.ROTATE_Z,
+      TRANSFORM$1 = _enums$STYLE_KEY$1.TRANSFORM,
+      TRANSFORM_ORIGIN = _enums$STYLE_KEY$1.TRANSFORM_ORIGIN,
+      BACKGROUND_IMAGE = _enums$STYLE_KEY$1.BACKGROUND_IMAGE,
+      BACKGROUND_COLOR = _enums$STYLE_KEY$1.BACKGROUND_COLOR,
+      BACKGROUND_POSITION_X = _enums$STYLE_KEY$1.BACKGROUND_POSITION_X,
+      BACKGROUND_POSITION_Y = _enums$STYLE_KEY$1.BACKGROUND_POSITION_Y,
+      BACKGROUND_SIZE = _enums$STYLE_KEY$1.BACKGROUND_SIZE,
+      OPACITY = _enums$STYLE_KEY$1.OPACITY,
+      Z_INDEX = _enums$STYLE_KEY$1.Z_INDEX,
+      COLOR = _enums$STYLE_KEY$1.COLOR,
+      FONT_SIZE$1 = _enums$STYLE_KEY$1.FONT_SIZE,
+      FONT_FAMILY$1 = _enums$STYLE_KEY$1.FONT_FAMILY,
+      FONT_WEIGHT$1 = _enums$STYLE_KEY$1.FONT_WEIGHT,
+      FONT_STYLE = _enums$STYLE_KEY$1.FONT_STYLE,
+      LINE_HEIGHT = _enums$STYLE_KEY$1.LINE_HEIGHT,
+      TEXT_ALIGN = _enums$STYLE_KEY$1.TEXT_ALIGN,
+      FILTER = _enums$STYLE_KEY$1.FILTER,
+      VISIBILITY = _enums$STYLE_KEY$1.VISIBILITY,
+      BOX_SHADOW = _enums$STYLE_KEY$1.BOX_SHADOW,
+      POINTER_EVENTS = _enums$STYLE_KEY$1.POINTER_EVENTS,
+      FILL = _enums$STYLE_KEY$1.FILL,
+      STROKE = _enums$STYLE_KEY$1.STROKE,
+      STROKE_DASHARRAY = _enums$STYLE_KEY$1.STROKE_DASHARRAY,
+      BORDER_TOP_WIDTH = _enums$STYLE_KEY$1.BORDER_TOP_WIDTH,
+      BORDER_RIGHT_WIDTH = _enums$STYLE_KEY$1.BORDER_RIGHT_WIDTH,
+      BORDER_BOTTOM_WIDTH = _enums$STYLE_KEY$1.BORDER_BOTTOM_WIDTH,
+      BORDER_LEFT_WIDTH = _enums$STYLE_KEY$1.BORDER_LEFT_WIDTH,
+      DISPLAY = _enums$STYLE_KEY$1.DISPLAY,
+      FLEX_DIRECTION = _enums$STYLE_KEY$1.FLEX_DIRECTION,
+      FLEX_GROW = _enums$STYLE_KEY$1.FLEX_GROW,
+      FLEX_SHRINK = _enums$STYLE_KEY$1.FLEX_SHRINK,
+      FLEX_BASIS = _enums$STYLE_KEY$1.FLEX_BASIS,
+      JUSTIFY_CONTENT = _enums$STYLE_KEY$1.JUSTIFY_CONTENT,
+      ALIGN_SELF = _enums$STYLE_KEY$1.ALIGN_SELF,
+      ALIGN_ITEMS = _enums$STYLE_KEY$1.ALIGN_ITEMS,
+      MATRIX = _enums$STYLE_KEY$1.MATRIX;
   var AUTO = unit.AUTO,
       PX$1 = unit.PX,
       PERCENT$1 = unit.PERCENT,
@@ -3492,7 +3815,7 @@
       var v = style[k];
 
       if (!isNil$3(v) && style.transform) {
-        console.warn("Can not use expand style \"".concat(k, "\" with transform"));
+        inject.warn("Can not use expand style \"".concat(k, "\" with transform"));
       }
     }); // 默认reset，根据传入不同，当style为空时覆盖
 
@@ -3793,17 +4116,17 @@
 
     if (temp || temp === 0) {
       if (temp === 'inherit') {
-        res[FONT_SIZE] = [0, INHERIT$2];
+        res[FONT_SIZE$1] = [0, INHERIT$2];
       } else if (/%$/.test(temp)) {
         var v = Math.max(0, parseFloat(temp));
 
         if (v) {
-          res[FONT_SIZE] = [v, PERCENT$1];
+          res[FONT_SIZE$1] = [v, PERCENT$1];
         } else {
-          res[FONT_SIZE] = [DEFAULT_FONT_SIZE, PX$1];
+          res[FONT_SIZE$1] = [DEFAULT_FONT_SIZE, PX$1];
         }
       } else {
-        res[FONT_SIZE] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX$1];
+        res[FONT_SIZE$1] = [Math.max(0, parseFloat(temp)) || DEFAULT_FONT_SIZE, PX$1];
       }
     }
 
@@ -3811,15 +4134,15 @@
 
     if (!isNil$3(temp)) {
       if (temp === 'bold') {
-        res[FONT_WEIGHT] = [700, NUMBER];
+        res[FONT_WEIGHT$1] = [700, NUMBER];
       } else if (temp === 'normal') {
-        res[FONT_WEIGHT] = [400, NUMBER];
+        res[FONT_WEIGHT$1] = [400, NUMBER];
       } else if (temp === 'lighter') {
-        res[FONT_WEIGHT] = [200, NUMBER];
+        res[FONT_WEIGHT$1] = [200, NUMBER];
       } else if (temp === 'inherit') {
-        res[FONT_WEIGHT] = [0, INHERIT$2];
+        res[FONT_WEIGHT$1] = [0, INHERIT$2];
       } else {
-        res[FONT_WEIGHT] = [Math.max(0, parseInt(temp)) || 400, NUMBER];
+        res[FONT_WEIGHT$1] = [Math.max(0, parseInt(temp)) || 400, NUMBER];
       }
     }
 
@@ -3837,9 +4160,9 @@
 
     if (temp) {
       if (temp === 'inherit') {
-        res[FONT_FAMILY] = [0, INHERIT$2];
+        res[FONT_FAMILY$1] = [0, INHERIT$2];
       } else {
-        res[FONT_FAMILY] = [temp, STRING];
+        res[FONT_FAMILY$1] = [temp, STRING];
       }
     }
 
@@ -4071,7 +4394,7 @@
     else if (lineHeight[1] === PX$1) {
         computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) || calNormalLineHeight(computedStyle);
       } else if (lineHeight[1] === NUMBER) {
-        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE] || calNormalLineHeight(computedStyle);
+        computedStyle[LINE_HEIGHT] = Math.max(lineHeight[0], 0) * computedStyle[FONT_SIZE$1] || calNormalLineHeight(computedStyle);
       } // normal
       else {
           computedStyle[LINE_HEIGHT] = calNormalLineHeight(computedStyle);
@@ -4079,18 +4402,18 @@
   }
 
   function setFontStyle(style) {
-    var fontSize = style[FONT_SIZE];
-    return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY] || 'arial');
+    var fontSize = style[FONT_SIZE$1];
+    return (style[FONT_STYLE] || 'normal') + ' ' + (style[FONT_WEIGHT$1] || '400') + ' ' + fontSize + 'px/' + fontSize + 'px ' + (style[FONT_FAMILY$1] || 'arial');
   }
 
   function getBaseLine(style) {
-    var fontSize = style[FONT_SIZE];
+    var fontSize = style[FONT_SIZE$1];
     var normal = fontSize * font.arial.lhr;
     return (style[LINE_HEIGHT] - normal) * 0.5 + fontSize * font.arial.blr;
   }
 
   function calNormalLineHeight(computedStyle) {
-    return computedStyle[FONT_SIZE] * font.arial.lhr;
+    return computedStyle[FONT_SIZE$1] * font.arial.lhr;
   }
 
   function calRelativePercent(n, parent, k) {
@@ -4335,12 +4658,12 @@
     cloneStyle: cloneStyle$1
   };
 
-  var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
-      COLOR$1 = _enums$STYLE_KEY$1.COLOR,
-      FONT_WEIGHT$1 = _enums$STYLE_KEY$1.FONT_WEIGHT,
-      FONT_FAMILY$1 = _enums$STYLE_KEY$1.FONT_FAMILY,
-      FONT_SIZE$1 = _enums$STYLE_KEY$1.FONT_SIZE,
-      FONT_STYLE$1 = _enums$STYLE_KEY$1.FONT_STYLE;
+  var _enums$STYLE_KEY$2 = enums.STYLE_KEY,
+      COLOR$1 = _enums$STYLE_KEY$2.COLOR,
+      FONT_WEIGHT$2 = _enums$STYLE_KEY$2.FONT_WEIGHT,
+      FONT_FAMILY$2 = _enums$STYLE_KEY$2.FONT_FAMILY,
+      FONT_SIZE$2 = _enums$STYLE_KEY$2.FONT_SIZE,
+      FONT_STYLE$1 = _enums$STYLE_KEY$2.FONT_STYLE;
 
   var LineBox = /*#__PURE__*/function () {
     function LineBox(parent, x, y, w, content) {
@@ -4373,7 +4696,7 @@
           this.__virtualDom = {
             type: 'item',
             tagName: 'text',
-            props: [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$1]], ['font-weight', computedStyle[FONT_WEIGHT$1]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$1] + 'px']],
+            props: [['x', x], ['y', y], ['fill', cacheStyle[COLOR$1]], ['font-family', computedStyle[FONT_FAMILY$2]], ['font-weight', computedStyle[FONT_WEIGHT$2]], ['font-style', computedStyle[FONT_STYLE$1]], ['font-size', computedStyle[FONT_SIZE$2] + 'px']],
             content: util.encodeHtml(content)
           };
         }
@@ -4428,15 +4751,15 @@
     return LineBox;
   }();
 
-  var _enums$STYLE_KEY$2 = enums.STYLE_KEY,
-      DISPLAY$1 = _enums$STYLE_KEY$2.DISPLAY,
-      LINE_HEIGHT$1 = _enums$STYLE_KEY$2.LINE_HEIGHT,
-      FONT_SIZE$2 = _enums$STYLE_KEY$2.FONT_SIZE,
-      FONT_FAMILY$2 = _enums$STYLE_KEY$2.FONT_FAMILY,
-      FONT_WEIGHT$2 = _enums$STYLE_KEY$2.FONT_WEIGHT,
-      COLOR$2 = _enums$STYLE_KEY$2.COLOR,
-      VISIBILITY$1 = _enums$STYLE_KEY$2.VISIBILITY,
-      TEXT_ALIGN$1 = _enums$STYLE_KEY$2.TEXT_ALIGN;
+  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
+      DISPLAY$1 = _enums$STYLE_KEY$3.DISPLAY,
+      LINE_HEIGHT$1 = _enums$STYLE_KEY$3.LINE_HEIGHT,
+      FONT_SIZE$3 = _enums$STYLE_KEY$3.FONT_SIZE,
+      FONT_FAMILY$3 = _enums$STYLE_KEY$3.FONT_FAMILY,
+      FONT_WEIGHT$3 = _enums$STYLE_KEY$3.FONT_WEIGHT,
+      COLOR$2 = _enums$STYLE_KEY$3.COLOR,
+      VISIBILITY$1 = _enums$STYLE_KEY$3.VISIBILITY,
+      TEXT_ALIGN$1 = _enums$STYLE_KEY$3.TEXT_ALIGN;
 
   var Text = /*#__PURE__*/function (_Node) {
     _inherits(Text, _Node);
@@ -4471,7 +4794,7 @@
           ctx.font = css.setFontStyle(computedStyle);
         }
 
-        var key = this.__key = computedStyle[FONT_SIZE$2] + ',' + computedStyle[FONT_FAMILY$2] + ',' + computedStyle[FONT_WEIGHT$2];
+        var key = this.__key = computedStyle[FONT_SIZE$3] + ',' + computedStyle[FONT_FAMILY$3] + ',' + computedStyle[FONT_WEIGHT$3];
         var wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
           key: key,
           style: computedStyle,
@@ -5311,15 +5634,15 @@
     geom: geom
   };
 
-  var _enums$STYLE_KEY$3 = enums.STYLE_KEY,
-      TRANSLATE_X$1 = _enums$STYLE_KEY$3.TRANSLATE_X,
-      TRANSLATE_Y$1 = _enums$STYLE_KEY$3.TRANSLATE_Y,
-      SCALE_X$1 = _enums$STYLE_KEY$3.SCALE_X,
-      SCALE_Y$1 = _enums$STYLE_KEY$3.SCALE_Y,
-      SKEW_X$1 = _enums$STYLE_KEY$3.SKEW_X,
-      SKEW_Y$1 = _enums$STYLE_KEY$3.SKEW_Y,
-      ROTATE_Z$1 = _enums$STYLE_KEY$3.ROTATE_Z,
-      MATRIX$1 = _enums$STYLE_KEY$3.MATRIX;
+  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
+      TRANSLATE_X$1 = _enums$STYLE_KEY$4.TRANSLATE_X,
+      TRANSLATE_Y$1 = _enums$STYLE_KEY$4.TRANSLATE_Y,
+      SCALE_X$1 = _enums$STYLE_KEY$4.SCALE_X,
+      SCALE_Y$1 = _enums$STYLE_KEY$4.SCALE_Y,
+      SKEW_X$1 = _enums$STYLE_KEY$4.SKEW_X,
+      SKEW_Y$1 = _enums$STYLE_KEY$4.SKEW_Y,
+      ROTATE_Z$1 = _enums$STYLE_KEY$4.ROTATE_Z,
+      MATRIX$1 = _enums$STYLE_KEY$4.MATRIX;
   var PX$2 = unit.PX,
       PERCENT$2 = unit.PERCENT;
   var matrix = math.matrix,
@@ -7706,9 +8029,9 @@
     calRadius: calRadius
   };
 
-  var _enums$STYLE_KEY$4 = enums.STYLE_KEY,
-      SCALE_X$2 = _enums$STYLE_KEY$4.SCALE_X,
-      SCALE_Y$2 = _enums$STYLE_KEY$4.SCALE_Y;
+  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
+      SCALE_X$2 = _enums$STYLE_KEY$5.SCALE_X,
+      SCALE_Y$2 = _enums$STYLE_KEY$5.SCALE_Y;
   var PERCENT$3 = unit.PERCENT,
       NUMBER$1 = unit.NUMBER;
 
@@ -7735,7 +8058,7 @@
     var program = createProgram(gl, vshader, fshader);
 
     if (!program) {
-      console.error('Failed to create program');
+      inject.error('Failed to create program');
       return false;
     }
 
@@ -7765,7 +8088,7 @@
 
     if (!linked) {
       var error = gl.getProgramInfoLog(program);
-      console.error('Failed to link program: ' + error);
+      inject.error('Failed to link program: ' + error);
       gl.deleteProgram(program);
       gl.deleteShader(fragmentShader);
       gl.deleteShader(vertexShader);
@@ -7779,7 +8102,7 @@
     var shader = gl.createShader(type);
 
     if (shader == null) {
-      console.error('unable to create shader');
+      inject.error('unable to create shader');
       return null;
     }
 
@@ -7789,7 +8112,7 @@
 
     if (!compiled) {
       var error = gl.getShaderInfoLog(shader);
-      console.error('Failed to compile shader: ' + error);
+      inject.error('Failed to compile shader: ' + error);
       gl.deleteShader(shader);
       return null;
     }
@@ -8056,325 +8379,6 @@
 
   var blur = {
     gaussBlur: gaussBlur
-  };
-
-  var _enums$STYLE_KEY$5 = enums.STYLE_KEY,
-      FONT_SIZE$3 = _enums$STYLE_KEY$5.FONT_SIZE,
-      FONT_FAMILY$3 = _enums$STYLE_KEY$5.FONT_FAMILY,
-      FONT_WEIGHT$3 = _enums$STYLE_KEY$5.FONT_WEIGHT;
-  var SPF = 1000 / 60;
-  var CANVAS = {};
-  var WEBGL = {};
-  var CANVAS_LIST = [];
-  var WEBGL_LIST = [];
-
-  function cache(key, width, height, hash, message) {
-    var o;
-
-    if (!key) {
-      var target = hash === CANVAS ? CANVAS_LIST : WEBGL_LIST;
-
-      if (target.length) {
-        o = target.pop();
-      } else {
-        o = document.createElement('canvas');
-      }
-    } else if (!hash[key]) {
-      o = hash[key] = document.createElement('canvas');
-    } else {
-      o = hash[key];
-    } // o.setAttribute('width', width + 'px');
-    // o.setAttribute('height', height + 'px');
-
-
-    o.width = width;
-    o.height = height;
-
-    if (typeof karas !== 'undefined' && karas.debug) {
-      o.style.width = width + 'px';
-      o.style.height = height + 'px';
-      o.setAttribute('type', hash === CANVAS ? 'canvas' : 'webgl');
-
-      if (key) {
-        o.setAttribute('key', key);
-      }
-
-      if (message) {
-        o.setAttribute('message', message);
-      }
-
-      document.body.appendChild(o);
-    }
-
-    return {
-      canvas: o,
-      ctx: hash === CANVAS ? o.getContext('2d') : o.getContext('webgl') || o.getContext('experimental-webgl'),
-      draw: function draw() {// 空函数，仅对小程序提供hook特殊处理，flush缓冲
-      },
-      available: true,
-      release: function release() {
-        if (hash === CANVAS) {
-          CANVAS_LIST.push(this.canvas);
-        } else {
-          WEBGL_LIST.push(this.canvas);
-        }
-
-        this.canvas = null;
-        this.ctx = null;
-      }
-    };
-  }
-
-  function cacheCanvas(key, width, height, message) {
-    return cache(key, width, height, CANVAS, message);
-  }
-
-  function cacheWebgl(key, width, height, message) {
-    return cache(key, width, height, WEBGL, message);
-  }
-
-  var IMG = {};
-  var INIT = 0;
-  var LOADING = 1;
-  var LOADED = 2;
-  var inject = {
-    measureText: function measureText() {
-      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
-          list = _Text$MEASURE_TEXT.list,
-          data = _Text$MEASURE_TEXT.data;
-      var html = '';
-      var keys = [];
-      var chars = [];
-      Object.keys(data).forEach(function (i) {
-        var _data$i = data[i],
-            key = _data$i.key,
-            style = _data$i.style,
-            s = _data$i.s;
-
-        if (s) {
-          var inline = "position:absolute;font-family:".concat(style[FONT_FAMILY$3], ";font-size:").concat(style[FONT_SIZE$3], "px;font-weight:").concat(style[FONT_WEIGHT$3]);
-
-          for (var j = 0, len = s.length; j < len; j++) {
-            keys.push(key);
-
-            var _char = s.charAt(j);
-
-            chars.push(_char);
-            html += "<span style=\"".concat(inline, "\">").concat(_char.replace(/</, '&lt;').replace(' ', '&nbsp;'), "</span>");
-          }
-        }
-      });
-
-      if (!html) {
-        return;
-      }
-
-      var div = document.createElement('div');
-      div.style.position = 'absolute';
-      div.style.left = '99999px';
-      div.style.top = '-99999px';
-      div.style.visibility = 'hidden';
-      document.body.appendChild(div);
-      div.innerHTML = html;
-      var cns = div.childNodes;
-      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
-          MEASURE_TEXT = Text.MEASURE_TEXT;
-
-      for (var i = 0, len = cns.length; i < len; i++) {
-        var node = cns[i];
-        var key = keys[i];
-        var _char2 = chars[i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
-
-        var css = window.getComputedStyle(node, null);
-        CHAR_WIDTH_CACHE[key][_char2] = parseFloat(css.width);
-      }
-
-      list.forEach(function (text) {
-        return text.__measureCb();
-      });
-      MEASURE_TEXT.list = [];
-      MEASURE_TEXT.data = {};
-      document.body.removeChild(div);
-    },
-    IMG: IMG,
-    INIT: INIT,
-    LOADED: LOADED,
-    LOADING: LOADING,
-    measureImg: function measureImg(url, cb) {
-      if (Array.isArray(url)) {
-        var count = 0;
-        var len = url.length;
-        var list = [];
-        url.forEach(function (item, i) {
-          inject.measureImg(item, function (cache) {
-            list[i] = cache;
-
-            if (++count === len) {
-              cb(list);
-            }
-          });
-        });
-        return;
-      }
-
-      var cache = IMG[url] = IMG[url] || {
-        state: INIT,
-        task: []
-      };
-
-      if (cache.state === LOADED) {
-        cb(cache);
-      } else if (cache.state === LOADING) {
-        cache.task.push(cb);
-      } else {
-        cache.state = LOADING;
-        cache.task.push(cb);
-        var img = new Image();
-
-        img.onload = function () {
-          cache.state = LOADED;
-          cache.success = true;
-          cache.width = img.width;
-          cache.height = img.height;
-          cache.source = img;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        };
-
-        img.onerror = function () {
-          cache.state = LOADED;
-          cache.success = false;
-          cache.url = url;
-          var list = cache.task.splice(0);
-          list.forEach(function (cb) {
-            return cb(cache);
-          });
-        };
-
-        if (url.substr(0, 5) !== 'data:') {
-          var host = /^(?:\w+:)?\/\/([^/:]+)/.exec(url);
-
-          if (host) {
-            if (location.hostname !== host[1]) {
-              img.crossOrigin = 'anonymous';
-            }
-          }
-        }
-
-        img.src = url;
-      }
-    },
-    warn: function warn(s) {
-      console.warn(s);
-    },
-    requestAnimationFrame: function (_requestAnimationFrame) {
-      function requestAnimationFrame(_x) {
-        return _requestAnimationFrame.apply(this, arguments);
-      }
-
-      requestAnimationFrame.toString = function () {
-        return _requestAnimationFrame.toString();
-      };
-
-      return requestAnimationFrame;
-    }(function (cb) {
-      var res;
-
-      if (typeof requestAnimationFrame !== 'undefined') {
-        inject.requestAnimationFrame = requestAnimationFrame.bind(window);
-        res = requestAnimationFrame(cb);
-      } else {
-        res = setTimeout(cb, SPF);
-
-        inject.requestAnimationFrame = function (cb) {
-          return setTimeout(cb, SPF);
-        };
-      }
-
-      return res;
-    }),
-    cancelAnimationFrame: function (_cancelAnimationFrame) {
-      function cancelAnimationFrame(_x2) {
-        return _cancelAnimationFrame.apply(this, arguments);
-      }
-
-      cancelAnimationFrame.toString = function () {
-        return _cancelAnimationFrame.toString();
-      };
-
-      return cancelAnimationFrame;
-    }(function (id) {
-      var res;
-
-      if (typeof cancelAnimationFrame !== 'undefined') {
-        inject.cancelAnimationFrame = cancelAnimationFrame.bind(window);
-        res = cancelAnimationFrame(id);
-      } else {
-        res = clearTimeout(id);
-
-        inject.cancelAnimationFrame = function (id) {
-          return clearTimeout(id);
-        };
-      }
-
-      return res;
-    }),
-    now: function now() {
-      if (typeof performance !== 'undefined') {
-        inject.now = function () {
-          return Math.floor(performance.now());
-        };
-
-        return Math.floor(performance.now());
-      }
-
-      inject.now = Date.now.bind(Date);
-      return Date.now();
-    },
-    hasCacheCanvas: function hasCacheCanvas(key) {
-      return key && CANVAS.hasOwnProperty(key);
-    },
-    getCacheCanvas: function getCacheCanvas(width, height, key, message) {
-      return cacheCanvas(key, width, height, message);
-    },
-    releaseCacheCanvas: function releaseCacheCanvas(o) {
-      CANVAS_LIST.push(o);
-    },
-    delCacheCanvas: function delCacheCanvas(key) {
-      key && delete CANVAS[key];
-    },
-    hasCacheWebgl: function hasCacheWebgl(key) {
-      return key && WEBGL.hasOwnProperty(key);
-    },
-    getCacheWebgl: function getCacheWebgl(width, height, key, message) {
-      return cacheWebgl(key, width, height, message);
-    },
-    releaseCacheWebgl: function releaseCacheWebgl(o) {
-      WEBGL_LIST.push(o);
-    },
-    delCacheWebgl: function delCacheWebgl(key) {
-      key && delete WEBGL[key];
-    },
-    isDom: function isDom(o) {
-      if (o) {
-        if (util.isString(o)) {
-          return true;
-        }
-
-        if (typeof window !== 'undefined' && window.Element && o instanceof window.Element) {
-          return true;
-        }
-
-        if (util.isFunction(o.getElementsByTagName)) {
-          return true;
-        }
-      }
-
-      return false;
-    }
   };
 
   var isFunction$1 = util.isFunction;
@@ -10816,7 +10820,7 @@
         var __config = this.__config;
 
         if (__config[I_PLAY_STATE] !== 'idle' && __config[I_PLAY_STATE] !== 'finished') {
-          console.warn('Modification will not come into effect when animation is running');
+          inject.warn('Modification will not come into effect when animation is running');
         }
       }
     }, {
@@ -11337,7 +11341,7 @@
           page = new Page(s, n);
 
           if (!page.offScreen) {
-            console.error('Can not create off-screen for page');
+            inject.error('Can not create off-screen for page');
             return;
           }
 
@@ -11677,7 +11681,7 @@
             ctx.globalAlpha = __config[NODE_OPACITY];
             Cache.drawCache(source, cacheMask, item.computedStyle[TRANSFORM$3], [1, 0, 0, 1, 0, 0], item.computedStyle[TRANSFORM_ORIGIN$2].slice(0), inverse);
           } else {
-            console.error('CacheMask is oversize');
+            inject.error('CacheMask is oversize');
           }
         });
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -14934,7 +14938,7 @@
 
         if (sr instanceof Text) {
           // 文字视作为父节点的直接文字子节点，在builder里做
-          console.warn('Component render() return a text, should not inherit style/event');
+          inject.warn('Component render() return a text, should not inherit style/event');
         } else if (sr instanceof Node) {
           var style = css.normalize(this.props.style);
           var keys = Object.keys(style);
@@ -14955,7 +14959,7 @@
           });
         } else if (sr instanceof Component) {
           // 本身build是递归的，子cp已经初始化了
-          console.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
+          inject.warn('Component render() return a component: ' + this.tagName + ' -> ' + sr.tagName + ', should not inherit style/event');
         } else {
           throw new Error('Component render() must return a dom/text: ' + this);
         } // shadow指向直接root，shadowRoot考虑到返回Component的递归
@@ -16404,7 +16408,7 @@
           if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
             if (item.currentStyle[DISPLAY$3] !== 'inline') {
               item.currentStyle[DISPLAY$3] = item.computedStyle[DISPLAY$3] = 'inline';
-              console.error('Inline can not contain block/flex');
+              inject.error('Inline can not contain block/flex');
             } // inline开头，不用考虑是否放得下直接放
 
 
@@ -18251,7 +18255,7 @@
         if (!util.isNil(key) && key !== '') {
           // 重复key错误警告
           if (hash.hasOwnProperty(key)) {
-            console.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+            inject.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
           }
 
           hash[key] = {
@@ -19629,7 +19633,7 @@
           __config[NODE_CACHE$4] = __cache;
 
           if (!__cache.enabled) {
-            console.warn('Downgrade for cache-filter change error');
+            inject.warn('Downgrade for cache-filter change error');
           }
         }
 
@@ -21711,7 +21715,7 @@
             _list.push((_list$push2 = {}, _defineProperty(_list$push2, UPDATE_STYLE$2, o[UPDATE_STYLE$2]), _defineProperty(_list$push2, UPDATE_OVERWRITE$1, o[UPDATE_OVERWRITE$1]), _defineProperty(_list$push2, UPDATE_KEYS$2, o[UPDATE_KEYS$2]), _list$push2));
           }
         } else {
-          console.error('Update process miss uniqueUpdateId');
+          inject.error('Update process miss uniqueUpdateId');
         }
       }
       /**
@@ -25006,7 +25010,7 @@
                 if (target[k2]) {
                   target = target[k2];
                 } else {
-                  console.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                  inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
                 }
               }
 

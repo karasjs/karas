@@ -846,7 +846,7 @@ class Root extends Dom {
       }
     }
     else {
-      console.error('Update process miss uniqueUpdateId');
+      inject.error('Update process miss uniqueUpdateId');
     }
   }
 

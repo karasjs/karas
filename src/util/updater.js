@@ -1,4 +1,5 @@
 import util from './util';
+import inject from './inject';
 import builder from './builder';
 import $$type from './$$type';
 import enums from './enums';
@@ -369,7 +370,7 @@ function getKeyHash(json, hash, vd) {
       if(!util.isNil(key) && key !== '') {
         // 重复key错误警告
         if(hash.hasOwnProperty(key)) {
-          console.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
+          inject.error('Component ' + vd.tagName + ' has duplicate key: ' + key);
         }
         hash[key] = {
           json,

@@ -242,7 +242,7 @@ class Cache {
         );
       }
       else {
-        console.error('CacheMask is oversize');
+        inject.error('CacheMask is oversize');
       }
     });
     ctx.setTransform(1, 0, 0, 1, 0, 0);

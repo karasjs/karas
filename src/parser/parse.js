@@ -2,6 +2,7 @@ import abbr from './abbr';
 import Node from '../node/Node';
 import $$type from '../util/$$type';
 import util from '../util/util';
+import inject from '../util/inject';
 
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
@@ -64,7 +65,7 @@ function replaceVars(target, vars) {
                 target = target[k2];
               }
               else {
-                console.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
+                inject.error('parseJson vars is not exist: ' + v.id + ', ' + k + ', ' + list.slice(0, i).join('.'));
               }
             }
             k2 = list[len - 1];

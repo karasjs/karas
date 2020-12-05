@@ -9,6 +9,7 @@ import css from '../style/css';
 import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
+import inject from '../util/inject';
 
 const {
   STYLE_KEY: {
@@ -1137,7 +1138,7 @@ class Dom extends Xom {
       if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
         if(item.currentStyle[DISPLAY] !== 'inline') {
           item.currentStyle[DISPLAY] = item.computedStyle[DISPLAY] = 'inline';
-          console.error('Inline can not contain block/flex');
+          inject.error('Inline can not contain block/flex');
         }
         // inline开头，不用考虑是否放得下直接放
         if(x === data.x) {

@@ -3,6 +3,7 @@ import Text from './Text';
 import builder from '../util/builder';
 import Event from '../util/Event';
 import util from '../util/util';
+import inject from '../util/inject';
 import css from '../style/css';
 import change from '../refresh/change';
 
@@ -94,7 +95,7 @@ class Component extends Event {
     this.__cd = cd;
     if(sr instanceof Text) {
       // 文字视作为父节点的直接文字子节点，在builder里做
-      console.warn('Component render() return a text, should not inherit style/event');
+      inject.warn('Component render() return a text, should not inherit style/event');
     }
     else if(sr instanceof Node) {
       let style = css.normalize(this.props.style);
@@ -116,7 +117,7 @@ class Component extends Event {
     }
     else if(sr instanceof Component) {
       // 本身build是递归的，子cp已经初始化了
-      console.warn('Component render() return a component: '
+      inject.warn('Component render() return a component: '
         + this.tagName + ' -> ' + sr.tagName
         + ', should not inherit style/event');
     }

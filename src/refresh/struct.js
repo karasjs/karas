@@ -1,4 +1,3 @@
-import inject from '../util/inject';
 import Geom from '../geom/Geom';
 import blur from '../style/blur';
 import Text from '../node/Text';
@@ -7,6 +6,7 @@ import Img from '../node/Img';
 import mx from '../math/matrix';
 import level from './level';
 import util from '../util/util';
+import inject from '../util/inject';
 import Cache from './Cache';
 import tf from '../style/transform';
 import enums from '../util/enums';
@@ -509,7 +509,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         }
         __config[NODE_CACHE] = __cache;
         if(!__cache.enabled) {
-          console.warn('Downgrade for cache-filter change error');
+          inject.warn('Downgrade for cache-filter change error');
         }
       }
       if(contain(__refreshLevel, MBM)) {

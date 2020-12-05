@@ -5,6 +5,7 @@ import abbr from '../style/abbr';
 import enums from '../util/enums';
 import util from '../util/util';
 import Event from '../util/Event';
+import inject from '../util/inject';
 import frame from './frame';
 import easing from './easing';
 import change from '../refresh/change';
@@ -1804,7 +1805,7 @@ class Animation extends Event {
   __checkModify() {
     let __config = this.__config;
     if(__config[I_PLAY_STATE] !== 'idle' && __config[I_PLAY_STATE] !== 'finished') {
-      console.warn('Modification will not come into effect when animation is running');
+      inject.warn('Modification will not come into effect when animation is running');
     }
   }
 

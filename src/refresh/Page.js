@@ -109,7 +109,7 @@ class Page {
     if(!page) {
       page = new Page(s, n);
       if(!page.offScreen) {
-        console.error('Can not create off-screen for page');
+        inject.error('Can not create off-screen for page');
         return;
       }
       list.push(page);

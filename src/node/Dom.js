@@ -47,6 +47,7 @@ const {
     NODE_CURRENT_STYLE,
     NODE_STYLE,
     NODE_STRUCT,
+    NODE_DOM_PARENT,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -188,15 +189,18 @@ class Dom extends Xom {
   __modifyStruct(root, offset = 0) {
     let __config = this.__config;
     let struct = __config[NODE_STRUCT];
+    let total = struct.total || 0;
+    // 新生成了struct，但引用不变
     let ns = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
     root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...ns);
     let d = 0;
     if(this !== root) {
-      d = ns[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
-      struct = this.domParent.__config[NODE_STRUCT];
-      struct[STRUCT_TOTAL] += d;
+      d = (struct.total || 0) - total;
+      let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
+      ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
+      ps[STRUCT_TOTAL] += d;
     }
-    return [ns, d];
+    return [struct, d];
   }
 
   /**

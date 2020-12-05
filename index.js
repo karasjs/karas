@@ -15181,6 +15181,7 @@
       NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
       NODE_STRUCT$2 = _enums$NODE_KEY$3.NODE_STRUCT,
+      NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -15345,6 +15346,7 @@
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var __config = this.__config;
         var struct = __config[NODE_STRUCT$2];
+        var total = struct.total || 0; // 新生成了struct，但引用不变
 
         var ns = this.__structure(struct[STRUCT_INDEX$1], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX$1]);
 
@@ -15353,12 +15355,13 @@
         var d = 0;
 
         if (this !== root) {
-          d = ns[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
-          struct = this.domParent.__config[NODE_STRUCT$2];
-          struct[STRUCT_TOTAL] += d;
+          d = (struct.total || 0) - total;
+          var ps = __config[NODE_DOM_PARENT$1].__config[NODE_STRUCT$2];
+          ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
+          ps[STRUCT_TOTAL] += d;
         }
 
-        return [ns, d];
+        return [struct, d];
       }
       /**
        * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
@@ -17896,7 +17899,7 @@
 
   var _enums$NODE_KEY$6 = enums.NODE_KEY,
       NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$6.NODE_COMPUTED_STYLE,
-      NODE_DOM_PARENT$1 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$2 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
       NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$6.NODE_MATRIX_EVENT,
       NODE_STRUCT$3 = _enums$NODE_KEY$6.NODE_STRUCT;
   var TYPE_VD$2 = $$type.TYPE_VD,
@@ -17988,7 +17991,7 @@
     ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
-    sr.__config[NODE_DOM_PARENT$1] = oldSr.domParent;
+    sr.__config[NODE_DOM_PARENT$2] = oldSr.domParent;
     sr.__config[NODE_STRUCT$3] = oldSr.__config[NODE_STRUCT$3];
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
@@ -20759,7 +20762,7 @@
       NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
-      NODE_DOM_PARENT$2 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$1 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
@@ -20947,7 +20950,7 @@
         __cacheProps = __config[NODE_CACHE_PROPS$1],
         currentStyle = __config[NODE_CURRENT_STYLE$4],
         currentProps = __config[NODE_CURRENT_PROPS$1],
-        domParent = __config[NODE_DOM_PARENT$2],
+        domParent = __config[NODE_DOM_PARENT$3],
         isMask = __config[NODE_IS_MASK$1];
     var lv = focus || NONE$1;
     var hasMeasure = measure;
@@ -21184,7 +21187,7 @@
         _config2[NODE_CACHE_OVERFLOW$4] = null;
       }
 
-      parent = _config2[NODE_DOM_PARENT$2];
+      parent = _config2[NODE_DOM_PARENT$3];
     }
 
     return true;

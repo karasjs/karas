@@ -1692,6 +1692,20 @@ karas.inject.cancelAnimationFrame(id);
 * **说明**  
 缓存池中是否存在指定key的离屏canvas缓存。
 
+### warn
+* **类型** `Function`
+* **参数**
+  * s `String`
+* **说明**  
+内部的警告信息会调用，默认实现是`console.warn(s)`。
+
+### error
+* **类型** `Function`
+* **参数**
+  * s `String`
+* **说明**  
+内部的错误信息会调用，默认实现是`console.error(s)`。可以覆盖实现降级错误信息上报。
+
 <a name="style包"></a>
 ## style包
 包含`css`、`reset`、`unit`、`font`子对象。

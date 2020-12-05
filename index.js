@@ -15350,16 +15350,17 @@
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
         var __config = this.__config;
         var struct = __config[NODE_STRUCT$2];
-        var total = struct.total || 0; // 新生成了struct，但引用不变
+        var total = struct[STRUCT_TOTAL] || 0; // 新生成了struct，引用也变了
 
-        var ns = this.__structure(struct[STRUCT_INDEX$1], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX$1]);
+        var nss = this.__structure(struct[STRUCT_INDEX$1], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX$1]);
 
-        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct[STRUCT_INDEX$1] + offset, struct[STRUCT_TOTAL] + 1].concat(_toConsumableArray(ns)));
+        (_root$__structs = root.__structs).splice.apply(_root$__structs, [struct[STRUCT_INDEX$1] + offset, struct[STRUCT_TOTAL] + 1].concat(_toConsumableArray(nss)));
 
         var d = 0;
 
         if (this !== root) {
-          d = (struct.total || 0) - total;
+          struct = __config[NODE_STRUCT$2];
+          d = (struct[STRUCT_TOTAL] || 0) - total;
           var ps = __config[NODE_DOM_PARENT$1].__config[NODE_STRUCT$2];
           ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
           ps[STRUCT_TOTAL] += d;
@@ -22443,11 +22444,11 @@
 
               if (isFirst) {
                 isFirst = false;
-                lastIndex = ns[STRUCT_INDEX$3] + ns[STRUCT_TOTAL$2] + 1;
+                lastIndex = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1;
                 diff += d;
               } // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
               else {
-                  var j = ns[STRUCT_INDEX$3] + ns[STRUCT_TOTAL$2] + 1 + diff;
+                  var j = ns[STRUCT_INDEX$3] + (ns[STRUCT_TOTAL$2] || 0) + 1 + diff;
 
                   for (var _i4 = lastIndex; _i4 < j; _i4++) {
                     structs[_i4][STRUCT_INDEX$3] += diff;
@@ -25316,7 +25317,7 @@
     Cache: Cache
   };
 
-  var version = "0.43.1";
+  var version = "0.43.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

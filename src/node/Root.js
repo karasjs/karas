@@ -1451,12 +1451,12 @@ class Root extends Dom {
         // 第1个变化区域无需更改前面一段
         if(isFirst) {
           isFirst = false;
-          lastIndex = ns[STRUCT_INDEX] + ns[STRUCT_TOTAL] + 1;
+          lastIndex = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1;
           diff += d;
         }
         // 第2+个变化区域看是否和前面一个相连，有不变的段则先偏移它，然后再偏移自己
         else {
-          let j = ns[STRUCT_INDEX] + ns[STRUCT_TOTAL] + 1 + diff;
+          let j = ns[STRUCT_INDEX] + (ns[STRUCT_TOTAL] || 0) + 1 + diff;
           for(let i = lastIndex; i < j; i++) {
             structs[i][STRUCT_INDEX] += diff;
           }

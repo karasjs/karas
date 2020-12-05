@@ -190,13 +190,14 @@ class Dom extends Xom {
   __modifyStruct(root, offset = 0) {
     let __config = this.__config;
     let struct = __config[NODE_STRUCT];
-    let total = struct.total || 0;
-    // 新生成了struct，但引用不变
-    let ns = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
-    root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...ns);
+    let total = struct[STRUCT_TOTAL] || 0;
+    // 新生成了struct，引用也变了
+    let nss = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
+    root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...nss);
     let d = 0;
     if(this !== root) {
-      d = (struct.total || 0) - total;
+      struct = __config[NODE_STRUCT];
+      d = (struct[STRUCT_TOTAL] || 0) - total;
       let ps = __config[NODE_DOM_PARENT].__config[NODE_STRUCT];
       ps[STRUCT_TOTAL] = ps[STRUCT_TOTAL] || 0;
       ps[STRUCT_TOTAL] += d;

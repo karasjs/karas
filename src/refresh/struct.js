@@ -290,8 +290,6 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
   }
   // 先序遍历汇总到total
   for(let i = index + 1, len = index + (total || 0) + 1; i < len; i++) {
-    // let { node, total, node: { __cacheOverflow, __cacheMask, __cacheFilter, __cacheTotal, __cache,
-    //   computedStyle: { display, visibility, transform, transformOrigin, mixBlendMode } } } = __structs[i];
     let {
       [STRUCT_NODE]: node,
       [STRUCT_TOTAL]: total,
@@ -389,16 +387,16 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
 }
 
 function genFilter(node, cache, v) {
-  return node.__cacheFilter = node.__config[NODE_CACHE_FILTER] = Cache.genBlur(cache, v);
+  return node.__config[NODE_CACHE_FILTER] = Cache.genBlur(cache, v);
 }
 
 function genMask(node, cache, isClip) {
   let { [TRANSFORM]: transform, [TRANSFORM_ORIGIN]: transformOrigin } = node.computedStyle;
-  return node.__cacheMask = node.__config[NODE_CACHE_MASK] = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
+  return node.__config[NODE_CACHE_MASK] = Cache.genMask(cache, node.next, isClip, transform, transformOrigin);
 }
 
 function genOverflow(node, cache) {
-  return node.__cacheOverflow = node.__config[NODE_CACHE_OVERFLOW] = Cache.genOverflow(cache, node);
+  return node.__config[NODE_CACHE_OVERFLOW] = Cache.genOverflow(cache, node);
 }
 
 function renderCacheCanvas(renderMode, ctx, defs, root) {
@@ -485,7 +483,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       }
       if(contain(__refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
-        node.__opacity = __config[NODE_OPACITY] = parentOpacity * opacity;
+        __config[NODE_OPACITY] = parentOpacity * opacity;
       }
       if(contain(__refreshLevel, FT)) {
         let filter = computedStyle[FILTER] = currentStyle[FILTER];

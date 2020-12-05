@@ -36,6 +36,11 @@ const {
     NODE_CURRENT_PROPS,
     NODE_CURRENT_STYLE,
     NODE_IS_MASK, NODE_STYLE,
+    NODE_CACHE,
+    NODE_CACHE_TOTAL,
+    NODE_CACHE_FILTER,
+    NODE_CACHE_MASK,
+    NODE_CACHE_OVERFLOW,
   }
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
@@ -288,17 +293,18 @@ class Geom extends Xom {
     // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
     let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs);
     let {
-      __cache,
-      __cacheTotal,
-      __cacheFilter,
-      __cacheMask,
+      [NODE_CACHE]: __cache,
+      [NODE_CACHE_TOTAL]: __cacheTotal,
+      [NODE_CACHE_FILTER]: __cacheFilter,
+      [NODE_CACHE_MASK]: __cacheMask,
+      [NODE_CACHE_OVERFLOW]: __cacheOverflow,
     } = this;
     // 存在老的缓存认为可提前跳出
     if(lv < level.REPAINT
       && (__cacheTotal && __cacheTotal.available
         || __cache && __cache.available
         || !level.contain(lv, level.FILTER) && __cacheFilter
-        || __cacheMask)) {
+        || __cacheMask || __cacheOverflow)) {
       res.break = true; // geom子类标识可以跳过自定义render()
     }
     if(renderMode === mode.SVG) {

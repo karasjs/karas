@@ -6,10 +6,18 @@ import blur from '../style/blur';
 import tf from '../style/transform';
 import mx from '../math/matrix';
 
-const { STYLE_KEY: {
-  TRANSFORM_ORIGIN,
-  TRANSFORM,
-} } = enums;
+const {
+  STYLE_KEY: {
+    TRANSFORM_ORIGIN,
+    TRANSFORM,
+  },
+  NODE_KEY: {
+    NODE_OPACITY,
+    NODE_CACHE,
+    NODE_CACHE_FILTER,
+    NODE_CACHE_OVERFLOW,
+  },
+} = enums;
 
 function genSingle(cache) {
   let { size, sx1, sy1, width, height, bbox } = cache;
@@ -214,13 +222,17 @@ class Cache {
     let inverse = tf.calMatrixByOrigin(transform, tfo);
     // 先将mask本身绘制到cache上，再设置模式绘制dom本身，因为都是img所以1个就够了
     list.forEach(item => {
-      let cacheFilter = item.__cacheFilter, cache = item.__cache;
-      let source = cacheFilter && cacheFilter.available && cacheFilter;
+      let __config = item.__config;
+      let cacheOverflow = __config[NODE_CACHE_OVERFLOW], cacheFilter = __config[NODE_CACHE_FILTER], cache = __config[NODE_CACHE];
+      let source = cacheOverflow && cacheOverflow.available && cacheOverflow;
+      if(!source) {
+        source = cacheFilter && cacheFilter.available && cacheFilter;
+      }
       if(!source) {
         source = cache && cache.available && cache;
       }
       if(source) {
-        ctx.globalAlpha = item.__opacity;
+        ctx.globalAlpha = __config[NODE_OPACITY];
         Cache.drawCache(
           source, cacheMask,
           item.computedStyle[TRANSFORM],

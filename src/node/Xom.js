@@ -1491,10 +1491,9 @@ class Xom extends Node {
       computedStyle,
       __cacheStyle,
       root,
-      __cache,
-      __cacheTotal,
       __config,
     } = this;
+    let __cache = __config[NODE_CACHE];
     // geom特殊处理，每次>=REPAINT重新渲染生成
     this.__renderSelfData = null;
     // 渲染完认为完全无变更，等布局/动画/更新重置
@@ -1511,8 +1510,8 @@ class Xom extends Node {
         visibility: 'visible',
       };
       // svg mock，每次都生成，每个节点都是局部根，更新时自底向上清除
-      if(!__cacheTotal) {
-        __config[NODE_CACHE_TOTAL] = this.__cacheTotal = {
+      if(!__config[NODE_CACHE_TOTAL]) {
+        __config[NODE_CACHE_TOTAL] = {
           available: true,
           release() {
             this.available = false;
@@ -1520,8 +1519,8 @@ class Xom extends Node {
           },
         };
       }
-      else if(!__cacheTotal.available) {
-        __cacheTotal.available = true;
+      else if(!__config[NODE_CACHE_TOTAL].available) {
+        __config[NODE_CACHE_TOTAL].available = true;
       }
     }
     // canvas返回信息，svg已经初始化好了vd
@@ -1594,9 +1593,9 @@ class Xom extends Node {
     // 先设置透明度，canvas可以向上累积
     if(renderMode === mode.CANVAS) {
       if(p) {
-        opacity *= p.__opacity;
+        opacity *= p.__config[NODE_OPACITY];
       }
-      __config[NODE_OPACITY] = this.__opacity = opacity;
+      __config[NODE_OPACITY] = opacity;
     }
     else if(renderMode === mode.SVG) {
       if(opacity === 1) {
@@ -1691,7 +1690,7 @@ class Xom extends Node {
         }
         else {
           __config[NODE_LIMIT_CACHE] = this.__limitCache = true;
-          __cache = this.__cache = null;
+          __cache = null;
         }
       }
       __config[NODE_CACHE] = __cache;
@@ -2264,24 +2263,29 @@ class Xom extends Node {
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
   __cancelCache() {
     let __config = this.__config;
-    this.__config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
-    if(this.__cache) {
-      this.__cache.release();
+    __config[NODE_CACHE_STYLE] = this.__cacheStyle = {};
+    let __cache = __config[NODE_CACHE];
+    let __cacheTotal = __config[NODE_CACHE_TOTAL];
+    let __cacheFilter = __config[NODE_CACHE_FILTER];
+    let __cacheMask = __config[NODE_CACHE_MASK];
+    let __cacheOverflow = __config[NODE_CACHE_OVERFLOW];
+    if(__cache) {
+      __cache.release();
     }
-    if(this.__cacheTotal) {
-      this.__cacheTotal.release();
+    if(__cacheTotal) {
+      __cacheTotal.release();
     }
-    if(this.__cacheFilter) {
-      inject.releaseCacheCanvas(this.__cacheFilter.canvas);
-      __config[NODE_CACHE_FILTER] = this.__cacheFilter = null;
+    if(__cacheFilter) {
+      inject.releaseCacheCanvas(__cacheFilter.canvas);
+      __config[NODE_CACHE_FILTER] = null;
     }
-    if(this.__cacheMask) {
-      inject.releaseCacheCanvas(this.__cacheMask.canvas);
-      __config[NODE_CACHE_MASK] = this.__cacheMask = null;
+    if(__cacheMask) {
+      inject.releaseCacheCanvas(__cacheMask.canvas);
+      __config[NODE_CACHE_MASK] = null;
     }
-    if(this.__cacheOverflow) {
-      inject.releaseCacheCanvas(this.__cacheOverflow.canvas);
-      __config[NODE_CACHE_OVERFLOW] = this.__cacheOverflow = null;
+    if(__cacheOverflow) {
+      inject.releaseCacheCanvas(__cacheOverflow.canvas);
+      __config[NODE_CACHE_OVERFLOW] = null;
     }
   }
 

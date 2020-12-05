@@ -33,6 +33,10 @@ const {
     UPDATE_IMG,
     UPDATE_CONFIG,
   },
+  NODE_KEY: {
+    NODE_CACHE,
+    NODE_CACHE_TOTAL,
+  },
 } = enums;
 const { AUTO } = unit;
 const { canvasPolygon, svgPolygon } = painter;
@@ -164,15 +168,16 @@ class Img extends Dom {
         [VISIBILITY]: visibility,
       },
       virtualDom,
-      __cache,
+      __config,
     } = this;
     // img无children所以total就是cache避免多余生成
     if(renderMode === mode.CANVAS) {
-      this.__cacheTotal = __cache;
+      __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
     if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
     }
+    let __cache = __config[NODE_CACHE];
     if(cache && __cache && __cache.enabled) {
       ctx = __cache.ctx;
     }

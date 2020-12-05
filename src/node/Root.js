@@ -65,6 +65,8 @@ const {
     NODE_STYLE,
     NODE_UPDATE_HASH,
     NODE_UNIQUE_UPDATE_ID,
+    NODE_CACHE,
+    NODE_CACHE_TOTAL,
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
     NODE_CACHE_MASK,
@@ -319,9 +321,9 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     while(prev && (prev.isMask)) {
       prev = prev.prev;
     }
-    if(prev && prev.__cacheMask) {
-      prev.__cacheMask.release();
-      prev.__cacheMask = null;
+    if(prev && prev.__config[NODE_CACHE_MASK]) {
+      prev.__config[NODE_CACHE_MASK].release();
+      prev.__config[NODE_CACHE_MASK] = null;
     }
   }
   // reflow/repaint/measure相关的记录下来
@@ -358,31 +360,32 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
-    if(node.__cache) {
-      node.__cache.release();
+    if(__config[NODE_CACHE]) {
+      __config[NODE_CACHE].release();
     }
-    if(node.__cacheTotal) {
-      node.__cacheTotal.release();
+    if(__config[NODE_CACHE_TOTAL]) {
+      __config[NODE_CACHE_TOTAL].release();
     }
-    if(node.__cacheMask) {
-      node.__cacheMask.release();
-      node.__cacheMask = __config[NODE_CACHE_MASK] = null;
+    if(__config[NODE_CACHE_MASK]) {
+      __config[NODE_CACHE_MASK].release();
+      __config[NODE_CACHE_MASK] = null;
     }
-    if(node.__cacheOverflow) {
-      node.__cacheOverflow.release();
-      node.__cacheOverflow = __config[NODE_CACHE_OVERFLOW] = null;
+    if(__config[NODE_CACHE_OVERFLOW]) {
+      __config[NODE_CACHE_OVERFLOW].release();
+      __config[NODE_CACHE_OVERFLOW] = null;
     }
   }
-  if((need || contain(lv, FILTER)) && node.__cacheFilter) {
-    node.__cacheFilter.release();
-    node.__cacheFilter = __config[NODE_CACHE_FILTER] = null;
+  if((need || contain(lv, FILTER)) && __config[NODE_CACHE_FILTER]) {
+    __config[NODE_CACHE_FILTER].release();
+    __config[NODE_CACHE_FILTER] = null;
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
   let parent = domParent;
   // 向上查找，出现重复跳出
   while(parent) {
-    if(parent.__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-      let id = parent.__config[NODE_UNIQUE_UPDATE_ID];
+    let __config = parent.__config;
+    if(__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
+      let id = __config[NODE_UNIQUE_UPDATE_ID];
       if(cacheHash.hasOwnProperty(id)) {
         break;
       }
@@ -391,41 +394,42 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     // 没有的需要设置一个标识
     else {
       cacheHash[uniqueUpdateId] = true;
-      parent.__config[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
+      __config[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
       cacheList.push(parent);
     }
-    let lv = parent.__refreshLevel;
+    let lv = __config[NODE_REFRESH_LV];
     let need = lv >= REPAINT;
-    if(need && parent.__cache) {
-      parent.__cache.release();
+    if(need && __config[NODE_CACHE]) {
+      __config[NODE_CACHE].release();
     }
     // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
-    if(parent.__cacheTotal) {
-      parent.__cacheTotal.release();
+    if(__config[NODE_CACHE_TOTAL]) {
+      __config[NODE_CACHE_TOTAL].release();
     }
-    if(parent.__cacheFilter) {
-      parent.__cacheFilter.release();
-      parent.__cacheFilter = null;
+    if(__config[NODE_CACHE_FILTER]) {
+      __config[NODE_CACHE_FILTER].release();
+      __config[NODE_CACHE_FILTER] = null;
     }
-    if(parent.__cacheMask) {
-      parent.__cacheMask.release();
-      parent.__cacheMask = null;
+    if(__config[NODE_CACHE_MASK]) {
+      __config[NODE_CACHE_MASK].release();
+      __config[NODE_CACHE_MASK] = null;
     }
-    if(parent.__cacheOverflow) {
-      parent.__cacheOverflow.release();
-      parent.__cacheOverflow = null;
+    if(__config[NODE_CACHE_OVERFLOW]) {
+      __config[NODE_CACHE_OVERFLOW].release();
+      __config[NODE_CACHE_OVERFLOW] = null;
     }
-    parent = parent.domParent;
+    parent = __config[NODE_DOM_PARENT];
   }
   return true;
 }
 
 function cleanSvgCache(node, child) {
+  let __config = node.__config;
   if(child) {
-    node.__config[NODE_REFRESH_LV] = node.__refreshLevel |= REPAINT;
+    __config[NODE_REFRESH_LV] = node.__refreshLevel |= REPAINT;
   }
   else {
-    node.__cacheTotal.release();
+    __config[NODE_CACHE_TOTAL].release();
   }
   if(Array.isArray(node.children)) {
     node.children.forEach(child => {

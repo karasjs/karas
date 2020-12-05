@@ -70,6 +70,7 @@ const {
     NODE_CACHE_FILTER,
     NODE_CACHE_OVERFLOW,
     NODE_CACHE_MASK,
+    NODE_STRUCT,
   },
   STRUCT_KEY: {
     STRUCT_INDEX,
@@ -289,7 +290,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // visibility/color变化，影响子继承
   if(hasVisibility || hasColor) {
-    for(let __structs = root.__structs, __struct = node.__struct, i = __struct[STRUCT_INDEX] + 1, len = i + __struct[STRUCT_TOTAL]; i < len; i++) {
+    for(let __structs = root.__structs, __struct = node.__config[NODE_STRUCT], i = __struct[STRUCT_INDEX] + 1, len = i + __struct[STRUCT_TOTAL]; i < len; i++) {
       let {
         [STRUCT_NODE]: node,
         [STRUCT_TOTAL]: total,

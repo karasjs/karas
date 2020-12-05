@@ -270,7 +270,6 @@ Object.keys(change.GEOM).concat([
   'displayAnimating',
   'visibilityAnimating',
   'bbox',
-  '__struct',
   '__config',
 ]).forEach(fn => {
   Object.defineProperty(Component.prototype, fn, {

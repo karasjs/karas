@@ -9,6 +9,7 @@ const {
   },
   NODE_KEY: {
     NODE_IS_DESTROYED,
+    NODE_STRUCT,
   },
 } = enums;
 
@@ -32,7 +33,7 @@ class Node {
   }
 
   __structure(i, lv, j) {
-    return this.__struct = {
+    return this.__config[NODE_STRUCT] = {
       [STRUCT_NODE]: this,
       [STRUCT_INDEX]: i,
       [STRUCT_CHILD_INDEX]: j,
@@ -41,7 +42,7 @@ class Node {
   }
 
   __modifyStruct(root, offset = 0) {
-    let struct = this.__struct;
+    let struct = this.__config[NODE_STRUCT];
     return [struct, 1];
   }
 

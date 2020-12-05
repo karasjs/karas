@@ -46,6 +46,7 @@ const {
   NODE_KEY: {
     NODE_CURRENT_STYLE,
     NODE_STYLE,
+    NODE_STRUCT,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -185,16 +186,17 @@ class Dom extends Xom {
   }
 
   __modifyStruct(root, offset = 0) {
-    let struct = this.__struct;
+    let __config = this.__config;
+    let struct = __config[NODE_STRUCT];
     let ns = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
     root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...ns);
     let d = 0;
     if(this !== root) {
-      d = this.__struct[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
-      struct = this.domParent.__struct;
+      d = ns[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
+      struct = this.domParent.__config[NODE_STRUCT];
       struct[STRUCT_TOTAL] += d;
     }
-    return [this.__struct, d];
+    return [ns, d];
   }
 
   /**
@@ -204,15 +206,14 @@ class Dom extends Xom {
    * @private
    */
   __updateStruct(structs) {
-    let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__struct;
+    let { [STRUCT_INDEX]: index, [STRUCT_TOTAL]: total = 0 } = this.__config[NODE_STRUCT];
     let zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
     let length = zIndexChildren.length;
     if(length === 1) {
       return;
     }
     zIndexChildren.forEach((child, i) => {
-      // child.__struct.childIndex = i;
-      child.__struct[STRUCT_CHILD_INDEX] = i;
+      child.__config[NODE_STRUCT][STRUCT_CHILD_INDEX] = i;
     });
     // 按直接子节点划分为相同数量的若干段进行排序
     let arr = [];

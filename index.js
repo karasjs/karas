@@ -424,7 +424,9 @@
       STRUCT_INDEX = _enums$STRUCT_KEY.STRUCT_INDEX,
       STRUCT_CHILD_INDEX = _enums$STRUCT_KEY.STRUCT_CHILD_INDEX,
       STRUCT_LV = _enums$STRUCT_KEY.STRUCT_LV,
-      NODE_IS_DESTROYED = enums.NODE_KEY.NODE_IS_DESTROYED;
+      _enums$NODE_KEY = enums.NODE_KEY,
+      NODE_IS_DESTROYED = _enums$NODE_KEY.NODE_IS_DESTROYED,
+      NODE_STRUCT = _enums$NODE_KEY.NODE_STRUCT;
 
   var Node = /*#__PURE__*/function () {
     function Node() {
@@ -450,14 +452,14 @@
     _createClass(Node, [{
       key: "__structure",
       value: function __structure(i, lv, j) {
-        var _this$__struct;
+        var _this$__config$NODE_S;
 
-        return this.__struct = (_this$__struct = {}, _defineProperty(_this$__struct, STRUCT_NODE, this), _defineProperty(_this$__struct, STRUCT_INDEX, i), _defineProperty(_this$__struct, STRUCT_CHILD_INDEX, j), _defineProperty(_this$__struct, STRUCT_LV, lv), _this$__struct);
+        return this.__config[NODE_STRUCT] = (_this$__config$NODE_S = {}, _defineProperty(_this$__config$NODE_S, STRUCT_NODE, this), _defineProperty(_this$__config$NODE_S, STRUCT_INDEX, i), _defineProperty(_this$__config$NODE_S, STRUCT_CHILD_INDEX, j), _defineProperty(_this$__config$NODE_S, STRUCT_LV, lv), _this$__config$NODE_S);
       }
     }, {
       key: "__modifyStruct",
       value: function __modifyStruct(root) {
-        var struct = this.__struct;
+        var struct = this.__config[NODE_STRUCT];
         return [struct, 1];
       }
     }, {
@@ -11378,11 +11380,11 @@
   var _enums$STYLE_KEY$8 = enums.STYLE_KEY,
       TRANSFORM_ORIGIN$2 = _enums$STYLE_KEY$8.TRANSFORM_ORIGIN,
       TRANSFORM$3 = _enums$STYLE_KEY$8.TRANSFORM,
-      _enums$NODE_KEY = enums.NODE_KEY,
-      NODE_OPACITY = _enums$NODE_KEY.NODE_OPACITY,
-      NODE_CACHE = _enums$NODE_KEY.NODE_CACHE,
-      NODE_CACHE_FILTER = _enums$NODE_KEY.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW = _enums$NODE_KEY.NODE_CACHE_OVERFLOW;
+      _enums$NODE_KEY$1 = enums.NODE_KEY,
+      NODE_OPACITY = _enums$NODE_KEY$1.NODE_OPACITY,
+      NODE_CACHE = _enums$NODE_KEY$1.NODE_CACHE,
+      NODE_CACHE_FILTER = _enums$NODE_KEY$1.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW = _enums$NODE_KEY$1.NODE_CACHE_OVERFLOW;
 
   function genSingle(cache) {
     var size = cache.size,
@@ -11913,25 +11915,25 @@
       UPDATE_KEYS$1 = _enums$UPDATE_KEY$1.UPDATE_KEYS,
       UPDATE_CONFIG$1 = _enums$UPDATE_KEY$1.UPDATE_CONFIG,
       STRUCT_HAS_MASK = enums.STRUCT_KEY.STRUCT_HAS_MASK,
-      _enums$NODE_KEY$1 = enums.NODE_KEY,
-      NODE_TAG_NAME = _enums$NODE_KEY$1.NODE_TAG_NAME,
-      NODE_CACHE_STYLE = _enums$NODE_KEY$1.NODE_CACHE_STYLE,
-      NODE_CURRENT_STYLE = _enums$NODE_KEY$1.NODE_CURRENT_STYLE,
-      NODE_COMPUTED_STYLE = _enums$NODE_KEY$1.NODE_COMPUTED_STYLE,
-      NODE_STYLE = _enums$NODE_KEY$1.NODE_STYLE,
-      NODE_STRUCT = _enums$NODE_KEY$1.NODE_STRUCT,
-      NODE_OPACITY$1 = _enums$NODE_KEY$1.NODE_OPACITY,
-      NODE_MATRIX_EVENT = _enums$NODE_KEY$1.NODE_MATRIX_EVENT,
-      NODE_MATRIX = _enums$NODE_KEY$1.NODE_MATRIX,
-      NODE_LIMIT_CACHE = _enums$NODE_KEY$1.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE = _enums$NODE_KEY$1.NODE_BLUR_VALUE,
-      NODE_HAS_CONTENT = _enums$NODE_KEY$1.NODE_HAS_CONTENT,
-      NODE_REFRESH_LV = _enums$NODE_KEY$1.NODE_REFRESH_LV,
-      NODE_CACHE$1 = _enums$NODE_KEY$1.NODE_CACHE,
-      NODE_CACHE_TOTAL = _enums$NODE_KEY$1.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$1.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK = _enums$NODE_KEY$1.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$1.NODE_CACHE_OVERFLOW;
+      _enums$NODE_KEY$2 = enums.NODE_KEY,
+      NODE_TAG_NAME = _enums$NODE_KEY$2.NODE_TAG_NAME,
+      NODE_CACHE_STYLE = _enums$NODE_KEY$2.NODE_CACHE_STYLE,
+      NODE_CURRENT_STYLE = _enums$NODE_KEY$2.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE = _enums$NODE_KEY$2.NODE_COMPUTED_STYLE,
+      NODE_STYLE = _enums$NODE_KEY$2.NODE_STYLE,
+      NODE_STRUCT$1 = _enums$NODE_KEY$2.NODE_STRUCT,
+      NODE_OPACITY$1 = _enums$NODE_KEY$2.NODE_OPACITY,
+      NODE_MATRIX_EVENT = _enums$NODE_KEY$2.NODE_MATRIX_EVENT,
+      NODE_MATRIX = _enums$NODE_KEY$2.NODE_MATRIX,
+      NODE_LIMIT_CACHE = _enums$NODE_KEY$2.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE = _enums$NODE_KEY$2.NODE_BLUR_VALUE,
+      NODE_HAS_CONTENT = _enums$NODE_KEY$2.NODE_HAS_CONTENT,
+      NODE_REFRESH_LV = _enums$NODE_KEY$2.NODE_REFRESH_LV,
+      NODE_CACHE$1 = _enums$NODE_KEY$2.NODE_CACHE,
+      NODE_CACHE_TOTAL = _enums$NODE_KEY$2.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$1 = _enums$NODE_KEY$2.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK = _enums$NODE_KEY$2.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW;
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -12433,7 +12435,6 @@
       _this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
 
       _this.__listener = {};
-      _this.__refreshLevel = REFLOW;
       Object.keys(_this.props).forEach(function (k) {
         var v = _this.props[k];
 
@@ -12454,7 +12455,7 @@
       config[NODE_CACHE_STYLE] = _this.__cacheStyle;
       config[NODE_CURRENT_STYLE] = _this.__currentStyle;
       config[NODE_COMPUTED_STYLE] = _this.__computedStyle;
-      config[NODE_REFRESH_LV] = _this.__refreshLevel;
+      config[NODE_REFRESH_LV] = REFLOW;
       config[NODE_STYLE] = _this.__style;
       config[NODE_MATRIX_EVENT] = [];
       return _this;
@@ -12469,7 +12470,7 @@
           res[STRUCT_HAS_MASK] = this.__hasMask;
         }
 
-        this.__config[NODE_STRUCT] = res;
+        this.__config[NODE_STRUCT$1] = res;
         return res;
       } // 获取margin/padding的实际值
 
@@ -12513,16 +12514,17 @@
         var w = data.w;
         var isDestroyed = this.isDestroyed,
             currentStyle = this.currentStyle,
-            computedStyle = this.computedStyle;
+            computedStyle = this.computedStyle,
+            __config = this.__config;
         var display = currentStyle[DISPLAY$2],
             width = currentStyle[WIDTH$2],
             position = currentStyle[POSITION$1];
-        this.__refreshLevel = this.__config[NODE_REFRESH_LV] = REFLOW;
+        __config[NODE_REFRESH_LV] = REFLOW;
 
         this.__cancelCache();
 
         this.__layoutData = clone$2(data);
-        this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+        __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
 
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = this.__innerWidth = this.__innerHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$2] = computedStyle[HEIGHT$2] = 0;
@@ -13173,7 +13175,7 @@
 
         this.__renderSelfData = null; // 渲染完认为完全无变更，等布局/动画/更新重置
 
-        this.__refreshLevel = __config[NODE_REFRESH_LV] = NONE;
+        __config[NODE_REFRESH_LV] = NONE;
 
         if (isDestroyed) {
           return {
@@ -14213,7 +14215,7 @@
         }
 
         if (lv !== undefined) {
-          this.__config[NODE_REFRESH_LV] = this.__refreshLevel |= lv;
+          this.__config[NODE_REFRESH_LV] |= lv;
         }
 
         this.__sx1 += diff;
@@ -14231,7 +14233,7 @@
         }
 
         if (lv !== undefined) {
-          this.__config[NODE_REFRESH_LV] = this.__refreshLevel |= lv;
+          this.__config[NODE_REFRESH_LV] |= lv;
         }
 
         this.__sy1 += diff;
@@ -15100,7 +15102,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', '__refreshLevel', '__cacheTotal', '__cache', 'bbox', '__struct', '__config']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -15176,9 +15178,10 @@
       ALIGN_ITEMS$1 = _enums$STYLE_KEY$a.ALIGN_ITEMS,
       JUSTIFY_CONTENT$1 = _enums$STYLE_KEY$a.JUSTIFY_CONTENT,
       Z_INDEX$3 = _enums$STYLE_KEY$a.Z_INDEX,
-      _enums$NODE_KEY$2 = enums.NODE_KEY,
-      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$2.NODE_CURRENT_STYLE,
-      NODE_STYLE$1 = _enums$NODE_KEY$2.NODE_STYLE,
+      _enums$NODE_KEY$3 = enums.NODE_KEY,
+      NODE_CURRENT_STYLE$1 = _enums$NODE_KEY$3.NODE_CURRENT_STYLE,
+      NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
+      NODE_STRUCT$2 = _enums$NODE_KEY$3.NODE_STRUCT,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -15330,9 +15333,7 @@
             arr.push(temp);
           }
         });
-        var total = arr.length - 1; // res.num = zIndexChildren.length;
-        // res.total = total;
-
+        var total = arr.length - 1;
         res[STRUCT_NUM] = zIndexChildren.length;
         res[STRUCT_TOTAL] = total;
         return arr;
@@ -15343,8 +15344,8 @@
         var _root$__structs;
 
         var offset = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-        var struct = this.__struct; // let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-        // root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
+        var __config = this.__config;
+        var struct = __config[NODE_STRUCT$2];
 
         var ns = this.__structure(struct[STRUCT_INDEX$1], struct[STRUCT_LV$1], struct[STRUCT_CHILD_INDEX$1]);
 
@@ -15353,14 +15354,12 @@
         var d = 0;
 
         if (this !== root) {
-          // d = this.__struct.total - struct.total;
-          d = this.__struct[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
-          struct = this.domParent.__struct; // struct.total += d;
-
+          d = ns[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
+          struct = this.domParent.__config[NODE_STRUCT$2];
           struct[STRUCT_TOTAL] += d;
         }
 
-        return [this.__struct, d];
+        return [ns, d];
       }
       /**
        * 因为zIndex的变化造成的更新，只需重排这一段顺序即可
@@ -15372,10 +15371,10 @@
     }, {
       key: "__updateStruct",
       value: function __updateStruct(structs) {
-        var _this$__struct = this.__struct,
-            index = _this$__struct[STRUCT_INDEX$1],
-            _this$__struct$STRUCT = _this$__struct[STRUCT_TOTAL],
-            total = _this$__struct$STRUCT === void 0 ? 0 : _this$__struct$STRUCT;
+        var _this$__config$NODE_S = this.__config[NODE_STRUCT$2],
+            index = _this$__config$NODE_S[STRUCT_INDEX$1],
+            _this$__config$NODE_S2 = _this$__config$NODE_S[STRUCT_TOTAL],
+            total = _this$__config$NODE_S2 === void 0 ? 0 : _this$__config$NODE_S2;
         var zIndexChildren = this.__zIndexChildren = genZIndexChildren(this);
         var length = zIndexChildren.length;
 
@@ -15384,8 +15383,7 @@
         }
 
         zIndexChildren.forEach(function (child, i) {
-          // child.__struct.childIndex = i;
-          child.__struct[STRUCT_CHILD_INDEX$1] = i;
+          child.__config[NODE_STRUCT$2][STRUCT_CHILD_INDEX$1] = i;
         }); // 按直接子节点划分为相同数量的若干段进行排序
 
         var arr = [];
@@ -15394,16 +15392,13 @@
           var child = structs[i];
           arr.push({
             child: child,
-            // list: structs.slice(child.index, child.index + child.total + 1),
             list: structs.slice(child[STRUCT_INDEX$1], child[STRUCT_INDEX$1] + child[STRUCT_TOTAL] + 1)
-          }); // i += child.total;
-
+          });
           i += child[STRUCT_TOTAL] || 0;
         }
 
         var needSort;
         arr.sort(function (a, b) {
-          // let res = a.child.childIndex - b.child.childIndex;
           var res = a.child[STRUCT_CHILD_INDEX$1] - b.child[STRUCT_CHILD_INDEX$1];
 
           if (res < 0) {
@@ -15419,7 +15414,6 @@
             list = list.concat(item.list);
           });
           list.forEach(function (struct, i) {
-            // struct.index = index + i + 1;
             struct[STRUCT_INDEX$1] = index + i + 1;
           });
           structs.splice.apply(structs, [index + 1, total].concat(_toConsumableArray(list)));
@@ -16971,9 +16965,9 @@
       UPDATE_FOCUS$1 = _enums$UPDATE_KEY$2.UPDATE_FOCUS,
       UPDATE_IMG = _enums$UPDATE_KEY$2.UPDATE_IMG,
       UPDATE_CONFIG$2 = _enums$UPDATE_KEY$2.UPDATE_CONFIG,
-      _enums$NODE_KEY$3 = enums.NODE_KEY,
-      NODE_CACHE$2 = _enums$NODE_KEY$3.NODE_CACHE,
-      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$3.NODE_CACHE_TOTAL;
+      _enums$NODE_KEY$4 = enums.NODE_KEY,
+      NODE_CACHE$2 = _enums$NODE_KEY$4.NODE_CACHE,
+      NODE_CACHE_TOTAL$1 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL;
   var AUTO$4 = unit.AUTO;
   var canvasPolygon$2 = painter.canvasPolygon,
       svgPolygon$2 = painter.svgPolygon;
@@ -17450,17 +17444,17 @@
       STROKE_DASHARRAY_STR = _enums$STYLE_KEY$c.STROKE_DASHARRAY_STR,
       FILL_RULE = _enums$STYLE_KEY$c.FILL_RULE,
       VISIBILITY$4 = _enums$STYLE_KEY$c.VISIBILITY,
-      _enums$NODE_KEY$4 = enums.NODE_KEY,
-      NODE_CACHE_PROPS = _enums$NODE_KEY$4.NODE_CACHE_PROPS,
-      NODE_CURRENT_PROPS = _enums$NODE_KEY$4.NODE_CURRENT_PROPS,
-      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$4.NODE_CURRENT_STYLE,
-      NODE_IS_MASK = _enums$NODE_KEY$4.NODE_IS_MASK,
-      NODE_STYLE$2 = _enums$NODE_KEY$4.NODE_STYLE,
-      NODE_CACHE$3 = _enums$NODE_KEY$4.NODE_CACHE,
-      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$4.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$4.NODE_CACHE_FILTER,
-      NODE_CACHE_MASK$1 = _enums$NODE_KEY$4.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$4.NODE_CACHE_OVERFLOW;
+      _enums$NODE_KEY$5 = enums.NODE_KEY,
+      NODE_CACHE_PROPS = _enums$NODE_KEY$5.NODE_CACHE_PROPS,
+      NODE_CURRENT_PROPS = _enums$NODE_KEY$5.NODE_CURRENT_PROPS,
+      NODE_CURRENT_STYLE$2 = _enums$NODE_KEY$5.NODE_CURRENT_STYLE,
+      NODE_IS_MASK = _enums$NODE_KEY$5.NODE_IS_MASK,
+      NODE_STYLE$2 = _enums$NODE_KEY$5.NODE_STYLE,
+      NODE_CACHE$3 = _enums$NODE_KEY$5.NODE_CACHE,
+      NODE_CACHE_TOTAL$2 = _enums$NODE_KEY$5.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$2 = _enums$NODE_KEY$5.NODE_CACHE_FILTER,
+      NODE_CACHE_MASK$1 = _enums$NODE_KEY$5.NODE_CACHE_MASK,
+      NODE_CACHE_OVERFLOW$2 = _enums$NODE_KEY$5.NODE_CACHE_OVERFLOW;
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
@@ -17901,10 +17895,11 @@
     return Geom;
   }(Xom);
 
-  var _enums$NODE_KEY$5 = enums.NODE_KEY,
-      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$5.NODE_COMPUTED_STYLE,
-      NODE_DOM_PARENT$1 = _enums$NODE_KEY$5.NODE_DOM_PARENT,
-      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$5.NODE_MATRIX_EVENT;
+  var _enums$NODE_KEY$6 = enums.NODE_KEY,
+      NODE_COMPUTED_STYLE$1 = _enums$NODE_KEY$6.NODE_COMPUTED_STYLE,
+      NODE_DOM_PARENT$1 = _enums$NODE_KEY$6.NODE_DOM_PARENT,
+      NODE_MATRIX_EVENT$1 = _enums$NODE_KEY$6.NODE_MATRIX_EVENT,
+      NODE_STRUCT$3 = _enums$NODE_KEY$6.NODE_STRUCT;
   var TYPE_VD$2 = $$type.TYPE_VD,
       TYPE_GM$2 = $$type.TYPE_GM,
       TYPE_CP$2 = $$type.TYPE_CP;
@@ -17991,10 +17986,11 @@
       sr.__config[NODE_MATRIX_EVENT$1] = oldSr.__config[NODE_MATRIX_EVENT$1];
     }
 
-    ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent', '__struct'].forEach(function (k) {
+    ['__x', '__y', '__width', '__height', '__sx1', '__layoutData', '__parent', '__domParent'].forEach(function (k) {
       sr[k] = oldSr[k];
     });
     sr.__config[NODE_DOM_PARENT$1] = oldSr.domParent;
+    sr.__config[NODE_STRUCT$3] = oldSr.__config[NODE_STRUCT$3];
     updateList.push(cp); // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
 
     if (!util.isObject(json) || !json.placeholder) {
@@ -19088,21 +19084,21 @@
       FILL$2 = _enums$STYLE_KEY$d.FILL,
       TRANSFORM$5 = _enums$STYLE_KEY$d.TRANSFORM,
       TRANSFORM_ORIGIN$4 = _enums$STYLE_KEY$d.TRANSFORM_ORIGIN,
-      _enums$NODE_KEY$6 = enums.NODE_KEY,
-      NODE_CACHE$4 = _enums$NODE_KEY$6.NODE_CACHE,
-      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$6.NODE_CACHE_TOTAL,
-      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$6.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$2 = _enums$NODE_KEY$6.NODE_CACHE_MASK,
-      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$6.NODE_CACHE_FILTER,
-      NODE_MATRIX$1 = _enums$NODE_KEY$6.NODE_MATRIX,
-      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$6.NODE_MATRIX_EVENT,
-      NODE_OPACITY$2 = _enums$NODE_KEY$6.NODE_OPACITY,
-      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$6.NODE_COMPUTED_STYLE,
-      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$6.NODE_CURRENT_STYLE,
-      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$6.NODE_LIMIT_CACHE,
-      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$6.NODE_BLUR_VALUE,
-      NODE_REFRESH_LV$1 = _enums$NODE_KEY$6.NODE_REFRESH_LV,
-      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$6.NODE_HAS_CONTENT,
+      _enums$NODE_KEY$7 = enums.NODE_KEY,
+      NODE_CACHE$4 = _enums$NODE_KEY$7.NODE_CACHE,
+      NODE_CACHE_TOTAL$3 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
+      NODE_CACHE_OVERFLOW$3 = _enums$NODE_KEY$7.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$2 = _enums$NODE_KEY$7.NODE_CACHE_MASK,
+      NODE_CACHE_FILTER$3 = _enums$NODE_KEY$7.NODE_CACHE_FILTER,
+      NODE_MATRIX$1 = _enums$NODE_KEY$7.NODE_MATRIX,
+      NODE_MATRIX_EVENT$2 = _enums$NODE_KEY$7.NODE_MATRIX_EVENT,
+      NODE_OPACITY$2 = _enums$NODE_KEY$7.NODE_OPACITY,
+      NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
+      NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
+      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
+      NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
+      NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
+      NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -19654,8 +19650,8 @@
           if (node instanceof Geom$1) {
             node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
 
-            if (node.__cache && node.__cache.available) {
-              node.render(renderMode, __refreshLevel, node.__cache.ctx, defs, true);
+            if (__cache && __cache.available) {
+              node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
             }
           } else {
             node.render(renderMode, __refreshLevel, ctx, defs, true);
@@ -19806,6 +19802,7 @@
           __cacheFilter = _node$__config3[NODE_CACHE_FILTER$3],
           __cacheMask = _node$__config3[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config3[NODE_CACHE_OVERFLOW$3],
+          __refreshLevel = _node$__config3[NODE_REFRESH_LV$1],
           _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
@@ -19954,9 +19951,9 @@
             } // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
             else if (__limitCache) {
                 if (node instanceof Geom$1) {
-                  res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
+                  res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
                 } else {
-                  res = node.render(renderMode, node.__refreshLevel, ctx, defs);
+                  res = node.render(renderMode, __refreshLevel, ctx, defs);
                 }
 
                 if (display === 'none') {
@@ -20759,24 +20756,25 @@
       UPDATE_OVERWRITE$1 = _enums$UPDATE_KEY$3.UPDATE_OVERWRITE,
       UPDATE_LIST = _enums$UPDATE_KEY$3.UPDATE_LIST,
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
-      _enums$NODE_KEY$7 = enums.NODE_KEY,
-      NODE_TAG_NAME$1 = _enums$NODE_KEY$7.NODE_TAG_NAME,
-      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
-      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$7.NODE_CACHE_PROPS,
-      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$7.NODE_CURRENT_PROPS,
-      NODE_DOM_PARENT$2 = _enums$NODE_KEY$7.NODE_DOM_PARENT,
-      NODE_IS_MASK$1 = _enums$NODE_KEY$7.NODE_IS_MASK,
-      NODE_REFRESH_LV$2 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
-      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$7.NODE_IS_DESTROYED,
-      NODE_STYLE$3 = _enums$NODE_KEY$7.NODE_STYLE,
-      NODE_UPDATE_HASH = _enums$NODE_KEY$7.NODE_UPDATE_HASH,
-      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$7.NODE_UNIQUE_UPDATE_ID,
-      NODE_CACHE$5 = _enums$NODE_KEY$7.NODE_CACHE,
-      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$7.NODE_CACHE_TOTAL,
-      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$7.NODE_CACHE_FILTER,
-      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$7.NODE_CACHE_OVERFLOW,
-      NODE_CACHE_MASK$3 = _enums$NODE_KEY$7.NODE_CACHE_MASK,
+      _enums$NODE_KEY$8 = enums.NODE_KEY,
+      NODE_TAG_NAME$1 = _enums$NODE_KEY$8.NODE_TAG_NAME,
+      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
+      NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
+      NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
+      NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
+      NODE_DOM_PARENT$2 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
+      NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
+      NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
+      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
+      NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
+      NODE_UPDATE_HASH = _enums$NODE_KEY$8.NODE_UPDATE_HASH,
+      NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$8.NODE_UNIQUE_UPDATE_ID,
+      NODE_CACHE$5 = _enums$NODE_KEY$8.NODE_CACHE,
+      NODE_CACHE_TOTAL$4 = _enums$NODE_KEY$8.NODE_CACHE_TOTAL,
+      NODE_CACHE_FILTER$4 = _enums$NODE_KEY$8.NODE_CACHE_FILTER,
+      NODE_CACHE_OVERFLOW$4 = _enums$NODE_KEY$8.NODE_CACHE_OVERFLOW,
+      NODE_CACHE_MASK$3 = _enums$NODE_KEY$8.NODE_CACHE_MASK,
+      NODE_STRUCT$4 = _enums$NODE_KEY$8.NODE_STRUCT,
       _enums$STRUCT_KEY$3 = enums.STRUCT_KEY,
       STRUCT_INDEX$3 = _enums$STRUCT_KEY$3.STRUCT_INDEX,
       STRUCT_TOTAL$2 = _enums$STRUCT_KEY$3.STRUCT_TOTAL,
@@ -21028,7 +21026,7 @@
 
 
     if (hasVisibility || hasColor) {
-      for (var __structs = root.__structs, __struct = node.__struct, _i = __struct[STRUCT_INDEX$3] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
+      for (var __structs = root.__structs, __struct = node.__config[NODE_STRUCT$4], _i = __struct[STRUCT_INDEX$3] + 1, _len = _i + __struct[STRUCT_TOTAL$2]; _i < _len; _i++) {
         var _structs$_i = __structs[_i],
             _node = _structs$_i[STRUCT_NODE$2],
             total = _structs$_i[STRUCT_TOTAL$2];
@@ -21047,7 +21045,7 @@
         }
 
         if (_need) {
-          _config[NODE_REFRESH_LV$2] = _node.__refreshLevel |= REPAINT$3;
+          _config[NODE_REFRESH_LV$2] |= REPAINT$3;
 
           if (_node instanceof Xom) {
             _node.__cancelCache();
@@ -21105,7 +21103,7 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$2] = node.__refreshLevel = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -21199,7 +21197,7 @@
     var __config = node.__config;
 
     if (child) {
-      __config[NODE_REFRESH_LV$2] = node.__refreshLevel |= REPAINT$3;
+      __config[NODE_REFRESH_LV$2] |= REPAINT$3;
     } else {
       __config[NODE_CACHE_TOTAL$4].release();
     }
@@ -22290,7 +22288,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] = _p2.__refreshLevel |= REFLOW$1;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                       }
                     }
 
@@ -22311,7 +22309,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] = _p2.__refreshLevel |= REFLOW$1;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
                       } // 高度不需要调整提前跳出
                       else {
                           break;

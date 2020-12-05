@@ -3,7 +3,14 @@ import builder from './builder';
 import $$type from './$$type';
 import enums from './enums';
 
-const { NODE_KEY: { NODE_COMPUTED_STYLE, NODE_DOM_PARENT, NODE_MATRIX_EVENT } } = enums;
+const {
+  NODE_KEY: {
+    NODE_COMPUTED_STYLE,
+    NODE_DOM_PARENT,
+    NODE_MATRIX_EVENT,
+    NODE_STRUCT,
+  },
+} = enums;
 const { TYPE_VD, TYPE_GM, TYPE_CP } = $$type;
 
 let Xom, Dom, Img, Geom, Component;
@@ -110,11 +117,11 @@ function updateCp(cp, props, state) {
     '__layoutData',
     '__parent',
     '__domParent',
-    '__struct',
   ].forEach(k => {
     sr[k] = oldSr[k];
   });
   sr.__config[NODE_DOM_PARENT] = oldSr.domParent;
+  sr.__config[NODE_STRUCT] = oldSr.__config[NODE_STRUCT];
   updateList.push(cp);
   // 老的需回收，diff会生成新的dom，唯一列外是cp直接返回一个没变化的cp
   if(!util.isObject(json) || !json.placeholder) {

@@ -524,8 +524,8 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     else {
       if(node instanceof Geom) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
-        if(node.__cache && node.__cache.available) {
-          node.render(renderMode, __refreshLevel, node.__cache.ctx, defs, true);
+        if(__cache && __cache.available) {
+          node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
         }
       }
       else {
@@ -674,6 +674,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
       [NODE_CACHE_FILTER]: __cacheFilter,
       [NODE_CACHE_MASK]: __cacheMask,
       [NODE_CACHE_OVERFLOW]: __cacheOverflow,
+      [NODE_REFRESH_LV]: __refreshLevel,
       [NODE_COMPUTED_STYLE]: {
         [DISPLAY]: display,
         [VISIBILITY]: visibility,
@@ -804,10 +805,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         // 无内容Xom会没有__cache且没有__limitCache，超限的会有__limitCache
         else if(__limitCache) {
           if(node instanceof Geom) {
-            res = node.__renderSelfData = node.__renderSelf(renderMode, node.__refreshLevel, ctx, defs);
+            res = node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs);
           }
           else {
-            res = node.render(renderMode, node.__refreshLevel, ctx, defs);
+            res = node.render(renderMode, __refreshLevel, ctx, defs);
           }
           if(display === 'none') {
             i += (total || 0);

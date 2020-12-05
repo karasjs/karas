@@ -179,8 +179,6 @@ class Dom extends Xom {
       }
     });
     let total = arr.length - 1;
-    // res.num = zIndexChildren.length;
-    // res.total = total;
     res[STRUCT_NUM] = zIndexChildren.length;
     res[STRUCT_TOTAL] = total;
     return arr;
@@ -188,16 +186,12 @@ class Dom extends Xom {
 
   __modifyStruct(root, offset = 0) {
     let struct = this.__struct;
-    // let ns = this.__structure(struct.index, struct.lv, struct.childIndex);
-    // root.__structs.splice(struct.index + offset, struct.total + 1, ...ns);
     let ns = this.__structure(struct[STRUCT_INDEX], struct[STRUCT_LV], struct[STRUCT_CHILD_INDEX]);
     root.__structs.splice(struct[STRUCT_INDEX] + offset, struct[STRUCT_TOTAL] + 1, ...ns);
     let d = 0;
     if(this !== root) {
-      // d = this.__struct.total - struct.total;
       d = this.__struct[STRUCT_TOTAL] - struct[STRUCT_TOTAL];
       struct = this.domParent.__struct;
-      // struct.total += d;
       struct[STRUCT_TOTAL] += d;
     }
     return [this.__struct, d];
@@ -226,15 +220,12 @@ class Dom extends Xom {
       let child = structs[i];
       arr.push({
         child,
-        // list: structs.slice(child.index, child.index + child.total + 1),
         list: structs.slice(child[STRUCT_INDEX], child[STRUCT_INDEX] + child[STRUCT_TOTAL] + 1),
       });
-      // i += child.total;
       i += child[STRUCT_TOTAL] || 0;
     }
     let needSort;
     arr.sort(function(a, b) {
-      // let res = a.child.childIndex - b.child.childIndex;
       let res = a.child[STRUCT_CHILD_INDEX] - b.child[STRUCT_CHILD_INDEX];
       if(res < 0) {
         needSort = true;
@@ -247,7 +238,6 @@ class Dom extends Xom {
         list = list.concat(item.list);
       });
       list.forEach((struct, i) => {
-        // struct.index = index + i + 1;
         struct[STRUCT_INDEX] = index + i + 1;
       })
       structs.splice(index + 1, total, ...list);

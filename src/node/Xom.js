@@ -777,7 +777,6 @@ class Xom extends Node {
     this.__currentStyle = {}; // 动画过程中绘制一开始会merge动画样式
     this.__computedStyle = {}; // 类似getComputedStyle()将currentStyle计算好数值赋给
     this.__listener = {};
-    this.__refreshLevel = REFLOW;
     Object.keys(this.props).forEach(k => {
       let v = this.props[k];
       if(/^on[a-zA-Z]/.test(k)) {
@@ -797,7 +796,7 @@ class Xom extends Node {
     config[NODE_CACHE_STYLE] = this.__cacheStyle;
     config[NODE_CURRENT_STYLE] = this.__currentStyle;
     config[NODE_COMPUTED_STYLE] = this.__computedStyle;
-    config[NODE_REFRESH_LV] = this.__refreshLevel;
+    config[NODE_REFRESH_LV] = REFLOW;
     config[NODE_STYLE] = this.__style;
     config[NODE_MATRIX_EVENT] = [];
   }
@@ -850,16 +849,16 @@ class Xom extends Node {
   __layout(data, isVirtual, fromAbs) {
     css.computeReflow(this, this.isShadowRoot);
     let { w } = data;
-    let { isDestroyed, currentStyle, computedStyle } = this;
+    let { isDestroyed, currentStyle, computedStyle, __config } = this;
     let {
       [DISPLAY]: display,
       [WIDTH]: width,
       [POSITION]: position,
     } = currentStyle;
-    this.__refreshLevel = this.__config[NODE_REFRESH_LV] = REFLOW;
+    __config[NODE_REFRESH_LV] = REFLOW;
     this.__cancelCache();
     this.__layoutData = clone(data);
-    this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+    __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__innerWidth = this.__innerHeight
@@ -1497,7 +1496,7 @@ class Xom extends Node {
     // geom特殊处理，每次>=REPAINT重新渲染生成
     this.__renderSelfData = null;
     // 渲染完认为完全无变更，等布局/动画/更新重置
-    this.__refreshLevel = __config[NODE_REFRESH_LV] = NONE;
+    __config[NODE_REFRESH_LV] = NONE;
     if(isDestroyed) {
       return { isDestroyed, break: true };
     }
@@ -2437,7 +2436,7 @@ class Xom extends Node {
       this.layoutData.x += diff;
     }
     if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] = this.__refreshLevel |= lv;
+      this.__config[NODE_REFRESH_LV] |= lv;
     }
     this.__sx1 += diff;
     this.__sx2 += diff;
@@ -2451,7 +2450,7 @@ class Xom extends Node {
       this.layoutData.y += diff;
     }
     if(lv !== undefined) {
-      this.__config[NODE_REFRESH_LV] = this.__refreshLevel |= lv;
+      this.__config[NODE_REFRESH_LV] |= lv;
     }
     this.__sy1 += diff;
     this.__sy2 += diff;

@@ -305,7 +305,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
         need = true;
       }
       if(need) {
-        __config[NODE_REFRESH_LV] = node.__refreshLevel |= REPAINT;
+        __config[NODE_REFRESH_LV] |= REPAINT;
         if(node instanceof Xom) {
           node.__cancelCache();
         }
@@ -356,7 +356,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
       measureList.push(node);
     }
   }
-  __config[NODE_REFRESH_LV] = node.__refreshLevel = lv;
+  __config[NODE_REFRESH_LV] = lv;
   // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
   let need = lv >= REPAINT || renderMode === mode.SVG && node instanceof Geom;
   if(need) {
@@ -426,7 +426,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
 function cleanSvgCache(node, child) {
   let __config = node.__config;
   if(child) {
-    __config[NODE_REFRESH_LV] = node.__refreshLevel |= REPAINT;
+    __config[NODE_REFRESH_LV] |= REPAINT;
   }
   else {
     __config[NODE_CACHE_TOTAL].release();
@@ -1324,7 +1324,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeX(dx);
                   p.__cancelCache();
-                  p.__config[NODE_REFRESH_LV] = p.__refreshLevel |= REFLOW;
+                  p.__config[NODE_REFRESH_LV] |= REFLOW;
                 }
               }
               if(dy) {
@@ -1342,7 +1342,7 @@ class Root extends Dom {
                 if(need) {
                   p.__resizeY(dy);
                   p.__cancelCache();
-                  p.__config[NODE_REFRESH_LV] = p.__refreshLevel |= REFLOW;
+                  p.__config[NODE_REFRESH_LV] |= REFLOW;
                 }
                 // 高度不需要调整提前跳出
                 else {

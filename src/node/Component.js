@@ -302,6 +302,7 @@ Object.keys(change.GEOM).concat([
   '__cancelCache',
   '__structure',
   '__modifyStruct',
+  '__updateStruct',
 ].forEach(fn => {
   Component.prototype[fn] = function() {
     let sr = this.shadowRoot;

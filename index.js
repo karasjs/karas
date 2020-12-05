@@ -12524,7 +12524,7 @@
         this.__cancelCache();
 
         this.__layoutData = clone$2(data);
-        __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+        __config[NODE_LIMIT_CACHE] = false;
 
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = this.__innerWidth = this.__innerHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$2] = computedStyle[HEIGHT$2] = 0;
@@ -13341,12 +13341,12 @@
           // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
           if (!hasContent && this.__releaseWhenEmpty(__cache)) {
             res["break"] = true;
-            __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+            __config[NODE_LIMIT_CACHE] = false;
             return res;
           } // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
 
 
-          if (!this.__limitCache && (!__cache || !__cache.available)) {
+          if (!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
             var bbox = this.bbox;
 
             if (__cache) {
@@ -13357,7 +13357,6 @@
 
 
             if (__cache && __cache.enabled) {
-              this.__cache = __cache;
               __cache.__bbox = bbox;
 
               __cache.__appendData(x1, y1);
@@ -13388,14 +13387,14 @@
                 res.y4 = y4 += dy;
               }
             } else {
-              __config[NODE_LIMIT_CACHE] = this.__limitCache = true;
+              __config[NODE_LIMIT_CACHE] = true;
               __cache = null;
             }
           }
 
           __config[NODE_CACHE$1] = __cache; // 无离屏功能视为不可缓存本身
 
-          if (this.__limitCache) {
+          if (__config[NODE_LIMIT_CACHE]) {
             return {
               limitCache: true
             };
@@ -14250,7 +14249,7 @@
         this.layoutData.w += diff;
 
         if (diff < 0) {
-          this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+          this.__config[NODE_LIMIT_CACHE] = false;
         }
       }
     }, {
@@ -14262,7 +14261,7 @@
         this.layoutData.h += diff;
 
         if (diff < 0) {
-          this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+          this.__config[NODE_LIMIT_CACHE] = false;
         }
       }
     }, {
@@ -15113,7 +15112,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__structure', '__modifyStruct'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -19099,6 +19098,7 @@
       NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
       NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
+      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
       STRUCT_NODE$1 = _enums$STRUCT_KEY$2.STRUCT_NODE,
       STRUCT_INDEX$2 = _enums$STRUCT_KEY$2.STRUCT_INDEX,
@@ -19319,7 +19319,7 @@
 
     if (bboxTotal[2] - bboxTotal[0] > Cache.MAX || bboxTotal[3] - bboxTotal[1] > Cache.MAX) {
       // 标识后续不再尝试生成，重新布局会清空标识
-      node.__limitCache = __config[NODE_LIMIT_CACHE$1] = true;
+      __config[NODE_LIMIT_CACHE$1] = true;
       return;
     }
 
@@ -19335,7 +19335,7 @@
 
   function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
     if (total === 0) {
-      return node.__cacheTotal = node.__config[NODE_CACHE_TOTAL$3] = cache;
+      return node.__config[NODE_CACHE_TOTAL$3] = cache;
     } // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
 
 
@@ -19351,7 +19351,7 @@
     if (cacheTop) {
       cacheTop.reset(bboxTotal);
     } else {
-      cacheTop = node.__cacheTotal = node.__config[NODE_CACHE_TOTAL$3] = Cache.getInstance(bboxTotal);
+      cacheTop = node.__config[NODE_CACHE_TOTAL$3] = Cache.getInstance(bboxTotal);
     } // 创建失败，再次降级
 
 
@@ -19565,13 +19565,11 @@
 
       if (__refreshLevel < REPAINT$2) {
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
-            _computedStyle = __config[NODE_COMPUTED_STYLE$2];
+            _computedStyle = __config[NODE_COMPUTED_STYLE$2],
+            __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
-          var __cacheStyle = node.__cacheStyle,
-              _currentStyle = node.currentStyle;
-
-          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, _currentStyle, _computedStyle); // 恶心的v8性能优化
+          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, _computedStyle); // 恶心的v8性能优化
 
 
           var m = __config[NODE_MATRIX$1];
@@ -19620,9 +19618,9 @@
           var bbox = node.bbox;
 
           if (__cache) {
-            __cache = node.__cache = Cache.updateCache(__cache, bbox);
+            __cache = Cache.updateCache(__cache, bbox);
           } else {
-            __cache = node.__cache = Cache.getInstance(bbox);
+            __cache = Cache.getInstance(bbox);
           }
 
           __config[NODE_CACHE$4] = __cache;
@@ -19649,6 +19647,7 @@
       else {
           if (node instanceof Geom$1) {
             node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
+            __cache = __config[NODE_CACHE$4];
 
             if (__cache && __cache.available) {
               node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
@@ -19757,7 +19756,7 @@
             continue;
           }
 
-          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = node.__cacheTotal = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache); // 超限降级继续
+          __cacheTotal = __config[NODE_CACHE_TOTAL$3] = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache); // 超限降级继续
 
           if (!__cacheTotal) {
             continue;
@@ -20527,14 +20526,12 @@
           delete virtualDom.cache;
         }
 
-        var currentStyle = node.currentStyle,
-            computedStyle = node.computedStyle;
+        var currentStyle = __config[NODE_CURRENT_STYLE$3],
+            computedStyle = __config[NODE_COMPUTED_STYLE$2],
+            __cacheStyle = __config[NODE_CACHE_STYLE$1];
 
         if (contain$1(__refreshLevel, TRANSFORM_ALL$1)) {
-          var __cacheStyle = node.__cacheStyle,
-              _currentStyle2 = node.currentStyle;
-
-          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, _currentStyle2, computedStyle); // 恶心的v8性能优化
+          var matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle); // 恶心的v8性能优化
 
 
           var m = __config[NODE_MATRIX$1];
@@ -20758,7 +20755,7 @@
       UPDATE_CONFIG$3 = _enums$UPDATE_KEY$3.UPDATE_CONFIG,
       _enums$NODE_KEY$8 = enums.NODE_KEY,
       NODE_TAG_NAME$1 = _enums$NODE_KEY$8.NODE_TAG_NAME,
-      NODE_CACHE_STYLE$1 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
+      NODE_CACHE_STYLE$2 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
       NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
@@ -20946,7 +20943,7 @@
 
 
     var tagName = __config[NODE_TAG_NAME$1],
-        __cacheStyle = __config[NODE_CACHE_STYLE$1],
+        __cacheStyle = __config[NODE_CACHE_STYLE$2],
         __cacheProps = __config[NODE_CACHE_PROPS$1],
         currentStyle = __config[NODE_CURRENT_STYLE$4],
         currentProps = __config[NODE_CURRENT_PROPS$1],

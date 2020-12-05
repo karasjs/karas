@@ -858,7 +858,7 @@ class Xom extends Node {
     __config[NODE_REFRESH_LV] = REFLOW;
     this.__cancelCache();
     this.__layoutData = clone(data);
-    __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+    __config[NODE_LIMIT_CACHE] = false;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
         = this.__innerWidth = this.__innerHeight
@@ -1651,11 +1651,11 @@ class Xom extends Node {
       // 无内容可释放并提前跳出，geom覆盖特殊判断，因为后面子类会绘制矢量，img也覆盖特殊判断，加载完肯定有内容
       if(!hasContent && this.__releaseWhenEmpty(__cache)) {
         res.break = true;
-        __config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+        __config[NODE_LIMIT_CACHE] = false;
         return res;
       }
       // 新生成根据最大尺寸，排除margin从border开始还要考虑阴影滤镜等，geom单独在dom里做
-      if(!this.__limitCache && (!__cache || !__cache.available)) {
+      if(!__config[NODE_LIMIT_CACHE] && (!__cache || !__cache.available)) {
         let bbox = this.bbox;
         if(__cache) {
           __cache.reset(bbox);
@@ -1665,7 +1665,6 @@ class Xom extends Node {
         }
         // 有可能超过最大尺寸限制不使用缓存
         if(__cache && __cache.enabled) {
-          this.__cache = __cache;
           __cache.__bbox = bbox;
           __cache.__appendData(x1, y1);
           let dbx = __cache.dbx, dby = __cache.dby;
@@ -1688,13 +1687,13 @@ class Xom extends Node {
           }
         }
         else {
-          __config[NODE_LIMIT_CACHE] = this.__limitCache = true;
+          __config[NODE_LIMIT_CACHE] = true;
           __cache = null;
         }
       }
       __config[NODE_CACHE] = __cache;
       // 无离屏功能视为不可缓存本身
-      if(this.__limitCache) {
+      if(__config[NODE_LIMIT_CACHE]) {
         return { limitCache: true };
       }
     }
@@ -2464,7 +2463,7 @@ class Xom extends Node {
     this.__outerWidth += diff;
     this.layoutData.w += diff;
     if(diff < 0) {
-      this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+      this.__config[NODE_LIMIT_CACHE] = false;
     }
   }
 
@@ -2474,7 +2473,7 @@ class Xom extends Node {
     this.__outerHeight += diff;
     this.layoutData.h += diff;
     if(diff < 0) {
-      this.__config[NODE_LIMIT_CACHE] = this.__limitCache = false;
+      this.__config[NODE_LIMIT_CACHE] = false;
     }
   }
 

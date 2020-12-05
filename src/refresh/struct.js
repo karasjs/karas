@@ -39,6 +39,7 @@ const {
     NODE_BLUR_VALUE,
     NODE_REFRESH_LV,
     NODE_HAS_CONTENT,
+    NODE_CACHE_STYLE,
   },
   STRUCT_KEY: {
     STRUCT_NODE,
@@ -243,7 +244,7 @@ function genBboxTotal(node, __structs, index, total, parentIndexHash, opacityHas
   }
   if((bboxTotal[2] - bboxTotal[0]) > Cache.MAX || (bboxTotal[3] - bboxTotal[1]) > Cache.MAX) {
     // 标识后续不再尝试生成，重新布局会清空标识
-    node.__limitCache = __config[NODE_LIMIT_CACHE] = true;
+    __config[NODE_LIMIT_CACHE] = true;
     return;
   }
   return bboxTotal;
@@ -258,7 +259,7 @@ function mergeBbox(bbox, t) {
 
 function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache) {
   if(total === 0) {
-    return node.__cacheTotal = node.__config[NODE_CACHE_TOTAL] = cache;
+    return node.__config[NODE_CACHE_TOTAL] = cache;
   }
   // 存每层父亲的matrix和opacity和index，bbox计算过程中生成，缓存给下面渲染过程用
   let parentIndexHash = {};
@@ -272,7 +273,7 @@ function genTotal(renderMode, node, lv, index, total, __structs, cacheTop, cache
     cacheTop.reset(bboxTotal);
   }
   else {
-    cacheTop = node.__cacheTotal = node.__config[NODE_CACHE_TOTAL] = Cache.getInstance(bboxTotal);
+    cacheTop = node.__config[NODE_CACHE_TOTAL] = Cache.getInstance(bboxTotal);
   }
   // 创建失败，再次降级
   if(!cacheTop || !cacheTop.enabled) {
@@ -457,9 +458,12 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     }
     // lv<REPAINT，肯定有__cache，跳过渲染过程，快速运算
     if(__refreshLevel < REPAINT) {
-      let { [NODE_CURRENT_STYLE]: currentStyle, [NODE_COMPUTED_STYLE]: computedStyle } = __config;
+      let {
+        [NODE_CURRENT_STYLE]: currentStyle,
+        [NODE_COMPUTED_STYLE]: computedStyle,
+        [NODE_CACHE_STYLE]: __cacheStyle,
+      } = __config;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        let { __cacheStyle, currentStyle } = node;
         let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
@@ -498,10 +502,10 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         }
         let bbox = node.bbox;
         if(__cache) {
-          __cache = node.__cache = Cache.updateCache(__cache, bbox);
+          __cache = Cache.updateCache(__cache, bbox);
         }
         else {
-          __cache = node.__cache = Cache.getInstance(bbox);
+          __cache = Cache.getInstance(bbox);
         }
         __config[NODE_CACHE] = __cache;
         if(!__cache.enabled) {
@@ -524,6 +528,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
     else {
       if(node instanceof Geom) {
         node.__renderSelfData = node.__renderSelf(renderMode, __refreshLevel, ctx, defs, true);
+        __cache = __config[NODE_CACHE];
         if(__cache && __cache.available) {
           node.render(renderMode, __refreshLevel, __cache.ctx, defs, true);
         }
@@ -632,7 +637,7 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         if(__cacheTotal && __cacheTotal.available) {
           continue;
         }
-        __cacheTotal = __config[NODE_CACHE_TOTAL] = node.__cacheTotal
+        __cacheTotal = __config[NODE_CACHE_TOTAL]
           = genTotal(renderMode, node, lv, index, total || 0, __structs, __cacheTotal, __cache);
         // 超限降级继续
         if(!__cacheTotal) {
@@ -829,8 +834,15 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
             let startIndex, endIndex;
             while(hasMask--) {
               // 注意这里用currentStyle当前状态而不是computedStyle上次状态
-              let { [STRUCT_TOTAL]: total,
-                [STRUCT_NODE]: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
+              let {
+                [STRUCT_TOTAL]: total,
+                [STRUCT_NODE]: {
+                  currentStyle: {
+                    [DISPLAY]: display,
+                    [VISIBILITY]: visibility
+                  },
+                },
+              } = __structs[j];
               if(display === 'none') {
                 j += (total || 0) + 1;
                 continue;
@@ -1029,8 +1041,16 @@ function renderCanvas(renderMode, ctx, defs, root) {
       let startIndex, endIndex;
       while(hasMask--) {
         // 注意这里用currentStyle当前状态而不是computedStyle上次状态
-        let { [STRUCT_TOTAL]: total,
-          [STRUCT_NODE]: { currentStyle: { [DISPLAY]: display, [VISIBILITY]: visibility } } } = __structs[j];
+        let {
+          [STRUCT_TOTAL]: total,
+          [STRUCT_NODE]: {
+            currentStyle: {
+              [DISPLAY]: display,
+              [VISIBILITY]:
+                visibility
+            },
+          },
+        } = __structs[j];
         if(display === 'none') {
           j += (total || 0) + 1;
           continue;
@@ -1241,9 +1261,12 @@ function renderSvg(renderMode, ctx, defs, root) {
         }
         delete virtualDom.cache;
       }
-      let { currentStyle, computedStyle } = node;
+      let {
+        [NODE_CURRENT_STYLE]: currentStyle,
+        [NODE_COMPUTED_STYLE]: computedStyle,
+        [NODE_CACHE_STYLE]: __cacheStyle,
+      } = __config;
       if(contain(__refreshLevel, TRANSFORM_ALL)) {
-        let { __cacheStyle, currentStyle } = node;
         let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];

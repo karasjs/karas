@@ -335,6 +335,9 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 
 #### getComputedStyle()
 * **类型** `Function`
+* **参数**
+  * key `String/Array<String>`
+    想要获取的样式键名，可为空，默认全部。
 * **说明**  
 获取当前计算好的样式
 * **示例**
@@ -346,6 +349,8 @@ let root = karas.render(
   '#selector'
 );
 console.log(root.ref.div.getComputedStyle().width); // 100
+console.log(root.ref.div.getComputedStyle('width').width); // 等同
+console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
 ```
 
 #### animate

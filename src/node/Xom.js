@@ -2508,11 +2508,28 @@ class Xom extends Node {
     return true;
   }
 
-  getComputedStyle() {
+  getComputedStyle(key) {
     let computedStyle = this.computedStyle;
     let res = {};
-    Object.keys(computedStyle).forEach(k => {
-      res[STYLE_RV_KEY[k]] = computedStyle[k];
+    let keys;
+    if(key) {
+      if(Array.isArray(key)) {
+        keys = key;
+      }
+      else {
+        keys = key;
+      }
+    }
+    else {
+      keys = Object.keys(computedStyle);
+    }
+    keys.forEach(k => {
+      if(GEOM.hasOwnProperty(k)) {
+        res[k] = computedStyle[k];
+      }
+      else {
+        res[STYLE_RV_KEY[k]] = computedStyle[k];
+      }
     });
     return res;
   }

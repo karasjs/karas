@@ -14299,11 +14299,27 @@
       }
     }, {
       key: "getComputedStyle",
-      value: function getComputedStyle() {
+      value: function getComputedStyle(key) {
         var computedStyle = this.computedStyle;
         var res = {};
-        Object.keys(computedStyle).forEach(function (k) {
-          res[STYLE_RV_KEY$2[k]] = computedStyle[k];
+        var keys;
+
+        if (key) {
+          if (Array.isArray(key)) {
+            keys = key;
+          } else {
+            keys = key;
+          }
+        } else {
+          keys = Object.keys(computedStyle);
+        }
+
+        keys.forEach(function (k) {
+          if (GEOM$4.hasOwnProperty(k)) {
+            res[k] = computedStyle[k];
+          } else {
+            res[STYLE_RV_KEY$2[k]] = computedStyle[k];
+          }
         });
         return res;
       }

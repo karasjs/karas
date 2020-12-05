@@ -19,6 +19,15 @@ var karas = require('karas'); // cjs
 console.log(karas.version);
 ```
 
+### debug
+* **类型** `boolean`
+* **说明**  
+  是否开启debug模式，开启后离屏canvas和img都会被添加到body上以便观察。默认关闭。
+* **示例**
+```jsx
+karas.debug = true;
+```
+
 <a name="render"></a>
 ### render
 * **类型** `Function`

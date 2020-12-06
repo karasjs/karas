@@ -20535,9 +20535,9 @@
           virtualDom.cache = true;
         } else {
           __cacheTotal && (__cacheTotal.available = true);
-          virtualDom = node.__virtualDom = util.extend({}, virtualDom);
+          virtualDom = node.__virtualDom = util.extend({}, virtualDom); // dom要清除children缓存，geom和img无需
 
-          if (!(node instanceof Img$1)) {
+          if (node instanceof Dom$1 && !(node instanceof Img$1)) {
             virtualDom.children = [];
           }
 

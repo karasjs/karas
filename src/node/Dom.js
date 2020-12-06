@@ -1293,7 +1293,7 @@ class Dom extends Xom {
       let { currentStyle, computedStyle } = item;
       // 先根据容器宽度计算margin/padding
       item.__mp(currentStyle, computedStyle, innerWidth);
-      if(computedStyle[DISPLAY] === 'inline') {
+      if(currentStyle[DISPLAY] === 'inline') {
         currentStyle[DISPLAY] = computedStyle[DISPLAY] = item.style.display = 'block';
       }
       let { [LEFT]: left, [TOP]: top, [RIGHT]: right,

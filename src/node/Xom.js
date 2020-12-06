@@ -1188,8 +1188,8 @@ class Xom extends Node {
       }
       if(!matrixCache) {
         let tfo = computedStyle[TRANSFORM_ORIGIN].slice(0);
-        tfo[0] += sx;
-        tfo[1] += sy;
+        tfo[0] += sx || 0;
+        tfo[1] += sy || 0;
         matrixCache = __cacheStyle[MATRIX] = tf.calMatrixByOrigin(computedStyle[TRANSFORM], tfo);
       }
     }

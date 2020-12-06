@@ -165,7 +165,6 @@ class Img extends Dom {
         [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
         [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
         [BORDER_BOTTOM_LEFT_RADIUS]: borderBottomLeftRadius,
-        [VISIBILITY]: visibility,
       },
       virtualDom,
       __config,
@@ -174,7 +173,7 @@ class Img extends Dom {
     if(renderMode === mode.CANVAS) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
-    if(isDestroyed || display === 'none' || visibility === 'hidden') {
+    if(isDestroyed || display === 'none') {
       return res;
     }
     let __cache = __config[NODE_CACHE];
@@ -186,9 +185,6 @@ class Img extends Dom {
     originY = res.y2 + paddingTop;
     let loadImg = this.__loadImg;
     if(loadImg.error && !placeholder && Img.showError) {
-      if(!width || !height) {
-        return res;
-      }
       let strokeWidth = Math.min(width, height) * 0.02;
       let stroke = '#CCC';
       let fill = '#DDD';
@@ -262,8 +258,8 @@ class Img extends Dom {
     }
     else if((loadImg.url === src || placeholder) && loadImg.source) {
       let source = loadImg.source;
-      // 无source不绘制，还要注意尺寸为0
-      if(source && (width || height)) {
+      // 无source不绘制
+      if(source) {
         // 圆角需要生成一个mask
         let list = border.calRadius(originX, originY, width, height,
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,

@@ -467,23 +467,27 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
-        if(parentMatrix) {
+        if(matrix && m) {
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
+        }
+        if(parentMatrix && matrix) {
           matrix = mx.multiply(parentMatrix, matrix);
         }
         // 恶心的v8性能优化
         m = __config[NODE_MATRIX_EVENT];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        if(m && matrix) {
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
+        }
       }
       if(contain(__refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -537,7 +541,6 @@ function renderCacheCanvas(renderMode, ctx, defs, root) {
         node.render(renderMode, __refreshLevel, ctx, defs, true);
       }
     }
-    // last = node;
     lastConfig = __config;
     lastLv = lv;
   }
@@ -1256,7 +1259,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       else {
         __cacheTotal && (__cacheTotal.available = true);
         virtualDom = node.__virtualDom = util.extend({}, virtualDom);
-        if(node instanceof Dom && !(node instanceof Img)) {
+        if(!(node instanceof Img)) {
           virtualDom.children = [];
         }
         delete virtualDom.cache;
@@ -1270,29 +1273,33 @@ function renderSvg(renderMode, ctx, defs, root) {
         let matrix = node.__calMatrix(__refreshLevel, __cacheStyle, currentStyle, computedStyle);
         // 恶心的v8性能优化
         let m = __config[NODE_MATRIX];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
-        if(mx.isE(matrix)) {
+        if(matrix && m) {
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
+        }
+        if(!matrix || mx.isE(matrix)) {
           delete virtualDom.transform;
         }
         else {
           virtualDom.transform = 'matrix(' + util.joinArr(matrix, ',') + ')';
         }
-        if(parentMatrix) {
+        if(parentMatrix && matrix) {
           matrix = mx.multiply(parentMatrix, matrix);
         }
         // 恶心的v8性能优化
         m = __config[NODE_MATRIX_EVENT];
-        m[0] = matrix[0];
-        m[1] = matrix[1];
-        m[2] = matrix[2];
-        m[3] = matrix[3];
-        m[4] = matrix[4];
-        m[5] = matrix[5];
+        if(m && matrix) {
+          m[0] = matrix[0];
+          m[1] = matrix[1];
+          m[2] = matrix[2];
+          m[3] = matrix[3];
+          m[4] = matrix[4];
+          m[5] = matrix[5];
+        }
       }
       if(contain(__refreshLevel, OP)) {
         let opacity = computedStyle[OPACITY] = currentStyle[OPACITY];
@@ -1353,10 +1360,10 @@ function renderSvg(renderMode, ctx, defs, root) {
       }
       node.render(renderMode, __refreshLevel, ctx, defs);
       virtualDom = node.virtualDom;
-    }
-    let { computedStyle: { [DISPLAY]: display } } = node;
-    if(display === 'none') {
-      i += (total || 0);
+      let { computedStyle: { [DISPLAY]: display } } = node;
+      if(display === 'none') {
+        i += (total || 0);
+      }
     }
     if(maskHash.hasOwnProperty(i)) {
       let { index, start, end, isClip } = maskHash[i];
@@ -1419,7 +1426,7 @@ function renderSvg(renderMode, ctx, defs, root) {
       parentVd.children.push(virtualDom);
     }
     if(i === 0) {
-      parentMatrix = node.__matrix;
+      parentMatrix = __config[NODE_MATRIX];
       parentVd = virtualDom;
     }
     lastLv = lv;

@@ -20541,7 +20541,13 @@
             virtualDom.children = [];
           }
 
-          delete virtualDom.cache;
+          delete virtualDom.cache; // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
+
+          var display = node.computedStyle[DISPLAY$6];
+
+          if (display === 'none') {
+            _i8 += total || 0;
+          }
         }
 
         var currentStyle = __config[NODE_CURRENT_STYLE$3],
@@ -20644,9 +20650,9 @@
 
         node.render(renderMode, __refreshLevel, ctx, defs);
         virtualDom = node.virtualDom;
-        var display = node.computedStyle[DISPLAY$6];
+        var _display2 = node.computedStyle[DISPLAY$6];
 
-        if (display === 'none') {
+        if (_display2 === 'none') {
           _i8 += total || 0;
         }
       }
@@ -20672,12 +20678,12 @@
         for (var j = _start; j < _end; j++) {
           var _node3 = __structs[j][STRUCT_NODE$1];
           var _node3$computedStyle = _node3.computedStyle,
-              _display2 = _node3$computedStyle[DISPLAY$6],
+              _display3 = _node3$computedStyle[DISPLAY$6],
               visibility = _node3$computedStyle[VISIBILITY$5],
               fill = _node3$computedStyle[FILL$2],
               children = _node3.virtualDom.children;
 
-          if (_display2 !== 'none' && visibility !== 'hidden') {
+          if (_display3 !== 'none' && visibility !== 'hidden') {
             mChildren = mChildren.concat(children);
 
             for (var k = 0, _len3 = children.length; k < _len3; k++) {
@@ -25332,7 +25338,7 @@
     Cache: Cache
   };
 
-  var version = "0.43.2";
+  var version = "0.43.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

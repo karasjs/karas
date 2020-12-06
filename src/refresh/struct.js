@@ -1264,6 +1264,11 @@ function renderSvg(renderMode, ctx, defs, root) {
           virtualDom.children = [];
         }
         delete virtualDom.cache;
+        // 还得判断，和img加载混在一起时，触发刷新如果display:none，则还有cacheTotal
+        let { computedStyle: { [DISPLAY]: display } } = node;
+        if(display === 'none') {
+          i += (total || 0);
+        }
       }
       let {
         [NODE_CURRENT_STYLE]: currentStyle,

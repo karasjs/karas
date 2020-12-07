@@ -244,7 +244,7 @@ class Text extends Node {
     return true;
   }
 
-  deepScan(cb) {
+  __deepScan(cb) {
     cb(this);
   }
 

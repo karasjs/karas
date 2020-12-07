@@ -1148,7 +1148,7 @@ class Root extends Dom {
      */
     else {
       let uniqueList = [];
-      this.deepScan(function(node, options) {
+      this.__deepScan(function(node, options) {
         if(node.hasOwnProperty('__uniqueReflowId')) {
           let o = reflowHash[node.__uniqueReflowId];
           delete node.__uniqueReflowId; // 清除掉
@@ -1158,7 +1158,7 @@ class Root extends Dom {
           else {
             // OFFSET的话先递归看子节点，本身改变放在最后
             let uniqueList = [];
-            node.deepScan(function(child, uniqueList) {}, { uniqueList });
+            node.__deepScan(function(child, uniqueList) {}, { uniqueList });
             uniqueList.forEach(item => {
               options.uniqueList.push(item);
             });

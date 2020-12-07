@@ -5058,8 +5058,8 @@
         return true;
       }
     }, {
-      key: "deepScan",
-      value: function deepScan(cb) {
+      key: "__deepScan",
+      value: function __deepScan(cb) {
         cb(this);
       }
     }, {
@@ -14207,8 +14207,8 @@
         }
       }
     }, {
-      key: "deepScan",
-      value: function deepScan(cb, options) {
+      key: "__deepScan",
+      value: function __deepScan(cb, options) {
         return cb(this, options);
       } // isLayout为false时，为relative/margin/flex/vertical等
 
@@ -15120,7 +15120,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -16892,14 +16892,14 @@
       } // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
 
     }, {
-      key: "deepScan",
-      value: function deepScan(cb, options) {
-        if (_get(_getPrototypeOf(Dom.prototype), "deepScan", this).call(this, cb, options)) {
+      key: "__deepScan",
+      value: function __deepScan(cb, options) {
+        if (_get(_getPrototypeOf(Dom.prototype), "__deepScan", this).call(this, cb, options)) {
           return;
         }
 
         this.children.forEach(function (node) {
-          node.deepScan(cb, options);
+          node.__deepScan(cb, options);
         });
       }
     }, {
@@ -22088,7 +22088,8 @@
          */
         else {
             var uniqueList = [];
-            this.deepScan(function (node, options) {
+
+            this.__deepScan(function (node, options) {
               if (node.hasOwnProperty('__uniqueReflowId')) {
                 var _o = reflowHash[node.__uniqueReflowId];
                 delete node.__uniqueReflowId; // 清除掉
@@ -22098,7 +22099,8 @@
                 } else {
                   // OFFSET的话先递归看子节点，本身改变放在最后
                   var _uniqueList = [];
-                  node.deepScan(function (child, uniqueList) {}, {
+
+                  node.__deepScan(function (child, uniqueList) {}, {
                     uniqueList: _uniqueList
                   });
 
@@ -22116,6 +22118,7 @@
             }, {
               uniqueList: uniqueList
             }); // 按顺序执行列表即可，上层LAYOUT先执行停止递归子节点，上层OFFSET后执行等子节点先LAYOUT/OFFSET
+
 
             var diffList = [];
             var diffI = 0;

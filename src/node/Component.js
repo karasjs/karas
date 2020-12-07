@@ -299,7 +299,7 @@ Object.keys(change.GEOM).concat([
   'removeAnimate',
   'clearAnimate',
   'updateStyle',
-  'deepScan',
+  '__deepScan',
   '__cancelCache',
   '__structure',
   '__modifyStruct',

@@ -2424,7 +2424,7 @@ class Xom extends Node {
     }
   }
 
-  deepScan(cb, options) {
+  __deepScan(cb, options) {
     return cb(this, options);
   }
 

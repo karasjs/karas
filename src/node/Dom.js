@@ -1560,12 +1560,12 @@ class Dom extends Xom {
   }
 
   // 深度遍历执行所有子节点，包含自己，如果cb返回true，提前跳出不继续深度遍历
-  deepScan(cb, options) {
-    if(super.deepScan(cb, options)) {
+  __deepScan(cb, options) {
+    if(super.__deepScan(cb, options)) {
       return;
     }
     this.children.forEach(node => {
-      node.deepScan(cb, options);
+      node.__deepScan(cb, options);
     });
   }
 

@@ -17139,7 +17139,7 @@
           __config[NODE_CACHE_TOTAL$1] = __config[NODE_CACHE$2];
         }
 
-        if (isDestroyed || display === 'none' || visibility === 'hidden' || res["break"]) {
+        if (isDestroyed || display === 'none' || visibility === 'hidden') {
           return res;
         }
 

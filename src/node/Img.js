@@ -174,7 +174,7 @@ class Img extends Dom {
     if(renderMode === mode.CANVAS) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
-    if(isDestroyed || display === 'none' || visibility === 'hidden' || res.break) {
+    if(isDestroyed || display === 'none' || visibility === 'hidden') {
       return res;
     }
     let __cache = __config[NODE_CACHE];

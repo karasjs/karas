@@ -2519,8 +2519,11 @@ class Xom extends Node {
         keys = key;
       }
       else {
-        keys = key;
+        keys = [key];
       }
+      keys = keys.map(s => {
+        return STYLE_KEY[style2Upper(s)];
+      });
     }
     else {
       keys = Object.keys(computedStyle);

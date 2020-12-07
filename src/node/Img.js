@@ -165,6 +165,7 @@ class Img extends Dom {
         [BORDER_TOP_RIGHT_RADIUS]: borderTopRightRadius,
         [BORDER_BOTTOM_RIGHT_RADIUS]: borderBottomRightRadius,
         [BORDER_BOTTOM_LEFT_RADIUS]: borderBottomLeftRadius,
+        [VISIBILITY]: visibility,
       },
       virtualDom,
       __config,
@@ -173,7 +174,7 @@ class Img extends Dom {
     if(renderMode === mode.CANVAS) {
       __config[NODE_CACHE_TOTAL] = __config[NODE_CACHE];
     }
-    if(isDestroyed || display === 'none') {
+    if(isDestroyed || display === 'none' || visibility === 'hidden' || res.break) {
       return res;
     }
     let __cache = __config[NODE_CACHE];

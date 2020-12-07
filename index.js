@@ -14332,8 +14332,12 @@
           if (Array.isArray(key)) {
             keys = key;
           } else {
-            keys = key;
+            keys = [key];
           }
+
+          keys = keys.map(function (s) {
+            return STYLE_KEY$6[style2Upper$2(s)];
+          });
         } else {
           keys = Object.keys(computedStyle);
         }
@@ -17127,6 +17131,7 @@
             borderTopRightRadius = _this$computedStyle[BORDER_TOP_RIGHT_RADIUS$1],
             borderBottomRightRadius = _this$computedStyle[BORDER_BOTTOM_RIGHT_RADIUS$1],
             borderBottomLeftRadius = _this$computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1],
+            visibility = _this$computedStyle[VISIBILITY$3],
             virtualDom = this.virtualDom,
             __config = this.__config; // img无children所以total就是cache避免多余生成
 
@@ -17134,7 +17139,7 @@
           __config[NODE_CACHE_TOTAL$1] = __config[NODE_CACHE$2];
         }
 
-        if (isDestroyed || display === 'none') {
+        if (isDestroyed || display === 'none' || visibility === 'hidden' || res["break"]) {
           return res;
         }
 
@@ -25338,7 +25343,7 @@
     Cache: Cache
   };
 
-  var version = "0.43.3";
+  var version = "0.43.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

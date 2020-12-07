@@ -17160,6 +17160,7 @@
             _this$props2 = this.props,
             src = _this$props2.src,
             placeholder = _this$props2.placeholder,
+            computedStyle = this.computedStyle,
             _this$computedStyle = this.computedStyle,
             display = _this$computedStyle[DISPLAY$4],
             borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$3],
@@ -17174,10 +17175,95 @@
             borderBottomLeftRadius = _this$computedStyle[BORDER_BOTTOM_LEFT_RADIUS$1],
             visibility = _this$computedStyle[VISIBILITY$3],
             virtualDom = this.virtualDom,
-            __config = this.__config; // img无children所以total就是cache避免多余生成
+            __config = this.__config,
+            loadImg = this.__loadImg; // img无children所以total就是cache避免多余生成
 
-        if (renderMode === mode.CANVAS) {
+        if (renderMode === mode.CANVAS && cache) {
           __config[NODE_CACHE_TOTAL$1] = __config[NODE_CACHE$2];
+        }
+
+        if (loadImg.url !== src && !loadImg.error) {
+          loadImg.url = src;
+          loadImg.source = null;
+          loadImg.error = null;
+          loadImg.cache = false;
+          inject.measureImg(src, function (data) {
+            var self = _this2; // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
+
+            if (data.url === loadImg.url && !self.__isDestroyed) {
+              var reload = function reload() {
+                var root = self.root,
+                    _self$currentStyle = self.currentStyle,
+                    width = _self$currentStyle[WIDTH$4],
+                    height = _self$currentStyle[HEIGHT$4];
+                root.delRefreshTask(self.__task);
+
+                if (width[1] !== AUTO$4 && height[1] !== AUTO$4) {
+                  root.addRefreshTask(self.__task = {
+                    __before: function __before() {
+                      if (self.isDestroyed) {
+                        return;
+                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+                      var res = {};
+                      res[UPDATE_NODE$2] = self;
+                      res[UPDATE_FOCUS$1] = o$1.REPAINT;
+                      res[UPDATE_CONFIG$2] = self.__config;
+
+                      root.__addUpdate(self, self.__config, root, root.__config, res);
+                    }
+                  });
+                } else {
+                  root.addRefreshTask(self.__task = {
+                    __before: function __before() {
+                      if (self.isDestroyed) {
+                        return;
+                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+                      var res = {};
+                      res[UPDATE_NODE$2] = self;
+                      res[UPDATE_FOCUS$1] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
+
+                      res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化
+
+                      res[UPDATE_CONFIG$2] = self.__config;
+
+                      root.__addUpdate(self, self.__config, root, root.__config, res);
+                    }
+                  });
+                }
+              };
+
+              if (data.success) {
+                loadImg.source = data.source;
+                loadImg.width = data.width;
+                loadImg.height = data.height;
+              } else if (placeholder) {
+                inject.measureImg(placeholder, function (data) {
+                  if (data.success) {
+                    loadImg.error = true;
+                    loadImg.source = data.source;
+                    loadImg.width = data.width;
+                    loadImg.height = data.height;
+                    reload();
+                  }
+                });
+                return;
+              } else {
+                loadImg.error = true;
+              } // 可见状态进行刷新操作
+
+
+              if (computedStyle[DISPLAY$4] !== 'none' && computedStyle[VISIBILITY$3] !== 'hidden') {
+                reload();
+              }
+            }
+          }, {
+            width: width,
+            height: height
+          });
         }
 
         if (isDestroyed || display === 'none' || visibility === 'hidden') {
@@ -17193,7 +17279,6 @@
         var originX, originY;
         originX = res.x2 + paddingLeft;
         originY = res.y2 + paddingTop;
-        var loadImg = this.__loadImg;
 
         if (loadImg.error && !placeholder && Img.showError) {
           var strokeWidth = Math.min(width, height) * 0.02;
@@ -17333,86 +17418,6 @@
               loadImg.cache = vd;
             }
           }
-        } else {
-          var _loadImg = this.__loadImg;
-          _loadImg.url = src;
-          _loadImg.source = null;
-          _loadImg.error = null;
-          _loadImg.cache = false;
-          inject.measureImg(src, function (data) {
-            var self = _this2; // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-
-            if (data.url === _loadImg.url && !self.__isDestroyed) {
-              var reload = function reload() {
-                var root = self.root,
-                    _self$currentStyle = self.currentStyle,
-                    width = _self$currentStyle[WIDTH$4],
-                    height = _self$currentStyle[HEIGHT$4];
-                root.delRefreshTask(self.__task);
-
-                if (width[1] !== AUTO$4 && height[1] !== AUTO$4) {
-                  root.addRefreshTask(self.__task = {
-                    __before: function __before() {
-                      if (self.isDestroyed) {
-                        return;
-                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-
-                      var res = {};
-                      res[UPDATE_NODE$2] = self;
-                      res[UPDATE_FOCUS$1] = o$1.REPAINT;
-                      res[UPDATE_CONFIG$2] = self.__config;
-
-                      root.__addUpdate(self, self.__config, root, root.__config, res);
-                    }
-                  });
-                } else {
-                  root.addRefreshTask(self.__task = {
-                    __before: function __before() {
-                      if (self.isDestroyed) {
-                        return;
-                      } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
-
-
-                      var res = {};
-                      res[UPDATE_NODE$2] = self;
-                      res[UPDATE_FOCUS$1] = o$1.REFLOW; // 没有样式变化但内容尺寸发生了变化强制执行
-
-                      res[UPDATE_IMG] = true; // 特殊标识强制布局即便没有style变化
-
-                      res[UPDATE_CONFIG$2] = self.__config;
-
-                      root.__addUpdate(self, self.__config, root, root.__config, res);
-                    }
-                  });
-                }
-              };
-
-              if (data.success) {
-                _loadImg.source = data.source;
-                _loadImg.width = data.width;
-                _loadImg.height = data.height;
-              } else if (placeholder) {
-                inject.measureImg(placeholder, function (data) {
-                  if (data.success) {
-                    _loadImg.error = true;
-                    _loadImg.source = data.source;
-                    _loadImg.width = data.width;
-                    _loadImg.height = data.height;
-                    reload();
-                  }
-                });
-                return;
-              } else {
-                _loadImg.error = true;
-              }
-
-              reload();
-            }
-          }, {
-            width: width,
-            height: height
-          });
         }
 
         return res;

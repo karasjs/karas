@@ -562,6 +562,94 @@ karas.render(
 );
 ```
 
+### 类属性property
+
+#### isMulti
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`multi`，表明图形是多个形式，数量是传入属性的数组长度。当为真值时，所有图形的数据均扩展一个维度数组表示。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
+    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### isMask
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。它将作用于上一个相邻的兄弟[Xom](#Xom)节点，对[Text](#Text)不起作用。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <div style={{width: 200, height: 200, background: '#F00'}}/>
+    <$rect style={{width: 100, height: 100}} mask={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### isClip
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <$rect style={{width: 100, height: 100}} clip={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### currentProps
+* **类型** `Object` 只读
+* **说明**  
+当前标签属性副本，注意和`props`的区别。当有动画不断更改props某个属性时，并不会直接修改props原始值，而是反应在currentProps上。
+
+### 类方法method
+
+#### getProps
+* **类型** `Function`
+* **参数**
+  * k `String`
+    键值key。
+* **说明**  
+返回`currentProps`上的值，如果为空则返回`props`上的值，注意名字是加双下划线的。详见[自定义图形](#自定义图形)。
+
+### 静态属性static
+
+#### getRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    返回已注册名字为name的矢量图形对象。
+* **说明**  
+任何矢量图形都需要先注册，内置的图形已经内置注册，如`$line`对应`Line`类。强制要求矢量图形以`$`开头，保持命名统一是良好的编程习惯。
+
+#### register
+* **类型** `Function`
+* **参数**
+  * name `String`
+  * target `class`
+    将要注册的矢量图形类。
+* **说明**  
+注册名字为name的矢量图形对象为target类。
+
+#### hasRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    返回名字为name是否已经被注册为矢量图形对象。
+* **说明**  
+注册前先检查是否已经被注册过。
+
 ## Img
 <a name="Img"></a>
 * **类型** `class`
@@ -1317,94 +1405,95 @@ karas.render(
   '#selector'
 );
 ```
-
-### 类属性property
-
-#### isMulti
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`multi`，表明图形是多个形式，数量是传入属性的数组长度。当为真值时，所有图形的数据均扩展一个维度数组表示。
 * **示例**
 ```jsx
+class Custom extends karas.Geom {
+  constructor(tagName, props) {
+    super(tagName, props);
+    // 注意双下划线同名约定
+    this.__custom = props.custom;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    // 使用getProps来获取custom，有变化时props上的custom是原始值不一定会变化，最新的在currentProps上
+    let custom = this.getProps('custom');
+  }
+}
+karas.Geom.register('$custom', Custom);
 karas.render(
   <canvas>
-    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
-    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
+    <$custom style={{ width: 100, height: 100 }} custom={{...someData}}/>
   </canvas>,
   '#selector'
 );
 ```
 
-#### isMask
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。它将作用于上一个相邻的兄弟[Xom](#Xom)节点，对[Text](#Text)不起作用。
+<a name="自定义图形动画"></a>
+## 自定义图形动画
+当使用自定义图形时，这个矢量图会有绘制的数据在props上，像内置的`$circle`有r来表示半径一样。这些数据因为是自定义新增的，动画或更新时处理差值框架本身并不知晓，需要注册扩展实现。
 * **示例**
 ```jsx
-karas.render(
-  <canvas>
-    <div style={{width: 200, height: 200, background: '#F00'}}/>
-    <$rect style={{width: 100, height: 100}} mask={true}/>
+// 本例简单实现了一个自定义圆，半径从固定的10到20的动画过程。仅canvas。
+class Yuan extends karas.Geom {
+  constructor(tagName, props) {
+    super(tagName, props);
+    this.__banjing = props.banjing;
+  }
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    let {
+      cx,
+      cy,
+      fill,
+    } = res;
+    let { __cacheProps } = this;
+    // 动画数据缓存在某个地方如__cacheProps，这样动画停止或结束后，别的地方引发刷新就会用这个缓存值
+    if(__cacheProps.banjing === undefined) {
+      __cacheProps.banjing = this.getProps('banjing');
+    }
+    ctx.beginPath();
+    ctx.fillStyle = fill;
+    ctx.arc(cx, cy, __cacheProps.banjing, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+karas.Geom.register('$yuan', Yuan);
+karas.refresh.change.addGeom('$yuan', 'banjing', {
+  calDiff(p, n) {
+    return n - p;
+  },
+  calIncrease(p, v, percent) {
+    return p + v * percent;
+  },
+});
+let root = karas.render(
+  <canvas width="360" height="360">
+    <$yuan ref="yuan" banjing={10} style={{
+      width: 100,
+      height: 100,
+      fill: '#F00',
+      background: '#000',
+    }}/>
   </canvas>,
   '#selector'
 );
+root.ref.yuan.animate([
+  {
+    banjing: 10,
+  },
+  {
+    banjing: 20,
+  }
+], {
+  duration: 1000,
+  fill: 'forwards',
+});
 ```
-
-#### isClip
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。
-* **示例**
-```jsx
-karas.render(
-  <canvas>
-    <$rect style={{width: 100, height: 100}} clip={true}/>
-  </canvas>,
-  '#selector'
-);
-```
-
-#### currentProps
-* **类型** `Object` 只读
-* **说明**  
-当前标签属性副本，注意和`props`的区别。当有动画不断更改props某个属性时，并不会直接修改props原始值，而是反应在currentProps上。
-
-### 类方法method
-
-#### getProps
-* **类型** `Function`
-* **参数**
-  * k `String`
-  键值key。
-* **说明**  
-返回`currentProps`上的值，如果为空则返回`props`上的值。
-
-### 静态属性static
-
-#### getRegister
-* **类型** `Function`
-* **参数**
-  * name `String`
-  返回已注册名字为name的矢量图形对象。
-* **说明**  
-任何矢量图形都需要先注册，内置的图形已经内置注册，如`$line`对应`Line`类。强制要求矢量图形以`$`开头，保持命名统一是良好的编程习惯。
-
-#### register
-* **类型** `Function`
-* **参数**
-  * name `String`
-  * target `class`
-  将要注册的矢量图形类。
-* **说明**  
-注册名字为name的矢量图形对象为target类。
-
-#### hasRegister
-* **类型** `Function`
-* **参数**
-  * name `String`
-  返回名字为name是否已经被注册为矢量图形对象。  
-* **说明**  
-注册前先检查是否已经被注册过。
 
 <a name="自定义组件"></a>
 ## 自定义组件
@@ -2383,6 +2472,108 @@ const ENUM = {
   // 高位表示reflow
   REFLOW: 128, //                               10000000
 };
+```
+
+### change
+* **说明**
+计算刷新变化过程中的变化和等级，此举是面向框架开发维护人员的，普通开发者无需关注。当实现自定义图形时，需要用到它。
+
+#### GEOM
+* **说明**
+存储geom矢量图形变化数据的hash表。
+
+#### GEOM_KEY_SET
+* **说明**
+同上，所有key的集合。
+
+#### isGeom
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String`
+* **说明**  
+判断一个k是否是指定矢量标签tagName下的属性。
+* **示例**
+```jsx
+karas.refresh.change.isGeom('$circle', 'r'); // true
+karas.refresh.change.isGeom('$circle', 'unknow'); // false
+```
+
+#### IGNORE
+* **说明**
+存储无变化数据的hash表。
+
+#### REPAINT
+* **说明**
+存储`REPAINT`变化数据的hash表。
+  
+#### MEASURE
+* **说明**
+存储`MEASURE`变化数据的hash表。
+
+#### isIgnore
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是无需刷新的`NONE`刷新等级。
+* **示例**
+```jsx
+karas.refresh.change.isIgnore('pointerEvents'); // true
+karas.refresh.change.isIgnore('visibility'); // false
+```
+
+#### isRepaint
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是`REPAINT`刷新等级，否则是`REFLOW`。
+* **示例**
+```jsx
+karas.refresh.change.isRepaint('color'); // true
+karas.refresh.change.isRepaint('display'); // false
+```
+
+#### isMeasure
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是`MEASURE`刷新等级，说明需要测量文字。
+* **示例**
+```jsx
+karas.refresh.change.isMeasure('fontFamily'); // true
+karas.refresh.change.isRepaint('color'); // false
+```
+
+#### isValid
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String`
+* **说明**  
+判断一个k是否是有效的刷新。
+* **示例**
+```jsx
+karas.refresh.change.isValid('$circle', 'r'); // true
+karas.refresh.change.isValid('$circle', 'unknow'); // false
+```
+
+#### addGeom
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String/Array<String>`
+  * options `Object`
+* **说明**  
+添加自定义图形的属性，这样这个属性在计算刷新时会被认为是有效的，如果options传入了`calDiff`和`calIncrease`，将被应用在计算差异的过程中，比如动画。详见[自定义图形动画](#自定义图形动画)。
+* **示例**
+```jsx
+karas.refresh.change.addGeom('$new', 'newProps', {
+  calDiff() {},
+  calIncrease() {},
+});
 ```
 
 ### Cache

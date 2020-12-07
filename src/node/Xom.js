@@ -840,7 +840,7 @@ class Xom extends Node {
     this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
     this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
     this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
-    this.__offsetHeight = w += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
+    this.__offsetHeight = h += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
     this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT];
     this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
@@ -1854,6 +1854,7 @@ class Xom extends Node {
               h = height;
             }
             else if(w === -2) {
+              console.log(width, clientWidth, height, clientHeight)
               if(width > clientWidth && height > clientHeight) {
                 w = width / clientWidth;
                 h = height / clientHeight;
@@ -2342,7 +2343,7 @@ class Xom extends Node {
       });
       // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
       for(let i in style) {
-        if(style.hasOwnProperty(i)) {
+        if(style.hasOwnProperty(i)) { console.log(i, change.isValid(tagName, i))
           if(change.isValid(tagName, i)) {
             hasChange = true;
           }
@@ -2351,7 +2352,7 @@ class Xom extends Node {
           }
         }
       }
-      let formatStyle = css.normalize(style);
+      let formatStyle = css.normalize(style); console.log(formatStyle)
       // 空样式或非法或无改变直接返回
       if(!hasChange) {
         if(util.isFunction(cb)) {

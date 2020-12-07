@@ -674,6 +674,14 @@ class Root extends Dom {
     this.__scy = y;
   }
 
+  resize(w, h, cb) {
+    if(w !== this.width || h !== this.height) {
+      this.__width = w;
+      this.__hegiht = h;
+      this.addRefreshTask(cb || function() {});
+    }
+  }
+
   addRefreshTask(cb) {
     if(!cb) {
       return;

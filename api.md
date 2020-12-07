@@ -515,7 +515,7 @@ console.log(root.ref.div === div);
 ```
 
 <a name="Dom"></a>
-## Dom
+### Dom
 * **类型** `class`
 * **说明**  
 VirtualDom的基类，所有非图形vd均是继承或实现了此类。一般情况下开发用不到。详见[虚拟Dom](#虚拟Dom)。
@@ -1209,6 +1209,30 @@ function cb() {
 }
 root.addRefreshTask(cb);
 root.delRefreshTask(cb);
+```
+
+#### resize
+* **类型** `Function`
+* **参数**
+  * w `Number`
+    新宽度。
+  * h `Number`
+    新高度。
+  * cb `Function`
+    刷新回调。
+* **说明**  
+  重设根节点尺寸并刷新，注意不会修改Dom的css样式，需外部控制。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas width={360} height={360}>
+    <div style={{width: '50%', height: '50%', background: '#F00'}}/>
+  </canvas>,
+  '#selector'
+);
+root.resize(720, 720, function() {
+  console.log('resize');
+});
 ```
 
 ### html属性attribute

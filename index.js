@@ -17421,7 +17421,7 @@
         }
 
         return res;
-      } // img没加载时，清空，加载了或错误时，也返回true，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
+      } // img没加载时，清空，这样Xom就认为没内容不生成cache，防止img先绘制cache再绘制主屏，重复
 
     }, {
       key: "__releaseWhenEmpty",
@@ -21592,6 +21592,15 @@
         var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : x;
         this.__scx = x;
         this.__scy = y;
+      }
+    }, {
+      key: "resize",
+      value: function resize(w, h, cb) {
+        if (w !== this.width || h !== this.height) {
+          this.__width = w;
+          this.__hegiht = h;
+          this.addRefreshTask(cb || function () {});
+        }
       }
     }, {
       key: "addRefreshTask",

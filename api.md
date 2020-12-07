@@ -2446,7 +2446,128 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
+
+### matrix
+
+#### identity
+* **类型** `Function`
+* **说明**
+生成3阶单位矩阵，注意这是css的6位1维表达方式。
+
+#### multiply
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+矩阵a乘以b，注意这是css的6位1维表达方式。
+
+#### calPoint
+* **类型** `Function`
+* **参数**
+  * point `Array<Number>`
+  * matrix `Array<Number>`
+* **说明**
+根据matrix获取点point的换算后的坐标。
+* **示例**
+```jsx
+karas.math.matrix.calPoint([0, 0], [1, 0, 0, 100, 100]); // [100, 100]
+```
+
+#### inverse
+* **类型** `Function`
+* **参数**
+  * matrix `Array<Number>`
+* **说明**
+矩阵的逆矩阵，注意这是css的6位1维表达方式。
+
+#### isE
+* **类型** `Function`
+* **参数**
+  * matrix `Array<Number>`
+* **说明**
+矩阵是否为单位矩阵，注意这是css的6位1维表达方式。
+
+### geom
+
+#### vectorProduct
+* **类型** `Function`
+* **参数**
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+* **说明**
+向量积。
+
+#### pointInPolygon
+* **类型** `Function`
+* **参数**
+  * x `Number`
+  * y `Number`
+  * vertexes `Array<Number>`
+* **说明**
+x/y点是否在由一堆顶点vertexes组成的多边形中。
+
+#### angleBySide
+* **类型** `Function`
+* **参数**
+  * a `Number`
+  * b `Number`
+  * c `Array<Number>`
+* **说明**
+余弦定理3边长求夹角。
+
+#### bboxBezier
+* **类型** `Function`
+* **参数**
+  * x0 `Number`
+  * y0 `Number`
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+  * x3 `Number`
+  * y3 `Number`
+* **说明**
+获取贝塞尔曲线所在的bbox矩形框，根据参数数量分为2阶和3阶。
+
+#### bezierLength
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * order `Number`
+    2阶还是3阶。
+  * start `Number`
+    开始，[0, 1]。
+  * end `Number`
+    结束，[0, 1]。
+* **说明**
+根据开始结束百分比获取贝塞尔曲线的长度，start和end不传默认为0和1即全部。
+
+#### sliceBezier
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * t `Number`
+    开始，[0, 1]。
+* **说明**
+根据开始百分比截取贝塞尔曲线的一部分。
+
+#### sliceBezier2Both
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * start `Number`
+    开始，[0, 1]。
+  * end `Number`
+    结束，[0, 1]。
+* **说明**
+根据开始结束百分比截取贝塞尔曲线的一部分。
 
 <a name="refresh包"></a>
 ## refresh包

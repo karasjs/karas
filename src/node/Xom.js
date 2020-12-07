@@ -1854,7 +1854,6 @@ class Xom extends Node {
               h = height;
             }
             else if(w === -2) {
-              console.log(width, clientWidth, height, clientHeight)
               if(width > clientWidth && height > clientHeight) {
                 w = width / clientWidth;
                 h = height / clientHeight;
@@ -2343,7 +2342,7 @@ class Xom extends Node {
       });
       // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
       for(let i in style) {
-        if(style.hasOwnProperty(i)) { console.log(i, change.isValid(tagName, i))
+        if(style.hasOwnProperty(i)) {
           if(change.isValid(tagName, i)) {
             hasChange = true;
           }
@@ -2352,7 +2351,7 @@ class Xom extends Node {
           }
         }
       }
-      let formatStyle = css.normalize(style); console.log(formatStyle)
+      let formatStyle = css.normalize(style);
       // 空样式或非法或无改变直接返回
       if(!hasChange) {
         if(util.isFunction(cb)) {

@@ -13602,8 +13602,6 @@
                   w = _width5;
                   h = _height5;
                 } else if (w === -2) {
-                  console.log(_width5, clientWidth, _height5, clientHeight);
-
                   if (_width5 > clientWidth && _height5 > clientHeight) {
                     w = _width5 / clientWidth;
                     h = _height5 / clientHeight;
@@ -14138,8 +14136,6 @@
 
           for (var i in style) {
             if (style.hasOwnProperty(i)) {
-              console.log(i, o.isValid(tagName, i));
-
               if (o.isValid(tagName, i)) {
                 hasChange = true;
               } else {
@@ -14148,8 +14144,7 @@
             }
           }
 
-          var formatStyle = css.normalize(style);
-          console.log(formatStyle); // 空样式或非法或无改变直接返回
+          var formatStyle = css.normalize(style); // 空样式或非法或无改变直接返回
 
           if (!hasChange) {
             if (util.isFunction(cb)) {

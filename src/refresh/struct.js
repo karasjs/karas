@@ -1049,8 +1049,7 @@ function renderCanvas(renderMode, ctx, defs, root) {
           [STRUCT_NODE]: {
             currentStyle: {
               [DISPLAY]: display,
-              [VISIBILITY]:
-                visibility
+              [VISIBILITY]: visibility,
             },
           },
         } = __structs[j];

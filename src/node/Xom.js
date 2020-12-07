@@ -837,12 +837,12 @@ class Xom extends Node {
 
   __ioSize(w, h) {
     let computedStyle = this.computedStyle;
-    this.__innerWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
-    this.__innerHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
-    this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[BORDER_LEFT_WIDTH]
-      + computedStyle[MARGIN_RIGHT] + computedStyle[BORDER_RIGHT_WIDTH];
-    this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[BORDER_TOP_WIDTH]
-      + computedStyle[MARGIN_BOTTOM] + computedStyle[BORDER_BOTTOM_WIDTH];
+    this.__clientWidth = w += computedStyle[PADDING_LEFT] + computedStyle[PADDING_RIGHT];
+    this.__clientHeight = h += computedStyle[PADDING_TOP] + computedStyle[PADDING_BOTTOM];
+    this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH] + computedStyle[BORDER_RIGHT_WIDTH];
+    this.__offsetHeight = w += computedStyle[BORDER_TOP_WIDTH] + computedStyle[BORDER_BOTTOM_WIDTH];
+    this.__outerWidth = w + computedStyle[MARGIN_LEFT] + computedStyle[MARGIN_RIGHT];
+    this.__outerHeight = h + computedStyle[MARGIN_TOP] + computedStyle[MARGIN_BOTTOM];
   }
 
   // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
@@ -861,7 +861,8 @@ class Xom extends Node {
     __config[NODE_LIMIT_CACHE] = false;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
-        = this.__innerWidth = this.__innerHeight
+        = this.__clientWidth = this.__clientHeight
+        = this.__offsetWidth = this.__offsetHeight
         = this.__outerWidth = this.__outerHeight
         = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
       return;
@@ -1197,7 +1198,7 @@ class Xom extends Node {
   }
 
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-             sx, sy, innerWidth, innerHeight, outerWidth, outerHeight,
+             sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              x1, x2, x3, x4, y1, y2, y3, y4) {
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight);
@@ -1219,7 +1220,7 @@ class Xom extends Node {
       }
       if(__cacheStyle[BACKGROUND_SIZE] === undefined) {
         __cacheStyle[BACKGROUND_SIZE] = true;
-        computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], innerWidth, innerHeight);
+        computedStyle[BACKGROUND_SIZE] = calBackgroundSize(currentStyle[BACKGROUND_SIZE], clientWidth, clientHeight);
       }
       if(__cacheStyle[BACKGROUND_IMAGE] === undefined) {
         let bgI = computedStyle[BACKGROUND_IMAGE] = currentStyle[BACKGROUND_IMAGE];
@@ -1259,13 +1260,13 @@ class Xom extends Node {
                 });
               }
             }, {
-              width: innerWidth,
-              height: innerHeight,
+              width: clientWidth,
+              height: clientHeight,
             });
           }
         }
         else if(bgI && bgI.k) {
-          __cacheStyle[BACKGROUND_IMAGE] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, bgI);
+          __cacheStyle[BACKGROUND_IMAGE] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgI);
         }
       }
       if(__cacheStyle[BOX_SHADOW] === undefined) {
@@ -1532,8 +1533,8 @@ class Xom extends Node {
       sy: y,
       width,
       height,
-      innerWidth,
-      innerHeight,
+      clientWidth,
+      clientHeight,
       outerWidth,
       outerHeight,
       __hasMask,
@@ -1565,7 +1566,7 @@ class Xom extends Node {
     let hasContent = this.__hasContent = __config[NODE_HAS_CONTENT]
       = this.__calCache(renderMode, lv, ctx, defs, this.parent,
         __cacheStyle, currentStyle, computedStyle,
-        x, y, innerWidth, innerHeight, outerWidth, outerHeight,
+        x, y, clientWidth, clientHeight, outerWidth, outerHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         x1, x2, x3, x4, y1, y2, y3, y4
       );
@@ -1833,7 +1834,7 @@ class Xom extends Node {
     }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
-      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], x2, y2, innerWidth, innerHeight, ctx, this,
+      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], x2, y2, clientWidth, clientHeight, ctx, this,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
@@ -1853,24 +1854,24 @@ class Xom extends Node {
               h = height;
             }
             else if(w === -2) {
-              if(width > innerWidth && height > innerHeight) {
-                w = width / innerWidth;
-                h = height / innerHeight;
+              if(width > clientWidth && height > clientHeight) {
+                w = width / clientWidth;
+                h = height / clientHeight;
                 if(w >= h) {
-                  w = innerWidth;
+                  w = clientWidth;
                   h = w * height / width;
                 }
                 else {
-                  h = innerHeight;
+                  h = clientHeight;
                   w = h * width / height;
                 }
               }
-              else if(width > innerWidth) {
-                w = innerWidth;
+              else if(width > clientWidth) {
+                w = clientWidth;
                 h = w * height / width;
               }
-              else if(height > innerHeight) {
-                h = innerHeight;
+              else if(height > clientHeight) {
+                h = clientHeight;
                 w = h * width / height;
               }
               else {
@@ -1879,35 +1880,35 @@ class Xom extends Node {
               }
             }
             else if(w === -3) {
-              if(innerWidth > width && innerHeight > height) {
-                w = width / innerWidth;
-                h = height / innerHeight;
+              if(clientWidth > width && clientHeight > height) {
+                w = width / clientWidth;
+                h = height / clientHeight;
                 if(w <= h) {
-                  w = innerWidth;
+                  w = clientWidth;
                   h = w * height / width;
                 }
                 else {
-                  h = innerHeight;
+                  h = clientHeight;
                   w = h * width / height;
                 }
               }
-              else if(innerWidth > width) {
-                w = innerWidth;
+              else if(clientWidth > width) {
+                w = clientWidth;
                 h = w * height / width;
               }
-              else if(innerHeight > height) {
-                h = innerHeight;
+              else if(clientHeight > height) {
+                h = clientHeight;
                 w = h * width / height;
               }
               else {
-                w = width / innerWidth;
-                h = height / innerHeight;
+                w = width / clientWidth;
+                h = height / clientHeight;
                 if(w <= h) {
-                  w = innerWidth;
+                  w = clientWidth;
                   h = w * height / width;
                 }
                 else {
-                  h = innerHeight;
+                  h = clientHeight;
                   w = h * width / height;
                 }
               }
@@ -1918,10 +1919,10 @@ class Xom extends Node {
             else if(h === -1) {
               h = w * height / width;
             }
-            let bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X], innerWidth, w);
-            let bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y], innerHeight, h);
+            let bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X], clientWidth, w);
+            let bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y], clientHeight, h);
             // 超出尺寸模拟mask截取
-            let needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight;
+            let needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight;
             // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
             let xnl = 0;
             let xnr = 0;
@@ -1933,7 +1934,7 @@ class Xom extends Node {
               if(diff > 0) {
                 xnl = Math.ceil(diff / w);
               }
-              diff = x2 + innerWidth - bgX - w;
+              diff = x2 + clientWidth - bgX - w;
               if(diff > 0) {
                 xnr = Math.ceil(diff / w);
               }
@@ -1944,7 +1945,7 @@ class Xom extends Node {
               if(diff > 0) {
                 ynt = Math.ceil(diff / h);
               }
-              diff = y2 + innerHeight - bgY - h;
+              diff = y2 + clientHeight - bgY - h;
               if(diff > 0) {
                 ynb = Math.ceil(diff / h);
               }
@@ -1966,7 +1967,7 @@ class Xom extends Node {
                 let x = bgX + (i + 1) * w;
                 repeat.push([x, bgY]);
                 // 看最右边超过没有
-                if(!needMask && i === xnr - 1 && x + w > x2 + innerWidth) {
+                if(!needMask && i === xnr - 1 && x + w > x2 + clientWidth) {
                   needMask = true;
                 }
               }
@@ -1986,7 +1987,7 @@ class Xom extends Node {
                 let y = bgY + (i + 1) * h;
                 repeat.push([bgX, y]);
                 // 看最下边超过没有
-                if(!needMask && i === ynb - 1 && y + w > y2 + innerHeight) {
+                if(!needMask && i === ynb - 1 && y + w > y2 + clientHeight) {
                   needMask = true;
                 }
               }
@@ -2023,7 +2024,7 @@ class Xom extends Node {
             if(renderMode === mode.CANVAS) {
               if(needMask) {
                 ctx.save();
-                renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this,
+                renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, this,
                   borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
               }
@@ -2038,7 +2039,7 @@ class Xom extends Node {
               }
             }
             else if(renderMode === mode.SVG) {
-              let matrix = image.matrixResize(width, height, w, h, bgX, bgY, innerWidth, innerHeight);
+              let matrix = image.matrixResize(width, height, w, h, bgX, bgY, clientWidth, clientHeight);
               let props = [
                 ['xlink:href', backgroundImage],
                 ['x', bgX],
@@ -2059,8 +2060,8 @@ class Xom extends Node {
                     props: [
                       ['x', x2],
                       ['y', y2],
-                      ['width', innerWidth],
-                      ['height', innerHeight],
+                      ['width', clientWidth],
+                      ['height', clientHeight],
                       ['fill', '#FFF']
                     ],
                   }],
@@ -2077,7 +2078,7 @@ class Xom extends Node {
               repeat.forEach(item => {
                 let copy = clone(props);
                 if(needResize) {
-                  let matrix = image.matrixResize(width, height, w, h, item[0], item[1], innerWidth, innerHeight);
+                  let matrix = image.matrixResize(width, height, w, h, item[0], item[1], clientWidth, clientHeight);
                   if(matrix && !mx.isE(matrix)) {
                     copy[5][1] = 'matrix(' + joinArr(matrix, ',') + ')';
                   }
@@ -2095,7 +2096,7 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE], x2, y2, innerWidth, innerHeight, ctx, this,
+        renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE], x2, y2, clientWidth, clientHeight, ctx, this,
           borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
           borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
       }
@@ -2186,17 +2187,17 @@ class Xom extends Node {
 
   willResponseEvent(e) {
     let { x, y } = e;
-    let { sx, sy, outerWidth, outerHeight, matrixEvent,
+    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent,
       computedStyle: { [POINTER_EVENTS]: pointerEvents } } = this;
     if(pointerEvents === 'none') {
       return;
     }
     let inThis = tf.pointInQuadrilateral(
       x, y,
-      sx, sy,
-      sx + outerWidth, sy,
-      sx + outerWidth, sy + outerHeight,
-      sx, sy + outerHeight,
+      __sx1, __sy1,
+      __sx1 + offsetWidth, __sy1,
+      __sx1 + offsetWidth, __sy1 + offsetHeight,
+      __sx1, __sy1 + offsetHeight,
       matrixEvent
     );
     if(inThis) {
@@ -2459,7 +2460,8 @@ class Xom extends Node {
 
   __resizeX(diff) {
     this.computedStyle.width = this.__width += diff;
-    this.__innerWidth += diff;
+    this.__clientWidth += diff;
+    this.__offsetWidth += diff;
     this.__outerWidth += diff;
     this.layoutData.w += diff;
     if(diff < 0) {
@@ -2469,7 +2471,8 @@ class Xom extends Node {
 
   __resizeY(diff) {
     this.computedStyle.height = this.__height += diff;
-    this.__innerHeight += diff;
+    this.__clientHeight += diff;
+    this.__offsetHeight += diff;
     this.__outerHeight += diff;
     this.layoutData.h += diff;
     if(diff < 0) {
@@ -2536,6 +2539,20 @@ class Xom extends Node {
     return res;
   }
 
+  getBoundingClientRect() {
+    let { __sx1, __sy1, offsetWidth, offsetHeight, matrixEvent } = this;
+    let p1 = mx.calPoint([__sx1, __sy1], matrixEvent);
+    let p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
+    let p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
+    let p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
+    return {
+      left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
+      top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
+      right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
+      bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
+    };
+  }
+
   get tagName() {
     return this.__tagName;
   }
@@ -2548,12 +2565,20 @@ class Xom extends Node {
     return this.__sy;
   }
 
-  get innerWidth() {
-    return this.__innerWidth || 0;
+  get clientWidth() {
+    return this.__clientWidth || 0;
   }
 
-  get innerHeight() {
-    return this.__innerHeight || 0;
+  get clientHeight() {
+    return this.__clientHeight || 0;
+  }
+
+  get offsetWidth() {
+    return this.__offsetWidth || 0;
+  }
+
+  get offsetHeight() {
+    return this.__offsetHeight || 0;
   }
 
   get outerWidth() {
@@ -2567,7 +2592,7 @@ class Xom extends Node {
   // 不考虑margin的范围
   get bbox() {
     let {
-      __sx1, __sy1, innerWidth, innerHeight,
+      __sx1, __sy1, clientWidth, clientHeight,
       computedStyle: {
         [BORDER_TOP_WIDTH]: borderTopWidth,
         [BORDER_RIGHT_WIDTH]: borderRightWidth,
@@ -2578,9 +2603,9 @@ class Xom extends Node {
       },
     } = this;
     let [ox, oy] = this.__spreadByBoxShadowAndFilter(boxShadow, filter);
-    innerWidth += borderLeftWidth + borderRightWidth;
-    innerHeight += borderTopWidth + borderBottomWidth;
-    return [__sx1 - ox, __sy1 - oy, __sx1 + innerWidth + ox, __sy1 + innerHeight + oy];
+    clientWidth += borderLeftWidth + borderRightWidth;
+    clientHeight += borderTopWidth + borderBottomWidth;
+    return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
   }
 
   get listener() {

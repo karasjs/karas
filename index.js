@@ -9133,7 +9133,7 @@
 
         res[1] = _v2;
       } else if (p[1] === PX$3 && n[1] === PERCENT$4) {
-        var _v3 = n[0] * 0.01 * target[k === BACKGROUND_POSITION_X$1 ? 'innerWidth' : 'innerHeight'];
+        var _v3 = n[0] * 0.01 * target[k === BACKGROUND_POSITION_X$1 ? 'clientWidth' : 'clientHeight'];
 
         _v3 = _v3 - p[0];
 
@@ -9143,7 +9143,7 @@
 
         res[1] = _v3;
       } else if (p[1] === PERCENT$4 && n[1] === PX$3) {
-        var _v4 = n[0] * 100 / target[k === BACKGROUND_POSITION_X$1 ? 'innerWidth' : 'innerHeight'];
+        var _v4 = n[0] * 100 / target[k === BACKGROUND_POSITION_X$1 ? 'clientWidth' : 'clientHeight'];
 
         _v4 = _v4 - p[0];
 
@@ -9216,11 +9216,11 @@
         if (_pi[1] === _ni[1] && [PX$3, PERCENT$4].indexOf(_pi[1]) > -1) {
           res[1].push(_ni[0] - _pi[0]);
         } else if (_pi[1] === PX$3 && _ni[1] === PERCENT$4) {
-          var _v9 = _ni[0] * 0.01 * target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v9 = _ni[0] * 0.01 * target[_i2 ? 'clientWidth' : 'clientHeight'];
 
           res[1].push(_v9 - _pi[0]);
         } else if (_pi[1] === PERCENT$4 && _ni[1] === PX$3) {
-          var _v10 = _ni[0] * 100 / target[_i2 ? 'innerWidth' : 'innerHeight'];
+          var _v10 = _ni[0] * 100 / target[_i2 ? 'clientWidth' : 'clientHeight'];
 
           res[1].push(_v10 - _pi[0]);
         } else {
@@ -9245,7 +9245,7 @@
           }
 
           res[1] = [];
-          var innerWidth = target.innerWidth;
+          var clientWidth = target.clientWidth;
           var eq;
 
           for (var _i3 = 0, _len = Math.min(pv.length, nv.length); _i3 < _len; _i3++) {
@@ -9259,9 +9259,9 @@
               if (_a[1][1] === _b[1][1]) {
                 t.push(_b[1][0] - _a[1][0]);
               } else if (_a[1][1] === PX$3 && _b[1][1] === PERCENT$4) {
-                t.push(_b[1][0] * innerWidth * 0.01 - _a[1][0]);
+                t.push(_b[1][0] * clientWidth * 0.01 - _a[1][0]);
               } else if (_a[1][1] === PERCENT$4 && _b[1][1] === PX$3) {
-                t.push(_b[1][0] * 100 / innerWidth - _a[1][0]);
+                t.push(_b[1][0] * 100 / clientWidth - _a[1][0]);
               }
 
               if (eq) {
@@ -9294,11 +9294,11 @@
                 if (pp[1] === np[1]) {
                   res[3].push(np[0] - pp[0]);
                 } else if (pp[1] === PX$3 && np[1] === PERCENT$4) {
-                  var _v12 = np[0] * 0.01 * target[_i4 ? 'innerWidth' : 'innerHeight'];
+                  var _v12 = np[0] * 0.01 * target[_i4 ? 'clientWidth' : 'clientHeight'];
 
                   res[3].push(_v12 - pp[0]);
                 } else if (pp[1] === PERCENT$4 && np[1] === PX$3) {
-                  var _v13 = np[0] * 100 / target[_i4 ? 'innerWidth' : 'innerHeight'];
+                  var _v13 = np[0] * 100 / target[_i4 ? 'clientWidth' : 'clientHeight'];
 
                   res[3].push(_v13 - pp[0]);
                 }
@@ -12509,10 +12509,12 @@
       key: "__ioSize",
       value: function __ioSize(w, h) {
         var computedStyle = this.computedStyle;
-        this.__innerWidth = w += computedStyle[PADDING_LEFT$1] + computedStyle[PADDING_RIGHT$1];
-        this.__innerHeight = h += computedStyle[PADDING_TOP$1] + computedStyle[PADDING_BOTTOM$1];
-        this.__outerWidth = w + computedStyle[MARGIN_LEFT$1] + computedStyle[BORDER_LEFT_WIDTH$1] + computedStyle[MARGIN_RIGHT$1] + computedStyle[BORDER_RIGHT_WIDTH$1];
-        this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[BORDER_TOP_WIDTH$1] + computedStyle[MARGIN_BOTTOM$1] + computedStyle[BORDER_BOTTOM_WIDTH$1];
+        this.__clientWidth = w += computedStyle[PADDING_LEFT$1] + computedStyle[PADDING_RIGHT$1];
+        this.__clientHeight = h += computedStyle[PADDING_TOP$1] + computedStyle[PADDING_BOTTOM$1];
+        this.__offsetWidth = w += computedStyle[BORDER_LEFT_WIDTH$1] + computedStyle[BORDER_RIGHT_WIDTH$1];
+        this.__offsetHeight = w += computedStyle[BORDER_TOP_WIDTH$1] + computedStyle[BORDER_BOTTOM_WIDTH$1];
+        this.__outerWidth = w + computedStyle[MARGIN_LEFT$1] + computedStyle[MARGIN_RIGHT$1];
+        this.__outerHeight = h + computedStyle[MARGIN_TOP$1] + computedStyle[MARGIN_BOTTOM$1];
       } // absolute且无尺寸时，isVirtual标明先假布局一次计算尺寸，比如flex列计算时
 
     }, {
@@ -12535,7 +12537,7 @@
         __config[NODE_LIMIT_CACHE] = false;
 
         if (isDestroyed || display === 'none') {
-          this.__width = this.__height = this.__innerWidth = this.__innerHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$2] = computedStyle[HEIGHT$2] = 0;
+          this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$2] = computedStyle[HEIGHT$2] = 0;
           return;
         } // margin/padding在abs前已经计算过了，无需二次计算
 
@@ -12887,7 +12889,7 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this3 = this;
 
         this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight);
@@ -12908,7 +12910,7 @@
 
           if (__cacheStyle[BACKGROUND_SIZE$2] === undefined) {
             __cacheStyle[BACKGROUND_SIZE$2] = true;
-            computedStyle[BACKGROUND_SIZE$2] = calBackgroundSize(currentStyle[BACKGROUND_SIZE$2], innerWidth, innerHeight);
+            computedStyle[BACKGROUND_SIZE$2] = calBackgroundSize(currentStyle[BACKGROUND_SIZE$2], clientWidth, clientHeight);
           }
 
           if (__cacheStyle[BACKGROUND_IMAGE$1] === undefined) {
@@ -12950,12 +12952,12 @@
                     });
                   }
                 }, {
-                  width: innerWidth,
-                  height: innerHeight
+                  width: clientWidth,
+                  height: clientHeight
                 });
               }
             } else if (bgI && bgI.k) {
-              __cacheStyle[BACKGROUND_IMAGE$1] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, bgI);
+              __cacheStyle[BACKGROUND_IMAGE$1] = this.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, bgI);
             }
           }
 
@@ -13226,8 +13228,8 @@
             y = this.sy,
             width = this.width,
             height = this.height,
-            innerWidth = this.innerWidth,
-            innerHeight = this.innerHeight,
+            clientWidth = this.clientWidth,
+            clientHeight = this.clientHeight,
             outerWidth = this.outerWidth,
             outerHeight = this.outerHeight,
             __hasMask = this.__hasMask;
@@ -13262,7 +13264,7 @@
 
         var p = this.domParent; // 计算好cacheStyle的内容，以及位图缓存指数
 
-        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+        var hasContent = this.__hasContent = __config[NODE_HAS_CONTENT] = this.__calCache(renderMode, lv, ctx, defs, this.parent, __cacheStyle, currentStyle, computedStyle, x, y, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
 
         var backgroundColor = computedStyle[BACKGROUND_COLOR$1],
             borderTopColor = computedStyle[BORDER_TOP_COLOR],
@@ -13547,7 +13549,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         } // 渐变或图片叠加
 
 
@@ -13571,54 +13573,54 @@
                   w = _width5;
                   h = _height5;
                 } else if (w === -2) {
-                  if (_width5 > innerWidth && _height5 > innerHeight) {
-                    w = _width5 / innerWidth;
-                    h = _height5 / innerHeight;
+                  if (_width5 > clientWidth && _height5 > clientHeight) {
+                    w = _width5 / clientWidth;
+                    h = _height5 / clientHeight;
 
                     if (w >= h) {
-                      w = innerWidth;
+                      w = clientWidth;
                       h = w * _height5 / _width5;
                     } else {
-                      h = innerHeight;
+                      h = clientHeight;
                       w = h * _width5 / _height5;
                     }
-                  } else if (_width5 > innerWidth) {
-                    w = innerWidth;
+                  } else if (_width5 > clientWidth) {
+                    w = clientWidth;
                     h = w * _height5 / _width5;
-                  } else if (_height5 > innerHeight) {
-                    h = innerHeight;
+                  } else if (_height5 > clientHeight) {
+                    h = clientHeight;
                     w = h * _width5 / _height5;
                   } else {
                     w = _width5;
                     h = _height5;
                   }
                 } else if (w === -3) {
-                  if (innerWidth > _width5 && innerHeight > _height5) {
-                    w = _width5 / innerWidth;
-                    h = _height5 / innerHeight;
+                  if (clientWidth > _width5 && clientHeight > _height5) {
+                    w = _width5 / clientWidth;
+                    h = _height5 / clientHeight;
 
                     if (w <= h) {
-                      w = innerWidth;
+                      w = clientWidth;
                       h = w * _height5 / _width5;
                     } else {
-                      h = innerHeight;
+                      h = clientHeight;
                       w = h * _width5 / _height5;
                     }
-                  } else if (innerWidth > _width5) {
-                    w = innerWidth;
+                  } else if (clientWidth > _width5) {
+                    w = clientWidth;
                     h = w * _height5 / _width5;
-                  } else if (innerHeight > _height5) {
-                    h = innerHeight;
+                  } else if (clientHeight > _height5) {
+                    h = clientHeight;
                     w = h * _width5 / _height5;
                   } else {
-                    w = _width5 / innerWidth;
-                    h = _height5 / innerHeight;
+                    w = _width5 / clientWidth;
+                    h = _height5 / clientHeight;
 
                     if (w <= h) {
-                      w = innerWidth;
+                      w = clientWidth;
                       h = w * _height5 / _width5;
                     } else {
-                      h = innerHeight;
+                      h = clientHeight;
                       w = h * _width5 / _height5;
                     }
                   }
@@ -13628,10 +13630,10 @@
                   h = w * _height5 / _width5;
                 }
 
-                var bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2], innerWidth, w);
-                var bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2], innerHeight, h); // 超出尺寸模拟mask截取
+                var bgX = x2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_X$2], clientWidth, w);
+                var bgY = y2 + calBackgroundPosition(currentStyle[BACKGROUND_POSITION_Y$2], clientHeight, h); // 超出尺寸模拟mask截取
 
-                var needMask = bgX < x2 || bgY < y2 || w > innerWidth || h > innerHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
+                var needMask = bgX < x2 || bgY < y2 || w > clientWidth || h > clientHeight; // 计算因为repeat，需要向4个方向扩展渲染几个数量图片
 
                 var xnl = 0;
                 var xnr = 0;
@@ -13645,7 +13647,7 @@
                     xnl = Math.ceil(diff / w);
                   }
 
-                  diff = x2 + innerWidth - bgX - w;
+                  diff = x2 + clientWidth - bgX - w;
 
                   if (diff > 0) {
                     xnr = Math.ceil(diff / w);
@@ -13660,7 +13662,7 @@
                     ynt = Math.ceil(_diff / h);
                   }
 
-                  _diff = y2 + innerHeight - bgY - h;
+                  _diff = y2 + clientHeight - bgY - h;
 
                   if (_diff > 0) {
                     ynb = Math.ceil(_diff / h);
@@ -13688,7 +13690,7 @@
 
                     repeat.push([_x2, bgY]); // 看最右边超过没有
 
-                    if (!needMask && _i3 === xnr - 1 && _x2 + w > x2 + innerWidth) {
+                    if (!needMask && _i3 === xnr - 1 && _x2 + w > x2 + clientWidth) {
                       needMask = true;
                     }
                   }
@@ -13712,7 +13714,7 @@
 
                     repeat.push([bgX, _y2]); // 看最下边超过没有
 
-                    if (!needMask && _i5 === ynb - 1 && _y2 + w > y2 + innerHeight) {
+                    if (!needMask && _i5 === ynb - 1 && _y2 + w > y2 + clientHeight) {
                       needMask = true;
                     }
                   }
@@ -13754,7 +13756,7 @@
                 if (renderMode === mode.CANVAS) {
                   if (needMask) {
                     ctx.save();
-                    renderBgc(renderMode, '#FFF', x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                    renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -13768,7 +13770,7 @@
                     ctx.restore();
                   }
                 } else if (renderMode === mode.SVG) {
-                  var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, innerWidth, innerHeight);
+                  var _matrix = image.matrixResize(_width5, _height5, w, h, bgX, bgY, clientWidth, clientHeight);
 
                   var props = [['xlink:href', backgroundImage], ['x', bgX], ['y', bgY], ['width', _width5], ['height', _height5]];
                   var needResize;
@@ -13783,7 +13785,7 @@
                       tagName: 'clipPath',
                       children: [{
                         tagName: 'rect',
-                        props: [['x', x2], ['y', y2], ['width', innerWidth], ['height', innerHeight], ['fill', '#FFF']]
+                        props: [['x', x2], ['y', y2], ['width', clientWidth], ['height', clientHeight], ['fill', '#FFF']]
                       }]
                     });
 
@@ -13801,7 +13803,7 @@
                     var copy = clone$2(props);
 
                     if (needResize) {
-                      var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], innerWidth, innerHeight);
+                      var _matrix2 = image.matrixResize(_width5, _height5, w, h, item[0], item[1], clientWidth, clientHeight);
 
                       if (_matrix2 && !mx.isE(_matrix2)) {
                         copy[5][1] = 'matrix(' + joinArr$1(_matrix2, ',') + ')';
@@ -13821,7 +13823,7 @@
               }
             }
           } else if (backgroundImage.k) {
-            renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE$1], x2, y2, innerWidth, innerHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE$1], x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
           }
         } // boxShadow可能会有多个
 
@@ -13941,10 +13943,10 @@
       value: function willResponseEvent(e) {
         var x = e.x,
             y = e.y;
-        var sx = this.sx,
-            sy = this.sy,
-            outerWidth = this.outerWidth,
-            outerHeight = this.outerHeight,
+        var __sx1 = this.__sx1,
+            __sy1 = this.__sy1,
+            offsetWidth = this.offsetWidth,
+            offsetHeight = this.offsetHeight,
             matrixEvent = this.matrixEvent,
             pointerEvents = this.computedStyle[POINTER_EVENTS$1];
 
@@ -13952,7 +13954,7 @@
           return;
         }
 
-        var inThis = tf.pointInQuadrilateral(x, y, sx, sy, sx + outerWidth, sy, sx + outerWidth, sy + outerHeight, sx, sy + outerHeight, matrixEvent);
+        var inThis = tf.pointInQuadrilateral(x, y, __sx1, __sy1, __sx1 + offsetWidth, __sy1, __sx1 + offsetWidth, __sy1 + offsetHeight, __sx1, __sy1 + offsetHeight, matrixEvent);
 
         if (inThis) {
           if (!e.target) {
@@ -14252,7 +14254,8 @@
       key: "__resizeX",
       value: function __resizeX(diff) {
         this.computedStyle.width = this.__width += diff;
-        this.__innerWidth += diff;
+        this.__clientWidth += diff;
+        this.__offsetWidth += diff;
         this.__outerWidth += diff;
         this.layoutData.w += diff;
 
@@ -14264,7 +14267,8 @@
       key: "__resizeY",
       value: function __resizeY(diff) {
         this.computedStyle.height = this.__height += diff;
-        this.__innerHeight += diff;
+        this.__clientHeight += diff;
+        this.__offsetHeight += diff;
         this.__outerHeight += diff;
         this.layoutData.h += diff;
 
@@ -14348,6 +14352,25 @@
         return res;
       }
     }, {
+      key: "getBoundingClientRect",
+      value: function getBoundingClientRect() {
+        var __sx1 = this.__sx1,
+            __sy1 = this.__sy1,
+            offsetWidth = this.offsetWidth,
+            offsetHeight = this.offsetHeight,
+            matrixEvent = this.matrixEvent;
+        var p1 = mx.calPoint([__sx1, __sy1], matrixEvent);
+        var p2 = mx.calPoint([__sx1 + offsetWidth, __sy1], matrixEvent);
+        var p3 = mx.calPoint([__sx1 + offsetWidth, __sy1 + offsetHeight], matrixEvent);
+        var p4 = mx.calPoint([__sx1, __sy1 + offsetHeight], matrixEvent);
+        return {
+          left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
+          top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
+          right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
+          bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1])))
+        };
+      }
+    }, {
       key: "tagName",
       get: function get() {
         return this.__tagName;
@@ -14363,14 +14386,24 @@
         return this.__sy;
       }
     }, {
-      key: "innerWidth",
+      key: "clientWidth",
       get: function get() {
-        return this.__innerWidth || 0;
+        return this.__clientWidth || 0;
       }
     }, {
-      key: "innerHeight",
+      key: "clientHeight",
       get: function get() {
-        return this.__innerHeight || 0;
+        return this.__clientHeight || 0;
+      }
+    }, {
+      key: "offsetWidth",
+      get: function get() {
+        return this.__offsetWidth || 0;
+      }
+    }, {
+      key: "offsetHeight",
+      get: function get() {
+        return this.__offsetHeight || 0;
       }
     }, {
       key: "outerWidth",
@@ -14388,8 +14421,8 @@
       get: function get() {
         var __sx1 = this.__sx1,
             __sy1 = this.__sy1,
-            innerWidth = this.innerWidth,
-            innerHeight = this.innerHeight,
+            clientWidth = this.clientWidth,
+            clientHeight = this.clientHeight,
             _this$computedStyle = this.computedStyle,
             borderTopWidth = _this$computedStyle[BORDER_TOP_WIDTH$1],
             borderRightWidth = _this$computedStyle[BORDER_RIGHT_WIDTH$1],
@@ -14403,9 +14436,9 @@
             ox = _this$__spreadByBoxSh2[0],
             oy = _this$__spreadByBoxSh2[1];
 
-        innerWidth += borderLeftWidth + borderRightWidth;
-        innerHeight += borderTopWidth + borderBottomWidth;
-        return [__sx1 - ox, __sy1 - oy, __sx1 + innerWidth + ox, __sy1 + innerHeight + oy];
+        clientWidth += borderLeftWidth + borderRightWidth;
+        clientHeight += borderTopWidth + borderBottomWidth;
+        return [__sx1 - ox, __sy1 - oy, __sx1 + clientWidth + ox, __sy1 + clientHeight + oy];
       }
     }, {
       key: "listener",
@@ -15109,7 +15142,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'innerWidth', 'innerHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -15120,7 +15153,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -15814,6 +15847,8 @@
     }, {
       key: "__layoutFlex",
       value: function __layoutFlex(data, isVirtual) {
+        var _this2 = this;
+
         var flowChildren = this.flowChildren,
             currentStyle = this.currentStyle;
         var flexDirection = currentStyle[FLEX_DIRECTION$2],
@@ -16011,11 +16046,13 @@
 
               if (isDirectionRow) {
                 item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
-                item.__innerWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+                item.__clientWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+                _this2.__offsetWidth = main - marginLeft - marginRight;
                 item.__outerWidth = main;
               } else {
                 item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-                item.__innerHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+                item.__clientHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+                _this2.__offsetHeight = main - marginTop - marginRight;
                 item.__outerHeight = main;
               }
             }
@@ -16125,7 +16162,7 @@
                   var old = item.height;
                   var v = item.__height = computedStyle[HEIGHT$3] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                   var d = v - old;
-                  item.__innerHeight += d;
+                  item.__clientHeight += d;
                   item.__outerHeight += d;
                 }
               } else {
@@ -16148,7 +16185,8 @@
 
                   var _d = _v - _old;
 
-                  item.__innerWidth += _d;
+                  item.__clientWidth += _d;
+                  _this2.__offsetWidth += _d;
                   item.__outerWidth += _d;
                 }
               }
@@ -16178,7 +16216,7 @@
                     var old = item.height;
                     var v = item.__height = computedStyle[HEIGHT$3] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
-                    item.__innerHeight += d;
+                    item.__clientHeight += d;
                     item.__outerHeight += d;
                   }
                 } else {
@@ -16212,7 +16250,8 @@
 
                     var _d2 = _v2 - _old2;
 
-                    item.__innerWidth += _d2;
+                    item.__clientWidth += _d2;
+                    _this2.__offsetWidth += _d2;
                     item.__outerWidth += _d2;
                   }
                 } else {
@@ -16249,7 +16288,7 @@
                     var old = item.height;
                     var v = item.__height = computedStyle[HEIGHT$3] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
-                    item.__innerHeight += d;
+                    item.__clientHeight += d;
                     item.__outerHeight += d;
                   }
                 } else {
@@ -16283,7 +16322,8 @@
 
                     var _d3 = _v3 - _old3;
 
-                    item.__innerWidth += _d3;
+                    item.__clientWidth += _d3;
+                    _this2.__offsetWidth += _d3;
                     item.__outerWidth += _d3;
                   }
                 } else {
@@ -16326,7 +16366,7 @@
                     var old = item.height;
                     var v = item.__height = item.__height = computedStyle[HEIGHT$3] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                     var d = v - old;
-                    item.__innerHeight += d;
+                    item.__clientHeight += d;
                     item.__outerHeight += d;
                   }
                 }
@@ -16360,7 +16400,8 @@
 
                     var _d4 = _v4 - _old4;
 
-                    item.__innerWidth += _d4;
+                    item.__clientWidth += _d4;
+                    _this2.__offsetWidth += _d4;
                     item.__outerWidth += _d4;
                   }
                 }
@@ -16380,7 +16421,7 @@
     }, {
       key: "__layoutInline",
       value: function __layoutInline(data, isVirtual) {
-        var _this2 = this;
+        var _this3 = this;
 
         var flowChildren = this.flowChildren,
             computedStyle = this.computedStyle,
@@ -16542,7 +16583,7 @@
 
         if (!isVirtual && ['center', 'right'].indexOf(textAlign) > -1) {
           lineGroups.forEach(function (lineGroup) {
-            var diff = _this2.__width - lineGroup.width;
+            var diff = _this3.__width - lineGroup.width;
 
             if (diff > 0) {
               lineGroup.horizonAlign(textAlign === 'center' ? diff * 0.5 : diff);
@@ -16563,8 +16604,8 @@
       value: function __layoutAbs(container, data, target) {
         var x = container.sx,
             y = container.sy,
-            innerWidth = container.innerWidth,
-            innerHeight = container.innerHeight,
+            clientWidth = container.clientWidth,
+            clientHeight = container.clientHeight,
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
@@ -16591,7 +16632,7 @@
           var currentStyle = item.currentStyle,
               computedStyle = item.computedStyle; // 先根据容器宽度计算margin/padding
 
-          item.__mp(currentStyle, computedStyle, innerWidth);
+          item.__mp(currentStyle, computedStyle, clientWidth);
 
           if (currentStyle[DISPLAY$3] === 'inline') {
             currentStyle[DISPLAY$3] = computedStyle[DISPLAY$3] = item.style.display = 'block';
@@ -16615,28 +16656,28 @@
 
           if (left[1] !== AUTO$3) {
             fixedLeft = true;
-            computedStyle[LEFT$2] = calAbsolute$1(currentStyle, 'left', left, innerWidth);
+            computedStyle[LEFT$2] = calAbsolute$1(currentStyle, 'left', left, clientWidth);
           } else {
             computedStyle[LEFT$2] = 'auto';
           }
 
           if (right[1] !== AUTO$3) {
             fixedRight = true;
-            computedStyle[RIGHT$2] = calAbsolute$1(currentStyle, 'right', right, innerWidth);
+            computedStyle[RIGHT$2] = calAbsolute$1(currentStyle, 'right', right, clientWidth);
           } else {
             computedStyle[RIGHT$2] = 'auto';
           }
 
           if (top[1] !== AUTO$3) {
             fixedTop = true;
-            computedStyle[TOP$2] = calAbsolute$1(currentStyle, 'top', top, innerHeight);
+            computedStyle[TOP$2] = calAbsolute$1(currentStyle, 'top', top, clientHeight);
           } else {
             computedStyle[TOP$2] = 'auto';
           }
 
           if (bottom[1] !== AUTO$3) {
             fixedBottom = true;
-            computedStyle[BOTTOM$2] = calAbsolute$1(currentStyle, 'bottom', bottom, innerHeight);
+            computedStyle[BOTTOM$2] = calAbsolute$1(currentStyle, 'bottom', bottom, clientHeight);
           } else {
             computedStyle[BOTTOM$2] = 'auto';
           } // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
@@ -16644,13 +16685,13 @@
 
           if (fixedLeft && fixedRight) {
             x2 = x + computedStyle[LEFT$2];
-            w2 = x + innerWidth - computedStyle[RIGHT$2] - x2;
+            w2 = x + clientWidth - computedStyle[RIGHT$2] - x2;
           } else if (fixedLeft && width[1] !== AUTO$3) {
             x2 = x + computedStyle[LEFT$2];
-            w2 = width[1] === PX$5 ? width[0] : innerWidth * width[0] * 0.01;
+            w2 = width[1] === PX$5 ? width[0] : clientWidth * width[0] * 0.01;
           } else if (fixedRight && width[1] !== AUTO$3) {
-            w2 = width[1] === PX$5 ? width[0] : innerWidth * width[0] * 0.01;
-            x2 = x + innerWidth - computedStyle[RIGHT$2] - w2; // 右对齐有尺寸时y值还需减去margin/border/padding的
+            w2 = width[1] === PX$5 ? width[0] : clientWidth * width[0] * 0.01;
+            x2 = x + clientWidth - computedStyle[RIGHT$2] - w2; // 右对齐有尺寸时y值还需减去margin/border/padding的
 
             x2 -= computedStyle[MARGIN_LEFT$2];
             x2 -= computedStyle[MARGIN_RIGHT$2];
@@ -16661,26 +16702,26 @@
           } else if (fixedLeft) {
             x2 = x + computedStyle[LEFT$2];
           } else if (fixedRight) {
-            x2 = x + innerWidth - computedStyle[RIGHT$2];
+            x2 = x + clientWidth - computedStyle[RIGHT$2];
             onlyRight = true;
           } else {
             x2 = x + paddingLeft;
 
             if (width[1] !== AUTO$3) {
-              w2 = width[1] === PX$5 ? width[0] : innerWidth * width[0] * 0.01;
+              w2 = width[1] === PX$5 ? width[0] : clientWidth * width[0] * 0.01;
             }
           } // top/bottom/height优先级同上
 
 
           if (fixedTop && fixedBottom) {
             y2 = y + computedStyle[TOP$2];
-            h2 = y + innerHeight - computedStyle[BOTTOM$2] - y2;
+            h2 = y + clientHeight - computedStyle[BOTTOM$2] - y2;
           } else if (fixedTop && height[1] !== AUTO$3) {
             y2 = y + computedStyle[TOP$2];
-            h2 = height[1] === PX$5 ? height[0] : innerHeight * height[0] * 0.01;
+            h2 = height[1] === PX$5 ? height[0] : clientHeight * height[0] * 0.01;
           } else if (fixedBottom && height[1] !== AUTO$3) {
-            h2 = height[1] === PX$5 ? height[0] : innerHeight * height[0] * 0.01;
-            y2 = y + innerHeight - computedStyle[BOTTOM$2] - h2; // 底对齐有尺寸时y值还需减去margin/border/padding的
+            h2 = height[1] === PX$5 ? height[0] : clientHeight * height[0] * 0.01;
+            y2 = y + clientHeight - computedStyle[BOTTOM$2] - h2; // 底对齐有尺寸时y值还需减去margin/border/padding的
 
             y2 -= computedStyle[MARGIN_TOP$2];
             y2 -= computedStyle[MARGIN_BOTTOM$3];
@@ -16691,7 +16732,7 @@
           } else if (fixedTop) {
             y2 = y + computedStyle[TOP$2];
           } else if (fixedBottom) {
-            y2 = y + innerHeight - computedStyle[BOTTOM$2];
+            y2 = y + clientHeight - computedStyle[BOTTOM$2];
             onlyBottom = true;
           } // 未声明y的找到之前的流布局child，紧随其下
           else {
@@ -16712,7 +16753,7 @@
               }
 
               if (height[1] !== AUTO$3) {
-                h2 = height[1] === PX$5 ? height[0] : innerHeight * height[0] * 0.01;
+                h2 = height[1] === PX$5 ? height[0] : clientHeight * height[0] * 0.01;
               }
             } // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
 
@@ -16730,9 +16771,9 @@
           } // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
 
 
-          var wl = onlyRight ? x2 - x : innerWidth + x - x2; // onlyBottom相同，正常情况是左上到右下的尺寸限制
+          var wl = onlyRight ? x2 - x : clientWidth + x - x2; // onlyBottom相同，正常情况是左上到右下的尺寸限制
 
-          var hl = onlyBottom ? y2 - y : innerHeight + y - y2; // 未直接或间接定义尺寸，取孩子宽度最大值
+          var hl = onlyBottom ? y2 - y : clientHeight + y - y2; // 未直接或间接定义尺寸，取孩子宽度最大值
 
           if (needCalWidth) {
             item.__layout({
@@ -17085,8 +17126,8 @@
 
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
-        var res = _get(_getPrototypeOf(Img.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
+        var res = _get(_getPrototypeOf(Img.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4);
 
         if (!res) {
           var _computedStyle = this.computedStyle,
@@ -17611,10 +17652,10 @@
       }
     }, {
       key: "__calCache",
-      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
+      value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, innerWidth, innerHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4); // geom才有的style
+        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, x1, x2, x3, x4, y1, y2, y3, y4); // geom才有的style
 
 
         [STROKE$1, FILL$1].forEach(function (k) {
@@ -17623,7 +17664,7 @@
             computedStyle[k] = v;
 
             if (v && (v.k === 'linear' || v.k === 'radial')) {
-              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, innerWidth, innerHeight, v);
+              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2, y2, x3, y3, clientWidth, clientHeight, v);
             } else {
               __cacheStyle[k] = int2rgba$3(currentStyle[k]);
             }

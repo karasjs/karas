@@ -752,12 +752,14 @@ class Dom extends Xom {
           } = computedStyle;
           if(isDirectionRow) {
             item.__width = main - marginLeft - marginRight - paddingLeft - paddingRight - borderLeftWidth - borderRightWidth;
-            item.__innerWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+            item.__clientWidth = main - marginLeft - marginRight - borderLeftWidth - borderRightWidth;
+            this.__offsetWidth = main - marginLeft - marginRight;
             item.__outerWidth = main;
           }
           else {
             item.__height = main - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
-            item.__innerHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+            item.__clientHeight = main - marginTop - marginBottom - borderTopWidth - borderBottomWidth;
+            this.__offsetHeight = main - marginTop - marginRight;
             item.__outerHeight = main;
           }
         }
@@ -863,7 +865,7 @@ class Dom extends Xom {
               let old = item.height;
               let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
               let d = v - old;
-              item.__innerHeight += d;
+              item.__clientHeight += d;
               item.__outerHeight += d;
             }
           }
@@ -885,7 +887,8 @@ class Dom extends Xom {
               let old = item.width;
               let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
               let d = v - old;
-              item.__innerWidth += d;
+              item.__clientWidth += d;
+              this.__offsetWidth += d;
               item.__outerWidth += d;
             }
           }
@@ -917,7 +920,7 @@ class Dom extends Xom {
                 let old = item.height;
                 let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 let d = v - old;
-                item.__innerHeight += d;
+                item.__clientHeight += d;
                 item.__outerHeight += d;
               }
             }
@@ -951,7 +954,8 @@ class Dom extends Xom {
                 let old = item.width;
                 let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
                 let d = v - old;
-                item.__innerWidth += d;
+                item.__clientWidth += d;
+                this.__offsetWidth += d;
                 item.__outerWidth += d;
               }
             }
@@ -990,7 +994,7 @@ class Dom extends Xom {
                 let old = item.height;
                 let v = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 let d = v - old;
-                item.__innerHeight += d;
+                item.__clientHeight += d;
                 item.__outerHeight += d;
               }
             }
@@ -1024,7 +1028,8 @@ class Dom extends Xom {
                 let old = item.width;
                 let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
                 let d = v - old;
-                item.__innerWidth += d;
+                item.__clientWidth += d;
+                this.__offsetWidth += d;
                 item.__outerWidth += d;
               }
             }
@@ -1069,7 +1074,7 @@ class Dom extends Xom {
                 let old = item.height;
                 let v = item.__height = item.__height = computedStyle[HEIGHT] = maxCross - marginTop - marginBottom - paddingTop - paddingBottom - borderTopWidth - borderBottomWidth;
                 let d = v - old;
-                item.__innerHeight += d;
+                item.__clientHeight += d;
                 item.__outerHeight += d;
               }
             }
@@ -1103,7 +1108,8 @@ class Dom extends Xom {
                 let old = item.width;
                 let v = item.__width = computedStyle[WIDTH] = maxCross - marginLeft - marginRight - paddingLeft - paddingRight - borderRightWidth - borderLeftWidth;
                 let d = v - old;
-                item.__innerWidth += d;
+                item.__clientWidth += d;
+                this.__offsetWidth += d;
                 item.__outerWidth += d;
               }
             }
@@ -1270,7 +1276,7 @@ class Dom extends Xom {
    * @private
    */
   __layoutAbs(container, data, target) {
-    let { sx: x, sy: y, innerWidth, innerHeight, computedStyle } = container;
+    let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
     let { isDestroyed, children, absChildren } = this;
     let {
       [DISPLAY]: display,
@@ -1292,7 +1298,7 @@ class Dom extends Xom {
       }
       let { currentStyle, computedStyle } = item;
       // 先根据容器宽度计算margin/padding
-      item.__mp(currentStyle, computedStyle, innerWidth);
+      item.__mp(currentStyle, computedStyle, clientWidth);
       if(currentStyle[DISPLAY] === 'inline') {
         currentStyle[DISPLAY] = computedStyle[DISPLAY] = item.style.display = 'block';
       }
@@ -1309,28 +1315,28 @@ class Dom extends Xom {
       // 判断何种方式的定位，比如左+宽度，左+右之类
       if(left[1] !== AUTO) {
         fixedLeft = true;
-        computedStyle[LEFT] = calAbsolute(currentStyle, 'left', left, innerWidth);
+        computedStyle[LEFT] = calAbsolute(currentStyle, 'left', left, clientWidth);
       }
       else {
         computedStyle[LEFT] = 'auto';
       }
       if(right[1] !== AUTO) {
         fixedRight = true;
-        computedStyle[RIGHT] = calAbsolute(currentStyle, 'right', right, innerWidth);
+        computedStyle[RIGHT] = calAbsolute(currentStyle, 'right', right, clientWidth);
       }
       else {
         computedStyle[RIGHT] = 'auto';
       }
       if(top[1] !== AUTO) {
         fixedTop = true;
-        computedStyle[TOP] = calAbsolute(currentStyle, 'top', top, innerHeight);
+        computedStyle[TOP] = calAbsolute(currentStyle, 'top', top, clientHeight);
       }
       else {
         computedStyle[TOP] = 'auto';
       }
       if(bottom[1] !== AUTO) {
         fixedBottom = true;
-        computedStyle[BOTTOM] = calAbsolute(currentStyle, 'bottom', bottom, innerHeight);
+        computedStyle[BOTTOM] = calAbsolute(currentStyle, 'bottom', bottom, clientHeight);
       }
       else {
         computedStyle[BOTTOM] = 'auto';
@@ -1338,15 +1344,15 @@ class Dom extends Xom {
       // 优先级最高left+right，其次left+width，再次right+width，再次仅申明单个，最次全部auto
       if(fixedLeft && fixedRight) {
         x2 = x + computedStyle[LEFT];
-        w2 = x + innerWidth - computedStyle[RIGHT] - x2;
+        w2 = x + clientWidth - computedStyle[RIGHT] - x2;
       }
       else if(fixedLeft && width[1] !== AUTO) {
         x2 = x + computedStyle[LEFT];
-        w2 = width[1] === PX ? width[0] : innerWidth * width[0] * 0.01;
+        w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
       }
       else if(fixedRight && width[1] !== AUTO) {
-        w2 = width[1] === PX ? width[0] : innerWidth * width[0] * 0.01;
-        x2 = x + innerWidth - computedStyle[RIGHT] - w2;
+        w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
+        x2 = x + clientWidth - computedStyle[RIGHT] - w2;
         // 右对齐有尺寸时y值还需减去margin/border/padding的
         x2 -= computedStyle[MARGIN_LEFT];
         x2 -= computedStyle[MARGIN_RIGHT];
@@ -1359,27 +1365,27 @@ class Dom extends Xom {
         x2 = x + computedStyle[LEFT];
       }
       else if(fixedRight) {
-        x2 = x + innerWidth - computedStyle[RIGHT];
+        x2 = x + clientWidth - computedStyle[RIGHT];
         onlyRight = true;
       }
       else {
         x2 = x + paddingLeft;
         if(width[1] !== AUTO) {
-          w2 = width[1] === PX ? width[0] : innerWidth * width[0] * 0.01;
+          w2 = width[1] === PX ? width[0] : clientWidth * width[0] * 0.01;
         }
       }
       // top/bottom/height优先级同上
       if(fixedTop && fixedBottom) {
         y2 = y + computedStyle[TOP];
-        h2 = y + innerHeight - computedStyle[BOTTOM] - y2;
+        h2 = y + clientHeight - computedStyle[BOTTOM] - y2;
       }
       else if(fixedTop && height[1] !== AUTO) {
         y2 = y + computedStyle[TOP];
-        h2 = height[1] === PX ? height[0] : innerHeight * height[0] * 0.01;
+        h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
       }
       else if(fixedBottom && height[1] !== AUTO) {
-        h2 = height[1] === PX ? height[0] : innerHeight * height[0] * 0.01;
-        y2 = y + innerHeight - computedStyle[BOTTOM] - h2;
+        h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
+        y2 = y + clientHeight - computedStyle[BOTTOM] - h2;
         // 底对齐有尺寸时y值还需减去margin/border/padding的
         y2 -= computedStyle[MARGIN_TOP];
         y2 -= computedStyle[MARGIN_BOTTOM];
@@ -1392,7 +1398,7 @@ class Dom extends Xom {
         y2 = y + computedStyle[TOP];
       }
       else if(fixedBottom) {
-        y2 = y + innerHeight - computedStyle[BOTTOM];
+        y2 = y + clientHeight - computedStyle[BOTTOM];
         onlyBottom = true;
       }
       // 未声明y的找到之前的流布局child，紧随其下
@@ -1410,7 +1416,7 @@ class Dom extends Xom {
           y2 = y;
         }
         if(height[1] !== AUTO) {
-          h2 = height[1] === PX ? height[0] : innerHeight * height[0] * 0.01;
+          h2 = height[1] === PX ? height[0] : clientHeight * height[0] * 0.01;
         }
       }
       // 没设宽高，需手动计算获取最大宽高后，赋给样式再布局
@@ -1427,9 +1433,9 @@ class Dom extends Xom {
         }
       }
       // onlyRight时做的布局其实是以那个点位为left/top布局然后offset，limit要特殊计算，从本点向左侧为边界
-      let wl = onlyRight ? x2 - x : innerWidth + x - x2;
+      let wl = onlyRight ? x2 - x : clientWidth + x - x2;
       // onlyBottom相同，正常情况是左上到右下的尺寸限制
-      let hl = onlyBottom ? y2 - y : innerHeight + y - y2;
+      let hl = onlyBottom ? y2 - y : clientHeight + y - y2;
       // 未直接或间接定义尺寸，取孩子宽度最大值
       if(needCalWidth) {
         item.__layout({

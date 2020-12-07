@@ -173,15 +173,25 @@ y偏移坐标，因relative造成。
 * **说明**  
 高度。
 
-#### innerWidth
+#### clientWidth
 * **类型** `Number` 只读
 * **说明**  
 内部宽度，包含padding。注意节点display:none时为0。
 
-#### innerHeight
+#### clientHeight
 * **类型** `Number` 只读
 * **说明**  
 内部高度，包含padding。注意节点display:none时为0。
+  
+#### offsetWidth
+* **类型** `Number` 只读
+* **说明**  
+  节点宽度，包含padding+border。注意节点display:none时为0。
+
+#### offsetHeight
+* **类型** `Number` 只读
+* **说明**  
+  节点高度，包含padding+border。注意节点display:none时为0。
 
 #### style
 * **类型** `Object` 只读
@@ -333,7 +343,7 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 
 ### 类方法method
 
-#### getComputedStyle()
+#### getComputedStyle
 * **类型** `Function`
 * **参数**
   * key `String/Array<String>`
@@ -344,13 +354,28 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 ```jsx
 let root = karas.render(
   <canvas>
-    <div style={{width: 100, height:100}} ref="div"/>
+    <div style={{width: 100, height: 100}} ref="div"/>
   </canvas>,
   '#selector'
 );
 console.log(root.ref.div.getComputedStyle().width); // 100
 console.log(root.ref.div.getComputedStyle('width').width); // 等同
 console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
+```
+
+#### getBoundingClientRect
+* **类型** `Function`
+* **说明**  
+  获取当前节点距离左上角的矩形区域坐标。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div style={{width: 100, height: 100, translateX: 100, rotate: 1}} ref="div"/>
+  </canvas>,
+  '#selector'
+);
+console.log(root.ref.div.getBoundingClientRect().width); // {"left":99.13499492031626,"top":-0.8650050796837405,"right":200.86500507968373,"bottom":100.86500507968374}
 ```
 
 #### animate
@@ -1364,7 +1389,7 @@ karas.render(
 ### 类属性property
 
 #### 代理实现
-tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、innerWidth、innerHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
+tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、clientWidth、clientHeight、offsetWidth、offsetHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
 
 <a name="shadow"></a>
 #### shadow
@@ -1605,14 +1630,14 @@ karas.render(
 * **示例**
 ```jsx
 karas.inject.measureImg('http://xxx', function(cache) {
-  console.log(cache);
+  console.log(cache); // { success: boolean, width: Number, height: Number, url: String, source: <img> }
 });
 ```
 
 ### IMG
 * **类型** `Object`
 * **说明**  
-测量图片信息hash保存。
+测量图片信息hash保存，key为url，value是`measureImg`中cache对象。
 
 ### INIT
 * **类型** `int`

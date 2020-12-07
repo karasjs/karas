@@ -146,11 +146,11 @@ class Geom extends Xom {
   }
 
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-             sx, sy, innerWidth, innerHeight, outerWidth, outerHeight,
+             sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
              x1, x2, x3, x4, y1, y2, y3, y4) {
     super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
-      sx, sy, innerWidth, innerHeight, outerWidth, outerHeight,
+      sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       x1, x2, x3, x4, y1, y2, y3, y4);
     // geom才有的style
@@ -160,7 +160,7 @@ class Geom extends Xom {
         computedStyle[k] = v;
         if(v && (v.k === 'linear' || v.k === 'radial')) {
           __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-            x2, y2, x3, y3, innerWidth, innerHeight, v);
+            x2, y2, x3, y3, clientWidth, clientHeight, v);
         }
         else {
           __cacheStyle[k] = int2rgba(currentStyle[k]);

@@ -65,7 +65,7 @@ const { AUTO, PX, PERCENT, INHERIT, RGBA, STRING, NUMBER } = unit;
 const { isNil, isFunction, isNumber, isObject, clone, equalArr } = util;
 const { linear } = easing;
 const { cloneStyle } = css;
-const { GEOM } = change;
+const { isGeom, GEOM } = change;
 
 const {
   COLOR_HASH,
@@ -206,9 +206,10 @@ function framing(style, duration, es) {
  * @param next 下一帧样式
  * @param k 比较的样式名
  * @param target dom对象
+ * @param tagName dom名
  * @returns {{k: *, v: *}}
  */
-function calDiff(prev, next, k, target) {
+function calDiff(prev, next, k, target, tagName) {
   let res = [k];
   let p = prev[k];
   let n = next[k];
@@ -286,7 +287,7 @@ function calDiff(prev, next, k, target) {
       res[1] = v;
     }
     else if(p[1] === PX && n[1] === PERCENT) {
-      let v = n[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'innerWidth' : 'innerHeight'];
+      let v = n[0] * 0.01 * target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
       v = v - p[0];
       if(v === 0) {
         return;
@@ -294,7 +295,7 @@ function calDiff(prev, next, k, target) {
       res[1] = v;
     }
     else if(p[1] === PERCENT && n[1] === PX) {
-      let v = n[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'innerWidth' : 'innerHeight'];
+      let v = n[0] * 100 / target[k === BACKGROUND_POSITION_X ? 'clientWidth' : 'clientHeight'];
       v = v - p[0];
       if(v === 0) {
         return;
@@ -355,11 +356,11 @@ function calDiff(prev, next, k, target) {
         res[1].push(ni[0] - pi[0]);
       }
       else if(pi[1] === PX && ni[1] === PERCENT) {
-        let v = ni[0] * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
+        let v = ni[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
         res[1].push(v - pi[0]);
       }
       else if(pi[1] === PERCENT && ni[1] === PX) {
-        let v = ni[0] * 100 / target[i ? 'innerWidth' : 'innerHeight'];
+        let v = ni[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
         res[1].push(v - pi[0]);
       }
       else {
@@ -383,7 +384,7 @@ function calDiff(prev, next, k, target) {
         return;
       }
       res[1] = [];
-      let { innerWidth } = target;
+      let { clientWidth } = target;
       let eq;
       for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
         let a = pv[i];
@@ -401,10 +402,10 @@ function calDiff(prev, next, k, target) {
             t.push(b[1][0] - a[1][0]);
           }
           else if(a[1][1] === PX && b[1][1] === PERCENT) {
-            t.push(b[1][0] * innerWidth * 0.01 - a[1][0]);
+            t.push(b[1][0] * clientWidth * 0.01 - a[1][0]);
           }
           else if(a[1][1] === PERCENT && b[1][1] === PX) {
-            t.push(b[1][0] * 100 / innerWidth - a[1][0]);
+            t.push(b[1][0] * 100 / clientWidth - a[1][0]);
           }
           if(eq) {
             eq = t[4] === 0;
@@ -433,11 +434,11 @@ function calDiff(prev, next, k, target) {
             res[3].push(np[0] - pp[0]);
           }
           else if(pp[1] === PX && np[1] === PERCENT) {
-            let v = np[0] * 0.01 * target[i ? 'innerWidth' : 'innerHeight'];
+            let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
             res[3].push(v - pp[0]);
           }
           else if(pp[1] === PERCENT && np[1] === PX) {
-            let v = np[0] * 100 / target[i ? 'innerWidth' : 'innerHeight'];
+            let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
             res[3].push(v - pp[0]);
           }
         }
@@ -554,6 +555,19 @@ function calDiff(prev, next, k, target) {
   else if(GEOM.hasOwnProperty(k)) {
     if(isNil(p)) {
       return;
+    }
+    else if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calDiff)) {
+      let fn = GEOM[k][tagName].calDiff;
+      if(target.isMulti) {
+        let arr = [];
+        for(let i = 0, len = Math.min(p.length, n.length); i < len; i++) {
+          arr.push(fn(p[i], n[i]));
+        }
+        return arr;
+      }
+      else {
+        res[1] = fn(p, n);
+      }
     }
     // 特殊处理multi
     else if(target.isMulti) {
@@ -693,9 +707,9 @@ function calDiff(prev, next, k, target) {
 }
 
 // 计算两帧之间不相同的变化，存入transition，相同的忽略
-function calFrame(prev, next, keys, target) {
+function calFrame(prev, next, keys, target, tagName) {
   keys.forEach(k => {
-    let ts = calDiff(prev[FRAME_STYLE], next[FRAME_STYLE], k, target);
+    let ts = calDiff(prev[FRAME_STYLE], next[FRAME_STYLE], k, target, tagName);
     // 可以形成过渡的才会产生结果返回
     if(ts) {
       prev[FRAME_TRANSITION].push(ts);
@@ -770,6 +784,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
     percent = timingFunction(percent);
   }
   let transition = frame[FRAME_TRANSITION];
+  let tagName = target.tagName;
   for(let i = 0, len = transition.length; i < len; i++) {
     let [k, v, d, p] = transition[i];
     let st = style[k];
@@ -860,7 +875,18 @@ function calIntermediateStyle(frame, keys, percent, target) {
     }
     else if(GEOM.hasOwnProperty(k)) {
       let st = style[k];
-      if(target.isMulti) {
+      if(GEOM[k][tagName] && isFunction(GEOM[k][tagName].calIncrease)) {
+        let fn = GEOM[k][tagName].calIncrease;
+        if(target.isMulti) {
+          style[k] = st.map((item, i) => {
+            return fn(item, v[i], percent);
+          });
+        }
+        else {
+          style[k] = fn(st, v, percent);
+        }
+      }
+      else if(target.isMulti) {
         if(k === 'points' || k === 'controls') {
           for(let i = 0, len = Math.min(st.length, v.length); i < len; i++) {
             let o = st[i];
@@ -1219,7 +1245,7 @@ class Animation extends Event {
     let { style, props } = target;
     let originStyle = {};
     keys.forEach(k => {
-      if(change.isGeom(tagName, k)) {
+      if(isGeom(tagName, k)) {
         originStyle[k] = props[k];
       }
       originStyle[k] = style[k];
@@ -1229,7 +1255,7 @@ class Animation extends Event {
     let prev = frames[0];
     for(let i = 1; i < length; i++) {
       let next = frames[i];
-      prev = calFrame(prev, next, keys, target);
+      prev = calFrame(prev, next, keys, target, tagName);
     }
     // 反向存储帧的倒排结果
     let framesR = clone(frames).reverse();
@@ -1240,7 +1266,7 @@ class Animation extends Event {
     prev = framesR[0];
     for(let i = 1; i < length; i++) {
       let next = framesR[i];
-      prev = calFrame(prev, next, keys, target);
+      prev = calFrame(prev, next, keys, target, tagName);
     }
     return [frames, framesR, keys, originStyle];
   }

@@ -62,10 +62,10 @@ let o = {
   IGNORE,
   REPAINT,
   MEASURE,
-  addGeom(tagName, ks) {
+  addGeom(tagName, ks, cb) {
     if(Array.isArray(ks)) {
       ks.forEach(k => {
-        o.addGeom(tagName, k);
+        o.addGeom(tagName, k, cb);
       });
     }
     else if(ks) {
@@ -73,7 +73,7 @@ let o = {
         GEOM_KEY_SET.push(ks);
       }
       let hash = GEOM[ks] = GEOM[ks] || {};
-      hash[tagName] = true;
+      hash[tagName] = cb || true;
     }
   },
 };

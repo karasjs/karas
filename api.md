@@ -173,15 +173,25 @@ y偏移坐标，因relative造成。
 * **说明**  
 高度。
 
-#### innerWidth
+#### clientWidth
 * **类型** `Number` 只读
 * **说明**  
 内部宽度，包含padding。注意节点display:none时为0。
 
-#### innerHeight
+#### clientHeight
 * **类型** `Number` 只读
 * **说明**  
 内部高度，包含padding。注意节点display:none时为0。
+  
+#### offsetWidth
+* **类型** `Number` 只读
+* **说明**  
+  节点宽度，包含padding+border。注意节点display:none时为0。
+
+#### offsetHeight
+* **类型** `Number` 只读
+* **说明**  
+  节点高度，包含padding+border。注意节点display:none时为0。
 
 #### style
 * **类型** `Object` 只读
@@ -333,7 +343,7 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 
 ### 类方法method
 
-#### getComputedStyle()
+#### getComputedStyle
 * **类型** `Function`
 * **参数**
   * key `String/Array<String>`
@@ -344,13 +354,28 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
 ```jsx
 let root = karas.render(
   <canvas>
-    <div style={{width: 100, height:100}} ref="div"/>
+    <div style={{width: 100, height: 100}} ref="div"/>
   </canvas>,
   '#selector'
 );
 console.log(root.ref.div.getComputedStyle().width); // 100
 console.log(root.ref.div.getComputedStyle('width').width); // 等同
 console.log(root.ref.div.getComputedStyle(['width']).width); // 等同
+```
+
+#### getBoundingClientRect
+* **类型** `Function`
+* **说明**  
+  获取当前节点距离左上角的矩形区域坐标。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div style={{width: 100, height: 100, translateX: 100, rotate: 1}} ref="div"/>
+  </canvas>,
+  '#selector'
+);
+console.log(root.ref.div.getBoundingClientRect().width); // {"left":99.13499492031626,"top":-0.8650050796837405,"right":200.86500507968373,"bottom":100.86500507968374}
 ```
 
 #### animate
@@ -490,7 +515,7 @@ console.log(root.ref.div === div);
 ```
 
 <a name="Dom"></a>
-## Dom
+### Dom
 * **类型** `class`
 * **说明**  
 VirtualDom的基类，所有非图形vd均是继承或实现了此类。一般情况下开发用不到。详见[虚拟Dom](#虚拟Dom)。
@@ -536,6 +561,94 @@ karas.render(
   '#selector'
 );
 ```
+
+### 类属性property
+
+#### isMulti
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`multi`，表明图形是多个形式，数量是传入属性的数组长度。当为真值时，所有图形的数据均扩展一个维度数组表示。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
+    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### isMask
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。它将作用于上一个相邻的兄弟[Xom](#Xom)节点，对[Text](#Text)不起作用。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <div style={{width: 200, height: 200, background: '#F00'}}/>
+    <$rect style={{width: 100, height: 100}} mask={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### isClip
+* **类型** `boolean` 只读
+* **说明**  
+当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。
+* **示例**
+```jsx
+karas.render(
+  <canvas>
+    <$rect style={{width: 100, height: 100}} clip={true}/>
+  </canvas>,
+  '#selector'
+);
+```
+
+#### currentProps
+* **类型** `Object` 只读
+* **说明**  
+当前标签属性副本，注意和`props`的区别。当有动画不断更改props某个属性时，并不会直接修改props原始值，而是反应在currentProps上。
+
+### 类方法method
+
+#### getProps
+* **类型** `Function`
+* **参数**
+  * k `String`
+    键值key。
+* **说明**  
+返回`currentProps`上的值，如果为空则返回`props`上的值，注意名字是加双下划线的。详见[自定义图形](#自定义图形)。
+
+### 静态属性static
+
+#### getRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    返回已注册名字为name的矢量图形对象。
+* **说明**  
+任何矢量图形都需要先注册，内置的图形已经内置注册，如`$line`对应`Line`类。强制要求矢量图形以`$`开头，保持命名统一是良好的编程习惯。
+
+#### register
+* **类型** `Function`
+* **参数**
+  * name `String`
+  * target `class`
+    将要注册的矢量图形类。
+* **说明**  
+注册名字为name的矢量图形对象为target类。
+
+#### hasRegister
+* **类型** `Function`
+* **参数**
+  * name `String`
+    返回名字为name是否已经被注册为矢量图形对象。
+* **说明**  
+注册前先检查是否已经被注册过。
 
 ## Img
 <a name="Img"></a>
@@ -1186,6 +1299,30 @@ root.addRefreshTask(cb);
 root.delRefreshTask(cb);
 ```
 
+#### resize
+* **类型** `Function`
+* **参数**
+  * w `Number`
+    新宽度。
+  * h `Number`
+    新高度。
+  * cb `Function`
+    刷新回调。
+* **说明**  
+  重设根节点尺寸并刷新，注意不会修改Dom的css样式，需外部控制。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas width={360} height={360}>
+    <div style={{width: '50%', height: '50%', background: '#F00'}}/>
+  </canvas>,
+  '#selector'
+);
+root.resize(720, 720, function() {
+  console.log('resize');
+});
+```
+
 ### html属性attribute
 
 #### width/height
@@ -1268,94 +1405,95 @@ karas.render(
   '#selector'
 );
 ```
-
-### 类属性property
-
-#### isMulti
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`multi`，表明图形是多个形式，数量是传入属性的数组长度。当为真值时，所有图形的数据均扩展一个维度数组表示。
 * **示例**
 ```jsx
+class Custom extends karas.Geom {
+  constructor(tagName, props) {
+    super(tagName, props);
+    // 注意双下划线同名约定
+    this.__custom = props.custom;
+  }
+
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    if(res.break) {
+      return res;
+    }
+    // 使用getProps来获取custom，有变化时props上的custom是原始值不一定会变化，最新的在currentProps上
+    let custom = this.getProps('custom');
+  }
+}
+karas.Geom.register('$custom', Custom);
 karas.render(
   <canvas>
-    <$line x1={0} x2={1} y1={0} y2={1} style={{width: 100, height: 100}}/>
-    <$line x1={[0, 0.1]} x2={[1, 0.9]} y1={[0, 0.2]} y2={[1, 0.8]} style={{width: 100, height: 100}} multi={true}/>
+    <$custom style={{ width: 100, height: 100 }} custom={{...someData}}/>
   </canvas>,
   '#selector'
 );
 ```
 
-#### isMask
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`mask`，表明图形是半透明遮罩。当为真值时，强制没有边线，因此只有封闭图形有效。它将作用于上一个相邻的兄弟[Xom](#Xom)节点，对[Text](#Text)不起作用。
+<a name="自定义图形动画"></a>
+## 自定义图形动画
+当使用自定义图形时，这个矢量图会有绘制的数据在props上，像内置的`$circle`有r来表示半径一样。这些数据因为是自定义新增的，动画或更新时处理差值框架本身并不知晓，需要注册扩展实现。
 * **示例**
 ```jsx
-karas.render(
-  <canvas>
-    <div style={{width: 200, height: 200, background: '#F00'}}/>
-    <$rect style={{width: 100, height: 100}} mask={true}/>
+// 本例简单实现了一个自定义圆，半径从固定的10到20的动画过程。仅canvas。
+class Yuan extends karas.Geom {
+  constructor(tagName, props) {
+    super(tagName, props);
+    this.__banjing = props.banjing;
+  }
+  render(renderMode, lv, ctx, defs) {
+    let res = super.render(renderMode, lv, ctx, defs);
+    let {
+      cx,
+      cy,
+      fill,
+    } = res;
+    let { __cacheProps } = this;
+    // 动画数据缓存在某个地方如__cacheProps，这样动画停止或结束后，别的地方引发刷新就会用这个缓存值
+    if(__cacheProps.banjing === undefined) {
+      __cacheProps.banjing = this.getProps('banjing');
+    }
+    ctx.beginPath();
+    ctx.fillStyle = fill;
+    ctx.arc(cx, cy, __cacheProps.banjing, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+karas.Geom.register('$yuan', Yuan);
+karas.refresh.change.addGeom('$yuan', 'banjing', {
+  calDiff(p, n) {
+    return n - p;
+  },
+  calIncrease(p, v, percent) {
+    return p + v * percent;
+  },
+});
+let root = karas.render(
+  <canvas width="360" height="360">
+    <$yuan ref="yuan" banjing={10} style={{
+      width: 100,
+      height: 100,
+      fill: '#F00',
+      background: '#000',
+    }}/>
   </canvas>,
   '#selector'
 );
+root.ref.yuan.animate([
+  {
+    banjing: 10,
+  },
+  {
+    banjing: 20,
+  }
+], {
+  duration: 1000,
+  fill: 'forwards',
+});
 ```
-
-#### isClip
-* **类型** `boolean` 只读
-* **说明**  
-当前标签属性是否传入了`clip`，表明遮罩是裁剪性质。它和mask正好反过来，mask是只显示重合部分，clip是反之。
-* **示例**
-```jsx
-karas.render(
-  <canvas>
-    <$rect style={{width: 100, height: 100}} clip={true}/>
-  </canvas>,
-  '#selector'
-);
-```
-
-#### currentProps
-* **类型** `Object` 只读
-* **说明**  
-当前标签属性副本，注意和`props`的区别。当有动画不断更改props某个属性时，并不会直接修改props原始值，而是反应在currentProps上。
-
-### 类方法method
-
-#### getProps
-* **类型** `Function`
-* **参数**
-  * k `String`
-  键值key。
-* **说明**  
-返回`currentProps`上的值，如果为空则返回`props`上的值。
-
-### 静态属性static
-
-#### getRegister
-* **类型** `Function`
-* **参数**
-  * name `String`
-  返回已注册名字为name的矢量图形对象。
-* **说明**  
-任何矢量图形都需要先注册，内置的图形已经内置注册，如`$line`对应`Line`类。强制要求矢量图形以`$`开头，保持命名统一是良好的编程习惯。
-
-#### register
-* **类型** `Function`
-* **参数**
-  * name `String`
-  * target `class`
-  将要注册的矢量图形类。
-* **说明**  
-注册名字为name的矢量图形对象为target类。
-
-#### hasRegister
-* **类型** `Function`
-* **参数**
-  * name `String`
-  返回名字为name是否已经被注册为矢量图形对象。  
-* **说明**  
-注册前先检查是否已经被注册过。
 
 <a name="自定义组件"></a>
 ## 自定义组件
@@ -1364,7 +1502,7 @@ karas.render(
 ### 类属性property
 
 #### 代理实现
-tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、innerWidth、innerHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
+tagName、root、host、prev、next、parent、isDestroyed、x、y、width、height、clientWidth、clientHeight、offsetWidth、offsetHeight、outerWidth、outerHeight、style、animationList、currentStyle、computedStyle、currentProps、baseLine、bbox，同[Xom](#Xom)或[Dom](#Dom)或[Geom](#Geom)，均为代理。
 
 <a name="shadow"></a>
 #### shadow
@@ -1605,14 +1743,14 @@ karas.render(
 * **示例**
 ```jsx
 karas.inject.measureImg('http://xxx', function(cache) {
-  console.log(cache);
+  console.log(cache); // { success: boolean, width: Number, height: Number, url: String, source: <img> }
 });
 ```
 
 ### IMG
 * **类型** `Object`
 * **说明**  
-测量图片信息hash保存。
+测量图片信息hash保存，key为url，value是`measureImg`中cache对象。
 
 ### INIT
 * **类型** `int`
@@ -2308,7 +2446,128 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
+
+### matrix
+
+#### identity
+* **类型** `Function`
+* **说明**
+生成3阶单位矩阵，注意这是css的6位1维表达方式。
+
+#### multiply
+* **类型** `Function`
+* **参数**
+  * a `Array<Number>`
+  * b `Array<Number>`
+* **说明**
+矩阵a乘以b，注意这是css的6位1维表达方式。
+
+#### calPoint
+* **类型** `Function`
+* **参数**
+  * point `Array<Number>`
+  * matrix `Array<Number>`
+* **说明**
+根据matrix获取点point的换算后的坐标。
+* **示例**
+```jsx
+karas.math.matrix.calPoint([0, 0], [1, 0, 0, 100, 100]); // [100, 100]
+```
+
+#### inverse
+* **类型** `Function`
+* **参数**
+  * matrix `Array<Number>`
+* **说明**
+矩阵的逆矩阵，注意这是css的6位1维表达方式。
+
+#### isE
+* **类型** `Function`
+* **参数**
+  * matrix `Array<Number>`
+* **说明**
+矩阵是否为单位矩阵，注意这是css的6位1维表达方式。
+
+### geom
+
+#### vectorProduct
+* **类型** `Function`
+* **参数**
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+* **说明**
+向量积。
+
+#### pointInPolygon
+* **类型** `Function`
+* **参数**
+  * x `Number`
+  * y `Number`
+  * vertexes `Array<Number>`
+* **说明**
+x/y点是否在由一堆顶点vertexes组成的多边形中。
+
+#### angleBySide
+* **类型** `Function`
+* **参数**
+  * a `Number`
+  * b `Number`
+  * c `Array<Number>`
+* **说明**
+余弦定理3边长求夹角。
+
+#### bboxBezier
+* **类型** `Function`
+* **参数**
+  * x0 `Number`
+  * y0 `Number`
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+  * x3 `Number`
+  * y3 `Number`
+* **说明**
+获取贝塞尔曲线所在的bbox矩形框，根据参数数量分为2阶和3阶。
+
+#### bezierLength
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * order `Number`
+    2阶还是3阶。
+  * start `Number`
+    开始，[0, 1]。
+  * end `Number`
+    结束，[0, 1]。
+* **说明**
+根据开始结束百分比获取贝塞尔曲线的长度，start和end不传默认为0和1即全部。
+
+#### sliceBezier
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * t `Number`
+    开始，[0, 1]。
+* **说明**
+根据开始百分比截取贝塞尔曲线的一部分。
+
+#### sliceBezier2Both
+* **类型** `Function`
+* **参数**
+  * points `Array<Number>`
+    曲线的起始点、控制点、结束点。
+  * start `Number`
+    开始，[0, 1]。
+  * end `Number`
+    结束，[0, 1]。
+* **说明**
+根据开始结束百分比截取贝塞尔曲线的一部分。
 
 <a name="refresh包"></a>
 ## refresh包
@@ -2334,6 +2593,108 @@ const ENUM = {
   // 高位表示reflow
   REFLOW: 128, //                               10000000
 };
+```
+
+### change
+* **说明**
+计算刷新变化过程中的变化和等级，此举是面向框架开发维护人员的，普通开发者无需关注。当实现自定义图形时，需要用到它。
+
+#### GEOM
+* **说明**
+存储geom矢量图形变化数据的hash表。
+
+#### GEOM_KEY_SET
+* **说明**
+同上，所有key的集合。
+
+#### isGeom
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String`
+* **说明**  
+判断一个k是否是指定矢量标签tagName下的属性。
+* **示例**
+```jsx
+karas.refresh.change.isGeom('$circle', 'r'); // true
+karas.refresh.change.isGeom('$circle', 'unknow'); // false
+```
+
+#### IGNORE
+* **说明**
+存储无变化数据的hash表。
+
+#### REPAINT
+* **说明**
+存储`REPAINT`变化数据的hash表。
+  
+#### MEASURE
+* **说明**
+存储`MEASURE`变化数据的hash表。
+
+#### isIgnore
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是无需刷新的`NONE`刷新等级。
+* **示例**
+```jsx
+karas.refresh.change.isIgnore('pointerEvents'); // true
+karas.refresh.change.isIgnore('visibility'); // false
+```
+
+#### isRepaint
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是`REPAINT`刷新等级，否则是`REFLOW`。
+* **示例**
+```jsx
+karas.refresh.change.isRepaint('color'); // true
+karas.refresh.change.isRepaint('display'); // false
+```
+
+#### isMeasure
+* **类型** `Function`
+* **参数**
+  * k `String`
+* **说明**  
+判断一个k是否是`MEASURE`刷新等级，说明需要测量文字。
+* **示例**
+```jsx
+karas.refresh.change.isMeasure('fontFamily'); // true
+karas.refresh.change.isRepaint('color'); // false
+```
+
+#### isValid
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String`
+* **说明**  
+判断一个k是否是有效的刷新。
+* **示例**
+```jsx
+karas.refresh.change.isValid('$circle', 'r'); // true
+karas.refresh.change.isValid('$circle', 'unknow'); // false
+```
+
+#### addGeom
+* **类型** `Function`
+* **参数**
+  * tagName `String`
+  * k `String/Array<String>`
+  * options `Object`
+* **说明**  
+添加自定义图形的属性，这样这个属性在计算刷新时会被认为是有效的，如果options传入了`calDiff`和`calIncrease`，将被应用在计算差异的过程中，比如动画。详见[自定义图形动画](#自定义图形动画)。
+* **示例**
+```jsx
+karas.refresh.change.addGeom('$new', 'newProps', {
+  calDiff() {},
+  calIncrease() {},
+});
 ```
 
 ### Cache

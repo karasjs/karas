@@ -2331,18 +2331,27 @@ class Xom extends Node {
     let { tagName, root, __config } = this;
     if(root) {
       let hasChange;
-      let formatStyle = css.normalize(style);
+      // 先去掉无用和缩写
+      style = util.extend({}, style);
+      let ks = Object.keys(style);
+      ks.forEach(k => {
+        if(abbr.hasOwnProperty(k)) {
+          abbr.toFull(style, k);
+          delete style[k];
+        }
+      });
       // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
-      for(let i in formatStyle) {
-        if(formatStyle.hasOwnProperty(i)) {
+      for(let i in style) {
+        if(style.hasOwnProperty(i)) {
           if(change.isValid(tagName, i)) {
             hasChange = true;
           }
           else {
-            delete formatStyle[k];
+            delete style[k];
           }
         }
       }
+      let formatStyle = css.normalize(style);
       // 空样式或非法或无改变直接返回
       if(!hasChange) {
         if(util.isFunction(cb)) {

@@ -14123,19 +14123,28 @@
             __config = this.__config;
 
         if (root) {
-          var hasChange;
-          var formatStyle = css.normalize(style); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
+          var hasChange; // 先去掉无用和缩写
 
-          for (var i in formatStyle) {
-            if (formatStyle.hasOwnProperty(i)) {
+          style = util.extend({}, style);
+          var ks = Object.keys(style);
+          ks.forEach(function (k) {
+            if (abbr.hasOwnProperty(k)) {
+              abbr.toFull(style, k);
+              delete style[k];
+            }
+          }); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
+
+          for (var i in style) {
+            if (style.hasOwnProperty(i)) {
               if (o.isValid(tagName, i)) {
                 hasChange = true;
               } else {
-                delete formatStyle[k];
+                delete style[k];
               }
             }
-          } // 空样式或非法或无改变直接返回
+          }
 
+          var formatStyle = css.normalize(style); // 空样式或非法或无改变直接返回
 
           if (!hasChange) {
             if (util.isFunction(cb)) {

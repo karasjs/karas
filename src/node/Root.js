@@ -57,6 +57,7 @@ const {
     NODE_CACHE_STYLE,
     NODE_CACHE_PROPS,
     NODE_CURRENT_STYLE,
+    NODE_COMPUTED_STYLE,
     NODE_CURRENT_PROPS,
     NODE_DOM_PARENT,
     NODE_IS_MASK,
@@ -220,13 +221,14 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     [NODE_CACHE_STYLE]: __cacheStyle,
     [NODE_CACHE_PROPS]: __cacheProps,
     [NODE_CURRENT_STYLE]: currentStyle,
+    [NODE_COMPUTED_STYLE]: computedStyle,
     [NODE_CURRENT_PROPS]: currentProps,
     [NODE_DOM_PARENT]: domParent,
     [NODE_IS_MASK]: isMask,
   } = __config;
   let lv = focus || NONE;
   let hasMeasure = measure;
-  let hasZ, hasVisibility, hasColor;
+  let hasZ, hasVisibility, hasColor, hasDisplay;
   // component无需遍历直接赋值，img重新加载等情况没有样式更新
   if(!component && style && keys) {
     for(let i = 0, len = keys.length; i < len; i++) {
@@ -256,6 +258,9 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
                 delete style[k];
                 continue;
               }
+            }
+            else if(k === 'display') {
+              hasDisplay = true;
             }
             // repaint细化等级，reflow在checkReflow()
             lv |= getLevel(k);
@@ -380,11 +385,23 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
     __config[NODE_CACHE_FILTER].release();
     __config[NODE_CACHE_FILTER] = null;
   }
-  // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
+  // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
+  if(computedStyle[DISPLAY] === 'none' && lv < REFLOW) {
+    return false;
+  }
+  // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
   let parent = domParent;
-  // 向上查找，出现重复跳出
+  if(hasDisplay) {
+    let __config = parent.__config;
+    if(__config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
+      return false;
+    }
+  }
+  // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
+  parent = domParent;
   while(parent) {
     let __config = parent.__config;
+    // 向上查找，出现重复跳出
     if(__config.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
       let id = __config[NODE_UNIQUE_UPDATE_ID];
       if(cacheHash.hasOwnProperty(id)) {

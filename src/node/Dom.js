@@ -75,45 +75,43 @@ function genZIndexChildren(dom) {
     if(item instanceof Component) {
       item = item.shadowRoot;
     }
-    // 遮罩单独保存后特殊排序，需要有__layoutData，特殊情况下中途插入的节点还未渲染
-    if(item.__layoutData || item instanceof Text) {
-      if(item.isMask) {
-        // 开头的mc忽略，后续的连续mc以第一次出现为准
-        if(lastMaskIndex !== undefined) {
-          mcHash[lastMaskIndex].push(item);
-        }
-        else if(i) {
-          lastMaskIndex = i - 1;
-          children[lastMaskIndex].__iIndex = lastMaskIndex;
-          mcHash[lastMaskIndex] = [item];
-          hasMc = true;
-        }
+    // 遮罩单独保存后特殊排序
+    if(item instanceof Xom && item.isMask) {
+      // 开头的mc忽略，后续的连续mc以第一次出现为准
+      if(lastMaskIndex !== undefined) {
+        mcHash[lastMaskIndex].push(item);
       }
-      else {
-        lastMaskIndex = undefined;
-        if(item instanceof Xom) {
-          if(isRelativeOrAbsolute(item)) {
-            // 临时变量为排序使用
-            child.__iIndex = i;
-            let z = child.__zIndex = item.currentStyle[Z_INDEX];
-            abs.push(child);
-            if(lastIndex === undefined) {
-              lastIndex = z;
-            }
-            else if(!needSort) {
-              if(z < lastIndex) {
-                needSort = true;
-              }
-              lastIndex = z;
-            }
+      else if(i) {
+        lastMaskIndex = i - 1;
+        children[lastMaskIndex].__iIndex = lastMaskIndex;
+        mcHash[lastMaskIndex] = [item];
+        hasMc = true;
+      }
+    }
+    else {
+      lastMaskIndex = undefined;
+      if(item instanceof Xom) {
+        if(isRelativeOrAbsolute(item)) {
+          // 临时变量为排序使用
+          child.__iIndex = i;
+          let z = child.__zIndex = item.currentStyle[Z_INDEX];
+          abs.push(child);
+          if(lastIndex === undefined) {
+            lastIndex = z;
           }
-          else {
-            flow.push(child);
+          else if(!needSort) {
+            if(z < lastIndex) {
+              needSort = true;
+            }
+            lastIndex = z;
           }
         }
         else {
           flow.push(child);
         }
+      }
+      else {
+        flow.push(child);
       }
     }
   });
@@ -387,6 +385,16 @@ class Dom extends Xom {
       n += v[0];
     }
     return n;
+  }
+
+  __layoutNone() {
+    super.__layoutNone();
+    let { children } = this;
+    children.forEach(item => {
+      if(item instanceof Xom || item instanceof Component && item.shadowRoot instanceof Xom) {
+        item.__layoutNone();
+      }
+    });
   }
 
   // 本身block布局时计算好所有子元素的基本位置
@@ -1287,6 +1295,7 @@ class Dom extends Xom {
       [PADDING_LEFT]: paddingLeft,
     } = computedStyle;
     if(isDestroyed || display === 'none') {
+      this.__layoutNone();
       return;
     }
     x += marginLeft + borderLeftWidth;

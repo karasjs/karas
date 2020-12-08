@@ -853,6 +853,8 @@ class Xom extends Node {
     let { isDestroyed, currentStyle, computedStyle, __config } = this;
     let {
       [DISPLAY]: display,
+    } = computedStyle;
+    let {
       [WIDTH]: width,
       [POSITION]: position,
     } = currentStyle;
@@ -866,6 +868,7 @@ class Xom extends Node {
         = this.__offsetWidth = this.__offsetHeight
         = this.__outerWidth = this.__outerHeight
         = computedStyle[WIDTH] = computedStyle[HEIGHT] = 0;
+      this.__layoutNone();
       return;
     }
     // margin/padding在abs前已经计算过了，无需二次计算
@@ -976,6 +979,11 @@ class Xom extends Node {
         ac.__playAuto();
       }
     }
+  }
+
+  __layoutNone() {
+    let { computedStyle } = this;
+    computedStyle[DISPLAY] = 'none';
   }
 
   // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
@@ -2329,10 +2337,11 @@ class Xom extends Node {
   }
 
   updateStyle(style, cb) {
-    let { root, __config } = this;
+    let node = this;
+    let { root, __config } = node;
+    let formatStyle = css.normalize(style);
+    // 有root说明被添加渲染过了
     if(root) {
-      let formatStyle = css.normalize(style);
-      let node = this;
       root.addRefreshTask(node.__task = {
         __before() {
           if(__config[NODE_IS_DESTROYED]) {
@@ -2358,6 +2367,13 @@ class Xom extends Node {
           }
         },
       });
+    }
+    // 没有是在如parse()还未添加的时候，可以直接同步覆盖
+    else {
+      Object.assign(this.currentStyle, formatStyle);
+      if(util.isFunction(cb)) {
+        cb.call(node, 0);
+      }
     }
   }
 

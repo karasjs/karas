@@ -473,7 +473,7 @@ root.ref.rect.removeAnimate(animate);
   * cb `Function`
   更新且刷新后的回调。
 * **说明**  
-异步更新样式。
+异步更新样式。如果节点还未被添加到Root上，则为同步，这种情况很罕见，会出现在parse()且未传入Dom参数的时候。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -487,6 +487,19 @@ root.ref.div.updateStyle({
 }, function() {
   console.log('updateStyle');
 });
+```
+```jsx
+let root = karas.parse(
+  {
+    tagName: 'svg',
+    props: {},
+    children: [123],
+  }
+);
+root.updateStyle({
+  color: '#F00',
+});
+root.appendTo('#selector');
 ```
 
 #### updateFormatStyleNoOverwrite

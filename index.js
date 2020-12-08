@@ -12555,8 +12555,8 @@
             currentStyle = this.currentStyle,
             computedStyle = this.computedStyle,
             __config = this.__config;
-        var display = currentStyle[DISPLAY$2],
-            width = currentStyle[WIDTH$2],
+        var display = computedStyle[DISPLAY$2];
+        var width = currentStyle[WIDTH$2],
             position = currentStyle[POSITION$1];
         __config[NODE_REFRESH_LV] = REFLOW;
 
@@ -12567,6 +12567,9 @@
 
         if (isDestroyed || display === 'none') {
           this.__width = this.__height = this.__clientWidth = this.__clientHeight = this.__offsetWidth = this.__offsetHeight = this.__outerWidth = this.__outerHeight = computedStyle[WIDTH$2] = computedStyle[HEIGHT$2] = 0;
+
+          this.__layoutNone();
+
           return;
         } // margin/padding在abs前已经计算过了，无需二次计算
 
@@ -12694,6 +12697,12 @@
               ac.__playAuto();
             }
         }
+      }
+    }, {
+      key: "__layoutNone",
+      value: function __layoutNone() {
+        var computedStyle = this.computedStyle;
+        computedStyle[DISPLAY$2] = 'none';
       } // 预先计算是否是固定宽高，布局点位和尺寸考虑margin/border/padding
 
     }, {
@@ -14118,12 +14127,12 @@
     }, {
       key: "updateStyle",
       value: function updateStyle(style, cb) {
-        var root = this.root,
-            __config = this.__config;
+        var node = this;
+        var root = node.root,
+            __config = node.__config;
+        var formatStyle = css.normalize(style); // 有root说明被添加渲染过了
 
         if (root) {
-          var formatStyle = css.normalize(style);
-          var node = this;
           root.addRefreshTask(node.__task = {
             __before: function __before() {
               if (__config[NODE_IS_DESTROYED$1]) {
@@ -14153,7 +14162,14 @@
               }
             }
           });
-        }
+        } // 没有是在如parse()还未添加的时候，可以直接同步覆盖
+        else {
+            Object.assign(this.currentStyle, formatStyle);
+
+            if (util.isFunction(cb)) {
+              cb.call(node, 0);
+            }
+          }
       }
     }, {
       key: "updateFormatStyleNoOverwrite",
@@ -15192,7 +15208,7 @@
       }
     });
   });
-  ['__layout', '__layoutAbs', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
+  ['__layout', '__layoutAbs', '__layoutNone', '__tryLayInline', '__offsetX', '__offsetY', '__calAutoBasis', '__calMp', '__calAbs', '__renderAsMask', '__renderByMask', '__mp', 'animate', 'removeAnimate', 'clearAnimate', 'updateStyle', 'getBoundingClientRect', 'getComputedStyle', '__deepScan', '__cancelCache', '__structure', '__modifyStruct', '__updateStruct'].forEach(function (fn) {
     Component$1.prototype[fn] = function () {
       var sr = this.shadowRoot;
 
@@ -15288,45 +15304,43 @@
 
       if (item instanceof Component$1) {
         item = item.shadowRoot;
-      } // 遮罩单独保存后特殊排序，需要有__layoutData，特殊情况下中途插入的节点还未渲染
+      } // 遮罩单独保存后特殊排序
 
 
-      if (item.__layoutData || item instanceof Text) {
-        if (item.isMask) {
-          // 开头的mc忽略，后续的连续mc以第一次出现为准
-          if (lastMaskIndex !== undefined) {
-            mcHash[lastMaskIndex].push(item);
-          } else if (i) {
-            lastMaskIndex = i - 1;
-            children[lastMaskIndex].__iIndex = lastMaskIndex;
-            mcHash[lastMaskIndex] = [item];
-            hasMc = true;
-          }
-        } else {
-          lastMaskIndex = undefined;
+      if (item instanceof Xom && item.isMask) {
+        // 开头的mc忽略，后续的连续mc以第一次出现为准
+        if (lastMaskIndex !== undefined) {
+          mcHash[lastMaskIndex].push(item);
+        } else if (i) {
+          lastMaskIndex = i - 1;
+          children[lastMaskIndex].__iIndex = lastMaskIndex;
+          mcHash[lastMaskIndex] = [item];
+          hasMc = true;
+        }
+      } else {
+        lastMaskIndex = undefined;
 
-          if (item instanceof Xom) {
-            if (isRelativeOrAbsolute$1(item)) {
-              // 临时变量为排序使用
-              child.__iIndex = i;
-              var z = child.__zIndex = item.currentStyle[Z_INDEX$3];
-              abs.push(child);
+        if (item instanceof Xom) {
+          if (isRelativeOrAbsolute$1(item)) {
+            // 临时变量为排序使用
+            child.__iIndex = i;
+            var z = child.__zIndex = item.currentStyle[Z_INDEX$3];
+            abs.push(child);
 
-              if (lastIndex === undefined) {
-                lastIndex = z;
-              } else if (!needSort) {
-                if (z < lastIndex) {
-                  needSort = true;
-                }
-
-                lastIndex = z;
+            if (lastIndex === undefined) {
+              lastIndex = z;
+            } else if (!needSort) {
+              if (z < lastIndex) {
+                needSort = true;
               }
-            } else {
-              flow.push(child);
+
+              lastIndex = z;
             }
           } else {
             flow.push(child);
           }
+        } else {
+          flow.push(child);
         }
       }
     });
@@ -15656,6 +15670,18 @@
         }
 
         return n;
+      }
+    }, {
+      key: "__layoutNone",
+      value: function __layoutNone() {
+        _get(_getPrototypeOf(Dom.prototype), "__layoutNone", this).call(this);
+
+        var children = this.children;
+        children.forEach(function (item) {
+          if (item instanceof Xom || item instanceof Component$1 && item.shadowRoot instanceof Xom) {
+            item.__layoutNone();
+          }
+        });
       } // 本身block布局时计算好所有子元素的基本位置
 
     }, {
@@ -16657,6 +16683,8 @@
             paddingLeft = computedStyle[PADDING_LEFT$2];
 
         if (isDestroyed || display === 'none') {
+          this.__layoutNone();
+
           return;
         }
 
@@ -20870,6 +20898,7 @@
       NODE_CACHE_STYLE$2 = _enums$NODE_KEY$8.NODE_CACHE_STYLE,
       NODE_CACHE_PROPS$1 = _enums$NODE_KEY$8.NODE_CACHE_PROPS,
       NODE_CURRENT_STYLE$4 = _enums$NODE_KEY$8.NODE_CURRENT_STYLE,
+      NODE_COMPUTED_STYLE$3 = _enums$NODE_KEY$8.NODE_COMPUTED_STYLE,
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
@@ -21058,12 +21087,13 @@
         __cacheStyle = __config[NODE_CACHE_STYLE$2],
         __cacheProps = __config[NODE_CACHE_PROPS$1],
         currentStyle = __config[NODE_CURRENT_STYLE$4],
+        computedStyle = __config[NODE_COMPUTED_STYLE$3],
         currentProps = __config[NODE_CURRENT_PROPS$1],
         domParent = __config[NODE_DOM_PARENT$3],
         isMask = __config[NODE_IS_MASK$1];
     var lv = focus || NONE$2;
     var hasMeasure = measure;
-    var hasZ, hasVisibility, hasColor; // component无需遍历直接赋值，img重新加载等情况没有样式更新
+    var hasZ, hasVisibility, hasColor, hasDisplay; // component无需遍历直接赋值，img重新加载等情况没有样式更新
 
     if (!component && style && keys) {
       for (var i = 0, len = keys.length; i < len; i++) {
@@ -21092,6 +21122,8 @@
                   delete style[k];
                   continue;
                 }
+              } else if (k === 'display') {
+                hasDisplay = true;
               } // repaint细化等级，reflow在checkReflow()
 
 
@@ -21242,16 +21274,32 @@
       __config[NODE_CACHE_FILTER$4].release();
 
       __config[NODE_CACHE_FILTER$4] = null;
+    } // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
+
+
+    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$1) {
+      return false;
+    } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
+
+
+    var parent = domParent;
+
+    if (hasDisplay) {
+      var _config2 = parent.__config;
+
+      if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$7] === 'none') {
+        return false;
+      }
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
 
-    var parent = domParent; // 向上查找，出现重复跳出
+    parent = domParent;
 
     while (parent) {
-      var _config2 = parent.__config;
+      var _config3 = parent.__config; // 向上查找，出现重复跳出
 
-      if (_config2.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
-        var id = _config2[NODE_UNIQUE_UPDATE_ID];
+      if (_config3.hasOwnProperty(NODE_UNIQUE_UPDATE_ID)) {
+        var id = _config3[NODE_UNIQUE_UPDATE_ID];
 
         if (cacheHash.hasOwnProperty(id)) {
           break;
@@ -21261,42 +21309,42 @@
       } // 没有的需要设置一个标识
       else {
           cacheHash[uniqueUpdateId] = true;
-          _config2[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
+          _config3[NODE_UNIQUE_UPDATE_ID] = uniqueUpdateId++;
           cacheList.push(parent);
         }
 
-      var _lv = _config2[NODE_REFRESH_LV$2];
+      var _lv = _config3[NODE_REFRESH_LV$2];
 
       var _need2 = _lv >= REPAINT$3;
 
-      if (_need2 && _config2[NODE_CACHE$5]) {
-        _config2[NODE_CACHE$5].release();
+      if (_need2 && _config3[NODE_CACHE$5]) {
+        _config3[NODE_CACHE$5].release();
       } // 前面已经过滤了无改变NONE的，只要孩子有任何改变父亲就要清除
 
 
-      if (_config2[NODE_CACHE_TOTAL$4]) {
-        _config2[NODE_CACHE_TOTAL$4].release();
+      if (_config3[NODE_CACHE_TOTAL$4]) {
+        _config3[NODE_CACHE_TOTAL$4].release();
       }
 
-      if (_config2[NODE_CACHE_FILTER$4]) {
-        _config2[NODE_CACHE_FILTER$4].release();
+      if (_config3[NODE_CACHE_FILTER$4]) {
+        _config3[NODE_CACHE_FILTER$4].release();
 
-        _config2[NODE_CACHE_FILTER$4] = null;
+        _config3[NODE_CACHE_FILTER$4] = null;
       }
 
-      if (_config2[NODE_CACHE_MASK$3]) {
-        _config2[NODE_CACHE_MASK$3].release();
+      if (_config3[NODE_CACHE_MASK$3]) {
+        _config3[NODE_CACHE_MASK$3].release();
 
-        _config2[NODE_CACHE_MASK$3] = null;
+        _config3[NODE_CACHE_MASK$3] = null;
       }
 
-      if (_config2[NODE_CACHE_OVERFLOW$4]) {
-        _config2[NODE_CACHE_OVERFLOW$4].release();
+      if (_config3[NODE_CACHE_OVERFLOW$4]) {
+        _config3[NODE_CACHE_OVERFLOW$4].release();
 
-        _config2[NODE_CACHE_OVERFLOW$4] = null;
+        _config3[NODE_CACHE_OVERFLOW$4] = null;
       }
 
-      parent = _config2[NODE_DOM_PARENT$3];
+      parent = _config3[NODE_DOM_PARENT$3];
     }
 
     return true;
@@ -25433,7 +25481,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.1";
+  var version = "0.44.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

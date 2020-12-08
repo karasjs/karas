@@ -59,7 +59,7 @@ karas.render(
   * dom `DOM/String`
   同[render()](#render)的dom参数。
   * options `Object`
-  整体动画初始化参数，同[Animation](#Animation)的options。
+  整体动画初始化参数，可选，详情见下文。
 * **说明**  
 入口方法，同[render()](#render)类似，接收的json可以动态化下发，更加灵活，但也缺少了一些编程本身的功能（如不能写逻辑和函数）。
 * **示例**
@@ -74,6 +74,28 @@ karas.parse(
     "children": ["Hello karas!"]
   },
   '#selector'
+);
+```
+
+#### options
+* **类型** `Object`
+* **说明**
+可配`autoPlay`是否默认播放，可配`controller`传入一个自定义总控制器，可配`vars`传入变量hash。
+* **示例**
+```jsx
+karas.parse(
+  someJson,
+  '#selector',
+  {
+    autoPlay: false, // 默认播放
+    controller: new karas.animate.Controller(),
+    vars: {
+      color: '#F00',
+      onClick: function() {
+        console.log('click');
+      },
+    },
+  }
 );
 ```
 

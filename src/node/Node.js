@@ -67,7 +67,6 @@ class Node {
   }
 
   __destroy() {
-    this.__isDestroyed = true;
     this.__config[NODE_IS_DESTROYED] = true;
   }
 
@@ -146,7 +145,7 @@ class Node {
   }
 
   get isDestroyed() {
-    return this.__isDestroyed;
+    return this.__config[NODE_IS_DESTROYED];
   }
 }
 

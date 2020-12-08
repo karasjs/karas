@@ -487,7 +487,6 @@
     }, {
       key: "__destroy",
       value: function __destroy() {
-        this.__isDestroyed = true;
         this.__config[NODE_IS_DESTROYED] = true;
       }
     }, {
@@ -585,7 +584,7 @@
     }, {
       key: "isDestroyed",
       get: function get() {
-        return this.__isDestroyed;
+        return this.__config[NODE_IS_DESTROYED];
       }
     }]);
 
@@ -11970,7 +11969,8 @@
       NODE_CACHE_TOTAL = _enums$NODE_KEY$2.NODE_CACHE_TOTAL,
       NODE_CACHE_FILTER$1 = _enums$NODE_KEY$2.NODE_CACHE_FILTER,
       NODE_CACHE_MASK = _enums$NODE_KEY$2.NODE_CACHE_MASK,
-      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW;
+      NODE_CACHE_OVERFLOW$1 = _enums$NODE_KEY$2.NODE_CACHE_OVERFLOW,
+      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$2.NODE_IS_DESTROYED;
   var AUTO$2 = unit.AUTO,
       PX$4 = unit.PX,
       PERCENT$5 = unit.PERCENT,
@@ -12961,7 +12961,7 @@
                 loadBgi.source = null;
                 inject.measureImg(bgI, function (data) {
                   // 还需判断url，防止重复加载时老的替换新的，失败不绘制bgi
-                  if (data.success && data.url === loadBgi.url && !_this3.__isDestroyed) {
+                  if (data.success && data.url === loadBgi.url && !_this3.isDestroyed) {
                     loadBgi.source = data.source;
                     loadBgi.width = data.width;
                     loadBgi.height = data.height;
@@ -13150,9 +13150,9 @@
             }
 
             for (var list = ['Top', 'Right', 'Bottom', 'Left'], i = 0, len = list.length; i < len; i++) {
-              var _k = list[i];
+              var k = list[i];
 
-              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + _k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + _k + 'Color')]][3] > 0) {
+              if (computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Width')]] > 0 && computedStyle[STYLE_KEY$6[style2Upper$2('border' + k + 'Color')]][3] > 0) {
                 return true;
               }
             }
@@ -14118,46 +14118,15 @@
     }, {
       key: "updateStyle",
       value: function updateStyle(style, cb) {
-        var tagName = this.tagName,
-            root = this.root,
+        var root = this.root,
             __config = this.__config;
 
         if (root) {
-          var hasChange; // 先去掉无用和缩写
-
-          style = util.extend({}, style);
-          var ks = Object.keys(style);
-          ks.forEach(function (k) {
-            if (abbr.hasOwnProperty(k)) {
-              abbr.toFull(style, k);
-              delete style[k];
-            }
-          }); // 此处仅检测样式是否有效，不检测相等，因为可能先不等再变回来需要覆盖，最终相等检测在Root刷新做
-
-          for (var i in style) {
-            if (style.hasOwnProperty(i)) {
-              if (o.isValid(tagName, i)) {
-                hasChange = true;
-              } else {
-                delete style[k];
-              }
-            }
-          }
-
-          var formatStyle = css.normalize(style); // 空样式或非法或无改变直接返回
-
-          if (!hasChange) {
-            if (util.isFunction(cb)) {
-              cb(0);
-            }
-
-            return;
-          }
-
+          var formatStyle = css.normalize(style);
           var node = this;
           root.addRefreshTask(node.__task = {
             __before: function __before() {
-              if (node.isDestroyed) {
+              if (__config[NODE_IS_DESTROYED$1]) {
                 return;
               } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
 
@@ -14168,6 +14137,43 @@
               res[UPDATE_OVERWRITE] = style; // 标识盖原有style样式不仅仅是修改currentStyle，不同于animate
 
               res[UPDATE_KEYS$1] = Object.keys(formatStyle).map(function (i) {
+                if (!GEOM$4.hasOwnProperty(i)) {
+                  i = parseInt(i);
+                }
+
+                return i;
+              });
+              res[UPDATE_CONFIG$1] = __config;
+
+              root.__addUpdate(node, __config, root, root.__config, res);
+            },
+            __after: function __after(diff) {
+              if (util.isFunction(cb)) {
+                cb.call(node, diff);
+              }
+            }
+          });
+        }
+      }
+    }, {
+      key: "updateFormatStyleNoOverwrite",
+      value: function updateFormatStyleNoOverwrite(style, cb) {
+        var root = this.root,
+            __config = this.__config;
+
+        if (root) {
+          var node = this;
+          root.addRefreshTask(node.__task = {
+            __before: function __before() {
+              if (__config[NODE_IS_DESTROYED$1]) {
+                return;
+              } // 刷新前统一赋值，由刷新逻辑计算最终值避免优先级覆盖问题
+
+
+              var res = {};
+              res[UPDATE_NODE$1] = node;
+              res[UPDATE_STYLE$1] = style;
+              res[UPDATE_KEYS$1] = Object.keys(style).map(function (i) {
                 if (!GEOM$4.hasOwnProperty(i)) {
                   i = parseInt(i);
                 }
@@ -14332,10 +14338,10 @@
         if (Array.isArray(filter)) {
           for (var i = 0, len = filter.length; i < len; i++) {
             var _filter$i = _slicedToArray(filter[i], 2),
-                _k2 = _filter$i[0],
+                k = _filter$i[0],
                 v = _filter$i[1];
 
-            if (_k2 === 'blur') {
+            if (k === 'blur') {
               var d = mx.int2convolution(v);
               ox = Math.max(ox, d);
               oy = Math.max(oy, d);
@@ -16901,9 +16907,6 @@
         });
 
         _get(_getPrototypeOf(Dom.prototype), "__destroy", this).call(this);
-
-        this.children.splice(0);
-        this.lineGroups.splice(0);
       }
     }, {
       key: "__emitEvent",
@@ -17219,7 +17222,7 @@
           inject.measureImg(src, function (data) {
             var self = _this2; // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
 
-            if (data.url === loadImg.url && !self.__isDestroyed) {
+            if (data.url === loadImg.url && !self.isDestroyed) {
               var reload = function reload() {
                 var root = self.root,
                     _self$currentStyle = self.currentStyle,
@@ -20871,7 +20874,7 @@
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
       NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
-      NODE_IS_DESTROYED$1 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
+      NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
       NODE_UPDATE_HASH = _enums$NODE_KEY$8.NODE_UPDATE_HASH,
       NODE_UNIQUE_UPDATE_ID = _enums$NODE_KEY$8.NODE_UNIQUE_UPDATE_ID,
@@ -21012,7 +21015,7 @@
         keys = target[UPDATE_KEYS$2],
         __config = target[UPDATE_CONFIG$3];
 
-    if (__config[NODE_IS_DESTROYED$1]) {
+    if (__config[NODE_IS_DESTROYED$2]) {
       return;
     } // updateStyle()这样的调用需要覆盖原有样式，因为是按顺序遍历，后面的优先级自动更高不怕重复
 

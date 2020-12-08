@@ -1515,8 +1515,6 @@ class Dom extends Xom {
       }
     });
     super.__destroy();
-    this.children.splice(0);
-    this.lineGroups.splice(0);
   }
 
   __emitEvent(e, force) {

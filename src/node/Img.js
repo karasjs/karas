@@ -184,7 +184,7 @@ class Img extends Dom {
       inject.measureImg(src, data => {
         let self = this;
         // 还需判断url，防止重复加载时老的替换新的，失败走error绘制
-        if(data.url === loadImg.url && !self.__isDestroyed) {
+        if(data.url === loadImg.url && !self.isDestroyed) {
           function reload() {
             let { root, currentStyle: { [WIDTH]: width, [HEIGHT]: height } } = self;
             root.delRefreshTask(self.__task);

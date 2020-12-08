@@ -349,7 +349,7 @@ svg标准的transform最终计算值，一维6为数组表达，相对于父元�
   * key `String/Array<String>`
     想要获取的样式键名，可为空，默认全部。
 * **说明**  
-获取当前计算好的样式
+获取当前计算好的样式。
 * **示例**
 ```jsx
 let root = karas.render(
@@ -382,7 +382,7 @@ console.log(root.ref.div.getBoundingClientRect().width); // {"left":99.134994920
 * **类型** `Function`
 * **参数**
   * list `Array<Object>`
-  动画列表
+  动画列表。
   * options `Object`
   动画参数
 * **说明**  
@@ -411,7 +411,7 @@ root.ref.rect.animate([
 * **类型** `Function`
 * **参数**
   * target `Animation`
-  动画对象
+  动画对象。
 * **说明**  
 取消并从animateList中移除一段动画。
 * **示例**
@@ -447,9 +447,9 @@ root.ref.rect.removeAnimate(animate);
 * **类型** `Function`
 * **参数**
   * style `Object`
-  更新的样式inline集合
+  更新的样式集合。
   * cb `Function`
-  更新且刷新后的回调
+  更新且刷新后的回调。
 * **说明**  
 异步更新样式。
 * **示例**
@@ -462,6 +462,30 @@ let root = karas.render(
 );
 root.ref.div.updateStyle({
   color: '#F00',
+}, function() {
+  console.log('updateStyle');
+});
+```
+
+#### updateFormatStyleNoOverwrite
+* **类型** `Function`
+* **参数**
+  * style `Object`
+    更新的样式集合。
+  * cb `Function`
+    更新且刷新后的回调。
+* **说明**  
+异步更新格式化好的样式。它要求传入的样式key和value均是格式化的，以提升性能，并且不会覆盖静态样式，即只存在于currentStyle中。
+* **示例**
+```jsx
+let root = karas.render(
+  <canvas>
+    <div ref="div">text</div>
+  </canvas>,
+  '#selector'
+);
+root.ref.div.updateFormatStyleNoOverwrite({
+  [karas.enums.STYLE_KEY.COLOR]: [[0, 0, 0, 1]],
 }, function() {
   console.log('updateStyle');
 });
@@ -1864,6 +1888,60 @@ karas.inject.cancelAnimationFrame(id);
 
 ### css
 处理样式的工具集合。此举是面向框架开发维护人员的，普通开发者无需关注。
+
+#### normalize
+* **类型** `Function`
+* **参数**
+  * style `Object`
+    更新的样式集合。
+  * reset `Array<Object>`
+    默认样式，可选。
+* **说明**  
+将传入的样式格式化为带单位的标准化格式，并使用枚举代替key。
+* **示例**
+```jsx
+karas.style.css.normalize({
+  margin: 0,
+});
+// { "6": [0, 1], "7": [0, 1], "8": [0, 1], "9": [0, 1] }
+```
+
+#### cloneStyle
+* **类型** `Function`
+* **参数**
+  * style `Object`
+    样式集合。
+* **说明**  
+将传入的样式clone。
+* **示例**
+```jsx
+karas.style.css.cloneStyle({
+  color: '#F00',
+});
+```
+
+#### equalStyle
+* **类型** `Function`
+* **参数**
+  * k `String/Number`
+    对比的样式名，注意是格式化的枚举值。
+  * styleA `Object`
+    其中一个样式，注意是格式化的。
+  * styleB `Array<Object>`
+    另一个样式，注意是格式化的。
+  * target `Xom`
+    样式的对象，可选。因为矢量图形的props也存在于动画过程中，其不属于标准样式，所以需要特殊对待传入节点来标识。
+* **说明**  
+对比所属target的样式k，是否相等。
+* **示例**
+```jsx
+karas.style.css.equalStyle(
+  karas.enums.STYLE_KEY.COLOR,
+  [[0, 0, 0, 1], karas.style.unit.RGBA],
+  [[0, 0, 0, 1], karas.style.unit.RGBA],
+);
+// true
+```
 
 ### reset
 存储默认样式。

@@ -2887,7 +2887,7 @@
   function parseMarginPadding(style, key, list) {
     var temp = style[key];
 
-    if (temp) {
+    if (!isNil$2(temp)) {
       var match = temp.toString().match(/(-?[\d.]+(px|%)?)|(auto)/ig);
 
       if (match) {
@@ -25433,7 +25433,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.0";
+  var version = "0.44.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

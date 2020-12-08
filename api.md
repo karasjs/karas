@@ -485,7 +485,7 @@ let root = karas.render(
   '#selector'
 );
 root.ref.div.updateFormatStyleNoOverwrite({
-  [karas.enums.STYLE_KEY.COLOR]: [[0, 0, 0, 1]],
+  [karas.enums.STYLE_KEY.COLOR]: [[255, 0, 0, 1], karas.style.unit.RGBA],
 }, function() {
   console.log('updateStyle');
 });

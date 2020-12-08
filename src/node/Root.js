@@ -394,6 +394,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   if(hasDisplay) {
     let __config = parent.__config;
     if(__config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
+      computedStyle[DISPLAY] = 'none';
       return false;
     }
   }

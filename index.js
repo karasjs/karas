@@ -21288,6 +21288,7 @@
       var _config2 = parent.__config;
 
       if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$7] === 'none') {
+        computedStyle[DISPLAY$7] = 'none';
         return false;
       }
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

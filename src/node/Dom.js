@@ -1302,8 +1302,15 @@ class Dom extends Xom {
     y += marginTop + borderTopWidth;
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
-      if(target && target !== item) {
-        return;
+      if(target) {
+        // 传入target局部布局更新，这时候如果是Component对比需变成sr
+        let node = item;
+        if(node instanceof Component) {
+          node = item.shadowRoot;
+        }
+        if(target !== node) {
+          return;
+        }
       }
       let { currentStyle, computedStyle } = item;
       // 先根据容器宽度计算margin/padding
@@ -1473,8 +1480,15 @@ class Dom extends Xom {
     });
     // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
-      if(target && target !== item) {
-        return;
+      if(target) {
+        // 传入target局部布局更新，这时候如果是Component对比需变成sr
+        let node = item;
+        if(node instanceof Component) {
+          node = item.shadowRoot;
+        }
+        if(target !== node) {
+          return;
+        }
       }
       if(item instanceof Dom) {
         item.__layoutAbs(isRelativeOrAbsolute(item) ? item : container, data);

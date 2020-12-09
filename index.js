@@ -16693,8 +16693,17 @@
         y += marginTop + borderTopWidth; // 对absolute的元素进行相对容器布局
 
         absChildren.forEach(function (item) {
-          if (target && target !== item) {
-            return;
+          if (target) {
+            // 传入target局部布局更新，这时候如果是Component对比需变成sr
+            var node = item;
+
+            if (node instanceof Component$1) {
+              node = item.shadowRoot;
+            }
+
+            if (target !== node) {
+              return;
+            }
           }
 
           var currentStyle = item.currentStyle,
@@ -16875,8 +16884,17 @@
         }); // 递归进行，遇到absolute/relative/component的设置新容器
 
         children.forEach(function (item) {
-          if (target && target !== item) {
-            return;
+          if (target) {
+            // 传入target局部布局更新，这时候如果是Component对比需变成sr
+            var node = item;
+
+            if (node instanceof Component$1) {
+              node = item.shadowRoot;
+            }
+
+            if (target !== node) {
+              return;
+            }
           }
 
           if (item instanceof Dom) {
@@ -25487,7 +25505,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.3";
+  var version = "0.44.4";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

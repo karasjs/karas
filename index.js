@@ -17314,10 +17314,10 @@
                 return;
               } else {
                 loadImg.error = true;
-              } // 可见状态进行刷新操作
+              } // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
 
 
-              if (computedStyle[DISPLAY$4] !== 'none' && computedStyle[VISIBILITY$3] !== 'hidden') {
+              if (computedStyle[DISPLAY$4] !== 'none') {
                 reload();
               }
             }

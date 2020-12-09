@@ -240,8 +240,8 @@ class Img extends Dom {
           else {
             loadImg.error = true;
           }
-          // 可见状态进行刷新操作
-          if(computedStyle[DISPLAY] !== 'none' && computedStyle[VISIBILITY] !== 'hidden') {
+          // 可见状态进行刷新操作，visibility某些情况需要刷新，可能宽高未定义要重新布局
+          if(computedStyle[DISPLAY] !== 'none') {
             reload();
           }
         }

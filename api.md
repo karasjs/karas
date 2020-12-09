@@ -1310,7 +1310,8 @@ root.on('refresh', function() {
   * y `Number'
   高清方案下y缩放比例，影响事件响应坐标判断。可选，默认值等于x。
 * **说明**  
-当根节点的属性的width/height和样式的width/height不同时，需要设置缩放比例。canvas类似一张图片，属性的width/height是图片的真实尺寸，样式的width/height是最终渲染的尺寸。常见高清模式dpr为2时，样式尺寸设置为属性尺寸的一半，达到高清渲染的目的，此时scale要随之设置为2，等于dpr。
+当根节点的属性的width/height和样式的width/height不同时，需要设置缩放比例。canvas类似一张图片，属性的width/height是图片的真实尺寸，样式的width/height是最终渲染的尺寸。常见高清模式dpr为2时，样式尺寸设置为属性尺寸的一半，达到高清渲染的目的，此时scale要随之设置为2，等于dpr。  
+`karas内部对DOM节点进行了自动判断，设置好了scale()，当需要手动调整时，才需要设置`
 * **示例**
 ```jsx
 let root = karas.render(

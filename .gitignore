@@ -9,4 +9,3 @@ coverage/
 *.swp
 test/**/script.js
 index.min.js*
-logo.png

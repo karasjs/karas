@@ -259,7 +259,7 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
                 continue;
               }
             }
-            else if(k === 'display') {
+            else if(k === DISPLAY) {
               hasDisplay = true;
             }
             // repaint细化等级，reflow在checkReflow()
@@ -392,10 +392,13 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
   let parent = domParent;
   if(hasDisplay) {
-    let __config = parent.__config;
-    if(__config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
-      computedStyle[DISPLAY] = 'none';
-      return false;
+    while(parent) {
+      let __config = parent.__config;
+      if(__config[NODE_COMPUTED_STYLE][DISPLAY] === 'none') {
+        computedStyle[DISPLAY] = 'none';
+        return false;
+      }
+      parent = __config[NODE_DOM_PARENT];
     }
   }
   // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归

@@ -2573,6 +2573,7 @@ class Xom extends Node {
       top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
       right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
       bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
+      points: [p1, p2, p3, p4],
     };
   }
 

@@ -14422,7 +14422,8 @@
           left: Math.min(p1[0], Math.min(p2[0], Math.min(p3[0], p4[0]))),
           top: Math.min(p1[1], Math.min(p2[1], Math.min(p3[1], p4[1]))),
           right: Math.max(p1[0], Math.max(p2[0], Math.max(p3[0], p4[0]))),
-          bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1])))
+          bottom: Math.max(p1[1], Math.max(p2[1], Math.max(p3[1], p4[1]))),
+          points: [p1, p2, p3, p4]
         };
       }
     }, {
@@ -21122,7 +21123,7 @@
                   delete style[k];
                   continue;
                 }
-              } else if (k === 'display') {
+              } else if (k === DISPLAY$7) {
                 hasDisplay = true;
               } // repaint细化等级，reflow在checkReflow()
 
@@ -21285,11 +21286,15 @@
     var parent = domParent;
 
     if (hasDisplay) {
-      var _config2 = parent.__config;
+      while (parent) {
+        var _config2 = parent.__config;
 
-      if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$7] === 'none') {
-        computedStyle[DISPLAY$7] = 'none';
-        return false;
+        if (_config2[NODE_COMPUTED_STYLE$3][DISPLAY$7] === 'none') {
+          computedStyle[DISPLAY$7] = 'none';
+          return false;
+        }
+
+        parent = _config2[NODE_DOM_PARENT$3];
       }
     } // 向上清除等级>=REPAINT的汇总缓存信息，过程中可能会出现重复，因此节点上记录一个临时标防止重复递归
 
@@ -25482,7 +25487,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.2";
+  var version = "0.44.3";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

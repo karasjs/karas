@@ -574,13 +574,13 @@ console.log(root.ref.div === div);
 ```
 
 <a name="Dom"></a>
-### Dom
+## Dom
 * **类型** `class`
 * **说明**  
 VirtualDom的基类，所有非图形vd均是继承或实现了此类。一般情况下开发用不到。详见[虚拟Dom](#虚拟Dom)。
 
 <a name="Root"></a>
-### Root
+## Root
 * **类型** `class`
 * **说明**  
 [Dom](#Dom)的派生类，根节点canvas/svg/webgl实现了此类。一般情况下开发用不到。详见[根节点](#根节点)。

@@ -152,14 +152,61 @@ class Component extends karas.Component {
 所有dom节点的基类，[Img](#Img)实现了此类。详见[Img](#Img)。
 
 ### Img
+* **类型** `class`
+* **说明**  
+图片节点类。详见[Img](#Img)。
 
 ### Component
 * **类型** `class`
 * **说明**  
 组件的基类，混入了[Event](#Event)。详见[Component](#Component)。
+  
+### util
+* **类型** `Object`
+* **说明**  
+一组工具方法的集合，用以附加处理工具类的方法。一般情况下开发用不到。详见[工具集](#工具集)。
+  
+### inject
+* **类型** `Object`
+* **说明**  
+一组注入方法的集合，用以注入实现非普通浏览器环境下的必要方法（如小程序、native开发）。一般情况下开发用不到。详见[注入](#注入)。
+  
+### style
+* **类型** `Object`
+* **说明**  
+公开的style包下的对象集合，用以处理样式相关的方法。一般情况下开发用不到。详见[style包](#style包)。
+
+<a name="parser"></a>
+### parser
+* **类型** `Object`
+* **说明**  
+  公开的parser包下的对象集合，用以处理动态json相关的方法。一般情况下开发用不到。详见[parser包](#parser包)。
+
+<a name="animate"></a>
+### animate
+* **类型** `Object`
+* **说明**  
+  公开的animate包下的对象集合，用以处理动画相关的方法。一般情况下开发用不到。详见[animate包](#animate包)。
+
+<a name="math"></a>
+### math
+* **类型** `Object`
+* **说明**  
+  公开的math包下的对象集合，用以处理数学相关的方法。一般情况下开发用不到。详见[math包](#math包)。
+
+<a name="refresh"></a>
+### refresh
+* **类型** `Object`
+* **说明**  
+  公开的refresh包下的对象集合，用以处理刷新缓存相关的方法。一般情况下开发用不到。详见[refresh包](#refresh包)。
+
+<a name="enums"></a>
+### enums枚举
+* **类型** `Object`
+* **说明**  
+  公开的枚举类型，因v8特殊优化的关系，一些常用的属性以索引下标的形式存储，而非常见的string的key。
 
 <a name="Node"></a>
-
 ## Node
 Xom/Text的基类，抽象共有部分。所有节点均派生于它。
 
@@ -754,55 +801,7 @@ karas.render(
 );
 ```
 
-<a name="util"></a>
-### util
-* **类型** `Object`
-* **说明**  
-一组工具方法的集合，用以附加处理工具类的方法。一般情况下开发用不到。详见[工具集](#工具集)。
-
-<a name="inject"></a>
-### inject
-* **类型** `Object`
-* **说明**  
-一组注入方法的集合，用以注入实现非普通浏览器环境下的必要方法（如小程序、native开发）。一般情况下开发用不到。详见[注入](#注入)。
-
-<a name="style"></a>
-### style包
-* **类型** `Object`
-* **说明**  
-公开的style包下的对象集合，用以处理样式相关的方法。一般情况下开发用不到。详见[style包](#style包)。
-
-<a name="parser"></a>
-### parser包
-* **类型** `Object`
-* **说明**  
-公开的parser包下的对象集合，用以处理动态json相关的方法。一般情况下开发用不到。详见[parser包](#parser包)。
-
-<a name="animate"></a>
-### animate包
-* **类型** `Object`
-* **说明**  
-公开的animate包下的对象集合，用以处理动画相关的方法。一般情况下开发用不到。详见[animate包](#animate包)。
-
-<a name="math"></a>
-### math包
-* **类型** `Object`
-* **说明**  
-公开的math包下的对象集合，用以处理数学相关的方法。一般情况下开发用不到。详见[math包](#math包)。
-
-<a name="refresh"></a>
-### refresh包
-* **类型** `Object`
-* **说明**  
-公开的refresh包下的对象集合，用以处理刷新缓存相关的方法。一般情况下开发用不到。详见[refresh包](#refresh包)。
-
-<a name="enums"></a>
-### enums枚举
-* **类型** `Object`
-* **说明**  
-公开的枚举类型，因v8特殊优化的关系，一些常用的属性以索引下标的形式存储，而非常见的string的key。
-
-#### STYLE_KEY
+### STYLE_KEY
 * **类型** `Object`
 * **说明**  
 currentStyle/computedStyle中的key枚举。

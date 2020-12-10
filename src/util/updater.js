@@ -411,7 +411,7 @@ function did() {
       item.componentDidUpdate();
     }
   });
-  updateList = [];
+  updateList.splice(0);
   removeList.forEach(item => {
     item.__destroy();
   });

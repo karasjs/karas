@@ -18436,7 +18436,7 @@
         item.componentDidUpdate();
       }
     });
-    updateList = [];
+    updateList.splice(0);
     removeList.forEach(function (item) {
       item.__destroy();
     });
@@ -25525,7 +25525,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.6";
+  var version = "0.44.7";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

@@ -12,7 +12,7 @@ npm install karas
 ```
 
 ## Framework
-[![framework](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/demo/framework.png)
+[![framework](https://raw.githubusercontent.com/karasjs/karas/master/framework.png)](https://raw.githubusercontent.com/karasjs/karas/master/framework.png)
 
 ## API
 * https://github.com/karasjs/karas/blob/master/api.md

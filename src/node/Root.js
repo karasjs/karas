@@ -139,7 +139,7 @@ function isFixedWidthOrHeight(node, root, k) {
   }
   if(c[1] === PERCENT) {
     let parent = node.domParent;
-    let s = parent.layoutData[k === 'width' ? 'w' : 'h'];
+    let s = parent.__layoutData[k === 'width' ? 'w' : 'h'];
     return c[0] * s * 0.01 === v;
   }
   return false;
@@ -744,7 +744,7 @@ class Root extends Dom {
                 res[UPDATE_STYLE] = sr.currentStyle;
                 res[UPDATE_FOCUS] = REFLOW;
                 res[UPDATE_MEASURE] = true;
-                res[UPDATE_COMPONENT] = true;
+                res[UPDATE_COMPONENT] = cp;
                 res[UPDATE_CONFIG] = sr.__config;
                 this.__addUpdate(sr, sr.__config, this, this.__config, res);
               });
@@ -830,9 +830,6 @@ class Root extends Dom {
         }
         if(o[UPDATE_MEASURE]) {
           updateHash[UPDATE_MEASURE] = true;
-        }
-        if(o[UPDATE_COMPONENT]) {
-          updateHash[UPDATE_COMPONENT] = true;
         }
         // 后续存在新建list上，需增加遍历逻辑
         if(o[UPDATE_STYLE]) {
@@ -1216,7 +1213,7 @@ class Root extends Dom {
             return;
           }
           let parent = node.domParent;
-          let { layoutData: { x, y, w, h }, width, computedStyle } = parent;
+          let { __layoutData: { x, y, w, h }, width, computedStyle } = parent;
           let current = node;
           // cp的shadowRoot要向上到cp本身
           while(component && current.isShadowRoot) {
@@ -1253,9 +1250,27 @@ class Root extends Dom {
             if(!container) {
               container = root;
             }
-            parent.__layoutAbs(container, null, node);
-            // 前后都是abs无需偏移后面兄弟
+            // 由setState引发的传入component自身，layout引发的传入sr
+            if(component) {
+              parent.__layoutAbs(container, null, component);
+            }
+            else {
+              parent.__layoutAbs(container, null, node);
+            }
+            // 前后都是abs无需偏移后面兄弟，component变化节点需更新struct
             if(isLastAbs) {
+              if(component) {
+                let arr = node.__modifyStruct(root, diffI);
+                diffI += arr[1];
+                diffList.push(arr);
+                if((position !== cts[POSITION] && (position === 'static' || cts[POSITION] === 'static'))
+                  || zIndex !== cts[Z_INDEX]) {
+                  node.domParent.__updateStruct(root.__structs);
+                  if(this.renderMode === mode.SVG) {
+                    cleanSvgCache(node.domParent);
+                  }
+                }
+              }
               return;
             }
             change2Abs = true;

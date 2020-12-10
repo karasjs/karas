@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=0"/>
+  <title>benchmark</title>
+  <link href="style.css" media="all" rel="stylesheet"/>
+</head>
+<body>
+<div class="pre">1000个节点的动画性能，仅canvas且开启cache缓存。</div>
+<div id="div"></div>
+<pre><code class="brush:csx"></code></pre>
+<script type="text/jsx">
+  let list = [];
+  for(let i = 0; i < 1000; i++) {
+    list.push(i);
+  }
+  let root = karas.render(
+    <canvas width={360} height={360} cache={true}>
+      {
+        list.map(i => {
+          let background = `rgb(${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)},${Math.floor(Math.random() * 255)})`;
+          return <div ref={i}
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        background,
+                      }}>{i}</div>;
+        })
+      }
+    </canvas>,
+    '#div'
+  );
+  list.forEach(i => {
+    let node = root.ref[i];
+    node.animate([
+      {
+        translateX: 0,
+        translateY: 0,
+      },
+      {
+        translateX: -180 + Math.random() * 360,
+        translateY: -180 + Math.random() * 360,
+      }
+    ], {
+      duration: 500 + Math.random() * 500,
+      direction: 'alternate',
+      iterations: Infinity,
+    });
+  });
+</script>
+<script src="sea.js"></script>
+<script src="homunculus.js"></script>
+<script src="yurine.js"></script>
+<script src="../index.js"></script>
+<script>
+  seajs.config({
+    alias: {
+    },
+    map: [function(url) {
+    }]
+  });
+  define('fs', {});
+  seajs.use(['jssc'], function(jssc) {
+    var code = document.querySelector('pre code');
+    var jsx = document.querySelector('script[type="text/jsx"]');
+    var source = jsx.textContent || jsx.text;
+    source = source.trim().replace(/\n[ ]{2}/g, '\n');
+    var text = document.createTextNode(source);
+    code.appendChild(text);
+    jssc.exec();
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var jsx = document.querySelectorAll('script');
+    for(var i = 0, len = jsx.length; i < len; i++) {
+      var node = jsx[i];
+      if(node.getAttribute('type') === 'text/jsx' && !node.getAttribute('yurine')) {
+        node.setAttribute('yurine', 1);
+        var code = node.textContent || node.text;
+        if(!code) {
+          continue;
+        }
+        code = yurine.parse(code);
+        var script = document.createElement('script');
+        script.async = true;
+        script.text = code;
+        head.appendChild(script);
+      }
+    }
+  });
+</script>
+</body>
+</html>

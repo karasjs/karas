@@ -201,9 +201,10 @@
     });
     a.on('end', function() {
       let plane = root.children[0];
-      item.style.left.value = plane.state.left + 24;
-      item.style.top.value = plane.state.top;
-      root.setRefreshLevel(1);
+      item.updateStyle({
+        left: plane.state.left + 24,
+        top: plane.state.top,
+      });
     });
   });
 </script>

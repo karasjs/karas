@@ -12558,11 +12558,11 @@
         var display = computedStyle[DISPLAY$2];
         var width = currentStyle[WIDTH$2],
             position = currentStyle[POSITION$1];
-        __config[NODE_REFRESH_LV] = REFLOW;
 
         this.__cancelCache();
 
         this.__layoutData = clone$2(data);
+        __config[NODE_REFRESH_LV] = REFLOW;
         __config[NODE_LIMIT_CACHE] = false;
 
         if (isDestroyed || display === 'none') {
@@ -14271,7 +14271,7 @@
         _get(_getPrototypeOf(Xom.prototype), "__offsetX", this).call(this, diff, isLayout);
 
         if (isLayout) {
-          this.layoutData.x += diff;
+          this.__layoutData.x += diff;
         }
 
         if (lv !== undefined) {
@@ -14289,7 +14289,7 @@
         _get(_getPrototypeOf(Xom.prototype), "__offsetY", this).call(this, diff, isLayout);
 
         if (isLayout) {
-          this.layoutData.y += diff;
+          this.__layoutData.y += diff;
         }
 
         if (lv !== undefined) {
@@ -14308,7 +14308,7 @@
         this.__clientWidth += diff;
         this.__offsetWidth += diff;
         this.__outerWidth += diff;
-        this.layoutData.w += diff;
+        this.__layoutData.w += diff;
 
         if (diff < 0) {
           this.__config[NODE_LIMIT_CACHE] = false;
@@ -14321,7 +14321,7 @@
         this.__clientHeight += diff;
         this.__offsetHeight += diff;
         this.__outerHeight += diff;
-        this.layoutData.h += diff;
+        this.__layoutData.h += diff;
 
         if (diff < 0) {
           this.__config[NODE_LIMIT_CACHE] = false;
@@ -14535,11 +14535,6 @@
       key: "currentStyle",
       get: function get() {
         return this.__currentStyle;
-      }
-    }, {
-      key: "layoutData",
-      get: function get() {
-        return this.__layoutData;
       }
     }, {
       key: "isShadowRoot",
@@ -15198,7 +15193,7 @@
     return Component;
   }(Event);
 
-  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', 'layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
+  Object.keys(o.GEOM).concat(['x', 'y', 'ox', 'oy', 'sx', 'sy', 'width', 'height', 'outerWidth', 'outerHeight', 'clientWidth', 'clientHeight', 'offsetWidth', 'offsetHeight', 'style', 'animationList', 'animateStyle', 'currentStyle', 'computedStyle', 'currentProps', 'baseLine', 'virtualDom', 'mask', 'maskId', 'textWidth', 'content', 'lineBoxes', 'charWidthList', 'charWidth', '__layoutData', 'availableAnimating', 'effectiveAnimating', 'displayAnimating', 'visibilityAnimating', 'bbox', '__config']).forEach(function (fn) {
     Object.defineProperty(Component$1.prototype, fn, {
       get: function get() {
         var sr = this.shadowRoot;
@@ -15279,6 +15274,8 @@
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
       NODE_STRUCT$2 = _enums$NODE_KEY$3.NODE_STRUCT,
       NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
+      NODE_REFRESH_LV$1 = _enums$NODE_KEY$3.NODE_REFRESH_LV,
+      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$3.NODE_LIMIT_CACHE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -15290,6 +15287,7 @@
       PERCENT$6 = unit.PERCENT;
   var calAbsolute$1 = css.calAbsolute,
       isRelativeOrAbsolute$1 = css.isRelativeOrAbsolute;
+  var REFLOW$1 = o$1.REFLOW;
 
   function genZIndexChildren(dom) {
     var flow = [];
@@ -16675,13 +16673,19 @@
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
-            absChildren = this.absChildren;
+            absChildren = this.absChildren,
+            __config = this.__config;
         var display = computedStyle[DISPLAY$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
             marginTop = computedStyle[MARGIN_TOP$2],
             marginLeft = computedStyle[MARGIN_LEFT$2],
-            paddingLeft = computedStyle[PADDING_LEFT$2];
+            paddingLeft = computedStyle[PADDING_LEFT$2]; // 和__layout一样，第一次布局会重复，但在局部更新时需要刷新数据，除了data
+
+        this.__cancelCache();
+
+        __config[NODE_REFRESH_LV$1] = REFLOW$1;
+        __config[NODE_LIMIT_CACHE$1] = false;
 
         if (isDestroyed || display === 'none') {
           this.__layoutNone();
@@ -16694,14 +16698,15 @@
 
         absChildren.forEach(function (item) {
           if (target) {
-            // 传入target局部布局更新，这时候如果是Component对比需变成sr
+            // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;
 
             if (node instanceof Component$1) {
               node = item.shadowRoot;
-            }
+            } // 所以得2个都对比
 
-            if (target !== node) {
+
+            if (target !== node && target !== item) {
               return;
             }
           }
@@ -16885,14 +16890,15 @@
 
         children.forEach(function (item) {
           if (target) {
-            // 传入target局部布局更新，这时候如果是Component对比需变成sr
+            // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
             var node = item;
 
             if (node instanceof Component$1) {
               node = item.shadowRoot;
-            }
+            } // 所以得2个都对比
 
-            if (target !== node) {
+
+            if (target !== node && target !== item) {
               return;
             }
           }
@@ -19237,9 +19243,9 @@
       NODE_OPACITY$2 = _enums$NODE_KEY$7.NODE_OPACITY,
       NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
+      NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
       NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
-      NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
+      NODE_REFRESH_LV$2 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
@@ -19375,7 +19381,7 @@
               __sy1 = _node.__sy1,
               _node$__config2 = _node.__config,
               __blurValue = _node$__config2[NODE_BLUR_VALUE$1],
-              __limitCache = _node$__config2[NODE_LIMIT_CACHE$1],
+              __limitCache = _node$__config2[NODE_LIMIT_CACHE$2],
               __cache = _node$__config2[NODE_CACHE$4],
               __cacheTotal = _node$__config2[NODE_CACHE_TOTAL$3],
               _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
@@ -19462,7 +19468,7 @@
 
     if (bboxTotal[2] - bboxTotal[0] > Cache.MAX || bboxTotal[3] - bboxTotal[1] > Cache.MAX) {
       // 标识后续不再尝试生成，重新布局会清空标识
-      __config[NODE_LIMIT_CACHE$1] = true;
+      __config[NODE_LIMIT_CACHE$2] = true;
       return;
     }
 
@@ -19665,7 +19671,7 @@
           lv = _structs$_i[STRUCT_LV$2],
           total = _structs$_i[STRUCT_TOTAL$1];
       var __config = node.__config;
-      var __refreshLevel = __config[NODE_REFRESH_LV$1],
+      var __refreshLevel = __config[NODE_REFRESH_LV$2],
           __cache = __config[NODE_CACHE$4],
           __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 排除Text
@@ -19859,7 +19865,7 @@
 
         var __hasContent = __config[NODE_HAS_CONTENT$1],
             __blurValue = __config[NODE_BLUR_VALUE$1],
-            __limitCache = __config[NODE_LIMIT_CACHE$1],
+            __limitCache = __config[NODE_LIMIT_CACHE$2],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cache = __config[NODE_CACHE$4];
         var need = void 0; // <是父节点
@@ -19943,13 +19949,13 @@
           __opacity = _node$__config3[NODE_OPACITY$2],
           matrixEvent = _node$__config3[NODE_MATRIX_EVENT$2],
           __blurValue = _node$__config3[NODE_BLUR_VALUE$1],
-          __limitCache = _node$__config3[NODE_LIMIT_CACHE$1],
+          __limitCache = _node$__config3[NODE_LIMIT_CACHE$2],
           __cache = _node$__config3[NODE_CACHE$4],
           __cacheTotal = _node$__config3[NODE_CACHE_TOTAL$3],
           __cacheFilter = _node$__config3[NODE_CACHE_FILTER$3],
           __cacheMask = _node$__config3[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config3[NODE_CACHE_OVERFLOW$3],
-          __refreshLevel = _node$__config3[NODE_REFRESH_LV$1],
+          __refreshLevel = _node$__config3[NODE_REFRESH_LV$2],
           _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
@@ -20361,7 +20367,7 @@
           hasMask = _structs$_i3[STRUCT_HAS_MASK$1];
       var _node$__config4 = node.__config,
           computedStyle = _node$__config4[NODE_COMPUTED_STYLE$2],
-          __refreshLevel = _node$__config4[NODE_REFRESH_LV$1]; // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
+          __refreshLevel = _node$__config4[NODE_REFRESH_LV$2]; // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
 
       if (maskStartHash.hasOwnProperty(_i6)) {
         ctx = maskStartHash[_i6].ctx;
@@ -20628,7 +20634,7 @@
           lv = _structs$_i4[STRUCT_LV$2];
       var __config = node.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          __refreshLevel = __config[NODE_REFRESH_LV$1];
+          __refreshLevel = __config[NODE_REFRESH_LV$2];
 
       if (hasMask) {
         var start = _i8 + (total || 0) + 1;
@@ -20921,7 +20927,7 @@
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
-      NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
+      NODE_REFRESH_LV$3 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
       NODE_UPDATE_HASH = _enums$NODE_KEY$8.NODE_UPDATE_HASH,
@@ -20953,7 +20959,7 @@
       NONE$2 = o$1.NONE,
       FILTER$6 = o$1.FILTER,
       REPAINT$3 = o$1.REPAINT,
-      REFLOW$1 = o$1.REFLOW;
+      REFLOW$2 = o$1.REFLOW;
   var isIgnore = o.isIgnore,
       isGeom$3 = o.isGeom,
       isMeasure = o.isMeasure;
@@ -21013,7 +21019,7 @@
 
     if (c[1] === PERCENT$8) {
       var parent = node.domParent;
-      var s = parent.layoutData[k === 'width' ? 'w' : 'h'];
+      var s = parent.__layoutData[k === 'width' ? 'w' : 'h'];
       return c[0] * s * 0.01 === v;
     }
 
@@ -21205,7 +21211,7 @@
         }
 
         if (_need) {
-          _config[NODE_REFRESH_LV$2] |= REPAINT$3;
+          _config[NODE_REFRESH_LV$3] |= REPAINT$3;
 
           if (_node instanceof Xom) {
             _node.__cancelCache();
@@ -21263,7 +21269,7 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+    __config[NODE_REFRESH_LV$3] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -21296,7 +21302,7 @@
     } // 由于父节点中有display:none，一些子节点也为none，执行普通动画是无效的，此时lv<REFLOW
 
 
-    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$1) {
+    if (computedStyle[DISPLAY$7] === 'none' && lv < REFLOW$2) {
       return false;
     } // 特殊情况，父节点中有display:none，子节点进行display变更，应视为无效
 
@@ -21337,7 +21343,7 @@
           cacheList.push(parent);
         }
 
-      var _lv = _config3[NODE_REFRESH_LV$2];
+      var _lv = _config3[NODE_REFRESH_LV$3];
 
       var _need2 = _lv >= REPAINT$3;
 
@@ -21378,7 +21384,7 @@
     var __config = node.__config;
 
     if (child) {
-      __config[NODE_REFRESH_LV$2] |= REPAINT$3;
+      __config[NODE_REFRESH_LV$3] |= REPAINT$3;
     } else {
       __config[NODE_CACHE_TOTAL$4].release();
     }
@@ -21754,9 +21760,9 @@
                     var res = {};
                     res[UPDATE_NODE$3] = sr;
                     res[UPDATE_STYLE$2] = sr.currentStyle;
-                    res[UPDATE_FOCUS$2] = REFLOW$1;
+                    res[UPDATE_FOCUS$2] = REFLOW$2;
                     res[UPDATE_MEASURE] = true;
-                    res[UPDATE_COMPONENT] = true;
+                    res[UPDATE_COMPONENT] = cp;
                     res[UPDATE_CONFIG$3] = sr.__config;
 
                     _this3.__addUpdate(sr, sr.__config, _this3, _this3.__config, res);
@@ -21857,10 +21863,6 @@
 
             if (o[UPDATE_MEASURE]) {
               updateHash[UPDATE_MEASURE] = true;
-            }
-
-            if (o[UPDATE_COMPONENT]) {
-              updateHash[UPDATE_COMPONENT] = true;
             } // 后续存在新建list上，需增加遍历逻辑
 
 
@@ -22307,11 +22309,11 @@
                 }
 
                 var parent = node.domParent;
-                var _parent$layoutData = parent.layoutData,
-                    _x = _parent$layoutData.x,
-                    y = _parent$layoutData.y,
-                    w = _parent$layoutData.w,
-                    h = _parent$layoutData.h,
+                var _parent$__layoutData = parent.__layoutData,
+                    _x = _parent$__layoutData.x,
+                    y = _parent$__layoutData.y,
+                    w = _parent$__layoutData.w,
+                    h = _parent$__layoutData.h,
                     _width = parent.width,
                     _computedStyle = parent.computedStyle;
                 var current = node; // cp的shadowRoot要向上到cp本身
@@ -22355,12 +22357,32 @@
 
                   if (!container) {
                     container = root;
-                  }
+                  } // 由setState引发的传入component自身，layout引发的传入sr
 
-                  parent.__layoutAbs(container, null, node); // 前后都是abs无需偏移后面兄弟
+
+                  if (component) {
+                    parent.__layoutAbs(container, null, component);
+                  } else {
+                    parent.__layoutAbs(container, null, node);
+                  } // 前后都是abs无需偏移后面兄弟，component变化节点需更新struct
 
 
                   if (isLastAbs) {
+                    if (component) {
+                      var arr = node.__modifyStruct(root, diffI);
+
+                      diffI += arr[1];
+                      diffList.push(arr);
+
+                      if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
+                        node.domParent.__updateStruct(root.__structs);
+
+                        if (_this4.renderMode === mode.SVG) {
+                          cleanSvgCache(node.domParent);
+                        }
+                      }
+                    }
+
                     return;
                   }
 
@@ -22442,12 +22464,12 @@
                     while (next) {
                       if (next.currentStyle[POSITION$4] === 'absolute') {
                         if (next.currentStyle[TOP$3][1] === AUTO$6 && next.currentStyle[BOTTOM$3][1] === AUTO$6) {
-                          next.__offsetY(dy, true, REFLOW$1);
+                          next.__offsetY(dy, true, REFLOW$2);
 
                           next.__cancelCache();
                         }
                       } else if (!next.hasOwnProperty('____uniqueReflowId') || reflowHash[next.____uniqueReflowId] < LAYOUT) {
-                        next.__offsetY(dy, true, REFLOW$1);
+                        next.__offsetY(dy, true, REFLOW$2);
 
                         next.__cancelCache();
                       }
@@ -22481,7 +22503,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
+                        _p2.__config[NODE_REFRESH_LV$3] |= REFLOW$2;
                       }
                     }
 
@@ -22502,7 +22524,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$1;
+                        _p2.__config[NODE_REFRESH_LV$3] |= REFLOW$2;
                       } // 高度不需要调整提前跳出
                       else {
                           break;
@@ -22520,10 +22542,10 @@
 
 
                 if (component) {
-                  var arr = node.__modifyStruct(root, diffI);
+                  var _arr = node.__modifyStruct(root, diffI);
 
-                  diffI += arr[1];
-                  diffList.push(arr);
+                  diffI += _arr[1];
+                  diffList.push(_arr);
 
                   if (position !== cts[POSITION$4] && (position === 'static' || cts[POSITION$4] === 'static') || zIndex !== cts[Z_INDEX$4]) {
                     node.domParent.__updateStruct(root.__structs);
@@ -22536,10 +22558,10 @@
                 else if (isLastNone || isNowNone) {
                     node.__zIndexChildren = null;
 
-                    var _arr = node.__modifyStruct(root, diffI);
+                    var _arr2 = node.__modifyStruct(root, diffI);
 
-                    diffI += _arr[1];
-                    diffList.push(_arr);
+                    diffI += _arr2[1];
+                    diffList.push(_arr2);
                   }
               } // OFFSET操作的节点都是relative，要考虑auto变化
               else {
@@ -22587,7 +22609,7 @@
                   }
 
                   if (newY !== oldY) {
-                    node.__offsetY(newY - oldY, false, REFLOW$1);
+                    node.__offsetY(newY - oldY, false, REFLOW$2);
                   }
 
                   var newX = 0;
@@ -22613,7 +22635,7 @@
                   }
 
                   if (newX !== oldX) {
-                    node.__offsetX(newX - oldX, false, REFLOW$1);
+                    node.__offsetX(newX - oldX, false, REFLOW$2);
                   }
                 }
             }); // 调整因reflow造成的原struct数据索引数量偏差，纯zIndex的已经在repaint里面重新生成过了
@@ -25505,7 +25527,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.4";
+  var version = "0.44.5";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

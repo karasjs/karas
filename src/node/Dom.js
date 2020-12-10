@@ -10,6 +10,7 @@ import unit from '../style/unit';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
+import level from '../refresh/level';
 
 const {
   STYLE_KEY: {
@@ -49,6 +50,8 @@ const {
     NODE_STYLE,
     NODE_STRUCT,
     NODE_DOM_PARENT,
+    NODE_REFRESH_LV,
+    NODE_LIMIT_CACHE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -60,6 +63,7 @@ const {
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
 const { calAbsolute, isRelativeOrAbsolute } = css;
+const { REFLOW } = level;
 
 function genZIndexChildren(dom) {
   let flow = [];
@@ -1285,7 +1289,7 @@ class Dom extends Xom {
    */
   __layoutAbs(container, data, target) {
     let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
-    let { isDestroyed, children, absChildren } = this;
+    let { isDestroyed, children, absChildren, __config } = this;
     let {
       [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -1294,6 +1298,10 @@ class Dom extends Xom {
       [MARGIN_LEFT]: marginLeft,
       [PADDING_LEFT]: paddingLeft,
     } = computedStyle;
+    // 和__layout一样，第一次布局会重复，但在局部更新时需要刷新数据，除了data
+    this.__cancelCache();
+    __config[NODE_REFRESH_LV] = REFLOW;
+    __config[NODE_LIMIT_CACHE] = false;
     if(isDestroyed || display === 'none') {
       this.__layoutNone();
       return;
@@ -1303,12 +1311,13 @@ class Dom extends Xom {
     // 对absolute的元素进行相对容器布局
     absChildren.forEach(item => {
       if(target) {
-        // 传入target局部布局更新，这时候如果是Component对比需变成sr
+        // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
         let node = item;
         if(node instanceof Component) {
           node = item.shadowRoot;
         }
-        if(target !== node) {
+        // 所以得2个都对比
+        if(target !== node && target !== item) {
           return;
         }
       }
@@ -1481,12 +1490,13 @@ class Dom extends Xom {
     // 递归进行，遇到absolute/relative/component的设置新容器
     children.forEach(item => {
       if(target) {
-        // 传入target局部布局更新，这时候如果是Component对比需变成sr
+        // 传入target局部布局更新，这时候如果是Component引发的，当setState时是Cp自身，当layout时是sr
         let node = item;
         if(node instanceof Component) {
           node = item.shadowRoot;
         }
-        if(target !== node) {
+        // 所以得2个都对比
+        if(target !== node && target !== item) {
           return;
         }
       }

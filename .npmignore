@@ -20,4 +20,4 @@ reports/
 selenium-debug.log
 src/
 .github
-logo.png
+*.png

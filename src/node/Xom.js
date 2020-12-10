@@ -858,9 +858,9 @@ class Xom extends Node {
       [WIDTH]: width,
       [POSITION]: position,
     } = currentStyle;
-    __config[NODE_REFRESH_LV] = REFLOW;
     this.__cancelCache();
     this.__layoutData = clone(data);
+    __config[NODE_REFRESH_LV] = REFLOW;
     __config[NODE_LIMIT_CACHE] = false;
     if(isDestroyed || display === 'none') {
       this.__width = this.__height
@@ -2453,7 +2453,7 @@ class Xom extends Node {
   __offsetX(diff, isLayout, lv) {
     super.__offsetX(diff, isLayout);
     if(isLayout) {
-      this.layoutData.x += diff;
+      this.__layoutData.x += diff;
     }
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
@@ -2467,7 +2467,7 @@ class Xom extends Node {
   __offsetY(diff, isLayout, lv) {
     super.__offsetY(diff, isLayout);
     if(isLayout) {
-      this.layoutData.y += diff;
+      this.__layoutData.y += diff;
     }
     if(lv !== undefined) {
       this.__config[NODE_REFRESH_LV] |= lv;
@@ -2483,7 +2483,7 @@ class Xom extends Node {
     this.__clientWidth += diff;
     this.__offsetWidth += diff;
     this.__outerWidth += diff;
-    this.layoutData.w += diff;
+    this.__layoutData.w += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }
@@ -2494,7 +2494,7 @@ class Xom extends Node {
     this.__clientHeight += diff;
     this.__offsetHeight += diff;
     this.__outerHeight += diff;
-    this.layoutData.h += diff;
+    this.__layoutData.h += diff;
     if(diff < 0) {
       this.__config[NODE_LIMIT_CACHE] = false;
     }
@@ -2662,10 +2662,6 @@ class Xom extends Node {
 
   get currentStyle() {
     return this.__currentStyle;
-  }
-
-  get layoutData() {
-    return this.__layoutData;
   }
 
   get isShadowRoot() {

@@ -267,7 +267,7 @@ Object.keys(change.GEOM).concat([
   'lineBoxes',
   'charWidthList',
   'charWidth',
-  'layoutData',
+  '__layoutData',
   'availableAnimating',
   'effectiveAnimating',
   'displayAnimating',

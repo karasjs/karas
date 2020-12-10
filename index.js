@@ -1031,15 +1031,21 @@
         res.push(parseInt(color.charAt(0) + color.charAt(0), 16));
         res.push(parseInt(color.charAt(1) + color.charAt(1), 16));
         res.push(parseInt(color.charAt(2) + color.charAt(2), 16));
+        res[3] = 1;
       } else if (color.length === 6) {
         res.push(parseInt(color.slice(0, 2), 16));
         res.push(parseInt(color.slice(2, 4), 16));
         res.push(parseInt(color.slice(4), 16));
+        res[3] = 1;
+      } else if (color.length === 8) {
+        res.push(parseInt(color.slice(0, 2), 16));
+        res.push(parseInt(color.slice(2, 4), 16));
+        res.push(parseInt(color.slice(4, 6), 16));
+        res.push(parseInt(color.slice(6), 16) / 255);
       } else {
         res[0] = res[1] = res[2] = 0;
+        res[3] = 1;
       }
-
-      res[3] = 1;
     } else {
       var c = color.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)/i);
 
@@ -25519,7 +25525,7 @@
     Cache: Cache
   };
 
-  var version = "0.44.5";
+  var version = "0.44.6";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

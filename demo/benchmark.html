@@ -9,8 +9,10 @@
 <body>
 <div class="pre">1000个节点的动画性能，仅canvas且开启cache缓存。</div>
 <div id="div"></div>
+<div id="fps"></div>
 <pre><code class="brush:csx"></code></pre>
 <script type="text/jsx">
+  karas.debug = true;
   let list = [];
   for(let i = 0; i < 1000; i++) {
     list.push(i);
@@ -49,6 +51,20 @@
       iterations: Infinity,
     });
   });
+  let fps = document.querySelector('#fps');
+  let arr = [];
+  karas.animate.frame.onFrame(function(diff) {
+    arr.push(diff);
+    if(arr.length > 5) {
+      arr.shift();
+      let n = 0;
+      arr.forEach(i => {
+        n += i;
+      });
+      fps.innerHTML = Math.round(1000 / (n / 5));
+    }
+  });
+  console.log(document.querySelectorAll('canvas'));
 </script>
 <script src="sea.js"></script>
 <script src="homunculus.js"></script>

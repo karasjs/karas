@@ -2154,7 +2154,7 @@ class Xom extends Node {
     let ref = this.props.ref;
     if(ref) {
       let owner = host || root;
-      if(owner && owner.ref[ref]) {
+      if(owner && owner.ref[ref] && owner.ref[ref] === this) {
         delete owner.ref[ref];
       }
     }

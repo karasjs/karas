@@ -13929,7 +13929,7 @@
         if (ref) {
           var owner = host || root;
 
-          if (owner && owner.ref[ref]) {
+          if (owner && owner.ref[ref] && owner.ref[ref] === this) {
             delete owner.ref[ref];
           }
         }
@@ -15027,7 +15027,7 @@
 
         var root = this.root;
         var cd = json || builder.flattenJson(this.render());
-        var sr = builder.initCp(cd, root, this, this);
+        var sr = builder.initCp(cd, root, this);
         this.__cd = cd;
 
         if (sr instanceof Text) {
@@ -15082,7 +15082,9 @@
       }
     }, {
       key: "render",
-      value: function render() {}
+      value: function render() {
+        inject.warn('Component must implement render()!');
+      }
     }, {
       key: "__destroy",
       value: function __destroy() {

@@ -91,7 +91,7 @@ class Component extends Event {
   __init(json) {
     let root = this.root;
     let cd = json || builder.flattenJson(this.render());
-    let sr = builder.initCp(cd, root, this, this);
+    let sr = builder.initCp(cd, root, this);
     this.__cd = cd;
     if(sr instanceof Text) {
       // 文字视作为父节点的直接文字子节点，在builder里做
@@ -144,6 +144,7 @@ class Component extends Event {
   }
 
   render() {
+    inject.warn('Component must implement render()!');
   }
 
   __destroy() {

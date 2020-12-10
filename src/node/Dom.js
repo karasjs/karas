@@ -50,8 +50,6 @@ const {
     NODE_STYLE,
     NODE_STRUCT,
     NODE_DOM_PARENT,
-    NODE_REFRESH_LV,
-    NODE_LIMIT_CACHE,
   },
   STRUCT_KEY: {
     STRUCT_NUM,
@@ -1289,7 +1287,7 @@ class Dom extends Xom {
    */
   __layoutAbs(container, data, target) {
     let { sx: x, sy: y, clientWidth, clientHeight, computedStyle } = container;
-    let { isDestroyed, children, absChildren, __config } = this;
+    let { isDestroyed, children, absChildren } = this;
     let {
       [DISPLAY]: display,
       [BORDER_TOP_WIDTH]: borderTopWidth,
@@ -1298,10 +1296,6 @@ class Dom extends Xom {
       [MARGIN_LEFT]: marginLeft,
       [PADDING_LEFT]: paddingLeft,
     } = computedStyle;
-    // 和__layout一样，第一次布局会重复，但在局部更新时需要刷新数据，除了data
-    this.__cancelCache();
-    __config[NODE_REFRESH_LV] = REFLOW;
-    __config[NODE_LIMIT_CACHE] = false;
     if(isDestroyed || display === 'none') {
       this.__layoutNone();
       return;

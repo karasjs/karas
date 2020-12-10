@@ -15274,8 +15274,6 @@
       NODE_STYLE$1 = _enums$NODE_KEY$3.NODE_STYLE,
       NODE_STRUCT$2 = _enums$NODE_KEY$3.NODE_STRUCT,
       NODE_DOM_PARENT$1 = _enums$NODE_KEY$3.NODE_DOM_PARENT,
-      NODE_REFRESH_LV$1 = _enums$NODE_KEY$3.NODE_REFRESH_LV,
-      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$3.NODE_LIMIT_CACHE,
       _enums$STRUCT_KEY$1 = enums.STRUCT_KEY,
       STRUCT_NUM = _enums$STRUCT_KEY$1.STRUCT_NUM,
       STRUCT_LV$1 = _enums$STRUCT_KEY$1.STRUCT_LV,
@@ -16673,19 +16671,13 @@
             computedStyle = container.computedStyle;
         var isDestroyed = this.isDestroyed,
             children = this.children,
-            absChildren = this.absChildren,
-            __config = this.__config;
+            absChildren = this.absChildren;
         var display = computedStyle[DISPLAY$3],
             borderTopWidth = computedStyle[BORDER_TOP_WIDTH$2],
             borderLeftWidth = computedStyle[BORDER_LEFT_WIDTH$2],
             marginTop = computedStyle[MARGIN_TOP$2],
             marginLeft = computedStyle[MARGIN_LEFT$2],
-            paddingLeft = computedStyle[PADDING_LEFT$2]; // 和__layout一样，第一次布局会重复，但在局部更新时需要刷新数据，除了data
-
-        this.__cancelCache();
-
-        __config[NODE_REFRESH_LV$1] = REFLOW$1;
-        __config[NODE_LIMIT_CACHE$1] = false;
+            paddingLeft = computedStyle[PADDING_LEFT$2];
 
         if (isDestroyed || display === 'none') {
           this.__layoutNone();
@@ -19243,9 +19235,9 @@
       NODE_OPACITY$2 = _enums$NODE_KEY$7.NODE_OPACITY,
       NODE_COMPUTED_STYLE$2 = _enums$NODE_KEY$7.NODE_COMPUTED_STYLE,
       NODE_CURRENT_STYLE$3 = _enums$NODE_KEY$7.NODE_CURRENT_STYLE,
-      NODE_LIMIT_CACHE$2 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
+      NODE_LIMIT_CACHE$1 = _enums$NODE_KEY$7.NODE_LIMIT_CACHE,
       NODE_BLUR_VALUE$1 = _enums$NODE_KEY$7.NODE_BLUR_VALUE,
-      NODE_REFRESH_LV$2 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
+      NODE_REFRESH_LV$1 = _enums$NODE_KEY$7.NODE_REFRESH_LV,
       NODE_HAS_CONTENT$1 = _enums$NODE_KEY$7.NODE_HAS_CONTENT,
       NODE_CACHE_STYLE$1 = _enums$NODE_KEY$7.NODE_CACHE_STYLE,
       _enums$STRUCT_KEY$2 = enums.STRUCT_KEY,
@@ -19381,7 +19373,7 @@
               __sy1 = _node.__sy1,
               _node$__config2 = _node.__config,
               __blurValue = _node$__config2[NODE_BLUR_VALUE$1],
-              __limitCache = _node$__config2[NODE_LIMIT_CACHE$2],
+              __limitCache = _node$__config2[NODE_LIMIT_CACHE$1],
               __cache = _node$__config2[NODE_CACHE$4],
               __cacheTotal = _node$__config2[NODE_CACHE_TOTAL$3],
               _node$__config2$NODE_ = _node$__config2[NODE_COMPUTED_STYLE$2],
@@ -19468,7 +19460,7 @@
 
     if (bboxTotal[2] - bboxTotal[0] > Cache.MAX || bboxTotal[3] - bboxTotal[1] > Cache.MAX) {
       // 标识后续不再尝试生成，重新布局会清空标识
-      __config[NODE_LIMIT_CACHE$2] = true;
+      __config[NODE_LIMIT_CACHE$1] = true;
       return;
     }
 
@@ -19671,7 +19663,7 @@
           lv = _structs$_i[STRUCT_LV$2],
           total = _structs$_i[STRUCT_TOTAL$1];
       var __config = node.__config;
-      var __refreshLevel = __config[NODE_REFRESH_LV$2],
+      var __refreshLevel = __config[NODE_REFRESH_LV$1],
           __cache = __config[NODE_CACHE$4],
           __cacheTotal = __config[NODE_CACHE_TOTAL$3],
           computedStyle = __config[NODE_COMPUTED_STYLE$2]; // 排除Text
@@ -19865,7 +19857,7 @@
 
         var __hasContent = __config[NODE_HAS_CONTENT$1],
             __blurValue = __config[NODE_BLUR_VALUE$1],
-            __limitCache = __config[NODE_LIMIT_CACHE$2],
+            __limitCache = __config[NODE_LIMIT_CACHE$1],
             __cacheTotal = __config[NODE_CACHE_TOTAL$3],
             __cache = __config[NODE_CACHE$4];
         var need = void 0; // <是父节点
@@ -19949,13 +19941,13 @@
           __opacity = _node$__config3[NODE_OPACITY$2],
           matrixEvent = _node$__config3[NODE_MATRIX_EVENT$2],
           __blurValue = _node$__config3[NODE_BLUR_VALUE$1],
-          __limitCache = _node$__config3[NODE_LIMIT_CACHE$2],
+          __limitCache = _node$__config3[NODE_LIMIT_CACHE$1],
           __cache = _node$__config3[NODE_CACHE$4],
           __cacheTotal = _node$__config3[NODE_CACHE_TOTAL$3],
           __cacheFilter = _node$__config3[NODE_CACHE_FILTER$3],
           __cacheMask = _node$__config3[NODE_CACHE_MASK$2],
           __cacheOverflow = _node$__config3[NODE_CACHE_OVERFLOW$3],
-          __refreshLevel = _node$__config3[NODE_REFRESH_LV$2],
+          __refreshLevel = _node$__config3[NODE_REFRESH_LV$1],
           _node$__config3$NODE_ = _node$__config3[NODE_COMPUTED_STYLE$2],
           display = _node$__config3$NODE_[DISPLAY$6],
           visibility = _node$__config3$NODE_[VISIBILITY$5],
@@ -20367,7 +20359,7 @@
           hasMask = _structs$_i3[STRUCT_HAS_MASK$1];
       var _node$__config4 = node.__config,
           computedStyle = _node$__config4[NODE_COMPUTED_STYLE$2],
-          __refreshLevel = _node$__config4[NODE_REFRESH_LV$2]; // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
+          __refreshLevel = _node$__config4[NODE_REFRESH_LV$1]; // 第一个mask在另外一个离屏上，开始聚集所有mask元素的绘制
 
       if (maskStartHash.hasOwnProperty(_i6)) {
         ctx = maskStartHash[_i6].ctx;
@@ -20634,7 +20626,7 @@
           lv = _structs$_i4[STRUCT_LV$2];
       var __config = node.__config;
       var __cacheTotal = __config[NODE_CACHE_TOTAL$3],
-          __refreshLevel = __config[NODE_REFRESH_LV$2];
+          __refreshLevel = __config[NODE_REFRESH_LV$1];
 
       if (hasMask) {
         var start = _i8 + (total || 0) + 1;
@@ -20927,7 +20919,7 @@
       NODE_CURRENT_PROPS$1 = _enums$NODE_KEY$8.NODE_CURRENT_PROPS,
       NODE_DOM_PARENT$3 = _enums$NODE_KEY$8.NODE_DOM_PARENT,
       NODE_IS_MASK$1 = _enums$NODE_KEY$8.NODE_IS_MASK,
-      NODE_REFRESH_LV$3 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
+      NODE_REFRESH_LV$2 = _enums$NODE_KEY$8.NODE_REFRESH_LV,
       NODE_IS_DESTROYED$2 = _enums$NODE_KEY$8.NODE_IS_DESTROYED,
       NODE_STYLE$3 = _enums$NODE_KEY$8.NODE_STYLE,
       NODE_UPDATE_HASH = _enums$NODE_KEY$8.NODE_UPDATE_HASH,
@@ -21211,7 +21203,7 @@
         }
 
         if (_need) {
-          _config[NODE_REFRESH_LV$3] |= REPAINT$3;
+          _config[NODE_REFRESH_LV$2] |= REPAINT$3;
 
           if (_node instanceof Xom) {
             _node.__cancelCache();
@@ -21269,7 +21261,7 @@
         }
       }
 
-    __config[NODE_REFRESH_LV$3] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
+    __config[NODE_REFRESH_LV$2] = lv; // dom在>=REPAINT时total失效，svg的geom比较特殊，任何改变都失效，要清除vd的cache
 
     var need = lv >= REPAINT$3 || renderMode === mode.SVG && node instanceof Geom$1;
 
@@ -21343,7 +21335,7 @@
           cacheList.push(parent);
         }
 
-      var _lv = _config3[NODE_REFRESH_LV$3];
+      var _lv = _config3[NODE_REFRESH_LV$2];
 
       var _need2 = _lv >= REPAINT$3;
 
@@ -21384,7 +21376,7 @@
     var __config = node.__config;
 
     if (child) {
-      __config[NODE_REFRESH_LV$3] |= REPAINT$3;
+      __config[NODE_REFRESH_LV$2] |= REPAINT$3;
     } else {
       __config[NODE_CACHE_TOTAL$4].release();
     }
@@ -22503,7 +22495,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$3] |= REFLOW$2;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$2;
                       }
                     }
 
@@ -22524,7 +22516,7 @@
 
                         _p2.__cancelCache();
 
-                        _p2.__config[NODE_REFRESH_LV$3] |= REFLOW$2;
+                        _p2.__config[NODE_REFRESH_LV$2] |= REFLOW$2;
                       } // 高度不需要调整提前跳出
                       else {
                           break;

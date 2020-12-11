@@ -34,12 +34,12 @@
       }
     }
 
-    render(renderMode, ctx, defs) {
+    render(renderMode, refreshLevel, ctx, defs) {
+      super.render(renderMode, refreshLevel, ctx, defs);
       let { x, y, width, height } = this;
       let cx = x + width * 0.5;
       let cy = y + height * 0.5;
       let r = Math.min(width, height) * 0.5;
-      super.render(renderMode, ctx, defs);
       if(renderMode === karas.mode.CANVAS) {
         ctx.fillStyle = '#0FF';
         ctx.beginPath();

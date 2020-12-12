@@ -238,15 +238,15 @@ function normalize(style, reset = []) {
   // 背景图
   temp = style.backgroundImage;
   if(temp !== undefined) {
+    if(!temp) {
+      res[BACKGROUND_IMAGE] = null;
+    }
     // 区分是渐变色还是图
-    if(reg.gradient.test(temp)) {
+    else if(reg.gradient.test(temp)) {
       res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
     }
     else if(reg.img.test(temp)) {
       res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
-    }
-    else {
-      res[BACKGROUND_IMAGE] = null;
     }
   }
   temp = style.backgroundColor;
@@ -257,7 +257,7 @@ function normalize(style, reset = []) {
       res[BACKGROUND_COLOR] = [rgba2int(bgc[0]), RGBA,];
     }
     else {
-      bgc = /rgba?\(.+\)/i.exec(temp);
+      bgc = /rgba?\s*\(.+\)/i.exec(temp);
       res[BACKGROUND_COLOR] = [rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]), RGBA,];
     }
   }

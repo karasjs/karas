@@ -1425,15 +1425,27 @@
   var reg = {
     position: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
     // tfo: /((-?[\d.]+(px|%)?)|(left|top|right|bottom|center)){1,2}/ig,
-    gradient: /\b(\w+)-gradient\((.+)\)/i,
+    gradient: /\b(\w+)-?gradient\((.+)\)/i,
     img: /(?:\burl\((['"]?)(.*?)\1\))|(?:\b((data:)))/i
   };
 
-  var H = 4 * (Math.sqrt(2) - 1) / 3; // 向量积
+  // 向量点乘积
+  function dotProduct(x1, y1, x2, y2) {
+    return x1 * x2 + y1 * y2;
+  } // 向量叉乘积
 
-  function vectorProduct(x1, y1, x2, y2) {
+
+  function crossProduct(x1, y1, x2, y2) {
     return x1 * y2 - x2 * y1;
   }
+
+  var vector = {
+    dotProduct: dotProduct,
+    crossProduct: crossProduct
+  };
+
+  var H = 4 * (Math.sqrt(2) - 1) / 3;
+  var crossProduct$1 = vector.crossProduct;
 
   function pointInPolygon(x, y, vertexes) {
     // 先取最大最小值得一个外围矩形，在外边可快速判断false
@@ -1472,7 +1484,7 @@
           x2 = _vertexes[0],
           y2 = _vertexes[1];
 
-      if (vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
+      if (crossProduct$1(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
         return false;
       }
     }
@@ -2146,7 +2158,6 @@
   }
 
   var geom = {
-    vectorProduct: vectorProduct,
     pointInPolygon: pointInPolygon,
     d2r: d2r,
     r2d: r2d,
@@ -2667,9 +2678,9 @@
         }
       }
 
-      var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
+      var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
-        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
+        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\s*\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
         var arr = [rgba2int$1(res[1])];
 
         if (res[2]) {
@@ -2941,7 +2952,7 @@
       } else if (/\btransparent\b/i.test(v)) {
         style[k + 'Color'] = 'transparent';
       } else {
-        c = /rgba?\(.+\)/i.exec(v);
+        c = /rgba?\s*\(.+\)/i.exec(v);
         style[k + 'Color'] = c ? c[0] : 'transparent';
       }
     }
@@ -2997,7 +3008,7 @@
         }
 
         if (isNil$2(style.backgroundColor)) {
-          var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(v);
+          var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\s*\(.+?\))/i.exec(v);
 
           if (bgc) {
             style.backgroundColor = bgc[0];
@@ -3840,14 +3851,14 @@
     temp = style.backgroundImage;
 
     if (temp !== undefined) {
-      // 区分是渐变色还是图
-      if (reg.gradient.test(temp)) {
-        res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
-      } else if (reg.img.test(temp)) {
-        res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
-      } else {
+      if (!temp) {
         res[BACKGROUND_IMAGE] = null;
-      }
+      } // 区分是渐变色还是图
+      else if (reg.gradient.test(temp)) {
+          res[BACKGROUND_IMAGE] = gradient.parseGradient(temp);
+        } else if (reg.img.test(temp)) {
+          res[BACKGROUND_IMAGE] = reg.img.exec(temp)[2];
+        }
     }
 
     temp = style.backgroundColor;
@@ -3859,7 +3870,7 @@
       if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
         res[BACKGROUND_COLOR] = [rgba2int$2(bgc[0]), RGBA];
       } else {
-        bgc = /rgba?\(.+\)/i.exec(temp);
+        bgc = /rgba?\s*\(.+\)/i.exec(temp);
         res[BACKGROUND_COLOR] = [rgba2int$2(bgc ? bgc[0] : [0, 0, 0, 0]), RGBA];
       }
     }

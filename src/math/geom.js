@@ -1,11 +1,8 @@
 import mx from './matrix';
+import vector from './vector';
 
 const H = 4 * (Math.sqrt(2) - 1) / 3;
-
-// 向量积
-function vectorProduct(x1, y1, x2, y2) {
-  return x1 * y2 - x2 * y1;
-}
+const { crossProduct } = vector;
 
 function pointInPolygon(x, y, vertexes) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
@@ -26,7 +23,7 @@ function pointInPolygon(x, y, vertexes) {
   for(let i = 0, len = vertexes.length; i < len; i++) {
     let [x1, y1] = vertexes[i];
     let [x2, y2] = vertexes[(i + 1) % len];
-    if(vectorProduct(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
+    if(crossProduct(x2 - x1, y2 - y1, x - x1, y - y1) < 0) {
       return false;
     }
   }
@@ -559,7 +556,6 @@ function sliceBezier2Both(points, start = 0, end = 1) {
 }
 
 export default {
-  vectorProduct,
   pointInPolygon,
   d2r,
   r2d,

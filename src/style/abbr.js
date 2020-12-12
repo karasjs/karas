@@ -62,7 +62,7 @@ function parseOneBorder(style, k) {
       style[k + 'Color'] = 'transparent';
     }
     else {
-      c = /rgba?\(.+\)/i.exec(v);
+      c = /rgba?\s*\(.+\)/i.exec(v);
       style[k + 'Color'] = c ? c[0] : 'transparent';
     }
   }
@@ -114,7 +114,7 @@ export default {
         }
       }
       if(isNil(style.backgroundColor)) {
-        let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\))/i.exec(v);
+        let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\s*\(.+?\))/i.exec(v);
         if(bgc) {
           style.backgroundColor = bgc[0];
           v = v.replace(bgc[0], '');

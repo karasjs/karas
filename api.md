@@ -2559,7 +2559,7 @@ karas.animate.frame.resume();
 
 <a name="math包"></a>
 ## math包
-数学工具集，包含`matrix`，`tar`，`geom`3个大类，分别处理矩阵、仿射变换、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
+数学工具集，包含`matrix`，`tar`，`vector`，`geom`几种，分别处理矩阵、仿射变换、向量、空间几何。此举大多是面向框架开发维护人员的，普通开发者无需关注。
 
 ### matrix
 
@@ -2602,9 +2602,9 @@ karas.math.matrix.calPoint([0, 0], [1, 0, 0, 100, 100]); // [100, 100]
 * **说明**
 矩阵是否为单位矩阵，注意这是css的6位1维表达方式。
 
-### geom
+### vector
 
-#### vectorProduct
+#### dotProduct
 * **类型** `Function`
 * **参数**
   * x1 `Number`
@@ -2612,7 +2612,19 @@ karas.math.matrix.calPoint([0, 0], [1, 0, 0, 100, 100]); // [100, 100]
   * x2 `Number`
   * y2 `Number`
 * **说明**
-向量积。
+向量点乘积。
+
+#### crossProduct
+* **类型** `Function`
+* **参数**
+  * x1 `Number`
+  * y1 `Number`
+  * x2 `Number`
+  * y2 `Number`
+* **说明**
+向量叉乘积。
+  
+### geom
 
 #### pointInPolygon
 * **类型** `Function`

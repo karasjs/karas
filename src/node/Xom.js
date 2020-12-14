@@ -8,7 +8,6 @@ import border from '../style/border';
 import css from '../style/css';
 import image from '../style/image';
 import blur from '../style/blur';
-import abbr from '../style/abbr';
 import enums from '../util/enums';
 import util from '../util/util';
 import inject from '../util/inject';
@@ -18,6 +17,7 @@ import geom from '../math/geom';
 import change from '../refresh/change';
 import level from '../refresh/level';
 import Cache from '../refresh/Cache';
+import transform from '../style/transform';
 
 const {
   STYLE_KEY,
@@ -168,9 +168,29 @@ function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
 }
 
 function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
+  // radial渐变时ellipse形状会有xr/yr/matrix，用以从圆缩放到椭圆
+  let matrix;
+  if(Array.isArray(color)) {
+    matrix = color[1];
+    color = color[0];
+  }
+  if(matrix) {
+    if(matrix[0] !== 1) {
+      w /= matrix[0];
+    }
+    if(matrix[3] !== 1) {
+      h /= matrix[3];
+    }
+  }
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
   let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
   if(renderMode === mode.CANVAS) {
+    if(matrix) {
+      ctx.save();
+      let tfo = [x, y];
+      let t = transform.calMatrixByOrigin(matrix, tfo);
+      ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
+    }
     ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
@@ -183,6 +203,9 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
     }
     ctx[method]();
     ctx.closePath();
+    if(matrix) {
+      ctx.restore();
+    }
   }
   else if(renderMode === mode.SVG) {
     if(list) {
@@ -192,7 +215,7 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
         tagName: 'path',
         props: [
           ['d', d],
-          ['fill', color]
+          ['fill', color],
         ],
       });
     }
@@ -205,9 +228,15 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
           ['y', y],
           ['width', w],
           ['height', h],
-          ['fill', color]
+          ['fill', color],
         ],
       });
+    }
+    if(matrix) {
+      let tfo = [x, y];
+      let t = transform.calMatrixByOrigin(matrix, tfo);
+      let bb = xom.virtualDom.bb;
+      bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(t, ',')})`]);
     }
   }
 }
@@ -1219,7 +1248,6 @@ class Xom extends Node {
         } = currentStyle;
         computedStyle[BACKGROUND_POSITION_X] = bgX[1] === PX ? bgX[0] : (bgX[0] + '%');
       }
-      // console.log(currentStyle[BACKGROUND_POSITION_X],currentStyle[BACKGROUND_POSITION_Y])
       if(__cacheStyle[BACKGROUND_POSITION_Y] === undefined) {
         __cacheStyle[BACKGROUND_POSITION_Y] = true;
         let {
@@ -2105,9 +2133,12 @@ class Xom extends Node {
         }
       }
       else if(backgroundImage.k) {
-        renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE], x2, y2, clientWidth, clientHeight, ctx, this,
-          borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-          borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        let gd = __cacheStyle[BACKGROUND_IMAGE];
+        if(gd) {
+          renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, this,
+            borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+            borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+        }
       }
     }
     // boxShadow可能会有多个
@@ -2232,7 +2263,12 @@ class Xom extends Node {
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
-      res = this.__getRg(renderMode, ctx, defs, gd);
+      if(gd) {
+        res = this.__getRg(renderMode, ctx, defs, gd);
+        if(gd.matrix) {
+          res = [res, gd.matrix];
+        }
+      }
     }
     return res;
   }

@@ -4,7 +4,6 @@ import painter from '../util/painter';
 import inject from '../util/inject';
 import util from '../util/util';
 import unit from '../style/unit';
-import transform from '../style/transform';
 import image from '../style/image';
 import border from '../style/border';
 import enums from '../util/enums';

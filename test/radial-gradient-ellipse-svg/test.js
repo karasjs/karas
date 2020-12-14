@@ -1,0 +1,12 @@
+let path = require('path');
+let fs = require('fs');
+
+module.exports = {
+  'init': function(browser) {
+    browser
+      .url('file://' + path.join(__dirname, 'index.html'))
+      .waitForElementVisible('body', 1000)
+      .assert.value('input', '{"bb":[],"children":[{"bb":[{"type":"item","tagName":"rect","props":[["x",35],["y",20],["width",257.1428571428571],["height",200],["fill","url(#karas-defs-0-0)"],["transform","matrix(0.3888888888888889,0,0,1,21.38888888888889,0)"]]}],"children":[],"visibility":"visible","type":"dom"},{"bb":[{"type":"item","tagName":"rect","props":[["x",165],["y",20],["width",145.46196641551836],["height",113.13708498984761],["fill","url(#karas-defs-0-1)"],["transform","matrix(0.6874649261535878,0,0,0.7071067811865475,51.56828718465802,5.857864376269051)"]]}],"children":[],"visibility":"visible","type":"dom"},{"bb":[{"type":"item","tagName":"rect","props":[["x",35],["y",240],["width",26.666666666666668],["height",80],["fill","url(#karas-defs-0-2)"],["transform","matrix(3.75,0,0,1,-96.25,0)"]]}],"children":[],"visibility":"visible","type":"dom"},{"bb":[{"type":"item","tagName":"rect","props":[["x",165],["y",240],["width",26.666666666666668],["height",80],["fill","url(#karas-defs-0-3)"],["transform","matrix(3.75,0,0,1,-453.75,0)"]]}],"children":[],"visibility":"visible","type":"dom"}],"visibility":"visible","type":"dom","defs":[{"tagName":"radialGradient","props":[["cx",112.14285714285714],["cy",40],["r",180]],"children":[{"tagName":"stop","props":[["stop-color","rgba(255,0,0,1)"],["offset","0%"]]},{"tagName":"stop","props":[["stop-color","rgba(0,0,255,1)"],["offset","100%"]]}],"uuid":"karas-defs-0-0"},{"tagName":"radialGradient","props":[["cx",208.63858992465552],["cy",31.31370849898476],["r",101.82337649086286]],"children":[{"tagName":"stop","props":[["stop-color","rgba(255,0,0,1)"],["offset","0%"]]},{"tagName":"stop","props":[["stop-color","rgba(0,0,255,1)"],["offset","100%"]]}],"uuid":"karas-defs-0-1"},{"tagName":"radialGradient","props":[["cx",43],["cy",248],["r",8]],"children":[{"tagName":"stop","props":[["stop-color","rgba(255,0,0,1)"],["offset","0%"]]},{"tagName":"stop","props":[["stop-color","rgba(0,0,255,1)"],["offset","100%"]]}],"uuid":"karas-defs-0-2"},{"tagName":"radialGradient","props":[["cx",173],["cy",248],["r",11.313708498984761]],"children":[{"tagName":"stop","props":[["stop-color","rgba(255,0,0,1)"],["offset","0%"]]},{"tagName":"stop","props":[["stop-color","rgba(0,0,255,1)"],["offset","100%"]]}],"uuid":"karas-defs-0-3"}]}')
+      .end();
+  }
+};

@@ -236,8 +236,8 @@ function calLinearCoords(deg, length, cx, cy) {
 
 // 获取径向渐变圆心半径
 function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
-  // let size = 'farthest-corner';
-  let cx, cy;
+  // 默认椭圆a是水平轴，b是垂直轴
+  let cx, cy, ax, ay, bx, by;
   if(position[0][1] === PX) {
     cx = x1 + position[0][0];
   }
@@ -250,83 +250,94 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
   else {
     cy = y1 + position[1][0] * ih * 0.01;
   }
-  let r;
-  if(size === 'closest-side') {
+  let xl, yl, r, ratio = 1;
+  if(size === 'closest-side' || size === 'closest-corner') {
     // 在边外特殊情况只有end颜色填充
     if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
       r = 0;
+      ax = bx = cx;
+      ay = by = cy;
     }
     else {
-      let xl;
-      let yl;
+      let ratio = 1;
       if(cx < x1 + iw * 0.5) {
         xl = cx - x1;
-      } else {
+      }
+      else {
         xl = x2 - cx;
       }
       if(cy < y1 + ih * 0.5) {
         yl = cy - y1;
-      } else {
+      }
+      else {
         yl = y2 - cy;
       }
       r = Math.min(xl, yl);
+      // css的角和边有对应关系，即边扩展倍数，计算为固定值
+      if(size === 'closest-corner') {
+        ratio = Math.sqrt(2);
+      }
+      xl *= ratio;
+      yl *= ratio;
+      if(shape === 'circle') {
+        ax = cx + r;
+        ay = cy;
+        bx = cx;
+        by = cy + r;
+      }
+      else {
+        r *= ratio;
+        ax = cx + xl * ratio;
+        ay = cy;
+        bx = cx;
+        by = cy + yl * ratio;
+      }
     }
   }
-  else if(size === 'closest-corner') {
-    let xl;
-    let yl;
-    if(cx < x1 + iw * 0.5) {
-      xl = cx - x1;
-    }
-    else {
-      xl = x2 - cx;
-    }
-    if(cy < y1 + ih * 0.5) {
-      yl = cy - y1;
-    }
-    else {
-      yl = y2 - cy;
-    }
-    r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
-  }
-  else if(size === 'farthest-side') {
+  else {
     if(cx <= x1) {
-      r = x1 - cx + iw;
+      xl = x1 - cx + iw;
     }
     else if(cx >= x2) {
-      r = cx - x2 + iw;
+      xl = cx - x2 + iw;
     }
-    else if(cy <= y1) {
-      r = y1 - cy + ih;
-    }
-    else if(cx >= y2) {
-      r = cy - y2 + ih;
-    }
-    else {
-      let xl = Math.max(x2 - cx, cx - x1);
-      let yl = Math.max(y2 - cy, cy - y1);
-      r = Math.max(xl, yl);
-    }
-  }
-  // 默认farthest-corner
-  else {
-    let xl;
-    let yl;
-    if(cx < x1 + iw * 0.5) {
+    else if(cx < x1 + iw * 0.5) {
       xl = x2 - cx;
     }
     else {
       xl = cx - x1;
     }
-    if(cy < y1 + ih * 0.5) {
+    if(cy <= y1) {
+      yl = y1 - cy + ih;
+    }
+    else if(cy >= y2) {
+      yl = cy - y2 + ih;
+    }
+    else if(cy < y1 + ih * 0.5) {
       yl = y2 - cy;
     }
     else {
       yl = cy - y1;
     }
-    r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+    r = Math.max(xl, yl);
+    if(size !== 'farthest-side') {
+      ratio = Math.sqrt(2);
+    }
+    if(shape === 'circle') {
+      ax = cx + r;
+      ay = cy;
+      bx = cx;
+      by = cy + r;
+    }
+    else {
+      r *= ratio;
+      ax = cx + xl * ratio;
+      ay = cy;
+      bx = cx;
+      by = cy + yl * ratio;
+    }
   }
-  return [r, cx, cy];
+  return [cx, cy, r, xl, yl, ax, ay, bx, by];
 }
 
 function parseGradient(s) {
@@ -443,23 +454,35 @@ function getLinear(v, d, ox, oy, cx, cy, w, h) {
 function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
-  let [r, cx, cy] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
-  let stop = getColorStop(v, r * 2);
-  // 超限情况等同于只显示end的bgc
-  if(r <= 0) {
-    let end = stop[stop.length - 1];
-    end[1] = 0;
-    stop = [end];
-    cx = x1;
-    cy = y1;
-    // 肯定大于最长直径
-    r = w + h;
+  let [cx, cy, r, xl, yl] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
+  // closest在矩形外时无效
+  if(r === 0) {
+    return;
   }
+  // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
+  let matrix;
+  if(xl !== yl) {
+    matrix = [1, 0, 0, 1, 0, 0];
+    if(xl !== r) {
+      let p = xl / r;
+      let d = cx - x1;
+      cx = x1 + d / p;
+      matrix[0] = p;
+    }
+    if(yl !== r) {
+      let p = yl / r;
+      let d = cy - y1;
+      cy = y1 + d / p;
+      matrix[3] = p;
+    }
+  }
+  let stop = getColorStop(v, r);
   return {
     cx,
     cy,
     r,
     stop,
+    matrix,
   };
 }
 

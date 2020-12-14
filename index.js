@@ -2424,8 +2424,8 @@
 
 
   function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
-    // let size = 'farthest-corner';
-    var cx, cy;
+    // 默认椭圆a是水平轴，b是垂直轴
+    var cx, cy, ax, ay, bx, by;
 
     if (position[0][1] === PX) {
       cx = x1 + position[0][0];
@@ -2439,15 +2439,19 @@
       cy = y1 + position[1][0] * ih * 0.01;
     }
 
-    var r;
+    var xl,
+        yl,
+        r,
+        ratio = 1;
 
-    if (size === 'closest-side') {
+    if (size === 'closest-side' || size === 'closest-corner') {
       // 在边外特殊情况只有end颜色填充
       if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
         r = 0;
+        ax = bx = cx;
+        ay = by = cy;
       } else {
-        var xl;
-        var yl;
+        var _ratio = 1;
 
         if (cx < x1 + iw * 0.5) {
           xl = cx - x1;
@@ -2461,64 +2465,70 @@
           yl = y2 - cy;
         }
 
-        r = Math.min(xl, yl);
+        r = Math.min(xl, yl); // css的角和边有对应关系，即边扩展倍数，计算为固定值
+
+        if (size === 'closest-corner') {
+          _ratio = Math.sqrt(2);
+        }
+
+        xl *= _ratio;
+        yl *= _ratio;
+
+        if (shape === 'circle') {
+          ax = cx + r;
+          ay = cy;
+          bx = cx;
+          by = cy + r;
+        } else {
+          r *= _ratio;
+          ax = cx + xl * _ratio;
+          ay = cy;
+          bx = cx;
+          by = cy + yl * _ratio;
+        }
       }
-    } else if (size === 'closest-corner') {
-      var _xl;
-
-      var _yl;
-
-      if (cx < x1 + iw * 0.5) {
-        _xl = cx - x1;
-      } else {
-        _xl = x2 - cx;
-      }
-
-      if (cy < y1 + ih * 0.5) {
-        _yl = cy - y1;
-      } else {
-        _yl = y2 - cy;
-      }
-
-      r = Math.sqrt(Math.pow(_xl, 2) + Math.pow(_yl, 2));
-    } else if (size === 'farthest-side') {
+    } else {
       if (cx <= x1) {
-        r = x1 - cx + iw;
+        xl = x1 - cx + iw;
       } else if (cx >= x2) {
-        r = cx - x2 + iw;
-      } else if (cy <= y1) {
-        r = y1 - cy + ih;
-      } else if (cx >= y2) {
-        r = cy - y2 + ih;
+        xl = cx - x2 + iw;
+      } else if (cx < x1 + iw * 0.5) {
+        xl = x2 - cx;
       } else {
-        var _xl2 = Math.max(x2 - cx, cx - x1);
-
-        var _yl2 = Math.max(y2 - cy, cy - y1);
-
-        r = Math.max(_xl2, _yl2);
-      }
-    } // 默认farthest-corner
-    else {
-        var _xl3;
-
-        var _yl3;
-
-        if (cx < x1 + iw * 0.5) {
-          _xl3 = x2 - cx;
-        } else {
-          _xl3 = cx - x1;
-        }
-
-        if (cy < y1 + ih * 0.5) {
-          _yl3 = y2 - cy;
-        } else {
-          _yl3 = cy - y1;
-        }
-
-        r = Math.sqrt(Math.pow(_xl3, 2) + Math.pow(_yl3, 2));
+        xl = cx - x1;
       }
 
-    return [r, cx, cy];
+      if (cy <= y1) {
+        yl = y1 - cy + ih;
+      } else if (cy >= y2) {
+        yl = cy - y2 + ih;
+      } else if (cy < y1 + ih * 0.5) {
+        yl = y2 - cy;
+      } else {
+        yl = cy - y1;
+      }
+
+      r = Math.max(xl, yl);
+
+      if (size !== 'farthest-side') {
+        ratio = Math.sqrt(2);
+      }
+
+      if (shape === 'circle') {
+        ax = cx + r;
+        ay = cy;
+        bx = cx;
+        by = cy + r;
+      } else {
+        r *= ratio;
+        ax = cx + xl * ratio;
+        ay = cy;
+        bx = cx;
+        by = cy + yl * ratio;
+      }
+    }
+
+    return [cx, cy, r, xl, yl, ax, ay, bx, by];
   }
 
   function parseGradient(s) {
@@ -2647,28 +2657,48 @@
     var h = y2 - y1;
 
     var _calRadialRadius = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2),
-        _calRadialRadius2 = _slicedToArray(_calRadialRadius, 3),
-        r = _calRadialRadius2[0],
-        cx = _calRadialRadius2[1],
-        cy = _calRadialRadius2[2];
+        _calRadialRadius2 = _slicedToArray(_calRadialRadius, 5),
+        cx = _calRadialRadius2[0],
+        cy = _calRadialRadius2[1],
+        r = _calRadialRadius2[2],
+        xl = _calRadialRadius2[3],
+        yl = _calRadialRadius2[4]; // closest在矩形外时无效
 
-    var stop = getColorStop(v, r * 2); // 超限情况等同于只显示end的bgc
 
-    if (r <= 0) {
-      var end = stop[stop.length - 1];
-      end[1] = 0;
-      stop = [end];
-      cx = x1;
-      cy = y1; // 肯定大于最长直径
+    if (r === 0) {
+      return;
+    } // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
 
-      r = w + h;
+
+    var matrix;
+
+    if (xl !== yl) {
+      matrix = [1, 0, 0, 1, 0, 0];
+
+      if (xl !== r) {
+        var p = xl / r;
+        var d = cx - x1;
+        cx = x1 + d / p;
+        matrix[0] = p;
+      }
+
+      if (yl !== r) {
+        var _p3 = yl / r;
+
+        var _d = cy - y1;
+
+        cy = y1 + _d / _p3;
+        matrix[3] = _p3;
+      }
     }
 
+    var stop = getColorStop(v, r);
     return {
       cx: cx,
       cy: cy,
       r: r,
-      stop: stop
+      stop: stop,
+      matrix: matrix
     };
   }
 
@@ -11963,10 +11993,35 @@
 
   function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
     var method = arguments.length > 16 && arguments[16] !== undefined ? arguments[16] : 'fill';
-    // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+    // radial渐变时ellipse形状会有xr/yr/matrix，用以从圆缩放到椭圆
+    var matrix;
+
+    if (Array.isArray(color)) {
+      matrix = color[1];
+      color = color[0];
+    }
+
+    if (matrix) {
+      if (matrix[0] !== 1) {
+        w /= matrix[0];
+      }
+
+      if (matrix[3] !== 1) {
+        h /= matrix[3];
+      }
+    } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+
+
     var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
 
     if (renderMode === mode.CANVAS) {
+      if (matrix) {
+        ctx.save();
+        var tfo = [x, y];
+        var t = tf.calMatrixByOrigin(matrix, tfo);
+        ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
+      }
+
       ctx.beginPath();
 
       if (ctx.fillStyle !== color) {
@@ -11981,6 +12036,10 @@
 
       ctx[method]();
       ctx.closePath();
+
+      if (matrix) {
+        ctx.restore();
+      }
     } else if (renderMode === mode.SVG) {
       if (list) {
         var d = svgPolygon$1(list);
@@ -11995,6 +12054,15 @@
           tagName: 'rect',
           props: [['x', x], ['y', y], ['width', w], ['height', h], ['fill', color]]
         });
+      }
+
+      if (matrix) {
+        var _tfo = [x, y];
+
+        var _t = tf.calMatrixByOrigin(matrix, _tfo);
+
+        var bb = xom.virtualDom.bb;
+        bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(_t, ','), ")")]);
       }
     }
   }
@@ -12876,8 +12944,7 @@
             __cacheStyle[BACKGROUND_POSITION_X$2] = true;
             var bgX = currentStyle[BACKGROUND_POSITION_X$2];
             computedStyle[BACKGROUND_POSITION_X$2] = bgX[1] === PX$4 ? bgX[0] : bgX[0] + '%';
-          } // console.log(currentStyle[BACKGROUND_POSITION_X],currentStyle[BACKGROUND_POSITION_Y])
-
+          }
 
           if (__cacheStyle[BACKGROUND_POSITION_Y$2] === undefined) {
             __cacheStyle[BACKGROUND_POSITION_Y$2] = true;
@@ -13800,7 +13867,11 @@
               }
             }
           } else if (backgroundImage.k) {
-            renderBgc(renderMode, __cacheStyle[BACKGROUND_IMAGE$1], x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            var gd = __cacheStyle[BACKGROUND_IMAGE$1];
+
+            if (gd) {
+              renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+            }
           }
         } // boxShadow可能会有多个
 
@@ -13964,7 +14035,13 @@
         } else if (k === 'radial') {
           var _gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
 
-          res = this.__getRg(renderMode, ctx, defs, _gd);
+          if (_gd) {
+            res = this.__getRg(renderMode, ctx, defs, _gd);
+
+            if (_gd.matrix) {
+              res = [res, _gd.matrix];
+            }
+          }
         }
 
         return res;

@@ -2,6 +2,7 @@ import util from '../util/util';
 import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
+import vector from '../math/vector';
 
 const { rgba2int, int2rgba, isNil } = util;
 const { PX, PERCENT } = unit;
@@ -75,18 +76,20 @@ function getColorStop(v, length) {
     let item = v[i];
     // 考虑是否声明了位置
     if(item.length > 1) {
-      let c = int2rgba(item[0]);
       let p = item[1];
       if(p[1] === PERCENT) {
-        list.push([c, p[0] * 0.01]);
+        list.push([item[0], p[0] * 0.01]);
       }
       else {
-        list.push([c, p[0] / length]);
+        list.push([item[0], p[0] / length]);
       }
     }
     else {
-      list.push([int2rgba(item[0])]);
+      list.push([item[0]]);
     }
+  }
+  if(list.length === 1) {
+    list.push(util.clone(list[0]));
   }
   // 首尾不声明默认为[0, 1]
   if(list[0].length === 1) {
@@ -133,81 +136,57 @@ function getColorStop(v, length) {
     }
   }
   // 0之前的和1之后的要过滤掉
-  for(let i = 0, len = list.length; i < len - 1; i++) {
+  for(let i = 0, len = list.length; i < len; i++) {
     let item = list[i];
     if(item[1] > 1) {
-      list.splice(i + 1);
+      list.splice(i);
+      let prev = list[i - 1];
+      if(prev && prev[1] < 1) {
+        let dr = item[0][0] - prev[0][0];
+        let dg = item[0][1] - prev[0][1];
+        let db = item[0][2] - prev[0][2];
+        let da = item[0][3] - prev[0][3];
+        let p = (1 - prev[1]) / (item[1] - prev[1]);
+        list.push([
+          [
+            item[0][0] + dr * p,
+            item[0][1] + dg * p,
+            item[0][2] + db * p,
+            item[0][3] + da * p,
+          ],
+          1],
+        );
+      }
       break;
     }
   }
-  for(let i = list.length - 1; i > 0; i--) {
+  for(let i = list.length - 1; i >= 0; i--) {
     let item = list[i];
     if(item[1] < 0) {
-      list.splice(0, i);
+      list.splice(0, i + 1);
+      let next = list[i];
+      if(next && next[1] > 0) {
+        let dr = next[0][0] - item[0][0];
+        let dg = next[0][1] - item[0][1];
+        let db = next[0][2] - item[0][2];
+        let da = next[0][3] - item[0][3];
+        let p = (-item[1]) / (next[1] - item[1]);
+        list.unshift([
+          [
+            item[0][0] + dr * p,
+            item[0][1] + dg * p,
+            item[0][2] + db * p,
+            item[0][3] + da * p,
+          ],
+          0],
+        );
+      }
       break;
     }
   }
   // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
-  let len = list.length;
-  // 在只有1个的情况下可简化
-  if(len === 1) {
-    list[0][1] = 0;
-  }
-  else {
-    // 全部都在[0,1]之外也可以简化
-    let allBefore = true;
-    let allAfter = true;
-    for(let i = len - 1; i >= 0; i--) {
-      let item = list[i];
-      let p = item[1];
-      if(p > 0) {
-        allBefore = false;
-      }
-      if(p < 1) {
-        allAfter = false;
-      }
-    }
-    if(allBefore) {
-      list.splice(0, len - 1);
-      list[0][1] = 0;
-    }
-    else if(allAfter) {
-      list.splice(1);
-      list[0][1] = 0;
-    }
-    // 部分在区间之外需复杂计算
-    else {
-      let first = list[0];
-      let last = list[len - 1];
-      // 只要2个的情况下就是首尾都落在外面
-      if(len === 2) {
-        if(first[1] < 0 && last[1] > 1) {
-          getCsLimit(first, last, length);
-        }
-      }
-      // 只有1个在外面的情况较为容易
-      else {
-        if(first[1] < 0) {
-          let next = list[1];
-          let c1 = rgba2int(first[0]);
-          let c2 = rgba2int(next[0]);
-          let c = getCsStartLimit(c1, first[1], c2, next[1], length);
-          first[0] = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
-          first[1] = 0;
-        }
-        if(last[1] > 1) {
-          let prev = list[len - 2];
-          let c1 = rgba2int(prev[0]);
-          let c2 = rgba2int(last[0]);
-          let c = getCsEndLimit(c1, prev[1], c2, last[1], length);
-          last[0] = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + c[3] + ')';
-          last[1] = 1;
-        }
-      }
-    }
-  }
-  // 防止精度计算溢出[0,1]
   list.forEach(item => {
+    item[0] = int2rgba(item[0]);
     if(item[1] < 0) {
       item[1] = 0;
     }
@@ -350,56 +329,6 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
   return [r, cx, cy];
 }
 
-// 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
-function getCsStartLimit(c1, p1, c2, p2, length) {
-  let [ r1, g1, b1, a1 = 1 ] = c1;
-  let [ r2, g2, b2, a2 = 1 ] = c2;
-  let l1 = Math.abs(p1) * length;
-  let l2 = p2 * length;
-  let p = l1 / (l2 + l1);
-  let r = Math.floor(r1 + (r2 - r1) * p);
-  let g = Math.floor(g1 + (g2 - g1) * p);
-  let b = Math.floor(b1 + (b2 - b1) * p);
-  let a = a1 + (a2 - a1) * p;
-  return [r, g, b, a];
-}
-
-function getCsEndLimit(c1, p1, c2, p2, length) {
-  let [ r1, g1, b1, a1 = 1 ] = c1;
-  let [ r2, g2, b2, a2 = 1 ] = c2;
-  let l1 = p1 * length;
-  let l2 = p2 * length;
-  let p = (length - l1) / (l2 - l1);
-  let r = Math.floor(r1 + (r2 - r1) * p);
-  let g = Math.floor(g1 + (g2 - g1) * p);
-  let b = Math.floor(b1 + (b2 - b1) * p);
-  let a = a1 + (a2 - a1) * p;
-  return [r, g, b, a];
-}
-
-function getCsLimit(first, last, length) {
-  let c1 = rgba2int(first[0]);
-  let c2 = rgba2int(last[0]);
-  let [ r1, g1, b1, a1 = 1 ] = c1;
-  let [ r2, g2, b2, a2 = 1 ] = c2;
-  let l1 = Math.abs(first[1]) * length;
-  let l2 = last[1] * length;
-  let p = l1 / (l1 + l2);
-  let r = Math.floor(r1 + (r2 - r1) * p);
-  let g = Math.floor(g1 + (g2 - g1) * p);
-  let b = Math.floor(b1 + (b2 - b1) * p);
-  let a = a1 + (a2 - a1) * p;
-  first[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-  first[1] = 0;
-  p = (length + l1) / (l1 + l2);
-  r = Math.floor(r1 + (r2 - r1) * p);
-  g = Math.floor(g1 + (g2 - g1) * p);
-  b = Math.floor(b1 + (b2 - b1) * p);
-  a = a1 + (a2 - a1) * p;
-  last[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-  last[1] = 1;
-}
-
 function parseGradient(s) {
   let gradient = reg.gradient.exec(s);
   if(gradient) {
@@ -411,8 +340,15 @@ function parseGradient(s) {
       if(deg) {
         o.d = getLinearDeg(deg[0].toLowerCase());
       }
+      // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        o.d = 180;
+        let points = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)/.exec(gradient[2]);
+        if(points) {
+          o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+        }
+        else {
+          o.d = 180;
+        }
       }
     }
     else if(o.k === 'radial') {
@@ -453,11 +389,48 @@ function parseGradient(s) {
   }
 }
 
-function getLinear(v, d, cx, cy, w, h) {
-  let theta = d2r(d);
-  let length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
-  let [x1, y1, x2, y2] = calLinearCoords(d, length * 0.5, cx, cy);
-  let stop = getColorStop(v, length);
+function getLinear(v, d, ox, oy, cx, cy, w, h) {
+  // d为数组是2个坐标点，数字是css标准角度
+  let x1, y1, x2, y2, stop;
+  if(Array.isArray(d)) {
+    x1 = ox + d[0] * w;
+    y1 = oy + d[1] * h;
+    x2 = ox + d[2] * w;
+    y2 = oy + d[3] * h;
+    let total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    stop = getColorStop(v, total);
+  }
+  else {
+    while(d >= 360) {
+      d -= 360;
+    }
+    while(d < 0) {
+      d += 360;
+    }
+    // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
+    let len = Math.max(w, h);
+    let coords = calLinearCoords(d, len, cx, cy, w, h);
+    len *= 2;
+    // start和4个顶点的向量在A上的投影长度
+    let l1 = vector.dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    let l2 = vector.dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    let l3 = vector.dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    let l4 = vector.dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+    // 最小和最大值为0~100%
+    let min = l1, max = l1;
+    min = Math.min(min, Math.min(l2, Math.min(l3, l4)));
+    max = Math.max(max, Math.max(l2, Math.max(l3, l4)));
+    // 求得0和100%的长度和坐标
+    let total = max - min;
+    let r1 = min / len;
+    let dx = coords[2] - coords[0];
+    let dy = coords[3] - coords[1];
+    x1 = coords[0] + dx * r1;
+    y1 = coords[1] + dy * r1;
+    x2 = coords[2] - dx * r1;
+    y2 = coords[3] - dy * r1;
+    stop = getColorStop(v, total);
+  }
   return {
     x1,
     y1,

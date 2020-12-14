@@ -2245,21 +2245,24 @@
   function getColorStop(v, length) {
     var list = []; // 先把已经声明距离的换算成[0,1]以数组形式存入，未声明的原样存入
 
-    for (var i = 0, _len = v.length; i < _len; i++) {
+    for (var i = 0, len = v.length; i < len; i++) {
       var item = v[i]; // 考虑是否声明了位置
 
       if (item.length > 1) {
-        var c = int2rgba$1(item[0]);
         var p = item[1];
 
         if (p[1] === PERCENT) {
-          list.push([c, p[0] * 0.01]);
+          list.push([item[0], p[0] * 0.01]);
         } else {
-          list.push([c, p[0] / length]);
+          list.push([item[0], p[0] / length]);
         }
       } else {
-        list.push([int2rgba$1(item[0])]);
+        list.push([item[0]]);
       }
+    }
+
+    if (list.length === 1) {
+      list.push(util.clone(list[0]));
     } // 首尾不声明默认为[0, 1]
 
 
@@ -2278,7 +2281,7 @@
 
     var start = list[0][1];
 
-    for (var _i2 = 1, _len2 = list.length; _i2 < _len2 - 1; _i2++) {
+    for (var _i2 = 1, _len = list.length; _i2 < _len - 1; _i2++) {
       var _item = list[_i2];
 
       if (_item.length > 1) {
@@ -2287,7 +2290,7 @@
         var j = _i2 + 1;
         var end = list[list.length - 1][1];
 
-        for (; j < _len2 - 1; j++) {
+        for (; j < _len - 1; j++) {
           var _item2 = list[j];
 
           if (_item2.length > 1) {
@@ -2310,7 +2313,7 @@
     } // 每个不能小于前面的，canvas/svg不能兼容这种情况，需处理
 
 
-    for (var _i3 = 1, _len3 = list.length; _i3 < _len3; _i3++) {
+    for (var _i3 = 1, _len2 = list.length; _i3 < _len2; _i3++) {
       var _item4 = list[_i3];
       var prev = list[_i3 - 1];
 
@@ -2320,93 +2323,57 @@
     } // 0之前的和1之后的要过滤掉
 
 
-    for (var _i4 = 0, _len4 = list.length; _i4 < _len4 - 1; _i4++) {
+    for (var _i4 = 0, _len3 = list.length; _i4 < _len3; _i4++) {
       var _item5 = list[_i4];
 
       if (_item5[1] > 1) {
-        list.splice(_i4 + 1);
+        list.splice(_i4);
+        var _prev = list[_i4 - 1];
+
+        if (_prev && _prev[1] < 1) {
+          var dr = _item5[0][0] - _prev[0][0];
+          var dg = _item5[0][1] - _prev[0][1];
+          var db = _item5[0][2] - _prev[0][2];
+          var da = _item5[0][3] - _prev[0][3];
+
+          var _p = (1 - _prev[1]) / (_item5[1] - _prev[1]);
+
+          list.push([[_item5[0][0] + dr * _p, _item5[0][1] + dg * _p, _item5[0][2] + db * _p, _item5[0][3] + da * _p], 1]);
+        }
+
         break;
       }
     }
 
-    for (var _i5 = list.length - 1; _i5 > 0; _i5--) {
+    for (var _i5 = list.length - 1; _i5 >= 0; _i5--) {
       var _item6 = list[_i5];
 
       if (_item6[1] < 0) {
-        list.splice(0, _i5);
+        list.splice(0, _i5 + 1);
+        var next = list[_i5];
+
+        if (next && next[1] > 0) {
+          var _dr = next[0][0] - _item6[0][0];
+
+          var _dg = next[0][1] - _item6[0][1];
+
+          var _db = next[0][2] - _item6[0][2];
+
+          var _da = next[0][3] - _item6[0][3];
+
+          var _p2 = -_item6[1] / (next[1] - _item6[1]);
+
+          list.unshift([[_item6[0][0] + _dr * _p2, _item6[0][1] + _dg * _p2, _item6[0][2] + _db * _p2, _item6[0][3] + _da * _p2], 0]);
+        }
+
         break;
       }
     } // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
 
 
-    var len = list.length; // 在只有1个的情况下可简化
-
-    if (len === 1) {
-      list[0][1] = 0;
-    } else {
-      // 全部都在[0,1]之外也可以简化
-      var allBefore = true;
-      var allAfter = true;
-
-      for (var _i6 = len - 1; _i6 >= 0; _i6--) {
-        var _item7 = list[_i6];
-        var _p = _item7[1];
-
-        if (_p > 0) {
-          allBefore = false;
-        }
-
-        if (_p < 1) {
-          allAfter = false;
-        }
-      }
-
-      if (allBefore) {
-        list.splice(0, len - 1);
-        list[0][1] = 0;
-      } else if (allAfter) {
-        list.splice(1);
-        list[0][1] = 0;
-      } // 部分在区间之外需复杂计算
-      else {
-          var first = list[0];
-          var last = list[len - 1]; // 只要2个的情况下就是首尾都落在外面
-
-          if (len === 2) {
-            if (first[1] < 0 && last[1] > 1) {
-              getCsLimit(first, last, length);
-            }
-          } // 只有1个在外面的情况较为容易
-          else {
-              if (first[1] < 0) {
-                var next = list[1];
-                var c1 = rgba2int$1(first[0]);
-                var c2 = rgba2int$1(next[0]);
-
-                var _c = getCsStartLimit(c1, first[1], c2, next[1], length);
-
-                first[0] = 'rgba(' + _c[0] + ',' + _c[1] + ',' + _c[2] + ',' + _c[3] + ')';
-                first[1] = 0;
-              }
-
-              if (last[1] > 1) {
-                var _prev = list[len - 2];
-
-                var _c2 = rgba2int$1(_prev[0]);
-
-                var _c3 = rgba2int$1(last[0]);
-
-                var _c4 = getCsEndLimit(_c2, _prev[1], _c3, last[1], length);
-
-                last[0] = 'rgba(' + _c4[0] + ',' + _c4[1] + ',' + _c4[2] + ',' + _c4[3] + ')';
-                last[1] = 1;
-              }
-            }
-        }
-    } // 防止精度计算溢出[0,1]
-
-
     list.forEach(function (item) {
+      item[0] = int2rgba$1(item[0]);
+
       if (item[1] < 0) {
         item[1] = 0;
       } else if (item[1] > 1) {
@@ -2552,93 +2519,6 @@
       }
 
     return [r, cx, cy];
-  } // 当linear-gradient的值超过[0,1]区间限制时，计算其对应区间1的值
-
-
-  function getCsStartLimit(c1, p1, c2, p2, length) {
-    var _c5 = _slicedToArray(c1, 4),
-        r1 = _c5[0],
-        g1 = _c5[1],
-        b1 = _c5[2],
-        _c5$ = _c5[3],
-        a1 = _c5$ === void 0 ? 1 : _c5$;
-
-    var _c6 = _slicedToArray(c2, 4),
-        r2 = _c6[0],
-        g2 = _c6[1],
-        b2 = _c6[2],
-        _c6$ = _c6[3],
-        a2 = _c6$ === void 0 ? 1 : _c6$;
-
-    var l1 = Math.abs(p1) * length;
-    var l2 = p2 * length;
-    var p = l1 / (l2 + l1);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    return [r, g, b, a];
-  }
-
-  function getCsEndLimit(c1, p1, c2, p2, length) {
-    var _c7 = _slicedToArray(c1, 4),
-        r1 = _c7[0],
-        g1 = _c7[1],
-        b1 = _c7[2],
-        _c7$ = _c7[3],
-        a1 = _c7$ === void 0 ? 1 : _c7$;
-
-    var _c8 = _slicedToArray(c2, 4),
-        r2 = _c8[0],
-        g2 = _c8[1],
-        b2 = _c8[2],
-        _c8$ = _c8[3],
-        a2 = _c8$ === void 0 ? 1 : _c8$;
-
-    var l1 = p1 * length;
-    var l2 = p2 * length;
-    var p = (length - l1) / (l2 - l1);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    return [r, g, b, a];
-  }
-
-  function getCsLimit(first, last, length) {
-    var c1 = rgba2int$1(first[0]);
-    var c2 = rgba2int$1(last[0]);
-
-    var _c9 = _slicedToArray(c1, 4),
-        r1 = _c9[0],
-        g1 = _c9[1],
-        b1 = _c9[2],
-        _c9$ = _c9[3],
-        a1 = _c9$ === void 0 ? 1 : _c9$;
-
-    var _c10 = _slicedToArray(c2, 4),
-        r2 = _c10[0],
-        g2 = _c10[1],
-        b2 = _c10[2],
-        _c10$ = _c10[3],
-        a2 = _c10$ === void 0 ? 1 : _c10$;
-
-    var l1 = Math.abs(first[1]) * length;
-    var l2 = last[1] * length;
-    var p = l1 / (l1 + l2);
-    var r = Math.floor(r1 + (r2 - r1) * p);
-    var g = Math.floor(g1 + (g2 - g1) * p);
-    var b = Math.floor(b1 + (b2 - b1) * p);
-    var a = a1 + (a2 - a1) * p;
-    first[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-    first[1] = 0;
-    p = (length + l1) / (l1 + l2);
-    r = Math.floor(r1 + (r2 - r1) * p);
-    g = Math.floor(g1 + (g2 - g1) * p);
-    b = Math.floor(b1 + (b2 - b1) * p);
-    a = a1 + (a2 - a1) * p;
-    last[0] = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-    last[1] = 1;
   }
 
   function parseGradient(s) {
@@ -2654,9 +2534,16 @@
 
         if (deg) {
           o.d = getLinearDeg(deg[0].toLowerCase());
-        } else {
-          o.d = 180;
-        }
+        } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
+        else {
+            var points = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)/.exec(gradient[2]);
+
+            if (points) {
+              o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+            } else {
+              o.d = 180;
+            }
+          }
       } else if (o.k === 'radial') {
         o.s = gradient[2].indexOf('ellipse') > -1 ? 'ellipse' : 'circle';
         var size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
@@ -2699,18 +2586,53 @@
     }
   }
 
-  function getLinear(v, d, cx, cy, w, h) {
-    var theta = d2r$1(d);
-    var length = Math.abs(w * Math.sin(theta)) + Math.abs(h * Math.cos(theta));
+  function getLinear(v, d, ox, oy, cx, cy, w, h) {
+    // d为数组是2个坐标点，数字是css标准角度
+    var x1, y1, x2, y2, stop;
 
-    var _calLinearCoords = calLinearCoords(d, length * 0.5, cx, cy),
-        _calLinearCoords2 = _slicedToArray(_calLinearCoords, 4),
-        x1 = _calLinearCoords2[0],
-        y1 = _calLinearCoords2[1],
-        x2 = _calLinearCoords2[2],
-        y2 = _calLinearCoords2[3];
+    if (Array.isArray(d)) {
+      x1 = ox + d[0] * w;
+      y1 = oy + d[1] * h;
+      x2 = ox + d[2] * w;
+      y2 = oy + d[3] * h;
+      var total = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+      stop = getColorStop(v, total);
+    } else {
+      while (d >= 360) {
+        d -= 360;
+      }
 
-    var stop = getColorStop(v, length);
+      while (d < 0) {
+        d += 360;
+      } // 根据角度求直线上2点，设置半径为长宽最大值，这样一定在矩形外，看做一个向量A
+
+
+      var len = Math.max(w, h);
+      var coords = calLinearCoords(d, len, cx, cy);
+      len *= 2; // start和4个顶点的向量在A上的投影长度
+
+      var l1 = vector.dotProduct(ox - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+      var l2 = vector.dotProduct(ox + w - coords[0], oy - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+      var l3 = vector.dotProduct(ox + w - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len;
+      var l4 = vector.dotProduct(ox - coords[0], oy + h - coords[1], coords[2] - coords[0], coords[3] - coords[1]) / len; // 最小和最大值为0~100%
+
+      var min = l1,
+          max = l1;
+      min = Math.min(min, Math.min(l2, Math.min(l3, l4)));
+      max = Math.max(max, Math.max(l2, Math.max(l3, l4))); // 求得0和100%的长度和坐标
+
+      var _total = max - min;
+
+      var r1 = min / len;
+      var dx = coords[2] - coords[0];
+      var dy = coords[3] - coords[1];
+      x1 = coords[0] + dx * r1;
+      y1 = coords[1] + dy * r1;
+      x2 = coords[2] - dx * r1;
+      y2 = coords[3] - dy * r1;
+      stop = getColorStop(v, _total);
+    }
+
     return {
       x1: x1,
       y1: y1,
@@ -14037,7 +13959,7 @@
         var res;
 
         if (k === 'linear') {
-          var gd = gradient.getLinear(v, d, cx, cy, iw, ih);
+          var gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
           res = this.__getLg(renderMode, ctx, defs, gd);
         } else if (k === 'radial') {
           var _gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);

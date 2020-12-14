@@ -2227,7 +2227,7 @@ class Xom extends Node {
     let cy = y2 + ih * 0.5;
     let res;
     if(k === 'linear') {
-      let gd = gradient.getLinear(v, d, cx, cy, iw, ih);
+      let gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
       res = this.__getLg(renderMode, ctx, defs, gd);
     }
     else if(k === 'radial') {

@@ -3,6 +3,7 @@ import unit from './unit';
 import reg from './reg';
 import geom from '../math/geom';
 import vector from '../math/vector';
+import mx from '../math/matrix';
 
 const { rgba2int, int2rgba, isNil } = util;
 const { PX, PERCENT } = unit;
@@ -236,108 +237,113 @@ function calLinearCoords(deg, length, cx, cy) {
 
 // 获取径向渐变圆心半径
 function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
-  // 默认椭圆a是水平轴，b是垂直轴
-  let cx, cy, ax, ay, bx, by;
-  if(position[0][1] === PX) {
-    cx = x1 + position[0][0];
-  }
-  else {
-    cx = x1 + position[0][0] * iw * 0.01;
-  }
-  if(position[1][1] === PX) {
-    cy = y1 + position[1][0];
-  }
-  else {
-    cy = y1 + position[1][0] * ih * 0.01;
-  }
-  let xl, yl, r, ratio = 1;
-  if(size === 'closest-side' || size === 'closest-corner') {
-    // 在边外特殊情况只有end颜色填充
-    if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-      r = 0;
-      ax = bx = cx;
-      ay = by = cy;
+  let cx, cy, xl, yl, r, d = 0;
+  // 扩展的from to格式
+  if(Array.isArray(size)) {
+    cx = x1 + size[0] * iw;
+    cy = y1 + size[1] * ih;
+    xl = Math.sqrt(Math.pow(x1 + size[2] * iw - cx, 2) + Math.pow(y1 + size[3] * ih - cy, 2));
+    yl = Math.sqrt(Math.pow(x1 + size[4] * iw - cx, 2) + Math.pow(y1 + size[5] * ih - cy, 2));
+    r = Math.max(xl, yl);
+    // 看旋转
+    if(size[2] >= size[0]) {
+      if(size[3] >= size[1]) {
+        d = Math.asin(size[3] - size[1] / xl);
+      }
+      else {
+        d = -Math.asin(size[1] - size[3] / xl);
+      }
     }
     else {
-      let ratio = 1;
-      if(cx < x1 + iw * 0.5) {
-        xl = cx - x1;
+      if(size[3] >= size[1]) {
+        d = 180 - Math.asin(size[3] - size[1] / xl);
       }
       else {
+        d = Math.asin(size[1] - size[3] / xl) - 180;
+      }
+    }
+  }
+  else {
+    // 默认椭圆a是水平轴，b是垂直轴
+    if(position[0][1] === PX) {
+      cx = x1 + position[0][0];
+    }
+    else {
+      cx = x1 + position[0][0] * iw * 0.01;
+    }
+    if(position[1][1] === PX) {
+      cy = y1 + position[1][0];
+    }
+    else {
+      cy = y1 + position[1][0] * ih * 0.01;
+    }
+    let ratio = 1;
+    if(size === 'closest-side' || size === 'closest-corner') {
+      // 在边外特殊情况只有end颜色填充
+      if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
+        r = 0;
+      }
+      else {
+        let ratio = 1;
+        if(cx < x1 + iw * 0.5) {
+          xl = cx - x1;
+        }
+        else {
+          xl = x2 - cx;
+        }
+        if(cy < y1 + ih * 0.5) {
+          yl = cy - y1;
+        }
+        else {
+          yl = y2 - cy;
+        }
+        r = Math.max(xl, yl);
+        // css的角和边有对应关系，即边扩展倍数，计算为固定值
+        if(size === 'closest-corner') {
+          ratio = Math.sqrt(2);
+        }
+        xl *= ratio;
+        yl *= ratio;
+        r *= ratio;
+      }
+    }
+    else {
+      if(cx <= x1) {
+        xl = x1 - cx + iw;
+      }
+      else if(cx >= x2) {
+        xl = cx - x2 + iw;
+      }
+      else if(cx < x1 + iw * 0.5) {
         xl = x2 - cx;
       }
-      if(cy < y1 + ih * 0.5) {
-        yl = cy - y1;
-      }
       else {
+        xl = cx - x1;
+      }
+      if(cy <= y1) {
+        yl = y1 - cy + ih;
+      }
+      else if(cy >= y2) {
+        yl = cy - y2 + ih;
+      }
+      else if(cy < y1 + ih * 0.5) {
         yl = y2 - cy;
       }
-      r = Math.min(xl, yl);
-      // css的角和边有对应关系，即边扩展倍数，计算为固定值
-      if(size === 'closest-corner') {
+      else {
+        yl = cy - y1;
+      }
+      r = Math.max(xl, yl);
+      if(size !== 'farthest-side') {
         ratio = Math.sqrt(2);
       }
       xl *= ratio;
       yl *= ratio;
-      if(shape === 'circle') {
-        ax = cx + r;
-        ay = cy;
-        bx = cx;
-        by = cy + r;
-      }
-      else {
-        r *= ratio;
-        ax = cx + xl * ratio;
-        ay = cy;
-        bx = cx;
-        by = cy + yl * ratio;
-      }
     }
   }
-  else {
-    if(cx <= x1) {
-      xl = x1 - cx + iw;
-    }
-    else if(cx >= x2) {
-      xl = cx - x2 + iw;
-    }
-    else if(cx < x1 + iw * 0.5) {
-      xl = x2 - cx;
-    }
-    else {
-      xl = cx - x1;
-    }
-    if(cy <= y1) {
-      yl = y1 - cy + ih;
-    }
-    else if(cy >= y2) {
-      yl = cy - y2 + ih;
-    }
-    else if(cy < y1 + ih * 0.5) {
-      yl = y2 - cy;
-    }
-    else {
-      yl = cy - y1;
-    }
-    r = Math.max(xl, yl);
-    if(size !== 'farthest-side') {
-      ratio = Math.sqrt(2);
-    }
-    if(shape === 'circle') {
-      ax = cx + r;
-      ay = cy;
-      bx = cx;
-      by = cy + r;
-    }
-    else {
-      r *= ratio;
-      ax = cx + xl * ratio;
-      ay = cy;
-      bx = cx;
-      by = cy + yl * ratio;
-    }
+  if(shape === 'circle') {
+    xl = yl = r;
   }
-  return [cx, cy, r, xl, yl, ax, ay, bx, by];
+  return [cx, cy, r, xl, yl, d];
 }
 
 function parseGradient(s) {
@@ -353,7 +359,7 @@ function parseGradient(s) {
       }
       // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
       else {
-        let points = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)/.exec(gradient[2]);
+        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
         if(points) {
           o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
         }
@@ -363,13 +369,20 @@ function parseGradient(s) {
       }
     }
     else if(o.k === 'radial') {
-      o.s = gradient[2].indexOf('ellipse') > -1 ? 'ellipse' : 'circle';
+      o.s = gradient[2].indexOf('circle') > -1 ? 'circle' : 'ellipse';
       let size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
       if(size) {
         o.z = size[0].toLowerCase();
       }
+      // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
       else {
-        o.z = 'farthest-corner';
+        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+        if(points) {
+          o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4]), parseFloat(points[5]), parseFloat(points[6])];
+        }
+        else {
+          o.z = 'farthest-corner';
+        }
       }
       let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
@@ -454,26 +467,32 @@ function getLinear(v, d, ox, oy, cx, cy, w, h) {
 function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
-  let [cx, cy, r, xl, yl] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
+  let [cx, cy, r, xl, yl, d] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
   // closest在矩形外时无效
   if(r === 0) {
     return;
   }
   // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
-  let matrix;
-  if(xl !== yl) {
+  let matrix, scx = 1, scy = 1;
+  if(xl !== yl || d) {
     matrix = [1, 0, 0, 1, 0, 0];
     if(xl !== r) {
-      let p = xl / r;
+      scx = xl / r;
       let d = cx - x1;
-      cx = x1 + d / p;
-      matrix[0] = p;
+      cx = x1 + d / scx;
+      matrix[0] = scx;
     }
     if(yl !== r) {
-      let p = yl / r;
+      scy = yl / r;
       let d = cy - y1;
-      cy = y1 + d / p;
-      matrix[3] = p;
+      cy = y1 + d / scy;
+      matrix[3] = scy;
+    }
+    if(d) {
+      let sin = Math.sin(d);
+      let cos = Math.cos(d);
+      let m = [cos, sin, -sin, cos, 0, 0];
+      matrix = mx.multiply(m, matrix);
     }
   }
   let stop = getColorStop(v, r);
@@ -482,12 +501,18 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
     cy,
     r,
     stop,
+    scx,
+    scy,
     matrix,
+    d,
   };
 }
+
+function getConic() {}
 
 export default {
   parseGradient,
   getLinear,
   getRadial,
+  getConic,
 };

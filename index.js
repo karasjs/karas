@@ -2424,111 +2424,115 @@
 
 
   function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
-    // 默认椭圆a是水平轴，b是垂直轴
-    var cx, cy, ax, ay, bx, by;
-
-    if (position[0][1] === PX) {
-      cx = x1 + position[0][0];
-    } else {
-      cx = x1 + position[0][0] * iw * 0.01;
-    }
-
-    if (position[1][1] === PX) {
-      cy = y1 + position[1][0];
-    } else {
-      cy = y1 + position[1][0] * ih * 0.01;
-    }
-
-    var xl,
+    var cx,
+        cy,
+        xl,
         yl,
         r,
-        ratio = 1;
+        d = 0; // 扩展的from to格式
 
-    if (size === 'closest-side' || size === 'closest-corner') {
-      // 在边外特殊情况只有end颜色填充
-      if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-        r = 0;
-        ax = bx = cx;
-        ay = by = cy;
+    if (Array.isArray(size)) {
+      cx = x1 + size[0] * iw;
+      cy = y1 + size[1] * ih;
+      xl = Math.sqrt(Math.pow(x1 + size[2] * iw - cx, 2) + Math.pow(y1 + size[3] * ih - cy, 2));
+      yl = Math.sqrt(Math.pow(x1 + size[4] * iw - cx, 2) + Math.pow(y1 + size[5] * ih - cy, 2));
+      r = Math.max(xl, yl); // 看旋转
+
+      if (size[2] >= size[0]) {
+        if (size[3] >= size[1]) {
+          d = Math.asin(size[3] - size[1] / xl);
+        } else {
+          d = -Math.asin(size[1] - size[3] / xl);
+        }
       } else {
-        var _ratio = 1;
-
-        if (cx < x1 + iw * 0.5) {
-          xl = cx - x1;
+        if (size[3] >= size[1]) {
+          d = 180 - Math.asin(size[3] - size[1] / xl);
         } else {
-          xl = x2 - cx;
-        }
-
-        if (cy < y1 + ih * 0.5) {
-          yl = cy - y1;
-        } else {
-          yl = y2 - cy;
-        }
-
-        r = Math.min(xl, yl); // css的角和边有对应关系，即边扩展倍数，计算为固定值
-
-        if (size === 'closest-corner') {
-          _ratio = Math.sqrt(2);
-        }
-
-        xl *= _ratio;
-        yl *= _ratio;
-
-        if (shape === 'circle') {
-          ax = cx + r;
-          ay = cy;
-          bx = cx;
-          by = cy + r;
-        } else {
-          r *= _ratio;
-          ax = cx + xl * _ratio;
-          ay = cy;
-          bx = cx;
-          by = cy + yl * _ratio;
+          d = Math.asin(size[1] - size[3] / xl) - 180;
         }
       }
     } else {
-      if (cx <= x1) {
-        xl = x1 - cx + iw;
-      } else if (cx >= x2) {
-        xl = cx - x2 + iw;
-      } else if (cx < x1 + iw * 0.5) {
-        xl = x2 - cx;
+      // 默认椭圆a是水平轴，b是垂直轴
+      if (position[0][1] === PX) {
+        cx = x1 + position[0][0];
       } else {
-        xl = cx - x1;
+        cx = x1 + position[0][0] * iw * 0.01;
       }
 
-      if (cy <= y1) {
-        yl = y1 - cy + ih;
-      } else if (cy >= y2) {
-        yl = cy - y2 + ih;
-      } else if (cy < y1 + ih * 0.5) {
-        yl = y2 - cy;
+      if (position[1][1] === PX) {
+        cy = y1 + position[1][0];
       } else {
-        yl = cy - y1;
+        cy = y1 + position[1][0] * ih * 0.01;
       }
 
-      r = Math.max(xl, yl);
+      var ratio = 1;
 
-      if (size !== 'farthest-side') {
-        ratio = Math.sqrt(2);
-      }
+      if (size === 'closest-side' || size === 'closest-corner') {
+        // 在边外特殊情况只有end颜色填充
+        if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
+          r = 0;
+        } else {
+          var _ratio = 1;
 
-      if (shape === 'circle') {
-        ax = cx + r;
-        ay = cy;
-        bx = cx;
-        by = cy + r;
+          if (cx < x1 + iw * 0.5) {
+            xl = cx - x1;
+          } else {
+            xl = x2 - cx;
+          }
+
+          if (cy < y1 + ih * 0.5) {
+            yl = cy - y1;
+          } else {
+            yl = y2 - cy;
+          }
+
+          r = Math.max(xl, yl); // css的角和边有对应关系，即边扩展倍数，计算为固定值
+
+          if (size === 'closest-corner') {
+            _ratio = Math.sqrt(2);
+          }
+
+          xl *= _ratio;
+          yl *= _ratio;
+          r *= _ratio;
+        }
       } else {
-        r *= ratio;
-        ax = cx + xl * ratio;
-        ay = cy;
-        bx = cx;
-        by = cy + yl * ratio;
+        if (cx <= x1) {
+          xl = x1 - cx + iw;
+        } else if (cx >= x2) {
+          xl = cx - x2 + iw;
+        } else if (cx < x1 + iw * 0.5) {
+          xl = x2 - cx;
+        } else {
+          xl = cx - x1;
+        }
+
+        if (cy <= y1) {
+          yl = y1 - cy + ih;
+        } else if (cy >= y2) {
+          yl = cy - y2 + ih;
+        } else if (cy < y1 + ih * 0.5) {
+          yl = y2 - cy;
+        } else {
+          yl = cy - y1;
+        }
+
+        r = Math.max(xl, yl);
+
+        if (size !== 'farthest-side') {
+          ratio = Math.sqrt(2);
+        }
+
+        xl *= ratio;
+        yl *= ratio;
       }
     }
 
-    return [cx, cy, r, xl, yl, ax, ay, bx, by];
+    if (shape === 'circle') {
+      xl = yl = r;
+    }
+
+    return [cx, cy, r, xl, yl, d];
   }
 
   function parseGradient(s) {
@@ -2546,7 +2550,7 @@
           o.d = getLinearDeg(deg[0].toLowerCase());
         } // 扩展支持从a点到b点相对坐标，而不是css角度，sketch等ui软件中用此格式
         else {
-            var points = /([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)/.exec(gradient[2]);
+            var points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
 
             if (points) {
               o.d = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
@@ -2555,14 +2559,21 @@
             }
           }
       } else if (o.k === 'radial') {
-        o.s = gradient[2].indexOf('ellipse') > -1 ? 'ellipse' : 'circle';
+        o.s = gradient[2].indexOf('circle') > -1 ? 'circle' : 'ellipse';
         var size = /(closest|farthest)-(side|corner)/i.exec(gradient[2]);
 
         if (size) {
           o.z = size[0].toLowerCase();
-        } else {
-          o.z = 'farthest-corner';
-        }
+        } // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
+        else {
+            var _points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+
+            if (_points) {
+              o.z = [parseFloat(_points[1]), parseFloat(_points[2]), parseFloat(_points[3]), parseFloat(_points[4]), parseFloat(_points[5]), parseFloat(_points[6])];
+            } else {
+              o.z = 'farthest-corner';
+            }
+          }
 
         var position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
 
@@ -2657,12 +2668,13 @@
     var h = y2 - y1;
 
     var _calRadialRadius = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2),
-        _calRadialRadius2 = _slicedToArray(_calRadialRadius, 5),
+        _calRadialRadius2 = _slicedToArray(_calRadialRadius, 6),
         cx = _calRadialRadius2[0],
         cy = _calRadialRadius2[1],
         r = _calRadialRadius2[2],
         xl = _calRadialRadius2[3],
-        yl = _calRadialRadius2[4]; // closest在矩形外时无效
+        yl = _calRadialRadius2[4],
+        d = _calRadialRadius2[5]; // closest在矩形外时无效
 
 
     if (r === 0) {
@@ -2670,25 +2682,36 @@
     } // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
 
 
-    var matrix;
+    var matrix,
+        scx = 1,
+        scy = 1;
 
-    if (xl !== yl) {
+    if (xl !== yl || d) {
       matrix = [1, 0, 0, 1, 0, 0];
 
       if (xl !== r) {
-        var p = xl / r;
-        var d = cx - x1;
-        cx = x1 + d / p;
-        matrix[0] = p;
+        scx = xl / r;
+
+        var _d = cx - x1;
+
+        cx = x1 + _d / scx;
+        matrix[0] = scx;
       }
 
       if (yl !== r) {
-        var _p3 = yl / r;
+        scy = yl / r;
 
-        var _d = cy - y1;
+        var _d2 = cy - y1;
 
-        cy = y1 + _d / _p3;
-        matrix[3] = _p3;
+        cy = y1 + _d2 / scy;
+        matrix[3] = scy;
+      }
+
+      if (d) {
+        var sin = Math.sin(d);
+        var cos = Math.cos(d);
+        var m = [cos, sin, -sin, cos, 0, 0];
+        matrix = mx.multiply(m, matrix);
       }
     }
 
@@ -2698,14 +2721,20 @@
       cy: cy,
       r: r,
       stop: stop,
-      matrix: matrix
+      scx: scx,
+      scy: scy,
+      matrix: matrix,
+      d: d
     };
   }
+
+  function getConic() {}
 
   var gradient = {
     parseGradient: parseGradient,
     getLinear: getLinear,
-    getRadial: getRadial
+    getRadial: getRadial,
+    getConic: getConic
   };
 
   var DOM = {
@@ -11991,35 +12020,82 @@
     }
   }
 
-  function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
-    var method = arguments.length > 16 && arguments[16] !== undefined ? arguments[16] : 'fill';
+  function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+    var method = arguments.length > 17 && arguments[17] !== undefined ? arguments[17] : 'fill';
     // radial渐变时ellipse形状会有xr/yr/matrix，用以从圆缩放到椭圆
-    var matrix;
+    var matrix, scx, scy, deg, cx, cy;
 
     if (Array.isArray(color)) {
-      matrix = color[1];
+      scx = color[1];
+      scy = color[2];
+      deg = color[3];
+      matrix = color[4];
+      cx = color[5];
+      cy = color[6];
       color = color[0];
     }
 
+    var originW = w,
+        originH = h;
+
     if (matrix) {
-      if (matrix[0] !== 1) {
-        w /= matrix[0];
+      if (scx !== 1) {
+        w /= scx;
       }
 
-      if (matrix[3] !== 1) {
-        h /= matrix[3];
+      if (scy !== 1) {
+        h /= scy;
       }
     } // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
 
 
-    var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+    var list;
+
+    if (deg) {
+      list = border.calRadius(x, y, originW, originH, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+    } else {
+      list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+    }
 
     if (renderMode === mode.CANVAS) {
-      if (matrix) {
+      // 有旋转的椭圆特殊处理画更大的，原本位置用clip()截取
+      if (deg) {
         ctx.save();
-        var tfo = [x, y];
+        ctx.beginPath();
+
+        if (list) {
+          canvasPolygon$1(ctx, list);
+        } else {
+          ctx.rect(x, y, originW, originH);
+        }
+
+        ctx.clip();
+        ctx.closePath();
+        var tfo = [cx, cy];
         var t = tf.calMatrixByOrigin(matrix, tfo);
         ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
+        ctx.beginPath();
+
+        if (ctx.fillStyle !== color) {
+          ctx.fillStyle = color;
+        } // 已经clip()过，这里简单绘制，但是要扩展尺寸，以防旋转导致不满，2倍足以
+
+
+        ctx.rect(x - w * 2, y - h * 2, w * 4, h * 4);
+        ctx[method]();
+        ctx.closePath();
+        ctx.restore();
+        return;
+      } // 无旋转的椭圆有matrix，用缩放来完成
+
+
+      if (matrix) {
+        ctx.save();
+        var _tfo = [x, y];
+
+        var _t = tf.calMatrixByOrigin(matrix, _tfo);
+
+        ctx.setTransform(_t[0], _t[1], _t[2], _t[3], _t[4], _t[5]);
       }
 
       ctx.beginPath();
@@ -12041,7 +12117,47 @@
         ctx.restore();
       }
     } else if (renderMode === mode.SVG) {
-      if (list) {
+      if (deg) {
+        var clip;
+
+        var _t2;
+
+        if (matrix) {
+          var _tfo2 = [cx, cy];
+          _t2 = tf.calMatrixByOrigin(matrix, _tfo2);
+        }
+
+        if (list) {
+          clip = defs.add({
+            tagName: 'clipPath',
+            children: [{
+              tagName: 'path',
+              props: [['d', svgPolygon$1(list)], ['fill', '#FFF'], ['transform', "matrix(".concat(joinArr$1(mx.inverse(_t2), ','), ")")]]
+            }]
+          });
+        } else {
+          clip = defs.add({
+            tagName: 'clipPath',
+            children: [{
+              tagName: 'rect',
+              props: [['x', x], ['y', y], ['width', originW], ['height', originH], ['fill', '#FFF'], ['transform', "matrix(".concat(joinArr$1(mx.inverse(_t2), ','), ")")]]
+            }]
+          });
+        }
+
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'rect',
+          props: [['x', x - w * 2], ['y', y - h * 2], ['width', w * 4], ['height', h * 4], ['fill', color], ['clip-path', 'url(#' + clip + ')']]
+        });
+
+        if (_t2) {
+          var bb = xom.virtualDom.bb;
+          bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(_t2, ','), ")")]);
+        }
+
+        return;
+      } else if (list) {
         var d = svgPolygon$1(list);
         xom.virtualDom.bb.push({
           type: 'item',
@@ -12057,12 +12173,13 @@
       }
 
       if (matrix) {
-        var _tfo = [x, y];
+        var _tfo3 = [x, y];
 
-        var _t = tf.calMatrixByOrigin(matrix, _tfo);
+        var _t3 = tf.calMatrixByOrigin(matrix, _tfo3);
 
-        var bb = xom.virtualDom.bb;
-        bb[bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(_t, ','), ")")]);
+        var _bb = xom.virtualDom.bb;
+
+        _bb[_bb.length - 1].props.push(['transform', "matrix(".concat(joinArr$1(_t3, ','), ")")]);
       }
     }
   }
@@ -13593,7 +13710,7 @@
 
 
         if (backgroundColor[3] > 0) {
-          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR$1], x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         } // 渐变或图片叠加
 
 
@@ -13800,7 +13917,7 @@
                 if (renderMode === mode.CANVAS) {
                   if (needMask) {
                     ctx.save();
-                    renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
+                    renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
                   } // 先画不考虑repeat的中心声明的
 
 
@@ -13870,7 +13987,7 @@
             var gd = __cacheStyle[BACKGROUND_IMAGE$1];
 
             if (gd) {
-              renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+              renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
             }
           }
         } // boxShadow可能会有多个
@@ -14039,9 +14156,11 @@
             res = this.__getRg(renderMode, ctx, defs, _gd);
 
             if (_gd.matrix) {
-              res = [res, _gd.matrix];
+              res = [res, _gd.scx, _gd.scy, _gd.d, _gd.matrix, _gd.cx, _gd.cy];
             }
           }
+        } else if (k === 'conic') {
+          var _gd2 = gradient.getConic(v, d, p, x2, y2, x3, y3);
         }
 
         return res;
@@ -14059,6 +14178,29 @@
           var uuid = defs.add({
             tagName: 'linearGradient',
             props: [['x1', gd.x1], ['y1', gd.y1], ['x2', gd.x2], ['y2', gd.y2]],
+            children: gd.stop.map(function (item) {
+              return {
+                tagName: 'stop',
+                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
+              };
+            })
+          });
+          return 'url(#' + uuid + ')';
+        }
+      }
+    }, {
+      key: "__getRg",
+      value: function __getRg(renderMode, ctx, defs, gd) {
+        if (renderMode === mode.CANVAS) {
+          var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+          gd.stop.forEach(function (item) {
+            rg.addColorStop(item[1], item[0]);
+          });
+          return rg;
+        } else if (renderMode === mode.SVG) {
+          var uuid = defs.add({
+            tagName: 'radialGradient',
+            props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
             children: gd.stop.map(function (item) {
               return {
                 tagName: 'stop',
@@ -14115,29 +14257,6 @@
           parent.__cancelCache();
 
           parent = parent.domParent;
-        }
-      }
-    }, {
-      key: "__getRg",
-      value: function __getRg(renderMode, ctx, defs, gd) {
-        if (renderMode === mode.CANVAS) {
-          var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-          gd.stop.forEach(function (item) {
-            rg.addColorStop(item[1], item[0]);
-          });
-          return rg;
-        } else if (renderMode === mode.SVG) {
-          var uuid = defs.add({
-            tagName: 'radialGradient',
-            props: [['cx', gd.cx], ['cy', gd.cy], ['r', gd.r]],
-            children: gd.stop.map(function (item) {
-              return {
-                tagName: 'stop',
-                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
-              };
-            })
-          });
-          return 'url(#' + uuid + ')';
         }
       }
     }, {

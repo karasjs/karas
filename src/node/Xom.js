@@ -167,24 +167,63 @@ function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
   }
 }
 
-function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
+function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
   // radial渐变时ellipse形状会有xr/yr/matrix，用以从圆缩放到椭圆
-  let matrix;
+  let matrix, scx, scy, deg, cx, cy;
   if(Array.isArray(color)) {
-    matrix = color[1];
+    scx = color[1];
+    scy = color[2];
+    deg = color[3];
+    matrix = color[4];
+    cx = color[5];
+    cy = color[6];
     color = color[0];
   }
+  let originW = w, originH = h;
   if(matrix) {
-    if(matrix[0] !== 1) {
-      w /= matrix[0];
+    if(scx !== 1) {
+      w /= scx;
     }
-    if(matrix[3] !== 1) {
-      h /= matrix[3];
+    if(scy !== 1) {
+      h /= scy;
     }
   }
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  let list;
+  if(deg) {
+    list = border.calRadius(x, y, originW, originH, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  }
+  else {
+    list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  }
   if(renderMode === mode.CANVAS) {
+    // 有旋转的椭圆特殊处理画更大的，原本位置用clip()截取
+    if(deg) {
+      ctx.save();
+      ctx.beginPath();
+      if(list) {
+        canvasPolygon(ctx, list);
+      }
+      else {
+        ctx.rect(x, y, originW, originH);
+      }
+      ctx.clip();
+      ctx.closePath();
+      let tfo = [cx, cy];
+      let t = transform.calMatrixByOrigin(matrix, tfo);
+      ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
+      ctx.beginPath();
+      if(ctx.fillStyle !== color) {
+        ctx.fillStyle = color;
+      }
+      // 已经clip()过，这里简单绘制，但是要扩展尺寸，以防旋转导致不满，2倍足以
+      ctx.rect(x - w * 2, y - h * 2, w * 4, h * 4);
+      ctx[method]();
+      ctx.closePath();
+      ctx.restore();
+      return;
+    }
+    // 无旋转的椭圆有matrix，用缩放来完成
     if(matrix) {
       ctx.save();
       let tfo = [x, y];
@@ -208,7 +247,61 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, xom, btw, brw, bbw, blw, 
     }
   }
   else if(renderMode === mode.SVG) {
-    if(list) {
+    if(deg) {
+      let clip;
+      let t;
+      if(matrix) {
+        let tfo = [cx, cy];
+        t = transform.calMatrixByOrigin(matrix, tfo);
+      }
+      if(list) {
+        clip = defs.add({
+          tagName: 'clipPath',
+          children: [{
+            tagName: 'path',
+            props: [
+              ['d', svgPolygon(list)],
+              ['fill', '#FFF'],
+              ['transform', `matrix(${joinArr(mx.inverse(t), ',')})`],
+            ],
+          }],
+        });
+      }
+      else {
+        clip = defs.add({
+          tagName: 'clipPath',
+          children: [{
+            tagName: 'rect',
+            props: [
+              ['x', x],
+              ['y', y],
+              ['width', originW],
+              ['height', originH],
+              ['fill', '#FFF'],
+              ['transform', `matrix(${joinArr(mx.inverse(t), ',')})`],
+            ],
+          }],
+        });
+      }
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'rect',
+        props: [
+          ['x', x - w * 2],
+          ['y', y - h * 2],
+          ['width', w * 4],
+          ['height', h * 4],
+          ['fill', color],
+          ['clip-path', 'url(#' + clip + ')'],
+        ],
+      });
+      if(t) {
+        let bb = xom.virtualDom.bb;
+        bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(t, ',')})`]);
+      }
+      return;
+    }
+    else if(list) {
       let d = svgPolygon(list);
       xom.virtualDom.bb.push({
         type: 'item',
@@ -1871,7 +1964,7 @@ class Xom extends Node {
     }
     // 背景色垫底
     if(backgroundColor[3] > 0) {
-      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], x2, y2, clientWidth, clientHeight, ctx, this,
+      renderBgc(renderMode, __cacheStyle[BACKGROUND_COLOR], x2, y2, clientWidth, clientHeight, ctx, defs, this,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
         borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
     }
@@ -2061,7 +2154,7 @@ class Xom extends Node {
             if(renderMode === mode.CANVAS) {
               if(needMask) {
                 ctx.save();
-                renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, this,
+                renderBgc(renderMode, '#FFF', x2, y2, clientWidth, clientHeight, ctx, defs, this,
                   borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
                   borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius, 'clip');
               }
@@ -2135,7 +2228,7 @@ class Xom extends Node {
       else if(backgroundImage.k) {
         let gd = __cacheStyle[BACKGROUND_IMAGE];
         if(gd) {
-          renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, this,
+          renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, defs, this,
             borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
             borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
         }
@@ -2266,9 +2359,12 @@ class Xom extends Node {
       if(gd) {
         res = this.__getRg(renderMode, ctx, defs, gd);
         if(gd.matrix) {
-          res = [res, gd.matrix];
+          res = [res, gd.scx, gd.scy, gd.d, gd.matrix, gd.cx, gd.cy];
         }
       }
+    }
+    else if(k === 'conic') {
+      let gd = gradient.getConic(v, d, p, x2, y2, x3, y3);
     }
     return res;
   }
@@ -2289,6 +2385,36 @@ class Xom extends Node {
           ['y1', gd.y1],
           ['x2', gd.x2],
           ['y2', gd.y2]
+        ],
+        children: gd.stop.map(item => {
+          return {
+            tagName: 'stop',
+            props: [
+              ['stop-color', item[0]],
+              ['offset', item[1] * 100 + '%']
+            ],
+          };
+        }),
+      });
+      return 'url(#' + uuid + ')';
+    }
+  }
+
+  __getRg(renderMode, ctx, defs, gd) {
+    if(renderMode === mode.CANVAS) {
+      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
+      gd.stop.forEach(item => {
+        rg.addColorStop(item[1], item[0]);
+      });
+      return rg;
+    }
+    else if(renderMode === mode.SVG) {
+      let uuid = defs.add({
+        tagName: 'radialGradient',
+        props: [
+          ['cx', gd.cx],
+          ['cy', gd.cy],
+          ['r', gd.r]
         ],
         children: gd.stop.map(item => {
           return {
@@ -2339,36 +2465,6 @@ class Xom extends Node {
     while(parent) {
       parent.__cancelCache();
       parent = parent.domParent;
-    }
-  }
-
-  __getRg(renderMode, ctx, defs, gd) {
-    if(renderMode === mode.CANVAS) {
-      let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
-      gd.stop.forEach(item => {
-        rg.addColorStop(item[1], item[0]);
-      });
-      return rg;
-    }
-    else if(renderMode === mode.SVG) {
-      let uuid = defs.add({
-        tagName: 'radialGradient',
-        props: [
-          ['cx', gd.cx],
-          ['cy', gd.cy],
-          ['r', gd.r]
-        ],
-        children: gd.stop.map(item => {
-          return {
-            tagName: 'stop',
-            props: [
-              ['stop-color', item[0]],
-              ['offset', item[1] * 100 + '%']
-            ],
-          };
-        }),
-      });
-      return 'url(#' + uuid + ')';
     }
   }
 

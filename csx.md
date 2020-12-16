@@ -109,7 +109,9 @@
   * none 默认
   * url() 图片
   * linear-gradient
+    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radial-gradient
+    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
 * backgroundPositionX
   * 0 默认
   * px
@@ -135,7 +137,7 @@
   * px
 * transform
   * null 默认
-  * trnaslate/translateX/translateY
+  * translate/translateX/translateY
   * rotate/rotateZ
   * scale/scaleX/scaleY
   * skewX/skewY
@@ -342,4 +344,73 @@ json有压缩格式，即把常见的样式/动画的key简写别名，使得整
   children?: Array<Object>,
   animate?: Object/Array<{ value: Object/Array, options: Object }>,
 }
+```
+工具导出的json能看到`library`字段，这是编辑器专用，为了复用，所有的元件（可理解为一个dom类）均在library中，且有唯一`id`标识，json中使用`libraryId`来引用并实例化元件。实例化的json有`init`属性来覆盖`props`属性，相当于创建对象并传入初始化参数。
+```ts
+{
+  tagName: 'canvas',
+  children: [
+    {
+      libraryId: 0,
+      init: {
+        style: {
+          background: '#F00'
+        }
+      },
+    },
+    {
+      libraryId: 0,
+      init: {
+        style: {
+          background: '#00F'
+        }
+      },
+    }
+  ],
+  library: {
+    id: 0,
+    tagName: 'div',
+    props: {
+      style: {
+        width: 100,
+        height: 100
+      }
+    }
+  }
+}
+```
+工具导出的json还能看到`var-`开头的字段，会出现在`props`和`style`中，即插槽变量，在`karas.parse()`时可根据id传入变量替换对应的属性。另外想要替换某个特殊字段如`children`和`animate`，会看到特殊的如`var-children.0`的字段，数字标明索引。
+```ts
+let json = {
+  tagName: 'canvas',
+  children: [
+    {
+      libraryId: 0
+    }
+  ],
+  library: {
+    id: 0,
+    tagName: 'div',
+    props: {
+      style: {
+        background: '#F00',
+        'var-background': {
+          id: 'color',
+          'desc': '自定义背景色'
+        }
+      }
+    },
+    children: [],
+    'var-children': {
+      id: 'children',
+      'desc': '自定义children'
+    }
+  }
+};
+karas.parse(json, {
+  vars: {
+    color: '#00F',
+    'children.0': 'text'
+  }
+});
 ```

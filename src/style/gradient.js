@@ -283,7 +283,27 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
       cy = y1 + position[1][0] * ih * 0.01;
     }
     let ratio = 1;
-    if(size === 'closest-side' || size === 'closest-corner') {
+    if(size === 'closest-corner' && shape === 'circle') {
+      if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
+        r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
+      }
+      else {
+        if(cx < x1 + iw * 0.5) {
+          xl = cx - x1;
+        }
+        else {
+          xl = x2 - cx;
+        }
+        if(cy < y1 + ih * 0.5) {
+          yl = cy - y1;
+        }
+        else {
+          yl = y2 - cy;
+        }
+        r = Math.sqrt(Math.pow(xl, 2) + Math.pow(yl, 2));
+      }
+    }
+    else if(size === 'closest-side' || size === 'closest-corner') {
       // 在边外特殊情况只有end颜色填充
       if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
         r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
@@ -302,7 +322,7 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
         else {
           yl = y2 - cy;
         }
-        r = Math.max(xl, yl);
+        r = Math.min(xl, yl);
         // css的角和边有对应关系，即边扩展倍数，计算为固定值
         if(size === 'closest-corner') {
           ratio = Math.sqrt(2);

@@ -2599,11 +2599,12 @@
         d = 0; // 扩展的from to ratio格式，圆心、长轴坐标、短轴缩放比
 
     if (Array.isArray(size)) {
+      cx = x1 + size[0] * iw;
+      cy = y1 + size[1] * ih;
+
       if (size[4] <= 0) {
-        r = 0;
+        r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
       } else {
-        cx = x1 + size[0] * iw;
-        cy = y1 + size[1] * ih;
         xl = Math.sqrt(Math.pow((size[2] - size[0]) * iw, 2) + Math.pow((size[3] - size[1]) * ih, 2));
         yl = xl * size[4];
         r = Math.max(xl, yl); // 看旋转
@@ -2641,7 +2642,7 @@
       if (size === 'closest-side' || size === 'closest-corner') {
         // 在边外特殊情况只有end颜色填充
         if (cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-          r = 0;
+          r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
         } else {
           var _ratio = 1;
 
@@ -2872,12 +2873,7 @@
         r = _calRadialRadius2[2],
         xl = _calRadialRadius2[3],
         yl = _calRadialRadius2[4],
-        d = _calRadialRadius2[5]; // closest在矩形外时或指定缩放为0时无效
-
-
-    if (r === 0) {
-      return;
-    } // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
+        d = _calRadialRadius2[5]; // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
 
 
     var matrix,
@@ -18236,7 +18232,8 @@
       value: function __drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, isFill, isStroke) {
         var fill = res.fill,
             stroke = res.stroke,
-            strokeWidth = res.strokeWidth;
+            strokeWidth = res.strokeWidth,
+            fillRule = res.fillRule;
 
         if (renderMode === mode.CANVAS) {
           ctx.beginPath();
@@ -18250,7 +18247,7 @@
           }
 
           if (isFill && fill && fill !== 'none') {
-            ctx.fill();
+            ctx.fill(fillRule);
           }
 
           if (isStroke && stroke !== 'none' && strokeWidth > 0) {
@@ -18281,6 +18278,10 @@
 
           if (isFill && fill && fill !== 'none') {
             props.push(['fill', fill.v || fill]);
+
+            if (fillRule !== 'nonzero') {
+              props.push(['fill-rule', fillRule]);
+            }
           } else {
             props.push(['fill', 'none']);
           }
@@ -18291,7 +18292,7 @@
 
             this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
           } else {
-            props.push(['strokeWidth', 0]);
+            props.push(['stroke-width', 0]);
           }
 
           this.addGeom('path', props);

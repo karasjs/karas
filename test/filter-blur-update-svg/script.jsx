@@ -9,5 +9,5 @@ o.ref.div.updateStyle({
   filter: null,
 }, function() {
   let input = document.querySelector('#base64');
-  input.value = JSON.stringify(document.querySelector('svg').outerHTML);
+  input.value = document.querySelector('svg').outerHTML;
 });

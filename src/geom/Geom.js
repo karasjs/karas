@@ -400,6 +400,7 @@ class Geom extends Xom {
       fill,
       stroke,
       strokeWidth,
+      fillRule,
     } = res;
     if(renderMode === mode.CANVAS) {
       ctx.beginPath();
@@ -410,7 +411,7 @@ class Geom extends Xom {
         canvasPolygon(ctx, list, dx, dy);
       }
       if(isFill && fill && fill !== 'none') {
-        ctx.fill();
+        ctx.fill(fillRule);
       }
       if(isStroke && stroke !== 'none' && strokeWidth > 0) {
         ctx.stroke();
@@ -439,6 +440,9 @@ class Geom extends Xom {
       }
       if(isFill && fill && fill !== 'none') {
         props.push(['fill', fill.v || fill]);
+        if(fillRule !== 'nonzero') {
+          props.push(['fill-rule', fillRule]);
+        }
       }
       else {
         props.push(['fill', 'none']);
@@ -449,7 +453,7 @@ class Geom extends Xom {
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
       }
       else {
-        props.push(['strokeWidth', 0]);
+        props.push(['stroke-width', 0]);
       }
       this.addGeom('path', props);
     }

@@ -11,7 +11,8 @@ let o = karas.render(
       [0.2, 0.8],
       [0.5, 0],
       [0.8, 0.8],
-    ]}/>  </svg>,
+    ]}/>
+  </svg>,
   '#test'
 );
 let input = document.querySelector('#base64');

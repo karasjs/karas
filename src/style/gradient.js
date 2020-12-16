@@ -240,12 +240,12 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
   let cx, cy, xl, yl, r, d = 0;
   // 扩展的from to ratio格式，圆心、长轴坐标、短轴缩放比
   if(Array.isArray(size)) {
+    cx = x1 + size[0] * iw;
+    cy = y1 + size[1] * ih;
     if(size[4] <= 0) {
-      r = 0;
+      r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
     }
     else {
-      cx = x1 + size[0] * iw;
-      cy = y1 + size[1] * ih;
       xl = Math.sqrt(Math.pow((size[2] - size[0]) * iw, 2) + Math.pow((size[3] - size[1]) * ih, 2));
       yl = xl * size[4];
       r = Math.max(xl, yl);
@@ -286,7 +286,7 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
     if(size === 'closest-side' || size === 'closest-corner') {
       // 在边外特殊情况只有end颜色填充
       if(cx <= x1 || cx >= x2 || cy <= y1 || cy >= y2) {
-        r = 0;
+        r = Math.min(Math.abs(cx - x1), Math.min(Math.abs(cy - y1), Math.min(Math.abs(cy - y2), Math.min(Math.abs(cx - y2)))));
       }
       else {
         let ratio = 1;
@@ -498,10 +498,6 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
   let [cx, cy, r, xl, yl, d] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
-  // closest在矩形外时或指定缩放为0时无效
-  if(r === 0) {
-    return;
-  }
   // 圆形取最小值，椭圆根据最小圆进行transform，椭圆其中一边轴和r一样，另一边则大小缩放可能
   let matrix, scx = 1, scy = 1;
   if(xl !== yl || d) {

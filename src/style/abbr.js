@@ -54,8 +54,8 @@ function parseOneBorder(style, k) {
     style[k + 'Style'] = s ? s[1] : 'solid';
   }
   if(isNil(style[k + 'Color'])) {
-    let c = /#[0-9a-f]{3,6}/i.exec(v);
-    if(c && [4, 7].indexOf(c[0].length) > -1) {
+    let c = /#[0-9a-f]{3,8}/i.exec(v);
+    if(c && [4, 7, 9].indexOf(c[0].length) > -1) {
       style[k + 'Color'] = c[0];
     }
     else if(/\btransparent\b/i.test(v)) {
@@ -114,7 +114,7 @@ export default {
         }
       }
       if(isNil(style.backgroundColor)) {
-        let bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\s*\(.+?\))/i.exec(v);
+        let bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
         if(bgc) {
           style.backgroundColor = bgc[0];
           v = v.replace(bgc[0], '');

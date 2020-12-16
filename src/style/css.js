@@ -252,13 +252,13 @@ function normalize(style, reset = []) {
   temp = style.backgroundColor;
   if(temp) {
     // 先赋值默认透明，后续操作有合法值覆盖
-    let bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
-    if(bgc && [4, 7].indexOf(bgc[0].length) > -1) {
-      res[BACKGROUND_COLOR] = [rgba2int(bgc[0]), RGBA,];
+    let bgc = /^#[0-9a-f]{3,8}/i.exec(temp);
+    if(bgc && [4, 7, 9].indexOf(bgc[0].length) > -1) {
+      res[BACKGROUND_COLOR] = [rgba2int(bgc[0]), RGBA];
     }
     else {
       bgc = /rgba?\s*\(.+\)/i.exec(temp);
-      res[BACKGROUND_COLOR] = [rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]), RGBA,];
+      res[BACKGROUND_COLOR] = [rgba2int(bgc ? bgc[0] : [0, 0, 0, 0]), RGBA];
     }
   }
   ['backgroundPositionX', 'backgroundPositionY'].forEach((k, i) => {
@@ -674,10 +674,10 @@ function normalize(style, reset = []) {
   temp = style.boxShadow;
   if(temp !== undefined) {
     let bs = null;
-    let match = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+    let match = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
     if(match) {
       match.forEach(item => {
-        let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+        let boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
         if(boxShadow) {
           bs = bs || [];
           let res = [boxShadow[1], boxShadow[2], boxShadow[3] || 0, boxShadow[4] || 0, boxShadow[5] || '#000', boxShadow[6] || 'outset'];

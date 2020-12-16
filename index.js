@@ -2803,9 +2803,9 @@
         }
       }
 
-      var v = gradient[2].match(/((#[0-9a-f]{3,6})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
+      var v = gradient[2].match(/((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
-        var res = /((?:#[0-9a-f]{3,6})|(?:rgba?\s*\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
+        var res = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
         var arr = [rgba2int$1(res[1])];
 
         if (res[2]) {
@@ -3179,9 +3179,9 @@
     }
 
     if (isNil$2(style[k + 'Color'])) {
-      var c = /#[0-9a-f]{3,6}/i.exec(v);
+      var c = /#[0-9a-f]{3,8}/i.exec(v);
 
-      if (c && [4, 7].indexOf(c[0].length) > -1) {
+      if (c && [4, 7, 9].indexOf(c[0].length) > -1) {
         style[k + 'Color'] = c[0];
       } else if (/\btransparent\b/i.test(v)) {
         style[k + 'Color'] = 'transparent';
@@ -3242,7 +3242,7 @@
         }
 
         if (isNil$2(style.backgroundColor)) {
-          var bgc = /^(transparent)|(#[0-9a-f]{3,6})|(rgba?\s*\(.+?\))/i.exec(v);
+          var bgc = /^(transparent)|(#[0-9a-f]{3,8})|(rgba?\s*\(.+?\))/i.exec(v);
 
           if (bgc) {
             style.backgroundColor = bgc[0];
@@ -4099,9 +4099,9 @@
 
     if (temp) {
       // 先赋值默认透明，后续操作有合法值覆盖
-      var bgc = /^#[0-9a-f]{3,6}/i.exec(temp);
+      var bgc = /^#[0-9a-f]{3,8}/i.exec(temp);
 
-      if (bgc && [4, 7].indexOf(bgc[0].length) > -1) {
+      if (bgc && [4, 7, 9].indexOf(bgc[0].length) > -1) {
         res[BACKGROUND_COLOR] = [rgba2int$2(bgc[0]), RGBA];
       } else {
         bgc = /rgba?\s*\(.+\)/i.exec(temp);
@@ -4538,11 +4538,11 @@
     if (temp !== undefined) {
       var _bs = null;
 
-      var _match4 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,6})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
+      var _match4 = (temp || '').match(/(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?)\s+(-?[\d.]+(px)?\s*)?(-?[\d.]+(px)?\s*)?(((transparent)|(#[0-9a-f]{3,8})|(rgba?\(.+?\)))\s*)?(inset|outset)?\s*,?/ig);
 
       if (_match4) {
         _match4.forEach(function (item) {
-          var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,6})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
+          var boxShadow = /(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?)\s+(-?[\d.]+(?:px)?\s*)?(-?[\d.]+(?:px)?\s*)?(?:((?:transparent)|(?:#[0-9a-f]{3,8})|(?:rgba?\(.+\)))\s*)?(inset|outset)?/i.exec(item);
 
           if (boxShadow) {
             _bs = _bs || [];
@@ -25810,7 +25810,7 @@
     Cache: Cache
   };
 
-  var version = "0.45.0";
+  var version = "0.45.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

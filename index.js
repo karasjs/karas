@@ -18018,8 +18018,6 @@
             } else {
               __cacheStyle[k] = 'none';
             }
-          } else {
-            computedStyle[k] = __cacheStyle[k] = 'none';
           }
         });
 
@@ -18034,16 +18032,12 @@
           } else {
             computedStyle[STROKE_WIDTH] = 0;
           }
-        } else {
-          computedStyle[STROKE_WIDTH] = 0;
         }
 
         if (isNil$7(__cacheStyle[STROKE_DASHARRAY$1])) {
           __cacheStyle[STROKE_DASHARRAY$1] = true;
           computedStyle[STROKE_DASHARRAY$1] = currentStyle[STROKE_DASHARRAY$1];
           __cacheStyle[STROKE_DASHARRAY_STR] = joinArr$2(currentStyle[STROKE_DASHARRAY$1], ',');
-        } else {
-          computedStyle[STROKE_DASHARRAY$1] = [];
         } // 直接赋值的
 
 
@@ -18255,7 +18249,7 @@
             canvasPolygon$3(ctx, list, dx, dy);
           }
 
-          if (isFill && fill !== 'none') {
+          if (isFill && fill && fill !== 'none') {
             ctx.fill();
           }
 
@@ -18281,11 +18275,11 @@
 
           var props = [['d', d]];
 
-          if (fill === 'none' && stroke === 'none') {
+          if (!fill || fill === 'none' && !stroke || stroke === 'none') {
             return;
           }
 
-          if (isFill && fill !== 'none') {
+          if (isFill && fill && fill !== 'none') {
             props.push(['fill', fill.v || fill]);
           } else {
             props.push(['fill', 'none']);
@@ -24291,7 +24285,7 @@
           }
         }
 
-        if (rebuildSE) {
+        if (rebuild || rebuildSE) {
           if (isMulti) {
             __cacheProps.list = __cacheProps.list2.map(function (item, i) {
               if (Array.isArray(item)) {

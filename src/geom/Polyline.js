@@ -344,7 +344,7 @@ class Polyline extends Geom {
         __cacheProps.len = getLength(__cacheProps.list2, isMulti);
       }
     }
-    if(rebuildSE) {
+    if(rebuild || rebuildSE) {
       if(isMulti) {
         __cacheProps.list = __cacheProps.list2.map((item, i) => {
           if(Array.isArray(item)) {

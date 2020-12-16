@@ -177,9 +177,6 @@ class Geom extends Xom {
           __cacheStyle[k] = 'none';
         }
       }
-      else {
-        computedStyle[k] = __cacheStyle[k] = 'none';
-      }
     });
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
@@ -194,16 +191,10 @@ class Geom extends Xom {
         computedStyle[STROKE_WIDTH] = 0;
       }
     }
-    else {
-      computedStyle[STROKE_WIDTH] = 0;
-    }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
       computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY];
       __cacheStyle[STROKE_DASHARRAY_STR] = joinArr(currentStyle[STROKE_DASHARRAY], ',');
-    }
-    else {
-      computedStyle[STROKE_DASHARRAY] = [];
     }
     // 直接赋值的
     [
@@ -418,7 +409,7 @@ class Geom extends Xom {
       else {
         canvasPolygon(ctx, list, dx, dy);
       }
-      if(isFill && fill !== 'none') {
+      if(isFill && fill && fill !== 'none') {
         ctx.fill();
       }
       if(isStroke && stroke !== 'none' && strokeWidth > 0) {
@@ -443,10 +434,10 @@ class Geom extends Xom {
       let props = [
         ['d', d],
       ];
-      if(fill === 'none' && stroke === 'none') {
+      if(!fill || fill === 'none' && !stroke || stroke === 'none') {
         return;
       }
-      if(isFill && fill !== 'none') {
+      if(isFill && fill && fill !== 'none') {
         props.push(['fill', fill.v || fill]);
       }
       else {

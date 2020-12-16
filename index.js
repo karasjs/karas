@@ -10094,6 +10094,7 @@
   var I_END_TIME = 42;
   var I_NODE_CONFIG = 43;
   var I_ROOT_CONFIG = 44;
+  var I_OUT_BEGIN_DELAY = 45;
 
   var Animation = /*#__PURE__*/function (_Event) {
     _inherits(Animation, _Event);
@@ -10182,7 +10183,8 @@
       false, // is2
       0, // endTime
       target.__config, // nodeConfig
-      root.__config // rootConfig
+      root.__config, // rootConfig
+      false // outBeginDelay
       ];
       var iterations = _this.iterations = op.iterations;
       var duration = _this.duration = op.duration;
@@ -10556,30 +10558,28 @@
 
         __config[I_FIRST_ENTER] = false; // delay仅第一次生效
 
-        if (playCount > 0) {
-          delay = 0;
-        } // 还没过前置delay
+        if (playCount > 0) ; // 还没过前置delay
         else if (currentTime < delay) {
             if (stayBegin) {
               var _currentFrame = __config[I_CURRENT_FRAME] = currentFrames[0];
 
               var _current = _currentFrame[FRAME_STYLE];
               genBeforeRefresh(_current, __config[I_KEYS], __config, root, target);
-            } // 即便不刷新，依旧执行begin和帧回调
+            } // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
 
 
-            if (currentTime === 0) {
-              __config[I_BEGIN] = true;
-            }
-
+            __config[I_OUT_BEGIN_DELAY] = true;
             __config[I_IS_DELAY] = true;
             return;
-          } // 减去delay，计算在哪一帧
+          } // 减去delay，计算在哪一帧，仅第一次生效
 
 
-        currentTime -= delay;
+        if (playCount === 0) {
+          currentTime -= delay;
+        }
 
-        if (currentTime === 0) {
+        if (currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
+          __config[I_OUT_BEGIN_DELAY] = false;
           __config[I_BEGIN] = true;
         } // 只有2帧可优化，否则2分查找当前帧
 

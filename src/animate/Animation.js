@@ -1019,6 +1019,7 @@ const I_IS2 = 41;
 const I_END_TIME = 42;
 const I_NODE_CONFIG = 43;
 const I_ROOT_CONFIG = 44;
+const I_OUT_BEGIN_DELAY = 45;
 
 class Animation extends Event {
   constructor(target, list, options) {
@@ -1103,6 +1104,7 @@ class Animation extends Event {
       0, // endTime
       target.__config, // nodeConfig
       root.__config, // rootConfig
+      false, // outBeginDelay
     ];
     let iterations = this.iterations = op.iterations;
     let duration = this.duration = op.duration;
@@ -1413,7 +1415,7 @@ class Animation extends Event {
     __config[I_FIRST_ENTER] = false;
     // delay仅第一次生效
     if(playCount > 0) {
-      delay = 0;
+      // delay = 0;
     }
     // 还没过前置delay
     else if(currentTime < delay) {
@@ -1422,16 +1424,17 @@ class Animation extends Event {
         let current = currentFrame[FRAME_STYLE];
         genBeforeRefresh(current, __config[I_KEYS], __config, root, target);
       }
-      // 即便不刷新，依旧执行begin和帧回调
-      if(currentTime === 0) {
-        __config[I_BEGIN] = true;
-      }
+      // 即便不刷新，依旧执行帧回调，同时标明让后续第一帧响应begin
+      __config[I_OUT_BEGIN_DELAY] = true;
       __config[I_IS_DELAY] = true;
       return;
     }
-    // 减去delay，计算在哪一帧
-    currentTime -= delay;
-    if(currentTime === 0) {
+    // 减去delay，计算在哪一帧，仅第一次生效
+    if(playCount === 0) {
+      currentTime -= delay;
+    }
+    if(currentTime === 0 || __config[I_OUT_BEGIN_DELAY]) {
+      __config[I_OUT_BEGIN_DELAY] = false;
       __config[I_BEGIN] = true;
     }
     // 只有2帧可优化，否则2分查找当前帧

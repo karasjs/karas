@@ -1,7 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
 import util from '../util/util';
-import painter from '../util/painter';
 import enums from '../util/enums';
 import geom from '../math/geom';
 
@@ -283,7 +281,7 @@ class Polyline extends Geom {
 
   buildCache(originX, originY) {
     let { width, height, points, controls, start, end, __cacheProps, isMulti } = this;
-    let rebuild;
+    let rebuild, rebuildSE;
     if(isNil(__cacheProps.points)) {
       rebuild = true;
       if(isMulti) {
@@ -312,18 +310,18 @@ class Polyline extends Geom {
       }
     }
     if(isNil(__cacheProps.start)) {
-      rebuild = true;
+      rebuildSE = true;
       __cacheProps.start = start;
     }
     if(isNil(__cacheProps.end)) {
-      rebuild = true;
+      rebuildSE = true;
       __cacheProps.end = end;
     }
     // points/controls有变化就需要重建顶点
     if(rebuild) {
       let { points, controls } = __cacheProps;
       if(isMulti) {
-        __cacheProps.list = points.filter(item => Array.isArray(item)).map((item, i) => {
+        __cacheProps.list2 = points.filter(item => Array.isArray(item)).map((item, i) => {
           let cl = controls[i];
           if(Array.isArray(item)) {
             return item.map((point, j) => {
@@ -334,95 +332,45 @@ class Polyline extends Geom {
             });
           }
         });
-        __cacheProps.len = getLength(__cacheProps.list, isMulti);
+        __cacheProps.len = getLength(__cacheProps.list2, isMulti);
       }
       else {
-        __cacheProps.list = points.filter(item => Array.isArray(item)).map((point, i) => {
+        __cacheProps.list2 = points.filter(item => Array.isArray(item)).map((point, i) => {
           if(i) {
             return concatPointAndControl(point, controls[i - 1]);
           }
           return point;
         });
-        __cacheProps.len = getLength(__cacheProps.list, isMulti);
+        __cacheProps.len = getLength(__cacheProps.list2, isMulti);
       }
     }
-    return rebuild;
+    if(rebuildSE) {
+      if(isMulti) {
+        __cacheProps.list = __cacheProps.list2.map((item, i) => {
+          if(Array.isArray(item)) {
+            let len = __cacheProps.len;
+            return getNewList(item, {
+              list: len.list[i],
+              total: len.total[i],
+              increase: len.increase[i],
+            }, __cacheProps.start[i], __cacheProps.end[i]);
+          }
+        });
+      }
+      else {
+        __cacheProps.list = getNewList(__cacheProps.list2, __cacheProps.len, __cacheProps.start, __cacheProps.end);
+      }
+    }
+    return rebuild || rebuildSE;
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
     if(res.break) {
       return res;
     }
-    let {
-      originX,
-      originY,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      fillRule,
-      dx,
-      dy,
-    } = res;
-    let { __cacheProps, isMulti } = this;
-    this.buildCache(originX, originY);
-    let list = __cacheProps.list;
-    if(isMulti) {
-      __cacheProps.list2 = list.map((item, i) => {
-        if(Array.isArray(item)) {
-          let len = __cacheProps.len;
-          return getNewList(item, {
-            list: len.list[i],
-            total: len.total[i],
-            increase: len.increase[i],
-          }, __cacheProps.start[i], __cacheProps.end[i]);
-        }
-      });
-    }
-    else {
-      __cacheProps.list2 = getNewList(list, __cacheProps.len, __cacheProps.start, __cacheProps.end);
-    }
-    if(renderMode === mode.SVG) {
-      if(isMulti) {
-        let d = '';
-        __cacheProps.list2.forEach(item => d += painter.svgPolygon(item));
-        __cacheProps.d = d;
-      }
-      else {
-        __cacheProps.d = painter.svgPolygon(__cacheProps.list2);
-      }
-    }
-    if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      if(isMulti) {
-        __cacheProps.list2.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
-      }
-      else {
-        painter.canvasPolygon(ctx, __cacheProps.list2, dx, dy);
-      }
-      ctx.fill(fillRule === 'evenodd' ? fillRule : 'nonzero');
-      if(strokeWidth > 0) {
-        ctx.stroke();
-      }
-      ctx.closePath();
-    }
-    else if(renderMode === mode.SVG) {
-      let props = [
-        ['d', __cacheProps.d],
-        ['fill', fill],
-        ['stroke', stroke],
-        ['stroke-width', strokeWidth]
-      ];
-      if(fillRule === 'evenodd') {
-        props.push(['fill-rule', 'evenodd']);
-      }
-      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
-      this.addGeom('path', props);
-    }
+    this.buildCache(res.originX, res.originY);
+    this.__renderPolygon(renderMode, ctx, defs, res);
     return res;
   }
 

@@ -1,8 +1,19 @@
 import mx from './matrix';
 import vector from './vector';
+import enums from '../util/enums';
 
 const H = 4 * (Math.sqrt(2) - 1) / 3;
 const { crossProduct } = vector;
+const { STYLE_KEY: {
+  WIDTH,
+  HEIGHT,
+  TRANSFORM_ORIGIN,
+} } = enums;
+
+function h(deg) {
+  deg *= 0.5;
+  return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
+}
 
 function pointInPolygon(x, y, vertexes) {
   // 先取最大最小值得一个外围矩形，在外边可快速判断false
@@ -82,8 +93,158 @@ function ellipsePoints(x, y, a, b = a) {
     [x - a, y - oy, x - ox, y - b, x, y - b],
     [x + ox, y - b, x + a, y - oy, x + a, y],
     [x + a, y + oy, x + ox, y + b, x, y + b],
-    [x - ox, y + b, x - a, y + oy, x - a, y]
+    [x - ox, y + b, x - a, y + oy, x - a, y],
   ];
+}
+
+/**
+ * 扇形圆心和半径起始角度生成4个端点和控制点
+ * 分为4个象限进行拟合，0、1、2、3
+ */
+function sectorPoints(x, y, r, begin, end) {
+  if(begin > end) {
+    [begin, end] = [end, begin];
+  }
+  let list = [];
+  let b = Math.floor(begin / 90);
+  let e = Math.floor(end / 90);
+  // 同象限直接算
+  if(b === e || (e - b) === 1 && end % 90 === 0) {
+    let h2 = h(d2r(Math.abs(begin - end)));
+    let d = h2 * r;
+    let c = Math.sqrt(Math.pow(r, 2) + Math.pow(d, 2));
+    let alpha = Math.atan(d / r);
+    if(b < 90) {
+      // 第1个交点
+      let rx = Math.sin(d2r(begin)) * r;
+      let ry = Math.cos(d2r(begin)) * r;
+      let p1 = [x + rx, y - ry];
+      // 第1个控制点
+      let deg = alpha + d2r(begin);
+      rx = Math.sin(deg) * c;
+      ry = Math.cos(deg) * c;
+      let p2 = [x + rx, y - ry];
+      // 第2个交点
+      rx = Math.sin(d2r(end)) * r;
+      ry = Math.cos(d2r(end)) * r;
+      let p4 = [x + rx, y - ry];
+      // 第2个控制点
+      deg = d2r(end) - alpha;
+      rx = Math.sin(deg) * c;
+      ry = Math.cos(deg) * c;
+      let p3 = [x + rx, y - ry];
+      list.push(p1);
+      list.push(p2.concat(p3).concat(p4));
+      // list.push([x, y]);
+    }
+    else if(b < 180) {
+      // 第1个交点
+      let rx = Math.cos(d2r(begin - 90)) * r;
+      let ry = Math.sin(d2r(begin - 90)) * r;
+      let p1 = [x + rx, y + ry];
+      // 第1个控制点
+      let deg = alpha + d2r(begin - 90);
+      rx = Math.cos(deg) * c;
+      ry = Math.sin(deg) * c;
+      let p2 = [x + rx, y + ry];
+      // 第2个交点
+      rx = Math.cos(d2r(end - 90)) * r;
+      ry = Math.sin(d2r(end - 90)) * r;
+      let p4 = [x + rx, y + ry];
+      // 第2个控制点
+      deg = d2r(end - 90) - alpha;
+      rx = Math.cos(deg) * c;
+      ry = Math.sin(deg) * c;
+      let p3 = [x + rx, y + ry];
+      list.push(p1);
+      list.push(p2.concat(p3).concat(p4));
+      // list.push([x, y]);
+    }
+    else if(b < 270) {
+      // 第1个交点
+      let rx = Math.sin(d2r(begin - 180)) * r;
+      let ry = Math.cos(d2r(begin - 180)) * r;
+      let p1 = [x - rx, y + ry];
+      // 第1个控制点
+      let deg = alpha + d2r(begin - 180);
+      rx = Math.sin(deg) * c;
+      ry = Math.cos(deg) * c;
+      let p2 = [x - rx, y + ry];
+      // 第2个交点
+      rx = Math.sin(d2r(end - 180)) * r;
+      ry = Math.cos(d2r(end - 180)) * r;
+      let p4 = [x - rx, y + ry];
+      // 第2个控制点
+      deg = d2r(end - 180) - alpha;
+      rx = Math.sin(deg) * c;
+      ry = Math.cos(deg) * c;
+      let p3 = [x - rx, y + ry];
+      list.push(p1);
+      list.push(p2.concat(p3).concat(p4));
+      // list.push([x, y]);
+    }
+    else {
+      // 第1个交点
+      let rx = Math.cos(d2r(begin - 270)) * r;
+      let ry = Math.sin(d2r(begin - 270)) * r;
+      let p1 = [x - rx, y + ry];
+      // 第1个控制点
+      let deg = alpha + d2r(begin - 270);
+      rx = Math.cos(deg) * c;
+      ry = Math.sin(deg) * c;
+      let p2 = [x - rx, y + ry];
+      // 第2个交点
+      rx = Math.cos(d2r(end - 270)) * r;
+      ry = Math.sin(d2r(end - 270)) * r;
+      let p4 = [x - rx, y + ry];
+      // 第2个控制点
+      deg = d2r(end - 270) - alpha;
+      rx = Math.cos(deg) * c;
+      ry = Math.sin(deg) * c;
+      let p3 = [x - rx, y + ry];
+      list.push(p1);
+      list.push(p2.concat(p3).concat(p4));
+      // list.push([x, y]);
+    }
+  }
+  // 跨象限循环算
+  else {
+    let i = b;
+    let temp = [];
+    for(; i <= e; i++) {
+      if(i === 0) {
+        let res = sectorPoints(x, y, r, begin, 90);
+        temp.push(res);
+      }
+      else if(i === 1) {
+        // 防止90~90这种情况，但如果begin和end都是90时又要显示
+        if(b === i || end > 90) {
+          let res = sectorPoints(x, y, r, begin < 90 ? 90 : begin, end > 180 ? 180 : end);
+          temp.push(res);
+        }
+      }
+      else if(i === 2) {
+        // 防止180~180这种情况，但如果begin和end都是90时又要显示
+        if(b === i || end > 180) {
+          let res = sectorPoints(x, y, r, begin < 180 ? 180 : begin, end > 270 ? 270 : end);
+          temp.push(res);
+        }
+      }
+      else if(i === 3) {
+        // 防止180~180这种情况，但如果begin和end都是90时又要显示
+        if(b === i || end > 270) {
+          let res = sectorPoints(x, y, r, begin < 270 ? 270 : begin, end);
+          temp.push(res);
+        }
+      }
+    }
+    // 去掉重复的首尾扇弧点
+    list = temp[0];
+    for(let i = 1, len = temp.length; i < len; i++) {
+      list.push(temp[i][1]);
+    }
+  }
+  return list;
 }
 
 /**
@@ -135,13 +296,13 @@ function isRectsInside(a, b) {
 
 function calCoordsInNode(px, py, node) {
   let { matrix = [1, 0, 0, 1, 0, 0], computedStyle = {} } = node;
-  let { width, height, transformOrigin: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
+  let { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] = [width * 0.5, height * 0.5] } = computedStyle;
   [px, py] = mx.calPoint([px * width - ox, py * height - oy], matrix);
   return [px + ox, py + oy];
 }
 
 function calPercentInNode(x, y, node) {
-  let { computedStyle: { width, height, transformOrigin: [ox, oy] } } = node;
+  let { computedStyle: { [WIDTH]: width, [HEIGHT]: height, [TRANSFORM_ORIGIN]: [ox, oy] } } = node;
   // 先求无旋转时右下角相对于原点的角度ds
   let ds = Math.atan((height - oy) / (width - ox));
   let [x1, y1] = calCoordsInNode(1, 1, node);
@@ -562,14 +723,12 @@ export default {
   // 贝塞尔曲线模拟1/4圆弧比例
   H,
   // <90任意角度贝塞尔曲线拟合圆弧的比例公式
-  h(deg) {
-    deg *= 0.5;
-    return 4 * ((1 - Math.cos(deg)) / Math.sin(deg)) / 3;
-  },
+  h,
   angleBySide,
   pointsDistance,
   triangleIncentre,
   ellipsePoints,
+  sectorPoints,
   getRectsIntersection,
   isRectsOverlap,
   isRectsInside,

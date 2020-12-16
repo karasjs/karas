@@ -1,7 +1,5 @@
 import Geom from './Geom';
-import mode from '../node/mode';
 import util from '../util/util';
-import painter from '../util/painter';
 import enums from '../util/enums';
 import geom from '../math/geom';
 
@@ -87,58 +85,13 @@ class Ellipse extends Geom {
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
     if(res.break) {
       return res;
     }
-    let {
-      cx,
-      cy,
-      fill,
-      stroke,
-      strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
-      dx,
-      dy,
-    } = res;
-    let { __cacheProps, isMulti } = this;
-    this.buildCache(cx, cy);
-    let list = __cacheProps.list;
-    if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      if(isMulti) {
-        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
-      }
-      else {
-        painter.canvasPolygon(ctx, list, dx, dy);
-      }
-      ctx.fill();
-      if(strokeWidth > 0) {
-        ctx.stroke();
-      }
-      ctx.closePath();
-    }
-    else if(renderMode === mode.SVG) {
-      let d = '';
-      if(isMulti) {
-        list.forEach(item => d += painter.svgPolygon(item));
-      }
-      else {
-        d = painter.svgPolygon(list);
-      }
-      let props = [
-        ['d', d],
-        ['fill', fill],
-        ['stroke', stroke],
-        ['stroke-width', strokeWidth]
-      ];
-      this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
-      this.addGeom('path', props);
-    }
+    this.buildCache(res.cx, res.cy);
+    this.__renderPolygon(renderMode, ctx, defs, res);
     return res;
   }
 

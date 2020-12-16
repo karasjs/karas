@@ -100,46 +100,9 @@ function svgLine(x1, y1, x2, y2, controlA, controlB, num) {
   }
 }
 
-const OFFSET = Math.PI * 0.5;
-
-function canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure, dx = 0, dy = 0) {
-  ctx.arc(cx + dx, cy + dy, r, begin * Math.PI / 180 - OFFSET, end * Math.PI / 180 - OFFSET);
-  if(edge) {
-    if(!large || !closure) {
-      ctx.lineTo(cx + dx, cy + dy);
-    }
-    ctx.lineTo(x1 + dx, y1 + dy);
-    if(strokeWidth > 0) {
-      ctx.stroke();
-    }
-  }
-  else {
-    if(strokeWidth > 0) {
-      ctx.stroke();
-    }
-    if(!large || !closure) {
-      ctx.lineTo(cx + dx, cy + dy);
-    }
-    ctx.lineTo(x1 + dx, y1 + dy);
-  }
-}
-
-function svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure) {
-  let d = closure && large
-    ? ('M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z')
-    : ('M' + cx + ',' + cy + 'L' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2 + 'z');
-  let d2;
-  if(!edge || strokeWidth > 0) {
-    d2 = 'M' + x1 + ',' + y1 + 'A' + r + ',' + r + ' 0 ' + large + ' 1 ' + x2 + ',' + y2;
-  }
-  return [d, d2];
-}
-
 export default {
   canvasPolygon,
   svgPolygon,
   canvasLine,
   svgLine,
-  canvasSector,
-  svgSector,
 };

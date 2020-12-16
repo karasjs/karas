@@ -6,6 +6,10 @@ import enums from '../util/enums';
 import mode from '../node/mode';
 import util from '../util/util';
 import level from '../refresh/level';
+import painter from '../util/painter';
+import transform from '../style/transform';
+import mx from '../math/matrix';
+import inject from '../util/inject';
 
 const {
   STYLE_KEY: {
@@ -44,7 +48,8 @@ const {
   }
 } = enums;
 const { AUTO, PX, PERCENT } = unit;
-const { int2rgba, isNil } = util;
+const { int2rgba, isNil, joinArr } = util;
+const { canvasPolygon, svgPolygon } = painter;
 
 const REGISTER = {};
 
@@ -148,23 +153,32 @@ class Geom extends Xom {
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
              sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+             paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, y1, y2, y3, y4) {
     super.__calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
       sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+      paddingTop, paddingRight, paddingBottom, paddingLeft,
       x1, x2, x3, x4, y1, y2, y3, y4);
     // geom才有的style
     [STROKE, FILL].forEach(k => {
       if(isNil(__cacheStyle[k])) {
         let v = currentStyle[k];
         computedStyle[k] = v;
-        if(v && (v.k === 'linear' || v.k === 'radial')) {
+        if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
           __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-            x2, y2, x3, y3, clientWidth, clientHeight, v);
+            x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
+            clientWidth, clientHeight, v);
         }
-        else {
+        else if(currentStyle[k][3] > 0) {
           __cacheStyle[k] = int2rgba(currentStyle[k]);
         }
+        else {
+          __cacheStyle[k] = 'none';
+        }
+      }
+      else {
+        computedStyle[k] = __cacheStyle[k] = 'none';
       }
     });
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
@@ -180,10 +194,16 @@ class Geom extends Xom {
         computedStyle[STROKE_WIDTH] = 0;
       }
     }
+    else {
+      computedStyle[STROKE_WIDTH] = 0;
+    }
     if(isNil(__cacheStyle[STROKE_DASHARRAY])) {
       __cacheStyle[STROKE_DASHARRAY] = true;
       computedStyle[STROKE_DASHARRAY] = currentStyle[STROKE_DASHARRAY];
-      __cacheStyle[STROKE_DASHARRAY_STR] = util.joinArr(currentStyle[STROKE_DASHARRAY], ',');
+      __cacheStyle[STROKE_DASHARRAY_STR] = joinArr(currentStyle[STROKE_DASHARRAY], ',');
+    }
+    else {
+      computedStyle[STROKE_DASHARRAY] = [];
     }
     // 直接赋值的
     [
@@ -232,6 +252,8 @@ class Geom extends Xom {
       y,
       originX,
       originY,
+      width,
+      height,
       cx,
       cy,
       display,
@@ -259,10 +281,28 @@ class Geom extends Xom {
       fill,
     } = res;
     if(renderMode === mode.CANVAS) {
-      if(ctx.fillStyle !== fill) {
+      if(fill.k === 'linear') {
+        ctx.fillStyle = fill.v;
+      }
+      else if(fill.k === 'radial' && !Array.isArray(fill.v)) {
+        ctx.fillStyle = fill.v;
+      }
+      else if(fill.k === 'conic') {
+        //
+      }
+      else if(!fill.k && ctx.fillStyle !== fill) {
         ctx.fillStyle = fill;
       }
-      if(ctx.strokeStyle !== stroke) {
+      if(stroke.k === 'linear') {
+        ctx.strokeStyle = stroke.v;
+      }
+      else if(stroke.k === 'radial' && !Array.isArray(stroke.v)) {
+        ctx.strokeStyle = stroke.v;
+      }
+      else if(stroke.k === 'conic') {
+        //
+      }
+      else if(!stroke.k && ctx.strokeStyle !== stroke) {
         ctx.strokeStyle = stroke;
       }
       if(ctx.lineWidth !== strokeWidth) {
@@ -291,7 +331,7 @@ class Geom extends Xom {
 
   render(renderMode, lv, ctx, defs, cache) {
     // cache状态渲染Root会先计算出super的__renderSelfData，非cache则无，也有可能渲染到一半异常从头再来，此时可能有也可能无
-    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs);
+    let res = this.__renderSelfData || super.render(renderMode, lv, ctx, defs, cache);
     let {
       [NODE_CACHE]: __cache,
       [NODE_CACHE_TOTAL]: __cacheTotal,
@@ -319,13 +359,209 @@ class Geom extends Xom {
     let { x2, y2 } = res;
     let { originX, originY } = preData;
     // 有cache时需计算差值
-    let { [PADDING_LEFT]: paddingLeft, [PADDING_TOP]: paddingTop } = this.computedStyle;
+    let {
+      [PADDING_LEFT]: paddingLeft,
+      [PADDING_TOP]: paddingTop,
+    } = this.computedStyle;
     x2 += paddingLeft;
     y2 += paddingTop;
     preData.dx = x2 - originX;
     preData.dy = y2 - originY;
     this.__preSetCanvas(renderMode, ctx, preData);
     return Object.assign(res, preData);
+  }
+
+  __renderPolygon(renderMode, ctx, defs, res) {
+    let {
+      fill,
+      stroke,
+      strokeWidth,
+      dx,
+      dy,
+    } = res;
+    let { __cacheProps: { list }, isMulti } = this;
+    let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
+    let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+    if(isFillRE || isStrokeRE) {
+      if(isFillRE) {
+        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
+      }
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+      }
+      // stroke椭圆渐变matrix会变形，降级为圆
+      if(strokeWidth > 0 && isStrokeRE) {
+        inject.warn('Stroke style can not use radial-gradient for ellipse');
+        res.stroke.v = res.stroke.v[0];
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+      }
+      else if(strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+      }
+    }
+    else {
+      this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, true);
+    }
+  }
+
+  __drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, isFill, isStroke) {
+    let {
+      fill,
+      stroke,
+      strokeWidth,
+    } = res;
+    if(renderMode === mode.CANVAS) {
+      ctx.beginPath();
+      if(isMulti) {
+        list.forEach(item => canvasPolygon(ctx, item, dx, dy));
+      }
+      else {
+        canvasPolygon(ctx, list, dx, dy);
+      }
+      if(isFill && fill !== 'none') {
+        ctx.fill();
+      }
+      if(isStroke && stroke !== 'none' && strokeWidth > 0) {
+        ctx.stroke();
+      }
+      ctx.closePath();
+    }
+    else if(renderMode === mode.SVG) {
+      let {
+        strokeDasharrayStr,
+        strokeLinecap,
+        strokeLinejoin,
+        strokeMiterlimit,
+      } = res;
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += svgPolygon(item));
+      }
+      else {
+        d = svgPolygon(list);
+      }
+      let props = [
+        ['d', d],
+      ];
+      if(fill === 'none' && stroke === 'none') {
+        return;
+      }
+      if(isFill && fill !== 'none') {
+        props.push(['fill', fill.v || fill]);
+      }
+      else {
+        props.push(['fill', 'none']);
+      }
+      if(isStroke && stroke !== 'none' && strokeWidth > 0) {
+        props.push(['stroke', stroke.v || stroke]);
+        props.push(['stroke-width', strokeWidth]);
+        this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+      }
+      else {
+        props.push(['strokeWidth', 0]);
+      }
+      this.addGeom('path', props);
+    }
+  }
+
+  __inversePtList(list, isMulti, t) {
+    if(isMulti) {
+      return list.map(item => {
+        if(!item || !item.length) {
+          return null;
+        }
+        return item.map(item => {
+          if(!item || !item.length) {
+            return null;
+          }
+          let arr = [];
+          for(let i = 0, len = item.length; i < len; i += 2) {
+            let p = mx.calPoint([item[i], item[i + 1]], t);
+            arr.push(p[0]);
+            arr.push(p[1]);
+          }
+          return arr;
+        });
+      });
+    }
+    else {
+      return list.map(item => {
+        if(!item || !item.length) {
+          return null;
+        }
+        let arr = [];
+        for(let i = 0, len = item.length; i < len; i += 2) {
+          let p = mx.calPoint([item[i], item[i + 1]], t);
+          arr.push(p[0]);
+          arr.push(p[1]);
+        }
+        return arr;
+      });
+    }
+  }
+
+  __radialEllipse(renderMode, ctx, defs, list, isMulti, res, method) {
+    let {
+      strokeWidth,
+      strokeDasharrayStr,
+      strokeLinecap,
+      strokeLinejoin,
+      strokeMiterlimit,
+      dx,
+      dy,
+    } = res;
+    let [color, matrix, cx, cy] = res[method].v;
+    // 椭圆渐变的转换，顶点逆矩阵变换
+    let tfo = [cx, cy];
+    matrix = transform.calMatrixByOrigin(matrix, tfo);
+    let t = mx.inverse(matrix);
+    list = this.__inversePtList(list, isMulti, t);
+    // 用正向matrix渲染
+    if(renderMode === mode.CANVAS) {
+      if(matrix) {
+        ctx.save();
+        ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+      }
+      ctx.beginPath();
+      if(ctx[method + 'Style'] !== color) {
+        ctx[method + 'Style'] = color;
+      }
+      if(isMulti) {
+        list.forEach(item => painter.canvasPolygon(ctx, item, dx, dy));
+      }
+      else {
+        canvasPolygon(ctx, list, dx, dy);
+      }
+      ctx[method]();
+      ctx.closePath();
+      if(matrix) {
+        ctx.restore();
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      let d = '';
+      if(isMulti) {
+        list.forEach(item => d += svgPolygon(item));
+      }
+      else {
+        d = svgPolygon(list);
+      }
+      let props = [
+        ['d', d],
+      ];
+      if(method === 'fill') {
+        props.push(['fill', color]);
+        props.push(['strokeWidth', 0]);
+      }
+      else if(method === 'stroke') {
+        props.push(['fill', 'none']);
+        props.push(['stroke', color]);
+        props.push(['stroke-width', strokeWidth]);
+        this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
+      }
+      props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
+      this.addGeom('path', props);
+    }
   }
 
   __propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit) {

@@ -618,8 +618,11 @@ function normalize(style, reset = []) {
   }
   // fill和stroke为渐变时特殊处理，fillRule无需处理字符串
   temp = style.fill;
-  if(temp) {
-    if(temp.indexOf('-gradient(') > 0) {
+  if(temp !== undefined) {
+    if(!temp) {
+      res[FILL] = 'none';
+    }
+    else if(reg.gradient.test(temp)) {
       res[FILL] = gradient.parseGradient(temp);
     }
     else {
@@ -627,8 +630,11 @@ function normalize(style, reset = []) {
     }
   }
   temp = style.stroke;
-  if(!isNil(temp)) {
-    if(temp.indexOf('-gradient(') > 0) {
+  if(temp !== undefined) {
+    if(!temp) {
+      res[STROKE] = 'none';
+    }
+    else if(reg.gradient.test(temp)) {
       res[STROKE] = gradient.parseGradient(temp);
     }
     else {

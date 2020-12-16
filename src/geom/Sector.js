@@ -1,8 +1,8 @@
 import Geom from './Geom';
-import mode from '../node/mode';
-import painter from '../util/painter';
 import util from '../util/util';
 import enums from '../util/enums';
+import geom from '../math/geom';
+import inject from '../util/inject';
 
 const { STYLE_KEY: {
   PADDING_TOP,
@@ -12,35 +12,7 @@ const { STYLE_KEY: {
   FILTER,
 } } = enums;
 const { isNil } = util;
-
-function getCoordsByDegree(x, y, r, d) {
-  r = Math.max(r, 0);
-  d = d % 360;
-  if(d >= 0 && d < 90) {
-    return [
-      x + Math.sin(d * Math.PI / 180) * r,
-      y - Math.cos(d * Math.PI / 180) * r
-    ];
-  }
-  else if(d >= 90 && d < 180) {
-    return [
-      x + Math.cos((d - 90) * Math.PI / 180) * r,
-      y + Math.sin((d - 90) * Math.PI / 180) * r,
-    ];
-  }
-  else if(d >= 180 && d < 270) {
-    return [
-      x - Math.cos((270 - d) * Math.PI / 180) * r,
-      y + Math.sin((270 - d) * Math.PI / 180) * r,
-    ];
-  }
-  else {
-    return [
-      x - Math.sin((360 - d) * Math.PI / 180) * r,
-      y - Math.cos((360 - d) * Math.PI / 180) * r,
-    ];
-  }
-}
+const { sectorPoints } = geom;
 
 function getR(v, dft) {
   v = parseFloat(v);
@@ -105,11 +77,11 @@ class Sector extends Geom {
     let rebuild;
     if(isNil(__cacheProps.begin)) {
       rebuild = true;
-      __cacheProps.begin = begin;
+      __cacheProps.begin = (begin || 0) % 360;
     }
     if(isNil(__cacheProps.end)) {
       rebuild = true;
-      __cacheProps.end = end;
+      __cacheProps.end = (end || 0) % 360;
     }
     if(isNil(__cacheProps.r)) {
       rebuild = true;
@@ -131,86 +103,93 @@ class Sector extends Geom {
     }
     if(rebuild) {
       if(isMulti) {
-        __cacheProps.x1 = [];
-        __cacheProps.x2 = [];
-        __cacheProps.y1 = [];
-        __cacheProps.y2 = [];
-        __cacheProps.large = [];
-        __cacheProps.d = [];
+        __cacheProps.list = [];
+        __cacheProps.sList = [];
         begin.forEach((begin, i) => {
           let r2 = isNil(r[i]) ? width * 0.5 : r[i];
-          let [x1, y1] = getCoordsByDegree(cx, cy, r2, begin);
-          let [x2, y2] = getCoordsByDegree(cx, cy, r2, end[i] || 0);
-          let large = ((end[i] || 0) - begin) > 180 ? 1 : 0;
-          __cacheProps.x1.push(x1);
-          __cacheProps.x2.push(x2);
-          __cacheProps.y1.push(y1);
-          __cacheProps.y2.push(y2);
-          __cacheProps.large.push(large);
+          let list = sectorPoints(cx, cy, r2, parseFloat(begin || 0) % 360, parseFloat(end[i] || 0) % 360);
+          let sList = list.slice(0);
+          if(closure[i]) {
+            list.push(list[0].slice(0));
+            if(edge) {
+              sList.push(sList[0].slice(0));
+            }
+          }
+          else {
+            list.unshift([cx, cy]);
+            list.push([cx, cy]);
+            if(edge) {
+              sList.unshift([cx, cy]);
+              sList.push([cx, cy]);
+            }
+          }
+          __cacheProps.list.push(list);
+          __cacheProps.sList.push(sList);
         });
       }
       else {
-        let [x1, y1] = getCoordsByDegree(cx, cy, r, begin);
-        let [x2, y2] = getCoordsByDegree(cx, cy, r, end);
-        let large = (end - begin) > 180 ? 1 : 0;
-        __cacheProps.x1 = x1;
-        __cacheProps.x2 = x2;
-        __cacheProps.y1 = y1;
-        __cacheProps.y2 = y2;
-        __cacheProps.large = large;
+        let list = sectorPoints(cx, cy, r, parseFloat(begin || 0), parseFloat(end || 0));
+        let sList = list.slice(0);
+        if(closure) {
+          list.push(list[0].slice(0));
+          if(edge) {
+            sList.push(sList[0].slice(0));
+          }
+        }
+        else {
+          list.unshift([cx, cy]);
+          list.push([cx, cy]);
+          if(edge) {
+            sList.unshift([cx, cy]);
+            sList.push([cx, cy]);
+          }
+        }
+        __cacheProps.list = list;
+        __cacheProps.sList = sList;
       }
     }
     return rebuild;
   }
 
-  render(renderMode, lv, ctx, defs) {
-    let res = super.render(renderMode, lv, ctx, defs);
+  render(renderMode, lv, ctx, defs, cache) {
+    let res = super.render(renderMode, lv, ctx, defs, cache);
     if(res.break) {
       return res;
     }
+    this.buildCache(res.cx, res.cy);
     let {
-      cx,
-      cy,
       fill,
       stroke,
       strokeWidth,
-      strokeDasharrayStr,
-      strokeLinecap,
-      strokeLinejoin,
-      strokeMiterlimit,
       dx,
       dy,
     } = res;
-    let { width, __cacheProps, isMulti } = this;
-    this.buildCache(cx, cy);
-    let { begin, end, r, x1, y1, x2, y2, edge, large, closure } = __cacheProps;
-    if(renderMode === mode.CANVAS) {
-      ctx.beginPath();
-      if(isMulti) {
-        begin.forEach((begin, i) => painter.canvasSector(ctx, cx, cy, r[i], x1[i], y1[i], x2[i], y2[i],
-          strokeWidth, begin[i], end[i], large[i], edge[i], closure[i], dx, dy));
+    let { __cacheProps: { list, sList }, isMulti } = this;
+    let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
+    let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
+    if(isFillRE || isStrokeRE) {
+      if(isFillRE) {
+        this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
       }
-      else {
-        painter.canvasSector(ctx, cx, cy, r, x1, y1, x2, y2, strokeWidth, begin, end, large, edge, closure, dx, dy);
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
       }
-      ctx.fill();
-      ctx.closePath();
+      // stroke椭圆渐变matrix会变形，降级为圆
+      if(strokeWidth > 0 && isStrokeRE) {
+        inject.warn('Stroke style can not use radial-gradient for ellipse');
+        res.stroke = res.stroke.v[0];
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+      }
+      else if(strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+      }
     }
-    else if(renderMode === mode.SVG) {
-      if(isMulti) {
-        begin.forEach((begin, i) => {
-          let r2 = isNil(r[i]) ? width * 0.5 : r[i];
-          this.__genSector(edge[i],
-            painter.svgSector(cx, cy, r2, x1[i], y1[i], x2[i], y2[i], strokeWidth, large[i], edge[i], closure[i]),
-            fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
-          );
-        });
+    else {
+      if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true, false);
       }
-      else {
-        this.__genSector(edge,
-          painter.svgSector(cx, cy, r, x1, y1, x2, y2, strokeWidth, large, edge, closure),
-          fill, stroke, strokeWidth, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit
-        );
+      if(stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
       }
     }
     return res;
@@ -220,8 +199,8 @@ class Sector extends Geom {
     if(edge) {
       let props = [
         ['d', d[0]],
-        ['fill', fill],
-        ['stroke', stroke],
+        ['fill', fill.v || fill],
+        ['stroke', stroke.v || stroke],
         ['stroke-width', strokeWidth],
       ];
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);
@@ -230,13 +209,13 @@ class Sector extends Geom {
     else {
       this.addGeom('path', [
         ['d', d[0]],
-        ['fill', fill],
+        ['fill', fill.v || fill],
       ]);
       if(strokeWidth > 0) {
         let props = [
           ['d', d[1]],
           ['fill', 'none'],
-          ['stroke', stroke],
+          ['stroke', stroke.v || stroke],
           ['stroke-width', strokeWidth],
         ];
         this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);

@@ -238,28 +238,33 @@ function calLinearCoords(deg, length, cx, cy) {
 // 获取径向渐变圆心半径
 function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
   let cx, cy, xl, yl, r, d = 0;
-  // 扩展的from to格式
+  // 扩展的from to ratio格式，圆心、长轴坐标、短轴缩放比
   if(Array.isArray(size)) {
-    cx = x1 + size[0] * iw;
-    cy = y1 + size[1] * ih;
-    xl = Math.sqrt(Math.pow(x1 + size[2] * iw - cx, 2) + Math.pow(y1 + size[3] * ih - cy, 2));
-    yl = Math.sqrt(Math.pow(x1 + size[4] * iw - cx, 2) + Math.pow(y1 + size[5] * ih - cy, 2));
-    r = Math.max(xl, yl);
-    // 看旋转
-    if(size[2] >= size[0]) {
-      if(size[3] >= size[1]) {
-        d = Math.asin(size[3] - size[1] / xl);
-      }
-      else {
-        d = -Math.asin(size[1] - size[3] / xl);
-      }
+    if(size[4] <= 0) {
+      r = 0;
     }
     else {
-      if(size[3] >= size[1]) {
-        d = 180 - Math.asin(size[3] - size[1] / xl);
+      cx = x1 + size[0] * iw;
+      cy = y1 + size[1] * ih;
+      xl = Math.sqrt(Math.pow((size[2] - size[0]) * iw, 2) + Math.pow((size[3] - size[1]) * ih, 2));
+      yl = xl * size[4];
+      r = Math.max(xl, yl);
+      // 看旋转
+      if(size[2] >= size[0]) {
+        if(size[3] >= size[1]) {
+          d = Math.asin((size[3] - size[1]) * ih / xl);
+        }
+        else {
+          d = -Math.asin((size[1] - size[3]) * ih / xl);
+        }
       }
       else {
-        d = Math.asin(size[1] - size[3] / xl) - 180;
+        if(size[3] >= size[1]) {
+          d = d2r(180) - Math.asin((size[3] - size[1]) * ih / xl);
+        }
+        else {
+          d = Math.asin((size[1] - size[3]) * ih / xl) - d2r(180);
+        }
       }
     }
   }
@@ -338,6 +343,7 @@ function calRadialRadius(shape, size, position, iw, ih, x1, y1, x2, y2) {
       }
       xl *= ratio;
       yl *= ratio;
+      r *= ratio;
     }
   }
   if(shape === 'circle') {
@@ -376,13 +382,37 @@ function parseGradient(s) {
       }
       // 扩展支持从a点到b点相对坐标，而不是size，sketch等ui软件中用此格式
       else {
-        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/.exec(gradient[2]);
+        let points = /(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)(?:\s+([\d.]+))?/.exec(gradient[2]);
         if(points) {
-          o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4]), parseFloat(points[5]), parseFloat(points[6])];
+          o.z = [parseFloat(points[1]), parseFloat(points[2]), parseFloat(points[3]), parseFloat(points[4])];
+          if(!isNil(points[5])) {
+            o.z.push(parseFloat(points[5]));
+          }
+          else {
+            o.z.push(1);
+          }
         }
         else {
           o.z = 'farthest-corner';
         }
+      }
+      let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
+      if(position) {
+        let x = getRadialPosition(position[1]);
+        let y = position[2] ? getRadialPosition(position[2]) : x;
+        o.p = [x, y];
+      }
+      else {
+        o.p = [[50, PERCENT], [50, PERCENT]];
+      }
+    }
+    else if(o.k === 'conic') {
+      let deg = /(-?[\d.]+deg)/i.exec(gradient[2]);
+      if(deg) {
+        o.d = parseFloat(deg[0]) % 360;
+      }
+      else {
+        o.d = 180;
       }
       let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
@@ -468,7 +498,7 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let w = x2 - x1;
   let h = y2 - y1;
   let [cx, cy, r, xl, yl, d] = calRadialRadius(shape, size, position, w, h, x1, y1, x2, y2);
-  // closest在矩形外时无效
+  // closest在矩形外时或指定缩放为0时无效
   if(r === 0) {
     return;
   }
@@ -476,23 +506,20 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   let matrix, scx = 1, scy = 1;
   if(xl !== yl || d) {
     matrix = [1, 0, 0, 1, 0, 0];
-    if(xl !== r) {
-      scx = xl / r;
-      let d = cx - x1;
-      cx = x1 + d / scx;
-      matrix[0] = scx;
-    }
-    if(yl !== r) {
-      scy = yl / r;
-      let d = cy - y1;
-      cy = y1 + d / scy;
-      matrix[3] = scy;
-    }
     if(d) {
       let sin = Math.sin(d);
       let cos = Math.cos(d);
-      let m = [cos, sin, -sin, cos, 0, 0];
-      matrix = mx.multiply(m, matrix);
+      matrix = [cos, sin, -sin, cos, 0, 0];
+    }
+    if(xl !== r) {
+      scx = xl / r;
+      let m = [scx, 0, 0, 1, 0, 0];
+      matrix = mx.multiply(matrix, m);
+    }
+    if(yl !== r) {
+      scy = yl / r;
+      let m = [1, 0, 0, scy, 0, 0];
+      matrix = mx.multiply(matrix, m);
     }
   }
   let stop = getColorStop(v, r);
@@ -508,7 +535,47 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   };
 }
 
-function getConic() {}
+function getConic(v, d, p, x1, y1, x2, y2) {
+  console.log(v, d, p, x1, y1, x2, y2);
+  let [cx, cy, r] = calConicRadius(v, d, p, x1, y1, x2, y2);
+  console.log(cx,cy,r);
+  let stop = getColorStop(v, r);
+  console.log(stop);
+}
+
+function calConicRadius(v, deg, position, x1, y1, x2, y2) {
+  let iw = x2 - x1;
+  let ih = y2 - y1;
+  let cx, cy;
+  if(position[0][1] === PX) {
+    cx = x1 + position[0][0];
+  }
+  else {
+    cx = x1 + position[0][0] * iw * 0.01;
+  }
+  if(position[1][1] === PX) {
+    cy = y1 + position[1][0];
+  }
+  else {
+    cy = y1 + position[1][0] * ih * 0.01;
+  }
+  let r, a, b;
+  if(cx >= x1 + iw * 0.5) {
+    a = cx - x1;
+  }
+  else {
+    a = x2 - cx;
+  }
+  if(cy >= y1 + ih * 0.5) {
+    b = cy - y1;
+  }
+  else {
+    b = y2 - cy;
+  }
+  r = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
+  console.log(a, b, r);
+  return [cx, cy, r];
+}
 
 export default {
   parseGradient,

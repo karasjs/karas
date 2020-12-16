@@ -168,78 +168,53 @@ function renderBorder(renderMode, points, color, ctx, xom, dx, dy) {
 }
 
 function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr, method = 'fill') {
-  // radial渐变时ellipse形状会有xr/yr/matrix，用以从圆缩放到椭圆
-  let matrix, scx, scy, deg, cx, cy;
+  // radial渐变ellipse形状会有matrix，用以从圆缩放到椭圆
+  let matrix, cx, cy;
   if(Array.isArray(color)) {
-    scx = color[1];
-    scy = color[2];
-    deg = color[3];
-    matrix = color[4];
-    cx = color[5];
-    cy = color[6];
+    matrix = color[1];
+    cx = color[2];
+    cy = color[3];
     color = color[0];
   }
-  let originW = w, originH = h;
-  if(matrix) {
-    if(scx !== 1) {
-      w /= scx;
-    }
-    if(scy !== 1) {
-      h /= scy;
-    }
-  }
   // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
-  let list;
-  if(deg) {
-    list = border.calRadius(x, y, originW, originH, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  if(!list) {
+    list = [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+      [x, y],
+    ];
   }
-  else {
-    list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  // 椭圆有matrix，用逆矩阵变化点来完成
+  if(matrix) {
+    let tfo = [cx, cy];
+    matrix = transform.calMatrixByOrigin(matrix, tfo);
+    let t = mx.inverse(matrix);
+    list = list.map(item => {
+      if(!item || !item.length) {
+        return null;
+      }
+      let arr = [];
+      for(let i = 0, len = item.length; i < len; i += 2) {
+        let p = mx.calPoint([item[i], item[i + 1]], t);
+        arr.push(p[0]);
+        arr.push(p[1]);
+      }
+      return arr;
+    });
   }
   if(renderMode === mode.CANVAS) {
-    // 有旋转的椭圆特殊处理画更大的，原本位置用clip()截取
-    if(deg) {
-      ctx.save();
-      ctx.beginPath();
-      if(list) {
-        canvasPolygon(ctx, list);
-      }
-      else {
-        ctx.rect(x, y, originW, originH);
-      }
-      ctx.clip();
-      ctx.closePath();
-      let tfo = [cx, cy];
-      let t = transform.calMatrixByOrigin(matrix, tfo);
-      ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
-      ctx.beginPath();
-      if(ctx.fillStyle !== color) {
-        ctx.fillStyle = color;
-      }
-      // 已经clip()过，这里简单绘制，但是要扩展尺寸，以防旋转导致不满，2倍足以
-      ctx.rect(x - w * 2, y - h * 2, w * 4, h * 4);
-      ctx[method]();
-      ctx.closePath();
-      ctx.restore();
-      return;
-    }
-    // 无旋转的椭圆有matrix，用缩放来完成
     if(matrix) {
       ctx.save();
-      let tfo = [x, y];
-      let t = transform.calMatrixByOrigin(matrix, tfo);
-      ctx.setTransform(t[0], t[1], t[2], t[3], t[4], t[5]);
+      ctx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
     ctx.beginPath();
     if(ctx.fillStyle !== color) {
       ctx.fillStyle = color;
     }
-    if(list) {
-      canvasPolygon(ctx, list);
-    }
-    else {
-      ctx.rect(x, y, w, h);
-    }
+    canvasPolygon(ctx, list);
     ctx[method]();
     ctx.closePath();
     if(matrix) {
@@ -247,89 +222,19 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw,
     }
   }
   else if(renderMode === mode.SVG) {
-    if(deg) {
-      let clip;
-      let t;
-      if(matrix) {
-        let tfo = [cx, cy];
-        t = transform.calMatrixByOrigin(matrix, tfo);
-      }
-      if(list) {
-        clip = defs.add({
-          tagName: 'clipPath',
-          children: [{
-            tagName: 'path',
-            props: [
-              ['d', svgPolygon(list)],
-              ['fill', '#FFF'],
-              ['transform', `matrix(${joinArr(mx.inverse(t), ',')})`],
-            ],
-          }],
-        });
-      }
-      else {
-        clip = defs.add({
-          tagName: 'clipPath',
-          children: [{
-            tagName: 'rect',
-            props: [
-              ['x', x],
-              ['y', y],
-              ['width', originW],
-              ['height', originH],
-              ['fill', '#FFF'],
-              ['transform', `matrix(${joinArr(mx.inverse(t), ',')})`],
-            ],
-          }],
-        });
-      }
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'rect',
-        props: [
-          ['x', x - w * 2],
-          ['y', y - h * 2],
-          ['width', w * 4],
-          ['height', h * 4],
-          ['fill', color],
-          ['clip-path', 'url(#' + clip + ')'],
-        ],
-      });
-      if(t) {
-        let bb = xom.virtualDom.bb;
-        bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(t, ',')})`]);
-      }
-      return;
-    }
-    else if(list) {
-      let d = svgPolygon(list);
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'path',
-        props: [
-          ['d', d],
-          ['fill', color],
-        ],
-      });
-    }
-    else {
-      xom.virtualDom.bb.push({
-        type: 'item',
-        tagName: 'rect',
-        props: [
-          ['x', x],
-          ['y', y],
-          ['width', w],
-          ['height', h],
-          ['fill', color],
-        ],
-      });
-    }
+    let d = svgPolygon(list);
+    xom.virtualDom.bb.push({
+      type: 'item',
+      tagName: 'path',
+      props: [
+        ['d', d],
+        ['fill', color],
+      ],
+    });
+    // 椭圆渐变独有
     if(matrix) {
-      let tfo = [x, y];
-      let t = transform.calMatrixByOrigin(matrix, tfo);
       let bb = xom.virtualDom.bb;
-      bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(t, ',')})`]);
+      bb[bb.length - 1].props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
     }
   }
 }
@@ -1331,6 +1236,7 @@ class Xom extends Node {
   __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle,
              sx, sy, clientWidth, clientHeight, outerWidth, outerHeight,
              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+             paddingTop, paddingRight, paddingBottom, paddingLeft,
              x1, x2, x3, x4, y1, y2, y3, y4) {
     this.__calMatrix(lv, __cacheStyle, currentStyle, computedStyle, sx, sy, outerWidth, outerHeight);
     if(lv >= REPAINT) {
@@ -1698,6 +1604,7 @@ class Xom extends Node {
         __cacheStyle, currentStyle, computedStyle,
         x, y, clientWidth, clientHeight, outerWidth, outerHeight,
         borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+        paddingTop, paddingRight, paddingBottom, paddingLeft,
         x1, x2, x3, x4, y1, y2, y3, y4
       );
     let {
@@ -2228,9 +2135,12 @@ class Xom extends Node {
       else if(backgroundImage.k) {
         let gd = __cacheStyle[BACKGROUND_IMAGE];
         if(gd) {
-          renderBgc(renderMode, gd, x2, y2, clientWidth, clientHeight, ctx, defs, this,
-            borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
-            borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          if(gd.k === 'conic') {}
+          else {
+            renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
+              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+              borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          }
         }
       }
     }
@@ -2352,15 +2262,22 @@ class Xom extends Node {
     let res;
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
-      res = this.__getLg(renderMode, ctx, defs, gd);
+      res = {
+        k,
+        v: this.__getLg(renderMode, ctx, defs, gd),
+      };
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
       if(gd) {
         res = this.__getRg(renderMode, ctx, defs, gd);
         if(gd.matrix) {
-          res = [res, gd.scx, gd.scy, gd.d, gd.matrix, gd.cx, gd.cy];
+          res = [res, gd.matrix, gd.cx, gd.cy];
         }
+        res = {
+          k,
+          v: res,
+        };
       }
     }
     else if(k === 'conic') {

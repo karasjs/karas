@@ -281,8 +281,12 @@ class Line extends Geom {
       }
       __cacheProps.d = d;
     }
+    let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
     if(renderMode === mode.CANVAS) {
-      if(strokeWidth > 0) {
+      if(strokeWidth > 0 && stroke !== 'none') {
+        if(isStrokeRE) {
+          ctx.strokeStyle = stroke.v[0];
+        }
         ctx.beginPath();
         if(isMulti) {
           __cacheProps.x1.forEach((xa, i) => {
@@ -316,7 +320,7 @@ class Line extends Geom {
       let props = [
         ['d', __cacheProps.d],
         ['fill', 'none'],
-        ['stroke', stroke],
+        ['stroke', isStrokeRE ? stroke.v[0] : (stroke.v || stroke)],
         ['stroke-width', strokeWidth]
       ];
       this.__propsStrokeStyle(props, strokeDasharrayStr, strokeLinecap, strokeLinejoin, strokeMiterlimit);

@@ -187,7 +187,7 @@ function getColorStop(v, length) {
   }
   // 可能存在超限情况，如在使用px单位超过len或<len时，canvas会报错超过[0,1]区间，需手动换算至区间内
   list.forEach(item => {
-    item[0] = int2rgba(item[0]);
+    // item[0] = int2rgba(item[0]);
     if(item[1] < 0) {
       item[1] = 0;
     }
@@ -432,7 +432,7 @@ function parseGradient(s) {
         o.d = parseFloat(deg[0]) % 360;
       }
       else {
-        o.d = 180;
+        o.d = 0;
       }
       let position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
       if(position) {
@@ -551,12 +551,18 @@ function getRadial(v, shape, size, position, x1, y1, x2, y2) {
   };
 }
 
-function getConic(v, d, p, x1, y1, x2, y2) {
-  console.log(v, d, p, x1, y1, x2, y2);
-  let [cx, cy, r] = calConicRadius(v, d, p, x1, y1, x2, y2);
-  console.log(cx,cy,r);
-  let stop = getColorStop(v, r);
-  console.log(stop);
+function getConic(v, d, p, x1, y1, x2, y2, ratio = 1) {
+  let [cx, cy, r, deg] = calConicRadius(v, d, p, x1, y1, x2, y2);
+  let stop = getColorStop(v, 1);
+  r <<= 1; // 锥形半径*2，这样分割画圆时保证一定会填满原有矩形
+  r *= ratio; // 矢量图形比较特殊，有可能超限，传入个倍数扩大半径
+  return {
+    cx,
+    cy,
+    r,
+    deg,
+    stop,
+  };
 }
 
 function calConicRadius(v, deg, position, x1, y1, x2, y2) {
@@ -589,8 +595,7 @@ function calConicRadius(v, deg, position, x1, y1, x2, y2) {
     b = y2 - cy;
   }
   r = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
-  console.log(a, b, r);
-  return [cx, cy, r];
+  return [cx, cy, r, deg];
 }
 
 export default {

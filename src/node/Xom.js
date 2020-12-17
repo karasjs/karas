@@ -2259,29 +2259,23 @@ class Xom extends Node {
     let { k, v, d, s, z, p } = vs;
     let cx = x2 + iw * 0.5;
     let cy = y2 + ih * 0.5;
-    let res;
+    let res = { k };
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
-      res = {
-        k,
-        v: this.__getLg(renderMode, ctx, defs, gd),
-      };
+      res.v = this.__getLg(renderMode, ctx, defs, gd);
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
       if(gd) {
-        res = this.__getRg(renderMode, ctx, defs, gd);
+        res.v = this.__getRg(renderMode, ctx, defs, gd);
         if(gd.matrix) {
-          res = [res, gd.matrix, gd.cx, gd.cy];
+          res.v = [res, gd.matrix, gd.cx, gd.cy];
         }
-        res = {
-          k,
-          v: res,
-        };
       }
     }
     else if(k === 'conic') {
       let gd = gradient.getConic(v, d, p, x2, y2, x3, y3);
+      res.v = this.__getCg(renderMode, ctx, defs, gd);
     }
     return res;
   }
@@ -2290,7 +2284,7 @@ class Xom extends Node {
     if(renderMode === mode.CANVAS) {
       let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
-        lg.addColorStop(item[1], item[0]);
+        lg.addColorStop(item[1], int2rgba(item[0]));
       });
       return lg;
     }
@@ -2307,8 +2301,8 @@ class Xom extends Node {
           return {
             tagName: 'stop',
             props: [
-              ['stop-color', item[0]],
-              ['offset', item[1] * 100 + '%']
+              ['stop-color', int2rgba(item[0])],
+              ['offset', item[1] * 100 + '%'],
             ],
           };
         }),
@@ -2321,7 +2315,7 @@ class Xom extends Node {
     if(renderMode === mode.CANVAS) {
       let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {
-        rg.addColorStop(item[1], item[0]);
+        rg.addColorStop(item[1], int2rgba(item[0]));
       });
       return rg;
     }
@@ -2337,13 +2331,77 @@ class Xom extends Node {
           return {
             tagName: 'stop',
             props: [
-              ['stop-color', item[0]],
-              ['offset', item[1] * 100 + '%']
+              ['stop-color', int2rgba(item[0])],
+              ['offset', item[1] * 100 + '%'],
             ],
           };
         }),
       });
       return 'url(#' + uuid + ')';
+    }
+  }
+
+  __getCg(renderMode, ctx, defs, gd) {
+    let { cx, cy, r, deg, stop } = gd;
+    let len = stop.length - 1;
+    if(stop[len][1] < 1) {
+      stop.push([stop[len][0].slice(0), 1]);
+    }
+    if(stop[0][1] > 0) {
+      stop.unshift([stop[0][0].slice(0), 0]);
+    }
+    console.log(cx, cy, r, deg, stop);
+    // 根据2个stop之间的百分比得角度差划分块数，每10°一块，不足也算
+    let list = [];
+    for(let i = 0, len = stop.length; i < len - 1; i++) {
+      let begin = stop[i][1] * 360;
+      let end = stop[i + 1][1] * 360;
+      let diff = end - begin;
+      let n = Math.ceil(diff / 10);
+      let per = diff / n;
+      // 计算每块的2个弧端点
+      let list2 = [];
+      let bc = stop[i][0];
+      let ec = stop[i + 1][0];
+      let dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
+      let pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
+      for(let j = 0; j < n; j++) {
+        let [x, y] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg);
+        list2.push([
+          x, y,
+          Math.round(bc[0] + pc[0] * j),
+          Math.round(bc[1] + pc[1] * j),
+          Math.round(bc[2] + pc[2] * j),
+          Math.round(bc[3] + pc[3] * j),
+        ]);
+      }
+      list.push(list2);
+    }
+    // 每段末尾补上下段开始的点和颜色，最后一段补自己末尾颜色特殊处理
+    for(let i = 0, len = list.length; i < len; i++) {
+      if(i === len - 1) {
+        let end = list[0][0].slice(0);
+        let s = stop[stop.length - 1][0];
+        end[2] = s[0];
+        end[3] = s[1];
+        end[4] = s[2];
+        end[5] = s[3];
+        list[i].push(end);
+      }
+      else {
+        list[i].push(list[i + 1][0].slice(0));
+      }
+    }
+    console.log(list);
+    if(renderMode === mode.CANVAS) {
+      return list.map(item => {
+        return item.map(item => {
+          console.log(item);
+        });
+      });
+    }
+    else if(renderMode === mode.SVG) {
+      //
     }
   }
 

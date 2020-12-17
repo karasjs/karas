@@ -1,6 +1,6 @@
-import Text from '../node/Text';
 import util from './util';
 import enums from './enums';
+import textCache from '../node/textCache';
 
 const { STYLE_KEY: {
   FONT_SIZE,
@@ -83,7 +83,7 @@ const LOADED = 2;
 
 let inject = {
   measureText() {
-    let { list, data } = Text.MEASURE_TEXT;
+    let { list, data } = textCache;
     let html = '';
     let keys = [];
     let chars = [];
@@ -110,18 +110,18 @@ let inject = {
     document.body.appendChild(div);
     div.innerHTML = html;
     let cns = div.childNodes;
-    let { CHAR_WIDTH_CACHE, MEASURE_TEXT } = Text;
+    let { charWidth } = textCache;
     for(let i = 0, len = cns.length; i < len; i++) {
       let node = cns[i];
       let key = keys[i];
       let char = chars[i];
       // clientWidth只返回ceil整数，精度必须用getComputedStyle
       let css = window.getComputedStyle(node, null);
-      CHAR_WIDTH_CACHE[key][char] = parseFloat(css.width);
+      charWidth[key][char] = parseFloat(css.width);
     }
     list.forEach(text => text.__measureCb());
-    MEASURE_TEXT.list = [];
-    MEASURE_TEXT.data = {};
+    textCache.list = [];
+    textCache.data = {};
     document.body.removeChild(div);
   },
   IMG,

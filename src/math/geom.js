@@ -53,6 +53,17 @@ function angleBySide(a, b, c) {
 }
 
 /**
+ * 余弦定理2边长和夹角求3边
+ * @param alpha 弧度
+ * @param a
+ * @param b
+ */
+function sideByAngle(alpha, a, b) {
+  let cos = Math.cos(alpha);
+  return Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2) - 2 * a * b * cos);
+}
+
+/**
  * 两点距离
  * @param x1
  * @param y1
@@ -716,6 +727,40 @@ function sliceBezier2Both(points, start = 0, end = 1) {
   return points;
 }
 
+function pointOnCircle(x, y, r, deg) {
+  if(deg >= 270) {
+    deg -= 270;
+    deg = d2r(deg);
+    return [
+      x - Math.cos(deg) * r,
+      y - Math.sin(deg) * r,
+    ];
+  }
+  else if(deg >= 180) {
+    deg -= 180;
+    deg = d2r(deg);
+    return [
+      x + Math.sin(deg) * r,
+      y + Math.cos(deg) * r,
+    ];
+  }
+  else if(deg >= 90) {
+    deg -= 90;
+    deg = d2r(deg);
+    return [
+      x + Math.cos(deg) * r,
+      y + Math.sin(deg) * r,
+    ];
+  }
+  else {
+    deg = d2r(deg);
+    return [
+      x + Math.sin(deg) * r,
+      y - Math.cos(deg) * r,
+    ];
+  }
+}
+
 export default {
   pointInPolygon,
   d2r,
@@ -725,6 +770,7 @@ export default {
   // <90任意角度贝塞尔曲线拟合圆弧的比例公式
   h,
   angleBySide,
+  sideByAngle,
   pointsDistance,
   triangleIncentre,
   ellipsePoints,
@@ -740,4 +786,5 @@ export default {
   pointAtBezierWithLength,
   sliceBezier,
   sliceBezier2Both,
+  pointOnCircle,
 };

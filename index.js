@@ -1513,6 +1513,18 @@
     return Math.acos(theta);
   }
   /**
+   * 余弦定理2边长和夹角求3边
+   * @param alpha 弧度
+   * @param a
+   * @param b
+   */
+
+
+  function sideByAngle(alpha, a, b) {
+    var cos = Math.cos(alpha);
+    return Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2) - 2 * a * b * cos);
+  }
+  /**
    * 两点距离
    * @param x1
    * @param y1
@@ -2326,6 +2338,25 @@
     return points;
   }
 
+  function pointOnCircle(x, y, r, deg) {
+    if (deg >= 270) {
+      deg -= 270;
+      deg = d2r(deg);
+      return [x - Math.cos(deg) * r, y - Math.sin(deg) * r];
+    } else if (deg >= 180) {
+      deg -= 180;
+      deg = d2r(deg);
+      return [x + Math.sin(deg) * r, y + Math.cos(deg) * r];
+    } else if (deg >= 90) {
+      deg -= 90;
+      deg = d2r(deg);
+      return [x + Math.cos(deg) * r, y + Math.sin(deg) * r];
+    } else {
+      deg = d2r(deg);
+      return [x + Math.sin(deg) * r, y - Math.cos(deg) * r];
+    }
+  }
+
   var geom = {
     pointInPolygon: pointInPolygon,
     d2r: d2r,
@@ -2335,6 +2366,7 @@
     // <90任意角度贝塞尔曲线拟合圆弧的比例公式
     h: h,
     angleBySide: angleBySide,
+    sideByAngle: sideByAngle,
     pointsDistance: pointsDistance,
     triangleIncentre: triangleIncentre,
     ellipsePoints: ellipsePoints,
@@ -2349,11 +2381,11 @@
     pointAtBezier: pointAtBezier,
     pointAtBezierWithLength: pointAtBezierWithLength,
     sliceBezier: sliceBezier,
-    sliceBezier2Both: sliceBezier2Both
+    sliceBezier2Both: sliceBezier2Both,
+    pointOnCircle: pointOnCircle
   };
 
   var rgba2int$1 = util.rgba2int,
-      int2rgba$1 = util.int2rgba,
       isNil$1 = util.isNil;
   var PX = unit.PX,
       PERCENT = unit.PERCENT;
@@ -2539,8 +2571,7 @@
 
 
     list.forEach(function (item) {
-      item[0] = int2rgba$1(item[0]);
-
+      // item[0] = int2rgba(item[0]);
       if (item[1] < 0) {
         item[1] = 0;
       } else if (item[1] > 1) {
@@ -2787,7 +2818,7 @@
         if (_deg) {
           o.d = parseFloat(_deg[0]) % 360;
         } else {
-          o.d = 180;
+          o.d = 0;
         }
 
         var _position = /at\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center))(?:\s+((?:-?[\d.]+(?:px|%)?)|(?:left|top|right|bottom|center)))?/i.exec(gradient[2]);
@@ -2934,17 +2965,27 @@
   }
 
   function getConic(v, d, p, x1, y1, x2, y2) {
-    console.log(v, d, p, x1, y1, x2, y2);
+    var ratio = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 1;
 
     var _calConicRadius = calConicRadius(v, d, p, x1, y1, x2, y2),
-        _calConicRadius2 = _slicedToArray(_calConicRadius, 3),
+        _calConicRadius2 = _slicedToArray(_calConicRadius, 4),
         cx = _calConicRadius2[0],
         cy = _calConicRadius2[1],
-        r = _calConicRadius2[2];
+        r = _calConicRadius2[2],
+        deg = _calConicRadius2[3];
 
-    console.log(cx, cy, r);
-    var stop = getColorStop(v, r);
-    console.log(stop);
+    var stop = getColorStop(v, 1);
+    r <<= 1; // 锥形半径*2，这样分割画圆时保证一定会填满原有矩形
+
+    r *= ratio; // 矢量图形比较特殊，有可能超限，传入个倍数扩大半径
+
+    return {
+      cx: cx,
+      cy: cy,
+      r: r,
+      deg: deg,
+      stop: stop
+    };
   }
 
   function calConicRadius(v, deg, position, x1, y1, x2, y2) {
@@ -2979,8 +3020,7 @@
     }
 
     r = Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2));
-    console.log(a, b, r);
-    return [cx, cy, r];
+    return [cx, cy, r, deg];
   }
 
   var gradient = {
@@ -3346,6 +3386,12 @@
     }
   };
 
+  var textCache = {
+    list: [],
+    data: {},
+    charWidth: {}
+  };
+
   var _enums$STYLE_KEY$1 = enums.STYLE_KEY,
       FONT_SIZE = _enums$STYLE_KEY$1.FONT_SIZE,
       FONT_FAMILY = _enums$STYLE_KEY$1.FONT_FAMILY,
@@ -3427,9 +3473,8 @@
   var LOADED = 2;
   var inject = {
     measureText: function measureText() {
-      var _Text$MEASURE_TEXT = Text.MEASURE_TEXT,
-          list = _Text$MEASURE_TEXT.list,
-          data = _Text$MEASURE_TEXT.data;
+      var list = textCache.list,
+          data = textCache.data;
       var html = '';
       var keys = [];
       var chars = [];
@@ -3465,8 +3510,7 @@
       document.body.appendChild(div);
       div.innerHTML = html;
       var cns = div.childNodes;
-      var CHAR_WIDTH_CACHE = Text.CHAR_WIDTH_CACHE,
-          MEASURE_TEXT = Text.MEASURE_TEXT;
+      var charWidth = textCache.charWidth;
 
       for (var i = 0, len = cns.length; i < len; i++) {
         var node = cns[i];
@@ -3474,14 +3518,14 @@
         var _char2 = chars[i]; // clientWidth只返回ceil整数，精度必须用getComputedStyle
 
         var css = window.getComputedStyle(node, null);
-        CHAR_WIDTH_CACHE[key][_char2] = parseFloat(css.width);
+        charWidth[key][_char2] = parseFloat(css.width);
       }
 
       list.forEach(function (text) {
         return text.__measureCb();
       });
-      MEASURE_TEXT.list = [];
-      MEASURE_TEXT.data = {};
+      textCache.list = [];
+      textCache.data = {};
       document.body.removeChild(div);
     },
     IMG: IMG,
@@ -5036,11 +5080,11 @@
       _this.__charWidth = 0;
       _this.__textWidth = 0;
       return _this;
-    }
+    } // 预先计算每个字的宽度
+
 
     _createClass(Text, [{
       key: "__computeMeasure",
-      // 预先计算每个字的宽度
       value: function __computeMeasure(renderMode, ctx) {
         var content = this.content,
             computedStyle = this.computedStyle,
@@ -5053,13 +5097,13 @@
         }
 
         var key = this.__key = computedStyle[FONT_SIZE$3] + ',' + computedStyle[FONT_FAMILY$3] + ',' + computedStyle[FONT_WEIGHT$3];
-        var wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
+        var wait = textCache.data[key] = textCache.data[key] || {
           key: key,
           style: computedStyle,
           hash: {},
           s: []
         };
-        var cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
+        var cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
         var sum = 0;
         var needMeasure = false;
 
@@ -5093,7 +5137,7 @@
         this.__textWidth = sum;
 
         if (needMeasure) {
-          Text.MEASURE_TEXT.list.push(this);
+          textCache.list.push(this);
         }
       }
     }, {
@@ -5102,7 +5146,7 @@
         var content = this.content,
             charWidthList = this.charWidthList;
         var key = this.__key;
-        var cache = Text.CHAR_WIDTH_CACHE[key];
+        var cache = textCache.charWidth[key];
         var sum = 0;
 
         for (var i = 0, len = charWidthList.length; i < len; i++) {
@@ -5392,13 +5436,6 @@
 
     return Text;
   }(Node);
-
-  _defineProperty(Text, "CHAR_WIDTH_CACHE", {});
-
-  _defineProperty(Text, "MEASURE_TEXT", {
-    list: [],
-    data: {}
-  });
 
   Text.prototype.__renderByMask = Text.prototype.render;
 
@@ -12189,7 +12226,7 @@
       STRING$2 = unit.STRING,
       INHERIT$4 = unit.INHERIT;
   var clone$2 = util.clone,
-      int2rgba$2 = util.int2rgba,
+      int2rgba$1 = util.int2rgba,
       rgba2int$3 = util.rgba2int,
       joinArr$1 = util.joinArr,
       isNil$5 = util.isNil;
@@ -12390,7 +12427,7 @@
         color = _data[4],
         inset = _data[5];
 
-    var c = int2rgba$2(color);
+    var c = int2rgba$1(color);
     var n = Math.abs(blur) * 2 + Math.abs(spread) * 2 + Math.abs(x) * 2 + Math.abs(y) * 2; // box本身坐标顺时针
 
     var box = [[x1, y1], [x4, y1], [x4, y4], [x1, y4], [x1, y1]]; // 算上各种偏移/扩散的最外层坐标，且逆时针
@@ -13258,7 +13295,7 @@
           });
           [BACKGROUND_COLOR$1, BORDER_TOP_COLOR, BORDER_RIGHT_COLOR, BORDER_BOTTOM_COLOR, BORDER_LEFT_COLOR].forEach(function (k) {
             if (__cacheStyle[k] === undefined) {
-              __cacheStyle[k] = int2rgba$2(computedStyle[k] = currentStyle[k][0]);
+              __cacheStyle[k] = int2rgba$1(computedStyle[k] = currentStyle[k][0]);
             }
           }); // 圆角边计算
 
@@ -13353,10 +13390,10 @@
 
         if (currentStyle[COLOR$4][1] === INHERIT$4) {
           computedStyle[COLOR$4] = parent ? parentComputedStyle[COLOR$4] : [0, 0, 0, 1];
-          __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
+          __cacheStyle[COLOR$4] = int2rgba$1(computedStyle[COLOR$4]);
         } else if (!__cacheStyle[COLOR$4]) {
           computedStyle[COLOR$4] = rgba2int$3(currentStyle[COLOR$4][0]);
-          __cacheStyle[COLOR$4] = int2rgba$2(computedStyle[COLOR$4]);
+          __cacheStyle[COLOR$4] = int2rgba$1(computedStyle[COLOR$4]);
         }
 
         if (currentStyle[VISIBILITY$2][1] === INHERIT$4) {
@@ -14271,31 +14308,27 @@
             p = vs.p;
         var cx = x2 + iw * 0.5;
         var cy = y2 + ih * 0.5;
-        var res;
+        var res = {
+          k: k
+        };
 
         if (k === 'linear') {
           var gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
-          res = {
-            k: k,
-            v: this.__getLg(renderMode, ctx, defs, gd)
-          };
+          res.v = this.__getLg(renderMode, ctx, defs, gd);
         } else if (k === 'radial') {
           var _gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
 
           if (_gd) {
-            res = this.__getRg(renderMode, ctx, defs, _gd);
+            res.v = this.__getRg(renderMode, ctx, defs, _gd);
 
             if (_gd.matrix) {
-              res = [res, _gd.matrix, _gd.cx, _gd.cy];
+              res.v = [res, _gd.matrix, _gd.cx, _gd.cy];
             }
-
-            res = {
-              k: k,
-              v: res
-            };
           }
         } else if (k === 'conic') {
           var _gd2 = gradient.getConic(v, d, p, x2, y2, x3, y3);
+
+          res.v = this.__getCg(renderMode, ctx, defs, _gd2);
         }
 
         return res;
@@ -14306,7 +14339,7 @@
         if (renderMode === mode.CANVAS) {
           var lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
           gd.stop.forEach(function (item) {
-            lg.addColorStop(item[1], item[0]);
+            lg.addColorStop(item[1], int2rgba$1(item[0]));
           });
           return lg;
         } else if (renderMode === mode.SVG) {
@@ -14316,7 +14349,7 @@
             children: gd.stop.map(function (item) {
               return {
                 tagName: 'stop',
-                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
+                props: [['stop-color', int2rgba$1(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
           });
@@ -14329,7 +14362,7 @@
         if (renderMode === mode.CANVAS) {
           var rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
           gd.stop.forEach(function (item) {
-            rg.addColorStop(item[1], item[0]);
+            rg.addColorStop(item[1], int2rgba$1(item[0]));
           });
           return rg;
         } else if (renderMode === mode.SVG) {
@@ -14339,11 +14372,85 @@
             children: gd.stop.map(function (item) {
               return {
                 tagName: 'stop',
-                props: [['stop-color', item[0]], ['offset', item[1] * 100 + '%']]
+                props: [['stop-color', int2rgba$1(item[0])], ['offset', item[1] * 100 + '%']]
               };
             })
           });
           return 'url(#' + uuid + ')';
+        }
+      }
+    }, {
+      key: "__getCg",
+      value: function __getCg(renderMode, ctx, defs, gd) {
+        var cx = gd.cx,
+            cy = gd.cy,
+            r = gd.r,
+            deg = gd.deg,
+            stop = gd.stop;
+        var len = stop.length - 1;
+
+        if (stop[len][1] < 1) {
+          stop.push([stop[len][0].slice(0), 1]);
+        }
+
+        if (stop[0][1] > 0) {
+          stop.unshift([stop[0][0].slice(0), 0]);
+        }
+
+        console.log(cx, cy, r, deg, stop); // 根据2个stop之间的百分比得角度差划分块数，每10°一块，不足也算
+
+        var list = [];
+
+        for (var i = 0, _len3 = stop.length; i < _len3 - 1; i++) {
+          var begin = stop[i][1] * 360;
+          var end = stop[i + 1][1] * 360;
+          var diff = end - begin;
+          var n = Math.ceil(diff / 10);
+          var per = diff / n; // 计算每块的2个弧端点
+
+          var list2 = [];
+          var bc = stop[i][0];
+          var ec = stop[i + 1][0];
+          var dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
+          var pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
+
+          for (var j = 0; j < n; j++) {
+            var _geom$pointOnCircle = geom.pointOnCircle(cx, cy, r, begin + per * j + deg),
+                _geom$pointOnCircle2 = _slicedToArray(_geom$pointOnCircle, 2),
+                x = _geom$pointOnCircle2[0],
+                y = _geom$pointOnCircle2[1];
+
+            list2.push([x, y, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
+          }
+
+          list.push(list2);
+        } // 每段末尾补上下段开始的点和颜色，最后一段补自己末尾颜色特殊处理
+
+
+        for (var _i10 = 0, _len4 = list.length; _i10 < _len4; _i10++) {
+          if (_i10 === _len4 - 1) {
+            var _end = list[0][0].slice(0);
+
+            var s = stop[stop.length - 1][0];
+            _end[2] = s[0];
+            _end[3] = s[1];
+            _end[4] = s[2];
+            _end[5] = s[3];
+
+            list[_i10].push(_end);
+          } else {
+            list[_i10].push(list[_i10 + 1][0].slice(0));
+          }
+        }
+
+        console.log(list);
+
+        if (renderMode === mode.CANVAS) {
+          return list.map(function (item) {
+            return item.map(function (item) {
+              console.log(item);
+            });
+          });
         }
       } // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
 
@@ -17864,7 +17971,7 @@
   var AUTO$5 = unit.AUTO,
       PX$6 = unit.PX,
       PERCENT$7 = unit.PERCENT;
-  var int2rgba$3 = util.int2rgba,
+  var int2rgba$2 = util.int2rgba,
       isNil$7 = util.isNil,
       joinArr$2 = util.joinArr;
   var canvasPolygon$3 = painter.canvasPolygon,
@@ -18028,7 +18135,7 @@
             if (v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
               __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v);
             } else if (currentStyle[k][3] > 0) {
-              __cacheStyle[k] = int2rgba$3(currentStyle[k]);
+              __cacheStyle[k] = int2rgba$2(currentStyle[k]);
             } else {
               __cacheStyle[k] = 'none';
             }

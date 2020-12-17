@@ -112,6 +112,7 @@
     * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radial-gradient
     * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+  * conic-gradient
 * backgroundPositionX
   * 0 默认
   * px
@@ -193,13 +194,19 @@
   * transparent 默认
   * #rgb/rgb/rgba
   * linear-gradient
+    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radial-gradient
+    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+  * conic-gradient
 * stroke
   * #000 默认
   * transparent
   * #rgb/rgb/rgba
   * linear-gradient
+    * 扩展支持linear-gradient(x1 y1 x2 y2, color-stop)格式，其中xy为起始点相对自身尺寸百分比坐标，范围[0,1]可超限
   * radial-gradient
+    * 扩展支持radial-gradient(cx cy ax ay ratio, color-stop)格式，其中c为圆心，a为长轴或半径，相对自身尺寸百分比坐标，范围[0,1]可超限，ratio为短轴缩放比，默认1即圆形
+  * conic-gradient
 * strokeWidth
   * 1 默认
   * px

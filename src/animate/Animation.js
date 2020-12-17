@@ -376,6 +376,7 @@ function calDiff(prev, next, k, target, tagName) {
     if(p.k !== n.k) {
       return;
     }
+    else if(p.k === 'conic') {}
     // 渐变
     else if(p.k === 'linear' || p.k === 'radial') {
       let pv = p.v;

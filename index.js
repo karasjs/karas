@@ -9485,7 +9485,7 @@
       // backgroundImage发生了渐变色和图片的变化，fill发生渐变色和纯色的变化等
       if (p.k !== n.k) {
         return;
-      } // 渐变
+      } else if (p.k === 'conic') ; // 渐变
       else if (p.k === 'linear' || p.k === 'radial') {
           var pv = p.v;
           var nv = n.v;

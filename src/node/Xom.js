@@ -239,6 +239,61 @@ function renderBgc(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw,
   }
 }
 
+function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+  // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+  let list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+  if(!list) {
+    list = [
+      [x, y],
+      [x + w, y],
+      [x + w, y + h],
+      [x, y + h],
+      [x, y],
+    ];
+  }
+  if(renderMode === mode.CANVAS) {
+    let alpha = ctx.globalAlpha;
+    ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+    ctx.save();
+    ctx.beginPath();
+    canvasPolygon(ctx, list);
+    ctx.clip();
+    ctx.closePath();
+    color.forEach(item => {
+      ctx.beginPath();
+      canvasPolygon(ctx, item[0]);
+      ctx.fillStyle = item[1];
+      ctx.fill();
+      ctx.closePath();
+    });
+    ctx.restore();
+    ctx.globalAlpha = alpha;
+  }
+  else if(renderMode === mode.SVG) {
+    let clip = defs.add({
+      tagName: 'clipPath',
+      children: [{
+        tagName: 'path',
+        props: [
+          ['d', svgPolygon(list)],
+          ['fill', '#FFF'],
+        ],
+      }],
+    });
+    color.forEach(item => {
+      xom.virtualDom.bb.push({
+        type: 'item',
+        tagName: 'path',
+        props: [
+          ['d', svgPolygon(item[0])],
+          ['fill', item[1]],
+          ['clip-path', 'url(#' + clip + ')'],
+        ],
+      });
+    });
+  }
+}
+
 let borderRadiusKs = [BORDER_TOP_LEFT_RADIUS, BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS];
 function calBorderRadius(w, h, currentStyle, computedStyle) {
   let noRadius = true;
@@ -2135,7 +2190,11 @@ class Xom extends Node {
       else if(backgroundImage.k) {
         let gd = __cacheStyle[BACKGROUND_IMAGE];
         if(gd) {
-          if(gd.k === 'conic') {}
+          if(gd.k === 'conic') {
+            renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
+              borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
+              borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+          }
           else {
             renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this,
               borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
@@ -2259,29 +2318,23 @@ class Xom extends Node {
     let { k, v, d, s, z, p } = vs;
     let cx = x2 + iw * 0.5;
     let cy = y2 + ih * 0.5;
-    let res;
+    let res = { k };
     if(k === 'linear') {
       let gd = gradient.getLinear(v, d, x2, y2, cx, cy, iw, ih);
-      res = {
-        k,
-        v: this.__getLg(renderMode, ctx, defs, gd),
-      };
+      res.v = this.__getLg(renderMode, ctx, defs, gd);
     }
     else if(k === 'radial') {
       let gd = gradient.getRadial(v, s, z, p, x2, y2, x3, y3);
       if(gd) {
-        res = this.__getRg(renderMode, ctx, defs, gd);
+        res.v = this.__getRg(renderMode, ctx, defs, gd);
         if(gd.matrix) {
-          res = [res, gd.matrix, gd.cx, gd.cy];
+          res.v = [res.v, gd.matrix, gd.cx, gd.cy];
         }
-        res = {
-          k,
-          v: res,
-        };
       }
     }
     else if(k === 'conic') {
       let gd = gradient.getConic(v, d, p, x2, y2, x3, y3);
+      res.v = this.__getCg(renderMode, ctx, defs, gd);
     }
     return res;
   }
@@ -2290,7 +2343,7 @@ class Xom extends Node {
     if(renderMode === mode.CANVAS) {
       let lg = ctx.createLinearGradient(gd.x1, gd.y1, gd.x2, gd.y2);
       gd.stop.forEach(item => {
-        lg.addColorStop(item[1], item[0]);
+        lg.addColorStop(item[1], int2rgba(item[0]));
       });
       return lg;
     }
@@ -2307,8 +2360,8 @@ class Xom extends Node {
           return {
             tagName: 'stop',
             props: [
-              ['stop-color', item[0]],
-              ['offset', item[1] * 100 + '%']
+              ['stop-color', int2rgba(item[0])],
+              ['offset', item[1] * 100 + '%'],
             ],
           };
         }),
@@ -2321,7 +2374,7 @@ class Xom extends Node {
     if(renderMode === mode.CANVAS) {
       let rg = ctx.createRadialGradient(gd.cx, gd.cy, 0, gd.cx, gd.cy, gd.r);
       gd.stop.forEach(item => {
-        rg.addColorStop(item[1], item[0]);
+        rg.addColorStop(item[1], int2rgba(item[0]));
       });
       return rg;
     }
@@ -2331,20 +2384,118 @@ class Xom extends Node {
         props: [
           ['cx', gd.cx],
           ['cy', gd.cy],
-          ['r', gd.r]
+          ['r', gd.r],
         ],
         children: gd.stop.map(item => {
           return {
             tagName: 'stop',
             props: [
-              ['stop-color', item[0]],
-              ['offset', item[1] * 100 + '%']
+              ['stop-color', int2rgba(item[0])],
+              ['offset', item[1] * 100 + '%'],
             ],
           };
         }),
       });
       return 'url(#' + uuid + ')';
     }
+  }
+
+  __getCg(renderMode, ctx, defs, gd) {
+    let { cx, cy, r, deg, stop } = gd;
+    let len = stop.length - 1;
+    if(stop[len][1] < 1) {
+      stop.push([stop[len][0].slice(0), 1]);
+    }
+    if(stop[0][1] > 0) {
+      stop.unshift([stop[0][0].slice(0), 0]);
+    }
+    let offset = renderMode === mode.CANVAS ? 1.5 : 0.5;
+    // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
+    let list = [];
+    for(let i = 0, len = stop.length; i < len - 1; i++) {
+      let begin = stop[i][1] * 360;
+      let end = stop[i + 1][1] * 360;
+      let diff = end - begin;
+      let n = Math.ceil(diff);
+      let per = diff / n;
+      // 计算每块的2个弧端点
+      let bc = stop[i][0];
+      let ec = stop[i + 1][0];
+      let dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
+      let pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
+      for(let j = 0; j < n; j++) {
+        let [x1, y1] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset);
+        let [x2, y2] = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset);
+        list.push([
+          x1, y1,
+          x2, y2,
+          Math.round(bc[0] + pc[0] * j),
+          Math.round(bc[1] + pc[1] * j),
+          Math.round(bc[2] + pc[2] * j),
+          Math.round(bc[3] + pc[3] * j),
+        ]);
+      }
+    }
+    // 最后一段补自己末尾颜色特殊处理
+    let end = list[0].slice(0);
+    let [x2, y2] = geom.pointOnCircle(cx, cy, r, deg);
+    end[2] = x2;
+    end[3] = y2;
+    let s = stop[stop.length - 1][0];
+    end[4] = s[0];
+    end[5] = s[1];
+    end[6] = s[2];
+    end[7] = s[3];
+    list.push(end);
+    // console.log(list);
+    let prev, res = [];
+    if(renderMode === mode.CANVAS) {
+      for(let i = 0, len = list.length; i < len; i++) {
+        let cur = list[i];
+        if(prev) {
+          let lg = ctx.createLinearGradient(prev[0], prev[1], cur[2], cur[3]);
+          lg.addColorStop(0, int2rgba([prev[4], prev[5], prev[6], prev[7]]));
+          lg.addColorStop(1, int2rgba([cur[4], cur[5], cur[6], cur[7]]));
+          res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], lg]);
+        }
+        prev = cur;
+      }
+    }
+    else if(renderMode === mode.SVG) {
+      for(let i = 0, len = list.length; i < len; i++) {
+        let cur = list[i];
+        if(prev) {
+          let uuid = defs.add({
+            tagName: 'linearGradient',
+            props: [
+              ['x1', prev[0]],
+              ['y1', prev[1]],
+              ['x2', cur[2]],
+              ['y2', cur[3]],
+            ],
+            children: [
+              {
+                tagName: 'stop',
+                props: [
+                  ['stop-color', int2rgba([prev[4], prev[5], prev[6], prev[7]])],
+                  ['offset', '0%'],
+                ],
+              },
+              {
+                tagName: 'stop',
+                props: [
+                  ['stop-color', int2rgba([cur[4], cur[5], cur[6], cur[7]])],
+                  ['offset', '100%'],
+                ],
+              },
+            ],
+          });
+          res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], 'url(#' + uuid + ')']);
+        }
+        prev = cur;
+      }
+    }
+    return res;
   }
 
   // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal

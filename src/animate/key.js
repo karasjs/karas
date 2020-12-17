@@ -73,6 +73,7 @@ KEY_GRADIENT.forEach(k => {
 const GRADIENT_TYPE = {
   linear: true,
   radial: true,
+  conic: true,
 };
 
 const KEY_EXPAND = [

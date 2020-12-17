@@ -165,9 +165,25 @@ class Sector extends Geom {
       dy,
     } = res;
     let { __cacheProps: { list, sList }, isMulti } = this;
+    let isFillCE = fill.k === 'conic';
+    let isStrokeCE = stroke.k === 'conic';
     let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
     let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-    if(isFillRE || isStrokeRE) {
+    if(isFillCE || isStrokeCE) {
+      if(isFillCE) {
+        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+      }
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+      }
+      if(strokeWidth > 0 && isStrokeCE) {
+        inject.warn('Stroke style can not use conic-gradient');
+      }
+      else if(strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+      }
+    }
+    else if(isFillRE || isStrokeRE) {
       if(isFillRE) {
         this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
       }

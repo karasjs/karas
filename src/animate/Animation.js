@@ -377,15 +377,12 @@ function calDiff(prev, next, k, target, tagName) {
       return;
     }
     // 渐变
-    else if(p.k === 'linear' || p.k === 'radial') {
+    if(p.k === 'linear' || p.k === 'radial' || p.k === 'conic') {
       let pv = p.v;
       let nv = n.v;
-      if(equalArr(pv, nv)) {
-        return;
-      }
       res[1] = [];
       let { clientWidth } = target;
-      let eq;
+      let eq = equalArr(pv, nv);
       for(let i = 0, len = Math.min(pv.length, nv.length); i < len; i++) {
         let a = pv[i];
         let b = nv[i];
@@ -396,7 +393,6 @@ function calDiff(prev, next, k, target, tagName) {
           b[0][2] - a[0][2],
           b[0][3] - a[0][3],
         ]);
-        eq = equalArr(t, [0, 0, 0, 0]);
         if(a[1] && b[1]) {
           if(a[1][1] === b[1][1]) {
             t.push(b[1][0] - a[1][0]);
@@ -407,25 +403,80 @@ function calDiff(prev, next, k, target, tagName) {
           else if(a[1][1] === PERCENT && b[1][1] === PX) {
             t.push(b[1][0] * 100 / clientWidth - a[1][0]);
           }
-          if(eq) {
-            eq = t[4] === 0;
-          }
-        }
-        else if(a[1] || b[1]) {
-          eq = false;
         }
         res[1].push(t);
       }
       // 线性渐变有角度差值变化
       if(p.k === 'linear') {
-        let v = n.d - p.d;
-        if(eq && v === 0) {
+        let isArrP = Array.isArray(p.d);
+        let isArrN = Array.isArray(n.d);
+        if(isArrN !== isArrP) {
           return;
         }
-        res[2] = v;
+        if(isArrP) {
+          let v = [n.d[0] - p.d[0], n.d[1] - p.d[1], n.d[2] - p.d[2], n.d[3] - p.d[3]];
+          if(eq && equalArr(v, [0, 0, 0, 0])) {
+            return;
+          }
+          res[2] = v;
+        }
+        else {
+          let v = n.d - p.d;
+          if(eq && v === 0) {
+            return;
+          }
+          res[2] = v;
+        }
       }
       // 径向渐变的位置
-      else {
+      else if(p.k === 'radial') {
+        let isArrP = Array.isArray(p.z);
+        let isArrN = Array.isArray(n.z);
+        if(isArrN !== isArrP) {
+          return;
+        }
+        if(isArrP) {
+          res[4] = [];
+          for(let i = 0; i < 5; i++) {
+            let pz = p.z[i];
+            // 半径比例省略为1
+            if(pz === undefined) {
+              pz = 1;
+            }
+            let nz = n.z[i];
+            if(nz === undefined) {
+              nz = 1;
+            }
+            res[4].push(nz - pz);
+          }
+          if(eq && equalArr(res[4], [0, 0, 0, 0, 0])) {
+            return;
+          }
+        }
+        else {
+          res[3] = [];
+          for(let i = 0; i < 2; i++) {
+            let pp = p.p[i];
+            let np = n.p[i];
+            if(pp[1] === np[1]) {
+              res[3].push(np[0] - pp[0]);
+            }
+            else if(pp[1] === PX && np[1] === PERCENT) {
+              let v = np[0] * 0.01 * target[i ? 'clientWidth' : 'clientHeight'];
+              res[3].push(v - pp[0]);
+            }
+            else if(pp[1] === PERCENT && np[1] === PX) {
+              let v = np[0] * 100 / target[i ? 'clientWidth' : 'clientHeight'];
+              res[3].push(v - pp[0]);
+            }
+          }
+          if(eq && equalArr(res[3], [0, 0])) {
+            return;
+          }
+        }
+      }
+      else if(p.k === 'conic') {
+        res[2] = n.d - p.d;
         res[3] = [];
         for(let i = 0; i < 2; i++) {
           let pp = p.p[i];
@@ -442,7 +493,7 @@ function calDiff(prev, next, k, target, tagName) {
             res[3].push(v - pp[0]);
           }
         }
-        if(eq && equalArr(res[3], [0, 0])) {
+        if(eq && res[2] !== 0 && equalArr(res[3], [0, 0])) {
           return;
         }
       }
@@ -786,7 +837,7 @@ function calIntermediateStyle(frame, keys, percent, target) {
   let transition = frame[FRAME_TRANSITION];
   let tagName = target.tagName;
   for(let i = 0, len = transition.length; i < len; i++) {
-    let [k, v, d, p] = transition[i];
+    let [k, v, d, p, z] = transition[i];
     let st = style[k];
     // transform特殊处理，只有1个matrix，有可能不存在，需给默认矩阵
     if(k === TRANSFORM) {
@@ -797,8 +848,6 @@ function calIntermediateStyle(frame, keys, percent, target) {
         st[0][1][i] += v[i] * percent;
       }
     }
-    // else if(k === BACKGROUND_POSITION_X || k === BACKGROUND_POSITION_Y
-    //   || LENGTH_HASH.hasOwnProperty(k) || EXPAND_HASH.hasOwnProperty(k)) {
     else if(NUM_CAL_HASH.hasOwnProperty(k)) {
       if(v) {
         st[0] += v * percent;
@@ -850,9 +899,31 @@ function calIntermediateStyle(frame, keys, percent, target) {
           }
         }
         if(st.k === 'linear' && st.d !== undefined && d !== undefined) {
-          st.d += d * percent;
+          if(Array.isArray(d)) {
+            st.d[0] += d[0] * percent;
+            st.d[1] += d[1] * percent;
+            st.d[2] += d[2] * percent;
+            st.d[3] += d[3] * percent;
+          }
+          else {
+            st.d += d * percent;
+          }
         }
-        if(st.k === 'radial' && st.p !== undefined && p !== undefined) {
+        if(st.k === 'radial') {
+          if(st.z !== undefined && z !== undefined) {
+            st.z[0] += z[0] * percent;
+            st.z[1] += z[1] * percent;
+            st.z[2] += z[2] * percent;
+            st.z[3] += z[3] * percent;
+            st.z[4] += z[4] * percent;
+          }
+          else if(st.p !== undefined && p !== undefined) {
+            st.p[0][0] += p[0] * percent;
+            st.p[1][0] += p[1] * percent;
+          }
+        }
+        else if(st.k === 'conic' && st.d !== undefined && d !== undefined) {
+          st.d += d * percent;
           st.p[0][0] += p[0] * percent;
           st.p[1][0] += p[1] * percent;
         }

@@ -4,6 +4,7 @@ import mode from './mode';
 import css from '../style/css';
 import enums from '../util/enums';
 import util from '../util/util';
+import textCache from './textCache';
 
 const {
   STYLE_KEY: {
@@ -28,12 +29,6 @@ class Text extends Node {
     this.__textWidth = 0;
   }
 
-  static CHAR_WIDTH_CACHE = {};
-  static MEASURE_TEXT = {
-    list: [],
-    data: {},
-  };
-
   // 预先计算每个字的宽度
   __computeMeasure(renderMode, ctx) {
     let { content, computedStyle, charWidthList } = this;
@@ -43,13 +38,13 @@ class Text extends Node {
       ctx.font = css.setFontStyle(computedStyle);
     }
     let key = this.__key = computedStyle[FONT_SIZE] + ',' + computedStyle[FONT_FAMILY] + ',' + computedStyle[FONT_WEIGHT];
-    let wait = Text.MEASURE_TEXT.data[key] = Text.MEASURE_TEXT.data[key] || {
+    let wait = textCache.data[key] = textCache.data[key] || {
       key,
       style: computedStyle,
       hash: {},
       s: [],
     };
-    let cache = Text.CHAR_WIDTH_CACHE[key] = Text.CHAR_WIDTH_CACHE[key] || {};
+    let cache = textCache.charWidth[key] = textCache.charWidth[key] || {};
     let sum = 0;
     let needMeasure = false;
     for(let i = 0, length = content.length; i < length; i++) {
@@ -79,14 +74,14 @@ class Text extends Node {
     }
     this.__textWidth = sum;
     if(needMeasure) {
-      Text.MEASURE_TEXT.list.push(this);
+      textCache.list.push(this);
     }
   }
 
   __measureCb() {
     let { content, charWidthList } = this;
     let key = this.__key;
-    let cache = Text.CHAR_WIDTH_CACHE[key];
+    let cache = textCache.charWidth[key];
     let sum = 0;
     for(let i = 0, len = charWidthList.length; i < len; i++) {
       if(charWidthList[i] < 0) {

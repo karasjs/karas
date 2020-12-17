@@ -12355,6 +12355,9 @@
     }
 
     if (renderMode === mode.CANVAS) {
+      var alpha = ctx.globalAlpha;
+      ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+
       ctx.save();
       ctx.beginPath();
       canvasPolygon$1(ctx, list);
@@ -12368,6 +12371,7 @@
         ctx.closePath();
       });
       ctx.restore();
+      ctx.globalAlpha = alpha;
     } else if (renderMode === mode.SVG) {
       var clip = defs.add({
         tagName: 'clipPath',
@@ -14437,10 +14441,9 @@
 
         if (stop[0][1] > 0) {
           stop.unshift([stop[0][0].slice(0), 0]);
-        } // console.log(cx, cy, r, deg, stop);
+        }
 
-
-        var offset = renderMode === mode.CANVAS ? 1 : 0.5; // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
+        var offset = renderMode === mode.CANVAS ? 1.5 : 0.5; // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
 
         var list = [];
 
@@ -14466,15 +14469,23 @@
 
             var _geom$pointOnCircle3 = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset),
                 _geom$pointOnCircle4 = _slicedToArray(_geom$pointOnCircle3, 2),
-                x2 = _geom$pointOnCircle4[0],
-                y2 = _geom$pointOnCircle4[1];
+                _x3 = _geom$pointOnCircle4[0],
+                _y3 = _geom$pointOnCircle4[1];
 
-            list.push([x1, y1, x2, y2, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
+            list.push([x1, y1, _x3, _y3, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
           }
         } // 最后一段补自己末尾颜色特殊处理
 
 
         var end = list[0].slice(0);
+
+        var _geom$pointOnCircle5 = geom.pointOnCircle(cx, cy, r, deg),
+            _geom$pointOnCircle6 = _slicedToArray(_geom$pointOnCircle5, 2),
+            x2 = _geom$pointOnCircle6[0],
+            y2 = _geom$pointOnCircle6[1];
+
+        end[2] = x2;
+        end[3] = y2;
         var s = stop[stop.length - 1][0];
         end[4] = s[0];
         end[5] = s[1];
@@ -18399,10 +18410,24 @@
             dy = res.dy;
         var list = this.__cacheProps.list,
             isMulti = this.isMulti;
+        var isFillCE = fill.k === 'conic';
+        var isStrokeCE = stroke.k === 'conic';
         var isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
         var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
 
-        if (isFillRE || isStrokeRE) {
+        if (isFillCE || isStrokeCE) {
+          if (isFillCE) {
+            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+          }
+
+          if (strokeWidth > 0 && isStrokeCE) {
+            inject.warn('Stroke style can not use conic-gradient');
+          } else if (strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+          }
+        } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
             this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
           } else if (fill !== 'none') {
@@ -18611,6 +18636,89 @@
 
           props.push(['transform', "matrix(".concat(joinArr$2(matrix, ','), ")")]);
           this.addGeom('path', props);
+        }
+      }
+    }, {
+      key: "__conicGradient",
+      value: function __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
+        var _this3 = this;
+
+        var fill = res.fill,
+            dx = res.dx,
+            dy = res.dy;
+        var color = fill.v;
+
+        if (renderMode === mode.CANVAS) {
+          var alpha = ctx.globalAlpha;
+          ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+
+          if (isMulti) {
+            list.forEach(function (item) {
+              ctx.save();
+              ctx.beginPath();
+              canvasPolygon$3(ctx, item, dx, dy);
+              ctx.clip();
+              ctx.closePath();
+              color.forEach(function (item) {
+                ctx.beginPath();
+                canvasPolygon$3(ctx, item[0], dx, dy);
+                ctx.fillStyle = item[1];
+                ctx.fill();
+                ctx.closePath();
+              });
+              ctx.restore();
+            });
+          } else {
+            ctx.save();
+            ctx.beginPath();
+            canvasPolygon$3(ctx, list, dx, dy);
+            ctx.clip();
+            ctx.closePath();
+            color.forEach(function (item) {
+              ctx.beginPath();
+              canvasPolygon$3(ctx, item[0], dx, dy);
+              ctx.fillStyle = item[1];
+              ctx.fill();
+              ctx.closePath();
+            });
+            ctx.restore();
+          }
+
+          ctx.globalAlpha = alpha;
+        } else if (renderMode === mode.SVG) {
+          if (isMulti) {
+            list.forEach(function (item) {
+              var clip = defs.add({
+                tagName: 'clipPath',
+                children: [{
+                  tagName: 'path',
+                  props: [['d', svgPolygon$3(item)], ['fill', '#FFF']]
+                }]
+              });
+              color.forEach(function (item) {
+                _this3.virtualDom.bb.push({
+                  type: 'item',
+                  tagName: 'path',
+                  props: [['d', svgPolygon$3(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+                });
+              });
+            });
+          } else {
+            var clip = defs.add({
+              tagName: 'clipPath',
+              children: [{
+                tagName: 'path',
+                props: [['d', svgPolygon$3(list)], ['fill', '#FFF']]
+              }]
+            });
+            color.forEach(function (item) {
+              _this3.virtualDom.bb.push({
+                type: 'item',
+                tagName: 'path',
+                props: [['d', svgPolygon$3(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+              });
+            });
+          }
         }
       }
     }, {
@@ -24867,10 +24975,24 @@
             list = _this$__cacheProps.list,
             sList = _this$__cacheProps.sList,
             isMulti = this.isMulti;
+        var isFillCE = fill.k === 'conic';
+        var isStrokeCE = stroke.k === 'conic';
         var isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
         var isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
 
-        if (isFillRE || isStrokeRE) {
+        if (isFillCE || isStrokeCE) {
+          if (isFillCE) {
+            this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+          } else if (fill !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+          }
+
+          if (strokeWidth > 0 && isStrokeCE) {
+            inject.warn('Stroke style can not use conic-gradient');
+          } else if (strokeWidth > 0 && stroke !== 'none') {
+            this.__drawPolygon(renderMode, ctx, defs, isMulti, sList, dx, dy, res, false, true);
+          }
+        } else if (isFillRE || isStrokeRE) {
           if (isFillRE) {
             this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
           } else if (fill !== 'none') {

@@ -371,9 +371,25 @@ class Geom extends Xom {
       dy,
     } = res;
     let { __cacheProps: { list }, isMulti } = this;
+    let isFillCE = fill.k === 'conic';
+    let isStrokeCE = stroke.k === 'conic';
     let isFillRE = fill.k === 'radial' && Array.isArray(fill.v);
     let isStrokeRE = strokeWidth > 0 && stroke.k === 'radial' && Array.isArray(stroke.v);
-    if(isFillRE || isStrokeRE) {
+    if(isFillCE || isStrokeCE) {
+      if(isFillCE) {
+        this.__conicGradient(renderMode, ctx, defs, list, isMulti, res);
+      }
+      else if(fill !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, true);
+      }
+      if(strokeWidth > 0 && isStrokeCE) {
+        inject.warn('Stroke style can not use conic-gradient');
+      }
+      else if(strokeWidth > 0 && stroke !== 'none') {
+        this.__drawPolygon(renderMode, ctx, defs, isMulti, list, dx, dy, res, false, true);
+      }
+    }
+    else if(isFillRE || isStrokeRE) {
       if(isFillRE) {
         this.__radialEllipse(renderMode, ctx, defs, list, isMulti, res, 'fill');
       }
@@ -556,6 +572,102 @@ class Geom extends Xom {
       }
       props.push(['transform', `matrix(${joinArr(matrix, ',')})`]);
       this.addGeom('path', props);
+    }
+  }
+
+  __conicGradient(renderMode, ctx, defs, list, isMulti, res) {
+    let {
+      fill,
+      dx,
+      dy,
+    } = res;
+    let color = fill.v;
+    if(renderMode === mode.CANVAS) {
+      let alpha = ctx.globalAlpha;
+      ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
+      if(isMulti) {
+        list.forEach(item => {
+          ctx.save();
+          ctx.beginPath();
+          canvasPolygon(ctx, item, dx, dy);
+          ctx.clip();
+          ctx.closePath();
+          color.forEach(item => {
+            ctx.beginPath();
+            canvasPolygon(ctx, item[0], dx, dy);
+            ctx.fillStyle = item[1];
+            ctx.fill();
+            ctx.closePath();
+          });
+          ctx.restore();
+        });
+      }
+      else {
+        ctx.save();
+        ctx.beginPath();
+        canvasPolygon(ctx, list, dx, dy);
+        ctx.clip();
+        ctx.closePath();
+        color.forEach(item => {
+          ctx.beginPath();
+          canvasPolygon(ctx, item[0], dx, dy);
+          ctx.fillStyle = item[1];
+          ctx.fill();
+          ctx.closePath();
+        });
+        ctx.restore();
+      }
+      ctx.globalAlpha = alpha;
+    }
+    else if(renderMode === mode.SVG) {
+      if(isMulti) {
+        list.forEach(item => {
+          let clip = defs.add({
+            tagName: 'clipPath',
+            children: [{
+              tagName: 'path',
+              props: [
+                ['d', svgPolygon(item)],
+                ['fill', '#FFF'],
+              ],
+            }],
+          });
+          color.forEach(item => {
+            this.virtualDom.bb.push({
+              type: 'item',
+              tagName: 'path',
+              props: [
+                ['d', svgPolygon(item[0])],
+                ['fill', item[1]],
+                ['clip-path', 'url(#' + clip + ')'],
+              ],
+            });
+          });
+        });
+      }
+      else {
+        let clip = defs.add({
+          tagName: 'clipPath',
+          children: [{
+            tagName: 'path',
+            props: [
+              ['d', svgPolygon(list)],
+              ['fill', '#FFF'],
+            ],
+          }],
+        });
+        color.forEach(item => {
+          this.virtualDom.bb.push({
+            type: 'item',
+            tagName: 'path',
+            props: [
+              ['d', svgPolygon(item[0])],
+              ['fill', item[1]],
+              ['clip-path', 'url(#' + clip + ')'],
+            ],
+          });
+        });
+      }
     }
   }
 

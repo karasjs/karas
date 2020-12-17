@@ -252,6 +252,8 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bb
     ];
   }
   if(renderMode === mode.CANVAS) {
+    let alpha = ctx.globalAlpha;
+    ctx.globalAlpha = alpha * 0.5; // 割圆法的叠加会加深色彩，这里还原模拟下透明度
     ctx.save();
     ctx.beginPath();
     canvasPolygon(ctx, list);
@@ -265,6 +267,7 @@ function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bb
       ctx.closePath();
     });
     ctx.restore();
+    ctx.globalAlpha = alpha;
   }
   else if(renderMode === mode.SVG) {
     let clip = defs.add({
@@ -2406,8 +2409,7 @@ class Xom extends Node {
     if(stop[0][1] > 0) {
       stop.unshift([stop[0][0].slice(0), 0]);
     }
-    // console.log(cx, cy, r, deg, stop);
-    let offset = renderMode === mode.CANVAS ? 1 : 0.5;
+    let offset = renderMode === mode.CANVAS ? 1.5 : 0.5;
     // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
     let list = [];
     for(let i = 0, len = stop.length; i < len - 1; i++) {
@@ -2436,6 +2438,9 @@ class Xom extends Node {
     }
     // 最后一段补自己末尾颜色特殊处理
     let end = list[0].slice(0);
+    let [x2, y2] = geom.pointOnCircle(cx, cy, r, deg);
+    end[2] = x2;
+    end[3] = y2;
     let s = stop[stop.length - 1][0];
     end[4] = s[0];
     end[5] = s[1];

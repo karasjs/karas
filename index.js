@@ -2346,7 +2346,7 @@
     } else if (deg >= 180) {
       deg -= 180;
       deg = d2r(deg);
-      return [x + Math.sin(deg) * r, y + Math.cos(deg) * r];
+      return [x - Math.sin(deg) * r, y + Math.cos(deg) * r];
     } else if (deg >= 90) {
       deg -= 90;
       deg = d2r(deg);
@@ -12346,6 +12346,46 @@
     }
   }
 
+  function renderConic(renderMode, color, x, y, w, h, ctx, defs, xom, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr) {
+    // border-radius使用三次贝塞尔曲线模拟1/4圆角，误差在[0, 0.000273]之间
+    var list = border.calRadius(x, y, w, h, btw, brw, bbw, blw, btlr, btrr, bbrr, bblr);
+
+    if (!list) {
+      list = [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
+    }
+
+    if (renderMode === mode.CANVAS) {
+      ctx.save();
+      ctx.beginPath();
+      canvasPolygon$1(ctx, list);
+      ctx.clip();
+      ctx.closePath();
+      color.forEach(function (item) {
+        ctx.beginPath();
+        canvasPolygon$1(ctx, item[0]);
+        ctx.fillStyle = item[1];
+        ctx.fill();
+        ctx.closePath();
+      });
+      ctx.restore();
+    } else if (renderMode === mode.SVG) {
+      var clip = defs.add({
+        tagName: 'clipPath',
+        children: [{
+          tagName: 'path',
+          props: [['d', svgPolygon$1(list)], ['fill', '#FFF']]
+        }]
+      });
+      color.forEach(function (item) {
+        xom.virtualDom.bb.push({
+          type: 'item',
+          tagName: 'path',
+          props: [['d', svgPolygon$1(item[0])], ['fill', item[1]], ['clip-path', 'url(#' + clip + ')']]
+        });
+      });
+    }
+  }
+
   var borderRadiusKs = [BORDER_TOP_LEFT_RADIUS, BORDER_TOP_RIGHT_RADIUS, BORDER_BOTTOM_RIGHT_RADIUS, BORDER_BOTTOM_LEFT_RADIUS];
 
   function calBorderRadius(w, h, currentStyle, computedStyle) {
@@ -14149,7 +14189,9 @@
             var gd = __cacheStyle[BACKGROUND_IMAGE$1];
 
             if (gd) {
-              if (gd.k === 'conic') ; else {
+              if (gd.k === 'conic') {
+                renderConic(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
+              } else {
                 renderBgc(renderMode, gd.v, x2, y2, clientWidth, clientHeight, ctx, defs, this, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, borderTopLeftRadius, borderTopRightRadius, borderBottomRightRadius, borderBottomLeftRadius);
               }
             }
@@ -14322,7 +14364,7 @@
             res.v = this.__getRg(renderMode, ctx, defs, _gd);
 
             if (_gd.matrix) {
-              res.v = [res, _gd.matrix, _gd.cx, _gd.cy];
+              res.v = [res.v, _gd.matrix, _gd.cx, _gd.cy];
             }
           }
         } else if (k === 'conic') {
@@ -14395,63 +14437,91 @@
 
         if (stop[0][1] > 0) {
           stop.unshift([stop[0][0].slice(0), 0]);
-        }
+        } // console.log(cx, cy, r, deg, stop);
 
-        console.log(cx, cy, r, deg, stop); // 根据2个stop之间的百分比得角度差划分块数，每10°一块，不足也算
+
+        var offset = renderMode === mode.CANVAS ? 1 : 0.5; // 根据2个stop之间的百分比得角度差划分块数，每0.5°一块，不足也算
 
         var list = [];
 
         for (var i = 0, _len3 = stop.length; i < _len3 - 1; i++) {
           var begin = stop[i][1] * 360;
-          var end = stop[i + 1][1] * 360;
-          var diff = end - begin;
-          var n = Math.ceil(diff / 10);
+
+          var _end = stop[i + 1][1] * 360;
+
+          var diff = _end - begin;
+          var n = Math.ceil(diff);
           var per = diff / n; // 计算每块的2个弧端点
 
-          var list2 = [];
           var bc = stop[i][0];
           var ec = stop[i + 1][0];
           var dc = [ec[0] - bc[0], ec[1] - bc[1], ec[2] - bc[2], ec[3] - bc[3]];
           var pc = [dc[0] / n, dc[1] / n, dc[2] / n, dc[3] / n];
 
           for (var j = 0; j < n; j++) {
-            var _geom$pointOnCircle = geom.pointOnCircle(cx, cy, r, begin + per * j + deg),
+            var _geom$pointOnCircle = geom.pointOnCircle(cx, cy, r, begin + per * j + deg - offset),
                 _geom$pointOnCircle2 = _slicedToArray(_geom$pointOnCircle, 2),
-                x = _geom$pointOnCircle2[0],
-                y = _geom$pointOnCircle2[1];
+                x1 = _geom$pointOnCircle2[0],
+                y1 = _geom$pointOnCircle2[1];
 
-            list2.push([x, y, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
+            var _geom$pointOnCircle3 = geom.pointOnCircle(cx, cy, r, begin + per * j + deg + offset),
+                _geom$pointOnCircle4 = _slicedToArray(_geom$pointOnCircle3, 2),
+                x2 = _geom$pointOnCircle4[0],
+                y2 = _geom$pointOnCircle4[1];
+
+            list.push([x1, y1, x2, y2, Math.round(bc[0] + pc[0] * j), Math.round(bc[1] + pc[1] * j), Math.round(bc[2] + pc[2] * j), Math.round(bc[3] + pc[3] * j)]);
           }
-
-          list.push(list2);
-        } // 每段末尾补上下段开始的点和颜色，最后一段补自己末尾颜色特殊处理
+        } // 最后一段补自己末尾颜色特殊处理
 
 
-        for (var _i10 = 0, _len4 = list.length; _i10 < _len4; _i10++) {
-          if (_i10 === _len4 - 1) {
-            var _end = list[0][0].slice(0);
+        var end = list[0].slice(0);
+        var s = stop[stop.length - 1][0];
+        end[4] = s[0];
+        end[5] = s[1];
+        end[6] = s[2];
+        end[7] = s[3];
+        list.push(end); // console.log(list);
 
-            var s = stop[stop.length - 1][0];
-            _end[2] = s[0];
-            _end[3] = s[1];
-            _end[4] = s[2];
-            _end[5] = s[3];
-
-            list[_i10].push(_end);
-          } else {
-            list[_i10].push(list[_i10 + 1][0].slice(0));
-          }
-        }
-
-        console.log(list);
+        var prev,
+            res = [];
 
         if (renderMode === mode.CANVAS) {
-          return list.map(function (item) {
-            return item.map(function (item) {
-              console.log(item);
-            });
-          });
+          for (var _i10 = 0, _len4 = list.length; _i10 < _len4; _i10++) {
+            var cur = list[_i10];
+
+            if (prev) {
+              var lg = ctx.createLinearGradient(prev[0], prev[1], cur[2], cur[3]);
+              lg.addColorStop(0, int2rgba$1([prev[4], prev[5], prev[6], prev[7]]));
+              lg.addColorStop(1, int2rgba$1([cur[4], cur[5], cur[6], cur[7]]));
+              res.push([[[cx, cy], [prev[0], prev[1]], [cur[2], cur[3]]], lg]);
+            }
+
+            prev = cur;
+          }
+        } else if (renderMode === mode.SVG) {
+          for (var _i11 = 0, _len5 = list.length; _i11 < _len5; _i11++) {
+            var _cur = list[_i11];
+
+            if (prev) {
+              var uuid = defs.add({
+                tagName: 'linearGradient',
+                props: [['x1', prev[0]], ['y1', prev[1]], ['x2', _cur[2]], ['y2', _cur[3]]],
+                children: [{
+                  tagName: 'stop',
+                  props: [['stop-color', int2rgba$1([prev[4], prev[5], prev[6], prev[7]])], ['offset', '0%']]
+                }, {
+                  tagName: 'stop',
+                  props: [['stop-color', int2rgba$1([_cur[4], _cur[5], _cur[6], _cur[7]])], ['offset', '100%']]
+                }]
+              });
+              res.push([[[cx, cy], [prev[0], prev[1]], [_cur[2], _cur[3]]], 'url(#' + uuid + ')']);
+            }
+
+            prev = _cur;
+          }
         }
+
+        return res;
       } // canvas清空自身cache，cacheTotal在Root的自底向上逻辑做，svg仅有cacheTotal
 
     }, {

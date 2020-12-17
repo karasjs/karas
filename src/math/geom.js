@@ -740,7 +740,7 @@ function pointOnCircle(x, y, r, deg) {
     deg -= 180;
     deg = d2r(deg);
     return [
-      x + Math.sin(deg) * r,
+      x - Math.sin(deg) * r,
       y + Math.cos(deg) * r,
     ];
   }

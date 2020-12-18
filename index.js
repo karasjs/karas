@@ -14454,7 +14454,11 @@
             }
           }
         } else if (k === 'conic') {
-          var _gd2 = gradient.getConic(v, d, p, x2, y2, x3, y3);
+          var bbox = this.bbox;
+          var m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
+          var m2 = Math.max(Math.abs(x3 - x2), Math.abs(y3 - y2));
+
+          var _gd2 = gradient.getConic(v, d, p, x2, y2, x3, y3, m1 / m2);
 
           res.v = this.__getCg(renderMode, ctx, defs, _gd2);
         }
@@ -14573,8 +14577,7 @@
         end[5] = s[1];
         end[6] = s[2];
         end[7] = s[3];
-        list.push(end); // console.log(list);
-
+        list.push(end);
         var prev,
             res = [];
 
@@ -18287,23 +18290,7 @@
       value: function __calCache(renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4) {
         var _this2 = this;
 
-        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4); // geom才有的style
-
-
-        [STROKE$1, FILL$1].forEach(function (k) {
-          if (isNil$7(__cacheStyle[k])) {
-            var v = currentStyle[k];
-            computedStyle[k] = v;
-
-            if (v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v);
-            } else if (currentStyle[k][3] > 0) {
-              __cacheStyle[k] = int2rgba$2(currentStyle[k]);
-            } else {
-              __cacheStyle[k] = 'none';
-            }
-          }
-        });
+        _get(_getPrototypeOf(Geom.prototype), "__calCache", this).call(this, renderMode, lv, ctx, defs, parent, __cacheStyle, currentStyle, computedStyle, sx, sy, clientWidth, clientHeight, outerWidth, outerHeight, borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth, paddingTop, paddingRight, paddingBottom, paddingLeft, x1, x2, x3, x4, y1, y2, y3, y4);
 
         if (isNil$7(__cacheStyle[STROKE_WIDTH])) {
           __cacheStyle[STROKE_WIDTH] = true;
@@ -18327,6 +18314,21 @@
 
         [STROKE_LINECAP, STROKE_LINEJOIN, STROKE_MITERLIMIT, FILL_RULE].forEach(function (k) {
           computedStyle[k] = currentStyle[k];
+        }); // geom才有的style
+
+        [STROKE$1, FILL$1].forEach(function (k) {
+          if (isNil$7(__cacheStyle[k])) {
+            var v = currentStyle[k];
+            computedStyle[k] = v;
+
+            if (v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
+              __cacheStyle[k] = _this2.__gradient(renderMode, ctx, defs, x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom, clientWidth, clientHeight, v);
+            } else if (currentStyle[k][3] > 0) {
+              __cacheStyle[k] = int2rgba$2(currentStyle[k]);
+            } else {
+              __cacheStyle[k] = 'none';
+            }
+          }
         }); // Geom强制有内容
 
         return computedStyle[VISIBILITY$4] !== 'hidden';
@@ -24794,9 +24796,9 @@
               bbox[3] = Math.max(bbox[3], _bezierBox[3] + oy);
             } else {
               bbox[0] = Math.min(bbox[0], xa - ox);
-              bbox[1] = Math.min(bbox[1], xb - oy);
+              bbox[1] = Math.min(bbox[1], ya - oy);
               bbox[2] = Math.max(bbox[2], xa + ox);
-              bbox[3] = Math.max(bbox[3], xb + oy);
+              bbox[3] = Math.max(bbox[3], ya + oy);
             }
 
             xa = xb;
@@ -26191,7 +26193,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.0";
+  var version = "0.46.1";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

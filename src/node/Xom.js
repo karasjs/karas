@@ -2333,7 +2333,10 @@ class Xom extends Node {
       }
     }
     else if(k === 'conic') {
-      let gd = gradient.getConic(v, d, p, x2, y2, x3, y3);
+      let bbox = this.bbox;
+      let m1 = Math.max(Math.abs(bbox[2] - bbox[0]), Math.abs(bbox[3] - bbox[1]));
+      let m2 = Math.max(Math.abs(x3 - x2), Math.abs(y3 - y2));
+      let gd = gradient.getConic(v, d, p, x2, y2, x3, y3, m1 / m2);
       res.v = this.__getCg(renderMode, ctx, defs, gd);
     }
     return res;
@@ -2447,7 +2450,6 @@ class Xom extends Node {
     end[6] = s[2];
     end[7] = s[3];
     list.push(end);
-    // console.log(list);
     let prev, res = [];
     if(renderMode === mode.CANVAS) {
       for(let i = 0, len = list.length; i < len; i++) {

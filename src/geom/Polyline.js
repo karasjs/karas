@@ -440,9 +440,9 @@ class Polyline extends Geom {
         }
         else {
           bbox[0] = Math.min(bbox[0], xa - ox);
-          bbox[1] = Math.min(bbox[1], xb - oy);
+          bbox[1] = Math.min(bbox[1], ya - oy);
           bbox[2] = Math.max(bbox[2], xa + ox);
-          bbox[3] = Math.max(bbox[3], xb + oy);
+          bbox[3] = Math.max(bbox[3], ya + oy);
         }
         xa = xb;
         ya = yb;

@@ -160,24 +160,6 @@ class Geom extends Xom {
       borderTopWidth, borderRightWidth, borderBottomWidth, borderLeftWidth,
       paddingTop, paddingRight, paddingBottom, paddingLeft,
       x1, x2, x3, x4, y1, y2, y3, y4);
-    // geom才有的style
-    [STROKE, FILL].forEach(k => {
-      if(isNil(__cacheStyle[k])) {
-        let v = currentStyle[k];
-        computedStyle[k] = v;
-        if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
-          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
-            x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
-            clientWidth, clientHeight, v);
-        }
-        else if(currentStyle[k][3] > 0) {
-          __cacheStyle[k] = int2rgba(currentStyle[k]);
-        }
-        else {
-          __cacheStyle[k] = 'none';
-        }
-      }
-    });
     if(isNil(__cacheStyle[STROKE_WIDTH])) {
       __cacheStyle[STROKE_WIDTH] = true;
       let strokeWidth = currentStyle[STROKE_WIDTH];
@@ -204,6 +186,24 @@ class Geom extends Xom {
       FILL_RULE,
     ].forEach(k => {
       computedStyle[k] = currentStyle[k];
+    });
+    // geom才有的style
+    [STROKE, FILL].forEach(k => {
+      if(isNil(__cacheStyle[k])) {
+        let v = currentStyle[k];
+        computedStyle[k] = v;
+        if(v && (v.k === 'linear' || v.k === 'radial' || v.k === 'conic')) {
+          __cacheStyle[k] = this.__gradient(renderMode, ctx, defs,
+            x2 + paddingLeft, y2 + paddingTop, x3 - paddingRight, y3 - paddingBottom,
+            clientWidth, clientHeight, v);
+        }
+        else if(currentStyle[k][3] > 0) {
+          __cacheStyle[k] = int2rgba(currentStyle[k]);
+        }
+        else {
+          __cacheStyle[k] = 'none';
+        }
+      }
     });
     // Geom强制有内容
     return computedStyle[VISIBILITY] !== 'hidden';

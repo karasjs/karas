@@ -9,18 +9,12 @@ function traversal(list, length, diff, after) {
       let item = list[i];
       item.__after && item.__after(diff);
     }
-    // list.forEach(item => {
-    //   item.__after && item.__after(diff);
-    // });
   }
   else {
     for(let i = 0; i < length; i++) {
       let item = list[i];
       item.__before && item.__before(diff);
     }
-    // list.forEach(item => {
-    //   item.__before && item.__before(diff);
-    // });
   }
 }
 
@@ -57,9 +51,9 @@ class Frame {
         // 执行动画造成的每个Root的刷新并清空
         let list = self.__hookTask.splice(0);
         for(let i = 0, len = list.length; i < len; i++) {
-          list[i]();
+          let item = list[i];
+          item && item();
         }
-        // self.__hookTask.splice(0).forEach(item => item());
         // 普通的before/after
         traversal(clone, length, diff, true);
         // 还有则继续，没有则停止节省性能

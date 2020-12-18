@@ -194,14 +194,14 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
   }
   // 多次调用更新才会有list，一般没有，优化；component无需，因为多次都是它自己
   if(list && !component) {
-    keys = keys.slice(0); // 防止原始值被更改
+    keys = (keys || []).slice(0); // 防止原始值被更改
     let hash = {};
     keys.forEach(k => {
       hash[k] = true;
     });
     list.forEach(item => {
       let { [UPDATE_STYLE]: style2, [UPDATE_OVERWRITE]: overwrite, [UPDATE_KEYS]: keys2 } = item;
-      keys2.forEach(k2 => {
+      (keys2 || []).forEach(k2 => {
         if(!hash.hasOwnProperty(k2)) {
           hash[k2] = true;
           keys.push(k2);
@@ -211,7 +211,12 @@ function parseUpdate(renderMode, root, target, reflowList, measureList, cacheHas
         Object.assign(__config[NODE_STYLE], overwrite);
       }
       if(style2) {
-        Object.assign(style, style2);
+        if(style) {
+          Object.assign(style, style2);
+        }
+        else {
+          style = style2;
+        }
       }
     });
   }

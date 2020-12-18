@@ -8806,18 +8806,12 @@
       for (var i = 0; i < length; i++) {
         var item = list[i];
         item.__after && item.__after(diff);
-      } // list.forEach(item => {
-      //   item.__after && item.__after(diff);
-      // });
-
+      }
     } else {
       for (var _i = 0; _i < length; _i++) {
         var _item = list[_i];
         _item.__before && _item.__before(diff);
-      } // list.forEach(item => {
-      //   item.__before && item.__before(diff);
-      // });
-
+      }
     }
   }
 
@@ -8862,9 +8856,9 @@
             var list = self.__hookTask.splice(0);
 
             for (var i = 0, len = list.length; i < len; i++) {
-              list[i]();
-            } // self.__hookTask.splice(0).forEach(item => item());
-            // 普通的before/after
+              var item = list[i];
+              item && item();
+            } // 普通的before/after
 
 
             traversal(clone, length, diff, true); // 还有则继续，没有则停止节省性能
@@ -21953,7 +21947,7 @@
 
 
     if (list && !component) {
-      keys = keys.slice(0); // 防止原始值被更改
+      keys = (keys || []).slice(0); // 防止原始值被更改
 
       var hash = {};
       keys.forEach(function (k) {
@@ -21963,7 +21957,7 @@
         var style2 = item[UPDATE_STYLE$2],
             overwrite = item[UPDATE_OVERWRITE$1],
             keys2 = item[UPDATE_KEYS$2];
-        keys2.forEach(function (k2) {
+        (keys2 || []).forEach(function (k2) {
           if (!hash.hasOwnProperty(k2)) {
             hash[k2] = true;
             keys.push(k2);
@@ -21975,7 +21969,11 @@
         }
 
         if (style2) {
-          Object.assign(style, style2);
+          if (style) {
+            Object.assign(style, style2);
+          } else {
+            style = style2;
+          }
         }
       });
     } // 按节点合并完style后判断改变等级

@@ -2834,15 +2834,16 @@
         }
       }
 
-      var v = gradient[2].match(/((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
+      var v = gradient[2].match(/(-?[\d.]+(px|%))?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
       o.v = v.map(function (item) {
-        var res = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
-        var arr = [rgba2int$1(res[1])];
+        var color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
+        var arr = [rgba2int$1(color[1])];
+        var percent = /\b-?[\d.]+(?:px|%)/.exec(item);
 
-        if (res[2]) {
-          arr[1] = [parseFloat(res[2])];
+        if (percent) {
+          arr[1] = [parseFloat(percent[0])];
 
-          if (/%$/.test(res[2])) {
+          if (/%$/.test(percent[0])) {
             arr[1][1] = PERCENT;
           } else {
             arr[1][1] = PX;
@@ -26193,7 +26194,7 @@
     Cache: Cache
   };
 
-  var version = "0.46.1";
+  var version = "0.46.2";
 
   Geom$1.register('$line', Line);
   Geom$1.register('$polyline', Polyline);

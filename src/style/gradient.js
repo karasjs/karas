@@ -5,7 +5,7 @@ import geom from '../math/geom';
 import vector from '../math/vector';
 import mx from '../math/matrix';
 
-const { rgba2int, int2rgba, isNil } = util;
+const { rgba2int, isNil } = util;
 const { PX, PERCENT } = unit;
 const { d2r } = geom;
 
@@ -444,13 +444,14 @@ function parseGradient(s) {
         o.p = [[50, PERCENT], [50, PERCENT]];
       }
     }
-    let v = gradient[2].match(/((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
+    let v = gradient[2].match(/(-?[\d.]+(px|%))?\s*((#[0-9a-f]{3,8})|(rgba?\s*\(.+?\)))\s*(-?[\d.]+(px|%))?/ig);
     o.v = v.map(item => {
-      let res = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))\s*(-?[\d.]+(?:px|%))?/i.exec(item);
-      let arr = [rgba2int(res[1])];
-      if(res[2]) {
-        arr[1] = [parseFloat(res[2])];
-        if(/%$/.test(res[2])) {
+      let color = /((?:#[0-9a-f]{3,8})|(?:rgba?\s*\(.+?\)))/i.exec(item);
+      let arr = [rgba2int(color[1])];
+      let percent = /\b-?[\d.]+(?:px|%)/.exec(item);
+      if(percent) {
+        arr[1] = [parseFloat(percent[0])];
+        if(/%$/.test(percent[0])) {
           arr[1][1] = PERCENT;
         }
         else {
